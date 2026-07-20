@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   useProjectByName: vi.fn(),
   getOrFetchProjectByName: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => true),
+  isDefaultProject: vi.fn((_name: string) => false),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -58,6 +59,11 @@ vi.mock("@/utils", async (importOriginal) => ({
   hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
 }));
 
+vi.mock("@/types/v1/project", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/types/v1/project")>()),
+  isDefaultProject: mocks.isDefaultProject,
+}));
+
 import { ProjectLabel } from "./ProjectLabel";
 
 const render = async (element: ReactElement) => {
@@ -79,6 +85,7 @@ describe("ProjectLabel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.hasWorkspacePermissionV2.mockReturnValue(true);
+    mocks.isDefaultProject.mockReturnValue(false);
     mocks.useProjectByName.mockReturnValue({
       name: "projects/sample",
       title: "Sample Project",
@@ -175,6 +182,45 @@ describe("ProjectLabel", () => {
     root = rendered.root;
 
     expect(rendered.container.textContent).toBe("Custom Project");
+    expect(mocks.getOrFetchProjectByName).not.toHaveBeenCalled();
+  });
+
+  test("renders unknown project names as plain text even when link is requested", async () => {
+    const rendered = await render(
+      <ProjectLabel projectName="projects/-1" link />
+    );
+    root = rendered.root;
+
+    expect(rendered.container.querySelector("a")).toBeNull();
+    expect(rendered.container.textContent).toBe("projects/-1");
+    expect(mocks.getOrFetchProjectByName).not.toHaveBeenCalled();
+  });
+
+  test("renders empty project names as plain text even when link is requested", async () => {
+    const rendered = await render(<ProjectLabel projectName="" link />);
+    root = rendered.root;
+
+    expect(rendered.container.querySelector("a")).toBeNull();
+    expect(rendered.container.textContent).toBe("-");
+    expect(mocks.getOrFetchProjectByName).not.toHaveBeenCalled();
+  });
+
+  test("renders the default project as plain text even when link is requested", async () => {
+    mocks.isDefaultProject.mockImplementation(
+      (name) => name === "projects/default"
+    );
+    mocks.useProjectByName.mockReturnValue({
+      name: "projects/default",
+      title: "Default project",
+    });
+
+    const rendered = await render(
+      <ProjectLabel projectName="projects/default" link />
+    );
+    root = rendered.root;
+
+    expect(rendered.container.querySelector("a")).toBeNull();
+    expect(rendered.container.textContent).toBe("Default project");
     expect(mocks.getOrFetchProjectByName).not.toHaveBeenCalled();
   });
 });
