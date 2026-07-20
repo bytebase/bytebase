@@ -4648,6 +4648,45 @@ paths:
           schema:
             type: string
             title: comment
+        - name: metadata.schemas.compositeTypes.name
+          in: query
+          description: The name of the composite type.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.compositeTypes.attributes.name
+          in: query
+          description: The name of the attribute.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.compositeTypes.attributes.type
+          in: query
+          description: The attribute type. User-defined types are always schema-qualified.
+          schema:
+            type: string
+            title: type
+        - name: metadata.schemas.compositeTypes.attributes.collation
+          in: query
+          description: |-
+            The non-default collation of the attribute as an emit-ready SQL
+             identifier reference (quoted as needed, schema-qualified when outside
+             pg_catalog), empty otherwise. e.g. `"C"` or `locale.en_us`.
+          schema:
+            type: string
+            title: collation
+        - name: metadata.schemas.compositeTypes.attributes.comment
+          in: query
+          description: The comment describing the attribute.
+          schema:
+            type: string
+            title: comment
+        - name: metadata.schemas.compositeTypes.comment
+          in: query
+          description: The comment describing the composite type.
+          schema:
+            type: string
+            title: comment
         - name: metadata.characterSet
           in: query
           description: The character_set is the character set of a database.
@@ -9898,6 +9937,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Policy'
+  /v1/projects/{project}/queryHistories:
+    get:
+      tags:
+        - SQLService
+      summary: ListQueryHistories
+      description: |-
+        ListQueryHistories lists query histories of all users in a project.
+         Permissions required: bb.queryHistories.list
+      operationId: SQLService_ListQueryHistories
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: pageSize
+          in: query
+          description: |-
+            The maximum number of histories to return.
+             The service may return fewer than this value.
+             If unspecified, at most 10 history entries will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+          schema:
+            type: integer
+            title: page_size
+            format: int32
+        - name: pageToken
+          in: query
+          description: |-
+            A page token, received from a previous `ListQueryHistories` call.
+             Provide this to retrieve the subsequent page.
+          schema:
+            type: string
+            title: page_token
+        - name: filter
+          in: query
+          description: |-
+            Filter is the filter to apply on the list query histories.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - creator: the user full name in "users/{email}" format, support "==" operator.
+
+             For example:
+             creator == "users/{email}"
+          schema:
+            type: string
+            title: filter
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListQueryHistoriesResponse'
   /v1/projects/{project}/queryHistories/{queryHistory}:
     get:
       tags:
@@ -17511,6 +17606,49 @@ components:
         - IDENTITY_GENERATION_UNSPECIFIED
         - ALWAYS
         - BY_DEFAULT
+    bytebase.v1.CompositeTypeAttribute:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: The name of the attribute.
+        type:
+          type: string
+          title: type
+          description: The attribute type. User-defined types are always schema-qualified.
+        collation:
+          type: string
+          title: collation
+          description: |-
+            The non-default collation of the attribute as an emit-ready SQL
+             identifier reference (quoted as needed, schema-qualified when outside
+             pg_catalog), empty otherwise. e.g. `"C"` or `locale.en_us`.
+        comment:
+          type: string
+          title: comment
+          description: The comment describing the attribute.
+      title: CompositeTypeAttribute
+      additionalProperties: false
+    bytebase.v1.CompositeTypeMetadata:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: The name of the composite type.
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.CompositeTypeAttribute'
+          title: attributes
+          description: The ordered attributes of the composite type.
+        comment:
+          type: string
+          title: comment
+          description: The comment describing the composite type.
+      title: CompositeTypeMetadata
+      additionalProperties: false
     bytebase.v1.CreateAccessGrantRequest:
       type: object
       properties:
@@ -20652,13 +20790,11 @@ components:
           description: How often the instance is synced.
           $ref: '#/components/schemas/google.protobuf.Duration'
         syncDatabases:
-          type: array
-          items:
-            type: string
           title: sync_databases
           description: |-
             Enable sync for following databases.
-             Default empty, means sync all schemas & databases.
+             Not set means sync all schemas & databases.
+          $ref: '#/components/schemas/bytebase.v1.SyncDatabases'
         lastSyncTime:
           title: last_sync_time
           description: The last time the instance was synced.
@@ -20952,6 +21088,15 @@ components:
               title: plan_update
               required:
                 - planUpdate
+            - type: object
+              properties:
+                reviewSubmission:
+                  title: review_submission
+                  description: Review submission event.
+                  $ref: '#/components/schemas/bytebase.v1.IssueComment.ReviewSubmission'
+              title: review_submission
+              required:
+                - reviewSubmission
       title: IssueComment
       additionalProperties: false
       description: A comment on an issue.
@@ -21038,6 +21183,11 @@ components:
       description: |-
         Plan update event information (snapshot of plan.config.specs before
          and after a PlanService.UpdatePlan call that mutated specs).
+    bytebase.v1.IssueComment.ReviewSubmission:
+      type: object
+      title: ReviewSubmission
+      additionalProperties: false
+      description: Review submission event information.
     bytebase.v1.IssueStatus:
       type: string
       title: IssueStatus
@@ -22014,6 +22164,65 @@ components:
             $ref: '#/components/schemas/bytebase.v1.PurchasePlan'
           title: plans
       title: ListPurchasePlansResponse
+      additionalProperties: false
+    bytebase.v1.ListQueryHistoriesRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent project whose query histories are listed.
+             Format: projects/{project}
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: |-
+            The maximum number of histories to return.
+             The service may return fewer than this value.
+             If unspecified, at most 10 history entries will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            A page token, received from a previous `ListQueryHistories` call.
+             Provide this to retrieve the subsequent page.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            Filter is the filter to apply on the list query histories.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - creator: the user full name in "users/{email}" format, support "==" operator.
+
+             For example:
+             creator == "users/{email}"
+      title: ListQueryHistoriesRequest
+      required:
+        - parent
+      additionalProperties: false
+    bytebase.v1.ListQueryHistoriesResponse:
+      type: object
+      properties:
+        queryHistories:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.QueryHistory'
+          title: query_histories
+          description: The list of query histories.
+          readOnly: true
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token to retrieve next page of history.
+             Pass this value in the page_token field in the subsequent call to
+             `ListQueryHistories` method to retrieve the next page of history.
+      title: ListQueryHistoriesResponse
       additionalProperties: false
     bytebase.v1.ListReleaseCategoriesRequest:
       type: object
@@ -25520,6 +25729,15 @@ components:
           type: string
           title: comment
           description: The comment is the comment of a schema.
+        compositeTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.CompositeTypeMetadata'
+          title: composite_types
+          description: |-
+            The composite_types is the list of user-defined composite types in a
+             schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row
+             types and derived types.
       title: SchemaMetadata
       additionalProperties: false
       description: |-
@@ -26539,6 +26757,16 @@ components:
     bytebase.v1.SyncDatabaseResponse:
       type: object
       title: SyncDatabaseResponse
+      additionalProperties: false
+    bytebase.v1.SyncDatabases:
+      type: object
+      properties:
+        databases:
+          type: array
+          items:
+            type: string
+          title: databases
+      title: SyncDatabases
       additionalProperties: false
     bytebase.v1.SyncInstanceRequest:
       type: object

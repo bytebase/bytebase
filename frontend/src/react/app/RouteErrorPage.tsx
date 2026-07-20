@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useRouteError } from "react-router-dom";
+import { useRouteError } from "react-router";
 import { Button } from "@/react/components/ui/button";
 import { cn } from "@/react/lib/utils";
 

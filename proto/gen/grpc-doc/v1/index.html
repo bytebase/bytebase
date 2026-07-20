@@ -666,6 +666,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.SyncDatabases"><span class="badge">M</span>SyncDatabases</a>
+                </li>
+
+                <li>
                   <a href="#bytebase.v1.SyncInstanceRequest"><span class="badge">M</span>SyncInstanceRequest</a>
                 </li>
               
@@ -770,6 +774,14 @@
               
                 <li>
                   <a href="#bytebase.v1.ColumnMetadata"><span class="badge">M</span>ColumnMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.CompositeTypeAttribute"><span class="badge">M</span>CompositeTypeAttribute</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.CompositeTypeMetadata"><span class="badge">M</span>CompositeTypeMetadata</a>
                 </li>
               
                 <li>
@@ -1080,6 +1092,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ListQueryHistoriesRequest"><span class="badge">M</span>ListQueryHistoriesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListQueryHistoriesResponse"><span class="badge">M</span>ListQueryHistoriesResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.MaskingReason"><span class="badge">M</span>MaskingReason</a>
                 </li>
               
@@ -1351,6 +1371,10 @@
               
                 <li>
                   <a href="#bytebase.v1.IssueComment.PlanUpdate"><span class="badge">M</span>IssueComment.PlanUpdate</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.IssueComment.ReviewSubmission"><span class="badge">M</span>IssueComment.ReviewSubmission</a>
                 </li>
               
                 <li>
@@ -3895,7 +3919,7 @@ Examples:
               <tr>
                 <td>APPROVAL_STATUS_UNSPECIFIED</td>
                 <td>0</td>
-                <td><p>Unspecified approval status.</p></td>
+                <td><p>No approval workflow has started, including for a linked draft issue.</p></td>
               </tr>
             
               <tr>
@@ -8085,10 +8109,10 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
               
                 <tr>
                   <td>sync_databases</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
+                  <td><a href="#bytebase.v1.SyncDatabases">SyncDatabases</a></td>
+                  <td></td>
                   <td><p>Enable sync for following databases.
-Default empty, means sync all schemas &amp; databases. </p></td>
+Not set means sync all schemas &amp; databases. </p></td>
                 </tr>
               
                 <tr>
@@ -8521,6 +8545,30 @@ Only READ_ONLY data source can be removed. </p></td>
 
         
       
+        <h3 id="bytebase.v1.SyncDatabases">SyncDatabases</h3>
+        <p></p>
+
+
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+
+                <tr>
+                  <td>databases</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+
+            </tbody>
+          </table>
+
+
+
+
+
         <h3 id="bytebase.v1.SyncInstanceRequest">SyncInstanceRequest</h3>
         <p></p>
 
@@ -9719,6 +9767,91 @@ int32). </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23&#43; only. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.CompositeTypeAttribute">CompositeTypeAttribute</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the attribute. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The attribute type. User-defined types are always schema-qualified. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The non-default collation of the attribute as an emit-ready SQL
+identifier reference (quoted as needed, schema-qualified when outside
+pg_catalog), empty otherwise. e.g. `&#34;C&#34;` or `locale.en_us`. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment describing the attribute. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.CompositeTypeMetadata">CompositeTypeMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the composite type. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>attributes</td>
+                  <td><a href="#bytebase.v1.CompositeTypeAttribute">CompositeTypeAttribute</a></td>
+                  <td>repeated</td>
+                  <td><p>The ordered attributes of the composite type. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment describing the composite type. </p></td>
                 </tr>
               
             </tbody>
@@ -11577,6 +11710,15 @@ Snowflake. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The comment is the comment of a schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>composite_types</td>
+                  <td><a href="#bytebase.v1.CompositeTypeMetadata">CompositeTypeMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The composite_types is the list of user-defined composite types in a
+schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row
+types and derived types. </p></td>
                 </tr>
               
             </tbody>
@@ -13763,6 +13905,96 @@ Format: projects/{project}/queryHistories/{id} </p></td>
 
         
       
+        <h3 id="bytebase.v1.ListQueryHistoriesRequest">ListQueryHistoriesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent project whose query histories are listed.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of histories to return.
+The service may return fewer than this value.
+If unspecified, at most 10 history entries will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListQueryHistories` call.
+Provide this to retrieve the subsequent page. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is the filter to apply on the list query histories.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter:
+- creator: the user full name in &#34;users/{email}&#34; format, support &#34;==&#34; operator.
+
+For example:
+creator == &#34;users/{email}&#34; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListQueryHistoriesResponse">ListQueryHistoriesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>query_histories</td>
+                  <td><a href="#bytebase.v1.QueryHistory">QueryHistory</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of query histories. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token to retrieve next page of history.
+Pass this value in the page_token field in the subsequent call to
+`ListQueryHistories` method to retrieve the next page of history. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.MaskingReason">MaskingReason</h3>
         <p></p>
 
@@ -14962,6 +15194,14 @@ Permissions required: None (only returns caller&#39;s own query histories)</p></
               </tr>
             
               <tr>
+                <td>ListQueryHistories</td>
+                <td><a href="#bytebase.v1.ListQueryHistoriesRequest">ListQueryHistoriesRequest</a></td>
+                <td><a href="#bytebase.v1.ListQueryHistoriesResponse">ListQueryHistoriesResponse</a></td>
+                <td><p>ListQueryHistories lists query histories of all users in a project.
+Permissions required: bb.queryHistories.list</p></td>
+              </tr>
+            
+              <tr>
                 <td>GetQueryHistory</td>
                 <td><a href="#bytebase.v1.GetQueryHistoryRequest">GetQueryHistoryRequest</a></td>
                 <td><a href="#bytebase.v1.QueryHistory">QueryHistory</a></td>
@@ -15038,6 +15278,16 @@ Permissions required: None (authenticated users only, requires AI to be enabled)
                 <td>POST</td>
                 <td>/v1/queryHistories:search</td>
                 <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListQueryHistories</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/queryHistories</td>
+                <td></td>
               </tr>
               
             
@@ -16763,6 +17013,13 @@ Format: projects/{project}/accessGrants/{access_grant} </p></td>
                   <td><p>Plan update event. </p></td>
                 </tr>
               
+                <tr>
+                  <td>review_submission</td>
+                  <td><a href="#bytebase.v1.IssueComment.ReviewSubmission">IssueComment.ReviewSubmission</a></td>
+                  <td></td>
+                  <td><p>Review submission event. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -16895,6 +17152,13 @@ Format: projects/{project}/accessGrants/{access_grant} </p></td>
           </table>
 
           
+
+        
+      
+        <h3 id="bytebase.v1.IssueComment.ReviewSubmission">IssueComment.ReviewSubmission</h3>
+        <p>Review submission event information.</p>
+
+        
 
         
       
@@ -34849,4 +35113,3 @@ Permissions required: bb.workspaces.setIamPolicy</p></td>
     </table>
   </body>
 </html>
-

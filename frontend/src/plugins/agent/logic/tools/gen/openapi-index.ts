@@ -17,13 +17,16 @@ export interface PropertyInfo {
   type: string;
   description?: string;
   required?: boolean;
+  format?: string;
+  items?: PropertyInfo;
+  additionalProperties?: PropertyInfo;
 }
 
 export interface SchemaInfo {
   type: "object" | "enum";
   description: string;
   properties?: PropertyInfo[];
-  values?: string[];
+  values?: Array<string | number>;
 }
 
 export const endpoints: EndpointInfo[] = [
@@ -123,20 +126,8 @@ export const endpoints: EndpointInfo[] = [
     method: "GetActuatorInfo",
     summary: "GetActuatorInfo",
     description:
-      "Gets system information and health status of the Bytebase instance.\n Permissions required: None",
+      "Gets system information and health status of the Bytebase instance.\n When `name` is provided (or the workspace-scoped binding is used), the\n response includes workspace-scoped fields for that workspace.\n Permissions required: None",
     requestSchemaRef: "#/components/schemas/bytebase.v1.GetActuatorInfoRequest",
-    responseSchemaRef: "#/components/schemas/bytebase.v1.ActuatorInfo",
-  },
-  {
-    operationId: "bytebase.v1.ActuatorService.GetWorkspaceActuatorInfo",
-    path: "/bytebase.v1.ActuatorService/GetWorkspaceActuatorInfo",
-    service: "ActuatorService",
-    method: "GetWorkspaceActuatorInfo",
-    summary: "GetWorkspaceActuatorInfo",
-    description:
-      "Gets workspace-scoped actuator info. Requires authentication.",
-    requestSchemaRef:
-      "#/components/schemas/bytebase.v1.GetWorkspaceActuatorInfoRequest",
     responseSchemaRef: "#/components/schemas/bytebase.v1.ActuatorInfo",
   },
   {
@@ -217,6 +208,41 @@ export const endpoints: EndpointInfo[] = [
       "Refreshes the access token using the refresh token cookie.\n Permissions required: None (validates via refresh token cookie)",
     requestSchemaRef: "#/components/schemas/bytebase.v1.RefreshRequest",
     responseSchemaRef: "#/components/schemas/bytebase.v1.RefreshResponse",
+  },
+  {
+    operationId: "bytebase.v1.AuthService.RequestPasswordReset",
+    path: "/bytebase.v1.AuthService/RequestPasswordReset",
+    service: "AuthService",
+    method: "RequestPasswordReset",
+    summary: "RequestPasswordReset",
+    description:
+      "Requests a password reset email for the given email address.\n Always returns success to avoid leaking whether the email exists.\n Permissions required: None",
+    requestSchemaRef:
+      "#/components/schemas/bytebase.v1.RequestPasswordResetRequest",
+    responseSchemaRef: "#/components/schemas/google.protobuf.Empty",
+  },
+  {
+    operationId: "bytebase.v1.AuthService.ResetPassword",
+    path: "/bytebase.v1.AuthService/ResetPassword",
+    service: "AuthService",
+    method: "ResetPassword",
+    summary: "ResetPassword",
+    description:
+      "Resets the user's password using a password reset token from email.\n Permissions required: None (validates via token)",
+    requestSchemaRef: "#/components/schemas/bytebase.v1.ResetPasswordRequest",
+    responseSchemaRef: "#/components/schemas/google.protobuf.Empty",
+  },
+  {
+    operationId: "bytebase.v1.AuthService.SendEmailLoginCode",
+    path: "/bytebase.v1.AuthService/SendEmailLoginCode",
+    service: "AuthService",
+    method: "SendEmailLoginCode",
+    summary: "SendEmailLoginCode",
+    description:
+      "Sends a 6-digit verification code to the email for login/signup.\n Always returns success (no email enumeration). Enforces 60-sec resend cooldown.\n Permissions required: None",
+    requestSchemaRef:
+      "#/components/schemas/bytebase.v1.SendEmailLoginCodeRequest",
+    responseSchemaRef: "#/components/schemas/google.protobuf.Empty",
   },
   {
     operationId: "bytebase.v1.AuthService.Signup",
@@ -923,6 +949,18 @@ export const endpoints: EndpointInfo[] = [
     responseSchemaRef: "#/components/schemas/bytebase.v1.Issue",
   },
   {
+    operationId: "bytebase.v1.IssueService.RetryIssueApproval",
+    path: "/bytebase.v1.IssueService/RetryIssueApproval",
+    service: "IssueService",
+    method: "RetryIssueApproval",
+    summary: "RetryIssueApproval",
+    description:
+      "Re-runs approval-template finding for an issue stuck in CHECKING.\n Useful when the synchronous post-create finding errored (e.g. against\n a malformed workspace approval rule) and the operator has since\n corrected it — without this, the issue would remain in CHECKING\n indefinitely because there is no other retry path for non-DATABASE_CHANGE\n issue types. Idempotent: returns the existing issue unchanged when\n approval-finding has already completed.\n Permissions required: None (caller must be the issue creator;\n mirrors RequestIssue's authorization model).",
+    requestSchemaRef:
+      "#/components/schemas/bytebase.v1.RetryIssueApprovalRequest",
+    responseSchemaRef: "#/components/schemas/bytebase.v1.Issue",
+  },
+  {
     operationId: "bytebase.v1.IssueService.SearchIssues",
     path: "/bytebase.v1.IssueService/SearchIssues",
     service: "IssueService",
@@ -1517,7 +1555,7 @@ export const endpoints: EndpointInfo[] = [
     method: "BatchCancelTaskRuns",
     summary: "BatchCancelTaskRuns",
     description:
-      "Cancels multiple running task executions.\n Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)",
+      "Cancels multiple task runs.\n PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive\n a best-effort cancellation request and may continue running if the request is missed or the\n executor does not stop. The response does not report which task runs were actually canceled.\n Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)",
     requestSchemaRef:
       "#/components/schemas/bytebase.v1.BatchCancelTaskRunsRequest",
     responseSchemaRef:
@@ -1671,6 +1709,17 @@ export const endpoints: EndpointInfo[] = [
     responseSchemaRef: "#/components/schemas/bytebase.v1.ExportResponse",
   },
   {
+    operationId: "bytebase.v1.SQLService.GetQueryHistory",
+    path: "/bytebase.v1.SQLService/GetQueryHistory",
+    service: "SQLService",
+    method: "GetQueryHistory",
+    summary: "GetQueryHistory",
+    description:
+      "GetQueryHistory gets a single query history for the caller.\n Permissions required: None (only returns the caller's own query history)",
+    requestSchemaRef: "#/components/schemas/bytebase.v1.GetQueryHistoryRequest",
+    responseSchemaRef: "#/components/schemas/bytebase.v1.QueryHistory",
+  },
+  {
     operationId: "bytebase.v1.SQLService.Query",
     path: "/bytebase.v1.SQLService/Query",
     service: "SQLService",
@@ -1790,6 +1839,19 @@ export const endpoints: EndpointInfo[] = [
     responseSchemaRef: "#/components/schemas/bytebase.v1.ListSettingsResponse",
   },
   {
+    operationId: "bytebase.v1.SettingService.TestEmailSetting",
+    path: "/bytebase.v1.SettingService/TestEmailSetting",
+    service: "SettingService",
+    method: "TestEmailSetting",
+    summary: "TestEmailSetting",
+    description:
+      "Sends a test email using the provided config (without persisting).\n Permissions required: bb.settings.set",
+    requestSchemaRef:
+      "#/components/schemas/bytebase.v1.TestEmailSettingRequest",
+    responseSchemaRef:
+      "#/components/schemas/bytebase.v1.TestEmailSettingResponse",
+  },
+  {
     operationId: "bytebase.v1.SettingService.UpdateSetting",
     path: "/bytebase.v1.SettingService/UpdateSetting",
     service: "SettingService",
@@ -1855,6 +1917,17 @@ export const endpoints: EndpointInfo[] = [
       "CreatePurchase creates a new subscription purchase (SaaS only).\n Returns a Stripe Checkout URL for the user to complete payment.",
     requestSchemaRef: "#/components/schemas/bytebase.v1.CreatePurchaseRequest",
     responseSchemaRef: "#/components/schemas/bytebase.v1.PurchaseResponse",
+  },
+  {
+    operationId: "bytebase.v1.SubscriptionService.ExportVCSProviderUsers",
+    path: "/bytebase.v1.SubscriptionService/ExportVCSProviderUsers",
+    service: "SubscriptionService",
+    method: "ExportVCSProviderUsers",
+    summary: "ExportVCSProviderUsers",
+    description: "Exports active VCS users as CSV.",
+    requestSchemaRef:
+      "#/components/schemas/bytebase.v1.ExportVCSProviderUsersRequest",
+    responseSchemaRef: "#/components/schemas/google.api.HttpBody",
   },
   {
     operationId: "bytebase.v1.SubscriptionService.GetPaymentInfo",
@@ -2180,6 +2253,17 @@ export const endpoints: EndpointInfo[] = [
     responseSchemaRef: "#/components/schemas/bytebase.v1.WorksheetOrganizer",
   },
   {
+    operationId: "bytebase.v1.WorkspaceService.DeleteWorkspace",
+    path: "/bytebase.v1.WorkspaceService/DeleteWorkspace",
+    service: "WorkspaceService",
+    method: "DeleteWorkspace",
+    summary: "DeleteWorkspace",
+    description:
+      "Deletes a workspace. SaaS only. Cancels any active subscription and\n soft-deletes the workspace so all associated data becomes inaccessible.\n Requires workspace admin permission.",
+    requestSchemaRef: "#/components/schemas/bytebase.v1.DeleteWorkspaceRequest",
+    responseSchemaRef: "#/components/schemas/bytebase.v1.LoginResponse",
+  },
+  {
     operationId: "bytebase.v1.WorkspaceService.GetIamPolicy",
     path: "/bytebase.v1.WorkspaceService/GetIamPolicy",
     service: "WorkspaceService",
@@ -2200,6 +2284,17 @@ export const endpoints: EndpointInfo[] = [
       'Gets a workspace by name.\n Supports "workspaces/-" to resolve the current workspace:\n - Authenticated: uses the workspace from JWT context\n - Self-hosted unauthenticated: returns the single workspace\n - SaaS unauthenticated: returns minimal response',
     requestSchemaRef: "#/components/schemas/bytebase.v1.GetWorkspaceRequest",
     responseSchemaRef: "#/components/schemas/bytebase.v1.Workspace",
+  },
+  {
+    operationId: "bytebase.v1.WorkspaceService.LeaveWorkspace",
+    path: "/bytebase.v1.WorkspaceService/LeaveWorkspace",
+    service: "WorkspaceService",
+    method: "LeaveWorkspace",
+    summary: "LeaveWorkspace",
+    description:
+      "Removes the calling user from a workspace and switches to the next\n available workspace. Available to any workspace member. Fails if the\n caller is the last workspace admin.",
+    requestSchemaRef: "#/components/schemas/bytebase.v1.LeaveWorkspaceRequest",
+    responseSchemaRef: "#/components/schemas/bytebase.v1.LoginResponse",
   },
   {
     operationId: "bytebase.v1.WorkspaceService.ListWorkspaces",
@@ -2261,6 +2356,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.AIChatToolCall>",
         description:
           "Tool calls made by the assistant. Only present in assistant messages.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.AIChatToolCall",
+        },
       },
     ],
     description: "A single message in the conversation.",
@@ -2283,11 +2382,19 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "messages",
         type: "array<bytebase.v1.AIChatMessage>",
         description: "The conversation messages.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.AIChatMessage",
+        },
       },
       {
         name: "toolDefinitions",
         type: "array<bytebase.v1.AIChatToolDefinition>",
         description: "The tool definitions available to the AI.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.AIChatToolDefinition",
+        },
       },
     ],
     description: "Request message for AIService.Chat.",
@@ -2305,10 +2412,14 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "toolCalls",
         type: "array<bytebase.v1.AIChatToolCall>",
         description: "Tool calls the AI wants to make.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.AIChatToolCall",
+        },
       },
       {
         name: "usage",
-        type: "object",
+        type: "bytebase.v1.AIChatUsage",
         description: "Token usage for this provider call, when available.",
       },
     ],
@@ -2368,6 +2479,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "totalTokens",
         type: "integer",
+        format: "int32",
         description: "Total tokens used by the provider call.",
       },
     ],
@@ -2379,6 +2491,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "messages",
         type: "array<bytebase.v1.AICompletionRequest.Message>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.AICompletionRequest.Message",
+        },
       },
     ],
     description: "",
@@ -2405,6 +2521,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.AICompletionResponse.Candidate>",
         description:
           "candidates is used for results with multiple choices and candidates. Used\n for OpenAI and Gemini.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.AICompletionResponse.Candidate",
+        },
       },
     ],
     description: "",
@@ -2426,6 +2546,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "parts",
         type: "array<bytebase.v1.AICompletionResponse.Candidate.Content.Part>",
         description: "parts is used for a result content with multiple parts.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.AICompletionResponse.Candidate.Content.Part",
+        },
       },
     ],
     description: "",
@@ -2494,6 +2618,16 @@ export const schemas: Record<string, SchemaInfo> = {
         description: "The creator of the access grant.\n Format: users/{email}",
       },
       {
+        name: "expireTime",
+        type: "google.protobuf.Timestamp",
+        description: "The expiration time of the access grant.",
+      },
+      {
+        name: "export",
+        type: "boolean",
+        description: "Whether export the query result.",
+      },
+      {
         name: "issue",
         type: "string",
         description:
@@ -2525,6 +2659,16 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "The target databases for this access grant.\n Format: instances/{instance}/databases/{database}",
+        items: {
+          name: "item",
+          type: "string",
+        },
+      },
+      {
+        name: "ttl",
+        type: "google.protobuf.Duration",
+        description:
+          "Input only. The time-to-live duration for the access grant.\n The server computes `expire_time` from this value at activation time.",
       },
       {
         name: "unmask",
@@ -2574,23 +2718,27 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "activatedInstanceCount",
         type: "integer",
+        format: "int32",
         description: "The number of activated database instances.",
       },
       {
         name: "activatedUserCount",
         type: "integer",
+        format: "int32",
         description: "The number of activated users.",
+      },
+      {
+        name: "activeVcsUserCount",
+        type: "integer",
+        format: "int32",
+        description:
+          "The number of active VCS users seen in the active window.",
       },
       {
         name: "defaultProject",
         type: "string",
         description:
           "The default project for unassigned databases.\n Format: projects/{id}",
-      },
-      {
-        name: "demo",
-        type: "boolean",
-        description: "Whether the Bytebase instance is running in demo mode.",
       },
       {
         name: "docker",
@@ -2644,6 +2792,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "replicaCount",
         type: "integer",
+        format: "int32",
         description:
           "The number of active replicas (servers sharing the same database).",
       },
@@ -2660,12 +2809,24 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "totalInstanceCount",
         type: "integer",
+        format: "int32",
         description: "The total number of database instances.",
       },
       {
         name: "unlicensedFeatures",
         type: "array<string>",
         description: "List of features that are not licensed.",
+        items: {
+          name: "item",
+          type: "string",
+        },
+      },
+      {
+        name: "userCountInIam",
+        type: "integer",
+        format: "int32",
+        description:
+          "The number of users in the workspace IAM (for seat limit display).",
       },
       {
         name: "version",
@@ -2734,6 +2895,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "limit",
         type: "integer",
+        format: "int32",
         description: "The maximum number of rows to return.",
       },
       {
@@ -2763,6 +2925,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "results",
         type: "array<bytebase.v1.QueryResult>",
         description: "The query results.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.QueryResult",
+        },
       },
     ],
     description: "",
@@ -2773,6 +2939,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "code",
         type: "integer",
+        format: "int32",
         description: "The advice code.",
       },
       {
@@ -2818,6 +2985,28 @@ export const schemas: Record<string, SchemaInfo> = {
     values: ["RULE_TYPE_UNSPECIFIED", "PARSER_BASED", "AI_POWERED"],
     description: "RuleType indicates the source of the linting rule.",
   },
+  "bytebase.v1.Algorithm": {
+    type: "object",
+    properties: [
+      {
+        name: "fullMask",
+        type: "bytebase.v1.Algorithm.FullMask",
+      },
+      {
+        name: "innerOuterMask",
+        type: "bytebase.v1.Algorithm.InnerOuterMask",
+      },
+      {
+        name: "md5Mask",
+        type: "bytebase.v1.Algorithm.MD5Mask",
+      },
+      {
+        name: "rangeMask",
+        type: "bytebase.v1.Algorithm.RangeMask",
+      },
+    ],
+    description: "",
+  },
   "bytebase.v1.Algorithm.FullMask": {
     type: "object",
     properties: [
@@ -2836,6 +3025,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "prefixLen",
         type: "integer",
+        format: "int32",
       },
       {
         name: "substitution",
@@ -2844,6 +3034,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "suffixLen",
         type: "integer",
+        format: "int32",
       },
       {
         name: "type",
@@ -2877,6 +3068,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.Algorithm.RangeMask.Slice>",
         description:
           "We store it as a repeated field to face the fact that the original value may have multiple parts should be masked.\n But frontend can be started with a single rule easily.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Algorithm.RangeMask.Slice",
+        },
       },
     ],
     description: "",
@@ -2887,12 +3082,14 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "end",
         type: "integer",
+        format: "int32",
         description:
           "end is the end character index (exclusive) of the original value.\n Uses character indices (not byte offsets) for display-oriented masking.",
       },
       {
         name: "start",
         type: "integer",
+        format: "int32",
         description:
           "start is the start character index (0-based) of the original value, should be less than end.\n Uses character indices (not byte offsets) for display-oriented masking.\n Example: For \"你好world\", character index 2 refers to 'w' (the 3rd character).",
       },
@@ -2909,11 +3106,6 @@ export const schemas: Record<string, SchemaInfo> = {
     type: "object",
     properties: [
       {
-        name: "level",
-        type: "bytebase.v1.Announcement.AlertLevel",
-        description: "The alert level of announcement",
-      },
-      {
         name: "link",
         type: "string",
         description:
@@ -2924,14 +3116,28 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "string",
         description: "The text of announcement",
       },
+      {
+        name: "theme",
+        type: "bytebase.v1.Announcement.AnnouncementTheme",
+        description:
+          "Banner colors. Built-in presets (info/warning/critical) are a\n frontend-only concept that seeds these colors; the store only holds them.",
+      },
     ],
     description: "",
   },
-  "bytebase.v1.Announcement.AlertLevel": {
-    type: "enum",
-    values: ["ALERT_LEVEL_UNSPECIFIED", "INFO", "WARNING", "CRITICAL"],
-    description:
-      "We support three levels of AlertLevel: INFO, WARNING, and ERROR.",
+  "bytebase.v1.Announcement.AnnouncementTheme": {
+    type: "object",
+    properties: [
+      {
+        name: "background",
+        type: "google.type.Color",
+      },
+      {
+        name: "text",
+        type: "google.type.Color",
+      },
+    ],
+    description: "",
   },
   "bytebase.v1.AppIMSetting": {
     type: "object",
@@ -2939,6 +3145,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "settings",
         type: "array<bytebase.v1.AppIMSetting.IMSetting>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.AppIMSetting.IMSetting",
+        },
       },
     ],
     description: "",
@@ -2979,8 +3189,32 @@ export const schemas: Record<string, SchemaInfo> = {
     type: "object",
     properties: [
       {
+        name: "dingtalk",
+        type: "bytebase.v1.AppIMSetting.DingTalk",
+      },
+      {
+        name: "feishu",
+        type: "bytebase.v1.AppIMSetting.Feishu",
+      },
+      {
+        name: "lark",
+        type: "bytebase.v1.AppIMSetting.Lark",
+      },
+      {
+        name: "slack",
+        type: "bytebase.v1.AppIMSetting.Slack",
+      },
+      {
+        name: "teams",
+        type: "bytebase.v1.AppIMSetting.Teams",
+      },
+      {
         name: "type",
         type: "bytebase.v1.WebhookType",
+      },
+      {
+        name: "wecom",
+        type: "bytebase.v1.AppIMSetting.Wecom",
       },
     ],
     description: "",
@@ -3055,9 +3289,26 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "roles",
         type: "array<string>",
         description: "The roles required for approval in order.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "",
+  },
+  "bytebase.v1.ApprovalStatus": {
+    type: "enum",
+    values: [
+      "APPROVAL_STATUS_UNSPECIFIED",
+      "CHECKING",
+      "PENDING",
+      "APPROVED",
+      "REJECTED",
+      "SKIPPED",
+    ],
+    description:
+      "Approval workflow status for an issue or a plan.\n Lives at the top level so both plan_service.proto and issue_service.proto\n can reference it without a circular import.",
   },
   "bytebase.v1.ApprovalTemplate": {
     type: "object",
@@ -3213,6 +3464,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "The taskRuns to cancel.\n Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "",
@@ -3231,6 +3486,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.CreateRevisionRequest>",
         description:
           "The request message specifying the revisions to create.\n A maximum of 100 revisions can be created in a batch.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.CreateRevisionRequest",
+        },
       },
     ],
     description: "",
@@ -3242,6 +3501,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "revisions",
         type: "array<bytebase.v1.Revision>",
         description: "The created revisions.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Revision",
+        },
       },
     ],
     description: "",
@@ -3258,6 +3521,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "requests",
         type: "array<bytebase.v1.CreateSheetRequest>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.CreateSheetRequest",
+        },
       },
     ],
     description: "",
@@ -3268,6 +3535,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "sheets",
         type: "array<bytebase.v1.Sheet>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Sheet",
+        },
       },
     ],
     description: "",
@@ -3280,6 +3551,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "The names of the projects to delete.\n Format: projects/{project}",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "purge",
@@ -3297,6 +3572,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "expressions",
         type: "array<google.api.expr.v1alpha1.Expr>",
         description: "The CEL expression ASTs to deparse.",
+        items: {
+          name: "item",
+          type: "google.api.expr.v1alpha1.Expr",
+        },
       },
     ],
     description: "Request message for batch deparsing CEL expressions.",
@@ -3308,6 +3587,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "expressions",
         type: "array<string>",
         description: "The deparsed CEL expressions as strings.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "Response message for batch deparsing CEL expressions.",
@@ -3319,6 +3602,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "names",
         type: "array<string>",
         description: "The list of database names to retrieve.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "parent",
@@ -3336,6 +3623,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "databases",
         type: "array<bytebase.v1.Database>",
         description: "The databases from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Database",
+        },
       },
     ],
     description: "",
@@ -3347,6 +3638,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "names",
         type: "array<string>",
         description: "The group names to retrieve.\n Format: groups/{email}",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "Request message for batch getting groups.",
@@ -3358,6 +3653,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "groups",
         type: "array<bytebase.v1.Group>",
         description: "The groups from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Group",
+        },
       },
     ],
     description: "Response message for batch getting groups.",
@@ -3370,6 +3669,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "The names of projects to retrieve.\n Format: projects/{project}",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "",
@@ -3381,6 +3684,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "projects",
         type: "array<bytebase.v1.Project>",
         description: "The projects from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Project",
+        },
       },
     ],
     description: "",
@@ -3392,6 +3699,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "names",
         type: "array<string>",
         description: "The user names to retrieve.\n Format: users/{email}",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "",
@@ -3403,6 +3714,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "users",
         type: "array<bytebase.v1.User>",
         description: "The users from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.User",
+        },
       },
     ],
     description: "",
@@ -3414,6 +3729,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "expressions",
         type: "array<string>",
         description: "The CEL expression strings to parse.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "Request message for batch parsing CEL expressions.",
@@ -3425,6 +3744,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "expressions",
         type: "array<google.api.expr.v1alpha1.Expr>",
         description: "The parsed CEL expressions as AST.",
+        items: {
+          name: "item",
+          type: "google.api.expr.v1alpha1.Expr",
+        },
       },
     ],
     description: "Response message for batch parsing CEL expressions.",
@@ -3440,7 +3763,7 @@ export const schemas: Record<string, SchemaInfo> = {
       },
       {
         name: "runTime",
-        type: "object",
+        type: "google.protobuf.Timestamp",
         description: "The task run should run after run_time.",
       },
       {
@@ -3454,6 +3777,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "The tasks to run.\n Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "",
@@ -3477,6 +3804,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "The tasks to skip.\n Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "",
@@ -3488,6 +3819,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "names",
         type: "array<string>",
         description: "The list of database names to sync.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "parent",
@@ -3506,6 +3841,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.SyncInstanceRequest>",
         description:
           "The request message specifying the instances to sync.\n A maximum of 1000 instances can be synced in a batch.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.SyncInstanceRequest",
+        },
       },
     ],
     description: "",
@@ -3524,6 +3863,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.UpdateDatabaseRequest>",
         description:
           "The request message specifying the resources to update.\n A maximum of 1000 databases can be modified in a batch.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.UpdateDatabaseRequest",
+        },
       },
     ],
     description: "",
@@ -3535,6 +3878,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "databases",
         type: "array<bytebase.v1.Database>",
         description: "Databases updated.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Database",
+        },
       },
     ],
     description: "",
@@ -3546,6 +3893,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "requests",
         type: "array<bytebase.v1.UpdateInstanceRequest>",
         description: "The request message specifying the resources to update.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.UpdateInstanceRequest",
+        },
       },
     ],
     description: "",
@@ -3556,6 +3907,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "instances",
         type: "array<bytebase.v1.Instance>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Instance",
+        },
       },
     ],
     description: "",
@@ -3568,6 +3923,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "The list of issues to update.\n Format: projects/{project}/issues/{issue}",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "parent",
@@ -3594,6 +3953,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "requests",
         type: "array<bytebase.v1.UpdateWorksheetOrganizerRequest>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.UpdateWorksheetOrganizerRequest",
+        },
       },
     ],
     description: "",
@@ -3604,6 +3967,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "worksheetOrganizers",
         type: "array<bytebase.v1.WorksheetOrganizer>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.WorksheetOrganizer",
+        },
       },
     ],
     description: "",
@@ -3620,13 +3987,17 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "condition",
         type: "google.type.Expr",
         description:
-          'The condition that is associated with this binding, only used in the project IAM policy.\n If the condition evaluates to true, then this binding applies to the current request.\n If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec\n\n Support variables:\n resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" and "roles/sqlEditorReadUser" roles, support "==" operator.\n resource.schema_name: the schema name, used by the "roles/sqlEditorUser" and "roles/sqlEditorReadUser" roles, support "==" operator.\n resource.table_name: the table name, used by the "roles/sqlEditorUser" and "roles/sqlEditorReadUser" roles, support "==" operator.\n resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support "in" operator.\n request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.\n\n For example:\n resource.database == "instances/local-pg/databases/postgres" && resource.schema_name in ["public","another_schema"]\n resource.database == "instances/local-pg/databases/bytebase" && resource.schema_name == "public" && resource.table_name in ["audit_log"]\n resource.database == "instances/local-pg/databases/postgres" && resource.environment_id in ["test"]\n request.time < timestamp("2025-04-26T11:24:48.655Z")',
+          'The condition that is associated with this binding, only used in the project IAM policy.\n If the condition evaluates to true, then this binding applies to the current request.\n If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec\n\n Support variables:\n resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.\n resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.\n resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.\n resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support "in" operator.\n request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.\n\n Known limitations of table/schema-scoped DDL/DML grants:\n - The scope only gates the write target, not the read sources of a write: e.g. `INSERT INTO granted_table SELECT * FROM other_table` may read `other_table` without a grant on it, so a table-scoped write grant is not an exfiltration boundary.\n - It must be paired with a database/project-level read grant: a table-scoped grant alone does not satisfy the SQL Editor query method permission (bb.databases.get).\n - A resource.schema_name-scoped grant only authorizes a write whose schema is unambiguous — qualify the table (schema.table) or select the schema for the SQL Editor session. An unqualified write whose effective schema cannot be determined ahead of execution is denied (qualify it, or use a table-only grant).\n - Multi-statement batches are authorized at the database level: an earlier statement can rebind the session\'s default schema or database mid-batch, so per-table/schema scoping is dropped and a table/schema-scoped grant requires a database-level grant. The database-level check is still per target database — a qualified cross-database write is gated by a grant on its own database, not the request database — but an unqualified write whose session default is rebound mid-batch is evaluated against the database it literally names, so qualify cross-database writes or run them as single statements.\n - A write target in a different project than the SQL-Editor session\'s database is denied: the per-target check evaluates the session project\'s IAM policy, so a cross-project write is failed closed (to write it, open the SQL Editor on a database in the target project).\n - Enforcement is on the statement\'s literal write target; writes routed elsewhere by a view/synonym, or into a temporary schema (e.g. pg_temp), are evaluated against what the statement names, not the ultimate base object.\n - Write-target gating uses an ALLOWLIST of statement types the resolver models. It does NOT cover every syntactically-identifiable cross-database write; statement types off the allowlist are authorized against the request database. The allowlist is:\n     - Modeled table/data writes (per-table/schema-scopable): INSERT/UPDATE/DELETE/TRUNCATE/MERGE, LOAD DATA, IMPORT INTO, CREATE TABLE AS / SELECT INTO, and table-level CREATE/DROP/ALTER/RENAME/index.\n     - Modeled non-table object DDL (gated at the DATABASE level by the object\'s own explicit database/schema qualifier; an unqualified name keeps the request-database check): CREATE/ALTER/DROP of view, procedure/function/routine, trigger, sequence, synonym, type, and (Oracle) package and cluster; plus Oracle ALTER/DROP MATERIALIZED VIEW (Oracle CREATE MATERIALIZED VIEW is not modeled — see below).\n   NOT modeled (these fall back to the request-database check, so a qualified cross-database one is authorized against the request database): MySQL CREATE TRIGGER and CREATE/ALTER/DROP EVENT (bare-string AST names); MSSQL ALTER of view/procedure/function/trigger (no ALTER node in the grammar); Oracle CREATE MATERIALIZED VIEW and the niche object DDL — dimension, attribute dimension, hierarchy, analytic view, JSON duality view, materialized zonemap, operator, in-memory join group, property graph, vector index, index type, domain; COPY ... FROM; and engine-specific bulk-load / deprecated text writes. A structural "write-target object database" extraction layer to remove this allowlist dependence is tracked as a follow-up.\n     - Out of scope (read sources / indirect effects): the tables a write READS (INSERT … SELECT, MERGE … USING, CREATE TABLE AS … SELECT) and objects reached indirectly via views/synonyms/function bodies/triggers are NOT gated.\n   Invariant: for a statement ON the modeled allowlist that explicitly names a different database as its write target, the ACL uses that target database, not the request database. Statement types OFF the allowlist are authorized against the request database.\n\n For example:\n resource.database == "instances/local-pg/databases/postgres" && resource.schema_name in ["public","another_schema"]\n resource.database == "instances/local-pg/databases/bytebase" && resource.schema_name == "public" && resource.table_name in ["audit_log"]\n resource.database == "instances/local-pg/databases/postgres" && resource.environment_id in ["test"]\n request.time < timestamp("2025-04-26T11:24:48.655Z")',
       },
       {
         name: "members",
         type: "array<string>",
         description:
           "Specifies the principals requesting access for a Bytebase resource.\n For users, the member should be: user:{email}\n For groups, the member should be: group:{email}\n For service accounts, the member should be: serviceAccount:{email}\n For workload identities, the member should be: workloadIdentity:{email}",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "parsedExpr",
@@ -3681,21 +4052,25 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "xmax",
         type: "number",
+        format: "double",
         description: "Maximum X coordinate",
       },
       {
         name: "xmin",
         type: "number",
+        format: "double",
         description: "Minimum X coordinate",
       },
       {
         name: "ymax",
         type: "number",
+        format: "double",
         description: "Maximum Y coordinate",
       },
       {
         name: "ymin",
         type: "number",
+        format: "double",
         description: "Minimum Y coordinate",
       },
     ],
@@ -3710,6 +4085,24 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "string",
         description:
           "The name of the plan check run to cancel.\n Format: projects/{project}/plans/{plan}/planCheckRun",
+      },
+    ],
+    description: "",
+  },
+  "bytebase.v1.CancelPurchaseRequest": {
+    type: "object",
+    properties: [
+      {
+        name: "comment",
+        type: "string",
+        description:
+          "Optional free-form comment. Max 500 chars (Stripe limit).",
+      },
+      {
+        name: "feedback",
+        type: "string",
+        description:
+          'Reason the customer is canceling. Maps to Stripe\'s cancellation_details.feedback.\n Valid Stripe values: "customer_service", "low_quality", "missing_features",\n "switched_service", "too_complex", "too_expensive", "unused", "other".\n Required.',
       },
     ],
     description: "",
@@ -3740,6 +4133,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "schemaSize",
         type: "integer",
+        format: "int64",
       },
       {
         name: "status",
@@ -3809,6 +4203,16 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "The targets to dry-run the release.\n Can be database or databaseGroup.\n Format:\n projects/{project}/databaseGroups/{databaseGroup}\n instances/{instance}/databases/{database}",
+        items: {
+          name: "item",
+          type: "string",
+        },
+      },
+      {
+        name: "vcsUser",
+        type: "bytebase.v1.VCSUser",
+        description:
+          "The non-bot VCS pull request or merge request creator observed by bytebase-release.\n If absent, Bytebase skips VCS user tracking and VCS user limit enforcement.",
       },
     ],
     description: "",
@@ -3819,12 +4223,17 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "affectedRows",
         type: "integer",
+        format: "int64",
         description: "The total affected rows across all checks.",
       },
       {
         name: "results",
         type: "array<bytebase.v1.CheckReleaseResponse.CheckResult>",
         description: "The check results for each file and target combination.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.CheckReleaseResponse.CheckResult",
+        },
       },
       {
         name: "riskLevel",
@@ -3841,10 +4250,15 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "advices",
         type: "array<bytebase.v1.Advice>",
         description: "The list of advice for the file and the target.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Advice",
+        },
       },
       {
         name: "affectedRows",
         type: "integer",
+        format: "int64",
         description:
           "The count of affected rows of the statement on the target.",
       },
@@ -3879,6 +4293,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "labels",
         type: "object",
         description: "User-defined labels for this column.",
+        additionalProperties: {
+          name: "value",
+          type: "string",
+        },
       },
       {
         name: "name",
@@ -3887,7 +4305,7 @@ export const schemas: Record<string, SchemaInfo> = {
       },
       {
         name: "objectSchema",
-        type: "object",
+        type: "bytebase.v1.ObjectSchema",
         description: "Object schema for complex column types like JSON.",
       },
       {
@@ -3965,17 +4383,25 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "identityIncrement",
         type: "integer",
+        format: "int64",
         description:
           "The identity_increment is for identity columns, MSSQL only.",
       },
       {
         name: "identitySeed",
         type: "integer",
+        format: "int64",
         description: "The identity_seed is for identity columns, MSSQL only.",
       },
       {
         name: "isIdentity",
         type: "boolean",
+      },
+      {
+        name: "isInvisible",
+        type: "boolean",
+        description:
+          "Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23+ only.",
       },
       {
         name: "name",
@@ -3996,7 +4422,14 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "position",
         type: "integer",
+        format: "int32",
         description: "The position is the position in columns.",
+      },
+      {
+        name: "srid",
+        type: "integer",
+        description:
+          "The spatial reference system identifier of a spatial column, MySQL 8.0 only.\n Unset means the column declares no SRID; presence carries the explicit SRID,\n including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed\n int32).",
       },
       {
         name: "type",
@@ -4009,6 +4442,59 @@ export const schemas: Record<string, SchemaInfo> = {
   "bytebase.v1.ColumnMetadata.IdentityGeneration": {
     type: "enum",
     values: ["IDENTITY_GENERATION_UNSPECIFIED", "ALWAYS", "BY_DEFAULT"],
+    description: "",
+  },
+  "bytebase.v1.CompositeTypeAttribute": {
+    type: "object",
+    properties: [
+      {
+        name: "collation",
+        type: "string",
+        description:
+          'The non-default collation of the attribute as an emit-ready SQL\n identifier reference (quoted as needed, schema-qualified when outside\n pg_catalog), empty otherwise. e.g. `"C"` or `locale.en_us`.',
+      },
+      {
+        name: "comment",
+        type: "string",
+        description: "The comment describing the attribute.",
+      },
+      {
+        name: "name",
+        type: "string",
+        description: "The name of the attribute.",
+      },
+      {
+        name: "type",
+        type: "string",
+        description:
+          "The attribute type. User-defined types are always schema-qualified.",
+      },
+    ],
+    description: "",
+  },
+  "bytebase.v1.CompositeTypeMetadata": {
+    type: "object",
+    properties: [
+      {
+        name: "attributes",
+        type: "array<bytebase.v1.CompositeTypeAttribute>",
+        description: "The ordered attributes of the composite type.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.CompositeTypeAttribute",
+        },
+      },
+      {
+        name: "comment",
+        type: "string",
+        description: "The comment describing the composite type.",
+      },
+      {
+        name: "name",
+        type: "string",
+        description: "The name of the composite type.",
+      },
+    ],
     description: "",
   },
   "bytebase.v1.CreateAccessGrantRequest": {
@@ -4100,6 +4586,12 @@ export const schemas: Record<string, SchemaInfo> = {
   "bytebase.v1.CreateInstanceRequest": {
     type: "object",
     properties: [
+      {
+        name: "initialDatabaseProject",
+        type: "string",
+        description:
+          "The project to assign newly discovered databases to during initial sync.\n Format: projects/{project}",
+      },
       {
         name: "instance",
         type: "bytebase.v1.Instance",
@@ -4223,6 +4715,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "seats",
         type: "integer",
+        format: "int32",
       },
     ],
     description: "",
@@ -4414,6 +4907,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "configs",
         type: "array<bytebase.v1.DataClassificationSetting.DataClassificationConfig>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.DataClassificationSetting.DataClassificationConfig",
+        },
       },
     ],
     description: "",
@@ -4426,6 +4923,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "object",
         description:
           "classification is the id - DataClassification map.\n The id should in [0-9]+-[0-9]+-[0-9]+ format.",
+        additionalProperties: {
+          name: "value",
+          type: "bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification",
+        },
       },
       {
         name: "id",
@@ -4437,6 +4938,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "levels",
         type: "array<bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level>",
         description: "levels is user defined level list for classification.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level",
+        },
       },
       {
         name: "title",
@@ -4473,6 +4978,7 @@ export const schemas: Record<string, SchemaInfo> = {
         {
           name: "level",
           type: "integer",
+          format: "int32",
           description: "The sensitivity level. Maps to Level.level.",
         },
         {
@@ -4488,6 +4994,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "level",
         type: "integer",
+        format: "int32",
         description: "The numeric level for ordering. Higher = more sensitive.",
       },
       {
@@ -4504,6 +5011,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "additionalAddresses",
         type: "array<bytebase.v1.DataSource.Address>",
         description: "additional_addresses is used for MongoDB replica set.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.DataSource.Address",
+        },
       },
       {
         name: "authenticationDatabase",
@@ -4526,6 +5037,20 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "authenticationType",
         type: "bytebase.v1.DataSource.AuthenticationType",
+      },
+      {
+        name: "awsCredential",
+        type: "bytebase.v1.DataSource.AWSCredential",
+      },
+      {
+        name: "azureCredential",
+        type: "bytebase.v1.DataSource.AzureCredential",
+      },
+      {
+        name: "cloudSqlIpType",
+        type: "bytebase.v1.DataSource.CloudSQLIPType",
+        description:
+          "cloud_sql_ip_type selects the Cloud SQL IP type for Google Cloud SQL IAM connections.\n CLOUD_SQL_IP_TYPE_UNSPECIFIED is treated as PUBLIC for backward compatibility.",
       },
       {
         name: "cluster",
@@ -4553,6 +5078,14 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "object",
         description:
           "Extra connection parameters for the database connection.\n For PostgreSQL HA, this can be used to set target_session_attrs=read-write",
+        additionalProperties: {
+          name: "value",
+          type: "string",
+        },
+      },
+      {
+        name: "gcpCredential",
+        type: "bytebase.v1.DataSource.GCPCredential",
       },
       {
         name: "host",
@@ -4659,14 +5192,64 @@ export const schemas: Record<string, SchemaInfo> = {
         description: "The SSL certificate authority certificate.",
       },
       {
+        name: "sslCaPath",
+        type: "string",
+        description:
+          "The local filesystem path to the SSL certificate authority certificate.",
+      },
+      {
+        name: "sslCaPathSet",
+        type: "boolean",
+        description:
+          "Whether an SSL certificate authority path has been configured.",
+      },
+      {
+        name: "sslCaSet",
+        type: "boolean",
+        description:
+          "Whether an SSL certificate authority certificate has been configured.",
+      },
+      {
         name: "sslCert",
         type: "string",
         description: "The SSL client certificate.",
       },
       {
+        name: "sslCertPath",
+        type: "string",
+        description: "The local filesystem path to the SSL client certificate.",
+      },
+      {
+        name: "sslCertPathSet",
+        type: "boolean",
+        description:
+          "Whether an SSL client certificate path has been configured.",
+      },
+      {
+        name: "sslCertSet",
+        type: "boolean",
+        description: "Whether an SSL client certificate has been configured.",
+      },
+      {
         name: "sslKey",
         type: "string",
         description: "The SSL client private key.",
+      },
+      {
+        name: "sslKeyPath",
+        type: "string",
+        description: "The local filesystem path to the SSL client private key.",
+      },
+      {
+        name: "sslKeyPathSet",
+        type: "boolean",
+        description:
+          "Whether an SSL client private key path has been configured.",
+      },
+      {
+        name: "sslKeySet",
+        type: "boolean",
+        description: "Whether an SSL client private key has been configured.",
       },
       {
         name: "type",
@@ -4771,6 +5354,12 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "",
   },
+  "bytebase.v1.DataSource.CloudSQLIPType": {
+    type: "enum",
+    values: ["CLOUD_SQL_IP_TYPE_UNSPECIFIED", "PUBLIC", "PRIVATE", "PSC"],
+    description:
+      "CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM connections.",
+  },
   "bytebase.v1.DataSource.ExtraConnectionParametersEntry": {
     type: "object",
     properties: [
@@ -4804,6 +5393,11 @@ export const schemas: Record<string, SchemaInfo> = {
     type: "object",
     properties: [
       {
+        name: "appRole",
+        type: "bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption",
+        description: "AppRole authentication configuration.",
+      },
+      {
         name: "authType",
         type: "bytebase.v1.DataSourceExternalSecret.AuthType",
         description:
@@ -4834,6 +5428,18 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "boolean",
         description:
           "TLS configuration for connecting to Vault server.\n These fields are separate from the database TLS configuration in DataSource.\n skip_vault_tls_verification disables TLS certificate verification for Vault connections.\n Default is false (verification enabled) for security.\n Only set to true for development or when certificates cannot be properly validated.",
+      },
+      {
+        name: "token",
+        type: "string",
+        description:
+          "Token for direct authentication. Interpreted according to token_type:\n the literal token (PLAIN), an environment variable name (ENVIRONMENT),\n or a file path (FILE).",
+      },
+      {
+        name: "tokenType",
+        type: "bytebase.v1.DataSourceExternalSecret.TokenType",
+        description:
+          "How to interpret the token field when auth_type is TOKEN.",
       },
       {
         name: "url",
@@ -4907,6 +5513,11 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "",
   },
+  "bytebase.v1.DataSourceExternalSecret.TokenType": {
+    type: "enum",
+    values: ["TOKEN_TYPE_UNSPECIFIED", "PLAIN", "ENVIRONMENT", "FILE"],
+    description: "",
+  },
   "bytebase.v1.DataSourceType": {
     type: "enum",
     values: ["DATA_SOURCE_UNSPECIFIED", "ADMIN", "READ_ONLY"],
@@ -4941,6 +5552,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "labels",
         type: "object",
         description: "Labels will be used for deployment and policy control.",
+        additionalProperties: {
+          name: "value",
+          type: "string",
+        },
       },
       {
         name: "name",
@@ -5009,6 +5624,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "schemas",
         type: "array<bytebase.v1.SchemaCatalog>",
         description: "The schemas in the database.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.SchemaCatalog",
+        },
       },
     ],
     description:
@@ -5033,6 +5652,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.DatabaseGroup.Database>",
         description:
           "The list of databases that match the database group condition.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.DatabaseGroup.Database",
+        },
       },
       {
         name: "name",
@@ -5087,6 +5710,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "extensions",
         type: "array<bytebase.v1.ExtensionMetadata>",
         description: "The extensions is the list of extensions in a database.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.ExtensionMetadata",
+        },
       },
       {
         name: "name",
@@ -5103,6 +5730,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "schemas",
         type: "array<bytebase.v1.SchemaMetadata>",
         description: "The schemas is the list of schemas in a database.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.SchemaMetadata",
+        },
       },
       {
         name: "searchPath",
@@ -5125,6 +5756,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "schema",
         type: "string",
+        format: "byte",
         description:
           "The SDL schema content.\n - For SINGLE_FILE format: contains the complete SDL schema as a text string.\n - For MULTI_FILE format: contains the ZIP archive as binary data.",
       },
@@ -5326,6 +5958,17 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "",
   },
+  "bytebase.v1.DeleteWorkspaceRequest": {
+    type: "object",
+    properties: [
+      {
+        name: "name",
+        type: "string",
+        description: "Format: workspaces/{workspace}",
+      },
+    ],
+    description: "",
+  },
   "bytebase.v1.DependencyColumn": {
     type: "object",
     properties: [
@@ -5399,10 +6042,21 @@ export const schemas: Record<string, SchemaInfo> = {
     type: "object",
     properties: [
       {
+        name: "changelog",
+        type: "string",
+        description:
+          "The resource name of the changelog\n Format:\n instances/{instance}/databases/{database}/changelogs/{changelog}",
+      },
+      {
         name: "name",
         type: "string",
         description:
           "The name of the database or changelog.\n Format:\n database: instances/{instance}/databases/{database}\n changelog: instances/{instance}/databases/{database}/changelogs/{changelog}",
+      },
+      {
+        name: "schema",
+        type: "string",
+        description: "The target schema.",
       },
     ],
     description: "",
@@ -5428,16 +6082,19 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "maxValue",
         type: "number",
+        format: "double",
         description: "Maximum value for this dimension",
       },
       {
         name: "minValue",
         type: "number",
+        format: "double",
         description: "Minimum value for this dimension",
       },
       {
         name: "tolerance",
         type: "number",
+        format: "double",
         description: "Tolerance for this dimension",
       },
     ],
@@ -5451,6 +6108,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "constraints",
         type: "array<bytebase.v1.DimensionConstraint>",
         description: "Coordinate system constraints",
+        items: {
+          name: "item",
+          type: "bytebase.v1.DimensionConstraint",
+        },
       },
       {
         name: "dataType",
@@ -5461,16 +6122,97 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "dimensions",
         type: "integer",
+        format: "int32",
         description: "Number of dimensions (2-4, default 2)",
       },
       {
         name: "srid",
         type: "integer",
+        format: "int32",
         description: "Spatial reference system identifier (SRID)",
       },
     ],
     description:
       "DimensionalConfig defines dimensional and constraint parameters for spatial indexes.",
+  },
+  "bytebase.v1.EmailSetting": {
+    type: "object",
+    properties: [
+      {
+        name: "from",
+        type: "string",
+      },
+      {
+        name: "fromName",
+        type: "string",
+      },
+      {
+        name: "smtp",
+        type: "bytebase.v1.EmailSetting.SMTPConfig",
+      },
+      {
+        name: "type",
+        type: "bytebase.v1.EmailSetting.Type",
+      },
+    ],
+    description: "",
+  },
+  "bytebase.v1.EmailSetting.SMTPConfig": {
+    type: "object",
+    properties: [
+      {
+        name: "authentication",
+        type: "bytebase.v1.EmailSetting.SMTPConfig.Authentication",
+      },
+      {
+        name: "encryption",
+        type: "bytebase.v1.EmailSetting.SMTPConfig.Encryption",
+      },
+      {
+        name: "host",
+        type: "string",
+      },
+      {
+        name: "password",
+        type: "string",
+      },
+      {
+        name: "port",
+        type: "integer",
+        format: "int32",
+      },
+      {
+        name: "username",
+        type: "string",
+      },
+    ],
+    description: "",
+  },
+  "bytebase.v1.EmailSetting.SMTPConfig.Authentication": {
+    type: "enum",
+    values: [
+      "AUTHENTICATION_UNSPECIFIED",
+      "AUTHENTICATION_NONE",
+      "PLAIN",
+      "LOGIN",
+      "CRAM_MD5",
+    ],
+    description: "",
+  },
+  "bytebase.v1.EmailSetting.SMTPConfig.Encryption": {
+    type: "enum",
+    values: [
+      "ENCRYPTION_UNSPECIFIED",
+      "ENCRYPTION_NONE",
+      "STARTTLS",
+      "SSL_TLS",
+    ],
+    description: "",
+  },
+  "bytebase.v1.EmailSetting.Type": {
+    type: "enum",
+    values: ["TYPE_UNSPECIFIED", "SMTP"],
+    description: "",
   },
   "bytebase.v1.Engine": {
     type: "enum",
@@ -5527,6 +6269,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "values",
         type: "array<string>",
         description: "The enum values of a type.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "",
@@ -5537,6 +6283,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "environments",
         type: "array<bytebase.v1.EnvironmentSetting.Environment>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.EnvironmentSetting.Environment",
+        },
       },
     ],
     description: "",
@@ -5546,7 +6296,7 @@ export const schemas: Record<string, SchemaInfo> = {
     properties: [
       {
         name: "color",
-        type: "string",
+        type: "google.type.Color",
       },
       {
         name: "id",
@@ -5563,6 +6313,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "tags",
         type: "object",
+        additionalProperties: {
+          name: "value",
+          type: "string",
+        },
       },
       {
         name: "title",
@@ -5679,6 +6433,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of logs to return.\n The service may return fewer than this value.\n If unspecified, at most 10 log entries will be returned.\n The maximum value is 5000; values above 5000 will be coerced to 5000.",
       },
@@ -5701,6 +6456,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "content",
         type: "string",
+        format: "byte",
         description: "The exported audit log content in the requested format.",
       },
       {
@@ -5740,6 +6496,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "limit",
         type: "integer",
+        format: "int32",
         description: "The maximum number of rows to return.",
       },
       {
@@ -5771,8 +6528,15 @@ export const schemas: Record<string, SchemaInfo> = {
     type: "object",
     properties: [
       {
+        name: "appliedAccessGrant",
+        type: "string",
+        description:
+          "The just-in-time access grant applied to this export, if any.\n Format: projects/{project}/accessGrants/{accessGrant}.\n Empty when the user was authorized through normal ACL rather than a grant.",
+      },
+      {
         name: "content",
         type: "string",
+        format: "byte",
         description: "The export file content.",
       },
     ],
@@ -5813,6 +6577,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.ColumnMetadata>",
         description:
           "The columns is the ordered list of columns in a foreign table.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.ColumnMetadata",
+        },
       },
       {
         name: "externalDatabaseName",
@@ -5873,6 +6641,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "The columns are the ordered referencing columns of a foreign key.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "matchType",
@@ -5900,6 +6672,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "The referenced_columns are the ordered referenced columns of a foreign key.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "referencedSchema",
@@ -5946,6 +6722,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.DependencyTable>",
         description:
           "The dependency_tables is the list of dependency tables of a function.\n For PostgreSQL, it's the list of tables that the function depends on the return type definition.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.DependencyTable",
+        },
       },
       {
         name: "name",
@@ -5999,6 +6779,18 @@ export const schemas: Record<string, SchemaInfo> = {
       },
     ],
     description: "",
+  },
+  "bytebase.v1.GetActuatorInfoRequest": {
+    type: "object",
+    properties: [
+      {
+        name: "name",
+        type: "string",
+        description:
+          "Optional. The workspace to scope the response to.\n Format: workspaces/{workspace}\n When unset, the workspace is resolved from the request context (self-hosted)\n or no workspace-scoped fields are returned (SaaS).",
+      },
+    ],
+    description: "Request message for getting actuator information.",
   },
   "bytebase.v1.GetChangelogRequest": {
     type: "object",
@@ -6058,6 +6850,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "limit",
         type: "integer",
+        format: "int32",
         description:
           "Limit the response size of returned table metadata per schema.\n For example, if the database has 3 schemas, and each schema has 100 tables,\n if limit is 20, then only 20 tables will be returned for each schema, total 60 tables.\n Default 0, means no limit.",
       },
@@ -6225,6 +7018,18 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "string",
         description:
           "The name of the project to retrieve.\n Format: projects/{project}",
+      },
+    ],
+    description: "",
+  },
+  "bytebase.v1.GetQueryHistoryRequest": {
+    type: "object",
+    properties: [
+      {
+        name: "name",
+        type: "string",
+        description:
+          "The name of the query history to retrieve.\n Format: projects/{project}/queryHistories/{id}",
       },
     ],
     description: "",
@@ -6467,18 +7272,6 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "",
   },
-  "bytebase.v1.GetWorkspaceActuatorInfoRequest": {
-    type: "object",
-    properties: [
-      {
-        name: "name",
-        type: "string",
-        description: "The workspace name, format: workspaces/{workspace}.",
-      },
-    ],
-    description:
-      "Request message for getting workspace-scoped actuator information.",
-  },
   "bytebase.v1.GetWorkspaceRequest": {
     type: "object",
     properties: [
@@ -6502,6 +7295,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "level",
         type: "integer",
+        format: "int32",
         description: "Grid level number (1-4 for SQL Server)",
       },
     ],
@@ -6525,6 +7319,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "members",
         type: "array<bytebase.v1.GroupMember>",
         description: "The members of the group.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.GroupMember",
+        },
       },
       {
         name: "name",
@@ -6576,6 +7374,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.Binding>",
         description:
           "Collection of binding.\n A binding binds one or more project members to a single project role.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Binding",
+        },
       },
       {
         name: "etag",
@@ -6618,6 +7420,43 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "",
   },
+  "bytebase.v1.IdentityProviderConfig": {
+    type: "object",
+    properties: [
+      {
+        name: "ldapConfig",
+        type: "bytebase.v1.LDAPIdentityProviderConfig",
+        description: "LDAP protocol configuration.",
+      },
+      {
+        name: "oauth2Config",
+        type: "bytebase.v1.OAuth2IdentityProviderConfig",
+        description: "OAuth2 protocol configuration.",
+      },
+      {
+        name: "oidcConfig",
+        type: "bytebase.v1.OIDCIdentityProviderConfig",
+        description: "OIDC protocol configuration.",
+      },
+    ],
+    description: "",
+  },
+  "bytebase.v1.IdentityProviderContext": {
+    type: "object",
+    properties: [
+      {
+        name: "oauth2Context",
+        type: "bytebase.v1.OAuth2IdentityProviderContext",
+        description: "OAuth2 authentication context.",
+      },
+      {
+        name: "oidcContext",
+        type: "bytebase.v1.OIDCIdentityProviderContext",
+        description: "OpenID Connect authentication context.",
+      },
+    ],
+    description: "Context for identity provider authentication.",
+  },
   "bytebase.v1.IdentityProviderType": {
     type: "enum",
     values: ["IDENTITY_PROVIDER_TYPE_UNSPECIFIED", "OAUTH2", "OIDC", "LDAP"],
@@ -6640,16 +7479,25 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "descending",
         type: "array<boolean>",
         description: "The descending is the ordered descending of an index.",
+        items: {
+          name: "item",
+          type: "boolean",
+        },
       },
       {
         name: "expressions",
         type: "array<string>",
         description:
           "The expressions are the ordered columns or expressions of an index.\n This could refer to a column or an expression.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "granularity",
         type: "integer",
+        format: "int64",
         description:
           "The number of granules in the block. It's a ClickHouse specific field.",
       },
@@ -6664,6 +7512,11 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<integer>",
         description:
           "The key_lengths are the ordered key lengths of an index.\n If the key length is not specified, it's -1.",
+        items: {
+          name: "item",
+          type: "integer",
+          format: "int64",
+        },
       },
       {
         name: "name",
@@ -6675,12 +7528,20 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<boolean>",
         description:
           "True if the operator class is the default. (PostgreSQL specific).",
+        items: {
+          name: "item",
+          type: "boolean",
+        },
       },
       {
         name: "opclassNames",
         type: "array<string>",
         description:
           "https://www.postgresql.org/docs/current/catalog-pg-opclass.html\n Name of the operator class for each column. (PostgreSQL specific).",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "parentIndexName",
@@ -6734,6 +7595,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.DataSource>",
         description:
           "Data source configurations for connecting to the instance.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.DataSource",
+        },
       },
       {
         name: "engine",
@@ -6761,6 +7626,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "object",
         description:
           'Labels are key-value pairs that can be attached to the instance.\n For example, { "org_group": "infrastructure", "environment": "production" }',
+        additionalProperties: {
+          name: "value",
+          type: "string",
+        },
       },
       {
         name: "lastSyncTime",
@@ -6776,6 +7645,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "roles",
         type: "array<bytebase.v1.InstanceRole>",
         description: "Database roles available in this instance.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.InstanceRole",
+        },
       },
       {
         name: "state",
@@ -6784,9 +7657,9 @@ export const schemas: Record<string, SchemaInfo> = {
       },
       {
         name: "syncDatabases",
-        type: "array<string>",
+        type: "bytebase.v1.SyncDatabases",
         description:
-          "Enable sync for following databases.\n Default empty, means sync all schemas & databases.",
+          "Enable sync for following databases.\n Not set means sync all schemas & databases.",
       },
       {
         name: "syncInterval",
@@ -6827,6 +7700,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "dataSources",
         type: "array<bytebase.v1.DataSource>",
         description: "Data source configurations for the instance.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.DataSource",
+        },
       },
       {
         name: "engine",
@@ -6869,6 +7746,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "connectionLimit",
         type: "integer",
+        format: "int32",
         description: "The connection count limit for this role.",
       },
       {
@@ -6906,7 +7784,8 @@ export const schemas: Record<string, SchemaInfo> = {
       },
       {
         name: "approvalStatus",
-        type: "bytebase.v1.Issue.ApprovalStatus",
+        type: "bytebase.v1.ApprovalStatus",
+        description: "The overall approval status for the issue.",
       },
       {
         name: "approvalTemplate",
@@ -6916,6 +7795,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "approvers",
         type: "array<bytebase.v1.Issue.Approver>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Issue.Approver",
+        },
       },
       {
         name: "createTime",
@@ -6932,10 +7815,19 @@ export const schemas: Record<string, SchemaInfo> = {
         description: "The description of the issue.",
       },
       {
+        name: "draft",
+        type: "boolean",
+        description: "Whether this issue is a Draft Review Issue.",
+      },
+      {
         name: "labels",
         type: "array<string>",
         description:
           "Labels attached to the issue for categorization and filtering.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "name",
@@ -6980,18 +7872,6 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "",
   },
-  "bytebase.v1.Issue.ApprovalStatus": {
-    type: "enum",
-    values: [
-      "APPROVAL_STATUS_UNSPECIFIED",
-      "CHECKING",
-      "PENDING",
-      "APPROVED",
-      "REJECTED",
-      "SKIPPED",
-    ],
-    description: "The overall approval status for the issue.",
-  },
   "bytebase.v1.Issue.Approver": {
     type: "object",
     properties: [
@@ -7028,6 +7908,11 @@ export const schemas: Record<string, SchemaInfo> = {
     type: "object",
     properties: [
       {
+        name: "approval",
+        type: "bytebase.v1.IssueComment.Approval",
+        description: "Approval event.",
+      },
+      {
         name: "comment",
         type: "string",
         description: "The text content of the comment.",
@@ -7042,6 +7927,11 @@ export const schemas: Record<string, SchemaInfo> = {
         description: "Format: users/{email}",
       },
       {
+        name: "issueUpdate",
+        type: "bytebase.v1.IssueComment.IssueUpdate",
+        description: "Issue update event.",
+      },
+      {
         name: "name",
         type: "string",
         description:
@@ -7051,6 +7941,16 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "payload",
         type: "string",
         description: "TODO: use struct message instead.",
+      },
+      {
+        name: "planUpdate",
+        type: "bytebase.v1.IssueComment.PlanUpdate",
+        description: "Plan update event.",
+      },
+      {
+        name: "reviewSubmission",
+        type: "bytebase.v1.IssueComment.ReviewSubmission",
+        description: "Review submission event.",
       },
       {
         name: "updateTime",
@@ -7085,10 +7985,14 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "fromLabels",
         type: "array<string>",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "fromStatus",
-        type: "object",
+        type: "bytebase.v1.IssueStatus",
       },
       {
         name: "fromTitle",
@@ -7101,10 +8005,14 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "toLabels",
         type: "array<string>",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "toStatus",
-        type: "object",
+        type: "bytebase.v1.IssueStatus",
       },
       {
         name: "toTitle",
@@ -7113,30 +8021,28 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "Issue update event information.",
   },
-  "bytebase.v1.IssueComment.PlanSpecUpdate": {
+  "bytebase.v1.IssueComment.PlanUpdate": {
     type: "object",
     properties: [
       {
-        name: "fromSheet",
-        type: "string",
-        description:
-          "The previous sheet.\n Format: projects/{project}/sheets/{sheet}",
+        name: "fromSpecs",
+        type: "array<bytebase.v1.Plan.Spec>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Plan.Spec",
+        },
       },
       {
-        name: "spec",
-        type: "string",
-        description:
-          "The spec that was updated.\n Format: projects/{project}/plans/{plan}/specs/{spec}",
-      },
-      {
-        name: "toSheet",
-        type: "string",
-        description:
-          "The new sheet.\n Format: projects/{project}/sheets/{sheet}",
+        name: "toSpecs",
+        type: "array<bytebase.v1.Plan.Spec>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Plan.Spec",
+        },
       },
     ],
     description:
-      "Plan spec update event information (tracks sheet changes to plan specs).",
+      "Plan update event information (snapshot of plan.config.specs before\n and after a PlanService.UpdatePlan call that mutated specs).",
   },
   "bytebase.v1.IssueStatus": {
     type: "enum",
@@ -7170,6 +8076,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "keytab",
         type: "string",
+        format: "byte",
         description: "The keytab file contents for authentication.",
       },
       {
@@ -7221,6 +8128,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "port",
         type: "integer",
+        format: "int32",
         description:
           "Port is the port number of the LDAP server, e.g., 389. When not set, the\n default port of the corresponding security protocol will be used, i.e. 389\n for StartTLS and 636 for LDAPS.",
       },
@@ -7256,8 +8164,8 @@ export const schemas: Record<string, SchemaInfo> = {
     properties: [
       {
         name: "color",
-        type: "string",
-        description: "The color code for the label (e.g., hex color).",
+        type: "google.type.Color",
+        description: "The label color.",
       },
       {
         name: "group",
@@ -7272,6 +8180,17 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "A label for categorizing and organizing issues.",
   },
+  "bytebase.v1.LeaveWorkspaceRequest": {
+    type: "object",
+    properties: [
+      {
+        name: "name",
+        type: "string",
+        description: "Format: workspaces/{workspace}",
+      },
+    ],
+    description: "",
+  },
   "bytebase.v1.ListAccessGrantsRequest": {
     type: "object",
     properties: [
@@ -7279,7 +8198,7 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "filter",
         type: "string",
         description:
-          'Filter expression using AIP-160 syntax.\n Supported fields:\n - name: the fullname in "projects/{project}/accessGrants/{access_grant}" format, support "==" operator.\n - creator: the creator name in "users/{email}" format, support "==" operator.\n - status: the access status, support "==" and "in" operator.\n - issue: the access issue fullname, support "==" operator.\n - expire_time: the access expire time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.\n - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.\n - query: the access query, support "==" and ".contains(xx)" operator\n - target: the target database fullname, support "==" operator.\n\n Examples:\n - creator == "users/dev@example.com"\n - status == "ACTIVE"\n - status in ["ACTIVE", "PENDING"]\n - creator == "users/dev@example.com" && status == "ACTIVE"\n - issue == "projects/x/issues/123"\n - status == "ACTIVE" && expire_time > "2024-02-01T00:00:00Z"\n - target == "instances/sample/databases/employee"',
+          'Filter expression using AIP-160 syntax.\n Supported fields:\n - name: the fullname in "projects/{project}/accessGrants/{access_grant}" format, support "==" operator.\n - creator: the creator name in "users/{email}" format, support "==" operator.\n - status: the access status, support "==" and "in" operator.\n - issue: the access issue fullname, support "==" operator.\n - expire_time: the access expire time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.\n - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.\n - query: the access query, support "==" and ".contains(xx)" operator\n - target: the target database fullname, support "==" operator.\n - unmask: whether the grant allows unmasking sensitive data, support "==" operator with a boolean literal.\n - export: whether the grant allows exporting the query result, support "==" operator with a boolean literal.\n\n Examples:\n - creator == "users/dev@example.com"\n - status == "ACTIVE"\n - status in ["ACTIVE", "PENDING"]\n - creator == "users/dev@example.com" && status == "ACTIVE"\n - issue == "projects/x/issues/123"\n - status == "ACTIVE" && expire_time > "2024-02-01T00:00:00Z"\n - target == "instances/sample/databases/employee"\n - unmask == true\n - export == true && status == "ACTIVE"',
       },
       {
         name: "orderBy",
@@ -7290,6 +8209,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description: "The maximum number of access grants to return.",
       },
       {
@@ -7313,6 +8233,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "accessGrants",
         type: "array<bytebase.v1.AccessGrant>",
         description: "The access grants from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.AccessGrant",
+        },
       },
       {
         name: "nextPageToken",
@@ -7335,6 +8259,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of changelogs to return. The service may return fewer\n than this value. If unspecified, at most 10 changelogs will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -7364,6 +8289,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "changelogs",
         type: "array<bytebase.v1.Changelog>",
         description: "The list of changelogs.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Changelog",
+        },
       },
       {
         name: "nextPageToken",
@@ -7399,6 +8328,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "databaseGroups",
         type: "array<bytebase.v1.DatabaseGroup>",
         description: "The database groups from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.DatabaseGroup",
+        },
       },
     ],
     description: "Response message for listing database groups.",
@@ -7421,6 +8354,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of databases to return. The service may return fewer\n than this value.\n If unspecified, at most 10 databases will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -7451,6 +8385,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "databases",
         type: "array<bytebase.v1.Database>",
         description: "The databases from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Database",
+        },
       },
       {
         name: "nextPageToken",
@@ -7473,6 +8411,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of groups to return. The service may return fewer than\n this value.\n If unspecified, at most 10 groups will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -7492,6 +8431,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "groups",
         type: "array<bytebase.v1.Group>",
         description: "The groups from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Group",
+        },
       },
       {
         name: "nextPageToken",
@@ -7502,6 +8445,18 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "Response message for listing groups.",
   },
+  "bytebase.v1.ListIdentityProvidersRequest": {
+    type: "object",
+    properties: [
+      {
+        name: "parent",
+        type: "string",
+        description:
+          "The parent workspace whose identity providers should be listed.\n Format: workspaces/{workspace}\n When unset, the workspace is resolved from the request context.",
+      },
+    ],
+    description: "",
+  },
   "bytebase.v1.ListIdentityProvidersResponse": {
     type: "object",
     properties: [
@@ -7509,6 +8464,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "identityProviders",
         type: "array<bytebase.v1.IdentityProvider>",
         description: "The identity providers from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.IdentityProvider",
+        },
       },
     ],
     description: "",
@@ -7518,7 +8477,7 @@ export const schemas: Record<string, SchemaInfo> = {
     properties: [
       {
         name: "instance",
-        type: "object",
+        type: "bytebase.v1.Instance",
         description:
           "The target instance. We need to set this field if the target instance is not created yet.",
       },
@@ -7537,6 +8496,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "databases",
         type: "array<string>",
         description: "All database name list in the instance.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "",
@@ -7547,6 +8510,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "Not used.\n The maximum number of roles to return. The service may return fewer than\n this value.\n If unspecified, at most 10 roles will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -7583,6 +8547,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "roles",
         type: "array<bytebase.v1.InstanceRole>",
         description: "The roles from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.InstanceRole",
+        },
       },
     ],
     description: "",
@@ -7605,6 +8573,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of instances to return. The service may return fewer than\n this value.\n If unspecified, at most 10 instances will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -7629,6 +8598,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "instances",
         type: "array<bytebase.v1.Instance>",
         description: "The instances from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Instance",
+        },
       },
       {
         name: "nextPageToken",
@@ -7645,6 +8618,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of issue comments to return. The service may return fewer than\n this value.\n If unspecified, at most 10 issue comments will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -7669,6 +8643,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "issueComments",
         type: "array<bytebase.v1.IssueComment>",
         description: "The issue comments from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.IssueComment",
+        },
       },
       {
         name: "nextPageToken",
@@ -7697,6 +8675,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of issues to return. The service may return fewer than\n this value.\n If unspecified, at most 10 issues will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -7727,6 +8706,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "issues",
         type: "array<bytebase.v1.Issue>",
         description: "The issues from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Issue",
+        },
       },
       {
         name: "nextPageToken",
@@ -7749,6 +8732,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of plans to return. The service may return fewer than\n this value.\n If unspecified, at most 10 plans will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -7780,6 +8764,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "plans",
         type: "array<bytebase.v1.Plan>",
         description: "The plans from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Plan",
+        },
       },
     ],
     description: "",
@@ -7795,7 +8783,7 @@ export const schemas: Record<string, SchemaInfo> = {
       },
       {
         name: "policyType",
-        type: "object",
+        type: "bytebase.v1.PolicyType",
         description: "Filter by specific policy type.",
       },
       {
@@ -7813,6 +8801,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "policies",
         type: "array<bytebase.v1.Policy>",
         description: "The policies from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Policy",
+        },
       },
     ],
     description: "",
@@ -7835,6 +8827,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of projects to return. The service may return fewer than\n this value.\n If unspecified, at most 10 projects will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -7865,6 +8858,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "projects",
         type: "array<bytebase.v1.Project>",
         description: "The projects from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Project",
+        },
       },
     ],
     description: "",
@@ -7875,6 +8872,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "plans",
         type: "array<bytebase.v1.PurchasePlan>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.PurchasePlan",
+        },
       },
     ],
     description: "",
@@ -7897,6 +8898,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "categories",
         type: "array<string>",
         description: "The unique category values in the project.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "",
@@ -7913,6 +8918,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of releases to return. The service may return fewer than this value.\n If unspecified, at most 10 releases will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -7948,6 +8954,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "releases",
         type: "array<bytebase.v1.Release>",
         description: "The releases from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Release",
+        },
       },
     ],
     description: "",
@@ -7959,6 +8969,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "reviewConfigs",
         type: "array<bytebase.v1.ReviewConfig>",
         description: "The SQL review configs from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.ReviewConfig",
+        },
       },
     ],
     description: "",
@@ -7969,6 +8983,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of revisions to return. The service may return fewer\n than this value. If unspecified, at most 10 revisions will be returned. The\n maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -8005,6 +9020,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "revisions",
         type: "array<bytebase.v1.Revision>",
         description: "The revisions from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Revision",
+        },
       },
     ],
     description: "",
@@ -8016,6 +9035,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "roles",
         type: "array<bytebase.v1.Role>",
         description: "The roles from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Role",
+        },
       },
     ],
     description: "",
@@ -8032,6 +9055,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of rollouts to return. The service may return fewer than\n this value.\n If unspecified, at most 10 rollouts will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -8063,6 +9087,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "rollouts",
         type: "array<bytebase.v1.Rollout>",
         description: "The rollouts from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Rollout",
+        },
       },
     ],
     description: "",
@@ -8079,6 +9107,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of service accounts to return. The service may return fewer than\n this value.\n If unspecified, at most 10 service accounts will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -8115,6 +9144,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "serviceAccounts",
         type: "array<bytebase.v1.ServiceAccount>",
         description: "The service accounts from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.ServiceAccount",
+        },
       },
     ],
     description: "Response message for listing service accounts.",
@@ -8126,6 +9159,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "settings",
         type: "array<bytebase.v1.Setting>",
         description: "The settings from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Setting",
+        },
       },
     ],
     description: "",
@@ -8149,6 +9186,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "taskRuns",
         type: "array<bytebase.v1.TaskRun>",
         description: "The taskRuns from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.TaskRun",
+        },
       },
     ],
     description: "",
@@ -8165,6 +9206,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of users to return. The service may return fewer than\n this value.\n If unspecified, at most 10 users will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -8195,6 +9237,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "users",
         type: "array<bytebase.v1.User>",
         description: "The users from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.User",
+        },
       },
     ],
     description: "",
@@ -8211,6 +9257,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of workload identities to return. The service may return fewer than\n this value.\n If unspecified, at most 10 workload identities will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -8247,6 +9294,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "workloadIdentities",
         type: "array<bytebase.v1.WorkloadIdentity>",
         description: "The workload identities from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.WorkloadIdentity",
+        },
       },
     ],
     description: "Response message for listing workload identities.",
@@ -8257,6 +9308,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "workspaces",
         type: "array<bytebase.v1.Workspace>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Workspace",
+        },
       },
     ],
     description: "",
@@ -8268,6 +9323,12 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "email",
         type: "string",
         description: "User's email address.",
+      },
+      {
+        name: "emailCode",
+        type: "string",
+        description:
+          "6-digit code from email for passwordless login/signup.\n Pairs with `email`. Mutually exclusive with `password` and `idp_name`.",
       },
       {
         name: "idpContext",
@@ -8309,6 +9370,12 @@ export const schemas: Record<string, SchemaInfo> = {
         description:
           "If true, sets access token and refresh token as HTTP-only cookies instead of\n returning the token in the response body. Use for browser-based clients.",
       },
+      {
+        name: "workspace",
+        type: "string",
+        description:
+          "Preferred workspace to land in after login. If the user is a member of this\n workspace, the token is issued for it; otherwise falls back to the default\n resolution (last login workspace → first membership). Typically populated\n from the ?workspace= query parameter in invite links.\n Format: workspaces/{workspace}",
+      },
     ],
     description: "",
   },
@@ -8345,6 +9412,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "exemptions",
         type: "array<bytebase.v1.MaskingExemptionPolicy.Exemption>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.MaskingExemptionPolicy.Exemption",
+        },
       },
     ],
     description:
@@ -8364,6 +9435,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "Specifies the principals who are exempt from masking.\n For users, the member should be: user:{email}\n For groups, the member should be: group:{email}\n For service accounts, the member should be: serviceAccount:{email}\n For workload identities, the member should be: workloadIdentity:{email}",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "",
@@ -8379,6 +9454,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "classificationLevel",
         type: "integer",
+        format: "int32",
         description: "The classification level that triggered masking.",
       },
       {
@@ -8418,6 +9494,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "rules",
         type: "array<bytebase.v1.MaskingRulePolicy.MaskingRule>",
         description: "The list of masking rules.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.MaskingRulePolicy.MaskingRule",
+        },
       },
     ],
     description: "Policy for configuring data masking rules.",
@@ -8463,11 +9543,19 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.DependencyColumn>",
         description:
           "The dependency_columns is the list of dependency columns of a materialized\n view.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.DependencyColumn",
+        },
       },
       {
         name: "indexes",
         type: "array<bytebase.v1.IndexMetadata>",
         description: "The indexes is the list of indexes in a table.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.IndexMetadata",
+        },
       },
       {
         name: "name",
@@ -8482,6 +9570,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "triggers",
         type: "array<bytebase.v1.TriggerMetadata>",
         description: "The columns is the ordered list of columns in a table.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.TriggerMetadata",
+        },
       },
     ],
     description:
@@ -8525,6 +9617,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "scopes",
         type: "array<string>",
         description: "The list of OAuth2 scopes to request.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "skipTlsVerify",
@@ -8608,6 +9704,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "The scopes that the OIDC provider supports.\n Should be fetched from the well-known configuration file of the OIDC provider.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "skipTlsVerify",
@@ -8644,9 +9744,19 @@ export const schemas: Record<string, SchemaInfo> = {
     type: "object",
     properties: [
       {
+        name: "arrayKind",
+        type: "bytebase.v1.ObjectSchema.ArrayKind",
+        description: "Array schema.",
+      },
+      {
         name: "semanticType",
         type: "string",
         description: "The semantic type of this object.",
+      },
+      {
+        name: "structKind",
+        type: "bytebase.v1.ObjectSchema.StructKind",
+        description: "Struct schema.",
       },
       {
         name: "type",
@@ -8674,6 +9784,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "properties",
         type: "object",
         description: "Properties of the struct.",
+        additionalProperties: {
+          name: "value",
+          type: "bytebase.v1.ObjectSchema",
+        },
       },
     ],
     description: "Structure type with named properties.",
@@ -8739,6 +9853,12 @@ export const schemas: Record<string, SchemaInfo> = {
         description: "Stripe Billing Portal URL for invoice management.",
       },
       {
+        name: "nextPeriodPrice",
+        type: "string",
+        description:
+          "Amount that will be charged at the next renewal, in the smallest currency unit (e.g. cents).\n Empty when the subscription will not renew (e.g. scheduled to cancel at period end).",
+      },
+      {
         name: "periodEnd",
         type: "string",
       },
@@ -8749,6 +9869,8 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "totalPrice",
         type: "string",
+        description:
+          "Total amount paid for the current billing period, in the smallest currency unit (e.g. cents).",
       },
     ],
     description: "",
@@ -8765,11 +9887,19 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "requiredPermissions",
         type: "array<string>",
         description: "The permissions required but not granted to the user.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "resources",
         type: "array<string>",
         description: "The resources the user was trying to access.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description:
@@ -8780,7 +9910,7 @@ export const schemas: Record<string, SchemaInfo> = {
     properties: [
       {
         name: "approvalStatus",
-        type: "bytebase.v1.Issue.ApprovalStatus",
+        type: "bytebase.v1.ApprovalStatus",
         description:
           "The approval status of the linked issue.\n Unspecified when no linked issue exists.",
       },
@@ -8820,17 +9950,30 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "object",
         description:
           "The status count of the latest plan check runs.\n Keys are:\n - SUCCESS\n - WARNING\n - ERROR\n - RUNNING",
+        additionalProperties: {
+          name: "value",
+          type: "integer",
+          format: "int32",
+        },
       },
       {
         name: "rolloutStageSummaries",
         type: "array<bytebase.v1.Plan.RolloutStageSummary>",
         description:
           "Per-stage rollout status summary.\n Ordered by environment deployment order. Empty when no rollout exists.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Plan.RolloutStageSummary",
+        },
       },
       {
         name: "specs",
         type: "array<bytebase.v1.Plan.Spec>",
         description: "The deployment specs for the plan.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Plan.Spec",
+        },
       },
       {
         name: "state",
@@ -8875,6 +10018,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "The list of targets.\n Multi-database format: [instances/{instance-id}/databases/{database-name}].\n Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "",
@@ -8955,6 +10102,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "The list of targets.\n Multi-database format: [instances/{instance-id}/databases/{database-name}].\n Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "",
@@ -8969,6 +10120,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "value",
         type: "integer",
+        format: "int32",
       },
     ],
     description: "",
@@ -8986,6 +10138,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "taskStatusCounts",
         type: "array<bytebase.v1.Plan.TaskStatusCount>",
         description: "Task status counts for this stage.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Plan.TaskStatusCount",
+        },
       },
     ],
     description: "",
@@ -8993,6 +10149,18 @@ export const schemas: Record<string, SchemaInfo> = {
   "bytebase.v1.Plan.Spec": {
     type: "object",
     properties: [
+      {
+        name: "changeDatabaseConfig",
+        type: "bytebase.v1.Plan.ChangeDatabaseConfig",
+      },
+      {
+        name: "createDatabaseConfig",
+        type: "bytebase.v1.Plan.CreateDatabaseConfig",
+      },
+      {
+        name: "exportDataConfig",
+        type: "bytebase.v1.Plan.ExportDataConfig",
+      },
       {
         name: "id",
         type: "string",
@@ -9007,6 +10175,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "count",
         type: "integer",
+        format: "int32",
         description: "The number of tasks in the status.",
       },
       {
@@ -9037,6 +10206,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "results",
         type: "array<bytebase.v1.PlanCheckRun.Result>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.PlanCheckRun.Result",
+        },
       },
       {
         name: "status",
@@ -9051,10 +10224,19 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "code",
         type: "integer",
+        format: "int32",
       },
       {
         name: "content",
         type: "string",
+      },
+      {
+        name: "sqlReviewReport",
+        type: "bytebase.v1.PlanCheckRun.Result.SqlReviewReport",
+      },
+      {
+        name: "sqlSummaryReport",
+        type: "bytebase.v1.PlanCheckRun.Result.SqlSummaryReport",
       },
       {
         name: "status",
@@ -9098,12 +10280,17 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "affectedRows",
         type: "integer",
+        format: "int64",
       },
       {
         name: "statementTypes",
         type: "array<bytebase.v1.StatementType>",
         description:
           "statement_types are the types of statements that are found in the sql.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.StatementType",
+        },
       },
     ],
     description: "",
@@ -9129,10 +10316,18 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "instanceFeatures",
         type: "array<bytebase.v1.PlanFeature>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.PlanFeature",
+        },
       },
       {
         name: "plans",
         type: "array<bytebase.v1.PlanLimitConfig>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.PlanLimitConfig",
+        },
       },
     ],
     description:
@@ -9222,14 +10417,20 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "features",
         type: "array<bytebase.v1.PlanFeature>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.PlanFeature",
+        },
       },
       {
         name: "maximumInstanceCount",
         type: "integer",
+        format: "int32",
       },
       {
         name: "maximumSeatCount",
         type: "integer",
+        format: "int32",
       },
       {
         name: "type",
@@ -9257,15 +10458,35 @@ export const schemas: Record<string, SchemaInfo> = {
         description: "Whether this policy inherits from its parent resource.",
       },
       {
+        name: "maskingExemptionPolicy",
+        type: "bytebase.v1.MaskingExemptionPolicy",
+      },
+      {
+        name: "maskingRulePolicy",
+        type: "bytebase.v1.MaskingRulePolicy",
+      },
+      {
         name: "name",
         type: "string",
         description:
           "The name of the policy.\n Format: {resource name}/policies/{policy type}\n Workspace resource name: workspaces/{workspace-id}.\n Environment resource name: environments/environment-id.\n Instance resource name: instances/instance-id.\n Database resource name: instances/instance-id/databases/database-name.",
       },
       {
+        name: "queryDataPolicy",
+        type: "bytebase.v1.QueryDataPolicy",
+      },
+      {
         name: "resourceType",
         type: "bytebase.v1.PolicyResourceType",
         description: "The resource type for the policy.",
+      },
+      {
+        name: "rolloutPolicy",
+        type: "bytebase.v1.RolloutPolicy",
+      },
+      {
+        name: "tagPolicy",
+        type: "bytebase.v1.TagPolicy",
       },
       {
         name: "type",
@@ -9282,6 +10503,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "bindingDeltas",
         type: "array<bytebase.v1.BindingDelta>",
         description: "The delta for Bindings between two policies.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.BindingDelta",
+        },
       },
     ],
     description: "Describes changes between two IAM policies.",
@@ -9314,12 +10539,14 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "column",
         type: "integer",
+        format: "int32",
         description:
           "Column position in a text (one-based).\n Column is measured in Unicode code points (characters/runes), not bytes or grapheme clusters.\n First character of the line is column 1.\n A value of 0 indicates the column information is unknown.\n\n Examples:\n - \"SELECT * FROM t\" - column 8 is '*'\n - \"SELECT 你好 FROM t\" - column 8 is '你' (even though it's at byte offset 7)\n - \"SELECT 😀 FROM t\" - column 8 is '😀' (even though it's 4 bytes in UTF-8)",
       },
       {
         name: "line",
         type: "integer",
+        format: "int32",
         description:
           "Line position in a text (one-based).\n First line of the text is line 1.\n A value of 0 indicates the line information is unknown.",
       },
@@ -9420,6 +10647,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "ciSamplingSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of database rows to sample during CI data validation.\n Without specification, sampling is disabled, resulting in full validation.",
       },
@@ -9455,12 +10683,20 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "issueLabels",
         type: "array<bytebase.v1.Label>",
         description: "Labels available for tagging issues in this project.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Label",
+        },
       },
       {
         name: "labels",
         type: "object",
         description:
           'Labels are key-value pairs that can be attached to the project.\n For example, { "environment": "production", "team": "backend" }',
+        additionalProperties: {
+          name: "value",
+          type: "string",
+        },
       },
       {
         name: "name",
@@ -9470,6 +10706,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "parallelTasksPerRollout",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of parallel tasks allowed during rollout execution.",
       },
@@ -9505,6 +10742,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "webhooks",
         type: "array<bytebase.v1.Webhook>",
         description: "The list of webhooks configured for the project.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Webhook",
+        },
       },
     ],
     description: "",
@@ -9515,6 +10756,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "maximumRetries",
         type: "integer",
+        format: "int32",
         description: "The maximum number of retries for lock timeout errors.",
       },
     ],
@@ -9558,6 +10800,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "value",
         type: "integer",
+        format: "int32",
       },
     ],
     description: "",
@@ -9578,10 +10821,18 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "additionals",
         type: "array<bytebase.v1.PurchasePlanAdditional>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.PurchasePlanAdditional",
+        },
       },
       {
         name: "billingMethods",
         type: "array<bytebase.v1.PurchaseBillingMethod>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.PurchaseBillingMethod",
+        },
       },
       {
         name: "selfServicePurchase",
@@ -9600,15 +10851,18 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "freeCount",
         type: "integer",
+        format: "int32",
       },
       {
         name: "maximumCount",
         type: "integer",
+        format: "int32",
         description: "-1 means unlimited.",
       },
       {
         name: "minimumCount",
         type: "integer",
+        format: "int32",
       },
       {
         name: "type",
@@ -9617,6 +10871,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "unitPrice",
         type: "integer",
+        format: "int32",
         description: "Price in USD cents per month.",
       },
     ],
@@ -9669,6 +10924,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "maximumResultRows",
         type: "integer",
+        format: "int32",
         description:
           "Support both project-level and workspace-level.\n The maximum number of rows to return in the SQL editor.\n The default value <= 0, means no limit.",
       },
@@ -9774,6 +11030,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "limit",
         type: "integer",
+        format: "int32",
         description: "The maximum number of rows to return.",
       },
       {
@@ -9804,9 +11061,19 @@ export const schemas: Record<string, SchemaInfo> = {
     type: "object",
     properties: [
       {
+        name: "appliedAccessGrant",
+        type: "string",
+        description:
+          "The just-in-time access grant applied to this query, if any.\n Format: projects/{project}/accessGrants/{accessGrant}.\n Empty when the user was authorized through normal ACL rather than a grant.",
+      },
+      {
         name: "results",
         type: "array<bytebase.v1.QueryResult>",
         description: "The query results.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.QueryResult",
+        },
       },
     ],
     description: "",
@@ -9818,12 +11085,24 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "columnNames",
         type: "array<string>",
         description: "Column names of the query result.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "columnTypeNames",
         type: "array<string>",
         description:
           "Column types of the query result.\n The types come from the Golang SQL driver.",
+        items: {
+          name: "item",
+          type: "string",
+        },
+      },
+      {
+        name: "commandError",
+        type: "bytebase.v1.QueryResult.CommandError",
       },
       {
         name: "error",
@@ -9840,26 +11119,51 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.MaskingReason>",
         description:
           "Masking reasons for each column (empty for non-masked columns).",
+        items: {
+          name: "item",
+          type: "bytebase.v1.MaskingReason",
+        },
       },
       {
         name: "messages",
         type: "array<bytebase.v1.QueryResult.Message>",
         description:
           "Informational or debug messages returned by the database engine during query execution.\n Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.QueryResult.Message",
+        },
+      },
+      {
+        name: "permissionDenied",
+        type: "bytebase.v1.PermissionDeniedDetail",
+      },
+      {
+        name: "postgresError",
+        type: "bytebase.v1.QueryResult.PostgresError",
       },
       {
         name: "rows",
         type: "array<bytebase.v1.QueryRow>",
         description: "Rows of the query result.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.QueryRow",
+        },
       },
       {
         name: "rowsCount",
         type: "integer",
+        format: "int64",
       },
       {
         name: "statement",
         type: "string",
         description: "The query statement for the result.",
+      },
+      {
+        name: "syntaxError",
+        type: "bytebase.v1.QueryResult.SyntaxError",
       },
     ],
     description: "",
@@ -9942,6 +11246,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "internalPosition",
         type: "integer",
+        format: "int32",
       },
       {
         name: "internalQuery",
@@ -9950,6 +11255,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "line",
         type: "integer",
+        format: "int32",
       },
       {
         name: "message",
@@ -9958,6 +11264,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "position",
         type: "integer",
+        format: "int32",
       },
       {
         name: "routine",
@@ -10002,6 +11309,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "values",
         type: "array<bytebase.v1.RowValue>",
         description: "Row values of the query result.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.RowValue",
+        },
       },
     ],
     description: "",
@@ -10012,11 +11323,13 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "end",
         type: "integer",
+        format: "int32",
         description: "End index (exclusive).",
       },
       {
         name: "start",
         type: "integer",
+        format: "int32",
         description: "Start index (inclusive).",
       },
     ],
@@ -10062,6 +11375,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "files",
         type: "array<bytebase.v1.Release.File>",
         description: "The SQL files included in the release.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Release.File",
+        },
       },
       {
         name: "name",
@@ -10110,6 +11427,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "statement",
         type: "string",
+        format: "byte",
         description: "The raw SQL statement content.",
       },
       {
@@ -10204,9 +11522,53 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "Metadata about the incoming request.",
   },
+  "bytebase.v1.RequestPasswordResetRequest": {
+    type: "object",
+    properties: [
+      {
+        name: "email",
+        type: "string",
+        description: "The email address of the account to reset.",
+      },
+      {
+        name: "workspace",
+        type: "string",
+        description:
+          "Optional workspace context captured at send time, used to locate the EMAIL setting,\n and later (at verify time) for signup gate checks and workspace assignment.\n Unset for SaaS brand-new signup (no workspace exists yet).\n Format: workspaces/{workspace}",
+      },
+    ],
+    description: "",
+  },
+  "bytebase.v1.ResetPasswordRequest": {
+    type: "object",
+    properties: [
+      {
+        name: "code",
+        type: "string",
+        description: "The 6-digit code from the reset email.",
+      },
+      {
+        name: "email",
+        type: "string",
+        description: "The email address of the account.",
+      },
+      {
+        name: "newPassword",
+        type: "string",
+        description: "The new password to set.",
+      },
+    ],
+    description: "",
+  },
   "bytebase.v1.Restriction": {
     type: "object",
     properties: [
+      {
+        name: "allowEmailCodeSignin",
+        type: "boolean",
+        description:
+          "Whether email + 6-digit code signin is enabled for this workspace.",
+      },
       {
         name: "disallowPasswordSignin",
         type: "boolean",
@@ -10219,9 +11581,27 @@ export const schemas: Record<string, SchemaInfo> = {
         description: "Whether self-service user signup is disabled.",
       },
       {
+        name: "passwordResetEnabled",
+        type: "boolean",
+        description:
+          "Whether password reset via email is available for this workspace.\n True when the workspace (or deployment) has an email setting configured.",
+      },
+      {
         name: "passwordRestriction",
         type: "bytebase.v1.WorkspaceProfileSetting.PasswordRestriction",
         description: "Password complexity and restriction requirements.",
+      },
+    ],
+    description: "",
+  },
+  "bytebase.v1.RetryIssueApprovalRequest": {
+    type: "object",
+    properties: [
+      {
+        name: "name",
+        type: "string",
+        description:
+          "The name of the issue whose approval-finding should be retried.\n Format: projects/{project}/issues/{issue}",
       },
     ],
     description: "",
@@ -10245,11 +11625,19 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "Resources using the config.\n Format: {resource}/{resource id}, e.g., environments/test.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "rules",
         type: "array<bytebase.v1.SQLReviewRule>",
         description: "The SQL review rules to enforce.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.SQLReviewRule",
+        },
       },
       {
         name: "title",
@@ -10280,7 +11668,7 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "file",
         type: "string",
         description:
-          "Format: projects/{project}/releases/{release}/files/{id}\n Can be empty.",
+          'Format: projects/{project}/releases/{release}/files/{file_path}\n The file_path segment is URL-encoded since file paths may contain "/".\n Can be empty.',
       },
       {
         name: "name",
@@ -10363,6 +11751,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "permissions",
         type: "array<string>",
         description: "List of permission identifiers granted by this role.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "title",
@@ -10427,6 +11819,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "stages",
         type: "array<bytebase.v1.Stage>",
         description: "Stages and thus tasks of the rollout.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Stage",
+        },
       },
       {
         name: "title",
@@ -10453,9 +11849,83 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "roles",
         type: "array<string>",
         description: "The roles that can approve rollout execution.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "Rollout policy configuration.",
+  },
+  "bytebase.v1.RowValue": {
+    type: "object",
+    properties: [
+      {
+        name: "boolValue",
+        type: "boolean",
+      },
+      {
+        name: "bytesValue",
+        type: "string",
+        format: "byte",
+      },
+      {
+        name: "doubleValue",
+        type: "number",
+        format: "double",
+      },
+      {
+        name: "floatValue",
+        type: "number",
+        format: "float",
+      },
+      {
+        name: "int32Value",
+        type: "integer",
+        format: "int32",
+      },
+      {
+        name: "int64Value",
+        type: "integer",
+        format: "int64",
+      },
+      {
+        name: "nullValue",
+        type: "google.protobuf.NullValue",
+      },
+      {
+        name: "stringValue",
+        type: "string",
+      },
+      {
+        name: "timestampTzValue",
+        type: "bytebase.v1.RowValue.TimestampTZ",
+        description:
+          "timestamp_tz_value is used for the timestamptz data type, which\n accurately represents the timestamp with location information.",
+      },
+      {
+        name: "timestampValue",
+        type: "bytebase.v1.RowValue.Timestamp",
+        description:
+          "timestamp_value is used for the timestamp without time zone data type,\n meaning it only includes the timestamp without any time zone or location\n info. Although it may be expressed as a UTC value, it should be seen as a\n timestamp missing location context.",
+      },
+      {
+        name: "uint32Value",
+        type: "integer",
+      },
+      {
+        name: "uint64Value",
+        type: "integer",
+        format: "int64",
+      },
+      {
+        name: "valueValue",
+        type: "google.protobuf.Value",
+        description:
+          "value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only.",
+      },
+    ],
+    description: "",
   },
   "bytebase.v1.RowValue.Timestamp": {
     type: "object",
@@ -10463,6 +11933,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "accuracy",
         type: "integer",
+        format: "int32",
         description:
           "The accuracy is the number of digits after the decimal point.",
       },
@@ -10479,6 +11950,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "accuracy",
         type: "integer",
+        format: "int32",
       },
       {
         name: "googleTimestamp",
@@ -10487,6 +11959,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "offset",
         type: "integer",
+        format: "int32",
         description: "The offset is in seconds east of UTC",
       },
       {
@@ -10516,9 +11989,65 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "",
   },
+  "bytebase.v1.SASLConfig": {
+    type: "object",
+    properties: [
+      {
+        name: "krbConfig",
+        type: "bytebase.v1.KerberosConfig",
+        description: "Kerberos authentication configuration.",
+      },
+    ],
+    description: "",
+  },
+  "bytebase.v1.SQLEditorThemeSetting": {
+    type: "object",
+    properties: [
+      {
+        name: "id",
+        type: "string",
+      },
+      {
+        name: "monacoBase",
+        type: "string",
+      },
+      {
+        name: "name",
+        type: "string",
+      },
+      {
+        name: "tokens",
+        type: "object",
+        description: "CSS token colors.",
+        additionalProperties: {
+          name: "value",
+          type: "google.type.Color",
+        },
+      },
+    ],
+    description: "",
+  },
+  "bytebase.v1.SQLEditorThemeSetting.TokensEntry": {
+    type: "object",
+    properties: [
+      {
+        name: "key",
+        type: "string",
+      },
+      {
+        name: "value",
+        type: "google.type.Color",
+      },
+    ],
+    description: "",
+  },
   "bytebase.v1.SQLReviewRule": {
     type: "object",
     properties: [
+      {
+        name: "commentConventionPayload",
+        type: "bytebase.v1.SQLReviewRule.CommentConventionRulePayload",
+      },
       {
         name: "engine",
         type: "bytebase.v1.Engine",
@@ -10528,6 +12057,26 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "level",
         type: "bytebase.v1.SQLReviewRule.Level",
         description: "The severity level of the rule.",
+      },
+      {
+        name: "namingCasePayload",
+        type: "bytebase.v1.SQLReviewRule.NamingCaseRulePayload",
+      },
+      {
+        name: "namingPayload",
+        type: "bytebase.v1.SQLReviewRule.NamingRulePayload",
+      },
+      {
+        name: "numberPayload",
+        type: "bytebase.v1.SQLReviewRule.NumberRulePayload",
+      },
+      {
+        name: "stringArrayPayload",
+        type: "bytebase.v1.SQLReviewRule.StringArrayRulePayload",
+      },
+      {
+        name: "stringPayload",
+        type: "bytebase.v1.SQLReviewRule.StringRulePayload",
       },
       {
         name: "type",
@@ -10544,6 +12093,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "maxLength",
         type: "integer",
+        format: "int32",
       },
       {
         name: "required",
@@ -10577,6 +12127,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "maxLength",
         type: "integer",
+        format: "int32",
       },
     ],
     description: "Payload message types for SQL review rules",
@@ -10587,6 +12138,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "number",
         type: "integer",
+        format: "int32",
       },
     ],
     description: "",
@@ -10597,6 +12149,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "list",
         type: "array<string>",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "",
@@ -10646,19 +12202,12 @@ export const schemas: Record<string, SchemaInfo> = {
       "STATEMENT_ADD_CHECK_NOT_VALID",
       "STATEMENT_ADD_FOREIGN_KEY_NOT_VALID",
       "STATEMENT_DISALLOW_ADD_NOT_NULL",
-      "STATEMENT_SELECT_FULL_TABLE_SCAN",
       "STATEMENT_CREATE_SPECIFY_SCHEMA",
       "STATEMENT_CHECK_SET_ROLE_VARIABLE",
-      "STATEMENT_DISALLOW_USING_FILESORT",
-      "STATEMENT_DISALLOW_USING_TEMPORARY",
       "STATEMENT_WHERE_NO_EQUAL_NULL",
       "STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS",
-      "STATEMENT_QUERY_MINIMUM_PLAN_LEVEL",
       "STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT",
-      "STATEMENT_MAXIMUM_LIMIT_VALUE",
-      "STATEMENT_MAXIMUM_JOIN_TABLE_COUNT",
       "STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION",
-      "STATEMENT_JOIN_STRICT_COLUMN_ATTRS",
       "STATEMENT_NON_TRANSACTIONAL",
       "STATEMENT_ADD_COLUMN_WITHOUT_POSITION",
       "STATEMENT_DISALLOW_OFFLINE_DDL",
@@ -10725,6 +12274,7 @@ export const schemas: Record<string, SchemaInfo> = {
       "ADVICE_ONLINE_MIGRATION",
       "BUILTIN_PRIOR_BACKUP_CHECK",
       "BUILTIN_WALK_THROUGH_CHECK",
+      "STATEMENT_DISALLOW_TRUNCATE",
     ],
     description: "",
   },
@@ -10740,6 +12290,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "tables",
         type: "array<bytebase.v1.TableCatalog>",
         description: "The tables in the schema.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.TableCatalog",
+        },
       },
     ],
     description: "Schema metadata within a database.",
@@ -10753,32 +12307,62 @@ export const schemas: Record<string, SchemaInfo> = {
         description: "The comment is the comment of a schema.",
       },
       {
+        name: "compositeTypes",
+        type: "array<bytebase.v1.CompositeTypeMetadata>",
+        description:
+          "The composite_types is the list of user-defined composite types in a\n schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row\n types and derived types.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.CompositeTypeMetadata",
+        },
+      },
+      {
         name: "enumTypes",
         type: "array<bytebase.v1.EnumTypeMetadata>",
         description:
           "The enum_types is the list of user-defined enum types in a schema.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.EnumTypeMetadata",
+        },
       },
       {
         name: "events",
         type: "array<bytebase.v1.EventMetadata>",
         description: "The events is the list of scheduled events in a schema.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.EventMetadata",
+        },
       },
       {
         name: "externalTables",
         type: "array<bytebase.v1.ExternalTableMetadata>",
         description:
           "The external_tables is the list of external tables in a schema.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.ExternalTableMetadata",
+        },
       },
       {
         name: "functions",
         type: "array<bytebase.v1.FunctionMetadata>",
         description: "The functions is the list of functions in a schema.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.FunctionMetadata",
+        },
       },
       {
         name: "materializedViews",
         type: "array<bytebase.v1.MaterializedViewMetadata>",
         description:
           "The materialized_views is the list of materialized views in a schema.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.MaterializedViewMetadata",
+        },
       },
       {
         name: "name",
@@ -10795,17 +12379,29 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "packages",
         type: "array<bytebase.v1.PackageMetadata>",
         description: "The packages is the list of packages in a schema.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.PackageMetadata",
+        },
       },
       {
         name: "procedures",
         type: "array<bytebase.v1.ProcedureMetadata>",
         description: "The procedures is the list of procedures in a schema.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.ProcedureMetadata",
+        },
       },
       {
         name: "sequences",
         type: "array<bytebase.v1.SequenceMetadata>",
         description:
           "The sequences is the list of sequences in a schema, sorted by name.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.SequenceMetadata",
+        },
       },
       {
         name: "skipDump",
@@ -10818,22 +12414,38 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.StreamMetadata>",
         description:
           "The streams is the list of streams in a schema, currently, only used for\n Snowflake.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.StreamMetadata",
+        },
       },
       {
         name: "tables",
         type: "array<bytebase.v1.TableMetadata>",
         description: "The tables is the list of tables in a schema.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.TableMetadata",
+        },
       },
       {
         name: "tasks",
         type: "array<bytebase.v1.TaskMetadata>",
         description:
           "The routines is the list of routines in a schema, currently, only used for\n Snowflake.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.TaskMetadata",
+        },
       },
       {
         name: "views",
         type: "array<bytebase.v1.ViewMetadata>",
         description: "The views is the list of views in a schema.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.ViewMetadata",
+        },
       },
     ],
     description:
@@ -10857,6 +12469,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of logs to return.\n The service may return fewer than this value.\n If unspecified, at most 10 log entries will be returned.\n The maximum value is 5000; values above 5000 will be coerced to 5000.",
       },
@@ -10879,6 +12492,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "auditLogs",
         type: "array<bytebase.v1.AuditLog>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.AuditLog",
+        },
       },
       {
         name: "nextPageToken",
@@ -10907,6 +12524,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of issues to return. The service may return fewer than\n this value.\n If unspecified, at most 10 issues will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -10937,6 +12555,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "issues",
         type: "array<bytebase.v1.Issue>",
         description: "The issues from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Issue",
+        },
       },
       {
         name: "nextPageToken",
@@ -10965,6 +12587,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description: "The maximum number of access grants to return.",
       },
       {
@@ -10988,6 +12611,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "accessGrants",
         type: "array<bytebase.v1.AccessGrant>",
         description: "The access grants from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.AccessGrant",
+        },
       },
       {
         name: "nextPageToken",
@@ -11016,6 +12643,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of projects to return. The service may return fewer than\n this value.\n If unspecified, at most 10 projects will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -11046,6 +12674,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "projects",
         type: "array<bytebase.v1.Project>",
         description: "The projects from the specified request.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Project",
+        },
       },
     ],
     description: "",
@@ -11062,6 +12694,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "pageSize",
         type: "integer",
+        format: "int32",
         description:
           "The maximum number of histories to return.\n The service may return fewer than this value.\n If unspecified, at most 10 history entries will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
       },
@@ -11087,6 +12720,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "queryHistories",
         type: "array<bytebase.v1.QueryHistory>",
         description: "The list of history.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.QueryHistory",
+        },
       },
     ],
     description: "",
@@ -11116,6 +12753,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "worksheets",
         type: "array<bytebase.v1.Worksheet>",
         description: "The worksheets that matched the search criteria.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Worksheet",
+        },
       },
     ],
     description: "",
@@ -11126,6 +12767,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "types",
         type: "array<bytebase.v1.SemanticTypeSetting.SemanticType>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.SemanticTypeSetting.SemanticType",
+        },
       },
     ],
     description: "",
@@ -11157,6 +12802,23 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "title",
         type: "string",
         description: "the title of the semantic type, it should not be empty.",
+      },
+    ],
+    description: "",
+  },
+  "bytebase.v1.SendEmailLoginCodeRequest": {
+    type: "object",
+    properties: [
+      {
+        name: "email",
+        type: "string",
+        description: "The email address to send the code to.",
+      },
+      {
+        name: "workspace",
+        type: "string",
+        description:
+          "Optional workspace context captured at send time, used to locate the EMAIL setting,\n and later (at verify time) for signup gate checks and workspace assignment.\n Unset for SaaS brand-new signup (no workspace exists yet).\n Format: workspaces/{workspace}",
       },
     ],
     description: "",
@@ -11321,8 +12983,47 @@ export const schemas: Record<string, SchemaInfo> = {
       "DATA_CLASSIFICATION",
       "SEMANTIC_TYPES",
       "ENVIRONMENT",
+      "EMAIL",
     ],
     description: "",
+  },
+  "bytebase.v1.SettingValue": {
+    type: "object",
+    properties: [
+      {
+        name: "ai",
+        type: "bytebase.v1.AISetting",
+      },
+      {
+        name: "appIm",
+        type: "bytebase.v1.AppIMSetting",
+      },
+      {
+        name: "dataClassification",
+        type: "bytebase.v1.DataClassificationSetting",
+      },
+      {
+        name: "email",
+        type: "bytebase.v1.EmailSetting",
+      },
+      {
+        name: "environment",
+        type: "bytebase.v1.EnvironmentSetting",
+      },
+      {
+        name: "semanticType",
+        type: "bytebase.v1.SemanticTypeSetting",
+      },
+      {
+        name: "workspaceApproval",
+        type: "bytebase.v1.WorkspaceApprovalSetting",
+      },
+      {
+        name: "workspaceProfile",
+        type: "bytebase.v1.WorkspaceProfileSetting",
+      },
+    ],
+    description: "The data in setting value.",
   },
   "bytebase.v1.Sheet": {
     type: "object",
@@ -11330,12 +13031,14 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "content",
         type: "string",
+        format: "byte",
         description:
           "The content of the sheet.\n By default, it will be cut off, if it doesn't match the `content_size`, you can\n set the `raw` to true in GetSheet request to retrieve the full content.",
       },
       {
         name: "contentSize",
         type: "integer",
+        format: "int64",
         description:
           "content_size is the full size of the content, may not match the size of the `content` field.",
       },
@@ -11423,6 +13126,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "tasks",
         type: "array<bytebase.v1.Task>",
         description: "The tasks within this stage.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Task",
+        },
       },
     ],
     description: "",
@@ -11498,6 +13205,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "commitInterval",
         type: "integer",
+        format: "int32",
       },
       {
         name: "dataCompression",
@@ -11511,11 +13219,13 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "fillfactor",
         type: "integer",
+        format: "int32",
         description: "Fill factor percentage (1-100)",
       },
       {
         name: "maxdop",
         type: "integer",
+        format: "int32",
       },
       {
         name: "online",
@@ -11529,6 +13239,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "sdoLevel",
         type: "integer",
+        format: "int32",
       },
       {
         name: "sortInTempdb",
@@ -11612,6 +13323,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "activeInstances",
         type: "integer",
+        format: "int32",
       },
       {
         name: "etag",
@@ -11632,6 +13344,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "instances",
         type: "integer",
+        format: "int32",
       },
       {
         name: "orgName",
@@ -11644,6 +13357,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "seats",
         type: "integer",
+        format: "int32",
       },
       {
         name: "trialing",
@@ -11700,6 +13414,20 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "",
   },
+  "bytebase.v1.SyncDatabases": {
+    type: "object",
+    properties: [
+      {
+        name: "databases",
+        type: "array<string>",
+        items: {
+          name: "item",
+          type: "string",
+        },
+      },
+    ],
+    description: "",
+  },
   "bytebase.v1.SyncInstanceRequest": {
     type: "object",
     properties: [
@@ -11724,6 +13452,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "databases",
         type: "array<string>",
         description: "All database name list in the instance.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
     ],
     description: "",
@@ -11742,9 +13474,19 @@ export const schemas: Record<string, SchemaInfo> = {
         description: "The data classification level for this table.",
       },
       {
+        name: "columns",
+        type: "bytebase.v1.TableCatalog.Columns",
+        description: "Regular table columns.",
+      },
+      {
         name: "name",
         type: "string",
         description: "The table name.",
+      },
+      {
+        name: "objectSchema",
+        type: "bytebase.v1.ObjectSchema",
+        description: "Object schema for JSON/XML columns.",
       },
     ],
     description: "Table metadata within a schema.",
@@ -11756,6 +13498,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "columns",
         type: "array<bytebase.v1.ColumnCatalog>",
         description: "The columns in the table.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.ColumnCatalog",
+        },
       },
     ],
     description: "Column list for regular tables.",
@@ -11773,6 +13519,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.CheckConstraintMetadata>",
         description:
           "The check_constraints is the list of check constraints in a table.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.CheckConstraintMetadata",
+        },
       },
       {
         name: "collation",
@@ -11783,6 +13533,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "columns",
         type: "array<bytebase.v1.ColumnMetadata>",
         description: "The columns is the ordered list of columns in a table.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.ColumnMetadata",
+        },
       },
       {
         name: "comment",
@@ -11797,12 +13551,14 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "dataFree",
         type: "integer",
+        format: "int64",
         description:
           "The data_free is the estimated free data size of a table.",
       },
       {
         name: "dataSize",
         type: "integer",
+        format: "int64",
         description: "The data_size is the estimated data size of a table.",
       },
       {
@@ -11814,15 +13570,24 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "foreignKeys",
         type: "array<bytebase.v1.ForeignKeyMetadata>",
         description: "The foreign_keys is the list of foreign keys in a table.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.ForeignKeyMetadata",
+        },
       },
       {
         name: "indexes",
         type: "array<bytebase.v1.IndexMetadata>",
         description: "The indexes is the list of indexes in a table.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.IndexMetadata",
+        },
       },
       {
         name: "indexSize",
         type: "integer",
+        format: "int64",
         description: "The index_size is the estimated index size of a table.",
       },
       {
@@ -11839,6 +13604,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "partitions",
         type: "array<bytebase.v1.TablePartitionMetadata>",
         description: "The partitions is the list of partitions in a table.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.TablePartitionMetadata",
+        },
       },
       {
         name: "primaryKeyType",
@@ -11849,6 +13618,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "rowCount",
         type: "integer",
+        format: "int64",
         description:
           "The row_count is the estimated number of rows of a table.",
       },
@@ -11869,12 +13639,20 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.\n Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "triggers",
         type: "array<bytebase.v1.TriggerMetadata>",
         description:
           "The triggers is the list of triggers associated with the table.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.TriggerMetadata",
+        },
       },
     ],
     description: "TableMetadata is the metadata for tables.",
@@ -11885,6 +13663,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "checkConstraints",
         type: "array<bytebase.v1.CheckConstraintMetadata>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.CheckConstraintMetadata",
+        },
       },
       {
         name: "expression",
@@ -11895,6 +13677,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "indexes",
         type: "array<bytebase.v1.IndexMetadata>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.IndexMetadata",
+        },
       },
       {
         name: "name",
@@ -11906,6 +13692,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.TablePartitionMetadata>",
         description:
           "The subpartitions is the list of subpartitions in a table partition.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.TablePartitionMetadata",
+        },
       },
       {
         name: "type",
@@ -11951,6 +13741,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "object",
         description:
           'tags is the key - value map for resources.\n for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "reviewConfigs/{review config resource id}"',
+        additionalProperties: {
+          name: "value",
+          type: "string",
+        },
       },
     ],
     description: "Policy for tagging resources with metadata.",
@@ -11973,6 +13767,18 @@ export const schemas: Record<string, SchemaInfo> = {
     type: "object",
     properties: [
       {
+        name: "databaseCreate",
+        type: "bytebase.v1.Task.DatabaseCreate",
+      },
+      {
+        name: "databaseDataExport",
+        type: "bytebase.v1.Task.DatabaseDataExport",
+      },
+      {
+        name: "databaseUpdate",
+        type: "bytebase.v1.Task.DatabaseUpdate",
+      },
+      {
         name: "name",
         type: "string",
         description:
@@ -11980,7 +13786,7 @@ export const schemas: Record<string, SchemaInfo> = {
       },
       {
         name: "runTime",
-        type: "object",
+        type: "google.protobuf.Timestamp",
         description:
           "The run_time is the scheduled run time of latest task run.\n If there are no task runs or the task run is not scheduled, it will be empty.",
       },
@@ -12011,7 +13817,7 @@ export const schemas: Record<string, SchemaInfo> = {
       },
       {
         name: "updateTime",
-        type: "object",
+        type: "google.protobuf.Timestamp",
         description:
           "The update_time is the update time of latest task run.\n If there are no task runs, it will be empty.",
       },
@@ -12040,6 +13846,22 @@ export const schemas: Record<string, SchemaInfo> = {
       },
     ],
     description: "Payload for exporting database data.",
+  },
+  "bytebase.v1.Task.DatabaseUpdate": {
+    type: "object",
+    properties: [
+      {
+        name: "release",
+        type: "string",
+        description: "Format: projects/{project}/releases/{release}",
+      },
+      {
+        name: "sheet",
+        type: "string",
+        description: "Format: projects/{project}/sheets/{sheet}",
+      },
+    ],
+    description: "Payload for updating a database schema.",
   },
   "bytebase.v1.Task.Status": {
     type: "enum",
@@ -12104,6 +13926,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "predecessors",
         type: "array<string>",
         description: "The predecessor tasks of the task.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "schedule",
@@ -12165,7 +13991,7 @@ export const schemas: Record<string, SchemaInfo> = {
       },
       {
         name: "runTime",
-        type: "object",
+        type: "google.protobuf.Timestamp",
         description:
           "The task run should run after run_time.\n This can only be set when creating the task run calling BatchRunTasks.",
       },
@@ -12212,6 +14038,17 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "Information about task run scheduling.",
   },
+  "bytebase.v1.TaskRun.SchedulerInfo.WaitingCause": {
+    type: "object",
+    properties: [
+      {
+        name: "parallelTasksLimit",
+        type: "boolean",
+        description: "Waiting due to parallel tasks limit.",
+      },
+    ],
+    description: "Information about why a task run is waiting.",
+  },
   "bytebase.v1.TaskRun.Status": {
     type: "enum",
     values: [
@@ -12232,6 +14069,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "entries",
         type: "array<bytebase.v1.TaskRunLogEntry>",
         description: "The log entries for this task run.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.TaskRunLogEntry",
+        },
       },
       {
         name: "name",
@@ -12259,6 +14100,11 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "databaseSync",
         type: "bytebase.v1.TaskRunLogEntry.DatabaseSync",
         description: "Database sync details (if type is DATABASE_SYNC).",
+      },
+      {
+        name: "ghostMigration",
+        type: "bytebase.v1.TaskRunLogEntry.GhostMigration",
+        description: "gh-ost migration details (if type is GHOST_MIGRATION).",
       },
       {
         name: "logTime",
@@ -12338,6 +14184,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "affectedRows",
         type: "integer",
+        format: "int64",
         description: "Total affected rows.",
       },
       {
@@ -12345,6 +14192,11 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<integer>",
         description:
           "`all_affected_rows` is the affected rows of each command.\n `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.",
+        items: {
+          name: "item",
+          type: "integer",
+          format: "int64",
+        },
       },
       {
         name: "error",
@@ -12401,6 +14253,27 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "Database synchronization details.",
   },
+  "bytebase.v1.TaskRunLogEntry.GhostMigration": {
+    type: "object",
+    properties: [
+      {
+        name: "endTime",
+        type: "google.protobuf.Timestamp",
+        description: "When the gh-ost migration ended.",
+      },
+      {
+        name: "error",
+        type: "string",
+        description: "Error message if the gh-ost migration failed.",
+      },
+      {
+        name: "startTime",
+        type: "google.protobuf.Timestamp",
+        description: "When the gh-ost migration started.",
+      },
+    ],
+    description: "gh-ost migration details.",
+  },
   "bytebase.v1.TaskRunLogEntry.PriorBackup": {
     type: "object",
     properties: [
@@ -12434,6 +14307,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "items",
         type: "array<bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item>",
         description: "The list of backed up tables.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item",
+        },
       },
     ],
     description: "Prior backup detail for rollback purposes.",
@@ -12514,11 +14391,13 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "maximumRetries",
         type: "integer",
+        format: "int32",
         description: "Maximum number of retries allowed.",
       },
       {
         name: "retryCount",
         type: "integer",
+        format: "int32",
         description: "Current retry attempt number.",
       },
     ],
@@ -12578,6 +14457,7 @@ export const schemas: Record<string, SchemaInfo> = {
       "RETRY_INFO",
       "COMPUTE_DIFF",
       "RELEASE_FILE_EXECUTE",
+      "GHOST_MIGRATION",
     ],
     description: "The type of log entry.",
   },
@@ -12590,6 +14470,11 @@ export const schemas: Record<string, SchemaInfo> = {
         description:
           "Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session",
       },
+      {
+        name: "postgres",
+        type: "bytebase.v1.TaskRunSession.Postgres",
+        description: "PostgreSQL session information.",
+      },
     ],
     description: "",
   },
@@ -12600,11 +14485,19 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "blockedSessions",
         type: "array<bytebase.v1.TaskRunSession.Postgres.Session>",
         description: "`blocked_sessions` are blocked by `session`.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.TaskRunSession.Postgres.Session",
+        },
       },
       {
         name: "blockingSessions",
         type: "array<bytebase.v1.TaskRunSession.Postgres.Session>",
         description: "`blocking_sessions` block `session`.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.TaskRunSession.Postgres.Session",
+        },
       },
       {
         name: "session",
@@ -12632,6 +14525,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "blockedByPids",
         type: "array<string>",
         description: "PIDs of sessions blocking this session.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "clientAddr",
@@ -12660,7 +14557,7 @@ export const schemas: Record<string, SchemaInfo> = {
       },
       {
         name: "queryStart",
-        type: "object",
+        type: "google.protobuf.Timestamp",
         description: "When the current query started.",
       },
       {
@@ -12685,7 +14582,7 @@ export const schemas: Record<string, SchemaInfo> = {
       },
       {
         name: "xactStart",
-        type: "object",
+        type: "google.protobuf.Timestamp",
         description: "When the current transaction started.",
       },
     ],
@@ -12703,12 +14600,17 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "cellsPerObject",
         type: "integer",
+        format: "int32",
         description: "Number of cells per object (1-8192 for SQL Server)",
       },
       {
         name: "gridLevels",
         type: "array<bytebase.v1.GridLevel>",
         description: "Grid levels and densities for multi-level tessellation",
+        items: {
+          name: "item",
+          type: "bytebase.v1.GridLevel",
+        },
       },
       {
         name: "scheme",
@@ -12720,6 +14622,38 @@ export const schemas: Record<string, SchemaInfo> = {
     description:
       "TessellationConfig defines tessellation parameters for spatial indexes.",
   },
+  "bytebase.v1.TestEmailSettingRequest": {
+    type: "object",
+    properties: [
+      {
+        name: "emailSetting",
+        type: "bytebase.v1.EmailSetting",
+      },
+      {
+        name: "parent",
+        type: "string",
+      },
+      {
+        name: "to",
+        type: "string",
+      },
+    ],
+    description: "",
+  },
+  "bytebase.v1.TestEmailSettingResponse": {
+    type: "object",
+    properties: [
+      {
+        name: "error",
+        type: "string",
+      },
+      {
+        name: "success",
+        type: "boolean",
+      },
+    ],
+    description: "",
+  },
   "bytebase.v1.TestIdentityProviderRequest": {
     type: "object",
     properties: [
@@ -12728,6 +14662,15 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "bytebase.v1.IdentityProvider",
         description:
           "The identity provider to test connection including uncreated.",
+      },
+      {
+        name: "oauth2Context",
+        type: "bytebase.v1.OAuth2IdentityProviderTestRequestContext",
+      },
+      {
+        name: "oidcContext",
+        type: "bytebase.v1.OIDCIdentityProviderTestRequestContext",
+        description: "OIDC authentication context for test connection.",
       },
     ],
     description: "",
@@ -12739,11 +14682,19 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "claims",
         type: "object",
         description: "The map of claims returned by the identity provider.",
+        additionalProperties: {
+          name: "value",
+          type: "string",
+        },
       },
       {
         name: "userInfo",
         type: "object",
         description: "The matched user info from the claims.",
+        additionalProperties: {
+          name: "value",
+          type: "string",
+        },
       },
     ],
     description: "",
@@ -13252,6 +15203,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "seats",
         type: "integer",
+        format: "int32",
       },
     ],
     description: "",
@@ -13520,6 +15472,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "groups",
         type: "array<string>",
         description: "The groups for the user.\n Format: groups/{email}",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "mfaEnabled",
@@ -13575,6 +15531,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<string>",
         description:
           "Temporary recovery codes used during MFA setup and regeneration.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "title",
@@ -13622,6 +15582,28 @@ export const schemas: Record<string, SchemaInfo> = {
     ],
     description: "Version control system type.",
   },
+  "bytebase.v1.VCSUser": {
+    type: "object",
+    properties: [
+      {
+        name: "displayName",
+        type: "string",
+      },
+      {
+        name: "userId",
+        type: "string",
+      },
+      {
+        name: "userName",
+        type: "string",
+      },
+      {
+        name: "vcsType",
+        type: "bytebase.v1.VCSType",
+      },
+    ],
+    description: "",
+  },
   "bytebase.v1.VerifyCheckoutSessionRequest": {
     type: "object",
     properties: [
@@ -13651,6 +15633,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "columns",
         type: "array<bytebase.v1.ColumnMetadata>",
         description: "The columns is the ordered list of columns in a table.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.ColumnMetadata",
+        },
       },
       {
         name: "comment",
@@ -13667,6 +15653,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.DependencyColumn>",
         description:
           "The dependency_columns is the list of dependency columns of a view.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.DependencyColumn",
+        },
       },
       {
         name: "name",
@@ -13681,6 +15671,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "triggers",
         type: "array<bytebase.v1.TriggerMetadata>",
         description: "The triggers is the list of triggers in a view.",
+        items: {
+          name: "item",
+          type: "bytebase.v1.TriggerMetadata",
+        },
       },
     ],
     description: "ViewMetadata is the metadata for views.",
@@ -13705,6 +15699,10 @@ export const schemas: Record<string, SchemaInfo> = {
         type: "array<bytebase.v1.Activity.Type>",
         description:
           "notification_types is the list of activities types that the webhook is interested in.\n Bytebase will only send notifications to the webhook if the activity type is in the list.\n It should not be empty, and should be a subset of the following:\n - ISSUE_CREATED\n - ISSUE_APPROVAL_REQUESTED\n - ISSUE_SENT_BACK\n - ISSUE_APPROVED\n - PIPELINE_FAILED\n - PIPELINE_COMPLETED",
+        items: {
+          name: "item",
+          type: "bytebase.v1.Activity.Type",
+        },
       },
       {
         name: "title",
@@ -13737,6 +15735,7 @@ export const schemas: Record<string, SchemaInfo> = {
       "FEISHU",
       "WECOM",
       "LARK",
+      "GOOGLE_CHAT",
     ],
     description: "Webhook integration type.",
   },
@@ -13787,6 +15786,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "allowedAudiences",
         type: "array<string>",
         description: "Allowed audiences for token validation",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "issuerUrl",
@@ -13819,12 +15822,14 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "content",
         type: "string",
+        format: "byte",
         description:
           "The content of the worksheet.\n By default, it will be cut off in SearchWorksheet() method. If it doesn't match the `content_size`, you can\n use GetWorksheet() request to retrieve the full content.",
       },
       {
         name: "contentSize",
         type: "integer",
+        format: "int64",
         description:
           "content_size is the full size of the content, may not match the size of the `content` field.",
       },
@@ -13847,6 +15852,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "folders",
         type: "array<string>",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "name",
@@ -13898,6 +15907,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "folders",
         type: "array<string>",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "starred",
@@ -13939,6 +15952,10 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "rules",
         type: "array<bytebase.v1.WorkspaceApprovalSetting.Rule>",
+        items: {
+          name: "item",
+          type: "bytebase.v1.WorkspaceApprovalSetting.Rule",
+        },
       },
     ],
     description: "",
@@ -13950,7 +15967,7 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "condition",
         type: "google.type.Expr",
         description:
-          'The condition that is associated with the rule.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec\n\n The `source` field filters which rules apply. The `condition` field then evaluates with full context.\n\n All supported variables:\n statement.affected_rows: affected row count in the DDL/DML, support "==", "!=", "<", "<=", ">", ">=" operations.\n statement.table_rows: table row count number, support "==", "!=", "<", "<=", ">", ">=" operations.\n resource.environment_id: the environment resource id, support "==", "!=", "in [xx]", "!(in [xx])" operations.\n resource.project_id: the project resource id, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.\n resource.db_engine: the database engine type, support "==", "!=", "in [xx]", "!(in [xx])" operations. Check the Engine enum for values.\n statement.sql_type: the SQL type, support "==", "!=", "in [xx]", "!(in [xx])" operations.\n resource.database_name: the database name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.\n resource.schema_name: the schema name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.\n resource.table_name: the table name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.\n statement.text: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.\n request.expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.\n request.role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.\n\n When source is CHANGE_DATABASE, support: statement.*, resource.* (excluding request.*)\n When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name\n When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name\n When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role\n When source is REQUEST_ACCESS, support: resource.environment_id, resource.project_id, request.unmask\n\n For examples:\n resource.environment_id == "prod" && statement.affected_rows >= 100\n resource.table_name.matches("sensitive_.*") && resource.db_engine == "MYSQL"',
+          'The condition that is associated with the rule.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec\n\n The `source` field filters which rules apply. The `condition` field then evaluates with full context.\n\n All supported variables:\n statement.affected_rows: affected row count in the DDL/DML, support "==", "!=", "<", "<=", ">", ">=" operations.\n statement.table_rows: table row count number, support "==", "!=", "<", "<=", ">", ">=" operations.\n resource.environment_id: the environment resource id, support "==", "!=", "in [xx]", "!(in [xx])" operations.\n resource.project_id: the project resource id, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.\n resource.db_engine: the database engine type, support "==", "!=", "in [xx]", "!(in [xx])" operations. Check the Engine enum for values.\n statement.sql_type: the SQL type, support "==", "!=", "in [xx]", "!(in [xx])" operations.\n resource.database_name: the database name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.\n resource.schema_name: the schema name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.\n resource.table_name: the table name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.\n statement.text: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.\n request.expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.\n request.role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.\n\n When source is CHANGE_DATABASE, support: statement.*, resource.* (excluding request.*)\n When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name\n When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role\n When source is REQUEST_ACCESS, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name, request.unmask, request.data_export\n\n For examples:\n resource.environment_id == "prod" && statement.affected_rows >= 100\n resource.table_name.matches("sensitive_.*") && resource.db_engine == "MYSQL"',
       },
       {
         name: "source",
@@ -13969,7 +15986,6 @@ export const schemas: Record<string, SchemaInfo> = {
       "SOURCE_UNSPECIFIED",
       "CHANGE_DATABASE",
       "CREATE_DATABASE",
-      "EXPORT_DATA",
       "REQUEST_ROLE",
       "REQUEST_ACCESS",
     ],
@@ -13982,6 +15998,12 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "accessTokenDuration",
         type: "google.protobuf.Duration",
         description: "The duration for access token. Default is 1 hour.",
+      },
+      {
+        name: "allowEmailCodeSignin",
+        type: "boolean",
+        description:
+          "Allow signin/signup using email + a 6-digit one-time verification code.\n Requires the EMAIL setting to be configured on the workspace.",
       },
       {
         name: "announcement",
@@ -14014,6 +16036,10 @@ export const schemas: Record<string, SchemaInfo> = {
         name: "domains",
         type: "array<string>",
         description: "The workspace domain, e.g., bytebase.com.",
+        items: {
+          name: "item",
+          type: "string",
+        },
       },
       {
         name: "enableAuditLogStdout",
@@ -14050,9 +16076,15 @@ export const schemas: Record<string, SchemaInfo> = {
           "The session expiration time if not activity detected for the user. Value <= 0 means no limit.",
       },
       {
+        name: "maximumRequestExpiration",
+        type: "google.protobuf.Duration",
+        description: "The max expiration duration for data access requests.",
+      },
+      {
         name: "maximumRoleExpiration",
         type: "google.protobuf.Duration",
-        description: "The max duration for role expired.",
+        description:
+          "The max expiration duration for request role.\n Deprecated: use just-in-time access request flows instead.",
       },
       {
         name: "passwordRestriction",
@@ -14071,13 +16103,26 @@ export const schemas: Record<string, SchemaInfo> = {
         description: "The duration for refresh token. Default is 7 days.",
       },
       {
-        name: "require2fa",
+        name: "requireMfa",
         type: "boolean",
-        description: "Require 2FA for all users.",
+        description: "Require MFA for all users.",
+      },
+      {
+        name: "sqlEditorCustomTheme",
+        type: "bytebase.v1.SQLEditorThemeSetting",
+        description:
+          "The enforced CUSTOM theme's full definition — present ONLY when\n sql_editor_theme_id is a custom uuid. tokens is always complete.",
+      },
+      {
+        name: "sqlEditorThemeId",
+        type: "string",
+        description:
+          "Enforced SQL Editor theme id: OPAQUE — a frontend-resolved built-in preset id\n OR a custom theme's uuid. Empty ⇒ default light.",
       },
       {
         name: "sqlResultSize",
         type: "integer",
+        format: "int64",
         description:
           "The maximum result size limit in bytes for query and export, works for the SQL Editor and Export Center.\n The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.",
       },
@@ -14096,6 +16141,7 @@ export const schemas: Record<string, SchemaInfo> = {
       {
         name: "minLength",
         type: "integer",
+        format: "int32",
         description:
           "min_length is the minimum length for password, should no less than 8.",
       },
@@ -14137,5 +16183,548 @@ export const schemas: Record<string, SchemaInfo> = {
       },
     ],
     description: "",
+  },
+  "connect-protocol-version": {
+    type: "enum",
+    values: [1],
+    description: "Define the version of the Connect protocol",
+  },
+  "connect.error": {
+    type: "object",
+    properties: [
+      {
+        name: "code",
+        type: "string",
+        description:
+          "The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].",
+      },
+      {
+        name: "details",
+        type: "array<connect.error_details.Any>",
+        description:
+          "A list of messages that carry the error details. There is no limit on the number of messages.",
+        items: {
+          name: "item",
+          type: "connect.error_details.Any",
+        },
+      },
+      {
+        name: "message",
+        type: "string",
+        description:
+          "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.",
+      },
+    ],
+    description:
+      "Error type returned by Connect: https://connectrpc.com/docs/go/errors/#http-representation",
+  },
+  "connect.error_details.Any": {
+    type: "object",
+    properties: [
+      {
+        name: "debug",
+        type: "object",
+        description: "Detailed error information.",
+      },
+      {
+        name: "type",
+        type: "string",
+        description:
+          "A URL that acts as a globally unique identifier for the type of the serialized message. For example: `type.googleapis.com/google.rpc.ErrorInfo`. This is used to determine the schema of the data in the `value` field and is the discriminator for the `debug` field.",
+      },
+      {
+        name: "value",
+        type: "string",
+        format: "binary",
+        description:
+          "The Protobuf message, serialized as bytes and base64-encoded. The specific message type is identified by the `type` field.",
+      },
+    ],
+    description:
+      "Contains an arbitrary serialized message along with a @type that describes the type of the serialized message, with an additional debug field for ConnectRPC error details.",
+  },
+  "google.api.HttpBody": {
+    type: "object",
+    properties: [
+      {
+        name: "contentType",
+        type: "string",
+        description:
+          "The HTTP Content-Type header value specifying the content type of the body.",
+      },
+      {
+        name: "data",
+        type: "string",
+        format: "byte",
+        description: "The HTTP request/response body as raw binary.",
+      },
+      {
+        name: "extensions",
+        type: "array<google.protobuf.Any>",
+        description:
+          "Application specific response metadata. Must be set in the first response\n for streaming APIs.",
+        items: {
+          name: "item",
+          type: "google.protobuf.Any",
+        },
+      },
+    ],
+    description:
+      "Message that represents an arbitrary HTTP body. It should only be used for\n payload formats that can't be represented as JSON, such as raw binary or\n an HTML page.\n\n\n This message can be used both in streaming and non-streaming API methods in\n the request as well as the response.\n\n It can be used as a top-level request field, which is convenient if one\n wants to extract parameters from either the URL or HTTP template into the\n request fields and also want access to the raw HTTP body.\n\n Example:\n\n     message GetResourceRequest {\n       // A unique request id.\n       string request_id = 1;\n\n       // The raw HTTP body is bound to this field.\n       google.api.HttpBody http_body = 2;\n\n     }\n\n     service ResourceService {\n       rpc GetResource(GetResourceRequest)\n         returns (google.api.HttpBody);\n       rpc UpdateResource(google.api.HttpBody)\n         returns (google.protobuf.Empty);\n\n     }\n\n Example with streaming methods:\n\n     service CaldavService {\n       rpc GetCalendar(stream google.api.HttpBody)\n         returns (stream google.api.HttpBody);\n       rpc UpdateCalendar(stream google.api.HttpBody)\n         returns (stream google.api.HttpBody);\n\n     }\n\n Use of this type only changes how the request and response bodies are\n handled, all other features will continue to work unchanged.",
+  },
+  "google.api.expr.v1alpha1.Constant": {
+    type: "object",
+    properties: [
+      {
+        name: "boolValue",
+        type: "boolean",
+        description: "boolean value.",
+      },
+      {
+        name: "bytesValue",
+        type: "string",
+        format: "byte",
+        description: "bytes value.",
+      },
+      {
+        name: "doubleValue",
+        type: "number",
+        format: "double",
+        description: "double value.",
+      },
+      {
+        name: "durationValue",
+        type: "google.protobuf.Duration",
+        description:
+          "protobuf.Duration value.\n\n Deprecated: duration is no longer considered a builtin cel type.",
+      },
+      {
+        name: "int64Value",
+        type: "integer",
+        format: "int64",
+        description: "int64 value.",
+      },
+      {
+        name: "nullValue",
+        type: "google.protobuf.NullValue",
+        description: "null value.",
+      },
+      {
+        name: "stringValue",
+        type: "string",
+        description: "string value.",
+      },
+      {
+        name: "timestampValue",
+        type: "google.protobuf.Timestamp",
+        description:
+          "protobuf.Timestamp value.\n\n Deprecated: timestamp is no longer considered a builtin cel type.",
+      },
+      {
+        name: "uint64Value",
+        type: "integer",
+        format: "int64",
+        description: "uint64 value.",
+      },
+    ],
+    description:
+      "Represents a primitive literal.\n\n Named 'Constant' here for backwards compatibility.\n\n This is similar as the primitives supported in the well-known type\n `google.protobuf.Value`, but richer so it can represent CEL's full range of\n primitives.\n\n Lists and structs are not included as constants as these aggregate types may\n contain [Expr][google.api.expr.v1alpha1.Expr] elements which require\n evaluation and are thus not constant.\n\n Examples of literals include: `\"hello\"`, `b'bytes'`, `1u`, `4.2`, `-2`,\n `true`, `null`.",
+  },
+  "google.api.expr.v1alpha1.Expr": {
+    type: "object",
+    properties: [
+      {
+        name: "callExpr",
+        type: "google.api.expr.v1alpha1.Expr.Call",
+        description:
+          "A call expression, including calls to predefined functions and operators.",
+      },
+      {
+        name: "comprehensionExpr",
+        type: "google.api.expr.v1alpha1.Expr.Comprehension",
+        description: "A comprehension expression.",
+      },
+      {
+        name: "constExpr",
+        type: "google.api.expr.v1alpha1.Constant",
+        description: "A literal expression.",
+      },
+      {
+        name: "id",
+        type: "integer",
+        format: "int64",
+        description:
+          "Required. An id assigned to this node by the parser which is unique in a\n given expression tree. This is used to associate type information and other\n attributes to a node in the parse tree.",
+      },
+      {
+        name: "identExpr",
+        type: "google.api.expr.v1alpha1.Expr.Ident",
+        description: "An identifier expression.",
+      },
+      {
+        name: "listExpr",
+        type: "google.api.expr.v1alpha1.Expr.CreateList",
+        description: "A list creation expression.",
+      },
+      {
+        name: "selectExpr",
+        type: "google.api.expr.v1alpha1.Expr.Select",
+        description: "A field selection expression, e.g. `request.auth`.",
+      },
+      {
+        name: "structExpr",
+        type: "google.api.expr.v1alpha1.Expr.CreateStruct",
+        description: "A map or message creation expression.",
+      },
+    ],
+    description:
+      "An abstract representation of a common expression.\n\n Expressions are abstractly represented as a collection of identifiers,\n select statements, function calls, literals, and comprehensions. All\n operators with the exception of the '.' operator are modelled as function\n calls. This makes it easy to represent new operators into the existing AST.\n\n All references within expressions must resolve to a\n [Decl][google.api.expr.v1alpha1.Decl] provided at type-check for an\n expression to be valid. A reference may either be a bare identifier `name` or\n a qualified identifier `google.api.name`. References may either refer to a\n value or a function declaration.\n\n For example, the expression `google.api.name.startsWith('expr')` references\n the declaration `google.api.name` within a\n [Expr.Select][google.api.expr.v1alpha1.Expr.Select] expression, and the\n function declaration `startsWith`.",
+  },
+  "google.api.expr.v1alpha1.Expr.Call": {
+    type: "object",
+    properties: [
+      {
+        name: "args",
+        type: "array<google.api.expr.v1alpha1.Expr>",
+        description: "The arguments.",
+        items: {
+          name: "item",
+          type: "google.api.expr.v1alpha1.Expr",
+        },
+      },
+      {
+        name: "function",
+        type: "string",
+        description:
+          "Required. The name of the function or method being called.",
+      },
+      {
+        name: "target",
+        type: "google.api.expr.v1alpha1.Expr",
+        description:
+          "The target of an method call-style expression. For example, `x` in\n `x.f()`.",
+      },
+    ],
+    description:
+      "A call expression, including calls to predefined functions and operators.\n\n For example, `value == 10`, `size(map_value)`.",
+  },
+  "google.api.expr.v1alpha1.Expr.Comprehension": {
+    type: "object",
+    properties: [
+      {
+        name: "accuInit",
+        type: "google.api.expr.v1alpha1.Expr",
+        description: "The initial value of the accumulator.",
+      },
+      {
+        name: "accuVar",
+        type: "string",
+        description:
+          "The name of the variable used for accumulation of the result.",
+      },
+      {
+        name: "iterRange",
+        type: "google.api.expr.v1alpha1.Expr",
+        description: "The range over which the comprehension iterates.",
+      },
+      {
+        name: "iterVar",
+        type: "string",
+        description:
+          "The name of the first iteration variable.\n When the iter_range is a list, this variable is the list element.\n When the iter_range is a map, this variable is the map entry key.",
+      },
+      {
+        name: "iterVar2",
+        type: "string",
+        description:
+          "The name of the second iteration variable, empty if not set.\n When the iter_range is a list, this variable is the integer index.\n When the iter_range is a map, this variable is the map entry value.\n This field is only set for comprehension v2 macros.",
+      },
+      {
+        name: "loopCondition",
+        type: "google.api.expr.v1alpha1.Expr",
+        description:
+          "An expression which can contain iter_var, iter_var2, and accu_var.\n\n Returns false when the result has been computed and may be used as\n a hint to short-circuit the remainder of the comprehension.",
+      },
+      {
+        name: "loopStep",
+        type: "google.api.expr.v1alpha1.Expr",
+        description:
+          "An expression which can contain iter_var, iter_var2, and accu_var.\n\n Computes the next value of accu_var.",
+      },
+      {
+        name: "result",
+        type: "google.api.expr.v1alpha1.Expr",
+        description:
+          "An expression which can contain accu_var.\n\n Computes the result.",
+      },
+    ],
+    description:
+      "A comprehension expression applied to a list or map.\n\n Comprehensions are not part of the core syntax, but enabled with macros.\n A macro matches a specific call signature within a parsed AST and replaces\n the call with an alternate AST block. Macro expansion happens at parse\n time.\n\n The following macros are supported within CEL:\n\n Aggregate type macros may be applied to all elements in a list or all keys\n in a map:\n\n *  `all`, `exists`, `exists_one` -  test a predicate expression against\n    the inputs and return `true` if the predicate is satisfied for all,\n    any, or only one value `list.all(x, x < 10)`.\n *  `filter` - test a predicate expression against the inputs and return\n    the subset of elements which satisfy the predicate:\n    `payments.filter(p, p > 1000)`.\n *  `map` - apply an expression to all elements in the input and return the\n    output aggregate type: `[1, 2, 3].map(i, i * i)`.\n\n The `has(m.x)` macro tests whether the property `x` is present in struct\n `m`. The semantics of this macro depend on the type of `m`. For proto2\n messages `has(m.x)` is defined as 'defined, but not set`. For proto3, the\n macro tests whether the property is set to its default. For map and struct\n types, the macro tests whether the property `x` is defined on `m`.\n\n Comprehensions for the standard environment macros evaluation can be best\n visualized as the following pseudocode:\n\n ```\n let `accu_var` = `accu_init`\n for (let `iter_var` in `iter_range`) {\n   if (!`loop_condition`) {\n     break\n   }\n   `accu_var` = `loop_step`\n }\n return `result`\n ```\n\n Comprehensions for the optional V2 macros which support map-to-map\n translation differ slightly from the standard environment macros in that\n they expose both the key or index in addition to the value for each list\n or map entry:\n\n ```\n let `accu_var` = `accu_init`\n for (let `iter_var`, `iter_var2` in `iter_range`) {\n   if (!`loop_condition`) {\n     break\n   }\n   `accu_var` = `loop_step`\n }\n return `result`\n ```",
+  },
+  "google.api.expr.v1alpha1.Expr.CreateList": {
+    type: "object",
+    properties: [
+      {
+        name: "elements",
+        type: "array<google.api.expr.v1alpha1.Expr>",
+        description: "The elements part of the list.",
+        items: {
+          name: "item",
+          type: "google.api.expr.v1alpha1.Expr",
+        },
+      },
+      {
+        name: "optionalIndices",
+        type: "array<integer>",
+        description:
+          "The indices within the elements list which are marked as optional\n elements.\n\n When an optional-typed value is present, the value it contains\n is included in the list. If the optional-typed value is absent, the list\n element is omitted from the CreateList result.",
+        items: {
+          name: "item",
+          type: "integer",
+          format: "int32",
+        },
+      },
+    ],
+    description:
+      "A list creation expression.\n\n Lists may either be homogenous, e.g. `[1, 2, 3]`, or heterogeneous, e.g.\n `dyn([1, 'hello', 2.0])`",
+  },
+  "google.api.expr.v1alpha1.Expr.CreateStruct": {
+    type: "object",
+    properties: [
+      {
+        name: "entries",
+        type: "array<google.api.expr.v1alpha1.Expr.CreateStruct.Entry>",
+        description: "The entries in the creation expression.",
+        items: {
+          name: "item",
+          type: "google.api.expr.v1alpha1.Expr.CreateStruct.Entry",
+        },
+      },
+      {
+        name: "messageName",
+        type: "string",
+        description:
+          "The type name of the message to be created, empty when creating map\n literals.",
+      },
+    ],
+    description:
+      "A map or message creation expression.\n\n Maps are constructed as `{'key_name': 'value'}`. Message construction is\n similar, but prefixed with a type name and composed of field ids:\n `types.MyType{field_id: 'value'}`.",
+  },
+  "google.api.expr.v1alpha1.Expr.CreateStruct.Entry": {
+    type: "object",
+    properties: [
+      {
+        name: "fieldKey",
+        type: "string",
+        description: "The field key for a message creator statement.",
+      },
+      {
+        name: "id",
+        type: "integer",
+        format: "int64",
+        description:
+          "Required. An id assigned to this node by the parser which is unique\n in a given expression tree. This is used to associate type\n information and other attributes to the node.",
+      },
+      {
+        name: "mapKey",
+        type: "google.api.expr.v1alpha1.Expr",
+        description: "The key expression for a map creation statement.",
+      },
+      {
+        name: "optionalEntry",
+        type: "boolean",
+        description: "Whether the key-value pair is optional.",
+      },
+      {
+        name: "value",
+        type: "google.api.expr.v1alpha1.Expr",
+        description:
+          "Required. The value assigned to the key.\n\n If the optional_entry field is true, the expression must resolve to an\n optional-typed value. If the optional value is present, the key will be\n set; however, if the optional value is absent, the key will be unset.",
+      },
+    ],
+    description: "Represents an entry.",
+  },
+  "google.api.expr.v1alpha1.Expr.Ident": {
+    type: "object",
+    properties: [
+      {
+        name: "name",
+        type: "string",
+        description:
+          "Required. Holds a single, unqualified identifier, possibly preceded by a\n '.'.\n\n Qualified names are represented by the\n [Expr.Select][google.api.expr.v1alpha1.Expr.Select] expression.",
+      },
+    ],
+    description: "An identifier expression. e.g. `request`.",
+  },
+  "google.api.expr.v1alpha1.Expr.Select": {
+    type: "object",
+    properties: [
+      {
+        name: "field",
+        type: "string",
+        description:
+          "Required. The name of the field to select.\n\n For example, in the select expression `request.auth`, the `auth` portion\n of the expression would be the `field`.",
+      },
+      {
+        name: "operand",
+        type: "google.api.expr.v1alpha1.Expr",
+        description:
+          "Required. The target of the selection expression.\n\n For example, in the select expression `request.auth`, the `request`\n portion of the expression is the `operand`.",
+      },
+      {
+        name: "testOnly",
+        type: "boolean",
+        description:
+          "Whether the select is to be interpreted as a field presence test.\n\n This results from the macro `has(request.auth)`.",
+      },
+    ],
+    description: "A field selection expression. e.g. `request.auth`.",
+  },
+  "google.protobuf.Any": {
+    type: "object",
+    properties: [
+      {
+        name: "type",
+        type: "string",
+      },
+      {
+        name: "value",
+        type: "string",
+        format: "binary",
+      },
+    ],
+    description:
+      "Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.",
+  },
+  "google.protobuf.ListValue": {
+    type: "object",
+    properties: [
+      {
+        name: "values",
+        type: "array<google.protobuf.Value>",
+        description: "Repeated field of dynamically typed values.",
+        items: {
+          name: "item",
+          type: "google.protobuf.Value",
+        },
+      },
+    ],
+    description:
+      "`ListValue` is a wrapper around a repeated field of values.\n\n The JSON representation for `ListValue` is JSON array.",
+  },
+  "google.protobuf.NullValue": {
+    type: "enum",
+    values: ["NULL_VALUE"],
+    description:
+      "`NullValue` is a singleton enumeration to represent the null value for the\n `Value` type union.\n\n The JSON representation for `NullValue` is JSON `null`.",
+  },
+  "google.protobuf.Struct.FieldsEntry": {
+    type: "object",
+    properties: [
+      {
+        name: "key",
+        type: "string",
+      },
+      {
+        name: "value",
+        type: "google.protobuf.Value",
+      },
+    ],
+    description: "",
+  },
+  "google.rpc.Status": {
+    type: "object",
+    properties: [
+      {
+        name: "code",
+        type: "integer",
+        format: "int32",
+        description:
+          "The status code, which should be an enum value of\n [google.rpc.Code][google.rpc.Code].",
+      },
+      {
+        name: "details",
+        type: "array<google.protobuf.Any>",
+        description:
+          "A list of messages that carry the error details.  There is a common set of\n message types for APIs to use.",
+        items: {
+          name: "item",
+          type: "google.protobuf.Any",
+        },
+      },
+      {
+        name: "message",
+        type: "string",
+        description:
+          "A developer-facing error message, which should be in English. Any\n user-facing error message should be localized and sent in the\n [google.rpc.Status.details][google.rpc.Status.details] field, or localized\n by the client.",
+      },
+    ],
+    description:
+      "The `Status` type defines a logical error model that is suitable for\n different programming environments, including REST APIs and RPC APIs. It is\n used by [gRPC](https://github.com/grpc). Each `Status` message contains\n three pieces of data: error code, error message, and error details.\n\n You can find out more about this error model and how to work with it in the\n [API Design Guide](https://cloud.google.com/apis/design/errors).",
+  },
+  "google.type.Color": {
+    type: "object",
+    properties: [
+      {
+        name: "alpha",
+        type: "google.protobuf.FloatValue",
+        description:
+          "The fraction of this color that should be applied to the pixel. That is,\n the final pixel color is defined by the equation:\n\n   `pixel color = alpha * (this color) + (1.0 - alpha) * (background color)`\n\n This means that a value of 1.0 corresponds to a solid color, whereas\n a value of 0.0 corresponds to a completely transparent color. This\n uses a wrapper message rather than a simple float scalar so that it is\n possible to distinguish between a default value and the value being unset.\n If omitted, this color object is rendered as a solid color\n (as if the alpha value had been explicitly given a value of 1.0).",
+      },
+      {
+        name: "blue",
+        type: "number",
+        format: "float",
+        description:
+          "The amount of blue in the color as a value in the interval [0, 1].",
+      },
+      {
+        name: "green",
+        type: "number",
+        format: "float",
+        description:
+          "The amount of green in the color as a value in the interval [0, 1].",
+      },
+      {
+        name: "red",
+        type: "number",
+        format: "float",
+        description:
+          "The amount of red in the color as a value in the interval [0, 1].",
+      },
+    ],
+    description:
+      "Represents a color in the RGBA color space. This representation is designed\n for simplicity of conversion to/from color representations in various\n languages over compactness. For example, the fields of this representation\n can be trivially provided to the constructor of `java.awt.Color` in Java; it\n can also be trivially provided to UIColor's `+colorWithRed:green:blue:alpha`\n method in iOS; and, with just a little work, it can be easily formatted into\n a CSS `rgba()` string in JavaScript.\n\n This reference page doesn't carry information about the absolute color\n space\n that should be used to interpret the RGB value (e.g. sRGB, Adobe RGB,\n DCI-P3, BT.2020, etc.). By default, applications should assume the sRGB color\n space.\n\n When color equality needs to be decided, implementations, unless\n documented otherwise, treat two colors as equal if all their red,\n green, blue, and alpha values each differ by at most 1e-5.\n\n Example (Java):\n\n      import com.google.type.Color;\n\n      // ...\n      public static java.awt.Color fromProto(Color protocolor) {\n        float alpha = protocolor.hasAlpha()\n            ? protocolor.getAlpha().getValue()\n            : 1.0;\n\n        return new java.awt.Color(\n            protocolor.getRed(),\n            protocolor.getGreen(),\n            protocolor.getBlue(),\n            alpha);\n      }\n\n      public static Color toProto(java.awt.Color color) {\n        float red = (float) color.getRed();\n        float green = (float) color.getGreen();\n        float blue = (float) color.getBlue();\n        float denominator = 255.0;\n        Color.Builder resultBuilder =\n            Color\n                .newBuilder()\n                .setRed(red / denominator)\n                .setGreen(green / denominator)\n                .setBlue(blue / denominator);\n        int alpha = color.getAlpha();\n        if (alpha != 255) {\n          result.setAlpha(\n              FloatValue\n                  .newBuilder()\n                  .setValue(((float) alpha) / denominator)\n                  .build());\n        }\n        return resultBuilder.build();\n      }\n      // ...\n\n Example (iOS / Obj-C):\n\n      // ...\n      static UIColor* fromProto(Color* protocolor) {\n         float red = [protocolor red];\n         float green = [protocolor green];\n         float blue = [protocolor blue];\n         FloatValue* alpha_wrapper = [protocolor alpha];\n         float alpha = 1.0;\n         if (alpha_wrapper != nil) {\n           alpha = [alpha_wrapper value];\n         }\n         return [UIColor colorWithRed:red green:green blue:blue alpha:alpha];\n      }\n\n      static Color* toProto(UIColor* color) {\n          CGFloat red, green, blue, alpha;\n          if (![color getRed:&red green:&green blue:&blue alpha:&alpha]) {\n            return nil;\n          }\n          Color* result = [[Color alloc] init];\n          [result setRed:red];\n          [result setGreen:green];\n          [result setBlue:blue];\n          if (alpha <= 0.9999) {\n            [result setAlpha:floatWrapperWithValue(alpha)];\n          }\n          [result autorelease];\n          return result;\n     }\n     // ...\n\n  Example (JavaScript):\n\n     // ...\n\n     var protoToCssColor = function(rgb_color) {\n        var redFrac = rgb_color.red || 0.0;\n        var greenFrac = rgb_color.green || 0.0;\n        var blueFrac = rgb_color.blue || 0.0;\n        var red = Math.floor(redFrac * 255);\n        var green = Math.floor(greenFrac * 255);\n        var blue = Math.floor(blueFrac * 255);\n\n        if (!('alpha' in rgb_color)) {\n           return rgbToCssColor(red, green, blue);\n        }\n\n        var alphaFrac = rgb_color.alpha.value || 0.0;\n        var rgbParams = [red, green, blue].join(',');\n        return ['rgba(', rgbParams, ',', alphaFrac, ')'].join('');\n     };\n\n     var rgbToCssColor = function(red, green, blue) {\n       var rgbNumber = new Number((red << 16) | (green << 8) | blue);\n       var hexString = rgbNumber.toString(16);\n       var missingZeros = 6 - hexString.length;\n       var resultBuilder = ['#'];\n       for (var i = 0; i < missingZeros; i++) {\n          resultBuilder.push('0');\n       }\n       resultBuilder.push(hexString);\n       return resultBuilder.join('');\n     };\n\n     // ...",
+  },
+  "google.type.Expr": {
+    type: "object",
+    properties: [
+      {
+        name: "description",
+        type: "string",
+        description:
+          "Optional. Description of the expression. This is a longer text which\n describes the expression, e.g. when hovered over it in a UI.",
+      },
+      {
+        name: "expression",
+        type: "string",
+        description:
+          "Textual representation of an expression in Common Expression Language\n syntax.",
+      },
+      {
+        name: "location",
+        type: "string",
+        description:
+          "Optional. String indicating the location of the expression for error\n reporting, e.g. a file name and a position in the file.",
+      },
+      {
+        name: "title",
+        type: "string",
+        description:
+          "Optional. Title for the expression, i.e. a short string describing\n its purpose. This can be used e.g. in UIs which allow to enter the\n expression.",
+      },
+    ],
+    description:
+      'Represents a textual expression in the Common Expression Language (CEL)\n syntax. CEL is a C-like expression language. The syntax and semantics of CEL\n are documented at https://github.com/google/cel-spec.\n\n Example (Comparison):\n\n     title: "Summary size limit"\n     description: "Determines if a summary is less than 100 chars"\n     expression: "document.summary.size() < 100"\n\n Example (Equality):\n\n     title: "Requestor is owner"\n     description: "Determines if requestor is the document owner"\n     expression: "document.owner == request.auth.claims.email"\n\n Example (Logic):\n\n     title: "Public documents"\n     description: "Determine whether the document should be publicly visible"\n     expression: "document.type != \'private\' && document.type != \'internal\'"\n\n Example (Data Manipulation):\n\n     title: "Notification string"\n     description: "Create a notification string with a timestamp."\n     expression: "\'New message received at \' + string(document.create_time)"\n\n The exact variables and functions that may be referenced within an expression\n are determined by the service that evaluates it. See the service\n documentation for additional information.',
   },
 };

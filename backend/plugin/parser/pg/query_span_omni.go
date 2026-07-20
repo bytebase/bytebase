@@ -779,6 +779,11 @@ func (e *omniQuerySpanExtractor) resolveVar(queryStack []*catalog.Query, v *cata
 		if rel == nil || rel.Schema == nil {
 			return
 		}
+		// Standalone composite types are not FROM-able; a valid analysis
+		// never produces such an RTE, so treat it as unresolved.
+		if rel.RelKind == 'c' {
+			return
+		}
 		colName := ""
 		if colIdx >= 0 && colIdx < len(rte.ColNames) {
 			colName = rte.ColNames[colIdx]
@@ -1062,6 +1067,11 @@ func (e *omniQuerySpanExtractor) extractColumnsFromRangeVar(rv *ast.RangeVar) []
 		}
 	}
 	if rel == nil {
+		return nil
+	}
+	// Standalone composite types share the relation namespace but are not
+	// FROM-able; PostgreSQL rejects them as table sources.
+	if rel.RelKind == 'c' {
 		return nil
 	}
 	var results []base.QuerySpanResult

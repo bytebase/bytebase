@@ -119,6 +119,10 @@ message SchemaMetadata {
   repeated EnumTypeMetadata enum_types = 15;
 
   bool skip_dump = 16;
+
+  // The list of user-defined composite types in a schema (PostgreSQL family,
+  // CREATE TYPE ... AS). Excludes table/view row types and derived types.
+  repeated CompositeTypeMetadata composite_types = 17;
 }
 
 message EnumTypeMetadata {
@@ -131,6 +135,33 @@ message EnumTypeMetadata {
   string comment = 3;
 
   bool skip_dump = 4;
+}
+
+message CompositeTypeMetadata {
+  // The name of the composite type.
+  string name = 1;
+
+  // The ordered attributes of the composite type.
+  repeated CompositeTypeAttribute attributes = 2;
+
+  string comment = 3;
+
+  bool skip_dump = 4;
+}
+
+message CompositeTypeAttribute {
+  // The name of the attribute.
+  string name = 1;
+
+  // The attribute type. User-defined types are always schema-qualified.
+  string type = 2;
+
+  // The non-default collation of the attribute as an emit-ready SQL
+  // identifier reference (quoted as needed, schema-qualified when outside
+  // pg_catalog), empty otherwise. e.g. `"C"` or `locale.en_us`.
+  string collation = 3;
+
+  string comment = 4;
 }
 
 message EventMetadata {

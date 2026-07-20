@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { type LoaderFunctionArgs, redirect } from "react-router-dom";
+import { type LoaderFunctionArgs, redirect } from "react-router";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
 import { shouldStayOnPlanDetailPage } from "@/react/pages/project/plan-detail/utils/header";
 import { issueNamePrefix, projectNamePrefix } from "@/store/modules/v1/common";
@@ -10,16 +10,13 @@ import {
 import { GetPlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { extractPlanUID } from "@/utils/v1/issue/plan";
 
-// BYT-9721: Plan Detail is the canonical review surface for schema/data change
-// plans (3.20.0). This route loader redirects the issue-detail route to Plan
-// Detail for those issues, preserving the query string. Create-database, export,
-// and grant issues stay on Issue Detail.
+// Plan Detail is the canonical review surface for Draft Review Issues and
+// schema/data change plans. Drafts redirect directly from their linked plan;
+// submitted create-database, export, and grant issues stay on Issue Detail.
 //
-// The discriminator is the plan's specs, not the issue type: schema-change and
-// create-database share the DATABASE_CHANGE proto type, so we fetch the plan and
-// redirect iff `shouldStayOnPlanDetailPage` — the same predicate Plan Detail's
-// own `useRedirects` uses to decide staying. Sharing it guarantees the two can't
-// ping-pong (issue -> plan -> issue -> ...).
+// For submitted DATABASE_CHANGE issues, the plan specs distinguish schema
+// changes from create-database plans. Drafts do not need that fetch: their
+// lifecycle and metadata always belong on the linked Plan Detail surface.
 //
 // Every issue-detail entry point navigates to this route by name, so this single
 // guard covers deep links, inbox/notifications, and review CTAs without patching
@@ -38,9 +35,21 @@ export async function issueDetailRedirectLoader({
         name: `${projectNamePrefix}${projectId}/${issueNamePrefix}${issueId}`,
       })
     );
-    // Export and grant issues stay on Issue Detail; skip the plan fetch for them.
-    // (DATABASE_CHANGE covers both schema-change and create-database.)
-    if (issue.type !== Issue_Type.DATABASE_CHANGE || !issue.plan) {
+    if (!issue.plan) {
+      return null;
+    }
+    // A Draft Review Issue is edited and submitted from Plan Detail regardless
+    // of plan spec type. Its plan name is already sufficient, so avoid an
+    // unnecessary GetPlan request.
+    if (issue.draft) {
+      const planId = extractPlanUID(issue.plan);
+      if (!planId) return null;
+      const { search } = new URL(request.url);
+      return redirect(`/projects/${projectId}/plans/${planId}${search}`);
+    }
+    // Submitted export and grant issues stay on Issue Detail; skip the plan
+    // fetch for them. DATABASE_CHANGE remains ambiguous until the plan loads.
+    if (issue.type !== Issue_Type.DATABASE_CHANGE) {
       return null;
     }
     // DATABASE_CHANGE is ambiguous (schema-change vs create-database); the plan's

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/pkg/errors"
@@ -39,6 +40,10 @@ type PlanCheckRunMessage struct {
 
 	Status PlanCheckRunStatus
 	Result *storepb.PlanCheckRunResult
+	// Generation is the PostgreSQL row-version token. It changes whenever the
+	// durable check row changes, including a same-version rerun that preserves
+	// the row UID.
+	Generation int64
 }
 
 // FindPlanCheckRunMessage is the message for finding plan check runs.
@@ -65,6 +70,20 @@ func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMess
 		return false, errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
+	if err := acquirePlanIssueRolloutAdvisoryLock(ctx, tx, create.ProjectID, create.PlanUID); err != nil {
+		return false, errors.Wrap(err, "failed to acquire Plan review lock for Plan check run")
+	}
+	var lockedPlanUID int64
+	if err := tx.QueryRowContext(ctx, `
+		SELECT id
+		FROM plan
+		WHERE project = $1 AND id = $2
+		FOR UPDATE`, create.ProjectID, create.PlanUID).Scan(&lockedPlanUID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, errors.Wrap(err, "failed to lock Plan for Plan check run")
+	}
 
 	nextID, err := nextProjectID(ctx, tx, "plan_check_run", create.ProjectID)
 	if err != nil {
@@ -119,7 +138,8 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 			plan_check_run.project,
 			plan_check_run.plan_id,
 			plan_check_run.status,
-			plan_check_run.result
+			plan_check_run.result,
+			plan_check_run.xmin::text::bigint
 		FROM plan_check_run
 		WHERE TRUE`)
 	if v := find.ProjectID; v != "" {
@@ -176,6 +196,7 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 			&planCheckRun.PlanUID,
 			&planCheckRun.Status,
 			&result,
+			&planCheckRun.Generation,
 		); err != nil {
 			return nil, err
 		}

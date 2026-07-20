@@ -1012,6 +1012,8 @@
     "create-gcp-credentials": "创建凭据的方法见",
     "database-region": "数据库区域",
     "default-role": "默认角色",
+    "delete-active-confirmation": "实例“{{name}}”当前处于活动状态。Bytebase 将先归档该实例，然后永久删除它。此操作无法撤销。请输入实例 ID “{{id}}” 以确认。",
+    "delete-confirmation": "这将永久删除实例“{{name}}”。此操作无法撤销。请输入实例 ID “{{id}}” 以确认。",
     "endpoint": "端点",
     "external-id": "外部 ID",
     "external-id-description": "承担角色时用于额外安全性的外部 ID（可选）",
@@ -1520,7 +1522,6 @@
   "plan": {
     "add-spec": "添加变更",
     "add-spec-pending-draft": "请先保存或放弃当前的待处理变更，然后再添加新变更",
-    "cannot-create": "无法创建变更计划",
     "checks": {
       "completed": "已完成计划检查",
       "failed-to-run": "运行计划检查失败",
@@ -1533,6 +1534,7 @@
     "description": {
       "placeholder": "添加描述"
     },
+    "draft-update-permission-required": "你可以查看此草稿，但需要 bb.issues.update 才能编辑标签或提交审批。",
     "editor": {
       "save-changes-before-continuing": "请保存或取消更改，然后再继续"
     },
@@ -1564,6 +1566,7 @@
       "gate-review-approved": "变更已批准",
       "gate-review-pending": "审批中",
       "gate-review-rejected": "请求变更",
+      "incomplete": "不完整",
       "preparing-rollout": "正在准备发布…",
       "rejected": "已拒绝",
       "rerun": "重新执行",
@@ -1659,6 +1662,11 @@
         "re-request-review": "重新发起审批",
         "title": "被 {{user}} 拒绝"
       }
+    },
+    "rollback": {
+      "description_one": "回滚发布 #{{rolloutId}} 中选中的 1 个任务。",
+      "description_other": "回滚发布 #{{rolloutId}} 中选中的 {{count}} 个任务。",
+      "title": "回滚发布 #{{rolloutId}}"
     },
     "run": "重新检查",
     "select-isolation-level": "选择隔离级别",

@@ -7,6 +7,7 @@ export type RouterLinkProps = Omit<
 > & {
   to: RouteTarget;
   children?: ReactNode;
+  preventScrollReset?: boolean;
 };
 
 export function RouterLink({
@@ -15,6 +16,7 @@ export function RouterLink({
   onClick,
   target,
   download,
+  preventScrollReset,
   ...props
 }: RouterLinkProps) {
   const href = router.resolve(to).href;
@@ -35,7 +37,13 @@ export function RouterLink({
     }
 
     event.preventDefault();
-    router.push(to);
+    // Branch instead of always forwarding `{ preventScrollReset: undefined }`:
+    // many tests across the app assert the bare `router.push(to)` call shape.
+    if (preventScrollReset) {
+      router.push(to, { preventScrollReset });
+    } else {
+      router.push(to);
+    }
   };
 
   return (

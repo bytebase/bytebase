@@ -47,7 +47,9 @@ const RULE_SELECT_RENDER_CHUNK_SIZE = 64;
 interface RulesSelectPanelProps {
   show: boolean;
   selectedRuleMap: Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>;
+  selectedEngine?: Engine;
   onClose: () => void;
+  onSelectedEngineChange?: (engine: Engine) => void;
   onRuleSelect: (rule: RuleTemplateV2) => void;
   onRuleRemove: (rule: RuleTemplateV2) => void;
 }
@@ -55,7 +57,9 @@ interface RulesSelectPanelProps {
 export function RulesSelectPanel({
   show,
   selectedRuleMap,
+  selectedEngine,
   onClose,
+  onSelectedEngineChange,
   onRuleSelect,
   onRuleRemove,
 }: RulesSelectPanelProps) {
@@ -121,7 +125,12 @@ export function RulesSelectPanel({
           <SheetTitle>{t("sql-review.select-review-rules")}</SheetTitle>
         </SheetHeader>
         <SheetBody className="p-4">
-          <TabsByEngine ruleMapByEngine={ruleTemplateMapV2} lazyPanels>
+          <TabsByEngine
+            ruleMapByEngine={ruleTemplateMapV2}
+            lazyPanels
+            selectedEngine={selectedEngine}
+            onSelectedEngineChange={onSelectedEngineChange}
+          >
             {(ruleList, engine) => (
               <RuleSelectListWithFilter
                 engine={engine}

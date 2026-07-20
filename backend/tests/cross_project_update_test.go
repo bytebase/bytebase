@@ -9,7 +9,9 @@ import (
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -66,6 +68,111 @@ func TestCollisionUpdateIssueNoCrossProjectEffect(t *testing.T) {
 		"project B's issue title leaked from project A update")
 	a.Equal(issueBBefore.Msg.Status, issueBAfter.Msg.Status,
 		"project B's issue status leaked from project A update")
+}
+
+// TestCollisionCreateRolloutIsolation verifies that the review module's
+// transactional Plan/task writes stay scoped to the full project/ID keys.
+func TestCollisionCreateRolloutIsolation(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	fixture := setupCollidingProjects(ctx, t, ctl)
+	fixture.completeRolloutB(ctx, t, ctl)
+	aAfter := snapshotProject(ctx, t, ctl, fixture.ProjectA)
+	assertProjectUnchanged(t, fixture.BaselineA, aAfter, "project A after project B rollout")
+}
+
+// TestCollisionBatchRunTasksNoCrossProjectEffect verifies that creating a
+// pending task run in project B cannot mutate project A's colliding task or
+// task_run rows.
+func TestCollisionBatchRunTasksNoCrossProjectEffect(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	fixture := setupCollidingProjects(ctx, t, ctl)
+	a.Greater(len(fixture.BaselineA.TaskRuns), 0, "project A should have task_runs")
+
+	rolloutB, err := ctl.rolloutServiceClient.CreateRollout(ctx,
+		connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: fixture.PlanB.Name}))
+	a.NoError(err)
+	a.Greater(len(rolloutB.Msg.Stages), 0, "project B rollout should have stages")
+	a.Greater(len(rolloutB.Msg.Stages[0].Tasks), 0, "project B rollout should have tasks")
+	taskB := rolloutB.Msg.Stages[0].Tasks[0]
+
+	_, err = ctl.rolloutServiceClient.BatchRunTasks(ctx,
+		connect.NewRequest(&v1pb.BatchRunTasksRequest{
+			Parent:  rolloutB.Msg.Stages[0].Name,
+			Tasks:   []string{taskB.Name},
+			RunTime: timestamppb.New(time.Now().Add(time.Hour)),
+		}))
+	a.NoError(err)
+
+	assertTasksCollide(ctx, t, ctl, fixture)
+	assertTaskRunsCollide(ctx, t, ctl, fixture)
+	aAfter := snapshotProject(ctx, t, ctl, fixture.ProjectA)
+	assertProjectUnchanged(t, fixture.BaselineA, aAfter, "project A after project B task run creation")
+}
+
+// TestCollisionBatchSkipTasksNoCrossProjectEffect verifies that skipping a
+// task in project B cannot mark project A's same-id task as skipped.
+func TestCollisionBatchSkipTasksNoCrossProjectEffect(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	fixture := setupCollidingProjects(ctx, t, ctl)
+	a.Greater(len(fixture.BaselineA.TaskRuns), 0, "project A should have task_runs")
+
+	rolloutA, err := ctl.rolloutServiceClient.GetRollout(ctx,
+		connect.NewRequest(&v1pb.GetRolloutRequest{Name: fixture.PlanA.Name + "/rollout"}))
+	a.NoError(err)
+	rolloutB, err := ctl.rolloutServiceClient.CreateRollout(ctx,
+		connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: fixture.PlanB.Name}))
+	a.NoError(err)
+	a.Greater(len(rolloutA.Msg.Stages), 0, "project A rollout should have stages")
+	a.Greater(len(rolloutA.Msg.Stages[0].Tasks), 0, "project A rollout should have tasks")
+	a.Greater(len(rolloutB.Msg.Stages), 0, "project B rollout should have stages")
+	a.Greater(len(rolloutB.Msg.Stages[0].Tasks), 0, "project B rollout should have tasks")
+	taskA := rolloutA.Msg.Stages[0].Tasks[0]
+	taskB := rolloutB.Msg.Stages[0].Tasks[0]
+	_, _, _, taskAID, err := common.GetProjectIDPlanIDStageIDTaskID(taskA.Name)
+	a.NoError(err)
+	_, _, _, taskBID, err := common.GetProjectIDPlanIDStageIDTaskID(taskB.Name)
+	a.NoError(err)
+	a.Equal(taskAID, taskBID, "project A and B task IDs should collide")
+
+	_, err = ctl.rolloutServiceClient.BatchSkipTasks(ctx,
+		connect.NewRequest(&v1pb.BatchSkipTasksRequest{
+			Parent: rolloutB.Msg.Stages[0].Name,
+			Tasks:  []string{taskB.Name},
+			Reason: "collision isolation",
+		}))
+	a.NoError(err)
+	rolloutBAfter, err := ctl.rolloutServiceClient.GetRollout(ctx,
+		connect.NewRequest(&v1pb.GetRolloutRequest{Name: rolloutB.Msg.Name}))
+	a.NoError(err)
+	a.Equal(v1pb.Task_SKIPPED, rolloutBAfter.Msg.Stages[0].Tasks[0].Status,
+		"project B task should be skipped")
+
+	aAfter := snapshotProject(ctx, t, ctl, fixture.ProjectA)
+	assertProjectUnchanged(t, fixture.BaselineA, aAfter, "project A after project B task skip")
 }
 
 // TestCollisionListPlansIsolation verifies that ListPlans scoped to project A

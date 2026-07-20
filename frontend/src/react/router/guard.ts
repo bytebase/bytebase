@@ -1,4 +1,4 @@
-import { redirect } from "react-router-dom";
+import { redirect } from "react-router";
 import { useAppStore } from "@/react/stores/app";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -190,6 +190,14 @@ export function rootGuard({
 
   const store = useAppStore.getState();
   const isLoggedIn = store.isLoggedIn();
+
+  if (toName === AUTH_SIGNUP_MODULE && store.isSaaSMode()) {
+    return redirect(
+      resolvePath(AUTH_SIGNIN_MODULE, {
+        query: Object.fromEntries(url.searchParams),
+      })
+    );
+  }
 
   // Allow 2FA setup / password reset / profile setup for logged-in users.
   if (

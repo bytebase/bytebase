@@ -310,3 +310,39 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 	}
 	return qb.Q().Space("(?)", q), nil
 }
+
+// GetListQueryHistoriesCreatorFilter parses the ListQueryHistories filter,
+// which supports only `creator == "users/{email}"`, and returns the creator
+// email. Returns nil when the filter is empty.
+func GetListQueryHistoriesCreatorFilter(filter string) (*string, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, errors.Errorf("failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	expr := ast.NativeRep().Expr()
+	if expr.Kind() != celast.CallKind || expr.AsCall().FunctionName() != celoperators.Equals {
+		return nil, errors.Errorf(`only 'creator == "users/{email}"' filter is supported`)
+	}
+	variable, value := getVariableAndValueFromExpr(expr)
+	if variable != "creator" {
+		return nil, errors.Errorf(`unsupport variable %q, only "creator" is supported`, variable)
+	}
+	strValue, ok := value.(string)
+	if !ok {
+		return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
+	}
+	email, err := common.GetUserEmail(strValue)
+	if err != nil {
+		return nil, errors.Errorf("invalid creator filter %q, expect users/{email}", strValue)
+	}
+	return &email, nil
+}

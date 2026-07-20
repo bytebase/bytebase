@@ -1,6 +1,8 @@
+import type { MouseEventHandler, ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { ProjectTable } from "./ProjectTable";
 
@@ -17,6 +19,37 @@ vi.mock("@/react/components/ui/ellipsis-text", () => ({
   EllipsisText: ({ children }: { children: React.ReactNode }) => (
     <span>{children}</span>
   ),
+}));
+
+vi.mock("@/react/components/ProjectLabel", () => ({
+  ProjectLabel: ({
+    children,
+    className,
+    link,
+    onClick,
+    projectName,
+  }: {
+    children: ReactNode;
+    className?: string;
+    link?: boolean;
+    onClick?: MouseEventHandler<HTMLAnchorElement>;
+    projectName: string;
+  }) =>
+    link ? (
+      <a
+        className={className}
+        data-project-name={projectName}
+        data-project-id={projectName.split("/").at(-1)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick?.(e);
+        }}
+      >
+        {children}
+      </a>
+    ) : (
+      <span className={className}>{children}</span>
+    ),
 }));
 
 const project = {
@@ -43,37 +76,26 @@ describe("ProjectTable", () => {
     vi.clearAllMocks();
   });
 
-  test("renders project ID and title as links when a row href is provided", () => {
+  test("renders project ID as text and title as a settings table link", () => {
     act(() => {
-      root.render(
-        <ProjectTable
-          projectList={[project]}
-          getRowHref={() => "/projects/sample/issues"}
-        />
-      );
+      root.render(<ProjectTable projectList={[project]} showActions />);
     });
 
     const links = [...container.querySelectorAll("a")];
-    expect(links).toHaveLength(2);
-    expect(links.map((link) => link.getAttribute("href"))).toEqual([
-      "/projects/sample/issues",
-      "/projects/sample/issues",
-    ]);
-    expect(links.map((link) => link.textContent)).toEqual([
-      "sample",
-      "Sample Project",
-    ]);
+    expect(links).toHaveLength(1);
+    expect(links[0].dataset.projectName).toBe("projects/sample");
+    expect(links[0].dataset.projectId).toBe("sample");
+    expect(links[0].textContent).toBe("Sample Project");
+    expect(container.textContent).toContain("sample");
   });
 
-  test("keeps plain clicks on row links native without a row click handler", () => {
+  test("keeps plain clicks on settings table links native without a row click handler", () => {
     act(() => {
-      root.render(
-        <ProjectTable projectList={[project]} getRowHref={() => "#sample"} />
-      );
+      root.render(<ProjectTable projectList={[project]} showActions />);
     });
 
     const links = [...container.querySelectorAll("a")];
-    expect(links).toHaveLength(2);
+    expect(links).toHaveLength(1);
     for (const link of links) {
       const notPrevented = link.dispatchEvent(
         new MouseEvent("click", {
@@ -85,63 +107,88 @@ describe("ProjectTable", () => {
     }
   });
 
-  test("routes plain clicks on row links through the row click handler", () => {
+  test("routes plain row clicks through the row click handler", () => {
     const onRowClick = vi.fn();
 
     act(() => {
       root.render(
         <ProjectTable
           projectList={[project]}
-          getRowHref={() => "/projects/sample/issues"}
+          showActions
           onRowClick={onRowClick}
         />
       );
     });
 
-    const links = [...container.querySelectorAll("a")];
-    expect(links).toHaveLength(2);
-    for (const link of links) {
-      const event = new MouseEvent("click", {
-        bubbles: true,
-        cancelable: true,
-      });
-      const notPrevented = link.dispatchEvent(event);
-      expect(notPrevented).toBe(false);
-    }
+    expect(container.querySelectorAll("a")).toHaveLength(0);
 
-    expect(onRowClick).toHaveBeenCalledTimes(2);
-    expect(onRowClick.mock.calls.map((call) => call[0])).toEqual([
-      project,
-      project,
-    ]);
+    const row = container.querySelector("tbody tr");
+    expect(row).not.toBeNull();
+    const event = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+    });
+    const notPrevented = row?.dispatchEvent(event);
+    expect(notPrevented).toBe(true);
+
+    expect(onRowClick).toHaveBeenCalledTimes(1);
+    expect(onRowClick.mock.calls[0][0]).toBe(project);
   });
 
-  test("keeps modified clicks on row links native", () => {
+  test("passes modified row clicks through the row click handler", () => {
     const onRowClick = vi.fn();
 
     act(() => {
       root.render(
         <ProjectTable
           projectList={[project]}
-          getRowHref={() => "#sample"}
+          showActions
           onRowClick={onRowClick}
         />
       );
     });
 
-    const links = [...container.querySelectorAll("a")];
-    expect(links).toHaveLength(2);
-    for (const link of links) {
-      const modifiedNotPrevented = link.dispatchEvent(
-        new MouseEvent("click", {
-          bubbles: true,
-          cancelable: true,
-          metaKey: true,
-        })
-      );
-      expect(modifiedNotPrevented).toBe(true);
-    }
+    expect(container.querySelectorAll("a")).toHaveLength(0);
 
-    expect(onRowClick).not.toHaveBeenCalled();
+    const row = container.querySelector("tbody tr");
+    expect(row).not.toBeNull();
+    const modifiedNotPrevented = row?.dispatchEvent(
+      new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        metaKey: true,
+      })
+    );
+    expect(modifiedNotPrevented).toBe(true);
+
+    expect(onRowClick).toHaveBeenCalledTimes(1);
+    expect(onRowClick.mock.calls[0][0]).toBe(project);
+    expect(onRowClick.mock.calls[0][1].metaKey).toBe(true);
+  });
+
+  test("renders a state column when requested", () => {
+    act(() => {
+      root.render(
+        <ProjectTable
+          projectList={[
+            { ...project, state: State.ACTIVE },
+            {
+              name: "projects/archived",
+              title: "Archived Project",
+              labels: {},
+              state: State.DELETED,
+            } as Project,
+          ]}
+          showState
+        />
+      );
+    });
+
+    const headers = [...container.querySelectorAll("thead th")].map(
+      (th) => th.textContent
+    );
+    expect(headers).toContain("common.state");
+    expect(container.textContent).toContain("common.active");
+    expect(container.textContent).toContain("common.archived");
   });
 });

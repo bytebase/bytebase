@@ -28,7 +28,7 @@ const mocks = vi.hoisted(() => ({
   notify: vi.fn(),
 }));
 
-vi.mock("react-router-dom", () => ({
+vi.mock("react-router", () => ({
   Outlet: () => <div data-testid="outlet" />,
   useParams: () => mocks.params,
 }));

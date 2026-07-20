@@ -1,11 +1,13 @@
 import { ShieldAlert } from "lucide-react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
+import { RouterLink } from "@/react/components/RouterLink";
 import { useEnvironment, usePlanFeature } from "@/react/hooks/useAppState";
 import { cn } from "@/react/lib/utils";
 import type { Environment } from "@/types";
 import {
   DEFAULT_ENVIRONMENT_COLOR,
+  formatEnvironmentName,
   NULL_ENVIRONMENT_NAME,
   UNKNOWN_ENVIRONMENT_NAME,
 } from "@/types";
@@ -25,10 +27,12 @@ export const EnvironmentBadge = memo(function EnvironmentBadge({
   environment,
   hasEnvTierFeature,
   className,
+  link,
 }: {
   environment: Environment;
   hasEnvTierFeature: boolean;
   className?: string;
+  link?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -41,7 +45,7 @@ export const EnvironmentBadge = memo(function EnvironmentBadge({
     ? null
     : hexToRgb(environment.color || DEFAULT_ENVIRONMENT_COLOR);
 
-  return (
+  const badge = (
     <span
       className={cn(
         "inline-flex items-center gap-x-1 px-1.5 rounded-xs truncate",
@@ -70,6 +74,22 @@ export const EnvironmentBadge = memo(function EnvironmentBadge({
       )}
     </span>
   );
+
+  if (!link || isUnset) {
+    return badge;
+  }
+
+  return (
+    <RouterLink
+      to={{ path: `/${formatEnvironmentName(environment.id)}` }}
+      className="hover:underline"
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
+    >
+      {badge}
+    </RouterLink>
+  );
 });
 
 /**
@@ -87,10 +107,12 @@ export function EnvironmentLabel({
   environment: envProp,
   environmentName,
   className,
+  link,
 }: {
   environment?: Environment;
   environmentName?: string;
   className?: string;
+  link?: boolean;
 }) {
   // Always called (rules of hooks); result ignored when envProp is provided.
   const envFromStore = useEnvironment(environmentName || NULL_ENVIRONMENT_NAME);
@@ -103,6 +125,7 @@ export function EnvironmentLabel({
       environment={environment}
       hasEnvTierFeature={hasEnvTierFeature}
       className={className}
+      link={link}
     />
   );
 }

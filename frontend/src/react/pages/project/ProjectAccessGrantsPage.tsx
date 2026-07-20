@@ -52,10 +52,10 @@ import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import { AccessGrant_Status } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   type AccessGrantDisplayStatus,
-  type AccessGrantFilterStatus,
   formatAbsoluteDateTime,
   getAccessGrantDisplayStatus,
   getAccessGrantDisplayStatusText,
@@ -144,6 +144,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   void projectsByName;
   const listUsers = useAppStore((state) => state.listUsers);
   const listAccessGrants = useAppStore((state) => state.listAccessGrants);
+  const fetchIssueByName = useAppStore((state) => state.fetchIssueByName);
   const activateAccessGrant = useAppStore((state) => state.activateAccessGrant);
   const revokeAccessGrant = useAppStore((state) => state.revokeAccessGrant);
   const currentUser = useCurrentUser();
@@ -186,6 +187,9 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     type: "activate" | "revoke";
     grant: AccessGrant;
   } | null>(null);
+  const [issueByGrantName, setIssueByGrantName] = useState<Map<string, Issue>>(
+    new Map()
+  );
 
   // Server-side search for database filter options
   const searchDatabases = useCallback(
@@ -292,6 +296,16 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
             keywords: ["revoked"],
             render: () => <span>{t("common.revoked")}</span>,
           },
+          {
+            value: "REJECTED",
+            keywords: ["rejected"],
+            render: () => <span>{t("common.rejected")}</span>,
+          },
+          {
+            value: "CANCELED",
+            keywords: ["canceled", "cancelled"],
+            render: () => <span>{t("common.canceled")}</span>,
+          },
         ],
       },
       {
@@ -373,10 +387,10 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const fetchList = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
       const filter: AccessFilter = {};
-      const statuses = getValuesFromScopes(
-        searchParams,
-        "status"
-      ) as AccessGrantFilterStatus[];
+      const statuses = getValuesFromScopes(searchParams, "status") as Exclude<
+        AccessGrantDisplayStatus,
+        "UNKNOWN"
+      >[];
       if (statuses.length > 0) {
         filter.status = statuses;
       }
@@ -429,6 +443,42 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     enabled: canList,
   });
 
+  useEffect(() => {
+    const pendingWithMissingIssue = paged.dataList.filter(
+      (g) =>
+        g.status === AccessGrant_Status.PENDING &&
+        g.issue &&
+        !issueByGrantName.has(g.name)
+    );
+    if (pendingWithMissingIssue.length === 0) {
+      return;
+    }
+
+    void (async () => {
+      const results = await Promise.all(
+        pendingWithMissingIssue.map(async (g) => {
+          try {
+            const issue = await fetchIssueByName(g.issue, true);
+            return { grantName: g.name, issue };
+          } catch {
+            return undefined;
+          }
+        })
+      );
+      setIssueByGrantName((prev) => {
+        const next = new Map(prev);
+        let changed = false;
+        for (const r of results) {
+          if (r) {
+            next.set(r.grantName, r.issue);
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    })();
+  }, [fetchIssueByName, issueByGrantName, paged.dataList]);
+
   // Translated column descriptors. Built inside the component (not at
   // module scope) so `title` strings resolve via `t()` and update
   // automatically on language switches. Memoized on `t` so the
@@ -440,8 +490,8 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
       {
         key: "status",
         title: t("common.status"),
-        defaultWidth: 112,
-        minWidth: 72,
+        defaultWidth: 160,
+        minWidth: 128,
       },
       {
         key: "creator",
@@ -609,6 +659,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
                       <AccessGrantRow
                         key={grant.name}
                         grant={grant}
+                        issue={issueByGrantName.get(grant.name)}
                         canActivate={canActivate}
                         canRevoke={canRevoke}
                         onActivate={() =>
@@ -683,19 +734,21 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
 
 function AccessGrantRow({
   grant,
+  issue,
   canActivate,
   canRevoke,
   onActivate,
   onRevoke,
 }: {
   grant: AccessGrant;
+  issue?: Issue;
   canActivate: boolean;
   canRevoke: boolean;
   onActivate: () => void;
   onRevoke: () => void;
 }) {
   const { t } = useTranslation();
-  const status = getAccessGrantDisplayStatus(grant);
+  const status = getAccessGrantDisplayStatus(grant, issue);
 
   const createdAt = grant.createTime
     ? formatAbsoluteDateTime(getTimeForPbTimestampProtoEs(grant.createTime))
@@ -709,7 +762,7 @@ function AccessGrantRow({
     <TableRow>
       <TableCell>
         <Badge variant={statusTagVariant(status)}>
-          {getAccessGrantDisplayStatusText(grant)}
+          {getAccessGrantDisplayStatusText(grant, issue)}
         </Badge>
       </TableCell>
       <TableCell>

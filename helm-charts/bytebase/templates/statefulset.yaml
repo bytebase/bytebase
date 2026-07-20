@@ -1,6 +1,4 @@
 # bytebase
-{{- $version := .Values.bytebase.version -}}
-{{- $registryMirrorHost := .Values.bytebase.registryMirrorHost -}}
 {{- $extraSecretMounts := .Values.bytebase.extraSecretMounts -}}
 {{- $extraVolumes := .Values.bytebase.extraVolumes }}
 # bytebase.option
@@ -60,11 +58,7 @@ spec:
       # Hence, we do the escaping in the initialization container, and write the escaped password to the shared volume.
       initContainers:
         - name: init-container
-          {{- if $registryMirrorHost }}
-          image: {{ trimSuffix "/" $registryMirrorHost }}/busybox
-          {{- else }}
-          image: busybox
-          {{- end }}
+          image: {{ include "bytebase.busyboxImage" . }}
           imagePullPolicy: IfNotPresent
           env:
           - name: PG_PASSWORD
@@ -120,36 +114,7 @@ spec:
       {{- end }}
       containers:
         - name: bytebase
-          {{- if .Values.global }}
-          {{- if .Values.global.azure }}
-          {{- if .Values.global.azure.images }}
-          {{- if .Values.global.azure.images.bytebase }}
-          # Azure Marketplace image path - Microsoft will retag images to their registry
-          image: {{ .Values.global.azure.images.bytebase.registry }}/{{ .Values.global.azure.images.bytebase.image }}:{{ .Values.global.azure.images.bytebase.tag }}
-          {{- else if $registryMirrorHost }}
-          # If user specifies a registry mirror host, we should use that instead of the default.
-          image: {{ trimSuffix "/" $registryMirrorHost }}/bytebase/bytebase:{{ $version }}
-          {{- else }}
-          image: bytebase/bytebase:{{ $version }}
-          {{- end }}
-          {{- else if $registryMirrorHost }}
-          # If user specifies a registry mirror host, we should use that instead of the default.
-          image: {{ trimSuffix "/" $registryMirrorHost }}/bytebase/bytebase:{{ $version }}
-          {{- else }}
-          image: bytebase/bytebase:{{ $version }}
-          {{- end }}
-          {{- else if $registryMirrorHost }}
-          # If user specifies a registry mirror host, we should use that instead of the default.
-          image: {{ trimSuffix "/" $registryMirrorHost }}/bytebase/bytebase:{{ $version }}
-          {{- else }}
-          image: bytebase/bytebase:{{ $version }}
-          {{- end }}
-          {{- else if $registryMirrorHost }}
-          # If user specifies a registry mirror host, we should use that instead of the default.
-          image: {{ trimSuffix "/" $registryMirrorHost }}/bytebase/bytebase:{{ $version }}
-          {{- else }}
-          image: bytebase/bytebase:{{ $version }}
-          {{- end }}
+          image: {{ include "bytebase.image" . }}
           imagePullPolicy: Always
           env:
           {{- if $externalPgExistingPgURLSecret }}

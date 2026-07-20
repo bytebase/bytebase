@@ -100,6 +100,36 @@ describe("project page layout", () => {
     expect(source).not.toContain('<div className="mb-2">');
   });
 
+  test("access grants search exposes display status filters", () => {
+    const source = readProjectPage("ProjectAccessGrantsPage.tsx");
+
+    expect(source).toContain('value: "REJECTED"');
+    expect(source).toContain('value: "CANCELED"');
+    expect(source).toContain(
+      'render: () => <span>{t("common.rejected")}</span>'
+    );
+    expect(source).toContain(
+      'render: () => <span>{t("common.canceled")}</span>'
+    );
+  });
+
+  test("access grants render display status from linked issue state", () => {
+    const source = readProjectPage("ProjectAccessGrantsPage.tsx");
+
+    expect(source).toContain("issue={issueByGrantName.get(grant.name)}");
+    expect(source).toContain("getAccessGrantDisplayStatus(grant, issue)");
+    expect(source).toContain("getAccessGrantDisplayStatusText(grant, issue)");
+  });
+
+  test("access grants status column reserves space for display badges", () => {
+    const source = readProjectPage("ProjectAccessGrantsPage.tsx");
+
+    expect(source).toContain(`key: "status",
+        title: t("common.status"),
+        defaultWidth: 160,
+        minWidth: 128,`);
+  });
+
   test("keeps database groups on the shared page vertical rhythm", () => {
     const source = readProjectPage("ProjectDatabaseGroupsPage.tsx");
     const databaseGroupTable = readFileSync(

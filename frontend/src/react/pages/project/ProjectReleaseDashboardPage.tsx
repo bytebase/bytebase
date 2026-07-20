@@ -24,6 +24,7 @@ import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useURLSearchParam } from "@/react/hooks/useURLSearchParam";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
+import { useScrollRestorationLoadMore } from "@/react/router/NavigationScrollRestoration";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
@@ -86,6 +87,7 @@ export function ProjectReleaseDashboardPage({
     sessionKey: `project-${projectName}-releases`,
     fetchList: fetchReleaseList,
   });
+  useScrollRestorationLoadMore(paged);
 
   return (
     <ProjectPageLayout>

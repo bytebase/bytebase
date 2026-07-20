@@ -1,8 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { buildAccessGrantFilter } from "./accessGrant";
 
-const FIXED_NOW = new Date("2026-06-01T00:00:00Z");
-
 describe("buildAccessGrantFilter", () => {
   test("empty filter returns empty string", () => {
     expect(buildAccessGrantFilter(undefined)).toBe("");
@@ -31,6 +29,14 @@ describe("buildAccessGrantFilter", () => {
     );
   });
 
+  test("statuses emit display-status filter", () => {
+    expect(
+      buildAccessGrantFilter({
+        status: ["ACTIVE", "PENDING"],
+      })
+    ).toBe('(status == "ACTIVE" || status == "PENDING")');
+  });
+
   test("unmask combines with other filters in order", () => {
     expect(
       buildAccessGrantFilter({
@@ -55,9 +61,9 @@ describe("buildAccessGrantFilter", () => {
 
   test("absent unmask/export fields produce no emission", () => {
     // Only target, no unmask/export.
-    expect(
-      buildAccessGrantFilter({ target: "instances/i/databases/d" }, FIXED_NOW)
-    ).toBe('target == "instances/i/databases/d"');
+    expect(buildAccessGrantFilter({ target: "instances/i/databases/d" })).toBe(
+      'target == "instances/i/databases/d"'
+    );
   });
 
   // statementExact pins the distinction from `statement` (substring search)

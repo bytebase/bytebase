@@ -346,7 +346,7 @@ func (ExportFormat) EnumDescriptor() ([]byte, []int) {
 type ApprovalStatus int32
 
 const (
-	// Unspecified approval status.
+	// No approval workflow has started, including for a linked draft issue.
 	ApprovalStatus_APPROVAL_STATUS_UNSPECIFIED ApprovalStatus = 0
 	// Approval checks are being evaluated.
 	ApprovalStatus_CHECKING ApprovalStatus = 1

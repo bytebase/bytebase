@@ -682,7 +682,7 @@ func TestWebhookIntegration(t *testing.T) {
 		// Issue creator (default ctl token) re-requests approval. Note: RequestIssue
 		// does NOT reset ApprovalFindingDone, so waitForIssuePending would return
 		// immediately. Wait for the second "Approval required" webhook instead —
-		// RequestIssue calls approval.NotifyApprovalRequested directly.
+		// RequestIssue dispatches the review workflow's approval-requested event.
 		requestIssueAsCreator(ctx, t, ctl, issue, "addressed feedback")
 		waitForWebhookCount(t, collector, project.Name, "Approval required", 2)
 

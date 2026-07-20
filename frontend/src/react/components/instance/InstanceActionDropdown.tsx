@@ -1,5 +1,5 @@
 import { EllipsisVertical } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   DropdownMenu,
@@ -14,6 +14,7 @@ import { pushNotification } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { InstanceDeleteDialog } from "./InstanceDeleteDialog";
 
 interface InstanceActionDropdownProps {
   instance: Instance;
@@ -25,6 +26,7 @@ export function InstanceActionDropdown({
   onDeleted,
 }: InstanceActionDropdownProps) {
   const { t } = useTranslation();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const canArchive = hasWorkspacePermissionV2("bb.instances.delete");
   const canRestore = hasWorkspacePermissionV2("bb.instances.undelete");
@@ -69,55 +71,48 @@ export function InstanceActionDropdown({
     });
   }, [instance, t]);
 
-  const handleDelete = useCallback(async () => {
-    if (
-      !window.confirm(
-        `${t("common.delete-resource", { type: instance.title })}\n\n${t("common.cannot-undo-this-action")}`
-      )
-    )
-      return;
-
-    await useAppStore.getState().deleteInstance(instance.name);
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.deleted"),
-    });
-    onDeleted?.();
-    router.replace({
-      name: INSTANCE_ROUTE_DASHBOARD,
-      query: { q: "state:DELETED" },
-    });
-  }, [instance, t, onDeleted]);
-
   const showArchive = instance.state === State.ACTIVE && canArchive;
   const showRestore = instance.state === State.DELETED && canRestore;
-  const showDelete = canArchive || canRestore;
+  const showDelete = canArchive;
 
   if (!showArchive && !showRestore && !showDelete) return null;
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="inline-flex items-center justify-center size-8 rounded-xs text-control hover:bg-control-bg cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
-        <EllipsisVertical className="size-4" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        {showArchive && (
-          <DropdownMenuItem onClick={handleArchive}>
-            {t("common.archive")}
-          </DropdownMenuItem>
-        )}
-        {showRestore && (
-          <DropdownMenuItem onClick={handleRestore}>
-            {t("common.restore")}
-          </DropdownMenuItem>
-        )}
-        {showDelete && (
-          <DropdownMenuItem className="text-error" onClick={handleDelete}>
-            {t("common.delete")}
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger className="inline-flex items-center justify-center size-8 rounded-xs text-control hover:bg-control-bg cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
+          <EllipsisVertical className="size-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          {showArchive && (
+            <DropdownMenuItem onClick={handleArchive}>
+              {t("common.archive")}
+            </DropdownMenuItem>
+          )}
+          {showRestore && (
+            <DropdownMenuItem onClick={handleRestore}>
+              {t("common.restore")}
+            </DropdownMenuItem>
+          )}
+          {showDelete && (
+            <DropdownMenuItem
+              className="text-error"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              {t("common.delete")}
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <InstanceDeleteDialog
+        open={showDeleteConfirm}
+        instance={instance}
+        onOpenChange={setShowDeleteConfirm}
+        onDeleted={() => {
+          onDeleted?.();
+          router.replace({ name: INSTANCE_ROUTE_DASHBOARD });
+        }}
+      />
+    </>
   );
 }

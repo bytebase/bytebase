@@ -59,7 +59,7 @@ vi.mock("@/react/lib/utils", () => ({
 }));
 
 vi.mock("./components/deploy/DeployBranch", () => ({
-  DeployBranch: () => null,
+  DeployBranch: () => <div data-testid="deploy-branch">deploy branch</div>,
 }));
 
 vi.mock("./components/review/PlanReviewSection", () => ({
@@ -84,7 +84,9 @@ vi.mock("./components/PlanDetailChangesBranch", () => ({
 }));
 
 vi.mock("./components/PlanDetailDeployFuture", () => ({
-  PlanDetailDeployFuture: () => null,
+  PlanDetailDeployFuture: () => (
+    <button data-testid="deploy-future-control">deploy future control</button>
+  ),
 }));
 
 vi.mock("./components/PlanDetailHeader", () => ({
@@ -195,6 +197,50 @@ describe("ProjectPlanDetailPage", () => {
     expect(selectedSpecIdText()).toBe("spec-2");
   });
 
+  it("resets spec selection when navigating to another plan", async () => {
+    const firstPage = buildPage();
+    firstPage.isCreating = false;
+    firstPage.pageKey = "foo/plan-1";
+    firstPage.planId = "plan-1";
+    mocks.usePlanDetailPage.mockReturnValue(firstPage);
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="plan-1"
+          projectId="foo"
+          specId="spec-1"
+        />
+      );
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      (
+        [...container.querySelectorAll("button")].find(
+          (button) => button.textContent === "select second spec"
+        ) as HTMLButtonElement
+      ).click();
+      await Promise.resolve();
+    });
+    expect(selectedSpecIdText()).toBe("spec-2");
+
+    const secondPage = buildPage();
+    secondPage.isCreating = false;
+    secondPage.pageKey = "foo/plan-2";
+    secondPage.planId = "plan-2";
+    secondPage.plan.specs = [
+      { id: "new-spec" },
+    ] as typeof secondPage.plan.specs;
+    mocks.usePlanDetailPage.mockReturnValue(secondPage);
+    await act(async () => {
+      root.render(<ProjectPlanDetailPage planId="plan-2" projectId="foo" />);
+      await Promise.resolve();
+    });
+
+    expect(selectedSpecIdText()).toBe("new-spec");
+  });
+
   it("renders the review phase for sheet-backed plans with an issue", async () => {
     mocks.usePlanDetailPage.mockReturnValue({
       ...buildPage(),
@@ -233,6 +279,85 @@ describe("ProjectPlanDetailPage", () => {
     // before an issue exists — it renders as an upcoming "future" step.
     expect(container.textContent).toContain("plan.navigator.review");
     expect(container.textContent).toContain("plan.phase.review-description");
+  });
+
+  it("recognizes a linked Draft Review Issue as the active draft changes phase", async () => {
+    const page = buildPage();
+    page.isCreating = false;
+    page.planId = "1";
+    page.plan.name = "projects/foo/plans/1";
+    page.plan.issue = "projects/foo/issues/1";
+    page.issue = {
+      name: "projects/foo/issues/1",
+      draft: true,
+    } as PlanDetailPageState["issue"];
+    mocks.usePlanDetailPage.mockReturnValue(page);
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage planId="1" projectId="foo" specId="spec-1" />
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain("common.draft");
+    expect(container.textContent).not.toContain("common.under-review");
+  });
+
+  it("does not surface rollout controls for a draft issue with stale rollout data", async () => {
+    const page = buildPage();
+    page.isCreating = false;
+    page.planId = "1";
+    page.pageKey = "foo/1";
+    page.plan.name = "projects/foo/plans/1";
+    page.plan.issue = "projects/foo/issues/1";
+    page.issue = {
+      name: "projects/foo/issues/1",
+      draft: true,
+    } as PlanDetailPageState["issue"];
+    page.rollout = {
+      name: "projects/foo/plans/1/rollout",
+      stages: [
+        {
+          name: "projects/foo/plans/1/rollout/stages/prod",
+          tasks: [{ status: 1 }],
+        },
+      ],
+    } as PlanDetailPageState["rollout"];
+    mocks.usePlanDetailPage.mockReturnValue(page);
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage planId="1" projectId="foo" specId="spec-1" />
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain("common.draft");
+    expect(container.querySelector("[data-testid='deploy-branch']")).toBeNull();
+    expect(
+      container.querySelector("[data-testid='deploy-future-control']")
+    ).toBeNull();
+    expect(container.textContent).not.toContain("common.not-started");
+  });
+
+  it("shows an incomplete state for a persisted plan without its Draft Review Issue", async () => {
+    const page = buildPage();
+    page.isCreating = false;
+    page.planId = "1";
+    page.plan.name = "projects/foo/plans/1";
+    page.plan.issue = "";
+    page.issue = undefined;
+    mocks.usePlanDetailPage.mockReturnValue(page);
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage planId="1" projectId="foo" specId="spec-1" />
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain("plan.lifecycle.incomplete");
   });
 
   it("hides the review phase for GitOps plans with release-backed specs", async () => {

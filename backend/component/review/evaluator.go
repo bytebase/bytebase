@@ -1,5 +1,4 @@
-// Package approval is the runner for finding approval templates for issues.
-package approval
+package review
 
 import (
 	"context"
@@ -66,29 +65,18 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // FindAndApplyApprovalTemplate finds and applies the approval template for an issue.
 // This is a utility function that can be called synchronously (from issue creation)
-// or asynchronously (from the event handler).
-func FindAndApplyApprovalTemplate(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, issue *store.IssueMessage) error {
+// or asynchronously (from the event handler). The caller dispatches returned
+// events after the approval finding commits.
+func FindAndApplyApprovalTemplate(ctx context.Context, stores *store.Store, licenseService *enterprise.LicenseService, issue *store.IssueMessage) (*ApplyApprovalTemplateResult, error) {
 	if issue.Payload.GetDraft() {
-		return nil
+		return &ApplyApprovalTemplateResult{Issue: issue}, nil
 	}
-	project, err := stores.GetProjectByResourceID(ctx, issue.ProjectID)
-	if err != nil {
-		return errors.Wrap(err, "failed to get project")
-	}
-	if project == nil {
-		return errors.Errorf("project %s not found", issue.ProjectID)
-	}
-	approvalSetting, err := stores.GetWorkspaceApprovalSetting(ctx, project.Workspace)
-	if err != nil {
-		return errors.Wrap(err, "failed to get workspace approval setting")
-	}
-
 	// Find approval template - errors are logged, not persisted
-	err = findApprovalTemplateForIssue(ctx, stores, webhookManager, licenseService, issue, approvalSetting)
+	result, err := findApprovalTemplateForIssue(ctx, stores, licenseService, issue)
 	if err != nil {
-		return errors.Wrap(err, "failed to find approval template")
+		return nil, errors.Wrap(err, "failed to find approval template")
 	}
-	return nil
+	return result, nil
 }
 
 func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
@@ -116,13 +104,8 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 		slog.Error("project not found", slog.String("project", ref.ProjectID))
 		return
 	}
-	approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx, project.Workspace)
+	result, err := findApprovalTemplateForIssue(ctx, r.store, r.licenseService, issue)
 	if err != nil {
-		slog.Error("failed to get workspace approval setting", log.BBError(err))
-		return
-	}
-
-	if err := findApprovalTemplateForIssue(ctx, r.store, r.webhookManager, r.licenseService, issue, approvalSetting); err != nil {
 		slog.Error("failed to find approval template",
 			slog.String("project", ref.ProjectID), slog.Int64("issue_uid", ref.UID),
 			slog.String("issue_title", issue.Title),
@@ -130,6 +113,7 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 		// Don't persist error - user can rerun plan check to retry
 		return
 	}
+	DispatchApprovalEvents(ctx, r.store, r.webhookManager, result)
 
 	// After approval finding is done, check if the issue is now approved
 	// (e.g., skip approval case where no template is required).
@@ -167,127 +151,6 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 			r.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: issue.ProjectID, PlanID: *issue.PlanUID}
 		}
 	}
-}
-
-func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, issue *store.IssueMessage, approvalSetting *storepb.WorkspaceApprovalSetting) error {
-	if issue.Payload.GetDraft() {
-		return nil
-	}
-	payload := issue.Payload
-
-	project, err := stores.GetProjectByResourceID(ctx, issue.ProjectID)
-	if err != nil {
-		return errors.Wrap(err, "failed to get project")
-	}
-	if project == nil {
-		return errors.Errorf("project %s not found", issue.ProjectID)
-	}
-
-	approvalInputVersion, err := getIssuePlanApprovalInputVersion(ctx, stores, issue)
-	if err != nil {
-		return err
-	}
-	if payload.Approval != nil && payload.Approval.ApprovalFindingDone && payload.Approval.GetApprovalInputVersion() == approvalInputVersion {
-		return nil
-	}
-	approvalLabels := store.CanonicalizeIssueLabels(payload.GetLabels())
-	if approvalLabels == nil {
-		approvalLabels = []string{}
-	}
-
-	approvalTemplate, celVarsList, approvalInputVersion, done, err := func() (*storepb.ApprovalTemplate, []map[string]any, int64, bool, error) {
-		// no need to find if feature is not enabled
-		if licenseService.IsFeatureEnabled(ctx, project.Workspace, v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil {
-			// nolint:nilerr
-			return nil, nil, approvalInputVersion, true, nil
-		}
-
-		// Step 1: Determine approval source from issue type
-		approvalSource, err := getApprovalSourceFromIssue(ctx, stores, issue)
-		if err != nil {
-			return nil, nil, approvalInputVersion, false, errors.Wrap(err, "failed to get approval source from issue")
-		}
-		if approvalSource == storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED {
-			// Cannot determine source, no approval needed
-			return nil, nil, approvalInputVersion, true, nil
-		}
-
-		// Step 2: Build CEL variables for evaluation
-		celVarsList, celApprovalInputVersion, done, err := buildCELVariablesForIssue(ctx, stores, issue)
-		approvalInputVersion = celApprovalInputVersion
-		if err != nil {
-			return nil, nil, approvalInputVersion, false, errors.Wrap(err, "failed to build CEL variables for issue")
-		}
-		if !done {
-			// Not ready yet (e.g., waiting for plan check runs)
-			return nil, nil, approvalInputVersion, false, nil
-		}
-
-		// Step 3: Inject risk level into CEL variables for CHANGE_DATABASE issues
-		// Risk level is calculated from statement types and injected so approval rules
-		// can use conditions like: risk_level == "HIGH"
-		if approvalSource == storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE {
-			riskLevel := calculateRiskLevelFromCELVars(celVarsList)
-			injectRiskLevelIntoCELVars(celVarsList, riskLevel)
-			injectIssueLabelsIntoCELVars(celVarsList, approvalLabels)
-		}
-
-		// Step 4: Find matching approval template
-		approvalTemplate, err := getApprovalTemplate(approvalSetting, approvalSource, celVarsList)
-		if err != nil {
-			return nil, nil, approvalInputVersion, false, errors.Wrapf(err, "failed to get approval template for source: %v", approvalSource)
-		}
-
-		return approvalTemplate, celVarsList, approvalInputVersion, true, nil
-	}()
-	if err != nil {
-		// Don't persist error - it will be logged by caller
-		// User can rerun plan check to retry
-		return err
-	}
-	if !done {
-		return nil
-	}
-
-	// Calculate risk level separately from approval flow
-	// TODO(p0ny): maybe move risk calculation to another runner in the future
-	riskLevel := calculateRiskLevelFromCELVars(celVarsList)
-
-	payload.Approval = &storepb.IssuePayloadApproval{
-		ApprovalFindingDone:  true,
-		ApprovalTemplate:     approvalTemplate,
-		Approvers:            nil,
-		ApprovalInputVersion: approvalInputVersion,
-	}
-	payload.RiskLevel = riskLevel
-
-	payloadPatch := &storepb.Issue{
-		Approval:  payload.Approval,
-		RiskLevel: riskLevel,
-	}
-	if issue.Type == storepb.Issue_DATABASE_CHANGE {
-		requireNoRollout := project.Setting.GetRequireIssueApproval()
-		_, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
-			PayloadUpsert:                   payloadPatch,
-			RequirePlanApprovalInputVersion: &approvalInputVersion,
-			RequireLabels:                   &approvalLabels,
-			RequireNoRollout:                requireNoRollout,
-		})
-		if err != nil {
-			if errors.Is(err, store.ErrIssueUpdateSkipped) {
-				return nil
-			}
-			return errors.Wrap(err, "failed to update issue payload")
-		}
-	} else if _, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: payloadPatch,
-	}); err != nil {
-		return errors.Wrap(err, "failed to update issue payload")
-	}
-
-	NotifyApprovalRequested(ctx, stores, webhookManager, issue, project)
-
-	return nil
 }
 
 func getIssuePlanApprovalInputVersion(ctx context.Context, stores *store.Store, issue *store.IssueMessage) (int64, error) {

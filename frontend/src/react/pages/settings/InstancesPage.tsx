@@ -20,6 +20,7 @@ import {
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { InstanceAssignmentSheet } from "@/react/components/InstanceAssignmentSheet";
+import { InstanceDeleteDialog } from "@/react/components/instance";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import {
   type SelectionAction,
@@ -32,6 +33,7 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/react/components/ui/alert-dialog";
+import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
@@ -72,13 +74,13 @@ import {
 } from "@/react/hooks/useSessionPageSize";
 import {
   createAdvancedSearchParser,
-  legacyStateSearchParams,
   serializeAdvancedSearch,
   useURLSearchParam,
 } from "@/react/hooks/useURLSearchParam";
 import { cn } from "@/react/lib/utils";
 import { router, useCurrentRoute } from "@/react/router";
 import { INSTANCE_ROUTE_CREATE } from "@/react/router/handles";
+import { useScrollRestorationLoadMore } from "@/react/router/NavigationScrollRestoration";
 import { useAppStore } from "@/react/stores/app";
 import type { InstanceFilter } from "@/react/stores/app/types";
 import { pushNotification } from "@/store";
@@ -86,22 +88,23 @@ import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
   DEFAULT_ENVIRONMENT_COLOR,
   isValidInstanceName,
-  NULL_ENVIRONMENT_NAME,
   UNKNOWN_ENVIRONMENT_NAME,
   unknownEnvironment,
 } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { UpdateInstanceRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   engineNameV1,
   hasWorkspacePermissionV2,
-  hexToRgb,
   hostPortOfDataSource,
   hostPortOfInstanceV1,
   supportedEngineV1List,
 } from "@/utils";
+import {
+  defaultActiveStateSearchParams,
+  getResourceStateFilter,
+} from "./resourceStateFilter";
 
 const ASSIGN_LICENSE_QUERY = "assignLicense";
 const ASSIGN_LICENSE_INSTANCES_QUERY = "instances";
@@ -187,75 +190,6 @@ function ConfirmDialog({
 }
 
 // ============================================================
-// EnvironmentName
-// ============================================================
-
-function EnvironmentName({ environmentName }: { environmentName: string }) {
-  const { t } = useTranslation();
-  const environmentList = useAppStore((s) => s.environmentList);
-  const environment = useMemo(
-    () =>
-      useAppStore
-        .getState()
-        .getEnvironmentByName(environmentName || NULL_ENVIRONMENT_NAME),
-    [environmentList, environmentName]
-  );
-
-  const isUnset =
-    environment.name === UNKNOWN_ENVIRONMENT_NAME ||
-    environment.name === NULL_ENVIRONMENT_NAME;
-
-  const hasEnvTierFeature = useAppStore((s) =>
-    s.hasInstanceFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
-  );
-  const isProtected =
-    hasEnvTierFeature && environment.tags?.protected === "protected";
-
-  const bgColorRgb = isUnset
-    ? null
-    : hexToRgb(environment.color || DEFAULT_ENVIRONMENT_COLOR);
-
-  return (
-    <span
-      className="inline-flex items-center gap-x-1"
-      style={
-        bgColorRgb && !isUnset
-          ? {
-              backgroundColor: `rgba(${bgColorRgb.join(", ")}, 0.1)`,
-              color: `rgb(${bgColorRgb.join(", ")})`,
-              padding: "0 6px",
-              borderRadius: "4px",
-            }
-          : undefined
-      }
-    >
-      <span className="truncate">
-        {isUnset ? (
-          <span className="text-control-light italic">
-            {t("common.unassigned")}
-          </span>
-        ) : (
-          environment.title
-        )}
-      </span>
-      {isProtected && !isUnset && (
-        <svg
-          className="w-4 h-4 shrink-0 text-current"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.351-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z"
-            clipRule="evenodd"
-          />
-        </svg>
-      )}
-    </span>
-  );
-}
-
-// ============================================================
 // InstanceActionDropdown
 // ============================================================
 
@@ -318,26 +252,6 @@ function InstanceActionDropdown({
     }
   }, [instance, t, onAction]);
 
-  const handleDelete = useCallback(async () => {
-    try {
-      await useAppStore.getState().deleteInstance(instance.name);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.deleted"),
-      });
-      setShowDeleteConfirm(false);
-      onAction();
-    } catch (error: unknown) {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("common.delete"),
-        description: (error as { message?: string }).message,
-      });
-    }
-  }, [instance, t, onAction]);
-
   if (!canArchive && !canRestore) return null;
 
   const isActive = instance.state === State.ACTIVE;
@@ -372,7 +286,7 @@ function InstanceActionDropdown({
               {t("common.restore")}
             </DropdownMenuItem>
           )}
-          {(canArchive || canRestore) && (
+          {canArchive && (
             <DropdownMenuItem
               className="text-error"
               onClick={(e) => {
@@ -409,16 +323,11 @@ function InstanceActionDropdown({
         </label>
       </ConfirmDialog>
 
-      <ConfirmDialog
+      <InstanceDeleteDialog
         open={showDeleteConfirm}
-        variant="error"
-        title={t("common.delete-resource", {
-          type: instance.title,
-        })}
-        description={t("common.cannot-undo-this-action")}
-        okText={t("common.delete")}
-        onOk={handleDelete}
-        onCancel={() => setShowDeleteConfirm(false)}
+        instance={instance}
+        onOpenChange={setShowDeleteConfirm}
+        onDeleted={onAction}
       />
     </>
   );
@@ -535,7 +444,7 @@ export function InstancesPage() {
   const route = useCurrentRoute();
 
   const defaultSearchParams = useMemo<SearchParams>(
-    () => legacyStateSearchParams(route.query.state),
+    () => defaultActiveStateSearchParams(route.query.state),
     [route.query.state]
   );
   const [searchParams, setSearchParams] = useURLSearchParam<SearchParams>({
@@ -594,11 +503,26 @@ export function InstancesPage() {
         title: t("common.state"),
         description: t("issue.advanced-search.scope.state.description"),
         options: [
-          { value: "ACTIVE", keywords: ["active"] },
+          {
+            value: "ACTIVE",
+            keywords: ["active"],
+            custom: true,
+            render: () => <span>{t("common.active")}</span>,
+          },
           ...(canUndelete
             ? [
-                { value: "DELETED", keywords: ["archived", "deleted"] },
-                { value: "ALL", keywords: ["all"] },
+                {
+                  value: "DELETED",
+                  keywords: ["archived", "deleted"],
+                  custom: true,
+                  render: () => <span>{t("common.archived")}</span>,
+                },
+                {
+                  value: "ALL",
+                  keywords: ["all"],
+                  custom: true,
+                  render: () => <span>{t("common.all")}</span>,
+                },
               ]
             : []),
         ],
@@ -621,12 +545,7 @@ export function InstancesPage() {
   const searchText = searchParams.query;
 
   const stateFilterVal = getValueFromScopes(searchParams, "state");
-  const selectedState =
-    stateFilterVal === "DELETED"
-      ? State.DELETED
-      : stateFilterVal === "ALL"
-        ? undefined
-        : State.ACTIVE;
+  const selectedState = getResourceStateFilter(stateFilterVal);
 
   const envVal = getValueFromScopes(searchParams, "environment");
   const selectedEnvironment = envVal
@@ -780,6 +699,12 @@ export function InstancesPage() {
       fetchInstances(false);
     }
   }, [isFetchingMore, fetchInstances]);
+  useScrollRestorationLoadMore({
+    dataList: instances,
+    hasMore,
+    isFetchingMore,
+    loadMore,
+  });
 
   // Selection state
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
@@ -991,8 +916,25 @@ export function InstancesPage() {
       resizable: true,
       sortable: true,
       render: (instance) => (
-        <EnvironmentName environmentName={instance.environment ?? ""} />
+        <EnvironmentLabel environmentName={instance.environment ?? ""} />
       ),
+    },
+    {
+      key: "state",
+      title: t("common.state"),
+      defaultWidth: 120,
+      minWidth: 100,
+      resizable: true,
+      render: (instance) =>
+        instance.state === State.DELETED ? (
+          <Badge variant="warning" className="text-xs">
+            {t("common.archived")}
+          </Badge>
+        ) : (
+          <Badge variant="success" className="text-xs">
+            {t("common.active")}
+          </Badge>
+        ),
     },
     {
       key: "address",

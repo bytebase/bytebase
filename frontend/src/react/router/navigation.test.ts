@@ -112,10 +112,16 @@ describe("navigation dispatch", () => {
     });
   });
 
-  test("navigateToPath passes the raw path through", () => {
+  test("navigateToPath passes the raw path and navigation options through", () => {
     const navigate = vi.fn();
     setAppRouter({ navigate });
-    navigateToPath("/raw", { replace: false });
-    expect(navigate).toHaveBeenCalledWith("/raw", { replace: false });
+    navigateToPath("/raw", {
+      preventScrollReset: true,
+      replace: false,
+    });
+    expect(navigate).toHaveBeenCalledWith("/raw", {
+      preventScrollReset: true,
+      replace: false,
+    });
   });
 });

@@ -27,7 +27,7 @@ func convertToV1Instance(instance *store.InstanceMessage, activation bool) *v1pb
 		Environment:   buildEnvironmentName(instance.EnvironmentID),
 		Activation:    activation,
 		SyncInterval:  instance.Metadata.GetSyncInterval(),
-		SyncDatabases: instance.Metadata.GetSyncDatabases(),
+		SyncDatabases: convertToV1SyncDatabases(instance.Metadata.SyncDatabases),
 		Roles:         convertInstanceRoles(instance, instance.Metadata.GetRoles()),
 		LastSyncTime:  instance.Metadata.GetLastSyncTime(),
 		Labels:        instance.Metadata.GetLabels(),
@@ -87,10 +87,28 @@ func convertToStoreInstance(instanceID string, instance *v1pb.Instance) (*store.
 			Activation:    instance.GetActivation(),
 			DataSources:   datasources,
 			SyncInterval:  instance.GetSyncInterval(),
-			SyncDatabases: instance.GetSyncDatabases(),
+			SyncDatabases: convertToStoreSyncDatabases(instance.SyncDatabases),
 			Labels:        instance.GetLabels(),
 		},
 	}, nil
+}
+
+func convertToV1SyncDatabases(syncDatabases *storepb.SyncDatabases) *v1pb.SyncDatabases {
+	if syncDatabases == nil {
+		return nil
+	}
+	return &v1pb.SyncDatabases{
+		Databases: syncDatabases.Databases,
+	}
+}
+
+func convertToStoreSyncDatabases(syncDatabases *v1pb.SyncDatabases) *storepb.SyncDatabases {
+	if syncDatabases == nil {
+		return nil
+	}
+	return &storepb.SyncDatabases{
+		Databases: syncDatabases.Databases,
+	}
 }
 
 func convertToV1InstanceResource(instanceMessage *store.InstanceMessage, activation bool) *v1pb.InstanceResource {

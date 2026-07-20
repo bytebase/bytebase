@@ -51,6 +51,7 @@ func metadataDiffEmpty(diff *schema.MetadataDiff) bool {
 			len(diff.ProcedureChanges) == 0 &&
 			len(diff.SequenceChanges) == 0 &&
 			len(diff.EnumTypeChanges) == 0 &&
+			len(diff.CompositeTypeChanges) == 0 &&
 			len(diff.ExtensionChanges) == 0 &&
 			len(diff.EventTriggerChanges) == 0 &&
 			len(diff.EventChanges) == 0 &&
@@ -203,7 +204,476 @@ func pgGenerateMetadataMigration(diff *schema.MetadataDiff) (string, error) {
 	if err := writeCreateOrAlterPhase(&buf, diff); err != nil {
 		return "", err
 	}
+	if err := writeDeferredDropPhase(&buf, diff); err != nil {
+		return "", err
+	}
 	return buf.String(), nil
+}
+
+// postViewCompositeCreates selects created composites whose attributes
+// reference a created view or materialized view row type, expanded over
+// composite-to-composite references, for emission after the views phase.
+func postViewCompositeCreates(diff *schema.MetadataDiff) map[*schema.CompositeTypeDiff]bool {
+	createdViews := make(map[string]bool)
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionCreate {
+			createdViews[viewDiff.SchemaName+"\x00"+viewDiff.ViewName] = true
+		}
+	}
+	for _, viewDiff := range diff.MaterializedViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionCreate {
+			createdViews[viewDiff.SchemaName+"\x00"+viewDiff.MaterializedViewName] = true
+		}
+	}
+	post := make(map[*schema.CompositeTypeDiff]bool)
+	if len(createdViews) == 0 {
+		return post
+	}
+	postKeys := make(map[string]bool)
+	for changed := true; changed; {
+		changed = false
+		for _, compositeDiff := range diff.CompositeTypeChanges {
+			if compositeDiff.Action != schema.MetadataDiffActionCreate || post[compositeDiff] {
+				continue
+			}
+			for _, attribute := range compositeDiff.NewCompositeType.GetAttributes() {
+				depSchema, depName, ok := parseQualifiedTypeIdent(attribute.Type)
+				if !ok {
+					continue
+				}
+				depKey := depSchema + "\x00" + depName
+				if createdViews[depKey] || postKeys[depKey] {
+					post[compositeDiff] = true
+					postKeys[compositeDiff.SchemaName+"\x00"+compositeDiff.CompositeTypeName] = true
+					changed = true
+					break
+				}
+			}
+		}
+	}
+	return post
+}
+
+// postViewCompositeAlters selects altered composites whose added or retyped
+// attributes reference a created view or materialized view row type; their
+// alter statements run after the views phase.
+func postViewCompositeAlters(diff *schema.MetadataDiff) map[*schema.CompositeTypeDiff]bool {
+	createdViews := make(map[string]bool)
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionCreate {
+			createdViews[viewDiff.SchemaName+"\x00"+viewDiff.ViewName] = true
+		}
+	}
+	for _, viewDiff := range diff.MaterializedViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionCreate {
+			createdViews[viewDiff.SchemaName+"\x00"+viewDiff.MaterializedViewName] = true
+		}
+	}
+	post := make(map[*schema.CompositeTypeDiff]bool)
+	if len(createdViews) == 0 {
+		return post
+	}
+	for _, compositeDiff := range diff.CompositeTypeChanges {
+		if compositeDiff.Action != schema.MetadataDiffActionAlter {
+			continue
+		}
+		oldAttributes := make(map[string]*storepb.CompositeTypeAttribute)
+		for _, attribute := range compositeDiff.OldCompositeType.GetAttributes() {
+			oldAttributes[attribute.Name] = attribute
+		}
+		for _, newAttribute := range compositeDiff.NewCompositeType.GetAttributes() {
+			oldAttribute := oldAttributes[newAttribute.Name]
+			if oldAttribute != nil && oldAttribute.Type == newAttribute.Type {
+				continue
+			}
+			if depSchema, depName, ok := parseQualifiedTypeIdent(newAttribute.Type); ok && createdViews[depSchema+"\x00"+depName] {
+				post[compositeDiff] = true
+				break
+			}
+		}
+	}
+	return post
+}
+
+// deferredDropSet resolves which drops must wait until the alter phase has
+// released the last reference.
+type deferredDropSet struct {
+	composites []*schema.CompositeTypeDiff
+	enums      map[*schema.EnumTypeDiff]bool
+	schemas    map[*schema.SchemaDiff]bool
+}
+
+// computeDeferredDrops seeds the set with composites released by a column
+// retype and schemas owning such composites, then expands to a fixpoint: a
+// dropped schema is also deferred when any pooled deferred composite
+// references a type inside it, and every deferred schema contributes its own
+// composites to the pool. Finally, dropped enums referenced by any pooled
+// composite are deferred.
+func computeDeferredDrops(diff *schema.MetadataDiff) *deferredDropSet {
+	deferred := &deferredDropSet{
+		enums:   make(map[*schema.EnumTypeDiff]bool),
+		schemas: make(map[*schema.SchemaDiff]bool),
+	}
+	var topLevelDrops []*schema.CompositeTypeDiff
+	deferredComposites := make(map[*schema.CompositeTypeDiff]bool)
+	var pool []*storepb.CompositeTypeMetadata
+	for _, compositeDiff := range diff.CompositeTypeChanges {
+		if compositeDiff.Action != schema.MetadataDiffActionDrop {
+			continue
+		}
+		topLevelDrops = append(topLevelDrops, compositeDiff)
+		if compositeDropReleasedByRetype(diff, compositeDiff) {
+			deferredComposites[compositeDiff] = true
+			pool = append(pool, compositeDiff.OldCompositeType)
+		}
+	}
+
+	// Combined fixpoint: pooled composites pull in (a) top-level dropped
+	// composites they reference and (b) dropped schemas containing types
+	// they reference; every newly deferred schema contributes its own
+	// composites to the pool.
+	for changed := true; changed; {
+		changed = false
+		for _, candidate := range topLevelDrops {
+			if deferredComposites[candidate] {
+				continue
+			}
+			for _, member := range pool {
+				if compositeReferencesType(member, candidate.SchemaName, candidate.CompositeTypeName) {
+					deferredComposites[candidate] = true
+					pool = append(pool, candidate.OldCompositeType)
+					changed = true
+					break
+				}
+			}
+		}
+		for _, schemaDiff := range diff.SchemaChanges {
+			if schemaDiff.Action != schema.MetadataDiffActionDrop || deferred.schemas[schemaDiff] {
+				continue
+			}
+			if !schemaOwnsRetypeReleasedComposite(diff, schemaDiff) && !compositePoolReferencesSchema(pool, schemaDiff.SchemaName) {
+				continue
+			}
+			deferred.schemas[schemaDiff] = true
+			for _, compositeType := range schemaDiff.OldSchema.GetCompositeTypes() {
+				if !compositeType.GetSkipDump() {
+					pool = append(pool, compositeType)
+				}
+			}
+			changed = true
+		}
+	}
+	for _, compositeDiff := range topLevelDrops {
+		if deferredComposites[compositeDiff] {
+			deferred.composites = append(deferred.composites, compositeDiff)
+		}
+	}
+
+	for _, enumDiff := range diff.EnumTypeChanges {
+		if enumDiff.Action != schema.MetadataDiffActionDrop {
+			continue
+		}
+		if typeReleasedByCompositeAlter(diff, enumDiff.SchemaName, enumDiff.EnumTypeName) {
+			deferred.enums[enumDiff] = true
+			continue
+		}
+		for _, compositeType := range pool {
+			if compositeReferencesType(compositeType, enumDiff.SchemaName, enumDiff.EnumTypeName) {
+				deferred.enums[enumDiff] = true
+				break
+			}
+		}
+	}
+	return deferred
+}
+
+// writeDeferredDropPhase emits the deferred drops after the alter phase.
+// Type drops are globalized across schema boundaries so cross-schema (even
+// cyclic) references between deferred schemas cannot produce an invalid
+// order: first the deferred schemas' non-type objects, then every deferred
+// composite (top-level and schema-owned) in one reverse-dependency pass,
+// then every deferred enum — nothing references an enum by that point —
+// and finally the bare DROP SCHEMA statements.
+func writeDeferredDropPhase(out *strings.Builder, diff *schema.MetadataDiff) error {
+	deferred := computeDeferredDrops(diff)
+
+	deferredSchemas := make([]*schema.SchemaDiff, 0, len(deferred.schemas))
+	for _, schemaDiff := range diff.SchemaChanges {
+		if schemaDiff.Action == schema.MetadataDiffActionDrop && deferred.schemas[schemaDiff] {
+			deferredSchemas = append(deferredSchemas, schemaDiff)
+		}
+	}
+	slices.SortStableFunc(deferredSchemas, func(a, b *schema.SchemaDiff) int {
+		return strings.Compare(a.SchemaName, b.SchemaName)
+	})
+
+	for _, schemaDiff := range deferredSchemas {
+		if skipPostgresSchemaDDL(schemaDiff.SchemaName) {
+			continue
+		}
+		if err := writeDropSchemaNonTypeObjects(out, schemaDiff.SchemaName, schemaDiff.OldSchema); err != nil {
+			return err
+		}
+	}
+
+	compositeDrops := slices.Clone(deferred.composites)
+	for _, schemaDiff := range deferredSchemas {
+		if skipPostgresSchemaDDL(schemaDiff.SchemaName) {
+			continue
+		}
+		schemaObjects := buildDropSchemaObjectsDiff(schemaDiff.SchemaName, schemaDiff.OldSchema)
+		compositeDrops = append(compositeDrops, schemaObjects.CompositeTypeChanges...)
+	}
+	if err := writeCompositeTypeDropsInReverseDependencyOrder(out, compositeDrops); err != nil {
+		return err
+	}
+
+	for _, enumDiff := range diff.EnumTypeChanges {
+		if enumDiff.Action == schema.MetadataDiffActionDrop && deferred.enums[enumDiff] {
+			if err := writeEnumTypeDiff(out, enumDiff); err != nil {
+				return err
+			}
+		}
+	}
+	for _, schemaDiff := range deferredSchemas {
+		if skipPostgresSchemaDDL(schemaDiff.SchemaName) {
+			continue
+		}
+		schemaObjects := buildDropSchemaObjectsDiff(schemaDiff.SchemaName, schemaDiff.OldSchema)
+		for _, enumDiff := range schemaObjects.EnumTypeChanges {
+			if err := writeEnumTypeDiff(out, enumDiff); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, schemaDiff := range deferredSchemas {
+		if skipPostgresSchemaDDL(schemaDiff.SchemaName) {
+			continue
+		}
+		if _, err := fmt.Fprintf(out, "DROP SCHEMA IF EXISTS \"%s\";\n\n", schemaDiff.SchemaName); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// compositePoolReferencesSchema reports whether any composite in the pool has
+// an attribute whose (always schema-qualified) type lives in the schema.
+func compositePoolReferencesSchema(pool []*storepb.CompositeTypeMetadata, schemaName string) bool {
+	for _, compositeType := range pool {
+		for _, attribute := range compositeType.GetAttributes() {
+			if depSchema, _, ok := parseQualifiedTypeIdent(attribute.Type); ok && depSchema == schemaName {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// schemaOwnsRetypeReleasedComposite reports whether the dropped schema owns a
+// composite that a column retype in the alter phase releases.
+func schemaOwnsRetypeReleasedComposite(diff *schema.MetadataDiff, schemaDiff *schema.SchemaDiff) bool {
+	for _, compositeType := range schemaDiff.OldSchema.GetCompositeTypes() {
+		if compositeType.GetSkipDump() {
+			continue
+		}
+		probe := &schema.CompositeTypeDiff{
+			SchemaName:        schemaDiff.SchemaName,
+			CompositeTypeName: compositeType.GetName(),
+		}
+		if compositeDropReleasedByRetype(diff, probe) {
+			return true
+		}
+	}
+	return false
+}
+
+// compositeReferencesType reports whether any attribute of the composite
+// references the given type. Attribute types are stored schema-qualified for
+// user-defined types; the bare fallback matches by name alone, which may
+// defer a drop unnecessarily — a safe direction.
+func compositeReferencesType(composite *storepb.CompositeTypeMetadata, typeSchema, typeName string) bool {
+	for _, attribute := range composite.GetAttributes() {
+		if typeStringReferencesComposite(attribute.Type, typeSchema, typeName) {
+			return true
+		}
+	}
+	return false
+}
+
+// partitionDroppedCompositeTypes splits composite type drops into those safe
+// to run in the drop phase and those that must wait until after the alter
+// phase because a column retype releases the last reference to the type.
+// immediateCompositeDrops returns the top-level composite drops that run in
+// the drop phase — everything not claimed by the deferred set.
+func immediateCompositeDrops(diff *schema.MetadataDiff, deferred *deferredDropSet) []*schema.CompositeTypeDiff {
+	deferredSet := make(map[*schema.CompositeTypeDiff]bool, len(deferred.composites))
+	for _, compositeDiff := range deferred.composites {
+		deferredSet[compositeDiff] = true
+	}
+	var immediate []*schema.CompositeTypeDiff
+	for _, compositeDiff := range diff.CompositeTypeChanges {
+		if compositeDiff.Action == schema.MetadataDiffActionDrop && !deferredSet[compositeDiff] {
+			immediate = append(immediate, compositeDiff)
+		}
+	}
+	return immediate
+}
+
+// dropGraphComposites splits the immediate top-level composite drops into
+// those ordered inside the dependent-object graph and those held back to the
+// post-graph batch because a schema-owned composite (which only drops after
+// the graph) references them, directly or transitively. A composite that is
+// both held back and a row-type referencer of a dropped table has genuinely
+// conflicting constraints; resolving that requires schema-owned objects in
+// the same graph.
+func dropGraphComposites(diff *schema.MetadataDiff) (map[string]*schema.CompositeTypeDiff, []*schema.CompositeTypeDiff) {
+	immediate := immediateCompositeDrops(diff, computeDeferredDrops(diff))
+	var pool []*storepb.CompositeTypeMetadata
+	for _, schemaDiff := range diff.SchemaChanges {
+		if schemaDiff.Action != schema.MetadataDiffActionDrop || skipPostgresSchemaDDL(schemaDiff.SchemaName) {
+			continue
+		}
+		for _, compositeType := range schemaDiff.OldSchema.GetCompositeTypes() {
+			if !compositeType.GetSkipDump() {
+				pool = append(pool, compositeType)
+			}
+		}
+	}
+	held := make(map[*schema.CompositeTypeDiff]bool)
+	for changed := true; changed; {
+		changed = false
+		for _, candidate := range immediate {
+			if held[candidate] {
+				continue
+			}
+			for _, member := range pool {
+				if compositeReferencesType(member, candidate.SchemaName, candidate.CompositeTypeName) {
+					held[candidate] = true
+					pool = append(pool, candidate.OldCompositeType)
+					changed = true
+					break
+				}
+			}
+		}
+	}
+	inGraph := make(map[string]*schema.CompositeTypeDiff)
+	var heldBack []*schema.CompositeTypeDiff
+	for _, compositeDiff := range immediate {
+		if held[compositeDiff] {
+			heldBack = append(heldBack, compositeDiff)
+		} else {
+			inGraph[getMigrationObjectID(compositeDiff.SchemaName, compositeDiff.CompositeTypeName)] = compositeDiff
+		}
+	}
+	return inGraph, heldBack
+}
+
+// typeReleasedByCompositeAlter reports whether an ALTERED composite's old
+// attributes reference the given type while its new version does not — the
+// release happens only when the create-phase alter runs.
+func typeReleasedByCompositeAlter(diff *schema.MetadataDiff, typeSchema, typeName string) bool {
+	for _, compositeDiff := range diff.CompositeTypeChanges {
+		if compositeDiff.Action != schema.MetadataDiffActionAlter {
+			continue
+		}
+		for _, oldAttribute := range compositeDiff.OldCompositeType.GetAttributes() {
+			if typeStringReferencesComposite(oldAttribute.Type, typeSchema, typeName) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func compositeDropReleasedByRetype(diff *schema.MetadataDiff, compositeDiff *schema.CompositeTypeDiff) bool {
+	if typeReleasedByCompositeAlter(diff, compositeDiff.SchemaName, compositeDiff.CompositeTypeName) {
+		return true
+	}
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action != schema.MetadataDiffActionAlter {
+			continue
+		}
+		for _, columnDiff := range tableDiff.ColumnChanges {
+			var oldType string
+			switch columnDiff.Action {
+			case schema.MetadataDiffActionAlter:
+				// A retype away from the composite releases it in the alter
+				// phase.
+				oldType = columnDiff.OldColumn.GetType()
+				if oldType == columnDiff.NewColumn.GetType() {
+					continue
+				}
+			case schema.MetadataDiffActionDrop:
+				// A column drop on a surviving table runs in
+				// writeDropAlterTableObjects, after the dependent-object
+				// graph — too late for a graph-ordered type drop.
+				oldType = columnDiff.OldColumn.GetType()
+			default:
+				continue
+			}
+			if typeStringReferencesComposite(oldType, compositeDiff.SchemaName, compositeDiff.CompositeTypeName) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// columnTypeCompositeIDs resolves a column type string to candidate
+// composite IDs in the given map. Qualified references resolve exactly;
+// bare references (including the "_name" array form column sync produces)
+// match every same-named composite — over-edging only tightens ordering.
+func columnTypeCompositeIDs(columnType string, composites map[string]*schema.CompositeTypeDiff) []string {
+	if depSchema, depName, ok := parseQualifiedTypeIdent(columnType); ok {
+		id := getMigrationObjectID(depSchema, depName)
+		if composites[id] != nil {
+			return []string{id}
+		}
+		return nil
+	}
+	base := strings.TrimSuffix(strings.TrimSpace(columnType), "[]")
+	base = strings.TrimPrefix(base, "_")
+	var ids []string
+	for id, compositeDiff := range composites {
+		if compositeDiff.CompositeTypeName == base {
+			ids = append(ids, id)
+		}
+	}
+	slices.Sort(ids)
+	return ids
+}
+
+// typeStringReferencesComposite matches a column type string against a
+// composite type. Column sync renders user-defined column types as
+// "schema.name" and array columns as the bare "_name" element type, so both
+// forms plus explicit array suffixes are recognized. The bare form matches
+// by name alone, which may defer a drop unnecessarily — a safe direction.
+func typeStringReferencesComposite(typeStr, schemaName, compositeName string) bool {
+	if depSchema, depName, ok := parseQualifiedTypeIdent(typeStr); ok {
+		return depSchema == schemaName && depName == compositeName
+	}
+	base := strings.TrimSuffix(strings.TrimSpace(typeStr), "[]")
+	base = strings.TrimPrefix(base, "_")
+	return base == compositeName
+}
+
+func writeCompositeTypeDropsInReverseDependencyOrder(out *strings.Builder, drops []*schema.CompositeTypeDiff) error {
+	droppedCompositeDiffs := make(map[string]*schema.CompositeTypeDiff, len(drops))
+	droppedComposites := make([]qualifiedCompositeType, 0, len(drops))
+	for _, compositeDiff := range drops {
+		droppedCompositeDiffs[compositeDiff.SchemaName+"\x00"+compositeDiff.CompositeTypeName] = compositeDiff
+		droppedComposites = append(droppedComposites, qualifiedCompositeType{Schema: compositeDiff.SchemaName, Composite: compositeDiff.OldCompositeType})
+	}
+	orderedDrops := sortCompositeTypesTopologically(droppedComposites)
+	for i := len(orderedDrops) - 1; i >= 0; i-- {
+		t := orderedDrops[i]
+		if err := writeCompositeTypeDiff(out, droppedCompositeDiffs[t.Schema+"\x00"+t.Composite.Name]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func writeDropPhase(out *strings.Builder, diff *schema.MetadataDiff) error {
@@ -227,6 +697,9 @@ func writeDropPhase(out *strings.Builder, diff *schema.MetadataDiff) error {
 	if err := writeDropSequenceOwnershipBeforeTableDrops(out, diff); err != nil {
 		return err
 	}
+	if err := writeReleasingCompositeAlters(out, diff); err != nil {
+		return err
+	}
 	if err := writeDropDependentObjects(out, diff); err != nil {
 		return err
 	}
@@ -244,8 +717,59 @@ func writeDropPhase(out *strings.Builder, diff *schema.MetadataDiff) error {
 			}
 		}
 	}
+	// Non-deferred dropped schemas participate in the same global type-drop
+	// ordering as top-level drops: a schema-owned composite may reference a
+	// top-level type (or vice versa), so their non-type objects drop first,
+	// then every composite in one reverse-dependency pass, then enums, and
+	// the bare DROP SCHEMA statements last.
+	deferred := computeDeferredDrops(diff)
+	var immediateSchemaDrops []*schema.SchemaDiff
+	for _, schemaDiff := range diff.SchemaChanges {
+		if schemaDiff.Action == schema.MetadataDiffActionDrop && !deferred.schemas[schemaDiff] && !skipPostgresSchemaDDL(schemaDiff.SchemaName) {
+			immediateSchemaDrops = append(immediateSchemaDrops, schemaDiff)
+		}
+	}
+	slices.SortStableFunc(immediateSchemaDrops, func(a, b *schema.SchemaDiff) int {
+		return strings.Compare(a.SchemaName, b.SchemaName)
+	})
+	for _, schemaDiff := range immediateSchemaDrops {
+		if err := writeDropSchemaNonTypeObjects(out, schemaDiff.SchemaName, schemaDiff.OldSchema); err != nil {
+			return err
+		}
+	}
+
+	// Drop composite types before enum types: composite attributes may
+	// reference enums. Dependents drop before the composites they reference.
+	// Composites released only by a column retype cannot be dropped yet —
+	// the retype runs in the later alter phase — so those drops are deferred
+	// to the end of the migration.
+	// Top-level immediate composite drops are ordered inside the dependent-
+	// object graph (writeDropDependentObjects), except those a schema-owned
+	// composite references — they drop here, merged with the schema-owned
+	// composites in one reverse-dependency pass. Residual corner: a
+	// schema-owned composite referencing a top-level dropped table drops
+	// after it — full generality needs the schema-owned objects in the
+	// same graph.
+	_, remainingDrops := dropGraphComposites(diff)
+	for _, schemaDiff := range immediateSchemaDrops {
+		schemaObjects := buildDropSchemaObjectsDiff(schemaDiff.SchemaName, schemaDiff.OldSchema)
+		remainingDrops = append(remainingDrops, schemaObjects.CompositeTypeChanges...)
+	}
+	if err := writeCompositeTypeDropsInReverseDependencyOrder(out, remainingDrops); err != nil {
+		return err
+	}
+	// Enums referenced by a deferred composite cannot be dropped until that
+	// composite is gone; they are deferred alongside it.
 	for _, enumDiff := range diff.EnumTypeChanges {
-		if enumDiff.Action == schema.MetadataDiffActionDrop {
+		if enumDiff.Action == schema.MetadataDiffActionDrop && !deferred.enums[enumDiff] {
+			if err := writeEnumTypeDiff(out, enumDiff); err != nil {
+				return err
+			}
+		}
+	}
+	for _, schemaDiff := range immediateSchemaDrops {
+		schemaObjects := buildDropSchemaObjectsDiff(schemaDiff.SchemaName, schemaDiff.OldSchema)
+		for _, enumDiff := range schemaObjects.EnumTypeChanges {
 			if err := writeEnumTypeDiff(out, enumDiff); err != nil {
 				return err
 			}
@@ -258,11 +782,9 @@ func writeDropPhase(out *strings.Builder, diff *schema.MetadataDiff) error {
 			}
 		}
 	}
-	for _, schemaDiff := range diff.SchemaChanges {
-		if schemaDiff.Action == schema.MetadataDiffActionDrop {
-			if err := writeSchemaDiff(out, schemaDiff); err != nil {
-				return err
-			}
+	for _, schemaDiff := range immediateSchemaDrops {
+		if _, err := fmt.Fprintf(out, "DROP SCHEMA IF EXISTS \"%s\";\n\n", schemaDiff.SchemaName); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -290,6 +812,7 @@ func writeCreateOrAlterPhase(out *strings.Builder, diff *schema.MetadataDiff) er
 			}
 		}
 	}
+
 	for _, sequenceDiff := range diff.SequenceChanges {
 		if sequenceDiff.Action == schema.MetadataDiffActionCreate || sequenceDiff.Action == schema.MetadataDiffActionAlter {
 			if err := writeSequenceDiff(out, sequenceDiff); err != nil {
@@ -301,6 +824,21 @@ func writeCreateOrAlterPhase(out *strings.Builder, diff *schema.MetadataDiff) er
 	if err := writeCreateTables(out, diff); err != nil {
 		return err
 	}
+	// Composite alters run after table creation: an added or retyped
+	// attribute may reference a row type created in this migration, while
+	// table creation itself only references the composite by name and never
+	// depends on its attribute set. Statements that release a dropped
+	// table's row type were already emitted in the drop phase. Alters that
+	// gain a created view's row type wait until after the views phase.
+	released := releasingCompositeAttributes(diff)
+	postViewAlters := postViewCompositeAlters(diff)
+	for _, compositeDiff := range diff.CompositeTypeChanges {
+		if compositeDiff.Action == schema.MetadataDiffActionAlter && !postViewAlters[compositeDiff] {
+			if err := writeCompositeTypeDiffWithReleased(out, compositeDiff, released); err != nil {
+				return err
+			}
+		}
+	}
 	if err := writeAlterTables(out, diff); err != nil {
 		return err
 	}
@@ -309,6 +847,29 @@ func writeCreateOrAlterPhase(out *strings.Builder, diff *schema.MetadataDiff) er
 	}
 	if err := writeCreateRoutinesViewsAndMaterializedViews(out, diff); err != nil {
 		return err
+	}
+	// Composites whose attributes use a created view or materialized view
+	// row type (directly or through another such composite) are created only
+	// now. Residual: a created table consuming such a composite still emits
+	// earlier — resolving that needs views in the create graph.
+	postView := postViewCompositeCreates(diff)
+	var postViewCreates []qualifiedCompositeType
+	postViewDiffs := make(map[string]*schema.CompositeTypeDiff)
+	for compositeDiff := range postView {
+		postViewDiffs[compositeDiff.SchemaName+"\x00"+compositeDiff.CompositeTypeName] = compositeDiff
+		postViewCreates = append(postViewCreates, qualifiedCompositeType{Schema: compositeDiff.SchemaName, Composite: compositeDiff.NewCompositeType})
+	}
+	for _, t := range sortCompositeTypesTopologically(postViewCreates) {
+		if err := writeCompositeTypeDiff(out, postViewDiffs[t.Schema+"\x00"+t.Composite.Name]); err != nil {
+			return err
+		}
+	}
+	for _, compositeDiff := range diff.CompositeTypeChanges {
+		if compositeDiff.Action == schema.MetadataDiffActionAlter && postViewAlters[compositeDiff] {
+			if err := writeCompositeTypeDiffWithReleased(out, compositeDiff, released); err != nil {
+				return err
+			}
+		}
 	}
 	if err := writeCreateTableForeignKeys(out, diff); err != nil {
 		return err
@@ -514,7 +1075,14 @@ func isSequenceOwnedByDroppedTable(diff *schema.MetadataDiff, schemaName string,
 
 func writeDropDependentObjects(out *strings.Builder, diff *schema.MetadataDiff) error {
 	maps := buildDropObjectMaps(diff)
+	// Top-level immediate composite drops participate in the same graph:
+	// tables/views drop before composites their columns use, and composites
+	// drop before tables whose row types their attributes reference.
+	composites, _ := dropGraphComposites(diff)
 	graph := base.NewGraph()
+	for _, id := range sortedMapKeys(composites) {
+		graph.AddNode(id)
+	}
 	for _, id := range sortedMapKeys(maps.tables) {
 		graph.AddNode(id)
 	}
@@ -542,6 +1110,39 @@ func writeDropDependentObjects(out *strings.Builder, diff *schema.MetadataDiff) 
 		}
 		for _, id := range sortedMapKeys(maps.functions) {
 			graph.AddEdge(id, tableID)
+		}
+	}
+	// Views, matviews, and routines drop before every composite type, like
+	// they do before every table — except when the composite's attributes
+	// reference that view's row type, where only the composite -> view edge
+	// applies (the blanket edge would create a cycle and break the order).
+	compositeRowTypeRefs := make(map[string]map[string]bool)
+	for compositeID, compositeDiff := range composites {
+		refs := make(map[string]bool)
+		for _, attribute := range compositeDiff.OldCompositeType.GetAttributes() {
+			if depSchema, depName, ok := parseQualifiedTypeIdent(attribute.Type); ok {
+				refs[getMigrationObjectID(depSchema, depName)] = true
+			}
+		}
+		compositeRowTypeRefs[compositeID] = refs
+	}
+	for _, compositeID := range sortedMapKeys(composites) {
+		refs := compositeRowTypeRefs[compositeID]
+		for _, id := range sortedMapKeys(maps.views) {
+			if !refs[id] {
+				graph.AddEdge(id, compositeID)
+			}
+		}
+		for _, id := range sortedMapKeys(maps.materializedViews) {
+			if !refs[id] {
+				graph.AddEdge(id, compositeID)
+			}
+		}
+		for _, id := range sortedMapKeys(maps.procedures) {
+			graph.AddEdge(id, compositeID)
+		}
+		for _, id := range sortedMapKeys(maps.functions) {
+			graph.AddEdge(id, compositeID)
 		}
 	}
 
@@ -580,6 +1181,26 @@ func writeDropDependentObjects(out *strings.Builder, diff *schema.MetadataDiff) 
 				graph.AddEdge(tableID, depID)
 			}
 		}
+		// A table whose column uses a dropped composite drops before it.
+		for _, column := range tableDiff.OldTable.GetColumns() {
+			for _, depID := range columnTypeCompositeIDs(column.GetType(), composites) {
+				graph.AddEdge(tableID, depID)
+			}
+		}
+	}
+	for compositeID, compositeDiff := range composites {
+		for _, attribute := range compositeDiff.OldCompositeType.GetAttributes() {
+			depSchema, depName, ok := parseQualifiedTypeIdent(attribute.Type)
+			if !ok {
+				continue
+			}
+			depID := getMigrationObjectID(depSchema, depName)
+			// A composite drops before the composite or table row type it
+			// references.
+			if depID != compositeID && hasNode(depID) {
+				graph.AddEdge(compositeID, depID)
+			}
+		}
 	}
 
 	orderedIDs, err := graph.TopologicalSort()
@@ -588,6 +1209,7 @@ func writeDropDependentObjects(out *strings.Builder, diff *schema.MetadataDiff) 
 		orderedIDs = append(orderedIDs, sortedMapKeys(maps.materializedViews)...)
 		orderedIDs = append(orderedIDs, sortedMapKeys(maps.procedures)...)
 		orderedIDs = append(orderedIDs, sortedMapKeys(maps.functions)...)
+		orderedIDs = append(orderedIDs, sortedMapKeys(composites)...)
 		orderedIDs = append(orderedIDs, sortedMapKeys(maps.tables)...)
 	}
 	for _, id := range orderedIDs {
@@ -610,6 +1232,10 @@ func writeDropDependentObjects(out *strings.Builder, diff *schema.MetadataDiff) 
 			}
 		case maps.tables[id] != nil:
 			if err := writeTableDiff(out, maps.tables[id]); err != nil {
+				return err
+			}
+		case composites[id] != nil:
+			if err := writeCompositeTypeDiff(out, composites[id]); err != nil {
 				return err
 			}
 		default:
@@ -678,7 +1304,21 @@ func writeDropAlterTableObjects(out *strings.Builder, diff *schema.MetadataDiff)
 
 func writeCreateTables(out *strings.Builder, diff *schema.MetadataDiff) error {
 	maps := buildCreateObjectMaps(diff)
+	// Created composite types share the graph: a composite referencing a
+	// created table's row type comes after that table, and a table whose
+	// column uses a created composite comes after the composite. Composites
+	// referencing created view row types wait for the views phase instead.
+	postView := postViewCompositeCreates(diff)
+	composites := make(map[string]*schema.CompositeTypeDiff)
+	for _, compositeDiff := range diff.CompositeTypeChanges {
+		if compositeDiff.Action == schema.MetadataDiffActionCreate && !postView[compositeDiff] {
+			composites[getMigrationObjectID(compositeDiff.SchemaName, compositeDiff.CompositeTypeName)] = compositeDiff
+		}
+	}
 	graph := base.NewGraph()
+	for _, id := range sortedMapKeys(composites) {
+		graph.AddNode(id)
+	}
 	for _, id := range sortedMapKeys(maps.tables) {
 		graph.AddNode(id)
 	}
@@ -689,13 +1329,39 @@ func writeCreateTables(out *strings.Builder, diff *schema.MetadataDiff) error {
 				graph.AddEdge(depID, tableID)
 			}
 		}
+		for _, column := range tableDiff.NewTable.GetColumns() {
+			for _, depID := range columnTypeCompositeIDs(column.GetType(), composites) {
+				graph.AddEdge(depID, tableID)
+			}
+		}
+	}
+	for compositeID, compositeDiff := range composites {
+		for _, attribute := range compositeDiff.NewCompositeType.GetAttributes() {
+			depSchema, depName, ok := parseQualifiedTypeIdent(attribute.Type)
+			if !ok {
+				continue
+			}
+			depID := getMigrationObjectID(depSchema, depName)
+			if depID == compositeID {
+				continue
+			}
+			if composites[depID] != nil || maps.tables[depID] != nil {
+				graph.AddEdge(depID, compositeID)
+			}
+		}
 	}
 
 	orderedIDs, err := graph.TopologicalSort()
 	if err != nil {
-		orderedIDs = sortedMapKeys(maps.tables)
+		orderedIDs = append(sortedMapKeys(composites), sortedMapKeys(maps.tables)...)
 	}
 	for _, id := range orderedIDs {
+		if compositeDiff := composites[id]; compositeDiff != nil {
+			if err := writeCompositeTypeDiff(out, compositeDiff); err != nil {
+				return err
+			}
+			continue
+		}
 		if err := writeTableDiff(out, maps.tables[id]); err != nil {
 			return err
 		}
@@ -1486,10 +2152,22 @@ func skipPostgresSchemaDDL(schemaName string) bool {
 }
 
 func writeDropSchemaObjects(out *strings.Builder, schemaName string, schemaMeta *storepb.SchemaMetadata) error {
+	if err := writeDropSchemaNonTypeObjects(out, schemaName, schemaMeta); err != nil {
+		return err
+	}
+	return writeDropSchemaTypes(out, schemaName, schemaMeta)
+}
+
+func writeDropSchemaNonTypeObjects(out *strings.Builder, schemaName string, schemaMeta *storepb.SchemaMetadata) error {
 	if schemaMeta == nil {
 		return nil
 	}
 	diff := buildDropSchemaObjectsDiff(schemaName, schemaMeta)
+	// This pass emits only non-type objects; the caller drops the schema's
+	// types afterwards. Clearing the type changes keeps the shared graph in
+	// writeDropDependentObjects from emitting them here too.
+	diff.CompositeTypeChanges = nil
+	diff.EnumTypeChanges = nil
 	if err := writeDropTableTriggers(out, diff); err != nil {
 		return err
 	}
@@ -1506,6 +2184,18 @@ func writeDropSchemaObjects(out *strings.Builder, schemaName string, schemaMeta 
 		if err := writeSequenceDiff(out, sequenceDiff); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func writeDropSchemaTypes(out *strings.Builder, schemaName string, schemaMeta *storepb.SchemaMetadata) error {
+	if schemaMeta == nil {
+		return nil
+	}
+	diff := buildDropSchemaObjectsDiff(schemaName, schemaMeta)
+	// Composite types drop before enum types they may reference.
+	if err := writeCompositeTypeDropsInReverseDependencyOrder(out, diff.CompositeTypeChanges); err != nil {
+		return err
 	}
 	for _, enumDiff := range diff.EnumTypeChanges {
 		if err := writeEnumTypeDiff(out, enumDiff); err != nil {
@@ -1600,6 +2290,17 @@ func buildDropSchemaObjectsDiff(schemaName string, schemaMeta *storepb.SchemaMet
 			SchemaName:   schemaName,
 			EnumTypeName: enumType.GetName(),
 			OldEnumType:  enumType,
+		})
+	}
+	for _, compositeType := range schemaMeta.GetCompositeTypes() {
+		if compositeType.GetSkipDump() {
+			continue
+		}
+		diff.CompositeTypeChanges = append(diff.CompositeTypeChanges, &schema.CompositeTypeDiff{
+			Action:            schema.MetadataDiffActionDrop,
+			SchemaName:        schemaName,
+			CompositeTypeName: compositeType.GetName(),
+			OldCompositeType:  compositeType,
 		})
 	}
 	return diff
@@ -1901,6 +2602,311 @@ func writeAlterEnumTypeAddValues(out *strings.Builder, schemaName string, oldEnu
 		return writeComment(out, fmt.Sprintf("TYPE \"%s\".\"%s\"", schemaName, newEnum.GetName()), newEnum.GetComment())
 	}
 	return nil
+}
+
+// releasedCompositeAttributeKey identifies an old composite attribute whose
+// releasing statement (DROP ATTRIBUTE or ALTER ATTRIBUTE ... TYPE) is emitted
+// early in the drop phase because its old type references a dropped table's
+// row type.
+func releasedCompositeAttributeKey(schemaName, typeName, attributeName string) string {
+	return schemaName + "\x00" + typeName + "\x00" + attributeName
+}
+
+// Modes for a released composite attribute.
+const (
+	releasedModeRetypeEarly = iota + 1
+	releasedModeDropReadd
+)
+
+// releasingCompositeAttributes finds old attributes of ALTERED composites
+// whose type references a dropped table and which the alter removes or
+// retypes — those statements must run before the table drop. When the
+// retype's target type is itself created in this migration, the early
+// statement is a DROP ATTRIBUTE and the create phase re-adds it.
+func releasingCompositeAttributes(diff *schema.MetadataDiff) map[string]int {
+	droppedTables := make(map[string]bool)
+	createdTypes := make(map[string]bool)
+	for _, tableDiff := range diff.TableChanges {
+		switch tableDiff.Action {
+		case schema.MetadataDiffActionDrop:
+			droppedTables[tableDiff.SchemaName+"\x00"+tableDiff.TableName] = true
+		case schema.MetadataDiffActionCreate:
+			createdTypes[tableDiff.SchemaName+"\x00"+tableDiff.TableName] = true
+		default:
+		}
+	}
+	// Dropped views and materialized views provide row types too.
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionDrop {
+			droppedTables[viewDiff.SchemaName+"\x00"+viewDiff.ViewName] = true
+		}
+	}
+	for _, viewDiff := range diff.MaterializedViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionDrop {
+			droppedTables[viewDiff.SchemaName+"\x00"+viewDiff.MaterializedViewName] = true
+		}
+	}
+	for _, compositeDiff := range diff.CompositeTypeChanges {
+		if compositeDiff.Action == schema.MetadataDiffActionCreate {
+			createdTypes[compositeDiff.SchemaName+"\x00"+compositeDiff.CompositeTypeName] = true
+		}
+	}
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionCreate {
+			createdTypes[viewDiff.SchemaName+"\x00"+viewDiff.ViewName] = true
+		}
+	}
+	for _, viewDiff := range diff.MaterializedViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionCreate {
+			createdTypes[viewDiff.SchemaName+"\x00"+viewDiff.MaterializedViewName] = true
+		}
+	}
+	released := make(map[string]int)
+	if len(droppedTables) == 0 {
+		return released
+	}
+	for _, compositeDiff := range diff.CompositeTypeChanges {
+		if compositeDiff.Action != schema.MetadataDiffActionAlter {
+			continue
+		}
+		newAttributes := make(map[string]*storepb.CompositeTypeAttribute)
+		for _, attribute := range compositeDiff.NewCompositeType.GetAttributes() {
+			newAttributes[attribute.Name] = attribute
+		}
+		for _, oldAttribute := range compositeDiff.OldCompositeType.GetAttributes() {
+			depSchema, depName, ok := parseQualifiedTypeIdent(oldAttribute.Type)
+			if !ok || !droppedTables[depSchema+"\x00"+depName] {
+				continue
+			}
+			newAttribute := newAttributes[oldAttribute.Name]
+			if newAttribute == nil || newAttribute.Type == oldAttribute.Type {
+				if newAttribute == nil {
+					released[releasedCompositeAttributeKey(compositeDiff.SchemaName, compositeDiff.CompositeTypeName, oldAttribute.Name)] = releasedModeRetypeEarly
+				}
+				continue
+			}
+			mode := releasedModeRetypeEarly
+			if newSchema, newName, ok := parseQualifiedTypeIdent(newAttribute.Type); ok && createdTypes[newSchema+"\x00"+newName] {
+				// The target type does not exist during the drop phase.
+				mode = releasedModeDropReadd
+			}
+			released[releasedCompositeAttributeKey(compositeDiff.SchemaName, compositeDiff.CompositeTypeName, oldAttribute.Name)] = mode
+		}
+	}
+	return released
+}
+
+// writeReleasingCompositeAlters emits, before the dependent-object graph,
+// the alter statements that release dropped tables' row types. Residual
+// corner: a dropped view over such a composite drops later inside the graph.
+func writeReleasingCompositeAlters(out *strings.Builder, diff *schema.MetadataDiff) error {
+	released := releasingCompositeAttributes(diff)
+	if len(released) == 0 {
+		return nil
+	}
+	for _, compositeDiff := range diff.CompositeTypeChanges {
+		if compositeDiff.Action != schema.MetadataDiffActionAlter {
+			continue
+		}
+		newAttributes := make(map[string]*storepb.CompositeTypeAttribute)
+		for _, attribute := range compositeDiff.NewCompositeType.GetAttributes() {
+			newAttributes[attribute.Name] = attribute
+		}
+		for _, oldAttribute := range compositeDiff.OldCompositeType.GetAttributes() {
+			mode := released[releasedCompositeAttributeKey(compositeDiff.SchemaName, compositeDiff.CompositeTypeName, oldAttribute.Name)]
+			if mode == 0 {
+				continue
+			}
+			newAttribute := newAttributes[oldAttribute.Name]
+			if mode == releasedModeRetypeEarly && newAttribute != nil {
+				if err := writeAlterCompositeAttribute(out, compositeDiff.SchemaName, compositeDiff.CompositeTypeName, alterAttributeAction, newAttribute); err != nil {
+					return err
+				}
+				continue
+			}
+			// Attribute dropped outright, or its retype target is created
+			// only later in this migration: drop now, re-add in the create
+			// phase.
+			if _, err := fmt.Fprintf(out, "ALTER TYPE \"%s\".\"%s\" DROP ATTRIBUTE \"%s\";\n\n", compositeDiff.SchemaName, compositeDiff.CompositeTypeName, oldAttribute.Name); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func writeCompositeTypeDiff(out *strings.Builder, compositeDiff *schema.CompositeTypeDiff) error {
+	return writeCompositeTypeDiffWithReleased(out, compositeDiff, nil)
+}
+
+// writeCompositeTypeDiffWithReleased is writeCompositeTypeDiff for the alter
+// path, skipping releasing statements already emitted in the drop phase.
+func writeCompositeTypeDiffWithReleased(out *strings.Builder, compositeDiff *schema.CompositeTypeDiff, released map[string]int) error {
+	switch compositeDiff.Action {
+	case schema.MetadataDiffActionCreate:
+		if err := writeCompositeType(out, compositeDiff.SchemaName, compositeDiff.NewCompositeType); err != nil {
+			return err
+		}
+		if _, err := out.WriteString(";\n\n"); err != nil {
+			return err
+		}
+		if compositeTypeHasComments(compositeDiff.NewCompositeType) {
+			return writeCompositeTypeComments(out, compositeDiff.SchemaName, compositeDiff.NewCompositeType)
+		}
+		return nil
+	case schema.MetadataDiffActionDrop:
+		_, err := fmt.Fprintf(out, "DROP TYPE \"%s\".\"%s\";\n\n", compositeDiff.SchemaName, compositeDiff.CompositeTypeName)
+		return err
+	case schema.MetadataDiffActionAlter:
+		return writeAlterCompositeType(out, compositeDiff.SchemaName, compositeDiff.OldCompositeType, compositeDiff.NewCompositeType, released)
+	default:
+		return nil
+	}
+}
+
+// alterAttributeAction is the writeAlterCompositeAttribute action that emits
+// ALTER ATTRIBUTE ... TYPE rather than ADD ATTRIBUTE.
+const alterAttributeAction = "ALTER ATTRIBUTE"
+
+// writeAlterCompositeType diffs attributes by name and emits real DDL.
+// ALTER ATTRIBUTE ... TYPE fails at execution when any table column uses the
+// type — PostgreSQL has no online path for that change; the reviewer sees the
+// statement and the executor surfaces the error. Attribute reordering has no
+// DDL at all and only produces a warning comment.
+func writeAlterCompositeType(out *strings.Builder, schemaName string, oldComposite, newComposite *storepb.CompositeTypeMetadata, released map[string]int) error {
+	oldAttributeMap := make(map[string]*storepb.CompositeTypeAttribute)
+	for _, attribute := range oldComposite.GetAttributes() {
+		oldAttributeMap[attribute.Name] = attribute
+	}
+	newAttributeMap := make(map[string]*storepb.CompositeTypeAttribute)
+	for _, attribute := range newComposite.GetAttributes() {
+		newAttributeMap[attribute.Name] = attribute
+	}
+
+	// Dropped attributes, in old declaration order. Dropping an attribute
+	// discards its data in every value of the type.
+	for _, oldAttribute := range oldComposite.GetAttributes() {
+		if released[releasedCompositeAttributeKey(schemaName, newComposite.GetName(), oldAttribute.Name)] != 0 {
+			continue
+		}
+		if _, exists := newAttributeMap[oldAttribute.Name]; !exists {
+			if _, err := fmt.Fprintf(out, "ALTER TYPE \"%s\".\"%s\" DROP ATTRIBUTE \"%s\";\n\n", schemaName, newComposite.GetName(), oldAttribute.Name); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Added attributes, in new declaration order.
+	for _, newAttribute := range newComposite.GetAttributes() {
+		if _, exists := oldAttributeMap[newAttribute.Name]; !exists {
+			if err := writeAlterCompositeAttribute(out, schemaName, newComposite.GetName(), "ADD ATTRIBUTE", newAttribute); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Attributes whose type or collation changed.
+	for _, newAttribute := range newComposite.GetAttributes() {
+		oldAttribute, exists := oldAttributeMap[newAttribute.Name]
+		if !exists {
+			continue
+		}
+		mode := released[releasedCompositeAttributeKey(schemaName, newComposite.GetName(), newAttribute.Name)]
+		if mode == releasedModeDropReadd {
+			// The early drop-phase statement removed the attribute; re-add
+			// it now that its target type exists.
+			if err := writeAlterCompositeAttribute(out, schemaName, newComposite.GetName(), "ADD ATTRIBUTE", newAttribute); err != nil {
+				return err
+			}
+			continue
+		}
+		if mode != 0 {
+			continue
+		}
+		if oldAttribute.Type != newAttribute.Type || oldAttribute.Collation != newAttribute.Collation {
+			if err := writeAlterCompositeAttribute(out, schemaName, newComposite.GetName(), alterAttributeAction, newAttribute); err != nil {
+				return err
+			}
+		}
+	}
+
+	if compositeAttributesReordered(oldComposite, newComposite) {
+		if _, err := fmt.Fprintf(out, "-- WARNING: PostgreSQL does not support reordering the attributes of \"%s\".\"%s\"\n\n", schemaName, newComposite.GetName()); err != nil {
+			return err
+		}
+	}
+
+	if oldComposite.GetComment() != newComposite.GetComment() {
+		if err := writeComment(out, fmt.Sprintf("TYPE \"%s\".\"%s\"", schemaName, newComposite.GetName()), newComposite.GetComment()); err != nil {
+			return err
+		}
+	}
+	for _, newAttribute := range newComposite.GetAttributes() {
+		oldAttribute, exists := oldAttributeMap[newAttribute.Name]
+		oldComment := ""
+		if exists {
+			oldComment = oldAttribute.Comment
+		}
+		// Comments of added attributes are covered here as well: ADD ATTRIBUTE
+		// carries no comment syntax.
+		if oldComment != newAttribute.Comment {
+			if err := writeComment(out, fmt.Sprintf("COLUMN \"%s\".\"%s\".\"%s\"", schemaName, newComposite.GetName(), newAttribute.Name), newAttribute.Comment); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func writeAlterCompositeAttribute(out *strings.Builder, schemaName, typeName, action string, attribute *storepb.CompositeTypeAttribute) error {
+	typeClause := attribute.Type
+	if action == alterAttributeAction {
+		typeClause = "TYPE " + attribute.Type
+	}
+	if _, err := fmt.Fprintf(out, "ALTER TYPE \"%s\".\"%s\" %s \"%s\" %s", schemaName, typeName, action, attribute.Name, typeClause); err != nil {
+		return err
+	}
+	// The collation is stored as an emit-ready identifier reference
+	// (quoted as needed, schema-qualified outside pg_catalog).
+	if attribute.Collation != "" {
+		if _, err := fmt.Fprintf(out, " COLLATE %s", attribute.Collation); err != nil {
+			return err
+		}
+	}
+	_, err := out.WriteString(";\n\n")
+	return err
+}
+
+// compositeAttributesReordered reports whether the attribute order ALTER TYPE
+// can achieve differs from the target order. Surviving attributes keep their
+// old relative positions and ADD ATTRIBUTE always appends at the end, so any
+// target that deviates from that achievable order — including an attribute
+// inserted in the middle — is unreachable and warrants the warning.
+func compositeAttributesReordered(oldComposite, newComposite *storepb.CompositeTypeMetadata) bool {
+	oldNames := make(map[string]bool)
+	for _, attribute := range oldComposite.GetAttributes() {
+		oldNames[attribute.Name] = true
+	}
+	newNames := make(map[string]bool)
+	for _, attribute := range newComposite.GetAttributes() {
+		newNames[attribute.Name] = true
+	}
+	var achieved []string
+	for _, attribute := range oldComposite.GetAttributes() {
+		if newNames[attribute.Name] {
+			achieved = append(achieved, attribute.Name)
+		}
+	}
+	for _, attribute := range newComposite.GetAttributes() {
+		if !oldNames[attribute.Name] {
+			achieved = append(achieved, attribute.Name)
+		}
+	}
+	var target []string
+	for _, attribute := range newComposite.GetAttributes() {
+		target = append(target, attribute.Name)
+	}
+	return !slices.Equal(achieved, target)
 }
 
 func writeViewDiff(out *strings.Builder, viewDiff *schema.ViewDiff) error {

@@ -53,6 +53,8 @@
     - [ColumnCatalog](#bytebase-store-ColumnCatalog)
     - [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry)
     - [ColumnMetadata](#bytebase-store-ColumnMetadata)
+    - [CompositeTypeAttribute](#bytebase-store-CompositeTypeAttribute)
+    - [CompositeTypeMetadata](#bytebase-store-CompositeTypeMetadata)
     - [DatabaseConfig](#bytebase-store-DatabaseConfig)
     - [DatabaseMetadata](#bytebase-store-DatabaseMetadata)
     - [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry)
@@ -140,6 +142,7 @@
     - [InstanceRole](#bytebase-store-InstanceRole)
     - [KerberosConfig](#bytebase-store-KerberosConfig)
     - [SASLConfig](#bytebase-store-SASLConfig)
+    - [SyncDatabases](#bytebase-store-SyncDatabases)
   
     - [DataSource.AuthenticationType](#bytebase-store-DataSource-AuthenticationType)
     - [DataSource.CloudSQLIPType](#bytebase-store-DataSource-CloudSQLIPType)
@@ -169,6 +172,7 @@
     - [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval)
     - [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate)
     - [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate)
+    - [IssueCommentPayload.ReviewSubmission](#bytebase-store-IssueCommentPayload-ReviewSubmission)
   
 - [store/oauth2.proto](#store_oauth2-proto)
     - [OAuth2AuthorizationCodeConfig](#bytebase-store-OAuth2AuthorizationCodeConfig)
@@ -1066,6 +1070,42 @@ This field is populated when syncing from the database. When empty (e.g., when p
 
 
 
+<a name="bytebase-store-CompositeTypeAttribute"></a>
+
+### CompositeTypeAttribute
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the attribute. |
+| type | [string](#string) |  | The attribute type. User-defined types are always schema-qualified. |
+| collation | [string](#string) |  | The non-default collation of the attribute as an emit-ready SQL identifier reference (quoted as needed, schema-qualified when outside pg_catalog), empty otherwise. e.g. `&#34;C&#34;` or `locale.en_us`. |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-CompositeTypeMetadata"></a>
+
+### CompositeTypeMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the composite type. |
+| attributes | [CompositeTypeAttribute](#bytebase-store-CompositeTypeAttribute) | repeated | The ordered attributes of the composite type. |
+| comment | [string](#string) |  |  |
+| skip_dump | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-DatabaseConfig"></a>
 
 ### DatabaseConfig
@@ -1641,6 +1681,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | events | [EventMetadata](#bytebase-store-EventMetadata) | repeated |  |
 | enum_types | [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata) | repeated |  |
 | skip_dump | [bool](#bool) |  |  |
+| composite_types | [CompositeTypeMetadata](#bytebase-store-CompositeTypeMetadata) | repeated | The list of user-defined composite types in a schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row types and derived types. |
 
 
 
@@ -2555,7 +2596,7 @@ Instance is the proto for instances.
 | external_link | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-store-DataSource) | repeated |  |
 | sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | The interval between automatic instance synchronizations. |
-| sync_databases | [string](#string) | repeated | Enable sync for the following databases. Default empty, means sync all schemas &amp; databases. |
+| sync_databases | [SyncDatabases](#bytebase-store-SyncDatabases) |  | Enable sync for the following databases. Not set means sync all schemas &amp; databases. |
 | mysql_lower_case_table_names | [int32](#int32) |  | The lower_case_table_names config for MySQL instances. It is used to determine whether the table names and database names are case sensitive. |
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | roles | [InstanceRole](#bytebase-store-InstanceRole) | repeated |  |
@@ -2630,6 +2671,21 @@ InstanceRole is the API message for instance role.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | krb_config | [KerberosConfig](#bytebase-store-KerberosConfig) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SyncDatabases"></a>
+
+### SyncDatabases
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [string](#string) | repeated |  |
 
 
 
@@ -2967,6 +3023,7 @@ Type represents the category of issue.
 | approval | [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval) |  |  |
 | issue_update | [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate) |  |  |
 | plan_update | [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate) |  |  |
+| review_submission | [IssueCommentPayload.ReviewSubmission](#bytebase-store-IssueCommentPayload-ReviewSubmission) |  |  |
 
 
 
@@ -3023,6 +3080,16 @@ add/remove/update from the snapshot pair.
 | ----- | ---- | ----- | ----------- |
 | from_specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
 | to_specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-IssueCommentPayload-ReviewSubmission"></a>
+
+### IssueCommentPayload.ReviewSubmission
+ReviewSubmission records that an issue entered review.
 
 
 

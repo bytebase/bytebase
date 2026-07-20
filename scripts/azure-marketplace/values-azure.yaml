@@ -10,6 +10,7 @@ global:
         tag: 3.11.1
         image: bytebase/bytebase
         registry: bytebase.azurecr.io
+        digest: ""
 
 # Standard Bytebase configuration
 bytebase:

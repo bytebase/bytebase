@@ -1,6 +1,6 @@
 import { useRef } from "react";
-import type { Location } from "react-router-dom";
-import { matchRoutes, Outlet, useBlocker } from "react-router-dom";
+import type { Location } from "react-router";
+import { matchRoutes, Outlet, useBlocker } from "react-router";
 import { AuthGate } from "@/react/app/AuthGate";
 import { SessionExpiredSurfaceGate } from "@/react/app/SessionExpiredSurfaceGate";
 import { Toaster } from "@/react/components/ui/toaster";
@@ -8,6 +8,7 @@ import { Watermark } from "@/react/components/Watermark";
 import { AgentWindow } from "@/react/plugins/agent/components/AgentWindow";
 import type { ReactRoute } from "@/react/router";
 import { buildReactRoute, runBeforeEachGuards } from "@/react/router";
+import { NavigationScrollRestoration } from "@/react/router/NavigationScrollRestoration";
 import { routes } from "@/react/router/routes";
 
 // Translate a react-router Location into the legacy `ReactRoute` snapshot the
@@ -69,9 +70,11 @@ export function RootLayout() {
       <AgentWindow />
       <SessionExpiredSurfaceGate />
       <LeaveGuardBlocker />
-      <AuthGate>
-        <Outlet />
-      </AuthGate>
+      <NavigationScrollRestoration>
+        <AuthGate>
+          <Outlet />
+        </AuthGate>
+      </NavigationScrollRestoration>
     </>
   );
 }

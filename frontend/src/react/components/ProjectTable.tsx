@@ -3,7 +3,7 @@ import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { memo, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
-import { RouterLink } from "@/react/components/RouterLink";
+import { ProjectLabel } from "@/react/components/ProjectLabel";
 import { Badge } from "@/react/components/ui/badge";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
@@ -53,14 +53,14 @@ export interface ProjectTableProps {
   readonly showSelection?: boolean;
   /** Mirrors Vue's `:show-labels`. Defaults to true. */
   readonly showLabels?: boolean;
+  /** Adds a dedicated state column. */
+  readonly showState?: boolean;
   /**
    * Mirrors Vue's `:show-actions`. When set, the trailing column renders
    * `renderActions(project)` (typically the project action dropdown).
    */
   readonly showActions?: boolean;
   readonly renderActions?: RenderActions;
-  /** Native link target for each row, used by title anchors. */
-  readonly getRowHref?: (project: Project) => string;
   /** Currently-checked rows (selection mode). */
   readonly selectedProjectNames?: readonly string[];
   /** Selection-change callback. */
@@ -99,9 +99,9 @@ export function ProjectTable({
   emptyContent,
   showSelection = false,
   showLabels = true,
+  showState = false,
   showActions = false,
   renderActions,
-  getRowHref,
   selectedProjectNames = [],
   onSelectedChange,
   sortKey,
@@ -134,6 +134,7 @@ export function ProjectTable({
     1 + // id
     1 + // title
     (showLabels ? 1 : 0) +
+    (showState ? 1 : 0) +
     (showActions ? 1 : 0);
 
   // Use refs so per-row handlers stay stable across selection changes.
@@ -147,8 +148,6 @@ export function ProjectTable({
   onRowClickRef.current = onRowClick;
   const renderActionsRef = useRef(renderActions);
   renderActionsRef.current = renderActions;
-  const getRowHrefRef = useRef(getRowHref);
-  getRowHrefRef.current = getRowHref;
 
   const handleSelectAll = useCallback(() => {
     const cb = onSelectedChangeRef.current;
@@ -218,6 +217,9 @@ export function ProjectTable({
               {t("common.labels")}
             </TableHead>
           ) : null}
+          {showState ? (
+            <TableHead className="min-w-[120px]">{t("common.state")}</TableHead>
+          ) : null}
           {showActions ? <TableHead className="w-[50px]" /> : null}
         </TableRow>
       </TableHeader>
@@ -253,12 +255,11 @@ export function ProjectTable({
               showSelection={showSelection}
               showLeadingCheck={showLeadingCheck}
               showLabels={showLabels}
+              showState={showState}
               showActions={showActions}
-              clickable={!!onRowClick}
-              rowHref={getRowHrefRef.current?.(project)}
               keyword={keyword}
               onToggleRow={handleToggleRow}
-              onRowClick={handleRowClick}
+              onRowClick={onRowClick ? handleRowClick : undefined}
               renderActions={renderActionsStable}
             />
           ))
@@ -275,12 +276,11 @@ interface ProjectRowViewProps {
   showSelection: boolean;
   showLeadingCheck: boolean;
   showLabels: boolean;
+  showState: boolean;
   showActions: boolean;
-  clickable: boolean;
-  rowHref?: string;
   keyword: string;
   onToggleRow: (name: string) => void;
-  onRowClick: (project: Project, event: ProjectRowClickEvent) => void;
+  onRowClick?: (project: Project, event: ProjectRowClickEvent) => void;
   renderActions: (project: Project) => ReactNode;
 }
 
@@ -291,9 +291,8 @@ const ProjectRowView = memo(function ProjectRowView({
   showSelection,
   showLeadingCheck,
   showLabels,
+  showState,
   showActions,
-  clickable,
-  rowHref,
   keyword,
   onToggleRow,
   onRowClick,
@@ -313,24 +312,10 @@ const ProjectRowView = memo(function ProjectRowView({
       <HighlightLabelText text={resourceId} keyword={keyword} />
     </EllipsisText>
   );
-  const handleRowLinkClick = (event: ReactMouseEvent<HTMLAnchorElement>) => {
-    event.stopPropagation();
-    if (
-      event.button !== 0 ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.shiftKey ||
-      event.altKey
-    ) {
-      return;
-    }
-    event.preventDefault();
-    onRowClick(project, event);
-  };
   return (
     <TableRow
-      className={cn(clickable && "cursor-pointer")}
-      onClick={clickable ? (event) => onRowClick(project, event) : undefined}
+      className={cn(onRowClick && "cursor-pointer")}
+      onClick={onRowClick ? (event) => onRowClick?.(project, event) : undefined}
     >
       {showSelection ? (
         <TableCell
@@ -356,40 +341,18 @@ const ProjectRowView = memo(function ProjectRowView({
         </TableCell>
       ) : null}
       <TableCell>
-        {rowHref && clickable ? (
-          <RouterLink
-            to={rowHref}
-            className="block hover:underline"
-            onClick={handleRowLinkClick}
-          >
-            {resourceIdContent}
-          </RouterLink>
-        ) : rowHref ? (
-          <a href={rowHref} className="block hover:underline">
-            {resourceIdContent}
-          </a>
-        ) : (
-          resourceIdContent
-        )}
+        {resourceIdContent}
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-x-2 min-w-0">
-          {rowHref && clickable ? (
-            <RouterLink
-              to={rowHref}
-              className="min-w-0 block hover:underline"
-              onClick={handleRowLinkClick}
-            >
-              {titleContent}
-            </RouterLink>
-          ) : rowHref ? (
-            <a href={rowHref} className="min-w-0 block hover:underline">
-              {titleContent}
-            </a>
-          ) : (
-            titleContent
-          )}
-          {project.state === State.DELETED ? (
+          <ProjectLabel
+            projectName={project.name}
+            link={!onRowClick}
+            className="min-w-0 block hover:underline"
+          >
+            {titleContent}
+          </ProjectLabel>
+          {!showState && project.state === State.DELETED ? (
             <Badge variant="warning" className="text-xs shrink-0">
               {t("common.archived")}
             </Badge>
@@ -401,6 +364,11 @@ const ProjectRowView = memo(function ProjectRowView({
           <LabelsCell labels={project.labels ?? {}} />
         </TableCell>
       ) : null}
+      {showState ? (
+        <TableCell>
+          <ResourceStateBadge state={project.state} />
+        </TableCell>
+      ) : null}
       {showActions ? (
         <TableCell className="w-[50px]" onClick={(e) => e.stopPropagation()}>
           <div className="flex justify-end">{renderActions(project)}</div>
@@ -409,6 +377,22 @@ const ProjectRowView = memo(function ProjectRowView({
     </TableRow>
   );
 });
+
+function ResourceStateBadge({ state }: { state: State }) {
+  const { t } = useTranslation();
+  if (state === State.DELETED) {
+    return (
+      <Badge variant="warning" className="text-xs">
+        {t("common.archived")}
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="success" className="text-xs">
+      {t("common.active")}
+    </Badge>
+  );
+}
 
 /**
  * Mirrors Vue's `LabelsCell` — show up to N labels inline, "..." for

@@ -15,6 +15,8 @@ type PhaseState = ReturnType<typeof usePhaseState>;
 
 export function useDerivedPlanState(params: {
   snapshot: PlanDetailPageSnapshot;
+  creationIssueLabels: string[];
+  setCreationIssueLabels: (labels: string[]) => void;
   isEditing: boolean;
   isRunningChecks: boolean;
   setIsRunningChecks: (running: boolean) => void;
@@ -30,6 +32,8 @@ export function useDerivedPlanState(params: {
 }): PlanDetailPageState {
   const {
     snapshot,
+    creationIssueLabels,
+    setCreationIssueLabels,
     isEditing,
     isRunningChecks,
     setIsRunningChecks,
@@ -97,6 +101,8 @@ export function useDerivedPlanState(params: {
   return useMemo(
     () => ({
       ...snapshot,
+      creationIssueLabels,
+      setCreationIssueLabels,
       isEditing,
       isRunningChecks,
       setIsRunningChecks,
@@ -117,6 +123,7 @@ export function useDerivedPlanState(params: {
     }),
     [
       editing,
+      creationIssueLabels,
       isEditing,
       isRunningChecks,
       patchState,
@@ -126,6 +133,7 @@ export function useDerivedPlanState(params: {
       routeName,
       routePhase,
       routeStageId,
+      setCreationIssueLabels,
       selectedTaskName,
       snapshot,
       taskRunsByTaskName,

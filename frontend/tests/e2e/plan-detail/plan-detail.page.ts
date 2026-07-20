@@ -29,6 +29,21 @@ export class PlanDetailPage {
   // The readiness footer's single action, in either weight (link or button).
   readonly bypassAndDeployAction: Locator;
 
+  // --- Header lifecycle slot (PlanDetailHeader, BYT-9722) ---
+  // The sticky title/action row. Scope every header-slot assertion to this so a
+  // pill/stamp/label in a phase section can't be mistaken for the header slot.
+  readonly headerRow: Locator;
+  // The frontier-stage advance buttons in the header slot: "Run · <stage>" /
+  // "Rerun · <stage>" (distinct from the deploy-section per-task exact "Run").
+  readonly headerRunStage: Locator;
+  readonly headerRerunStage: Locator;
+  // The your-turn Review action in the header slot (opens the approve/reject
+  // composer). Scoped so it never resolves to a phase-section control.
+  readonly headerReviewButton: Locator;
+  // The "⋯" overflow trigger and the promoted secondary action (e.g. Reopen).
+  readonly headerOverflowButton: Locator;
+  readonly headerReopenButton: Locator;
+
   constructor(page: Page, baseURL: string) {
     this.page = page;
     this.baseURL = baseURL;
@@ -50,13 +65,69 @@ export class PlanDetailPage {
     this.composerEditor = page.locator("textarea[placeholder='Add a comment...']");
     this.composerSubmitButton = page.getByRole("button", { name: "Comment", exact: true });
     this.bypassAndDeployAction = page.getByRole("button", { name: "Bypass and deploy" });
+
+    // The sticky header row, located structurally (no product-code testid): the
+    // title <input> sits in the row's left group (beside the terminal stamp), so
+    // its grandparent is the row that also holds the lifecycle slot + ⋯ overflow.
+    // Uses the same `..`-parent pattern as getSectionToggle below.
+    this.headerRow = page.getByRole("textbox").first().locator("..").locator("..");
+    // The frontier advance button reads "Run <stage>" / "Rerun <stage>" (the
+    // "·" separator is aria-hidden, so it's not in the accessible name). "Rerun"
+    // starts with "Re", so /^Run/ and /^Rerun/ never cross-match.
+    this.headerRunStage = this.headerRow.getByRole("button", { name: /^Run/ });
+    this.headerRerunStage = this.headerRow.getByRole("button", { name: /^Rerun/ });
+    this.headerReviewButton = this.headerRow.getByRole("button", {
+      name: "Review",
+      exact: true,
+    });
+    this.headerOverflowButton = this.headerRow.getByRole("button", { name: "More" });
+    this.headerReopenButton = this.headerRow.getByRole("button", {
+      name: "Reopen",
+      exact: true,
+    });
+  }
+
+  // The read-only status pill in the header slot ("Under review", "Rejected",
+  // "N checks failing", "Checking…"). It is a <button> (opens the gate popover),
+  // which distinguishes it from the identical-text review-phase status <span>.
+  headerStatusPill(name: string | RegExp): Locator {
+    return this.headerRow.getByRole("button", { name });
+  }
+
+  // A terminal stamp in the header slot ("Deployed" / "Closed"), rendered as a
+  // non-interactive badge left of the title.
+  headerStamp(text: string): Locator {
+    return this.headerRow.getByText(text, { exact: true });
+  }
+
+  // Open the "⋯" overflow menu and return a menu item by name. The menu portals
+  // outside the header row, so the item is located at page scope.
+  async openOverflow(): Promise<void> {
+    await this.headerOverflowButton.click();
+    await this.page.getByRole("menu").waitFor({ state: "visible" });
+  }
+
+  overflowItem(name: string): Locator {
+    return this.page.getByRole("menuitem", { name, exact: true });
+  }
+
+  // Confirm a "Run task" run-confirmation dialog (shared by the header Run·stage
+  // slot and the deploy-section Run — both open PlanDetailTaskRolloutActionPanel).
+  async confirmRunTaskDialog(): Promise<void> {
+    const dialog = this.page.getByRole("dialog").filter({ hasText: "Run task" });
+    await dialog.getByRole("button", { name: "Run", exact: true }).click();
   }
 
   // The Review phase status badge text (e.g. "Under review", "Approved",
-  // "Rejected", "Skipped"). Scoped to its known label set so it doesn't match
-  // body copy.
+  // "Rejected", "Skipped"). Scoped to the review phase section (#plan-phase-review)
+  // because the header lifecycle slot (BYT-9722, #20720) now renders the SAME
+  // status text as a pill — an unscoped getByText would match both and throw a
+  // strict-mode violation (the header pill is asserted separately, scoped to the
+  // header row, in plan-detail-header.spec.ts).
   reviewBadge(text: string): Locator {
-    return this.page.getByText(text, { exact: true });
+    return this.page
+      .locator("#plan-phase-review")
+      .getByText(text, { exact: true });
   }
 
   // Open the Review popover, pick an action, optionally type a comment, submit.

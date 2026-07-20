@@ -40,13 +40,13 @@ import {
 } from "@/react/hooks/useSessionPageSize";
 import {
   createAdvancedSearchParser,
-  legacyStateSearchParams,
   serializeAdvancedSearch,
   useURLSearchParam,
 } from "@/react/hooks/useURLSearchParam";
 import { cn } from "@/react/lib/utils";
 import { router, useCurrentRoute } from "@/react/router";
 import { PROJECT_V1_ROUTE_ISSUES } from "@/react/router/handles";
+import { useScrollRestorationLoadMore } from "@/react/router/NavigationScrollRestoration";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
@@ -57,6 +57,10 @@ import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
+import {
+  defaultActiveStateSearchParams,
+  getResourceStateFilter,
+} from "./resourceStateFilter";
 
 const parseProjectSearch = createAdvancedSearchParser(["state", "label"]);
 
@@ -243,7 +247,7 @@ export function ProjectsPage() {
   const route = useCurrentRoute();
 
   const defaultSearchParams = useMemo<SearchParams>(
-    () => legacyStateSearchParams(route.query.state),
+    () => defaultActiveStateSearchParams(route.query.state),
     [route.query.state]
   );
   const [searchParams, setSearchParams] = useURLSearchParam<SearchParams>({
@@ -261,11 +265,26 @@ export function ProjectsPage() {
       title: t("common.state"),
       description: t("issue.advanced-search.scope.state.description"),
       options: [
-        { value: "ACTIVE", keywords: ["active"] },
+        {
+          value: "ACTIVE",
+          keywords: ["active"],
+          custom: true,
+          render: () => <span>{t("common.active")}</span>,
+        },
         ...(canUndelete
           ? [
-              { value: "DELETED", keywords: ["archived", "deleted"] },
-              { value: "ALL", keywords: ["all"] },
+              {
+                value: "DELETED",
+                keywords: ["archived", "deleted"],
+                custom: true,
+                render: () => <span>{t("common.archived")}</span>,
+              },
+              {
+                value: "ALL",
+                keywords: ["all"],
+                custom: true,
+                render: () => <span>{t("common.all")}</span>,
+              },
             ]
           : []),
       ],
@@ -281,12 +300,7 @@ export function ProjectsPage() {
 
   // Derived values from searchParams
   const searchText = searchParams.query;
-  const stateFilter = useMemo(() => {
-    const val = getValueFromScopes(searchParams, "state");
-    if (val === "DELETED") return "DELETED" as const;
-    if (val === "ALL") return "ALL" as const;
-    return "ACTIVE" as const;
-  }, [searchParams]);
+  const stateFilter = getValueFromScopes(searchParams, "state");
   const selectedLabels = useMemo(
     () =>
       searchParams.scopes.filter((s) => s.id === "label").map((s) => s.value),
@@ -339,11 +353,7 @@ export function ProjectsPage() {
     [sortKey, sortOrder]
   );
 
-  const selectedState = useMemo(() => {
-    if (stateFilter === "DELETED") return State.DELETED;
-    if (stateFilter === "ALL") return undefined;
-    return State.ACTIVE;
-  }, [stateFilter]);
+  const selectedState = getResourceStateFilter(stateFilter);
 
   const fetchProjects = useCallback(
     async (isRefresh: boolean) => {
@@ -425,6 +435,12 @@ export function ProjectsPage() {
       fetchProjects(false);
     }
   }, [isFetchingMore, fetchProjects]);
+  useScrollRestorationLoadMore({
+    dataList: projects,
+    hasMore,
+    isFetchingMore,
+    loadMore,
+  });
 
   // Selection state
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
@@ -578,10 +594,6 @@ export function ProjectsPage() {
     []
   );
 
-  const getProjectHref = useCallback((project: Project) => {
-    return router.resolve(projectIssuesRoute(project)).fullPath;
-  }, []);
-
   const handleProjectAction = useCallback(() => {
     fetchProjects(true);
   }, [fetchProjects]);
@@ -617,6 +629,7 @@ export function ProjectsPage() {
           loading={loading}
           showSelection={canDelete}
           showLabels
+          showState
           showActions
           renderActions={(project) => (
             <ProjectActionDropdown
@@ -624,7 +637,6 @@ export function ProjectsPage() {
               onAction={handleProjectAction}
             />
           )}
-          getRowHref={getProjectHref}
           selectedProjectNames={Array.from(selectedNames)}
           onSelectedChange={(names) => setSelectedNames(new Set(names))}
           sortKey={sortKey}

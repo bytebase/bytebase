@@ -17,7 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cloneDeep, isEqual } from "lodash-es";
-import { GripVertical, ListOrdered, Plus, ShieldAlert, X } from "lucide-react";
+import { GripVertical, ListOrdered, Plus, X } from "lucide-react";
 import {
   forwardRef,
   useCallback,
@@ -28,6 +28,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
@@ -100,66 +101,11 @@ import {
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import {
-  hasWorkspacePermissionV2,
-  hexToRgb,
-  sqlReviewPolicySlug,
-} from "@/utils";
+import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import {
   getEnvironmentListKey,
   resolveSelectedEnvironmentId,
 } from "./environmentSelection";
-
-// ============================================================
-// EnvironmentName - displays env name with color badge
-// ============================================================
-function EnvironmentName({
-  environment,
-  link = false,
-}: {
-  environment: Environment;
-  link?: boolean;
-}) {
-  const hasEnvTierFeature = useAppStore((s) =>
-    s.hasInstanceFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
-  );
-  const color = environment.color || DEFAULT_ENVIRONMENT_COLOR;
-  const rgbValues = hexToRgb(color);
-  const rgbStr = rgbValues.join(", ");
-  const showProductionIcon =
-    hasEnvTierFeature && environment.tags?.protected === "protected";
-
-  const content = (
-    <span
-      className="inline-flex items-center gap-x-1 px-1.5 rounded-xs select-none truncate"
-      style={{
-        backgroundColor: `rgba(${rgbStr}, 0.1)`,
-        color: `rgb(${rgbStr})`,
-      }}
-    >
-      <span className="truncate">{environment.title}</span>
-      {showProductionIcon && (
-        <ShieldAlert className="w-3.5 h-3.5 shrink-0 text-control" />
-      )}
-    </span>
-  );
-
-  if (link) {
-    return (
-      <RouterLink
-        to={{ path: `/${formatEnvironmentName(environment.id)}` }}
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        className="hover:underline"
-      >
-        {content}
-      </RouterLink>
-    );
-  }
-
-  return content;
-}
 
 // ============================================================
 // Toggle switch
@@ -1237,7 +1183,7 @@ function SortableEnvironmentRow({
     >
       <div className="flex items-center gap-x-2">
         <span className="textinfo">{index + 1}.</span>
-        <EnvironmentName environment={env} />
+        <EnvironmentLabel environment={env} />
       </div>
       <button
         type="button"
@@ -1549,7 +1495,7 @@ export function EnvironmentsPage() {
           {environmentList.map((env, index) => (
             <TabsTrigger key={env.id} value={env.id} className="px-4">
               <span className="opacity-60 mr-1">{index + 1}.</span>
-              <EnvironmentName environment={env} />
+              <EnvironmentLabel environment={env} />
             </TabsTrigger>
           ))}
           <div className="flex-1" />

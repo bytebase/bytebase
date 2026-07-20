@@ -549,6 +549,22 @@ export declare type UpdateDataSourceRequest = Message<"bytebase.v1.UpdateDataSou
 export declare const UpdateDataSourceRequestSchema: GenMessage<UpdateDataSourceRequest>;
 
 /**
+ * @generated from message bytebase.v1.SyncDatabases
+ */
+export declare type SyncDatabases = Message<"bytebase.v1.SyncDatabases"> & {
+  /**
+   * @generated from field: repeated string databases = 1;
+   */
+  databases: string[];
+};
+
+/**
+ * Describes the message bytebase.v1.SyncDatabases.
+ * Use `create(SyncDatabasesSchema)` to create a new message.
+ */
+export declare const SyncDatabasesSchema: GenMessage<SyncDatabases>;
+
+/**
  * @generated from message bytebase.v1.Instance
  */
 export declare type Instance = Message<"bytebase.v1.Instance"> & {
@@ -633,11 +649,11 @@ export declare type Instance = Message<"bytebase.v1.Instance"> & {
 
   /**
    * Enable sync for following databases.
-   * Default empty, means sync all schemas & databases.
+   * Not set means sync all schemas & databases.
    *
-   * @generated from field: repeated string sync_databases = 14;
+   * @generated from field: bytebase.v1.SyncDatabases sync_databases = 14;
    */
-  syncDatabases: string[];
+  syncDatabases?: SyncDatabases | undefined;
 
   /**
    * The last time the instance was synced.

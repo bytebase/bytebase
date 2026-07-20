@@ -18,6 +18,7 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useURLSearchParam } from "@/react/hooks/useURLSearchParam";
 import { refreshIssueList } from "@/react/lib/issue/issueListRefresh";
+import { useScrollRestorationLoadMore } from "@/react/router/NavigationScrollRestoration";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
@@ -122,6 +123,7 @@ export function ProjectIssueDashboardPage({
     sessionKey: "bb.issue-table.project-issues",
     fetchList: fetchIssueList,
   });
+  useScrollRestorationLoadMore(paged);
 
   useEffect(() => {
     if (paged.dataList.length === 0) {

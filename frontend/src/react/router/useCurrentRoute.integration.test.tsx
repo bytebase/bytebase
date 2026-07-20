@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { createMemoryRouter, Outlet, RouterProvider } from "react-router-dom";
+import { createMemoryRouter, Outlet } from "react-router";
+import { RouterProvider } from "react-router/dom";
 import { describe, expect, test } from "vitest";
 import { SQL_EDITOR_DATABASE_MODULE } from "./handles";
 import { type ReactRoute, useCurrentRoute } from "./index";

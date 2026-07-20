@@ -7,7 +7,6 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { usePolling } from "@/react/hooks/usePolling";
 import {
   preserveTaskRunIdentities,
   sameMessage,
@@ -19,7 +18,7 @@ import {
   PLAN_DETAIL_PHASE_REVIEW,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
 import { IssueSchema, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   PlanCheckRunSchema,
@@ -29,6 +28,7 @@ import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import {
   RolloutSchema,
   Task_Status,
+  TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { unknownPlan } from "@/types/v1/issue/plan";
@@ -38,6 +38,7 @@ import { setDocumentTitle } from "@/utils";
 import { isTaskActivelyTransitioning } from "@/utils/v1/issue/rollout";
 import type { PlanDetailPhase } from "../../shared/stores/types";
 import { usePlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
+import { getPlanCheckSummary } from "../../utils/phaseSummary";
 import { fetchPlanSnapshot } from "./fetchPlanSnapshot";
 import type { PlanDetailPageSnapshot, PlanDetailPageState } from "./types";
 import { useDerivedPlanState } from "./useDerivedPlanState";
@@ -45,14 +46,9 @@ import { useEditingScopes } from "./useEditingScopes";
 import { useInitialFetch } from "./useInitialFetch";
 import { useLeaveGuard } from "./useLeaveGuard";
 import { usePhaseState } from "./usePhaseState";
+import { type PlanPollingMode, usePlanPolling } from "./usePlanPolling";
 import { useRedirects } from "./useRedirects";
 import { useRouteSelection } from "./useRouteSelection";
-
-// Poll cadence: fast while a task is transitioning (PENDING/RUNNING) so a status
-// change surfaces within ~1s; idle otherwise, just to catch externally-created
-// rollouts/tasks and a scheduled task starting, without hammering the server.
-const ACTIVE_POLL_INTERVAL_MS = 1000;
-const IDLE_POLL_INTERVAL_MS = 15000;
 
 const buildDefaultSnapshot = (
   projectId: string,
@@ -191,6 +187,7 @@ export const usePlanDetailPage = ({
   const phase = usePhaseState();
   const editing = useEditingScopes();
   const storeApi = usePlanDetailStoreApi();
+  const [creationIssueLabels, setCreationIssueLabels] = useState<string[]>([]);
   const [isRunningChecks, setIsRunningChecks] = useState(false);
   const latestSnapshotRef = useRef(snapshot);
   const { resolveLeaveConfirm } = useLeaveGuard();
@@ -208,6 +205,9 @@ export const usePlanDetailPage = ({
   const routeTaskId = route.taskId;
   const setActivePhases = phase.setActivePhases;
   const pageIdentityKey = `${projectId}/${planId}`;
+  useEffect(() => {
+    setCreationIssueLabels([]);
+  }, [pageIdentityKey]);
   const phaseSelectionRef = useRef<PhaseSelection>({});
   phaseSelectionRef.current = {
     routePhase,
@@ -344,14 +344,66 @@ export const usePlanDetailPage = ({
     syncDefaultActivePhases,
   ]);
 
-  const { isPlanDone, hasActiveTasks } = useMemo(() => {
+  const { activePollingKey, isPlanDone, pollingMode } = useMemo((): {
+    activePollingKey: string;
+    isPlanDone: boolean;
+    pollingMode: PlanPollingMode;
+  } => {
     if (!snapshot.rollout) {
-      return { isPlanDone: false, hasActiveTasks: false };
+      const checks = getPlanCheckSummary(snapshot.plan);
+      // A newly queued check is AVAILABLE until the scheduler claims it. The
+      // public check-run enum maps that store status to UNSPECIFIED, but the
+      // plan status-count map preserves the key. Keep polling actively across
+      // that short queueing window as well as while the check is RUNNING.
+      const hasActivePlanChecks =
+        checks.running > 0 ||
+        (snapshot.plan.planCheckRunStatusCount?.AVAILABLE ?? 0) > 0;
+      const hasCanceledPlanChecks =
+        (snapshot.plan.planCheckRunStatusCount?.CANCELED ?? 0) > 0;
+      // The backend considers an approval template with zero roles approved,
+      // although its API approval status can still be PENDING. Treat the
+      // resolved empty flow as passed so we keep polling through rollout
+      // creation instead of falling back to the idle cadence in that window.
+      const hasNoApprovalSteps =
+        snapshot.issue?.approvalTemplate?.flow?.roles.length === 0;
+      const approvalPassed =
+        snapshot.issue?.approvalStatus === ApprovalStatus.APPROVED ||
+        snapshot.issue?.approvalStatus === ApprovalStatus.SKIPPED ||
+        hasNoApprovalSteps;
+      const approvalChecking =
+        snapshot.issue?.status === IssueStatus.OPEN &&
+        !snapshot.issue.draft &&
+        snapshot.issue.approvalStatus === ApprovalStatus.CHECKING;
+      const rolloutExpected =
+        snapshot.plan.hasRollout ||
+        snapshot.issue?.status === IssueStatus.DONE ||
+        (snapshot.issue?.status === IssueStatus.OPEN &&
+          !snapshot.issue.draft &&
+          approvalPassed &&
+          !hasActivePlanChecks &&
+          !hasCanceledPlanChecks &&
+          checks.error === 0);
+      // Once every gate passes, rollout creation is asynchronous. Keep polling
+      // at the active cadence through that gap, as well as when either the plan
+      // or issue already proves the rollout committed but its data is missing.
+      return {
+        activePollingKey: [
+          snapshot.plan.hasRollout,
+          snapshot.issue?.status,
+          snapshot.issue?.approvalStatus,
+          JSON.stringify(snapshot.plan.planCheckRunStatusCount),
+        ].join(":"),
+        isPlanDone: false,
+        pollingMode:
+          hasActivePlanChecks || approvalChecking || rolloutExpected
+            ? "active"
+            : "idle",
+      };
     }
     const nowMs = Date.now();
     let taskCount = 0;
     let allSettled = true;
-    let hasActiveTasks = false;
+    let shouldPollActively = false;
     for (const stage of snapshot.rollout.stages) {
       for (const task of stage.tasks) {
         taskCount++;
@@ -366,33 +418,53 @@ export const usePlanDetailPage = ({
         // stays on the idle cadence rather than polling every second while it
         // waits — the idle poll still catches it once the backend starts it.
         if (isTaskActivelyTransitioning(task, nowMs)) {
-          hasActiveTasks = true;
+          shouldPollActively = true;
         }
       }
     }
-    return { isPlanDone: taskCount > 0 && allSettled, hasActiveTasks };
-  }, [snapshot.rollout]);
+    const hasActiveTaskRuns = snapshot.taskRuns.some(
+      (taskRun) =>
+        taskRun.status === TaskRun_Status.PENDING ||
+        taskRun.status === TaskRun_Status.AVAILABLE ||
+        taskRun.status === TaskRun_Status.RUNNING
+    );
+    const activePollingKey = [
+      ...snapshot.rollout.stages.flatMap((stage) =>
+        stage.tasks.map((task) => `${task.name}:${task.status}`)
+      ),
+      ...snapshot.taskRuns.map(
+        (taskRun) => `${taskRun.name}:${taskRun.status}`
+      ),
+    ].join("|");
+    return {
+      activePollingKey,
+      isPlanDone: taskCount > 0 && allSettled && !hasActiveTaskRuns,
+      pollingMode: shouldPollActively || hasActiveTaskRuns ? "active" : "idle",
+    };
+  }, [snapshot.issue, snapshot.plan, snapshot.rollout, snapshot.taskRuns]);
 
-  // Poll the whole snapshot on a fixed cadence: fast while a task is
-  // transitioning so PENDING -> RUNNING -> DONE surfaces promptly, idle
-  // otherwise (a failed task awaiting rerun, a scheduled task, an unstarted
-  // rollout) to catch changes without hammering the server. Stops once every
-  // task is terminal. usePolling pauses on a hidden tab and never overlaps a
-  // slow fetch. A user action's immediate fetch (refreshState) surfaces the
-  // result at once, and the cadence tightens as soon as that status is active.
-  usePolling(
-    snapshot.ready && !snapshot.isCreating && !isPlanDone,
-    hasActiveTasks ? ACTIVE_POLL_INTERVAL_MS : IDLE_POLL_INTERVAL_MS,
-    fetchState
-  );
+  // Poll the complete snapshot. Idle polling backs off from 1s to 16s. Active
+  // plan checks, approval finding, rollout creation, and task execution share a
+  // faster 500ms -> 1s -> 2s -> 4s cadence which resets when state changes.
+  // Independent jitter prevents synchronized clients; hidden tabs pause until
+  // they become visible again.
+  const { restart: restartPolling } = usePlanPolling({
+    enabled: snapshot.ready && !snapshot.isCreating && !isPlanDone,
+    mode: pollingMode,
+    refreshState: fetchState,
+    resetKey: pollingMode === "active" ? activePollingKey : undefined,
+  });
 
   // Public refresh used by user actions (run/skip/cancel a task, edits, etc.).
   const refreshState = useCallback(async () => {
     await fetchState();
-  }, [fetchState]);
+    restartPolling();
+  }, [fetchState, restartPolling]);
 
   return useDerivedPlanState({
     snapshot,
+    creationIssueLabels,
+    setCreationIssueLabels,
     isEditing,
     isRunningChecks,
     setIsRunningChecks,

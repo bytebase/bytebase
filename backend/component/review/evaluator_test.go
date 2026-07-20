@@ -1,4 +1,4 @@
-package approval
+package review
 
 import (
 	"context"
@@ -519,6 +519,7 @@ func TestFindApprovalTemplateForIssueSkipsDatabaseChangeAfterRolloutWhenApproval
 		Description: "",
 		Config: &storepb.PlanConfig{
 			ApprovalInputVersion: 2,
+			HasRollout:           true,
 			Specs: []*storepb.PlanConfig_Spec{{
 				Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
 					CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{
@@ -543,14 +544,9 @@ func TestFindApprovalTemplateForIssueSkipsDatabaseChangeAfterRolloutWhenApproval
 	})
 	require.NoError(t, err)
 
-	approvalInputVersion := int64(2)
-	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: approvalInputVersion}, nil)
-	require.NoError(t, err)
-	require.True(t, marked)
-
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
 	require.NoError(t, err)
-	err = findApprovalTemplateForIssue(ctx, s, nil, licenseService, issue, &storepb.WorkspaceApprovalSetting{})
+	_, err = findApprovalTemplateForIssue(ctx, s, licenseService, issue, &storepb.WorkspaceApprovalSetting{})
 	require.NoError(t, err)
 
 	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
@@ -569,6 +565,7 @@ func TestFindApprovalTemplateForIssueCompletesAfterRolloutWhenApprovalNotRequire
 		Description: "",
 		Config: &storepb.PlanConfig{
 			ApprovalInputVersion: 2,
+			HasRollout:           true,
 			Specs: []*storepb.PlanConfig_Spec{{
 				Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
 					CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{
@@ -593,14 +590,9 @@ func TestFindApprovalTemplateForIssueCompletesAfterRolloutWhenApprovalNotRequire
 	})
 	require.NoError(t, err)
 
-	approvalInputVersion := int64(2)
-	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: approvalInputVersion}, nil)
-	require.NoError(t, err)
-	require.True(t, marked)
-
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
 	require.NoError(t, err)
-	err = findApprovalTemplateForIssue(ctx, s, nil, licenseService, issue, &storepb.WorkspaceApprovalSetting{})
+	_, err = findApprovalTemplateForIssue(ctx, s, licenseService, issue, &storepb.WorkspaceApprovalSetting{})
 	require.NoError(t, err)
 
 	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})

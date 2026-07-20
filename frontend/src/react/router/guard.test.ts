@@ -1,4 +1,4 @@
-import { matchRoutes } from "react-router-dom";
+import { matchRoutes, RouterContextProvider } from "react-router";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 // Configurable fake session, controlled per test.
@@ -8,6 +8,7 @@ const session = {
   requireResetPassword: false,
   requireMfa: false,
   hasTwoFa: false,
+  isSaaSMode: false,
   currentUser: undefined as { mfaEnabled: boolean } | undefined,
 };
 
@@ -25,6 +26,7 @@ vi.mock("@/react/stores/app", () => ({
       requireResetPassword: () => session.requireResetPassword,
       getWorkspaceProfile: () => ({ requireMfa: session.requireMfa }),
       hasFeature: () => session.hasTwoFa,
+      isSaaSMode: () => session.isSaaSMode,
       currentUser: session.currentUser,
       ...resets,
     }),
@@ -42,6 +44,7 @@ import {
   AUTH_OAUTH_CALLBACK_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
   AUTH_SIGNIN_MODULE,
+  AUTH_SIGNUP_MODULE,
   PROJECT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROUTE_404,
 } from "./handles";
@@ -54,6 +57,7 @@ beforeEach(() => {
   session.requireResetPassword = false;
   session.requireMfa = false;
   session.hasTwoFa = false;
+  session.isSaaSMode = false;
   session.currentUser = undefined;
   vi.clearAllMocks();
   setRouteNameIndex(
@@ -89,7 +93,7 @@ async function runCatchAllLoader(path: string): Promise<Response> {
     url,
     pattern: "*",
     params: {},
-    context: {},
+    context: new RouterContextProvider(),
   }) as Response | Promise<Response>;
 }
 
@@ -142,6 +146,19 @@ describe("rootGuard", () => {
     expect(resets.resetDatabases).toHaveBeenCalled();
     expect(resets.resetInstances).toHaveBeenCalled();
     expect(resets.resetProjects).toHaveBeenCalled();
+  });
+
+  test("redirects SaaS signup route to signin", () => {
+    session.isSaaSMode = true;
+
+    expect(
+      location(
+        run(
+          AUTH_SIGNUP_MODULE,
+          "/auth/signup?email=alice%40example.com&invitation=invite-1"
+        )
+      )
+    ).toBe("/auth?email=alice%40example.com&invitation=invite-1");
   });
 
   test("not-logged-in user is redirected to signin with a redirect query", () => {

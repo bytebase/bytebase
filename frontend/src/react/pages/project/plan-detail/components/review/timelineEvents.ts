@@ -24,8 +24,12 @@ export function buildTimelineEntries(input: {
   planCreateTime?: Timestamp;
   issueCreator?: string;
   issueCreateTime?: Timestamp;
+  issueDraft?: boolean;
   comments: IssueComment[];
 }): TimelineEntry[] {
+  const reviewSubmission = input.comments.find(
+    (comment) => comment.event.case === "reviewSubmission"
+  );
   const entries: TimelineEntry[] = [];
   if (input.planCreator) {
     entries.push({
@@ -37,7 +41,7 @@ export function buildTimelineEntries(input: {
       },
     });
   }
-  if (input.issueCreator) {
+  if (input.issueCreator && !input.issueDraft && !reviewSubmission) {
     entries.push({
       id: "ready-for-review",
       source: {
@@ -48,6 +52,19 @@ export function buildTimelineEntries(input: {
     });
   }
   for (const comment of input.comments) {
+    if (comment.event.case === "reviewSubmission") {
+      if (comment === reviewSubmission) {
+        entries.push({
+          id: comment.name,
+          source: {
+            type: "ready-for-review",
+            creator: comment.creator,
+            time: comment.createTime,
+          },
+        });
+      }
+      continue;
+    }
     entries.push({ id: comment.name, source: { type: "comment", comment } });
   }
   return entries;

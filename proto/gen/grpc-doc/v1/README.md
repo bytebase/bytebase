@@ -129,6 +129,7 @@
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
     - [SASLConfig](#bytebase-v1-SASLConfig)
+    - [SyncDatabases](#bytebase-v1-SyncDatabases)
     - [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest)
     - [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse)
     - [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest)
@@ -157,6 +158,8 @@
     - [Changelog](#bytebase-v1-Changelog)
     - [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata)
     - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
+    - [CompositeTypeAttribute](#bytebase-v1-CompositeTypeAttribute)
+    - [CompositeTypeMetadata](#bytebase-v1-CompositeTypeMetadata)
     - [Database](#bytebase-v1-Database)
     - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
     - [DatabaseMetadata](#bytebase-v1-DatabaseMetadata)
@@ -235,6 +238,8 @@
     - [ExportRequest](#bytebase-v1-ExportRequest)
     - [ExportResponse](#bytebase-v1-ExportResponse)
     - [GetQueryHistoryRequest](#bytebase-v1-GetQueryHistoryRequest)
+    - [ListQueryHistoriesRequest](#bytebase-v1-ListQueryHistoriesRequest)
+    - [ListQueryHistoriesResponse](#bytebase-v1-ListQueryHistoriesResponse)
     - [MaskingReason](#bytebase-v1-MaskingReason)
     - [QueryHistory](#bytebase-v1-QueryHistory)
     - [QueryOption](#bytebase-v1-QueryOption)
@@ -306,6 +311,7 @@
     - [IssueComment.Approval](#bytebase-v1-IssueComment-Approval)
     - [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate)
     - [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate)
+    - [IssueComment.ReviewSubmission](#bytebase-v1-IssueComment-ReviewSubmission)
     - [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest)
     - [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse)
     - [ListIssuesRequest](#bytebase-v1-ListIssuesRequest)
@@ -1092,7 +1098,7 @@ can reference it without a circular import.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| APPROVAL_STATUS_UNSPECIFIED | 0 | Unspecified approval status. |
+| APPROVAL_STATUS_UNSPECIFIED | 0 | No approval workflow has started, including for a linked draft issue. |
 | CHECKING | 1 | Approval checks are being evaluated. |
 | PENDING | 2 | Approval is pending. |
 | APPROVED | 3 | Issue has been approved. |
@@ -2573,7 +2579,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | activation | [bool](#bool) |  | Whether the instance is activated for use. |
 | roles | [InstanceRole](#bytebase-v1-InstanceRole) | repeated | Database roles available in this instance. |
 | sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
-| sync_databases | [string](#string) | repeated | Enable sync for following databases. Default empty, means sync all schemas &amp; databases. |
+| sync_databases | [SyncDatabases](#bytebase-v1-SyncDatabases) |  | Enable sync for following databases. Not set means sync all schemas &amp; databases. |
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time the instance was synced. |
 | labels | [Instance.LabelsEntry](#bytebase-v1-Instance-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the instance. For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } |
 
@@ -2737,6 +2743,21 @@ For example: name == &#34;sample instance&#34; name.contains(&#34;sample&#34;) r
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | krb_config | [KerberosConfig](#bytebase-v1-KerberosConfig) |  | Kerberos authentication configuration. |
+
+
+
+
+
+
+<a name="bytebase-v1-SyncDatabases"></a>
+
+### SyncDatabases
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [string](#string) | repeated |  |
 
 
 
@@ -3154,6 +3175,41 @@ To modify the default, you must first drop the existing constraint by name: ALTE
 This field is populated when syncing from the database. When empty (e.g., when parsing from SQL files), the system cannot automatically drop the constraint. |
 | srid | [uint32](#uint32) | optional | The spatial reference system identifier of a spatial column, MySQL 8.0 only. Unset means the column declares no SRID; presence carries the explicit SRID, including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed int32). |
 | is_invisible | [bool](#bool) |  | Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23&#43; only. |
+
+
+
+
+
+
+<a name="bytebase-v1-CompositeTypeAttribute"></a>
+
+### CompositeTypeAttribute
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the attribute. |
+| type | [string](#string) |  | The attribute type. User-defined types are always schema-qualified. |
+| collation | [string](#string) |  | The non-default collation of the attribute as an emit-ready SQL identifier reference (quoted as needed, schema-qualified when outside pg_catalog), empty otherwise. e.g. `&#34;C&#34;` or `locale.en_us`. |
+| comment | [string](#string) |  | The comment describing the attribute. |
+
+
+
+
+
+
+<a name="bytebase-v1-CompositeTypeMetadata"></a>
+
+### CompositeTypeMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the composite type. |
+| attributes | [CompositeTypeAttribute](#bytebase-v1-CompositeTypeAttribute) | repeated | The ordered attributes of the composite type. |
+| comment | [string](#string) |  | The comment describing the composite type. |
 
 
 
@@ -3828,6 +3884,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | enum_types | [EnumTypeMetadata](#bytebase-v1-EnumTypeMetadata) | repeated | The enum_types is the list of user-defined enum types in a schema. |
 | skip_dump | [bool](#bool) |  | Whether to skip this schema during schema dump operations. |
 | comment | [string](#string) |  | The comment is the comment of a schema. |
+| composite_types | [CompositeTypeMetadata](#bytebase-v1-CompositeTypeMetadata) | repeated | The composite_types is the list of user-defined composite types in a schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row types and derived types. |
 
 
 
@@ -4548,6 +4605,44 @@ DatabaseService manages databases and their schemas.
 
 
 
+<a name="bytebase-v1-ListQueryHistoriesRequest"></a>
+
+### ListQueryHistoriesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent project whose query histories are listed. Format: projects/{project} |
+| page_size | [int32](#int32) |  | The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 10 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListQueryHistories` call. Provide this to retrieve the subsequent page. |
+| filter | [string](#string) |  | Filter is the filter to apply on the list query histories. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - creator: the user full name in &#34;users/{email}&#34; format, support &#34;==&#34; operator.
+
+For example: creator == &#34;users/{email}&#34; |
+
+
+
+
+
+
+<a name="bytebase-v1-ListQueryHistoriesResponse"></a>
+
+### ListQueryHistoriesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| query_histories | [QueryHistory](#bytebase-v1-QueryHistory) | repeated | The list of query histories. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of history. Pass this value in the page_token field in the subsequent call to `ListQueryHistories` method to retrieve the next page of history. |
+
+
+
+
+
+
 <a name="bytebase-v1-MaskingReason"></a>
 
 ### MaskingReason
@@ -4977,6 +5072,7 @@ SQLService executes SQL queries and manages query operations.
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) | Executes a read-only SQL query against a database. Permissions required: bb.databases.get |
 | AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream | Executes SQL with admin privileges via streaming connection. Permissions required: bb.sql.admin |
 | SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | SearchQueryHistories searches query histories for the caller. Permissions required: None (only returns caller&#39;s own query histories) |
+| ListQueryHistories | [ListQueryHistoriesRequest](#bytebase-v1-ListQueryHistoriesRequest) | [ListQueryHistoriesResponse](#bytebase-v1-ListQueryHistoriesResponse) | ListQueryHistories lists query histories of all users in a project. Permissions required: bb.queryHistories.list |
 | GetQueryHistory | [GetQueryHistoryRequest](#bytebase-v1-GetQueryHistoryRequest) | [QueryHistory](#bytebase-v1-QueryHistory) | GetQueryHistory gets a single query history for the caller. Permissions required: None (only returns the caller&#39;s own query history) |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) | Exports query results to a file format. Permissions required: bb.databases.get |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) | Computes schema differences between two database metadata. Permissions required: None |
@@ -5622,6 +5718,7 @@ A comment on an issue.
 | approval | [IssueComment.Approval](#bytebase-v1-IssueComment-Approval) |  | Approval event. |
 | issue_update | [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate) |  | Issue update event. |
 | plan_update | [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate) |  | Plan update event. |
+| review_submission | [IssueComment.ReviewSubmission](#bytebase-v1-IssueComment-ReviewSubmission) |  | Review submission event. |
 
 
 
@@ -5676,6 +5773,16 @@ and after a PlanService.UpdatePlan call that mutated specs).
 | ----- | ---- | ----- | ----------- |
 | from_specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
 | to_specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-IssueComment-ReviewSubmission"></a>
+
+### IssueComment.ReviewSubmission
+Review submission event information.
 
 
 

@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -17,207 +16,66 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func cdcSpec(id, sheet string, targets []string, priorBackup bool) *storepb.PlanConfig_Spec {
-	return &storepb.PlanConfig_Spec{
-		Id: id,
-		Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
-			ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
-				SheetSha256:       sheet,
-				Targets:           targets,
-				EnablePriorBackup: priorBackup,
-			},
-		},
-	}
-}
-
-func TestPlanSpecsEqualSet(t *testing.T) {
-	cases := []struct {
-		name string
-		a, b []*storepb.PlanConfig_Spec
-		want bool
-	}{
-		{
-			name: "both nil",
-			a:    nil,
-			b:    nil,
-			want: true,
-		},
-		{
-			name: "identical single spec",
-			a:    []*storepb.PlanConfig_Spec{cdcSpec("s1", "sha1", []string{"db1"}, false)},
-			b:    []*storepb.PlanConfig_Spec{cdcSpec("s1", "sha1", []string{"db1"}, false)},
-			want: true,
-		},
-		{
-			name: "same set reordered",
-			a: []*storepb.PlanConfig_Spec{
-				cdcSpec("s1", "sha1", []string{"db1"}, false),
-				cdcSpec("s2", "sha2", []string{"db2"}, false),
-			},
-			b: []*storepb.PlanConfig_Spec{
-				cdcSpec("s2", "sha2", []string{"db2"}, false),
-				cdcSpec("s1", "sha1", []string{"db1"}, false),
-			},
-			want: true,
-		},
-		{
-			name: "added spec",
-			a:    []*storepb.PlanConfig_Spec{cdcSpec("s1", "sha1", []string{"db1"}, false)},
-			b: []*storepb.PlanConfig_Spec{
-				cdcSpec("s1", "sha1", []string{"db1"}, false),
-				cdcSpec("s2", "sha2", []string{"db2"}, false),
-			},
-			want: false,
-		},
-		{
-			name: "removed spec",
-			a: []*storepb.PlanConfig_Spec{
-				cdcSpec("s1", "sha1", []string{"db1"}, false),
-				cdcSpec("s2", "sha2", []string{"db2"}, false),
-			},
-			b:    []*storepb.PlanConfig_Spec{cdcSpec("s1", "sha1", []string{"db1"}, false)},
-			want: false,
-		},
-		{
-			name: "same id sheet differs",
-			a:    []*storepb.PlanConfig_Spec{cdcSpec("s1", "sha1", []string{"db1"}, false)},
-			b:    []*storepb.PlanConfig_Spec{cdcSpec("s1", "sha2", []string{"db1"}, false)},
-			want: false,
-		},
-		{
-			name: "same id targets differ",
-			a:    []*storepb.PlanConfig_Spec{cdcSpec("s1", "sha1", []string{"db1"}, false)},
-			b:    []*storepb.PlanConfig_Spec{cdcSpec("s1", "sha1", []string{"db1", "db2"}, false)},
-			want: false,
-		},
-		{
-			name: "same id prior_backup differs",
-			a:    []*storepb.PlanConfig_Spec{cdcSpec("s1", "sha1", []string{"db1"}, false)},
-			b:    []*storepb.PlanConfig_Spec{cdcSpec("s1", "sha1", []string{"db1"}, true)},
-			want: false,
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, planSpecsEqualSet(tc.a, tc.b))
-		})
-	}
-}
-
-func TestUpdateIssueApprovalResetSkipsStalePlanApprovalInputVersion(t *testing.T) {
-	ctx := context.Background()
-	s := setupPlanServiceTestStore(ctx, t)
-
-	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
-		ProjectID:   "project-a",
-		Name:        "plan-a",
-		Description: "",
-		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
-	}, "creator@example.com")
-	require.NoError(t, err)
-
-	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
-		ProjectID:    "project-a",
-		CreatorEmail: "creator@example.com",
-		Title:        "issue-a",
-		Type:         storepb.Issue_DATABASE_CHANGE,
-		Description:  "",
-		Payload: &storepb.Issue{
-			Approval: &storepb.IssuePayloadApproval{
-				ApprovalFindingDone:  true,
-				ApprovalInputVersion: 1,
-			},
-		},
-		PlanUID: &plan.UID,
-	})
-	require.NoError(t, err)
-
-	updatedIssue, updated, err := resetIssueApprovalFindingIfPlanApprovalInputVersion(ctx, s, issue, 1)
-	require.NoError(t, err)
-	require.False(t, updated)
-	require.Nil(t, updatedIssue)
-
-	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
-	require.NoError(t, err)
-	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
-	require.EqualValues(t, 1, got.Payload.GetApproval().GetApprovalInputVersion())
-
-	updatedIssue, updated, err = resetIssueApprovalFindingIfPlanApprovalInputVersion(ctx, s, issue, 2)
-	require.NoError(t, err)
-	require.True(t, updated)
-	require.NotNil(t, updatedIssue)
-	require.False(t, updatedIssue.Payload.GetApproval().GetApprovalFindingDone())
-	require.EqualValues(t, 2, updatedIssue.Payload.GetApproval().GetApprovalInputVersion())
-}
-
-func TestResetIssueApprovalFindingSkipsDraftIssue(t *testing.T) {
-	ctx := context.Background()
-	s := setupPlanServiceTestStore(ctx, t)
-
-	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
-		ProjectID:   "project-a",
-		Name:        "plan-a",
-		Description: "",
-		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
-	}, "creator@example.com")
-	require.NoError(t, err)
-
-	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
-		ProjectID:    "project-a",
-		CreatorEmail: "creator@example.com",
-		Title:        "draft issue",
-		Type:         storepb.Issue_DATABASE_CHANGE,
-		Description:  "",
-		Payload: &storepb.Issue{
-			Draft: true,
-			Approval: &storepb.IssuePayloadApproval{
-				ApprovalFindingDone:  true,
-				ApprovalInputVersion: 1,
-			},
-		},
-		PlanUID: &plan.UID,
-	})
-	require.NoError(t, err)
-
-	updatedIssue, updated, err := resetIssueApprovalFindingIfPlanApprovalInputVersion(ctx, s, issue, 2)
-	require.NoError(t, err)
-	require.False(t, updated)
-	require.Nil(t, updatedIssue)
-
-	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
-	require.NoError(t, err)
-	require.NotNil(t, got)
-	require.True(t, got.Payload.GetDraft())
-	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
-	require.EqualValues(t, 1, got.Payload.GetApproval().GetApprovalInputVersion())
-}
-
-func TestPlanServiceListPlansKeepsIssueLessDraftsVisible(t *testing.T) {
+func TestPlanServiceListPlansHidesMalformedUIPlans(t *testing.T) {
 	ctx := context.Background()
 	stores := setupPlanServiceTestStore(ctx, t)
 	service := NewPlanService(stores, nil, nil, nil, nil)
 
-	changeDraft, err := stores.CreatePlan(ctx, &store.PlanMessage{
-		ProjectID: "project-a",
-		Name:      "change draft",
-		Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
-			Id: "change",
+	createPlan := func(name string, config *storepb.PlanConfig) *store.PlanMessage {
+		t.Helper()
+		plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+			ProjectID: "project-a",
+			Name:      name,
+			Config:    config,
+		}, "creator@example.com")
+		require.NoError(t, err)
+		return plan
+	}
+	changeConfig := func(id, release string) *storepb.PlanConfig {
+		return &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+			Id: id,
 			Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
+				ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{Release: release},
 			},
-		}}},
-	}, "creator@example.com")
-	require.NoError(t, err)
-	createDraft, err := stores.CreatePlan(ctx, &store.PlanMessage{
-		ProjectID: "project-a",
-		Name:      "create draft",
-		Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
-			Id: "create",
+		}}}
+	}
+	createConfig := func(id string) *storepb.PlanConfig {
+		return &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+			Id: id,
 			Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
 				CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{},
 			},
-		}}},
-	}, "creator@example.com")
+		}}}
+	}
+
+	createPlan("malformed change", changeConfig("malformed-change", ""))
+	createPlan("malformed create", createConfig("malformed-create"))
+	createPlan("malformed mixed", &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{
+		createConfig("mixed-create").Specs[0],
+		changeConfig("mixed-change", "").Specs[0],
+	}})
+	oldMalformed := createPlan("old malformed", changeConfig("old", ""))
+	_, err := stores.GetDB().ExecContext(ctx, `
+		UPDATE plan SET created_at = CURRENT_TIMESTAMP - INTERVAL '31 days'
+		WHERE project = $1 AND id = $2`, oldMalformed.ProjectID, oldMalformed.UID)
+	require.NoError(t, err)
+	gitOps := createPlan("GitOps", changeConfig("gitops", "projects/project-a/releases/release-a"))
+	export := createPlan("export", &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+		Id: "export",
+		Config: &storepb.PlanConfig_Spec_ExportDataConfig{
+			ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{},
+		},
+	}}})
+	deleted := createPlan("deleted", changeConfig("deleted", ""))
+	_, err = stores.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID: deleted.UID, ProjectID: deleted.ProjectID, Deleted: new(true),
+	})
+	require.NoError(t, err)
+	linked := createPlan("linked", changeConfig("linked", ""))
+	_, err = stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID: linked.ProjectID, CreatorEmail: "creator@example.com", PlanUID: &linked.UID,
+		Title: "linked issue", Type: storepb.Issue_DATABASE_CHANGE, Payload: &storepb.Issue{},
+	})
 	require.NoError(t, err)
 
 	response, err := service.ListPlans(ctx, connect.NewRequest(&v1pb.ListPlansRequest{
@@ -229,7 +87,13 @@ func TestPlanServiceListPlansKeepsIssueLessDraftsVisible(t *testing.T) {
 	for _, plan := range response.Msg.Plans {
 		got = append(got, plan.Title)
 	}
-	require.ElementsMatch(t, []string{changeDraft.Name, createDraft.Name}, got)
+	require.ElementsMatch(t, []string{gitOps.Name, export.Name, deleted.Name, linked.Name}, got)
+
+	gotMalformed, err := service.GetPlan(ctx, connect.NewRequest(&v1pb.GetPlanRequest{
+		Name: fmt.Sprintf("projects/project-a/plans/%d", oldMalformed.UID),
+	}))
+	require.NoError(t, err)
+	require.Equal(t, oldMalformed.Name, gotMalformed.Msg.Title)
 }
 
 func TestPlanServiceCreatePlanRejectsMixedDatabaseSpecs(t *testing.T) {

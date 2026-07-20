@@ -1,4 +1,4 @@
-import { Navigate, type RouteObject, redirect } from "react-router-dom";
+import { Navigate, type RouteObject, redirect } from "react-router";
 import { BodyLayout } from "@/react/app/layouts/BodyLayout";
 import { DashboardLayout } from "@/react/app/layouts/DashboardLayout";
 import { RouteErrorPage } from "@/react/app/RouteErrorPage";

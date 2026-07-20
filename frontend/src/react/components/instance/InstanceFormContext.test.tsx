@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import {
   DataSourceSchema,
   DataSourceType,
@@ -132,6 +132,8 @@ const Probe = () => {
       data-title={ctx.basicInfo.title}
       data-host={ctx.adminDataSource.host}
       data-environment={ctx.basicInfo.environment}
+      data-value-changed={String(ctx.valueChanged)}
+      data-is-editing={String(ctx.isEditing)}
     />
   );
 };
@@ -158,6 +160,7 @@ const renderIntoContainer = () => {
 describe("InstanceFormProvider", () => {
   beforeEach(() => {
     mockEnvironmentList = [];
+    vi.useRealTimers();
   });
 
   test("selects the first environment by default when creating an instance", async () => {
@@ -209,6 +212,54 @@ describe("InstanceFormProvider", () => {
     expect(probe.dataset.host).toBe("prod.example.com");
 
     harness.unmount();
+  });
+
+  test("does not mark an archived instance as changed after restore", async () => {
+    vi.useFakeTimers();
+    const archivedInstance = create(InstanceSchema, {
+      name: "instances/prod",
+      state: State.DELETED,
+      title: "Production",
+      engine: Engine.POSTGRES,
+      environment: "environments/prod",
+      dataSources: [
+        create(DataSourceSchema, {
+          id: "admin",
+          type: DataSourceType.ADMIN,
+          host: "prod.example.com",
+          port: "5432",
+        }),
+      ],
+    });
+    const restoredInstance = create(InstanceSchema, {
+      ...archivedInstance,
+      state: State.ACTIVE,
+    });
+    const harness = renderIntoContainer();
+
+    await harness.render(
+      <InstanceFormProvider instance={archivedInstance}>
+        <Probe />
+      </InstanceFormProvider>
+    );
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+    await harness.render(
+      <InstanceFormProvider instance={restoredInstance}>
+        <Probe />
+      </InstanceFormProvider>
+    );
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+
+    const probe = harness.container.firstElementChild as HTMLElement;
+    expect(probe.dataset.valueChanged).toBe("false");
+    expect(probe.dataset.isEditing).toBe("false");
+
+    harness.unmount();
+    vi.useRealTimers();
   });
 
   // Regression test for BYT-9696: setting missingFeature (e.g. saving a

@@ -5,7 +5,7 @@ import {
   useMemo,
   useRef,
 } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 import {
   buildSearchParamsBySearchText,
   buildSearchTextBySearchParams,
@@ -119,7 +119,10 @@ export function useURLSearchParam<T>({
       if (apply(urlSearchParamsRef.current) === urlSearchParamsRef.current) {
         return;
       }
-      setURLSearchParams(apply, { replace: true });
+      setURLSearchParams(apply, {
+        preventScrollReset: true,
+        replace: true,
+      });
     },
     [defaultValue, param, parse, serialize, setURLSearchParams]
   );

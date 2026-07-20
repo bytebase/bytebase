@@ -101,7 +101,7 @@ enum ExportFormat {
 // Lives at the top level so both plan_service.proto and issue_service.proto
 // can reference it without a circular import.
 enum ApprovalStatus {
-  // Unspecified approval status.
+  // No approval workflow has started, including for a linked draft issue.
   APPROVAL_STATUS_UNSPECIFIED = 0;
   // Approval checks are being evaluated.
   CHECKING = 1;

@@ -1,15 +1,20 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { DatabaseBackup, Loader2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import {
+  issueServiceClientConnect,
   planServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import { ReadonlyMonaco } from "@/react/components/monaco";
+import {
+  PermissionGuard,
+  usePermissionCheck,
+} from "@/react/components/PermissionGuard";
 import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
@@ -22,30 +27,22 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
-import {
-  CreatePlanRequestSchema,
-  Plan_ChangeDatabaseConfigSchema,
-  Plan_SpecSchema,
-  PlanSchema,
-} from "@/types/proto-es/v1/plan_service_pb";
-import {
-  PreviewTaskRunRollbackRequestSchema,
-  type Task,
-  type TaskRun,
-} from "@/types/proto-es/v1/rollout_service_pb";
-import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
+import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import { PreviewTaskRunRollbackRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractPlanUID,
   extractPlanUIDFromRolloutName,
   extractProjectResourceName,
-  hasProjectPermissionV2,
 } from "@/utils";
+import { DraftReviewIssueCreationError } from "../utils/header";
 import { PlanTargetDisplay } from "./PlanTargetDisplay";
+import { createRollbackDraftReview } from "./rollbackDraft";
 
 export function PlanDetailRollbackSheet({
   open,
@@ -64,6 +61,7 @@ export function PlanDetailRollbackSheet({
   }>;
 }) {
   const { t } = useTranslation();
+  const currentUser = useCurrentUser();
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
@@ -84,58 +82,106 @@ export function PlanDetailRollbackSheet({
     }>
   >([]);
   const [step, setStep] = useState<1 | 2>(1);
+  const requestGenerationRef = useRef(0);
+  const requestControllersRef = useRef(new Set<AbortController>());
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const itemsIdentity = useMemo(
+    () =>
+      JSON.stringify(
+        items.map(({ task, taskRun }) => [task.name, task.target, taskRun.name])
+      ),
+    [items]
+  );
 
-  useEffect(() => {
-    if (!open) {
-      setStep(1);
-      setPreviews([]);
-      setSelectedTaskRunNames([]);
-      return;
+  const invalidateRequests = useCallback(() => {
+    requestGenerationRef.current += 1;
+    for (const controller of requestControllersRef.current) {
+      controller.abort();
     }
-    if (items.length === 1) {
-      setSelectedTaskRunNames([items[0].taskRun.name]);
-    }
-  }, [items, open]);
+    requestControllersRef.current.clear();
+  }, []);
 
-  useEffect(() => {
-    if (!open || items.length !== 1 || step !== 1) {
-      return;
-    }
-    const only = items[0];
-    void (async () => {
+  const requestPreviews = useCallback(
+    async (targetItems: Array<{ task: Task; taskRun: TaskRun }>) => {
+      invalidateRequests();
+      const generation = requestGenerationRef.current;
+      const controller = new AbortController();
+      requestControllersRef.current.add(controller);
+      setLoading(true);
+      const nextPreviews = targetItems.map((item) => ({
+        task: item.task,
+        taskRun: item.taskRun,
+        statement: undefined as string | undefined,
+        error: undefined as string | undefined,
+      }));
       try {
-        setLoading(true);
-        const response =
-          await rolloutServiceClientConnect.previewTaskRunRollback(
-            create(PreviewTaskRunRollbackRequestSchema, {
-              name: only.taskRun.name,
-            }),
-            {
-              contextValues: createContextValues().set(silentContextKey, true),
+        for (const preview of nextPreviews) {
+          try {
+            const response =
+              await rolloutServiceClientConnect.previewTaskRunRollback(
+                create(PreviewTaskRunRollbackRequestSchema, {
+                  name: preview.taskRun.name,
+                }),
+                {
+                  contextValues: createContextValues().set(
+                    silentContextKey,
+                    true
+                  ),
+                  signal: controller.signal,
+                }
+              );
+            if (requestGenerationRef.current !== generation) return;
+            preview.statement = response.statement;
+          } catch (error) {
+            if (
+              controller.signal.aborted ||
+              requestGenerationRef.current !== generation
+            ) {
+              return;
             }
-          );
-        setPreviews([
-          {
-            task: only.task,
-            taskRun: only.taskRun,
-            statement: response.statement,
-          },
-        ]);
-        setStep(2);
-      } catch (error) {
-        setPreviews([
-          {
-            task: only.task,
-            taskRun: only.taskRun,
-            error: String(error),
-          },
-        ]);
+            preview.error = String(error);
+          }
+        }
+        if (requestGenerationRef.current !== generation) return;
+        setPreviews(nextPreviews);
         setStep(2);
       } finally {
+        requestControllersRef.current.delete(controller);
+        if (requestGenerationRef.current === generation) {
+          setLoading(false);
+        }
+      }
+    },
+    [invalidateRequests]
+  );
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      if (!nextOpen) {
+        invalidateRequests();
         setLoading(false);
       }
-    })();
-  }, [items, open, step]);
+      onOpenChange(nextOpen);
+    },
+    [invalidateRequests, onOpenChange]
+  );
+
+  useEffect(() => {
+    invalidateRequests();
+    setLoading(false);
+    setStep(1);
+    setPreviews([]);
+    setSelectedTaskRunNames([]);
+    if (!open) return;
+
+    const currentItems = itemsRef.current;
+    if (currentItems.length === 1) {
+      setSelectedTaskRunNames([currentItems[0].taskRun.name]);
+      void requestPreviews(currentItems);
+    }
+    return invalidateRequests;
+  }, [invalidateRequests, itemsIdentity, open, requestPreviews]);
 
   const selectedItems = useMemo(
     () =>
@@ -143,18 +189,24 @@ export function PlanDetailRollbackSheet({
     [items, selectedTaskRunNames]
   );
 
+  const [canCreateDraftReview, createPermissionReason] = usePermissionCheck(
+    ["bb.plans.create", "bb.issues.create"],
+    project
+  );
+  const [canUpdateIssue] = usePermissionCheck(["bb.issues.update"], project);
+
   const canCreate = useMemo(() => {
     return (
       !loading &&
       previews.length > 0 &&
       previews.every((preview) => !preview.error) &&
       previews.some((preview) => preview.statement) &&
-      hasProjectPermissionV2(project, "bb.plans.create")
+      canCreateDraftReview
     );
-  }, [loading, previews, project]);
+  }, [canCreateDraftReview, loading, previews]);
 
   return (
-    <Sheet onOpenChange={onOpenChange} open={open}>
+    <Sheet onOpenChange={handleOpenChange} open={open}>
       <SheetContent width="wide">
         <SheetHeader>
           <SheetTitle>{t("common.rollback")}</SheetTitle>
@@ -181,7 +233,7 @@ export function PlanDetailRollbackSheet({
                   return (
                     <label
                       key={item.taskRun.name}
-                      className="flex cursor-pointer items-center gap-3 border-b border-control-border px-3 py-2 last:border-b-0 hover:bg-gray-50"
+                      className="flex cursor-pointer items-center gap-3 border-b border-control-border px-3 py-2 last:border-b-0 hover:bg-control-bg"
                     >
                       <Checkbox
                         checked={checked}
@@ -220,9 +272,15 @@ export function PlanDetailRollbackSheet({
                   "task-run.rollback.preview-statement.description"
                 )}
               />
+              {!canUpdateIssue && (
+                <Alert
+                  variant="warning"
+                  description={t("plan.draft-update-permission-required")}
+                />
+              )}
               {loading ? (
                 <div className="flex items-center justify-center py-8 text-control-light">
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="size-5 animate-spin" />
                 </div>
               ) : (
                 previews.map((preview) => (
@@ -246,10 +304,10 @@ export function PlanDetailRollbackSheet({
                         max={256}
                       />
                     ) : (
-                      <div className="flex items-center justify-center rounded-md border bg-gray-50 p-8">
+                      <div className="flex items-center justify-center rounded-md border border-control-border bg-control-bg p-8">
                         <div className="flex flex-col items-center gap-y-2 text-center">
-                          <DatabaseBackup className="h-6 w-6 text-gray-400" />
-                          <p className="text-sm text-gray-500">
+                          <DatabaseBackup className="size-6 text-control-placeholder" />
+                          <p className="text-sm text-control-light">
                             {t("task-run.rollback.no-statement-generated")}
                           </p>
                         </div>
@@ -263,123 +321,118 @@ export function PlanDetailRollbackSheet({
         </SheetBody>
         <SheetFooter>
           {step === 1 ? (
-            <Button onClick={() => onOpenChange(false)} appearance="secondary">
+            <Button
+              onClick={() => handleOpenChange(false)}
+              appearance="secondary"
+            >
               {t("common.cancel")}
             </Button>
           ) : (
-            <Button onClick={() => setStep(1)} appearance="secondary">
+            <Button
+              onClick={() => {
+                invalidateRequests();
+                setLoading(false);
+                setStep(1);
+              }}
+              appearance="secondary"
+            >
               {t("common.back")}
             </Button>
           )}
           {step === 1 ? (
             <Button
               disabled={selectedItems.length === 0}
-              onClick={async () => {
-                try {
-                  setLoading(true);
-                  const nextPreviews: Array<{
-                    task: Task;
-                    taskRun: TaskRun;
-                    statement?: string;
-                    error?: string;
-                  }> = selectedItems.map((item) => ({
-                    task: item.task,
-                    taskRun: item.taskRun,
-                  }));
-                  for (const preview of nextPreviews) {
-                    try {
-                      const response =
-                        await rolloutServiceClientConnect.previewTaskRunRollback(
-                          create(PreviewTaskRunRollbackRequestSchema, {
-                            name: preview.taskRun.name,
-                          }),
-                          {
-                            contextValues: createContextValues().set(
-                              silentContextKey,
-                              true
-                            ),
-                          }
-                        );
-                      preview.statement = response.statement;
-                    } catch (err) {
-                      preview.error = String(err);
-                    }
-                  }
-                  setPreviews(nextPreviews);
-                  setStep(2);
-                } finally {
-                  setLoading(false);
-                }
-              }}
+              onClick={() => void requestPreviews(selectedItems)}
             >
               {t("common.next")}
             </Button>
           ) : null}
-          <Button
-            disabled={step !== 2 || !canCreate}
-            onClick={async () => {
-              if (previews.length === 0) return;
-              try {
-                setLoading(true);
-                const specs = [];
-                for (const preview of previews) {
-                  if (!preview.statement) continue;
-                  const sheet = await useAppStore.getState().createSheet(
-                    projectName,
-                    create(SheetSchema, {
-                      name: `${projectName}/sheets/${uuidv4()}`,
-                      content: new TextEncoder().encode(preview.statement),
-                    })
-                  );
-                  specs.push(
-                    create(Plan_SpecSchema, {
-                      id: uuidv4(),
-                      config: {
-                        case: "changeDatabaseConfig",
-                        value: create(Plan_ChangeDatabaseConfigSchema, {
-                          targets: [preview.task.target],
-                          sheet: sheet.name,
-                        }),
-                      },
-                    })
-                  );
-                }
-                const plan = create(PlanSchema, {
-                  name: `${projectName}/plans/${uuidv4()}`,
-                  title: `Rollback for rollout#${extractPlanUIDFromRolloutName(
-                    rolloutName
-                  )}`,
-                  description: `This plan is created to rollback ${previews.length} task(s) in rollout #${extractPlanUIDFromRolloutName(rolloutName)}`,
-                  specs,
-                });
-                const createdPlan = await planServiceClientConnect.createPlan(
-                  create(CreatePlanRequestSchema, {
-                    parent: projectName,
-                    plan,
-                  })
-                );
-                void router.push({
-                  name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-                  params: {
-                    projectId: extractProjectResourceName(projectName),
-                    planId: extractPlanUID(createdPlan.name),
-                  },
-                });
-              } catch (err) {
-                pushNotification({
-                  module: "bytebase",
-                  style: "CRITICAL",
-                  title: t("common.failed"),
-                  description: String(err),
-                });
-              } finally {
-                setLoading(false);
-              }
-            }}
+          <PermissionGuard
+            permissions={["bb.plans.create", "bb.issues.create"]}
+            project={project}
           >
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {t("common.confirm")}
-          </Button>
+            <Button
+              disabled={step !== 2 || !canCreate}
+              title={createPermissionReason}
+              onClick={async () => {
+                const successfulPreviews = previews.flatMap((preview) =>
+                  preview.statement
+                    ? [
+                        {
+                          statement: preview.statement,
+                          target: preview.task.target,
+                        },
+                      ]
+                    : []
+                );
+                if (successfulPreviews.length === 0) return;
+                const actionGeneration = requestGenerationRef.current;
+                try {
+                  setLoading(true);
+                  const rolloutId = extractPlanUIDFromRolloutName(rolloutName);
+                  const { plan: createdPlan } = await createRollbackDraftReview(
+                    {
+                      createIssue: (request) =>
+                        issueServiceClientConnect.createIssue(request),
+                      createPlan: (request) =>
+                        planServiceClientConnect.createPlan(request),
+                      createSheet: (sheet) =>
+                        useAppStore
+                          .getState()
+                          .createSheet(normalizedProjectName, sheet),
+                      creator: currentUser.name,
+                      newId: uuidv4,
+                      parent: normalizedProjectName,
+                      previews: successfulPreviews,
+                      title: t("plan.rollback.title", { rolloutId }),
+                      description: t("plan.rollback.description", {
+                        count: successfulPreviews.length,
+                        rolloutId,
+                      }),
+                    }
+                  );
+                  if (requestGenerationRef.current !== actionGeneration) return;
+                  handleOpenChange(false);
+                  await router.push({
+                    name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+                    params: {
+                      projectId: extractProjectResourceName(createdPlan.name),
+                      planId: extractPlanUID(createdPlan.name),
+                    },
+                  });
+                } catch (err) {
+                  if (requestGenerationRef.current !== actionGeneration) return;
+                  if (err instanceof DraftReviewIssueCreationError) {
+                    handleOpenChange(false);
+                    await router.push({
+                      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+                      params: {
+                        projectId: extractProjectResourceName(err.plan.name),
+                        planId: extractPlanUID(err.plan.name),
+                      },
+                    });
+                  }
+                  pushNotification({
+                    module: "bytebase",
+                    style: "CRITICAL",
+                    title: t("common.failed"),
+                    description: String(
+                      err instanceof DraftReviewIssueCreationError
+                        ? err.cause
+                        : err
+                    ),
+                  });
+                } finally {
+                  if (requestGenerationRef.current === actionGeneration) {
+                    setLoading(false);
+                  }
+                }
+              }}
+            >
+              {loading && <Loader2 className="size-4 animate-spin" />}
+              {t("common.confirm")}
+            </Button>
+          </PermissionGuard>
         </SheetFooter>
       </SheetContent>
     </Sheet>

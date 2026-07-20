@@ -78,21 +78,6 @@ type TaskStatusCount struct {
 	Count       int32
 }
 
-// ErrDraftIssueNotSubmitted indicates rollout creation was rejected because its
-// currently linked issue is still a draft.
-var ErrDraftIssueNotSubmitted = errors.New("draft issue must be submitted before rollout creation")
-
-// IssueApprovalGuard carries the approval-input version used for rollout
-// creation. When issue approval is required, it also carries the issue approval
-// snapshot that the API layer has already accepted. The store uses it only as a
-// race guard: the plan must still be on this version and, when Approval is set,
-// the locked issue row must still have the same approval payload.
-type IssueApprovalGuard struct {
-	IssueUID             int64
-	ApprovalInputVersion int64
-	Approval             *storepb.IssuePayloadApproval
-}
-
 // GetTaskByID gets a task by ID.
 func (s *Store) GetTaskByID(ctx context.Context, projectID string, id int64) (*TaskMessage, error) {
 	tasks, err := s.ListTasks(ctx, &TaskFind{ProjectID: projectID, ID: &id})
@@ -494,131 +479,90 @@ func (s *Store) ListTaskStatusCountByPlanIDs(ctx context.Context, projectIDs []s
 
 // BatchSkipTasks batch skip tasks.
 func (s *Store) BatchSkipTasks(ctx context.Context, projectID string, taskUIDs []int64, comment string) error {
+	if len(taskUIDs) == 0 {
+		return nil
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	// Lock task rows before checking task runs so the check uses a fresh Read Committed snapshot.
+	lockQ := qb.Q().Space(`
+		SELECT id
+		FROM task
+		WHERE project = ? AND id = ANY(?)
+		ORDER BY id
+		FOR UPDATE`, projectID, taskUIDs)
+	lockQuery, lockArgs, err := lockQ.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build task lock sql")
+	}
+	if err := func() error {
+		rows, err := tx.QueryContext(ctx, lockQuery, lockArgs...)
+		if err != nil {
+			return errors.Wrapf(err, "failed to lock tasks")
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var taskUID int64
+			if err := rows.Scan(&taskUID); err != nil {
+				return errors.Wrapf(err, "failed to scan locked task")
+			}
+		}
+		if err := rows.Err(); err != nil {
+			return errors.Wrapf(err, "failed to read locked tasks")
+		}
+		return nil
+	}(); err != nil {
+		return err
+	}
+
+	blockingQ := qb.Q().Space(`
+		SELECT task_id
+		FROM task_run
+		WHERE project = ? AND task_id = ANY(?)
+		AND status IN (?, ?, ?, ?)
+		ORDER BY task_id
+		LIMIT 1`, projectID, taskUIDs,
+		storepb.TaskRun_PENDING.String(), storepb.TaskRun_AVAILABLE.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
+	blockingQuery, blockingArgs, err := blockingQ.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build task run check sql")
+	}
+	var blockingTaskUID int64
+	if err := tx.QueryRowContext(ctx, blockingQuery, blockingArgs...).Scan(&blockingTaskUID); err != nil && err != sql.ErrNoRows {
+		return errors.Wrapf(err, "failed to check task runs")
+	} else if err == nil {
+		return common.Errorf(common.Conflict, "task %d cannot be skipped because it has a task run in a blocking status", blockingTaskUID)
+	}
+
 	q := qb.Q().Space(`
-		UPDATE task
+		UPDATE task AS t
 		SET payload = payload || jsonb_build_object('skipped', ?::BOOLEAN) || jsonb_build_object('skippedReason', ?::TEXT)
-		WHERE id = ANY(?) AND project = ?`, true, comment, taskUIDs, projectID)
+		WHERE t.id = ANY(?) AND t.project = ?
+		AND (t.payload->>'skipped')::BOOLEAN IS NOT TRUE`, true, comment, taskUIDs, projectID)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to batch skip tasks")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrapf(err, "failed to commit tx")
 	}
 
 	return nil
 }
 
-// CreateRolloutTasks marks the plan as having rollout and creates tasks in one transaction.
-// If issueApprovalGuard is set, the transaction creates no tasks unless the plan
-// still has that approval input version. The API layer owns the "is this issue
-// approved" policy check before calling this method; the store only verifies
-// that the locked issue approval payload still matches the approved snapshot.
-func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUID int64, issueApprovalGuard *IssueApprovalGuard, tasks []*TaskMessage) (bool, []*TaskMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return false, nil, errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
-	if err := acquirePlanIssueRolloutAdvisoryLock(ctx, tx, projectID, planUID); err != nil {
-		return false, nil, errors.Wrap(err, "failed to acquire plan issue-rollout lock")
-	}
-
-	var approvalInputVersion *int64
-	if issueApprovalGuard != nil {
-		approvalInputVersion = &issueApprovalGuard.ApprovalInputVersion
-	}
-
-	var currentIssueUID int64
-	var payload []byte
-	issueFound := true
-	if err := tx.QueryRowContext(ctx, `
-		SELECT id, payload
-		FROM issue
-		WHERE project = $1
-		  AND plan_id = $2
-		FOR UPDATE`,
-		projectID, planUID).Scan(&currentIssueUID, &payload); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			issueFound = false
-		} else {
-			return false, nil, errors.Wrap(err, "failed to lock linked issue")
-		}
-	}
-
-	currentIssuePayload := &storepb.Issue{}
-	if issueFound {
-		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, currentIssuePayload); err != nil {
-			return false, nil, errors.Wrap(err, "failed to unmarshal issue payload")
-		}
-		if currentIssuePayload.GetDraft() {
-			return false, nil, ErrDraftIssueNotSubmitted
-		}
-	}
-
-	if issueApprovalGuard != nil && issueApprovalGuard.Approval != nil {
-		if !issueFound || currentIssueUID != issueApprovalGuard.IssueUID {
-			return false, nil, nil
-		}
-		if !isIssueApprovalPayloadSameAsGuard(currentIssuePayload, issueApprovalGuard) {
-			return false, nil, nil
-		}
-	}
-
-	var updatedPlanUID int64
-	if err := tx.QueryRowContext(ctx, `
-		UPDATE plan
-		SET
-			updated_at = CASE
-				WHEN COALESCE((config->>'hasRollout')::boolean, false) = false THEN $1
-				ELSE updated_at
-			END,
-			config = CASE
-				WHEN COALESCE((config->>'hasRollout')::boolean, false) = false THEN jsonb_set(config, '{hasRollout}', 'true'::jsonb, true)
-				ELSE config
-			END
-		WHERE project = $2
-		  AND id = $3
-		  AND (
-			$4::bigint IS NULL
-			OR COALESCE((config->>'approvalInputVersion')::bigint, 0) = $4
-		  )
-		RETURNING id`,
-		time.Now(), projectID, planUID, approvalInputVersion).Scan(&updatedPlanUID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, nil, nil
-		}
-		return false, nil, errors.Wrapf(err, "failed to mark plan has rollout")
-	}
-
-	tasks, err = s.createTasksTxDedup(ctx, tx, projectID, planUID, tasks)
-	if err != nil {
-		return false, nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return false, nil, errors.Wrapf(err, "failed to commit tx")
-	}
-
-	return true, tasks, nil
-}
-
-func isIssueApprovalPayloadSameAsGuard(issuePayload *storepb.Issue, guard *IssueApprovalGuard) bool {
-	if issuePayload == nil || guard == nil || guard.Approval == nil {
-		return false
-	}
-	if guard.Approval.GetApprovalInputVersion() != guard.ApprovalInputVersion {
-		return false
-	}
-	approval := issuePayload.GetApproval()
-	if approval == nil || !approval.GetApprovalFindingDone() {
-		return false
-	}
-	return approval.Equal(guard.Approval)
-}
-
-func (s *Store) createTasksTxDedup(ctx context.Context, tx *sql.Tx, projectID string, planUID int64, tasks []*TaskMessage) ([]*TaskMessage, error) {
+// CreateMissingTasksTx creates any missing rollout tasks inside a caller-owned transaction.
+// Review policy and Plan state transitions belong to the review module.
+func (s *Store) CreateMissingTasksTx(ctx context.Context, tx *sql.Tx, projectID string, planUID int64, tasks []*TaskMessage) ([]*TaskMessage, error) {
 	// Check existing tasks to avoid duplicates
 	existingTasks, err := s.listTasksImpl(ctx, tx, &TaskFind{
 		ProjectID: projectID,

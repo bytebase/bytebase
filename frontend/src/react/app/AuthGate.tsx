@@ -1,7 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation, useMatches, useNavigate } from "react-router-dom";
+import { useLocation, useMatches, useNavigate } from "react-router";
 import { InactiveRemindModal } from "@/react/components/auth/InactiveRemindModal";
 import {
   buildSigninRedirectQuery,

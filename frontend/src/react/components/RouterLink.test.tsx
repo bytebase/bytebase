@@ -207,4 +207,21 @@ describe("RouterLink", () => {
     expect(mocks.push).not.toHaveBeenCalled();
     unmount();
   });
+
+  test("passes the scroll reset opt-out to the router", () => {
+    const to: RouteTarget = "/projects/default";
+    const { container, render, unmount } = renderIntoContainer(
+      <RouterLink to={to} preventScrollReset>
+        Project
+      </RouterLink>
+    );
+    render();
+
+    click(getLink(container));
+
+    expect(mocks.push).toHaveBeenCalledWith(to, {
+      preventScrollReset: true,
+    });
+    unmount();
+  });
 });
