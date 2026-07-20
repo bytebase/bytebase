@@ -49,6 +49,8 @@ import {
   DataSource_AuthenticationType,
   DataSource_RedisType,
   DataSourceType,
+  type SyncDatabases as SyncDatabasesMessage,
+  SyncDatabasesSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import {
   PlanFeature,
@@ -418,16 +420,16 @@ function SyncDatabases({
   showLabel: boolean;
   allowEdit: boolean;
   projectName?: string;
-  syncDatabases: string[];
-  onSyncDatabasesChange: (databases: string[]) => void;
+  syncDatabases?: SyncDatabasesMessage;
+  onSyncDatabasesChange: (databases: string[], syncAll: boolean) => void;
 }) {
   const { t } = useTranslation();
   const ctx = useInstanceFormContext();
   const { hideAdvancedFeatures, instance, pendingCreateInstance } = ctx;
 
-  const [syncAll, setSyncAll] = useState(syncDatabases.length === 0);
+  const [syncAll, setSyncAll] = useState(syncDatabases === undefined);
   const [selectedSet, setSelectedSet] = useState<Set<string>>(
-    () => new Set(syncDatabases)
+    () => new Set(syncDatabases?.databases ?? [])
   );
   const [databaseList, setDatabaseList] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
@@ -445,10 +447,13 @@ function SyncDatabases({
   const prevNotifiedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const key = syncAll ? "" : [...selectedSet].sort().join("\0");
+    const key = [
+      syncAll ? "all" : "selected",
+      ...[...selectedSet].sort((a, b) => a.localeCompare(b)),
+    ].join("\0");
     if (key === prevNotifiedRef.current) return;
     prevNotifiedRef.current = key;
-    onSyncDatabasesChangeRef.current(syncAll ? [] : [...selectedSet]);
+    onSyncDatabasesChangeRef.current(syncAll ? [] : [...selectedSet], syncAll);
   }, [syncAll, selectedSet]);
 
   useEffect(() => {
@@ -960,8 +965,13 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
   );
 
   const handleChangeSyncDatabases = useCallback(
-    (databases: string[]) => {
-      setBasicInfo((prev) => ({ ...prev, syncDatabases: [...databases] }));
+    (databases: string[], syncAll: boolean) => {
+      setBasicInfo((prev) => ({
+        ...prev,
+        syncDatabases: syncAll
+          ? undefined
+          : create(SyncDatabasesSchema, { databases }),
+      }));
     },
     [setBasicInfo]
   );

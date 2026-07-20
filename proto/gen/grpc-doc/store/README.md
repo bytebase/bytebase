@@ -142,6 +142,7 @@
     - [InstanceRole](#bytebase-store-InstanceRole)
     - [KerberosConfig](#bytebase-store-KerberosConfig)
     - [SASLConfig](#bytebase-store-SASLConfig)
+    - [SyncDatabases](#bytebase-store-SyncDatabases)
   
     - [DataSource.AuthenticationType](#bytebase-store-DataSource-AuthenticationType)
     - [DataSource.CloudSQLIPType](#bytebase-store-DataSource-CloudSQLIPType)
@@ -2595,7 +2596,7 @@ Instance is the proto for instances.
 | external_link | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-store-DataSource) | repeated |  |
 | sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | The interval between automatic instance synchronizations. |
-| sync_databases | [string](#string) | repeated | Enable sync for the following databases. Default empty, means sync all schemas &amp; databases. |
+| sync_databases | [SyncDatabases](#bytebase-store-SyncDatabases) |  | Enable sync for the following databases. Not set means sync all schemas &amp; databases. |
 | mysql_lower_case_table_names | [int32](#int32) |  | The lower_case_table_names config for MySQL instances. It is used to determine whether the table names and database names are case sensitive. |
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | roles | [InstanceRole](#bytebase-store-InstanceRole) | repeated |  |
@@ -2670,6 +2671,21 @@ InstanceRole is the API message for instance role.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | krb_config | [KerberosConfig](#bytebase-store-KerberosConfig) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SyncDatabases"></a>
+
+### SyncDatabases
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [string](#string) | repeated |  |
 
 
 

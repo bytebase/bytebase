@@ -7,6 +7,7 @@ import {
   DataSourceSchema,
   DataSourceType,
   InstanceSchema,
+  SyncDatabasesSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { InstanceFormButtons } from "./InstanceFormButtons";
 
@@ -175,7 +176,6 @@ beforeEach(() => {
       title: "Production",
       engine: Engine.POSTGRES,
       environment: "environments/prod",
-      syncDatabases: [],
     }),
     setBasicInfo: vi.fn(),
     labelKVList: [],
@@ -266,6 +266,46 @@ describe("InstanceFormButtons", () => {
       },
     });
     expect(mocks.context?.onDismiss).not.toHaveBeenCalled();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  test("sets empty sync databases when sync-all is unchecked and no databases are selected", async () => {
+    mocks.context = {
+      ...mocks.context,
+      basicInfo: create(InstanceSchema, {
+        title: "Production",
+        engine: Engine.POSTGRES,
+        environment: "environments/prod",
+        syncDatabases: create(SyncDatabasesSchema, { databases: [] }),
+      }),
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<InstanceFormButtons />);
+    });
+
+    const createButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("common.create")
+    ) as HTMLButtonElement;
+    await act(async () => {
+      createButton.click();
+      await flushPromises();
+    });
+
+    expect(mocks.createInstance).toHaveBeenCalledWith(
+      expect.objectContaining({
+        syncDatabases: create(SyncDatabasesSchema, { databases: [] }),
+      }),
+      false,
+      {
+        initialDatabaseProject: undefined,
+      }
+    );
 
     await act(async () => {
       root.unmount();

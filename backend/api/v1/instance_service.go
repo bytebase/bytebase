@@ -354,7 +354,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err == nil {
 		defer driver.Close(ctx)
-		updatedInstance, _, _, err := s.schemaSyncer.SyncInstanceWithOptions(ctx, instance, schemasync.SyncInstanceOptions{
+		updatedInstance, _, newDatabases, err := s.schemaSyncer.SyncInstanceWithOptions(ctx, instance, schemasync.SyncInstanceOptions{
 			InitialProjectID: initialProjectID,
 		})
 		if err != nil {
@@ -364,8 +364,12 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		} else {
 			instance = updatedInstance
 		}
-		// Sync all databases in the instance asynchronously.
-		s.schemaSyncer.SyncAllDatabases(ctx, instance)
+		if instance.Metadata.SyncDatabases == nil {
+			// Sync all databases in the instance asynchronously.
+			s.schemaSyncer.SyncAllDatabases(ctx, instance)
+		} else {
+			s.schemaSyncer.SyncDatabasesAsync(newDatabases)
+		}
 	}
 
 	result := s.convertToV1Instance(ctx, instance)
@@ -736,7 +740,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			updateSyncInterval = true
 			patch.Metadata.SyncInterval = req.Msg.Instance.SyncInterval
 		case "sync_databases":
-			patch.Metadata.SyncDatabases = req.Msg.Instance.SyncDatabases
+			patch.Metadata.SyncDatabases = convertToStoreSyncDatabases(req.Msg.Instance.SyncDatabases)
 		case "labels":
 			if err := validateLabels(req.Msg.Instance.Labels); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
