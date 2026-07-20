@@ -214,6 +214,15 @@ describe("ProjectLabel", () => {
     expect(mocks.getOrFetchProjectByName).not.toHaveBeenCalled();
   });
 
+  test("renders empty project IDs as plain text even when link is requested", async () => {
+    const rendered = await render(<ProjectLabel projectName="projects/" link />);
+    root = rendered.root;
+
+    expect(rendered.container.querySelector("a")).toBeNull();
+    expect(rendered.container.textContent).toBe("projects/");
+    expect(mocks.getOrFetchProjectByName).not.toHaveBeenCalled();
+  });
+
   test("renders the default project as plain text even when link is requested", async () => {
     mocks.isDefaultProject.mockImplementation(
       (name) => name === "projects/default"

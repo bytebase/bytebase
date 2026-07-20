@@ -453,10 +453,8 @@ export function LandingPage(_: Record<string, never> = {}) {
       router.push({ name: link.route });
       return;
     }
-    switch (link.id) {
-      case "visit-issues":
-        router.push({ name: WORKSPACE_ROUTE_MY_ISSUES });
-        break;
+    if (link.id === "visit-issues") {
+      router.push({ name: WORKSPACE_ROUTE_MY_ISSUES });
     }
   }, []);
 
