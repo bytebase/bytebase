@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
+import { RouterLink } from "@/react/components/RouterLink";
+import { Button } from "@/react/components/ui/button";
 import { cn } from "@/react/lib/utils";
+import type { RouteTarget } from "@/react/router";
 import { UserAvatar } from "./UserAvatar";
 
 interface UserCellProps {
@@ -17,7 +20,8 @@ interface UserCellProps {
   nameClassName?: string;
   /** Wrap the name in a clickable element. */
   nameLink?: {
-    onClick: () => void;
+    onClick?: () => void;
+    to?: RouteTarget;
   };
   /** Inline badges rendered after the name. */
   badges?: ReactNode;
@@ -38,18 +42,38 @@ export function UserCell({
 }: UserCellProps) {
   const nameContent = title || subtitle || "?";
 
-  const nameEl = nameLink ? (
-    <button
-      type="button"
-      className={cn(
-        "font-medium text-accent hover:underline cursor-pointer",
-        size === "sm" && "text-sm",
-        nameClassName
-      )}
-      onClick={nameLink.onClick}
+  const nameClassNameMerged = cn(
+    "font-medium text-accent hover:underline cursor-pointer",
+    size === "sm" && "text-sm",
+    nameClassName
+  );
+
+  const nameEl = nameLink?.to ? (
+    <RouterLink
+      className={nameClassNameMerged}
+      to={nameLink.to}
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
     >
       {nameContent}
-    </button>
+    </RouterLink>
+  ) : nameLink?.onClick ? (
+    <Button
+      type="button"
+      appearance="link"
+      size="sm"
+      className={cn(
+        nameClassNameMerged,
+        "h-auto p-0 justify-start rounded-none leading-normal"
+      )}
+      onClick={(e) => {
+        e.stopPropagation();
+        nameLink.onClick?.();
+      }}
+    >
+      {nameContent}
+    </Button>
   ) : (
     <span
       className={cn(
