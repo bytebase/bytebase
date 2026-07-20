@@ -14,7 +14,6 @@ import { UserAvatar } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { applyProjectDetailMutationResult } from "@/react/pages/project/applyProjectDetailMutationResult";
 import { useCurrentRoute } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
@@ -355,7 +354,7 @@ function IssueDescriptionCommentRow({
         updateMask: { paths: ["description"] },
       });
       const response = await issueServiceClientConnect.updateIssue(request);
-      applyProjectDetailMutationResult(page, { issue: response });
+      page.patchState({ issue: response });
       setIsEditing(false);
       await onRefresh();
     } catch (error) {

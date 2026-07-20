@@ -5,7 +5,6 @@ import { issueServiceClientConnect } from "@/connect";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { Alert } from "@/react/components/ui/alert";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { applyProjectDetailMutationResult } from "@/react/pages/project/applyProjectDetailMutationResult";
 import { useAppStore } from "@/react/stores/app";
 import {
   getIssueCommentType,
@@ -67,7 +66,7 @@ export function ReviewRejectionBanner({
       const response = await issueServiceClientConnect.requestIssue(
         create(RequestIssueRequestSchema, { name: issue.name })
       );
-      applyProjectDetailMutationResult(page, { issue: response });
+      page.patchState({ issue: response });
       await page.refreshState();
     } catch (error) {
       pushNotification({

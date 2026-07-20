@@ -37,6 +37,7 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { UNKNOWN_PLAN_NAME, unknownPlan } from "@/types/v1/issue/plan";
 import { getRolloutFromPlan, minmax, setDocumentTitle } from "@/utils";
+import { invalidateProjectPagedDataCacheIfChanged } from "../../pagedDataCacheScope";
 import type { ProjectIssueDetailPageProps } from "../types";
 import {
   type IssueDetailType,
@@ -309,6 +310,19 @@ export const useIssueDetailPage = ({
 
   const patchState = useCallback(
     (patch: Partial<IssueDetailPageSnapshot>) => {
+      const previous = latestSnapshotRef.current;
+      invalidateProjectPagedDataCacheIfChanged(
+        previous.projectId,
+        "plans",
+        previous.plan,
+        patch.plan
+      );
+      invalidateProjectPagedDataCacheIfChanged(
+        previous.projectId,
+        "issues",
+        previous.issue,
+        patch.issue
+      );
       setSnapshot((prev) => {
         const next = applyDerivedState({ ...prev, ...patch });
         return isSameSnapshot(prev, next) ? prev : next;

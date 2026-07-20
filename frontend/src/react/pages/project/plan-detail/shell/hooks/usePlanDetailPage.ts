@@ -36,6 +36,7 @@ import { unknownProject } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
 import { setDocumentTitle } from "@/utils";
 import { isTaskActivelyTransitioning } from "@/utils/v1/issue/rollout";
+import { invalidateProjectPagedDataCacheIfChanged } from "../../../pagedDataCacheScope";
 import type { PlanDetailPhase } from "../../shared/stores/types";
 import { usePlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
 import { getPlanCheckSummary } from "../../utils/phaseSummary";
@@ -246,6 +247,18 @@ export const usePlanDetailPage = ({
   const patchState = useCallback(
     (patch: Partial<PlanDetailPageSnapshot>) => {
       const prevSnapshot = latestSnapshotRef.current;
+      invalidateProjectPagedDataCacheIfChanged(
+        prevSnapshot.projectId,
+        "plans",
+        prevSnapshot.plan,
+        patch.plan
+      );
+      invalidateProjectPagedDataCacheIfChanged(
+        prevSnapshot.projectId,
+        "issues",
+        prevSnapshot.issue,
+        patch.issue
+      );
       // Seed the shared rollout store from this (already staleness-guarded)
       // patch, and adopt the store's identity-preserved instance so the deploy
       // view and the log viewer read the exact same rollout object.

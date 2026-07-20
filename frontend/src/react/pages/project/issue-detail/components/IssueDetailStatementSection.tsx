@@ -11,7 +11,6 @@ import { useCurrentUser, useReleaseByName } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { seedSheetStatement } from "@/react/hooks/useSheetStatement";
 import { cn } from "@/react/lib/utils";
-import { applyProjectDetailMutationResult } from "@/react/pages/project/applyProjectDetailMutationResult";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix, pushNotification } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
@@ -360,7 +359,7 @@ export function IssueDetailStatementSection({
         },
       });
       const response = await planServiceClientConnect.updatePlan(request);
-      applyProjectDetailMutationResult(page, {
+      page.patchState({
         plan: response,
       });
       // Drop the orphaned local sheet only after the spec is committed —

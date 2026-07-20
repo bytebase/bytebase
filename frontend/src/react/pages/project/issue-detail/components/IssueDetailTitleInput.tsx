@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { applyProjectDetailMutationResult } from "@/react/pages/project/applyProjectDetailMutationResult";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -66,7 +65,7 @@ export function IssueDetailTitleInput() {
         updateMask: { paths: ["title"] },
       });
       const response = await issueServiceClientConnect.updateIssue(request);
-      applyProjectDetailMutationResult(page, { issue: response });
+      page.patchState({ issue: response });
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",

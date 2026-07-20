@@ -52,10 +52,6 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
-import {
-  applyProjectDetailMutationResult,
-  invalidateProjectPagedDataCache,
-} from "@/react/pages/project/applyProjectDetailMutationResult";
 import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
@@ -345,7 +341,6 @@ export function IssueDetailActionBar() {
           status: nextStatus,
         })
       );
-      invalidateProjectPagedDataCache(page.projectId, "issues");
       await Promise.all([
         handleRefreshIssueDetailState(),
         refreshIssueComments(),
@@ -766,7 +761,7 @@ function IssueDetailReviewPopover({
             name: issue.name,
           })
         );
-        applyProjectDetailMutationResult(page, { issue: response });
+        page.patchState({ issue: response });
       } else if (selectedAction === "REJECT") {
         const response = await issueServiceClientConnect.rejectIssue(
           create(RejectIssueRequestSchema, {
@@ -774,7 +769,7 @@ function IssueDetailReviewPopover({
             name: issue.name,
           })
         );
-        applyProjectDetailMutationResult(page, { issue: response });
+        page.patchState({ issue: response });
       } else {
         await useAppStore.getState().createIssueComment({
           issueName: issue.name,

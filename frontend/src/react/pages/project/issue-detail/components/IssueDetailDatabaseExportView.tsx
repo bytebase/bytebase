@@ -22,7 +22,6 @@ import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
-import { applyProjectDetailMutationResult } from "@/react/pages/project/applyProjectDetailMutationResult";
 import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -255,7 +254,7 @@ function IssueDetailDatabaseExportOptions() {
         updateMask: { paths: ["specs"] },
       });
       const response = await planServiceClientConnect.updatePlan(request);
-      applyProjectDetailMutationResult(page, { plan: response });
+      page.patchState({ plan: response });
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
