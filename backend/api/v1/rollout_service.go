@@ -1023,6 +1023,9 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	}
 
 	if err := s.store.BatchSkipTasks(ctx, projectID, taskUIDs, request.Reason); err != nil {
+		if common.ErrorCode(err) == common.Conflict {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to skip tasks"))
 	}
 
