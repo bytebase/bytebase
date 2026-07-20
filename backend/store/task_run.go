@@ -343,18 +343,53 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 	}
 	defer tx.Rollback()
 
+	lockQ := qb.Q().Space(`
+		SELECT task.project, task.id
+		FROM (
+			SELECT
+				unnest(CAST(? AS TEXT[])) AS project,
+				unnest(CAST(? AS BIGINT[])) AS task_id
+		) requested_tasks
+		JOIN task ON task.project = requested_tasks.project AND task.id = requested_tasks.task_id
+		ORDER BY task.project, task.id
+		FOR UPDATE OF task`, projects, taskUIDs)
+	lockQuery, lockArgs, err := lockQ.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build task lock sql")
+	}
+	lockedTaskCount := 0
+	if err := func() error {
+		rows, err := tx.QueryContext(ctx, lockQuery, lockArgs...)
+		if err != nil {
+			return errors.Wrapf(err, "failed to lock tasks")
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var lockedProjectID string
+			var lockedTaskUID int64
+			if err := rows.Scan(&lockedProjectID, &lockedTaskUID); err != nil {
+				return errors.Wrapf(err, "failed to scan locked task")
+			}
+			lockedTaskCount++
+		}
+		if err := rows.Err(); err != nil {
+			return errors.Wrapf(err, "failed to read locked tasks")
+		}
+		return nil
+	}(); err != nil {
+		return err
+	}
+	if lockedTaskCount == 0 {
+		return nil
+	}
+
+	// Keep the child-to-parent lock order used by project deletion: task, then project.
 	baseID, err := nextProjectID(ctx, tx, "task_run", projectID)
 	if err != nil {
 		return err
 	}
 
-	// Single query that:
-	// 1. Locks task rows so task-run creation and skipping cannot both win
-	// 2. Assigns per-project IDs using ROW_NUMBER() + baseID
-	// 3. Filters out tasks with existing PENDING/RUNNING/DONE task runs (idempotent)
-	// 4. Calculates next attempt for each remaining task
-	// 5. Inserts task runs
-	// 6. Uses ON CONFLICT DO NOTHING to handle race conditions
+	// Assign per-project IDs, filter existing task runs, and insert new pending runs.
 	q := qb.Q().Space(`
 		WITH requested_tasks AS (
 			SELECT
@@ -369,8 +404,6 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 			) tasks
 			JOIN task ON task.project = tasks.project AND task.id = tasks.task_id
 			WHERE (task.payload->>'skipped')::BOOLEAN IS NOT TRUE
-			ORDER BY tasks.project, tasks.task_id
-			FOR UPDATE OF task
 		), candidates AS (
 			SELECT
 				(ROW_NUMBER() OVER ()) + ? - 1 AS new_id,
