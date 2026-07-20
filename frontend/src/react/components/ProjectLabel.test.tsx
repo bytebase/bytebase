@@ -196,6 +196,15 @@ describe("ProjectLabel", () => {
     expect(mocks.getOrFetchProjectByName).not.toHaveBeenCalled();
   });
 
+  test("renders wildcard project names as plain text even when link is requested", async () => {
+    const rendered = await render(<ProjectLabel projectName="projects/-" link />);
+    root = rendered.root;
+
+    expect(rendered.container.querySelector("a")).toBeNull();
+    expect(rendered.container.textContent).toBe("projects/-");
+    expect(mocks.getOrFetchProjectByName).not.toHaveBeenCalled();
+  });
+
   test("renders empty project names as plain text even when link is requested", async () => {
     const rendered = await render(<ProjectLabel projectName="" link />);
     root = rendered.root;
