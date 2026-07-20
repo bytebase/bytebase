@@ -130,3 +130,61 @@ func TestCreateDraftIssueUsesLockedPlanMetadata(t *testing.T) {
 	require.Equal(t, "Updated Plan title", result.Issue.Title)
 	require.Equal(t, "Updated Plan description", result.Issue.Description)
 }
+
+func TestCreateDraftIssueRejectsUnavailableProject(t *testing.T) {
+	tests := []struct {
+		name      string
+		projectID string
+		delete    bool
+	}{
+		{name: "missing", projectID: "missing-project"},
+		{name: "soft deleted", projectID: "project-a", delete: true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			stores := setupWorkflowStore(ctx, t)
+			planUID := int64(101)
+			if test.projectID == "project-a" {
+				plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+					ProjectID: test.projectID,
+					Name:      "draft Plan",
+					Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+						Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+							ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
+						},
+					}}},
+				}, "creator@example.com")
+				require.NoError(t, err)
+				planUID = plan.UID
+			}
+			if test.delete {
+				deleted := true
+				require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{
+					Workspace: "default", ResourceID: test.projectID, Delete: &deleted,
+				}))
+			}
+
+			result, err := NewWorkflow(stores).CreateDraftIssue(ctx, CreateDraftIssueInput{
+				Workspace: "default",
+				Issue: &store.IssueMessage{
+					ProjectID: test.projectID, CreatorEmail: "creator@example.com", PlanUID: &planUID,
+					Type: storepb.Issue_DATABASE_CHANGE,
+					Payload: &storepb.Issue{
+						Draft: true, Approval: &storepb.IssuePayloadApproval{},
+					},
+				},
+			})
+			require.Nil(t, result)
+			var workflowErr *Error
+			require.ErrorAs(t, err, &workflowErr)
+			require.Equal(t, ErrorNotFound, workflowErr.Code)
+			issue, getErr := stores.GetIssue(ctx, &store.FindIssueMessage{
+				ProjectIDs: []string{test.projectID}, PlanUID: &planUID,
+			})
+			require.NoError(t, getErr)
+			require.Nil(t, issue)
+		})
+	}
+}

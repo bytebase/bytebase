@@ -191,8 +191,11 @@ Several tables use composite primary keys (e.g., `(project, id)`). Check
 multi-column PRIMARY KEY.
 
 When writing or modifying queries on these tables:
-- Every WHERE, JOIN, USING, DELETE, and UPDATE predicate must include ALL primary key
-  columns — never filter by `id` alone
+- Every WHERE, JOIN, USING, DELETE, and UPDATE predicate must include every
+  project/tenant scope column. Identify rows with either the full primary key or
+  a full declared non-partial UNIQUE key that contains the same scope columns;
+  verify alternate keys in `LATEST.sql`. Never filter by `id` or another locally
+  unique identifier alone
 - When adding a new store method touching a composite-PK table, add a corresponding
   `TestCollision_*` test in `backend/tests/`. The existing `setupCollidingProjects`
   fixture and `assertProjectUnchanged` helper cover `plan`, `issue`, `task`, `task_run`,
@@ -203,6 +206,23 @@ When writing or modifying queries on these tables:
   and `snapshotProject` / `assertProjectUnchanged` for assertions — all going through
   the public gRPC API, no store access. Run with:
   `go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m`
+
+## Transaction Lock Ordering
+
+Before adding or modifying a transaction that locks multiple rows or tables, follow the canonical [store row-lock ordering](backend/store/README.md#transaction-row-lock-ordering). Lock existing child rows before parents, lock batches in full primary-key order, and treat upserts as existing-row locks. Add the deterministic real-PostgreSQL regression tests required below for new multi-row or multi-table coordination paths.
+
+Row ordering prevents wait-for cycles on existing rows, but it cannot protect a
+child row that does not exist yet. `nextProjectID` closes that gap for its callers:
+it locks the project and requires the project to be active before allocating an ID,
+so creation is rejected when the project is missing or deleted. This is not a
+repository-wide purge fence because some writers bypass `nextProjectID`.
+
+Every new or modified writer of purge-managed data must define whether its
+lifecycle policy requires an active project or merely an existing project, then
+serialize and validate that policy against project deletion. Add deterministic
+real-PostgreSQL tests for both lock-acquisition directions. Assert the terminal
+outcomes, including that neither direction ends in a foreign-key failure; merely
+checking for the absence of SQLSTATE `40P01` is insufficient.
 
 ### Imports
 

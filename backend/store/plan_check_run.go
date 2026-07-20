@@ -73,6 +73,14 @@ func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMess
 	if err := acquirePlanIssueRolloutAdvisoryLock(ctx, tx, create.ProjectID, create.PlanUID); err != nil {
 		return false, errors.Wrap(err, "failed to acquire Plan review lock for Plan check run")
 	}
+	var lockedPlanCheckRunUID int64
+	if err := tx.QueryRowContext(ctx, `
+		SELECT id
+		FROM plan_check_run
+		WHERE project = $1 AND plan_id = $2
+		FOR UPDATE`, create.ProjectID, create.PlanUID).Scan(&lockedPlanCheckRunUID); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return false, errors.Wrap(err, "failed to lock Plan Check Run")
+	}
 	var lockedPlanUID int64
 	if err := tx.QueryRowContext(ctx, `
 		SELECT id

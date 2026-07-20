@@ -69,14 +69,17 @@ last updated. Cross-reference with the tables your diff touches.
 
 For every query in the diff that touches a composite-PK table, verify:
 
-- Every `WHERE` clause includes ALL primary key columns
-- Every `JOIN ... ON` includes ALL primary key columns
-- Every `DELETE ... USING` includes ALL primary key columns
-- Every `UPDATE ... FROM` includes ALL primary key columns
+- Every `WHERE`, `JOIN ... ON`, `DELETE ... USING`, and `UPDATE ... FROM`
+  predicate includes every project/tenant scope column
+- Each row is identified by either the full primary key or a full declared
+  non-partial UNIQUE key containing the same scope columns
+- Any alternate unique key is verified against `LATEST.sql`
 
-**Red flag pattern:** `WHERE id = ?` without `AND project = ?` on any of these tables.
+**Red flag patterns:** `WHERE id = ?` or `WHERE plan_id = ?` without
+`AND project = ?` on any of these tables.
 
-**STOP — do not proceed to PR creation if any predicate is missing a PK column.**
+**STOP — do not proceed to PR creation if any predicate is missing a required
+scope or key column.**
 This is the exact bug pattern that caused BYT-9259. Fix the query first.
 
 ### Step 3c: Verify collision test coverage
@@ -142,7 +145,40 @@ spots — they document what helpers exist and what guarantees they make.
 Stale references don't break the build but they actively mislead future
 contributors and AI agents that read these docs at session start.
 
-## 4. Image Compatibility Window
+## 4. Transaction Lock Ordering
+
+**Skip if:** the diff does not add or modify a transaction in `backend/store/`.
+
+Read the canonical [store row-lock ordering](../backend/store/README.md#transaction-row-lock-ordering), then inspect every explicit and implicit lock in the changed transaction:
+
+- Transaction-scoped advisory locks are acquired before row locks
+- Existing related rows are locked child-to-parent
+- Batches are locked in full primary-key order
+- Project-owned sibling branches follow the documented `DeleteProject` order
+- `nextProjectID` is called only after required existing-child locks
+- `nextProjectID` locks the project and requires it to be active before allocation;
+  missing or deleted projects reject creation
+- `UPDATE`, `DELETE`, foreign-key checks, and conflicting upserts are included in the ordering analysis
+
+Row ordering prevents wait-for cycles on existing rows, but it cannot protect an
+absent child row. The `nextProjectID` active-project check covers only writers that
+call it, not every repository writer. For every new or modified writer of
+purge-managed data, define whether it requires an active project or merely an
+existing project, then serialize and validate that lifecycle policy against
+project deletion.
+
+If the transaction coordinates multiple rows or tables or races with project
+deletion, add deterministic real-PostgreSQL regression tests for both
+lock-acquisition directions. The tests must observe public store behavior, fail
+against the old behavior, and assert terminal outcomes. Verify that neither
+direction ends in a foreign-key failure; merely checking for the absence of
+SQLSTATE `40P01` is insufficient.
+
+**STOP — do not proceed to PR creation if the transaction conflicts with the
+canonical order or lacks the required deterministic lock and lifecycle regression
+tests.**
+
+## 5. Image Compatibility Window
 
 **Skip if:** diff does not touch server version metadata, actuator compatibility
 metadata, or `bytebase-action` version/compatibility logic.
@@ -156,7 +192,7 @@ If the diff changes, narrows, or may break the compatibility window, call out
 the policy change, compatibility impact, and validation plan in the PR
 description.
 
-## 5. Lint and Format Gate
+## 6. Lint and Format Gate
 
 **Skip if:** no code changes (docs-only PR).
 
@@ -180,7 +216,7 @@ pnpm --dir frontend type-check
 buf lint proto
 ```
 
-## 6. Test Gate
+## 7. Test Gate
 
 **Skip if:** no code changes.
 
@@ -189,7 +225,7 @@ buf lint proto
 - For Go changes: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
 - For new migration files: update `TestLatestVersion` in `backend/migrator/migrator_test.go`
 
-## 7. SonarCloud Properties
+## 8. SonarCloud Properties
 
 **Skip if:** no new files or directories added.
 
@@ -198,7 +234,7 @@ Update `.sonarcloud.properties` to reflect the latest file structure:
 - `sonar.test.inclusions` for test file patterns (e.g., `**/*_test.go`)
 - `sonar.cpd.exclusions` to skip copy-paste detection on test files
 
-## 8. Final Verification
+## 9. Final Verification
 
 Before running `gh pr create`:
 
