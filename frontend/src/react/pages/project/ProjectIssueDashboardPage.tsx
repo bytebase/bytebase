@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation, useNavigationType } from "react-router";
 import type { SearchParams } from "@/react/components/AdvancedSearch";
 import {
   BatchActionBar,
@@ -44,6 +45,8 @@ export function ProjectIssueDashboardPage({
   projectId: string;
 }) {
   const { t } = useTranslation();
+  const location = useLocation();
+  const navigationType = useNavigationType();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -97,6 +100,16 @@ export function ProjectIssueDashboardPage({
     param: "order",
     defaultValue: "",
   });
+  const viewCacheKey = useMemo(
+    () =>
+      JSON.stringify([
+        "project-issues",
+        projectName,
+        serializeSearchParams(searchParams),
+        orderBy,
+      ]),
+    [orderBy, projectName, searchParams]
+  );
 
   // Issue filter
   const issueFilter = useMemo(() => {
@@ -121,6 +134,8 @@ export function ProjectIssueDashboardPage({
 
   const paged = usePagedData<Issue>({
     sessionKey: "bb.issue-table.project-issues",
+    cacheKey: viewCacheKey,
+    cacheRestoreToken: navigationType === "POP" ? location.key : undefined,
     fetchList: fetchIssueList,
   });
   useScrollRestorationLoadMore(paged);

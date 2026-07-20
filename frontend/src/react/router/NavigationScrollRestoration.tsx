@@ -21,6 +21,7 @@ const RESTORE_MAX_TIMEOUT_MS = 5 * 60 * 1000;
 const WINDOW_TARGET_ID = "window";
 const CUSTOM_TARGET_PREFIX = "custom:";
 const TARGET_ATTRIBUTE = "data-scroll-restoration-id";
+const ANCHOR_ATTRIBUTE = "data-scroll-restoration-anchor";
 /** The `data-scroll-restoration-id` value carried by the main layout pane. */
 export const MAIN_SCROLL_RESTORATION_ID = "main";
 const SCROLL_KEYS = new Set([
@@ -33,9 +34,15 @@ const SCROLL_KEYS = new Set([
   " ",
 ]);
 
+type ScrollAnchor = {
+  key: string;
+  offset: number;
+};
+
 type ScrollPosition = {
   x: number;
   y: number;
+  anchor?: ScrollAnchor;
 };
 
 type SavedPositions = Record<string, Record<string, ScrollPosition>>;
@@ -49,12 +56,16 @@ type ActiveRestoration = {
 type PendingRestore = {
   cancel: () => void;
   keepAlive: () => void;
+  needsGrowth: () => boolean;
+  settle: () => void;
   setBusy: (busy: boolean) => void;
 };
 
 type ScrollRestorationContextValue = {
   positions: Record<string, ScrollPosition>;
   keepAlive: (id: string) => void;
+  needsGrowth: (id: string) => boolean;
+  settle: (id: string) => void;
   setBusy: (id: string, busy: boolean) => void;
 };
 
@@ -159,11 +170,45 @@ function collectTargets(): Map<string, ScrollTarget> {
   return targets;
 }
 
-function readPosition(target: ScrollTarget): ScrollPosition {
-  if (isWindowTarget(target)) {
-    return { x: window.scrollX, y: window.scrollY };
+function anchorBelongsToTarget(
+  anchor: HTMLElement,
+  target: ScrollTarget
+): boolean {
+  const owner = anchor.closest<HTMLElement>(`[${TARGET_ATTRIBUTE}]`);
+  return isWindowTarget(target) ? owner === null : owner === target;
+}
+
+function readAnchor(target: ScrollTarget): ScrollAnchor | undefined {
+  const root: ParentNode = isWindowTarget(target) ? document : target;
+  const viewportTop = isWindowTarget(target)
+    ? 0
+    : target.getBoundingClientRect().top;
+  const viewportBottom = isWindowTarget(target)
+    ? window.innerHeight
+    : target.getBoundingClientRect().bottom;
+
+  for (const anchor of root.querySelectorAll<HTMLElement>(
+    `[${ANCHOR_ATTRIBUTE}]`
+  )) {
+    if (!anchorBelongsToTarget(anchor, target)) continue;
+    const key = anchor.getAttribute(ANCHOR_ATTRIBUTE);
+    const rect = anchor.getBoundingClientRect();
+    if (key && rect.bottom > viewportTop && rect.top < viewportBottom) {
+      return { key, offset: rect.top - viewportTop };
+    }
   }
-  return { x: target.scrollLeft, y: target.scrollTop };
+  return undefined;
+}
+
+function readPosition(
+  target: ScrollTarget,
+  includeAnchor = false
+): ScrollPosition {
+  const coordinate = isWindowTarget(target)
+    ? { x: window.scrollX, y: window.scrollY }
+    : { x: target.scrollLeft, y: target.scrollTop };
+  const anchor = includeAnchor ? readAnchor(target) : undefined;
+  return anchor ? { ...coordinate, anchor } : coordinate;
 }
 
 function scrollRange(target: ScrollTarget): ScrollPosition {
@@ -209,6 +254,40 @@ function applyPosition(
   };
 }
 
+function applyAnchor(
+  target: ScrollTarget,
+  anchor: ScrollAnchor
+): "missing" | "pending" | "reached" {
+  const root: ParentNode = isWindowTarget(target) ? document : target;
+  const element = Array.from(
+    root.querySelectorAll<HTMLElement>(`[${ANCHOR_ATTRIBUTE}]`)
+  ).find(
+    (candidate) =>
+      candidate.getAttribute(ANCHOR_ATTRIBUTE) === anchor.key &&
+      anchorBelongsToTarget(candidate, target)
+  );
+  if (!element) return "missing";
+
+  const viewportTop = isWindowTarget(target)
+    ? 0
+    : target.getBoundingClientRect().top;
+  const delta =
+    element.getBoundingClientRect().top - viewportTop - anchor.offset;
+  if (Math.abs(delta) < 1) return "reached";
+
+  if (isWindowTarget(target)) {
+    window.scrollTo(window.scrollX, window.scrollY + delta);
+  } else {
+    target.scrollTop += delta;
+  }
+  const restoredViewportTop = isWindowTarget(target)
+    ? 0
+    : target.getBoundingClientRect().top;
+  const remainingDelta =
+    element.getBoundingClientRect().top - restoredViewportTop - anchor.offset;
+  return Math.abs(remainingDelta) < 1 ? "reached" : "pending";
+}
+
 function restoreWhenReady(
   id: string,
   position: ScrollPosition,
@@ -223,6 +302,7 @@ function restoreWhenReady(
   let resizeObserver: ResizeObserver | undefined;
   let observedTarget: ScrollTarget | null = null;
   let lastRange: ScrollPosition | undefined;
+  let growthNeeded = true;
 
   const stop = () => {
     if (stopped) return;
@@ -273,7 +353,12 @@ function restoreWhenReady(
       lastRange = undefined;
     }
     const { range, reached } = applyPosition(observedTarget, position);
-    if (reached) {
+    const anchorState = position.anchor
+      ? applyAnchor(observedTarget, position.anchor)
+      : "missing";
+    growthNeeded =
+      !reached || (position.anchor !== undefined && anchorState !== "reached");
+    if (anchorState === "reached" || (!position.anchor && reached)) {
       stop();
       return;
     }
@@ -281,6 +366,11 @@ function restoreWhenReady(
       keepAlive();
     }
     lastRange = range;
+  };
+
+  const settle = () => {
+    attempt();
+    stop();
   };
 
   attempt();
@@ -293,6 +383,8 @@ function restoreWhenReady(
   return {
     cancel: stop,
     keepAlive,
+    needsGrowth: () => growthNeeded,
+    settle,
     setBusy: (value) => {
       busy = value;
       keepAlive();
@@ -331,12 +423,12 @@ type NavigationScrollRestorationProps = {
 export function useScrollRestorationLoadMore(
   paged: Pick<
     PagedDataResult<unknown>,
-    "hasMore" | "isFetchingMore" | "dataList" | "loadMore"
+    "hasMore" | "isFetchingMore" | "isLoading" | "dataList" | "loadMore"
   >,
   /** The value of `data-scroll-restoration-id`; omit for the main layout pane. */
   restorationId: string = MAIN_SCROLL_RESTORATION_ID
 ): void {
-  const { hasMore, isFetchingMore, dataList, loadMore } = paged;
+  const { hasMore, isFetchingMore, isLoading, dataList, loadMore } = paged;
   const restoration = useContext(ScrollRestorationContext);
   const id = customTargetId(restorationId);
   // Depend on the primitive: the saved-position record is replaced on every
@@ -346,20 +438,25 @@ export function useScrollRestorationLoadMore(
 
   useEffect(() => {
     if (requestedY === undefined) return;
-    restoration?.setBusy(id, isFetchingMore);
+    restoration?.setBusy(id, isLoading || isFetchingMore);
     return () => restoration?.setBusy(id, false);
-  }, [id, isFetchingMore, requestedY, restoration]);
+  }, [id, isFetchingMore, isLoading, requestedY, restoration]);
 
   useEffect(() => {
-    if (requestedY === undefined || !hasMore || isFetchingMore) return;
+    if (requestedY === undefined || isLoading || isFetchingMore) return;
     const target = findTarget(id);
-    if (!target || scrollRange(target).y >= requestedY) return;
-    restoration?.keepAlive(id);
-    loadMore();
+    if (!target) return;
+    if (hasMore && restoration?.needsGrowth(id)) {
+      restoration?.keepAlive(id);
+      loadMore();
+      return;
+    }
+    restoration?.settle(id);
   }, [
     hasMore,
     id,
     isFetchingMore,
+    isLoading,
     itemCount,
     loadMore,
     requestedY,
@@ -407,6 +504,16 @@ export function NavigationScrollRestoration({
     [pendingRestores]
   );
 
+  const restorationNeedsGrowth = useCallback(
+    (id: string) => pendingRestores.get(id)?.needsGrowth() === true,
+    [pendingRestores]
+  );
+
+  const settleRestoration = useCallback(
+    (id: string) => pendingRestores.get(id)?.settle(),
+    [pendingRestores]
+  );
+
   const setRestorationBusy = useCallback(
     (id: string, busy: boolean) => pendingRestores.get(id)?.setBusy(busy),
     [pendingRestores]
@@ -434,7 +541,8 @@ export function NavigationScrollRestoration({
       const key = locationKey ?? currentLocationKeyRef.current;
       for (const [id, target] of collectTargets()) {
         if (pendingRestores.has(id)) continue;
-        savePosition(savedPositions, key, id, readPosition(target));
+        const position = readPosition(target, true);
+        savePosition(savedPositions, key, id, position);
       }
     },
     [pendingRestores, savedPositions]
@@ -495,9 +603,6 @@ export function NavigationScrollRestoration({
 
   useLayoutEffect(() => {
     const previousLocationKey = currentLocationKeyRef.current;
-    if (previousLocationKey !== locationKey) {
-      recordAllTargets(previousLocationKey);
-    }
     cancelPendingRestores();
     currentLocationKeyRef.current = locationKey;
     const savedForLocation = savedPositions[locationKey];
@@ -553,7 +658,6 @@ export function NavigationScrollRestoration({
     locationKey,
     navigationType,
     pendingRestores,
-    recordAllTargets,
     savedPositions,
   ]);
 
@@ -563,10 +667,19 @@ export function NavigationScrollRestoration({
         ? {
             positions: activeRestoration.positions,
             keepAlive: keepRestorationAlive,
+            needsGrowth: restorationNeedsGrowth,
+            settle: settleRestoration,
             setBusy: setRestorationBusy,
           }
         : undefined,
-    [activeRestoration, keepRestorationAlive, locationKey, setRestorationBusy]
+    [
+      activeRestoration,
+      keepRestorationAlive,
+      locationKey,
+      restorationNeedsGrowth,
+      setRestorationBusy,
+      settleRestoration,
+    ]
   );
 
   return (

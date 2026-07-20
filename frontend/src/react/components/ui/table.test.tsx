@@ -51,12 +51,14 @@ describe("table primitives", () => {
     expect(content.props.children).toBe("No data");
   });
 
-  test("ColumnResizeHandle uses a raised 12px hitbox around a 2px visual bar", () => {
+  test("ColumnResizeHandle keeps its hitbox inside the header edge", () => {
     const element = ColumnResizeHandle({ onMouseDown: () => {} });
 
-    expect(element.props.className).toContain("right-[-6px]");
+    expect(element.props.className).toContain("right-0");
+    expect(element.props.className).not.toContain("right-[-6px]");
     expect(element.props.className).toContain("w-3");
     expect(element.props.className).toContain("z-10");
+    expect(element.props.children.props.className).toContain("right-0");
     expect(element.props.children.props.className).toContain("w-0.5");
   });
 });

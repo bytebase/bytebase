@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MAIN_SCROLL_RESTORATION_ID } from "@/react/router/NavigationScrollRestoration";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { PlanDetailPageState } from "./shell/hooks/types";
 
@@ -169,6 +170,46 @@ const selectedSpecIdText = () =>
   container.querySelector('[data-testid="selected-spec-id"]')?.textContent;
 
 describe("ProjectPlanDetailPage", () => {
+  it("uses the dashboard main pane as its vertical scroll owner", async () => {
+    mocks.usePlanDetailPage.mockReturnValue(buildPage());
+
+    await act(async () => {
+      root.render(
+        <div data-scroll-restoration-id={MAIN_SCROLL_RESTORATION_ID}>
+          <ProjectPlanDetailPage
+            planId="create"
+            projectId="foo"
+            specId="spec-1"
+          />
+        </div>
+      );
+      await Promise.resolve();
+    });
+
+    const scrollHost = container.querySelector<HTMLElement>(
+      `[data-scroll-restoration-id='${MAIN_SCROLL_RESTORATION_ID}']`
+    );
+    const pageHost = container.querySelector<HTMLElement>(
+      '[data-testid="plan-detail-page"]'
+    );
+    const header = pageHost?.querySelector("header");
+    if (!scrollHost || !pageHost || !header) {
+      throw new Error("Missing plan-detail scroll test elements");
+    }
+
+    const pageHostClasses = pageHost.className.split(/\s+/);
+    expect(pageHostClasses).toContain("min-h-full");
+    expect(pageHostClasses).toContain("overflow-x-clip");
+    expect(pageHostClasses).not.toContain("h-full");
+    expect(pageHostClasses).not.toContain("overflow-x-hidden");
+
+    act(() => {
+      scrollHost.scrollTop = 1;
+      scrollHost.dispatchEvent(new Event("scroll"));
+    });
+    expect(header.className).toContain("border-b");
+  });
+
   it("keeps local spec selection on creating plans with a stale route spec id", async () => {
     mocks.usePlanDetailPage.mockReturnValue(buildPage());
 

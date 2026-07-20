@@ -439,6 +439,7 @@ export function ProjectsPage() {
     dataList: projects,
     hasMore,
     isFetchingMore,
+    isLoading: loading,
     loadMore,
   });
 

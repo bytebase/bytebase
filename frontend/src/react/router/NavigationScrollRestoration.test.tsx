@@ -1,4 +1,4 @@
-import { act, useState } from "react";
+import { act, useLayoutEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createMemoryRouter, Outlet } from "react-router";
 import { RouterProvider } from "react-router/dom";
@@ -14,13 +14,14 @@ import {
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-function TestShell() {
+function TestShell({ routeInsidePanel = true }: { routeInsidePanel?: boolean }) {
   return (
     <NavigationScrollRestoration>
       <div data-scroll-restoration-id={MAIN_SCROLL_RESTORATION_ID}>
         <div data-scroll-restoration-id="panel">
-          <Outlet />
+          {routeInsidePanel ? <Outlet /> : null}
         </div>
+        {routeInsidePanel ? null : <Outlet />}
       </div>
     </NavigationScrollRestoration>
   );
@@ -33,6 +34,17 @@ function makeScrollable(element: HTMLElement): void {
     scrollHeight: { configurable: true, value: 1000 },
     scrollWidth: { configurable: true, value: 1000 },
   });
+  element.getBoundingClientRect = () => ({
+    x: 0,
+    y: 0,
+    top: 0,
+    bottom: 200,
+    left: 0,
+    right: 200,
+    width: 200,
+    height: 200,
+    toJSON: () => ({}),
+  });
 }
 
 function recordScroll(element: HTMLElement, top: number, left = 0): void {
@@ -41,15 +53,89 @@ function recordScroll(element: HTMLElement, top: number, left = 0): void {
   element.dispatchEvent(new Event("scroll"));
 }
 
-async function renderRouter(firstElement = <div>First</div>) {
+function RouteScrollMetrics({
+  scrollHeight,
+  resetScrollTop = false,
+}: {
+  scrollHeight: number;
+  resetScrollTop?: boolean;
+}) {
+  useLayoutEffect(() => {
+    const main = document.querySelector<HTMLElement>(
+      `[data-scroll-restoration-id='${MAIN_SCROLL_RESTORATION_ID}']`
+    );
+    if (!main) throw new Error("Missing main scroll target");
+    Object.defineProperty(main, "scrollHeight", {
+      configurable: true,
+      value: scrollHeight,
+    });
+    if (resetScrollTop) main.scrollTop = 0;
+  }, [resetScrollTop, scrollHeight]);
+
+  return null;
+}
+
+function AnchorPage({
+  anchorTop,
+  scrollHeight,
+}: {
+  anchorTop: () => number;
+  scrollHeight?: () => number;
+}) {
+  const anchorRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const anchor = anchorRef.current;
+    const main = anchor?.closest<HTMLElement>(
+      `[data-scroll-restoration-id='${MAIN_SCROLL_RESTORATION_ID}']`
+    );
+    if (!anchor || !main) throw new Error("Missing anchor test elements");
+    if (scrollHeight) {
+      Object.defineProperty(main, "scrollHeight", {
+        configurable: true,
+        value: scrollHeight(),
+      });
+    }
+
+    anchor.getBoundingClientRect = () => {
+      const top = anchorTop() - main.scrollTop;
+      return {
+        x: 0,
+        y: top,
+        top,
+        bottom: top + 40,
+        left: 0,
+        right: 200,
+        width: 200,
+        height: 40,
+        toJSON: () => ({}),
+      };
+    };
+  }, [anchorTop, scrollHeight]);
+
+  return (
+    <div
+      ref={anchorRef}
+      data-scroll-restoration-anchor="issues/anchor"
+    >
+      Anchor
+    </div>
+  );
+}
+
+async function renderRouter(
+  firstElement = <div>First</div>,
+  secondElement = <div>Second</div>,
+  { routeInsidePanel = true }: { routeInsidePanel?: boolean } = {}
+) {
   const router = createMemoryRouter(
     [
       {
         path: "/",
-        element: <TestShell />,
+        element: <TestShell routeInsidePanel={routeInsidePanel} />,
         children: [
           { path: "first", element: firstElement },
-          { path: "second", element: <div>Second</div> },
+          { path: "second", element: secondElement },
         ],
       },
     ],
@@ -150,6 +236,26 @@ describe("NavigationScrollRestoration", () => {
     unmount();
   });
 
+  test("does not overwrite the outgoing position after destination layout commits", async () => {
+    const { main, router, unmount } = await renderRouter(
+      <RouteScrollMetrics scrollHeight={1000} />,
+      <RouteScrollMetrics scrollHeight={200} resetScrollTop />
+    );
+
+    main.scrollTop = 640;
+    await act(async () => {
+      await router.navigate("/second");
+    });
+    expect(main.scrollTop).toBe(0);
+
+    await act(async () => {
+      await router.navigate(-1);
+    });
+
+    expect(main.scrollTop).toBe(640);
+    unmount();
+  });
+
   test("restores after repeated Push and Back navigations", async () => {
     const { main, router, unmount } = await renderRouter();
 
@@ -197,6 +303,7 @@ describe("NavigationScrollRestoration", () => {
       useScrollRestorationLoadMore({
         hasMore: true,
         isFetchingMore: false,
+        isLoading: false,
         dataList: [],
         loadMore: onLoadMore,
       });
@@ -230,6 +337,7 @@ describe("NavigationScrollRestoration", () => {
       useScrollRestorationLoadMore({
         hasMore: true,
         isFetchingMore: false,
+        isLoading: false,
         dataList,
         loadMore: onLoadMore,
       });
@@ -273,6 +381,7 @@ describe("NavigationScrollRestoration", () => {
       useScrollRestorationLoadMore({
         hasMore: true,
         isFetchingMore,
+        isLoading: false,
         dataList,
         loadMore: () => {
           onLoadMore();
@@ -302,6 +411,273 @@ describe("NavigationScrollRestoration", () => {
     act(() => finishPage?.());
 
     expect(onLoadMore).toHaveBeenCalledTimes(2);
+    unmount();
+  });
+
+  test("keeps the same semantic anchor offset when row geometry changes", async () => {
+    let anchorTop = 400;
+    const { main, router, unmount } = await renderRouter(
+      <AnchorPage anchorTop={() => anchorTop} />,
+      <div>Second</div>,
+      { routeInsidePanel: false }
+    );
+
+    recordScroll(main, 380);
+    await act(async () => {
+      await router.navigate("/second");
+    });
+
+    anchorTop = 460;
+    await act(async () => {
+      await router.navigate(-1);
+    });
+
+    expect(main.scrollTop).toBe(440);
+    unmount();
+  });
+
+  test("uses the semantic anchor when the old coordinate is no longer reachable", async () => {
+    let anchorTop = 620;
+    let scrollHeight = 1000;
+    const { main, router, unmount } = await renderRouter(
+      <AnchorPage
+        anchorTop={() => anchorTop}
+        scrollHeight={() => scrollHeight}
+      />,
+      <div>Second</div>,
+      { routeInsidePanel: false }
+    );
+
+    recordScroll(main, 600);
+    await act(async () => {
+      await router.navigate("/second");
+    });
+
+    anchorTop = 350;
+    scrollHeight = 550;
+    await act(async () => {
+      await router.navigate(-1);
+    });
+
+    expect(main.scrollTop).toBe(330);
+    unmount();
+  });
+
+  test("grows paged content when a saved anchor is not loaded yet", async () => {
+    const onLoadMore = vi.fn();
+    let showAnchor = true;
+    const PagedAnchorPage = () => {
+      useScrollRestorationLoadMore({
+        hasMore: true,
+        isFetchingMore: false,
+        isLoading: false,
+        dataList: [{}],
+        loadMore: onLoadMore,
+      });
+      return showAnchor ? (
+        <AnchorPage anchorTop={() => 320} />
+      ) : (
+        <div>First page</div>
+      );
+    };
+    const { main, router, unmount } = await renderRouter(
+      <PagedAnchorPage />,
+      <div>Second</div>,
+      { routeInsidePanel: false }
+    );
+
+    recordScroll(main, 300);
+    await act(async () => {
+      await router.navigate("/second");
+    });
+
+    showAnchor = false;
+    await act(async () => {
+      await router.navigate(-1);
+    });
+
+    const restoredScrollTop = main.scrollTop;
+    unmount();
+
+    expect(restoredScrollTop).toBe(300);
+    expect(onLoadMore).toHaveBeenCalledOnce();
+  });
+
+  test("keeps restoring while an anchor correction is temporarily clamped", async () => {
+    vi.useFakeTimers();
+    let anchorTop = 320;
+    let scrollHeight = 1000;
+    const { main, router, unmount } = await renderRouter(
+      <AnchorPage
+        anchorTop={() => anchorTop}
+        scrollHeight={() => scrollHeight}
+      />,
+      <div>Second</div>,
+      { routeInsidePanel: false }
+    );
+    let scrollTop = 0;
+    let maxScrollTop = 800;
+    Object.defineProperty(main, "scrollTop", {
+      configurable: true,
+      get: () => scrollTop,
+      set: (value: number) => {
+        scrollTop = Math.max(0, Math.min(value, maxScrollTop));
+      },
+    });
+
+    recordScroll(main, 300);
+    await act(async () => {
+      await router.navigate("/second");
+    });
+
+    anchorTop = 500;
+    scrollHeight = 650;
+    maxScrollTop = 450;
+    await act(async () => {
+      await router.navigate(-1);
+    });
+    expect(main.scrollTop).toBe(450);
+
+    Object.defineProperty(main, "scrollHeight", {
+      configurable: true,
+      value: 800,
+    });
+    maxScrollTop = 600;
+    act(() => vi.advanceTimersByTime(100));
+
+    expect(main.scrollTop).toBe(480);
+    unmount();
+  });
+
+  test("grows paged content while an anchor correction is clamped", async () => {
+    vi.useFakeTimers();
+    const onLoadMore = vi.fn();
+    let finishPage: (() => void) | undefined;
+    let anchorTop = 320;
+    let scrollHeight = 1000;
+    const PagedAnchorPage = () => {
+      const [dataList, setDataList] = useState<unknown[]>([]);
+      const [hasMore, setHasMore] = useState(true);
+      const [isFetchingMore, setIsFetchingMore] = useState(false);
+      finishPage = () => {
+        setDataList([{}]);
+        setHasMore(false);
+        setIsFetchingMore(false);
+      };
+      useScrollRestorationLoadMore({
+        hasMore,
+        isFetchingMore,
+        isLoading: false,
+        dataList,
+        loadMore: () => {
+          onLoadMore();
+          setIsFetchingMore(true);
+        },
+      });
+      return (
+        <AnchorPage
+          anchorTop={() => anchorTop}
+          scrollHeight={() => scrollHeight}
+        />
+      );
+    };
+    const { main, router, unmount } = await renderRouter(
+      <PagedAnchorPage />,
+      <div>Second</div>,
+      { routeInsidePanel: false }
+    );
+    let scrollTop = 0;
+    let maxScrollTop = 800;
+    Object.defineProperty(main, "scrollTop", {
+      configurable: true,
+      get: () => scrollTop,
+      set: (value: number) => {
+        scrollTop = Math.max(0, Math.min(value, maxScrollTop));
+      },
+    });
+
+    recordScroll(main, 300);
+    await act(async () => {
+      await router.navigate("/second");
+    });
+
+    anchorTop = 500;
+    scrollHeight = 650;
+    maxScrollTop = 450;
+    await act(async () => {
+      await router.navigate(-1);
+    });
+
+    expect(main.scrollTop).toBe(450);
+    expect(onLoadMore).toHaveBeenCalledOnce();
+
+    Object.defineProperty(main, "scrollHeight", {
+      configurable: true,
+      value: 800,
+    });
+    maxScrollTop = 600;
+    act(() => finishPage?.());
+
+    expect(main.scrollTop).toBe(480);
+    expect(vi.getTimerCount()).toBe(0);
+    unmount();
+  });
+
+  test("accepts the best clamped anchor when paged content cannot grow", async () => {
+    vi.useFakeTimers();
+    let anchorTop = 320;
+    let scrollHeight = 1000;
+    const PagedAnchorPage = () => {
+      useScrollRestorationLoadMore({
+        hasMore: false,
+        isFetchingMore: false,
+        isLoading: false,
+        dataList: [],
+        loadMore: vi.fn(),
+      });
+      return (
+        <AnchorPage
+          anchorTop={() => anchorTop}
+          scrollHeight={() => scrollHeight}
+        />
+      );
+    };
+    const { main, router, unmount } = await renderRouter(
+      <PagedAnchorPage />,
+      <div>Second</div>,
+      { routeInsidePanel: false }
+    );
+    let scrollTop = 0;
+    let maxScrollTop = 800;
+    Object.defineProperty(main, "scrollTop", {
+      configurable: true,
+      get: () => scrollTop,
+      set: (value: number) => {
+        scrollTop = Math.max(0, Math.min(value, maxScrollTop));
+      },
+    });
+
+    recordScroll(main, 300);
+    await act(async () => {
+      await router.navigate("/second");
+    });
+
+    anchorTop = 500;
+    scrollHeight = 650;
+    maxScrollTop = 450;
+    await act(async () => {
+      await router.navigate(-1);
+    });
+    expect(main.scrollTop).toBe(450);
+    expect(vi.getTimerCount()).toBe(0);
+
+    recordScroll(main, 200);
+    await act(async () => {
+      await router.navigate("/second");
+      await router.navigate(-1);
+    });
+
+    expect(main.scrollTop).toBe(200);
     unmount();
   });
 });

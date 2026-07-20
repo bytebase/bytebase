@@ -166,6 +166,7 @@ export function DatabaseTable({
     dataList: databases,
     hasMore: !selectOnRowClick && hasMore,
     isFetchingMore,
+    isLoading: loading,
     loadMore,
   });
 

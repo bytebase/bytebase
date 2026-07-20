@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigationType } from "react-router";
 import type { SearchParams } from "@/react/components/AdvancedSearch";
 import {
   BatchActionBar,
@@ -33,6 +34,8 @@ const serializeSearchParams = (params: SearchParams): string =>
   buildSearchTextBySearchParams(params);
 
 export function MyIssuesPage() {
+  const location = useLocation();
+  const navigationType = useNavigationType();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -63,6 +66,15 @@ export function MyIssuesPage() {
     param: "order",
     defaultValue: "",
   });
+  const viewCacheKey = useMemo(
+    () =>
+      JSON.stringify([
+        "my-issues",
+        serializeSearchParams(searchParams),
+        orderBy,
+      ]),
+    [orderBy, searchParams]
+  );
 
   // Issue filter
   const issueFilter = useMemo(() => {
@@ -87,6 +99,8 @@ export function MyIssuesPage() {
 
   const paged = usePagedData<Issue>({
     sessionKey: "bb.issue-table.my-issues",
+    cacheKey: viewCacheKey,
+    cacheRestoreToken: navigationType === "POP" ? location.key : undefined,
     fetchList: fetchIssueList,
   });
   useScrollRestorationLoadMore(paged);

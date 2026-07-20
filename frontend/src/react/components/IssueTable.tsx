@@ -688,6 +688,8 @@ export const IssueListItem = memo(function IssueListItem({
   return (
     <div
       data-slot="issue-list-item"
+      data-testid="issue-list-item"
+      data-scroll-restoration-anchor={issue.name}
       className="flex items-start gap-x-2 px-4 py-3 cursor-pointer border-b border-block-border transition-colors last:border-b-0 hover:bg-control-bg/60"
       onClick={onRowClick}
     >

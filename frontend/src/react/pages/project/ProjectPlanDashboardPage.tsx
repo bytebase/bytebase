@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation, useNavigationType } from "react-router";
 import { v4 as uuidv4 } from "uuid";
 import {
   AdvancedSearch,
@@ -53,6 +54,11 @@ import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useMediaQuery } from "@/react/hooks/useMediaQuery";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
+import {
+  createAdvancedSearchParser,
+  serializeAdvancedSearch,
+  useURLSearchParam,
+} from "@/react/hooks/useURLSearchParam";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
@@ -101,9 +107,12 @@ import {
 // Below Tailwind's `sm` breakpoint (640px) we switch the plan list and the
 // database picker to their compact mobile layouts.
 const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
+const parsePlanSearchParams = createAdvancedSearchParser(["state", "creator"]);
 
 export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
+  const location = useLocation();
+  const navigationType = useNavigationType();
   const projectsByName = useAppStore((s) => s.projectsByName);
   const listUsers = useAppStore((state) => state.listUsers);
   const batchGetOrFetchUsers = useAppStore(
@@ -118,25 +127,28 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const [showAddSpecDrawer, setShowAddSpecDrawer] = useState(false);
 
   // Search
-  const defaultSearchParams = useCallback(
-    (): SearchParams => ({
+  const defaultSearchParams = useMemo<SearchParams>(
+    () => ({
       query: "",
       scopes: [{ id: "state", value: "ACTIVE" }],
     }),
     []
   );
-
-  const [searchParams, setSearchParams] =
-    useState<SearchParams>(defaultSearchParams);
-
-  const didMountRef = useRef(false);
-  useEffect(() => {
-    if (!didMountRef.current) {
-      didMountRef.current = true;
-      return;
-    }
-    setSearchParams(defaultSearchParams());
-  }, [defaultSearchParams, projectId]);
+  const [searchParams, setSearchParams] = useURLSearchParam({
+    param: "q",
+    parse: parsePlanSearchParams,
+    serialize: serializeAdvancedSearch,
+    defaultValue: defaultSearchParams,
+  });
+  const viewCacheKey = useMemo(
+    () =>
+      JSON.stringify([
+        "project-plans",
+        projectName,
+        serializeAdvancedSearch(searchParams),
+      ]),
+    [projectName, searchParams]
+  );
 
   // Scope options
   const scopeOptions: ScopeOption[] = useMemo(
@@ -220,6 +232,8 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
 
   const paged = usePagedData<Plan>({
     sessionKey: `bb.${projectName}.plan-table`,
+    cacheKey: viewCacheKey,
+    cacheRestoreToken: navigationType === "POP" ? location.key : undefined,
     fetchList: fetchPlanList,
   });
   useScrollRestorationLoadMore(paged);
@@ -642,6 +656,8 @@ function PlanRow({
 
   return (
     <TableRow
+      data-testid="plan-list-item"
+      data-scroll-restoration-anchor={plan.name}
       className={cn("cursor-pointer", isDeleted && "opacity-60")}
       onClick={onRowClick}
     >
