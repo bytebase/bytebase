@@ -21,7 +21,6 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { ProjectSwitchDialog } from "@/react/components/header/ProjectSwitchDialog";
 import { RouterLink } from "@/react/components/RouterLink";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
@@ -92,6 +91,7 @@ function useFullQuickLinkList(): QuickLinkDef[] {
       {
         id: "visit-projects",
         title: t("landing.quick-link.visit-prjects"),
+        route: PROJECT_V1_ROUTE_DASHBOARD,
         icon: GalleryHorizontalEnd,
       },
       {
@@ -431,7 +431,6 @@ function ConfigSheet({
 export function LandingPage(_: Record<string, never> = {}) {
   const { t } = useTranslation();
   const [showConfigDrawer, setShowConfigDrawer] = useState(false);
-  const [showProjectSwitchDialog, setShowProjectSwitchDialog] = useState(false);
 
   const email = useOptionalCurrentUser()?.email ?? "";
   const { version, changelogURL } = useServerState();
@@ -454,13 +453,8 @@ export function LandingPage(_: Record<string, never> = {}) {
       router.push({ name: link.route });
       return;
     }
-    switch (link.id) {
-      case "visit-projects":
-        setShowProjectSwitchDialog(true);
-        break;
-      case "visit-issues":
-        router.push({ name: WORKSPACE_ROUTE_MY_ISSUES });
-        break;
+    if (link.id === "visit-issues") {
+      router.push({ name: WORKSPACE_ROUTE_MY_ISSUES });
     }
   }, []);
 
@@ -542,11 +536,6 @@ export function LandingPage(_: Record<string, never> = {}) {
         fullList={fullList}
         config={config}
         setConfig={setConfig}
-      />
-
-      <ProjectSwitchDialog
-        open={showProjectSwitchDialog}
-        onClose={() => setShowProjectSwitchDialog(false)}
       />
     </>
   );

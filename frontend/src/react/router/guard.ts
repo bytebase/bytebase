@@ -191,6 +191,14 @@ export function rootGuard({
   const store = useAppStore.getState();
   const isLoggedIn = store.isLoggedIn();
 
+  if (toName === AUTH_SIGNUP_MODULE && store.isSaaSMode()) {
+    return redirect(
+      resolvePath(AUTH_SIGNIN_MODULE, {
+        query: Object.fromEntries(url.searchParams),
+      })
+    );
+  }
+
   // Allow 2FA setup / password reset / profile setup for logged-in users.
   if (
     isLoggedIn &&

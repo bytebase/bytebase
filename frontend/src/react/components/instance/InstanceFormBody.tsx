@@ -381,7 +381,11 @@ function ScanIntervalInput({
         <RadioGroupItem value="DEFAULT" disabled={!allowEdit}>
           {t("instance.scan-interval.default-never")}
         </RadioGroupItem>
-        <RadioGroupItem value="CUSTOM" disabled={!allowEdit}>
+        <RadioGroupItem
+          value="CUSTOM"
+          disabled={!allowEdit}
+          contentClassName="flex items-center gap-x-2"
+        >
           <span>{t("common.custom")}</span>
           <Input
             type="number"

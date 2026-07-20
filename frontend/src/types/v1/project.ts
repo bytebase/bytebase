@@ -35,7 +35,12 @@ export const defaultProject = (name: string): Project => {
 };
 
 export const isValidProjectName = (name: string | undefined) => {
+  const projectID = name?.slice("projects/".length);
   return (
-    !!name && name.startsWith("projects/") && name !== UNKNOWN_PROJECT_NAME
+    !!name &&
+    name.startsWith("projects/") &&
+    !!projectID &&
+    projectID !== "-" &&
+    name !== UNKNOWN_PROJECT_NAME
   );
 };

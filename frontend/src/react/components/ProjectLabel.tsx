@@ -8,7 +8,7 @@ import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { projectNamePrefix } from "@/store/modules/v1/common";
+import { isDefaultProject, isValidProjectName } from "@/types/v1/project";
 import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 
 export function ProjectLabel({
@@ -29,19 +29,20 @@ export function ProjectLabel({
   const { t } = useTranslation();
   const project = useProjectByName(projectName);
   const projectId = extractProjectResourceName(projectName);
-  const validProjectName =
-    projectName.startsWith(projectNamePrefix) && projectId.length > 0;
+  const validProjectName = isValidProjectName(projectName);
+  const defaultProject = isDefaultProject(projectName);
   const shouldFetchProject = children === undefined;
 
   useEffect(() => {
     if (
       shouldFetchProject &&
       validProjectName &&
+      !defaultProject &&
       hasWorkspacePermissionV2("bb.projects.get")
     ) {
       void useAppStore.getState().getOrFetchProjectByName(projectName, true);
     }
-  }, [projectName, shouldFetchProject, validProjectName]);
+  }, [defaultProject, projectName, shouldFetchProject, validProjectName]);
 
   if (!validProjectName) {
     return (
@@ -62,7 +63,7 @@ export function ProjectLabel({
     </>
   );
 
-  if (!link) {
+  if (!link || defaultProject) {
     if (className) {
       return <span className={className}>{content}</span>;
     }
