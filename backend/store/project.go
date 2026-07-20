@@ -440,7 +440,40 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrapf(err, "failed to delete task_run for project %s", resourceID)
 	}
 
-	// Delete tasks in plans of this project
+	// Lock tasks in full primary-key order before deleting them. Pending Task Run
+	// creation uses the same order, so concurrent batches cannot form a wait cycle.
+	q = qb.Q().Space(`
+		SELECT project, id
+		FROM task
+		WHERE project = ?
+		ORDER BY project, id
+		FOR UPDATE`, resourceID)
+	sql, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrap(err, "failed to build task lock query")
+	}
+	if err := func() error {
+		rows, err := tx.QueryContext(ctx, sql, args...)
+		if err != nil {
+			return errors.Wrapf(err, "failed to lock tasks for project %s", resourceID)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var lockedProjectID string
+			var lockedTaskID int64
+			if err := rows.Scan(&lockedProjectID, &lockedTaskID); err != nil {
+				return errors.Wrap(err, "failed to scan locked task")
+			}
+		}
+		if err := rows.Err(); err != nil {
+			return errors.Wrap(err, "failed to read locked tasks")
+		}
+		return nil
+	}(); err != nil {
+		return err
+	}
+
+	// Delete tasks in plans of this project after acquiring every task lock.
 	q = qb.Q().Space("DELETE FROM task WHERE project = ?", resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
