@@ -2945,11 +2945,6 @@
     "no-data-available": "No hay datos disponibles",
     "no-database-selected": "No se ha seleccionado una base de datos",
     "no-history-found": "No se encontró historial",
-    "no-project": {
-      "contact-the-admin-to-grant-access": "Póngase en contacto con el administrador para otorgar acceso.",
-      "go-to-create": "ir a crear",
-      "not-member-of-any-projects": "No eres miembro de ningún proyecto."
-    },
     "no-queriable-database": "No hay base de datos consultable",
     "notify-empty-statement": "Ingrese sus declaraciones SQL en el editor",
     "only-select-allowed": "Solo se permiten ejecutar declaraciones de solo lectura.",

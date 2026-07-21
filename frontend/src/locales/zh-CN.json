@@ -2945,11 +2945,6 @@
     "no-data-available": "暂无数据",
     "no-database-selected": "未选择数据库",
     "no-history-found": "暂无历史记录",
-    "no-project": {
-      "contact-the-admin-to-grant-access": "联系管理员以授予访问权限。",
-      "go-to-create": "去创建",
-      "not-member-of-any-projects": "你不是任何项目的成员。"
-    },
     "no-queriable-database": "没有可查询的数据库",
     "notify-empty-statement": "请在编辑器中输入 SQL 语句",
     "only-select-allowed": "只允许执行只读语句",

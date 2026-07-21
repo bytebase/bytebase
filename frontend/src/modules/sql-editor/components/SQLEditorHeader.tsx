@@ -11,6 +11,7 @@ import { useRecentVisit } from "@/hooks/useAppState";
 import { getProjectName, isValidProjectName } from "@/lib/resourceName";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
+import { useAppStore } from "@/stores/app";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { isDarkTheme } from "./theme/derive";
 import { useSQLEditorTheme } from "./theme/SQLEditorThemeScope";
@@ -21,6 +22,7 @@ export function SQLEditorHeader() {
   const theme = useSQLEditorTheme();
   const projectName = useSQLEditorEditorState((s) => s.project);
   const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
+  const setRecentProject = useAppStore((s) => s.setRecentProject);
   const projectId = isValidProjectName(projectName)
     ? getProjectName(projectName)
     : undefined;
@@ -34,6 +36,7 @@ export function SQLEditorHeader() {
         },
       });
       record(route.fullPath);
+      setRecentProject(project.name);
 
       if (event.ctrlKey || event.metaKey) {
         window.open(route.fullPath, "_blank");
@@ -41,7 +44,7 @@ export function SQLEditorHeader() {
         void maybeSwitchProject(project.name);
       }
     },
-    [maybeSwitchProject, navigate, record]
+    [maybeSwitchProject, navigate, record, setRecentProject]
   );
 
   return (

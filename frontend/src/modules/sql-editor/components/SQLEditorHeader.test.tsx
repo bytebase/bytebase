@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
     | undefined,
   maybeSwitchProject: vi.fn().mockResolvedValue(undefined),
   record: vi.fn(),
+  setRecentProject: vi.fn(),
   themeDark: true,
   resolve: vi.fn(
     ({
@@ -58,6 +59,15 @@ vi.mock("@/hooks/useAppState", () => ({
   useRecentVisit: () => ({
     record: mocks.record,
   }),
+}));
+
+vi.mock("@/stores/app", () => ({
+  useAppStore: (
+    selector: (state: { setRecentProject: typeof mocks.setRecentProject }) => unknown
+  ) =>
+    selector({
+      setRecentProject: mocks.setRecentProject,
+    }),
 }));
 
 vi.mock("@/modules/sql-editor/store", () => ({
@@ -199,10 +209,39 @@ describe("SQLEditorHeader", () => {
     expect(mocks.record).toHaveBeenCalledWith(
       "/sql-editor/projects/other-project"
     );
+    expect(mocks.setRecentProject).toHaveBeenCalledWith(
+      "projects/other-project"
+    );
     expect(mocks.maybeSwitchProject).toHaveBeenCalledWith(
       "projects/other-project"
     );
     expect(window.open).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("records recent project when opening the SQL Editor project in a new tab", () => {
+    const { render, unmount } = renderIntoContainer(<SQLEditorHeader />);
+    render();
+
+    act(() => {
+      mocks.breadcrumbProps?.onSelectProject?.(
+        { name: "projects/other-project" },
+        { ctrlKey: true, metaKey: false }
+      );
+    });
+
+    expect(mocks.record).toHaveBeenCalledWith(
+      "/sql-editor/projects/other-project"
+    );
+    expect(mocks.setRecentProject).toHaveBeenCalledWith(
+      "projects/other-project"
+    );
+    expect(window.open).toHaveBeenCalledWith(
+      "/sql-editor/projects/other-project",
+      "_blank"
+    );
+    expect(mocks.maybeSwitchProject).not.toHaveBeenCalled();
 
     unmount();
   });
