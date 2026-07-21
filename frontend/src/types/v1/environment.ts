@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { environmentNamePrefix } from "@/store";
+import { environmentNamePrefix } from "@/stores";
 import { UNKNOWN_ID } from "../const";
 import {
   type EnvironmentSetting_Environment,

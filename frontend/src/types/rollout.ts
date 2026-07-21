@@ -1,5 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { getProjectNamePlanIdFromRolloutName } from "@/store/modules/v1/common";
+import { getProjectNamePlanIdFromRolloutName } from "@/stores/modules/v1/common";
 import { UNKNOWN_ID } from "./const";
 import type { Rollout } from "./proto-es/v1/rollout_service_pb";
 import { RolloutSchema } from "./proto-es/v1/rollout_service_pb";

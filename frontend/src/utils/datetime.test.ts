@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock("@/react/i18n", () => ({
+vi.mock("@/lib/i18n", () => ({
   default: {
     language: "en-US",
   },

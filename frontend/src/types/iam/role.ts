@@ -1,4 +1,4 @@
-import { roleNamePrefix } from "@/store/modules/v1/common";
+import { roleNamePrefix } from "@/stores/modules/v1/common";
 
 export enum PresetRoleType {
   WORKSPACE_ADMIN = `${roleNamePrefix}workspaceAdmin`,

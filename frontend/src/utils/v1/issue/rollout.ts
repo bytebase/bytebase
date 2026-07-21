@@ -1,5 +1,5 @@
-import i18n from "@/react/i18n";
-import { getDatabaseByName } from "@/react/stores/app/databaseAccess";
+import i18n from "@/lib/i18n";
+import { getDatabaseByName } from "@/stores/app/databaseAccess";
 import {
   getTimeForPbTimestampProtoEs,
   isValidDatabaseName,

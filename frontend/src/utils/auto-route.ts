@@ -2,7 +2,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-} from "@/react/router/handles";
+} from "@/app/router/handles";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { extractDatabaseResourceName, extractProjectResourceName } from "./v1";

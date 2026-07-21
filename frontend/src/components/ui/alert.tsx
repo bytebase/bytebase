@@ -1,0 +1,116 @@
+import { cva, type VariantProps } from "class-variance-authority";
+import {
+  AlertCircle,
+  AlertTriangle,
+  Info,
+  type LucideIcon,
+  X,
+} from "lucide-react";
+import type { ComponentProps, ReactNode } from "react";
+import { cn } from "@/lib/utils";
+
+const alertVariants = cva(
+  "relative flex w-full items-start gap-x-3 rounded-xs border px-4 py-3 text-sm leading-5 shadow-xs",
+  {
+    variants: {
+      // Text follows the variant's status color so a colored alert reads
+      // cohesively (info tracks the theme accent; warning/error stay semantic).
+      variant: {
+        info: "border-info/40 bg-info/10 text-info",
+        warning: "border-warning/40 bg-warning/10 text-warning",
+        error: "border-error/40 bg-error/10 text-error",
+      },
+    },
+    defaultVariants: {
+      variant: "info",
+    },
+  }
+);
+
+const alertIconVariants = cva("mt-0.5 size-5 shrink-0", {
+  variants: {
+    variant: {
+      info: "text-info",
+      warning: "text-warning",
+      error: "text-error",
+    },
+  },
+  defaultVariants: {
+    variant: "info",
+  },
+});
+
+const iconMap: Record<string, LucideIcon> = {
+  info: Info,
+  warning: AlertTriangle,
+  error: AlertCircle,
+};
+
+type AlertProps = Omit<ComponentProps<"div">, "title"> &
+  VariantProps<typeof alertVariants> & {
+    title?: ReactNode;
+    description?: ReactNode;
+    showIcon?: boolean;
+    onDismiss?: () => void;
+  };
+
+function Alert({
+  className,
+  variant = "info",
+  showIcon = true,
+  title,
+  description,
+  onDismiss,
+  children,
+  ...props
+}: AlertProps) {
+  const Icon = iconMap[variant ?? "info"];
+  const hasStructuredContent = title !== undefined || description !== undefined;
+
+  return (
+    <div
+      role="alert"
+      className={cn(alertVariants({ variant, className }))}
+      {...props}
+    >
+      {showIcon && <Icon className={alertIconVariants({ variant })} />}
+      <div className="min-w-0 flex-1">
+        {hasStructuredContent ? (
+          <>
+            {title !== undefined && (
+              <h5 className="font-medium leading-6">{title}</h5>
+            )}
+            {description !== undefined && (
+              <div
+                className={cn(
+                  // Inherit the variant text color (slightly softened) so the
+                  // body follows the theme like the rest of the alert.
+                  "text-sm leading-6 opacity-90",
+                  title !== undefined && "mt-1"
+                )}
+              >
+                {description}
+              </div>
+            )}
+            {children}
+          </>
+        ) : (
+          children
+        )}
+      </div>
+      {onDismiss && (
+        <button
+          type="button"
+          aria-label="Dismiss"
+          className="shrink-0 rounded-xs p-0.5 text-control-light hover:bg-black/5 hover:text-control"
+          onClick={onDismiss}
+        >
+          <X className="size-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+export type { AlertProps };
+export { Alert, alertVariants };

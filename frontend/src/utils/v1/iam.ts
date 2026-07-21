@@ -1,17 +1,17 @@
 import { isUndefined, uniq } from "lodash-es";
-import { getProjectByName } from "@/react/stores/app/projectAccess";
 import {
   ensureGroupIdentifier,
   extractServiceAccountId,
   extractWorkloadIdentityId,
   groupNamePrefix,
-} from "@/store";
+} from "@/stores";
+import { getProjectByName } from "@/stores/app/projectAccess";
 import {
   getUserFullNameByType,
   serviceAccountNamePrefix,
   userNamePrefix,
   workloadIdentityNamePrefix,
-} from "@/store/modules/v1/common";
+} from "@/stores/modules/v1/common";
 import {
   ALL_USERS_USER_EMAIL,
   groupBindingPrefix,
