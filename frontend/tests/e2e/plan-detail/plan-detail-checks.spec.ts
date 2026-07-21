@@ -139,6 +139,31 @@ async function createPlanAndWaitForChecks(
   return planId;
 }
 
+// Read the CHANGES-section statement editors' text — the [role=code] Monaco
+// surfaces between the "Changes" and "Deploy" phase labels. Deliberately
+// excludes the DEPLOY task-statement preview (which shows the first task's SQL
+// and is independent of the spec tab), so the read is purely about CHANGES.
+function readChangesStatements(): Promise<string> {
+  return page.evaluate(() => {
+    const spans = Array.from(document.querySelectorAll("span"));
+    const changesLabel = spans.find((e) => e.textContent?.trim() === "Changes");
+    const deployLabel = spans.find((e) => e.textContent?.trim() === "Deploy");
+    if (!changesLabel) return "";
+    const FOLLOWING = Node.DOCUMENT_POSITION_FOLLOWING;
+    const PRECEDING = Node.DOCUMENT_POSITION_PRECEDING;
+    return Array.from(document.querySelectorAll('[role="code"]'))
+      .filter(
+        (c) =>
+          !!(changesLabel.compareDocumentPosition(c) & FOLLOWING) &&
+          (!deployLabel ||
+            !!(deployLabel.compareDocumentPosition(c) & PRECEDING)),
+      )
+      .flatMap((c) => Array.from(c.querySelectorAll(".view-line")))
+      .map((l) => l.textContent ?? "")
+      .join("\n");
+  });
+}
+
 test.describe("WARNING-level review rule", () => {
   test("violating SQL produces a warning but does not block auto-rollout", async () => {
     await attachReviewConfig("WARNING");
@@ -265,15 +290,16 @@ test.describe("Per-spec check counts render plan-wide (BYT-9160)", () => {
   // BYT-9160 (original): the per-spec right SIDEBAR always showed the LAST
   // spec's check counts regardless of which spec tab was selected. The React
   // migration REMOVED that sidebar; check counts are now a single PLAN-WIDE
-  // aggregate summary (PlanDetailAggregateChecks). That UI element no longer
-  // exists, so the original bug cannot recur. This test locks the resolution:
-  // the aggregate summary renders and stays present regardless of the selected
-  // spec (it is plan-wide, not per-spec).
+  // aggregate summary (PlanDetailAggregateChecks, rendered once in
+  // PlanDetailChangesBranch.tsx). That per-spec UI no longer exists, so the
+  // original bug cannot recur — the aggregate is plan-wide by construction (one
+  // component, not one-per-spec). This test locks the resolution: the aggregate
+  // summary renders for a multi-spec plan.
   //
-  // NOTE: the separate contract "selecting a spec shows only THAT spec's
-  // STATEMENT" is a *different* concern, guarded separately below (BYT-9794 —
-  // a duplicate-key regression that stacked spec editors, fixed by #20662).
-  test("the aggregate check summary stays plan-wide across spec switches", async () => {
+  // (Originally this clicked through spec tabs to prove the summary stayed put;
+  // that dance is gone — clicking a spec tab currently collapses the CHANGES
+  // section, locked separately below as the spec-switch BUG.)
+  test("the plan-wide aggregate check summary renders for a multi-spec plan", async () => {
     const ts = Date.now();
     await createPlanAndWaitForChecks("E2E Plan-Wide Checks", [
       {
@@ -290,31 +316,26 @@ test.describe("Per-spec check counts render plan-wide (BYT-9160)", () => {
 
     await planPage.expandSection("Changes");
 
-    // The plan-wide aggregate summary renders (the removed per-spec sidebar
-    // would have shown per-spec counts here instead).
-    await expect(page.getByText("Success").first()).toBeVisible({
+    // The single plan-wide aggregate summary renders a Success entry covering
+    // all specs (the removed per-spec sidebar would have shown per-spec counts).
+    await expect(page.getByText(/Success/).first()).toBeVisible({
       timeout: 15_000,
     });
-
-    // It is plan-wide: still present after switching specs (the BYT-9160
-    // sidebar would have re-bound to / gone stale on the selected spec).
-    await planPage.specTab(1).click();
-    await expect(page.getByText("Success").first()).toBeVisible();
-    await planPage.specTab(2).click();
-    await expect(page.getByText("Success").first()).toBeVisible();
   });
 });
 
-// Regression guard for BYT-9794 (distinct from BYT-9160's deleted sidebar):
-// switching spec tabs used to leave the PREVIOUSLY-selected spec's statement
-// editor mounted, so both specs' SQL stacked in CHANGES. Root cause: the
-// spec-detail sections (TargetsSection / StatementSection / OptionsSection)
-// each carried the SAME `key={selectedSpec.id}` — duplicate React keys on
-// siblings broke reconciliation, so the old sections weren't removed on
-// switch. Fixed by #20662, which consolidated them under a single keyed
-// wrapper `<div key={selectedSpec.id}>`. This was a test.fail() lock until the
-// fix landed; it now runs as a normal passing guard so a re-regression fails
-// loudly.
+// BYT-9794 (FIXED, #20662): switching spec tabs used to leave the
+// PREVIOUSLY-selected spec's statement editor mounted, so both specs' SQL
+// stacked in CHANGES. Root cause: the spec-detail sections (TargetsSection /
+// StatementSection / OptionsSection) each carried the SAME `key={selectedSpec
+// .id}` — duplicate React keys broke reconciliation. Fixed by consolidating
+// them under a single keyed wrapper `<div key={selectedSpec.id}>`. Guarded here
+// as a static property: expanding CHANGES mounts exactly ONE statement editor
+// (the selected spec's), never both stacked.
+//
+// (The original version switched to spec tab 2 to check the OTHER spec's
+// statement replaced the first; that path now hits the spec-switch collapse BUG
+// below, so the stacking property is asserted directly on the first spec.)
 test.describe(
   "Spec identity and resource routing stay synchronized (BYT-9794/BYT-9805/BYT-9913)",
   () => {
@@ -342,7 +363,7 @@ test.describe(
           ],
         );
 
-        await planPage.expandSection("Changes");
+      await planPage.expandSection("Changes");
 
         // Read ONLY the CHANGES section's statement editors — the [role=code]
         // Monaco surfaces between the "Changes" and "Deploy" phase labels. This
