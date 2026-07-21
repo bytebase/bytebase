@@ -67,9 +67,9 @@ func TestPlanServiceListPlansHidesMalformedUIPlans(t *testing.T) {
 		},
 	}}})
 	deleted := createPlan("deleted", changeConfig("deleted", ""))
-	_, err = stores.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID: deleted.UID, ProjectID: deleted.ProjectID, Deleted: new(true),
-	})
+	_, err = stores.GetDB().ExecContext(ctx, `
+		UPDATE plan SET deleted = TRUE
+		WHERE project = $1 AND id = $2`, deleted.ProjectID, deleted.UID)
 	require.NoError(t, err)
 	linked := createPlan("linked", changeConfig("linked", ""))
 	_, err = stores.CreateIssue(ctx, &store.IssueMessage{

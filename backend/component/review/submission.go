@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -58,8 +57,7 @@ func (w *Workflow) CreateDraftIssue(ctx context.Context, input CreateDraftIssueI
 		return nil, workflowWrap(ErrorInternal, err, "failed to begin draft creation transaction")
 	}
 	defer tx.Rollback()
-	key := issue.ProjectID + "/" + strconv.FormatInt(*issue.PlanUID, 10)
-	if err := store.AcquireAdvisoryXactLockWithStringKey(ctx, tx, store.AdvisoryLockKeyPlanIssueRollout, key); err != nil {
+	if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, issue.ProjectID, *issue.PlanUID); err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock")
 	}
 	existing, err := lockIssueByPlan(ctx, tx, issue.ProjectID, *issue.PlanUID)
@@ -184,8 +182,7 @@ func (w *Workflow) SubmitIssue(ctx context.Context, input SubmitIssueInput) (*Su
 	}
 	defer tx.Rollback()
 
-	key := input.ProjectID + "/" + strconv.FormatInt(*observedIssue.PlanUID, 10)
-	if err := store.AcquireAdvisoryXactLockWithStringKey(ctx, tx, store.AdvisoryLockKeyPlanIssueRollout, key); err != nil {
+	if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, input.ProjectID, *observedIssue.PlanUID); err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock")
 	}
 	issue, err := lockIssue(ctx, tx, input.ProjectID, input.IssueUID)

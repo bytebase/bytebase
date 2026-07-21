@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -671,8 +672,17 @@ func TestLabelResetMakesPendingApprovalActionStale(t *testing.T) {
 			ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
 		},
 	}}
-	_, err = stores.UpdatePlan(ctx, &store.UpdatePlanMessage{UID: plan.UID, ProjectID: plan.ProjectID, Config: config})
+	configPayload, err := protojson.Marshal(config)
 	require.NoError(t, err)
+	result, err := stores.GetDB().ExecContext(ctx, `
+		UPDATE plan
+		SET config = $1
+		WHERE project = $2 AND id = $3
+	`, configPayload, plan.ProjectID, plan.UID)
+	require.NoError(t, err)
+	rowsAffected, err := result.RowsAffected()
+	require.NoError(t, err)
+	require.EqualValues(t, 1, rowsAffected)
 
 	workflow := NewWorkflow(stores)
 	proposalReady := make(chan struct{})

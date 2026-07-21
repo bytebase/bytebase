@@ -28,7 +28,9 @@ const (
 	AdvisoryLockKeyPlanIssueRollout AdvisoryLockKey = 1005
 )
 
-func acquirePlanIssueRolloutAdvisoryLock(ctx context.Context, tx *sql.Tx, projectID string, planUID int64) error {
+// AcquirePlanIssueRolloutAdvisoryLock serializes coordinated Plan, linked Issue,
+// Rollout, and Plan Check Run transactions for one Plan.
+func AcquirePlanIssueRolloutAdvisoryLock(ctx context.Context, tx *sql.Tx, projectID string, planUID int64) error {
 	key := projectID + "/" + strconv.FormatInt(planUID, 10)
 	return AcquireAdvisoryXactLockWithStringKey(ctx, tx, AdvisoryLockKeyPlanIssueRollout, key)
 }

@@ -3,7 +3,6 @@ package review
 import (
 	"context"
 	"database/sql"
-	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -74,8 +73,7 @@ func (w *Workflow) UpdatePlan(ctx context.Context, input UpdatePlanInput) (*Upda
 	}
 	defer tx.Rollback()
 
-	key := input.ProjectID + "/" + strconv.FormatInt(input.PlanUID, 10)
-	if err := store.AcquireAdvisoryXactLockWithStringKey(ctx, tx, store.AdvisoryLockKeyPlanIssueRollout, key); err != nil {
+	if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, input.ProjectID, input.PlanUID); err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock")
 	}
 	issue, err := lockIssueByPlan(ctx, tx, input.ProjectID, input.PlanUID)

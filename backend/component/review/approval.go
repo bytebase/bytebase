@@ -145,6 +145,14 @@ func (a *ApprovalEvaluator) ApplyApprovalTemplate(ctx context.Context, input App
 		return nil, workflowWrap(ErrorInternal, err, "failed to begin approval finding transaction")
 	}
 	defer tx.Rollback()
+	if observedPlan != nil {
+		if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, input.ProjectID, observedPlan.UID); err != nil {
+			return nil, workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock for approval finding")
+		}
+	}
+	// The existing Issue row is the project-lifecycle fence for this update:
+	// project purge deletes Issues before the Project. Approval may finish while
+	// a soft-deleted Project still exists, but cannot write after purge passes it.
 	lockedIssue, err := lockIssue(ctx, tx, input.ProjectID, input.IssueUID)
 	if err != nil {
 		return nil, err
@@ -152,7 +160,7 @@ func (a *ApprovalEvaluator) ApplyApprovalTemplate(ctx context.Context, input App
 	if lockedIssue == nil {
 		return nil, workflowError(ErrorNotFound, "issue %d not found in project %s", input.IssueUID, input.ProjectID)
 	}
-	lockedPlan, err := lockIssuePlan(ctx, tx, lockedIssue)
+	lockedPlan, err := getIssuePlan(ctx, tx, lockedIssue)
 	if err != nil {
 		return nil, err
 	}

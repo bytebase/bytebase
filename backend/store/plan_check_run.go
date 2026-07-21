@@ -70,7 +70,7 @@ func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMess
 		return false, errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
-	if err := acquirePlanIssueRolloutAdvisoryLock(ctx, tx, create.ProjectID, create.PlanUID); err != nil {
+	if err := AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, create.ProjectID, create.PlanUID); err != nil {
 		return false, errors.Wrap(err, "failed to acquire Plan review lock for Plan check run")
 	}
 	var lockedPlanCheckRunUID int64
