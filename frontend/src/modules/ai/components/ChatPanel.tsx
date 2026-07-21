@@ -210,7 +210,7 @@ export function ChatPanel() {
   if (!aiSetting.enabled) return null;
 
   return (
-    <div className="w-full h-full flex-1 flex flex-col overflow-hidden">
+    <div className="w-full h-full flex-1 flex flex-col overflow-hidden text-control">
       <ActionBar />
 
       {ready ? (

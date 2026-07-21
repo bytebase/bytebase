@@ -1,9 +1,11 @@
 import { PlayIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MonacoEditor } from "@/components/monaco/MonacoEditor";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Tooltip } from "@/components/ui/tooltip";
+import { monacoThemeName } from "@/modules/sql-editor/components/theme/derive";
+import { useActiveSQLEditorTheme } from "@/modules/sql-editor/components/theme/useActiveSQLEditorTheme";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { findAncestor } from "@/utils";
 import { useAIContext } from "../../context";
@@ -38,6 +40,11 @@ const PADDING_PX = 8;
 export function CodeBlock({ code, width }: Props) {
   const { t } = useTranslation();
   const { events, setShowHistoryDialog } = useAIContext();
+  const activeTheme = useActiveSQLEditorTheme();
+  const monacoOptions = useMemo(
+    () => ({ theme: monacoThemeName(activeTheme) }),
+    [activeTheme]
+  );
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   // The message wrapper element is mounted by `ChatView` with the
@@ -76,7 +83,7 @@ export function CodeBlock({ code, width }: Props) {
   return (
     <div
       ref={containerRef}
-      className="flex flex-col overflow-x-hidden border border-gray-500 rounded-sm bg-white"
+      className="flex flex-col overflow-x-hidden border border-control-border rounded-sm bg-background text-control"
       style={{ width: `${computedWidth}px` }}
     >
       <div className="flex items-center justify-between px-1 pt-1">
@@ -117,6 +124,7 @@ export function CodeBlock({ code, width }: Props) {
         min={20}
         max={120}
         options={{
+          ...monacoOptions,
           fontSize: 12,
           lineHeight: 14,
           lineNumbers: "off",
