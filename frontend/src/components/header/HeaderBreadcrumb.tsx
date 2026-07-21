@@ -9,6 +9,7 @@ import {
 import { PROJECT_V1_ROUTE_ISSUES } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
@@ -218,10 +219,12 @@ export function ProjectSegment() {
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger
             render={
-              <button
+              <Button
                 type="button"
+                appearance="secondary"
                 aria-label={t("project.select")}
-                className="inline-flex items-center rounded-xs p-1 text-control-placeholder hover:bg-control-bg cursor-pointer"
+                size="xs"
+                className="size-6 p-0 text-control-placeholder"
               />
             }
           >
