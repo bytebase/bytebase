@@ -152,19 +152,29 @@ psql -U bbdev bbdev
 
 ### React
 
-The frontend is built entirely in React. **All UI code is React** — use the stack and component patterns below.
+The product frontend is built in React. **All product UI code is React** — use the stack and component patterns below. The only Vue runtime is the isolated `pev2` adapter under `frontend/src/apps/explain-visualizer/`.
+
+The canonical frontend ownership map is in `./frontend/AGENTS.md`. In summary:
+
+- `frontend/src/app/` owns bootstrap, layouts, and router infrastructure.
+- `frontend/src/routes/` owns route modules and route-local code.
+- `frontend/src/modules/` owns reusable application subsystems.
+- `frontend/src/components/ui/` owns shared UI primitives; `frontend/src/components/` contains other genuinely shared product components.
+- `frontend/src/stores/`, `frontend/src/api/`, `frontend/src/hooks/`, and `frontend/src/lib/` contain cross-route infrastructure. Existing `types/` and `utils/` are compatibility surfaces, not default homes for owner-specific code.
+- Do not introduce a generic feature bucket or recreate the migration-era framework namespace.
+- Historical frontend migration plans under `docs/superpowers/` preserve the paths that existed when they were written; use `frontend/AGENTS.md`, not those plans, for current placement decisions.
 
 **Stack**: React + [Base UI](https://base-ui.com/) (`@base-ui/react`) + Tailwind CSS v4 + shadcn-style component patterns
 
 **Component patterns**:
 - Build UI components in the shadcn style — `class-variance-authority` (cva) for variant props, `clsx`/`tailwind-merge` for class merging
-- Wrap Base UI primitives (Button, Tabs, Input, etc.) with styled variants in `./frontend/src/react/components/ui/`
+- Wrap Base UI primitives (Button, Tabs, Input, etc.) with styled variants in `./frontend/src/components/ui/`
 - Use `useTranslation()` from `react-i18next` for i18n
 - Use CSS custom properties (`--color-accent`, `--color-error`, `--color-control-border`, etc.) for theme tokens, defined in `./frontend/src/assets/css/tailwind.css`
 
 **Shared UI primitives**:
-- For React UI code, prefer shared components from `./frontend/src/react/components/ui/` over native HTML controls or ad hoc styled elements
-- Before adding or modifying an interactive UI element, first check whether a matching component already exists in `./frontend/src/react/components/ui/`
+- For React UI code, prefer shared components from `./frontend/src/components/ui/` over native HTML controls or ad hoc styled elements
+- Before adding or modifying an interactive UI element, first check whether a matching component already exists in `./frontend/src/components/ui/`
 - Use shared UI components for common controls such as buttons, inputs, selects, dialogs, dropdowns, tooltips, tabs, checkboxes, radios, switches, tables, and form controls when available
 - Do not hand-roll native controls with Tailwind classes when a shared component exists
 - Native HTML controls are allowed only when the shared component does not support the required browser behavior, accessibility behavior, or integration pattern
@@ -176,7 +186,7 @@ The frontend is built entirely in React. **All UI code is React** — use the st
 - Default border color is `currentcolor` (compat shim in `tailwind.css` preserves v3 behavior)
 
 **State & build**:
-- React app state lives under `./frontend/src/react/stores/` — the core slices are in `stores/app/`, consumed via the `useAppStore` hook. Routing helpers live in `./frontend/src/react/router/`
+- React app state lives under `./frontend/src/stores/` — the core slices are in `stores/app/`, consumed via the `useAppStore` hook. Routing helpers live in `./frontend/src/app/router/`
 - React `.tsx` is compiled by esbuild (`react-tsx-transform` Vite plugin) and type-checked with `tsc --build` via `pnpm --dir frontend type-check`
 
 ## Naming

@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { getDatabaseByName } from "@/react/stores/app/databaseAccess";
+import { getDatabaseByName } from "@/stores/app/databaseAccess";
 import { UNKNOWN_ID } from "@/types";
 import type {
   Changelog,

@@ -1,4 +1,4 @@
-import { projectNamePrefix, userNamePrefix } from "@/store";
+import { projectNamePrefix, userNamePrefix } from "@/stores";
 import type { IssueFilter } from "@/types";
 import { ApprovalStatus, RiskLevel } from "@/types/proto-es/v1/common_pb";
 import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";

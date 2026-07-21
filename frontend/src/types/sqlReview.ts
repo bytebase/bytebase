@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import i18n from "@/react/i18n";
+import i18n from "@/lib/i18n";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { SQLReviewRule } from "@/types/proto-es/v1/review_config_service_pb";
 import {

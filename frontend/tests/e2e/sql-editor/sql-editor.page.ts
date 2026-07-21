@@ -32,12 +32,12 @@ export class SqlEditorPage {
     // editorStore.allowAdmin && currentTab.mode === "WORKSHEET".
     //
     // Scoping note: the workspace-level "Bytebase has not configured
-    // --external-url" banner (frontend/src/react/components/BannersWrapper.tsx)
+    // --external-url" banner (frontend/src/components/BannersWrapper.tsx)
     // ALSO renders a button with a lucide-wrench icon ("Configure now").
     // The framework's seed-test-data fixture silences that banner by
     // setting an external URL during setup, but we still anchor by the
     // editor's own warning-color class (`border-warning`, applied in
-    // frontend/src/react/components/sql-editor/AdminModeButton.tsx:53)
+    // frontend/src/components/sql-editor/AdminModeButton.tsx:53)
     // so the locator stays correct even if a future build re-introduces
     // the banner.
     this.adminModeButton = page

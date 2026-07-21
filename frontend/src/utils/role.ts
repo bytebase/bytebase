@@ -1,4 +1,4 @@
-import i18n from "@/react/i18n";
+import i18n from "@/lib/i18n";
 import type { Permission } from "@/types/iam";
 import { PresetRoleType } from "@/types/iam";
 import { appStoreUtilBridge } from "@/utils/app-store-bridge";

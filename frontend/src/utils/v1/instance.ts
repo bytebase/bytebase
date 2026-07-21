@@ -1,4 +1,4 @@
-import i18n from "@/react/i18n";
+import i18n from "@/lib/i18n";
 import { isValidInstanceName, unknownInstance } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 // Using proto-es types directly, no conversions needed

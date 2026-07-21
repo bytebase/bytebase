@@ -1,0 +1,379 @@
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import { Code } from "@connectrpc/connect";
+import { Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { router } from "@/app/router";
+import {
+  SQL_EDITOR_HOME_MODULE,
+  WORKSPACE_ROUTE_LANDING,
+} from "@/app/router/handles";
+import { AuthFooter } from "@/components/auth/AuthFooter";
+import { ComponentPermissionGuard } from "@/components/ComponentPermissionGuard";
+import {
+  ResourceIdField,
+  type ResourceIdFieldRef,
+} from "@/components/ResourceIdField";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useAppFeature } from "@/hooks/useAppState";
+import { useAppStore } from "@/stores/app";
+import { projectNamePrefix } from "@/stores/modules/v1/common";
+import { isValidProjectName } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
+import { extractGrpcErrorMessage, getErrorCode } from "@/utils/connect";
+
+type Purpose = "edit-schema" | "query-data";
+type Workflow = "simple" | "team";
+type DataChoice = "self-setup" | "builtin-sample";
+
+const SETUP_PERMISSIONS = [
+  "bb.settings.get",
+  "bb.settings.setWorkspaceProfile",
+  "bb.projects.create",
+  "bb.roles.list",
+  "bb.workspaces.getIamPolicy",
+] as const;
+
+const homePath = (mode?: DatabaseChangeMode) => {
+  if (mode === DatabaseChangeMode.EDITOR) {
+    return { name: SQL_EDITOR_HOME_MODULE };
+  }
+  return { name: WORKSPACE_ROUTE_LANDING };
+};
+
+export function SetupPage() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      await router.isReady();
+      try {
+        await Promise.all([
+          // Force-refresh server info so `enableOnboarding()` reflects the
+          // post-signup active-user count. This page renders outside any
+          // shell, so useEnsureWorkspaceCommonData hasn't run.
+          useAppStore.getState().fetchServerInfo(),
+          useAppStore.getState().listRoles(),
+          useAppStore.getState().fetchWorkspaceIamPolicy(),
+        ]);
+      } catch (error) {
+        // Roles/IAM pre-fetch failed — proceed to render the wizard anyway.
+        // The wizard's own RPC calls surface their errors; blocking setup
+        // on a prefetch failure leaves the page stuck on a spinner.
+        console.error("Setup prefetch failed:", error);
+      }
+      setReady(true);
+    })();
+  }, []);
+
+  return (
+    <>
+      <ComponentPermissionGuard permissions={[...SETUP_PERMISSIONS]}>
+        {ready ? (
+          <SetupWizard />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Loader2 className="size-6 animate-spin" />
+          </div>
+        )}
+      </ComponentPermissionGuard>
+      <AuthFooter />
+    </>
+  );
+}
+
+function SetupWizard() {
+  const { t } = useTranslation();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [purpose, setPurpose] = useState<Purpose>("edit-schema");
+  const [workflow, setWorkflow] = useState<Workflow>("team");
+  const [data, setData] = useState<DataChoice>("self-setup");
+  const [mode, setMode] = useState<DatabaseChangeMode>(
+    DatabaseChangeMode.PIPELINE
+  );
+  const [projectTitle, setProjectTitle] = useState("New Project");
+  const [resourceId, setResourceId] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const resourceFieldRef = useRef<ResourceIdFieldRef>(null);
+  const [resourceValid, setResourceValid] = useState(false);
+
+  const enableOnboarding = useAppStore((s) => s.enableOnboarding());
+  const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
+
+  useEffect(() => {
+    if (!enableOnboarding) {
+      router.push(homePath(databaseChangeMode));
+    }
+  }, [enableOnboarding, databaseChangeMode]);
+
+  const steps = [
+    t("setup.basic-info"),
+    t("setup.self"),
+    t("settings.general.workspace.default-landing-page.self"),
+  ];
+
+  const canAdvance = (() => {
+    if (currentStep === 1 && data === "self-setup") {
+      return !!projectTitle && resourceValid;
+    }
+    return !loading;
+  })();
+
+  const changeStepIndex = (next: number) => {
+    if (next === steps.length - 1) {
+      if (purpose === "query-data" && workflow === "simple") {
+        setMode(DatabaseChangeMode.EDITOR);
+      } else {
+        setMode(DatabaseChangeMode.PIPELINE);
+      }
+    }
+    setCurrentStep(next);
+  };
+
+  const skip = () => router.push("/");
+
+  const finish = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      if (data === "self-setup") {
+        await useAppStore.getState().createProject(projectTitle, resourceId);
+      } else {
+        await useAppStore.getState().setupSample();
+      }
+      await useAppStore.getState().updateWorkspaceProfile({
+        payload: { databaseChangeMode: mode },
+        updateMask: create(FieldMaskSchema, {
+          paths: ["value.workspace_profile.database_change_mode"],
+        }),
+      });
+      useAppStore.getState().resetQuickstartProgress();
+      router.push(homePath(mode));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const validateProjectResourceID = useCallback(
+    async (id: string) => {
+      try {
+        const project = await useAppStore
+          .getState()
+          .getOrFetchProjectByName(
+            `${projectNamePrefix}${id}`,
+            true /* silent */
+          );
+        if (!isValidProjectName(project.name)) {
+          return [];
+        }
+        return [
+          {
+            type: "error" as const,
+            message: t("resource-id.validation.duplicated", {
+              resource: "project",
+            }),
+          },
+        ];
+      } catch (error) {
+        if (getErrorCode(error) === Code.NotFound) {
+          return [];
+        }
+        return [
+          {
+            type: "error" as const,
+            message: extractGrpcErrorMessage(error),
+          },
+        ];
+      }
+    },
+    [t]
+  );
+
+  return (
+    <div className="w-full mx-auto max-w-2xl py-6 px-4 flex flex-col gap-4">
+      <div className="sticky top-0 bg-white z-10 pb-4 border-b border-control-border">
+        <ol className="flex items-center gap-x-4 text-sm">
+          {steps.map((label, i) => (
+            <li
+              key={label}
+              className={
+                i === currentStep
+                  ? "text-accent font-medium"
+                  : "text-control-light"
+              }
+            >
+              {i + 1}. {label}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {currentStep === 0 && (
+        <div className="w-full flex flex-col gap-6 py-4">
+          <div className="flex flex-col gap-y-2">
+            <p>{t("setup.purposes.self")}</p>
+            <RadioGroup
+              value={purpose}
+              onValueChange={(v) => setPurpose(v as Purpose)}
+              className="flex-col items-start gap-y-2"
+            >
+              <RadioGroupItem value="edit-schema">
+                {t("setup.purposes.alter-schema")}
+              </RadioGroupItem>
+              <RadioGroupItem value="query-data">
+                {t("setup.purposes.query-data")}
+              </RadioGroupItem>
+            </RadioGroup>
+          </div>
+          <div className="flex flex-col gap-y-2">
+            <p>{t("setup.workflow.self")}</p>
+            <RadioGroup
+              value={workflow}
+              onValueChange={(v) => setWorkflow(v as Workflow)}
+              className="flex-col items-start gap-y-2"
+            >
+              <RadioGroupItem value="team">
+                {t("setup.workflow.team")}
+              </RadioGroupItem>
+              <RadioGroupItem value="simple">
+                {t("setup.workflow.simple")}
+              </RadioGroupItem>
+            </RadioGroup>
+          </div>
+        </div>
+      )}
+
+      {currentStep === 1 && (
+        <div className="w-full flex flex-col gap-2 py-4">
+          <RadioGroup
+            value={data}
+            onValueChange={(v) => setData(v as DataChoice)}
+            className="flex-col items-start gap-y-6"
+          >
+            <div>
+              <RadioGroupItem value="self-setup">
+                <div className="font-medium">{t("setup.data.self-setup")}</div>
+              </RadioGroupItem>
+              {data === "self-setup" && (
+                <div className="mt-2 ml-6 flex flex-col gap-y-1">
+                  <Input
+                    value={projectTitle}
+                    required
+                    placeholder={t("project.create-modal.project-name")}
+                    onChange={(e) => setProjectTitle(e.target.value)}
+                  />
+                  <ResourceIdField
+                    suffix
+                    ref={resourceFieldRef}
+                    value={resourceId}
+                    resourceName={t("common.project")}
+                    resourceTitle={projectTitle}
+                    validate={validateProjectResourceID}
+                    onChange={setResourceId}
+                    onValidationChange={setResourceValid}
+                  />
+                </div>
+              )}
+            </div>
+            <div>
+              <RadioGroupItem
+                value="builtin-sample"
+                className="items-start"
+                radioClassName="mt-0.5"
+              >
+                <div className="flex flex-col gap-1">
+                  <div className="font-medium">{t("setup.data.built-in")}</div>
+                  <div className="text-control">
+                    {t("setup.data.built-in-desc")}
+                  </div>
+                </div>
+              </RadioGroupItem>
+            </div>
+          </RadioGroup>
+        </div>
+      )}
+
+      {currentStep === 2 && (
+        <div className="py-4 flex flex-col gap-6">
+          <div className="font-medium">
+            {t("settings.general.workspace.default-landing-page.self")}
+          </div>
+          <RadioGroup
+            value={String(mode)}
+            onValueChange={(v) => setMode(Number(v) as DatabaseChangeMode)}
+            className="flex-col items-start gap-y-6"
+          >
+            <RadioGroupItem
+              value={String(DatabaseChangeMode.PIPELINE)}
+              className="items-start"
+              radioClassName="mt-0.5"
+            >
+              <div className="flex flex-col gap-1">
+                <div className="font-medium">
+                  {t(
+                    "settings.general.workspace.default-landing-page.workspace.self"
+                  )}
+                </div>
+                <div className="text-control">
+                  {t(
+                    "settings.general.workspace.default-landing-page.workspace.description"
+                  )}
+                </div>
+              </div>
+            </RadioGroupItem>
+            <RadioGroupItem
+              value={String(DatabaseChangeMode.EDITOR)}
+              className="items-start"
+              radioClassName="mt-0.5"
+            >
+              <div className="flex flex-col gap-1">
+                <div className="font-medium">
+                  {t(
+                    "settings.general.workspace.default-landing-page.sql-editor.self"
+                  )}
+                </div>
+                <div className="text-control">
+                  {t(
+                    "settings.general.workspace.default-landing-page.sql-editor.description"
+                  )}
+                </div>
+              </div>
+            </RadioGroupItem>
+          </RadioGroup>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pt-4 border-t border-control-border">
+        <Button appearance="secondary" onClick={skip}>
+          {t("setup.skip-setup")}
+        </Button>
+        <div className="flex items-center gap-x-2">
+          {currentStep > 0 && (
+            <Button
+              appearance="outline"
+              onClick={() => changeStepIndex(currentStep - 1)}
+            >
+              &larr;
+            </Button>
+          )}
+          {currentStep < steps.length - 1 ? (
+            <Button
+              onClick={() => changeStepIndex(currentStep + 1)}
+              disabled={!canAdvance}
+            >
+              &rarr;
+            </Button>
+          ) : (
+            <Button onClick={finish} disabled={loading}>
+              {t("common.confirm")}
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

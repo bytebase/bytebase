@@ -1,13 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
-import i18n from "@/react/i18n";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/react/router/handles";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/app/router/handles";
+import i18n from "@/lib/i18n";
+import { projectNamePrefix } from "@/stores";
 import {
   getDatabaseByName,
   getDatabaseList,
-} from "@/react/stores/app/databaseAccess";
-import { getProjectByName } from "@/react/stores/app/projectAccess";
-import { projectNamePrefix } from "@/store";
+} from "@/stores/app/databaseAccess";
+import { getProjectByName } from "@/stores/app/projectAccess";
 import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";

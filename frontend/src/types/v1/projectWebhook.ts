@@ -1,5 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import i18n from "@/react/i18n";
+import i18n from "@/lib/i18n";
 import { WebhookType } from "../proto-es/v1/common_pb";
 import {
   Activity_Type,

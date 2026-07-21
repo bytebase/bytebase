@@ -1,0 +1,498 @@
+import { Code2, Loader2, MessageSquareMore, Rocket } from "lucide-react";
+import type { ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { MAIN_SCROLL_RESTORATION_ID } from "@/app/router/NavigationScrollRestoration";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { getRolloutStatus } from "@/utils";
+import { getReviewBadge } from "../utils/reviewBadge";
+import { DeployBranch } from "./components/deploy/DeployBranch";
+import { PlanDetailChangesBranch } from "./components/PlanDetailChangesBranch";
+import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
+import { PlanDetailHeader } from "./components/PlanDetailHeader";
+import { PlanDetailHeaderDetails } from "./components/PlanDetailHeaderDetails";
+import { PlanReviewSection } from "./components/review/PlanReviewSection";
+import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
+import { planPhaseAnchorId } from "./shell/focusPhase";
+import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
+import { PlanDetailProvider } from "./shell/PlanDetailContext";
+import {
+  buildChangesSummary,
+  buildDeploySummary,
+  buildReviewSummary,
+} from "./utils/phaseSummary";
+import { isReleaseBackedPlan } from "./utils/spec";
+
+type PhaseStatus = "completed" | "closed" | "active" | "future";
+
+function phaseLineClass(from: PhaseStatus, to: PhaseStatus): string {
+  if (from === "completed" && (to === "completed" || to === "active"))
+    return "bg-success";
+  return "bg-control-border";
+}
+
+export function ProjectPlanDetailPage(props: {
+  projectId: string;
+  planId: string;
+  routeName?: string;
+  routeQuery?: Record<string, unknown>;
+  specId?: string;
+}) {
+  return (
+    <PlanDetailStoreProvider>
+      <ProjectPlanDetailPageInner {...props} />
+    </PlanDetailStoreProvider>
+  );
+}
+
+function ProjectPlanDetailPageInner({
+  projectId,
+  planId,
+  routeName,
+  routeQuery,
+  specId,
+}: {
+  projectId: string;
+  planId: string;
+  routeName?: string;
+  routeQuery?: Record<string, unknown>;
+  specId?: string;
+}) {
+  const { t } = useTranslation();
+  const [pageHost, setPageHost] = useState<HTMLDivElement | null>(null);
+  // The sticky title row only shows its bottom border once content scrolls
+  // under it (GitHub issue-header pattern) — flat at the top, separated when
+  // stuck. The dashboard main pane owns vertical scrolling.
+  const [headerStuck, setHeaderStuck] = useState(false);
+  useEffect(() => {
+    if (!pageHost) return;
+    const scrollHost = pageHost.closest<HTMLElement>(
+      `[data-scroll-restoration-id="${MAIN_SCROLL_RESTORATION_ID}"]`
+    );
+    if (!scrollHost) return;
+    const onScroll = () => setHeaderStuck(scrollHost.scrollTop > 0);
+    onScroll();
+    scrollHost.addEventListener("scroll", onScroll, { passive: true });
+    return () => scrollHost.removeEventListener("scroll", onScroll);
+  }, [pageHost]);
+  const [selectedSpecId, setSelectedSpecId] = useState(specId ?? "");
+  const page = usePlanDetailPage({
+    projectId,
+    planId,
+    routeName,
+    routeQuery,
+    specId,
+  });
+  const isGitOpsPlan = useMemo(
+    () => isReleaseBackedPlan(page.plan.specs),
+    [page.plan.specs]
+  );
+  // CI/CD UI (sheet-backed) plans always surface the review phase — even
+  // before an issue exists it shows as an upcoming step. Only GitOps
+  // release-backed plans, which bypass review entirely, hide it.
+  const reviewVisible = !isGitOpsPlan;
+
+  const phaseConfigs = useMemo(() => {
+    const hasIssue = !!page.issue;
+    const isDraftIssue = page.issue?.draft === true;
+    const hasSubmittedIssue = hasIssue && !isDraftIssue;
+    const effectiveRollout = isDraftIssue ? undefined : page.rollout;
+    const hasRollout = !!effectiveRollout;
+    const isIssueClosed =
+      page.issue?.status === IssueStatus.CANCELED ||
+      page.issue?.status === IssueStatus.DONE;
+    const allTasks =
+      effectiveRollout?.stages.flatMap((stage) => stage.tasks) ?? [];
+    const allDone =
+      allTasks.length > 0 &&
+      allTasks.every(
+        (task) =>
+          task.status === Task_Status.DONE ||
+          task.status === Task_Status.SKIPPED
+      );
+
+    let review: PhaseStatus = "future";
+    if (hasSubmittedIssue) {
+      if (page.issue?.status === IssueStatus.CANCELED) {
+        review = "closed";
+      } else {
+        review = hasRollout || isIssueClosed ? "completed" : "active";
+      }
+    }
+
+    const changesStatus: PhaseStatus =
+      page.isCreating || (reviewVisible && !hasSubmittedIssue && !hasRollout)
+        ? "active"
+        : "completed";
+    const deployStatus: PhaseStatus = hasRollout
+      ? allDone
+        ? "completed"
+        : "active"
+      : "future";
+
+    const changesBadge =
+      changesStatus === "active" && !page.isCreating
+        ? {
+            label: page.issue?.draft
+              ? t("common.draft")
+              : t("plan.lifecycle.incomplete"),
+            variant: page.issue?.draft
+              ? ("default" as const)
+              : ("destructive" as const),
+          }
+        : undefined;
+    const rawReviewBadge = getReviewBadge({
+      hasIssue: hasSubmittedIssue,
+      issueStatus: page.issue?.status,
+      hasRollout,
+      approvalStatus: page.issue?.approvalStatus,
+    });
+    const reviewBadge = rawReviewBadge
+      ? {
+          label: t(rawReviewBadge.labelKey),
+          variant: rawReviewBadge.variant,
+        }
+      : undefined;
+    const deployBadge = (() => {
+      if (deployStatus !== "active" || !effectiveRollout) return undefined;
+      const rolloutStatus = getRolloutStatus(effectiveRollout);
+      if (rolloutStatus === Task_Status.FAILED) {
+        return { label: t("common.failed"), variant: "destructive" as const };
+      }
+      if (
+        rolloutStatus === Task_Status.RUNNING ||
+        rolloutStatus === Task_Status.PENDING
+      ) {
+        return {
+          label: t("common.in-progress"),
+          variant: "secondary" as const,
+        };
+      }
+      if (rolloutStatus === Task_Status.CANCELED) {
+        return { label: t("common.canceled"), variant: "default" as const };
+      }
+      // A NOT_STARTED aggregate can still mean earlier stages already finished
+      // (partially deployed) — at the phase level that's progress, not idle.
+      if (
+        allTasks.some(
+          (task) =>
+            task.status === Task_Status.DONE ||
+            task.status === Task_Status.SKIPPED
+        )
+      ) {
+        return {
+          label: t("common.in-progress"),
+          variant: "secondary" as const,
+        };
+      }
+      return { label: t("common.not-started"), variant: "default" as const };
+    })();
+
+    return {
+      changes: {
+        status: changesStatus,
+        badge: changesBadge,
+        lineClass: phaseLineClass(
+          changesStatus,
+          reviewVisible ? review : deployStatus
+        ),
+      },
+      review: {
+        status: review,
+        badge: reviewBadge,
+        lineClass: phaseLineClass(review, deployStatus),
+      },
+      deploy: {
+        status: deployStatus,
+        badge: deployBadge,
+      },
+    };
+  }, [page.isCreating, page.issue, page.rollout, reviewVisible, t]);
+
+  useEffect(() => {
+    setSelectedSpecId(specId ?? "");
+  }, [page.pageKey]);
+
+  // Mirror the URL specId into local state. We deliberately don't include
+  // selectedSpecId in the deps — children (e.g. PlanDetailChangesBranch) may
+  // set selectedSpecId to a draft spec that has no URL yet, and snapping it
+  // back to specId here would defeat the selection.
+  useEffect(() => {
+    if (!page.isCreating && specId) {
+      setSelectedSpecId(specId);
+    }
+  }, [page.isCreating, specId]);
+
+  // Default to the first spec when nothing is selected.
+  useEffect(() => {
+    if (!selectedSpecId && page.plan.specs.length > 0) {
+      setSelectedSpecId(page.plan.specs[0].id);
+    }
+  }, [page.plan.specs, selectedSpecId]);
+
+  return (
+    <PlanDetailProvider value={page}>
+      <div
+        ref={setPageHost}
+        data-testid="plan-detail-page"
+        className="relative min-h-full overflow-x-clip bg-gray-50"
+      >
+        <div
+          className={cn(
+            "flex min-h-full flex-col",
+            page.ready ? "" : "invisible pointer-events-none"
+          )}
+        >
+          {/* Only the title/action row is sticky (GitHub issue-header pattern);
+              the description + metadata below scroll away beneath it. The
+              dashboard main pane is the scroll container, so top-0 pins to it;
+              z-20 keeps it above the phase rail nodes (z-10). The border appears
+              only when stuck, so the row is flat at the top. */}
+          <header
+            className={cn(
+              "sticky top-0 z-20 shrink-0 bg-white",
+              headerStuck && "border-b"
+            )}
+          >
+            <PlanDetailHeader />
+          </header>
+          <PlanDetailHeaderDetails />
+
+          <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
+            {/* No row gap here: each PhaseSection's pb-6 carries the spacing,
+                  which the connector line fills so it stays continuous. */}
+            <div className="flex min-w-0 flex-col pb-6 pl-2 pr-4 pt-4 xl:pr-8 2xl:pr-12">
+              <PhaseSection
+                anchorId={planPhaseAnchorId("changes")}
+                badge={phaseConfigs.changes.badge}
+                expanded={page.activePhases.has("changes")}
+                icon={<Code2 className="size-3 md:size-4" />}
+                lineClass={phaseConfigs.changes.lineClass}
+                label={t("plan.navigator.changes")}
+                onSelect={() => page.expandPhase("changes")}
+                status={phaseConfigs.changes.status}
+                onToggle={() => page.togglePhase("changes")}
+                summary={buildChangesSummary(page.plan, t)}
+              >
+                <PlanDetailChangesBranch
+                  onSelectedSpecIdChange={setSelectedSpecId}
+                  selectedSpecId={selectedSpecId}
+                />
+              </PhaseSection>
+
+              {reviewVisible && (
+                <PhaseSection
+                  anchorId={planPhaseAnchorId("review")}
+                  badge={phaseConfigs.review.badge}
+                  expanded={page.activePhases.has("review")}
+                  icon={<MessageSquareMore className="size-3 md:size-4" />}
+                  lineClass={phaseConfigs.review.lineClass}
+                  label={t("plan.navigator.review")}
+                  onSelect={() => page.expandPhase("review")}
+                  status={phaseConfigs.review.status}
+                  onToggle={() => page.togglePhase("review")}
+                  summary={buildReviewSummary(page.issue, t)}
+                  future={
+                    <p className="mt-0.5 text-sm text-control-placeholder">
+                      {t("plan.phase.review-description")}
+                    </p>
+                  }
+                >
+                  <PlanReviewSection />
+                </PhaseSection>
+              )}
+
+              <PhaseSection
+                anchorId={planPhaseAnchorId("deploy")}
+                badge={phaseConfigs.deploy.badge}
+                expanded={page.activePhases.has("deploy")}
+                icon={<Rocket className="size-3 md:size-4" />}
+                isLast
+                label={t("plan.navigator.deploy")}
+                status={phaseConfigs.deploy.status}
+                onSelect={() => page.expandPhase("deploy")}
+                onToggle={() => page.togglePhase("deploy")}
+                summary={buildDeploySummary(
+                  page.issue?.draft ? undefined : page.rollout,
+                  t
+                )}
+                future={
+                  page.issue?.draft ? (
+                    <p className="mt-0.5 text-sm text-control-placeholder">
+                      {t("plan.phase.deploy-description")}
+                    </p>
+                  ) : (
+                    <PlanDetailDeployFuture />
+                  )
+                }
+              >
+                <DeployBranch />
+              </PhaseSection>
+            </div>
+          </main>
+        </div>
+
+        {!page.ready && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-white">
+            <Loader2 className="h-8 w-8 animate-spin text-accent" />
+            <div className="text-sm text-control-light">
+              {t("common.loading")}
+            </div>
+          </div>
+        )}
+
+        <AlertDialog
+          open={page.pendingLeaveConfirm}
+          onOpenChange={(open) => {
+            if (!open) {
+              page.resolveLeaveConfirm(false);
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogTitle>
+              {t("common.leave-without-saving")}
+            </AlertDialogTitle>
+            <AlertDialogFooter>
+              <Button
+                appearance="outline"
+                onClick={() => page.resolveLeaveConfirm(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => page.resolveLeaveConfirm(true)}
+              >
+                {t("common.discard-changes")}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </PlanDetailProvider>
+  );
+}
+
+function PhaseSection({
+  badge,
+  label,
+  lineClass,
+  icon,
+  future,
+  isLast = false,
+  expanded,
+  status,
+  summary,
+  children,
+  onToggle,
+  onSelect,
+  anchorId,
+}: {
+  badge?: {
+    label: string;
+    variant: "default" | "secondary" | "warning" | "success" | "destructive";
+  };
+  label: string;
+  lineClass?: string;
+  icon: ReactNode;
+  future?: ReactNode;
+  isLast?: boolean;
+  expanded: boolean;
+  status: PhaseStatus;
+  summary?: string;
+  children: ReactNode;
+  onToggle: () => void;
+  onSelect: () => void;
+  anchorId?: string;
+}) {
+  const { t } = useTranslation();
+  const dotClass =
+    status === "completed"
+      ? "bg-success text-white ring-[3px] ring-success/15 md:ring-4"
+      : status === "closed"
+        ? "bg-control-placeholder text-white"
+        : status === "active"
+          ? "bg-accent text-white ring-[3px] ring-accent/15 md:ring-4"
+          : "border-2 border-dashed border-control-border text-control-placeholder";
+
+  return (
+    <div className={cn("flex scroll-mt-16", isLast && "mb-48")} id={anchorId}>
+      <div className="flex w-10 shrink-0 flex-col items-center md:w-16">
+        <div
+          className="relative z-10 mt-0.5 flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center md:h-7 md:w-7"
+          onClick={onSelect}
+        >
+          <div
+            className={cn(
+              "flex h-5 w-5 items-center justify-center rounded-full md:h-7 md:w-7",
+              dotClass
+            )}
+          >
+            {icon}
+          </div>
+        </div>
+        {/* -mt-1 tucks the rail under the node's halo so it reads as connected. */}
+        {!isLast && (
+          <div className={cn("-mt-1 w-0.5 flex-1 min-h-[20px]", lineClass)} />
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1 pb-6">
+        {status === "future" ? (
+          <div className="py-0.5">
+            <span className="textlabel uppercase text-control-placeholder">
+              {label}
+            </span>
+            {future ?? (
+              <div className="mt-0.5 text-sm text-control-placeholder">
+                {summary}
+              </div>
+            )}
+          </div>
+        ) : !expanded ? (
+          <div className="cursor-pointer py-0.5" onClick={onToggle}>
+            <div className="flex items-center gap-2">
+              <span className="textlabel uppercase">{label}</span>
+              {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
+              <div className="flex-1" />
+              <span className="shrink-0 text-[11px] text-control-placeholder">
+                {t("plan.phase.show-details")}
+              </span>
+            </div>
+            {summary && (
+              <div className="mt-0.5 text-sm text-control">{summary}</div>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2 py-0.5">
+              <span className="textlabel uppercase text-accent">{label}</span>
+              {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
+              <div className="flex-1" />
+              <span
+                className="shrink-0 cursor-pointer text-[11px] text-control-placeholder hover:text-control"
+                onClick={onToggle}
+              >
+                {t("plan.phase.hide-details")}
+              </span>
+            </div>
+            <div className="mt-1 overflow-hidden rounded-lg border bg-white">
+              {children}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

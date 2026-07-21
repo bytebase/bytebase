@@ -1,0 +1,1332 @@
+import { create } from "@bufbuild/protobuf";
+import { isEqual } from "lodash-es";
+import {
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  Settings,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { NavigationHistoryAction } from "@/app/router";
+import { router } from "@/app/router";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/app/router/handles";
+import { ComponentPermissionGuard } from "@/components/ComponentPermissionGuard";
+import { FeatureBadge } from "@/components/FeatureBadge";
+import { HighlightLabelText } from "@/components/HighlightLabelText";
+import { RouterLink } from "@/components/RouterLink";
+import { UserCell } from "@/components/UserCell";
+import { UserSelect } from "@/components/UserSelect";
+import { Alert } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { FormError, FormField, FormFieldGroup } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { listRowStateClassName } from "@/components/ui/styles.stylex";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tooltip } from "@/components/ui/tooltip";
+import {
+  WorkspacePageFooter,
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/components/WorkspacePageLayout";
+import { useCurrentUser } from "@/hooks/useAppState";
+import { PagedTableFooter, usePagedData } from "@/hooks/usePagedData";
+import {
+  DOMAIN_RESTRICTION_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+} from "@/lib/productIntro";
+import { cn } from "@/lib/utils";
+import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
+import { extractUserEmail, groupNamePrefix } from "@/stores/modules/v1/common";
+import { UNKNOWN_USER_NAME } from "@/types";
+import type { Group, GroupMember } from "@/types/proto-es/v1/group_service_pb";
+import {
+  GroupMember_Role,
+  GroupMemberSchema,
+  GroupSchema,
+} from "@/types/proto-es/v1/group_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
+import { hasWorkspacePermissionV2, isValidEmail } from "@/utils";
+import { AADSyncSheet } from "./shared/AADSyncSheet";
+
+// ============================================================
+// Helpers
+// ============================================================
+
+// Normalize member identifier to users/{email} format.
+// Accepts: "users/foo@bar.com", "foo@bar.com" → "users/foo@bar.com"
+function normalizeMemberIdentifier(member: string): string {
+  const trimmed = member.trim();
+  if (!trimmed) return trimmed;
+  if (trimmed.startsWith("users/")) return trimmed;
+  return `users/${trimmed}`;
+}
+
+function deduplicateMembers(members: GroupMember[]): GroupMember[] {
+  const map = new Map<string, GroupMember>();
+  for (const m of members) {
+    const key = m.member;
+    const existing = map.get(key);
+    if (existing) {
+      // Keep the one with OWNER role
+      if (m.role === GroupMember_Role.OWNER) {
+        map.set(key, m);
+      }
+    } else {
+      map.set(key, m);
+    }
+  }
+  return Array.from(map.values());
+}
+
+// ============================================================
+// GroupTable
+// ============================================================
+
+function GroupTable({
+  groups,
+  searchText,
+  onGroupSelected,
+  onGroupDeleted,
+}: {
+  groups: Group[];
+  searchText: string;
+  onGroupSelected: (group: Group) => void;
+  onGroupDeleted: (group: Group) => void;
+}) {
+  const { t } = useTranslation();
+  const currentUser = useCurrentUser();
+  const batchGetOrFetchUsers = useAppStore(
+    (state) => state.batchGetOrFetchUsers
+  );
+  const deleteGroup = useAppStore((state) => state.deleteGroup);
+
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [memberCache, setMemberCache] = useState<Map<string, User[]>>(
+    new Map()
+  );
+  const memberCacheRef = useRef(memberCache);
+  memberCacheRef.current = memberCache;
+  const loadingRef = useRef<Set<string>>(new Set());
+
+  const fetchGroupMembers = useCallback(
+    (group: Group) => {
+      if (loadingRef.current.has(group.name)) return;
+      loadingRef.current.add(group.name);
+      const memberNames = group.members.map((m) => m.member);
+      batchGetOrFetchUsers(memberNames)
+        .then((users) => {
+          setMemberCache((prev) => {
+            const next = new Map(prev);
+            next.set(
+              group.name,
+              users.filter((u): u is User => !!u)
+            );
+            return next;
+          });
+        })
+        .catch(() => {
+          // Allow retry on next expand
+        })
+        .finally(() => {
+          loadingRef.current.delete(group.name);
+        });
+    },
+    [batchGetOrFetchUsers]
+  );
+
+  // Invalidate member cache when groups data changes (e.g. after editing membership)
+  // and refetch members for currently expanded groups
+  const prevGroupsRef = useRef(groups);
+  const expandedGroupsRef = useRef(expandedGroups);
+  expandedGroupsRef.current = expandedGroups;
+  const fetchGroupMembersRef = useRef(fetchGroupMembers);
+  fetchGroupMembersRef.current = fetchGroupMembers;
+  useEffect(() => {
+    if (prevGroupsRef.current !== groups) {
+      prevGroupsRef.current = groups;
+      setMemberCache(new Map());
+      loadingRef.current = new Set();
+      // Refetch members for currently expanded groups
+      for (const groupName of expandedGroupsRef.current) {
+        const group = groups.find((g) => g.name === groupName);
+        if (group) {
+          fetchGroupMembersRef.current(group);
+        }
+      }
+    }
+  }, [groups]);
+
+  const toggleExpand = useCallback(
+    (group: Group) => {
+      setExpandedGroups((prev) => {
+        const next = new Set(prev);
+        if (next.has(group.name)) {
+          next.delete(group.name);
+        } else {
+          next.add(group.name);
+        }
+        return next;
+      });
+
+      // Fetch members if not cached
+      if (!memberCacheRef.current.has(group.name)) {
+        fetchGroupMembers(group);
+      }
+    },
+    [fetchGroupMembers]
+  );
+
+  const isGroupOwner = useCallback(
+    (group: Group) => {
+      return (
+        group.members.find(
+          (m) => extractUserEmail(m.member) === currentUser.email
+        )?.role === GroupMember_Role.OWNER
+      );
+    },
+    [currentUser.email]
+  );
+
+  const handleDelete = useCallback(
+    async (group: Group) => {
+      const confirmed = window.confirm(
+        t("settings.members.action.deactivate-confirm-title")
+      );
+      if (!confirmed) return;
+
+      try {
+        await deleteGroup(group.name);
+        onGroupDeleted(group);
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.deleted"),
+        });
+      } catch {
+        // error shown by store
+      }
+    },
+    [deleteGroup, onGroupDeleted, t]
+  );
+
+  if (groups.length === 0) {
+    return (
+      <div className="py-8 text-center text-control-light text-sm">
+        {t("common.no-data")}
+      </div>
+    );
+  }
+
+  return (
+    <div className="border rounded-sm overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-control-bg">
+            <TableHead className="whitespace-nowrap">
+              {t("common.groups")} / {t("common.users")}
+            </TableHead>
+            <TableHead className="text-right whitespace-nowrap w-16" />
+          </TableRow>
+        </TableHeader>
+        <TableBody striped={false}>
+          {groups.map((group, i) => {
+            const isExpanded = expandedGroups.has(group.name);
+            const members = memberCache.get(group.name);
+            const canEdit =
+              isGroupOwner(group) ||
+              hasWorkspacePermissionV2("bb.groups.update");
+            const canDelete =
+              isGroupOwner(group) ||
+              hasWorkspacePermissionV2("bb.groups.delete");
+
+            return (
+              <GroupRow
+                key={group.name}
+                group={group}
+                index={i}
+                isExpanded={isExpanded}
+                members={members}
+                searchText={searchText}
+                canDelete={canDelete}
+                canOpen={canEdit || hasWorkspacePermissionV2("bb.groups.get")}
+                onToggle={() => toggleExpand(group)}
+                onEdit={() => onGroupSelected(group)}
+                onDelete={() => handleDelete(group)}
+              />
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function GroupRow({
+  group,
+  index,
+  isExpanded,
+  members,
+  searchText,
+  canDelete,
+  canOpen,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  group: Group;
+  index: number;
+  isExpanded: boolean;
+  members: User[] | undefined;
+  searchText: string;
+  canDelete: boolean;
+  canOpen: boolean;
+  onToggle: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { t } = useTranslation();
+  const stripeBg = index % 2 === 1 ? "bg-control-bg/50" : "";
+
+  return (
+    <>
+      <TableRow
+        className={cn(
+          stripeBg,
+          canOpen &&
+            "cursor-pointer focus-visible:outline-none focus-visible:bg-control-bg",
+          canOpen && listRowStateClassName
+        )}
+        tabIndex={canOpen ? 0 : undefined}
+        role={canOpen ? "button" : undefined}
+        aria-label={canOpen ? group.title : undefined}
+        onClick={canOpen ? onEdit : undefined}
+        onKeyDown={
+          canOpen
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onEdit();
+                }
+              }
+            : undefined
+        }
+      >
+        <TableCell className="py-2">
+          <div className="flex items-center gap-x-2">
+            <button
+              className="shrink-0 p-0.5 rounded-xs hover:bg-gray-200"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle();
+              }}
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </button>
+            <Users className="h-4 w-4 shrink-0 text-control-light" />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-x-1.5">
+                <span>
+                  <HighlightLabelText text={group.title} keyword={searchText} />
+                </span>
+                <span className="text-control-light text-xs">
+                  (
+                  {t("settings.members.groups.n-members", {
+                    n: group.members.length,
+                  })}
+                  )
+                </span>
+                {group.source && (
+                  <Badge className="text-xs px-1.5 py-0">{group.source}</Badge>
+                )}
+              </div>
+              <span className="textinfolabel text-xs">
+                <HighlightLabelText text={group.name} keyword={searchText} />
+              </span>
+            </div>
+          </div>
+        </TableCell>
+        <TableCell className="py-2">
+          <div className="flex justify-end gap-x-1">
+            {canDelete && (
+              <Tooltip content={t("common.delete")}>
+                <Button
+                  appearance="secondary"
+                  size="sm"
+                  className="text-error hover:text-error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+            )}
+          </div>
+        </TableCell>
+      </TableRow>
+      {isExpanded &&
+        members &&
+        members.map((user) => {
+          const memberInfo = group.members.find(
+            (m) => extractUserEmail(m.member) === user.email
+          );
+          const isOwner = memberInfo?.role === GroupMember_Role.OWNER;
+
+          return (
+            <TableRow key={user.name} className={stripeBg}>
+              <TableCell className="py-2 pl-14">
+                <UserCell
+                  title={user.title}
+                  subtitle={user.email}
+                  size="sm"
+                  badges={
+                    isOwner ? (
+                      <Badge
+                        variant="secondary"
+                        className="text-xs px-1.5 py-0"
+                      >
+                        {t("settings.members.groups.form.role.owner")}
+                      </Badge>
+                    ) : (
+                      <Badge variant="default" className="text-xs px-1.5 py-0">
+                        {t("settings.members.groups.form.role.member")}
+                      </Badge>
+                    )
+                  }
+                />
+              </TableCell>
+              <TableCell />
+            </TableRow>
+          );
+        })}
+      {isExpanded && !members && (
+        <TableRow className={stripeBg}>
+          <TableCell colSpan={2} className="py-2 pl-14">
+            <div className="flex items-center gap-x-2 text-control-light text-sm">
+              <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
+              {t("common.loading")}
+            </div>
+          </TableCell>
+        </TableRow>
+      )}
+    </>
+  );
+}
+
+// ============================================================
+// CreateGroupDrawer
+// ============================================================
+
+interface CreateGroupSheetProps {
+  open: boolean;
+  group: Group | undefined;
+  onClose: () => void;
+  onUpdated: (group: Group) => void;
+  onRemoved: (group: Group) => void;
+}
+
+type PendingLeaveTarget = {
+  fullPath: string;
+  historyAction: NavigationHistoryAction;
+  reset?: () => void;
+  retry?: () => void;
+};
+
+function CreateGroupSheet(props: CreateGroupSheetProps) {
+  const { open, group, onClose } = props;
+  const { t } = useTranslation();
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [pendingLeaveConfirm, setPendingLeaveConfirm] = useState(false);
+  const [pendingLeaveTarget, setPendingLeaveTarget] =
+    useState<PendingLeaveTarget | null>(null);
+  const bypassLeaveGuardRef = useRef(false);
+  // Freeze the entity while open=false so the inner form stays visually
+  // stable during the Sheet's close animation.
+  const openEntityRef = useRef(group);
+  if (open) {
+    openEntityRef.current = group;
+  }
+  const stableGroup = openEntityRef.current;
+
+  const clearPendingLeave = useCallback(() => {
+    setPendingLeaveConfirm(false);
+    setPendingLeaveTarget(null);
+  }, []);
+
+  const stayOnCurrentPage = useCallback(() => {
+    const target = pendingLeaveTarget;
+    clearPendingLeave();
+    target?.reset?.();
+  }, [clearPendingLeave, pendingLeaveTarget]);
+
+  const closeWithoutConfirm = useCallback(() => {
+    setHasUnsavedChanges(false);
+    clearPendingLeave();
+    onClose();
+  }, [clearPendingLeave, onClose]);
+
+  const requestClose = useCallback(() => {
+    if (hasUnsavedChanges) {
+      setPendingLeaveConfirm(true);
+      return;
+    }
+    closeWithoutConfirm();
+  }, [closeWithoutConfirm, hasUnsavedChanges]);
+
+  const discardChanges = useCallback(() => {
+    const target = pendingLeaveTarget;
+    closeWithoutConfirm();
+    if (target) {
+      if (target.historyAction === "POP" && target.retry) {
+        target.retry();
+        return;
+      }
+      bypassLeaveGuardRef.current = true;
+      const navigate =
+        target.historyAction === "REPLACE" ? router.replace : router.push;
+      void navigate(target.fullPath);
+    }
+  }, [closeWithoutConfirm, pendingLeaveTarget]);
+
+  useEffect(() => {
+    if (!open) {
+      setHasUnsavedChanges(false);
+      clearPendingLeave();
+    }
+  }, [clearPendingLeave, open]);
+
+  useEffect(() => {
+    if (!open || !hasUnsavedChanges) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    const removeGuard = router.beforeEach((to, _from, next, options) => {
+      if (bypassLeaveGuardRef.current) {
+        bypassLeaveGuardRef.current = false;
+        next();
+        return;
+      }
+      setPendingLeaveTarget({
+        fullPath: to.fullPath,
+        historyAction: options?.historyAction ?? "PUSH",
+        reset: options?.reset,
+        retry: options?.retry,
+      });
+      setPendingLeaveConfirm(true);
+      next(false);
+    });
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      removeGuard();
+    };
+  }, [hasUnsavedChanges, open]);
+
+  return (
+    <>
+      <Sheet open={open} onOpenChange={(next) => !next && requestClose()}>
+        <SheetContent width="standard">
+          <GroupForm
+            key={stableGroup?.name ?? "new"}
+            group={stableGroup}
+            onClose={requestClose}
+            onCloseWithoutConfirm={closeWithoutConfirm}
+            onDirtyChange={setHasUnsavedChanges}
+            onUpdated={props.onUpdated}
+            onRemoved={props.onRemoved}
+          />
+        </SheetContent>
+      </Sheet>
+      <AlertDialog
+        open={pendingLeaveConfirm}
+        onOpenChange={(
+          nextOpen: boolean,
+          eventDetails?: { reason?: string; cancel?: () => void }
+        ) => {
+          if (
+            !nextOpen &&
+            (eventDetails?.reason === "escape-key" ||
+              eventDetails?.reason === "outside-press")
+          ) {
+            eventDetails.cancel?.();
+            return;
+          }
+          if (!nextOpen) {
+            stayOnCurrentPage();
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>
+            {t("common.leave-without-saving")}
+          </AlertDialogTitle>
+          <AlertDialogFooter>
+            <Button appearance="outline" onClick={stayOnCurrentPage}>
+              {t("common.cancel")}
+            </Button>
+            <Button variant="destructive" onClick={discardChanges}>
+              {t("common.discard-changes")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+function GroupForm({
+  group,
+  onClose,
+  onCloseWithoutConfirm,
+  onDirtyChange,
+  onUpdated,
+  onRemoved,
+}: Omit<CreateGroupSheetProps, "open"> & {
+  onCloseWithoutConfirm: () => void;
+  onDirtyChange: (dirty: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const currentUser = useCurrentUser();
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
+  const getOrFetchUserByIdentifier = useAppStore(
+    (state) => state.getOrFetchUserByIdentifier
+  );
+  const createGroup = useAppStore((state) => state.createGroup);
+  const updateGroup = useAppStore((state) => state.updateGroup);
+  const deleteGroup = useAppStore((state) => state.deleteGroup);
+
+  const isEditMode = !!group;
+  const workspaceDomains = useAppStore((s) => s.getWorkspaceProfile().domains);
+  const domainOptions = workspaceDomains.filter((d) => d.trim());
+
+  // Initial values derived from the group prop. The parent keys this
+  // component by group, so it remounts fresh on each open — these initial
+  // values always reflect the latest prop.
+  const initialEmail = group?.email ?? "";
+  const initialSelectedDomain = (() => {
+    if (group?.email) {
+      const atIdx = group.email.indexOf("@");
+      if (atIdx >= 0) {
+        const domain = group.email.slice(atIdx + 1);
+        if (domainOptions.includes(domain)) return domain;
+      }
+    }
+    return domainOptions[0] ?? "";
+  })();
+  const initialTitle = group?.title ?? "";
+  const initialDescription = group?.description ?? "";
+  const initialMembers: GroupMember[] = group
+    ? group.members.map((m) =>
+        create(GroupMemberSchema, { member: m.member, role: m.role })
+      )
+    : [
+        create(GroupMemberSchema, {
+          role: GroupMember_Role.OWNER,
+          member: currentUser.name,
+        }),
+      ];
+
+  const [email, setEmail] = useState(initialEmail);
+  const [selectedDomain, setSelectedDomain] = useState(initialSelectedDomain);
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
+  const [members, setMembers] = useState<GroupMember[]>(initialMembers);
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const isExternalGroup = !!group?.source;
+
+  const allowEdit = isExternalGroup
+    ? false
+    : isEditMode
+      ? group.members.some(
+          (m) =>
+            extractUserEmail(m.member) === currentUser.email &&
+            m.role === GroupMember_Role.OWNER
+        ) || hasWorkspacePermissionV2("bb.groups.update")
+      : hasWorkspacePermissionV2("bb.groups.create");
+
+  const fullEmail = useMemo(() => {
+    if (isEditMode) return email;
+    if (!email) return "";
+    // When workspace domains are configured, enforce by using selected domain
+    if (domainOptions.length > 0 && selectedDomain) {
+      const localPart = email.split("@")[0];
+      return `${localPart}@${selectedDomain}`;
+    }
+    return email;
+  }, [email, isEditMode, domainOptions, selectedDomain]);
+
+  const titleErrorMessage = useMemo(() => {
+    if (!title.trim())
+      return (
+        t("settings.members.groups.form.title") + " " + t("common.is-required")
+      );
+    return "";
+  }, [title, t]);
+
+  const emailErrorMessage = useMemo(() => {
+    if (!fullEmail || !isValidEmail(fullEmail))
+      return t("settings.members.groups.form.email-tips");
+    return "";
+  }, [fullEmail, t]);
+
+  const memberErrorMessage = useMemo(() => {
+    // Validate member identifiers — extract email part and check format
+    for (const m of members) {
+      const raw = m.member.trim();
+      if (!raw) continue;
+      const memberEmail = raw.startsWith("users/") ? raw.slice(6) : raw;
+      if (!isValidEmail(memberEmail)) {
+        return `Invalid member: ${raw}`;
+      }
+    }
+    return "";
+  }, [members]);
+
+  const errorMessage =
+    titleErrorMessage || emailErrorMessage || memberErrorMessage;
+
+  const hasChanged = useMemo(() => {
+    if (!isEditMode) return true;
+    if (!group) return true;
+    if (title !== group.title) return true;
+    if (description !== group.description) return true;
+    if (!isEqual(members, group.members)) return true;
+    return false;
+  }, [isEditMode, group, title, description, members]);
+
+  const hasUnsavedChanges = useMemo(() => {
+    if (isEditMode) return hasChanged;
+    if (email !== initialEmail) return true;
+    if (selectedDomain !== initialSelectedDomain) return true;
+    if (title !== initialTitle) return true;
+    if (description !== initialDescription) return true;
+    if (!isEqual(members, initialMembers)) return true;
+    return false;
+  }, [
+    description,
+    email,
+    hasChanged,
+    initialDescription,
+    initialEmail,
+    initialMembers,
+    initialSelectedDomain,
+    initialTitle,
+    isEditMode,
+    members,
+    selectedDomain,
+    title,
+  ]);
+
+  useEffect(() => {
+    onDirtyChange(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onDirtyChange]);
+
+  const allowConfirm = !errorMessage && hasChanged;
+
+  const handleAddMember = () => {
+    setMembers((prev) => [
+      ...prev,
+      create(GroupMemberSchema, { role: GroupMember_Role.MEMBER, member: "" }),
+    ]);
+  };
+
+  const handleRemoveMember = (index: number) => {
+    setMembers((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleMemberChange = (
+    index: number,
+    field: "member" | "role",
+    value: string | GroupMember_Role
+  ) => {
+    setMembers((prev) =>
+      prev.map((m, i) => {
+        if (i !== index) return m;
+        return create(GroupMemberSchema, {
+          ...m,
+          [field]: value,
+        });
+      })
+    );
+  };
+
+  const handleSubmit = async () => {
+    if (!allowConfirm || !allowEdit) return;
+    setIsRequesting(true);
+    try {
+      const normalizedMembers = members
+        .filter((m) => m.member.trim())
+        .map((m) =>
+          create(GroupMemberSchema, {
+            ...m,
+            member: normalizeMemberIdentifier(m.member),
+          })
+        );
+
+      // In self-hosted mode, verify all members exist via backend lookup
+      if (!isSaaSMode) {
+        const notFound: string[] = [];
+        for (const m of normalizedMembers) {
+          const user = await getOrFetchUserByIdentifier({
+            identifier: m.member,
+            silent: true,
+            fallback: false,
+          });
+          if (!user || user.name === UNKNOWN_USER_NAME) {
+            notFound.push(m.member.replace("users/", ""));
+          }
+        }
+        if (notFound.length > 0) {
+          pushNotification({
+            module: "bytebase",
+            style: "WARN",
+            title: `User not found: ${notFound.join(", ")}`,
+          });
+          setIsRequesting(false);
+          return;
+        }
+      }
+
+      const dedupedMembers = deduplicateMembers(normalizedMembers);
+      if (isEditMode && group) {
+        const validGroup = create(GroupSchema, {
+          name: group.name,
+          title,
+          description,
+          members: dedupedMembers,
+        });
+        const updated = await updateGroup(validGroup);
+        onUpdated(updated);
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.updated"),
+        });
+      } else {
+        const validGroup = create(GroupSchema, {
+          name: `${groupNamePrefix}${fullEmail}`,
+          title,
+          description,
+          members: dedupedMembers,
+        });
+        const created = await createGroup(validGroup);
+        onUpdated(created);
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.created"),
+        });
+      }
+      onCloseWithoutConfirm();
+    } catch {
+      // error shown by store
+    } finally {
+      setIsRequesting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!group) return;
+    setIsRequesting(true);
+    try {
+      await deleteGroup(group.name);
+      onRemoved(group);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.deleted"),
+      });
+      onCloseWithoutConfirm();
+    } catch {
+      // error shown by store
+    } finally {
+      setIsRequesting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const canDelete =
+    isEditMode &&
+    !isExternalGroup &&
+    (group.members.some(
+      (m) =>
+        extractUserEmail(m.member) === currentUser.email &&
+        m.role === GroupMember_Role.OWNER
+    ) ||
+      hasWorkspacePermissionV2("bb.groups.delete"));
+
+  return (
+    <>
+      <SheetHeader>
+        <SheetTitle>{t("common.group")}</SheetTitle>
+      </SheetHeader>
+
+      <SheetBody>
+        <FormFieldGroup>
+          {isExternalGroup && (
+            <Alert
+              variant="info"
+              description={t("settings.members.groups.external-readonly")}
+            />
+          )}
+
+          {/* Email */}
+          <FormField
+            title={
+              <>
+                {t("settings.members.groups.form.email")}
+                <span className="ml-0.5 text-error">*</span>
+              </>
+            }
+            description={<>{t("settings.members.groups.form.email-tips")}</>}
+          >
+            <div className="flex min-w-0 w-full items-center gap-x-1">
+              <Input
+                value={isEditMode ? email : email.split("@")[0]}
+                className="min-w-0 flex-1"
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isEditMode || !allowEdit}
+              />
+              {!isEditMode && domainOptions.length > 0 && (
+                <>
+                  <span className="shrink-0 whitespace-nowrap text-sm leading-5 text-control-light">
+                    @
+                  </span>
+                  {domainOptions.length === 1 ? (
+                    <span className="shrink-0 whitespace-nowrap text-sm leading-5 text-control-light">
+                      {domainOptions[0]}
+                    </span>
+                  ) : (
+                    <select
+                      value={selectedDomain}
+                      onChange={(e) => setSelectedDomain(e.target.value)}
+                      className="border border-control-border rounded-sm text-sm pl-2 pr-6 py-1"
+                      disabled={!allowEdit}
+                    >
+                      {domainOptions.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </>
+              )}
+            </div>
+            {emailErrorMessage && errorMessage === emailErrorMessage && (
+              <FormError>{emailErrorMessage}</FormError>
+            )}
+          </FormField>
+
+          {/* Title */}
+          <FormField
+            title={
+              <>
+                {t("settings.members.groups.form.title")}
+                <span className="ml-0.5 text-error">*</span>
+              </>
+            }
+          >
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={200}
+              disabled={!allowEdit}
+            />
+            {titleErrorMessage && errorMessage === titleErrorMessage && (
+              <FormError>{titleErrorMessage}</FormError>
+            )}
+          </FormField>
+
+          {/* Description */}
+          <FormField
+            title={<>{t("settings.members.groups.form.description")}</>}
+          >
+            <Input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={1000}
+              disabled={!allowEdit}
+            />
+          </FormField>
+
+          {/* Members */}
+          <FormField title={<>{t("common.members", { count: 2 })}</>}>
+            <div className="flex flex-col gap-y-2">
+              {members.map((member, index) => (
+                <div key={index} className="flex items-center gap-x-2">
+                  <UserSelect
+                    className="flex-1"
+                    value={member.member}
+                    onChange={(val) => handleMemberChange(index, "member", val)}
+                    disabled={!allowEdit}
+                  />
+                  <Select
+                    value={member.role}
+                    onValueChange={(val: GroupMember_Role | null) => {
+                      if (val !== null) {
+                        handleMemberChange(index, "role", val);
+                      }
+                    }}
+                    disabled={!allowEdit}
+                  >
+                    <SelectTrigger className="w-36 shrink-0">
+                      <SelectValue>
+                        {(value: GroupMember_Role | null) =>
+                          value === GroupMember_Role.OWNER
+                            ? t("settings.members.groups.form.role.owner")
+                            : t("settings.members.groups.form.role.member")
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={GroupMember_Role.OWNER}>
+                        {t("settings.members.groups.form.role.owner")}
+                      </SelectItem>
+                      <SelectItem value={GroupMember_Role.MEMBER}>
+                        {t("settings.members.groups.form.role.member")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    appearance="secondary"
+                    size="sm"
+                    className="shrink-0 text-error hover:text-error"
+                    onClick={() => handleRemoveMember(index)}
+                    disabled={!allowEdit}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {allowEdit && (
+                <Button
+                  appearance="outline"
+                  size="sm"
+                  className="self-start"
+                  onClick={handleAddMember}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {t("settings.members.add-member")}
+                </Button>
+              )}
+            </div>
+            {memberErrorMessage && errorMessage === memberErrorMessage && (
+              <FormError>{memberErrorMessage}</FormError>
+            )}
+          </FormField>
+        </FormFieldGroup>
+      </SheetBody>
+
+      <SheetFooter className="justify-between">
+        <div>
+          {canDelete && (
+            <>
+              {showDeleteConfirm ? (
+                <div className="flex items-center gap-x-2">
+                  <span className="text-sm text-error">
+                    {t("settings.members.action.deactivate-confirm-title")}
+                  </span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={isRequesting}
+                  >
+                    {t("common.deactivate")}
+                  </Button>
+                  <Button
+                    appearance="outline"
+                    size="sm"
+                    onClick={() => setShowDeleteConfirm(false)}
+                  >
+                    {t("common.cancel")}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  appearance="secondary"
+                  className="text-error hover:text-error"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  {t("common.delete")}
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-x-2">
+          <Button appearance="outline" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            disabled={!allowEdit || !allowConfirm || isRequesting}
+            onClick={handleSubmit}
+          >
+            {isEditMode ? t("common.update") : t("common.create")}
+          </Button>
+        </div>
+      </SheetFooter>
+    </>
+  );
+}
+
+// ============================================================
+// GroupsPage (main)
+// ============================================================
+
+export function GroupsPage() {
+  const { t } = useTranslation();
+  const listGroups = useAppStore((state) => state.listGroups);
+  const fetchGroup = useAppStore((state) => state.fetchGroup);
+
+  const hasUserGroupFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_USER_GROUPS)
+  );
+  const workspaceDomains = useAppStore((s) => s.getWorkspaceProfile().domains);
+  const hasDirectorySyncFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_DIRECTORY_SYNC)
+  );
+  const canAccessSettings = hasWorkspacePermissionV2("bb.settings.get");
+
+  const [groupSearchText, setGroupSearchText] = useState("");
+  const [showCreateGroupDrawer, setShowCreateGroupDrawer] = useState(false);
+  const [showAadSyncDrawer, setShowAadSyncDrawer] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<Group | undefined>(
+    undefined
+  );
+
+  // Groups paged data
+  const fetchGroups = useCallback(
+    async (params: { pageSize: number; pageToken: string }) => {
+      const { groups, nextPageToken } = await listGroups({
+        pageSize: params.pageSize,
+        pageToken: params.pageToken,
+        filter: { query: groupSearchText },
+      });
+      return { list: groups, nextPageToken };
+    },
+    [listGroups, groupSearchText]
+  );
+
+  const hasGroupListPermission = hasWorkspacePermissionV2("bb.groups.list");
+  const groupPaged = usePagedData<Group>({
+    sessionKey: "bb.paged-group-table",
+    fetchList: fetchGroups,
+    enabled: hasGroupListPermission,
+  });
+
+  // Handle query param for group opening: ?name=groups/...
+  useEffect(() => {
+    const handleRouteChange = () => {
+      const params = new URLSearchParams(window.location.search);
+      const name = params.get("name");
+      if (name && name.startsWith("groups/")) {
+        // Clear the query param so the drawer doesn't reopen on refresh/navigation
+        router.replace({
+          ...router.currentRoute.value,
+          query: {},
+        });
+        fetchGroup(name)
+          .then((group) => {
+            if (group) {
+              setEditingGroup(group);
+              setShowCreateGroupDrawer(true);
+            }
+          })
+          .catch(() => {
+            // Group not found or fetch failed — silently ignore
+          });
+      }
+    };
+    // Run on mount
+    handleRouteChange();
+    // Listen for in-app navigation via Vue router (pushState/replaceState)
+    const unregister = router.afterEach(() => {
+      handleRouteChange();
+    });
+    return () => unregister();
+  }, []); // mount-only setup, router.afterEach handles subsequent changes
+
+  const handleGroupSelected = (group: Group) => {
+    setEditingGroup(group);
+    setShowCreateGroupDrawer(true);
+  };
+
+  const handleGroupDeleted = (group: Group) => {
+    groupPaged.removeCache(group);
+  };
+
+  return (
+    <WorkspacePageLayout>
+      {/* Action bar */}
+      <WorkspacePageToolbar>
+        <SearchInput
+          placeholder={t("common.filter-by-name")}
+          value={groupSearchText}
+          onChange={(e) => setGroupSearchText(e.target.value)}
+        />
+        <div className="flex items-center gap-x-2">
+          <Button
+            appearance="outline"
+            disabled={!hasDirectorySyncFeature || !canAccessSettings}
+            onClick={() => setShowAadSyncDrawer(true)}
+          >
+            <Settings className="h-4 w-4 mr-1" />
+            <FeatureBadge
+              feature={PlanFeature.FEATURE_DIRECTORY_SYNC}
+              clickable={false}
+            />
+            {t("settings.members.entra-sync.self")}
+          </Button>
+          {workspaceDomains.length === 0 ? (
+            <Tooltip
+              content={
+                <span>
+                  {t("settings.members.groups.workspace-domain-required")}{" "}
+                  <RouterLink
+                    to={{
+                      name: SETTING_ROUTE_WORKSPACE_GENERAL,
+                      hash: "#domain-restriction",
+                      query: {
+                        [PRODUCT_INTRO_QUERY_KEY]:
+                          DOMAIN_RESTRICTION_PRODUCT_INTRO,
+                      },
+                    }}
+                    className="underline text-accent"
+                  >
+                    {t("common.configure")}
+                  </RouterLink>
+                </span>
+              }
+            >
+              <Button disabled>
+                <FeatureBadge
+                  feature={PlanFeature.FEATURE_USER_GROUPS}
+                  clickable={false}
+                  fallback={<Plus className="h-4 w-4 mr-1" />}
+                />
+                {t("common.create")}
+              </Button>
+            </Tooltip>
+          ) : (
+            <Button
+              disabled={
+                !hasUserGroupFeature ||
+                !hasWorkspacePermissionV2("bb.groups.create")
+              }
+              onClick={() => {
+                setEditingGroup(undefined);
+                setShowCreateGroupDrawer(true);
+              }}
+            >
+              <FeatureBadge
+                feature={PlanFeature.FEATURE_USER_GROUPS}
+                clickable={false}
+                fallback={<Plus className="h-4 w-4 mr-1" />}
+              />
+              {t("common.create")}
+            </Button>
+          )}
+        </div>
+      </WorkspacePageToolbar>
+
+      {/* Groups table */}
+      <ComponentPermissionGuard permissions={["bb.groups.list"]}>
+        {groupPaged.isLoading && groupPaged.dataList.length === 0 ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+          </div>
+        ) : (
+          <>
+            <GroupTable
+              groups={groupPaged.dataList}
+              searchText={groupSearchText}
+              onGroupSelected={handleGroupSelected}
+              onGroupDeleted={handleGroupDeleted}
+            />
+            <WorkspacePageFooter>
+              <PagedTableFooter
+                pageSize={groupPaged.pageSize}
+                pageSizeOptions={groupPaged.pageSizeOptions}
+                onPageSizeChange={groupPaged.onPageSizeChange}
+                hasMore={groupPaged.hasMore}
+                isFetchingMore={groupPaged.isFetchingMore}
+                onLoadMore={groupPaged.loadMore}
+              />
+            </WorkspacePageFooter>
+          </>
+        )}
+      </ComponentPermissionGuard>
+
+      <CreateGroupSheet
+        open={showCreateGroupDrawer}
+        group={editingGroup}
+        onClose={() => {
+          setShowCreateGroupDrawer(false);
+          setEditingGroup(undefined);
+        }}
+        onUpdated={(group) => {
+          groupPaged.updateCache([group]);
+        }}
+        onRemoved={(group) => {
+          groupPaged.removeCache(group);
+          setShowCreateGroupDrawer(false);
+          setEditingGroup(undefined);
+        }}
+      />
+
+      <AADSyncSheet
+        open={showAadSyncDrawer}
+        onClose={() => setShowAadSyncDrawer(false)}
+      />
+    </WorkspacePageLayout>
+  );
+}

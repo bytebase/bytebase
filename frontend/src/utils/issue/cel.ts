@@ -1,14 +1,14 @@
 import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { cloneDeep, head } from "lodash-es";
-import type { SimpleExpr } from "@/plugins/cel";
-import { isRawStringExpr, resolveCELExpr } from "@/plugins/cel";
+import type { SimpleExpr } from "@/modules/cel";
+import { isRawStringExpr, resolveCELExpr } from "@/modules/cel";
 import {
   databaseNamePrefix,
   environmentNamePrefix,
   getEnvironmentId,
   instanceNamePrefix,
-} from "@/store/modules/v1/common";
+} from "@/stores/modules/v1/common";
 import type { DatabaseResource } from "@/types";
 import type { Expr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import type { Expr as ConditionExpr } from "@/types/proto-es/google/type/expr_pb";

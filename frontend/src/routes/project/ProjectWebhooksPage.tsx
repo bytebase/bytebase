@@ -1,0 +1,289 @@
+import { EllipsisVertical, Plus } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { router } from "@/app/router";
+import {
+  PROJECT_V1_ROUTE_WEBHOOK_CREATE,
+  PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
+} from "@/app/router/handles";
+import { PermissionGuard } from "@/components/PermissionGuard";
+import {
+  ProjectPageContent,
+  ProjectPageLayout,
+  ProjectPageToolbar,
+} from "@/components/ProjectPageLayout";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { WebhookTypeIcon } from "@/components/WebhookTypeIcon";
+import { useProjectByName } from "@/hooks/useProjectByName";
+import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
+import { projectNamePrefix } from "@/stores/modules/v1/common";
+import { projectWebhookV1ActivityItemList } from "@/types";
+import { State } from "@/types/proto-es/v1/common_pb";
+import type { Webhook } from "@/types/proto-es/v1/project_service_pb";
+import { Activity_Type } from "@/types/proto-es/v1/project_service_pb";
+import { extractProjectWebhookID, hasProjectPermissionV2 } from "@/utils";
+
+export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
+  const { t } = useTranslation();
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  const deleteProjectWebhook = useAppStore(
+    (state) => state.deleteProjectWebhook
+  );
+
+  const projectName = `${projectNamePrefix}${projectId}`;
+  // subscribe to re-render on project cache change
+  void projectsByName;
+  const project = useProjectByName(projectName);
+
+  const [deleteTarget, setDeleteTarget] = useState<Webhook | null>(null);
+
+  const allowEdit = useMemo(() => {
+    if (!project) return false;
+    if (project.state === State.DELETED) return false;
+    return hasProjectPermissionV2(project, "bb.projects.update");
+  }, [project]);
+
+  const webhooks = useMemo(() => project?.webhooks ?? [], [project]);
+
+  const handleAdd = useCallback(() => {
+    router.push({ name: PROJECT_V1_ROUTE_WEBHOOK_CREATE });
+  }, []);
+
+  const handleRowClick = useCallback(
+    (e: React.MouseEvent, webhook: Webhook) => {
+      const url = router.resolve({
+        name: PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
+        params: {
+          webhookResourceId: extractProjectWebhookID(webhook.name),
+        },
+      }).fullPath;
+      if (e.ctrlKey || e.metaKey) {
+        window.open(url, "_blank");
+      } else {
+        router.push(url);
+      }
+    },
+    []
+  );
+
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget || !project) return;
+    try {
+      const name = deleteTarget.title;
+      const updatedProject = await deleteProjectWebhook(deleteTarget);
+      useAppStore.getState().updateProjectCache({
+        ...project,
+        ...updatedProject,
+      });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("project.webhook.success-deleted-prompt", { name }),
+      });
+    } catch (error: unknown) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: (error as { message?: string })?.message ?? String(error),
+      });
+    }
+    setDeleteTarget(null);
+  }, [deleteTarget, project, deleteProjectWebhook, t]);
+
+  return (
+    <ProjectPageLayout>
+      <ProjectPageToolbar align="end">
+        <PermissionGuard permissions={["bb.projects.update"]} project={project}>
+          <Button disabled={!allowEdit} onClick={handleAdd}>
+            <Plus className="size-4 mr-1" />
+            {t("common.create")}
+          </Button>
+        </PermissionGuard>
+      </ProjectPageToolbar>
+
+      <ProjectPageContent>
+        <WebhookTable
+          webhooks={webhooks}
+          allowEdit={allowEdit}
+          onRowClick={handleRowClick}
+          onDelete={setDeleteTarget}
+        />
+      </ProjectPageContent>
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>
+            {deleteTarget
+              ? t("project.webhook.deletion.confirm-title", {
+                  title: deleteTarget.title,
+                })
+              : ""}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("common.cannot-undo-this-action")}
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <Button appearance="outline" onClick={() => setDeleteTarget(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              {t("common.delete")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </ProjectPageLayout>
+  );
+}
+
+function WebhookTable({
+  webhooks,
+  allowEdit,
+  onRowClick,
+  onDelete,
+}: {
+  webhooks: Webhook[];
+  allowEdit: boolean;
+  onRowClick: (e: React.MouseEvent, webhook: Webhook) => void;
+  onDelete: (webhook: Webhook) => void;
+}) {
+  const { t } = useTranslation();
+
+  const activityItemList = projectWebhookV1ActivityItemList();
+
+  return (
+    <div className="border rounded-sm overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-control-bg">
+            <TableHead className="w-60">{t("common.name")}</TableHead>
+            <TableHead>URL</TableHead>
+            <TableHead>{t("project.webhook.triggering-activity")}</TableHead>
+            {allowEdit && <TableHead className="w-12" />}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {webhooks.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={allowEdit ? 4 : 3}
+                className="py-8 text-center text-control-light"
+              >
+                {t("common.no-data")}
+              </TableCell>
+            </TableRow>
+          ) : (
+            webhooks.map((webhook) => {
+              const activityTitles = webhook.notificationTypes.map(
+                (activity) => {
+                  const item = activityItemList.find(
+                    (item) => item.activity === activity
+                  );
+                  return item
+                    ? item.title
+                    : Activity_Type[activity] || `ACTIVITY_${activity}`;
+                }
+              );
+
+              return (
+                <TableRow
+                  key={webhook.name}
+                  className="cursor-pointer"
+                  onClick={(e) => onRowClick(e, webhook)}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-x-2">
+                      <WebhookTypeIcon type={webhook.type} className="size-5" />
+                      {webhook.title}
+                    </div>
+                  </TableCell>
+                  <TableCell className="truncate max-w-xs text-control-light">
+                    {webhook.url}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-2">
+                      {activityTitles.map((title) => (
+                        <span
+                          key={title}
+                          className="inline-block px-2 py-0.5 text-xs rounded-xs bg-control-bg text-control"
+                        >
+                          {title}
+                        </span>
+                      ))}
+                    </div>
+                  </TableCell>
+                  {allowEdit && (
+                    <TableCell>
+                      <ActionDropdown webhook={webhook} onDelete={onDelete} />
+                    </TableCell>
+                  )}
+                </TableRow>
+              );
+            })
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function ActionDropdown({
+  webhook,
+  onDelete,
+}: {
+  webhook: Webhook;
+  onDelete: (webhook: Webhook) => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="p-1 rounded-xs hover:bg-control-bg outline-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <EllipsisVertical className="size-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem
+            className="text-error"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(webhook);
+            }}
+          >
+            {t("common.delete")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}

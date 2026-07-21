@@ -1,0 +1,69 @@
+import { ChevronDown, ChevronRight } from "lucide-react";
+import type { ButtonHTMLAttributes } from "react";
+import { cn } from "@/lib/utils";
+import type { Section } from "./types";
+
+// The status glyph shared by the collapsible header and the sole-section
+// (non-collapsible) label in TaskRunLogViewer, so the two can't drift.
+export function SectionStatusIcon({ section }: { section: Section }) {
+  const StatusIcon = section.statusIcon;
+  return (
+    <StatusIcon
+      className={cn(
+        "h-3.5 w-3.5 shrink-0",
+        section.statusClass,
+        section.status === "running" && "animate-spin"
+      )}
+    />
+  );
+}
+
+export interface SectionHeaderProps
+  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
+  section: Section;
+  isExpanded: boolean;
+  indent?: boolean;
+  onToggle: () => void;
+}
+
+export function SectionHeader({
+  section,
+  isExpanded,
+  indent = false,
+  onToggle,
+  className,
+  ...props
+}: SectionHeaderProps) {
+  return (
+    <button
+      type="button"
+      aria-expanded={isExpanded}
+      className={cn(
+        "flex w-full items-center gap-x-2 py-1.5 bg-background hover:bg-control-bg cursor-pointer select-none text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
+        indent ? "px-6" : "px-3",
+        className
+      )}
+      onClick={onToggle}
+      {...props}
+    >
+      {isExpanded ? (
+        <ChevronDown className="size-3.5 shrink-0 text-control-placeholder" />
+      ) : (
+        <ChevronRight className="size-3.5 shrink-0 text-control-placeholder" />
+      )}
+      <SectionStatusIcon section={section} />
+      <span className="text-control">{section.label}</span>
+      {section.entryCount > 1 ? (
+        <span className="text-control-placeholder">({section.entryCount})</span>
+      ) : null}
+      <span className="flex-1" />
+      {section.duration ? (
+        <span className="text-control-light tabular-nums">
+          {section.duration}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
+export default SectionHeader;
