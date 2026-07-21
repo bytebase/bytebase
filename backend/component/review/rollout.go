@@ -2,7 +2,6 @@ package review
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -99,8 +98,7 @@ func (w *Workflow) CreateRollout(ctx context.Context, input CreateRolloutInput) 
 		return nil, workflowWrap(ErrorInternal, err, "failed to begin rollout transaction")
 	}
 	defer tx.Rollback()
-	key := input.ProjectID + "/" + strconv.FormatInt(input.PlanUID, 10)
-	if err := store.AcquireAdvisoryXactLockWithStringKey(ctx, tx, store.AdvisoryLockKeyPlanIssueRollout, key); err != nil {
+	if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, input.ProjectID, input.PlanUID); err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock")
 	}
 	lockedIssue, err := lockIssueByPlan(ctx, tx, input.ProjectID, input.PlanUID)

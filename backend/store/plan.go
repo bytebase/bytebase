@@ -54,20 +54,6 @@ type FindPlanMessage struct {
 	FilterQ *qb.Query
 }
 
-// UpdatePlanMessage is the message to update a plan.
-type UpdatePlanMessage struct {
-	UID       int64
-	ProjectID string
-
-	Name        *string
-	Description *string
-	// Config replaces the entire plan config.
-	// Callers should clone the existing config and modify only the fields they want to change.
-	// Example: config := proto.CloneOf(plan.Config); config.HasRollout = true; patch.Config = config
-	Config  *storepb.PlanConfig
-	Deleted *bool
-}
-
 // CreatePlan creates a new plan.
 func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator string) (*PlanMessage, error) {
 	config, err := protojson.Marshal(plan.Config)
@@ -244,62 +230,6 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	}
 
 	return plans, nil
-}
-
-// UpdatePlan updates an existing plan and returns the updated plan.
-func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*PlanMessage, error) {
-	set := qb.Q().Comma("updated_at = ?", time.Now())
-
-	if v := patch.Name; v != nil {
-		set.Comma("name = ?", *v)
-	}
-	if v := patch.Description; v != nil {
-		set.Comma("description = ?", *v)
-	}
-	if v := patch.Deleted; v != nil {
-		set.Comma("deleted = ?", *v)
-	}
-	if v := patch.Config; v != nil {
-		config, err := protojson.Marshal(v)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal plan config")
-		}
-		set.Comma("config = ?", config)
-	}
-
-	where := qb.Q().Space("id = ? AND project = ?", patch.UID, patch.ProjectID)
-
-	q := qb.Q().Space(`UPDATE plan SET ? WHERE ?
-		RETURNING id, creator, created_at, updated_at, project, name, description, config, deleted`,
-		set, where)
-
-	query, finalArgs, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	plan := PlanMessage{
-		Config: &storepb.PlanConfig{},
-	}
-	var config []byte
-	if err := s.GetDB().QueryRowContext(ctx, query, finalArgs...).Scan(
-		&plan.UID,
-		&plan.Creator,
-		&plan.CreatedAt,
-		&plan.UpdatedAt,
-		&plan.ProjectID,
-		&plan.Name,
-		&plan.Description,
-		&config,
-		&plan.Deleted,
-	); err != nil {
-		return nil, errors.Wrapf(err, "failed to update plan")
-	}
-	if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal plan config")
-	}
-
-	return &plan, nil
 }
 
 // GetListPlanFilter parses a CEL filter expression into a query builder query for listing plans.
