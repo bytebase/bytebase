@@ -76,7 +76,7 @@ export function CodeBlock({ code, width }: Props) {
   return (
     <div
       ref={containerRef}
-      className="flex flex-col overflow-x-hidden border border-gray-500 rounded-sm bg-white"
+      className="flex flex-col overflow-x-hidden border border-control-border rounded-sm bg-background text-control"
       style={{ width: `${computedWidth}px` }}
     >
       <div className="flex items-center justify-between px-1 pt-1">
