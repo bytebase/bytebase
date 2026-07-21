@@ -11,7 +11,11 @@ PostgreSQL holds row locks until a transaction ends. Transactions that acquire t
    - `issue_comment -> issue -> plan -> project`
    - `plan_webhook_delivery -> plan -> project`
    - `plan_check_run -> plan -> project`
-   - `task_run_log -> task_run -> task -> plan -> project`
+   - `task_run_log -> task_run -> task -> plan -> project -> instance`
+   - `worksheet_organizer -> worksheet -> project`
+   - `changelog -> sync_history -> db -> instance`
+   - `revision -> db -> instance`
+   - `db_schema -> db -> instance`
 3. Identify project-scoped rows with every scope column plus either the remaining primary-key columns or every remaining column of a declared non-partial unique key. Verify alternate keys in `LATEST.sql`. Lock batches in full primary-key order; project-scoped `(project, id)` batches therefore use that order, not `id` alone.
 4. Treat locks acquired by `UPDATE`, `DELETE`, foreign-key checks, and `INSERT ... ON CONFLICT DO UPDATE` as part of the order. An upsert that can update an existing row is not a new-row-only insert.
 5. `nextProjectID` locks `project` and requires it to be active before allocating an ID. Call it after locking any existing descendants, and do not lock an existing descendant afterward. Creation is rejected when the project is missing or deleted.
@@ -27,18 +31,17 @@ lifecycle policy: require an active project for new resources, or require only a
 existing project when deleted-project continuation is intentional. Serialize and
 validate that policy against project deletion before writing the managed data.
 
-Transactions spanning project-owned sibling branches follow the order used by `DeleteProject`:
+Transactions spanning project- or instance-owned sibling branches follow this canonical order:
 
 ```text
-query_history -> policy -> worksheet (project reassignment)
+query_history -> policy -> worksheet_organizer -> worksheet
 -> issue_comment -> issue -> plan_webhook_delivery -> plan_check_run
 -> task_run_log -> task_run -> task -> plan -> access_grant -> release
--> db_group -> db (project reassignment) -> project_webhook
--> worksheet_organizer -> worksheet (creator cleanup) -> revision
--> service_account -> workload_identity -> project
+-> db_group -> changelog -> sync_history -> revision -> db_schema -> db
+-> project_webhook -> service_account -> workload_identity -> project -> instance
 ```
 
-Update this list and `DeleteProject` together. A transaction that needs another sibling branch must establish its position here before implementation. Keep transactions short and acquire every required lock before performing work that depends on the protected state.
+Update this list, `DeleteProject`, and `DeleteInstance` together. A transaction that needs another sibling branch must establish its position here before implementation. When one table is touched by multiple predicates, keep those mutations contiguous at that table's position. Keep transactions short and preserve this order whether locks are acquired explicitly or by `UPDATE` and `DELETE` statements.
 
 Examples:
 
