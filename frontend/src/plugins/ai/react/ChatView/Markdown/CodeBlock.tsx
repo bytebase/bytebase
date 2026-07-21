@@ -1,7 +1,9 @@
 import { Check, Copy, PlayIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MonacoEditor } from "@/react/components/monaco/MonacoEditor";
+import { monacoThemeName } from "@/react/components/sql-editor/theme/derive";
+import { useActiveSQLEditorTheme } from "@/react/components/sql-editor/theme/useActiveSQLEditorTheme";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { findAncestor } from "@/utils";
@@ -38,6 +40,11 @@ const PADDING_PX = 8;
 export function CodeBlock({ code, width }: Props) {
   const { t } = useTranslation();
   const { events, setShowHistoryDialog } = useAIContext();
+  const activeTheme = useActiveSQLEditorTheme();
+  const monacoOptions = useMemo(
+    () => ({ theme: monacoThemeName(activeTheme) }),
+    [activeTheme]
+  );
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   // The message wrapper element is mounted by `ChatView` with the
@@ -76,7 +83,7 @@ export function CodeBlock({ code, width }: Props) {
   return (
     <div
       ref={containerRef}
-      className="flex flex-col overflow-x-hidden border border-gray-500 rounded-sm bg-white"
+      className="flex flex-col overflow-x-hidden border border-control-border rounded-sm bg-background text-control"
       style={{ width: `${computedWidth}px` }}
     >
       <div className="flex items-center justify-between px-1 pt-1">
@@ -119,6 +126,7 @@ export function CodeBlock({ code, width }: Props) {
         min={20}
         max={120}
         options={{
+          ...monacoOptions,
           fontSize: 12,
           lineHeight: 14,
           lineNumbers: "off",

@@ -35,7 +35,10 @@ export function Markdown({ content, codeBlockProps }: Props) {
       inlineCode: (node) =>
         createElement(
           "code",
-          { className: "inline-block bg-gray-200 px-0.5 mx-0.5" },
+          {
+            className:
+              "inline-block rounded-xs bg-control-bg-hover px-0.5 mx-0.5 text-control",
+          },
           node.value.replace(/\r?\n|\r/g, " ")
         ),
       image: (node) => createElement("img", { src: node.url }),
