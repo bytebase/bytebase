@@ -1,0 +1,1786 @@
+import { create } from "@bufbuild/protobuf";
+import type { Duration } from "@bufbuild/protobuf/wkt";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import {
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  Info,
+  Trash2,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
+import { router } from "@/app/router";
+import { EngineIcon } from "@/components/EngineIcon";
+import { EnvironmentSelect } from "@/components/EnvironmentSelect";
+import { FeatureBadge } from "@/components/FeatureBadge";
+import { LabelListEditor } from "@/components/LabelListEditor";
+import { LearnMoreLink } from "@/components/LearnMoreLink";
+import { ResourceIdField } from "@/components/ResourceIdField";
+import { RouterLink } from "@/components/RouterLink";
+import { ResourceLink } from "@/components/sql-review/ResourceLink";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  FormControlGroup,
+  FormControlRow,
+  FormField,
+  FormLabel,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils";
+import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
+import {
+  environmentNamePrefix,
+  instanceNamePrefix,
+  projectNamePrefix,
+} from "@/stores/modules/v1/common";
+import {
+  isValidEnvironmentName,
+  UNKNOWN_ID,
+  type ValidatedMessage,
+} from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import {
+  DataSource_AddressSchema,
+  DataSource_AuthenticationType,
+  DataSource_RedisType,
+  DataSourceType,
+  type SyncDatabases as SyncDatabasesMessage,
+  SyncDatabasesSchema,
+} from "@/types/proto-es/v1/instance_service_pb";
+import {
+  PlanFeature,
+  PlanType,
+} from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  engineNameV1,
+  extractInstanceResourceName,
+  isDev,
+  isValidSpannerHost,
+  supportedEngineV1List,
+  urlfy,
+} from "@/utils";
+import {
+  type ConnectionFailureCategory,
+  ConnectionRecovery,
+} from "./ConnectionRecovery";
+import type { EditDataSource } from "./common";
+import { hasSslConfig } from "./common";
+import {
+  MongoDBConnectionStringSchemaList,
+  RedisConnectionType,
+  SnowflakeExtraLinkPlaceHolder,
+} from "./constants";
+import { DataSourceForm } from "./DataSourceForm";
+import { DataSourceSection } from "./DataSourceSection";
+import { useInstanceFormContext } from "./InstanceFormContext";
+import { hasInfoContent, type InfoSection } from "./info-content";
+
+// --- Inline sub-components ---
+
+function SpannerHostInput({
+  host,
+  onHostChange,
+  allowEdit,
+}: {
+  host: string;
+  onHostChange: (host: string) => void;
+  allowEdit: boolean;
+}) {
+  const { t } = useTranslation();
+  const RE =
+    /^projects\/(?<PROJECT_ID>(?:[a-z]|[-.:]|[0-9])*)\/instances\/(?<INSTANCE_ID>(?:[a-z]|[-]|[0-9])*)$/;
+  const RE_PROJECT_ID = /^(?:[a-z]|[-.:]|[0-9])+$/;
+  const RE_INSTANCE_ID = /^(?:[a-z]|[-]|[0-9])+$/;
+
+  const parseProjectId = (h: string) => h.match(RE)?.groups?.PROJECT_ID ?? "";
+  const parseInstanceId = (h: string) => h.match(RE)?.groups?.INSTANCE_ID ?? "";
+
+  const [projectId, setProjectId] = useState(() => parseProjectId(host));
+  const [instanceId, setInstanceId] = useState(() => parseInstanceId(host));
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    if (!host) return;
+    setProjectId(parseProjectId(host));
+    setInstanceId(parseInstanceId(host));
+  }, [host]);
+
+  const update = useCallback(
+    (pId: string, iId: string) => {
+      setDirty(true);
+      if (!RE_PROJECT_ID.test(pId) || !RE_INSTANCE_ID.test(iId)) {
+        onHostChange("");
+        return;
+      }
+      onHostChange(`projects/${pId}/instances/${iId}`);
+    },
+    [onHostChange]
+  );
+
+  const isValidProjectId = RE_PROJECT_ID.test(projectId);
+  const isValidInstanceId = RE_INSTANCE_ID.test(instanceId);
+
+  return (
+    <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+      <FormField
+        title={
+          <>
+            {t("instance.project-id")}
+            <span style={{ color: "red" }}> *</span>
+          </>
+        }
+      >
+        <Input
+          value={projectId}
+          required
+          placeholder="projectId"
+          className={`w-full ${dirty && !isValidProjectId ? "border-error" : ""}`}
+          disabled={!allowEdit}
+          onChange={(e) => {
+            const v = e.target.value;
+            setProjectId(v);
+            update(v, instanceId);
+          }}
+        />
+      </FormField>
+      <FormField
+        title={
+          <>
+            {t("instance.instance-id")}
+            <span style={{ color: "red" }}> *</span>
+          </>
+        }
+      >
+        <Input
+          value={instanceId}
+          required
+          placeholder="instanceId"
+          className={`w-full ${dirty && !isValidInstanceId ? "border-error" : ""}`}
+          disabled={!allowEdit}
+          onChange={(e) => {
+            const v = e.target.value;
+            setInstanceId(v);
+            update(projectId, v);
+          }}
+        />
+      </FormField>
+      <p className="col-span-2 text-xs leading-4 text-control-light">
+        {t("instance.find-gcp-project-id-and-instance-id")}{" "}
+        <a
+          href="https://docs.bytebase.com/get-started/connect/gcp?source=console"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="normal-link inline-flex items-center"
+        >
+          {t("common.detailed-guide")}
+          <ExternalLink className="size-4 ml-1" />
+        </a>
+      </p>
+    </div>
+  );
+}
+
+function BigQueryHostInput({
+  host,
+  onHostChange,
+  allowEdit,
+}: {
+  host: string;
+  onHostChange: (host: string) => void;
+  allowEdit: boolean;
+}) {
+  const { t } = useTranslation();
+  const RE_PROJECT_ID = /^(?:[a-z]|[-.:]|[0-9])+$/;
+  const [projectId, setProjectId] = useState(() => host || "");
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    if (!host) return;
+    setProjectId(host);
+  }, [host]);
+
+  const isValidProjectId = RE_PROJECT_ID.test(projectId);
+
+  return (
+    <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+      <FormField
+        title={
+          <>
+            {t("instance.project-id")}
+            <span style={{ color: "red" }}> *</span>
+          </>
+        }
+      >
+        <Input
+          value={projectId}
+          required
+          placeholder="projectId"
+          className={`w-full ${dirty && !isValidProjectId ? "border-error" : ""}`}
+          disabled={!allowEdit}
+          onChange={(e) => {
+            const v = e.target.value;
+            setProjectId(v);
+            setDirty(true);
+            if (!RE_PROJECT_ID.test(v)) {
+              onHostChange("");
+            } else {
+              onHostChange(v);
+            }
+          }}
+        />
+      </FormField>
+      <p className="col-span-2 text-xs leading-4 text-control-light">
+        {t("instance.find-gcp-project-id")}{" "}
+        <a
+          href="https://docs.bytebase.com/get-started/connect/gcp?source=console"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="normal-link inline-flex items-center"
+        >
+          {t("common.detailed-guide")}
+          <ExternalLink className="size-4 ml-1" />
+        </a>
+      </p>
+    </div>
+  );
+}
+
+function InstanceEngineRadioGrid({
+  engine,
+  engineList,
+  onEngineChange,
+  isEngineBeta,
+}: {
+  engine: Engine;
+  engineList: Engine[];
+  onEngineChange: (engine: Engine) => void;
+  isEngineBeta: (engine: Engine) => boolean;
+}) {
+  return (
+    <div className="w-full grid grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-2">
+      {engineList.map((eng) => (
+        <button
+          key={eng}
+          type="button"
+          className={`flex items-center gap-x-2 rounded-sm border px-3 py-2 text-sm text-left transition-colors ${
+            eng === engine
+              ? "border-accent bg-accent/5 ring-1 ring-accent"
+              : "border-control-border hover:border-accent/50 hover:bg-control-bg"
+          }`}
+          onClick={() => onEngineChange(eng)}
+        >
+          <EngineIcon engine={eng} className="size-5" />
+          <span className="truncate">{engineNameV1(eng)}</span>
+          {isEngineBeta(eng) && (
+            <span className="ml-auto shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
+              Beta
+            </span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const MIN_SCAN_MINUTES = 30;
+
+function ScanIntervalInput({
+  scanInterval,
+  allowEdit,
+  onScanIntervalChange,
+}: {
+  scanInterval: Duration | undefined;
+  allowEdit: boolean;
+  onScanIntervalChange: (interval: Duration | undefined) => void;
+}) {
+  const { t } = useTranslation();
+  const ctx = useInstanceFormContext();
+  const { instance: _instance, hideAdvancedFeatures } = ctx;
+
+  const extractState = (
+    duration: Duration | undefined
+  ): { mode: "DEFAULT" | "CUSTOM"; minutes: number | undefined } => {
+    if (!duration || Number(duration.seconds) === 0) {
+      return { mode: "DEFAULT", minutes: undefined };
+    }
+    return {
+      mode: "CUSTOM",
+      minutes: Math.floor(Number(duration.seconds) / 60),
+    };
+  };
+
+  const [mode, setMode] = useState<"DEFAULT" | "CUSTOM">(
+    () => extractState(scanInterval).mode
+  );
+  const [minutes, setMinutes] = useState<number | undefined>(
+    () => extractState(scanInterval).minutes
+  );
+  const [isValid, setIsValid] = useState(true);
+
+  useEffect(() => {
+    const s = extractState(scanInterval);
+    setMode(s.mode);
+    setMinutes(s.minutes);
+    setIsValid(true);
+  }, [scanInterval]);
+
+  const handleModeChange = (targetMode: "DEFAULT" | "CUSTOM") => {
+    if (targetMode === mode) return;
+    setMode(targetMode);
+    if (targetMode === "DEFAULT") {
+      onScanIntervalChange(create(DurationSchema, { seconds: BigInt(0) }));
+    } else {
+      setMinutes(24 * 60);
+      onScanIntervalChange(
+        create(DurationSchema, { seconds: BigInt(24 * 60 * 60) })
+      );
+    }
+  };
+
+  const handleMinuteChange = (value: string) => {
+    const num = parseInt(value, 10);
+    if (Number.isNaN(num)) {
+      setMinutes(undefined);
+      setIsValid(false);
+      return;
+    }
+    setMinutes(num);
+    if (num < MIN_SCAN_MINUTES) {
+      setIsValid(false);
+      return;
+    }
+    setIsValid(true);
+    onScanIntervalChange(create(DurationSchema, { seconds: BigInt(num * 60) }));
+  };
+
+  if (hideAdvancedFeatures) return null;
+
+  return (
+    <FormField
+      className="sm:col-span-4 sm:col-start-1"
+      title={
+        <span className="flex items-center gap-x-2">
+          {t("instance.scan-interval.self")}
+          <FeatureBadge
+            feature={PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME}
+          />
+        </span>
+      }
+      description={t("instance.scan-interval.description")}
+    >
+      <RadioGroup
+        className="gap-x-6"
+        value={mode}
+        onValueChange={(value) => handleModeChange(value as typeof mode)}
+      >
+        <RadioGroupItem value="DEFAULT" disabled={!allowEdit}>
+          {t("instance.scan-interval.default-never")}
+        </RadioGroupItem>
+        <RadioGroupItem
+          value="CUSTOM"
+          disabled={!allowEdit}
+          contentClassName="flex items-center gap-x-2"
+        >
+          <span>{t("common.custom")}</span>
+          <Input
+            type="number"
+            value={minutes ?? ""}
+            className={`w-16 ${!isValid ? "border-error" : ""}`}
+            placeholder={`>= ${MIN_SCAN_MINUTES}`}
+            disabled={mode !== "CUSTOM"}
+            onChange={(e) => handleMinuteChange(e.target.value)}
+          />
+          {!isValid ? (
+            <span className="text-error text-sm">
+              {t("instance.scan-interval.min-value", {
+                value: MIN_SCAN_MINUTES,
+              })}
+            </span>
+          ) : (
+            <span className="text-sm">{t("common.minutes")}</span>
+          )}
+        </RadioGroupItem>
+      </RadioGroup>
+    </FormField>
+  );
+}
+
+const MAX_VISIBLE_DATABASES = 100;
+
+function SyncDatabases({
+  isCreating: isCreatingProp,
+  showLabel,
+  allowEdit,
+  projectName,
+  syncDatabases,
+  onSyncDatabasesChange,
+}: {
+  isCreating: boolean;
+  showLabel: boolean;
+  allowEdit: boolean;
+  projectName?: string;
+  syncDatabases?: SyncDatabasesMessage;
+  onSyncDatabasesChange: (databases: string[], syncAll: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const ctx = useInstanceFormContext();
+  const { hideAdvancedFeatures, instance, pendingCreateInstance } = ctx;
+
+  const [syncAll, setSyncAll] = useState(syncDatabases === undefined);
+  const [selectedSet, setSelectedSet] = useState<Set<string>>(
+    () => new Set(syncDatabases?.databases ?? [])
+  );
+  const [databaseList, setDatabaseList] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [inputDatabase, setInputDatabase] = useState("");
+  const [visibleDatabaseCount, setVisibleDatabaseCount] = useState(
+    MAX_VISIBLE_DATABASES
+  );
+  const pendingScrollDatabaseRef = useRef<string | null>(null);
+  const firstNewDatabaseRef = useRef<HTMLLabelElement | null>(null);
+
+  // Notify parent only when selection actually changes.
+  const onSyncDatabasesChangeRef = useRef(onSyncDatabasesChange);
+  onSyncDatabasesChangeRef.current = onSyncDatabasesChange;
+  const prevNotifiedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const key = [
+      syncAll ? "all" : "selected",
+      ...[...selectedSet].sort((a, b) => a.localeCompare(b)),
+    ].join("\0");
+    if (key === prevNotifiedRef.current) return;
+    prevNotifiedRef.current = key;
+    onSyncDatabasesChangeRef.current(syncAll ? [] : [...selectedSet], syncAll);
+  }, [syncAll, selectedSet]);
+
+  useEffect(() => {
+    if (syncAll) return;
+    let cancelled = false;
+    const fetchDatabases = async () => {
+      const inst = isCreatingProp ? pendingCreateInstance : instance;
+      if (!inst) return;
+      setLoading(true);
+      try {
+        const resp = await useAppStore
+          .getState()
+          .listInstanceDatabases(inst.name, isCreatingProp ? inst : undefined);
+        if (!cancelled) {
+          setDatabaseList(new Set([...resp.databases, ...selectedSet]));
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchDatabases();
+    return () => {
+      cancelled = true;
+    };
+  }, [syncAll, isCreatingProp, pendingCreateInstance, instance]);
+
+  useEffect(() => {
+    setVisibleDatabaseCount(MAX_VISIBLE_DATABASES);
+  }, [databaseList, searchText]);
+
+  useEffect(() => {
+    if (!pendingScrollDatabaseRef.current) return;
+    firstNewDatabaseRef.current?.scrollIntoView({ block: "nearest" });
+    pendingScrollDatabaseRef.current = null;
+    firstNewDatabaseRef.current = null;
+  }, [visibleDatabaseCount]);
+
+  if (hideAdvancedFeatures) return null;
+
+  const lowerSearch = searchText.toLowerCase();
+  const filteredDatabases = lowerSearch
+    ? [...databaseList].filter((db) => db.toLowerCase().includes(lowerSearch))
+    : [...databaseList];
+  const visibleDatabases = filteredDatabases.slice(0, visibleDatabaseCount);
+  const hasMore = filteredDatabases.length > visibleDatabaseCount;
+  const hasProjectContext = !!projectName && isCreatingProp;
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.nativeEvent.isComposing) return;
+    const trimmed = inputDatabase.trim();
+    if (!trimmed) return;
+    if (e.key === "Enter") {
+      setDatabaseList((prev) => new Set([...prev, trimmed]));
+      setSelectedSet((prev) => new Set([...prev, trimmed]));
+      setInputDatabase("");
+    }
+  };
+
+  const toggleDatabase = (db: string) => {
+    setSelectedSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(db)) {
+        next.delete(db);
+      } else {
+        next.add(db);
+      }
+      return next;
+    });
+  };
+
+  const loadMoreDatabases = () => {
+    pendingScrollDatabaseRef.current =
+      filteredDatabases[visibleDatabaseCount] ?? null;
+    setVisibleDatabaseCount((count) => count + MAX_VISIBLE_DATABASES);
+  };
+
+  return (
+    <FormField
+      className="sm:col-span-4 sm:col-start-1"
+      title={showLabel ? t("instance.sync-databases.self") : undefined}
+      description={
+        showLabel ? t("instance.sync-databases.description") : undefined
+      }
+    >
+      <div className="flex flex-col gap-y-2">
+        {hasProjectContext && (
+          <Alert variant="info">
+            <Trans
+              t={t}
+              i18nKey="instance.sync-databases.project-description"
+              values={{ project: projectName }}
+              components={{
+                project: (
+                  <ResourceLink
+                    resource={projectName || ""}
+                    showResourceType={false}
+                    className="underline underline-offset-2"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  />
+                ),
+              }}
+            />
+          </Alert>
+        )}
+        <label className="flex items-center gap-x-2 cursor-pointer">
+          <Checkbox
+            checked={syncAll}
+            disabled={!allowEdit}
+            onCheckedChange={(checked) => setSyncAll(checked)}
+          />
+          {hasProjectContext
+            ? t("instance.sync-databases.project-sync-all")
+            : t("instance.sync-databases.sync-all")}
+        </label>
+        {!syncAll && (
+          <div>
+            {loading ? (
+              <div className="opacity-60 text-sm text-control-light">
+                {t("common.loading")}...
+              </div>
+            ) : (
+              <div className="border rounded-xs p-2 flex flex-col gap-y-2">
+                <Input
+                  value={searchText}
+                  className="w-full"
+                  placeholder={t("instance.sync-databases.search-database")}
+                  onChange={(e) => setSearchText(e.target.value)}
+                />
+                <div className="max-h-[250px] overflow-y-auto flex flex-col gap-y-1">
+                  {visibleDatabases.map((db) => (
+                    <label
+                      key={db}
+                      ref={(element) => {
+                        if (db === pendingScrollDatabaseRef.current) {
+                          firstNewDatabaseRef.current = element;
+                        }
+                      }}
+                      className="flex items-center gap-x-2 cursor-pointer text-sm"
+                    >
+                      <Checkbox
+                        checked={selectedSet.has(db)}
+                        disabled={!allowEdit}
+                        onCheckedChange={() => toggleDatabase(db)}
+                      />
+                      <span>{db}</span>
+                    </label>
+                  ))}
+                </div>
+                {hasMore && (
+                  <Button
+                    type="button"
+                    appearance="secondary"
+                    size="sm"
+                    className="self-start"
+                    onClick={loadMoreDatabases}
+                  >
+                    {t("common.load-more")}
+                  </Button>
+                )}
+                <Input
+                  value={inputDatabase}
+                  className="w-full"
+                  placeholder={t("instance.sync-databases.add-database")}
+                  disabled={!allowEdit}
+                  onChange={(e) => setInputDatabase(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </FormField>
+  );
+}
+
+// --- Main component ---
+
+interface InstanceFormBodyProps {
+  onOpenInfoPanel?: (section: InfoSection) => void;
+}
+
+export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
+  const { t } = useTranslation();
+  const ctx = useInstanceFormContext();
+  const {
+    instance,
+    state,
+    specs,
+    isCreating,
+    allowEdit,
+    allowCreate,
+    environment,
+    basicInfo,
+    setBasicInfo,
+    labelKVList,
+    setLabelKVList,
+    dataSourceEditState,
+    setDataSourceEditState,
+    adminDataSource,
+    editingDataSource,
+    checkDataSource,
+    testConnection,
+    resetDataSource,
+    showConnectionOptionsEvent,
+    emitShowConnectionOptions,
+    setResourceIdValidated,
+  } = ctx;
+  const { isEngineBeta, defaultPort, instanceLink, allowEditPort } = specs;
+
+  const hasUnifiedInstanceLicense = useAppStore((s) =>
+    s.hasUnifiedInstanceLicense()
+  );
+  const instanceLicenseCount = useAppStore((s) => s.instanceLicenseCount());
+  const activatedInstanceCount = useAppStore((s) => s.activatedInstanceCount());
+  const currentPlan = useAppStore((s) => s.currentPlan());
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
+
+  const [isEngineSelectorCollapsed, setIsEngineSelectorCollapsed] =
+    useState(false);
+  const [isConnectionOptionsCollapsed, setIsConnectionOptionsCollapsed] =
+    useState(true);
+  const [testConnectionFailure, setTestConnectionFailure] = useState<
+    | {
+        message: string;
+        failureCategory: ConnectionFailureCategory;
+      }
+    | undefined
+  >();
+
+  // Auto-expand connection options when configured
+  const showConnectionOptionsCard =
+    basicInfo.engine !== Engine.DYNAMODB && !!editingDataSource;
+
+  const hasConfiguredConnectionOptions = useMemo(() => {
+    const ds = editingDataSource;
+    if (!ds) return false;
+    const hasExtraParameters =
+      Object.keys(ds.extraConnectionParameters ?? {}).length > 0;
+    const hasSshConfig = !!(
+      ds.sshHost ||
+      ds.sshPort ||
+      ds.sshUser ||
+      ds.sshPassword ||
+      ds.sshPrivateKey
+    );
+    return hasExtraParameters || hasSslConfig(ds) || hasSshConfig;
+  }, [editingDataSource]);
+
+  // Collapse state management based on visibility and configuration
+  const prevShowRef = useRef(showConnectionOptionsCard);
+  const prevConfiguredRef = useRef(hasConfiguredConnectionOptions);
+  useEffect(() => {
+    if (!showConnectionOptionsCard) {
+      prevShowRef.current = false;
+      return;
+    }
+    const becameVisible = !prevShowRef.current;
+    if (becameVisible) {
+      setIsConnectionOptionsCollapsed(
+        isCreating ? true : !hasConfiguredConnectionOptions
+      );
+      prevShowRef.current = true;
+      prevConfiguredRef.current = hasConfiguredConnectionOptions;
+      return;
+    }
+    if (
+      !isCreating &&
+      hasConfiguredConnectionOptions &&
+      !prevConfiguredRef.current
+    ) {
+      setIsConnectionOptionsCollapsed(false);
+    }
+    prevShowRef.current = showConnectionOptionsCard;
+    prevConfiguredRef.current = hasConfiguredConnectionOptions;
+  }, [showConnectionOptionsCard, isCreating, hasConfiguredConnectionOptions]);
+
+  // Listen for show-connection-options event
+  const prevEventRef = useRef(showConnectionOptionsEvent);
+  useEffect(() => {
+    if (showConnectionOptionsEvent !== prevEventRef.current) {
+      prevEventRef.current = showConnectionOptionsEvent;
+      if (showConnectionOptionsCard) {
+        setIsConnectionOptionsCollapsed(false);
+      }
+    }
+  }, [showConnectionOptionsEvent, showConnectionOptionsCard]);
+
+  // --- Computed values ---
+
+  const availableLicenseCount = useMemo(
+    () => Math.max(0, instanceLicenseCount - activatedInstanceCount),
+    [instanceLicenseCount, activatedInstanceCount]
+  );
+
+  const availableLicenseCountText = useMemo((): string => {
+    if (instanceLicenseCount === Number.MAX_VALUE) {
+      return t("common.unlimited");
+    }
+    return `${availableLicenseCount}`;
+  }, [instanceLicenseCount, availableLicenseCount, t]);
+
+  const resourceId = useMemo(() => {
+    const id = extractInstanceResourceName(basicInfo.name);
+    if (id === String(UNKNOWN_ID)) return "";
+    return id;
+  }, [basicInfo.name]);
+
+  const routeProjectId = useMemo(() => {
+    const projectId = router.currentRoute.value.query.project;
+    return typeof projectId === "string" && projectId ? projectId : undefined;
+  }, []);
+  const routeProjectName = routeProjectId
+    ? `${projectNamePrefix}${routeProjectId}`
+    : "";
+
+  useEffect(() => {
+    if (!routeProjectName) return;
+    useAppStore
+      .getState()
+      .fetchProject(routeProjectName, true)
+      .catch(() => {
+        // Ignore prefetch failure. The instance creation request still uses the
+        // route project name directly.
+      });
+  }, [routeProjectName]);
+
+  const setResourceId = useCallback(
+    (id: string) => {
+      setBasicInfo((prev) => ({ ...prev, name: `instances/${id}` }));
+    },
+    [setBasicInfo]
+  );
+
+  // Duplicate-instance check used by the shared ResourceIdField's `validate`
+  // callback. Tries to fetch the instance by ID; a successful fetch means the
+  // ID is taken. A NotFound (or any error) means the ID is available.
+  const validateInstanceId = useCallback(
+    async (id: string): Promise<ValidatedMessage[]> => {
+      if (!isCreating || !id) return [];
+      try {
+        const existing = await useAppStore
+          .getState()
+          .getOrFetchInstanceByName(
+            `${instanceNamePrefix}${id}`,
+            true /* silent */
+          );
+        if (existing) {
+          return [
+            {
+              type: "error",
+              message: t("resource-id.validation.duplicated", {
+                resource: t("common.instance"),
+              }),
+            },
+          ];
+        }
+      } catch {
+        // NotFound = available.
+      }
+      return [];
+    },
+    [isCreating, t]
+  );
+
+  const currentMongoDBConnectionSchema = useMemo(() => {
+    return adminDataSource.srv === false
+      ? MongoDBConnectionStringSchemaList[0]
+      : MongoDBConnectionStringSchemaList[1];
+  }, [adminDataSource.srv]);
+
+  const currentRedisConnectionType = useMemo(() => {
+    switch (adminDataSource.redisType) {
+      case DataSource_RedisType.STANDALONE:
+        return RedisConnectionType[0];
+      case DataSource_RedisType.SENTINEL:
+        return RedisConnectionType[1];
+      case DataSource_RedisType.CLUSTER:
+        return RedisConnectionType[2];
+      default:
+        return RedisConnectionType[0];
+    }
+  }, [adminDataSource.redisType]);
+
+  const showAdditionalAddresses = useMemo(() => {
+    if (basicInfo.engine === Engine.CASSANDRA) return true;
+    if (basicInfo.engine === Engine.MONGODB && !adminDataSource.srv)
+      return true;
+    if (
+      basicInfo.engine === Engine.REDIS &&
+      (adminDataSource.redisType === DataSource_RedisType.CLUSTER ||
+        adminDataSource.redisType === DataSource_RedisType.SENTINEL)
+    )
+      return true;
+    return false;
+  }, [basicInfo.engine, adminDataSource.srv, adminDataSource.redisType]);
+
+  const allowTestConnection = useMemo(() => {
+    if (!allowEdit || state.isRequesting || state.isTestingConnection) {
+      return false;
+    }
+    const ds = editingDataSource;
+    if (!ds) return false;
+    if (basicInfo.engine === Engine.SPANNER) {
+      return isValidSpannerHost(ds.host);
+    }
+    if (basicInfo.engine === Engine.BIGQUERY) {
+      return ds.host !== "";
+    }
+    if (basicInfo.engine !== Engine.DYNAMODB && ds.host === "") {
+      return false;
+    }
+    return checkDataSource([ds]);
+  }, [allowEdit, state, editingDataSource, basicInfo.engine, checkDataSource]);
+
+  const hasHostInfo = useMemo(
+    () => hasInfoContent(basicInfo.engine, "host"),
+    [basicInfo.engine]
+  );
+
+  // --- Handlers ---
+
+  const updateBasicInfo = useCallback(
+    (partial: Partial<typeof basicInfo>) => {
+      setBasicInfo((prev) => ({ ...prev, ...partial }));
+    },
+    [setBasicInfo]
+  );
+
+  const updateAdminDS = useCallback(
+    (partial: Partial<EditDataSource>) => {
+      setDataSourceEditState((prev) => ({
+        ...prev,
+        dataSources: prev.dataSources.map((ds) =>
+          ds.type === DataSourceType.ADMIN ? { ...ds, ...partial } : ds
+        ),
+      }));
+    },
+    [setDataSourceEditState]
+  );
+
+  const changeInstanceEngine = useCallback(
+    (engine: Engine) => {
+      resetDataSource();
+      // After resetDataSource, we need to adjust the host based on the new engine.
+      // Use a direct state update instead.
+      setDataSourceEditState((prev) => {
+        const dataSources = prev.dataSources.map((ds) => {
+          if (ds.type !== DataSourceType.ADMIN) return ds;
+          const updated = { ...ds };
+          switch (engine) {
+            case Engine.SNOWFLAKE:
+            case Engine.DYNAMODB: {
+              if (
+                updated.host === "127.0.0.1" ||
+                updated.host === "host.docker.internal"
+              ) {
+                updated.host = "";
+              }
+              break;
+            }
+            case Engine.SPANNER:
+            case Engine.BIGQUERY: {
+              updated.authenticationType =
+                DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM;
+              if (
+                updated.host === "127.0.0.1" ||
+                updated.host === "host.docker.internal"
+              ) {
+                updated.host = "";
+              }
+              break;
+            }
+            case Engine.COSMOSDB: {
+              updated.authenticationType =
+                DataSource_AuthenticationType.AZURE_IAM;
+              break;
+            }
+            default: {
+              if (!updated.host) {
+                updated.host = isDev() ? "127.0.0.1" : "host.docker.internal";
+              }
+              break;
+            }
+          }
+          return updated;
+        });
+        return { ...prev, dataSources };
+      });
+      setBasicInfo((prev) => ({ ...prev, engine }));
+    },
+    [resetDataSource, setDataSourceEditState, setBasicInfo]
+  );
+
+  const handleSelectInstanceEngine = useCallback(
+    (engine: Engine) => {
+      changeInstanceEngine(engine);
+      setIsEngineSelectorCollapsed(true);
+    },
+    [changeInstanceEngine]
+  );
+
+  const handleSelectEnvironment = useCallback(
+    (name: string | undefined) => {
+      setBasicInfo((prev) => ({ ...prev, environment: name }));
+    },
+    [setBasicInfo]
+  );
+
+  const handleChangeSyncDatabases = useCallback(
+    (databases: string[], syncAll: boolean) => {
+      setBasicInfo((prev) => ({
+        ...prev,
+        syncDatabases: syncAll
+          ? undefined
+          : create(SyncDatabasesSchema, { databases }),
+      }));
+    },
+    [setBasicInfo]
+  );
+
+  const changeScanInterval = useCallback(
+    (duration: Duration | undefined) => {
+      setBasicInfo((prev) => ({ ...prev, syncInterval: duration }));
+    },
+    [setBasicInfo]
+  );
+
+  const handleRedisConnectionTypeChange = useCallback(
+    (type: string) => {
+      let redisType = DataSource_RedisType.STANDALONE;
+      switch (type) {
+        case RedisConnectionType[1]:
+          redisType = DataSource_RedisType.SENTINEL;
+          break;
+        case RedisConnectionType[2]:
+          redisType = DataSource_RedisType.CLUSTER;
+          break;
+      }
+      updateAdminDS({ redisType });
+    },
+    [updateAdminDS]
+  );
+
+  const handleMongodbConnectionStringSchemaChange = useCallback(
+    (type: string) => {
+      if (type === MongoDBConnectionStringSchemaList[1]) {
+        updateAdminDS({
+          port: "",
+          additionalAddresses: [],
+          replicaSet: "",
+          directConnection: false,
+          srv: true,
+        });
+      } else {
+        updateAdminDS({ srv: false });
+      }
+    },
+    [updateAdminDS]
+  );
+
+  const removeDSAdditionalAddress = useCallback(
+    (index: number) => {
+      setDataSourceEditState((prev) => ({
+        ...prev,
+        dataSources: prev.dataSources.map((ds) => {
+          if (ds.type !== DataSourceType.ADMIN) return ds;
+          const newAddresses = [...ds.additionalAddresses];
+          newAddresses.splice(index, 1);
+          return {
+            ...ds,
+            additionalAddresses: newAddresses,
+            directConnection:
+              newAddresses.length === 0 ? false : ds.directConnection,
+          };
+        }),
+      }));
+    },
+    [setDataSourceEditState]
+  );
+
+  const addDSAdditionalAddress = useCallback(() => {
+    setDataSourceEditState((prev) => ({
+      ...prev,
+      dataSources: prev.dataSources.map((ds) => {
+        if (ds.id !== dataSourceEditState.editingDataSourceId) return ds;
+        const newAddresses = [
+          ...ds.additionalAddresses,
+          create(DataSource_AddressSchema, { host: "", port: "" }),
+        ];
+        return {
+          ...ds,
+          additionalAddresses: newAddresses,
+          directConnection:
+            newAddresses.length !== 0 ? false : ds.directConnection,
+        };
+      }),
+    }));
+  }, [setDataSourceEditState, dataSourceEditState.editingDataSourceId]);
+
+  const changeInstanceActivation = useCallback(
+    async (on: boolean) => {
+      updateBasicInfo({ activation: on });
+      if (instance) {
+        const instancePatch = { ...instance, activation: on };
+        const updated = await useAppStore
+          .getState()
+          .updateInstance(instancePatch, ["activation"]);
+        useAppStore.getState().updateDatabaseInstance(updated);
+        await useAppStore
+          .getState()
+          .fetchServerInfo(useAppStore.getState().workspaceResourceName());
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.updated"),
+        });
+      }
+    },
+    [instance, updateBasicInfo, t]
+  );
+
+  const testConnectionForCurrentEditingDS = useCallback(async () => {
+    const ds = editingDataSource;
+    if (!ds) return;
+    setTestConnectionFailure(undefined);
+    const result = await testConnection(ds, false);
+    if (result.success) {
+      return;
+    }
+    setTestConnectionFailure({
+      message: result.message,
+      failureCategory: result.failureCategory,
+    });
+    if (hasConfiguredConnectionOptions) {
+      emitShowConnectionOptions();
+    }
+  }, [
+    editingDataSource,
+    testConnection,
+    hasConfiguredConnectionOptions,
+    emitShowConnectionOptions,
+  ]);
+
+  const handleDataSourceChange = useCallback(
+    (updated: EditDataSource) => {
+      setDataSourceEditState((prev) => ({
+        ...prev,
+        dataSources: prev.dataSources.map((ds) =>
+          ds.id === updated.id ? updated : ds
+        ),
+      }));
+    },
+    [setDataSourceEditState]
+  );
+
+  const openInfoPanel = useCallback(
+    (section: InfoSection) => {
+      if (!hasInfoContent(basicInfo.engine, section)) return;
+      onOpenInfoPanel?.(section);
+    },
+    [basicInfo.engine, onOpenInfoPanel]
+  );
+
+  // Port-only numeric filter
+  const handlePortChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      if (value === "" || /^\d+$/.test(value)) {
+        updateAdminDS({ port: value });
+      }
+    },
+    [updateAdminDS]
+  );
+
+  const handleAdditionalAddressHostChange = useCallback(
+    (index: number, host: string) => {
+      setDataSourceEditState((prev) => ({
+        ...prev,
+        dataSources: prev.dataSources.map((ds) => {
+          if (ds.type !== DataSourceType.ADMIN) return ds;
+          const newAddresses = [...ds.additionalAddresses];
+          newAddresses[index] = { ...newAddresses[index], host };
+          return { ...ds, additionalAddresses: newAddresses };
+        }),
+      }));
+    },
+    [setDataSourceEditState]
+  );
+
+  const handleAdditionalAddressPortChange = useCallback(
+    (index: number, port: string) => {
+      if (port !== "" && !/^\d+$/.test(port)) return;
+      setDataSourceEditState((prev) => ({
+        ...prev,
+        dataSources: prev.dataSources.map((ds) => {
+          if (ds.type !== DataSourceType.ADMIN) return ds;
+          const newAddresses = [...ds.additionalAddresses];
+          newAddresses[index] = { ...newAddresses[index], port };
+          return { ...ds, additionalAddresses: newAddresses };
+        }),
+      }));
+    },
+    [setDataSourceEditState]
+  );
+
+  return (
+    <div className="flex flex-col gap-y-6 pb-2">
+      <div className="w-full flex flex-col gap-y-6">
+        {/* Engine Selector (create only) */}
+        {isCreating && (
+          <div className="rounded-lg border border-block-border bg-background">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between gap-x-3 px-4 py-3 text-left transition-colors hover:bg-control-bg"
+              onClick={() => setIsEngineSelectorCollapsed((prev) => !prev)}
+            >
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-control-light">
+                  {t("database.engine")}
+                </p>
+                <div className="mt-1 flex items-center gap-x-1.5">
+                  <EngineIcon engine={basicInfo.engine} className="size-4" />
+                  <span className="text-sm font-medium text-main">
+                    {engineNameV1(basicInfo.engine)}
+                  </span>
+                  {isEngineBeta(basicInfo.engine) && (
+                    <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
+                      Beta
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="shrink-0 text-control-light">
+                {!isEngineSelectorCollapsed ? (
+                  <ChevronDown className="size-4" />
+                ) : (
+                  <ChevronRight className="size-4" />
+                )}
+              </div>
+            </button>
+
+            <div
+              className={cn(
+                "grid transition-[grid-template-rows] duration-200 ease-in-out",
+                !isEngineSelectorCollapsed && "border-t border-block-border"
+              )}
+              style={{
+                gridTemplateRows: !isEngineSelectorCollapsed ? "1fr" : "0fr",
+              }}
+              inert={isEngineSelectorCollapsed ? true : undefined}
+            >
+              <div className="overflow-hidden">
+                <div className="px-4 py-4">
+                  <InstanceEngineRadioGrid
+                    engine={basicInfo.engine}
+                    engineList={supportedEngineV1List()}
+                    onEngineChange={handleSelectInstanceEngine}
+                    isEngineBeta={isEngineBeta}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Basic Info Card */}
+        <div className="border border-block-border rounded-lg p-5">
+          <h3 className="text-base font-medium text-main">
+            {t("instance.section.basic-info")}
+          </h3>
+
+          <div className="mt-3 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
+            {/* Instance Name */}
+            <FormField className="sm:col-span-2 sm:col-start-1">
+              <FormLabel htmlFor="name" className="flex flex-row items-center">
+                {t("instance.instance-name")}
+                <span className="ml-0.5 text-error">*</span>
+                {instance && (
+                  <div className="ml-2 flex items-center">
+                    <EngineIcon engine={instance.engine} className="size-4" />
+                    <span className="ml-1">{instance.engineVersion}</span>
+                  </div>
+                )}
+              </FormLabel>
+              <Input
+                value={basicInfo.title}
+                required
+                className="w-full max-w-[40rem]"
+                disabled={!allowEdit}
+                maxLength={200}
+                onChange={(e) => updateBasicInfo({ title: e.target.value })}
+              />
+            </FormField>
+
+            {/* Activation toggle */}
+            {currentPlan !== PlanType.FREE &&
+              !hasUnifiedInstanceLicense &&
+              allowEdit && (
+                <div className="sm:col-span-2 ml-0 sm:ml-3">
+                  <label htmlFor="activation" className="textlabel block">
+                    {t("subscription.instance-assignment.assign-license")} (
+                    <RouterLink
+                      to="/setting/subscription"
+                      className="accent-link"
+                    >
+                      {t("subscription.instance-assignment.n-license-remain", {
+                        n: availableLicenseCountText,
+                      })}
+                    </RouterLink>
+                    )
+                  </label>
+                  <div className="h-8.5 flex flex-row items-center mt-1">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={basicInfo.activation}
+                        disabled={
+                          !basicInfo.activation && availableLicenseCount === 0
+                        }
+                        onChange={(e) =>
+                          changeInstanceActivation(e.target.checked)
+                        }
+                      />
+                      <div className="w-9 h-5 bg-control-border peer-focus:outline-none rounded-full peer peer-checked:bg-accent transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-background after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+                    </label>
+                  </div>
+                </div>
+              )}
+
+            {/* Resource ID */}
+            <div className="sm:col-span-3 sm:col-start-1 -mt-4">
+              <ResourceIdField
+                suffix
+                value={resourceId}
+                resourceName={t("common.instance")}
+                resourceTitle={basicInfo.title}
+                readonly={!isCreating}
+                validate={validateInstanceId}
+                onChange={setResourceId}
+                onValidationChange={setResourceIdValidated}
+              />
+            </div>
+
+            {/* Environment */}
+            <FormField className="sm:col-span-2 sm:col-start-1">
+              <FormLabel htmlFor="environment">
+                {t("common.environment")}
+              </FormLabel>
+              <EnvironmentSelect
+                className="w-full max-w-[40rem]"
+                value={
+                  isValidEnvironmentName(
+                    `${environmentNamePrefix}${environment.id}`
+                  )
+                    ? `${environmentNamePrefix}${environment.id}`
+                    : ""
+                }
+                disabled={!allowEdit}
+                onChange={(value) =>
+                  handleSelectEnvironment(value || undefined)
+                }
+              />
+            </FormField>
+
+            {/* Labels */}
+            <FormField className="sm:col-span-3 sm:col-start-1">
+              <FormLabel htmlFor="labels">{t("common.labels")}</FormLabel>
+              <LabelListEditor
+                kvList={labelKVList}
+                onChange={setLabelKVList}
+                readonly={!allowEdit}
+                showErrors
+                onErrorsChange={ctx.setLabelErrors}
+              />
+            </FormField>
+
+            {/* External link (edit mode only) */}
+            {!isCreating && (
+              <FormField className="sm:col-span-3 sm:col-start-1">
+                <div className="inline-flex items-center">
+                  <FormLabel htmlFor="external-link">
+                    {basicInfo.engine === Engine.SNOWFLAKE
+                      ? t("instance.snowflake-web-console")
+                      : t("instance.external-link")}
+                  </FormLabel>
+                  {(basicInfo.externalLink ?? "").trim().length > 0 && (
+                    <button
+                      className="ml-1 btn-icon"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        window.open(
+                          urlfy(basicInfo.externalLink ?? ""),
+                          "_blank"
+                        );
+                      }}
+                    >
+                      <ExternalLink className="size-4" />
+                    </button>
+                  )}
+                </div>
+                {basicInfo.engine === Engine.SNOWFLAKE ? (
+                  <Input
+                    required
+                    className="w-full"
+                    disabled
+                    value={instanceLink}
+                  />
+                ) : (
+                  <>
+                    <p className="text-xs leading-4 text-control-light">
+                      {t("instance.sentence.console.snowflake")}
+                    </p>
+                    <Input
+                      value={basicInfo.externalLink ?? ""}
+                      required
+                      className="w-full"
+                      disabled={!allowEdit}
+                      placeholder={SnowflakeExtraLinkPlaceHolder}
+                      onChange={(e) =>
+                        updateBasicInfo({ externalLink: e.target.value })
+                      }
+                    />
+                  </>
+                )}
+              </FormField>
+            )}
+
+            {/* Scan Interval (edit mode only) */}
+            {!isCreating && instance && (
+              <ScanIntervalInput
+                scanInterval={basicInfo.syncInterval}
+                allowEdit={allowEdit}
+                onScanIntervalChange={changeScanInterval}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Connection Card */}
+        <div className="border border-block-border rounded-lg p-5">
+          <h3 className="text-base font-medium text-main">
+            {t("instance.section.connection")}
+          </h3>
+          {isSaaSMode && (
+            <Alert variant="info" className="mt-2">
+              <a
+                href="https://docs.bytebase.com/get-started/cloud#prerequisites"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="normal-link"
+              >
+                {t("instance.sentence.firewall-info")}
+              </a>
+            </Alert>
+          )}
+
+          <div className="mt-3 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
+            {/* Host input */}
+            <div className="sm:col-span-3 sm:col-start-1">
+              {basicInfo.engine === Engine.SPANNER ? (
+                <SpannerHostInput
+                  host={adminDataSource.host}
+                  onHostChange={(host) => updateAdminDS({ host })}
+                  allowEdit={allowEdit}
+                />
+              ) : basicInfo.engine === Engine.BIGQUERY ? (
+                <BigQueryHostInput
+                  host={adminDataSource.host}
+                  onHostChange={(host) => updateAdminDS({ host })}
+                  allowEdit={allowEdit}
+                />
+              ) : (
+                <>
+                  {basicInfo.engine === Engine.SNOWFLAKE ? (
+                    <>
+                      <div className="flex items-center gap-x-2">
+                        <FormLabel htmlFor="host">
+                          {t("instance.account-locator")}
+                          <span className="text-error"> *</span>
+                        </FormLabel>
+                        <LearnMoreLink
+                          href="https://docs.snowflake.com/en/user-guide/admin-account-identifier#using-an-account-locator-as-an-identifier"
+                          className="text-sm normal-link"
+                        />
+                      </div>
+                    </>
+                  ) : basicInfo.engine === Engine.COSMOSDB ? (
+                    <FormLabel htmlFor="host">
+                      {t("instance.endpoint")}
+                      <span className="text-error"> *</span>
+                    </FormLabel>
+                  ) : adminDataSource.authenticationType ===
+                    DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM ? (
+                    <>
+                      <FormLabel htmlFor="host">
+                        {t("instance.sentence.google-cloud-sql.instance-name")}
+                        <span className="text-error"> *</span>
+                      </FormLabel>
+                      <p className="text-xs leading-4 text-control-light">
+                        {t(
+                          "instance.sentence.google-cloud-sql.instance-name-tips",
+                          {
+                            instance: "{project-id}:{region}:{instance-name}",
+                          }
+                        )}
+                      </p>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-x-1">
+                      <FormLabel htmlFor="host">
+                        {t("instance.host-or-socket")}
+                        {basicInfo.engine !== Engine.DYNAMODB && (
+                          <span className="text-error"> *</span>
+                        )}
+                      </FormLabel>
+                      {onOpenInfoPanel && hasHostInfo && (
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-x-0.5 text-accent text-xs"
+                          onClick={() => openInfoPanel("host")}
+                        >
+                          <Info className="size-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <Input
+                    value={adminDataSource.host}
+                    required
+                    placeholder={
+                      basicInfo.engine === Engine.SNOWFLAKE
+                        ? t("instance.your-snowflake-account-locator")
+                        : t("instance.sentence.host.none-snowflake")
+                    }
+                    className="mt-1 w-full"
+                    disabled={!allowEdit}
+                    onChange={(e) => updateAdminDS({ host: e.target.value })}
+                  />
+                  {basicInfo.engine === Engine.SNOWFLAKE && (
+                    <p className="mt-2 text-xs leading-4 text-control-light">
+                      {t("instance.sentence.proxy.snowflake")}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Port input */}
+            {basicInfo.engine !== Engine.SPANNER &&
+              basicInfo.engine !== Engine.BIGQUERY &&
+              basicInfo.engine !== Engine.DATABRICKS &&
+              basicInfo.engine !== Engine.COSMOSDB &&
+              adminDataSource.authenticationType !==
+                DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM && (
+                <FormField className="sm:col-span-1">
+                  <FormLabel htmlFor="port">{t("instance.port")}</FormLabel>
+                  <Input
+                    value={adminDataSource.port}
+                    className="w-full"
+                    placeholder={defaultPort}
+                    disabled={!allowEdit || !allowEditPort}
+                    onChange={handlePortChange}
+                  />
+                </FormField>
+              )}
+
+            {/* MongoDB connection string schema */}
+            {basicInfo.engine === Engine.MONGODB && (
+              <FormField className="sm:col-span-4 sm:col-start-1">
+                <FormLabel htmlFor="connectionStringSchema">
+                  {t("data-source.connection-string-schema")}
+                </FormLabel>
+                <RadioGroup
+                  className="gap-x-4"
+                  value={currentMongoDBConnectionSchema}
+                  onValueChange={(value) =>
+                    handleMongodbConnectionStringSchemaChange(value as string)
+                  }
+                >
+                  {MongoDBConnectionStringSchemaList.map((type) => (
+                    <RadioGroupItem key={type} value={type}>
+                      {type}
+                    </RadioGroupItem>
+                  ))}
+                </RadioGroup>
+              </FormField>
+            )}
+
+            {/* Redis connection type */}
+            {basicInfo.engine === Engine.REDIS && (
+              <FormField className="sm:col-span-4 sm:col-start-1">
+                <FormLabel htmlFor="connectionStringSchema">
+                  {t("data-source.connection-type")}
+                </FormLabel>
+                <RadioGroup
+                  className="gap-x-4"
+                  value={currentRedisConnectionType}
+                  onValueChange={(value) =>
+                    handleRedisConnectionTypeChange(value as string)
+                  }
+                >
+                  {RedisConnectionType.map((type) => (
+                    <RadioGroupItem key={type} value={type}>
+                      {type}
+                    </RadioGroupItem>
+                  ))}
+                </RadioGroup>
+              </FormField>
+            )}
+
+            {/* Additional addresses */}
+            {showAdditionalAddresses && (
+              <FormField className="sm:col-span-4 sm:col-start-1">
+                <FormLabel htmlFor="additionalAddresses">
+                  {t("data-source.additional-node-addresses")}
+                </FormLabel>
+                <FormControlGroup className="mt-1">
+                  {adminDataSource.additionalAddresses.map((addr, index) => (
+                    <FormControlRow key={index} className="items-end">
+                      <FormField className="min-w-0 flex-1">
+                        {index === 0 && (
+                          <FormLabel
+                            htmlFor="additionalAddressesHost"
+                            className="font-normal!"
+                          >
+                            {t("instance.host-or-socket")}
+                          </FormLabel>
+                        )}
+                        <Input
+                          value={addr.host}
+                          required
+                          className="w-full"
+                          disabled={!allowEdit}
+                          onChange={(e) =>
+                            handleAdditionalAddressHostChange(
+                              index,
+                              e.target.value
+                            )
+                          }
+                        />
+                      </FormField>
+                      <FormField className="w-32 shrink-0">
+                        {index === 0 && (
+                          <FormLabel
+                            htmlFor="additionalAddressesPort"
+                            className="font-normal!"
+                          >
+                            {t("instance.port")}
+                          </FormLabel>
+                        )}
+                        <Input
+                          value={addr.port}
+                          className="w-full"
+                          placeholder={defaultPort}
+                          disabled={!allowEdit || !allowEditPort}
+                          onChange={(e) =>
+                            handleAdditionalAddressPortChange(
+                              index,
+                              e.target.value
+                            )
+                          }
+                        />
+                      </FormField>
+                      <button
+                        type="button"
+                        className="flex h-8.5 w-8.5 shrink-0 items-center justify-center text-control-light hover:text-error disabled:opacity-50"
+                        disabled={!allowEdit}
+                        onClick={() => removeDSAdditionalAddress(index)}
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </FormControlRow>
+                  ))}
+                  <div>
+                    <Button
+                      appearance="outline"
+                      size="sm"
+                      className="w-12!"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        addDSAdditionalAddress();
+                      }}
+                    >
+                      {t("common.add")}
+                    </Button>
+                  </div>
+                </FormControlGroup>
+              </FormField>
+            )}
+
+            {/* MongoDB replica set */}
+            {basicInfo.engine === Engine.MONGODB && !adminDataSource.srv && (
+              <FormField className="sm:col-span-2 sm:col-start-1">
+                <FormLabel htmlFor="replicaSet">
+                  {t("data-source.replica-set")}
+                </FormLabel>
+                <Input
+                  value={adminDataSource.replicaSet}
+                  required
+                  className="w-full"
+                  disabled={!allowEdit}
+                  onChange={(e) =>
+                    updateAdminDS({ replicaSet: e.target.value })
+                  }
+                />
+              </FormField>
+            )}
+
+            {/* MongoDB direct connection */}
+            {basicInfo.engine === Engine.MONGODB &&
+              !adminDataSource.srv &&
+              adminDataSource.additionalAddresses.length === 0 && (
+                <div className="sm:col-span-4 sm:col-start-1">
+                  <label className="flex items-center gap-x-2 cursor-pointer">
+                    <Checkbox
+                      checked={adminDataSource.directConnection}
+                      disabled={!allowEdit}
+                      onCheckedChange={(checked) =>
+                        updateAdminDS({
+                          directConnection: checked,
+                        })
+                      }
+                    />
+                    {t("data-source.direct-connection")}
+                  </label>
+                </div>
+              )}
+          </div>
+
+          {/* Credentials (auth method, username, password) */}
+          {basicInfo.engine !== Engine.DYNAMODB && (
+            <>
+              <DataSourceSection
+                hideOptions
+                onOpenInfoPanel={onOpenInfoPanel}
+              />
+
+              <div className="mt-6">
+                <SyncDatabases
+                  isCreating={isCreating}
+                  showLabel
+                  allowEdit={
+                    isCreating ? allowEdit && !!allowCreate : allowEdit
+                  }
+                  projectName={routeProjectName}
+                  syncDatabases={basicInfo.syncDatabases}
+                  onSyncDatabasesChange={handleChangeSyncDatabases}
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Connection Options Card */}
+        {basicInfo.engine !== Engine.DYNAMODB && editingDataSource && (
+          <div className="border border-block-border rounded-lg bg-background">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between gap-x-3 px-5 py-4 text-left transition-colors hover:bg-control-bg"
+              onClick={() => setIsConnectionOptionsCollapsed((prev) => !prev)}
+            >
+              <h3 className="text-base font-medium text-main">
+                {t("instance.connection-options")}
+              </h3>
+              <div className="shrink-0 text-control-light">
+                {!isConnectionOptionsCollapsed ? (
+                  <ChevronDown className="size-4" />
+                ) : (
+                  <ChevronRight className="size-4" />
+                )}
+              </div>
+            </button>
+            <div
+              className={cn(
+                "grid transition-[grid-template-rows] duration-200 ease-in-out",
+                !isConnectionOptionsCollapsed && "border-t border-block-border"
+              )}
+              style={{
+                gridTemplateRows: !isConnectionOptionsCollapsed ? "1fr" : "0fr",
+              }}
+              inert={isConnectionOptionsCollapsed ? true : undefined}
+            >
+              <div className="overflow-hidden">
+                <div className="px-5 py-4">
+                  <DataSourceForm
+                    dataSource={editingDataSource}
+                    optionsOnly
+                    onDataSourceChange={handleDataSourceChange}
+                    onOpenInfoPanel={onOpenInfoPanel}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Test Connection button (create only) */}
+        {isCreating && !!editingDataSource && (
+          <div className="flex flex-col items-start gap-y-2">
+            <Button
+              appearance="outline"
+              disabled={!allowTestConnection || state.isTestingConnection}
+              onClick={(e) => {
+                e.preventDefault();
+                testConnectionForCurrentEditingDS();
+              }}
+            >
+              {state.isTestingConnection
+                ? `${t("instance.test-connection")}...`
+                : t("instance.test-connection")}
+            </Button>
+            {testConnectionFailure && (
+              <ConnectionRecovery
+                category={testConnectionFailure.failureCategory}
+                className="max-w-3xl"
+              />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

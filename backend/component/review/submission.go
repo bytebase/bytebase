@@ -90,11 +90,17 @@ func (w *Workflow) CreateDraftIssue(ctx context.Context, input CreateDraftIssueI
 	}
 	issue.Title = plan.Name
 	issue.Description = plan.Description
-	if _, err := tx.ExecContext(ctx, `
-		SELECT 1 FROM project
+	var projectDeleted bool
+	if err := tx.QueryRowContext(ctx, `
+		SELECT deleted FROM project
 		WHERE workspace = $1 AND resource_id = $2
-		FOR UPDATE`, input.Workspace, issue.ProjectID); err != nil {
+		FOR UPDATE`, input.Workspace, issue.ProjectID).Scan(&projectDeleted); errors.Is(err, sql.ErrNoRows) {
+		return nil, workflowError(ErrorNotFound, "project %s not found", issue.ProjectID)
+	} else if err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to lock project for draft creation")
+	}
+	if projectDeleted {
+		return nil, workflowError(ErrorNotFound, "project %s not found", issue.ProjectID)
 	}
 	if err := tx.QueryRowContext(ctx, `
 		SELECT GREATEST(COALESCE(MAX(id), 0) + 1, 101)

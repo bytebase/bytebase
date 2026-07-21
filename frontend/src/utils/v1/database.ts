@@ -1,8 +1,8 @@
-import { getProjectByName } from "@/react/stores/app/projectAccess";
+import { getProjectByName } from "@/stores/app/projectAccess";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
-} from "@/store/modules/v1/common";
+} from "@/stores/modules/v1/common";
 import type { QueryPermission } from "@/types";
 import {
   isValidDatabaseName,

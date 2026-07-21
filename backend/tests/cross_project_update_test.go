@@ -83,7 +83,15 @@ func TestCollisionCreateRolloutIsolation(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
+	a.Greater(len(fixture.BaselineA.PlanCheckRuns), 0, "project A should have plan_check_runs")
 	fixture.completeRolloutB(ctx, t, ctl)
+	planCheckRunB, err := ctl.planServiceClient.GetPlanCheckRun(ctx,
+		connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
+			Name: fixture.PlanB.Name + "/planCheckRun",
+		}))
+	a.NoError(err)
+	a.True(strings.HasPrefix(planCheckRunB.Msg.Name, fixture.ProjectB.Name+"/"),
+		"GetPlanCheckRun for plan B returned %s from another project", planCheckRunB.Msg.Name)
 	aAfter := snapshotProject(ctx, t, ctl, fixture.ProjectA)
 	assertProjectUnchanged(t, fixture.BaselineA, aAfter, "project A after project B rollout")
 }

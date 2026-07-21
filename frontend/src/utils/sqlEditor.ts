@@ -48,6 +48,6 @@ export const isSameSQLEditorConnection = (
 };
 
 // `getConnectionForSQLEditorTab` / `isConnectedSQLEditorTab` and
-// `getValidDataSourceByPolicy` moved to `@/react/lib/*` so the database and
+// `getValidDataSourceByPolicy` moved to `@/lib/*` so the database and
 // policy lookups read the React app store directly without dragging
-// `@/react/stores/app` into the `@/utils` import graph (a static ESM cycle).
+// `@/stores/app` into the `@/utils` import graph (a static ESM cycle).

@@ -152,19 +152,29 @@ psql -U bbdev bbdev
 
 ### React
 
-The frontend is built entirely in React. **All UI code is React** — use the stack and component patterns below.
+The product frontend is built in React. **All product UI code is React** — use the stack and component patterns below. The only Vue runtime is the isolated `pev2` adapter under `frontend/src/apps/explain-visualizer/`.
+
+The canonical frontend ownership map is in `./frontend/AGENTS.md`. In summary:
+
+- `frontend/src/app/` owns bootstrap, layouts, and router infrastructure.
+- `frontend/src/routes/` owns route modules and route-local code.
+- `frontend/src/modules/` owns reusable application subsystems.
+- `frontend/src/components/ui/` owns shared UI primitives; `frontend/src/components/` contains other genuinely shared product components.
+- `frontend/src/stores/`, `frontend/src/api/`, `frontend/src/hooks/`, and `frontend/src/lib/` contain cross-route infrastructure. Existing `types/` and `utils/` are compatibility surfaces, not default homes for owner-specific code.
+- Do not introduce a generic feature bucket or recreate the migration-era framework namespace.
+- Historical frontend migration plans under `docs/superpowers/` preserve the paths that existed when they were written; use `frontend/AGENTS.md`, not those plans, for current placement decisions.
 
 **Stack**: React + [Base UI](https://base-ui.com/) (`@base-ui/react`) + Tailwind CSS v4 + shadcn-style component patterns
 
 **Component patterns**:
 - Build UI components in the shadcn style — `class-variance-authority` (cva) for variant props, `clsx`/`tailwind-merge` for class merging
-- Wrap Base UI primitives (Button, Tabs, Input, etc.) with styled variants in `./frontend/src/react/components/ui/`
+- Wrap Base UI primitives (Button, Tabs, Input, etc.) with styled variants in `./frontend/src/components/ui/`
 - Use `useTranslation()` from `react-i18next` for i18n
 - Use CSS custom properties (`--color-accent`, `--color-error`, `--color-control-border`, etc.) for theme tokens, defined in `./frontend/src/assets/css/tailwind.css`
 
 **Shared UI primitives**:
-- For React UI code, prefer shared components from `./frontend/src/react/components/ui/` over native HTML controls or ad hoc styled elements
-- Before adding or modifying an interactive UI element, first check whether a matching component already exists in `./frontend/src/react/components/ui/`
+- For React UI code, prefer shared components from `./frontend/src/components/ui/` over native HTML controls or ad hoc styled elements
+- Before adding or modifying an interactive UI element, first check whether a matching component already exists in `./frontend/src/components/ui/`
 - Use shared UI components for common controls such as buttons, inputs, selects, dialogs, dropdowns, tooltips, tabs, checkboxes, radios, switches, tables, and form controls when available
 - Do not hand-roll native controls with Tailwind classes when a shared component exists
 - Native HTML controls are allowed only when the shared component does not support the required browser behavior, accessibility behavior, or integration pattern
@@ -176,7 +186,7 @@ The frontend is built entirely in React. **All UI code is React** — use the st
 - Default border color is `currentcolor` (compat shim in `tailwind.css` preserves v3 behavior)
 
 **State & build**:
-- React app state lives under `./frontend/src/react/stores/` — the core slices are in `stores/app/`, consumed via the `useAppStore` hook. Routing helpers live in `./frontend/src/react/router/`
+- React app state lives under `./frontend/src/stores/` — the core slices are in `stores/app/`, consumed via the `useAppStore` hook. Routing helpers live in `./frontend/src/app/router/`
 - React `.tsx` is compiled by esbuild (`react-tsx-transform` Vite plugin) and type-checked with `tsc --build` via `pnpm --dir frontend type-check`
 
 ## Naming
@@ -191,8 +201,11 @@ Several tables use composite primary keys (e.g., `(project, id)`). Check
 multi-column PRIMARY KEY.
 
 When writing or modifying queries on these tables:
-- Every WHERE, JOIN, USING, DELETE, and UPDATE predicate must include ALL primary key
-  columns — never filter by `id` alone
+- Every WHERE, JOIN, USING, DELETE, and UPDATE predicate must include every
+  project/tenant scope column. Identify rows with either the full primary key or
+  a full declared non-partial UNIQUE key that contains the same scope columns;
+  verify alternate keys in `LATEST.sql`. Never filter by `id` or another locally
+  unique identifier alone
 - When adding a new store method touching a composite-PK table, add a corresponding
   `TestCollision_*` test in `backend/tests/`. The existing `setupCollidingProjects`
   fixture and `assertProjectUnchanged` helper cover `plan`, `issue`, `task`, `task_run`,
@@ -203,6 +216,23 @@ When writing or modifying queries on these tables:
   and `snapshotProject` / `assertProjectUnchanged` for assertions — all going through
   the public gRPC API, no store access. Run with:
   `go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m`
+
+## Transaction Lock Ordering
+
+Before adding or modifying a transaction that locks multiple rows or tables, follow the canonical [store row-lock ordering](backend/store/README.md#transaction-row-lock-ordering). Lock existing child rows before parents, lock batches in full primary-key order, and treat upserts as existing-row locks. Add the deterministic real-PostgreSQL regression tests required below for new multi-row or multi-table coordination paths.
+
+Row ordering prevents wait-for cycles on existing rows, but it cannot protect a
+child row that does not exist yet. `nextProjectID` closes that gap for its callers:
+it locks the project and requires the project to be active before allocating an ID,
+so creation is rejected when the project is missing or deleted. This is not a
+repository-wide purge fence because some writers bypass `nextProjectID`.
+
+Every new or modified writer of purge-managed data must define whether its
+lifecycle policy requires an active project or merely an existing project, then
+serialize and validate that policy against project deletion. Add deterministic
+real-PostgreSQL tests for both lock-acquisition directions. Assert the terminal
+outcomes, including that neither direction ends in a foreign-key failure; merely
+checking for the absence of SQLSTATE `40P01` is insufficient.
 
 ### Imports
 

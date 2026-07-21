@@ -1,9 +1,9 @@
 import { flatten, isUndefined } from "lodash-es";
-import { useAppStore } from "@/react/stores/app";
+import { useAppStore } from "@/stores/app";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
-} from "@/store/modules/v1/common";
+} from "@/stores/modules/v1/common";
 import type { DatabaseResource } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {

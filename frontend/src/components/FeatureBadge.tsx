@@ -1,0 +1,109 @@
+import { Lock, Sparkles } from "lucide-react";
+import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import { RouterLink } from "@/components/RouterLink";
+import { useSubscriptionState } from "@/hooks/useAppState";
+import { useAppStore } from "@/stores/app";
+import type {
+  Instance,
+  InstanceResource,
+} from "@/types/proto-es/v1/instance_service_pb";
+import {
+  PlanFeature,
+  PlanType,
+} from "@/types/proto-es/v1/subscription_service_pb";
+import { Tooltip } from "./ui/tooltip";
+
+interface FeatureBadgeProps {
+  readonly feature: PlanFeature;
+  readonly instance?: Instance | InstanceResource;
+  readonly clickable?: boolean;
+  readonly className?: string;
+  /**
+   * Rendered in place of the badge when the feature IS available (and the
+   * instance has its license). Lets callers express "show this content
+   * icon when granted; replace it with the paywall sparkles when gated"
+   * in a single component, instead of stacking both icons in a Button.
+   */
+  readonly fallback?: ReactNode;
+}
+
+const planLabel: Record<number, string> = {
+  [PlanType.FREE]: "free",
+  [PlanType.TEAM]: "team",
+  [PlanType.ENTERPRISE]: "enterprise",
+};
+
+/**
+ * FeatureBadge shows a sparkles icon with tooltip when the user's plan
+ * doesn't include the required feature, or a lock icon when the instance
+ * is missing a license assignment.
+ *
+ * Renders nothing if the feature is available.
+ */
+export function FeatureBadge({
+  feature,
+  instance,
+  clickable = true,
+  className,
+  fallback = null,
+}: FeatureBadgeProps) {
+  const { t } = useTranslation();
+  useSubscriptionState();
+
+  const hasFeature = useAppStore((state) =>
+    state.hasInstanceFeature(feature, instance)
+  );
+  const instanceMissingLicense = useAppStore((state) =>
+    state.instanceMissingLicense(feature, instance)
+  );
+  const minimumPlan = useAppStore((state) =>
+    state.getMinimumRequiredPlan(feature)
+  );
+
+  if (instanceMissingLicense) {
+    return (
+      <Tooltip
+        content={t(
+          "subscription.instance-assignment.missing-license-attention"
+        )}
+      >
+        <span className={className ?? "text-accent inline-flex"}>
+          <Lock className="w-5 h-5" />
+        </span>
+      </Tooltip>
+    );
+  }
+
+  if (hasFeature) {
+    return <>{fallback}</>;
+  }
+
+  const requiredPlanLabel = t(
+    `subscription.plan.${planLabel[minimumPlan] ?? "enterprise"}.title`
+  );
+  const tooltip = t("subscription.require-subscription", {
+    requiredPlan: requiredPlanLabel,
+  });
+
+  if (clickable) {
+    return (
+      <Tooltip content={tooltip}>
+        <RouterLink
+          to="/setting/subscription"
+          className={className ?? "text-accent inline-flex"}
+        >
+          <Sparkles className="w-5 h-5" />
+        </RouterLink>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <Tooltip content={tooltip}>
+      <span className={className ?? "text-accent inline-flex"}>
+        <Sparkles className="w-5 h-5" />
+      </span>
+    </Tooltip>
+  );
+}

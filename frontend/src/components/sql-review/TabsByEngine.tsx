@@ -1,0 +1,115 @@
+import { useEffect, useMemo, useState } from "react";
+import { EngineIcon } from "@/components/EngineIcon";
+import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
+import type { RuleTemplateV2 } from "@/types/sqlReview";
+import { engineNameV1, supportedEngineV1List } from "@/utils";
+
+interface TabsByEngineProps {
+  ruleMapByEngine: Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>;
+  children: (ruleList: RuleTemplateV2[], engine: Engine) => React.ReactNode;
+  lazyPanels?: boolean;
+  selectedEngine?: Engine;
+  onSelectedEngineChange?: (engine: Engine) => void;
+}
+
+export function TabsByEngine({
+  ruleMapByEngine,
+  children,
+  lazyPanels = false,
+  selectedEngine: controlledSelectedEngine,
+  onSelectedEngineChange,
+}: TabsByEngineProps) {
+  const [uncontrolledSelectedEngine, setUncontrolledSelectedEngine] =
+    useState<Engine>(Engine.ENGINE_UNSPECIFIED);
+  const selectedEngine = controlledSelectedEngine ?? uncontrolledSelectedEngine;
+
+  const setSelectedEngine = (engine: Engine) => {
+    if (controlledSelectedEngine === undefined) {
+      setUncontrolledSelectedEngine(engine);
+    }
+    onSelectedEngineChange?.(engine);
+  };
+
+  // Only reset to first engine on initial load or when the selected engine disappears
+  useEffect(() => {
+    if (
+      selectedEngine === Engine.ENGINE_UNSPECIFIED ||
+      !ruleMapByEngine.has(selectedEngine)
+    ) {
+      const firstEngine =
+        [...ruleMapByEngine.keys()][0] ?? Engine.ENGINE_UNSPECIFIED;
+      setSelectedEngine(firstEngine);
+    }
+  }, [ruleMapByEngine, selectedEngine]);
+
+  const sortedData = useMemo(() => {
+    const orderRank = new Map<Engine, number>();
+    supportedEngineV1List().forEach((engine, index) => {
+      orderRank.set(engine, index);
+    });
+
+    return [...ruleMapByEngine.entries()].sort(([e1], [e2]) => {
+      return (orderRank.get(e1) ?? 0) - (orderRank.get(e2) ?? 0);
+    });
+  }, [ruleMapByEngine]);
+
+  const RE_SUBTITLE = /\(.+?\)/;
+
+  const engineParts = (engine: Engine): { title: string; subtitle: string } => {
+    const name = engineNameV1(engine);
+    const match = name.match(RE_SUBTITLE);
+    if (!match) return { title: name, subtitle: "" };
+    return {
+      title: name.replace(match[0], "").trim(),
+      subtitle: match[0],
+    };
+  };
+
+  if (sortedData.length === 0) {
+    return null;
+  }
+
+  const effectiveSelectedEngine =
+    selectedEngine === Engine.ENGINE_UNSPECIFIED ||
+    !ruleMapByEngine.has(selectedEngine)
+      ? sortedData[0][0]
+      : selectedEngine;
+
+  return (
+    <Tabs
+      value={String(effectiveSelectedEngine)}
+      onValueChange={(val) => setSelectedEngine(Number(val) as Engine)}
+    >
+      <TabsList className="gap-x-4 overflow-x-scroll overflow-y-hidden border-b-0!">
+        {sortedData.map(([engine, ruleMap]) => (
+          <TabsTrigger key={engine} value={String(engine)}>
+            <div className="flex items-center gap-x-1">
+              <EngineIcon engine={engine} className="h-4 w-4" />
+              <span className="text-sm">{engineParts(engine).title}</span>
+              {engineParts(engine).subtitle && (
+                <span className="text-xs text-control-light">
+                  {engineParts(engine).subtitle}
+                </span>
+              )}
+              <span className="text-xs px-1 py-0.5 rounded-full bg-gray-200 text-gray-800 ml-1">
+                {ruleMap.size}
+              </span>
+            </div>
+          </TabsTrigger>
+        ))}
+      </TabsList>
+      {sortedData.map(([engine, ruleMap]) => {
+        if (lazyPanels && engine !== effectiveSelectedEngine) {
+          return null;
+        }
+        return (
+          <TabsPanel key={engine} value={String(engine)}>
+            {children([...ruleMap.values()], engine)}
+          </TabsPanel>
+        );
+      })}
+    </Tabs>
+  );
+}

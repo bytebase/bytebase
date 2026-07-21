@@ -46,10 +46,8 @@ export default defineConfig({
       name: "react-tsx-transform",
       enforce: "pre",
       async transform(code, id) {
-        // Both the main React tree (`src/react/...`) and the AI plugin's
-        // co-located React subtree (`src/plugins/ai/react/...`) compile
-        // with React's automatic JSX runtime.
-        if (!/\/(src\/react|src\/plugins\/ai\/react)\/.+\.tsx$/.test(id)) {
+        // All TSX under src uses React's automatic JSX runtime.
+        if (!/\/src\/.+\.tsx$/.test(id)) {
           return undefined;
         }
         const result = await esbuildTransform(code, {
@@ -78,7 +76,7 @@ export default defineConfig({
       : [
           CodeInspectorPlugin({
             bundler: "vite",
-            exclude: [/src\/react\//],
+            exclude: [/src\//],
           }),
         ]),
     // Export CSP hashes from @vitejs/plugin-legacy for backend to use

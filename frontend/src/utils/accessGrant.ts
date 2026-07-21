@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import i18n from "@/react/i18n";
+import i18n from "@/lib/i18n";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import {
   type AccessGrant,

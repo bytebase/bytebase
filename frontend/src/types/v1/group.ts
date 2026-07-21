@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
-import i18n from "@/react/i18n";
-import { extractGroupEmail } from "@/store/modules/v1/common";
+import i18n from "@/lib/i18n";
+import { extractGroupEmail } from "@/stores/modules/v1/common";
 import { type Group, GroupSchema } from "@/types/proto-es/v1/group_service_pb";
 import { UNKNOWN_ID } from "../const";
 
