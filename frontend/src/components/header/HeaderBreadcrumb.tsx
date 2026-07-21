@@ -6,6 +6,7 @@ import {
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
+import { PROJECT_V1_ROUTE_ISSUES } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -178,6 +179,8 @@ export function ProjectSegment() {
     : "";
   const currentProject = useProject(currentProjectName);
   const hasProject = isValidProjectName(currentProject?.name);
+  const { record } = useRecentVisit();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setOpen(false);
@@ -185,39 +188,60 @@ export function ProjectSegment() {
 
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          render={
-            <button
-              type="button"
-              className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control hover:bg-control-bg cursor-pointer"
-            />
-          }
-        >
-          <FolderKanban className="size-4 text-control-light shrink-0" />
-          {hasProject ? (
+      <div className="inline-flex items-center">
+        {hasProject && projectId ? (
+          <RouterLink
+            to={{
+              name: PROJECT_V1_ROUTE_ISSUES,
+              params: { projectId },
+            }}
+            onClick={() => {
+              const resolvedRoute = navigate.resolve({
+                name: PROJECT_V1_ROUTE_ISSUES,
+                params: { projectId },
+              });
+              record(resolvedRoute.fullPath);
+            }}
+            className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control hover:bg-control-bg cursor-pointer no-underline"
+          >
+            <FolderKanban className="size-4 text-control-light shrink-0" />
             <span className="truncate max-w-48">{currentProject.title}</span>
-          ) : (
+          </RouterLink>
+        ) : (
+          <div className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control">
+            <FolderKanban className="size-4 text-control-light shrink-0" />
             <span className="truncate max-w-48 text-control-placeholder">
               {t("project.select")}
             </span>
-          )}
-          <ChevronDown className="size-3.5 text-control-placeholder shrink-0" />
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          sideOffset={6}
-          className="w-[24rem] max-w-[calc(100vw-2rem)] p-0! py-3!"
-        >
-          <ProjectSwitchPanel
-            onClose={() => setOpen(false)}
-            onRequestCreate={() => {
-              setOpen(false);
-              setCreateOpen(true);
-            }}
-          />
-        </PopoverContent>
-      </Popover>
+          </div>
+        )}
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger
+            render={
+              <button
+                type="button"
+                aria-label={t("project.select")}
+                className="inline-flex items-center rounded-xs p-1 text-control-placeholder hover:bg-control-bg cursor-pointer"
+              />
+            }
+          >
+            <ChevronDown className="size-3.5" />
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            sideOffset={6}
+            className="w-[24rem] max-w-[calc(100vw-2rem)] p-0! py-3!"
+          >
+            <ProjectSwitchPanel
+              onClose={() => setOpen(false)}
+              onRequestCreate={() => {
+                setOpen(false);
+                setCreateOpen(true);
+              }}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
 
       <ProjectCreateDialog
         open={createOpen}
