@@ -185,8 +185,11 @@ vi.mock("@/components/HumanizeTs", () => ({
 }));
 
 vi.mock("@/components/ui/input", () => ({
-  Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <input data-testid="search-input" {...props} />
+  Input: ({
+    size,
+    ...props
+  }: React.InputHTMLAttributes<HTMLInputElement> & { size?: string }) => (
+    <input data-testid="search-input" data-size={size} {...props} />
   ),
 }));
 
@@ -195,12 +198,19 @@ vi.mock("@/components/ui/button", () => ({
     children,
     onClick,
     disabled,
+    size,
   }: {
     children: React.ReactNode;
     onClick?: () => void;
     disabled?: boolean;
+    size?: string;
   }) => (
-    <button type="button" disabled={disabled} onClick={onClick}>
+    <button
+      type="button"
+      data-size={size}
+      disabled={disabled}
+      onClick={onClick}
+    >
       {children}
     </button>
   ),
@@ -286,6 +296,19 @@ describe("SchemaPane shell", () => {
       container.querySelector("[data-testid='search-input']")
     ).not.toBeNull();
     expect(container.querySelector("button")).not.toBeNull();
+    unmount();
+  });
+
+  test("aligns search input and sync button control sizes", () => {
+    const { container, render, unmount } = renderInto(<SchemaPane />);
+    render();
+
+    const input = container.querySelector("[data-testid='search-input']");
+    const button = container.querySelector("button");
+    expect(input?.getAttribute("data-size")).toBe("sm");
+    expect(button?.getAttribute("data-size")).toBe("sm");
+    expect(input?.className).not.toContain("h-8");
+
     unmount();
   });
 

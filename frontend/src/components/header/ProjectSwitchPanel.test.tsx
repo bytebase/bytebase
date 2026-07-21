@@ -322,6 +322,36 @@ describe("ProjectSwitchPanel", () => {
     unmount();
   });
 
+  test("delegates project selection to a custom handler", () => {
+    const selectProject = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <ProjectSwitchPanel
+        onClose={mocks.close}
+        onRequestCreate={mocks.requestCreate}
+        onSelectProject={selectProject}
+      />
+    );
+
+    render();
+
+    const row = Array.from(container.querySelectorAll("tr")).find((tr) =>
+      tr.textContent?.includes("Recent Project")
+    );
+    act(() => {
+      row?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(selectProject).toHaveBeenCalledWith(
+      recentProject,
+      expect.objectContaining({ type: "click" })
+    );
+    expect(mocks.resolve).not.toHaveBeenCalled();
+    expect(mocks.record).not.toHaveBeenCalled();
+    expect(mocks.push).not.toHaveBeenCalled();
+    expect(mocks.close).toHaveBeenCalled();
+    unmount();
+  });
+
   test("keeps project lists constrained to vertical scrolling", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ProjectSwitchPanel

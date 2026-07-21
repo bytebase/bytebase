@@ -299,6 +299,16 @@ describe("TabList", () => {
     unmount();
   });
 
+  test("does not render the profile dropdown in the tab list", () => {
+    setup([makeTab("a")]);
+    const { container, render, unmount } = renderIntoContainer(<TabList />);
+    render();
+    expect(
+      container.querySelector("[data-testid='header-profile-menu']")
+    ).toBeNull();
+    unmount();
+  });
+
   test("subscribes to close-tab bus event on mount", () => {
     setup([makeTab("a")]);
     const { render, unmount } = renderIntoContainer(<TabList />);

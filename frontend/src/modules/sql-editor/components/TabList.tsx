@@ -20,7 +20,6 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { HeaderProfileMenuMount } from "@/components/HeaderProfileMenuMount";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -316,10 +315,6 @@ export function TabList() {
           </SortableContext>
         </DndContext>
       </div>
-
-      {/* Profile menu (avatar + workspace branding) sits to the right of
-          the tab scroll area, matching the Vue TabList layout. */}
-      <HeaderProfileMenuMount size="small" />
 
       <TabContextMenu ref={contextMenuRef} />
 

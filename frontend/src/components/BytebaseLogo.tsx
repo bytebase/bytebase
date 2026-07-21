@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "@/app/router";
 import logoFull from "@/assets/logo-full.svg";
+import logoFullDark from "@/assets/logo-full-dark.svg";
 import { RouterLink } from "@/components/RouterLink";
 import { useRecentVisit, useWorkspace } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
@@ -9,6 +10,7 @@ type Props = {
   /** Optional route name — when set, the logo is wrapped in a link that records the visit. */
   readonly redirect?: string;
   readonly className?: string;
+  readonly builtinTheme?: "light" | "dark";
 };
 
 /**
@@ -16,12 +18,17 @@ type Props = {
  * custom logo when set, otherwise the bundled Bytebase fallback SVG.
  *
  */
-export function BytebaseLogo({ className, redirect }: Props) {
+export function BytebaseLogo({
+  builtinTheme = "light",
+  className,
+  redirect,
+}: Props) {
   const { t } = useTranslation();
   const workspace = useWorkspace();
   const { record } = useRecentVisit();
   const navigate = useNavigate();
   const customLogo = workspace?.logo ?? "";
+  const builtinLogo = builtinTheme === "dark" ? logoFullDark : logoFull;
 
   const content = (
     <span className="h-full w-full select-none flex flex-row justify-center items-center">
@@ -33,7 +40,7 @@ export function BytebaseLogo({ className, redirect }: Props) {
         />
       ) : (
         <img
-          src={logoFull}
+          src={builtinLogo}
           alt="Bytebase"
           className="h-8 md:h-10 w-auto object-contain"
         />

@@ -31,7 +31,16 @@ import {
 import { cn } from "@/lib/utils";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { ProjectCreateDialog } from "./ProjectCreateDialog";
-import { ProjectSwitchPanel } from "./ProjectSwitchPanel";
+import {
+  ProjectSwitchPanel,
+  type ProjectSwitchPanelProps,
+} from "./ProjectSwitchPanel";
+
+export type HeaderBreadcrumbProps = {
+  projectId?: string;
+  currentProjectName?: string;
+  onSelectProject?: ProjectSwitchPanelProps["onSelectProject"];
+};
 
 function planLabel(
   t: (key: string) => string,
@@ -169,15 +178,23 @@ export function WorkspaceSegment() {
 // ---------------------------------------------------------------------------
 // ProjectSegment — shows project name + dropdown, only when inside a project
 // ---------------------------------------------------------------------------
-export function ProjectSegment() {
+export function ProjectSegment({
+  projectId: projectIdOverride,
+  currentProjectName: currentProjectNameOverride,
+  onSelectProject,
+}: Pick<
+  HeaderBreadcrumbProps,
+  "projectId" | "currentProjectName" | "onSelectProject"
+> = {}) {
   const { t } = useTranslation();
   const route = useCurrentRoute();
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const projectId = route.params.projectId as string | undefined;
-  const currentProjectName = projectId
-    ? `${projectNamePrefix}${projectId}`
-    : "";
+  const projectId =
+    projectIdOverride ?? (route.params.projectId as string | undefined);
+  const currentProjectName =
+    currentProjectNameOverride ??
+    (projectId ? `${projectNamePrefix}${projectId}` : "");
   const currentProject = useProject(currentProjectName);
   const hasProject = isValidProjectName(currentProject?.name);
   const { record } = useRecentVisit();
@@ -236,6 +253,8 @@ export function ProjectSegment() {
             className="w-[24rem] max-w-[calc(100vw-2rem)] p-0! py-3!"
           >
             <ProjectSwitchPanel
+              currentProjectName={currentProjectName}
+              onSelectProject={onSelectProject}
               onClose={() => setOpen(false)}
               onRequestCreate={() => {
                 setOpen(false);
@@ -257,14 +276,22 @@ export function ProjectSegment() {
 // ---------------------------------------------------------------------------
 // HeaderBreadcrumb — the assembled breadcrumb bar
 // ---------------------------------------------------------------------------
-export function HeaderBreadcrumb() {
+export function HeaderBreadcrumb({
+  projectId,
+  currentProjectName,
+  onSelectProject,
+}: HeaderBreadcrumbProps = {}) {
   return (
     <div className="flex items-center gap-x-1">
       <div className="hidden md:flex items-center gap-x-1">
         <WorkspaceSegment />
         <span className="text-control-placeholder select-none">/</span>
       </div>
-      <ProjectSegment />
+      <ProjectSegment
+        projectId={projectId}
+        currentProjectName={currentProjectName}
+        onSelectProject={onSelectProject}
+      />
     </div>
   );
 }

@@ -47,6 +47,10 @@ vi.mock("@/assets/logo-full.svg", () => ({
   default: "/assets/logo-full.svg",
 }));
 
+vi.mock("@/assets/logo-full-dark.svg", () => ({
+  default: "/assets/logo-full-dark.svg",
+}));
+
 let BytebaseLogo: typeof import("./BytebaseLogo").BytebaseLogo;
 
 const renderIntoContainer = (element: ReactElement) => {
@@ -94,6 +98,19 @@ describe("BytebaseLogo", () => {
     const img = container.querySelector("img");
     expect(img).not.toBeNull();
     expect(img?.getAttribute("src")).toBe("/assets/logo-full.svg");
+    expect(img?.getAttribute("alt")).toBe("Bytebase");
+    unmount();
+  });
+
+  test("renders dark fallback Bytebase SVG when requested", () => {
+    mocks.workspaceLogo = "";
+    const { container, render, unmount } = renderIntoContainer(
+      <BytebaseLogo builtinTheme="dark" />
+    );
+    render();
+    const img = container.querySelector("img");
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute("src")).toBe("/assets/logo-full-dark.svg");
     expect(img?.getAttribute("alt")).toBe("Bytebase");
     unmount();
   });
