@@ -330,6 +330,7 @@ export function IssueListPanel({
   issues,
   selectedNames,
   onToggleSelection,
+  onOpenIssue,
   showProject,
 }: {
   params: SearchParams;
@@ -338,6 +339,7 @@ export function IssueListPanel({
   issues: Issue[];
   selectedNames: Set<string>;
   onToggleSelection: (name: string) => void;
+  onOpenIssue?: () => void;
   showProject?: boolean;
 }) {
   const { t } = useTranslation();
@@ -360,6 +362,7 @@ export function IssueListPanel({
             issue={issue}
             selected={selectedNames.has(issue.name)}
             onToggleSelection={onToggleSelection}
+            onOpenIssue={onOpenIssue}
             highlightText={params.query}
             showProject={showProject}
           />
@@ -621,6 +624,7 @@ export const IssueListItem = memo(function IssueListItem({
   issue,
   selected,
   onToggleSelection,
+  onOpenIssue,
   highlightText = "",
   showProject = false,
 }: {
@@ -628,6 +632,7 @@ export const IssueListItem = memo(function IssueListItem({
   selected: boolean;
   /** Called with the issue's name; pass a stable callback from the parent. */
   onToggleSelection: (name: string) => void;
+  onOpenIssue?: () => void;
   highlightText?: string;
   showProject?: boolean;
 }) {
@@ -656,10 +661,26 @@ export const IssueListItem = memo(function IssueListItem({
       if (e.ctrlKey || e.metaKey) {
         window.open(issueUrl, "_blank");
       } else {
+        onOpenIssue?.();
         router.push(issueUrl);
       }
     },
-    [issueUrl]
+    [issueUrl, onOpenIssue]
+  );
+  const onTitleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.shiftKey &&
+        !e.altKey &&
+        e.button === 0
+      ) {
+        onOpenIssue?.();
+      }
+    },
+    [onOpenIssue]
   );
 
   // Labels
@@ -688,6 +709,8 @@ export const IssueListItem = memo(function IssueListItem({
   return (
     <div
       data-slot="issue-list-item"
+      data-testid="issue-list-item"
+      data-scroll-restoration-anchor={issue.name}
       className="flex items-start gap-x-2 px-4 py-3 cursor-pointer border-b border-block-border transition-colors last:border-b-0 hover:bg-control-bg/60"
       onClick={onRowClick}
     >
@@ -715,7 +738,7 @@ export const IssueListItem = memo(function IssueListItem({
               <RouterLink
                 to={issueUrl}
                 className="font-medium text-main text-base hover:underline min-w-0 block"
-                onClick={(e) => e.stopPropagation()}
+                onClick={onTitleClick}
               >
                 <EllipsisText text={issue.title}>
                   <HighlightLabelText
@@ -728,7 +751,7 @@ export const IssueListItem = memo(function IssueListItem({
               <RouterLink
                 to={issueUrl}
                 className="font-medium text-base truncate hover:underline italic text-control-placeholder"
-                onClick={(e) => e.stopPropagation()}
+                onClick={onTitleClick}
               >
                 {t("common.untitled")}
               </RouterLink>

@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { cn } from "@/react/lib/utils";
+import { MAIN_SCROLL_RESTORATION_ID } from "@/react/router/NavigationScrollRestoration";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getRolloutStatus } from "@/utils";
@@ -71,14 +72,18 @@ function ProjectPlanDetailPageInner({
   const [pageHost, setPageHost] = useState<HTMLDivElement | null>(null);
   // The sticky title row only shows its bottom border once content scrolls
   // under it (GitHub issue-header pattern) — flat at the top, separated when
-  // stuck. pageHost is the scroll container.
+  // stuck. The dashboard main pane owns vertical scrolling.
   const [headerStuck, setHeaderStuck] = useState(false);
   useEffect(() => {
     if (!pageHost) return;
-    const onScroll = () => setHeaderStuck(pageHost.scrollTop > 0);
+    const scrollHost = pageHost.closest<HTMLElement>(
+      `[data-scroll-restoration-id="${MAIN_SCROLL_RESTORATION_ID}"]`
+    );
+    if (!scrollHost) return;
+    const onScroll = () => setHeaderStuck(scrollHost.scrollTop > 0);
     onScroll();
-    pageHost.addEventListener("scroll", onScroll, { passive: true });
-    return () => pageHost.removeEventListener("scroll", onScroll);
+    scrollHost.addEventListener("scroll", onScroll, { passive: true });
+    return () => scrollHost.removeEventListener("scroll", onScroll);
   }, [pageHost]);
   const [selectedSpecId, setSelectedSpecId] = useState(specId ?? "");
   const page = usePlanDetailPage({
@@ -239,7 +244,8 @@ function ProjectPlanDetailPageInner({
     <PlanDetailProvider value={page}>
       <div
         ref={setPageHost}
-        className="relative h-full overflow-x-hidden bg-gray-50"
+        data-testid="plan-detail-page"
+        className="relative min-h-full overflow-x-clip bg-gray-50"
       >
         <div
           className={cn(
@@ -248,10 +254,10 @@ function ProjectPlanDetailPageInner({
           )}
         >
           {/* Only the title/action row is sticky (GitHub issue-header pattern);
-              the description + metadata below scroll away beneath it. pageHost
-              (overflow-x-hidden → overflow-y auto) is the scroll container, so
-              top-0 pins to it; z-20 keeps it above the phase rail nodes (z-10).
-              The border appears only when stuck, so the row is flat at the top. */}
+              the description + metadata below scroll away beneath it. The
+              dashboard main pane is the scroll container, so top-0 pins to it;
+              z-20 keeps it above the phase rail nodes (z-10). The border appears
+              only when stuck, so the row is flat at the top. */}
           <header
             className={cn(
               "sticky top-0 z-20 shrink-0 bg-white",

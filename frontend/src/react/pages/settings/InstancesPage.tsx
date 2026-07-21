@@ -703,6 +703,7 @@ export function InstancesPage() {
     dataList: instances,
     hasMore,
     isFetchingMore,
+    isLoading: loading,
     loadMore,
   });
 

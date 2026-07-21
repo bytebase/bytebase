@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router";
 import type { SearchParams } from "@/react/components/AdvancedSearch";
 import {
   BatchActionBar,
@@ -16,7 +17,11 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useURLSearchParam } from "@/react/hooks/useURLSearchParam";
 import { refreshIssueList } from "@/react/lib/issue/issueListRefresh";
-import { useScrollRestorationLoadMore } from "@/react/router/NavigationScrollRestoration";
+import {
+  markScrollRestorationEntry,
+  useScrollRestorationKey,
+  useScrollRestorationLoadMore,
+} from "@/react/router/NavigationScrollRestoration";
 import { useAppStore } from "@/react/stores/app";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
@@ -33,6 +38,8 @@ const serializeSearchParams = (params: SearchParams): string =>
   buildSearchTextBySearchParams(params);
 
 export function MyIssuesPage() {
+  const location = useLocation();
+  const scrollRestorationKey = useScrollRestorationKey();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -63,6 +70,15 @@ export function MyIssuesPage() {
     param: "order",
     defaultValue: "",
   });
+  const viewCacheKey = useMemo(
+    () =>
+      JSON.stringify([
+        "my-issues",
+        serializeSearchParams(searchParams),
+        orderBy,
+      ]),
+    [orderBy, searchParams]
+  );
 
   // Issue filter
   const issueFilter = useMemo(() => {
@@ -87,6 +103,8 @@ export function MyIssuesPage() {
 
   const paged = usePagedData<Issue>({
     sessionKey: "bb.issue-table.my-issues",
+    cacheKey: viewCacheKey,
+    cacheRestoreToken: scrollRestorationKey,
     fetchList: fetchIssueList,
   });
   useScrollRestorationLoadMore(paged);
@@ -128,6 +146,10 @@ export function MyIssuesPage() {
       return next;
     });
   }, []);
+  const handleOpenIssue = useCallback(
+    () => markScrollRestorationEntry(location),
+    [location]
+  );
 
   const toggleSelectAll = useCallback(() => {
     setSelectedNames((prev) => {
@@ -169,6 +191,7 @@ export function MyIssuesPage() {
           issues={paged.dataList}
           selectedNames={selectedNames}
           onToggleSelection={toggleSelection}
+          onOpenIssue={handleOpenIssue}
           showProject
         />
         {paged.dataList.length > 0 && (

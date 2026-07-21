@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router";
 import type { SearchParams } from "@/react/components/AdvancedSearch";
 import {
   BatchActionBar,
@@ -18,7 +19,11 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useURLSearchParam } from "@/react/hooks/useURLSearchParam";
 import { refreshIssueList } from "@/react/lib/issue/issueListRefresh";
-import { useScrollRestorationLoadMore } from "@/react/router/NavigationScrollRestoration";
+import {
+  markScrollRestorationEntry,
+  useScrollRestorationKey,
+  useScrollRestorationLoadMore,
+} from "@/react/router/NavigationScrollRestoration";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
@@ -31,6 +36,7 @@ import {
   mergeSearchParams,
   type SearchScope as VueSearchScope,
 } from "@/utils";
+import { projectIssuesPagedDataCacheScope } from "./pagedDataCacheScope";
 
 const serializeSearchParams = (params: SearchParams): string =>
   buildSearchTextBySearchParams({
@@ -44,6 +50,8 @@ export function ProjectIssueDashboardPage({
   projectId: string;
 }) {
   const { t } = useTranslation();
+  const location = useLocation();
+  const scrollRestorationKey = useScrollRestorationKey();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -97,6 +105,16 @@ export function ProjectIssueDashboardPage({
     param: "order",
     defaultValue: "",
   });
+  const viewCacheKey = useMemo(
+    () =>
+      JSON.stringify([
+        "project-issues",
+        projectName,
+        serializeSearchParams(searchParams),
+        orderBy,
+      ]),
+    [orderBy, projectName, searchParams]
+  );
 
   // Issue filter
   const issueFilter = useMemo(() => {
@@ -121,6 +139,9 @@ export function ProjectIssueDashboardPage({
 
   const paged = usePagedData<Issue>({
     sessionKey: "bb.issue-table.project-issues",
+    cacheKey: viewCacheKey,
+    cacheScope: projectIssuesPagedDataCacheScope(projectId),
+    cacheRestoreToken: scrollRestorationKey,
     fetchList: fetchIssueList,
   });
   useScrollRestorationLoadMore(paged);
@@ -162,6 +183,10 @@ export function ProjectIssueDashboardPage({
       return next;
     });
   }, []);
+  const handleOpenIssue = useCallback(
+    () => markScrollRestorationEntry(location),
+    [location]
+  );
 
   const toggleSelectAll = useCallback(() => {
     setSelectedNames((prev) => {
@@ -206,6 +231,7 @@ export function ProjectIssueDashboardPage({
           issues={paged.dataList}
           selectedNames={selectedNames}
           onToggleSelection={toggleSelection}
+          onOpenIssue={handleOpenIssue}
         />
         {paged.dataList.length > 0 && (
           <ProjectPageFooter className="px-2">

@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useReducer, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -12,6 +19,12 @@ import {
   getPageSizeOptions,
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
+import {
+  deletePagedDataCache,
+  type PagedDataCacheSnapshot,
+  readPagedDataCache,
+  writePagedDataCache,
+} from "./pagedDataCache";
 
 // ============================================================
 // usePagedData hook
@@ -34,29 +47,41 @@ export type PagedDataResult<T> = {
 type FetchMode = "refresh" | "append";
 
 type PagedDataState<T> = {
+  cacheKey?: string;
+  cacheWriteState: "clean" | "dirty";
   dataList: T[];
   status: "idle" | "loading" | "ready" | "loadingMore";
   hasMore: boolean;
 };
 
 type PagedDataAction<T> =
-  | { type: "fetch-start"; mode: FetchMode }
+  | {
+      type: "restore-cache";
+      cacheKey?: string;
+      snapshot?: PagedDataCacheSnapshot<T>;
+    }
+  | { type: "fetch-start"; mode: FetchMode; cacheKey?: string }
   | {
       type: "fetch-success";
       mode: FetchMode;
+      cacheKey?: string;
       list: T[];
       hasMore: boolean;
     }
   | { type: "fetch-error" }
   | { type: "update-cache"; items: T[] }
-  | { type: "remove-cache"; item: T };
+  | { type: "remove-cache"; item: T }
+  | { type: "cache-persisted"; cacheKey?: string };
 
-const initialPagedDataState = <
-  T extends { name: string },
->(): PagedDataState<T> => ({
-  dataList: [],
-  status: "idle",
-  hasMore: false,
+const stateFromSnapshot = <T extends { name: string }>(
+  cacheKey: string | undefined,
+  snapshot?: PagedDataCacheSnapshot<T>
+): PagedDataState<T> => ({
+  cacheKey,
+  cacheWriteState: "clean",
+  dataList: snapshot?.dataList ?? [],
+  status: snapshot ? "ready" : "idle",
+  hasMore: snapshot?.hasMore ?? false,
 });
 
 const pagedDataReducer = <T extends { name: string }>(
@@ -64,13 +89,18 @@ const pagedDataReducer = <T extends { name: string }>(
   action: PagedDataAction<T>
 ): PagedDataState<T> => {
   switch (action.type) {
+    case "restore-cache":
+      return stateFromSnapshot(action.cacheKey, action.snapshot);
     case "fetch-start":
       return {
         ...state,
+        cacheKey: action.cacheKey,
         status: action.mode === "refresh" ? "loading" : "loadingMore",
       };
     case "fetch-success":
       return {
+        cacheKey: action.cacheKey,
+        cacheWriteState: "dirty",
         dataList:
           action.mode === "refresh"
             ? action.list
@@ -81,6 +111,7 @@ const pagedDataReducer = <T extends { name: string }>(
     case "fetch-error":
       return {
         ...state,
+        cacheWriteState: "clean",
         status: "ready",
       };
     case "update-cache": {
@@ -95,25 +126,37 @@ const pagedDataReducer = <T extends { name: string }>(
       }
       return {
         ...state,
+        cacheWriteState: "dirty",
         dataList,
       };
     }
     case "remove-cache":
       return {
         ...state,
+        cacheWriteState: "dirty",
         dataList: state.dataList.filter(
           (data) => data.name !== action.item.name
         ),
       };
+    case "cache-persisted":
+      return action.cacheKey === state.cacheKey
+        ? { ...state, cacheWriteState: "clean" }
+        : state;
   }
 };
 
 export function usePagedData<T extends { name: string }>({
   sessionKey,
+  cacheKey,
+  cacheScope,
+  cacheRestoreToken,
   fetchList,
   enabled = true,
 }: {
   sessionKey: string;
+  cacheKey?: string;
+  cacheScope?: string;
+  cacheRestoreToken?: string;
   fetchList: (params: {
     pageSize: number;
     pageToken: string;
@@ -123,15 +166,32 @@ export function usePagedData<T extends { name: string }>({
   const [pageSize, setPageSize] = useSessionPageSize(sessionKey);
   const pageSizeOptions = getPageSizeOptions();
 
+  const resolvedCacheKey = cacheKey
+    ? `${cacheKey}:page-size=${pageSize}`
+    : undefined;
+  const [initialCache] = useState(() => {
+    const snapshot = cacheRestoreToken
+      ? readPagedDataCache<T>(resolvedCacheKey)
+      : undefined;
+    return {
+      key: resolvedCacheKey,
+      cacheRestoreToken,
+      snapshot,
+    };
+  });
   const [state, dispatch] = useReducer(
     pagedDataReducer<T>,
-    undefined,
-    initialPagedDataState<T>
+    initialCache,
+    ({ key, snapshot }) => stateFromSnapshot(key, snapshot)
   );
 
   const abortRef = useRef<AbortController | null>(null);
   const fetchIdRef = useRef(0);
-  const nextPageTokenRef = useRef("");
+  const nextPageTokenRef = useRef(initialCache.snapshot?.nextPageToken ?? "");
+  const activeCacheKeyRef = useRef(initialCache.key);
+  const activeCacheRestoreTokenRef = useRef(initialCache.cacheRestoreToken);
+  const consumedCacheRestoreTokenRef = useRef(initialCache.cacheRestoreToken);
+  const skipNextFetchRef = useRef(Boolean(initialCache.snapshot));
 
   const doFetch = useCallback(
     async (isRefresh: boolean) => {
@@ -141,7 +201,8 @@ export function usePagedData<T extends { name: string }>({
       abortRef.current = controller;
 
       const mode: FetchMode = isRefresh ? "refresh" : "append";
-      dispatch({ type: "fetch-start", mode });
+      const activeCacheKey = activeCacheKeyRef.current;
+      dispatch({ type: "fetch-start", mode, cacheKey: activeCacheKey });
 
       try {
         const token = isRefresh ? "" : nextPageTokenRef.current;
@@ -152,6 +213,7 @@ export function usePagedData<T extends { name: string }>({
         dispatch({
           type: "fetch-success",
           mode,
+          cacheKey: activeCacheKey,
           list: result.list,
           hasMore: Boolean(result.nextPageToken),
         });
@@ -173,6 +235,7 @@ export function usePagedData<T extends { name: string }>({
   }, [doFetch, state.hasMore, state.status]);
 
   const refresh = useCallback(() => {
+    deletePagedDataCache(activeCacheKeyRef.current);
     doFetch(true);
   }, [doFetch]);
 
@@ -184,10 +247,67 @@ export function usePagedData<T extends { name: string }>({
     dispatch({ type: "remove-cache", item });
   }, []);
 
+  useLayoutEffect(() => {
+    if (
+      activeCacheKeyRef.current === resolvedCacheKey &&
+      activeCacheRestoreTokenRef.current === cacheRestoreToken
+    ) {
+      return;
+    }
+    fetchIdRef.current++;
+    abortRef.current?.abort();
+    activeCacheKeyRef.current = resolvedCacheKey;
+    activeCacheRestoreTokenRef.current = cacheRestoreToken;
+
+    const shouldRestore =
+      cacheRestoreToken !== undefined &&
+      consumedCacheRestoreTokenRef.current !== cacheRestoreToken;
+    consumedCacheRestoreTokenRef.current = cacheRestoreToken;
+    const snapshot = shouldRestore
+      ? readPagedDataCache<T>(resolvedCacheKey)
+      : undefined;
+    nextPageTokenRef.current = snapshot?.nextPageToken ?? "";
+    skipNextFetchRef.current = Boolean(snapshot);
+    dispatch({
+      type: "restore-cache",
+      cacheKey: resolvedCacheKey,
+      snapshot,
+    });
+  }, [cacheRestoreToken, resolvedCacheKey]);
+
+  useEffect(() => {
+    if (
+      !state.cacheKey ||
+      state.cacheWriteState !== "dirty" ||
+      state.status !== "ready" ||
+      state.cacheKey !== resolvedCacheKey
+    ) {
+      return;
+    }
+    writePagedDataCache(
+      state.cacheKey,
+      {
+        dataList: state.dataList,
+        hasMore: state.hasMore,
+        nextPageToken: nextPageTokenRef.current,
+      },
+      cacheScope
+    );
+    dispatch({ type: "cache-persisted", cacheKey: state.cacheKey });
+  }, [cacheScope, resolvedCacheKey, state]);
+
   // Fetch on mount and when fetchList/pageSize changes (handles search text reactivity)
   const isFirstLoad = useRef(true);
   useEffect(() => {
     if (!enabled) return;
+    if (skipNextFetchRef.current) {
+      isFirstLoad.current = false;
+      // Keep the guard through React Strict Mode's immediate effect replay.
+      const timer = window.setTimeout(() => {
+        skipNextFetchRef.current = false;
+      });
+      return () => window.clearTimeout(timer);
+    }
     if (isFirstLoad.current) {
       isFirstLoad.current = false;
       doFetch(true);
@@ -195,10 +315,14 @@ export function usePagedData<T extends { name: string }>({
     }
     fetchIdRef.current++;
     abortRef.current?.abort();
-    dispatch({ type: "fetch-start", mode: "refresh" });
+    dispatch({
+      type: "fetch-start",
+      mode: "refresh",
+      cacheKey: activeCacheKeyRef.current,
+    });
     const timer = setTimeout(() => doFetch(true), 300);
     return () => clearTimeout(timer);
-  }, [doFetch, enabled]);
+  }, [cacheRestoreToken, doFetch, enabled, resolvedCacheKey]);
 
   useEffect(() => {
     return () => {
