@@ -171,7 +171,7 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 	defer tx.Rollback()
 
 	if create.PlanUID != nil {
-		if err := acquirePlanIssueRolloutAdvisoryLock(ctx, tx, create.ProjectID, *create.PlanUID); err != nil {
+		if err := AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, create.ProjectID, *create.PlanUID); err != nil {
 			return nil, errors.Wrap(err, "failed to acquire plan issue-rollout lock")
 		}
 

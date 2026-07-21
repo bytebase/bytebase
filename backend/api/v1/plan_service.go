@@ -296,7 +296,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied to update plan"))
 	}
 
-	planUpdate := &store.UpdatePlanMessage{}
+	var title *string
+	var description *string
+	var deleted *bool
 	var specs []*storepb.PlanConfig_Spec
 
 	var planCheckRunsTrigger bool
@@ -309,11 +311,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			if project.Setting.EnforceIssueTitle && trimmed == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q requires a manual plan title (enforce_issue_title is enabled)", common.FormatProject(project.ResourceID)))
 			}
-			planUpdate.Name = &trimmed
+			title = &trimmed
 		case "description":
-			planUpdate.Description = new(req.Plan.Description)
+			description = new(req.Plan.Description)
 		case "state":
-			planUpdate.Deleted = new(req.Plan.State == v1pb.State_DELETED)
+			deleted = new(req.Plan.State == v1pb.State_DELETED)
 		case "specs":
 			if oldPlan.Config != nil && oldPlan.Config.GetHasRollout() {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot update specs for plan that has a rollout"))
@@ -345,9 +347,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		Workspace:   common.GetWorkspaceIDFromContext(ctx),
 		PlanUID:     oldPlan.UID,
 		ProjectID:   oldPlan.ProjectID,
-		Title:       planUpdate.Name,
-		Description: planUpdate.Description,
-		Deleted:     planUpdate.Deleted,
+		Title:       title,
+		Description: description,
+		Deleted:     deleted,
 		Specs:       specsUpdate,
 	})
 	if err != nil {

@@ -66,12 +66,7 @@ func TestUpdatePlanCheckRunIfApprovalInputVersionSkipsStaleWorkerOnRefreshedRow(
 	require.Len(t, claimed, 1)
 	require.EqualValues(t, 1, claimed[0].ApprovalInputVersion)
 
-	_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:       plan.UID,
-		ProjectID: plan.ProjectID,
-		Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
-	})
-	require.NoError(t, err)
+	setPlanApprovalInputVersionTwo(ctx, t, s, plan.ProjectID, plan.UID)
 
 	created, err = s.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
 		ProjectID: "project-a",
@@ -126,12 +121,7 @@ func TestUpdatePlanCheckRunIfApprovalInputVersionAllowsClaimedRowAfterPlanVersio
 	require.Len(t, claimed, 1)
 	require.EqualValues(t, 1, claimed[0].ApprovalInputVersion)
 
-	_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:       plan.UID,
-		ProjectID: plan.ProjectID,
-		Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
-	})
-	require.NoError(t, err)
+	setPlanApprovalInputVersionTwo(ctx, t, s, plan.ProjectID, plan.UID)
 
 	updated, err := s.UpdatePlanCheckRunIfApprovalInputVersion(ctx, "project-a", store.PlanCheckRunStatusDone, &storepb.PlanCheckRunResult{
 		ApprovalInputVersion: 1,
@@ -380,12 +370,7 @@ func TestRefreshPlanCheckRunIfStaleApprovalInputVersionRefreshesTerminalStaleChe
 	require.NoError(t, err)
 	require.True(t, updated)
 
-	_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:       plan.UID,
-		ProjectID: plan.ProjectID,
-		Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
-	})
-	require.NoError(t, err)
+	setPlanApprovalInputVersionTwo(ctx, t, s, plan.ProjectID, plan.UID)
 
 	refreshed, err := s.RefreshPlanCheckRunIfStaleApprovalInputVersion(ctx, "project-a", plan.UID, 2)
 	require.NoError(t, err)
@@ -433,12 +418,7 @@ func TestRefreshPlanCheckRunIfStaleApprovalInputVersionSkipsSameVersionRow(t *te
 	require.NoError(t, err)
 	require.True(t, updated)
 
-	_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:       plan.UID,
-		ProjectID: plan.ProjectID,
-		Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
-	})
-	require.NoError(t, err)
+	setPlanApprovalInputVersionTwo(ctx, t, s, plan.ProjectID, plan.UID)
 
 	refreshed, err := s.RefreshPlanCheckRunIfStaleApprovalInputVersion(ctx, "project-a", plan.UID, 1)
 	require.NoError(t, err)
@@ -521,12 +501,7 @@ func TestCancelPlanCheckRunIfApprovalInputVersionSkipsRefreshedRow(t *testing.T)
 	require.NoError(t, err)
 	require.Len(t, claimed, 1)
 
-	_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:       plan.UID,
-		ProjectID: plan.ProjectID,
-		Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
-	})
-	require.NoError(t, err)
+	setPlanApprovalInputVersionTwo(ctx, t, s, plan.ProjectID, plan.UID)
 
 	created, err = s.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
 		ProjectID: "project-a",
@@ -580,12 +555,7 @@ func TestCancelPlanCheckRunIfApprovalInputVersionAllowsObservedStaleRow(t *testi
 	require.NoError(t, err)
 	require.Len(t, claimed, 1)
 
-	_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:       plan.UID,
-		ProjectID: plan.ProjectID,
-		Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
-	})
-	require.NoError(t, err)
+	setPlanApprovalInputVersionTwo(ctx, t, s, plan.ProjectID, plan.UID)
 
 	canceled, err := s.CancelPlanCheckRunIfApprovalInputVersion(ctx, "project-a", claimed[0].UID, 1)
 	require.NoError(t, err)
@@ -656,4 +626,18 @@ func setupPlanCheckRunVersionStore(ctx context.Context, t *testing.T) *store.Sto
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, s.Close()) })
 	return s
+}
+
+func setPlanApprovalInputVersionTwo(ctx context.Context, t *testing.T, s *store.Store, projectID string, planUID int64) {
+	t.Helper()
+
+	result, err := s.GetDB().ExecContext(ctx, `
+		UPDATE plan
+		SET config = jsonb_set(config, '{approvalInputVersion}', to_jsonb($1::bigint))
+		WHERE project = $2 AND id = $3
+	`, int64(2), projectID, planUID)
+	require.NoError(t, err)
+	rowsAffected, err := result.RowsAffected()
+	require.NoError(t, err)
+	require.EqualValues(t, 1, rowsAffected)
 }

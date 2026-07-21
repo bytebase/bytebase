@@ -793,14 +793,10 @@ func TestStaleReviewRequestDispatchesNoPostCommitEffects(t *testing.T) {
 		PayloadUpsert: &storepb.Issue{Approval: staleApproval},
 	})
 	require.NoError(t, err)
-	_, err = stores.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:       plan.UID,
-		ProjectID: plan.ProjectID,
-		Config: &storepb.PlanConfig{
-			ApprovalInputVersion: 3,
-			Specs:                plan.Config.GetSpecs(),
-		},
-	})
+	_, err = stores.GetDB().ExecContext(ctx, `
+		UPDATE plan
+		SET config = jsonb_set(config, '{approvalInputVersion}', '3')
+		WHERE project = $1 AND id = $2`, plan.ProjectID, plan.UID)
 	require.NoError(t, err)
 
 	for range 2 {

@@ -465,14 +465,29 @@ func lockIssuePlan(ctx context.Context, tx *sql.Tx, issue *store.IssueMessage) (
 	if issue.Type != storepb.Issue_DATABASE_CHANGE || issue.PlanUID == nil {
 		return nil, nil
 	}
-	plan := &store.PlanMessage{Config: &storepb.PlanConfig{}}
-	var config []byte
-	err := tx.QueryRowContext(ctx, `
+	return scanIssuePlan(tx.QueryRowContext(ctx, `
 		SELECT id, creator, created_at, updated_at, project, name, description, config, deleted
 		FROM plan
 		WHERE project = $1
 		  AND id = $2
-		FOR UPDATE`, issue.ProjectID, *issue.PlanUID).Scan(
+		FOR UPDATE`, issue.ProjectID, *issue.PlanUID), "failed to lock plan")
+}
+
+func getIssuePlan(ctx context.Context, tx *sql.Tx, issue *store.IssueMessage) (*store.PlanMessage, error) {
+	if issue.Type != storepb.Issue_DATABASE_CHANGE || issue.PlanUID == nil {
+		return nil, nil
+	}
+	return scanIssuePlan(tx.QueryRowContext(ctx, `
+		SELECT id, creator, created_at, updated_at, project, name, description, config, deleted
+		FROM plan
+		WHERE project = $1
+		  AND id = $2`, issue.ProjectID, *issue.PlanUID), "failed to get plan")
+}
+
+func scanIssuePlan(row *sql.Row, queryErrorMessage string) (*store.PlanMessage, error) {
+	plan := &store.PlanMessage{Config: &storepb.PlanConfig{}}
+	var config []byte
+	err := row.Scan(
 		&plan.UID,
 		&plan.Creator,
 		&plan.CreatedAt,
@@ -487,7 +502,7 @@ func lockIssuePlan(ctx context.Context, tx *sql.Tx, issue *store.IssueMessage) (
 		return nil, workflowError(ErrorNotFound, "plan not found")
 	}
 	if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to lock plan")
+		return nil, workflowWrap(ErrorInternal, err, queryErrorMessage)
 	}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to unmarshal plan config")
