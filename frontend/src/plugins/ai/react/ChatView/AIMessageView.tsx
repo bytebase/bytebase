@@ -26,9 +26,9 @@ export function AIMessageView({ message }: Props) {
   return (
     <div
       className={cn(
-        "border rounded-sm shadow-sm py-1 px-1 bg-gray-50 border-gray-400",
+        "border rounded-sm shadow-sm py-1 px-1 bg-control-bg/80 border-control-border text-control",
         isDone && "w-full min-w-36",
-        isFailed && "max-w-[40%] min-w-36",
+        isFailed && "max-w-[80%] min-w-36 bg-warning/10 border-warning/60",
         !isDone && !isFailed && "w-auto"
       )}
     >
@@ -36,14 +36,16 @@ export function AIMessageView({ message }: Props) {
         <Markdown content={message.content} codeBlockProps={{ width: 1.0 }} />
       )}
       {isLoading && (
-        <div className="flex items-center">
+        <div className="flex items-center text-control-light">
           <Loader2 className="mx-1 size-[18px] animate-spin" />
         </div>
       )}
       {isFailed && (
-        <div className="text-warning flex items-center gap-x-1">
-          <TriangleAlertIcon className="inline-block size-4 shrink-0" />
-          <span className="text-sm">{message.error}</span>
+        <div className="flex items-start gap-x-1.5">
+          <TriangleAlertIcon className="mt-0.5 inline-block size-4 shrink-0 text-warning" />
+          <span className="break-words text-sm text-control">
+            {message.error}
+          </span>
         </div>
       )}
     </div>
