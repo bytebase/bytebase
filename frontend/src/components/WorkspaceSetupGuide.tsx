@@ -3,6 +3,13 @@ import { CheckCircle, Circle, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { sqlServiceClientConnect } from "@/api";
+import { type RouteTarget, router, useCurrentRoute } from "@/app/router";
+import {
+  DATABASE_ROUTE_DASHBOARD,
+  INSTANCE_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_DASHBOARD,
+  SQL_EDITOR_DATABASE_MODULE,
+} from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -17,13 +24,6 @@ import {
   PRODUCT_INTRO_TIP_QUERY_KEY,
 } from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
-import { type RouteTarget, router, useCurrentRoute } from "@/app/router";
-import {
-  DATABASE_ROUTE_DASHBOARD,
-  INSTANCE_ROUTE_DASHBOARD,
-  PROJECT_V1_ROUTE_DASHBOARD,
-  SQL_EDITOR_DATABASE_MODULE,
-} from "@/app/router/handles";
 import { useAppStore } from "@/stores/app";
 import { SearchQueryHistoriesRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import {

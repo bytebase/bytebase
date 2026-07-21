@@ -1782,10 +1782,6 @@
         "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente."
       }
     },
-    "connect-database": "Conectar base de datos",
-    "connect-database-empty-placeholder": "Conecta una instancia para sincronizar bases de datos en este proyecto",
-    "connect-database-intro-description": "Conecta una base de datos para que Bytebase pueda sincronizarla en este proyecto.",
-    "connect-database-intro-title": "Conecta tu primera base de datos",
     "connect-instance": "Conectar instancia",
     "connect-instance-empty-placeholder": "Conecta una instancia para sincronizar bases de datos en este proyecto",
     "connect-instance-intro-description": "Conecta una instancia para que Bytebase sincronice bases de datos en este proyecto.",

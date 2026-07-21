@@ -1782,10 +1782,6 @@
         "warning": "This action cannot be undone. All project data including issues, configurations, and history will be permanently removed."
       }
     },
-    "connect-database": "Connect database",
-    "connect-database-empty-placeholder": "Connect an instance to sync databases into this project",
-    "connect-database-intro-description": "Connect a database so Bytebase can sync it into this project.",
-    "connect-database-intro-title": "Connect your first database",
     "connect-instance": "Connect instance",
     "connect-instance-empty-placeholder": "Connect an instance to sync databases into this project",
     "connect-instance-intro-description": "Connect an instance so Bytebase can sync databases into this project.",

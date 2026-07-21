@@ -4,14 +4,14 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import {
+  INSTANCE_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_DATABASES,
+} from "@/app/router/handles";
+import {
   PRODUCT_INTRO_QUERY_KEY,
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
-import {
-  INSTANCE_ROUTE_DETAIL,
-  PROJECT_V1_ROUTE_DATABASES,
-} from "@/app/router/handles";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";

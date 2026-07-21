@@ -1782,10 +1782,6 @@
         "warning": "Hành động này không thể hoàn tác. Tất cả dữ liệu dự án bao gồm vấn đề, cấu hình và lịch sử sẽ bị xóa vĩnh viễn."
       }
     },
-    "connect-database": "Kết nối cơ sở dữ liệu",
-    "connect-database-empty-placeholder": "Kết nối một phiên bản để đồng bộ cơ sở dữ liệu vào dự án này",
-    "connect-database-intro-description": "Kết nối cơ sở dữ liệu để Bytebase đồng bộ vào dự án này.",
-    "connect-database-intro-title": "Kết nối cơ sở dữ liệu đầu tiên",
     "connect-instance": "Kết nối instance",
     "connect-instance-empty-placeholder": "Kết nối instance để đồng bộ cơ sở dữ liệu vào dự án này",
     "connect-instance-intro-description": "Kết nối instance để Bytebase đồng bộ cơ sở dữ liệu vào dự án này.",

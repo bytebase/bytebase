@@ -3,6 +3,7 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useCurrentRoute } from "@/app/router";
 import {
   AdvancedSearch,
   getValueFromScopes,
@@ -39,7 +40,6 @@ import {
   PRODUCT_INTRO_TIP_QUERY_KEY,
   useProductIntro,
 } from "@/lib/productIntro";
-import { useCurrentRoute } from "@/app/router";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {

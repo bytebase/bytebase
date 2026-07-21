@@ -1782,10 +1782,6 @@
         "warning": "この操作は元に戻せません。イシュー、設定、履歴を含むすべてのプロジェクトデータが完全に削除されます。"
       }
     },
-    "connect-database": "データベースに接続",
-    "connect-database-empty-placeholder": "インスタンスを接続して、このプロジェクトにデータベースを同期します",
-    "connect-database-intro-description": "データベースを接続すると、Bytebase がこのプロジェクトに同期します。",
-    "connect-database-intro-title": "最初のデータベースを接続",
     "connect-instance": "インスタンスを接続",
     "connect-instance-empty-placeholder": "インスタンスを接続して、このプロジェクトにデータベースを同期します",
     "connect-instance-intro-description": "インスタンスを接続すると、Bytebase がデータベースをこのプロジェクトに同期します。",
