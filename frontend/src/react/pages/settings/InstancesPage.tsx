@@ -77,6 +77,10 @@ import {
   serializeAdvancedSearch,
   useURLSearchParam,
 } from "@/react/hooks/useURLSearchParam";
+import {
+  CREATE_INSTANCE_PRODUCT_INTRO,
+  useProductIntro,
+} from "@/react/lib/productIntro";
 import { cn } from "@/react/lib/utils";
 import { router, useCurrentRoute } from "@/react/router";
 import { INSTANCE_ROUTE_CREATE } from "@/react/router/handles";
@@ -860,6 +864,12 @@ export function InstancesPage() {
   );
 
   const canCreate = hasWorkspacePermissionV2("bb.instances.create");
+  useProductIntro({
+    id: CREATE_INSTANCE_PRODUCT_INTRO,
+    title: t("workspace-setup-guide.intro.instance-title"),
+    description: t("workspace-setup-guide.intro.instance-description"),
+    disabled: !canCreate,
+  });
   const allSelected =
     instances.length > 0 && selectedNames.size === instances.length;
   const someSelected =
@@ -1030,9 +1040,13 @@ export function InstancesPage() {
           onParamsChange={setSearchParams}
         />
         <PermissionGuard permissions={["bb.instances.create"]}>
-          <Button disabled={!canCreate} onClick={navigateToCreate}>
+          <Button
+            data-product-intro-target={CREATE_INSTANCE_PRODUCT_INTRO}
+            disabled={!canCreate}
+            onClick={navigateToCreate}
+          >
             <Plus className="h-4 w-4 mr-1" />
-            {t("common.create")}
+            {t("instance.connect-instance")}
           </Button>
         </PermissionGuard>
       </WorkspacePageToolbar>

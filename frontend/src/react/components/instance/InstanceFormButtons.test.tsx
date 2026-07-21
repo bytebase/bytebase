@@ -261,8 +261,8 @@ describe("InstanceFormButtons", () => {
       name: "workspace.project.database",
       params: { projectId: "demo" },
       query: {
+        intro: "project-instance-synced",
         syncingInstance: "prod",
-        intro: "connect-database",
       },
     });
     expect(mocks.context?.onDismiss).not.toHaveBeenCalled();
@@ -306,6 +306,35 @@ describe("InstanceFormButtons", () => {
         initialDatabaseProject: undefined,
       }
     );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  test("redirects no-project instance creation to the instance databases tab", async () => {
+    mocks.routerCurrentQuery = {};
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<InstanceFormButtons />);
+    });
+
+    const createButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("common.create")
+    ) as HTMLButtonElement;
+    await act(async () => {
+      createButton.click();
+      await flushPromises();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.instance.detail",
+      params: { instanceId: "prod" },
+      query: { syncingInstance: "prod" },
+      hash: "databases",
+    });
 
     await act(async () => {
       root.unmount();

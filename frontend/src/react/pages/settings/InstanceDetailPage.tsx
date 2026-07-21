@@ -11,6 +11,7 @@ import {
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import {
+  CreateDatabaseSheet,
   DatabaseBatchOperationsBar,
   DatabaseTable,
   LabelEditorSheet,
@@ -29,6 +30,7 @@ import {
   useInstanceFormContext,
 } from "@/react/components/instance";
 import { Alert } from "@/react/components/ui/alert";
+import { Button } from "@/react/components/ui/button";
 import {
   Tabs,
   TabsList,
@@ -74,6 +76,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
   const location = useLocation();
   const navigate = useNavigate();
   const databasesByName = useAppStore((s) => s.databasesByName);
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const getDatabaseByName = useAppStore((s) => s.getDatabaseByName);
   const removeDatabaseMetadataCache = useAppStore(
     (s) => s.removeDatabaseMetadataCache
@@ -98,10 +101,14 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
   const [visibleDatabases, setVisibleDatabases] = useState<Database[]>([]);
   const [refreshToken, setRefreshToken] = useState(0);
+  const autoRefreshCountRef = useRef(0);
   const [syncing, setSyncing] = useState(false);
   const [showLabelEditor, setShowLabelEditor] = useState(false);
   const [showEditEnvDrawer, setShowEditEnvDrawer] = useState(false);
   const [showTransferDrawer, setShowTransferDrawer] = useState(false);
+  const [showCreateDrawer, setShowCreateDrawer] = useState(false);
+  const [syncingRefreshExhausted, setSyncingRefreshExhausted] = useState(false);
+  const [hasUserProject, setHasUserProject] = useState(false);
 
   const selectedDatabases = useMemo(() => {
     if (selectedNames.size === 0) return [];
@@ -122,6 +129,29 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     setRefreshToken((prev) => prev + 1);
     setSelectedNames(new Set());
   }, []);
+
+  const syncingInstanceId = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return query.get("syncingInstance") || undefined;
+  }, [location.search]);
+
+  useEffect(() => {
+    if (!syncingInstanceId || visibleDatabases.length > 0) {
+      setSyncingRefreshExhausted(false);
+      return;
+    }
+    setSyncingRefreshExhausted(false);
+    autoRefreshCountRef.current = 0;
+    const timer = window.setInterval(() => {
+      autoRefreshCountRef.current += 1;
+      refresh();
+      if (autoRefreshCountRef.current >= 12) {
+        setSyncingRefreshExhausted(true);
+        window.clearInterval(timer);
+      }
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [syncingInstanceId, visibleDatabases.length, refresh]);
 
   const handleSyncSchema = useCallback(async () => {
     if (syncing) return;
@@ -336,6 +366,9 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
   const defaultProjectId = useAppStore((s) =>
     extractProjectResourceName(s.serverInfo?.defaultProject ?? "")
   );
+  const defaultProjectName = useAppStore(
+    (s) => s.serverInfo?.defaultProject ?? ""
+  );
   const unassignedProjectOption = useMemo<ValueOption>(
     () => ({
       value: defaultProjectId,
@@ -419,6 +452,71 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     [location.pathname, location.search, navigate]
   );
 
+  useEffect(() => {
+    if (!syncingInstanceId || visibleDatabases.length === 0) {
+      setHasUserProject(false);
+      return;
+    }
+
+    const isUserProject = (project?: { name?: string }) =>
+      !!defaultProjectName &&
+      !!project?.name &&
+      project.name !== defaultProjectName;
+
+    if (Object.values(projectsByName).some(isUserProject)) {
+      setHasUserProject(true);
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { projects } = await useAppStore.getState().fetchProjectList({
+          pageSize: getDefaultPagination(),
+          silent: true,
+        });
+        if (cancelled) {
+          return;
+        }
+        setHasUserProject(projects.some(isUserProject));
+      } catch {
+        if (!cancelled) {
+          setHasUserProject(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    defaultProjectName,
+    projectsByName,
+    syncingInstanceId,
+    visibleDatabases.length,
+  ]);
+
+  const showSyncingInstanceHint =
+    !!syncingInstanceId &&
+    visibleDatabases.length === 0 &&
+    !syncingRefreshExhausted;
+  const showNoDatabasesAfterSync =
+    !!syncingInstanceId &&
+    visibleDatabases.length === 0 &&
+    syncingRefreshExhausted;
+  const showPostSyncTransferAction =
+    !!syncingInstanceId && visibleDatabases.length > 0 && hasUserProject;
+  const syncingInstanceTitle =
+    syncingInstanceId === instanceId
+      ? instanceV1Name(instance)
+      : syncingInstanceId;
+  const handleTransferSyncedDatabases = useCallback(() => {
+    setSelectedNames(
+      new Set(visibleDatabases.map((database) => database.name))
+    );
+    setShowTransferDrawer(true);
+  }, [visibleDatabases]);
+
   return (
     <div className="p-4 flex flex-col gap-y-2">
       {/* Archive banner */}
@@ -475,6 +573,54 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
 
         <TabsPanel value="databases" keepMounted={false}>
           <div className="flex flex-col gap-y-2">
+            {showSyncingInstanceHint && (
+              <Alert
+                variant="info"
+                title={t("db.project-instance-syncing-title", {
+                  instance: syncingInstanceTitle,
+                })}
+                description={
+                  <div className="flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4">
+                    <span>{t("db.project-instance-syncing-description")}</span>
+                    <Button size="sm" appearance="outline" onClick={refresh}>
+                      {t("common.refresh")}
+                    </Button>
+                  </div>
+                }
+              />
+            )}
+            {showPostSyncTransferAction && (
+              <Alert
+                variant="info"
+                title={t("db.instance-databases-synced-title")}
+                description={
+                  <div className="flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4">
+                    <span>{t("db.instance-databases-synced-description")}</span>
+                    <Button size="sm" onClick={handleTransferSyncedDatabases}>
+                      {t("db.instance-databases-synced-action")}
+                    </Button>
+                  </div>
+                }
+              />
+            )}
+            {showNoDatabasesAfterSync && (
+              <Alert
+                variant="info"
+                title={t("db.instance-no-databases-title")}
+                description={
+                  <div className="flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4">
+                    <span>{t("db.instance-no-databases-description")}</span>
+                    <Button
+                      size="sm"
+                      appearance="outline"
+                      onClick={() => setShowCreateDrawer(true)}
+                    >
+                      {t("db.instance-no-databases-action")}
+                    </Button>
+                  </div>
+                }
+              />
+            )}
             <AdvancedSearch
               params={searchParams}
               onParamsChange={setSearchParams}
@@ -497,6 +643,11 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
               databases={selectedDatabases}
               onClose={() => setShowTransferDrawer(false)}
               onTransfer={handleTransferProject}
+            />
+            <CreateDatabaseSheet
+              open={showCreateDrawer}
+              onClose={() => setShowCreateDrawer(false)}
+              instanceName={instanceName}
             />
             <DatabaseTable
               filter={filter}

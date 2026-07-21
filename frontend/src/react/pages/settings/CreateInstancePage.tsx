@@ -47,14 +47,12 @@ export function CreateInstancePage() {
     const {
       project: projectId,
       syncingInstance,
-      syncInstance,
       intro,
     } = router.currentRoute.value.query;
     if (typeof projectId === "string" && projectId) {
       const query: Record<string, string> = {};
-      const instanceId = syncingInstance ?? syncInstance;
-      if (typeof instanceId === "string" && instanceId) {
-        query.syncingInstance = instanceId;
+      if (typeof syncingInstance === "string" && syncingInstance) {
+        query.syncingInstance = syncingInstance;
       }
       if (typeof intro === "string" && intro) {
         query.intro = intro;

@@ -4,7 +4,13 @@ import { router, useCurrentRoute } from "@/react/router";
 import "./productIntro.css";
 
 export const PRODUCT_INTRO_QUERY_KEY = "intro";
+export const PRODUCT_INTRO_TIP_QUERY_KEY = "tip";
 export const CONNECT_DATABASE_PRODUCT_INTRO = "connect-database";
+export const CREATE_PROJECT_PRODUCT_INTRO = "create-project";
+export const CREATE_INSTANCE_PRODUCT_INTRO = "create-instance";
+export const PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO = "project-instance-synced";
+export const PREPARE_DATABASE_PRODUCT_INTRO = "prepare-database";
+export const PREPARE_DATABASE_TRANSFER_TIP = "transfer-databases-to-project";
 export const EXTERNAL_URL_PRODUCT_INTRO = "external-url";
 export const AI_ASSISTANT_PRODUCT_INTRO = "ai-assistant";
 export const DOMAIN_RESTRICTION_PRODUCT_INTRO = "domain-restriction";

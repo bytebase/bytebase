@@ -2,10 +2,16 @@ import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CONNECT_DATABASE_PRODUCT_INTRO } from "@/react/lib/productIntro";
+import {
+  PRODUCT_INTRO_QUERY_KEY,
+  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+} from "@/react/lib/productIntro";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
-import { PROJECT_V1_ROUTE_DATABASES } from "@/react/router/handles";
+import {
+  INSTANCE_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_DATABASES,
+} from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -264,12 +270,18 @@ export function InstanceFormButtons({
           name: PROJECT_V1_ROUTE_DATABASES,
           params: { projectId: projectContext.id },
           query: {
+            [PRODUCT_INTRO_QUERY_KEY]: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
             syncingInstance: extractInstanceResourceName(createdInstance.name),
-            intro: CONNECT_DATABASE_PRODUCT_INTRO,
           },
         });
       } else {
-        router.push(`/${createdInstance.name}`);
+        const instanceId = extractInstanceResourceName(createdInstance.name);
+        router.push({
+          name: INSTANCE_ROUTE_DETAIL,
+          params: { instanceId },
+          query: { syncingInstance: instanceId },
+          hash: "databases",
+        });
       }
 
       pushNotification({

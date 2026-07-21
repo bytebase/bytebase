@@ -15,6 +15,7 @@ import {
   DatabaseBatchOperationsBar,
   DatabaseTable,
   LabelEditorSheet,
+  TransferProjectSheet,
 } from "@/react/components/database";
 import { EditEnvironmentSheet } from "@/react/components/EditEnvironmentSheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
@@ -35,6 +36,7 @@ import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { preCreateIssue } from "@/react/lib/plan/issue";
 import {
   CONNECT_DATABASE_PRODUCT_INTRO,
+  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
   useProductIntro,
 } from "@/react/lib/productIntro";
 import { router } from "@/react/router";
@@ -99,11 +101,13 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   const [showLabelEditor, setShowLabelEditor] = useState(false);
   const [showEditEnvDrawer, setShowEditEnvDrawer] = useState(false);
+  const [showTransferDrawer, setShowTransferDrawer] = useState(false);
   const [showUnassignConfirm, setShowUnassignConfirm] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
   const [workspaceHasInstance, setWorkspaceHasInstance] = useState<
     boolean | undefined
   >(undefined);
+  const [syncingRefreshExhausted, setSyncingRefreshExhausted] = useState(false);
   const autoRefreshCountRef = useRef(0);
 
   const [searchParams, setSearchParams] = useState<SearchParams>({
@@ -231,9 +235,10 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
   const [visibleDatabases, setVisibleDatabases] = useState<Database[]>([]);
   const syncingInstanceId = useMemo(() => {
-    const { syncingInstance, syncInstance } = router.currentRoute.value.query;
-    const value = syncingInstance ?? syncInstance;
-    return typeof value === "string" && value ? value : undefined;
+    const { syncingInstance } = router.currentRoute.value.query;
+    return typeof syncingInstance === "string" && syncingInstance
+      ? syncingInstance
+      : undefined;
   }, []);
   const selectedDatabases = useMemo(() => {
     if (selectedNames.size === 0) return [];
@@ -262,12 +267,17 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   }, []);
 
   useEffect(() => {
-    if (!syncingInstanceId || visibleDatabases.length > 0) return;
+    if (!syncingInstanceId || visibleDatabases.length > 0) {
+      setSyncingRefreshExhausted(false);
+      return;
+    }
+    setSyncingRefreshExhausted(false);
     autoRefreshCountRef.current = 0;
     const timer = window.setInterval(() => {
       autoRefreshCountRef.current += 1;
       refresh();
       if (autoRefreshCountRef.current >= 12) {
+        setSyncingRefreshExhausted(true);
         window.clearInterval(timer);
       }
     }, 5000);
@@ -401,6 +411,40 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     [refresh, t]
   );
 
+  const handleTransferProject = useCallback(
+    async (projectName: string) => {
+      try {
+        await useAppStore.getState().batchUpdateDatabases(
+          create(BatchUpdateDatabasesRequestSchema, {
+            parent: "-",
+            requests: selectedDatabasesRef.current.map((database) =>
+              create(UpdateDatabaseRequestSchema, {
+                database: create(DatabaseSchema$, {
+                  name: database.name,
+                  project: projectName,
+                }),
+                updateMask: create(FieldMaskSchema, { paths: ["project"] }),
+              })
+            ),
+          })
+        );
+        refresh();
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("database.successfully-transferred-databases"),
+        });
+      } catch {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.failed"),
+        });
+      }
+    },
+    [refresh, t]
+  );
+
   const handleUnassign = useCallback(async () => {
     const defaultProject =
       useAppStore.getState().serverInfo?.defaultProject ?? "";
@@ -439,19 +483,22 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   }, [projectName, selectedDatabaseNames]);
 
   const hasVisibleDatabase = visibleDatabases.length > 0;
-  const showSyncingInstanceHint = !!syncingInstanceId && !hasVisibleDatabase;
+  const showSyncingInstanceHint =
+    !!syncingInstanceId && !hasVisibleDatabase && !syncingRefreshExhausted;
   const showPostSyncNextAction = !!syncingInstanceId && hasVisibleDatabase;
   const checkingWorkspaceInstance =
     !hasVisibleDatabase &&
     !showSyncingInstanceHint &&
+    !syncingRefreshExhausted &&
     workspaceHasInstance === undefined;
   const emptyProjectHasInstance =
     !hasVisibleDatabase &&
-    workspaceHasInstance === true &&
+    (workspaceHasInstance === true || syncingRefreshExhausted) &&
     !showSyncingInstanceHint;
   const emptyProjectShouldConnectInstance =
     !hasVisibleDatabase &&
     workspaceHasInstance === false &&
+    !syncingRefreshExhausted &&
     !showSyncingInstanceHint;
 
   const handleCreateFirstChange = useCallback(() => {
@@ -478,13 +525,19 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
 
   useProductIntro({
     id: CONNECT_DATABASE_PRODUCT_INTRO,
-    title: t("project.connect-database-intro-title"),
-    description: t("project.connect-database-intro-description"),
+    title: t("project.connect-instance-intro-title"),
+    description: t("project.connect-instance-intro-description"),
     disabled:
       showSyncingInstanceHint ||
       hasVisibleDatabase ||
       workspaceHasInstance !== false ||
       !canCreateInstance,
+  });
+  useProductIntro({
+    id: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+    title: t("db.project-instance-synced-title"),
+    description: t("db.project-instance-synced-description"),
+    disabled: !showPostSyncNextAction,
   });
 
   const handleCreateDatabaseAction = useCallback(() => {
@@ -545,7 +598,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
                 ? t("common.create")
                 : emptyProjectHasInstance
                   ? t("project.add-database")
-                  : t("project.connect-database")}
+                  : t("project.connect-instance")}
             </Button>
           </PermissionGuard>
         )}
@@ -571,30 +624,34 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       {showPostSyncNextAction && (
         <Alert
           variant="info"
+          data-product-intro-target={PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO}
           title={t("db.project-instance-synced-title")}
           description={
-            <div className="flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4">
+            <div className="flex flex-col gap-y-3">
               <span>{t("db.project-instance-synced-description")}</span>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+              <div className="ml-auto flex flex-wrap items-center gap-x-2 gap-y-2">
+                <PermissionGuard
+                  permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}
+                  project={project}
+                >
+                  <Button
+                    size="sm"
+                    appearance="outline"
+                    onClick={handleCreateFirstChange}
+                  >
+                    {t("db.project-instance-synced-action")}
+                  </Button>
+                </PermissionGuard>
                 <PermissionGuard
                   permissions={["bb.sql.select"]}
                   project={project}
                 >
                   <Button
                     size="sm"
-                    appearance="outline"
                     onClick={handleOpenFirstDatabaseInSQLEditor}
                   >
                     <SquareTerminal className="size-4" />
                     {t("db.project-instance-synced-sql-editor-action")}
-                  </Button>
-                </PermissionGuard>
-                <PermissionGuard
-                  permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}
-                  project={project}
-                >
-                  <Button size="sm" onClick={handleCreateFirstChange}>
-                    {t("db.project-instance-synced-action")}
                   </Button>
                 </PermissionGuard>
               </div>
@@ -625,7 +682,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
             <span className="text-sm text-control-light">
               {emptyProjectHasInstance
                 ? t("project.add-database-empty-placeholder")
-                : t("project.connect-database-empty-placeholder")}
+                : t("project.connect-instance-empty-placeholder")}
             </span>
           )
         }
@@ -638,6 +695,9 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         onSyncSchema={handleSyncSchema}
         onEditLabels={() => setShowLabelEditor(true)}
         onEditEnvironment={() => setShowEditEnvDrawer(true)}
+        onTransferProject={
+          isDefault ? () => setShowTransferDrawer(true) : undefined
+        }
         onUnassign={isDefault ? undefined : () => setShowUnassignConfirm(true)}
         onChangeDatabase={isDefault ? undefined : handleChangeDatabase}
         allSelected={
@@ -669,6 +729,12 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         databases={selectedDatabases}
         onClose={() => setShowLabelEditor(false)}
         onApply={handleLabelsApply}
+      />
+      <TransferProjectSheet
+        open={showTransferDrawer}
+        databases={selectedDatabases}
+        onClose={() => setShowTransferDrawer(false)}
+        onTransfer={handleTransferProject}
       />
 
       {/* Unassign confirmation dialog */}

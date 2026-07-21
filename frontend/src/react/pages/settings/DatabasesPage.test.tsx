@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -10,10 +10,14 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   routerReplace: vi.fn(),
+  currentRoute: { query: {} as Record<string, string> },
   batchSyncDatabases: vi.fn(),
   batchUpdateDatabases: vi.fn(),
   removeDatabaseMetadataCache: vi.fn(),
+  useProductIntro: vi.fn(),
   hasWorkspacePermission: true,
+  databaseTableRows: [] as unknown[],
+  databaseTableLoading: false,
 }));
 
 let DatabasesPage: typeof import("./DatabasesPage").DatabasesPage;
@@ -26,11 +30,14 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/react/router", () => ({
   router: {
     currentRoute: {
-      value: { query: {} },
+      get value() {
+        return mocks.currentRoute;
+      },
     },
     push: mocks.routerPush,
     replace: mocks.routerReplace,
   },
+  useCurrentRoute: () => mocks.currentRoute,
 }));
 
 vi.mock("@/react/components/AdvancedSearch", () => ({
@@ -65,6 +72,13 @@ vi.mock("@/react/components/WorkspacePageLayout", () => ({
   ),
 }));
 
+vi.mock("@/react/lib/productIntro", () => ({
+  PREPARE_DATABASE_PRODUCT_INTRO: "prepare-database",
+  PREPARE_DATABASE_TRANSFER_TIP: "transfer-databases-to-project",
+  PRODUCT_INTRO_TIP_QUERY_KEY: "tip",
+  useProductIntro: mocks.useProductIntro,
+}));
+
 vi.mock("@/react/components/database", () => ({
   CreateDatabaseSheet: ({ open }: { open: boolean }) => (
     <div data-testid="create-database-sheet" data-open={String(open)} />
@@ -72,19 +86,53 @@ vi.mock("@/react/components/database", () => ({
   DatabaseBatchOperationsBar: () => null,
   DatabaseTable: ({
     emptyPlaceholder,
+    selectionColumnIntroTarget,
+    onDatabasesChange,
+    onLoadingChange,
   }: {
     emptyPlaceholder?: React.ReactNode;
+    selectionColumnIntroTarget?: string;
+    onDatabasesChange?: (databases: unknown[]) => void;
+    onLoadingChange?: (loading: boolean) => void;
   }) => (
-    <div
-      data-testid="database-table"
-      data-has-empty-placeholder={String(!!emptyPlaceholder)}
-    >
-      {emptyPlaceholder}
-    </div>
+    <DatabaseTableMock
+      emptyPlaceholder={emptyPlaceholder}
+      selectionColumnIntroTarget={selectionColumnIntroTarget}
+      onDatabasesChange={onDatabasesChange}
+      onLoadingChange={onLoadingChange}
+    />
   ),
   LabelEditorSheet: () => null,
   TransferProjectSheet: () => null,
 }));
+
+const DatabaseTableMock = ({
+  emptyPlaceholder,
+  selectionColumnIntroTarget,
+  onDatabasesChange,
+  onLoadingChange,
+}: {
+  emptyPlaceholder?: React.ReactNode;
+  selectionColumnIntroTarget?: string;
+  onDatabasesChange?: (databases: unknown[]) => void;
+  onLoadingChange?: (loading: boolean) => void;
+}) => {
+  useEffect(() => {
+    onDatabasesChange?.(mocks.databaseTableRows);
+  }, [onDatabasesChange]);
+  useEffect(() => {
+    onLoadingChange?.(mocks.databaseTableLoading);
+  }, [onLoadingChange]);
+  return (
+    <div
+      data-testid="database-table"
+      data-has-empty-placeholder={String(!!emptyPlaceholder)}
+      data-selection-column-intro-target={selectionColumnIntroTarget ?? ""}
+    >
+      {emptyPlaceholder}
+    </div>
+  );
+};
 
 vi.mock("@/react/stores/app", () => {
   const appState = {
@@ -130,6 +178,9 @@ vi.mock("@/utils", async () => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.hasWorkspacePermission = true;
+  mocks.currentRoute = { query: {} };
+  mocks.databaseTableRows = [];
+  mocks.databaseTableLoading = false;
   ({ DatabasesPage } = await import("./DatabasesPage"));
 });
 
@@ -160,6 +211,11 @@ describe("DatabasesPage", () => {
         .querySelector("[data-testid='create-database-sheet']")
         ?.getAttribute("data-open")
     ).toBe("false");
+    expect(mocks.useProductIntro).toHaveBeenCalledWith({
+      id: "prepare-database",
+      title: "workspace-setup-guide.intro.database-title",
+      description: "workspace-setup-guide.intro.database-description",
+    });
 
     act(() => {
       root.unmount();
@@ -180,9 +236,12 @@ describe("DatabasesPage", () => {
     });
 
     const createButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("common.create")
+      (button) => button.textContent?.includes("database.create-database")
     ) as HTMLButtonElement;
     expect(createButton).toBeTruthy();
+    expect(createButton.getAttribute("data-product-intro-target")).toBe(
+      "prepare-database"
+    );
 
     await act(async () => {
       createButton.click();
@@ -195,6 +254,141 @@ describe("DatabasesPage", () => {
         .querySelector("[data-testid='create-database-sheet']")
         ?.getAttribute("data-open")
     ).toBe("true");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("shows a transfer tip from the prepare database query", async () => {
+    mocks.currentRoute = {
+      query: {
+        intro: "prepare-database",
+        tip: "transfer-databases-to-project",
+      },
+    };
+    mocks.databaseTableRows = [{ name: "instances/i/databases/db" }];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <DatabasesPage />
+        </MemoryRouter>
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain(
+      "workspace-setup-guide.prepare-database-tip"
+    );
+    const alert = container.querySelector("[role='alert']");
+    expect(alert?.className).toContain("w-auto");
+    expect(alert?.hasAttribute("data-product-intro-target")).toBe(false);
+    expect(
+      container
+        .querySelector("[data-testid='database-table']")
+        ?.getAttribute("data-selection-column-intro-target")
+    ).toBe("prepare-database");
+    expect(mocks.useProductIntro).toHaveBeenCalledWith({
+      id: "prepare-database",
+      title: "workspace-setup-guide.intro.transfer-title",
+      description: "workspace-setup-guide.intro.transfer-description",
+    });
+    expect(
+      Array.from(container.querySelectorAll("button"))
+        .find((button) =>
+          button.textContent?.includes("database.create-database")
+        )
+        ?.hasAttribute("data-product-intro-target")
+    ).toBe(false);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("waits for the table to load before highlighting the transfer selection column", async () => {
+    mocks.currentRoute = {
+      query: {
+        intro: "prepare-database",
+        tip: "transfer-databases-to-project",
+      },
+    };
+    mocks.databaseTableLoading = true;
+    mocks.databaseTableRows = [{ name: "instances/i/databases/db" }];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <DatabasesPage />
+        </MemoryRouter>
+      );
+      await Promise.resolve();
+    });
+
+    expect(mocks.useProductIntro).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "prepare-database",
+        disabled: true,
+      })
+    );
+    expect(
+      container
+        .querySelector("[data-testid='database-table']")
+        ?.getAttribute("data-selection-column-intro-target")
+    ).toBe("");
+    expect(
+      Array.from(container.querySelectorAll("button"))
+        .find((button) =>
+          button.textContent?.includes("database.create-database")
+        )
+        ?.hasAttribute("data-product-intro-target")
+    ).toBe(false);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("falls back to highlighting create database after transfer context loads with no rows", async () => {
+    mocks.currentRoute = {
+      query: {
+        intro: "prepare-database",
+        tip: "transfer-databases-to-project",
+      },
+    };
+    mocks.databaseTableRows = [];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <DatabasesPage />
+        </MemoryRouter>
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).not.toContain(
+      "workspace-setup-guide.prepare-database-tip"
+    );
+    expect(
+      container
+        .querySelector("[data-testid='database-table']")
+        ?.getAttribute("data-selection-column-intro-target")
+    ).toBe("");
+    expect(
+      Array.from(container.querySelectorAll("button"))
+        .find((button) =>
+          button.textContent?.includes("database.create-database")
+        )
+        ?.getAttribute("data-product-intro-target")
+    ).toBe("prepare-database");
 
     act(() => {
       root.unmount();

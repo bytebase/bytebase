@@ -33,7 +33,7 @@ describe("ProjectCreateDialog layout", () => {
       "projectId: extractProjectResourceName(createdProject.name)"
     );
     expect(source).toContain(
-      "query: { intro: CONNECT_DATABASE_PRODUCT_INTRO }"
+      "query: { [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO }"
     );
     expect(source).not.toContain("path: `/${createdProject.name}`");
   });

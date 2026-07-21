@@ -203,7 +203,7 @@ describe("CreateInstancePage", () => {
   test("keeps syncing instance and intro context when dismissing to the project database page", () => {
     mocks.routerCurrentQuery = {
       project: "demo",
-      syncInstance: "prod",
+      syncingInstance: "prod",
       intro: "connect-database",
     };
     const container = document.createElement("div");

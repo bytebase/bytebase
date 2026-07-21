@@ -672,6 +672,7 @@
     "column": "Column",
     "columns": "Columns",
     "comment": "Comment",
+    "create-database": "Create database",
     "data-size": "Data size",
     "edit-environment": "Edit Environment",
     "edit-labels": "Edit Labels",
@@ -804,11 +805,17 @@
     "failed-to-sync-schema": "Failed to sync schema",
     "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database \"{{name}}\".",
     "functions": "Functions",
+    "instance-databases-synced-action": "Transfer to project",
+    "instance-databases-synced-description": "Transfer databases to a project to start governed changes.",
+    "instance-databases-synced-title": "Transfer databases to a project",
+    "instance-no-databases-action": "Create database",
+    "instance-no-databases-description": "Create a database in this instance, then transfer it to a project to start governed changes.",
+    "instance-no-databases-title": "No databases found",
     "n-databases-had-sync-errors": "{{0}} database(s) had sync errors",
     "packages": "Packages",
     "partitions": "Partitions",
     "procedures": "Procedures",
-    "project-instance-synced-action": "Create first change",
+    "project-instance-synced-action": "Create database change",
     "project-instance-synced-description": "Your database is ready in this project. Start with a governed database change when you are ready.",
     "project-instance-synced-sql-editor-action": "Open SQL Editor",
     "project-instance-synced-title": "Database connected",
@@ -940,6 +947,7 @@
       "public": "Public IP"
     },
     "connect-database-to-project": "Connect database to project",
+    "connect-instance": "Connect instance",
     "connecting-database-to-project": "Connecting database...",
     "connection-info": "Connection info",
     "connection-options": "Connection Options",
@@ -1778,6 +1786,10 @@
     "connect-database-empty-placeholder": "Connect an instance to sync databases into this project",
     "connect-database-intro-description": "Connect a database so Bytebase can sync it into this project.",
     "connect-database-intro-title": "Connect your first database",
+    "connect-instance": "Connect instance",
+    "connect-instance-empty-placeholder": "Connect an instance to sync databases into this project",
+    "connect-instance-intro-description": "Connect an instance so Bytebase can sync databases into this project.",
+    "connect-instance-intro-title": "Connect the instance",
     "create-modal": {
       "project-name": "Project Name",
       "success-prompt": "Successfully created project {{name}}."
@@ -3344,5 +3356,37 @@
   },
   "worksheet": {
     "self": "Worksheet"
+  },
+  "workspace-setup-guide": {
+    "actions": {
+      "change": "Create database change",
+      "query": "Go to SQL Editor"
+    },
+    "descriptions": {
+      "database": "Create or transfer a database into a project before querying data.",
+      "instance": "Connect an instance so Bytebase can sync your databases.",
+      "project": "Create a project to organize databases and changes.",
+      "sql-editor": "Query data in SQL Editor, or create a governed database change."
+    },
+    "dismiss": "Dismiss guide",
+    "intro": {
+      "database-description": "Create a database in your connected instance.",
+      "database-title": "Create a database",
+      "instance-description": "Create an instance so Bytebase can connect to your database server.",
+      "instance-title": "Connect the instance",
+      "project-description": "Create a project first. Databases can be synced into it after the instance is connected.",
+      "project-title": "Create a project",
+      "transfer-description": "Select one or more databases, then transfer them to the project.",
+      "transfer-title": "Select databases"
+    },
+    "prepare-database-tip": "Select databases to transfer to the project.",
+    "previous-step-required": "You need to finish the previous step.",
+    "self": "Set up Bytebase",
+    "steps": {
+      "database": "Prepare database",
+      "instance": "Connect instance",
+      "project": "Create project",
+      "query": "Query data"
+    }
   }
 }

@@ -478,6 +478,16 @@ export function useQuickstartReset() {
   return useAppStore((state) => state.resetQuickstartProgress);
 }
 
+export function useIntroStateByKey(key: string) {
+  const introStateVersion = useAppStore((state) => state.introStateVersion);
+  const getIntroStateByKey = useAppStore((state) => state.getIntroStateByKey);
+
+  return useMemo(
+    () => getIntroStateByKey(key),
+    [getIntroStateByKey, introStateVersion, key]
+  );
+}
+
 export function useCreateProject() {
   const createProject = useAppStore((state) => state.createProject);
   const setRecentProject = useAppStore((state) => state.setRecentProject);

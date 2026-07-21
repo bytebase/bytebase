@@ -26,7 +26,10 @@ import {
   useNotify,
   useWorkspacePermission,
 } from "@/react/hooks/useAppState";
-import { CONNECT_DATABASE_PRODUCT_INTRO } from "@/react/lib/productIntro";
+import {
+  CONNECT_DATABASE_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+} from "@/react/lib/productIntro";
 import { projectNamePrefix } from "@/react/lib/resourceName";
 import { useNavigate } from "@/react/router";
 import { PROJECT_V1_ROUTE_DATABASES } from "@/react/router/handles";
@@ -120,7 +123,7 @@ export function ProjectCreateDialog({
           params: {
             projectId: extractProjectResourceName(createdProject.name),
           },
-          query: { intro: CONNECT_DATABASE_PRODUCT_INTRO },
+          query: { [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO },
         });
       }
 

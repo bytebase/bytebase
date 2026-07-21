@@ -13,9 +13,16 @@ import {
   useWorkspace,
   useWorkspacePermission,
 } from "@/react/hooks/useAppState";
-import { CONNECT_DATABASE_PRODUCT_INTRO } from "@/react/lib/productIntro";
+import {
+  CONNECT_DATABASE_PRODUCT_INTRO,
+  CREATE_PROJECT_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+} from "@/react/lib/productIntro";
 import { router } from "@/react/router";
-import { PROJECT_V1_ROUTE_DATABASES } from "@/react/router/handles";
+import {
+  PROJECT_V1_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_DATABASES,
+} from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -68,11 +75,6 @@ export function ProfileSetupPage() {
   const [saving, setSaving] = useState(false);
   const projectTitleTrimmed = projectTitle.trim();
   const shouldCreateProject = canCreateProject && !!projectTitleTrimmed;
-
-  const redirectUrl = () => {
-    const q = new URLSearchParams(window.location.search);
-    return q.get("redirect") || "/";
-  };
 
   const validateProjectResourceId = useCallback(
     async (id: string): Promise<ValidatedMessage[]> => {
@@ -140,10 +142,10 @@ export function ProfileSetupPage() {
           params: {
             projectId: extractProjectResourceName(createdProjectName),
           },
-          query: { intro: CONNECT_DATABASE_PRODUCT_INTRO },
+          query: { [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO },
         });
       } else {
-        router.replace(redirectUrl());
+        goToDashboard();
       }
     } catch {
       pushNotification({
@@ -156,8 +158,11 @@ export function ProfileSetupPage() {
     }
   };
 
-  const handleSkip = () => {
-    router.replace(redirectUrl());
+  const goToDashboard = () => {
+    router.replace({
+      name: PROJECT_V1_ROUTE_DASHBOARD,
+      query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO },
+    });
   };
 
   const displayName = name.trim() || currentUser?.email || "?";
@@ -237,7 +242,7 @@ export function ProfileSetupPage() {
             </Button>
             <Button
               appearance="secondary"
-              onClick={handleSkip}
+              onClick={goToDashboard}
               className="w-full"
             >
               {t("settings.profile.setup-skip")}
