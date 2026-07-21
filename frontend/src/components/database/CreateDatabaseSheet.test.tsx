@@ -15,11 +15,13 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 vi.mock("@/components/InstanceSelect", () => ({
   InstanceSelect: (props: {
     onChange: (name: string, instance: unknown) => void;
+    disabled?: boolean;
     portal?: boolean;
     value: string;
   }) =>
     createElement("input", {
       "data-testid": "instance-select",
+      disabled: props.disabled,
       "data-portal": String(Boolean(props.portal)),
       value: props.value,
       onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -166,6 +168,7 @@ const appStoreState = {
   },
   getProjectByName: (name: string) =>
     appStoreState.projectsByName[name] ?? UNKNOWN_PROJECT,
+  instancesByName: {} as Record<string, unknown>,
   projectsByName: {} as Record<
     string,
     {
@@ -248,6 +251,7 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
   appStoreState.environmentList = [];
+  appStoreState.instancesByName = {};
   appStoreState.projectsByName = {};
   mocks.instancesByName = {};
   mocks.permissions = {};
@@ -276,6 +280,7 @@ function setupProjectMock(enforceIssueTitle: boolean) {
     issueLabels: [],
     forceIssueLabels: false,
   }));
+  appStoreState.instancesByName[TEST_INSTANCE.name] = TEST_INSTANCE;
   mocks.instancesByName[TEST_INSTANCE.name] = TEST_INSTANCE;
   mocks.getOrFetchInstanceByName.mockResolvedValue(TEST_INSTANCE);
 }
@@ -394,6 +399,29 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
     expect(mocks.getOrFetchProjectByName).toHaveBeenCalledOnce();
     expect(mocks.getOrFetchProjectByName).toHaveBeenCalledWith("projects/foo");
     expect(getCreateButton().disabled).toBe(false);
+  });
+
+  it("prefills and locks a fixed instance", async () => {
+    setupProjectMock(false);
+
+    await act(async () => {
+      root.render(
+        createElement(CreateDatabaseSheet, {
+          open: true,
+          onClose: () => {},
+          projectName: "projects/foo",
+          instanceName: TEST_INSTANCE.name,
+        })
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const instanceSelect = container.querySelector(
+      "[data-testid='instance-select']"
+    ) as HTMLInputElement;
+    expect(instanceSelect.value).toBe(TEST_INSTANCE.name);
+    expect(instanceSelect.disabled).toBe(true);
   });
 
   it("clears the inherited environment when switching to an instance without one", async () => {

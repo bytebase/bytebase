@@ -3,8 +3,14 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
-import { PROJECT_V1_ROUTE_DATABASES } from "@/app/router/handles";
-import { CONNECT_DATABASE_PRODUCT_INTRO } from "@/lib/productIntro";
+import {
+  INSTANCE_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_DATABASES,
+} from "@/app/router/handles";
+import {
+  PRODUCT_INTRO_QUERY_KEY,
+  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+} from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -264,12 +270,18 @@ export function InstanceFormButtons({
           name: PROJECT_V1_ROUTE_DATABASES,
           params: { projectId: projectContext.id },
           query: {
+            [PRODUCT_INTRO_QUERY_KEY]: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
             syncingInstance: extractInstanceResourceName(createdInstance.name),
-            intro: CONNECT_DATABASE_PRODUCT_INTRO,
           },
         });
       } else {
-        router.push(`/${createdInstance.name}`);
+        const instanceId = extractInstanceResourceName(createdInstance.name);
+        router.push({
+          name: INSTANCE_ROUTE_DETAIL,
+          params: { instanceId },
+          query: { syncingInstance: instanceId },
+          hash: "databases",
+        });
       }
 
       pushNotification({

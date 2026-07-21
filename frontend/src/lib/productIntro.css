@@ -93,6 +93,9 @@
 }
 
 .bb-product-intro-active {
-  position: relative;
   z-index: 1000000001;
+}
+
+.bb-product-intro-active:not([data-product-intro-preserve-position]) {
+  position: relative;
 }

@@ -46,6 +46,10 @@ import {
   serializeAdvancedSearch,
   useURLSearchParam,
 } from "@/hooks/useURLSearchParam";
+import {
+  CREATE_PROJECT_PRODUCT_INTRO,
+  useProductIntro,
+} from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -579,6 +583,13 @@ export function ProjectsPage() {
   const canCreate = hasWorkspacePermissionV2("bb.projects.create");
   const canDelete = hasWorkspacePermissionV2("bb.projects.delete");
 
+  useProductIntro({
+    id: CREATE_PROJECT_PRODUCT_INTRO,
+    title: t("workspace-setup-guide.intro.project-title"),
+    description: t("workspace-setup-guide.intro.project-description"),
+    disabled: !canCreate,
+  });
+
   const handleCreated = useCallback((project: Project) => {
     router.push(projectIssuesRoute(project));
   }, []);
@@ -613,6 +624,7 @@ export function ProjectsPage() {
         />
         <PermissionGuard permissions={["bb.projects.create"]}>
           <Button
+            data-product-intro-target={CREATE_PROJECT_PRODUCT_INTRO}
             disabled={!canCreate}
             onClick={() => setShowCreateDrawer(true)}
           >

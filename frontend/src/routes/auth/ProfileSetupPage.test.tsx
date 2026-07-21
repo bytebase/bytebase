@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { fireEvent } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { act } from "react";
@@ -10,6 +13,8 @@ import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
+
+const componentDir = dirname(fileURLToPath(import.meta.url));
 
 const mocks = vi.hoisted(() => ({
   canUpdateWorkspace: true,
@@ -167,6 +172,19 @@ beforeEach(async () => {
 });
 
 describe("ProfileSetupPage", () => {
+  test("uses the shared product intro query key after creating a project", () => {
+    const source = readFileSync(join(componentDir, "ProfileSetupPage.tsx"), {
+      encoding: "utf8",
+    });
+
+    expect(source).toContain(
+      "query: { [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO }"
+    );
+    expect(source).toContain(
+      "query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO }"
+    );
+  });
+
   test("shows workspace name when the sole member can update the workspace", () => {
     const page = renderIntoContainer(<ProfileSetupPage />);
 
@@ -303,7 +321,32 @@ describe("ProfileSetupPage", () => {
 
     expect(mocks.createProject).not.toHaveBeenCalled();
     expect(mocks.setRecentProject).not.toHaveBeenCalled();
-    expect(mocks.routerReplace).toHaveBeenCalledWith("/");
+    expect(mocks.routerReplace).toHaveBeenCalledWith({
+      name: "workspace.project",
+      query: { intro: "create-project" },
+    });
+
+    page.unmount();
+  });
+
+  test("skips profile setup to the projects page with create project highlighted", async () => {
+    const page = renderIntoContainer(<ProfileSetupPage />);
+
+    page.render();
+
+    const skip = Array.from(page.container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("settings.profile.setup-skip")
+    ) as HTMLButtonElement;
+    await act(async () => {
+      skip.click();
+      await Promise.resolve();
+    });
+
+    expect(mocks.createProject).not.toHaveBeenCalled();
+    expect(mocks.routerReplace).toHaveBeenCalledWith({
+      name: "workspace.project",
+      query: { intro: "create-project" },
+    });
 
     page.unmount();
   });

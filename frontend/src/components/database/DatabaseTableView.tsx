@@ -64,6 +64,7 @@ interface DatabaseTableViewProps {
   onRowClick?: (db: Database, e: React.MouseEvent) => void;
   /** Select the row when it is clicked and no explicit row handler is set. */
   selectOnRowClick?: boolean;
+  selectionColumnIntroTarget?: string;
 }
 
 const isAllSelected = (databases: Database[], selected?: Set<string>) =>
@@ -110,6 +111,7 @@ export function DatabaseTableView({
   onSortChange,
   onRowClick,
   selectOnRowClick = false,
+  selectionColumnIntroTarget,
 }: DatabaseTableViewProps) {
   const { t } = useTranslation();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -352,8 +354,15 @@ export function DatabaseTableView({
     <div
       ref={scrollContainerRef}
       data-testid="database-table-scroll-container"
-      className="overflow-x-auto border rounded-sm"
+      className="relative overflow-x-auto border rounded-sm"
     >
+      {showSelection && selectionColumnIntroTarget && (
+        <div
+          data-product-intro-target={selectionColumnIntroTarget}
+          data-product-intro-preserve-position="true"
+          className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-12"
+        />
+      )}
       <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
         <colgroup>
           {showSelection && <col style={{ width: "48px" }} />}

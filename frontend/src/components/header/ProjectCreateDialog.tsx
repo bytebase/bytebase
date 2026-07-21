@@ -24,7 +24,10 @@ import {
   useNotify,
   useWorkspacePermission,
 } from "@/hooks/useAppState";
-import { CONNECT_DATABASE_PRODUCT_INTRO } from "@/lib/productIntro";
+import {
+  CONNECT_DATABASE_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+} from "@/lib/productIntro";
 import { projectNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -116,7 +119,7 @@ export function ProjectCreateDialog({
           params: {
             projectId: extractProjectResourceName(createdProject.name),
           },
-          query: { intro: CONNECT_DATABASE_PRODUCT_INTRO },
+          query: { [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO },
         });
       }
 

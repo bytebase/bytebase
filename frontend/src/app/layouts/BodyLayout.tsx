@@ -12,6 +12,8 @@ import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { ProjectSidebar } from "@/components/ProjectSidebar";
 import { Quickstart } from "@/components/Quickstart";
 import { RoutePermissionGuardShell } from "@/components/RoutePermissionGuardShell";
+import { WorkspaceSetupGuide } from "@/components/WorkspaceSetupGuide";
+import { useAppStore } from "@/stores/app";
 
 // Ported from `src/layouts/BodyLayout.vue`. Mounts the workspace
 // `DashboardBodyShell` (header + sidebar slot + body slot) and portals the
@@ -36,6 +38,7 @@ export function BodyLayout() {
   // Workspace "My Issues" is a standalone full-width page: header (with logo)
   // but no sidebar, mirroring the Vue IssuesRouteShell (variant="issues").
   const isMyIssues = currentRouteName === WORKSPACE_ROUTE_MY_ISSUES;
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
   // Project-scoped routes (`workspace.project.*`) get the project sidebar; the
   // bare projects list (`workspace.project`) keeps the workspace sidebar.
   const isProjectRoute = Boolean(
@@ -116,7 +119,10 @@ export function BodyLayout() {
         : null}
 
       {targets.quickstart
-        ? createPortal(<Quickstart />, targets.quickstart)
+        ? createPortal(
+            isSaaSMode ? <WorkspaceSetupGuide /> : <Quickstart />,
+            targets.quickstart
+          )
         : null}
     </>
   );

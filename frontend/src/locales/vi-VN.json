@@ -672,6 +672,7 @@
     "column": "Cột",
     "columns": "Cột",
     "comment": "Bình luận",
+    "create-database": "Tạo cơ sở dữ liệu",
     "data-size": "Kích thước dữ liệu",
     "edit-environment": "Chỉnh sửa Môi trường",
     "edit-labels": "Chỉnh sửa nhãn",
@@ -804,11 +805,17 @@
     "failed-to-sync-schema": "Đồng bộ hóa lược đồ thất bại",
     "failed-to-sync-schema-for-database-database-value-name": "Đồng bộ schema thất bại cho cơ sở dữ liệu \"{{name}}\".",
     "functions": "Hàm",
+    "instance-databases-synced-action": "Chuyển sang dự án",
+    "instance-databases-synced-description": "Chuyển cơ sở dữ liệu sang một dự án để bắt đầu thay đổi được quản trị.",
+    "instance-databases-synced-title": "Chuyển cơ sở dữ liệu sang dự án",
+    "instance-no-databases-action": "Tạo cơ sở dữ liệu",
+    "instance-no-databases-description": "Tạo cơ sở dữ liệu trong instance này, sau đó chuyển nó sang một dự án để bắt đầu thay đổi được quản trị.",
+    "instance-no-databases-title": "Không tìm thấy cơ sở dữ liệu",
     "n-databases-had-sync-errors": "{{0}} cơ sở dữ liệu gặp lỗi đồng bộ",
     "packages": "Gói",
     "partitions": "Phân vùng",
     "procedures": "Thủ tục",
-    "project-instance-synced-action": "Tạo thay đổi đầu tiên",
+    "project-instance-synced-action": "Tạo thay đổi cơ sở dữ liệu",
     "project-instance-synced-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy bắt đầu bằng một thay đổi cơ sở dữ liệu được quản trị khi bạn sẵn sàng.",
     "project-instance-synced-sql-editor-action": "Mở SQL Editor",
     "project-instance-synced-title": "Đã kết nối cơ sở dữ liệu",
@@ -940,6 +947,7 @@
       "public": "IP công khai"
     },
     "connect-database-to-project": "Kết nối cơ sở dữ liệu với dự án",
+    "connect-instance": "Kết nối instance",
     "connecting-database-to-project": "Đang kết nối cơ sở dữ liệu...",
     "connection-info": "Thông tin kết nối",
     "connection-options": "Tùy chọn kết nối",
@@ -1774,10 +1782,10 @@
         "warning": "Hành động này không thể hoàn tác. Tất cả dữ liệu dự án bao gồm vấn đề, cấu hình và lịch sử sẽ bị xóa vĩnh viễn."
       }
     },
-    "connect-database": "Kết nối cơ sở dữ liệu",
-    "connect-database-empty-placeholder": "Kết nối một phiên bản để đồng bộ cơ sở dữ liệu vào dự án này",
-    "connect-database-intro-description": "Kết nối cơ sở dữ liệu để Bytebase đồng bộ vào dự án này.",
-    "connect-database-intro-title": "Kết nối cơ sở dữ liệu đầu tiên",
+    "connect-instance": "Kết nối instance",
+    "connect-instance-empty-placeholder": "Kết nối instance để đồng bộ cơ sở dữ liệu vào dự án này",
+    "connect-instance-intro-description": "Kết nối instance để Bytebase đồng bộ cơ sở dữ liệu vào dự án này.",
+    "connect-instance-intro-title": "Kết nối instance",
     "create-modal": {
       "project-name": "Dự án Tên",
       "success-prompt": "Đã tạo thành công dự án {{name}}."
@@ -3344,5 +3352,37 @@
   },
   "worksheet": {
     "self": "Bảng tính"
+  },
+  "workspace-setup-guide": {
+    "actions": {
+      "change": "Tạo thay đổi cơ sở dữ liệu",
+      "query": "Đi tới SQL Editor"
+    },
+    "descriptions": {
+      "database": "Tạo hoặc chuyển cơ sở dữ liệu vào dự án trước khi truy vấn dữ liệu.",
+      "instance": "Kết nối instance để Bytebase có thể đồng bộ cơ sở dữ liệu của bạn.",
+      "project": "Tạo dự án để quản lý cơ sở dữ liệu và thay đổi.",
+      "sql-editor": "Truy vấn dữ liệu trong SQL Editor hoặc tạo thay đổi cơ sở dữ liệu được quản trị."
+    },
+    "dismiss": "Đóng hướng dẫn",
+    "intro": {
+      "database-description": "Tạo cơ sở dữ liệu trong instance đã kết nối.",
+      "database-title": "Tạo cơ sở dữ liệu",
+      "instance-description": "Tạo instance để Bytebase có thể kết nối tới máy chủ cơ sở dữ liệu của bạn.",
+      "instance-title": "Kết nối instance",
+      "project-description": "Tạo một dự án trước. Cơ sở dữ liệu có thể được đồng bộ vào dự án đó sau khi instance được kết nối.",
+      "project-title": "Tạo dự án",
+      "transfer-description": "Chọn một hoặc nhiều cơ sở dữ liệu, sau đó chuyển chúng vào dự án.",
+      "transfer-title": "Chọn cơ sở dữ liệu"
+    },
+    "prepare-database-tip": "Chọn cơ sở dữ liệu để chuyển vào dự án.",
+    "previous-step-required": "Bạn cần hoàn thành bước trước đó.",
+    "self": "Thiết lập Bytebase",
+    "steps": {
+      "database": "Chuẩn bị cơ sở dữ liệu",
+      "instance": "Kết nối instance",
+      "project": "Tạo dự án",
+      "query": "Truy vấn dữ liệu"
+    }
   }
 }

@@ -69,26 +69,40 @@ export interface CreateDatabaseSheetProps {
   onClose: () => void;
   // If provided, lock project selection to this project
   projectName?: string;
+  // If provided, lock instance selection to this instance
+  instanceName?: string;
 }
 
 interface CreateDatabaseSession {
   id: number;
   open: boolean;
   fixedProjectName?: string;
+  fixedInstanceName?: string;
 }
 
 export function CreateDatabaseSheet(props: CreateDatabaseSheetProps) {
-  const { open, onClose, projectName: fixedProjectName } = props;
+  const {
+    open,
+    onClose,
+    projectName: fixedProjectName,
+    instanceName: fixedInstanceName,
+  } = props;
   const sessionRef = useRef<CreateDatabaseSession>({
     id: 0,
     open: false,
     fixedProjectName,
+    fixedInstanceName,
   });
   const session = sessionRef.current;
   if (open) {
-    if (!session.open || session.fixedProjectName !== fixedProjectName) {
+    if (
+      !session.open ||
+      session.fixedProjectName !== fixedProjectName ||
+      session.fixedInstanceName !== fixedInstanceName
+    ) {
       session.id += 1;
       session.fixedProjectName = fixedProjectName;
+      session.fixedInstanceName = fixedInstanceName;
     }
     session.open = true;
   } else {
@@ -103,10 +117,11 @@ export function CreateDatabaseSheet(props: CreateDatabaseSheetProps) {
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent width="standard">
         <CreateDatabaseForm
-          key={`${session.id}:${session.fixedProjectName ?? ""}`}
+          key={`${session.id}:${session.fixedProjectName ?? ""}:${session.fixedInstanceName ?? ""}`}
           open={open}
           onClose={onClose}
           fixedProjectName={session.fixedProjectName}
+          fixedInstanceName={session.fixedInstanceName}
           sessionId={session.id}
           isSessionActive={isSessionActive}
         />
@@ -119,12 +134,14 @@ function CreateDatabaseForm({
   open,
   onClose,
   fixedProjectName,
+  fixedInstanceName,
   sessionId,
   isSessionActive,
 }: {
   open: boolean;
   onClose: () => void;
   fixedProjectName?: string;
+  fixedInstanceName?: string;
   sessionId: number;
   isSessionActive: (id: number) => boolean;
 }) {
@@ -318,6 +335,25 @@ function CreateDatabaseForm({
     }
   };
 
+  useEffect(() => {
+    if (!open || !fixedInstanceName) {
+      return;
+    }
+    const inst = useAppStore.getState().instancesByName[fixedInstanceName];
+    if (inst) {
+      void handleInstanceChange(fixedInstanceName, inst);
+      return;
+    }
+    setInstanceName(fixedInstanceName);
+    void useAppStore
+      .getState()
+      .getOrFetchInstanceByName(fixedInstanceName)
+      .then((fetched) => handleInstanceChange(fixedInstanceName, fetched))
+      .catch(() => {});
+    // Fixed-instance initialization follows the sheet session. Manual instance
+    // changes still go through InstanceSelect.onChange.
+  }, [fixedInstanceName, open, sessionId]);
+
   const handleCreate = async () => {
     if (!allowCreate || creating) return;
     setCreating(true);
@@ -455,6 +491,7 @@ function CreateDatabaseForm({
               value={instanceName}
               onChange={handleInstanceChange}
               engines={enginesSupportCreateDatabase()}
+              disabled={!!fixedInstanceName}
               portal
             />
           </FormField>

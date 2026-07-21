@@ -133,4 +133,36 @@ describe("DatabaseTableView", () => {
       databases.map((database) => database.name)
     );
   });
+
+  test("can expose the selection column as a product intro target", async () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    await act(async () => {
+      root!.render(
+        <DatabaseTableView
+          databases={[makeDatabase("instances/i/databases/db1")]}
+          mode="PROJECT"
+          selectedNames={new Set()}
+          onSelectedNamesChange={vi.fn()}
+          selectionColumnIntroTarget="prepare-database"
+        />
+      );
+      await Promise.resolve();
+    });
+
+    const target = container.querySelector(
+      "[data-product-intro-target='prepare-database']"
+    );
+
+    expect(target).toBeTruthy();
+    expect(target?.getAttribute("data-product-intro-preserve-position")).toBe(
+      "true"
+    );
+    expect(target?.className).toContain("w-12");
+    expect(target?.className).toContain("bottom-0");
+    expect(target?.className).toContain("pointer-events-none");
+    expect(target?.className).not.toContain("h-full");
+  });
 });

@@ -131,6 +131,13 @@ describe("workspace list page layout", () => {
     }
   });
 
+  test("labels the instances page create action as connect instance", () => {
+    const source = readSettingsPage("InstancesPage.tsx");
+
+    expect(source).toContain('t("instance.connect-instance")');
+    expect(source).not.toContain('{t("common.create")}');
+  });
+
   test("does not stack page top padding with general settings form sections", () => {
     const source = readSettingsPage("general/GeneralPage.tsx");
 

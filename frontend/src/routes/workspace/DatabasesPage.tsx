@@ -3,6 +3,7 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useCurrentRoute } from "@/app/router";
 import {
   AdvancedSearch,
   getValueFromScopes,
@@ -21,6 +22,7 @@ import { EditEnvironmentSheet } from "@/components/EditEnvironmentSheet";
 import { EngineIcon } from "@/components/EngineIcon";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
 import { PermissionGuard } from "@/components/PermissionGuard";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   WorkspacePageLayout,
@@ -32,6 +34,12 @@ import {
   useURLSearchParam,
 } from "@/hooks/useURLSearchParam";
 import type { DatabaseFilter } from "@/lib/databaseFilter";
+import {
+  PREPARE_DATABASE_PRODUCT_INTRO,
+  PREPARE_DATABASE_TRANSFER_TIP,
+  PRODUCT_INTRO_TIP_QUERY_KEY,
+  useProductIntro,
+} from "@/lib/productIntro";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -70,6 +78,7 @@ const parseDatabaseSearch = createAdvancedSearchParser([
 
 export function DatabasesPage() {
   const { t } = useTranslation();
+  const currentRoute = useCurrentRoute();
   const databasesByName = useAppStore((s) => s.databasesByName);
   const getDatabaseByName = useAppStore((s) => s.getDatabaseByName);
   const removeDatabaseMetadataCache = useAppStore(
@@ -289,9 +298,34 @@ export function DatabasesPage() {
     }
   }, []);
 
+  const showPrepareDatabaseTip =
+    currentRoute.query[PRODUCT_INTRO_TIP_QUERY_KEY] ===
+    PREPARE_DATABASE_TRANSFER_TIP;
+
   // Selection state
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
   const [visibleDatabases, setVisibleDatabases] = useState<Database[]>([]);
+  const [databaseTableLoading, setDatabaseTableLoading] = useState(true);
+
+  const shouldShowTransferIntro =
+    showPrepareDatabaseTip &&
+    !databaseTableLoading &&
+    visibleDatabases.length > 0;
+  const shouldShowCreateDatabaseIntro =
+    !showPrepareDatabaseTip ||
+    (!databaseTableLoading && visibleDatabases.length === 0);
+  useProductIntro({
+    id: PREPARE_DATABASE_PRODUCT_INTRO,
+    title: shouldShowTransferIntro
+      ? t("workspace-setup-guide.intro.transfer-title")
+      : t("workspace-setup-guide.intro.database-title"),
+    description: shouldShowTransferIntro
+      ? t("workspace-setup-guide.intro.transfer-description")
+      : t("workspace-setup-guide.intro.database-description"),
+    ...(showPrepareDatabaseTip && databaseTableLoading
+      ? { disabled: true }
+      : {}),
+  });
 
   const selectedDatabases = useMemo(() => {
     if (selectedNames.size === 0) return [];
@@ -461,6 +495,11 @@ export function DatabasesPage() {
           permissions={["bb.instances.list", "bb.issues.create"]}
         >
           <Button
+            data-product-intro-target={
+              shouldShowCreateDatabaseIntro
+                ? PREPARE_DATABASE_PRODUCT_INTRO
+                : undefined
+            }
             disabled={
               !hasWorkspacePermissionV2("bb.instances.list") ||
               !hasWorkspacePermissionV2("bb.issues.create")
@@ -468,10 +507,16 @@ export function DatabasesPage() {
             onClick={() => setShowCreateDrawer(true)}
           >
             <Plus className="h-4 w-4 mr-1" />
-            {t("common.create")}
+            {t("database.create-database")}
           </Button>
         </PermissionGuard>
       </WorkspacePageToolbar>
+
+      {shouldShowTransferIntro && (
+        <Alert className="mx-4 w-auto" variant="info">
+          {t("workspace-setup-guide.prepare-database-tip")}
+        </Alert>
+      )}
 
       <DatabaseTable
         filter={filter}
@@ -479,7 +524,11 @@ export function DatabasesPage() {
         selectedNames={selectedNames}
         onSelectedNamesChange={setSelectedNames}
         onDatabasesChange={setVisibleDatabases}
+        onLoadingChange={setDatabaseTableLoading}
         refreshToken={refreshToken}
+        selectionColumnIntroTarget={
+          shouldShowTransferIntro ? PREPARE_DATABASE_PRODUCT_INTRO : undefined
+        }
       />
 
       {/* Batch operations bar */}

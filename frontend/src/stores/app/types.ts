@@ -866,8 +866,8 @@ export type NotificationSlice = {
 };
 
 export type PreferencesSlice = {
-  // Bumped on every intro-state write so selectors reading `getIntroStateByKey`
-  // re-run (the flags live in localStorage, not Zustand state).
+  // Bumped on every intro-state write so `useIntroStateByKey` can re-read the
+  // flags, which live in localStorage rather than Zustand state.
   introStateVersion: number;
   setRecentProject: (name: string) => void;
   recordRecentVisit: (path: string, workspaceName?: string) => void;

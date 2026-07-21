@@ -672,6 +672,7 @@
     "column": "列",
     "columns": "列",
     "comment": "注释",
+    "create-database": "创建数据库",
     "data-size": "数据大小",
     "edit-environment": "编辑环境",
     "edit-labels": "编辑标签",
@@ -804,11 +805,17 @@
     "failed-to-sync-schema": "同步 schema 失败",
     "failed-to-sync-schema-for-database-database-value-name": "同步数据库 \"{{name}}\" 的 schema 失败。",
     "functions": "函数",
+    "instance-databases-synced-action": "转移到项目",
+    "instance-databases-synced-description": "将数据库转移到项目后，即可开始创建受管变更。",
+    "instance-databases-synced-title": "将数据库转移到项目",
+    "instance-no-databases-action": "创建数据库",
+    "instance-no-databases-description": "在该实例中创建数据库，然后将其转移到项目以开始受管变更。",
+    "instance-no-databases-title": "未找到数据库",
     "n-databases-had-sync-errors": "{{0}} 个数据库同步出错",
     "packages": "包",
     "partitions": "分区",
     "procedures": "存储过程",
-    "project-instance-synced-action": "创建第一个变更",
+    "project-instance-synced-action": "创建数据库变更",
     "project-instance-synced-description": "你的数据库已在此项目中就绪。准备好后，可以从受管数据库变更开始。",
     "project-instance-synced-sql-editor-action": "打开 SQL Editor",
     "project-instance-synced-title": "数据库已连接",
@@ -940,6 +947,7 @@
       "public": "公共 IP"
     },
     "connect-database-to-project": "连接数据库到项目",
+    "connect-instance": "连接实例",
     "connecting-database-to-project": "正在连接数据库...",
     "connection-info": "连接信息",
     "connection-options": "连接选项",
@@ -1774,10 +1782,10 @@
         "warning": "此操作无法撤消。包括工单、配置和历史记录在内的所有项目数据将被永久删除。"
       }
     },
-    "connect-database": "连接数据库",
-    "connect-database-empty-placeholder": "连接实例，将数据库同步到此项目",
-    "connect-database-intro-description": "连接数据库后，Bytebase 会将它同步到这个项目中。",
-    "connect-database-intro-title": "连接第一个数据库",
+    "connect-instance": "连接实例",
+    "connect-instance-empty-placeholder": "连接实例，将数据库同步到此项目",
+    "connect-instance-intro-description": "连接实例后，Bytebase 会将数据库同步到这个项目中。",
+    "connect-instance-intro-title": "连接实例",
     "create-modal": {
       "project-name": "项目名称",
       "success-prompt": "成功创建 {{name}}."
@@ -3344,5 +3352,37 @@
   },
   "worksheet": {
     "self": "工作表"
+  },
+  "workspace-setup-guide": {
+    "actions": {
+      "change": "创建数据库变更",
+      "query": "前往 SQL Editor"
+    },
+    "descriptions": {
+      "database": "创建数据库或将数据库转移到项目中，然后查询数据。",
+      "instance": "连接实例，让 Bytebase 可以同步你的数据库。",
+      "project": "创建项目来管理数据库和变更。",
+      "sql-editor": "在 SQL Editor 中查询数据，或创建受管数据库变更。"
+    },
+    "dismiss": "关闭指南",
+    "intro": {
+      "database-description": "在已连接的实例中创建数据库。",
+      "database-title": "创建数据库",
+      "instance-description": "创建实例，让 Bytebase 可以连接到你的数据库服务器。",
+      "instance-title": "连接实例",
+      "project-description": "先创建一个项目。实例连接后，数据库可以同步到该项目中。",
+      "project-title": "创建项目",
+      "transfer-description": "选择一个或多个数据库，然后转移到项目。",
+      "transfer-title": "选择数据库"
+    },
+    "prepare-database-tip": "选择数据库并转移到项目。",
+    "previous-step-required": "你需要先完成上一步。",
+    "self": "设置 Bytebase",
+    "steps": {
+      "database": "准备数据库",
+      "instance": "连接实例",
+      "project": "创建项目",
+      "query": "查询数据"
+    }
   }
 }

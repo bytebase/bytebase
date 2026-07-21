@@ -672,6 +672,7 @@
     "column": "列",
     "columns": "カラム",
     "comment": "コメント",
+    "create-database": "データベースを作成",
     "data-size": "データサイズ",
     "edit-environment": "環境の編集",
     "edit-labels": "ラベルを編集",
@@ -804,11 +805,17 @@
     "failed-to-sync-schema": "スキーマの同期に失敗しました",
     "failed-to-sync-schema-for-database-database-value-name": "データベース \"{{name}}\" のスキーマの同期に失敗しました。",
     "functions": "関数",
+    "instance-databases-synced-action": "プロジェクトへ転送",
+    "instance-databases-synced-description": "管理された変更を始めるには、データベースをプロジェクトへ転送してください。",
+    "instance-databases-synced-title": "データベースをプロジェクトへ転送",
+    "instance-no-databases-action": "データベースを作成",
+    "instance-no-databases-description": "このインスタンスにデータベースを作成し、プロジェクトへ転送して管理された変更を開始します。",
+    "instance-no-databases-title": "データベースが見つかりません",
     "n-databases-had-sync-errors": "{{0}} 個のデータベースで同期エラーが発生しました",
     "packages": "パッケージ",
     "partitions": "パーティション",
     "procedures": "ストアドプロシージャ",
-    "project-instance-synced-action": "最初の変更を作成",
+    "project-instance-synced-action": "データベース変更を作成",
     "project-instance-synced-description": "このプロジェクトでデータベースを利用できるようになりました。準備ができたら、管理されたデータベース変更から始めてください。",
     "project-instance-synced-sql-editor-action": "SQL Editor を開く",
     "project-instance-synced-title": "データベースが接続されました",
@@ -940,6 +947,7 @@
       "public": "パブリック IP"
     },
     "connect-database-to-project": "データベースをプロジェクトに接続",
+    "connect-instance": "インスタンスを接続",
     "connecting-database-to-project": "データベースを接続中...",
     "connection-info": "接続情報",
     "connection-options": "接続オプション",
@@ -1774,10 +1782,10 @@
         "warning": "この操作は元に戻せません。イシュー、設定、履歴を含むすべてのプロジェクトデータが完全に削除されます。"
       }
     },
-    "connect-database": "データベースに接続",
-    "connect-database-empty-placeholder": "インスタンスを接続して、このプロジェクトにデータベースを同期します",
-    "connect-database-intro-description": "データベースを接続すると、Bytebase がこのプロジェクトに同期します。",
-    "connect-database-intro-title": "最初のデータベースを接続",
+    "connect-instance": "インスタンスを接続",
+    "connect-instance-empty-placeholder": "インスタンスを接続して、このプロジェクトにデータベースを同期します",
+    "connect-instance-intro-description": "インスタンスを接続すると、Bytebase がデータベースをこのプロジェクトに同期します。",
+    "connect-instance-intro-title": "インスタンスを接続",
     "create-modal": {
       "project-name": "プロジェクト名前",
       "success-prompt": "{{name}} が正常に作成されました。"
@@ -3344,5 +3352,37 @@
   },
   "worksheet": {
     "self": "ワークシート"
+  },
+  "workspace-setup-guide": {
+    "actions": {
+      "change": "データベース変更を作成",
+      "query": "SQL Editor に移動"
+    },
+    "descriptions": {
+      "database": "データをクエリする前に、データベースを作成するかプロジェクトに転送します。",
+      "instance": "インスタンスを接続して、Bytebase がデータベースを同期できるようにします。",
+      "project": "データベースと変更を整理するプロジェクトを作成します。",
+      "sql-editor": "SQL Editor でデータをクエリするか、ガバナンス付きデータベース変更を作成します。"
+    },
+    "dismiss": "ガイドを閉じる",
+    "intro": {
+      "database-description": "接続済みインスタンスにデータベースを作成します。",
+      "database-title": "データベースを作成",
+      "instance-description": "Bytebase がデータベースサーバーに接続できるようにインスタンスを作成します。",
+      "instance-title": "インスタンスを接続",
+      "project-description": "まずプロジェクトを作成します。インスタンス接続後、データベースをそのプロジェクトに同期できます。",
+      "project-title": "プロジェクトを作成",
+      "transfer-description": "1つ以上のデータベースを選択し、プロジェクトに転送します。",
+      "transfer-title": "データベースを選択"
+    },
+    "prepare-database-tip": "プロジェクトに転送するデータベースを選択します。",
+    "previous-step-required": "前のステップを先に完了する必要があります。",
+    "self": "Bytebase をセットアップ",
+    "steps": {
+      "database": "データベースを準備",
+      "instance": "インスタンスを接続",
+      "project": "プロジェクトを作成",
+      "query": "データをクエリ"
+    }
   }
 }

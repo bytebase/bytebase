@@ -62,16 +62,19 @@ vi.mock("./DatabaseTableView", () => ({
     emptyPlaceholder,
     onRowClick,
     selectOnRowClick,
+    selectionColumnIntroTarget,
   }: {
     databases: Database[];
     emptyPlaceholder?: React.ReactNode;
     onRowClick?: (database: Database, event: React.MouseEvent) => void;
     selectOnRowClick?: boolean;
+    selectionColumnIntroTarget?: string;
   }) => (
     <div
       data-testid="database-names"
       data-has-row-click={Boolean(onRowClick)}
       data-select-on-row-click={Boolean(selectOnRowClick)}
+      data-selection-column-intro-target={selectionColumnIntroTarget ?? ""}
     >
       {databases.map((database) => database.name).join(",")}
       {emptyPlaceholder && (
@@ -239,5 +242,34 @@ describe("DatabaseTable", () => {
     const view = container.querySelector("[data-testid='database-names']");
     expect(view?.getAttribute("data-has-row-click")).toBe("false");
     expect(view?.getAttribute("data-select-on-row-click")).toBe("true");
+  });
+
+  test("forwards selection column intro target to the table view", async () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    mocks.fetchDatabases.mockResolvedValueOnce({
+      databases: [db1],
+      nextPageToken: "",
+    });
+
+    await act(async () => {
+      root!.render(
+        <DatabaseTable
+          filter={{}}
+          parent="instances/i"
+          selectedNames={new Set()}
+          onSelectedNamesChange={vi.fn()}
+          selectionColumnIntroTarget="prepare-database"
+        />
+      );
+      await Promise.resolve();
+    });
+
+    const view = container.querySelector("[data-testid='database-names']");
+    expect(view?.getAttribute("data-selection-column-intro-target")).toBe(
+      "prepare-database"
+    );
   });
 });

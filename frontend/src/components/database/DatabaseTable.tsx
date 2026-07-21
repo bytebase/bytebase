@@ -36,8 +36,10 @@ export interface DatabaseTableProps {
    * it every render and re-fires the effect on every parent re-render.
    */
   onDatabasesChange?: (databases: Database[]) => void;
+  onLoadingChange?: (loading: boolean) => void;
   refreshToken?: number;
   emptyPlaceholder?: React.ReactNode;
+  selectionColumnIntroTarget?: string;
 }
 
 function databaseFilterKey(filter: DatabaseFilter | string | undefined) {
@@ -72,8 +74,10 @@ export function DatabaseTable({
   selectedNames,
   onSelectedNamesChange,
   onDatabasesChange,
+  onLoadingChange,
   refreshToken,
   emptyPlaceholder,
+  selectionColumnIntroTarget,
 }: DatabaseTableProps) {
   const [databases, setDatabases] = useState<Database[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,6 +178,9 @@ export function DatabaseTable({
   useEffect(() => {
     onDatabasesChange?.(databases);
   }, [databases, onDatabasesChange]);
+  useEffect(() => {
+    onLoadingChange?.(loading);
+  }, [loading, onLoadingChange]);
 
   const handleRowClick = useCallback((db: Database, e: React.MouseEvent) => {
     const url = router.resolve(autoDatabaseRoute(db)).fullPath;
@@ -203,6 +210,7 @@ export function DatabaseTable({
         onSortChange={setSort}
         onRowClick={selectOnRowClick ? undefined : handleRowClick}
         selectOnRowClick={selectOnRowClick}
+        selectionColumnIntroTarget={selectionColumnIntroTarget}
       />
       <div className="mt-4 mx-2">
         <PagedTableFooter

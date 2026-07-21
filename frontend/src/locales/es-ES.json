@@ -672,6 +672,7 @@
     "column": "Columna",
     "columns": "Columnas",
     "comment": "Comentario",
+    "create-database": "Crear base de datos",
     "data-size": "Tamaño de datos",
     "edit-environment": "Editar entorno",
     "edit-labels": "Editar etiquetas",
@@ -804,11 +805,17 @@
     "failed-to-sync-schema": "Error al sincronizar el esquema",
     "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos \"{{name}}\".",
     "functions": "Funciones",
+    "instance-databases-synced-action": "Transferir al proyecto",
+    "instance-databases-synced-description": "Transfiere las bases de datos a un proyecto para empezar cambios gobernados.",
+    "instance-databases-synced-title": "Transferir bases de datos a un proyecto",
+    "instance-no-databases-action": "Crear base de datos",
+    "instance-no-databases-description": "Crea una base de datos en esta instancia y luego transfiérela a un proyecto para empezar cambios gobernados.",
+    "instance-no-databases-title": "No se encontraron bases de datos",
     "n-databases-had-sync-errors": "{{0}} base(s) de datos tuvieron errores de sincronización",
     "packages": "Paquetes",
     "partitions": "Particiones",
     "procedures": "Procedimientos",
-    "project-instance-synced-action": "Crear primer cambio",
+    "project-instance-synced-action": "Crear cambio de base de datos",
     "project-instance-synced-description": "Tu base de datos está lista en este proyecto. Empieza con un cambio de base de datos gobernado cuando estés listo.",
     "project-instance-synced-sql-editor-action": "Abrir SQL Editor",
     "project-instance-synced-title": "Base de datos conectada",
@@ -940,6 +947,7 @@
       "public": "IP pública"
     },
     "connect-database-to-project": "Conectar base de datos al proyecto",
+    "connect-instance": "Conectar instancia",
     "connecting-database-to-project": "Conectando base de datos...",
     "connection-info": "Información de conexión",
     "connection-options": "Opciones de conexión",
@@ -1774,10 +1782,10 @@
         "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente."
       }
     },
-    "connect-database": "Conectar base de datos",
-    "connect-database-empty-placeholder": "Conecta una instancia para sincronizar bases de datos en este proyecto",
-    "connect-database-intro-description": "Conecta una base de datos para que Bytebase pueda sincronizarla en este proyecto.",
-    "connect-database-intro-title": "Conecta tu primera base de datos",
+    "connect-instance": "Conectar instancia",
+    "connect-instance-empty-placeholder": "Conecta una instancia para sincronizar bases de datos en este proyecto",
+    "connect-instance-intro-description": "Conecta una instancia para que Bytebase sincronice bases de datos en este proyecto.",
+    "connect-instance-intro-title": "Conectar la instancia",
     "create-modal": {
       "project-name": "Proyecto Nombre",
       "success-prompt": "Proyecto {{name}} creado exitosamente."
@@ -3344,5 +3352,37 @@
   },
   "worksheet": {
     "self": "Hoja de trabajo"
+  },
+  "workspace-setup-guide": {
+    "actions": {
+      "change": "Crear cambio de base de datos",
+      "query": "Ir a SQL Editor"
+    },
+    "descriptions": {
+      "database": "Crea o transfiere una base de datos a un proyecto antes de consultar datos.",
+      "instance": "Conecta una instancia para que Bytebase pueda sincronizar tus bases de datos.",
+      "project": "Crea un proyecto para organizar bases de datos y cambios.",
+      "sql-editor": "Consulta datos en SQL Editor o crea un cambio de base de datos gobernado."
+    },
+    "dismiss": "Cerrar guía",
+    "intro": {
+      "database-description": "Crea una base de datos en tu instancia conectada.",
+      "database-title": "Crear base de datos",
+      "instance-description": "Crea una instancia para que Bytebase pueda conectarse a tu servidor de base de datos.",
+      "instance-title": "Conectar la instancia",
+      "project-description": "Crea primero un proyecto. Las bases de datos se pueden sincronizar en él después de conectar la instancia.",
+      "project-title": "Crear un proyecto",
+      "transfer-description": "Selecciona una o más bases de datos y transfiérelas al proyecto.",
+      "transfer-title": "Seleccionar bases de datos"
+    },
+    "prepare-database-tip": "Selecciona las bases de datos para transferirlas al proyecto.",
+    "previous-step-required": "Debes terminar el paso anterior.",
+    "self": "Configurar Bytebase",
+    "steps": {
+      "database": "Preparar base de datos",
+      "instance": "Conectar instancia",
+      "project": "Crear proyecto",
+      "query": "Consultar datos"
+    }
   }
 }
