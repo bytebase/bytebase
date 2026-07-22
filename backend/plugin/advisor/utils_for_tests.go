@@ -498,6 +498,11 @@ func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMetadata, 
 	return nil, nil
 }
 
+// SyncInstanceBasicMeta implements the Driver interface.
+func (*MockDriver) SyncInstanceBasicMeta(_ context.Context) (*database.InstanceMetadata, error) {
+	return nil, nil
+}
+
 // SyncDBSchema implements the Driver interface.
 func (*MockDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	return nil, nil

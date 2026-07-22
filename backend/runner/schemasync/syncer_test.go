@@ -7,8 +7,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -48,4 +50,45 @@ func TestGetOrDefaultSyncIntervalUsesEffectiveActivation(t *testing.T) {
 
 	instance.Metadata.Activation = true
 	require.Equal(t, customInterval, s.getOrDefaultSyncInterval(ctx, instance))
+}
+
+func TestMergeInstanceMetadataPreservesLastSyncTimeForBasicSync(t *testing.T) {
+	lastSyncTime := timestamppb.New(time.Unix(100, 0))
+
+	metadata := mergeInstanceMetadata(
+		&storepb.Instance{
+			Version:      "old-version",
+			LastSyncTime: lastSyncTime,
+		},
+		&db.InstanceMetadata{
+			Version: "new-version",
+			Metadata: &storepb.Instance{
+				MysqlLowerCaseTableNames: 1,
+			},
+		},
+		false,
+	)
+
+	require.Equal(t, lastSyncTime.AsTime(), metadata.LastSyncTime.AsTime())
+	require.Equal(t, "new-version", metadata.Version)
+	require.Equal(t, int32(1), metadata.MysqlLowerCaseTableNames)
+}
+
+func TestMergeInstanceMetadataUpdatesLastSyncTimeForFullSync(t *testing.T) {
+	lastSyncTime := timestamppb.New(time.Unix(100, 0))
+	fullSyncTime := timestamppb.New(time.Unix(200, 0))
+
+	metadata := mergeInstanceMetadata(
+		&storepb.Instance{
+			LastSyncTime: lastSyncTime,
+		},
+		&db.InstanceMetadata{
+			Metadata: &storepb.Instance{
+				LastSyncTime: fullSyncTime,
+			},
+		},
+		true,
+	)
+
+	require.Equal(t, fullSyncTime.AsTime(), metadata.LastSyncTime.AsTime())
 }

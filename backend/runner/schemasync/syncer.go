@@ -285,14 +285,42 @@ func (s *Syncer) GetInstanceMeta(ctx context.Context, instance *store.InstanceMe
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to sync instance: %s", instance.ResourceID)
 	}
+	instanceMeta = setInstanceMetaLastSyncTime(instanceMeta)
 
+	return instanceMeta, nil
+}
+
+// GetInstanceBasicMeta gets the instance metadata without database discovery.
+func (s *Syncer) GetInstanceBasicMeta(ctx context.Context, instance *store.InstanceMessage) (*db.InstanceMetadata, error) {
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
+	if err != nil {
+		return nil, err
+	}
+	defer driver.Close(ctx)
+
+	deadlineCtx, cancelFunc := context.WithDeadline(ctx, time.Now().Add(syncTimeout))
+	defer cancelFunc()
+	instanceMeta, err := driver.SyncInstanceBasicMeta(deadlineCtx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to sync instance basic metadata: %s", instance.ResourceID)
+	}
+	return ensureInstanceMetaMetadata(instanceMeta), nil
+}
+
+func ensureInstanceMetaMetadata(instanceMeta *db.InstanceMetadata) *db.InstanceMetadata {
+	if instanceMeta == nil {
+		instanceMeta = &db.InstanceMetadata{}
+	}
 	if instanceMeta.Metadata == nil {
 		instanceMeta.Metadata = &storepb.Instance{}
 	}
+	return instanceMeta
+}
 
+func setInstanceMetaLastSyncTime(instanceMeta *db.InstanceMetadata) *db.InstanceMetadata {
+	instanceMeta = ensureInstanceMetaMetadata(instanceMeta)
 	instanceMeta.Metadata.LastSyncTime = timestamppb.Now()
-
-	return instanceMeta, nil
+	return instanceMeta
 }
 
 // SyncInstanceOptions controls one-off sync behavior.
@@ -307,26 +335,22 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	return s.SyncInstanceWithOptions(ctx, instance, SyncInstanceOptions{})
 }
 
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (s *Syncer) SyncInstanceBasicMeta(ctx context.Context, instance *store.InstanceMessage) (*store.InstanceMessage, error) {
+	instanceMeta, err := s.GetInstanceBasicMeta(ctx, instance)
+	if err != nil {
+		return nil, err
+	}
+	return s.updateInstanceMetadata(ctx, instance, instanceMeta, false /* updateLastSyncTime */)
+}
+
 // SyncInstanceWithOptions syncs the schema for all databases in an instance with one-off options.
 func (s *Syncer) SyncInstanceWithOptions(ctx context.Context, instance *store.InstanceMessage, options SyncInstanceOptions) (*store.InstanceMessage, []*storepb.DatabaseSchemaMetadata, []*store.DatabaseMessage, error) {
 	instanceMeta, err := s.GetInstanceMeta(ctx, instance)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	metadata := proto.CloneOf(instance.Metadata)
-	metadata.LastSyncTime = instanceMeta.Metadata.LastSyncTime
-	metadata.MysqlLowerCaseTableNames = instanceMeta.Metadata.MysqlLowerCaseTableNames
-	metadata.Roles = instanceMeta.Metadata.Roles
-
-	updateInstance := &store.UpdateInstanceMessage{
-		ResourceID: &instance.ResourceID,
-		Workspace:  instance.Workspace,
-		Metadata:   metadata,
-	}
-	if instanceMeta.Version != instance.Metadata.GetVersion() {
-		metadata.Version = instanceMeta.Version
-	}
-	updatedInstance, err := s.store.UpdateInstance(ctx, updateInstance)
+	updatedInstance, err := s.updateInstanceMetadata(ctx, instance, instanceMeta, true /* updateLastSyncTime */)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -381,6 +405,34 @@ func (s *Syncer) SyncInstanceWithOptions(ctx context.Context, instance *store.In
 	}
 
 	return updatedInstance, instanceMeta.Databases, newDatabases, nil
+}
+
+func (s *Syncer) updateInstanceMetadata(ctx context.Context, instance *store.InstanceMessage, instanceMeta *db.InstanceMetadata, updateLastSyncTime bool) (*store.InstanceMessage, error) {
+	metadata := mergeInstanceMetadata(instance.Metadata, instanceMeta, updateLastSyncTime)
+
+	return s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &instance.ResourceID,
+		Workspace:  instance.Workspace,
+		Metadata:   metadata,
+	})
+}
+
+func mergeInstanceMetadata(metadata *storepb.Instance, instanceMeta *db.InstanceMetadata, updateLastSyncTime bool) *storepb.Instance {
+	metadata = proto.CloneOf(metadata)
+	if metadata == nil {
+		metadata = &storepb.Instance{}
+	}
+	instanceMeta = ensureInstanceMetaMetadata(instanceMeta)
+	if updateLastSyncTime {
+		metadata.LastSyncTime = instanceMeta.Metadata.LastSyncTime
+	}
+	metadata.MysqlLowerCaseTableNames = instanceMeta.Metadata.MysqlLowerCaseTableNames
+	metadata.Roles = instanceMeta.Metadata.Roles
+	if instanceMeta.Version != metadata.GetVersion() {
+		metadata.Version = instanceMeta.Version
+	}
+
+	return metadata
 }
 
 // doSyncDatabaseSchema is the core implementation that syncs the schema for a database and optionally creates a sync history record.

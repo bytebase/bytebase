@@ -12,9 +12,9 @@ import (
 
 // SyncInstance syncs the instance.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, err := d.getVersion(ctx)
+	instanceMetadata, err := d.SyncInstanceBasicMeta(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get Trino version")
+		return nil, err
 	}
 
 	catalogList, err := d.getCatalog(ctx)
@@ -29,10 +29,19 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		})
 	}
 
+	instanceMetadata.Databases = catalogMetadata
+	return instanceMetadata, nil
+}
+
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (d *Driver) SyncInstanceBasicMeta(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, err := d.getVersion(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get Trino version")
+	}
 	return &db.InstanceMetadata{
-		Version:   version,
-		Databases: catalogMetadata,
-		Metadata:  &storepb.Instance{},
+		Version:  version,
+		Metadata: &storepb.Instance{},
 	}, nil
 }
 

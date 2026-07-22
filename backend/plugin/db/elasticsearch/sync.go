@@ -19,14 +19,25 @@ import (
 )
 
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, err := d.getVersion()
+	instanceMetadata, err := d.SyncInstanceBasicMeta(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to fetch version from Elasticsearch server")
+		return nil, err
 	}
 
 	dbMetadata, err := d.SyncDBSchema(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to fetch indices from Elasticsearch server")
+	}
+
+	instanceMetadata.Databases = []*storepb.DatabaseSchemaMetadata{dbMetadata}
+	return instanceMetadata, nil
+}
+
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (d *Driver) SyncInstanceBasicMeta(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, err := d.getVersion()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to fetch version from Elasticsearch server")
 	}
 
 	instanceRoles, err := d.getInstanceRoles(ctx)
@@ -35,8 +46,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}
 
 	return &db.InstanceMetadata{
-		Version:   version,
-		Databases: []*storepb.DatabaseSchemaMetadata{dbMetadata},
+		Version: version,
 		Metadata: &storepb.Instance{
 			Roles: instanceRoles,
 		},

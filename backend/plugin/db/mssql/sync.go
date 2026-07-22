@@ -16,16 +16,9 @@ import (
 
 // SyncInstance syncs the instance.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	var version, fullVersion string
-	if err := d.db.QueryRowContext(ctx, "SELECT SERVERPROPERTY('productversion'), @@VERSION").Scan(&version, &fullVersion); err != nil {
+	instanceMetadata, err := d.SyncInstanceBasicMeta(ctx)
+	if err != nil {
 		return nil, err
-	}
-	tokens := strings.Fields(fullVersion)
-	for _, token := range tokens {
-		if len(token) == 4 && strings.HasPrefix(token, "20") {
-			version = fmt.Sprintf("%s (%s)", version, token)
-			break
-		}
 	}
 
 	var databases []*storepb.DatabaseSchemaMetadata
@@ -50,9 +43,26 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, err
 	}
 
+	instanceMetadata.Databases = databases
+	return instanceMetadata, nil
+}
+
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (d *Driver) SyncInstanceBasicMeta(ctx context.Context) (*db.InstanceMetadata, error) {
+	var version, fullVersion string
+	if err := d.db.QueryRowContext(ctx, "SELECT SERVERPROPERTY('productversion'), @@VERSION").Scan(&version, &fullVersion); err != nil {
+		return nil, err
+	}
+	tokens := strings.Fields(fullVersion)
+	for _, token := range tokens {
+		if len(token) == 4 && strings.HasPrefix(token, "20") {
+			version = fmt.Sprintf("%s (%s)", version, token)
+			break
+		}
+	}
+
 	return &db.InstanceMetadata{
-		Version:   version,
-		Databases: databases,
+		Version: version,
 	}, nil
 }
 

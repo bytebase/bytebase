@@ -38,9 +38,9 @@ func isSystemDatabase(database string) bool {
 }
 
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, err := d.getVersion(ctx)
+	instanceMetadata, err := d.SyncInstanceBasicMeta(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get version")
+		return nil, err
 	}
 	databases, err := d.getDatabases(ctx)
 	if err != nil {
@@ -55,9 +55,18 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		filteredDatabases = append(filteredDatabases, database)
 	}
 
+	instanceMetadata.Databases = filteredDatabases
+	return instanceMetadata, nil
+}
+
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (d *Driver) SyncInstanceBasicMeta(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, err := d.getVersion(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get version")
+	}
 	return &db.InstanceMetadata{
-		Version:   version,
-		Databases: filteredDatabases,
+		Version: version,
 	}, nil
 }
 

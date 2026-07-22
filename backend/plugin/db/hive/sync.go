@@ -15,10 +15,7 @@ import (
 )
 
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	var instanceMetadata db.InstanceMetadata
-
-	// version.
-	version, err := d.getVersion(ctx)
+	instanceMetadata, err := d.SyncInstanceBasicMeta(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -35,8 +32,18 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		})
 	}
 
-	instanceMetadata.Version = version
-	return &instanceMetadata, nil
+	return instanceMetadata, nil
+}
+
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (d *Driver) SyncInstanceBasicMeta(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, err := d.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &db.InstanceMetadata{
+		Version: version,
+	}, nil
 }
 
 func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {

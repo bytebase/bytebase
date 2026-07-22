@@ -33,6 +33,11 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}, nil
 }
 
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (*Driver) SyncInstanceBasicMeta(context.Context) (*db.InstanceMetadata, error) {
+	return &db.InstanceMetadata{}, nil
+}
+
 type columnRow struct {
 	TableName       string              `bigquery:"table_name"`
 	ColumnName      string              `bigquery:"column_name"`

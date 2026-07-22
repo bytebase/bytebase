@@ -44,11 +44,7 @@ type Role struct {
 
 // SyncInstance syncs the instance meta.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, err := d.getVersion(ctx)
-	if err != nil {
-		return nil, err
-	}
-	instanceRoles, err := d.getInstanceRoles(ctx)
+	instanceMetadata, err := d.SyncInstanceBasicMeta(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -63,9 +59,23 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		})
 	}
 
+	instanceMetadata.Databases = databases
+	return instanceMetadata, nil
+}
+
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (d *Driver) SyncInstanceBasicMeta(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, err := d.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+	instanceRoles, err := d.getInstanceRoles(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &db.InstanceMetadata{
-		Version:   version,
-		Databases: databases,
+		Version: version,
 		Metadata: &storepb.Instance{
 			Roles: instanceRoles,
 		},

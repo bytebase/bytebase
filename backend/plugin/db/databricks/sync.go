@@ -51,6 +51,32 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 }
 
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	instanceMetadata, err := d.SyncInstanceBasicMeta(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// fetch table data from databricks.
+	catalogMap, err := d.listCatologTables(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	for catalogName, schemaMap := range catalogMap {
+		dbMetadataMeta := storepb.DatabaseSchemaMetadata{}
+		schemas := convertToStorepbSchemas(schemaMap)
+		dbMetadataMeta.Name = catalogName
+		dbMetadataMeta.Schemas = schemas
+		instanceMetadata.Databases = append(instanceMetadata.Databases, &dbMetadataMeta)
+	}
+
+	// fetch workspace users.
+	// TODO(tommy): complete this part when Permissions API for Golang is implemented.
+
+	return instanceMetadata, nil
+}
+
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (d *Driver) SyncInstanceBasicMeta(ctx context.Context) (*db.InstanceMetadata, error) {
 	instanceMetadata := &db.InstanceMetadata{}
 
 	// fetch version.
@@ -66,20 +92,6 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, errors.New("invalid version format")
 	}
 	instanceMetadata.Version = splitVersion[0]
-
-	// fetch table data from databricks.
-	catalogMap, err := d.listCatologTables(ctx, "")
-	if err != nil {
-		return nil, err
-	}
-
-	for catalogName, schemaMap := range catalogMap {
-		dbMetadataMeta := storepb.DatabaseSchemaMetadata{}
-		schemas := convertToStorepbSchemas(schemaMap)
-		dbMetadataMeta.Name = catalogName
-		dbMetadataMeta.Schemas = schemas
-		instanceMetadata.Databases = append(instanceMetadata.Databases, &dbMetadataMeta)
-	}
 
 	// fetch workspace users.
 	// TODO(tommy): complete this part when Permissions API for Golang is implemented.

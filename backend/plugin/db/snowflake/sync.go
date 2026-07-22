@@ -24,12 +24,7 @@ var (
 
 // SyncInstance syncs the instance.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, err := d.getVersion(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	instanceRoles, err := d.getInstanceRoles(ctx)
+	instanceMetadata, err := d.SyncInstanceBasicMeta(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -45,9 +40,24 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		databaseMetadataSlice = append(databaseMetadataSlice, &storepb.DatabaseSchemaMetadata{Name: database})
 	}
 
+	instanceMetadata.Databases = databaseMetadataSlice
+	return instanceMetadata, nil
+}
+
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (d *Driver) SyncInstanceBasicMeta(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, err := d.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	instanceRoles, err := d.getInstanceRoles(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &db.InstanceMetadata{
-		Version:   version,
-		Databases: databaseMetadataSlice,
+		Version: version,
 		Metadata: &storepb.Instance{
 			Roles: instanceRoles,
 		},
