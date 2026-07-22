@@ -8,6 +8,7 @@ import {
   DATABASE_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_DATABASES,
   SQL_EDITOR_DATABASE_MODULE,
 } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
@@ -16,6 +17,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useIntroStateByKey } from "@/hooks/useAppState";
 import { preCreateIssue } from "@/lib/plan/issue";
 import {
+  CONNECT_DATABASE_PRODUCT_INTRO,
   CREATE_INSTANCE_PRODUCT_INTRO,
   CREATE_PROJECT_PRODUCT_INTRO,
   PREPARE_DATABASE_PRODUCT_INTRO,
@@ -245,10 +247,23 @@ export function WorkspaceSetupGuide() {
         key: "hasInstance",
         label: t("workspace-setup-guide.steps.instance"),
         description: t("workspace-setup-guide.descriptions.instance"),
-        link: {
-          name: INSTANCE_ROUTE_DASHBOARD,
-          query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_INSTANCE_PRODUCT_INTRO },
-        },
+        link:
+          !setupState.hasInstance && setupState.projectName
+            ? {
+                name: PROJECT_V1_ROUTE_DATABASES,
+                params: {
+                  projectId: extractProjectResourceName(setupState.projectName),
+                },
+                query: {
+                  [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO,
+                },
+              }
+            : {
+                name: INSTANCE_ROUTE_DASHBOARD,
+                query: {
+                  [PRODUCT_INTRO_QUERY_KEY]: CREATE_INSTANCE_PRODUCT_INTRO,
+                },
+              },
         done: setupState.hasInstance,
         matchesRoute: (routeName) =>
           isRouteInside(routeName, INSTANCE_ROUTE_DASHBOARD),

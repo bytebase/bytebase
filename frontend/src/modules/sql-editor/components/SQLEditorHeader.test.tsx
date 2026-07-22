@@ -52,7 +52,6 @@ vi.mock("react-i18next", () => ({
       ({
         "sql-editor.self": "SQL Editor",
         "sql-editor.tab.unsaved-worksheet": "Unsaved worksheet.",
-        "common.leave-without-saving": "Leave without saving?",
       })[key] ?? key,
   }),
 }));
@@ -203,7 +202,7 @@ beforeEach(async () => {
   );
   mocks.loadWorkspacePermissionState.mockResolvedValue(undefined);
   mocks.themeDark = true;
-  window.confirm = vi.fn();
+  window.alert = vi.fn();
   window.open = vi.fn();
   ({ SQLEditorHeader } = await import("./SQLEditorHeader"));
 });
@@ -233,37 +232,19 @@ describe("SQLEditorHeader", () => {
     );
     expect(mocks.loadWorkspacePermissionState).toHaveBeenCalled();
     expect(mocks.breadcrumbProps?.onBeforeSwitchWorkspace?.()).toBe(true);
-    expect(window.confirm).not.toHaveBeenCalled();
+    expect(window.alert).not.toHaveBeenCalled();
 
     unmount();
   });
 
-  test("blocks workspace switching when dirty SQL Editor tabs are not confirmed", () => {
+  test("alerts and blocks workspace switching when SQL Editor has dirty tabs", () => {
     mocks.openTmpTabList = [{ id: "tab-1" }];
     mocks.tabsById = new Map([["tab-1", { status: "DIRTY" }]]);
-    vi.mocked(window.confirm).mockReturnValue(false);
     const { render, unmount } = renderIntoContainer(<SQLEditorHeader />);
     render();
 
     expect(mocks.breadcrumbProps?.onBeforeSwitchWorkspace?.()).toBe(false);
-    expect(window.confirm).toHaveBeenCalledWith(
-      "Unsaved worksheet. Leave without saving?"
-    );
-
-    unmount();
-  });
-
-  test("allows workspace switching when dirty SQL Editor tabs are confirmed", () => {
-    mocks.openTmpTabList = [{ id: "tab-1" }];
-    mocks.tabsById = new Map([["tab-1", { status: "SAVING" }]]);
-    vi.mocked(window.confirm).mockReturnValue(true);
-    const { render, unmount } = renderIntoContainer(<SQLEditorHeader />);
-    render();
-
-    expect(mocks.breadcrumbProps?.onBeforeSwitchWorkspace?.()).toBe(true);
-    expect(window.confirm).toHaveBeenCalledWith(
-      "Unsaved worksheet. Leave without saving?"
-    );
+    expect(window.alert).toHaveBeenCalledWith("Unsaved worksheet.");
 
     unmount();
   });

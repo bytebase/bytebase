@@ -10,10 +10,12 @@ import { preCreateIssue } from "@/lib/plan/issue";
 const mocks = vi.hoisted(() => ({
   visibleDatabases: [] as { name: string }[],
   databasesByName: {} as Record<string, { name: string }>,
+  instancesByName: {} as Record<string, { name: string; title: string }>,
   routerCurrentQuery: {} as Record<string, unknown>,
   routerPush: vi.fn(),
   useProductIntro: vi.fn(),
   removeDatabaseMetadataCache: vi.fn(),
+  fetchInstance: vi.fn(),
   fetchInstanceList: vi.fn(async () => ({
     instances: [] as { name: string; title: string }[],
   })),
@@ -27,7 +29,10 @@ let ProjectDatabasesPage: typeof import("./ProjectDatabasesPage").ProjectDatabas
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string, options?: { instance?: string }) =>
+      options?.instance ? `${key}:${options.instance}` : key,
+  }),
 }));
 
 vi.mock("@/app/router", () => ({
@@ -156,12 +161,16 @@ vi.mock("@/stores/app", () => {
     get databasesByName() {
       return mocks.databasesByName;
     },
+    get instancesByName() {
+      return mocks.instancesByName;
+    },
     projectsByName: {},
     environmentList: [],
   };
   const useAppStore = (selector: (state: typeof appState) => unknown) =>
     selector(appState);
   useAppStore.getState = () => ({
+    fetchInstance: mocks.fetchInstance,
     fetchInstanceList: mocks.fetchInstanceList,
     batchSyncDatabases: vi.fn(),
     batchUpdateDatabases: vi.fn(),
@@ -194,9 +203,11 @@ beforeEach(async () => {
   vi.clearAllMocks();
   mocks.visibleDatabases = [];
   mocks.databasesByName = {};
+  mocks.instancesByName = {};
   mocks.routerCurrentQuery = {};
   mocks.workspacePermissions = new Set([
     "bb.instances.create",
+    "bb.instances.get",
     "bb.instances.list",
   ]);
   ({ ProjectDatabasesPage } = await import("./ProjectDatabasesPage"));
@@ -339,6 +350,9 @@ describe("ProjectDatabasesPage", () => {
 
   test("shows syncing guidance when redirected from project-aware instance creation", async () => {
     mocks.routerCurrentQuery = { syncingInstance: "prod" };
+    mocks.instancesByName = {
+      "instances/prod": { name: "instances/prod", title: "Prod Instance" },
+    };
     const container = document.createElement("div");
     const root = createRoot(container);
 
@@ -347,7 +361,10 @@ describe("ProjectDatabasesPage", () => {
     });
 
     expect(container.textContent).toContain(
-      "db.project-instance-syncing-title"
+      "db.project-instance-syncing-title:Prod Instance"
+    );
+    expect(container.textContent).not.toContain(
+      "db.project-instance-syncing-title:prod"
     );
     expect(container.textContent).toContain(
       "db.project-instance-syncing-description"

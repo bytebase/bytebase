@@ -65,6 +65,9 @@ describe("InstanceFormBody", () => {
     expect(source).toContain("instance.sync-databases.project-description");
     expect(source).toContain("instance.sync-databases.project-sync-all");
     expect(source).toContain("projectName");
+    expect(source).toContain('useProjectByName(projectName ?? "")');
+    expect(source).toContain("project.title || projectName");
+    expect(source).toContain("values={{ project: projectTitle }}");
     expect(source).toContain("fetchProject(routeProjectName");
     expect(source).toContain("ResourceLink");
     expect(source).toContain("showResourceType={false}");

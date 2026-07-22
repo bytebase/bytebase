@@ -73,6 +73,7 @@ import {
   getDefaultPagination,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
+  instanceV1Name,
   PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   supportedEngineV1List,
 } from "@/utils";
@@ -240,6 +241,27 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       ? syncingInstance
       : undefined;
   }, []);
+  const syncingInstanceName = syncingInstanceId
+    ? `${instanceNamePrefix}${syncingInstanceId}`
+    : undefined;
+  const syncingInstance = useAppStore((s) =>
+    syncingInstanceName ? s.instancesByName[syncingInstanceName] : undefined
+  );
+  const syncingInstanceTitle = syncingInstance?.title
+    ? instanceV1Name(syncingInstance)
+    : syncingInstanceId;
+
+  useEffect(() => {
+    if (
+      !syncingInstanceName ||
+      syncingInstance ||
+      !hasWorkspacePermissionV2("bb.instances.get")
+    ) {
+      return;
+    }
+    void useAppStore.getState().fetchInstance(syncingInstanceName);
+  }, [syncingInstanceName, syncingInstance]);
+
   const selectedDatabases = useMemo(() => {
     if (selectedNames.size === 0) return [];
     return Array.from(selectedNames)
@@ -608,7 +630,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         <Alert
           variant="info"
           title={t("db.project-instance-syncing-title", {
-            instance: syncingInstanceId,
+            instance: syncingInstanceTitle,
           })}
           description={
             <div className="flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4">

@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useProjectByName } from "@/hooks/useProjectByName";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -430,6 +431,7 @@ function SyncDatabases({
   const { t } = useTranslation();
   const ctx = useInstanceFormContext();
   const { hideAdvancedFeatures, instance, pendingCreateInstance } = ctx;
+  const project = useProjectByName(projectName ?? "");
 
   const [syncAll, setSyncAll] = useState(syncDatabases === undefined);
   const [selectedSet, setSelectedSet] = useState<Set<string>>(
@@ -504,6 +506,8 @@ function SyncDatabases({
   const visibleDatabases = filteredDatabases.slice(0, visibleDatabaseCount);
   const hasMore = filteredDatabases.length > visibleDatabaseCount;
   const hasProjectContext = !!projectName && isCreatingProp;
+  const projectTitle =
+    project.name === projectName ? project.title || projectName : projectName;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.nativeEvent.isComposing) return;
@@ -548,7 +552,7 @@ function SyncDatabases({
             <Trans
               t={t}
               i18nKey="instance.sync-databases.project-description"
-              values={{ project: projectName }}
+              values={{ project: projectTitle }}
               components={{
                 project: (
                   <ResourceLink
