@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Plus, SquareTerminal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import {
   INSTANCE_ROUTE_CREATE,
@@ -23,6 +23,7 @@ import {
   TransferProjectSheet,
 } from "@/components/database";
 import { EditEnvironmentSheet } from "@/components/EditEnvironmentSheet";
+import { InstanceLabel } from "@/components/InstanceLabel";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import {
   ProjectPageLayout,
@@ -73,7 +74,6 @@ import {
   getDefaultPagination,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
-  instanceV1Name,
   PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   supportedEngineV1List,
 } from "@/utils";
@@ -244,23 +244,6 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const syncingInstanceName = syncingInstanceId
     ? `${instanceNamePrefix}${syncingInstanceId}`
     : undefined;
-  const syncingInstance = useAppStore((s) =>
-    syncingInstanceName ? s.instancesByName[syncingInstanceName] : undefined
-  );
-  const syncingInstanceTitle = syncingInstance?.title
-    ? instanceV1Name(syncingInstance)
-    : syncingInstanceId;
-
-  useEffect(() => {
-    if (
-      !syncingInstanceName ||
-      syncingInstance ||
-      !hasWorkspacePermissionV2("bb.instances.get")
-    ) {
-      return;
-    }
-    void useAppStore.getState().fetchInstance(syncingInstanceName);
-  }, [syncingInstanceName, syncingInstance]);
 
   const selectedDatabases = useMemo(() => {
     if (selectedNames.size === 0) return [];
@@ -629,9 +612,20 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       {showSyncingInstanceHint && (
         <Alert
           variant="info"
-          title={t("db.project-instance-syncing-title", {
-            instance: syncingInstanceTitle,
-          })}
+          title={
+            <Trans
+              t={t}
+              i18nKey="db.project-instance-syncing-title"
+              components={{
+                instance: (
+                  <InstanceLabel
+                    instanceName={syncingInstanceName ?? ""}
+                    link
+                  />
+                ),
+              }}
+            />
+          }
           description={
             <div className="flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4">
               <span>{t("db.project-instance-syncing-description")}</span>

@@ -1,8 +1,7 @@
 import { Check, Copy, ShieldAlert } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { INSTANCE_ROUTE_DETAIL } from "@/app/router/handles";
-import { EngineIcon } from "@/components/EngineIcon";
+import { InstanceLabel } from "@/components/InstanceLabel";
 import { RouterLink } from "@/components/RouterLink";
 import { useEnvironment, usePlanFeature } from "@/hooks/useAppState";
 import { writeTextToClipboard } from "@/lib/clipboard";
@@ -17,9 +16,7 @@ import {
 import {
   extractInstanceResourceName,
   getInstanceResource,
-  hasWorkspacePermissionV2,
   hexToRgb,
-  instanceV1Name,
 } from "@/utils";
 import { extractReleaseUID } from "@/utils/v1/release";
 import { DatabaseSQLEditorButton } from "./DatabaseSQLEditorButton";
@@ -49,9 +46,7 @@ export function DatabaseDetailHeader({
   );
 
   const instanceResource = getInstanceResource(database);
-  const instanceLabel = instanceV1Name(instanceResource);
   const instanceId = extractInstanceResourceName(instanceResource.name);
-  const canViewInstance = hasWorkspacePermissionV2("bb.instances.get");
 
   const environment = useEnvironment(database.effectiveEnvironment ?? "");
   const hasEnvironmentTierFeature = usePlanFeature(
@@ -149,30 +144,13 @@ export function DatabaseDetailHeader({
         </div>
         <div className="flex items-center gap-x-1.5">
           <span className="text-control-light">{t("common.instance")}</span>
-          {canViewInstance && instanceId ? (
-            <RouterLink
-              to={{
-                name: INSTANCE_ROUTE_DETAIL,
-                params: { instanceId },
-              }}
-              className="inline-flex cursor-pointer items-center gap-x-1 hover:underline"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <EngineIcon
-                engine={instanceResource.engine}
-                className="h-4 w-4"
-              />
-              {instanceLabel}
-            </RouterLink>
-          ) : (
-            <span className="inline-flex items-center gap-x-1">
-              <EngineIcon
-                engine={instanceResource.engine}
-                className="h-4 w-4"
-              />
-              {instanceLabel}
-            </span>
-          )}
+          <InstanceLabel
+            instance={instanceResource}
+            instanceName={instanceResource.name}
+            link={!!instanceId}
+            className="inline-flex items-center gap-x-1"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
         {database.release && (
           <div className="flex items-center gap-x-1.5">

@@ -821,7 +821,7 @@
     "project-instance-synced-title": "数据库已连接",
     "project-instance-syncing-description": "这可能需要几秒到几分钟。你可以稍后刷新此页面。",
     "project-instance-syncing-empty": "数据库仍在同步中。稍后刷新此页面即可在这里看到它们。",
-    "project-instance-syncing-title": "{{instance}} 的数据库正在同步。",
+    "project-instance-syncing-title": "<instance></instance> 的数据库正在同步。",
     "schema": {
       "default": "默认 Schema"
     },

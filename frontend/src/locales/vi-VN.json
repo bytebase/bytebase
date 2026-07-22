@@ -821,7 +821,7 @@
     "project-instance-synced-title": "Đã kết nối cơ sở dữ liệu",
     "project-instance-syncing-description": "Quá trình này có thể mất vài giây đến vài phút. Bạn có thể làm mới trang này sau.",
     "project-instance-syncing-empty": "Cơ sở dữ liệu vẫn đang được đồng bộ hóa. Hãy làm mới trang này sau ít phút để thấy chúng ở đây.",
-    "project-instance-syncing-title": "Cơ sở dữ liệu từ {{instance}} đang được đồng bộ hóa.",
+    "project-instance-syncing-title": "Cơ sở dữ liệu từ <instance></instance> đang được đồng bộ hóa.",
     "schema": {
       "default": "Schema mặc định"
     },

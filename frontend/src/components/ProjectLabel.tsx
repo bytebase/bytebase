@@ -28,6 +28,7 @@ export function ProjectLabel({
   const projectId = extractProjectResourceName(projectName);
   const validProjectName = isValidProjectName(projectName);
   const defaultProject = isDefaultProject(projectName);
+  const canGetProject = hasWorkspacePermissionV2("bb.projects.get");
   const shouldFetchProject = children === undefined;
 
   useEffect(() => {
@@ -35,13 +36,19 @@ export function ProjectLabel({
       shouldFetchProject &&
       validProjectName &&
       !defaultProject &&
-      hasWorkspacePermissionV2("bb.projects.get")
+      canGetProject
     ) {
       void useAppStore.getState().getOrFetchProjectByName(projectName, true);
     }
-  }, [defaultProject, projectName, shouldFetchProject, validProjectName]);
+  }, [
+    canGetProject,
+    defaultProject,
+    projectName,
+    shouldFetchProject,
+    validProjectName,
+  ]);
 
-  if (!validProjectName) {
+  if (!validProjectName || !canGetProject) {
     return (
       <span className={className}>{children ?? (projectName || "-")}</span>
     );

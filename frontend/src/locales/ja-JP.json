@@ -821,7 +821,7 @@
     "project-instance-synced-title": "データベースが接続されました",
     "project-instance-syncing-description": "数秒から数分かかる場合があります。後でこのページを更新してください。",
     "project-instance-syncing-empty": "データベースはまだ同期中です。しばらくしてからこのページを更新すると表示されます。",
-    "project-instance-syncing-title": "{{instance}} のデータベースを同期中です。",
+    "project-instance-syncing-title": "<instance></instance> のデータベースを同期中です。",
     "schema": {
       "default": "デフォルトスキーマ"
     },

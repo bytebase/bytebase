@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useProjectByName: vi.fn(),
   getOrFetchProjectByName: vi.fn(),
-  hasWorkspacePermissionV2: vi.fn(() => true),
+  hasWorkspacePermissionV2: vi.fn((_permission: string) => true),
   isDefaultProject: vi.fn((_name: string) => false),
 }));
 
@@ -173,6 +173,21 @@ describe("ProjectLabel", () => {
     root = rendered.root;
 
     expect(rendered.container.textContent).toBe("sample");
+  });
+
+  test("renders the project resource name as plain text without project get permission", async () => {
+    mocks.hasWorkspacePermissionV2.mockImplementation(
+      (permission) => permission !== "bb.projects.get"
+    );
+
+    const rendered = await render(
+      <ProjectLabel projectName="projects/sample" link />
+    );
+    root = rendered.root;
+
+    expect(rendered.container.querySelector("a")).toBeNull();
+    expect(rendered.container.textContent).toBe("projects/sample");
+    expect(mocks.getOrFetchProjectByName).not.toHaveBeenCalled();
   });
 
   test("does not fetch the project when custom content is provided", async () => {

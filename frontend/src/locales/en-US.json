@@ -821,7 +821,7 @@
     "project-instance-synced-title": "Database connected",
     "project-instance-syncing-description": "This may take a few seconds to a few minutes. You can refresh this page later.",
     "project-instance-syncing-empty": "Databases are still syncing. Refresh this page in a moment to see them here.",
-    "project-instance-syncing-title": "Databases from {{instance}} are syncing.",
+    "project-instance-syncing-title": "Databases from <instance></instance> are syncing.",
     "schema": {
       "default": "Default schema"
     },

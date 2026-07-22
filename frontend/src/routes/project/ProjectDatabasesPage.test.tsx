@@ -29,6 +29,18 @@ let ProjectDatabasesPage: typeof import("./ProjectDatabasesPage").ProjectDatabas
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
+  Trans: ({
+    i18nKey,
+    components,
+  }: {
+    i18nKey: string;
+    components?: { instance?: React.ReactNode };
+  }) => (
+    <>
+      {i18nKey}
+      {components?.instance}
+    </>
+  ),
   useTranslation: () => ({
     t: (key: string, options?: { instance?: string }) =>
       options?.instance ? `${key}:${options.instance}` : key,
@@ -38,6 +50,7 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/app/router", () => ({
   router: {
     push: mocks.routerPush,
+    resolve: ({ name }: { name?: string }) => ({ href: `/${name ?? ""}` }),
     currentRoute: {
       get value() {
         return { query: mocks.routerCurrentQuery };
@@ -361,10 +374,10 @@ describe("ProjectDatabasesPage", () => {
     });
 
     expect(container.textContent).toContain(
-      "db.project-instance-syncing-title:Prod Instance"
+      "db.project-instance-syncing-titleProd Instance"
     );
     expect(container.textContent).not.toContain(
-      "db.project-instance-syncing-title:prod"
+      "db.project-instance-syncing-titleprod"
     );
     expect(container.textContent).toContain(
       "db.project-instance-syncing-description"
