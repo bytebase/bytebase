@@ -6,7 +6,7 @@ import { useProjectByName } from "@/hooks/useProjectByName";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import { isDefaultProject, isValidProjectName } from "@/types/v1/project";
-import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import { extractProjectResourceName } from "@/utils";
 
 export function ProjectLabel({
   children,
@@ -31,12 +31,7 @@ export function ProjectLabel({
   const shouldFetchProject = children === undefined;
 
   useEffect(() => {
-    if (
-      shouldFetchProject &&
-      validProjectName &&
-      !defaultProject &&
-      hasWorkspacePermissionV2("bb.projects.get")
-    ) {
+    if (shouldFetchProject && validProjectName && !defaultProject) {
       void useAppStore.getState().getOrFetchProjectByName(projectName, true);
     }
   }, [defaultProject, projectName, shouldFetchProject, validProjectName]);

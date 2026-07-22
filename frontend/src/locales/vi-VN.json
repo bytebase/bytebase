@@ -821,7 +821,7 @@
     "project-instance-synced-title": "Đã kết nối cơ sở dữ liệu",
     "project-instance-syncing-description": "Quá trình này có thể mất vài giây đến vài phút. Bạn có thể làm mới trang này sau.",
     "project-instance-syncing-empty": "Cơ sở dữ liệu vẫn đang được đồng bộ hóa. Hãy làm mới trang này sau ít phút để thấy chúng ở đây.",
-    "project-instance-syncing-title": "Cơ sở dữ liệu từ {{instance}} đang được đồng bộ hóa.",
+    "project-instance-syncing-title": "Cơ sở dữ liệu từ <instance></instance> đang được đồng bộ hóa.",
     "schema": {
       "default": "Schema mặc định"
     },
@@ -2945,11 +2945,6 @@
     "no-data-available": "Không có dữ liệu",
     "no-database-selected": "Chưa chọn cơ sở dữ liệu",
     "no-history-found": "Không tìm thấy lịch sử",
-    "no-project": {
-      "contact-the-admin-to-grant-access": "Liên hệ với quản trị viên để cấp quyền truy cập.",
-      "go-to-create": "Đi tới tạo",
-      "not-member-of-any-projects": "Bạn không phải là thành viên của bất kỳ dự án nào."
-    },
     "no-queriable-database": "Không có cơ sở dữ liệu có thể truy vấn",
     "notify-empty-statement": "Vui lòng nhập câu lệnh SQL của bạn vào trình soạn thảo",
     "only-select-allowed": "Chỉ cho phép thực thi câu lệnh chỉ đọc.",

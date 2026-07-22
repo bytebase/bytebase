@@ -58,10 +58,6 @@ vi.mock("@/app/router", async (importOriginal) => ({
   },
 }));
 
-vi.mock("@/assets/logo-icon.svg", () => ({
-  default: "/assets/logo-icon.svg",
-}));
-
 vi.mock("@/components/ui/tooltip", () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
@@ -128,15 +124,12 @@ describe("GutterBar", () => {
     unmount();
   });
 
-  test("logo link has target=_blank and rel=noopener noreferrer", () => {
+  test("does not render the Bytebase logo", () => {
     mocks.projectData = { allowJustInTimeAccess: false };
-    mocks.routerResolve.mockReturnValue({ href: "/workspace/home" });
     const { container, render, unmount } = renderIntoContainer(<GutterBar />);
     render();
-    const link = container.querySelector("a");
-    expect(link?.getAttribute("href")).toBe("/workspace/home");
-    expect(link?.getAttribute("target")).toBe("_blank");
-    expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(container.querySelector("a")).toBeNull();
+    expect(container.querySelector('img[alt="Bytebase"]')).toBeNull();
     unmount();
   });
 });

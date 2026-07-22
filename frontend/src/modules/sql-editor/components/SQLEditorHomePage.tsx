@@ -23,6 +23,7 @@ import { resizeHandleClass } from "@/modules/schema-editor/resize";
 import { AsidePanel } from "@/modules/sql-editor/components/AsidePanel";
 import { ConnectionPanel } from "@/modules/sql-editor/components/ConnectionPanel";
 import { Panels } from "@/modules/sql-editor/components/Panels/Panels";
+import { SQLEditorHeader } from "@/modules/sql-editor/components/SQLEditorHeader";
 import { TabList } from "@/modules/sql-editor/components/TabList";
 import {
   SQLEditorThemeScope,
@@ -197,6 +198,7 @@ export function SQLEditorHomePage() {
 
   return (
     <div className="sqleditor--wrapper w-full flex-1 overflow-hidden flex flex-col bg-background text-main">
+      <SQLEditorHeader />
       {mobileToggle}
       {hideSidebar &&
         sidebarExpanded &&

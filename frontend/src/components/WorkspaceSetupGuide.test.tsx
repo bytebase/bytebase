@@ -376,7 +376,7 @@ describe("WorkspaceSetupGuide", () => {
     expect(mocks.fetchProjectList).not.toHaveBeenCalled();
   });
 
-  it("advances to the instance step after a project exists", async () => {
+  it("advances to the project database connection step after a project exists", async () => {
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
@@ -394,8 +394,9 @@ describe("WorkspaceSetupGuide", () => {
       await Promise.resolve();
     });
     expect(mocks.routerPush).toHaveBeenCalledWith({
-      name: "workspace.instance",
-      query: { intro: "create-instance" },
+      name: "workspace.project.database",
+      params: { projectId: "project-a" },
+      query: { intro: "connect-database" },
     });
     expect(
       container.querySelector("[data-testid='setup-step-hasFirstQuery']")

@@ -226,7 +226,12 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
       return validNames.map((name) => get().getProjectByName(name));
     },
 
-    searchProjects: async ({ pageSize, pageToken, query }) => {
+    searchProjects: async ({
+      pageSize,
+      pageToken,
+      query,
+      excludeDefault = true,
+    }) => {
       const response = await projectServiceClientConnect.searchProjects(
         createProto(SearchProjectsRequestSchema, {
           pageSize,
@@ -245,11 +250,10 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
         },
       }));
       return {
-        projects: response.projects.filter(
-          (project) =>
-            project.state === State.ACTIVE &&
-            project.name !== defaultProjectName(get)
-        ),
+        projects: response.projects.filter((project) => {
+          if (project.state !== State.ACTIVE) return false;
+          return !excludeDefault || project.name !== defaultProjectName(get);
+        }),
         nextPageToken: response.nextPageToken,
       };
     },

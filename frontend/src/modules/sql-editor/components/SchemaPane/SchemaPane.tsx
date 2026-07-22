@@ -429,11 +429,12 @@ function SchemaPaneInner() {
       <div className="px-1 flex flex-row gap-1">
         <div className="flex-1 overflow-hidden">
           <Input
+            size="sm"
             value={searchPattern}
             placeholder={t("common.search")}
             disabled={!currentTab}
             onChange={(e) => setSearchPattern(e.target.value)}
-            className="h-8 text-sm w-full"
+            className="w-full"
           />
         </div>
         <div className="shrink-0 flex items-center">

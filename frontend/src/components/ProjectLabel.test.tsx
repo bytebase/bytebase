@@ -10,7 +10,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useProjectByName: vi.fn(),
   getOrFetchProjectByName: vi.fn(),
-  hasWorkspacePermissionV2: vi.fn(() => true),
   isDefaultProject: vi.fn((_name: string) => false),
 }));
 
@@ -54,11 +53,6 @@ vi.mock("@/stores/app", () => ({
   },
 }));
 
-vi.mock("@/utils", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/utils")>()),
-  hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
-}));
-
 vi.mock("@/types/v1/project", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/types/v1/project")>()),
   isDefaultProject: mocks.isDefaultProject,
@@ -84,7 +78,6 @@ describe("ProjectLabel", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.hasWorkspacePermissionV2.mockReturnValue(true);
     mocks.isDefaultProject.mockReturnValue(false);
     mocks.useProjectByName.mockReturnValue({
       name: "projects/sample",

@@ -821,7 +821,7 @@
     "project-instance-synced-title": "データベースが接続されました",
     "project-instance-syncing-description": "数秒から数分かかる場合があります。後でこのページを更新してください。",
     "project-instance-syncing-empty": "データベースはまだ同期中です。しばらくしてからこのページを更新すると表示されます。",
-    "project-instance-syncing-title": "{{instance}} のデータベースを同期中です。",
+    "project-instance-syncing-title": "<instance></instance> のデータベースを同期中です。",
     "schema": {
       "default": "デフォルトスキーマ"
     },
@@ -2945,11 +2945,6 @@
     "no-data-available": "データがありません",
     "no-database-selected": "データベースが選択されていません",
     "no-history-found": "まだ履歴がありません",
-    "no-project": {
-      "contact-the-admin-to-grant-access": "管理者に連絡してアクセスを許可してください。",
-      "go-to-create": "作成に行く",
-      "not-member-of-any-projects": "あなたはどのプロジェクトのメンバーでもありません。"
-    },
     "no-queriable-database": "クエリ可能なデータベースがありません",
     "notify-empty-statement": "エディターに SQL ステートメントを入力してください",
     "only-select-allowed": "読み取り専用ステートメントのみが実行を許可されます",

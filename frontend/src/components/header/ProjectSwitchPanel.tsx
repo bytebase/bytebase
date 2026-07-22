@@ -42,6 +42,12 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 export interface ProjectSwitchPanelProps {
   onClose: () => void;
   onRequestCreate: () => void;
+  currentProjectName?: string;
+  excludeDefaultProject?: boolean;
+  onSelectProject?: (
+    project: Project,
+    event: ReactMouseEvent<HTMLElement>
+  ) => void;
 }
 
 type ProjectSwitchTab = "recent" | "all";
@@ -97,12 +103,17 @@ function ProjectSwitchFooter({
 export function ProjectSwitchPanel({
   onClose,
   onRequestCreate,
+  currentProjectName: currentProjectNameOverride,
+  excludeDefaultProject = true,
+  onSelectProject,
 }: ProjectSwitchPanelProps) {
   const { t } = useTranslation();
   const { record } = useRecentVisit();
   const navigate = useNavigate();
   const route = useCurrentRoute();
-  const { projects: recentProjectList } = useRecentProjects();
+  const { projects: recentProjectList } = useRecentProjects({
+    excludeDefault: excludeDefaultProject,
+  });
   const [searchText, setSearchText] = useState("");
   const [selectedTab, setSelectedTab] = useState<ProjectSwitchTab>(() =>
     recentProjectList.length > 0 ? "recent" : "all"
@@ -115,9 +126,9 @@ export function ProjectSwitchPanel({
     }
   }, [recentProjectList.length]);
   const projectId = route.params.projectId as string | undefined;
-  const currentProjectName = projectId
-    ? `${projectNamePrefix}${projectId}`
-    : "";
+  const currentProjectName =
+    currentProjectNameOverride ??
+    (projectId ? `${projectNamePrefix}${projectId}` : "");
   const currentProject = useProject(currentProjectName);
   const allowToCreateProject = useWorkspacePermission("bb.projects.create");
 
@@ -151,10 +162,16 @@ export function ProjectSwitchPanel({
     pageSize,
     pageSizeOptions,
     onPageSizeChange,
-  } = useProjectList(searchText);
+  } = useProjectList(searchText, { excludeDefault: excludeDefaultProject });
 
   const handleProjectSelect = useCallback(
     (project: Project, event: ReactMouseEvent<HTMLElement>) => {
+      if (onSelectProject) {
+        onSelectProject(project, event);
+        onClose();
+        return;
+      }
+
       const route = navigate.resolve({
         name: PROJECT_V1_ROUTE_DETAIL,
         params: {
@@ -171,7 +188,7 @@ export function ProjectSwitchPanel({
 
       onClose();
     },
-    [navigate, onClose, record]
+    [navigate, onClose, onSelectProject, record]
   );
 
   const handleGotoWorkspace = useCallback(
