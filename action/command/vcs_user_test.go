@@ -136,6 +136,145 @@ func TestGetVCSUserFromBitbucketPullRequestAuthor(t *testing.T) {
 	require.Equal(t, "Alice", user.DisplayName)
 }
 
+func TestGetVCSUserFromAzureDevOpsPullRequestCreator(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodGet, r.Method)
+		require.Equal(t, "/collection/_apis/git/pullrequests/42", r.URL.Path)
+		require.Equal(t, "7.1", r.URL.Query().Get("api-version"))
+		require.Equal(t, "Bearer access-token", r.Header.Get("Authorization"))
+		require.Equal(t, "application/json", r.Header.Get("Accept"))
+		w.Header().Set("Content-Type", "application/json")
+		_, err := w.Write([]byte(`{"createdBy":{"id":"author-id","uniqueName":"alice@example.com","displayName":"Alice"}}`))
+		require.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTID", "42")
+	t.Setenv("SYSTEM_COLLECTIONURI", server.URL+"/collection/")
+	t.Setenv("SYSTEM_ACCESSTOKEN", "access-token")
+
+	user := getVCSUser(world.AzureDevOps)
+	require.NotNil(t, user)
+	require.Equal(t, v1pb.VCSType_AZURE_DEVOPS, user.VcsType)
+	require.Equal(t, "author-id", user.UserId)
+	require.Equal(t, "alice@example.com", user.UserName)
+	require.Equal(t, "Alice", user.DisplayName)
+}
+
+func TestGetVCSUserFromAzureDevOpsPullRequestCreatorWithTeamFoundationCollectionURI(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/collection/_apis/git/pullrequests/42", r.URL.Path)
+		_, err := w.Write([]byte(`{"createdBy":{"id":"author-id","uniqueName":"alice@example.com","displayName":"Alice"}}`))
+		require.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTID", "42")
+	t.Setenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI", server.URL+"/collection/")
+	t.Setenv("SYSTEM_ACCESSTOKEN", "access-token")
+
+	require.NotNil(t, getVCSUser(world.AzureDevOps))
+}
+
+func TestGetVCSUserSkipsAzureDevOpsWhenPullRequestMetadataUnavailable(t *testing.T) {
+	t.Setenv("SYSTEM_COLLECTIONURI", "https://dev.azure.com/bytebase/")
+	t.Setenv("SYSTEM_ACCESSTOKEN", "access-token")
+	t.Setenv("BUILD_REQUESTEDFORID", "requester-id")
+	t.Setenv("BUILD_REQUESTEDFOR", "Requester")
+
+	require.Nil(t, getVCSUser(world.AzureDevOps))
+}
+
+func TestGetVCSUserSkipsAzureDevOpsWhenAccessTokenUnavailable(t *testing.T) {
+	t.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTID", "42")
+	t.Setenv("SYSTEM_COLLECTIONURI", "https://dev.azure.com/bytebase/")
+
+	require.Nil(t, getVCSUser(world.AzureDevOps))
+}
+
+func TestGetVCSUserSkipsAzureDevOpsServicePrincipalCreator(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, err := w.Write([]byte(`{"createdBy":{"id":"bot-id","uniqueName":"build-service","displayName":"Build Service","descriptor":"aadsp.service-principal"}}`))
+		require.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTID", "42")
+	t.Setenv("SYSTEM_COLLECTIONURI", server.URL)
+	t.Setenv("SYSTEM_ACCESSTOKEN", "access-token")
+
+	require.Nil(t, getVCSUser(world.AzureDevOps))
+}
+
+func TestGetVCSUserSkipsAzureDevOpsBuildServiceCreator(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, err := w.Write([]byte(`{"createdBy":{"id":"bot-id","uniqueName":"build-service","displayName":"Build Service","descriptor":"svc.build-service"}}`))
+		require.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTID", "42")
+	t.Setenv("SYSTEM_COLLECTIONURI", server.URL)
+	t.Setenv("SYSTEM_ACCESSTOKEN", "access-token")
+
+	require.Nil(t, getVCSUser(world.AzureDevOps))
+}
+
+func TestGetVCSUserSkipsAzureDevOpsBotCreator(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, err := w.Write([]byte(`{"createdBy":{"id":"bot-id","uniqueName":"release[bot]","displayName":"Release Bot"}}`))
+		require.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTID", "42")
+	t.Setenv("SYSTEM_COLLECTIONURI", server.URL)
+	t.Setenv("SYSTEM_ACCESSTOKEN", "access-token")
+
+	require.Nil(t, getVCSUser(world.AzureDevOps))
+}
+
+func TestGetVCSUserSkipsAzureDevOpsCreatorWithoutID(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, err := w.Write([]byte(`{"createdBy":{"uniqueName":"alice@example.com","displayName":"Alice"}}`))
+		require.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTID", "42")
+	t.Setenv("SYSTEM_COLLECTIONURI", server.URL)
+	t.Setenv("SYSTEM_ACCESSTOKEN", "access-token")
+
+	require.Nil(t, getVCSUser(world.AzureDevOps))
+}
+
+func TestGetVCSUserSkipsAzureDevOpsInvalidPullRequestResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, err := w.Write([]byte(`invalid`))
+		require.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTID", "42")
+	t.Setenv("SYSTEM_COLLECTIONURI", server.URL)
+	t.Setenv("SYSTEM_ACCESSTOKEN", "access-token")
+
+	require.Nil(t, getVCSUser(world.AzureDevOps))
+}
+
+func TestGetVCSUserSkipsAzureDevOpsNonOKPullRequestResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTID", "42")
+	t.Setenv("SYSTEM_COLLECTIONURI", server.URL)
+	t.Setenv("SYSTEM_ACCESSTOKEN", "access-token")
+
+	require.Nil(t, getVCSUser(world.AzureDevOps))
+}
+
 func TestBitbucketDefaultAPIUsesPipelinesProxy(t *testing.T) {
 	requestURL, err := buildBitbucketPullRequestURL(getBitbucketAPIBaseURL(), "bytebase", "example", "10")
 	require.NoError(t, err)
