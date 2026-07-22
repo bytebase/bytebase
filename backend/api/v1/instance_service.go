@@ -62,6 +62,9 @@ func classifyConnectionFailure(err error) string {
 	}
 	var connectErr *connect.Error
 	if errors.As(err, &connectErr) {
+		if connectErr == nil {
+			return connectionCategorySuccess
+		}
 		if category := connectErr.Meta().Get(connectionCategoryHeader); category != "" {
 			return category
 		}
@@ -159,11 +162,6 @@ func hasDataSourceSSH(dataSource *storepb.DataSource) bool {
 		dataSource.GetObfuscatedSshPrivateKey() != ""
 }
 
-func logInstanceConnection(err error, method string, instance *store.InstanceMessage, dataSource *storepb.DataSource, elapsed time.Duration) {
-	category := classifyConnectionFailure(err)
-	slog.Info("instance connection check completed", buildInstanceConnectionLogAttrs(method, category, instance, dataSource, elapsed)...)
-}
-
 func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, method string, instance *store.InstanceMessage, dataSource *storepb.DataSource) *connect.Error {
 	start := time.Now()
 
@@ -183,7 +181,8 @@ func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, met
 		}
 		return nil
 	}()
-	logInstanceConnection(err, method, instance, dataSource, time.Since(start))
+	category := classifyConnectionFailure(err)
+	slog.Info("instance connection check completed", buildInstanceConnectionLogAttrs(method, category, instance, dataSource, time.Since(start))...)
 	return err
 }
 
