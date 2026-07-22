@@ -69,12 +69,14 @@ func TestBuildInstanceConnectionLogAttrs(t *testing.T) {
 
 	attrs := buildInstanceConnectionLogAttrs(v1connect.InstanceServiceCreateInstanceProcedure, connectionCategoryAuthFailed, instance, dataSource, 1500*time.Millisecond)
 	got := make(map[string]any)
-	for _, attr := range attrs {
+	for _, item := range attrs {
+		attr, ok := item.(slog.Attr)
+		require.True(t, ok)
 		got[attr.Key] = attr.Value.Any()
 	}
 
 	require.Equal(t, map[string]any{
-		"source":              v1connect.InstanceServiceCreateInstanceProcedure,
+		"method":              v1connect.InstanceServiceCreateInstanceProcedure,
 		"engine":              storepb.Engine_POSTGRES.String(),
 		"data_source_type":    storepb.DataSourceType_ADMIN.String(),
 		"category":            connectionCategoryAuthFailed,
@@ -86,7 +88,6 @@ func TestBuildInstanceConnectionLogAttrs(t *testing.T) {
 	for _, key := range []string{"host", "port", "username", "database", "password", "dsn", "sql"} {
 		require.NotContains(t, got, key)
 	}
-	require.IsType(t, slog.Attr{}, attrs[0])
 }
 
 func TestValidateExternalSecretForSaaS(t *testing.T) {

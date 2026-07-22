@@ -31,7 +31,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // InstanceService implements the instance service.
@@ -116,9 +115,9 @@ func newConnectionTestErrorWithCategory(code connect.Code, err error, format str
 	return connectErr
 }
 
-func buildInstanceConnectionLogAttrs(source string, category string, instance *store.InstanceMessage, dataSource *storepb.DataSource, elapsed time.Duration) []slog.Attr {
-	attrs := []slog.Attr{
-		slog.String("source", source),
+func buildInstanceConnectionLogAttrs(method string, category string, instance *store.InstanceMessage, dataSource *storepb.DataSource, elapsed time.Duration) []any {
+	attrs := []any{
+		slog.String("method", method),
 		slog.String("category", category),
 		slog.Int64("elapsed_ms", elapsed.Milliseconds()),
 		slog.Bool("has_ssl", hasDataSourceSSL(dataSource)),
@@ -160,12 +159,12 @@ func hasDataSourceSSH(dataSource *storepb.DataSource) bool {
 		dataSource.GetObfuscatedSshPrivateKey() != ""
 }
 
-func logInstanceConnection(ctx context.Context, err error, source string, instance *store.InstanceMessage, dataSource *storepb.DataSource, elapsed time.Duration) {
+func logInstanceConnection(ctx context.Context, err error, method string, instance *store.InstanceMessage, dataSource *storepb.DataSource, elapsed time.Duration) {
 	category := classifyConnectionFailure(err)
-	slog.LogAttrs(ctx, slog.LevelInfo, "instance connection check completed", buildInstanceConnectionLogAttrs(source, category, instance, dataSource, elapsed)...)
+	slog.Info("instance connection check completed", buildInstanceConnectionLogAttrs(method, category, instance, dataSource, elapsed)...)
 }
 
-func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, source string, instance *store.InstanceMessage, dataSource *storepb.DataSource) *connect.Error {
+func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, method string, instance *store.InstanceMessage, dataSource *storepb.DataSource) *connect.Error {
 	start := time.Now()
 
 	err := func() *connect.Error {
@@ -184,7 +183,7 @@ func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, sou
 		}
 		return nil
 	}()
-	logInstanceConnection(ctx, err, source, instance, dataSource, time.Since(start))
+	logInstanceConnection(ctx, err, method, instance, dataSource, time.Since(start))
 	return err
 }
 
@@ -361,13 +360,8 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	adminDataSource := utils.DataSourceFromInstanceWithType(instanceMessage, storepb.DataSourceType_ADMIN)
-	start := time.Now()
-	syncErr := func() error {
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
-		if err != nil {
-			return err
-		}
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
+	if err == nil {
 		defer driver.Close(ctx)
 		updatedInstance, _, newDatabases, err := s.schemaSyncer.SyncInstanceWithOptions(ctx, instance, schemasync.SyncInstanceOptions{
 			InitialProjectID: initialProjectID,
@@ -385,9 +379,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		} else {
 			s.schemaSyncer.SyncDatabasesAsync(newDatabases)
 		}
-		return err
-	}()
-	logInstanceConnection(ctx, syncErr, v1connect.InstanceServiceCreateInstanceProcedure, instance, adminDataSource, time.Since(start))
+	}
 
 	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
@@ -1023,7 +1015,6 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	if dataSource.GetType() != storepb.DataSourceType_READ_ONLY {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only read-only data source can be added"))
 	}
-	_ = s.checkAndLogInstanceConnection(ctx, v1connect.InstanceServiceAddDataSourceProcedure, instance, dataSource)
 
 	instance, err = s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		ResourceID: &instance.ResourceID,
@@ -1226,8 +1217,6 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		result := s.convertToV1Instance(ctx, instanceWithMetadata(instance, metadata))
 		return connect.NewResponse(result), nil
 	}
-
-	_ = s.checkAndLogInstanceConnection(ctx, v1connect.InstanceServiceUpdateDataSourceProcedure, instance, dataSource)
 
 	instance, err = s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		ResourceID: &instance.ResourceID,
