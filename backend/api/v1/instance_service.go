@@ -159,7 +159,7 @@ func hasDataSourceSSH(dataSource *storepb.DataSource) bool {
 		dataSource.GetObfuscatedSshPrivateKey() != ""
 }
 
-func logInstanceConnection(ctx context.Context, err error, method string, instance *store.InstanceMessage, dataSource *storepb.DataSource, elapsed time.Duration) {
+func logInstanceConnection(err error, method string, instance *store.InstanceMessage, dataSource *storepb.DataSource, elapsed time.Duration) {
 	category := classifyConnectionFailure(err)
 	slog.Info("instance connection check completed", buildInstanceConnectionLogAttrs(method, category, instance, dataSource, elapsed)...)
 }
@@ -183,7 +183,7 @@ func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, met
 		}
 		return nil
 	}()
-	logInstanceConnection(ctx, err, method, instance, dataSource, time.Since(start))
+	logInstanceConnection(err, method, instance, dataSource, time.Since(start))
 	return err
 }
 
