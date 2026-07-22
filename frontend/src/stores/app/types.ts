@@ -101,6 +101,7 @@ export type ProjectListParams = {
   pageSize: number;
   pageToken: string;
   query?: string;
+  excludeDefault?: boolean;
 };
 
 export type GroupFilter = {

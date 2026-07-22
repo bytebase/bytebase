@@ -22,6 +22,9 @@ const mocks = vi.hoisted(() => ({
   resolve: vi.fn(({ name }: { name: string }) => ({
     fullPath: `/${name}`,
   })),
+  projectSwitchPanelProps: undefined as
+    | { excludeDefaultProject?: boolean }
+    | undefined,
   switchWorkspace: vi.fn(),
 }));
 
@@ -134,7 +137,10 @@ vi.mock("@/components/ui/popover", () => ({
 }));
 
 vi.mock("@/components/header/ProjectSwitchPanel", () => ({
-  ProjectSwitchPanel: () => <div data-testid="project-switch-panel" />,
+  ProjectSwitchPanel: (props: { excludeDefaultProject?: boolean }) => {
+    mocks.projectSwitchPanelProps = props;
+    return <div data-testid="project-switch-panel" />;
+  },
 }));
 
 vi.mock("@/components/header/ProjectCreateDialog", () => ({
@@ -164,6 +170,7 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.projectSwitchPanelProps = undefined;
   ({ HeaderBreadcrumb } = await import("./HeaderBreadcrumb"));
 });
 
@@ -198,6 +205,24 @@ describe("HeaderBreadcrumb", () => {
     expect(
       container.querySelector('[data-testid="project-switch-panel"]')
     ).not.toBeNull();
+
+    unmount();
+  });
+
+  test("passes default-project visibility to the project switcher", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <HeaderBreadcrumb projectSwitchExcludeDefaultProject={false} />
+    );
+
+    render();
+
+    const projectSwitchButton = container.querySelector<HTMLButtonElement>(
+      "button"
+    );
+    act(() => {
+      projectSwitchButton?.click();
+    });
+    expect(mocks.projectSwitchPanelProps?.excludeDefaultProject).toBe(false);
 
     unmount();
   });

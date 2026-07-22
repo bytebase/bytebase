@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
+import { isValidProjectName } from "@/lib/resourceName";
 import {
   getProjectResourceId,
   isConnectAlreadyExists,
@@ -341,7 +342,10 @@ export function useAccessGrant(name: string) {
   return useAppStore((state) => state.accessGrantsByName[name]);
 }
 
-export function useProjectList(query: string) {
+export function useProjectList(
+  query: string,
+  { excludeDefault = true }: { excludeDefault?: boolean } = {}
+) {
   const searchProjects = useAppStore((state) => state.searchProjects);
   const [projects, setProjects] = useState<Project[]>([]);
   const [pageToken, setPageToken] = useState("");
@@ -367,6 +371,7 @@ export function useProjectList(query: string) {
           pageSize,
           pageToken: mode === "refresh" ? "" : pageTokenRef.current,
           query,
+          excludeDefault,
         });
         if (requestId !== requestIdRef.current) {
           return;
@@ -388,7 +393,7 @@ export function useProjectList(query: string) {
         }
       }
     },
-    [pageSize, query, searchProjects]
+    [excludeDefault, pageSize, query, searchProjects]
   );
 
   useEffect(() => {
@@ -428,10 +433,15 @@ function readRecentProjectNames(scope: string, email: string) {
   }
 }
 
-export function useRecentProjects() {
+export function useRecentProjects({
+  excludeDefault = true,
+}: {
+  excludeDefault?: boolean;
+} = {}) {
   const currentUser = useOptionalCurrentUser();
   const isSaaS = useIsSaaSMode();
   const batchFetchProjects = useAppStore((state) => state.batchFetchProjects);
+  const getProjectByName = useAppStore((state) => state.getProjectByName);
   const projectsByName = useAppStore((state) => state.projectsByName);
   const [projectNames, setProjectNames] = useState<string[]>([]);
 
@@ -452,10 +462,13 @@ export function useRecentProjects() {
 
   const projects = useMemo(() => {
     return projectNames
-      .map((name) => projectsByName[name])
+      .map((name) => projectsByName[name] ?? getProjectByName(name))
       .filter((project): project is Project => Boolean(project))
-      .filter((project) => !isDefaultProjectName(project.name));
-  }, [projectNames, projectsByName]);
+      .filter((project) => isValidProjectName(project.name))
+      .filter(
+        (project) => !excludeDefault || !isDefaultProjectName(project.name)
+      );
+  }, [excludeDefault, getProjectByName, projectNames, projectsByName]);
 
   return { projects, refresh: refreshNames };
 }

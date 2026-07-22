@@ -48,6 +48,8 @@ const mocks = vi.hoisted(() => ({
   close: vi.fn(),
   recentProjects: [] as Array<typeof recentProject>,
   allProjects: [] as Array<typeof allProject>,
+  recentOptions: undefined as { excludeDefault?: boolean } | undefined,
+  projectListOptions: undefined as { excludeDefault?: boolean } | undefined,
   hasMore: false,
   loadMore: vi.fn(),
   onPageSizeChange: vi.fn(),
@@ -80,19 +82,28 @@ vi.mock("@/hooks/useAppState", () => ({
     record: mocks.record,
   }),
   useProject: () => recentProject,
-  useRecentProjects: () => ({
-    projects: mocks.recentProjects,
-  }),
-  useProjectList: () => ({
-    projects: mocks.allProjects,
-    isLoading: false,
-    isFetchingMore: false,
-    hasMore: mocks.hasMore,
-    loadMore: mocks.loadMore,
-    pageSize: 50,
-    pageSizeOptions: [50],
-    onPageSizeChange: mocks.onPageSizeChange,
-  }),
+  useRecentProjects: (options?: { excludeDefault?: boolean }) => {
+    mocks.recentOptions = options;
+    return {
+      projects: mocks.recentProjects,
+    };
+  },
+  useProjectList: (
+    _query: string,
+    options?: { excludeDefault?: boolean }
+  ) => {
+    mocks.projectListOptions = options;
+    return {
+      projects: mocks.allProjects,
+      isLoading: false,
+      isFetchingMore: false,
+      hasMore: mocks.hasMore,
+      loadMore: mocks.loadMore,
+      pageSize: 50,
+      pageSizeOptions: [50],
+      onPageSizeChange: mocks.onPageSizeChange,
+    };
+  },
   useWorkspacePermission: () => true,
   projectMatchesKeyword: (project: typeof recentProject, keyword: string) =>
     project.title.toLowerCase().includes(keyword.toLowerCase()) ||
@@ -164,6 +175,8 @@ beforeEach(async () => {
   vi.clearAllMocks();
   mocks.recentProjects = [recentProject];
   mocks.allProjects = [allProject];
+  mocks.recentOptions = undefined;
+  mocks.projectListOptions = undefined;
   mocks.hasMore = false;
   mocks.inputOnChange = undefined;
   window.open = vi.fn();
@@ -349,6 +362,22 @@ describe("ProjectSwitchPanel", () => {
     expect(mocks.record).not.toHaveBeenCalled();
     expect(mocks.push).not.toHaveBeenCalled();
     expect(mocks.close).toHaveBeenCalled();
+    unmount();
+  });
+
+  test("can keep the default project in both switcher lists", () => {
+    const { render, unmount } = renderIntoContainer(
+      <ProjectSwitchPanel
+        onClose={mocks.close}
+        onRequestCreate={mocks.requestCreate}
+        excludeDefaultProject={false}
+      />
+    );
+
+    render();
+
+    expect(mocks.recentOptions).toEqual({ excludeDefault: false });
+    expect(mocks.projectListOptions).toEqual({ excludeDefault: false });
     unmount();
   });
 

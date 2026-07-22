@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import {
   SQL_EDITOR_PROJECT_MODULE,
   useNavigate,
@@ -13,6 +13,7 @@ import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useAppStore } from "@/stores/app";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { defaultProject } from "@/types/v1/project";
 import { isDarkTheme } from "./theme/derive";
 import { useSQLEditorTheme } from "./theme/SQLEditorThemeScope";
 
@@ -23,9 +24,27 @@ export function SQLEditorHeader() {
   const projectName = useSQLEditorEditorState((s) => s.project);
   const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
   const setRecentProject = useAppStore((s) => s.setRecentProject);
+  const loadWorkspacePermissionState = useAppStore(
+    (s) => s.loadWorkspacePermissionState
+  );
+  const defaultProjectName = useAppStore(
+    (s) => s.serverInfo?.defaultProject ?? ""
+  );
+  const allowAccessDefaultProject = useAppStore((s) =>
+    defaultProjectName
+      ? s.hasProjectPermission(
+          defaultProject(defaultProjectName),
+          "bb.projects.get"
+        )
+      : false
+  );
   const projectId = isValidProjectName(projectName)
     ? getProjectName(projectName)
     : undefined;
+
+  useEffect(() => {
+    void loadWorkspacePermissionState();
+  }, [loadWorkspacePermissionState]);
 
   const handleSelectProject = useCallback(
     (project: Project, event: React.MouseEvent<HTMLElement>) => {
@@ -58,6 +77,7 @@ export function SQLEditorHeader() {
         <HeaderBreadcrumb
           projectId={projectId}
           currentProjectName={projectName}
+          projectSwitchExcludeDefaultProject={!allowAccessDefaultProject}
           onSelectProject={handleSelectProject}
         />
       </div>

@@ -39,7 +39,8 @@ import {
 export type HeaderBreadcrumbProps = {
   projectId?: string;
   currentProjectName?: string;
-  onSelectProject?: ProjectSwitchPanelProps["onSelectProject"];
+  projectSwitchExcludeDefaultProject?: boolean;
+  onSelectProject?: NonNullable<ProjectSwitchPanelProps["onSelectProject"]>;
 };
 
 function planLabel(
@@ -181,10 +182,14 @@ export function WorkspaceSegment() {
 export function ProjectSegment({
   projectId: projectIdOverride,
   currentProjectName: currentProjectNameOverride,
+  projectSwitchExcludeDefaultProject = true,
   onSelectProject,
 }: Pick<
   HeaderBreadcrumbProps,
-  "projectId" | "currentProjectName" | "onSelectProject"
+  | "projectId"
+  | "currentProjectName"
+  | "projectSwitchExcludeDefaultProject"
+  | "onSelectProject"
 > = {}) {
   const { t } = useTranslation();
   const route = useCurrentRoute();
@@ -254,6 +259,7 @@ export function ProjectSegment({
           >
             <ProjectSwitchPanel
               currentProjectName={currentProjectName}
+              excludeDefaultProject={projectSwitchExcludeDefaultProject}
               onSelectProject={onSelectProject}
               onClose={() => setOpen(false)}
               onRequestCreate={() => {
@@ -279,6 +285,7 @@ export function ProjectSegment({
 export function HeaderBreadcrumb({
   projectId,
   currentProjectName,
+  projectSwitchExcludeDefaultProject,
   onSelectProject,
 }: HeaderBreadcrumbProps = {}) {
   return (
@@ -290,6 +297,7 @@ export function HeaderBreadcrumb({
       <ProjectSegment
         projectId={projectId}
         currentProjectName={currentProjectName}
+        projectSwitchExcludeDefaultProject={projectSwitchExcludeDefaultProject}
         onSelectProject={onSelectProject}
       />
     </div>

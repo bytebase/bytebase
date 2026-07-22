@@ -1430,6 +1430,42 @@ describe("useAppStore", () => {
     expect(mocks.getProject).toHaveBeenCalledTimes(2);
   });
 
+  test("keeps default project only when searchProjects opts in", async () => {
+    const defaultProject = createProto(ProjectSchema, {
+      name: "projects/default",
+      title: "Default project",
+      state: State.ACTIVE,
+    });
+    mocks.searchProjects.mockResolvedValue({
+      projects: [defaultProject, projectA],
+      nextPageToken: "",
+    });
+    const store = createAppStore();
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, {
+        defaultProject: defaultProject.name,
+      }),
+    });
+
+    await expect(
+      store.getState().searchProjects({
+        pageSize: 50,
+        pageToken: "",
+      })
+    ).resolves.toMatchObject({
+      projects: [projectA],
+    });
+    await expect(
+      store.getState().searchProjects({
+        pageSize: 50,
+        pageToken: "",
+        excludeDefault: false,
+      })
+    ).resolves.toMatchObject({
+      projects: [defaultProject, projectA],
+    });
+  });
+
   test("writes created projects into the entity cache", async () => {
     mocks.createProject.mockResolvedValue(projectA);
     const store = createAppStore();

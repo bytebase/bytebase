@@ -43,6 +43,7 @@ export interface ProjectSwitchPanelProps {
   onClose: () => void;
   onRequestCreate: () => void;
   currentProjectName?: string;
+  excludeDefaultProject?: boolean;
   onSelectProject?: (
     project: Project,
     event: ReactMouseEvent<HTMLElement>
@@ -103,13 +104,16 @@ export function ProjectSwitchPanel({
   onClose,
   onRequestCreate,
   currentProjectName: currentProjectNameOverride,
+  excludeDefaultProject = true,
   onSelectProject,
 }: ProjectSwitchPanelProps) {
   const { t } = useTranslation();
   const { record } = useRecentVisit();
   const navigate = useNavigate();
   const route = useCurrentRoute();
-  const { projects: recentProjectList } = useRecentProjects();
+  const { projects: recentProjectList } = useRecentProjects({
+    excludeDefault: excludeDefaultProject,
+  });
   const [searchText, setSearchText] = useState("");
   const [selectedTab, setSelectedTab] = useState<ProjectSwitchTab>(() =>
     recentProjectList.length > 0 ? "recent" : "all"
@@ -158,7 +162,7 @@ export function ProjectSwitchPanel({
     pageSize,
     pageSizeOptions,
     onPageSizeChange,
-  } = useProjectList(searchText);
+  } = useProjectList(searchText, { excludeDefault: excludeDefaultProject });
 
   const handleProjectSelect = useCallback(
     (project: Project, event: ReactMouseEvent<HTMLElement>) => {

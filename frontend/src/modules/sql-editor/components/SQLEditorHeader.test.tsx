@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
     | {
         projectId?: string;
         currentProjectName?: string;
+        projectSwitchExcludeDefaultProject?: boolean;
         onSelectProject?: (
           project: { name: string },
           event: { ctrlKey?: boolean; metaKey?: boolean }
@@ -22,6 +23,10 @@ const mocks = vi.hoisted(() => ({
   maybeSwitchProject: vi.fn().mockResolvedValue(undefined),
   record: vi.fn(),
   setRecentProject: vi.fn(),
+  loadWorkspacePermissionState: vi.fn().mockResolvedValue(undefined),
+  hasProjectPermission: vi.fn(),
+  allowAccessDefaultProject: true,
+  defaultProjectName: "projects/default",
   themeDark: true,
   resolve: vi.fn(
     ({
@@ -63,11 +68,26 @@ vi.mock("@/hooks/useAppState", () => ({
 
 vi.mock("@/stores/app", () => ({
   useAppStore: (
-    selector: (state: { setRecentProject: typeof mocks.setRecentProject }) => unknown
+    selector: (state: {
+      serverInfo: { defaultProject: string };
+      setRecentProject: typeof mocks.setRecentProject;
+      loadWorkspacePermissionState: typeof mocks.loadWorkspacePermissionState;
+      hasProjectPermission: typeof mocks.hasProjectPermission;
+    }) => unknown
   ) =>
     selector({
+      serverInfo: { defaultProject: mocks.defaultProjectName },
       setRecentProject: mocks.setRecentProject,
+      loadWorkspacePermissionState: mocks.loadWorkspacePermissionState,
+      hasProjectPermission: mocks.hasProjectPermission,
     }),
+}));
+
+vi.mock("@/types/v1/project", () => ({
+  defaultProject: (name: string) => ({
+    name,
+    title: "Default project",
+  }),
 }));
 
 vi.mock("@/modules/sql-editor/store", () => ({
@@ -162,6 +182,12 @@ beforeEach(async () => {
   vi.clearAllMocks();
   mocks.breadcrumbProps = undefined;
   mocks.project = "projects/recent-project";
+  mocks.allowAccessDefaultProject = true;
+  mocks.defaultProjectName = "projects/default";
+  mocks.hasProjectPermission.mockImplementation(
+    () => mocks.allowAccessDefaultProject
+  );
+  mocks.loadWorkspacePermissionState.mockResolvedValue(undefined);
   mocks.themeDark = true;
   window.open = vi.fn();
   ({ SQLEditorHeader } = await import("./SQLEditorHeader"));
@@ -187,6 +213,20 @@ describe("SQLEditorHeader", () => {
     expect(mocks.breadcrumbProps?.currentProjectName).toBe(
       "projects/recent-project"
     );
+    expect(mocks.breadcrumbProps?.projectSwitchExcludeDefaultProject).toBe(
+      false
+    );
+    expect(mocks.loadWorkspacePermissionState).toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("excludes the default project when SQL Editor cannot access it", () => {
+    mocks.allowAccessDefaultProject = false;
+    const { render, unmount } = renderIntoContainer(<SQLEditorHeader />);
+    render();
+
+    expect(mocks.breadcrumbProps?.projectSwitchExcludeDefaultProject).toBe(true);
 
     unmount();
   });
