@@ -816,7 +816,7 @@
     "partitions": "分区",
     "procedures": "存储过程",
     "project-instance-synced-action": "创建数据库变更",
-    "project-instance-synced-description": "你的数据库已在此项目中就绪。准备好后，可以从受管数据库变更开始。",
+    "project-instance-synced-description": "你的数据库已在此项目中就绪。可以先在 SQL Editor 中查询数据，也可以在需要时创建受管数据库变更。",
     "project-instance-synced-sql-editor-action": "打开 SQL Editor",
     "project-instance-synced-title": "数据库已连接",
     "project-instance-syncing-description": "这可能需要几秒到几分钟。你可以稍后刷新此页面。",

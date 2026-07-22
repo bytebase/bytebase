@@ -31,6 +31,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // InstanceService implements the instance service.
@@ -56,15 +57,15 @@ const (
 	connectionCategorySuccess            = "success"
 )
 
-func newConnectionTestErrorWithCategory(code connect.Code, err error, category string, format string, args ...any) *connect.Error {
-	connectErr := connect.NewError(code, errors.Wrapf(err, format, args...))
-	connectErr.Meta().Set(connectionCategoryHeader, category)
-	return connectErr
-}
-
 func classifyConnectionFailure(err error) string {
 	if err == nil {
-		return connectionCategoryUnknown
+		return connectionCategorySuccess
+	}
+	var connectErr *connect.Error
+	if errors.As(err, &connectErr) {
+		if category := connectErr.Meta().Get(connectionCategoryHeader); category != "" {
+			return category
+		}
 	}
 	text := strings.ToLower(err.Error())
 	switch {
@@ -106,6 +107,13 @@ func classifyConnectionFailure(err error) string {
 	default:
 		return connectionCategoryUnknown
 	}
+}
+
+func newConnectionTestErrorWithCategory(code connect.Code, err error, format string, args ...any) *connect.Error {
+	category := classifyConnectionFailure(err)
+	connectErr := connect.NewError(code, errors.Wrapf(err, format, args...))
+	connectErr.Meta().Set(connectionCategoryHeader, category)
+	return connectErr
 }
 
 func buildInstanceConnectionLogAttrs(source string, category string, instance *store.InstanceMessage, dataSource *storepb.DataSource, elapsed time.Duration) []slog.Attr {
@@ -152,8 +160,32 @@ func hasDataSourceSSH(dataSource *storepb.DataSource) bool {
 		dataSource.GetObfuscatedSshPrivateKey() != ""
 }
 
-func logInstanceConnection(ctx context.Context, source string, category string, instance *store.InstanceMessage, dataSource *storepb.DataSource, elapsed time.Duration) {
+func logInstanceConnection(ctx context.Context, err error, source string, instance *store.InstanceMessage, dataSource *storepb.DataSource, elapsed time.Duration) {
+	category := classifyConnectionFailure(err)
 	slog.LogAttrs(ctx, slog.LevelInfo, "instance connection check completed", buildInstanceConnectionLogAttrs(source, category, instance, dataSource, elapsed)...)
+}
+
+func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, source string, instance *store.InstanceMessage, dataSource *storepb.DataSource) *connect.Error {
+	start := time.Now()
+
+	err := func() *connect.Error {
+		driver, err := s.dbFactory.GetDataSourceDriver(
+			ctx, instance, dataSource,
+			db.ConnectionContext{
+				ReadOnly: dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
+			},
+		)
+		if err != nil {
+			return newConnectionTestErrorWithCategory(connect.CodeInternal, err, "failed to get database driver")
+		}
+		defer driver.Close(ctx)
+		if err := driver.Ping(ctx); err != nil {
+			return newConnectionTestErrorWithCategory(connect.CodeInvalidArgument, err, "invalid datasource %s", dataSource.GetType())
+		}
+		return nil
+	}()
+	logInstanceConnection(ctx, err, source, instance, dataSource, time.Since(start))
+	return err
 }
 
 // NewInstanceService creates a new InstanceService.
@@ -308,29 +340,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	// Test connection.
 	if req.Msg.ValidateOnly {
 		for _, ds := range instanceMessage.Metadata.GetDataSources() {
-			err := func() error {
-				start := time.Now()
-				driver, err := s.dbFactory.GetDataSourceDriver(
-					ctx, instanceMessage, ds,
-					db.ConnectionContext{
-						ReadOnly: ds.GetType() == storepb.DataSourceType_READ_ONLY,
-					},
-				)
-				if err != nil {
-					category := classifyConnectionFailure(err)
-					logInstanceConnection(ctx, v1connect.InstanceServiceCreateInstanceProcedure, category, instanceMessage, ds, time.Since(start))
-					return newConnectionTestErrorWithCategory(connect.CodeInternal, err, category, "failed to get database driver")
-				}
-				defer driver.Close(ctx)
-				if err := driver.Ping(ctx); err != nil {
-					category := classifyConnectionFailure(err)
-					logInstanceConnection(ctx, v1connect.InstanceServiceCreateInstanceProcedure, category, instanceMessage, ds, time.Since(start))
-					return newConnectionTestErrorWithCategory(connect.CodeInvalidArgument, err, category, "invalid datasource %s", ds.GetType())
-				}
-				logInstanceConnection(ctx, v1connect.InstanceServiceCreateInstanceProcedure, connectionCategorySuccess, instanceMessage, ds, time.Since(start))
-				return nil
-			}()
-			if err != nil {
+			if err := s.checkAndLogInstanceConnection(ctx, v1connect.InstanceServiceCreateInstanceProcedure, instanceMessage, ds); err != nil {
 				return nil, err
 			}
 		}
@@ -351,8 +361,13 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
-	if err == nil {
+	adminDataSource := utils.DataSourceFromInstanceWithType(instanceMessage, storepb.DataSourceType_ADMIN)
+	start := time.Now()
+	syncErr := func() error {
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
+		if err != nil {
+			return err
+		}
 		defer driver.Close(ctx)
 		updatedInstance, _, newDatabases, err := s.schemaSyncer.SyncInstanceWithOptions(ctx, instance, schemasync.SyncInstanceOptions{
 			InitialProjectID: initialProjectID,
@@ -370,7 +385,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		} else {
 			s.schemaSyncer.SyncDatabasesAsync(newDatabases)
 		}
-	}
+		return err
+	}()
+	logInstanceConnection(ctx, syncErr, v1connect.InstanceServiceCreateInstanceProcedure, instance, adminDataSource, time.Since(start))
 
 	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
@@ -996,29 +1013,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 
 	// Test connection.
 	if req.Msg.ValidateOnly {
-		err := func() error {
-			start := time.Now()
-			driver, err := s.dbFactory.GetDataSourceDriver(
-				ctx, instance, dataSource,
-				db.ConnectionContext{
-					ReadOnly: dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
-				},
-			)
-			if err != nil {
-				category := classifyConnectionFailure(err)
-				logInstanceConnection(ctx, v1connect.InstanceServiceAddDataSourceProcedure, category, instance, dataSource, time.Since(start))
-				return newConnectionTestErrorWithCategory(connect.CodeInternal, err, category, "failed to get database driver")
-			}
-			defer driver.Close(ctx)
-			if err := driver.Ping(ctx); err != nil {
-				category := classifyConnectionFailure(err)
-				logInstanceConnection(ctx, v1connect.InstanceServiceAddDataSourceProcedure, category, instance, dataSource, time.Since(start))
-				return newConnectionTestErrorWithCategory(connect.CodeInvalidArgument, err, category, "invalid datasource %s", dataSource.GetType())
-			}
-			logInstanceConnection(ctx, v1connect.InstanceServiceAddDataSourceProcedure, connectionCategorySuccess, instance, dataSource, time.Since(start))
-			return nil
-		}()
-		if err != nil {
+		if err := s.checkAndLogInstanceConnection(ctx, v1connect.InstanceServiceAddDataSourceProcedure, instance, dataSource); err != nil {
 			return nil, err
 		}
 		result := s.convertToV1Instance(ctx, instanceWithMetadata(instance, metadata))
@@ -1027,6 +1022,9 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 
 	if dataSource.GetType() != storepb.DataSourceType_READ_ONLY {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only read-only data source can be added"))
+	}
+	if err := s.checkAndLogInstanceConnection(ctx, v1connect.InstanceServiceAddDataSourceProcedure, instance, dataSource); err != nil {
+		return nil, err
 	}
 
 	instance, err = s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
@@ -1224,31 +1222,15 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 
 	// Test connection.
 	if req.Msg.ValidateOnly {
-		err := func() error {
-			start := time.Now()
-			driver, err := s.dbFactory.GetDataSourceDriver(
-				ctx, instance, dataSource,
-				db.ConnectionContext{ReadOnly: dataSource.GetType() == storepb.DataSourceType_READ_ONLY},
-			)
-			if err != nil {
-				category := classifyConnectionFailure(err)
-				logInstanceConnection(ctx, v1connect.InstanceServiceUpdateDataSourceProcedure, category, instance, dataSource, time.Since(start))
-				return newConnectionTestErrorWithCategory(connect.CodeInternal, err, category, "failed to get database driver")
-			}
-			defer driver.Close(ctx)
-			if err := driver.Ping(ctx); err != nil {
-				category := classifyConnectionFailure(err)
-				logInstanceConnection(ctx, v1connect.InstanceServiceUpdateDataSourceProcedure, category, instance, dataSource, time.Since(start))
-				return newConnectionTestErrorWithCategory(connect.CodeInvalidArgument, err, category, "invalid datasource %s", dataSource.GetType())
-			}
-			logInstanceConnection(ctx, v1connect.InstanceServiceUpdateDataSourceProcedure, connectionCategorySuccess, instance, dataSource, time.Since(start))
-			return nil
-		}()
-		if err != nil {
+		if err := s.checkAndLogInstanceConnection(ctx, v1connect.InstanceServiceUpdateDataSourceProcedure, instance, dataSource); err != nil {
 			return nil, err
 		}
 		result := s.convertToV1Instance(ctx, instanceWithMetadata(instance, metadata))
 		return connect.NewResponse(result), nil
+	}
+
+	if err := s.checkAndLogInstanceConnection(ctx, v1connect.InstanceServiceUpdateDataSourceProcedure, instance, dataSource); err != nil {
+		return nil, err
 	}
 
 	instance, err = s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{

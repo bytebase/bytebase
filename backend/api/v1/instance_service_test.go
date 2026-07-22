@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -23,10 +24,15 @@ func TestValidateExtraConnectionParametersRejectsTiDBAllowAllFiles(t *testing.T)
 }
 
 func TestClassifyConnectionFailure(t *testing.T) {
+	connectErr := connect.NewError(connect.CodeInvalidArgument, errors.New("generic connect error"))
+	connectErr.Meta().Set(connectionCategoryHeader, connectionCategoryAuthFailed)
+
 	testCases := []struct {
 		err  error
 		want string
 	}{
+		{err: nil, want: connectionCategorySuccess},
+		{err: connectErr, want: connectionCategoryAuthFailed},
 		{err: errors.New("dial tcp 10.0.0.5:5432: i/o timeout"), want: connectionCategoryTimeout},
 		{err: errors.New("password authentication failed for user bytebase"), want: connectionCategoryAuthFailed},
 		{err: errors.New("permission denied for schema public"), want: connectionCategoryPermissionDenied},

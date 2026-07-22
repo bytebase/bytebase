@@ -816,7 +816,7 @@
     "partitions": "Phân vùng",
     "procedures": "Thủ tục",
     "project-instance-synced-action": "Tạo thay đổi cơ sở dữ liệu",
-    "project-instance-synced-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy bắt đầu bằng một thay đổi cơ sở dữ liệu được quản trị khi bạn sẵn sàng.",
+    "project-instance-synced-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy bắt đầu bằng cách truy vấn dữ liệu trong SQL Editor, hoặc tạo thay đổi cơ sở dữ liệu được quản trị khi cần.",
     "project-instance-synced-sql-editor-action": "Mở SQL Editor",
     "project-instance-synced-title": "Đã kết nối cơ sở dữ liệu",
     "project-instance-syncing-description": "Quá trình này có thể mất vài giây đến vài phút. Bạn có thể làm mới trang này sau.",
