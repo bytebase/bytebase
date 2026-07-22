@@ -43,18 +43,45 @@ var goMigrations = map[string]GoMigrationFunc{
 
 // MigrateSchema migrates the schema for metadata database.
 func MigrateSchema(ctx context.Context, db *sql.DB) error {
-	// Acquire advisory lock to ensure only one replica runs migrations.
-	// This blocks until the lock is available.
-	lock, err := store.AcquireAdvisoryLock(ctx, db, store.AdvisoryLockKeyMigration)
+	return withMigrationGuard(ctx, db, runSchemaMigration)
+}
+
+// withMigrationGuard serializes schema migrations with a transaction-scoped
+// advisory lock. Migration work uses separate connections because individual
+// SQL and Go migrations manage their own transactions.
+func withMigrationGuard(ctx context.Context, db *sql.DB, migrate func(context.Context, *sql.DB) error) (err error) {
+	guardTx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(err, "failed to acquire migration lock")
+		return errors.Wrap(err, "failed to begin migration guard transaction")
 	}
 	defer func() {
-		if err := lock.Release(); err != nil {
-			slog.Error("Failed to release migration advisory lock", log.BBError(err))
+		if err == nil && ctx.Err() == nil {
+			if commitErr := guardTx.Commit(); commitErr != nil {
+				err = errors.Wrap(commitErr, "failed to commit migration guard transaction")
+			}
+			return
+		}
+		if err == nil {
+			err = ctx.Err()
+		}
+		if rollbackErr := guardTx.Rollback(); rollbackErr != nil && !errors.Is(rollbackErr, sql.ErrTxDone) {
+			slog.Error("Failed to roll back migration guard transaction", log.BBError(rollbackErr))
 		}
 	}()
 
+	if _, err := guardTx.ExecContext(ctx, "SET LOCAL idle_in_transaction_session_timeout = 0"); err != nil {
+		return errors.Wrap(err, "failed to configure migration guard transaction")
+	}
+	// This blocks until the transaction-scoped lock is available, then remains
+	// held until the guard transaction completes.
+	if err := store.AcquireAdvisoryXactLock(ctx, guardTx, store.AdvisoryLockKeyMigration); err != nil {
+		return errors.Wrap(err, "failed to acquire transaction-scoped migration lock")
+	}
+
+	return migrate(ctx, db)
+}
+
+func runSchemaMigration(ctx context.Context, db *sql.DB) error {
 	files, err := getSortedVersionedFiles()
 	if err != nil {
 		return err
