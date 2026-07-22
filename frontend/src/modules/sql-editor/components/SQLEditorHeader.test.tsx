@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
         projectId?: string;
         currentProjectName?: string;
         projectSwitchExcludeDefaultProject?: boolean;
+        onBeforeSwitchWorkspace?: () => boolean;
         onSelectProject?: (
           project: { name: string },
           event: { ctrlKey?: boolean; metaKey?: boolean }
@@ -27,6 +28,8 @@ const mocks = vi.hoisted(() => ({
   hasProjectPermission: vi.fn(),
   allowAccessDefaultProject: true,
   defaultProjectName: "projects/default",
+  openTmpTabList: [] as Array<{ id: string }>,
+  tabsById: new Map<string, { status: "CLEAN" | "DIRTY" | "SAVING" }>(),
   themeDark: true,
   resolve: vi.fn(
     ({
@@ -48,6 +51,8 @@ vi.mock("react-i18next", () => ({
     t: (key: string) =>
       ({
         "sql-editor.self": "SQL Editor",
+        "sql-editor.tab.unsaved-worksheet": "Unsaved worksheet.",
+        "common.leave-without-saving": "Leave without saving?",
       })[key] ?? key,
   }),
 }));
@@ -104,6 +109,13 @@ vi.mock("@/modules/sql-editor/store", () => ({
 vi.mock("@/modules/sql-editor/store/editor", () => ({
   useSQLEditorEditorState: (selector: (state: { project: string }) => unknown) =>
     selector({ project: mocks.project }),
+}));
+
+vi.mock("@/modules/sql-editor/store/tab", () => ({
+  getSQLEditorTabsState: () => ({
+    openTmpTabList: mocks.openTmpTabList,
+    tabsById: mocks.tabsById,
+  }),
 }));
 
 vi.mock("@/modules/sql-editor/components/theme/SQLEditorThemeScope", () => ({
@@ -184,11 +196,14 @@ beforeEach(async () => {
   mocks.project = "projects/recent-project";
   mocks.allowAccessDefaultProject = true;
   mocks.defaultProjectName = "projects/default";
+  mocks.openTmpTabList = [];
+  mocks.tabsById = new Map();
   mocks.hasProjectPermission.mockImplementation(
     () => mocks.allowAccessDefaultProject
   );
   mocks.loadWorkspacePermissionState.mockResolvedValue(undefined);
   mocks.themeDark = true;
+  window.confirm = vi.fn();
   window.open = vi.fn();
   ({ SQLEditorHeader } = await import("./SQLEditorHeader"));
 });
@@ -217,6 +232,38 @@ describe("SQLEditorHeader", () => {
       false
     );
     expect(mocks.loadWorkspacePermissionState).toHaveBeenCalled();
+    expect(mocks.breadcrumbProps?.onBeforeSwitchWorkspace?.()).toBe(true);
+    expect(window.confirm).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("blocks workspace switching when dirty SQL Editor tabs are not confirmed", () => {
+    mocks.openTmpTabList = [{ id: "tab-1" }];
+    mocks.tabsById = new Map([["tab-1", { status: "DIRTY" }]]);
+    vi.mocked(window.confirm).mockReturnValue(false);
+    const { render, unmount } = renderIntoContainer(<SQLEditorHeader />);
+    render();
+
+    expect(mocks.breadcrumbProps?.onBeforeSwitchWorkspace?.()).toBe(false);
+    expect(window.confirm).toHaveBeenCalledWith(
+      "Unsaved worksheet. Leave without saving?"
+    );
+
+    unmount();
+  });
+
+  test("allows workspace switching when dirty SQL Editor tabs are confirmed", () => {
+    mocks.openTmpTabList = [{ id: "tab-1" }];
+    mocks.tabsById = new Map([["tab-1", { status: "SAVING" }]]);
+    vi.mocked(window.confirm).mockReturnValue(true);
+    const { render, unmount } = renderIntoContainer(<SQLEditorHeader />);
+    render();
+
+    expect(mocks.breadcrumbProps?.onBeforeSwitchWorkspace?.()).toBe(true);
+    expect(window.confirm).toHaveBeenCalledWith(
+      "Unsaved worksheet. Leave without saving?"
+    );
 
     unmount();
   });

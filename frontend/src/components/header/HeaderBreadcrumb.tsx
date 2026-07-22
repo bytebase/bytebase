@@ -40,6 +40,7 @@ export type HeaderBreadcrumbProps = {
   projectId?: string;
   currentProjectName?: string;
   projectSwitchExcludeDefaultProject?: boolean;
+  onBeforeSwitchWorkspace?: () => boolean;
   onSelectProject?: NonNullable<ProjectSwitchPanelProps["onSelectProject"]>;
 };
 
@@ -75,7 +76,9 @@ function planVariant(
 // ---------------------------------------------------------------------------
 // WorkspaceSegment — shows workspace name + plan badge + optional dropdown
 // ---------------------------------------------------------------------------
-export function WorkspaceSegment() {
+export function WorkspaceSegment({
+  onBeforeSwitchWorkspace,
+}: Pick<HeaderBreadcrumbProps, "onBeforeSwitchWorkspace"> = {}) {
   const { t } = useTranslation();
   const workspace = useWorkspace();
   const workspaceList = useWorkspaceList();
@@ -92,10 +95,11 @@ export function WorkspaceSegment() {
   const onSwitch = useCallback(
     (workspaceName: string) => {
       if (workspaceName === currentWorkspaceName) return;
+      if (onBeforeSwitchWorkspace && !onBeforeSwitchWorkspace()) return;
       setOpen(false);
       void switchWorkspace(workspaceName);
     },
-    [currentWorkspaceName, switchWorkspace]
+    [currentWorkspaceName, onBeforeSwitchWorkspace, switchWorkspace]
   );
 
   return (
@@ -286,12 +290,13 @@ export function HeaderBreadcrumb({
   projectId,
   currentProjectName,
   projectSwitchExcludeDefaultProject,
+  onBeforeSwitchWorkspace,
   onSelectProject,
 }: HeaderBreadcrumbProps = {}) {
   return (
     <div className="flex items-center gap-x-1">
       <div className="hidden md:flex items-center gap-x-1">
-        <WorkspaceSegment />
+        <WorkspaceSegment onBeforeSwitchWorkspace={onBeforeSwitchWorkspace} />
         <span className="text-control-placeholder select-none">/</span>
       </div>
       <ProjectSegment

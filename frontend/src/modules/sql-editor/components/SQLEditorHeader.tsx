@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   SQL_EDITOR_PROJECT_MODULE,
   useNavigate,
@@ -11,6 +12,7 @@ import { useRecentVisit } from "@/hooks/useAppState";
 import { getProjectName, isValidProjectName } from "@/lib/resourceName";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
+import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { defaultProject } from "@/types/v1/project";
@@ -18,6 +20,7 @@ import { isDarkTheme } from "./theme/derive";
 import { useSQLEditorTheme } from "./theme/SQLEditorThemeScope";
 
 export function SQLEditorHeader() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { record } = useRecentVisit();
   const theme = useSQLEditorTheme();
@@ -66,6 +69,19 @@ export function SQLEditorHeader() {
     [maybeSwitchProject, navigate, record, setRecentProject]
   );
 
+  const handleBeforeSwitchWorkspace = useCallback(() => {
+    const tabsState = getSQLEditorTabsState();
+    for (const persisted of tabsState.openTmpTabList) {
+      const tab = tabsState.tabsById.get(persisted.id);
+      if (tab && tab.status !== "CLEAN") {
+        return window.confirm(
+          `${t("sql-editor.tab.unsaved-worksheet")} ${t("common.leave-without-saving")}`
+        );
+      }
+    }
+    return true;
+  }, [t]);
+
   return (
     <header className="h-12 shrink-0 border-b border-block-border bg-background px-3 flex items-center justify-between gap-x-4">
       <div className="min-w-0 flex items-center gap-x-4">
@@ -78,6 +94,7 @@ export function SQLEditorHeader() {
           projectId={projectId}
           currentProjectName={projectName}
           projectSwitchExcludeDefaultProject={!allowAccessDefaultProject}
+          onBeforeSwitchWorkspace={handleBeforeSwitchWorkspace}
           onSelectProject={handleSelectProject}
         />
       </div>

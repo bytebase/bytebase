@@ -26,6 +26,12 @@ const mocks = vi.hoisted(() => ({
     | { excludeDefaultProject?: boolean }
     | undefined,
   switchWorkspace: vi.fn(),
+  workspaceList: [
+    {
+      name: "workspaces/default",
+      title: "Default Workspace",
+    },
+  ],
 }));
 
 vi.mock("react-i18next", () => ({
@@ -63,12 +69,7 @@ vi.mock("@/hooks/useAppState", () => ({
     name: "workspaces/default",
     title: "Default Workspace",
   }),
-  useWorkspaceList: () => [
-    {
-      name: "workspaces/default",
-      title: "Default Workspace",
-    },
-  ],
+  useWorkspaceList: () => mocks.workspaceList,
 }));
 
 vi.mock("@/components/RouterLink", () => ({
@@ -171,6 +172,12 @@ const renderIntoContainer = (element: ReactElement) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.projectSwitchPanelProps = undefined;
+  mocks.workspaceList = [
+    {
+      name: "workspaces/default",
+      title: "Default Workspace",
+    },
+  ];
   ({ HeaderBreadcrumb } = await import("./HeaderBreadcrumb"));
 });
 
@@ -205,6 +212,43 @@ describe("HeaderBreadcrumb", () => {
     expect(
       container.querySelector('[data-testid="project-switch-panel"]')
     ).not.toBeNull();
+
+    unmount();
+  });
+
+  test("checks before switching workspace", () => {
+    mocks.workspaceList = [
+      {
+        name: "workspaces/default",
+        title: "Default Workspace",
+      },
+      {
+        name: "workspaces/other",
+        title: "Other Workspace",
+      },
+    ];
+    const onBeforeSwitchWorkspace = vi.fn(() => false);
+    const { container, render, unmount } = renderIntoContainer(
+      <HeaderBreadcrumb onBeforeSwitchWorkspace={onBeforeSwitchWorkspace} />
+    );
+
+    render();
+
+    const workspaceSwitchButton = container.querySelector<HTMLButtonElement>(
+      "button"
+    );
+    act(() => {
+      workspaceSwitchButton?.click();
+    });
+    const otherWorkspaceButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent?.includes("Other Workspace"));
+    act(() => {
+      otherWorkspaceButton?.click();
+    });
+
+    expect(onBeforeSwitchWorkspace).toHaveBeenCalledTimes(1);
+    expect(mocks.switchWorkspace).not.toHaveBeenCalled();
 
     unmount();
   });
