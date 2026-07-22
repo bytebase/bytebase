@@ -52,6 +52,18 @@ vi.mock("react-router", () => ({
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
+  Trans: ({
+    i18nKey,
+    components,
+  }: {
+    i18nKey: string;
+    components?: { instance?: ReactNode };
+  }) => (
+    <>
+      {i18nKey}
+      {components?.instance}
+    </>
+  ),
   useTranslation: () => ({
     t: (key: string) => key,
   }),
@@ -88,8 +100,10 @@ vi.mock("@/stores", () => ({
 }));
 
 vi.mock("@/utils", () => ({
+  extractInstanceResourceName: (name: string) => name.split("/").pop() ?? "",
   extractProjectResourceName: (name: string) => name.split("/").pop() ?? "",
   getDefaultPagination: () => 10,
+  hasWorkspacePermissionV2: () => true,
   instanceV1Name: (instance: Instance) => instance.title,
   isValidDatabaseName: (name: string) =>
     /^instances\/[^/]+\/databases\/[^/]+$/.test(name),

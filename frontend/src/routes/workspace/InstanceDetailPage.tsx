@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router";
 import {
   AdvancedSearch,
@@ -20,6 +20,7 @@ import {
 import { EditEnvironmentSheet } from "@/components/EditEnvironmentSheet";
 import { EngineIcon } from "@/components/EngineIcon";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
+import { InstanceLabel } from "@/components/InstanceLabel";
 import {
   InstanceActionDropdown,
   InstanceFormBody,
@@ -501,10 +502,11 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     syncingRefreshExhausted;
   const showPostSyncTransferAction =
     !!syncingInstanceId && visibleDatabases.length > 0 && hasUserProject;
-  const syncingInstanceTitle =
-    syncingInstanceId === instanceId
-      ? instanceV1Name(instance)
-      : syncingInstanceId;
+  const syncingInstanceName = syncingInstanceId
+    ? `${instanceNamePrefix}${syncingInstanceId}`
+    : undefined;
+  const syncingInstance =
+    syncingInstanceId === instanceId ? instance : undefined;
   const handleTransferSyncedDatabases = useCallback(() => {
     setSelectedNames(
       new Set(visibleDatabases.map((database) => database.name))
@@ -571,9 +573,20 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
             {showSyncingInstanceHint && (
               <Alert
                 variant="info"
-                title={t("db.project-instance-syncing-title", {
-                  instance: syncingInstanceTitle,
-                })}
+                title={
+                  <Trans
+                    t={t}
+                    i18nKey="db.project-instance-syncing-title"
+                    components={{
+                      instance: (
+                        <InstanceLabel
+                          instance={syncingInstance}
+                          instanceName={syncingInstanceName}
+                        />
+                      ),
+                    }}
+                  />
+                }
                 description={
                   <div className="flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4">
                     <span>{t("db.project-instance-syncing-description")}</span>
