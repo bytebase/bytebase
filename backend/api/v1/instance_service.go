@@ -1023,9 +1023,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	if dataSource.GetType() != storepb.DataSourceType_READ_ONLY {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only read-only data source can be added"))
 	}
-	if err := s.checkAndLogInstanceConnection(ctx, v1connect.InstanceServiceAddDataSourceProcedure, instance, dataSource); err != nil {
-		return nil, err
-	}
+	_ = s.checkAndLogInstanceConnection(ctx, v1connect.InstanceServiceAddDataSourceProcedure, instance, dataSource)
 
 	instance, err = s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		ResourceID: &instance.ResourceID,
@@ -1229,9 +1227,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		return connect.NewResponse(result), nil
 	}
 
-	if err := s.checkAndLogInstanceConnection(ctx, v1connect.InstanceServiceUpdateDataSourceProcedure, instance, dataSource); err != nil {
-		return nil, err
-	}
+	_ = s.checkAndLogInstanceConnection(ctx, v1connect.InstanceServiceUpdateDataSourceProcedure, instance, dataSource)
 
 	instance, err = s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		ResourceID: &instance.ResourceID,
