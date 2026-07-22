@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { isValidProjectName } from "@/lib/resourceName";
 import {
   getProjectResourceId,
   isConnectAlreadyExists,
@@ -17,6 +16,7 @@ import {
   nullEnvironment,
   unknownEnvironment,
 } from "@/types/v1/environment";
+import { isValidProjectName } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
 import {
   storageKeyRecentProjects,
@@ -462,7 +462,7 @@ export function useRecentProjects({
 
   const projects = useMemo(() => {
     return projectNames
-      .map((name) => projectsByName[name] ?? getProjectByName(name))
+      .map((name) => getProjectByName(name))
       .filter((project): project is Project => Boolean(project))
       .filter((project) => isValidProjectName(project.name))
       .filter(
