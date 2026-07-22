@@ -142,7 +142,7 @@ export function TableCell({
       <div
         ref={wrapperRef}
         className={cn(
-          "font-mono text-start wrap-break-word line-clamp-3",
+          "font-mono text-start wrap-break-word whitespace-pre-wrap line-clamp-3",
           (hasByteData || clickable) && "max-w-[calc(100%-1.5rem)]",
           hasByteData && clickable && "max-w-[calc(100%-3.25rem)]"
         )}

@@ -176,6 +176,7 @@ export function AdvancedSearch({
   const asyncSearchRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const asyncRequestRef = useRef(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const scrollPendingMenuIndexRef = useRef(false);
 
   // Sync external query changes
   useEffect(() => {
@@ -528,16 +529,26 @@ export function AdvancedSearch({
 
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        setMenuIndex((prev) => Math.max(0, prev - 1));
+        setMenuIndex((prev) => {
+          const next = Math.max(0, prev - 1);
+          scrollPendingMenuIndexRef.current = next !== prev;
+          return next;
+        });
         return;
       }
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        const maxIdx =
+        const maxIdx = Math.max(
+          0,
           menuView === "scope"
             ? visibleScopeOptions.length - 1
-            : visibleValueOptions.length - 1;
-        setMenuIndex((prev) => Math.min(maxIdx, prev + 1));
+            : visibleValueOptions.length - 1
+        );
+        setMenuIndex((prev) => {
+          const next = Math.min(maxIdx, prev + 1);
+          scrollPendingMenuIndexRef.current = next !== prev;
+          return next;
+        });
         return;
       }
 
@@ -631,6 +642,24 @@ export function AdvancedSearch({
       inline: "nearest",
     });
   }, [focusedTagIndex]);
+
+  useEffect(() => {
+    if (!scrollPendingMenuIndexRef.current) return;
+    scrollPendingMenuIndexRef.current = false;
+    const menuList =
+      menuView === "scope"
+        ? scopeMenuListRef.current
+        : menuView === "value"
+          ? valueMenuListRef.current
+          : undefined;
+    const option = menuList?.querySelector<HTMLElement>(
+      `[data-search-menu-option-index="${menuIndex}"]`
+    );
+    option?.scrollIntoView({
+      block: "nearest",
+      inline: "nearest",
+    });
+  }, [menuIndex, menuView]);
 
   return (
     <div ref={containerRef} className="w-full min-w-0 relative">
@@ -769,6 +798,7 @@ export function AdvancedSearch({
                 {visibleScopeOptions.map((option, index) => (
                   <div
                     key={option.id}
+                    data-search-menu-option-index={index}
                     className={cn(
                       "flex gap-x-2 px-3 py-2 cursor-pointer text-sm items-center",
                       index > 0 && "border-t border-block-border",
@@ -832,6 +862,7 @@ export function AdvancedSearch({
                     {visibleValueOptions.map((option, index) => (
                       <div
                         key={option.value}
+                        data-search-menu-option-index={index}
                         className={cn(
                           "h-[38px] flex gap-x-2 px-3 items-center cursor-pointer border-t border-block-border overflow-hidden",
                           index === menuIndex && "bg-control-bg-hover/75"

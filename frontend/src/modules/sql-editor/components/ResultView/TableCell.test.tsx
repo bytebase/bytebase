@@ -61,6 +61,9 @@ const longValue = "1.779696812227E+12";
 const value = create(RowValueSchema, {
   kind: { case: "stringValue", value: longValue },
 });
+const indentedValue = create(RowValueSchema, {
+  kind: { case: "stringValue", value: "  -> Seq Scan on project" },
+});
 
 const rows: ResultTableRow[] = [
   {
@@ -106,5 +109,29 @@ describe("TableCell", () => {
     expect(container.querySelector(".line-clamp-3")).toHaveClass(
       "max-w-[calc(100%-1.5rem)]"
     );
+  });
+
+  test("preserves leading whitespace when rendering string cells", () => {
+    const { container } = render(
+      <SQLResultViewProvider
+        engine={Engine.POSTGRES}
+        rows={rows}
+        columns={columns}
+      >
+        <TableCell
+          value={indentedValue}
+          rowIndex={0}
+          colIndex={0}
+          allowSelect
+          columnType="TEXT"
+          database={database}
+          keyword=""
+        />
+      </SQLResultViewProvider>
+    );
+
+    const content = container.querySelector(".line-clamp-3");
+    expect(content?.textContent).toBe("  -> Seq Scan on project");
+    expect(content).toHaveClass("whitespace-pre-wrap");
   });
 });
