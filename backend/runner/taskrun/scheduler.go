@@ -225,16 +225,6 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 		}
 	}
 
-	// All tasks complete and successful - try to claim completion notification
-	claimed, err := s.store.ClaimPipelineCompletionNotification(ctx, ref.ProjectID, planID)
-	if err != nil {
-		slog.Error("failed to claim pipeline completion notification", log.BBError(err))
-		return
-	}
-	if !claimed {
-		return // Already sent
-	}
-
 	project, err := s.store.GetProjectByResourceID(ctx, plan.ProjectID)
 	if err != nil || project == nil {
 		slog.Error("failed to get project for completion webhook", log.BBError(err))
@@ -244,6 +234,16 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 	if err != nil {
 		slog.Error("failed to get environments for completion webhook", log.BBError(err))
 		return
+	}
+
+	// All tasks complete and successful - try to claim completion notification
+	claimed, err := s.store.ClaimPipelineCompletionNotification(ctx, ref.ProjectID, planID)
+	if err != nil {
+		slog.Error("failed to claim pipeline completion notification", log.BBError(err))
+		return
+	}
+	if !claimed {
+		return // Already sent
 	}
 
 	// Send PIPELINE_COMPLETED webhook
