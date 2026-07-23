@@ -64,7 +64,7 @@ require (
 	github.com/labstack/echo-contrib/v5 v5.0.1
 	github.com/lib/pq v1.12.3
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
-	github.com/mattn/go-sqlite3 v1.14.47
+	github.com/mattn/go-sqlite3 v1.14.48
 	github.com/microsoft/go-mssqldb v1.10.0
 	github.com/moby/moby/api v1.55.0
 	github.com/modelcontextprotocol/go-sdk v1.6.1
