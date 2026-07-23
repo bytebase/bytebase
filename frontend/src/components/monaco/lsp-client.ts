@@ -42,6 +42,11 @@ export type ConnectionState = {
   ws: Promise<WebSocket> | undefined;
 };
 
+type LanguageClientConnection = {
+  client: MonacoLanguageClient;
+  ws: WebSocket;
+};
+
 // Inline replacement for `monaco-languageclient`'s `MonacoLanguageClient`,
 // which was a ~15-line subclass and the only thing we consumed from that
 // package. All the LSP machinery lives in `vscode-languageclient`, whose
@@ -111,8 +116,8 @@ const state = {
   client: undefined as MonacoLanguageClient | undefined,
   clientInitialized: undefined as Promise<MonacoLanguageClient> | undefined,
 };
-let heartbeatResponseTimer: ReturnType<typeof setTimeout> | undefined;
 let reconnectHeartbeatTimer: ReturnType<typeof setTimeout> | undefined;
+let reconnectJob: Promise<MonacoLanguageClient> | undefined;
 
 const setConnState = (patch: Partial<ConnectionState>) => {
   Object.assign(conn, patch);
@@ -134,8 +139,6 @@ const setHeartbeat = (patch: Partial<ConnectionState["heartbeat"]>) => {
 
 const clearHeartbeat = () => {
   clearTimeout(conn.heartbeat.timer);
-  clearTimeout(heartbeatResponseTimer);
-  heartbeatResponseTimer = undefined;
   conn.heartbeat = {
     timer: undefined,
     counter: 0,
@@ -159,11 +162,13 @@ const scheduleReconnectHeartbeat = () => {
   }, WEBSOCKET_HEARTBEAT_INTERVAL);
 };
 
-const useHeartbeat = (client: MonacoLanguageClient, ws: WebSocket) => {
+const startHeartbeat = (client: MonacoLanguageClient, ws: WebSocket) => {
   let active = true;
+  let heartbeatResponseTimer: ReturnType<typeof setTimeout> | undefined;
 
   const cleanup = () => {
     active = false;
+    clearTimeout(heartbeatResponseTimer);
     clearHeartbeat();
   };
 
@@ -290,7 +295,7 @@ const disposeClient = () => {
   state.clientInitialized = undefined;
 };
 
-const reconnect = async () => {
+const reconnectRunner = async () => {
   setConnState({
     ws: undefined,
     state: "initial",
@@ -314,7 +319,18 @@ const reconnect = async () => {
   return initializeLSPClient();
 };
 
-const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
+const reconnect = () => {
+  if (reconnectJob) {
+    return reconnectJob;
+  }
+
+  reconnectJob = reconnectRunner().finally(() => {
+    reconnectJob = undefined;
+  });
+  return reconnectJob;
+};
+
+const createLanguageClient = async (): Promise<LanguageClientConnection> => {
   // `vscode-languageclient` touches the `vscode` API at construction time,
   // which requires `@codingame/monaco-vscode-api`'s `initialize()` to have
   // completed before `new MonacoLanguageClient(...)`,
@@ -330,47 +346,50 @@ const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
   const socket = toSocket(ws);
   const reader = new WebSocketMessageReader(socket);
   const writer = new WebSocketMessageWriter(socket);
-  return new MonacoLanguageClient({
-    name: "Bytebase Language Client",
-    clientOptions: {
-      documentSelector: ["sql", "javascript"],
-      initializationOptions: {
-        performanceMode: true,
-        diagnosticDelay: 500,
-        disableFeaturesWhileTyping: true,
-      },
-      middleware: {
-        provideHover: throttle(async (document, position, token, next) => {
-          return next(document, position, token);
-        }, 300),
-        provideCompletionItem: throttle(
-          async (document, position, context, token, next) => {
-            const triggerCharacters = [".", ",", "(", " "];
-            if (
-              context.triggerKind === 1 &&
-              !triggerCharacters.includes(context.triggerCharacter || "")
-            ) {
-              return { items: [] };
-            }
-            return next(document, position, context, token);
+  return {
+    client: new MonacoLanguageClient({
+      name: "Bytebase Language Client",
+      clientOptions: {
+        documentSelector: ["sql", "javascript"],
+        initializationOptions: {
+          performanceMode: true,
+          diagnosticDelay: 500,
+          disableFeaturesWhileTyping: true,
+        },
+        middleware: {
+          provideHover: throttle(async (document, position, token, next) => {
+            return next(document, position, token);
+          }, 300),
+          provideCompletionItem: throttle(
+            async (document, position, context, token, next) => {
+              const triggerCharacters = [".", ",", "(", " "];
+              if (
+                context.triggerKind === 1 &&
+                !triggerCharacters.includes(context.triggerCharacter || "")
+              ) {
+                return { items: [] };
+              }
+              return next(document, position, context, token);
+            },
+            200
+          ),
+        },
+        errorHandler: {
+          error: () => ({ action: ErrorAction.Continue }),
+          closed: () => {
+            reconnect().catch((err) => errorNotification(err));
+            return { action: CloseAction.DoNotRestart };
           },
-          200
-        ),
-      },
-      errorHandler: {
-        error: () => ({ action: ErrorAction.Continue }),
-        closed: () => {
-          reconnect().catch((err) => errorNotification(err));
-          return { action: CloseAction.DoNotRestart };
         },
       },
-    },
-    messageTransports: { reader, writer },
-  });
+      messageTransports: { reader, writer },
+    }),
+    ws,
+  };
 };
 
 const initializeRunner = async () => {
-  const client = await createLanguageClient();
+  const { client, ws } = await createLanguageClient();
   client.onDidChangeState((event) => {
     if (event.newState === State.Running) {
       const { lastCommand } = conn;
@@ -387,10 +406,7 @@ const initializeRunner = async () => {
   }
 
   state.client = client;
-  const ws = await conn.ws;
-  if (ws) {
-    useHeartbeat(client, ws);
-  }
+  startHeartbeat(client, ws);
   return client;
 };
 

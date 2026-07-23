@@ -119,6 +119,16 @@ const flushPromises = async () => {
   await Promise.resolve();
 };
 
+const deferred = <T>() => {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
+};
+
 beforeEach(() => {
   vi.useFakeTimers();
   vi.resetModules();
@@ -130,6 +140,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   vi.useRealTimers();
 });
 
@@ -255,6 +266,42 @@ describe("LSP client connection recovery", () => {
 
     expect(mocks.refreshTokens).toHaveBeenCalledTimes(3);
     expect(mocks.clients).toHaveLength(2);
+    expect(getConnectionStateSnapshot().state).toBe("ready");
+  });
+
+  test("shares one reconnect attempt across concurrent callers", async () => {
+    const {
+      ensureLSPConnection,
+      getConnectionStateSnapshot,
+      initializeLSPClient,
+    } = await import("./lsp-client");
+
+    const failedInitialConnection = initializeLSPClient().catch(
+      () => undefined
+    );
+    for (let i = 0; i < 5; i++) {
+      await flushPromises();
+      MockWebSocket.instances[i].closeBeforeOpen();
+    }
+    await failedInitialConnection;
+    expect(getConnectionStateSnapshot().state).toBe("closed");
+
+    const refresh = deferred<undefined>();
+    mocks.refreshTokens.mockReturnValueOnce(refresh.promise);
+
+    const first = ensureLSPConnection();
+    const second = ensureLSPConnection();
+
+    expect(first).toBe(second);
+    expect(mocks.refreshTokens).toHaveBeenCalledTimes(1);
+
+    refresh.resolve(undefined);
+    await flushPromises();
+    await flushPromises();
+    MockWebSocket.instances[5].open();
+    await Promise.all([first, second]);
+
+    expect(mocks.clients).toHaveLength(1);
     expect(getConnectionStateSnapshot().state).toBe("ready");
   });
 });
