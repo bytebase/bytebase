@@ -144,7 +144,7 @@
     "typescript": "7.0.2",
     "typescript-6": "npm:typescript@6.0.3",
     "unified": "^11.0.5",
-    "vite": "8.1.4",
+    "vite": "8.1.5",
     "vite-bundle-visualizer": "^1.2.1",
     "vitest": "4.1.10",
     "vscode-oniguruma": "^2.0.1",
