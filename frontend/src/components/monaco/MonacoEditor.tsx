@@ -222,6 +222,8 @@ export function MonacoEditor({
     getConnectionStateSnapshot,
     getConnectionStateSnapshot
   );
+  const connectionStateRef = useRef(connection.state);
+  connectionStateRef.current = connection.state;
 
   const clampMeasuredHeight = (height: number): number => {
     return Math.min(max, Math.max(min, height));
@@ -310,7 +312,6 @@ export function MonacoEditor({
     let cursorSubscription: { dispose(): void } | null = null;
     let formatAction: { dispose(): void } | null = null;
     let suggestStyle: HTMLStyleElement | null = null;
-    let messageHandler: ((event: MessageEvent) => void) | null = null;
     const host = document.createElement("div");
     host.className = "h-full w-full";
     containerRef.current?.replaceChildren(host);
@@ -414,20 +415,6 @@ export function MonacoEditor({
           suggestStyle = ensureSuggestOverrideStyle();
         }
 
-        if (shouldEnableLSP) {
-          const wsPromise =
-            getConnectionWebSocket() ??
-            initializeLSPClient().then(() => getConnectionWebSocket());
-          wsPromise?.then((ws) => {
-            if (!ws || disposed) return;
-            messageHandler = (message: MessageEvent) => {
-              processStatementRangeMessage(message);
-              emitSelectionSideEffects();
-            };
-            ws.addEventListener("message", messageHandler);
-          });
-        }
-
         if (autoFocus) {
           editor.focus();
         }
@@ -450,12 +437,6 @@ export function MonacoEditor({
       cursorSubscription?.dispose();
       formatAction?.dispose();
       suggestStyle?.remove();
-      const wsPromise = getConnectionWebSocket();
-      if (messageHandler) {
-        wsPromise?.then((ws) =>
-          ws.removeEventListener("message", messageHandler!)
-        );
-      }
       // Clear ALL active-statement decorations on the (shared, persistent)
       // model, not just this instance's tracked id, so teardown can't leave
       // an orphan highlight behind for the next editor lifecycle.
@@ -500,6 +481,36 @@ export function MonacoEditor({
     shouldEnableLSP,
     t,
   ]);
+
+  useEffect(() => {
+    if (!shouldEnableLSP || connection.state !== "ready") {
+      return;
+    }
+
+    let disposed = false;
+    let activeWebSocket: WebSocket | undefined;
+    const messageHandler = (message: MessageEvent) => {
+      processStatementRangeMessage(message);
+      emitSelectionSideEffects();
+    };
+    const wsPromise = getConnectionWebSocket();
+    void wsPromise?.then((ws) => {
+      if (!ws || disposed) return;
+      activeWebSocket = ws;
+      ws.addEventListener("message", messageHandler);
+    });
+
+    return () => {
+      disposed = true;
+      if (activeWebSocket) {
+        activeWebSocket.removeEventListener("message", messageHandler);
+        return;
+      }
+      void wsPromise?.then((ws) =>
+        ws?.removeEventListener("message", messageHandler)
+      );
+    };
+  }, [connection.state, shouldEnableLSP]);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -597,7 +608,7 @@ export function MonacoEditor({
   // a writable Monaco for plain text editing don't initialize the LSP
   // client or send empty `setMetadata` traffic.
   useEffect(() => {
-    if (readOnly || !ready) return;
+    if (readOnly || !ready || connection.state !== "ready") return;
     const ctx = autoCompleteContext;
     if (!ctx) return;
     const params: {
@@ -637,7 +648,13 @@ export function MonacoEditor({
     return () => {
       apply.cancel();
     };
-  }, [autoCompleteContext, readOnly, ready]);
+  }, [
+    autoCompleteContext,
+    connection.state,
+    generatedFilename,
+    readOnly,
+    ready,
+  ]);
 
   const height = clampMeasuredHeight(contentHeight);
   let connectionStateText = t(
