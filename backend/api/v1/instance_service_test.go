@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -23,10 +24,17 @@ func TestValidateExtraConnectionParametersRejectsTiDBAllowAllFiles(t *testing.T)
 }
 
 func TestClassifyConnectionFailure(t *testing.T) {
+	connectErr := connect.NewError(connect.CodeInvalidArgument, errors.New("generic connect error"))
+	connectErr.Meta().Set(connectionCategoryHeader, connectionCategoryAuthFailed)
+	var typedNilConnectErr *connect.Error
+
 	testCases := []struct {
 		err  error
 		want string
 	}{
+		{err: nil, want: connectionCategorySuccess},
+		{err: typedNilConnectErr, want: connectionCategorySuccess},
+		{err: connectErr, want: connectionCategoryAuthFailed},
 		{err: errors.New("dial tcp 10.0.0.5:5432: i/o timeout"), want: connectionCategoryTimeout},
 		{err: errors.New("password authentication failed for user bytebase"), want: connectionCategoryAuthFailed},
 		{err: errors.New("permission denied for schema public"), want: connectionCategoryPermissionDenied},
@@ -63,12 +71,14 @@ func TestBuildInstanceConnectionLogAttrs(t *testing.T) {
 
 	attrs := buildInstanceConnectionLogAttrs(v1connect.InstanceServiceCreateInstanceProcedure, connectionCategoryAuthFailed, instance, dataSource, 1500*time.Millisecond)
 	got := make(map[string]any)
-	for _, attr := range attrs {
+	for _, item := range attrs {
+		attr, ok := item.(slog.Attr)
+		require.True(t, ok)
 		got[attr.Key] = attr.Value.Any()
 	}
 
 	require.Equal(t, map[string]any{
-		"source":              v1connect.InstanceServiceCreateInstanceProcedure,
+		"method":              v1connect.InstanceServiceCreateInstanceProcedure,
 		"engine":              storepb.Engine_POSTGRES.String(),
 		"data_source_type":    storepb.DataSourceType_ADMIN.String(),
 		"category":            connectionCategoryAuthFailed,
@@ -80,7 +90,6 @@ func TestBuildInstanceConnectionLogAttrs(t *testing.T) {
 	for _, key := range []string{"host", "port", "username", "database", "password", "dsn", "sql"} {
 		require.NotContains(t, got, key)
 	}
-	require.IsType(t, slog.Attr{}, attrs[0])
 }
 
 func TestValidateExternalSecretForSaaS(t *testing.T) {

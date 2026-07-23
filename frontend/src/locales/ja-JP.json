@@ -816,7 +816,7 @@
     "partitions": "パーティション",
     "procedures": "ストアドプロシージャ",
     "project-instance-synced-action": "データベース変更を作成",
-    "project-instance-synced-description": "このプロジェクトでデータベースを利用できるようになりました。準備ができたら、管理されたデータベース変更から始めてください。",
+    "project-instance-synced-description": "このプロジェクトでデータベースを利用できるようになりました。まず SQL Editor でデータをクエリし、必要に応じて管理されたデータベース変更を作成できます。",
     "project-instance-synced-sql-editor-action": "SQL Editor を開く",
     "project-instance-synced-title": "データベースが接続されました",
     "project-instance-syncing-description": "数秒から数分かかる場合があります。後でこのページを更新してください。",
