@@ -30,7 +30,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { useCurrentUser } from "@/hooks/useAppState";
 import {
   monacoThemeName,
   themeColorScheme,
@@ -70,7 +69,6 @@ function AccessGrantRequestDrawerInner({
   onClose,
 }: AccessGrantRequestDrawerInnerProps) {
   const { t } = useTranslation();
-  const currentUserEmail = useCurrentUser().email;
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const setHighlightAccessGrantName = useSQLEditorStore(
     (s) => s.setHighlightAccessGrantName
@@ -253,7 +251,6 @@ function AccessGrantRequestDrawerInner({
             };
 
       const accessGrant = create(AccessGrantSchema, {
-        creator: `users/${currentUserEmail}`,
         targets,
         query,
         unmask,
