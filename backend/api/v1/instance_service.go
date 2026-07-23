@@ -361,7 +361,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	}
 	go func() {
 		syncCtx := context.WithoutCancel(ctx)
-		time.Sleep(3 * time.Second)
 		updatedInstance, _, newDatabases, err := s.schemaSyncer.SyncInstanceWithOptions(syncCtx, instance, schemasync.SyncInstanceOptions{
 			InitialProjectID: initialProjectID,
 		})
