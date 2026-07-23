@@ -168,18 +168,17 @@ func TestWebhookIntegration(t *testing.T) {
 	defer webhookServer.Close()
 
 	// Create a single instance for all tests
-	instanceRootDir := t.TempDir()
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "testInstance")
+	pgContainer, err := provisionPgInstance(ctx, t)
 	require.NoError(t, err)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "test instance",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	require.NoError(t, err)
@@ -372,7 +371,7 @@ func TestWebhookIntegration(t *testing.T) {
 		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
 		requireWebhookCount(t, collector, project.Name, "Rollout completed", 0)
 
-		unblockFailingTask(t, instanceDir, "byt9398_c3_fail")
+		unblockFailingTask(t, pgContainer, "byt9398_c3_fail")
 		retryFailedTasks(ctx, t, ctl, rollout)
 
 		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
@@ -432,8 +431,8 @@ func TestWebhookIntegration(t *testing.T) {
 		requireWebhookCount(t, collector, project.Name, "Rollout completed", 0)
 
 		// Unblock dbRetry only — dbSkipFailed's __force_fail_target table remains
-		// absent in its own .db file, so its retry would still fail.
-		unblockFailingTask(t, instanceDir, "byt9398_c7_retry")
+		// absent in its own database, so its retry would still fail.
+		unblockFailingTask(t, pgContainer, "byt9398_c7_retry")
 		runTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c7_retry"))
 		waitForTaskStatus(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c7_retry"), v1pb.Task_DONE, 30*time.Second)
 		skipTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c7_skipfailed"))

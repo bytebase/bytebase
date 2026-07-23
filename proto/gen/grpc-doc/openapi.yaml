@@ -19387,7 +19387,6 @@ components:
         - MYSQL
         - POSTGRES
         - SNOWFLAKE
-        - SQLITE
         - TIDB
         - MONGODB
         - REDIS

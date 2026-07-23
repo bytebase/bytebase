@@ -19,9 +19,7 @@ func TestArchiveProject(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	instanceRootDir := t.TempDir()
-	instanceName := "testInstance1"
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 
 	// Add an instance.
@@ -29,10 +27,10 @@ func TestArchiveProject(t *testing.T) {
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "test",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)

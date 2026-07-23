@@ -50,7 +50,7 @@ type collisionFixture struct {
 // setupCollidingProjects creates two projects with naturally colliding ids.
 //
 // Both projects get a plan → issue → rollout with a DML task targeting
-// separate databases on the same SQLite instance. Because nextProjectID
+// separate databases on the same Postgres instance. Because nextProjectID
 // allocates per-project, the first plan/task/task_run/plan_check_run in
 // each project receives the same numeric id.
 //
@@ -76,18 +76,17 @@ func setupCollidingProjects(
 	}))
 	a.NoError(err)
 
-	instanceRootDir := t.TempDir()
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "collision-instance")
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("col-inst"),
 		Instance: &v1pb.Instance{
 			Title:       "collision-instance",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -208,7 +207,7 @@ func setupCollidingProjects(
 }
 
 // setupCollidingProjectsSeparateInstances is a variant of setupCollidingProjects
-// that places each project on its own SQLite instance. Useful for tests that
+// that places each project on its own Postgres instance. Useful for tests that
 // need to distinguish correct per-instance cascade from a buggy cross-project
 // DELETE USING predicate. Project A's rollout is driven to DONE; project B's
 // rollout is left for the caller to trigger.
@@ -232,8 +231,8 @@ func setupCollidingProjectsSeparateInstances(
 	}))
 	a.NoError(err)
 
-	instA := createSQLiteInstance(ctx, t, ctl, "col-inst-a")
-	instB := createSQLiteInstance(ctx, t, ctl, "col-inst-b")
+	instA := createPgInstance(ctx, t, ctl, "col-inst-a")
+	instB := createPgInstance(ctx, t, ctl, "col-inst-b")
 
 	const dbNameA = "collision_db_a"
 	a.NoError(ctl.createDatabase(ctx, projectA.Msg, instA, nil, dbNameA, ""))
@@ -454,20 +453,21 @@ func listTaskRunAndTaskUIDs(ctx context.Context, t *testing.T, ctl *controller, 
 	return taskRunUIDs, taskUIDs
 }
 
-// createSQLiteInstance provisions and registers a SQLite instance for test use.
-func createSQLiteInstance(ctx context.Context, t *testing.T, ctl *controller, titlePrefix string) *v1pb.Instance {
+// createPgInstance provisions a dedicated Postgres container and registers it
+// as an instance for test use.
+func createPgInstance(ctx context.Context, t *testing.T, ctl *controller, titlePrefix string) *v1pb.Instance {
 	t.Helper()
 	a := require.New(t)
-	instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), titlePrefix)
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 	resp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString(titlePrefix),
 		Instance: &v1pb.Instance{
 			Title:       titlePrefix,
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)

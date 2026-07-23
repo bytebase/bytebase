@@ -54,18 +54,17 @@ func TestTenantBackfill(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	instanceRootDir := t.TempDir()
-	prodInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "prod-instance")
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 
 	prodInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "prod-instance",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -313,16 +312,16 @@ func TestCreatePlanWithRepeatedDatabaseGroupTarget(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), t.Name())
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "prod-instance",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
