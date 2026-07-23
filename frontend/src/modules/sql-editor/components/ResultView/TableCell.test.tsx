@@ -111,7 +111,7 @@ describe("TableCell", () => {
     );
   });
 
-  test("preserves leading whitespace when rendering string cells", () => {
+  test("preserves leading whitespace without soft-wrapping string cells", () => {
     const { container } = render(
       <SQLResultViewProvider
         engine={Engine.POSTGRES}
@@ -132,6 +132,8 @@ describe("TableCell", () => {
 
     const content = container.querySelector(".line-clamp-3");
     expect(content?.textContent).toBe("  -> Seq Scan on project");
-    expect(content).toHaveClass("whitespace-pre-wrap");
+    expect(content).toHaveClass("whitespace-pre");
+    expect(content).not.toHaveClass("whitespace-pre-wrap");
+    expect(content).not.toHaveClass("wrap-break-word");
   });
 });

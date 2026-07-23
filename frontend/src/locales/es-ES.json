@@ -816,7 +816,7 @@
     "partitions": "Particiones",
     "procedures": "Procedimientos",
     "project-instance-synced-action": "Crear cambio de base de datos",
-    "project-instance-synced-description": "Tu base de datos está lista en este proyecto. Empieza con un cambio de base de datos gobernado cuando estés listo.",
+    "project-instance-synced-description": "Tu base de datos está lista en este proyecto. Empieza consultando datos en SQL Editor, o crea un cambio de base de datos gobernado cuando lo necesites.",
     "project-instance-synced-sql-editor-action": "Abrir SQL Editor",
     "project-instance-synced-title": "Base de datos conectada",
     "project-instance-syncing-description": "Esto puede tardar de unos segundos a unos minutos. Puedes actualizar esta página más tarde.",

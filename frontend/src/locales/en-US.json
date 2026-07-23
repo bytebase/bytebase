@@ -816,7 +816,7 @@
     "partitions": "Partitions",
     "procedures": "Procedures",
     "project-instance-synced-action": "Create database change",
-    "project-instance-synced-description": "Your database is ready in this project. Start with a governed database change when you are ready.",
+    "project-instance-synced-description": "Your database is ready in this project. Start by querying data in SQL Editor, or create a governed database change when needed.",
     "project-instance-synced-sql-editor-action": "Open SQL Editor",
     "project-instance-synced-title": "Database connected",
     "project-instance-syncing-description": "This may take a few seconds to a few minutes. You can refresh this page later.",
