@@ -25,6 +25,7 @@ import {
   messages,
   progressiveDelay,
   WEBSOCKET_HEARTBEAT_INTERVAL,
+  WEBSOCKET_HEARTBEAT_TIMEOUT,
   WEBSOCKET_TIMEOUT,
 } from "./utils";
 
@@ -110,6 +111,8 @@ const state = {
   client: undefined as MonacoLanguageClient | undefined,
   clientInitialized: undefined as Promise<MonacoLanguageClient> | undefined,
 };
+let heartbeatResponseTimer: ReturnType<typeof setTimeout> | undefined;
+let reconnectHeartbeatTimer: ReturnType<typeof setTimeout> | undefined;
 
 const setConnState = (patch: Partial<ConnectionState>) => {
   Object.assign(conn, patch);
@@ -129,37 +132,81 @@ const setHeartbeat = (patch: Partial<ConnectionState["heartbeat"]>) => {
   emit();
 };
 
-const useHeartbeat = (ws: WebSocket) => {
+const clearHeartbeat = () => {
+  clearTimeout(conn.heartbeat.timer);
+  clearTimeout(heartbeatResponseTimer);
+  heartbeatResponseTimer = undefined;
+  conn.heartbeat = {
+    timer: undefined,
+    counter: 0,
+    timestamp: 0,
+  };
+  emit();
+};
+
+const clearReconnectHeartbeat = () => {
+  clearTimeout(reconnectHeartbeatTimer);
+  reconnectHeartbeatTimer = undefined;
+};
+
+const scheduleReconnectHeartbeat = () => {
+  if (reconnectHeartbeatTimer || conn.state === "ready") {
+    return;
+  }
+  reconnectHeartbeatTimer = setTimeout(() => {
+    reconnectHeartbeatTimer = undefined;
+    void reconnect().catch(() => undefined);
+  }, WEBSOCKET_HEARTBEAT_INTERVAL);
+};
+
+const useHeartbeat = (client: MonacoLanguageClient, ws: WebSocket) => {
+  let active = true;
+
   const cleanup = () => {
-    clearTimeout(conn.heartbeat.timer);
-    conn.heartbeat = {
-      timer: undefined,
-      counter: 0,
-      timestamp: 0,
-    };
-    emit();
+    active = false;
+    clearHeartbeat();
   };
 
   ws.addEventListener("error", cleanup);
   ws.addEventListener("close", cleanup);
 
   const ping = () => {
+    clearTimeout(heartbeatResponseTimer);
+    const counter = conn.heartbeat.counter + 1;
+    const timestamp = Date.now();
     setHeartbeat({
-      counter: conn.heartbeat.counter + 1,
-      timestamp: Date.now(),
+      counter,
+      timestamp,
     });
-    ws.send(
-      JSON.stringify({
-        jsonrpc: "2.0",
-        method: "$ping",
-        params: {
-          state: omit(conn.heartbeat, "timer"),
-        },
+
+    heartbeatResponseTimer = setTimeout(() => {
+      if (active && ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    }, WEBSOCKET_HEARTBEAT_TIMEOUT);
+
+    void Promise.resolve(
+      client.sendRequest("$ping", {
+        state: omit(conn.heartbeat, "timer"),
       })
-    );
-    setHeartbeat({
-      timer: setTimeout(ping, WEBSOCKET_HEARTBEAT_INTERVAL),
-    });
+    )
+      .then(() => {
+        if (!active) {
+          return;
+        }
+        clearTimeout(heartbeatResponseTimer);
+        heartbeatResponseTimer = undefined;
+        if (ws.readyState === WebSocket.OPEN) {
+          setHeartbeat({
+            timer: setTimeout(ping, WEBSOCKET_HEARTBEAT_INTERVAL),
+          });
+        }
+      })
+      .catch(() => {
+        if (active && ws.readyState === WebSocket.OPEN) {
+          ws.close();
+        }
+      });
   };
 
   ping();
@@ -214,8 +261,8 @@ const connectWebSocket = () => {
         if (conn.state === "ready" || conn.state === "closed") {
           return;
         }
+        clearReconnectHeartbeat();
         setConnState({ state: "ready", retries: 0 });
-        useHeartbeat(ws);
         resolve(ws);
       });
 
@@ -231,15 +278,7 @@ const connectWebSocket = () => {
   return promise;
 };
 
-const reconnect = async () => {
-  setConnState({
-    ws: undefined,
-    state: "initial",
-    retries: 0,
-  });
-
-  await refreshTokens();
-
+const disposeClient = () => {
   if (state.client) {
     try {
       state.client.dispose();
@@ -249,7 +288,30 @@ const reconnect = async () => {
     state.client = undefined;
   }
   state.clientInitialized = undefined;
-  await initializeLSPClient();
+};
+
+const reconnect = async () => {
+  setConnState({
+    ws: undefined,
+    state: "initial",
+    retries: 0,
+  });
+
+  clearReconnectHeartbeat();
+  disposeClient();
+  try {
+    await refreshTokens();
+  } catch (err) {
+    setConnState({
+      ws: undefined,
+      state: "closed",
+      retries: 0,
+    });
+    scheduleReconnectHeartbeat();
+    throw err;
+  }
+
+  return initializeLSPClient();
 };
 
 const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
@@ -325,6 +387,10 @@ const initializeRunner = async () => {
   }
 
   state.client = client;
+  const ws = await conn.ws;
+  if (ws) {
+    useHeartbeat(client, ws);
+  }
   return client;
 };
 
@@ -332,9 +398,30 @@ export const initializeLSPClient = () => {
   if (state.clientInitialized) {
     return state.clientInitialized;
   }
-  const job = initializeRunner();
+  const job = initializeRunner().catch((err) => {
+    disposeClient();
+    if (conn.state !== "ready") {
+      setConnState({
+        ws: undefined,
+        state: "closed",
+        retries: 0,
+      });
+      scheduleReconnectHeartbeat();
+    }
+    throw err;
+  });
   state.clientInitialized = job;
   return job;
+};
+
+export const ensureLSPConnection = () => {
+  if (conn.state === "ready" || conn.state === "reconnecting") {
+    return state.clientInitialized ?? initializeLSPClient();
+  }
+  if (conn.state === "initial" && conn.ws) {
+    return state.clientInitialized ?? initializeLSPClient();
+  }
+  return reconnect();
 };
 
 export const executeCommand = async (

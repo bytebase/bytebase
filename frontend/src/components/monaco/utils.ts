@@ -13,6 +13,7 @@ export const RECONNECTION_DELAY = {
 };
 export const WEBSOCKET_TIMEOUT = 5000;
 export const WEBSOCKET_HEARTBEAT_INTERVAL = 10 * 1000;
+export const WEBSOCKET_HEARTBEAT_TIMEOUT = 30 * 1000;
 
 type MonacoMessages = {
   title: string;

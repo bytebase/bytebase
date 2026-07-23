@@ -29,6 +29,7 @@ import {
   setMonacoModelLanguage,
 } from "./core";
 import {
+  ensureLSPConnection,
   executeCommand,
   getConnectionStateSnapshot,
   getConnectionWebSocket,
@@ -222,6 +223,8 @@ export function MonacoEditor({
     getConnectionStateSnapshot,
     getConnectionStateSnapshot
   );
+  const connectionStateRef = useRef(connection.state);
+  connectionStateRef.current = connection.state;
 
   const clampMeasuredHeight = (height: number): number => {
     return Math.min(max, Math.max(min, height));
@@ -376,6 +379,9 @@ export function MonacoEditor({
         contentSubscription = editor.onDidChangeModelContent(() => {
           if (isApplyingExternalChangeRef.current) {
             return;
+          }
+          if (shouldEnableLSP && connectionStateRef.current === "closed") {
+            void ensureLSPConnection().catch(() => undefined);
           }
           onChangeRef.current?.(editor.getValue());
           emitSelectionSideEffects();

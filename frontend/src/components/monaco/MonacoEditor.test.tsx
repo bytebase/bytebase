@@ -24,6 +24,9 @@ const mocks = vi.hoisted(() => {
     getAllDecorations: () => [],
   };
   const subscription = { dispose: vi.fn() };
+  const handlers = {
+    modelContent: undefined as (() => void) | undefined,
+  };
   const editor = {
     addAction: vi.fn(() => subscription),
     createDecorationsCollection: vi.fn(() => ({ clear: vi.fn() })),
@@ -38,7 +41,10 @@ const mocks = vi.hoisted(() => {
     onDidChangeCursorPosition: vi.fn(() => subscription),
     onDidChangeCursorSelection: vi.fn(() => subscription),
     onDidChangeModel: vi.fn(() => subscription),
-    onDidChangeModelContent: vi.fn(() => subscription),
+    onDidChangeModelContent: vi.fn((handler: () => void) => {
+      handlers.modelContent = handler;
+      return subscription;
+    }),
     onDidContentSizeChange: vi.fn(() => subscription),
     setModel: vi.fn(),
     setValue: vi.fn(),
@@ -47,6 +53,7 @@ const mocks = vi.hoisted(() => {
   return {
     connectionSnapshot,
     editor,
+    handlers,
     model,
     subscription,
   };
@@ -122,6 +129,7 @@ vi.mock("./core", () => ({
 }));
 
 vi.mock("./lsp-client", () => ({
+  ensureLSPConnection: vi.fn(async () => ({})),
   executeCommand: vi.fn(async () => undefined),
   getConnectionStateSnapshot: vi.fn(() => mocks.connectionSnapshot),
   getConnectionWebSocket: vi.fn(() => undefined),
@@ -169,6 +177,8 @@ const renderIntoContainer = async (
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.connectionSnapshot.state = "ready";
+  mocks.handlers.modelContent = undefined;
 });
 
 describe("MonacoEditor", () => {
@@ -219,6 +229,26 @@ describe("MonacoEditor", () => {
     );
 
     expect(container.querySelector("[data-testid='tooltip']")).toBeNull();
+
+    unmount();
+  });
+
+  test("reconnects closed LSP connection on editor input", async () => {
+    const { ensureLSPConnection } = await import("./lsp-client");
+    mocks.connectionSnapshot.state = "closed";
+
+    const { unmount } = await renderIntoContainer(
+      createElement(MonacoEditor, {
+        content: "select 1",
+        enableDecorations: true,
+      })
+    );
+
+    act(() => {
+      mocks.handlers.modelContent?.();
+    });
+
+    expect(ensureLSPConnection).toHaveBeenCalled();
 
     unmount();
   });
