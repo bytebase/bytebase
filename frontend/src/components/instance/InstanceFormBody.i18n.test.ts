@@ -15,25 +15,28 @@ const LOCALES = {
 } as const;
 
 describe("Instance form locale interpolation", () => {
-  test.each(
-    Object.entries(LOCALES)
-  )("renders host and proxy placeholders literally in %s", (locale, translation) => {
-    const i18n = i18next.createInstance();
+  test.each(Object.entries(LOCALES))(
+    "renders host and proxy placeholders literally in %s",
+    (locale, translation) => {
+      const i18n = i18next.createInstance();
 
-    void i18n.init({
-      resources: {
-        [locale]: { translation },
-      },
-      lng: locale,
-      interpolation: {
-        escapeValue: false,
-      },
-      initAsync: false,
-    });
+      void i18n.init({
+        resources: {
+          [locale]: { translation },
+        },
+        lng: locale,
+        interpolation: {
+          escapeValue: false,
+        },
+        initAsync: false,
+      });
 
-    expect(i18n.t("instance.sentence.host.none-snowflake")).toContain(" | ");
-    expect(i18n.t("instance.sentence.host.none-snowflake")).not.toContain("{");
-    expect(i18n.t("instance.sentence.proxy.snowflake")).toContain("@");
-    expect(i18n.t("instance.sentence.proxy.snowflake")).not.toContain("{");
-  });
+      expect(i18n.t("instance.sentence.host.none-snowflake")).toContain(" | ");
+      expect(i18n.t("instance.sentence.host.none-snowflake")).not.toContain(
+        "{"
+      );
+      expect(i18n.t("instance.sentence.proxy.snowflake")).toContain("@");
+      expect(i18n.t("instance.sentence.proxy.snowflake")).not.toContain("{");
+    }
+  );
 });

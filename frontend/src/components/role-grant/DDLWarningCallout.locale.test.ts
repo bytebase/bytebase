@@ -31,15 +31,16 @@ const projectMembersKindKeys = [
 describe("DDLWarningCallout locale strings", () => {
   for (const [locale, data] of Object.entries(locales)) {
     describe(locale, () => {
-      test.each(
-        projectMembersKindKeys
-      )("project.members.%s contains {{kind}} placeholder", (key) => {
-        const value = (
-          data.project.members as unknown as Record<string, string>
-        )[key];
-        expect(value).toBeDefined();
-        expect(value).toContain("{{kind}}");
-      });
+      test.each(projectMembersKindKeys)(
+        "project.members.%s contains {{kind}} placeholder",
+        (key) => {
+          const value = (
+            data.project.members as unknown as Record<string, string>
+          )[key];
+          expect(value).toBeDefined();
+          expect(value).toContain("{{kind}}");
+        }
+      );
     });
   }
 });

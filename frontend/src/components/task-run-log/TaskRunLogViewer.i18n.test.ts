@@ -15,27 +15,28 @@ const LOCALES = {
 } as const;
 
 describe("TaskRunLogViewer locale interpolation", () => {
-  test.each(
-    Object.entries(LOCALES)
-  )("interpolates summary and replica labels in %s", (locale, translation) => {
-    const i18n = i18next.createInstance();
+  test.each(Object.entries(LOCALES))(
+    "interpolates summary and replica labels in %s",
+    (locale, translation) => {
+      const i18n = i18next.createInstance();
 
-    void i18n.init({
-      resources: {
-        [locale]: { translation },
-      },
-      lng: locale,
-      interpolation: {
-        escapeValue: false,
-      },
-      initAsync: false,
-    });
+      void i18n.init({
+        resources: {
+          [locale]: { translation },
+        },
+        lng: locale,
+        interpolation: {
+          escapeValue: false,
+        },
+        initAsync: false,
+      });
 
-    expect(
-      i18n.t("task-run.log-viewer.summary", { sections: 2, entries: 3 })
-    ).not.toContain("{");
-    expect(i18n.t("task-run.log-viewer.replica-n", { n: 2 })).not.toContain(
-      "{"
-    );
-  });
+      expect(
+        i18n.t("task-run.log-viewer.summary", { sections: 2, entries: 3 })
+      ).not.toContain("{");
+      expect(i18n.t("task-run.log-viewer.replica-n", { n: 2 })).not.toContain(
+        "{"
+      );
+    }
+  );
 });
