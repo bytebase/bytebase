@@ -95,7 +95,7 @@
     "vscode": "npm:@codingame/monaco-vscode-extension-api@35.0.3",
     "vscode-languageclient": "9.0.1",
     "vscode-ws-jsonrpc": "3.5.0",
-    "vue": "3.5.39",
+    "vue": "3.5.40",
     "zustand": "^5.0.13"
   },
   "devDependencies": {
