@@ -241,19 +241,13 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 		return
 	}
 
-	// Use environment from the first task (all tasks should be in the same environment for a rollout)
-	environment := ""
-	if len(tasks) > 0 {
-		environment = tasks[0].Environment
-	}
-
 	// Send PIPELINE_COMPLETED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Type:    storepb.Activity_PIPELINE_COMPLETED,
 		Project: webhook.NewProject(project),
 		RolloutCompleted: &webhook.EventRolloutCompleted{
 			Rollout:     webhook.NewRollout(plan),
-			Environment: environment,
+			Environment: completionWebhookEnvironment(tasks),
 		},
 	})
 
@@ -299,4 +293,11 @@ func (s *Scheduler) autoResolveIssue(ctx context.Context, projectID string, plan
 		return
 	}
 	slog.Info("auto-resolved deferred rollout issue", slog.String("project", projectID), slog.Int64("issueUID", issue.UID), slog.Int64("planID", planID))
+}
+
+func completionWebhookEnvironment(tasks []*store.TaskMessage) string {
+	if len(tasks) == 0 {
+		return ""
+	}
+	return tasks[len(tasks)-1].Environment
 }
