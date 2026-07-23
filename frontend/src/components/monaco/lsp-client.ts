@@ -45,6 +45,7 @@ export type ConnectionState = {
 type LanguageClientConnection = {
   client: MonacoLanguageClient;
   ws: WebSocket;
+  wsPromise: Promise<WebSocket>;
 };
 
 // Inline replacement for `monaco-languageclient`'s `MonacoLanguageClient`,
@@ -342,7 +343,8 @@ const createLanguageClient = async (): Promise<LanguageClientConnection> => {
   // caller to have initialized services first. Await it here so callers
   // can fire-and-forget safely.
   await initializeMonacoServices();
-  const ws = await connectWebSocket();
+  const wsPromise = connectWebSocket();
+  const ws = await wsPromise;
   const socket = toSocket(ws);
   const reader = new WebSocketMessageReader(socket);
   const writer = new WebSocketMessageWriter(socket);
@@ -385,11 +387,13 @@ const createLanguageClient = async (): Promise<LanguageClientConnection> => {
       messageTransports: { reader, writer },
     }),
     ws,
+    wsPromise,
   };
 };
 
 const initializeRunner = async () => {
-  const { client, ws } = await createLanguageClient();
+  const { client, ws, wsPromise } = await createLanguageClient();
+  const isCurrentConnection = () => conn.ws === wsPromise;
   client.onDidChangeState((event) => {
     if (event.newState === State.Running) {
       const { lastCommand } = conn;
@@ -400,11 +404,6 @@ const initializeRunner = async () => {
   });
 
   await client.start().catch((err) => {
-    setConnState({
-      ws: undefined,
-      state: "closed",
-      retries: 0,
-    });
     try {
       client.dispose();
     } catch {
@@ -416,10 +415,31 @@ const initializeRunner = async () => {
     ) {
       ws.close();
     }
-    scheduleReconnectHeartbeat();
+    if (isCurrentConnection()) {
+      setConnState({
+        ws: undefined,
+        state: "closed",
+        retries: 0,
+      });
+      scheduleReconnectHeartbeat();
+    }
     throw err;
   });
 
+  if (!isCurrentConnection()) {
+    try {
+      client.dispose();
+    } catch {
+      // ignore
+    }
+    if (
+      ws.readyState !== WebSocket.CLOSING &&
+      ws.readyState !== WebSocket.CLOSED
+    ) {
+      ws.close();
+    }
+    return client;
+  }
   state.client = client;
   startHeartbeat(client, ws);
   return client;
@@ -429,15 +449,18 @@ export const initializeLSPClient = () => {
   if (state.clientInitialized) {
     return state.clientInitialized;
   }
-  const job = initializeRunner().catch((err) => {
-    disposeClient();
-    if (conn.state !== "ready") {
-      setConnState({
-        ws: undefined,
-        state: "closed",
-        retries: 0,
-      });
-      scheduleReconnectHeartbeat();
+  let job: Promise<MonacoLanguageClient>;
+  job = initializeRunner().catch((err) => {
+    if (state.clientInitialized === job) {
+      disposeClient();
+      if (conn.state !== "ready") {
+        setConnState({
+          ws: undefined,
+          state: "closed",
+          retries: 0,
+        });
+        scheduleReconnectHeartbeat();
+      }
     }
     throw err;
   });

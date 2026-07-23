@@ -374,4 +374,35 @@ describe("LSP client connection recovery", () => {
     expect(mocks.clients).toHaveLength(2);
     expect(getConnectionStateSnapshot().state).toBe("ready");
   });
+
+  test("does not let a stale startup failure close a recovered client", async () => {
+    const { getConnectionStateSnapshot, initializeLSPClient } = await import(
+      "./lsp-client"
+    );
+
+    const staleStart = deferred<undefined>();
+    mocks.start.mockReturnValueOnce(staleStart.promise);
+
+    const staleInitializing = initializeLSPClient().catch(() => undefined);
+    await flushPromises();
+    const staleSocket = MockWebSocket.instances[0];
+    staleSocket.open();
+    await flushPromises();
+    expect(getConnectionStateSnapshot().state).toBe("ready");
+
+    staleSocket.close();
+    mocks.clients[0].clientOptions.errorHandler?.closed?.();
+    await flushPromises();
+    const recoveredSocket = MockWebSocket.instances[1];
+    recoveredSocket.open();
+    await flushPromises();
+    expect(getConnectionStateSnapshot().state).toBe("ready");
+
+    staleStart.reject(new Error("stale initialize rejected"));
+    await staleInitializing;
+
+    expect(mocks.clients[1].dispose).not.toHaveBeenCalled();
+    expect(recoveredSocket.close).not.toHaveBeenCalled();
+    expect(getConnectionStateSnapshot().state).toBe("ready");
+  });
 });
