@@ -113,10 +113,7 @@ func (s *RolloutService) GetRollout(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get environments"))
 	}
-	environmentOrderMap := make(map[string]int)
-	for i, env := range environments.GetEnvironments() {
-		environmentOrderMap[env.Id] = i
-	}
+	environmentOrderMap := common.EnvironmentOrderMap(environments.GetEnvironments())
 
 	rolloutV1, err := convertToRollout(project, plan, tasks, environmentOrderMap)
 	if err != nil {
@@ -203,10 +200,7 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get environments"))
 	}
-	environmentOrderMap := make(map[string]int)
-	for i, env := range environments.GetEnvironments() {
-		environmentOrderMap[env.Id] = i
-	}
+	environmentOrderMap := common.EnvironmentOrderMap(environments.GetEnvironments())
 
 	// Convert plans and their tasks to rollouts
 	rollouts := []*v1pb.Rollout{}
@@ -335,10 +329,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get environments"))
 	}
-	environmentOrderMap := make(map[string]int)
-	for i, env := range environments.GetEnvironments() {
-		environmentOrderMap[env.Id] = i
-	}
+	environmentOrderMap := common.EnvironmentOrderMap(environments.GetEnvironments())
 
 	rolloutV1, err := convertToRollout(project, plan, tasks, environmentOrderMap)
 	if err != nil {

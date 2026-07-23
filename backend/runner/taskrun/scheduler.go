@@ -240,6 +240,11 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 		slog.Error("failed to get project for completion webhook", log.BBError(err))
 		return
 	}
+	environmentSetting, err := s.store.GetEnvironment(ctx, project.Workspace)
+	if err != nil {
+		slog.Error("failed to get environments for completion webhook", log.BBError(err))
+		return
+	}
 
 	// Send PIPELINE_COMPLETED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
@@ -247,7 +252,7 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 		Project: webhook.NewProject(project),
 		RolloutCompleted: &webhook.EventRolloutCompleted{
 			Rollout:     webhook.NewRollout(plan),
-			Environment: completionWebhookEnvironment(tasks),
+			Environment: completionWebhookEnvironment(tasks, common.EnvironmentOrderMap(environmentSetting.GetEnvironments())),
 		},
 	})
 
@@ -295,9 +300,18 @@ func (s *Scheduler) autoResolveIssue(ctx context.Context, projectID string, plan
 	slog.Info("auto-resolved deferred rollout issue", slog.String("project", projectID), slog.Int64("issueUID", issue.UID), slog.Int64("planID", planID))
 }
 
-func completionWebhookEnvironment(tasks []*store.TaskMessage) string {
-	if len(tasks) == 0 {
-		return ""
+func completionWebhookEnvironment(tasks []*store.TaskMessage, environmentOrderMap map[string]int) string {
+	lastEnvironment := ""
+	lastOrder := -1
+	for _, task := range tasks {
+		order, ok := environmentOrderMap[task.Environment]
+		if !ok {
+			continue
+		}
+		if lastEnvironment == "" || order > lastOrder {
+			lastEnvironment = task.Environment
+			lastOrder = order
+		}
 	}
-	return tasks[len(tasks)-1].Environment
+	return lastEnvironment
 }
