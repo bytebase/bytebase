@@ -32,11 +32,10 @@ test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
 
-  ({ projectId, planId } = await createSchemaEditorPlan(env, "E2E SchemaEditor CreateTable"));
-
   ctx = await browser.newContext({ storageState: ".auth/state.json" });
   page = await ctx.newPage();
   se = new SchemaEditorPage(page, env.baseURL);
+  ({ projectId, planId } = await createSchemaEditorPlan(env, page, "E2E SchemaEditor CreateTable"));
   await se.gotoPlan(projectId, planId);
 });
 

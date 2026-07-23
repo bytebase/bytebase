@@ -25,6 +25,7 @@ import {
 } from "@playwright/test";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
+import { createSubmittedMultiSpecChangePlanViaUI } from "../framework/ui-create-plan";
 import { PlanDetailPage } from "./plan-detail.page";
 import { waitForPlanChecksDone } from "./plan-helpers";
 
@@ -32,6 +33,11 @@ test.setTimeout(180_000);
 
 let env: TestEnv & { api: BytebaseApiClient };
 let projectId: string;
+// Two distinct sample databases for multi-spec plans. sqlMap in the UI create
+// URL is keyed by database, so two specs must target two different DBs — both
+// carry the same HR schema (employee), so the review SQL applies to either.
+let testDb: string;
+let prodDb: string;
 
 let sharedContext: BrowserContext;
 let page: Page;
@@ -48,6 +54,14 @@ test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
   projectId = env.project.split("/").pop()!;
   await env.api.login(env.adminEmail, env.adminPassword);
+
+  const hrTest = await env.api.findDatabaseByShortName("hr_test");
+  const hrProd = await env.api.findDatabaseByShortName("hr_prod");
+  if (!hrTest || !hrProd) {
+    throw new Error("plan-check multi-spec setup needs hr_test + hr_prod sample dbs");
+  }
+  testDb = hrTest.database;
+  prodDb = hrProd.database;
 
   const project = await env.api.getProject(env.project);
   originalSettings = {
@@ -108,30 +122,29 @@ async function attachReviewConfig(
   return cfg.name;
 }
 
-// Poll the latest planCheckRun on `planName` until status === "DONE",
-// then navigate to the plan detail page. Returns the planId.
+// Create an N-spec change plan through the UI (create + "Ready for Review"),
+// wait for its plan checks to finish, then navigate to the plan detail page.
+// Returns the planId. Submitting the review issue is what makes checks run and
+// (under permissive settings) a rollout auto-create — the same states the old
+// bare api.createPlan + api.createIssue fabricated, now produced via the real
+// user workflow so drift breaks loudly. Each spec is one DB; multi-spec callers
+// pass distinct DBs (sqlMap is keyed by database).
 async function createPlanAndWaitForChecks(
   titlePrefix: string,
-  specs: { id: string; targets: string[]; sql: string }[],
+  specs: { database: string; sql: string }[],
 ): Promise<string> {
   const ts = Date.now();
-  const planSpecs = await Promise.all(
-    specs.map(async (s) => ({
-      id: s.id,
-      targets: s.targets,
-      sheet: await env.api.createSheet(env.project, s.sql),
-    })),
-  );
-  const plan = await env.api.createPlan(
-    env.project,
-    `${titlePrefix} ${ts}`,
-    planSpecs,
-  );
-  const planName = plan.name;
-  const planId = planName.split("/").pop()!;
-  await env.api.createIssue(env.project, `${titlePrefix} ${ts}`, planName);
-  await env.api.runPlanChecks(planName);
-
+  const { planId } = await createSubmittedMultiSpecChangePlanViaUI(page, {
+    baseURL: env.baseURL,
+    projectId,
+    title: `${titlePrefix} ${ts}`,
+    specs,
+  });
+  const planName = `${env.project}/plans/${planId}`;
+  // Submitting the review issue already triggers the plan checks — no explicit
+  // runPlanChecks (an API-only escape hatch outside the user workflow that also
+  // contends with submit's rollout-creation transaction). Just wait for the
+  // submit-triggered checks to settle before the assertions read the summary.
   await waitForPlanChecksDone(env.api, planName);
 
   await planPage.goto(projectId, planId);
@@ -171,8 +184,7 @@ test.describe("WARNING-level review rule", () => {
     const ts = Date.now();
     await createPlanAndWaitForChecks("E2E Checks Warning", [
       {
-        id: `spec-${ts}`,
-        targets: [env.database],
+        database: env.database,
         // Nullable TEXT with no default → trips COLUMN_NO_NULL.
         sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_warn_${ts} TEXT;`,
       },
@@ -223,8 +235,7 @@ test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () =>
     const ts = Date.now();
     await createPlanAndWaitForChecks("E2E Checks Error Gate-On", [
       {
-        id: `spec-${ts}`,
-        targets: [env.database],
+        database: env.database,
         sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_err_on_${ts} TEXT;`,
       },
     ]);
@@ -259,8 +270,7 @@ test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () =>
     const ts = Date.now();
     await createPlanAndWaitForChecks("E2E Checks Error Gate-Off", [
       {
-        id: `spec-${ts}`,
-        targets: [env.database],
+        database: env.database,
         sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_err_off_${ts} TEXT;`,
       },
     ]);
@@ -303,13 +313,11 @@ test.describe("Per-spec check counts render plan-wide (BYT-9160)", () => {
     const ts = Date.now();
     await createPlanAndWaitForChecks("E2E Plan-Wide Checks", [
       {
-        id: `spec-a-${ts}`,
-        targets: [env.database],
+        database: testDb,
         sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_pw_a_${ts} TEXT;`,
       },
       {
-        id: `spec-b-${ts}`,
-        targets: [env.database],
+        database: prodDb,
         sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_pw_b_${ts} TEXT;`,
       },
     ]);
@@ -330,12 +338,14 @@ test.describe("Per-spec check counts render plan-wide (BYT-9160)", () => {
 // StatementSection / OptionsSection) each carried the SAME `key={selectedSpec
 // .id}` — duplicate React keys broke reconciliation. Fixed by consolidating
 // them under a single keyed wrapper `<div key={selectedSpec.id}>`. Guarded here
-// as a static property: expanding CHANGES mounts exactly ONE statement editor
-// (the selected spec's), never both stacked.
+// by switching between the two spec tabs and asserting only the selected
+// spec's statement is mounted at each step (never both stacked), alongside the
+// spec-scoped URL / history contract (BYT-9805 / BYT-9913).
 //
-// (The original version switched to spec tab 2 to check the OTHER spec's
-// statement replaced the first; that path now hits the spec-switch collapse BUG
-// below, so the stacking property is asserted directly on the first spec.)
+// The plan is created through the UI with two DISTINCT target databases
+// (hr_test / hr_prod): the UI create page keys per-spec SQL by database, so a
+// two-spec plan needs two targets — which also makes each tab's label
+// ("Change N: <db>") distinct.
 test.describe(
   "Spec identity and resource routing stay synchronized (BYT-9794/BYT-9805/BYT-9913)",
   () => {
@@ -345,23 +355,28 @@ test.describe(
         const ts = Date.now();
         const colA = `e2e_stale_a_${ts}`;
         const colB = `e2e_stale_b_${ts}`;
-        const specA = `spec-a-${ts}`;
-        const specB = `spec-b-${ts}`;
         const planId = await createPlanAndWaitForChecks(
           "E2E Stale Spec Editor",
           [
             {
-              id: specA,
-              targets: [env.database],
+              database: testDb,
               sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colA} TEXT;`,
             },
             {
-              id: specB,
-              targets: [env.database],
+              database: prodDb,
               sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colB} TEXT;`,
             },
           ],
         );
+        // The plan was created through the UI, so the product assigned each
+        // spec a generated id. Read the real ids (in spec order — spec 1 targets
+        // testDb, spec 2 targets prodDb) for the spec-scoped URL assertions.
+        const created = await env.api.getPlan(`${env.project}/plans/${planId}`);
+        const specIds = (created.specs ?? []).map((sp) => sp.id);
+        expect(specIds).toHaveLength(2);
+        const [specA, specB] = specIds;
+        const testDbId = testDb.split("/").pop()!;
+        const prodDbId = prodDb.split("/").pop()!;
 
       await planPage.expandSection("Changes");
 
@@ -396,12 +411,8 @@ test.describe(
 
         const tab1 = planPage.specTab(1);
         const tab2 = planPage.specTab(2);
-        await expect(tab1).toHaveAccessibleName(
-          `Change 1: ${env.databaseId}`,
-        );
-        await expect(tab2).toHaveAccessibleName(
-          `Change 2: ${env.databaseId}`,
-        );
+        await expect(tab1).toHaveAccessibleName(`Change 1: ${testDbId}`);
+        await expect(tab2).toHaveAccessibleName(`Change 2: ${prodDbId}`);
         await expect(
           page.getByRole("button", { name: /Database Change/ }),
         ).toHaveCount(0);

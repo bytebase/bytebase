@@ -267,9 +267,29 @@ export class SchemaEditorPage {
     await expect(this.sheet).toBeHidden({ timeout: 15_000 });
   }
 
+  // Reads the plan's statement Monaco editor. That editor VIRTUALIZES and its
+  // viewport is short, so only the top (rendered) lines live in the DOM. A
+  // multi-statement DDL - e.g. a CREATE TABLE followed by a SEPARATE
+  // `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY (...)` statement - puts its
+  // trailing lines below the fold, and a naive `.view-lines` read silently
+  // truncates them (this is why a created-table PK, emitted as that trailing
+  // ALTER statement, appeared "missing"). Read the top, jump to the end so the
+  // trailing lines render, then union both. Also normalize Monaco's rendered
+  // non-breaking spaces to plain spaces so literal-space assertions match.
   async planStatementText(): Promise<string> {
-    const editor = this.page.locator(".monaco-editor .view-lines").first();
-    await expect(editor).toBeVisible({ timeout: 10_000 });
-    return (await editor.innerText()).replace(/ /g, " ");
+    const lines = this.page.locator(".monaco-editor .view-lines").first();
+    await expect(lines).toBeVisible({ timeout: 10_000 });
+    const norm = (s: string) => s.replace(/\u00a0/g, " ");
+    const top = norm(await lines.innerText());
+    // Focus the editor and jump to document end so the last lines render.
+    await this.page.locator(".monaco-editor").first().click();
+    await this.page.keyboard.press("ControlOrMeta+End");
+    await this.page.waitForTimeout(300); // let the scrolled-to lines render
+    const bottom = norm(await lines.innerText());
+    // Union preserves order: top lines first, then newly-revealed trailing
+    // lines. Substring/regex assertions then see the whole statement.
+    return Array.from(
+      new Set([...top.split("\n"), ...bottom.split("\n")]),
+    ).join("\n");
   }
 }
