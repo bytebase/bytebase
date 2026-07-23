@@ -27,25 +27,9 @@ var (
 
 // SyncInstance syncs the instance.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	var fullVersion string
-	queryVersion := "SELECT BANNER FROM v$version WHERE banner LIKE 'Oracle%'"
-	if err := d.db.QueryRowContext(ctx, queryVersion).Scan(&fullVersion); err != nil {
-		return nil, util.FormatErrorWithQuery(err, queryVersion)
-	}
-	tokens := strings.Fields(fullVersion)
-	var version, canonicalVersion string
-	for _, token := range tokens {
-		if semVersionRegex.MatchString(token) {
-			version = token
-			continue
-		}
-		if canonicalVersionRegex.MatchString(token) {
-			canonicalVersion = token
-			continue
-		}
-	}
-	if canonicalVersion != "" {
-		version = fmt.Sprintf("%s (%s)", version, canonicalVersion)
+	instanceMetadata, err := d.SyncInstanceBasicMeta(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	txn, err := d.db.BeginTx(ctx, nil)
@@ -70,9 +54,35 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, err
 	}
 
+	instanceMetadata.Databases = databases
+	return instanceMetadata, nil
+}
+
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (d *Driver) SyncInstanceBasicMeta(ctx context.Context) (*db.InstanceMetadata, error) {
+	var fullVersion string
+	queryVersion := "SELECT BANNER FROM v$version WHERE banner LIKE 'Oracle%'"
+	if err := d.db.QueryRowContext(ctx, queryVersion).Scan(&fullVersion); err != nil {
+		return nil, util.FormatErrorWithQuery(err, queryVersion)
+	}
+	tokens := strings.Fields(fullVersion)
+	var version, canonicalVersion string
+	for _, token := range tokens {
+		if semVersionRegex.MatchString(token) {
+			version = token
+			continue
+		}
+		if canonicalVersionRegex.MatchString(token) {
+			canonicalVersion = token
+			continue
+		}
+	}
+	if canonicalVersion != "" {
+		version = fmt.Sprintf("%s (%s)", version, canonicalVersion)
+	}
+
 	return &db.InstanceMetadata{
-		Version:   version,
-		Databases: databases,
+		Version: version,
 	}, nil
 }
 

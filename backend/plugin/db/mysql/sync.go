@@ -78,25 +78,10 @@ func isStockMySQL(versionSuffix string) bool {
 
 // SyncInstance syncs the instance.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, _, err := d.getVersion(ctx)
+	instanceMetadata, err := d.SyncInstanceBasicMeta(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	var lowerCaseTableNames int32
-	lowerCaseTableNamesText, err := d.getServerVariable(ctx, "lower_case_table_names")
-	if err != nil {
-		slog.Debug("failed to get lower_case_table_names variable", log.BBError(err))
-	} else {
-		v, err := strconv.ParseInt(lowerCaseTableNamesText, 10, 32)
-		if err != nil {
-			slog.Debug("failed to parse lower_case_table_names variable", log.BBError(err))
-		} else {
-			lowerCaseTableNames = int32(v)
-		}
-	}
-
-	instanceRoles := d.getInstanceRoles(ctx)
 
 	// Query db info
 	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", systemDatabaseClause)
@@ -129,12 +114,35 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, err
 	}
 
+	instanceMetadata.Databases = databases
+	return instanceMetadata, nil
+}
+
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (d *Driver) SyncInstanceBasicMeta(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, _, err := d.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var lowerCaseTableNames int32
+	lowerCaseTableNamesText, err := d.getServerVariable(ctx, "lower_case_table_names")
+	if err != nil {
+		slog.Debug("failed to get lower_case_table_names variable", log.BBError(err))
+	} else {
+		v, err := strconv.ParseInt(lowerCaseTableNamesText, 10, 32)
+		if err != nil {
+			slog.Debug("failed to parse lower_case_table_names variable", log.BBError(err))
+		} else {
+			lowerCaseTableNames = int32(v)
+		}
+	}
+
 	return &db.InstanceMetadata{
-		Version:   version,
-		Databases: databases,
+		Version: version,
 		Metadata: &storepb.Instance{
 			MysqlLowerCaseTableNames: lowerCaseTableNames,
-			Roles:                    instanceRoles,
+			Roles:                    d.getInstanceRoles(ctx),
 		},
 	}, nil
 }

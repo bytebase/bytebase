@@ -16,12 +16,10 @@ import (
 
 // SyncInstance syncs the instance metadata.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	var instance db.InstanceMetadata
-	version, err := d.getVersion(ctx)
+	instance, err := d.SyncInstanceBasicMeta(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get server version")
+		return nil, err
 	}
-	instance.Version = version
 
 	databaseNumbers, err := d.getDatabases(ctx)
 	if err != nil {
@@ -35,7 +33,18 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}
 	instance.Databases = databases
 
-	return &instance, nil
+	return instance, nil
+}
+
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (d *Driver) SyncInstanceBasicMeta(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, err := d.getVersion(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get server version")
+	}
+	return &db.InstanceMetadata{
+		Version: version,
+	}, nil
 }
 
 // SyncDBSchema syncs a single database schema.

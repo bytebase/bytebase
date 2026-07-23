@@ -35,6 +35,11 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}, nil
 }
 
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (*Driver) SyncInstanceBasicMeta(context.Context) (*db.InstanceMetadata, error) {
+	return &db.InstanceMetadata{}, nil
+}
+
 func (d *Driver) syncInstanceViaREST() (*db.InstanceMetadata, error) {
 	client, err := newEmulatorRESTClient(d.connCfg.DataSource.Host)
 	if err != nil {

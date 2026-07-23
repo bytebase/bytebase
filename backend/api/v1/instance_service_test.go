@@ -40,6 +40,7 @@ func TestClassifyConnectionFailure(t *testing.T) {
 		{err: errors.New("permission denied for schema public"), want: connectionCategoryPermissionDenied},
 		{err: errors.New("tls: failed to verify certificate: x509: certificate signed by unknown authority"), want: connectionCategorySSLTLSFailed},
 		{err: errors.New("dial tcp 10.0.0.5:5432: connection refused"), want: connectionCategoryNetworkUnreachable},
+		{err: errors.New("failed to get database driver: cannot parse `host=host.docker.internal port=11111111`: invalid port (strconv.ParseUint: parsing \"11111111\": value out of range)"), want: connectionCategoryNetworkUnreachable},
 		{err: errors.New("unsupported engine"), want: connectionCategoryUnsupportedEngine},
 		{err: errors.New("driver returned an unexpected error"), want: connectionCategoryUnknown},
 	}

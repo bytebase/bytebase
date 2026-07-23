@@ -53,6 +53,11 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}, nil
 }
 
+// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+func (*Driver) SyncInstanceBasicMeta(context.Context) (*db.InstanceMetadata, error) {
+	return &db.InstanceMetadata{}, nil
+}
+
 // SyncDBSchema syncs a single database schema.
 func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	notFound, err := d.notFoundDatabase(ctx, d.databaseName)

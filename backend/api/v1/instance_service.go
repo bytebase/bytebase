@@ -98,6 +98,9 @@ func classifyConnectionFailure(err error) string {
 	case strings.Contains(text, "network"),
 		strings.Contains(text, "unreachable"),
 		strings.Contains(text, "no route"),
+		strings.Contains(text, "invalid port"),
+		strings.Contains(text, "cannot parse"),
+		strings.Contains(text, "value out of range"),
 		strings.Contains(text, "no such host"),
 		strings.Contains(text, "unknown host"),
 		strings.Contains(text, "enotfound"),
@@ -359,26 +362,32 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
-	if err == nil {
-		defer driver.Close(ctx)
-		updatedInstance, _, newDatabases, err := s.schemaSyncer.SyncInstanceWithOptions(ctx, instance, schemasync.SyncInstanceOptions{
+	updatedInstance, err := s.schemaSyncer.SyncInstanceBasicMeta(ctx, instance)
+	if err != nil {
+		slog.Warn("Failed to sync instance basic metadata",
+			slog.String("instance", instance.ResourceID),
+			log.BBError(err))
+	} else {
+		instance = updatedInstance
+	}
+	go func() {
+		syncCtx := context.WithoutCancel(ctx)
+		updatedInstance, _, newDatabases, err := s.schemaSyncer.SyncInstanceWithOptions(syncCtx, instance, schemasync.SyncInstanceOptions{
 			InitialProjectID: initialProjectID,
 		})
 		if err != nil {
 			slog.Warn("Failed to sync instance",
 				slog.String("instance", instance.ResourceID),
 				log.BBError(err))
-		} else {
-			instance = updatedInstance
+			return
 		}
 		if instance.Metadata.SyncDatabases == nil {
 			// Sync all databases in the instance asynchronously.
-			s.schemaSyncer.SyncAllDatabases(ctx, instance)
+			s.schemaSyncer.SyncAllDatabases(syncCtx, updatedInstance)
 		} else {
 			s.schemaSyncer.SyncDatabasesAsync(newDatabases)
 		}
-	}
+	}()
 
 	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil

@@ -148,7 +148,9 @@ type Driver interface {
 	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext QueryContext) ([]*v1pb.QueryResult, error)
 
 	// Sync schema
-	// SyncInstance syncs the instance metadata.
+	// SyncInstanceBasicMeta syncs basic instance metadata without database discovery.
+	SyncInstanceBasicMeta(ctx context.Context) (*InstanceMetadata, error)
+	// SyncInstance syncs the instance metadata and discovers databases.
 	SyncInstance(ctx context.Context) (*InstanceMetadata, error)
 	// SyncDBSchema syncs a single database schema.
 	SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error)

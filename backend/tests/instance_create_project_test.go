@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	_ "github.com/mattn/go-sqlite3"
@@ -44,10 +45,13 @@ func TestCreateInstanceAssignsSyncedDatabasesToProject(t *testing.T) {
 	a.NoError(err)
 	instance := instanceResp.Msg
 
-	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
-		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
-	}))
-	a.NoError(err)
+	var databaseResp *connect.Response[v1pb.Database]
+	require.Eventually(t, func() bool {
+		databaseResp, err = ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
+			Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
+		}))
+		return err == nil
+	}, 5*time.Second, 100*time.Millisecond)
 	a.Equal(ctl.project.Name, databaseResp.Msg.Project)
 }
 
@@ -79,10 +83,13 @@ func TestCreateInstanceWithoutProjectKeepsDefaultProject(t *testing.T) {
 	a.NoError(err)
 	instance := instanceResp.Msg
 
-	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
-		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
-	}))
-	a.NoError(err)
+	var databaseResp *connect.Response[v1pb.Database]
+	require.Eventually(t, func() bool {
+		databaseResp, err = ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
+			Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
+		}))
+		return err == nil
+	}, 5*time.Second, 100*time.Millisecond)
 	a.True(strings.HasPrefix(databaseResp.Msg.Project, "projects/default-") || databaseResp.Msg.Project == "projects/default")
 	a.NotEqual(ctl.project.Name, databaseResp.Msg.Project)
 }
