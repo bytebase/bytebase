@@ -56,8 +56,8 @@ importers:
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.7)
       '@markdoc/markdoc':
-        specifier: 0.5.7
-        version: 0.5.7(@types/react@19.2.17)(react@19.2.7)
+        specifier: 0.5.8
+        version: 0.5.8(@types/react@19.2.17)(react@19.2.7)
       '@stylexjs/stylex':
         specifier: ^0.19.0
         version: 0.19.0
@@ -1390,8 +1390,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@markdoc/markdoc@0.5.7':
-    resolution: {integrity: sha512-NxreNThm7foFgMMQD6zgk7rKkcFMmdC8J5r+Zn4FKoN75F5YjvwdihwF11VhrBfL3CXnD4+YG1VYwvBL+igzvw==}
+  '@markdoc/markdoc@0.5.8':
+    resolution: {integrity: sha512-U0II9ix5O96VWZXurdsw9uxwPFTurWcQyeNVTH5P7Q6kuIfTzjEy7IPJMTTmFefK7V6nRzIARi5+G6kTjuFeCQ==}
     engines: {node: '>=14.7.0'}
     peerDependencies:
       '@types/react': '*'
@@ -5511,7 +5511,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@markdoc/markdoc@0.5.7(@types/react@19.2.17)(react@19.2.7)':
+  '@markdoc/markdoc@0.5.8(@types/react@19.2.17)(react@19.2.7)':
     optionalDependencies:
       '@types/linkify-it': 3.0.5
       '@types/markdown-it': 12.2.3
