@@ -7,6 +7,10 @@ import {
 } from "@playwright/test";
 import { BytebaseApiClient } from "../framework/api-client";
 import { loadTestEnv, type TestEnv } from "../framework/env";
+import {
+  createDatabaseChangePlanViaUI,
+  submitDraftForReviewViaUI,
+} from "../framework/ui-create-plan";
 
 test.setTimeout(240_000);
 
@@ -102,34 +106,33 @@ test.beforeAll(async ({ browser }) => {
     (setting?.value as { workspaceProfile?: { externalUrl?: string } })
       ?.workspaceProfile?.externalUrl ?? "";
 
-  const sheet = await env.api.createSheet(env.project, "SELECT 1;");
-  for (let i = 0; i < ISSUE_COUNT; i++) {
-    const title = `${searchToken} issue ${i}`;
-    const plan = await env.api.createPlan(env.project, title, [
-      {
-        id: `scroll-restoration-${stamp}-${i}`,
-        targets: [env.database],
-        sheet,
-      },
-    ]);
-    const repeatedDescription = Array.from(
-      { length: (i % 4) + 1 },
-      () => `${searchToken} variable-height content`
-    ).join("\n");
-    await env.api.createIssue(
-      env.project,
-      title,
-      plan.name,
-      repeatedDescription
-    );
-  }
-
   sharedContext = await browser.newContext({
     storageState: ".auth/state.json",
     // Below Tailwind's sm breakpoint, the banner CTA moves onto its own row.
     viewport: { width: 600, height: 720 },
   });
   page = await sharedContext.newPage();
+
+  // Seed the way the UI does: each plan is created together with its draft
+  // review issue (createPlanWithDraftReview), so every plan appears in the Plans
+  // list — an issueless plan is not a reachable product state and never lists.
+  // Submit the first ISSUE_COUNT for review so they also surface in the Issues
+  // list (draft issues are hidden there). This exercises the real bulk-create +
+  // submit workflow and stays correct if that workflow changes again.
+  await page.setViewportSize({ width: 1280, height: 900 }); // the create page needs room
+  for (let i = 0; i < PLAN_COUNT; i++) {
+    await createDatabaseChangePlanViaUI(page, {
+      baseURL: env.baseURL,
+      projectId,
+      database: env.database,
+      title: `${searchToken} issue ${i}`,
+      sql: "SELECT 1;",
+    });
+    if (i < ISSUE_COUNT) {
+      await submitDraftForReviewViaUI(page);
+    }
+  }
+  await page.setViewportSize({ width: 600, height: 720 });
 });
 
 test.afterAll(async () => {

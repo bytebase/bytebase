@@ -60,6 +60,10 @@ import {
   seedReviewPlan,
   waitForApprovalStatus,
 } from "./plan-helpers";
+import {
+  createDatabaseChangePlanViaUI,
+  createSubmittedDatabaseChangePlanViaUI,
+} from "../framework/ui-create-plan";
 
 test.setTimeout(240_000);
 test.describe.configure({ mode: "serial" });
@@ -615,7 +619,7 @@ test.describe("Review advance is persona-scoped (R1/R2)", () => {
   test.beforeAll(async () => {
     // allowSelfApproval → admin (creator) IS the candidate.
     await setApproval(true);
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Hdr R1R2",
       sql: "SELECT 1;",
       runChecks: true,
@@ -655,7 +659,7 @@ test.describe("Rejected review shows the Rejected pill + re-request (R3)", () =>
 
   test.beforeAll(async () => {
     await setApproval(true);
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Hdr R3",
       sql: "SELECT 1;",
       runChecks: true,
@@ -700,7 +704,7 @@ test.describe("Approved with a failing ERROR check shows the checks-failing pill
       requirePlanCheckNoError: true,
     });
     const ts = Date.now();
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       // A nullable column trips COLUMN_NO_NULL at ERROR level.
       prefix: "E2E Hdr R4",
       sql: `ALTER TABLE employee ADD COLUMN e2e_r4_${ts} TEXT;`,
@@ -731,7 +735,7 @@ test.describe("Running the frontier stage from the header reaches the Deployed s
   test.beforeAll(async () => {
     await setPermissive();
     const ts = Date.now();
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Hdr D1",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_d1_${ts} TEXT;`,
       runChecks: true,
@@ -764,7 +768,7 @@ test.describe("A failed task surfaces Rerun in the header slot (D2)", () => {
     await setPermissive();
     const ts = Date.now();
     // A nonexistent target makes the task fail at execution.
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Hdr D2",
       sql: `ALTER TABLE nonexistent_e2e_hdr_${ts} ADD COLUMN c1 TEXT;`,
       runChecks: false,
@@ -798,18 +802,17 @@ test.describe("A multi-stage rollout advances the header stage by stage to Deplo
     if (!testDb || !prodDb) {
       throw new Error("multi-stage seed needs the hr_test + hr_prod E2E databases");
     }
-    const sheet = await env.api.createSheet(
-      env.project,
-      `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_d3_${ts} TEXT;`,
-    );
     // One spec targeting two environments → the rollout groups tasks into two
-    // stages (Test, Prod).
-    const plan = await env.api.createPlan(env.project, `E2E Hdr D3 ${ts}`, [
-      { id: `spec-${ts}`, targets: [testDb.database, prodDb.database], sheet },
-    ]);
-    await env.api.createIssue(env.project, `E2E Hdr D3 ${ts}`, plan.name);
-    planId = plan.name.split("/").pop()!;
-    await waitForRollout(plan.name);
+    // stages (Test, Prod). Create + submit through the UI so the rollout
+    // auto-creates under the permissive settings set above.
+    ({ planId } = await createSubmittedDatabaseChangePlanViaUI(page, {
+      baseURL: env.baseURL,
+      projectId,
+      database: [testDb.database, prodDb.database],
+      title: `E2E Hdr D3 ${ts}`,
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_d3_${ts} TEXT;`,
+    }));
+    await waitForRollout(`${env.project}/plans/${planId}`);
   });
 
   test("the header Run advance walks each stage until the plan is Deployed", async () => {
@@ -849,7 +852,7 @@ test.describe("Close and reopen the review from the ⋯ overflow menu (T1)", () 
   test.beforeAll(async () => {
     // Open review, no rollout yet (self-approval off → observer, unapproved).
     await setApproval(false);
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: titlePrefix,
       sql: "SELECT 1;",
       runChecks: true,

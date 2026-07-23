@@ -570,11 +570,15 @@ export class BytebaseApiClient {
     });
   }
 
+  // `specs` carries each spec's id + targets. UI-created plans get product-
+  // generated UUID spec ids, so callers asserting spec-scoped URLs must read
+  // the real ids here rather than assuming the ids they would have chosen.
   async getPlan(planName: string): Promise<{
     name: string;
     hasRollout: boolean;
     issue: string;
     state: string;
+    specs?: { id: string; changeDatabaseConfig?: { targets?: string[] } }[];
   }> {
     return this.request("GET", `/v1/${planName}`);
   }
