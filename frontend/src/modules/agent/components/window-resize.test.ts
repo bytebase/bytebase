@@ -31,17 +31,20 @@ describe("resizeWindowBounds", () => {
     ["nw", { x: 40, y: 20 }, { x: 140, y: 140, width: 460, height: 430 }],
     ["se", { x: 50, y: 50 }, { x: 100, y: 120, width: 550, height: 500 }],
     ["sw", { x: -40, y: 50 }, { x: 60, y: 120, width: 540, height: 500 }],
-  ])("resizes %s while anchoring the opposite edges", (direction, delta, expected) => {
-    expect(
-      resizeWindowBounds({
-        direction,
-        startBounds,
-        deltaX: delta.x,
-        deltaY: delta.y,
-        constraints,
-      })
-    ).toEqual(expected);
-  });
+  ])(
+    "resizes %s while anchoring the opposite edges",
+    (direction, delta, expected) => {
+      expect(
+        resizeWindowBounds({
+          direction,
+          startBounds,
+          deltaX: delta.x,
+          deltaY: delta.y,
+          constraints,
+        })
+      ).toEqual(expected);
+    }
+  );
 
   test("stops west resizing at the minimum width while keeping the right edge fixed", () => {
     expect(

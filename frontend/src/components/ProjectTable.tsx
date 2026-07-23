@@ -340,9 +340,7 @@ const ProjectRowView = memo(function ProjectRowView({
           {isCurrent ? <Check className="size-4 text-accent" /> : null}
         </TableCell>
       ) : null}
-      <TableCell>
-        {resourceIdContent}
-      </TableCell>
+      <TableCell>{resourceIdContent}</TableCell>
       <TableCell>
         <div className="flex items-center gap-x-2 min-w-0">
           <ProjectLabel

@@ -9,13 +9,13 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { router } from "@/app/router";
+import { SQL_EDITOR_QUERY_HISTORY_MODULE } from "@/app/router/handles";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { Button } from "@/components/ui/button";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
-import { router } from "@/app/router";
-import { SQL_EDITOR_QUERY_HISTORY_MODULE } from "@/app/router/handles";
-import { useAppStore } from "@/stores/app";
+import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import type { QueryHistoryFilter } from "@/modules/sql-editor/store";
 import {
   selectQueryHistoryEntry,
@@ -26,10 +26,10 @@ import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
 } from "@/modules/sql-editor/store/tab";
+import { useAppStore } from "@/stores/app";
 import { DEBOUNCE_SEARCH_DELAY, getDateForPbTimestampProtoEs } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
 import { extractProjectResourceName, extractQueryHistoryUID } from "@/utils";
-import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { HistorySearchInput } from "./HistorySearchInput";
 
 /**
