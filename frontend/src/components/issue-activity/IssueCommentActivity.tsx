@@ -6,7 +6,7 @@ import { Loader2, Send } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
-import { buildPlanDeployRouteFromPlanName } from "@/app/router/routeHelpers";
+import { buildPlanRolloutRouteFromPlanName } from "@/app/router/routeHelpers";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import {
   type ActivityIconSpec,
@@ -478,7 +478,7 @@ function IssueCommentActionSentence({
           const planRoute =
             linkless || !plan
               ? undefined
-              : buildPlanDeployRouteFromPlanName(plan.name);
+              : buildPlanRolloutRouteFromPlanName(plan.name);
           const sentence =
             issue?.approvalStatus === ApprovalStatus.APPROVED
               ? planUID

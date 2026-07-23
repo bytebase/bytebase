@@ -11,6 +11,7 @@ import { DatabaseTable } from "./DatabaseTable";
 
 const mocks = vi.hoisted(() => ({
   fetchDatabases: vi.fn(),
+  routerPush: vi.fn(),
 }));
 
 vi.mock("@/stores/app", () => {
@@ -26,7 +27,7 @@ vi.mock("@/stores/app", () => {
 vi.mock("@/app/router", () => ({
   router: {
     resolve: () => ({ fullPath: "/database" }),
-    push: vi.fn(),
+    push: mocks.routerPush,
   },
 }));
 
@@ -75,6 +76,9 @@ vi.mock("./DatabaseTableView", () => ({
       data-has-row-click={Boolean(onRowClick)}
       data-select-on-row-click={Boolean(selectOnRowClick)}
       data-selection-column-intro-target={selectionColumnIntroTarget ?? ""}
+      onClick={(event) => {
+        if (databases[0]) onRowClick?.(databases[0], event);
+      }}
     >
       {databases.map((database) => database.name).join(",")}
       {emptyPlaceholder && (
@@ -120,6 +124,7 @@ describe("DatabaseTable", () => {
     container = undefined;
     document.body.innerHTML = "";
     mocks.fetchDatabases.mockReset();
+    mocks.routerPush.mockReset();
   });
 
   test("keeps appended rows when the parent rerenders with an equivalent filter", async () => {
@@ -242,6 +247,41 @@ describe("DatabaseTable", () => {
     const view = container.querySelector("[data-testid='database-names']");
     expect(view?.getAttribute("data-has-row-click")).toBe("false");
     expect(view?.getAttribute("data-select-on-row-click")).toBe("true");
+  });
+
+  test("marks the list entry before opening a database", async () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    const onOpenDatabase = vi.fn();
+
+    mocks.fetchDatabases.mockResolvedValueOnce({
+      databases: [db1],
+      nextPageToken: "",
+    });
+
+    await act(async () => {
+      root!.render(
+        <DatabaseTable
+          filter={{}}
+          parent="instances/i"
+          onOpenDatabase={onOpenDatabase}
+        />
+      );
+      await Promise.resolve();
+    });
+
+    act(() => {
+      container!
+        .querySelector<HTMLElement>("[data-testid='database-names']")
+        ?.click();
+    });
+
+    expect(onOpenDatabase).toHaveBeenCalledOnce();
+    expect(mocks.routerPush).toHaveBeenCalledWith("/database");
+    expect(onOpenDatabase.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.routerPush.mock.invocationCallOrder[0]
+    );
   });
 
   test("forwards selection column intro target to the table view", async () => {

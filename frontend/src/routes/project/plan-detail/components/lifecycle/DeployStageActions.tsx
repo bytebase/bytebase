@@ -9,6 +9,7 @@ import { Play } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
+import { buildStageRoute } from "@/app/router/routeHelpers";
 import { TaskStatusIcon } from "@/components/TaskStatusIcon";
 import { Button } from "@/components/ui/button";
 import {
@@ -124,7 +125,17 @@ export function RunStageAction({ stage }: { stage: Stage }) {
           // another stage is currently selected, then bring the phase into view.
           const stageId = stage.name.split("/").pop();
           if (stageId && page.routeStageId && page.routeStageId !== stageId) {
-            void router.push({ query: { phase: "deploy", stageId } });
+            const target = buildStageRoute(stage.name);
+            if (
+              page.isEditing &&
+              router.resolve(target).fullPath !==
+                router.currentRoute.value.fullPath
+            ) {
+              page.bypassLeaveGuardOnce();
+            }
+            void router.push(target, {
+              preventScrollReset: true,
+            });
           }
           focusPlanPhase("deploy", page.expandPhase);
         }}

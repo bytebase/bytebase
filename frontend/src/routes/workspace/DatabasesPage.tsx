@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCurrentRoute } from "@/app/router";
+import { markListScrollRestorationEntry } from "@/app/router/NavigationScrollRestoration";
 import {
   AdvancedSearch,
   getValueFromScopes,
@@ -521,6 +522,7 @@ export function DatabasesPage() {
       <DatabaseTable
         filter={filter}
         mode="ALL"
+        onOpenDatabase={markListScrollRestorationEntry}
         selectedNames={selectedNames}
         onSelectedNamesChange={setSelectedNames}
         onDatabasesChange={setVisibleDatabases}

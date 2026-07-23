@@ -19,11 +19,14 @@ vi.mock("./DeployStageCard", () => ({
   DeployStageList: ({
     onSelectStage,
     rollout,
+    selectedStageId,
   }: {
     onSelectStage: (stage: Stage) => void;
     rollout: Rollout;
+    selectedStageId: string;
   }) => (
     <div>
+      <span data-testid="selected-stage-id">{selectedStageId}</span>
       {rollout.stages.map((stage) => (
         <button
           key={stage.name}
@@ -47,7 +50,7 @@ vi.mock("../../utils/rolloutPreview", () => ({
   generateRolloutPreview: () => Promise.resolve({ stages: [] }),
 }));
 
-const ROLLOUT = "projects/p/rollouts/r";
+const ROLLOUT = "projects/p/plans/1/rollout";
 const stage = (id: string): Stage =>
   ({
     name: `${ROLLOUT}/stages/${id}`,
@@ -70,6 +73,18 @@ const makePage = (routeStageId: string): PlanDetailPageState =>
   }) as unknown as PlanDetailPageState;
 
 describe("DeployBranch stage selection", () => {
+  test("uses the rollout frontier while a stale stage route canonicalizes", () => {
+    render(
+      <PlanDetailProvider value={makePage("missing")}>
+        <DeployBranch />
+      </PlanDetailProvider>
+    );
+
+    expect(screen.getByTestId("selected-stage-id")).toHaveTextContent(
+      `${ROLLOUT}/stages/a`
+    );
+  });
+
   test("a quick click back to the route stage supersedes a pending optimistic switch", () => {
     routerMocks.push.mockClear();
     render(
@@ -81,16 +96,24 @@ describe("DeployBranch stage selection", () => {
     // Switch to b optimistically. routeStageId still reads "a" (its URL
     // re-render is pending), but the view now shows b.
     fireEvent.click(screen.getByTestId("select-b"));
-    expect(routerMocks.push).toHaveBeenLastCalledWith({
-      query: { phase: "deploy", stageId: "b" },
-    });
+    expect(routerMocks.push).toHaveBeenLastCalledWith(
+      {
+        name: "workspace.project.plan.detail.rollout.stage",
+        params: { projectId: "p", planId: "1", stageId: "b" },
+      },
+      { preventScrollReset: true }
+    );
 
     // Immediately click back to a. This must NOT be dropped as a no-op just
     // because routeStageId still reads "a" — the on-screen stage is b, so the
     // click has to push a and win over the pending b navigation.
     fireEvent.click(screen.getByTestId("select-a"));
-    expect(routerMocks.push).toHaveBeenLastCalledWith({
-      query: { phase: "deploy", stageId: "a" },
-    });
+    expect(routerMocks.push).toHaveBeenLastCalledWith(
+      {
+        name: "workspace.project.plan.detail.rollout.stage",
+        params: { projectId: "p", planId: "1", stageId: "a" },
+      },
+      { preventScrollReset: true }
+    );
   });
 });

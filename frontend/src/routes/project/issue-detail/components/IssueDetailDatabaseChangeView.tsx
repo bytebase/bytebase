@@ -8,7 +8,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
 } from "@/app/router/handles";
-import { buildPlanDeployRouteFromPlanName } from "@/app/router/routeHelpers";
+import { buildPlanRolloutRouteFromPlanName } from "@/app/router/routeHelpers";
 import { EngineIcon } from "@/components/EngineIcon";
 import { RouterLink } from "@/components/RouterLink";
 import { SearchInput } from "@/components/ui/search-input";
@@ -90,7 +90,7 @@ export function IssueDetailDatabaseChangeView({
       return "";
     }
     const route = page.plan.hasRollout
-      ? buildPlanDeployRouteFromPlanName(page.plan.name)
+      ? buildPlanRolloutRouteFromPlanName(page.plan.name)
       : {
           name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
           params: {

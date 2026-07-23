@@ -24,9 +24,9 @@ const plan = {
 const mocks = vi.hoisted(() => ({
   batchGetOrFetchUsers: vi.fn(async () => []),
   listUsers: vi.fn(async () => ({ users: [] })),
-  markScrollRestorationEntry: vi.fn(),
+  listScrollRestorationKey: undefined as string | undefined,
+  markListScrollRestorationEntry: vi.fn(),
   routerPush: vi.fn(),
-  scrollRestorationKey: undefined as string | undefined,
   usePagedData: vi.fn(),
 }));
 
@@ -151,9 +151,9 @@ vi.mock("@/app/router", () => ({
 }));
 
 vi.mock("@/app/router/NavigationScrollRestoration", () => ({
-  markScrollRestorationEntry: mocks.markScrollRestorationEntry,
-  useScrollRestorationKey: () => mocks.scrollRestorationKey,
-  useScrollRestorationLoadMore: () => undefined,
+  markListScrollRestorationEntry: mocks.markListScrollRestorationEntry,
+  useListScrollRestorationKey: () => mocks.listScrollRestorationKey,
+  useListScrollRestorationLoadMore: () => undefined,
 }));
 
 vi.mock("@/stores/app", () => {
@@ -185,7 +185,7 @@ describe("ProjectPlanDashboardPage scroll restoration", () => {
     document.body.appendChild(container);
     root = createRoot(container);
     mocks.usePagedData.mockReset();
-    mocks.scrollRestorationKey = undefined;
+    mocks.listScrollRestorationKey = undefined;
     mocks.usePagedData.mockReturnValue({
       dataList: [plan],
       hasMore: true,
@@ -233,7 +233,7 @@ describe("ProjectPlanDashboardPage scroll restoration", () => {
   });
 
   test("uses the item-click restoration key for paged data", () => {
-    mocks.scrollRestorationKey = "plans-entry";
+    mocks.listScrollRestorationKey = "plans-entry";
     act(() => {
       root.render(
         <MemoryRouter>
@@ -263,10 +263,10 @@ describe("ProjectPlanDashboardPage scroll restoration", () => {
     expect(row).not.toBeNull();
     act(() => row?.click());
 
-    expect(mocks.markScrollRestorationEntry).toHaveBeenCalledOnce();
+    expect(mocks.markListScrollRestorationEntry).toHaveBeenCalledOnce();
     expect(mocks.routerPush).toHaveBeenCalledWith("/projects/foo/plans/1");
     expect(
-      mocks.markScrollRestorationEntry.mock.invocationCallOrder[0]
+      mocks.markListScrollRestorationEntry.mock.invocationCallOrder[0]
     ).toBeLessThan(mocks.routerPush.mock.invocationCallOrder[0]);
   });
 

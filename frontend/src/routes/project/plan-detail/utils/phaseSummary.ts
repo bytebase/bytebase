@@ -1,4 +1,6 @@
+import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { PlanCheckRun_Status } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
@@ -18,6 +20,14 @@ export interface PlanCheckSummary {
   warning: number;
 }
 
+// Mirrors the eligibility gates that can permanently prevent RolloutCreator
+// from materializing a rollout. Transient approval and check gates are handled
+// separately below.
+const supportsAutomaticRollout = (plan: Plan): boolean =>
+  plan.state === State.ACTIVE &&
+  plan.specs.length > 0 &&
+  plan.specs.every((spec) => spec.config?.case === "changeDatabaseConfig");
+
 export const getPlanCheckSummary = (plan: Plan): PlanCheckSummary => {
   const statusCount = plan.planCheckRunStatusCount || {};
   const running =
@@ -36,6 +46,38 @@ export const getPlanCheckSummary = (plan: Plan): PlanCheckSummary => {
     total: running + success + warning + totalError,
     warning,
   };
+};
+
+export const isRolloutExpected = ({
+  issue,
+  plan,
+}: {
+  issue?: Issue;
+  plan: Plan;
+}): boolean => {
+  if (plan.hasRollout) {
+    return true;
+  }
+  if (!supportsAutomaticRollout(plan)) {
+    return false;
+  }
+  if (issue?.status === IssueStatus.DONE) {
+    return true;
+  }
+  const approvalPassed =
+    issue?.approvalStatus === ApprovalStatus.APPROVED ||
+    issue?.approvalStatus === ApprovalStatus.SKIPPED ||
+    issue?.approvalTemplate?.flow?.roles.length === 0;
+  if (issue?.status !== IssueStatus.OPEN || issue.draft || !approvalPassed) {
+    return false;
+  }
+  const checks = getPlanCheckSummary(plan);
+  return (
+    checks.running === 0 &&
+    checks.error === 0 &&
+    (plan.planCheckRunStatusCount?.AVAILABLE ?? 0) === 0 &&
+    (plan.planCheckRunStatusCount?.CANCELED ?? 0) === 0
+  );
 };
 
 const targetsForSpec = (spec: Plan["specs"][number]): string[] => {

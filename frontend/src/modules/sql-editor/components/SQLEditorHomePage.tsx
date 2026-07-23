@@ -8,7 +8,7 @@ import {
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
 import { useNavigate } from "@/app/router";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/app/router/handles";
+import { buildPlanCreateRoute } from "@/app/router/routeHelpers";
 import { IAMRemindDialog } from "@/components/IAMRemindDialog";
 import { Quickstart } from "@/components/Quickstart";
 import {
@@ -118,7 +118,6 @@ export function SQLEditorHomePage() {
           database.name
         );
         const query: Record<string, string> = {
-          template: "bb.plan.change-database",
           databaseList: database.name,
           sql: exampleSQL.join(" "),
         };
@@ -127,15 +126,12 @@ export function SQLEditorHomePage() {
           project,
           () => `[${dbName}] ${t("issue.title.edit-schema")}`
         );
-        const route = navigate.resolve({
-          name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-          params: {
-            projectId: extractProjectResourceName(database.project),
-            planId: "create",
-            specId: "placeholder",
-          },
-          query,
-        });
+        const route = navigate.resolve(
+          buildPlanCreateRoute(
+            extractProjectResourceName(database.project),
+            query
+          )
+        );
         window.open(route.fullPath, "_blank");
       }
     );

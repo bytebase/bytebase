@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { act } from "react";
+import { act, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MAIN_SCROLL_RESTORATION_ID } from "@/app/router/NavigationScrollRestoration";
@@ -17,6 +17,9 @@ const mocks = vi.hoisted(() => ({
     removeItem: vi.fn(),
     setItem: vi.fn(),
   },
+  branchMountCount: { value: 0 },
+  routerPush: vi.fn(),
+  selectedSpecRender: vi.fn(),
   usePlanDetailPage: vi.fn(),
 }));
 
@@ -25,6 +28,12 @@ vi.stubGlobal("localStorage", mocks.localStorage);
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({ t: (key: string) => key }),
+}));
+
+vi.mock("@/app/router", () => ({
+  router: {
+    push: mocks.routerPush,
+  },
 }));
 
 vi.mock("@/components/ui/alert-dialog", () => ({
@@ -74,14 +83,23 @@ vi.mock("./components/PlanDetailChangesBranch", () => ({
   }: {
     onSelectedSpecIdChange: (specId: string) => void;
     selectedSpecId: string;
-  }) => (
-    <div>
-      <div data-testid="selected-spec-id">{selectedSpecId}</div>
-      <button onClick={() => onSelectedSpecIdChange("spec-2")}>
-        select second spec
-      </button>
-    </div>
-  ),
+  }) => {
+    const mountId = useRef(0);
+    if (mountId.current === 0) {
+      mocks.branchMountCount.value += 1;
+      mountId.current = mocks.branchMountCount.value;
+    }
+    mocks.selectedSpecRender(selectedSpecId);
+    return (
+      <div>
+        <div data-testid="changes-mount-id">{mountId.current}</div>
+        <div data-testid="selected-spec-id">{selectedSpecId}</div>
+        <button onClick={() => onSelectedSpecIdChange("spec-2")}>
+          select second spec
+        </button>
+      </div>
+    );
+  },
 }));
 
 vi.mock("./components/PlanDetailDeployFuture", () => ({
@@ -115,6 +133,7 @@ let root: ReturnType<typeof createRoot>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.branchMountCount.value = 0;
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -168,8 +187,58 @@ const buildPage = (): PlanDetailPageState =>
 
 const selectedSpecIdText = () =>
   container.querySelector('[data-testid="selected-spec-id"]')?.textContent;
+const changesMountIdText = () =>
+  container.querySelector('[data-testid="changes-mount-id"]')?.textContent;
 
 describe("ProjectPlanDetailPage", () => {
+  it("only expands phases while creating a plan", async () => {
+    const page = buildPage();
+    mocks.usePlanDetailPage.mockReturnValue(page);
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          routeQuery={{}}
+        />
+      );
+      await Promise.resolve();
+    });
+
+    const phaseRow = container.querySelector("#plan-phase-changes");
+    const phaseDot = phaseRow?.firstElementChild
+      ?.firstElementChild as HTMLElement | null;
+    if (!phaseDot) throw new Error("Missing Changes phase selector");
+    act(() => phaseDot.click());
+
+    expect(page.expandPhase).toHaveBeenCalledWith("changes");
+    expect(page.bypassLeaveGuardOnce).not.toHaveBeenCalled();
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+  });
+
+  it("keeps phase selection local on an existing plan", async () => {
+    const page = buildPage();
+    page.isCreating = false;
+    page.isEditing = true;
+    mocks.usePlanDetailPage.mockReturnValue(page);
+
+    await act(async () => {
+      root.render(<ProjectPlanDetailPage planId="1" projectId="foo" />);
+      await Promise.resolve();
+    });
+
+    const phaseRow = container.querySelector("#plan-phase-review");
+    const phaseDot = phaseRow?.firstElementChild
+      ?.firstElementChild as HTMLElement | null;
+    if (!phaseDot) throw new Error("Missing Review phase selector");
+    act(() => phaseDot.click());
+
+    expect(page.expandPhase).toHaveBeenCalledWith("review");
+    expect(page.bypassLeaveGuardOnce).not.toHaveBeenCalled();
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+  });
+
   it("uses the dashboard main pane as its vertical scroll owner", async () => {
     mocks.usePlanDetailPage.mockReturnValue(buildPage());
 
@@ -238,6 +307,59 @@ describe("ProjectPlanDetailPage", () => {
     expect(selectedSpecIdText()).toBe("spec-2");
   });
 
+  it("selects the first client-local spec on the first create-route render", async () => {
+    mocks.usePlanDetailPage.mockReturnValue(buildPage());
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage planId="create" projectId="foo" routeQuery={{}} />
+      );
+    });
+
+    expect(
+      mocks.selectedSpecRender.mock.calls.every(([id]) => id === "spec-1")
+    ).toBe(true);
+    expect(selectedSpecIdText()).toBe("spec-1");
+  });
+
+  it("renders a route-selected spec without an intermediate stale spec", async () => {
+    const page = buildPage();
+    page.isCreating = false;
+    page.pageKey = "foo/plan-1";
+    page.planId = "plan-1";
+    mocks.usePlanDetailPage.mockReturnValue(page);
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="plan-1"
+          projectId="foo"
+          specId="spec-1"
+        />
+      );
+      await Promise.resolve();
+    });
+    expect(selectedSpecIdText()).toBe("spec-1");
+    expect(changesMountIdText()).toBe("1");
+
+    mocks.selectedSpecRender.mockClear();
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="plan-1"
+          projectId="foo"
+          specId="spec-2"
+        />
+      );
+    });
+
+    expect(mocks.selectedSpecRender.mock.calls.map(([id]) => id)).toEqual([
+      "spec-2",
+    ]);
+    expect(selectedSpecIdText()).toBe("spec-2");
+    expect(changesMountIdText()).toBe("1");
+  });
+
   it("resets spec selection when navigating to another plan", async () => {
     const firstPage = buildPage();
     firstPage.isCreating = false;
@@ -280,6 +402,7 @@ describe("ProjectPlanDetailPage", () => {
     });
 
     expect(selectedSpecIdText()).toBe("new-spec");
+    expect(changesMountIdText()).toBe("2");
   });
 
   it("renders the review phase for sheet-backed plans with an issue", async () => {

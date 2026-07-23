@@ -1,5 +1,5 @@
 import { router } from "@/app/router";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/app/router/handles";
+import { buildPlanCreateRoute } from "@/app/router/routeHelpers";
 import { useAppStore } from "@/stores/app";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import {
@@ -11,8 +11,6 @@ import {
 import { applyPlanTitleToQuery } from "./title";
 
 export const preCreateIssue = async (project: string, targets: string[]) => {
-  const type = "bb.plan.change-database";
-
   const databaseNames: string[] = [];
   for (const target of targets) {
     if (isValidDatabaseGroupName(target)) {
@@ -34,33 +32,22 @@ export const preCreateIssue = async (project: string, targets: string[]) => {
     .getOrFetchProjectByName(project);
 
   // Navigate to plan detail page
-  const query: Record<string, string> = {
-    template: type,
-  };
+  const query: Record<string, string> = {};
 
   if (isDatabaseGroup) {
     const databaseGroupName = targets[0];
     query.databaseGroupName = databaseGroupName;
     applyPlanTitleToQuery(query, projectEntity, () =>
-      generatePlanTitle(type, [extractDatabaseGroupName(databaseGroupName)])
+      generatePlanTitle([extractDatabaseGroupName(databaseGroupName)])
     );
   } else {
     query.databaseList = targets.join(",");
     applyPlanTitleToQuery(query, projectEntity, () =>
       generatePlanTitle(
-        type,
         targets.map((db) => extractDatabaseResourceName(db).databaseName)
       )
     );
   }
 
-  router.push({
-    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(project),
-      planId: "create",
-      specId: "placeholder",
-    },
-    query,
-  });
+  router.push(buildPlanCreateRoute(extractProjectResourceName(project), query));
 };

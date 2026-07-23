@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  isPlanDetailPhase,
   PLAN_DETAIL_PHASE_CHANGES,
   PLAN_DETAIL_PHASE_DEPLOY,
   PLAN_DETAIL_PHASE_REVIEW,
@@ -39,9 +40,13 @@ import { isTaskActivelyTransitioning } from "@/utils/v1/issue/rollout";
 import { invalidateProjectPagedDataCacheIfChanged } from "../../../pagedDataCacheScope";
 import type { PlanDetailPhase } from "../../shared/stores/types";
 import { usePlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
-import { getPlanCheckSummary } from "../../utils/phaseSummary";
+import {
+  getPlanCheckSummary,
+  isRolloutExpected,
+} from "../../utils/phaseSummary";
 import { fetchPlanSnapshot } from "./fetchPlanSnapshot";
 import type { PlanDetailPageSnapshot, PlanDetailPageState } from "./types";
+import { useCanonicalPlanDetailRoute } from "./useCanonicalPlanDetailRoute";
 import { useDerivedPlanState } from "./useDerivedPlanState";
 import { useEditingScopes } from "./useEditingScopes";
 import { useInitialFetch } from "./useInitialFetch";
@@ -138,28 +143,21 @@ const getDefaultActivePhases = (phase: PlanDetailPhase): PlanDetailPhase[] => {
 
 type PhaseSelection = {
   routePhase?: PlanDetailPhase;
-  routeStageId?: string;
-  routeTaskId?: string;
+  routeSelectionKey: string;
 };
 
-// The phase to focus by default: an explicit URL selection (phase / stage /
-// task) wins, otherwise the furthest-progressed phase the plan has reached.
+// The phase to focus by default: an explicit URL selection wins — a stage/task
+// selection already resolves to an explicit deploy phase in useRouteSelection —
+// otherwise the furthest-progressed phase the plan has reached.
 const getCurrentPhase = (
   snapshot: PlanDetailPageSnapshot,
   selection: PhaseSelection
 ): PlanDetailPhase => {
-  const { routePhase, routeStageId, routeTaskId } = selection;
-  if (
-    routePhase === PLAN_DETAIL_PHASE_CHANGES ||
-    routePhase === PLAN_DETAIL_PHASE_REVIEW ||
-    routePhase === PLAN_DETAIL_PHASE_DEPLOY
-  ) {
+  const { routePhase } = selection;
+  if (isPlanDetailPhase(routePhase)) {
     return routePhase;
   }
-  if (routeStageId || routeTaskId) {
-    return PLAN_DETAIL_PHASE_DEPLOY;
-  }
-  if (snapshot.rollout) {
+  if (snapshot.rollout || isRolloutExpected(snapshot)) {
     return PLAN_DETAIL_PHASE_DEPLOY;
   }
   if (snapshot.issue) {
@@ -171,15 +169,21 @@ const getCurrentPhase = (
 export const usePlanDetailPage = ({
   projectId,
   planId,
+  routeHash,
   routeName,
   routeQuery = {},
   specId,
+  stageId,
+  taskId,
 }: {
   projectId: string;
   planId: string;
+  routeHash?: string;
   routeName?: string;
   routeQuery?: Record<string, unknown>;
   specId?: string;
+  stageId?: string;
+  taskId?: string;
 }): PlanDetailPageState => {
   const { t } = useTranslation();
   const [snapshot, setSnapshot] = useState<PlanDetailPageSnapshot>(() =>
@@ -197,51 +201,66 @@ export const usePlanDetailPage = ({
   // routeQuery is a fresh object on every router navigation. Stash the latest
   // value in a ref and depend only on the individual keys we actually consume,
   // so the init/refresh/poll effects don't churn (and reset isInitializing)
-  // every time an unrelated query param like ?taskId changes.
+  // every time unrelated secondary query state changes.
   const routeQueryRef = useRef(routeQuery);
   routeQueryRef.current = routeQuery;
-  const route = useRouteSelection({ routeQuery, specId });
+  const route = useRouteSelection({
+    routeName,
+    routeQuery,
+    specId,
+    stageId,
+    taskId,
+  });
   const routePhase = route.phase;
+  const routeSelectionKey = route.selectionKey;
   const routeStageId = route.stageId;
   const routeTaskId = route.taskId;
   const setActivePhases = phase.setActivePhases;
+  const expandPhase = phase.expandPhase;
   const pageIdentityKey = `${projectId}/${planId}`;
+  const snapshotBelongsToRoute = snapshot.pageKey === pageIdentityKey;
   useEffect(() => {
     setCreationIssueLabels([]);
   }, [pageIdentityKey]);
-  const phaseSelectionRef = useRef<PhaseSelection>({});
+  const phaseSelectionRef = useRef<PhaseSelection>({ routeSelectionKey });
   phaseSelectionRef.current = {
     routePhase,
-    routeStageId,
-    routeTaskId,
+    routeSelectionKey,
   };
   const syncedDefaultPhaseRef = useRef<
     | {
         pageIdentityKey: string;
-        phase: PlanDetailPhase;
+        selectionKey: string;
       }
     | undefined
   >(undefined);
   const syncDefaultActivePhases = useCallback(
     (nextSnapshot: PlanDetailPageSnapshot) => {
+      if (!nextSnapshot.ready || nextSnapshot.pageKey !== pageIdentityKey) {
+        return;
+      }
       const nextPhase = getCurrentPhase(
         nextSnapshot,
         phaseSelectionRef.current
       );
+      const explicitPhase = phaseSelectionRef.current.routePhase;
+      const selectionKey = phaseSelectionRef.current.routeSelectionKey;
       const synced = syncedDefaultPhaseRef.current;
-      if (
-        synced?.pageIdentityKey === pageIdentityKey &&
-        synced.phase === nextPhase
-      ) {
+      if (synced?.pageIdentityKey !== pageIdentityKey) {
+        setActivePhases(getDefaultActivePhases(nextPhase));
+        syncedDefaultPhaseRef.current = { pageIdentityKey, selectionKey };
         return;
       }
-      setActivePhases(getDefaultActivePhases(nextPhase));
-      syncedDefaultPhaseRef.current = {
-        pageIdentityKey,
-        phase: nextPhase,
-      };
+      if (synced.selectionKey === selectionKey) return;
+      // Same-plan resource navigation only reveals the destination phase. It
+      // never collapses phases the user already opened, so Back/Forward and
+      // rapid spec/stage/task selection cannot reset disclosure state.
+      if (explicitPhase) {
+        expandPhase(explicitPhase);
+      }
+      syncedDefaultPhaseRef.current = { pageIdentityKey, selectionKey };
     },
-    [pageIdentityKey, setActivePhases]
+    [expandPhase, pageIdentityKey, setActivePhases]
   );
 
   const patchState = useCallback(
@@ -276,6 +295,19 @@ export const usePlanDetailPage = ({
         })
       );
       syncDefaultActivePhases(nextSnapshot);
+      // Reveal a rollout that materializes while this plan is already open,
+      // regardless of which backend gate completed last. Expanding before the
+      // snapshot update keeps the old future state visually unchanged, so the
+      // first render with rollout data is already expanded without changing
+      // selection, URL, scroll, or the user's other disclosure choices.
+      if (
+        prevSnapshot.ready &&
+        prevSnapshot.pageKey === nextSnapshot.pageKey &&
+        !prevSnapshot.rollout &&
+        nextSnapshot.rollout
+      ) {
+        expandPhase(PLAN_DETAIL_PHASE_DEPLOY);
+      }
       if (nextSnapshot === prevSnapshot) {
         // Content-identical (the common quiet poll tick) — no state update,
         // so nothing under the provider re-renders.
@@ -284,7 +316,7 @@ export const usePlanDetailPage = ({
       latestSnapshotRef.current = nextSnapshot;
       setSnapshot(nextSnapshot);
     },
-    [syncDefaultActivePhases]
+    [expandPhase, syncDefaultActivePhases]
   );
 
   // Monotonic fetch sequence: a fetch already in flight when a newer one started
@@ -303,11 +335,9 @@ export const usePlanDetailPage = ({
       // failure doesn't spam the global toast (the initial load is loud).
       true
     );
-    // The page isn't remounted on plan->plan navigation, so a poll started for
-    // the previous plan can still be in flight after the switch. The seq guard
-    // doesn't bump on navigation, so also drop the patch when the page identity
-    // has changed — otherwise the old plan's data would merge onto the new
-    // plan's snapshot (wrong data under a correct URL, until the next poll).
+    // The keyed page provider remounts for normal plan-to-plan navigation. Keep
+    // the page-identity check as a defensive hook-level guard for any caller
+    // that reuses the hook instance while a request is still in flight.
     if (
       seq !== fetchSeqRef.current ||
       latestSnapshotRef.current.pageKey !== current.pageKey
@@ -326,6 +356,9 @@ export const usePlanDetailPage = ({
   });
 
   useEffect(() => {
+    if (!snapshotBelongsToRoute) {
+      return;
+    }
     if (snapshot.isCreating) {
       setDocumentTitle(t("plan.new-plan"), snapshot.projectTitle);
       return;
@@ -338,24 +371,35 @@ export const usePlanDetailPage = ({
     snapshot.plan.title,
     snapshot.projectTitle,
     snapshot.ready,
+    snapshotBelongsToRoute,
     t,
   ]);
 
   useRedirects({
-    ready: snapshot.ready,
+    ready: snapshotBelongsToRoute && snapshot.ready,
     plan: snapshot.plan,
     issue: snapshot.issue,
   });
 
+  // Reveal a same-plan route destination before the browser paints. A normal
+  // effect would commit the previous collapsed state for one frame first.
   useLayoutEffect(() => {
     syncDefaultActivePhases(latestSnapshotRef.current);
-  }, [
-    pageIdentityKey,
-    routePhase,
-    routeStageId,
-    routeTaskId,
-    syncDefaultActivePhases,
-  ]);
+  }, [pageIdentityKey, routeSelectionKey, syncDefaultActivePhases]);
+
+  useCanonicalPlanDetailRoute({
+    projectId,
+    planId,
+    routeHash,
+    routeName,
+    routeQuery,
+    specId,
+    stageId,
+    taskId,
+    snapshot,
+    isEditing,
+    bypassLeaveGuardOnce: editing.bypassLeaveGuardOnce,
+  });
 
   const { activePollingKey, isPlanDone, pollingMode } = useMemo((): {
     activePollingKey: string;
@@ -371,31 +415,11 @@ export const usePlanDetailPage = ({
       const hasActivePlanChecks =
         checks.running > 0 ||
         (snapshot.plan.planCheckRunStatusCount?.AVAILABLE ?? 0) > 0;
-      const hasCanceledPlanChecks =
-        (snapshot.plan.planCheckRunStatusCount?.CANCELED ?? 0) > 0;
-      // The backend considers an approval template with zero roles approved,
-      // although its API approval status can still be PENDING. Treat the
-      // resolved empty flow as passed so we keep polling through rollout
-      // creation instead of falling back to the idle cadence in that window.
-      const hasNoApprovalSteps =
-        snapshot.issue?.approvalTemplate?.flow?.roles.length === 0;
-      const approvalPassed =
-        snapshot.issue?.approvalStatus === ApprovalStatus.APPROVED ||
-        snapshot.issue?.approvalStatus === ApprovalStatus.SKIPPED ||
-        hasNoApprovalSteps;
       const approvalChecking =
         snapshot.issue?.status === IssueStatus.OPEN &&
         !snapshot.issue.draft &&
         snapshot.issue.approvalStatus === ApprovalStatus.CHECKING;
-      const rolloutExpected =
-        snapshot.plan.hasRollout ||
-        snapshot.issue?.status === IssueStatus.DONE ||
-        (snapshot.issue?.status === IssueStatus.OPEN &&
-          !snapshot.issue.draft &&
-          approvalPassed &&
-          !hasActivePlanChecks &&
-          !hasCanceledPlanChecks &&
-          checks.error === 0);
+      const rolloutExpected = isRolloutExpected(snapshot);
       // Once every gate passes, rollout creation is asynchronous. Keep polling
       // at the active cadence through that gap, as well as when either the plan
       // or issue already proves the rollout committed but its data is missing.
@@ -462,7 +486,11 @@ export const usePlanDetailPage = ({
   // Independent jitter prevents synchronized clients; hidden tabs pause until
   // they become visible again.
   const { restart: restartPolling } = usePlanPolling({
-    enabled: snapshot.ready && !snapshot.isCreating && !isPlanDone,
+    enabled:
+      snapshotBelongsToRoute &&
+      snapshot.ready &&
+      !snapshot.isCreating &&
+      !isPlanDone,
     mode: pollingMode,
     refreshState: fetchState,
     resetKey: pollingMode === "active" ? activePollingKey : undefined,

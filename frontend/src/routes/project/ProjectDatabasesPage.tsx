@@ -8,6 +8,7 @@ import {
   INSTANCE_ROUTE_CREATE,
   SQL_EDITOR_DATABASE_MODULE,
 } from "@/app/router/handles";
+import { markListScrollRestorationEntry } from "@/app/router/NavigationScrollRestoration";
 import {
   AdvancedSearch,
   getValueFromScopes,
@@ -680,6 +681,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         filter={filter}
         parent={projectName}
         mode="PROJECT"
+        onOpenDatabase={markListScrollRestorationEntry}
         selectedNames={selectedNames}
         onSelectedNamesChange={setSelectedNames}
         onDatabasesChange={setVisibleDatabases}

@@ -13,7 +13,7 @@ import {
   TaskRunSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
-import type { PlanDetailPageSnapshot } from "./types";
+import type { PlanDetailPageSnapshot, PlanDetailPhase } from "./types";
 
 const mocks = vi.hoisted(() => ({
   fetchPlanSnapshot: vi.fn(),
@@ -84,7 +84,16 @@ const buildSnapshotPatch = ({
       creator: "users/me@example.com",
       hasRollout: false,
       state: State.ACTIVE,
-      specs: [{ id: "spec-1" }, { id: "spec-2" }],
+      specs: [
+        {
+          id: "spec-1",
+          config: { case: "changeDatabaseConfig", value: { targets: [] } },
+        },
+        {
+          id: "spec-2",
+          config: { case: "changeDatabaseConfig", value: { targets: [] } },
+        },
+      ],
     },
     issue,
     rollout,
@@ -104,28 +113,6 @@ describe("usePlanDetailPage", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-  });
-
-  test("defaults to only the changes phase on the specs route", async () => {
-    const { result } = renderHook(
-      () =>
-        usePlanDetailPage({
-          projectId: "foo",
-          planId: "create",
-          routeName: "workspace.project.plan.detail.specs",
-        }),
-      { wrapper }
-    );
-
-    await waitFor(() => expect(result.current.ready).toBe(true));
-    expect(result.current.activePhases.has("changes")).toBe(true);
-    expect(result.current.activePhases.has("review")).toBe(false);
-    expect(result.current.activePhases.has("deploy")).toBe(false);
-
-    act(() => result.current.togglePhase("changes"));
-    await waitFor(() =>
-      expect(result.current.activePhases.has("changes")).toBe(false)
-    );
   });
 
   test("defaults to only the deploy phase on the deploy route query", async () => {
@@ -148,6 +135,32 @@ describe("usePlanDetailPage", () => {
     await waitFor(() =>
       expect(result.current.activePhases.has("deploy")).toBe(false)
     );
+  });
+
+  test("keeps the specs collection focused on Changes without a phase query", async () => {
+    mocks.fetchPlanSnapshot.mockResolvedValue(
+      buildSnapshotPatch({
+        planId: "plan-1",
+        rollout: {
+          name: "projects/foo/plans/plan-1/rollout",
+          stages: [],
+        } as unknown as PlanDetailPageSnapshot["rollout"],
+      })
+    );
+    const { result } = renderHook(
+      () =>
+        usePlanDetailPage({
+          projectId: "foo",
+          planId: "plan-1",
+          routeName: "workspace.project.plan.detail.specs",
+        }),
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(result.current.activePhases).toEqual(new Set(["changes"]));
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(mocks.routerReplace).not.toHaveBeenCalled();
   });
 
   test("resets focused phase when navigating to another plan with the same route phase", async () => {
@@ -179,6 +192,45 @@ describe("usePlanDetailPage", () => {
     expect(result.current.activePhases.has("deploy")).toBe(true);
   });
 
+  test("derives a new plan's disclosure from its own snapshot", async () => {
+    mocks.fetchPlanSnapshot.mockImplementation(
+      async (_projectId: string, planId: string) =>
+        planId === "plan-1"
+          ? buildSnapshotPatch({
+              planId,
+              rollout: {
+                name: `projects/foo/plans/${planId}/rollout`,
+                stages: [],
+              } as unknown as PlanDetailPageSnapshot["rollout"],
+            })
+          : buildSnapshotPatch({
+              planId,
+              issue: {
+                name: "projects/foo/issues/2",
+              } as PlanDetailPageSnapshot["issue"],
+            })
+    );
+    const { result, rerender } = renderHook(
+      ({ planId }: { planId: string }) =>
+        usePlanDetailPage({ projectId: "foo", planId }),
+      {
+        initialProps: { planId: "plan-1" },
+        wrapper,
+      }
+    );
+
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(result.current.activePhases).toEqual(new Set(["deploy"]));
+
+    rerender({ planId: "plan-2" });
+
+    await waitFor(() => expect(result.current.pageKey).toBe("foo/plan-2"));
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(result.current.activePhases).toEqual(
+      new Set(["changes", "review"])
+    );
+  });
+
   test("defaults to the changes and review phases after an issue is created", async () => {
     mocks.fetchPlanSnapshot.mockResolvedValue(
       buildSnapshotPatch({
@@ -204,38 +256,53 @@ describe("usePlanDetailPage", () => {
     expect(result.current.activePhases.has("deploy")).toBe(false);
   });
 
-  test("keeps the review section visible for reviewed plans on the specs route", async () => {
+  test("defaults to deploy while rollout creation is pending", async () => {
     mocks.fetchPlanSnapshot.mockResolvedValue(
       buildSnapshotPatch({
         issue: {
           name: "projects/foo/issues/1",
+          approvalStatus: ApprovalStatus.APPROVED,
+          draft: false,
+          status: IssueStatus.OPEN,
         } as PlanDetailPageSnapshot["issue"],
         planId: "plan-1",
       })
     );
 
+    const readyRenders: Set<PlanDetailPhase>[] = [];
     const { result } = renderHook(
-      () =>
-        usePlanDetailPage({
+      () => {
+        const page = usePlanDetailPage({
           projectId: "foo",
           planId: "plan-1",
-          routeName: "workspace.project.plan.detail.specs",
-        }),
+        });
+        if (page.ready) {
+          readyRenders.push(new Set(page.activePhases));
+        }
+        return page;
+      },
       { wrapper }
     );
 
     await waitFor(() => expect(result.current.ready).toBe(true));
-    expect(result.current.activePhases.has("changes")).toBe(true);
-    expect(result.current.activePhases.has("review")).toBe(true);
-    expect(result.current.activePhases.has("deploy")).toBe(false);
+    expect(result.current.activePhases).toEqual(new Set(["deploy"]));
+    expect(readyRenders[0]).toEqual(new Set(["deploy"]));
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(mocks.routerReplace).not.toHaveBeenCalled();
   });
 
-  test("focuses the deploy phase on the specs route for rollout plans", async () => {
+  test("keeps an explicit review phase on a reviewed rollout plan", async () => {
     mocks.fetchPlanSnapshot.mockResolvedValue(
       buildSnapshotPatch({
+        issue: {
+          name: "projects/foo/issues/1",
+          approvalStatus: ApprovalStatus.APPROVED,
+          draft: false,
+          status: IssueStatus.DONE,
+        } as PlanDetailPageSnapshot["issue"],
         planId: "plan-1",
         rollout: {
-          name: "projects/foo/rollouts/1",
+          name: "projects/foo/plans/plan-1/rollout",
           stages: [],
         } as unknown as PlanDetailPageSnapshot["rollout"],
       })
@@ -246,18 +313,20 @@ describe("usePlanDetailPage", () => {
         usePlanDetailPage({
           projectId: "foo",
           planId: "plan-1",
-          routeName: "workspace.project.plan.detail.specs",
+          routeQuery: { phase: "review" },
         }),
       { wrapper }
     );
 
     await waitFor(() => expect(result.current.ready).toBe(true));
-    expect(result.current.activePhases.has("changes")).toBe(false);
-    expect(result.current.activePhases.has("review")).toBe(false);
-    expect(result.current.activePhases.has("deploy")).toBe(true);
+    expect(result.current.activePhases).toEqual(
+      new Set(["changes", "review"])
+    );
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(mocks.routerReplace).not.toHaveBeenCalled();
   });
 
-  test("focuses the deploy phase on the spec-detail route for reviewed rollout plans", async () => {
+  test("lets a spec resource override a reviewed rollout plan's default", async () => {
     mocks.fetchPlanSnapshot.mockResolvedValue(
       buildSnapshotPatch({
         issue: {
@@ -283,9 +352,9 @@ describe("usePlanDetailPage", () => {
     );
 
     await waitFor(() => expect(result.current.ready).toBe(true));
-    expect(result.current.activePhases.has("changes")).toBe(false);
+    expect(result.current.activePhases.has("changes")).toBe(true);
     expect(result.current.activePhases.has("review")).toBe(false);
-    expect(result.current.activePhases.has("deploy")).toBe(true);
+    expect(result.current.activePhases.has("deploy")).toBe(false);
   });
 
   test("has review default phases on the first ready render", async () => {
@@ -351,7 +420,7 @@ describe("usePlanDetailPage", () => {
     expect(readyRenders[0].has("deploy")).toBe(true);
   });
 
-  test("does not refetch the page snapshot when only the route spec changes", async () => {
+  test("reveals a new spec without refetching the page snapshot", async () => {
     const { result, rerender } = renderHook(
       ({ specId }: { specId: string }) =>
         usePlanDetailPage({
@@ -371,12 +440,192 @@ describe("usePlanDetailPage", () => {
     expect(result.current.activePhases.has("changes")).toBe(true);
     expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
 
+    act(() => result.current.togglePhase("changes"));
+    expect(result.current.activePhases.has("changes")).toBe(false);
+
     rerender({ specId: "spec-2" });
+
+    // The new spec is a distinct resource selection even though its lifecycle
+    // phase is unchanged. Layout synchronization reveals it before rerender
+    // returns, without waiting for a post-paint effect.
+    expect(result.current.activePhases.has("changes")).toBe(true);
+    expect(result.current.pageKey).toBe("foo/plan-1");
+    expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  test("reveals a rollout resource before paint after a deploy phase route", async () => {
+    mocks.fetchPlanSnapshot.mockResolvedValue(
+      buildSnapshotPatch({
+        planId: "plan-1",
+        rollout: {
+          name: "projects/foo/plans/plan-1/rollout",
+          stages: [],
+        } as unknown as PlanDetailPageSnapshot["rollout"],
+      })
+    );
+    const { result, rerender } = renderHook(
+      ({
+        routeName,
+        routeQuery,
+      }: {
+        routeName: string;
+        routeQuery: Record<string, unknown>;
+      }) =>
+        usePlanDetailPage({
+          projectId: "foo",
+          planId: "plan-1",
+          routeName,
+          routeQuery,
+        }),
+      {
+        initialProps: {
+          routeName: "workspace.project.plan.detail",
+          routeQuery: { phase: "deploy" } as Record<string, unknown>,
+        },
+        wrapper,
+      }
+    );
+
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    act(() => result.current.togglePhase("deploy"));
+    expect(result.current.activePhases.has("deploy")).toBe(false);
+
+    rerender({
+      routeName: "workspace.project.plan.detail.rollout",
+      routeQuery: {},
+    });
+
+    // Both URLs resolve to Deploy, but the rollout is a new resource arrival.
+    // It is visible in the same commit and disclosure sync never writes a URL.
+    expect(result.current.activePhases.has("deploy")).toBe(true);
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  test("ignores secondary query changes when synchronizing disclosure", async () => {
+    const { result, rerender } = renderHook(
+      ({ line }: { line: string }) =>
+        usePlanDetailPage({
+          projectId: "foo",
+          planId: "plan-1",
+          routeName: "workspace.project.plan.detail.spec.detail",
+          routeQuery: { line },
+          specId: "spec-1",
+        }),
+      {
+        initialProps: { line: "1" },
+        wrapper,
+      }
+    );
+
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    act(() => result.current.togglePhase("changes"));
+    expect(result.current.activePhases.has("changes")).toBe(false);
+
+    rerender({ line: "2" });
+
+    expect(result.current.activePhases.has("changes")).toBe(false);
+    expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  test("keeps disclosure stable while a legacy stage query canonicalizes", async () => {
+    mocks.fetchPlanSnapshot.mockResolvedValue(
+      buildSnapshotPatch({
+        planId: "plan-1",
+        rollout: {
+          name: "projects/foo/plans/plan-1/rollout",
+          stages: [
+            {
+              name: "projects/foo/plans/plan-1/rollout/stages/s1",
+              tasks: [],
+            },
+          ],
+        } as unknown as PlanDetailPageSnapshot["rollout"],
+      })
+    );
+    const { result, rerender } = renderHook(
+      ({
+        routeName,
+        routeQuery,
+        stageId,
+      }: {
+        routeName: string;
+        routeQuery: Record<string, unknown>;
+        stageId?: string;
+      }) =>
+        usePlanDetailPage({
+          projectId: "foo",
+          planId: "plan-1",
+          routeName,
+          routeQuery,
+          stageId,
+        }),
+      {
+        initialProps: {
+          routeName: "workspace.project.plan.detail",
+          routeQuery: { stageId: "s1" } as Record<string, unknown>,
+          stageId: undefined as string | undefined,
+        },
+        wrapper,
+      }
+    );
+
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    act(() => result.current.togglePhase("deploy"));
+    expect(result.current.activePhases.has("deploy")).toBe(false);
+
+    rerender({
+      routeName: "workspace.project.plan.detail.rollout.stage",
+      routeQuery: {},
+      stageId: "s1",
+    });
+
+    // The query bookmark and its canonical path represent one selection, so
+    // the replace cannot produce an extra collapse/expand transition.
+    expect(result.current.activePhases.has("deploy")).toBe(false);
+    expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  test("reveals a resource phase without collapsing same-plan disclosure", async () => {
+    mocks.fetchPlanSnapshot.mockResolvedValue(
+      buildSnapshotPatch({
+        planId: "plan-1",
+        rollout: {
+          name: "projects/foo/plans/plan-1/rollout",
+          stages: [],
+        } as unknown as PlanDetailPageSnapshot["rollout"],
+      })
+    );
+    const { result, rerender } = renderHook(
+      ({ routeName, specId }: { routeName: string; specId?: string }) =>
+        usePlanDetailPage({
+          projectId: "foo",
+          planId: "plan-1",
+          routeName,
+          specId,
+        }),
+      {
+        initialProps: {
+          routeName: "workspace.project.plan.detail.rollout",
+          specId: "",
+        },
+        wrapper,
+      }
+    );
+
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(result.current.activePhases.has("deploy")).toBe(true);
+    expect(result.current.activePhases.has("changes")).toBe(false);
+
+    rerender({
+      routeName: "workspace.project.plan.detail.spec.detail",
+      specId: "spec-1",
+    });
 
     await waitFor(() =>
       expect(result.current.activePhases.has("changes")).toBe(true)
     );
-    expect(result.current.pageKey).toBe("foo/plan-1");
+    expect(result.current.activePhases.has("deploy")).toBe(true);
     expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
   });
 
@@ -442,6 +691,89 @@ describe("usePlanDetailPage", () => {
 
     expect(result.current.activePhases.has("review")).toBe(false);
     expect(result.current.activePhases.has("changes")).toBe(true);
+  });
+
+  test("reveals a rollout once when it materializes on an open plan", async () => {
+    const reviewIssue = {
+      name: "projects/foo/issues/1",
+      status: IssueStatus.OPEN,
+      approvalStatus: ApprovalStatus.CHECKING,
+    } as PlanDetailPageSnapshot["issue"];
+    const reviewPatch = buildSnapshotPatch({
+      issue: reviewIssue,
+      planId: "plan-1",
+    });
+    const rolloutPatch = {
+      ...reviewPatch,
+      issue: {
+        ...reviewIssue,
+        approvalStatus: ApprovalStatus.APPROVED,
+        status: IssueStatus.DONE,
+      } as PlanDetailPageSnapshot["issue"],
+      plan: { ...reviewPatch.plan, hasRollout: true },
+      rollout: {
+        name: "projects/foo/plans/plan-1/rollout",
+        stages: [],
+      } as unknown as PlanDetailPageSnapshot["rollout"],
+    };
+    mocks.fetchPlanSnapshot
+      .mockResolvedValueOnce(reviewPatch)
+      .mockResolvedValue(rolloutPatch);
+
+    const readyRenders: {
+      activePhases: Set<PlanDetailPhase>;
+      hasRollout: boolean;
+    }[] = [];
+    const { result } = renderHook(
+      () => {
+        const page = usePlanDetailPage({
+          projectId: "foo",
+          planId: "plan-1",
+        });
+        if (page.ready) {
+          readyRenders.push({
+            activePhases: new Set(page.activePhases),
+            hasRollout: !!page.rollout,
+          });
+        }
+        return page;
+      },
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(result.current.activePhases).toEqual(
+      new Set(["changes", "review"])
+    );
+
+    act(() => result.current.togglePhase("review"));
+    expect(result.current.activePhases.has("review")).toBe(false);
+
+    await act(async () => {
+      await result.current.refreshState();
+    });
+
+    expect(result.current.rollout).toBeDefined();
+    expect(result.current.activePhases).toEqual(
+      new Set(["changes", "deploy"])
+    );
+    const rolloutRenders = readyRenders.filter((render) => render.hasRollout);
+    expect(rolloutRenders.length).toBeGreaterThan(0);
+    expect(
+      rolloutRenders.every((render) => render.activePhases.has("deploy"))
+    ).toBe(true);
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+
+    act(() => result.current.togglePhase("deploy"));
+    expect(result.current.activePhases.has("deploy")).toBe(false);
+
+    await act(async () => {
+      await result.current.refreshState();
+    });
+
+    // Later polls must preserve a deliberate collapse after the one-time
+    // lifecycle transition has already been consumed.
+    expect(result.current.activePhases).toEqual(new Set(["changes"]));
   });
 
   test("a poll returning identical content keeps the page state identity", async () => {

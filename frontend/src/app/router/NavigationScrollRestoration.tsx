@@ -33,7 +33,7 @@ const SCROLL_KEYS = new Set([
   "PageUp",
   " ",
 ]);
-const restorableLocationKeys = new Set<string>();
+const listScrollRestorationKeys = new Set<string>();
 
 type ScrollAnchor = {
   key: string;
@@ -48,6 +48,11 @@ type ScrollPosition = {
 
 type SavedPositions = Record<string, Record<string, ScrollPosition>>;
 type ScrollTarget = Window | HTMLElement;
+type ScrollRestorationLocation = Pick<
+  Location,
+  "hash" | "pathname" | "search"
+> &
+  Partial<Pick<Location, "key">>;
 
 type ActiveRestoration = {
   locationKey: string;
@@ -78,23 +83,27 @@ function isWindowTarget(target: ScrollTarget): target is Window {
   return target === window;
 }
 
-function locationStorageKey(location: Location): string {
-  if (location.key !== "default") {
+function locationStorageKey(location: ScrollRestorationLocation): string {
+  if (location.key && location.key !== "default") {
     return location.key;
   }
   return `default:${location.pathname}${location.search}${location.hash}`;
 }
 
-export function markScrollRestorationEntry(location: Location): void {
-  restorableLocationKeys.add(locationStorageKey(location));
+export function markListScrollRestorationEntry(
+  location: ScrollRestorationLocation | undefined = getAppRouterState()
+    ?.location
+): void {
+  if (!location) return;
+  listScrollRestorationKeys.add(locationStorageKey(location));
 }
 
-export function useScrollRestorationKey(): string | undefined {
+export function useListScrollRestorationKey(): string | undefined {
   const location = useLocation();
   const navigationType = useNavigationType();
   return useMemo(() => {
     const key = locationStorageKey(location);
-    return navigationType === "POP" && restorableLocationKeys.has(key)
+    return navigationType === "POP" && listScrollRestorationKeys.has(key)
       ? key
       : undefined;
   }, [location, navigationType]);
@@ -131,18 +140,6 @@ function savePosition(
     savedPositions[locationKey] = {};
   }
   savedPositions[locationKey][targetId] = position;
-}
-
-function copyPositions(
-  savedPositions: SavedPositions,
-  fromLocationKey: string,
-  toLocationKey: string
-): void {
-  const positions = savedPositions[fromLocationKey];
-  if (!positions || fromLocationKey === toLocationKey) return;
-  for (const [id, position] of Object.entries(positions)) {
-    savePosition(savedPositions, toLocationKey, id, { ...position });
-  }
 }
 
 function customTargetId(value: string): string {
@@ -436,7 +433,7 @@ type NavigationScrollRestorationProps = {
   children: ReactNode;
 };
 
-export function useScrollRestorationLoadMore(
+export function useListScrollRestorationLoadMore(
   paged: Pick<
     PagedDataResult<unknown>,
     "hasMore" | "isFetchingMore" | "isLoading" | "dataList" | "loadMore"
@@ -481,21 +478,23 @@ export function useScrollRestorationLoadMore(
 }
 
 /**
- * Restores registered scroll containers by browser history entry.
+ * Restores registered scroll containers for explicitly marked list entries.
  * Nested containers opt in with `data-scroll-restoration-id="stable-id"`
  * (the main layout pane registers as `MAIN_SCROLL_RESTORATION_ID`).
+ * List pages opt in to Back restoration with
+ * `markListScrollRestorationEntry`.
  *
  * Hand-rolled instead of react-router's `<ScrollRestoration>`, which only
  * handles window scroll: this app scrolls in nested containers and needs the
- * `useScrollRestorationLoadMore` growth protocol for paged lists. Never mount
- * the built-in alongside — both manage `history.scrollRestoration` and would
- * fight over the window position.
+ * `useListScrollRestorationLoadMore` growth protocol for paged lists. Never
+ * mount the built-in alongside — both manage `history.scrollRestoration` and
+ * would fight over the window position.
  */
 export function NavigationScrollRestoration({
   children,
 }: NavigationScrollRestorationProps) {
   const location = useLocation();
-  const navigationType = useNavigationType();
+  const listRestorationKey = useListScrollRestorationKey();
   // Lazy state, not `useRef(loadSavedPositions())`: a ref initializer argument
   // is evaluated (storage read + JSON parse) on every render.
   const [savedPositions] = useState(loadSavedPositions);
@@ -539,12 +538,14 @@ export function NavigationScrollRestoration({
     (target: EventTarget | null) => {
       const id = targetId(target);
       if (!id || pendingRestores.has(id)) return;
+      const key = currentLocationKeyRef.current;
+      if (!listScrollRestorationKeys.has(key)) return;
       // Scroll events fire at frame rate: read the scrolled element directly
       // instead of re-querying the DOM for it, and defer persistence to
       // pagehide/unmount (SPA restores read the in-memory map).
       savePosition(
         savedPositions,
-        currentLocationKeyRef.current,
+        key,
         id,
         readPosition(target === document ? window : (target as HTMLElement))
       );
@@ -555,6 +556,7 @@ export function NavigationScrollRestoration({
   const recordAllTargets = useCallback(
     (locationKey?: string) => {
       const key = locationKey ?? currentLocationKeyRef.current;
+      if (!listScrollRestorationKeys.has(key)) return;
       for (const [id, target] of collectTargets()) {
         if (pendingRestores.has(id)) continue;
         const position = readPosition(target, true);
@@ -618,22 +620,15 @@ export function NavigationScrollRestoration({
   }, [flushToStorage]);
 
   useLayoutEffect(() => {
-    const previousLocationKey = currentLocationKeyRef.current;
     cancelPendingRestores();
     currentLocationKeyRef.current = locationKey;
-    const savedForLocation = savedPositions[locationKey];
+    const savedForLocation = listRestorationKey
+      ? savedPositions[listRestorationKey]
+      : undefined;
     const preventScrollReset = getAppRouterState()?.preventScrollReset === true;
 
-    if (preventScrollReset) {
-      copyPositions(savedPositions, previousLocationKey, locationKey);
-    }
-
-    if (
-      navigationType === "POP" &&
-      savedForLocation &&
-      restorableLocationKeys.has(locationKey)
-    ) {
-      restorableLocationKeys.delete(locationKey);
+    if (listRestorationKey && savedForLocation) {
+      listScrollRestorationKeys.delete(listRestorationKey);
       const currentTargets = collectTargets();
       const targetIds = new Set([
         ...currentTargets.keys(),
@@ -641,7 +636,10 @@ export function NavigationScrollRestoration({
       ]);
       const generation = restorationGenerationRef.current;
       let remaining = targetIds.size;
-      setActiveRestoration({ locationKey, positions: savedForLocation });
+      setActiveRestoration({
+        locationKey: listRestorationKey,
+        positions: savedForLocation,
+      });
 
       for (const id of targetIds) {
         const position = savedForLocation[id] ?? { x: 0, y: 0 };
@@ -677,7 +675,7 @@ export function NavigationScrollRestoration({
     cancelPendingRestores,
     location,
     locationKey,
-    navigationType,
+    listRestorationKey,
     pendingRestores,
     savedPositions,
   ]);

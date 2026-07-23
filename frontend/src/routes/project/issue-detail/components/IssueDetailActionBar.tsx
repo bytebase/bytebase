@@ -27,8 +27,8 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL,
 } from "@/app/router/handles";
 import {
-  buildPlanDeployRouteFromPlanName,
   buildPlanDeployRouteFromRolloutName,
+  buildPlanRolloutRouteFromPlanName,
 } from "@/app/router/routeHelpers";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { RouterLink } from "@/components/RouterLink";
@@ -199,7 +199,7 @@ export function IssueDetailActionBar() {
       return undefined;
     }
     if (page.plan.hasRollout) {
-      return buildPlanDeployRouteFromPlanName(page.plan.name);
+      return buildPlanRolloutRouteFromPlanName(page.plan.name);
     }
     return {
       name: PROJECT_V1_ROUTE_PLAN_DETAIL,
@@ -783,7 +783,7 @@ function IssueDetailReviewPopover({
         ) &&
         page.plan.hasRollout
       ) {
-        void router.push(buildPlanDeployRouteFromPlanName(page.plan.name));
+        void router.push(buildPlanRolloutRouteFromPlanName(page.plan.name));
       } else if (selectedAction !== "COMMENT" && issue) {
         void router.push({
           name: PROJECT_V1_ROUTE_ISSUE_DETAIL,

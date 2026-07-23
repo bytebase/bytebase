@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
+import { type Issue, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
@@ -7,6 +8,7 @@ import {
   buildChangesSummary,
   buildDeploySummary,
   buildReviewSummary,
+  isRolloutExpected,
 } from "./phaseSummary";
 
 const templates: Record<string, string> = {
@@ -96,5 +98,216 @@ describe("plan detail phase summaries", () => {
     } as unknown as Rollout;
 
     expect(buildDeploySummary(rollout, t)).toBe("2/3 tasks");
+  });
+});
+
+describe("isRolloutExpected", () => {
+  const approvedIssue = {
+    approvalStatus: ApprovalStatus.APPROVED,
+    draft: false,
+    status: IssueStatus.OPEN,
+  } as unknown as Issue;
+  const planWithSpec = (configCase: string) =>
+    ({
+      planCheckRunStatusCount: { SUCCESS: 1 },
+      specs: [{ config: { case: configCase, value: {} } }],
+      state: State.ACTIVE,
+    }) as unknown as Plan;
+
+  test("expects automatic rollout for an approved change-database plan", () => {
+    expect(
+      isRolloutExpected({
+        issue: approvedIssue,
+        plan: planWithSpec("changeDatabaseConfig"),
+      })
+    ).toBe(true);
+  });
+
+  test.each([
+    {
+      expected: true,
+      issue: {
+        ...approvedIssue,
+        approvalStatus: ApprovalStatus.SKIPPED,
+      },
+      name: "skipped approval",
+    },
+    {
+      expected: true,
+      issue: {
+        ...approvedIssue,
+        approvalStatus: ApprovalStatus.PENDING,
+        approvalTemplate: { flow: { roles: [] } },
+      },
+      name: "zero approval roles",
+    },
+    {
+      expected: true,
+      issue: {
+        ...approvedIssue,
+        approvalStatus: ApprovalStatus.PENDING,
+        status: IssueStatus.DONE,
+      },
+      name: "completed issue commitment",
+    },
+    {
+      expected: false,
+      issue: {
+        ...approvedIssue,
+        approvalStatus: ApprovalStatus.CHECKING,
+      },
+      name: "approval finding",
+    },
+    {
+      expected: false,
+      issue: {
+        ...approvedIssue,
+        approvalStatus: ApprovalStatus.PENDING,
+      },
+      name: "pending approval",
+    },
+    {
+      expected: false,
+      issue: {
+        ...approvedIssue,
+        draft: true,
+      },
+      name: "draft issue",
+    },
+    {
+      expected: false,
+      issue: {
+        ...approvedIssue,
+        status: IssueStatus.CANCELED,
+      },
+      name: "canceled issue",
+    },
+  ])("returns $expected for $name", ({ expected, issue }) => {
+    expect(
+      isRolloutExpected({
+        issue: issue as unknown as Issue,
+        plan: planWithSpec("changeDatabaseConfig"),
+      })
+    ).toBe(expected);
+  });
+
+  test.each([
+    { expected: true, name: "no checks", statusCount: {} },
+    {
+      expected: true,
+      name: "successful checks",
+      statusCount: { SUCCESS: 2 },
+    },
+    {
+      expected: true,
+      name: "warning-only checks",
+      statusCount: { WARNING: 1 },
+    },
+    {
+      expected: false,
+      name: "queued checks",
+      statusCount: { AVAILABLE: 1 },
+    },
+    {
+      expected: false,
+      name: "running checks",
+      statusCount: { RUNNING: 1 },
+    },
+    {
+      expected: false,
+      name: "canceled checks",
+      statusCount: { CANCELED: 1 },
+    },
+    {
+      expected: false,
+      name: "advice errors",
+      statusCount: { ERROR: 1 },
+    },
+    {
+      expected: false,
+      name: "failed check runs",
+      statusCount: { FAILED: 1 },
+    },
+  ])("returns $expected with $name", ({ expected, statusCount }) => {
+    const plan = {
+      ...planWithSpec("changeDatabaseConfig"),
+      planCheckRunStatusCount: statusCount,
+    } as unknown as Plan;
+
+    expect(isRolloutExpected({ issue: approvedIssue, plan })).toBe(expected);
+  });
+
+  test.each([
+    "createDatabaseConfig",
+    "exportDataConfig",
+  ])("does not expect automatic rollout for %s", (configCase) => {
+    expect(
+      isRolloutExpected({
+        issue: approvedIssue,
+        plan: planWithSpec(configCase),
+      })
+    ).toBe(false);
+  });
+
+  test("does not expect rollout when only some specs support it", () => {
+    const plan = {
+      ...planWithSpec("changeDatabaseConfig"),
+      specs: [
+        { config: { case: "changeDatabaseConfig", value: {} } },
+        { config: { case: "exportDataConfig", value: {} } },
+      ],
+    } as unknown as Plan;
+
+    expect(isRolloutExpected({ issue: approvedIssue, plan })).toBe(false);
+  });
+
+  test("does not expect rollout before an issue exists", () => {
+    expect(
+      isRolloutExpected({
+        plan: planWithSpec("changeDatabaseConfig"),
+      })
+    ).toBe(false);
+  });
+
+  test("does not expect automatic rollout for empty or deleted plans", () => {
+    const emptyPlan = {
+      specs: [],
+      state: State.ACTIVE,
+    } as unknown as Plan;
+    const deletedPlan = {
+      ...planWithSpec("changeDatabaseConfig"),
+      state: State.DELETED,
+    } as unknown as Plan;
+
+    expect(isRolloutExpected({ issue: approvedIssue, plan: emptyPlan })).toBe(
+      false
+    );
+    expect(isRolloutExpected({ issue: approvedIssue, plan: deletedPlan })).toBe(
+      false
+    );
+  });
+
+  test("does not infer a rollout from a done unsupported issue", () => {
+    const doneIssue = {
+      ...approvedIssue,
+      status: IssueStatus.DONE,
+    } as unknown as Issue;
+
+    expect(
+      isRolloutExpected({
+        issue: doneIssue,
+        plan: planWithSpec("exportDataConfig"),
+      })
+    ).toBe(false);
+  });
+
+  test("keeps polling after rollout commitment regardless of eligibility", () => {
+    const plan = {
+      ...planWithSpec("exportDataConfig"),
+      hasRollout: true,
+      state: State.DELETED,
+    } as unknown as Plan;
+
+    expect(isRolloutExpected({ issue: approvedIssue, plan })).toBe(true);
   });
 });

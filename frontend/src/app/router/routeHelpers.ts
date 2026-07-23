@@ -1,8 +1,10 @@
 import type { RouteTarget } from "@/app/router";
 import {
-  PLAN_DETAIL_PHASE_DEPLOY,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
 } from "@/app/router/handles";
 import { extractPlanUID } from "@/utils/v1/issue/plan";
 import {
@@ -16,26 +18,46 @@ import { extractProjectResourceName } from "@/utils/v1/project";
 // Route-target builders return the structural `RouteTarget` consumed by the
 // application router's push, replace, and resolve methods.
 
-type BuildPlanDeployRouteParams = {
+type BuildPlanDeployRouteSelection = { stageId: string; taskId?: string };
+
+type BuildPlanDeployRouteParams = BuildPlanDeployRouteSelection & {
   projectId: string;
   planId: string;
-  stageId?: string;
-  taskId?: string;
 };
+
+export const buildPlanCreateRoute = (
+  projectId: string,
+  query: Record<string, string>
+): RouteTarget => ({
+  name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+  params: { projectId, planId: "create" },
+  query,
+});
 
 export const buildPlanDeployRoute = ({
   projectId,
   planId,
   stageId,
   taskId,
-}: BuildPlanDeployRouteParams): RouteTarget => ({
-  name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+}: BuildPlanDeployRouteParams): RouteTarget => {
+  if (taskId) {
+    return {
+      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
+      params: { projectId, planId, stageId, taskId },
+    };
+  }
+  return {
+    name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
+    params: { projectId, planId, stageId },
+  };
+};
+
+export const buildPlanRolloutRoute = (
+  projectId: string,
+  planId: string
+): RouteTarget => ({
+  name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
   params: { projectId, planId },
-  query: {
-    phase: PLAN_DETAIL_PHASE_DEPLOY,
-    ...(stageId ? { stageId } : {}),
-    ...(taskId ? { taskId } : {}),
-  },
 });
 
 export const buildSpecDetailRouteForCurrentPage = (
@@ -55,28 +77,27 @@ export const buildSpecDetailRouteForCurrentPage = (
     ) as Record<string, string>),
     specId,
   },
-  query: (currentRoute.query || {}) as Record<string, string | undefined>,
 });
 
-export const buildPlanDeployRouteFromPlanName = (
-  planName: string,
-  options?: Omit<BuildPlanDeployRouteParams, "projectId" | "planId">
+export const buildPlanRolloutRouteFromPlanName = (
+  planName: string
 ): RouteTarget =>
-  buildPlanDeployRoute({
-    projectId: extractProjectResourceName(planName),
-    planId: extractPlanUID(planName) || "_",
-    ...options,
-  });
+  buildPlanRolloutRoute(
+    extractProjectResourceName(planName),
+    extractPlanUID(planName) || "_"
+  );
 
 export const buildPlanDeployRouteFromRolloutName = (
   rolloutName: string,
-  options?: Omit<BuildPlanDeployRouteParams, "projectId" | "planId">
-): RouteTarget =>
-  buildPlanDeployRoute({
-    projectId: extractProjectResourceName(rolloutName),
-    planId: extractPlanUIDFromRolloutName(rolloutName) || "_",
-    ...options,
-  });
+  options?: BuildPlanDeployRouteSelection
+): RouteTarget => {
+  const projectId = extractProjectResourceName(rolloutName);
+  const planId = extractPlanUIDFromRolloutName(rolloutName) || "_";
+  if (!options?.stageId) {
+    return buildPlanRolloutRoute(projectId, planId);
+  }
+  return buildPlanDeployRoute({ projectId, planId, ...options });
+};
 
 export const buildTaskDetailRoute = (taskName: string): RouteTarget => {
   const stageName = extractStageNameFromTaskName(taskName);

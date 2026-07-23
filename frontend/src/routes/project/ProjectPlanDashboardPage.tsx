@@ -7,18 +7,15 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router";
 import { v4 as uuidv4 } from "uuid";
 import { router } from "@/app/router";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/app/router/handles";
 import {
-  PROJECT_V1_ROUTE_PLAN_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-} from "@/app/router/handles";
-import {
-  markScrollRestorationEntry,
-  useScrollRestorationKey,
-  useScrollRestorationLoadMore,
+  markListScrollRestorationEntry,
+  useListScrollRestorationKey,
+  useListScrollRestorationLoadMore,
 } from "@/app/router/NavigationScrollRestoration";
+import { buildPlanCreateRoute } from "@/app/router/routeHelpers";
 import {
   AdvancedSearch,
   type ScopeOption,
@@ -116,12 +113,7 @@ const parsePlanSearchParams = createAdvancedSearchParser(["state", "creator"]);
 
 export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const location = useLocation();
-  const scrollRestorationKey = useScrollRestorationKey();
-  const handleOpenPlan = useCallback(
-    () => markScrollRestorationEntry(location),
-    [location]
-  );
+  const listScrollRestorationKey = useListScrollRestorationKey();
   const projectsByName = useAppStore((s) => s.projectsByName);
   const listUsers = useAppStore((state) => state.listUsers);
   const batchGetOrFetchUsers = useAppStore(
@@ -243,10 +235,10 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
     sessionKey: `bb.${projectName}.plan-table`,
     cacheKey: viewCacheKey,
     cacheScope: projectPlansPagedDataCacheScope(projectId),
-    cacheRestoreToken: scrollRestorationKey,
+    cacheRestoreToken: listScrollRestorationKey,
     fetchList: fetchPlanList,
   });
-  useScrollRestorationLoadMore(paged);
+  useListScrollRestorationLoadMore(paged);
 
   useEffect(() => {
     if (paged.dataList.length === 0) {
@@ -260,7 +252,6 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
     async (spec: Plan_Spec) => {
       if (!project) return;
 
-      const template = "bb.plan.change-database";
       const targets =
         spec.config?.case === "changeDatabaseConfig"
           ? [...(spec.config.value.targets ?? [])]
@@ -268,7 +259,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
       const isDatabaseGroup = targets.every((target) =>
         isValidDatabaseGroupName(target)
       );
-      const query: Record<string, string> = { template };
+      const query: Record<string, string> = {};
 
       // Check if the spec has a sheet with content
       if (
@@ -284,15 +275,12 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
         if (!databaseGroupName) return;
         query.databaseGroupName = databaseGroupName;
         applyPlanTitleToQuery(query, project, () =>
-          generatePlanTitle(template, [
-            extractDatabaseGroupName(databaseGroupName),
-          ])
+          generatePlanTitle([extractDatabaseGroupName(databaseGroupName)])
         );
       } else {
         query.databaseList = targets.join(",");
         applyPlanTitleToQuery(query, project, () =>
           generatePlanTitle(
-            template,
             targets.map((db) => {
               const { databaseName } = extractDatabaseResourceName(db);
               return databaseName;
@@ -301,15 +289,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
         );
       }
 
-      await router.push({
-        name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-        params: {
-          projectId,
-          planId: "create",
-          specId: "placeholder",
-        },
-        query,
-      });
+      await router.push(buildPlanCreateRoute(projectId, query));
     },
     [project, projectId]
   );
@@ -355,7 +335,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
           <PlanTable
             plans={paged.dataList}
             projectId={projectId}
-            onOpenPlan={handleOpenPlan}
+            onOpenPlan={markListScrollRestorationEntry}
           />
         )}
 
