@@ -2,14 +2,11 @@ package tests
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -24,21 +21,20 @@ func TestCreateInstanceAssignsSyncedDatabasesToProject(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	instanceRootDir := t.TempDir()
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "project-aware-sync")
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 	databaseName := "project_assignment"
-	createSQLiteDatabase(t, instanceDir, databaseName)
+	createPgDatabase(t, pgContainer, databaseName)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId:             generateRandomString("instance"),
 		InitialDatabaseProject: ctl.project.Name,
 		Instance: &v1pb.Instance{
 			Title:       "project-aware-sync",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -60,20 +56,19 @@ func TestCreateInstanceWithoutProjectKeepsDefaultProject(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	instanceRootDir := t.TempDir()
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "default-project-sync")
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 	databaseName := "default_project_assignment"
-	createSQLiteDatabase(t, instanceDir, databaseName)
+	createPgDatabase(t, pgContainer, databaseName)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "default-project-sync",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -96,20 +91,19 @@ func TestCreateInstanceWithEmptySyncDatabasesSkipsInitialDatabaseSync(t *testing
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	instanceRootDir := t.TempDir()
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "skip-initial-database-sync")
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 	databaseName := "unsynced_database"
-	createSQLiteDatabase(t, instanceDir, databaseName)
+	createPgDatabase(t, pgContainer, databaseName)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:         "skip-initial-database-sync",
-			Engine:        v1pb.Engine_SQLITE,
+			Engine:        v1pb.Engine_POSTGRES,
 			Environment:   new("environments/prod"),
 			Activation:    true,
-			DataSources:   []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 			SyncDatabases: &v1pb.SyncDatabases{},
 		},
 	}))
@@ -135,33 +129,28 @@ func TestListInstanceDatabaseBeforeCreate(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	instanceRootDir := t.TempDir()
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "preview-databases")
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 	databaseName := "preview_database"
-	createSQLiteDatabase(t, instanceDir, databaseName)
+	createPgDatabase(t, pgContainer, databaseName)
 
 	resp, err := ctl.instanceServiceClient.ListInstanceDatabase(ctx, connect.NewRequest(&v1pb.ListInstanceDatabaseRequest{
 		Name: fmt.Sprintf("instances/%s", generateRandomString("instance")),
 		Instance: &v1pb.Instance{
 			Title:       "preview-databases",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
 	a.Contains(resp.Msg.Databases, databaseName)
 }
 
-func createSQLiteDatabase(t *testing.T, dir, databaseName string) {
+func createPgDatabase(t *testing.T, pgContainer *Container, databaseName string) {
 	t.Helper()
 
-	db, err := sql.Open("sqlite3", filepath.Join(dir, fmt.Sprintf("%s.db", databaseName)))
-	require.NoError(t, err)
-	defer db.Close()
-
-	_, err = db.Exec("CREATE TABLE t(id INTEGER PRIMARY KEY)")
+	_, err := pgContainer.db.Exec(fmt.Sprintf("CREATE DATABASE %s", databaseName))
 	require.NoError(t, err)
 }

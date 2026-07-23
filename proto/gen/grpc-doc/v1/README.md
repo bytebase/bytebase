@@ -1119,7 +1119,6 @@ Database engine type.
 | MYSQL | 2 | MySQL relational database. |
 | POSTGRES | 3 | PostgreSQL relational database. |
 | SNOWFLAKE | 4 | Snowflake cloud data warehouse. |
-| SQLITE | 5 | SQLite embedded database. |
 | TIDB | 6 | TiDB distributed SQL database. |
 | MONGODB | 7 | MongoDB document database. |
 | REDIS | 8 | Redis key-value store. |

@@ -18,16 +18,16 @@ func TestAdminExecuteAuditLog(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), "admin-execute-audit")
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "admin execute audit",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)

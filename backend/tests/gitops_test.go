@@ -43,12 +43,10 @@ func TestGitOpsCheck(t *testing.T) {
 	project := projectResp.Msg
 
 	// Provision test and prod instances.
-	instanceRootDir := t.TempDir()
-
-	testInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "gitops-check-test")
+	testPgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 
-	prodInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "gitops-check-prod")
+	prodPgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 
 	// Add the provisioned instances.
@@ -56,10 +54,10 @@ func TestGitOpsCheck(t *testing.T) {
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-check-test",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/test"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{testPgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -69,10 +67,10 @@ func TestGitOpsCheck(t *testing.T) {
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-check-prod",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{prodPgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -93,10 +91,10 @@ func TestGitOpsCheck(t *testing.T) {
 				Path:    "migrations/001__create_users_table.sql",
 				Version: "001",
 				Statement: []byte(`CREATE TABLE users (
-					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					id SERIAL PRIMARY KEY,
 					username TEXT NOT NULL UNIQUE,
 					email TEXT NOT NULL,
-					created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 				);`),
 			},
 			{
@@ -601,7 +599,7 @@ func createGitOpsVCSUserTestProject(ctx context.Context, t *testing.T, ctl *cont
 
 func createGitOpsVCSUserTestTarget(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project) string {
 	t.Helper()
-	instance := createSQLiteInstance(ctx, t, ctl, "gitops-vcs-user")
+	instance := createPgInstance(ctx, t, ctl, "gitops-vcs-user")
 	databaseName := generateRandomString("gitops_vcs_user")
 	require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, databaseName, ""))
 	return fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)
@@ -643,9 +641,7 @@ func TestGitOpsRollout(t *testing.T) {
 	project := projectResp.Msg
 
 	// Provision test instance.
-	instanceRootDir := t.TempDir()
-
-	testInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "gitops-rollout-test")
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 
 	// Add the provisioned instance.
@@ -653,10 +649,10 @@ func TestGitOpsRollout(t *testing.T) {
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-rollout-test",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/test"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -677,11 +673,11 @@ func TestGitOpsRollout(t *testing.T) {
 					Path:    "migrations/001__create_products_table.sql",
 					Version: "001",
 					Statement: []byte(`CREATE TABLE products (
-						id INTEGER PRIMARY KEY AUTOINCREMENT,
+						id SERIAL PRIMARY KEY,
 						name TEXT NOT NULL,
 						price DECIMAL(10,2) NOT NULL,
 						description TEXT,
-						created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+						created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 					);`),
 				},
 			},
@@ -753,8 +749,8 @@ func TestGitOpsRollout(t *testing.T) {
 	a.NoError(err)
 	testDBSchema := testDBSchemaResp.Msg
 	a.Contains(testDBSchema.Schema, "products")
-	a.Contains(testDBSchema.Schema, "id INTEGER PRIMARY KEY AUTOINCREMENT")
-	a.Contains(testDBSchema.Schema, "name TEXT NOT NULL")
+	a.Contains(testDBSchema.Schema, "\"id\" integer DEFAULT nextval")
+	a.Contains(testDBSchema.Schema, "\"name\" text NOT NULL")
 
 	// Verify database revision after migration using RevisionService.
 	revisionsResp, err := ctl.revisionServiceClient.ListRevisions(ctx, connect.NewRequest(&v1pb.ListRevisionsRequest{
@@ -947,12 +943,10 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	project := projectResp.Msg
 
 	// Provision test and prod instances.
-	instanceRootDir := t.TempDir()
-
-	testInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "gitops-multi-test")
+	testPgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 
-	prodInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "gitops-multi-prod")
+	prodPgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 
 	// Add the provisioned instances.
@@ -960,10 +954,10 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-multi-test",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/test"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{testPgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -973,10 +967,10 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-multi-prod",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{prodPgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -999,7 +993,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 					Path:    "migrations/1.0.0__create_table_one.sql",
 					Version: "1.0.0",
 					Statement: []byte(`CREATE TABLE table_one (
-						id INTEGER PRIMARY KEY AUTOINCREMENT,
+						id SERIAL PRIMARY KEY,
 						name TEXT NOT NULL
 					);`),
 				},
@@ -1007,7 +1001,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 					Path:    "migrations/1.0.1__create_table_two.sql",
 					Version: "1.0.1",
 					Statement: []byte(`CREATE TABLE table_two (
-						id INTEGER PRIMARY KEY AUTOINCREMENT,
+						id SERIAL PRIMARY KEY,
 						value TEXT NOT NULL
 					);`),
 				},
@@ -1015,7 +1009,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 					Path:    "migrations/1.0.2__create_table_three.sql",
 					Version: "1.0.2",
 					Statement: []byte(`CREATE TABLE table_three (
-						id INTEGER PRIMARY KEY AUTOINCREMENT,
+						id SERIAL PRIMARY KEY,
 						data TEXT NULL
 					);`),
 				},
@@ -1094,9 +1088,9 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	a.Contains(testDBSchema.Schema, "table_one")
 	a.Contains(testDBSchema.Schema, "table_two")
 	a.Contains(testDBSchema.Schema, "table_three")
-	a.Contains(testDBSchema.Schema, "name TEXT NOT NULL")
-	a.Contains(testDBSchema.Schema, "value TEXT NOT NULL")
-	a.Contains(testDBSchema.Schema, "data TEXT")
+	a.Contains(testDBSchema.Schema, "\"name\" text NOT NULL")
+	a.Contains(testDBSchema.Schema, "\"value\" text NOT NULL")
+	a.Contains(testDBSchema.Schema, "\"data\" text")
 
 	// Verify schema changes were applied to prod database.
 	prodDBSchemaResp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
@@ -1109,9 +1103,9 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	a.Contains(prodDBSchema.Schema, "table_one")
 	a.Contains(prodDBSchema.Schema, "table_two")
 	a.Contains(prodDBSchema.Schema, "table_three")
-	a.Contains(prodDBSchema.Schema, "name TEXT NOT NULL")
-	a.Contains(prodDBSchema.Schema, "value TEXT NOT NULL")
-	a.Contains(prodDBSchema.Schema, "data TEXT")
+	a.Contains(prodDBSchema.Schema, "\"name\" text NOT NULL")
+	a.Contains(prodDBSchema.Schema, "\"value\" text NOT NULL")
+	a.Contains(prodDBSchema.Schema, "\"data\" text")
 
 	// Additional verification: Ensure both databases have identical schemas.
 	a.Equal(testDBSchema.Schema, prodDBSchema.Schema, "Test and prod databases should have identical schemas after deployment")
@@ -1195,8 +1189,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 	project := projectResp.Msg
 
 	// Provision test instance.
-	instanceRootDir := t.TempDir()
-	testInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "gitops-changed-test")
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 
 	// Add the provisioned instance.
@@ -1204,10 +1197,10 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-changed-test",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/test"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -1226,7 +1219,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 				Path:    "migrations/1.0.0__create_users_table.sql",
 				Version: "1.0.0",
 				Statement: []byte(`CREATE TABLE users (
-					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					id SERIAL PRIMARY KEY,
 					username TEXT NOT NULL,
 					email TEXT NOT NULL
 				);`),
@@ -1292,11 +1285,11 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 				Path:    "migrations/1.0.0__create_users_table.sql",
 				Version: "1.0.0",
 				Statement: []byte(`CREATE TABLE users (
-					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					id SERIAL PRIMARY KEY,
 					username TEXT NOT NULL,
 					email TEXT NOT NULL,
 					phone TEXT,
-					created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 				);`),
 			},
 		},

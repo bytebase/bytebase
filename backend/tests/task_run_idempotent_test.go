@@ -26,19 +26,18 @@ func TestBatchRunTasks_Idempotent(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Provision an instance
-	instanceRootDir := t.TempDir()
 	instanceName := "testInstanceIdempotent"
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       instanceName,
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -171,16 +170,16 @@ func TestBatchRunTasks_ConcurrentSkipCannotBothWin(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), "testInstanceConcurrentRunSkip")
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "testInstanceConcurrentRunSkip",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -325,18 +324,17 @@ func TestBatchRunTasks_RejectsSkippedTasks(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	instanceRootDir := t.TempDir()
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "testInstanceSkippedTask")
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "testInstanceSkippedTask",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)

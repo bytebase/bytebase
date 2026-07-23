@@ -512,7 +512,6 @@ Engine represents the type of database system.
 | MYSQL | 2 |  |
 | POSTGRES | 3 |  |
 | SNOWFLAKE | 4 |  |
-| SQLITE | 5 |  |
 | TIDB | 6 |  |
 | MONGODB | 7 |  |
 | REDIS | 8 |  |

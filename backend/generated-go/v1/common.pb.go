@@ -87,8 +87,6 @@ const (
 	Engine_POSTGRES Engine = 3
 	// Snowflake cloud data warehouse.
 	Engine_SNOWFLAKE Engine = 4
-	// SQLite embedded database.
-	Engine_SQLITE Engine = 5
 	// TiDB distributed SQL database.
 	Engine_TIDB Engine = 6
 	// MongoDB document database.
@@ -139,7 +137,6 @@ var (
 		2:  "MYSQL",
 		3:  "POSTGRES",
 		4:  "SNOWFLAKE",
-		5:  "SQLITE",
 		6:  "TIDB",
 		7:  "MONGODB",
 		8:  "REDIS",
@@ -167,7 +164,6 @@ var (
 		"MYSQL":              2,
 		"POSTGRES":           3,
 		"SNOWFLAKE":          4,
-		"SQLITE":             5,
 		"TIDB":               6,
 		"MONGODB":            7,
 		"REDIS":              8,
@@ -928,16 +924,14 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x11STATE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
 	"\x06ACTIVE\x10\x01\x12\v\n" +
-	"\aDELETED\x10\x02*\xf0\x02\n" +
+	"\aDELETED\x10\x02*\xe4\x02\n" +
 	"\x06Engine\x12\x16\n" +
 	"\x12ENGINE_UNSPECIFIED\x10\x00\x12\x0e\n" +
 	"\n" +
 	"CLICKHOUSE\x10\x01\x12\t\n" +
 	"\x05MYSQL\x10\x02\x12\f\n" +
 	"\bPOSTGRES\x10\x03\x12\r\n" +
-	"\tSNOWFLAKE\x10\x04\x12\n" +
-	"\n" +
-	"\x06SQLITE\x10\x05\x12\b\n" +
+	"\tSNOWFLAKE\x10\x04\x12\b\n" +
 	"\x04TIDB\x10\x06\x12\v\n" +
 	"\aMONGODB\x10\a\x12\t\n" +
 	"\x05REDIS\x10\b\x12\n" +

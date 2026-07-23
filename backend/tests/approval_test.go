@@ -34,19 +34,16 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Create instance in prod environment
-	instanceDir := t.TempDir()
+	pgContainer, err := provisionPgInstance(ctx, t)
+	a.NoError(err)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
 			Title:       "Prod Instance",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -69,7 +66,7 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 							{
 								Source: v1pb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
 								Condition: &expr.Expr{
-									Expression: `resource.db_engine == "SQLITE"`, // Use db_engine to test CEL with variables
+									Expression: `resource.db_engine == "POSTGRES"`, // Use db_engine to test CEL with variables
 								},
 								Template: &v1pb.ApprovalTemplate{
 									Title:       "Prod Change Database Approval",
@@ -165,19 +162,16 @@ func TestApprovalFindingRerunsPlanCheckForStaleApprovalInputVersion(t *testing.T
 	a.NoError(err)
 	t.Cleanup(func() { _ = ctl.Close(ctx) })
 
-	instanceDir := t.TempDir()
+	pgContainer, err := provisionPgInstance(ctx, t)
+	a.NoError(err)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
 			Title:       "Approval Input Version Instance",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -201,7 +195,7 @@ func TestApprovalFindingRerunsPlanCheckForStaleApprovalInputVersion(t *testing.T
 									Expression: `statement.text.contains("stale_approval_b")`,
 								},
 								Template: &v1pb.ApprovalTemplate{
-									Title: "SQLite change approval B",
+									Title: "Postgres change approval B",
 									Flow: &v1pb.ApprovalFlow{
 										Roles: []string{"roles/workspaceOwner"},
 									},
@@ -213,7 +207,7 @@ func TestApprovalFindingRerunsPlanCheckForStaleApprovalInputVersion(t *testing.T
 									Expression: `statement.text.contains("stale_approval_a")`,
 								},
 								Template: &v1pb.ApprovalTemplate{
-									Title: "SQLite change approval A",
+									Title: "Postgres change approval A",
 									Flow: &v1pb.ApprovalFlow{
 										Roles: []string{"roles/workspaceOwner"},
 									},
@@ -276,7 +270,7 @@ func TestApprovalFindingRerunsPlanCheckForStaleApprovalInputVersion(t *testing.T
 	gotIssueResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueResp.Msg.Name}))
 	a.NoError(err)
 	a.NotEqual(v1pb.ApprovalStatus_CHECKING, gotIssueResp.Msg.ApprovalStatus)
-	a.Equal("SQLite change approval A", gotIssueResp.Msg.GetApprovalTemplate().GetTitle())
+	a.Equal("Postgres change approval A", gotIssueResp.Msg.GetApprovalTemplate().GetTitle())
 
 	updatedPlanResp, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
 		Plan: &v1pb.Plan{
@@ -300,7 +294,7 @@ func TestApprovalFindingRerunsPlanCheckForStaleApprovalInputVersion(t *testing.T
 	gotIssueResp, err = ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueResp.Msg.Name}))
 	a.NoError(err)
 	a.NotEqual(v1pb.ApprovalStatus_CHECKING, gotIssueResp.Msg.ApprovalStatus)
-	a.Equal("SQLite change approval B", gotIssueResp.Msg.GetApprovalTemplate().GetTitle())
+	a.Equal("Postgres change approval B", gotIssueResp.Msg.GetApprovalTemplate().GetTitle())
 
 	checkResp, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
 		Name: fmt.Sprintf("%s/planCheckRun", updatedPlanResp.Msg.Name),
@@ -381,19 +375,16 @@ func createStaleApprovalInputVersionIssue(ctx context.Context, t *testing.T, ctl
 	t.Helper()
 	project := ctl.createTestProject(ctx, t, suffix)
 
-	instanceDir := t.TempDir()
+	pgContainer, err := provisionPgInstance(ctx, t)
+	require.NoError(t, err)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
 			Title:       "Stale Approval Instance",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	require.NoError(t, err)
@@ -509,19 +500,16 @@ func TestApprovalRuleFirstMatchWins(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Create instance in prod environment
-	instanceDir := t.TempDir()
+	pgContainer, err := provisionPgInstance(ctx, t)
+	a.NoError(err)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
 			Title:       "Prod Instance",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -654,19 +642,16 @@ func TestApprovalRuleNoMatch(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Create instance in test environment (not prod)
-	instanceDir := t.TempDir()
+	pgContainer, err := provisionPgInstance(ctx, t)
+	a.NoError(err)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
 			Title:       "Test Instance",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/test"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -855,19 +840,16 @@ func TestFallbackRuleMatchesWhenSourceSpecificDoesNot(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Create instance in TEST environment (not prod)
-	instanceDir := t.TempDir()
+	pgContainer, err := provisionPgInstance(ctx, t)
+	a.NoError(err)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
 			Title:       "Test Instance",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/test"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -994,19 +976,16 @@ func TestSourceSpecificRuleTakesPriorityOverFallback(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Create instance in prod environment
-	instanceDir := t.TempDir()
+	pgContainer, err := provisionPgInstance(ctx, t)
+	a.NoError(err)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
 			Title:       "Prod Instance",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -1145,19 +1124,16 @@ func TestSelfApprovalBlocked(t *testing.T) {
 	project := projectResp.Msg
 
 	// Create instance
-	instanceDir := t.TempDir()
+	pgContainer, err := provisionPgInstance(ctx, t)
+	a.NoError(err)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
 			Title:       "Prod Instance",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
