@@ -31,7 +31,10 @@ class MockLanguageClient {
 }
 
 class MockWebSocket extends EventTarget {
+  static readonly CONNECTING = 0;
   static readonly OPEN = 1;
+  static readonly CLOSING = 2;
+  static readonly CLOSED = 3;
   static instances: MockWebSocket[] = [];
 
   readonly close = vi.fn(() => {
@@ -342,6 +345,33 @@ describe("LSP client connection recovery", () => {
     await flushPromises();
 
     expect(mocks.clients).toHaveLength(3);
+    expect(getConnectionStateSnapshot().state).toBe("ready");
+  });
+
+  test("closes the startup socket and disposes the failed client before retrying", async () => {
+    const { getConnectionStateSnapshot, initializeLSPClient } = await import(
+      "./lsp-client"
+    );
+
+    mocks.start.mockRejectedValueOnce(new Error("initialize rejected"));
+
+    const initializing = initializeLSPClient().catch(() => undefined);
+    await flushPromises();
+    const ws = MockWebSocket.instances[0];
+    ws.open();
+    await flushPromises();
+    await initializing;
+
+    expect(ws.close).toHaveBeenCalled();
+    expect(mocks.clients[0].dispose).toHaveBeenCalled();
+    expect(getConnectionStateSnapshot().state).toBe("closed");
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    await flushPromises();
+    MockWebSocket.instances[1].open();
+    await flushPromises();
+
+    expect(mocks.clients).toHaveLength(2);
     expect(getConnectionStateSnapshot().state).toBe("ready");
   });
 });

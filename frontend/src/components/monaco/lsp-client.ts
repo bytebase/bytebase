@@ -405,6 +405,17 @@ const initializeRunner = async () => {
       state: "closed",
       retries: 0,
     });
+    try {
+      client.dispose();
+    } catch {
+      // ignore
+    }
+    if (
+      ws.readyState !== WebSocket.CLOSING &&
+      ws.readyState !== WebSocket.CLOSED
+    ) {
+      ws.close();
+    }
     scheduleReconnectHeartbeat();
     throw err;
   });
