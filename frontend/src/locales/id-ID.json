@@ -2902,7 +2902,7 @@
     "copy-all-rows-as-sql": "Salin semua baris sebagai SQL",
     "copy-history-link": "Salin tautan riwayat",
     "copy-name": "Salin nama",
-    "copy-selected-results": "Salin hasil yang dipilih",
+    "copy-selected-results": "Salin hasil yang dipilih dengan <action></action> atau <button></button>",
     "copy-selected-rows-as-csv": "Salin baris yang dipilih sebagai CSV",
     "copy-selected-rows-as-sql": "Salin baris yang dipilih sebagai SQL",
     "copy-url": "Salin URL",
