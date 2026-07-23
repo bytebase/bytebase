@@ -88,9 +88,9 @@ message AccessGrant {
   // The {access_grant} segment is a server-generated unique ID.
   string name = 1;
 
-  // The creator of the access grant, derived from the authenticated caller.
+  // The creator of the access grant.
   // Format: users/{email}
-  string creator = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string creator = 2 [(google.api.field_behavior) = REQUIRED];
 
   // The status of the access grant.
   // An ACTIVE grant with `expire_time` in the past is effectively expired
