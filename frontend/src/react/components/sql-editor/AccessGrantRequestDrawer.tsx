@@ -28,7 +28,6 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { Textarea } from "@/react/components/ui/textarea";
-import { useCurrentUser } from "@/react/hooks/useAppState";
 import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -63,7 +62,6 @@ function AccessGrantRequestDrawerInner({
   onClose,
 }: AccessGrantRequestDrawerInnerProps) {
   const { t } = useTranslation();
-  const currentUserEmail = useCurrentUser().email;
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const setHighlightAccessGrantName = useSQLEditorStore(
     (s) => s.setHighlightAccessGrantName
@@ -246,7 +244,6 @@ function AccessGrantRequestDrawerInner({
             };
 
       const accessGrant = create(AccessGrantSchema, {
-        creator: `users/${currentUserEmail}`,
         targets,
         query,
         unmask,
