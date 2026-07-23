@@ -137,9 +137,6 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	if ag == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("access_grant is required"))
 	}
-	if ag.Creator == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("creator is required"))
-	}
 	if len(ag.Targets) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("targets is required"))
 	}
@@ -169,10 +166,14 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only read-only statements are allowed in access grants"))
 	}
 
-	creatorEmail, err := common.GetUserEmail(ag.Creator)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid creator"))
+	// Derive the creator from the authenticated caller. The client-supplied
+	// creator field is OUTPUT_ONLY and must never be trusted, otherwise any
+	// caller could forge grants and issues attributed to an arbitrary identity.
+	user, ok := GetUserFromContext(ctx)
+	if !ok || user == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
 	}
+	creatorEmail := user.Email
 
 	var expireTime *time.Time
 	var requestedDuration *durationpb.Duration
