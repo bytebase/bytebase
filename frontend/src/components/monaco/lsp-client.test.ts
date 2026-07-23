@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   initializeMonacoServices: vi.fn(async () => undefined),
   refreshTokens: vi.fn(async () => undefined),
   sleep: vi.fn(async () => undefined),
+  start: vi.fn(async () => undefined),
 }));
 
 class MockLanguageClient {
@@ -16,7 +17,7 @@ class MockLanguageClient {
   };
   readonly onDidChangeState = vi.fn();
   readonly sendRequest = vi.fn(async () => undefined);
-  readonly start = vi.fn(async () => undefined);
+  readonly start = vi.fn(() => mocks.start());
   readonly dispose = vi.fn();
 
   constructor(
@@ -133,6 +134,8 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.resetModules();
   vi.clearAllMocks();
+  mocks.start.mockReset();
+  mocks.start.mockResolvedValue(undefined);
   mocks.clients.length = 0;
   MockWebSocket.instances = [];
   vi.stubGlobal("WebSocket", MockWebSocket);
@@ -302,6 +305,43 @@ describe("LSP client connection recovery", () => {
     await Promise.all([first, second]);
 
     expect(mocks.clients).toHaveLength(1);
+    expect(getConnectionStateSnapshot().state).toBe("ready");
+  });
+
+  test("queues another retry when the active reconnect socket closes during startup", async () => {
+    const { getConnectionStateSnapshot, initializeLSPClient } = await import(
+      "./lsp-client"
+    );
+
+    const initializing = initializeLSPClient();
+    await flushPromises();
+    MockWebSocket.instances[0].open();
+    await initializing;
+    expect(getConnectionStateSnapshot().state).toBe("ready");
+
+    const reconnectStart = deferred<undefined>();
+    mocks.start.mockReturnValueOnce(reconnectStart.promise);
+    mocks.clients[0].clientOptions.errorHandler?.closed?.();
+    await flushPromises();
+
+    const reconnectSocket = MockWebSocket.instances[1];
+    reconnectSocket.open();
+    await flushPromises();
+    expect(getConnectionStateSnapshot().state).toBe("ready");
+
+    reconnectSocket.close();
+    mocks.clients[1].clientOptions.errorHandler?.closed?.();
+    reconnectStart.reject(new Error("connection dropped during startup"));
+    await flushPromises();
+
+    expect(getConnectionStateSnapshot().state).toBe("closed");
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    await flushPromises();
+    MockWebSocket.instances[2].open();
+    await flushPromises();
+
+    expect(mocks.clients).toHaveLength(3);
     expect(getConnectionStateSnapshot().state).toBe("ready");
   });
 });

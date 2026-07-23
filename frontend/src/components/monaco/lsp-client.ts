@@ -399,11 +399,15 @@ const initializeRunner = async () => {
     }
   });
 
-  try {
-    await client.start();
-  } catch (err) {
-    errorNotification(err);
-  }
+  await client.start().catch((err) => {
+    setConnState({
+      ws: undefined,
+      state: "closed",
+      retries: 0,
+    });
+    scheduleReconnectHeartbeat();
+    throw err;
+  });
 
   state.client = client;
   startHeartbeat(client, ws);
