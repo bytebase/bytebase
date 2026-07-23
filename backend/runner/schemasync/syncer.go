@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/leader"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -37,11 +38,12 @@ const (
 )
 
 // NewSyncer creates a schema syncer.
-func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, licenseService *enterprise.LicenseService) *Syncer {
+func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, licenseService *enterprise.LicenseService, leaderManager *leader.Manager) *Syncer {
 	return &Syncer{
 		store:          stores,
 		dbFactory:      dbFactory,
 		licenseService: licenseService,
+		leaderManager:  leaderManager,
 	}
 }
 
@@ -52,6 +54,7 @@ type Syncer struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	licenseService  *enterprise.LicenseService
+	leaderManager   *leader.Manager
 	databaseSyncMap sync.Map // map[string]*store.DatabaseMessage
 }
 
@@ -144,6 +147,20 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (s *Syncer) trySyncAll(ctx context.Context) {
+	ran, err := s.leaderManager.TryRun(ctx, leader.SchemaSync, func(leaderCtx context.Context) error {
+		s.syncAll(leaderCtx)
+		return nil
+	})
+	if err != nil {
+		slog.Error("Failed to run schema syncer as leader", log.BBError(err))
+		return
+	}
+	if !ran {
+		slog.Debug("Schema syncer leadership held by another replica, skipping")
+	}
+}
+
+func (s *Syncer) syncAll(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -151,21 +168,6 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 				err = errors.Errorf("%v", r)
 			}
 			slog.Error("Instance syncer PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
-		}
-	}()
-
-	lock, acquired, err := store.TryAdvisoryLock(ctx, s.store.GetDB(), store.AdvisoryLockKeySchemaSyncer)
-	if err != nil {
-		slog.Error("Failed to acquire schema syncer advisory lock", log.BBError(err))
-		return
-	}
-	if !acquired {
-		slog.Debug("Schema syncer advisory lock held by another replica, skipping")
-		return
-	}
-	defer func() {
-		if err := lock.Release(); err != nil {
-			slog.Error("Failed to release schema syncer advisory lock", log.BBError(err))
 		}
 	}()
 
