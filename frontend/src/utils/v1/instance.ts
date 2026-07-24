@@ -411,8 +411,8 @@ export const hasIndexSizeProperty = (
   return ![Engine.CLICKHOUSE, Engine.SNOWFLAKE].includes(engine);
 };
 
-export const RE_GCP_PROJECT_ID = /^(?:[a-z]|[-.:]|[0-9])+$/;
-export const RE_GCP_INSTANCE_ID = /^(?:[a-z]|[-]|[0-9])+$/;
+export const RE_GCP_PROJECT_ID = /^[a-z\d.:-]+$/;
+export const RE_GCP_INSTANCE_ID = /^[a-z\d-]+$/;
 
 export const isValidSpannerDataSource = (
   ds: Pick<DataSource, "projectId" | "instanceId">

@@ -94,14 +94,14 @@ function GCPEndpointInput({
   example,
   onUpdate,
   allowEdit,
-}: {
+}: Readonly<{
   endpoint: string;
   port: string;
   placeholder: string;
   example: string;
   onUpdate: (update: { host?: string; port?: string }) => void;
   allowEdit: boolean;
-}) {
+}>) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const visible = expanded || !!endpoint || !!port;
