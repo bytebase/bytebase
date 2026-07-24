@@ -17,8 +17,8 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.21.2"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.21/0002##migrate_instance_sync_databases.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.21.3"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.21/0003##migrate_gcp_data_source_fields.sql", files[len(files)-1].path)
 }
 
 func TestVersionUnique(t *testing.T) {
@@ -88,6 +88,76 @@ func TestMigration3_21_2_MigrateInstanceSyncDatabases(t *testing.T) {
 	require.JSONEq(t, `{"engine":"POSTGRES","syncDatabases":{"databases":[]}}`, getMetadata("instance-with-empty-databases"))
 	require.JSONEq(t, `{"engine":"POSTGRES","syncDatabases":{"databases":["db3"]}}`, getMetadata("instance-with-new-shape"))
 	require.JSONEq(t, `{"engine":"POSTGRES"}`, getMetadata("instance-without-sync-databases"))
+}
+
+func TestMigration3_21_3_MigrateGCPDataSourceFields(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	db := container.GetDB()
+
+	setup := `
+		CREATE TABLE instance (
+			resource_id TEXT PRIMARY KEY,
+			metadata JSONB NOT NULL DEFAULT '{}'
+		);
+
+		INSERT INTO instance (resource_id, metadata) VALUES
+			(
+				'spanner-legacy',
+				'{"engine":"SPANNER","dataSources":[{"id":"admin","host":"projects/my-proj/instances/my-inst"}]}'
+			),
+			(
+				'spanner-multi-data-source',
+				'{"engine":"SPANNER","dataSources":[{"id":"admin","host":"projects/my-proj/instances/my-inst"},{"id":"ro-1","type":"READ_ONLY","host":"projects/my-proj/instances/my-inst"},{"id":"ro-2","type":"READ_ONLY","host":"projects/my-proj/instances/my-inst"}]}'
+			),
+			(
+				'spanner-new-shape',
+				'{"engine":"SPANNER","dataSources":[{"id":"admin","projectId":"my-proj","instanceId":"my-inst","host":"spanner-nonprod.p.googleapis.com"}]}'
+			),
+			(
+				'spanner-no-data-sources',
+				'{"engine":"SPANNER","dataSources":[]}'
+			),
+			(
+				'bigquery-legacy',
+				'{"engine":"BIGQUERY","dataSources":[{"id":"admin","host":"my-proj"}]}'
+			),
+			(
+				'bigquery-new-shape',
+				'{"engine":"BIGQUERY","dataSources":[{"id":"admin","projectId":"my-proj","host":"bigquery-nonprod.p.googleapis.com"}]}'
+			),
+			(
+				'postgres-untouched',
+				'{"engine":"POSTGRES","dataSources":[{"id":"admin","host":"localhost","port":"5432"}]}'
+			);
+	`
+	_, err := db.ExecContext(ctx, setup)
+	require.NoError(t, err)
+
+	statement, err := migrationFS.ReadFile("migration/3.21/0003##migrate_gcp_data_source_fields.sql")
+	require.NoError(t, err)
+
+	_, err = db.ExecContext(ctx, string(statement))
+	require.NoError(t, err)
+
+	getMetadata := func(resourceID string) string {
+		t.Helper()
+		var metadata string
+		err := db.QueryRowContext(ctx, `SELECT metadata::text FROM instance WHERE resource_id = $1`, resourceID).Scan(&metadata)
+		require.NoError(t, err)
+		return metadata
+	}
+
+	require.JSONEq(t, `{"engine":"SPANNER","dataSources":[{"id":"admin","projectId":"my-proj","instanceId":"my-inst"}]}`, getMetadata("spanner-legacy"))
+	// JSONEq treats arrays as ordered: this also asserts the data source order is preserved.
+	require.JSONEq(t, `{"engine":"SPANNER","dataSources":[{"id":"admin","projectId":"my-proj","instanceId":"my-inst"},{"id":"ro-1","type":"READ_ONLY","projectId":"my-proj","instanceId":"my-inst"},{"id":"ro-2","type":"READ_ONLY","projectId":"my-proj","instanceId":"my-inst"}]}`, getMetadata("spanner-multi-data-source"))
+	require.JSONEq(t, `{"engine":"SPANNER","dataSources":[{"id":"admin","projectId":"my-proj","instanceId":"my-inst","host":"spanner-nonprod.p.googleapis.com"}]}`, getMetadata("spanner-new-shape"))
+	require.JSONEq(t, `{"engine":"SPANNER","dataSources":[]}`, getMetadata("spanner-no-data-sources"))
+	require.JSONEq(t, `{"engine":"BIGQUERY","dataSources":[{"id":"admin","projectId":"my-proj"}]}`, getMetadata("bigquery-legacy"))
+	require.JSONEq(t, `{"engine":"BIGQUERY","dataSources":[{"id":"admin","projectId":"my-proj","host":"bigquery-nonprod.p.googleapis.com"}]}`, getMetadata("bigquery-new-shape"))
+	require.JSONEq(t, `{"engine":"POSTGRES","dataSources":[{"id":"admin","host":"localhost","port":"5432"}]}`, getMetadata("postgres-untouched"))
 }
 
 func TestMigration3_21_1_BackfillUIPlanDraftIssues(t *testing.T) {

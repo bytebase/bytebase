@@ -1333,6 +1333,22 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
    * @generated from field: map<string, string> extra_connection_parameters = 36;
    */
   extraConnectionParameters: { [key: string]: string };
+
+  /**
+   * project_id and instance_id are the GCP resource identifiers.
+   * project_id is used by Spanner and BigQuery; instance_id is used by Spanner.
+   * For these engines, host and port optionally override the default Google API
+   * endpoint (e.g. a Private Service Connect endpoint like
+   * spanner-nonprod.p.googleapis.com).
+   *
+   * @generated from field: string project_id = 57;
+   */
+  projectId: string;
+
+  /**
+   * @generated from field: string instance_id = 58;
+   */
+  instanceId: string;
 };
 
 /**

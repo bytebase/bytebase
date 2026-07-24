@@ -2393,6 +2393,8 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | redis_type | [DataSource.RedisType](#bytebase-v1-DataSource-RedisType) |  |  |
 | cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
 | extra_connection_parameters | [DataSource.ExtraConnectionParametersEntry](#bytebase-v1-DataSource-ExtraConnectionParametersEntry) | repeated | Extra connection parameters for the database connection. For PostgreSQL HA, this can be used to set target_session_attrs=read-write |
+| project_id | [string](#string) |  | project_id and instance_id are the GCP resource identifiers. project_id is used by Spanner and BigQuery; instance_id is used by Spanner. For these engines, host and port optionally override the default Google API endpoint (e.g. a Private Service Connect endpoint like spanner-nonprod.p.googleapis.com). |
+| instance_id | [string](#string) |  |  |
 
 
 

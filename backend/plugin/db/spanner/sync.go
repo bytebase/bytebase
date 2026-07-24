@@ -21,7 +21,7 @@ import (
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var databases []*storepb.DatabaseSchemaMetadata
 	iter := d.dbClient.ListDatabases(ctx, &databasepb.ListDatabasesRequest{
-		Parent: d.config.DataSource.Host,
+		Parent: d.instancePath(),
 	})
 	for {
 		database, err := iter.Next()
@@ -106,7 +106,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 }
 
 func (d *Driver) notFoundDatabase(ctx context.Context, databaseName string) (bool, error) {
-	dsn := getDSN(d.config.DataSource.Host, databaseName)
+	dsn := getDSN(d.instancePath(), databaseName)
 	_, err := d.dbClient.GetDatabase(ctx, &databasepb.GetDatabaseRequest{Name: dsn})
 	if status.Code(err) == codes.NotFound {
 		return true, nil

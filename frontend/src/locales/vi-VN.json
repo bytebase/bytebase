@@ -1073,6 +1073,8 @@
     "find-gcp-project-id": "Để tìm ID dự án GCP, xem",
     "find-gcp-project-id-and-instance-id": "Để tìm ID dự án GCP và ID phiên bản, xem",
     "force-archive-description": "Buộc lưu trữ. Tất cả cơ sở dữ liệu sẽ bị hủy gán.",
+    "gcp-endpoint-tip": "Tùy chọn. Ghi đè điểm cuối Google API mặc định, ví dụ: điểm cuối Private Service Connect như {{example}}.",
+    "gcp-endpoint-toggle": "Thiết lập điểm cuối API tùy chỉnh",
     "grants": "Quyền",
     "host-or-socket": "Máy chủ hoặc Socket",
     "iam-extension": {

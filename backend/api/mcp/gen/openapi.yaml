@@ -10363,6 +10363,18 @@ components:
               description: |-
                 Extra connection parameters for the database connection.
                  For PostgreSQL HA, this can be used to set target_session_attrs=read-write
+            projectId:
+              type: string
+              title: project_id
+              description: |-
+                project_id and instance_id are the GCP resource identifiers.
+                 project_id is used by Spanner and BigQuery; instance_id is used by Spanner.
+                 For these engines, host and port optionally override the default Google API
+                 endpoint (e.g. a Private Service Connect endpoint like
+                 spanner-nonprod.p.googleapis.com).
+            instanceId:
+              type: string
+              title: instance_id
         - oneOf:
             - type: object
               properties:

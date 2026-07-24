@@ -28,7 +28,8 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   convertKVListToLabels,
   extractInstanceResourceName,
-  isValidSpannerHost,
+  isValidBigQueryDataSource,
+  isValidSpannerDataSource,
 } from "@/utils";
 import {
   AlertDialog,
@@ -138,17 +139,18 @@ export function InstanceFormButtons({
   const allowUpdate = useMemo((): boolean => {
     if (!valueChanged) return false;
     if (basicInfo.engine === Engine.SPANNER) {
-      if (!isValidSpannerHost(adminDataSource.host)) return false;
+      if (!isValidSpannerDataSource(adminDataSource)) return false;
       if (readonlyDataSourceList.length > 0) {
-        if (readonlyDataSourceList.some((ds) => !isValidSpannerHost(ds.host)))
+        if (readonlyDataSourceList.some((ds) => !isValidSpannerDataSource(ds)))
           return false;
       }
       return !!basicInfo.title.trim();
     }
     if (basicInfo.engine === Engine.BIGQUERY) {
-      if (!adminDataSource.host) return false;
+      if (!isValidBigQueryDataSource(adminDataSource)) return false;
       if (readonlyDataSourceList.length > 0) {
-        if (readonlyDataSourceList.some((ds) => !ds.host)) return false;
+        if (readonlyDataSourceList.some((ds) => !isValidBigQueryDataSource(ds)))
+          return false;
       }
       return !!basicInfo.title.trim();
     }

@@ -32,7 +32,8 @@ import {
   convertKVListToLabels,
   convertLabelsToKVList,
   hasWorkspacePermissionV2,
-  isValidSpannerHost,
+  isValidBigQueryDataSource,
+  isValidSpannerDataSource,
 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/connect";
 import { FeatureModal } from "../ui/feature-modal";
@@ -336,11 +337,13 @@ export function InstanceFormProvider({
     if (!hasWorkspacePermissionV2("bb.instances.create")) return false;
     if (basicInfo.engine === Engine.SPANNER) {
       return (
-        !!basicInfo.title.trim() && isValidSpannerHost(adminDataSource.host)
+        !!basicInfo.title.trim() && isValidSpannerDataSource(adminDataSource)
       );
     }
     if (basicInfo.engine === Engine.BIGQUERY) {
-      return !!basicInfo.title.trim() && adminDataSource.host !== "";
+      return (
+        !!basicInfo.title.trim() && isValidBigQueryDataSource(adminDataSource)
+      );
     }
     if (basicInfo.engine !== Engine.DYNAMODB) {
       if (adminDataSource.host === "") return false;

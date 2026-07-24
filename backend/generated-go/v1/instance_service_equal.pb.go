@@ -744,6 +744,12 @@ func (x *DataSource) Equal(y *DataSource) bool {
 			return false
 		}
 	}
+	if x.ProjectId != y.ProjectId {
+		return false
+	}
+	if x.InstanceId != y.InstanceId {
+		return false
+	}
 	return true
 }
 

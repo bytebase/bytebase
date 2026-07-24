@@ -52,10 +52,10 @@ export function DataSourceSection({
     };
     if (
       basicInfo.engine === Engine.SPANNER ||
-      basicInfo.engine === Engine.BIGQUERY ||
-      basicInfo.engine === Engine.DYNAMODB
+      basicInfo.engine === Engine.BIGQUERY
     ) {
-      ds.host = adminDataSource.host;
+      ds.projectId = adminDataSource.projectId;
+      ds.instanceId = adminDataSource.instanceId;
     }
     setDataSourceEditState((prev) => ({
       dataSources: [...prev.dataSources, ds],
