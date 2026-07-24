@@ -27,7 +27,7 @@
   "dependencies": {
     "@base-ui/react": "^1.3.0",
     "@buf/googleapis_googleapis.bufbuild_es": "2.10.2-20260414192239-c17df5b2beca.1",
-    "@bufbuild/protobuf": "2.12.1",
+    "@bufbuild/protobuf": "2.13.0",
     "@codingame/monaco-vscode-api": "35.0.3",
     "@codingame/monaco-vscode-javascript-default-extension": "35.0.3",
     "@codingame/monaco-vscode-languages-service-override": "35.0.3",
