@@ -87,7 +87,7 @@ export function IssueDetailCommentList() {
   const renderPlanChangeReference = useCallback<PlanChangeReferenceRenderer>(
     ({ siblings, spec }) => (
       <PlanSpecChangeReference
-        className="font-medium text-main"
+        className="font-medium"
         resources={changeReferenceResources}
         siblings={siblings}
         spec={spec}

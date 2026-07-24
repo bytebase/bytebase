@@ -1308,7 +1308,7 @@ describe("PlanDetailChangesBranch", () => {
     ).toBeNull();
 
     const specTabs = [...container.querySelectorAll("button")].filter(
-      (button) => button.textContent?.includes("plan.spec.type.database-change")
+      (button) => button.querySelector("[data-plan-change-reference]")
     );
     expect(specTabs.length).toBe(2);
 

@@ -79,6 +79,18 @@ export const buildSpecDetailRouteForCurrentPage = (
   },
 });
 
+export const buildSpecDetailRouteFromPlanName = (
+  planName: string,
+  specId: string
+): RouteTarget => ({
+  name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+  params: {
+    projectId: extractProjectResourceName(planName),
+    planId: extractPlanUID(planName) || "_",
+    specId,
+  },
+});
+
 export const buildPlanRolloutRouteFromPlanName = (
   planName: string
 ): RouteTarget =>
