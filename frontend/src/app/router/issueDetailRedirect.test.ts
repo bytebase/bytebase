@@ -111,25 +111,24 @@ describe("issueDetailRedirectLoader", () => {
     expect(mocks.getPlan).not.toHaveBeenCalled();
   });
 
-  test.each([
-    "changes",
-    "review",
-    "deploy",
-  ])("preserves an explicit %s phase intent", async (phase) => {
-    mocks.getIssue.mockResolvedValue(
-      makeIssue(Issue_Type.DATABASE_CHANGE, PLAN_NAME)
-    );
-    mocks.getPlan.mockResolvedValue(makePlan(["changeDatabaseConfig"]));
+  test.each(["changes", "review", "deploy"])(
+    "preserves an explicit %s phase intent",
+    async (phase) => {
+      mocks.getIssue.mockResolvedValue(
+        makeIssue(Issue_Type.DATABASE_CHANGE, PLAN_NAME)
+      );
+      mocks.getPlan.mockResolvedValue(makePlan(["changeDatabaseConfig"]));
 
-    const res = await run(
-      { projectId: "p1", issueId: "123" },
-      `http://localhost/projects/p1/issues/123?phase=${phase}`
-    );
+      const res = await run(
+        { projectId: "p1", issueId: "123" },
+        `http://localhost/projects/p1/issues/123?phase=${phase}`
+      );
 
-    expect(res?.headers.get("Location")).toBe(
-      `/projects/p1/plans/456?phase=${phase}`
-    );
-  });
+      expect(res?.headers.get("Location")).toBe(
+        `/projects/p1/plans/456?phase=${phase}`
+      );
+    }
+  );
 
   test("drops an invalid phase intent", async () => {
     mocks.getIssue.mockResolvedValue(

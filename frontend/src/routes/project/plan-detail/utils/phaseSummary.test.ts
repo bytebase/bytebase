@@ -237,17 +237,17 @@ describe("isRolloutExpected", () => {
     expect(isRolloutExpected({ issue: approvedIssue, plan })).toBe(expected);
   });
 
-  test.each([
-    "createDatabaseConfig",
-    "exportDataConfig",
-  ])("does not expect automatic rollout for %s", (configCase) => {
-    expect(
-      isRolloutExpected({
-        issue: approvedIssue,
-        plan: planWithSpec(configCase),
-      })
-    ).toBe(false);
-  });
+  test.each(["createDatabaseConfig", "exportDataConfig"])(
+    "does not expect automatic rollout for %s",
+    (configCase) => {
+      expect(
+        isRolloutExpected({
+          issue: approvedIssue,
+          plan: planWithSpec(configCase),
+        })
+      ).toBe(false);
+    }
+  );
 
   test("does not expect rollout when only some specs support it", () => {
     const plan = {
