@@ -257,13 +257,13 @@ func rewriteSelectLimit(sql string, sel *ast.SelectStmt, limitCount int) (string
 				return sql, nil // existing limit is already lower or equal, keep it
 			}
 			loc := nodeLocOf(sel.LimitCount)
-			if end, ok := integerLiteralEnd(sql, loc.Start); ok {
+			if end, ok := integerLiteralEnd(sql, loc); ok {
 				return sql[:loc.Start] + strconv.Itoa(limitCount) + sql[end:], nil
 			}
 		}
 		// LimitCount is not a plain integer constant (e.g. LIMIT $1, LIMIT (1+2),
 		// LIMIT 1.5). Cannot safely rewrite in-place; let the caller fall back
-		// to the CTE wrapper.
+		// to the CTE wrapper, which preserves the inner limit while capping.
 		return "", errors.Errorf("cannot rewrite non-constant LIMIT expression")
 	}
 
@@ -331,51 +331,16 @@ func nodeLocOf(node ast.Node) ast.Loc {
 }
 
 // integerLiteralEnd returns the exclusive end byte offset of the integer
-// literal beginning at off in sql. omni reports A_Const.Loc.End as the start
-// of the next token (which includes any trailing whitespace), so
-// rewriteSelectLimit must recompute the literal's real end to avoid gluing
-// the replacement value onto the following clause. It accepts every integer
-// form PostgreSQL 16 parses — decimal, 0x hex, 0o octal, 0b binary, each with
-// optional underscores between digits (e.g. 1_000, 0x3_E8) — and requires the
-// literal to end at a token boundary. ok is false when no integer literal is
-// found, signalling the caller to fall back to the CTE wrapper.
-func integerLiteralEnd(sql string, off int) (end int, ok bool) {
-	if off < 0 || off >= len(sql) {
+// literal spanning loc in sql. omni reports A_Const.Loc.End as the start of
+// the next token, so the span may include the whitespace separating the value
+// from a following clause (e.g. OFFSET, FOR UPDATE); trimming it keeps that
+// separator intact when the caller splices in the replacement value. ok is
+// false when loc is unset or out of range, signalling the caller to fall back
+// to the CTE wrapper.
+func integerLiteralEnd(sql string, loc ast.Loc) (int, bool) {
+	if loc.Start < 0 || loc.End <= loc.Start || loc.End > len(sql) {
 		return 0, false
 	}
-	end = off
-	if sql[end] == '+' || sql[end] == '-' {
-		end++
-	}
-	charset := "0123456789"
-	if end+1 < len(sql) && sql[end] == '0' {
-		switch sql[end+1] {
-		case 'x', 'X':
-			charset, end = "0123456789abcdefABCDEF", end+2
-		case 'o', 'O':
-			charset, end = "01234567", end+2
-		case 'b', 'B':
-			charset, end = "01", end+2
-		default:
-			// Decimal literal; charset and offset already set.
-		}
-	}
-	digitsStart := end
-	for end < len(sql) && (sql[end] == '_' || strings.IndexByte(charset, sql[end]) >= 0) {
-		end++
-	}
-	if end == digitsStart {
-		return 0, false // no digits consumed; not an integer literal
-	}
-	// The literal must end at a token boundary; a partial scan would glue the
-	// replacement onto trailing junk (e.g. "1.5" rewritten as "1000.5").
-	if end < len(sql) && (sql[end] == '.' || isIdentChar(sql[end])) {
-		return 0, false
-	}
-	return end, true
-}
-
-func isIdentChar(c byte) bool {
-	return c == '_' || c == '$' ||
-		(c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+	literal := strings.TrimRight(sql[loc.Start:loc.End], " \t\r\n\f\v")
+	return loc.Start + len(literal), true
 }
