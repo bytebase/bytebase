@@ -257,11 +257,6 @@ func rewriteSelectLimit(sql string, sel *ast.SelectStmt, limitCount int) (string
 				return sql, nil // existing limit is already lower or equal, keep it
 			}
 			loc := nodeLocOf(sel.LimitCount)
-			// omni reports A_Const.Loc.End as the start of the *next* token, which
-			// swallows the whitespace separating the limit value from a following
-			// clause. Recompute the literal's real end so the splice keeps that
-			// separator; otherwise "LIMIT 2000 OFFSET 0" becomes "LIMIT 1000OFFSET 0",
-			// which PostgreSQL 15+ rejects as "trailing junk after numeric literal".
 			if end, ok := integerLiteralEnd(sql, loc.Start); ok {
 				return sql[:loc.Start] + strconv.Itoa(limitCount) + sql[end:], nil
 			}
@@ -312,7 +307,7 @@ func findLimitInsertPosition(sel *ast.SelectStmt) (int, bool) {
 // integerFromNode extracts the integer value from a LIMIT/OFFSET node,
 // reporting whether the node is a plain integer constant. Non-integer nodes
 // (parameters, expressions, floats) report ok=false.
-func integerFromNode(node ast.Node) (val int, ok bool) {
+func integerFromNode(node ast.Node) (int, bool) {
 	switch n := node.(type) {
 	case *ast.Integer:
 		return int(n.Ival), true
