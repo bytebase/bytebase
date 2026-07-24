@@ -129,7 +129,7 @@
     "@types/slug": "5.0.9",
     "@vitejs/plugin-legacy": "~7.2.1",
     "autoprefixer": "10.5.4",
-    "code-inspector-plugin": "^1.4.4",
+    "code-inspector-plugin": "^2.0.0",
     "dotenv": "^17.4.2",
     "esbuild": "0.28.1",
     "jsdom": "29.1.1",
