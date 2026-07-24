@@ -70,7 +70,10 @@ vi.mock("@/utils", () => ({
     Object.fromEntries(list.map(({ key, value }) => [key, value])),
   extractInstanceResourceName: (name: string) =>
     name.replace(/^instances\//, ""),
-  isValidSpannerHost: (host: string) => host !== "",
+  isValidSpannerDataSource: (ds: { projectId: string; instanceId: string }) =>
+    ds.projectId !== "" && ds.instanceId !== "",
+  isValidBigQueryDataSource: (ds: { projectId: string }) =>
+    ds.projectId !== "",
 }));
 
 vi.mock("../ui/alert-dialog", () => ({

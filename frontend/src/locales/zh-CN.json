@@ -1073,6 +1073,8 @@
     "find-gcp-project-id": "查看 GCP 项目 ID 的方法见",
     "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
     "force-archive-description": "强制归档。所有数据库均将被取消分配。",
+    "gcp-endpoint-tip": "可选。覆盖默认的 Google API 端点，例如 Private Service Connect 端点 {{example}}。",
+    "gcp-endpoint-toggle": "设置自定义 API 端点",
     "grants": "权限",
     "host-or-socket": "Host 或 Socket",
     "iam-extension": {

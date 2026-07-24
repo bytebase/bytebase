@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net"
 	"time"
 	"unicode"
 
@@ -48,8 +49,8 @@ func newDriver() db.Driver {
 // Open opens a BigQuery driver. It must connect to a specific database.
 // If database isn't provided, part of the driver cannot function.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	if config.DataSource.Host == "" {
-		return nil, errors.New("host cannot be empty")
+	if config.DataSource.ProjectId == "" {
+		return nil, errors.New("project ID cannot be empty")
 	}
 	d.config = config
 	d.connCtx = config.ConnectionContext
@@ -63,7 +64,17 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		}
 		o = append(o, credOption)
 	}
-	client, err := bigquery.NewClient(ctx, config.DataSource.Host, o...)
+	// host and port optionally override the default bigquery.googleapis.com
+	// endpoint, e.g. with a Private Service Connect endpoint. A bare host[:port]
+	// is merged with the default endpoint's scheme and path by the client library.
+	if host := config.DataSource.Host; host != "" {
+		endpoint := host
+		if port := config.DataSource.Port; port != "" {
+			endpoint = net.JoinHostPort(host, port)
+		}
+		o = append(o, option.WithEndpoint(endpoint))
+	}
+	client, err := bigquery.NewClient(ctx, config.DataSource.ProjectId, o...)
 	if err != nil {
 		return nil, err
 	}

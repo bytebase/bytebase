@@ -50,6 +50,15 @@ export const hostPortOfDataSource = (ds: DataSource | undefined): string => {
   if (!ds) {
     return "";
   }
+  // GCP data sources (Spanner, BigQuery) identify the target by
+  // project ID (+ instance ID); host/port only optionally override
+  // the Google API endpoint.
+  if (ds.projectId) {
+    if (ds.instanceId) {
+      return `projects/${ds.projectId}/instances/${ds.instanceId}`;
+    }
+    return ds.projectId;
+  }
   const parts = [ds.host];
   if (ds.port) {
     parts.push(ds.port);
@@ -402,10 +411,22 @@ export const hasIndexSizeProperty = (
   return ![Engine.CLICKHOUSE, Engine.SNOWFLAKE].includes(engine);
 };
 
-export const isValidSpannerHost = (host: string) => {
-  const RE =
-    /^projects\/(?<PROJECT_ID>(?:[a-z]|[-.:]|[0-9])+)\/instances\/(?<INSTANCE_ID>(?:[a-z]|[-]|[0-9])+)$/;
-  return RE.test(host);
+export const RE_GCP_PROJECT_ID = /^[a-z\d.:-]+$/;
+export const RE_GCP_INSTANCE_ID = /^[a-z\d-]+$/;
+
+export const isValidSpannerDataSource = (
+  ds: Pick<DataSource, "projectId" | "instanceId">
+) => {
+  return (
+    RE_GCP_PROJECT_ID.test(ds.projectId) &&
+    RE_GCP_INSTANCE_ID.test(ds.instanceId)
+  );
+};
+
+export const isValidBigQueryDataSource = (
+  ds: Pick<DataSource, "projectId">
+) => {
+  return RE_GCP_PROJECT_ID.test(ds.projectId);
 };
 
 export const getFixedPrimaryKey = (engine: Engine) => {

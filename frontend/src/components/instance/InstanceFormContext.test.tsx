@@ -86,7 +86,10 @@ vi.mock("@/utils", () => ({
   instanceV1HasExtraParameters: () => false,
   instanceV1HasSSH: () => false,
   instanceV1HasSSL: () => false,
-  isValidSpannerHost: (host: string) => host !== "",
+  isValidSpannerDataSource: (ds: { projectId: string; instanceId: string }) =>
+    ds.projectId !== "" && ds.instanceId !== "",
+  isValidBigQueryDataSource: (ds: { projectId: string }) =>
+    ds.projectId !== "",
 }));
 
 vi.mock("@/utils/connect", () => ({

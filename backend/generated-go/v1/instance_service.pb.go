@@ -2029,8 +2029,15 @@ type DataSource struct {
 	// Extra connection parameters for the database connection.
 	// For PostgreSQL HA, this can be used to set target_session_attrs=read-write
 	ExtraConnectionParameters map[string]string `protobuf:"bytes,36,rep,name=extra_connection_parameters,json=extraConnectionParameters,proto3" json:"extra_connection_parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields             protoimpl.UnknownFields
-	sizeCache                 protoimpl.SizeCache
+	// project_id and instance_id are the GCP resource identifiers.
+	// project_id is used by Spanner and BigQuery; instance_id is used by Spanner.
+	// For these engines, host and port optionally override the default Google API
+	// endpoint (e.g. a Private Service Connect endpoint like
+	// spanner-nonprod.p.googleapis.com).
+	ProjectId     string `protobuf:"bytes,57,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	InstanceId    string `protobuf:"bytes,58,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DataSource) Reset() {
@@ -2424,6 +2431,20 @@ func (x *DataSource) GetExtraConnectionParameters() map[string]string {
 		return x.ExtraConnectionParameters
 	}
 	return nil
+}
+
+func (x *DataSource) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *DataSource) GetInstanceId() string {
+	if x != nil {
+		return x.InstanceId
+	}
+	return ""
 }
 
 type isDataSource_IamExtension interface {
@@ -3172,7 +3193,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x05PLAIN\x10\x01\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x02\x12\b\n" +
 	"\x04FILE\x10\x03B\r\n" +
-	"\vauth_option\"\xbd\x18\n" +
+	"\vauth_option\"\xfd\x18\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
@@ -3232,7 +3253,11 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\n" +
 	"redis_type\x18\" \x01(\x0e2!.bytebase.v1.DataSource.RedisTypeR\tredisType\x12\x18\n" +
 	"\acluster\x18# \x01(\tR\acluster\x12v\n" +
-	"\x1bextra_connection_parameters\x18$ \x03(\v26.bytebase.v1.DataSource.ExtraConnectionParametersEntryR\x19extraConnectionParameters\x1au\n" +
+	"\x1bextra_connection_parameters\x18$ \x03(\v26.bytebase.v1.DataSource.ExtraConnectionParametersEntryR\x19extraConnectionParameters\x12\x1d\n" +
+	"\n" +
+	"project_id\x189 \x01(\tR\tprojectId\x12\x1f\n" +
+	"\vinstance_id\x18: \x01(\tR\n" +
+	"instanceId\x1au\n" +
 	"\x0fAzureCredential\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12(\n" +

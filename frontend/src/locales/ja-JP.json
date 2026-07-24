@@ -1073,6 +1073,8 @@
     "find-gcp-project-id": "GCP プロジェクト ID とインスタンス ID を表示するには、次を参照してください。",
     "find-gcp-project-id-and-instance-id": "GCP プロジェクト ID の確認方法については、次を参照してください",
     "force-archive-description": "アーカイブを強制します。すべてのデータベースの割り当てが解除されます。",
+    "gcp-endpoint-tip": "省略可能。デフォルトの Google API エンドポイントを上書きします（例：Private Service Connect エンドポイント {{example}}）。",
+    "gcp-endpoint-toggle": "カスタム API エンドポイントを設定",
     "grants": "権限",
     "host-or-socket": "ホストまたはソケット",
     "iam-extension": {

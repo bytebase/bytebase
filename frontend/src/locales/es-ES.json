@@ -1073,6 +1073,8 @@
     "find-gcp-project-id": "Para encontrar el ID del proyecto de GCP, consulta",
     "find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
     "force-archive-description": "Forzar a archivar. Todas las bases de datos quedarán desasignadas.",
+    "gcp-endpoint-tip": "Opcional. Reemplaza el punto de conexión predeterminado de la API de Google, p. ej., un punto de conexión de Private Service Connect como {{example}}.",
+    "gcp-endpoint-toggle": "Configurar un punto de conexión de API personalizado",
     "grants": "Concesiones",
     "host-or-socket": "Host o Socket",
     "iam-extension": {

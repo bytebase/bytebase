@@ -61,7 +61,11 @@ import {
   engineNameV1,
   extractInstanceResourceName,
   isDev,
-  isValidSpannerHost,
+  isValidBigQueryDataSource,
+  isValidSpannerDataSource,
+  onlyAllowNumber,
+  RE_GCP_INSTANCE_ID,
+  RE_GCP_PROJECT_ID,
   supportedEngineV1List,
   urlfy,
 } from "@/utils";
@@ -83,48 +87,95 @@ import { hasInfoContent, type InfoSection } from "./info-content";
 
 // --- Inline sub-components ---
 
+function GCPEndpointInput({
+  endpoint,
+  port,
+  placeholder,
+  example,
+  onUpdate,
+  allowEdit,
+}: Readonly<{
+  endpoint: string;
+  port: string;
+  placeholder: string;
+  example: string;
+  onUpdate: (update: { host?: string; port?: string }) => void;
+  allowEdit: boolean;
+}>) {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded || !!endpoint || !!port;
+
+  if (!visible) {
+    if (!allowEdit) return null;
+    return (
+      <div className="col-span-2">
+        <button
+          type="button"
+          className="text-sm normal-link"
+          onClick={() => setExpanded(true)}
+        >
+          {t("instance.gcp-endpoint-toggle")}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <FormField title={<>{t("instance.endpoint")}</>}>
+        <Input
+          value={endpoint}
+          placeholder={placeholder}
+          className="w-full"
+          disabled={!allowEdit}
+          onChange={(e) => onUpdate({ host: e.target.value.trim() })}
+        />
+      </FormField>
+      <FormField title={<>{t("instance.port")}</>}>
+        <Input
+          value={port}
+          placeholder="443"
+          className="w-full"
+          disabled={!allowEdit}
+          onChange={(e) => {
+            if (e.target.value && !onlyAllowNumber(e.target.value)) return;
+            onUpdate({ port: e.target.value.trim() });
+          }}
+        />
+      </FormField>
+      <p className="col-span-2 text-xs leading-4 text-control-light">
+        {t("instance.gcp-endpoint-tip", { example })}
+      </p>
+    </>
+  );
+}
+
 function SpannerHostInput({
-  host,
-  onHostChange,
+  projectId,
+  instanceId,
+  endpoint,
+  port,
+  onUpdate,
   allowEdit,
 }: {
-  host: string;
-  onHostChange: (host: string) => void;
+  projectId: string;
+  instanceId: string;
+  endpoint: string;
+  port: string;
+  onUpdate: (update: {
+    projectId?: string;
+    instanceId?: string;
+    host?: string;
+    port?: string;
+  }) => void;
   allowEdit: boolean;
 }) {
   const { t } = useTranslation();
-  const RE =
-    /^projects\/(?<PROJECT_ID>(?:[a-z]|[-.:]|[0-9])*)\/instances\/(?<INSTANCE_ID>(?:[a-z]|[-]|[0-9])*)$/;
-  const RE_PROJECT_ID = /^(?:[a-z]|[-.:]|[0-9])+$/;
-  const RE_INSTANCE_ID = /^(?:[a-z]|[-]|[0-9])+$/;
-
-  const parseProjectId = (h: string) => h.match(RE)?.groups?.PROJECT_ID ?? "";
-  const parseInstanceId = (h: string) => h.match(RE)?.groups?.INSTANCE_ID ?? "";
-
-  const [projectId, setProjectId] = useState(() => parseProjectId(host));
-  const [instanceId, setInstanceId] = useState(() => parseInstanceId(host));
   const [dirty, setDirty] = useState(false);
 
-  useEffect(() => {
-    if (!host) return;
-    setProjectId(parseProjectId(host));
-    setInstanceId(parseInstanceId(host));
-  }, [host]);
-
-  const update = useCallback(
-    (pId: string, iId: string) => {
-      setDirty(true);
-      if (!RE_PROJECT_ID.test(pId) || !RE_INSTANCE_ID.test(iId)) {
-        onHostChange("");
-        return;
-      }
-      onHostChange(`projects/${pId}/instances/${iId}`);
-    },
-    [onHostChange]
-  );
-
-  const isValidProjectId = RE_PROJECT_ID.test(projectId);
-  const isValidInstanceId = RE_INSTANCE_ID.test(instanceId);
+  const isValidProjectId = RE_GCP_PROJECT_ID.test(projectId);
+  const isValidInstanceId = RE_GCP_INSTANCE_ID.test(instanceId);
 
   return (
     <div className="grid grid-cols-2 gap-x-2 gap-y-1">
@@ -132,7 +183,7 @@ function SpannerHostInput({
         title={
           <>
             {t("instance.project-id")}
-            <span style={{ color: "red" }}> *</span>
+            <span className="text-error"> *</span>
           </>
         }
       >
@@ -143,9 +194,8 @@ function SpannerHostInput({
           className={`w-full ${dirty && !isValidProjectId ? "border-error" : ""}`}
           disabled={!allowEdit}
           onChange={(e) => {
-            const v = e.target.value;
-            setProjectId(v);
-            update(v, instanceId);
+            setDirty(true);
+            onUpdate({ projectId: e.target.value.trim() });
           }}
         />
       </FormField>
@@ -153,7 +203,7 @@ function SpannerHostInput({
         title={
           <>
             {t("instance.instance-id")}
-            <span style={{ color: "red" }}> *</span>
+            <span className="text-error"> *</span>
           </>
         }
       >
@@ -164,9 +214,8 @@ function SpannerHostInput({
           className={`w-full ${dirty && !isValidInstanceId ? "border-error" : ""}`}
           disabled={!allowEdit}
           onChange={(e) => {
-            const v = e.target.value;
-            setInstanceId(v);
-            update(projectId, v);
+            setDirty(true);
+            onUpdate({ instanceId: e.target.value.trim() });
           }}
         />
       </FormField>
@@ -182,30 +231,39 @@ function SpannerHostInput({
           <ExternalLink className="size-4 ml-1" />
         </a>
       </p>
+      <GCPEndpointInput
+        endpoint={endpoint}
+        port={port}
+        placeholder="spanner.googleapis.com"
+        example="spanner-nonprod.p.googleapis.com"
+        onUpdate={onUpdate}
+        allowEdit={allowEdit}
+      />
     </div>
   );
 }
 
 function BigQueryHostInput({
-  host,
-  onHostChange,
+  projectId,
+  endpoint,
+  port,
+  onUpdate,
   allowEdit,
 }: {
-  host: string;
-  onHostChange: (host: string) => void;
+  projectId: string;
+  endpoint: string;
+  port: string;
+  onUpdate: (update: {
+    projectId?: string;
+    host?: string;
+    port?: string;
+  }) => void;
   allowEdit: boolean;
 }) {
   const { t } = useTranslation();
-  const RE_PROJECT_ID = /^(?:[a-z]|[-.:]|[0-9])+$/;
-  const [projectId, setProjectId] = useState(() => host || "");
   const [dirty, setDirty] = useState(false);
 
-  useEffect(() => {
-    if (!host) return;
-    setProjectId(host);
-  }, [host]);
-
-  const isValidProjectId = RE_PROJECT_ID.test(projectId);
+  const isValidProjectId = RE_GCP_PROJECT_ID.test(projectId);
 
   return (
     <div className="grid grid-cols-2 gap-x-2 gap-y-1">
@@ -213,7 +271,7 @@ function BigQueryHostInput({
         title={
           <>
             {t("instance.project-id")}
-            <span style={{ color: "red" }}> *</span>
+            <span className="text-error"> *</span>
           </>
         }
       >
@@ -224,14 +282,8 @@ function BigQueryHostInput({
           className={`w-full ${dirty && !isValidProjectId ? "border-error" : ""}`}
           disabled={!allowEdit}
           onChange={(e) => {
-            const v = e.target.value;
-            setProjectId(v);
             setDirty(true);
-            if (!RE_PROJECT_ID.test(v)) {
-              onHostChange("");
-            } else {
-              onHostChange(v);
-            }
+            onUpdate({ projectId: e.target.value.trim() });
           }}
         />
       </FormField>
@@ -247,6 +299,14 @@ function BigQueryHostInput({
           <ExternalLink className="size-4 ml-1" />
         </a>
       </p>
+      <GCPEndpointInput
+        endpoint={endpoint}
+        port={port}
+        placeholder="bigquery.googleapis.com"
+        example="bigquery-nonprod.p.googleapis.com"
+        onUpdate={onUpdate}
+        allowEdit={allowEdit}
+      />
     </div>
   );
 }
@@ -867,10 +927,10 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
     const ds = editingDataSource;
     if (!ds) return false;
     if (basicInfo.engine === Engine.SPANNER) {
-      return isValidSpannerHost(ds.host);
+      return isValidSpannerDataSource(ds);
     }
     if (basicInfo.engine === Engine.BIGQUERY) {
-      return ds.host !== "";
+      return isValidBigQueryDataSource(ds);
     }
     if (basicInfo.engine !== Engine.DYNAMODB && ds.host === "") {
       return false;
@@ -1426,14 +1486,19 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
             <div className="sm:col-span-3 sm:col-start-1">
               {basicInfo.engine === Engine.SPANNER ? (
                 <SpannerHostInput
-                  host={adminDataSource.host}
-                  onHostChange={(host) => updateAdminDS({ host })}
+                  projectId={adminDataSource.projectId}
+                  instanceId={adminDataSource.instanceId}
+                  endpoint={adminDataSource.host}
+                  port={adminDataSource.port}
+                  onUpdate={(update) => updateAdminDS(update)}
                   allowEdit={allowEdit}
                 />
               ) : basicInfo.engine === Engine.BIGQUERY ? (
                 <BigQueryHostInput
-                  host={adminDataSource.host}
-                  onHostChange={(host) => updateAdminDS({ host })}
+                  projectId={adminDataSource.projectId}
+                  endpoint={adminDataSource.host}
+                  port={adminDataSource.port}
+                  onUpdate={(update) => updateAdminDS(update)}
                   allowEdit={allowEdit}
                 />
               ) : (

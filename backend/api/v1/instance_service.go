@@ -730,6 +730,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
+			normalizeGCPDataSources(instance.Metadata.GetEngine(), dataSources)
 			for _, ds := range dataSources {
 				if err := validateAndSanitizeDataSourceTLS(ds); err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -981,6 +982,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	if instance.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Name))
 	}
+	normalizeGCPDataSources(instance.Metadata.GetEngine(), []*storepb.DataSource{dataSource})
 	for _, ds := range instance.Metadata.GetDataSources() {
 		if ds.GetId() == req.Msg.DataSource.Id {
 			return nil, connect.NewError(connect.CodeNotFound, errors.New("data source already exists with the same name"))
@@ -1151,6 +1153,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 			dataSource.MasterPassword = req.Msg.DataSource.MasterPassword
 		case "extra_connection_parameters":
 			dataSource.ExtraConnectionParameters = req.Msg.DataSource.ExtraConnectionParameters
+		case "project_id":
+			dataSource.ProjectId = req.Msg.DataSource.ProjectId
+		case "instance_id":
+			dataSource.InstanceId = req.Msg.DataSource.InstanceId
 		case "azure_credential", "aws_credential", "gcp_credential":
 			switch req.Msg.DataSource.AuthenticationType {
 			case v1pb.DataSource_AZURE_IAM:
@@ -1200,6 +1206,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	}
 
 	clearDataSourceAuthentication(dataSource)
+	normalizeGCPDataSources(instance.Metadata.GetEngine(), []*storepb.DataSource{dataSource})
 	if err := validateAndSanitizeDataSourceTLS(dataSource); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
