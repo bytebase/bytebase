@@ -82,7 +82,12 @@ export function buildBehaviorAnalyticsConfig(params: {
         ],
         dom_event_allowlist: ["click", "submit"],
         element_allowlist: ["a", "button", "form", "label"],
-        element_attribute_ignorelist: ["aria-label", "title", "data-sensitive"],
+        element_attribute_ignorelist: [
+          "aria-label",
+          "href",
+          "title",
+          "data-sensitive",
+        ],
       },
       capture_pageview: "history_change",
       capture_pageleave: true,

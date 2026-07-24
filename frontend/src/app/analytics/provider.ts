@@ -7,6 +7,7 @@ type PostHogClient = {
   opt_out_capturing?: () => void;
   reset: () => void;
   capture: (event: string, properties?: Record<string, unknown>) => void;
+  startSessionRecording?: () => void;
   stopSessionRecording?: () => void;
 };
 
@@ -33,6 +34,7 @@ class BehaviorAnalytics {
     this.properties = config.properties ?? {};
     if (this.initialized && this.configKey === config.apiKey) {
       this.client?.opt_in_capturing?.();
+      this.client?.startSessionRecording?.();
       return;
     }
     const posthog = await this.loadClient();

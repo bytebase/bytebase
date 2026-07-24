@@ -237,4 +237,34 @@ describe("RouteBehaviorRecorder", () => {
       },
     });
   });
+
+  test("ends the current page session before identifying a replacement user", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000);
+
+    await act(async () => {
+      root.render(<RouteBehaviorRecorder />);
+    });
+
+    vi.setSystemTime(6_000);
+    mocks.appStore.currentUserName = "users/bob@example.com";
+    await act(async () => {
+      root.render(<RouteBehaviorRecorder />);
+    });
+
+    expect(mocks.analytics.captureMetric).toHaveBeenCalledWith({
+      event: "page session",
+      properties: expect.objectContaining({
+        route_id: "workspace.project.database",
+        duration_ms: 5000,
+        visible_duration_ms: 5000,
+      }),
+    });
+
+    const pageSessionOrder =
+      mocks.analytics.captureMetric.mock.invocationCallOrder[0];
+    const replacementIdentifyOrder =
+      mocks.analytics.identify.mock.invocationCallOrder[1];
+    expect(pageSessionOrder).toBeLessThan(replacementIdentifyOrder);
+  });
 });

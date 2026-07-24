@@ -10,6 +10,7 @@ function createClient() {
     opt_out_capturing: vi.fn(),
     reset: vi.fn(),
     capture: vi.fn(),
+    startSessionRecording: vi.fn(),
     stopSessionRecording: vi.fn(),
   };
 }
@@ -153,5 +154,17 @@ describe("BehaviorAnalytics provider", () => {
 
     expect(client.init).not.toHaveBeenCalled();
     expect(client.capture).not.toHaveBeenCalled();
+  });
+
+  test("restarts session recording when re-enabled after disable", async () => {
+    const client = createClient();
+    const analytics = createBehaviorAnalytics(() => Promise.resolve(client));
+
+    await analytics.init(config);
+    analytics.disable();
+    await analytics.init(config);
+
+    expect(client.opt_in_capturing).toHaveBeenCalledOnce();
+    expect(client.startSessionRecording).toHaveBeenCalledOnce();
   });
 });

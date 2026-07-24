@@ -69,6 +69,11 @@ function EnabledRouteBehaviorRecorder() {
     if (!config) {
       return;
     }
+    if (pageSessionRef.current) {
+      const previousSession = pageSessionRef.current;
+      endPageSession(previousSession);
+      pageSessionRef.current = startPageSession(previousSession.decision);
+    }
     if (!currentUserName) {
       behaviorAnalytics.reset();
       return;
@@ -104,14 +109,7 @@ function EnabledRouteBehaviorRecorder() {
       );
     }
     pageSessionRef.current =
-      decision.recording === "allow"
-        ? {
-            decision,
-            startedAt: Date.now(),
-            visibleStartedAt: document.hidden ? undefined : Date.now(),
-            visibleDurationMs: 0,
-          }
-        : undefined;
+      decision.recording === "allow" ? startPageSession(decision) : undefined;
   }, [config, route.name, route.fullPath]);
 
   useEffect(() => {
@@ -136,6 +134,18 @@ function EnabledRouteBehaviorRecorder() {
   }, []);
 
   return null;
+}
+
+function startPageSession(
+  decision: Extract<BehaviorRecordingDecision, { recording: "allow" }>
+): ActivePageSession {
+  const now = Date.now();
+  return {
+    decision,
+    startedAt: now,
+    visibleStartedAt: document.hidden ? undefined : now,
+    visibleDurationMs: 0,
+  };
 }
 
 function endPageSession(session: ActivePageSession | undefined): void {

@@ -49,6 +49,7 @@ describe("behavior analytics config", () => {
           element_allowlist: ["a", "button", "form", "label"],
           element_attribute_ignorelist: [
             "aria-label",
+            "href",
             "title",
             "data-sensitive",
           ],
