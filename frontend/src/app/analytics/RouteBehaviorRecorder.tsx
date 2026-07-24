@@ -24,8 +24,15 @@ export function RouteBehaviorRecorder() {
   const enableMetricCollection = useAppStore(
     (state) => state.getWorkspaceProfile().enableMetricCollection
   );
+  const enabled = isSaaSMode && enableMetricCollection;
 
-  if (!isSaaSMode || !enableMetricCollection) {
+  useEffect(() => {
+    if (!enabled) {
+      behaviorAnalytics.disable();
+    }
+  }, [enabled]);
+
+  if (!enabled) {
     return null;
   }
 
@@ -43,6 +50,7 @@ function EnabledRouteBehaviorRecorder() {
       buildBehaviorAnalyticsConfig({
         posthogKey: import.meta.env.BB_POSTHOG_KEY as string | undefined,
         posthogHost: import.meta.env.BB_POSTHOG_HOST as string | undefined,
+        gitCommit: import.meta.env.GIT_COMMIT as string | undefined,
         recordingSampleRate: parseRecordingSampleRate(
           import.meta.env.BB_POSTHOG_RECORDING_SAMPLE_RATE as string | undefined
         ),
@@ -79,7 +87,22 @@ function EnabledRouteBehaviorRecorder() {
     const decision = classifyBehaviorRoute({
       name: route.name,
     });
-    endPageSession(pageSessionRef.current);
+    const previousSession = pageSessionRef.current;
+    endPageSession(previousSession);
+    if (
+      previousSession &&
+      decision.recording === "allow" &&
+      previousSession.decision.routeId !== decision.routeId
+    ) {
+      behaviorAnalytics.captureMetric(
+        createBehaviorMetric("page navigated", {
+          properties: {
+            from_route_id: previousSession.decision.routeId,
+            to_route_id: decision.routeId,
+          },
+        })
+      );
+    }
     pageSessionRef.current =
       decision.recording === "allow"
         ? {

@@ -3,8 +3,11 @@ import type { BehaviorAnalyticsConfig, BehaviorMetric } from "./behavior";
 type PostHogClient = {
   init: (apiKey: string, options?: Record<string, unknown>) => void;
   identify: (id: string, properties?: Record<string, unknown>) => void;
+  opt_in_capturing?: () => void;
+  opt_out_capturing?: () => void;
   reset: () => void;
   capture: (event: string, properties?: Record<string, unknown>) => void;
+  stopSessionRecording?: () => void;
 };
 
 type AnalyticsIdentity = {
@@ -17,6 +20,8 @@ type LoadPostHog = () => Promise<PostHogClient>;
 class BehaviorAnalytics {
   private client: PostHogClient | undefined;
   private configKey: string | undefined;
+  private properties: Record<string, unknown> = {};
+  private enabled = false;
   private initialized = false;
   private pendingIdentity: AnalyticsIdentity | undefined;
   private pendingMetrics: BehaviorMetric[] = [];
@@ -24,10 +29,16 @@ class BehaviorAnalytics {
   constructor(private readonly loadClient: LoadPostHog) {}
 
   async init(config: BehaviorAnalyticsConfig): Promise<void> {
+    this.enabled = true;
+    this.properties = config.properties ?? {};
     if (this.initialized && this.configKey === config.apiKey) {
+      this.client?.opt_in_capturing?.();
       return;
     }
     const posthog = await this.loadClient();
+    if (!this.enabled) {
+      return;
+    }
     posthog.init(config.apiKey, config.options);
     this.client = posthog;
     this.configKey = config.apiKey;
@@ -37,6 +48,9 @@ class BehaviorAnalytics {
   }
 
   identify(identity: AnalyticsIdentity): void {
+    if (!this.enabled) {
+      return;
+    }
     this.pendingIdentity = identity;
     if (!this.client || !identity.user) {
       return;
@@ -50,7 +64,19 @@ class BehaviorAnalytics {
     this.pendingMetrics = [];
   }
 
+  disable(): void {
+    this.enabled = false;
+    this.pendingIdentity = undefined;
+    this.pendingMetrics = [];
+    this.client?.stopSessionRecording?.();
+    this.client?.opt_out_capturing?.();
+    this.client?.reset();
+  }
+
   captureMetric(metric: BehaviorMetric): void {
+    if (!this.enabled) {
+      return;
+    }
     if (!this.client) {
       this.pendingMetrics.push(metric);
       return;
@@ -82,7 +108,7 @@ class BehaviorAnalytics {
     if (!this.client) {
       return;
     }
-    const properties = { ...metric.properties };
+    const properties = { ...metric.properties, ...this.properties };
     if (this.pendingIdentity) {
       properties.user = this.pendingIdentity.user;
       properties.workspace = this.pendingIdentity.workspace;

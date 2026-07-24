@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import type { BehaviorMetricInput } from "./behavior";
 import {
   behaviorMetricDefinitions,
   buildBehaviorAnalyticsConfig,
@@ -71,6 +72,38 @@ describe("behavior analytics config", () => {
         .maskTextSelector
     ).toBeUndefined();
   });
+
+  test("adds build commit metadata to PostHog event properties", () => {
+    const config = buildBehaviorAnalyticsConfig({
+      posthogKey: "phc_test",
+      posthogHost: "https://us.i.posthog.com",
+      recordingSampleRate: 0.25,
+      gitCommit: "abc123",
+    });
+
+    if (!config) {
+      throw new Error("Expected behavior analytics config");
+    }
+    expect(config.properties).toEqual({
+      git_commit: "abc123",
+    });
+
+    const sanitizeProperties = config.options.sanitize_properties as (
+      properties: Record<string, unknown>,
+      eventName?: string
+    ) => Record<string, unknown>;
+
+    expect(
+      sanitizeProperties(
+        {
+          $current_url: "https://cloud.bytebase.com/projects/acme?token=secret",
+        },
+        "$pageview"
+      )
+    ).toEqual({
+      git_commit: "abc123",
+    });
+  });
 });
 
 describe("behavior analytics routes", () => {
@@ -132,7 +165,7 @@ describe("behavior analytics privacy helpers", () => {
     });
   });
 
-  test("keeps redacted page URL properties for PostHog pageviews", () => {
+  test("removes page URL properties for PostHog pageviews", () => {
     expect(
       sanitizeBehaviorProperties(
         {
@@ -144,16 +177,14 @@ describe("behavior analytics privacy helpers", () => {
         },
         "$pageview"
       )
-    ).toEqual({
-      $current_url: "https://cloud.bytebase.com/projects/customer-a/databases",
-      $pathname: "/projects/customer-a/databases",
-    });
+    ).toEqual({});
   });
 });
 
 describe("behavior analytics metrics", () => {
   test("defines metric names in one map", () => {
     expect([...behaviorMetricDefinitions.keys()]).toContain("page session");
+    expect([...behaviorMetricDefinitions.keys()]).toContain("page navigated");
   });
 
   test("creates allowlisted page session metrics with route context", () => {
@@ -172,6 +203,34 @@ describe("behavior analytics metrics", () => {
         visible_duration_ms: 9_000,
         is_bounce: false,
       },
+    });
+  });
+
+  test("creates allowlisted page navigation metrics with route transition context", () => {
+    expect(
+      createBehaviorMetric("page navigated", {
+        properties: {
+          from_route_id: "workspace.landing",
+          to_route_id: "workspace.instance.create",
+        },
+      })
+    ).toEqual({
+      event: "page navigated",
+      properties: {
+        from_route_id: "workspace.landing",
+        to_route_id: "workspace.instance.create",
+      },
+    });
+  });
+
+  test("keeps route transition context out of the shared metric input fields", () => {
+    const routeTransitionInput = {
+      // @ts-expect-error route transitions should use event-specific properties.
+      fromRouteId: "workspace.landing",
+    } satisfies BehaviorMetricInput;
+
+    expect(routeTransitionInput).toEqual({
+      fromRouteId: "workspace.landing",
     });
   });
 

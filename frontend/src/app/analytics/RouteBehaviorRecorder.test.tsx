@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
     workspace: "workspaces/customer-a",
   },
   analytics: {
+    disable: vi.fn(),
     init: vi.fn(),
     identify: vi.fn(),
     reset: vi.fn(),
@@ -64,6 +65,7 @@ describe("RouteBehaviorRecorder", () => {
     vi.stubEnv("BB_POSTHOG_KEY", "phc_test");
     vi.stubEnv("BB_POSTHOG_HOST", "https://us.i.posthog.com");
     vi.stubEnv("BB_POSTHOG_RECORDING_SAMPLE_RATE", "1");
+    vi.stubEnv("GIT_COMMIT", "abc123");
   });
 
   afterEach(() => {
@@ -92,6 +94,9 @@ describe("RouteBehaviorRecorder", () => {
           capture_pageview: "history_change",
           disable_session_recording: false,
         }),
+        properties: {
+          git_commit: "abc123",
+        },
       })
     );
   });
@@ -104,6 +109,7 @@ describe("RouteBehaviorRecorder", () => {
     });
 
     expect(mocks.analytics.init).not.toHaveBeenCalled();
+    expect(mocks.analytics.disable).toHaveBeenCalledOnce();
   });
 
   test("does not initialize PostHog when workspace metric collection is disabled", async () => {
@@ -114,6 +120,21 @@ describe("RouteBehaviorRecorder", () => {
     });
 
     expect(mocks.analytics.init).not.toHaveBeenCalled();
+    expect(mocks.analytics.disable).toHaveBeenCalledOnce();
+  });
+
+  test("disables PostHog after workspace metric collection is disabled", async () => {
+    await act(async () => {
+      root.render(<RouteBehaviorRecorder />);
+    });
+
+    mocks.appStore.enableMetricCollection = false;
+    await act(async () => {
+      root.render(<RouteBehaviorRecorder />);
+    });
+
+    expect(mocks.analytics.init).toHaveBeenCalledOnce();
+    expect(mocks.analytics.disable).toHaveBeenCalledOnce();
   });
 
   test("passes replay sample rate to PostHog without local route sampling", async () => {
@@ -193,6 +214,27 @@ describe("RouteBehaviorRecorder", () => {
         duration_ms: 5000,
         visible_duration_ms: 5000,
       }),
+    });
+  });
+
+  test("emits a route-level page navigation metric on route changes", async () => {
+    await act(async () => {
+      root.render(<RouteBehaviorRecorder />);
+    });
+
+    mocks.route.name = "workspace.instance.create";
+    mocks.route.fullPath = "/instances/new";
+
+    await act(async () => {
+      root.render(<RouteBehaviorRecorder />);
+    });
+
+    expect(mocks.analytics.captureMetric).toHaveBeenCalledWith({
+      event: "page navigated",
+      properties: {
+        from_route_id: "workspace.project.database",
+        to_route_id: "workspace.instance.create",
+      },
     });
   });
 });

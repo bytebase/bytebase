@@ -14,12 +14,14 @@ export type BehaviorRouteInput = {
 export type BehaviorAnalyticsConfig = {
   apiKey: string;
   options: Record<string, unknown>;
+  properties?: Record<string, unknown>;
 };
 
 // PostHog recommends "[object] [verb]" event names.
 // https://posthog.com/docs/product-analytics/capture-events
 export const behaviorMetricDefinitions = new Map([
   ["page session", {}],
+  ["page navigated", {}],
   ["connect database clicked", {}],
   ["instance connection test clicked", {}],
   ["instance create clicked", {}],
@@ -53,6 +55,7 @@ export type BehaviorMetricInput = {
 export function buildBehaviorAnalyticsConfig(params: {
   posthogKey?: string;
   posthogHost?: string;
+  gitCommit?: string;
   recordingSampleRate: number;
 }): BehaviorAnalyticsConfig | null {
   const apiKey = params.posthogKey?.trim();
@@ -60,9 +63,13 @@ export function buildBehaviorAnalyticsConfig(params: {
   if (!apiKey || !apiHost) {
     return null;
   }
+  const properties = sanitizeBehaviorProperties({
+    git_commit: params.gitCommit?.trim() || undefined,
+  });
 
   return {
     apiKey,
+    properties,
     options: {
       api_host: apiHost,
       autocapture: {
@@ -81,7 +88,13 @@ export function buildBehaviorAnalyticsConfig(params: {
       capture_pageleave: true,
       disable_session_recording: false,
       person_profiles: "identified_only",
-      sanitize_properties: sanitizeBehaviorProperties,
+      sanitize_properties: (
+        eventProperties: Record<string, unknown>,
+        eventName?: string
+      ) => ({
+        ...sanitizeBehaviorProperties(eventProperties, eventName),
+        ...properties,
+      }),
       session_recording: {
         maskAllInputs: true,
         blockClass: "ph-no-capture",
@@ -107,19 +120,11 @@ export function classifyBehaviorRoute(
 
 export function sanitizeBehaviorProperties(
   properties: Record<string, unknown>,
-  eventName?: string
+  _eventName?: string
 ): Record<string, unknown> {
   const sanitized: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(properties)) {
     if (value === undefined) {
-      continue;
-    }
-    if (eventName === "$pageview" && key === "$current_url") {
-      sanitized[key] = redactPageUrl(value);
-      continue;
-    }
-    if (eventName === "$pageview" && key === "$pathname") {
-      sanitized[key] = value;
       continue;
     }
     if (isForbiddenPropertyKey(key)) {
@@ -165,16 +170,4 @@ function isForbiddenPropertyKey(key: string): boolean {
     normalized.includes("error") ||
     normalized.includes("message")
   );
-}
-
-function redactPageUrl(value: unknown): unknown {
-  if (typeof value !== "string") {
-    return value;
-  }
-  try {
-    const url = new URL(value);
-    return `${url.origin}${url.pathname}`;
-  } catch {
-    return value.split(/[?#]/, 1)[0];
-  }
 }
