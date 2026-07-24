@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -33,6 +34,13 @@ const (
 	accessTokenExpiry    = 1 * time.Hour
 	refreshTokenExpiry   = 30 * 24 * time.Hour
 	clientInactiveExpiry = 30 * 24 * time.Hour
+
+	// maxOAuth2BodyBytes caps request bodies on the OAuth2 POST routes. Echo's
+	// default JSON deserializer buffers the whole body in memory before
+	// unmarshalling, and /register is unauthenticated, so bodies must be
+	// bounded before Bind. OAuth2 payloads (RFC 7591 client metadata, RFC 6749
+	// token/revoke forms) are at most a few KB; 64 KB is generous.
+	maxOAuth2BodyBytes = 64 << 10
 )
 
 type Service struct {
@@ -60,23 +68,24 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	// authorization code / refresh token (set at consent time from the
 	// user's session), not on the URL or the client. Same routes serve
 	// self-hosted and SaaS.
-	e.POST("/api/oauth2/register", s.handleRegister)
+	bodyLimit := middleware.BodyLimit(maxOAuth2BodyBytes)
+	e.POST("/api/oauth2/register", s.handleRegister, bodyLimit)
 	e.GET("/api/oauth2/authorize", s.handleAuthorizeGet)
-	e.POST("/api/oauth2/authorize", s.handleAuthorizePost)
+	e.POST("/api/oauth2/authorize", s.handleAuthorizePost, bodyLimit)
 	e.GET("/api/oauth2/clients/:clientID", s.handleGetClient)
-	e.POST("/api/oauth2/token", s.handleToken)
-	e.POST("/api/oauth2/revoke", s.handleRevoke)
+	e.POST("/api/oauth2/token", s.handleToken, bodyLimit)
+	e.POST("/api/oauth2/revoke", s.handleRevoke, bodyLimit)
 
 	// Workspace-scoped routes are kept for backward compatibility with any
 	// client that hardcoded the older URL shape. The :workspaceID segment
 	// is now informational — workspace resolution comes from the session
 	// at consent time, just like the unscoped routes above.
-	e.POST("/api/workspaces/:workspaceID/oauth2/register", s.handleRegister)
+	e.POST("/api/workspaces/:workspaceID/oauth2/register", s.handleRegister, bodyLimit)
 	e.GET("/api/workspaces/:workspaceID/oauth2/authorize", s.handleAuthorizeGet)
-	e.POST("/api/workspaces/:workspaceID/oauth2/authorize", s.handleAuthorizePost)
+	e.POST("/api/workspaces/:workspaceID/oauth2/authorize", s.handleAuthorizePost, bodyLimit)
 	e.GET("/api/workspaces/:workspaceID/oauth2/clients/:clientID", s.handleGetClient)
-	e.POST("/api/workspaces/:workspaceID/oauth2/token", s.handleToken)
-	e.POST("/api/workspaces/:workspaceID/oauth2/revoke", s.handleRevoke)
+	e.POST("/api/workspaces/:workspaceID/oauth2/token", s.handleToken, bodyLimit)
+	e.POST("/api/workspaces/:workspaceID/oauth2/revoke", s.handleRevoke, bodyLimit)
 }
 
 // handleGetClient returns public client info for the consent page.
