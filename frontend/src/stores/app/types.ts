@@ -236,7 +236,11 @@ export type WorkspaceSlice = {
     workspace: Workspace,
     updateMask: string[]
   ) => Promise<Workspace>;
-  switchWorkspace: (workspaceName: string, redirect?: boolean) => Promise<void>;
+  switchWorkspace: (
+    workspaceName: string,
+    redirect?: boolean,
+    recordVisit?: boolean
+  ) => Promise<void>;
   loadWorkspaceProfile: (
     force?: boolean
   ) => Promise<WorkspaceProfileSetting | undefined>;

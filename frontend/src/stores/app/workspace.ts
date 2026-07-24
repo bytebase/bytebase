@@ -289,17 +289,23 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       return updated;
     },
 
-    switchWorkspace: async (workspaceName: string, redirect = true) => {
+    switchWorkspace: async (
+      workspaceName: string,
+      redirect = true,
+      recordVisit = true
+    ) => {
       await authServiceClientConnect.switchWorkspace(
         createProto(SwitchWorkspaceRequestSchema, {
           workspace: workspaceName,
           web: true,
         })
       );
-      get().recordRecentVisit(
-        resolvePath(WORKSPACE_ROUTE_LANDING),
-        workspaceName
-      );
+      if (recordVisit) {
+        get().recordRecentVisit(
+          resolvePath(WORKSPACE_ROUTE_LANDING),
+          workspaceName
+        );
+      }
       // Notify other tabs to reload with the new workspace.
       broadcastWorkspaceSwitch(workspaceName);
       if (redirect) {

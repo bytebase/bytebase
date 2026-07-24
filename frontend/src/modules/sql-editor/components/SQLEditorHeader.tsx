@@ -92,7 +92,6 @@ export function SQLEditorHeader() {
       const route = navigate.resolve({
         name: SQL_EDITOR_HOME_MODULE,
       });
-      record(route.fullPath, workspaceName);
 
       if (workspaceName === workspace?.name) {
         if (event.ctrlKey || event.metaKey) {
@@ -103,11 +102,11 @@ export function SQLEditorHeader() {
         return;
       }
 
-      void switchWorkspace(workspaceName, false).then(() => {
+      void switchWorkspace(workspaceName, false, true).then(() => {
         globalThis.location.assign(route.fullPath);
       });
     },
-    [navigate, record, switchWorkspace, workspace?.name]
+    [navigate, switchWorkspace, workspace?.name]
   );
 
   return (
