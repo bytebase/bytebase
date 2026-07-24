@@ -823,7 +823,6 @@ function SpecChangeRow({
       {specRoute != null ? (
         <RouterLink
           className="inline-flex min-w-0 items-center gap-1 text-main transition-colors hover:text-accent hover:underline focus-visible:text-accent focus-visible:underline focus-visible:outline-hidden"
-          preventScrollReset={linkless}
           to={specRoute}
         >
           {chip}

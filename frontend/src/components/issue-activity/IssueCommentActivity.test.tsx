@@ -226,7 +226,7 @@ describe("IssueCommentRow", () => {
       "hover:text-accent",
       "hover:underline"
     );
-    expect(link).toHaveAttribute("data-prevent-scroll-reset", "true");
+    expect(link).not.toHaveAttribute("data-prevent-scroll-reset");
   });
 
   test("uses the new target in a changed-targets reference", () => {
