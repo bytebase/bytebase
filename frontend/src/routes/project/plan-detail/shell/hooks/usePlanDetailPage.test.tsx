@@ -115,6 +115,22 @@ describe("usePlanDetailPage", () => {
     vi.restoreAllMocks();
   });
 
+  test("defaults to every phase before review begins", async () => {
+    const { result } = renderHook(
+      () =>
+        usePlanDetailPage({
+          projectId: "foo",
+          planId: "plan-1",
+        }),
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(result.current.activePhases).toEqual(
+      new Set(["changes", "review", "deploy"])
+    );
+  });
+
   test("defaults to only the deploy phase on the deploy route query", async () => {
     const { result } = renderHook(
       () =>
@@ -137,7 +153,7 @@ describe("usePlanDetailPage", () => {
     );
   });
 
-  test("keeps the specs collection focused on Changes without a phase query", async () => {
+  test("expands every phase when entering through the specs collection", async () => {
     mocks.fetchPlanSnapshot.mockResolvedValue(
       buildSnapshotPatch({
         planId: "plan-1",
@@ -158,7 +174,9 @@ describe("usePlanDetailPage", () => {
     );
 
     await waitFor(() => expect(result.current.ready).toBe(true));
-    expect(result.current.activePhases).toEqual(new Set(["changes"]));
+    expect(result.current.activePhases).toEqual(
+      new Set(["changes", "review", "deploy"])
+    );
     expect(mocks.routerPush).not.toHaveBeenCalled();
     expect(mocks.routerReplace).not.toHaveBeenCalled();
   });
@@ -227,11 +245,11 @@ describe("usePlanDetailPage", () => {
     await waitFor(() => expect(result.current.pageKey).toBe("foo/plan-2"));
     await waitFor(() => expect(result.current.ready).toBe(true));
     expect(result.current.activePhases).toEqual(
-      new Set(["changes", "review"])
+      new Set(["changes", "review", "deploy"])
     );
   });
 
-  test("defaults to the changes and review phases after an issue is created", async () => {
+  test("defaults to every phase after an issue is created", async () => {
     mocks.fetchPlanSnapshot.mockResolvedValue(
       buildSnapshotPatch({
         issue: {
@@ -253,7 +271,7 @@ describe("usePlanDetailPage", () => {
     await waitFor(() => expect(result.current.ready).toBe(true));
     expect(result.current.activePhases.has("changes")).toBe(true);
     expect(result.current.activePhases.has("review")).toBe(true);
-    expect(result.current.activePhases.has("deploy")).toBe(false);
+    expect(result.current.activePhases.has("deploy")).toBe(true);
   });
 
   test("defaults to deploy while rollout creation is pending", async () => {
@@ -291,7 +309,7 @@ describe("usePlanDetailPage", () => {
     expect(mocks.routerReplace).not.toHaveBeenCalled();
   });
 
-  test("keeps an explicit review phase on a reviewed rollout plan", async () => {
+  test("expands every phase for an explicit review route", async () => {
     mocks.fetchPlanSnapshot.mockResolvedValue(
       buildSnapshotPatch({
         issue: {
@@ -320,23 +338,22 @@ describe("usePlanDetailPage", () => {
 
     await waitFor(() => expect(result.current.ready).toBe(true));
     expect(result.current.activePhases).toEqual(
-      new Set(["changes", "review"])
+      new Set(["changes", "review", "deploy"])
     );
     expect(mocks.routerPush).not.toHaveBeenCalled();
     expect(mocks.routerReplace).not.toHaveBeenCalled();
   });
 
-  test("lets a spec resource override a reviewed rollout plan's default", async () => {
+  test("expands every phase when entering a review-stage plan through a spec", async () => {
     mocks.fetchPlanSnapshot.mockResolvedValue(
       buildSnapshotPatch({
         issue: {
           name: "projects/foo/issues/1",
+          approvalStatus: ApprovalStatus.CHECKING,
+          draft: false,
+          status: IssueStatus.OPEN,
         } as PlanDetailPageSnapshot["issue"],
         planId: "plan-1",
-        rollout: {
-          name: "projects/foo/rollouts/1",
-          stages: [],
-        } as unknown as PlanDetailPageSnapshot["rollout"],
       })
     );
 
@@ -353,11 +370,11 @@ describe("usePlanDetailPage", () => {
 
     await waitFor(() => expect(result.current.ready).toBe(true));
     expect(result.current.activePhases.has("changes")).toBe(true);
-    expect(result.current.activePhases.has("review")).toBe(false);
-    expect(result.current.activePhases.has("deploy")).toBe(false);
+    expect(result.current.activePhases.has("review")).toBe(true);
+    expect(result.current.activePhases.has("deploy")).toBe(true);
   });
 
-  test("has review default phases on the first ready render", async () => {
+  test("has every phase on the first ready render for review plans", async () => {
     mocks.fetchPlanSnapshot.mockResolvedValue(
       buildSnapshotPatch({
         issue: {
@@ -385,7 +402,7 @@ describe("usePlanDetailPage", () => {
     await waitFor(() => expect(result.current.ready).toBe(true));
     expect(readyRenders[0].has("changes")).toBe(true);
     expect(readyRenders[0].has("review")).toBe(true);
-    expect(readyRenders[0].has("deploy")).toBe(false);
+    expect(readyRenders[0].has("deploy")).toBe(true);
   });
 
   test("has deploy as the only phase on the first ready render for rollout plans", async () => {
@@ -743,7 +760,7 @@ describe("usePlanDetailPage", () => {
 
     await waitFor(() => expect(result.current.ready).toBe(true));
     expect(result.current.activePhases).toEqual(
-      new Set(["changes", "review"])
+      new Set(["changes", "review", "deploy"])
     );
 
     act(() => result.current.togglePhase("review"));

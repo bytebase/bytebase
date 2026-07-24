@@ -135,10 +135,14 @@ const preserveSnapshotIdentities = (
 };
 
 const getDefaultActivePhases = (phase: PlanDetailPhase): PlanDetailPhase[] => {
-  if (phase === PLAN_DETAIL_PHASE_REVIEW) {
-    return [PLAN_DETAIL_PHASE_CHANGES, PLAN_DETAIL_PHASE_REVIEW];
+  if (phase === PLAN_DETAIL_PHASE_DEPLOY) {
+    return [PLAN_DETAIL_PHASE_DEPLOY];
   }
-  return [phase];
+  return [
+    PLAN_DETAIL_PHASE_CHANGES,
+    PLAN_DETAIL_PHASE_REVIEW,
+    PLAN_DETAIL_PHASE_DEPLOY,
+  ];
 };
 
 type PhaseSelection = {
