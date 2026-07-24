@@ -96,6 +96,131 @@ func TestPlanServiceListPlansHidesMalformedUIPlans(t *testing.T) {
 	require.Equal(t, oldMalformed.Name, gotMalformed.Msg.Title)
 }
 
+func TestPlanServiceListPlansIncludesIssueStatus(t *testing.T) {
+	ctx := context.Background()
+	stores := setupPlanServiceTestStore(ctx, t)
+	service := NewPlanService(stores, nil, nil, nil, nil)
+
+	createPlan := func(title, release string) *store.PlanMessage {
+		t.Helper()
+		plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+			ProjectID: "project-a",
+			Name:      title,
+			Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+				Id: title,
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{Release: release},
+				},
+			}}},
+		}, "creator@example.com")
+		require.NoError(t, err)
+		return plan
+	}
+	createIssue := func(plan *store.PlanMessage, draft bool, status storepb.Issue_Status) {
+		t.Helper()
+		issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+			ProjectID:    plan.ProjectID,
+			CreatorEmail: "creator@example.com",
+			PlanUID:      &plan.UID,
+			Title:        plan.Name,
+			Type:         storepb.Issue_DATABASE_CHANGE,
+			Payload: &storepb.Issue{
+				Draft: draft,
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone: true,
+				},
+			},
+		})
+		require.NoError(t, err)
+		if status != storepb.Issue_OPEN {
+			_, err = stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{Status: &status})
+			require.NoError(t, err)
+		}
+	}
+
+	createPlan("no issue", "projects/project-a/releases/release-a")
+	draftPlan := createPlan("draft", "")
+	createIssue(draftPlan, true, storepb.Issue_OPEN)
+	openPlan := createPlan("open", "")
+	createIssue(openPlan, false, storepb.Issue_OPEN)
+	donePlan := createPlan("done", "")
+	createIssue(donePlan, false, storepb.Issue_DONE)
+	canceledPlan := createPlan("canceled", "")
+	createIssue(canceledPlan, false, storepb.Issue_CANCELED)
+
+	response, err := service.ListPlans(ctx, connect.NewRequest(&v1pb.ListPlansRequest{
+		Parent:   "projects/project-a",
+		PageSize: 100,
+	}))
+	require.NoError(t, err)
+	require.Len(t, response.Msg.Plans, 5)
+	plansByTitle := make(map[string]*v1pb.Plan, len(response.Msg.Plans))
+	for _, plan := range response.Msg.Plans {
+		plansByTitle[plan.Title] = plan
+	}
+
+	require.Empty(t, plansByTitle["no issue"].Issue)
+	require.Equal(t, v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED, plansByTitle["no issue"].IssueStatus)
+	require.Equal(t, v1pb.ApprovalStatus_APPROVAL_STATUS_UNSPECIFIED, plansByTitle["no issue"].ApprovalStatus)
+
+	require.NotEmpty(t, plansByTitle["draft"].Issue)
+	require.Equal(t, v1pb.IssueStatus_OPEN, plansByTitle["draft"].IssueStatus)
+	require.Equal(t, v1pb.ApprovalStatus_APPROVAL_STATUS_UNSPECIFIED, plansByTitle["draft"].ApprovalStatus)
+
+	require.Equal(t, v1pb.IssueStatus_OPEN, plansByTitle["open"].IssueStatus)
+	require.Equal(t, v1pb.ApprovalStatus_SKIPPED, plansByTitle["open"].ApprovalStatus)
+	require.Equal(t, v1pb.IssueStatus_DONE, plansByTitle["done"].IssueStatus)
+	require.Equal(t, v1pb.IssueStatus_CANCELED, plansByTitle["canceled"].IssueStatus)
+}
+
+func TestConvertToPlansScopesIssueStatusByProject(t *testing.T) {
+	ctx := context.Background()
+	stores := setupPlanServiceTestStore(ctx, t)
+	_, err := stores.GetDB().ExecContext(ctx, `
+		INSERT INTO project (resource_id, workspace, name)
+		VALUES ('project-b', 'default', 'Project B')
+	`)
+	require.NoError(t, err)
+
+	createPlanWithIssue := func(projectID string, status storepb.Issue_Status) *store.PlanMessage {
+		t.Helper()
+		plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+			ProjectID: projectID,
+			Name:      projectID,
+			Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+				Id: projectID,
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
+				},
+			}}},
+		}, "creator@example.com")
+		require.NoError(t, err)
+		issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+			ProjectID:    projectID,
+			CreatorEmail: "creator@example.com",
+			PlanUID:      &plan.UID,
+			Title:        projectID,
+			Type:         storepb.Issue_DATABASE_CHANGE,
+			Payload:      &storepb.Issue{},
+		})
+		require.NoError(t, err)
+		if status != storepb.Issue_OPEN {
+			_, err = stores.UpdateIssue(ctx, projectID, issue.UID, &store.UpdateIssueMessage{Status: &status})
+			require.NoError(t, err)
+		}
+		return plan
+	}
+
+	planA := createPlanWithIssue("project-a", storepb.Issue_CANCELED)
+	planB := createPlanWithIssue("project-b", storepb.Issue_DONE)
+	require.Equal(t, planA.UID, planB.UID)
+
+	plans, err := convertToPlans(ctx, stores, []*store.PlanMessage{planA, planB})
+	require.NoError(t, err)
+	require.Equal(t, v1pb.IssueStatus_CANCELED, plans[0].IssueStatus)
+	require.Equal(t, v1pb.IssueStatus_DONE, plans[1].IssueStatus)
+}
+
 func TestPlanServiceCreatePlanRejectsMixedDatabaseSpecs(t *testing.T) {
 	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
 	ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{

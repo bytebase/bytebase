@@ -290,6 +290,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.IssueStatus"><span class="badge">E</span>IssueStatus</a>
+                </li>
+
+                <li>
                   <a href="#bytebase.v1.RiskLevel"><span class="badge">E</span>RiskLevel</a>
                 </li>
               
@@ -1436,10 +1440,6 @@
               
                 <li>
                   <a href="#bytebase.v1.IssueComment.Approval.Status"><span class="badge">E</span>IssueComment.Approval.Status</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.IssueStatus"><span class="badge">E</span>IssueStatus</a>
                 </li>
               
               
@@ -4157,6 +4157,41 @@ Examples:
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.IssueStatus">IssueStatus</h3>
+        <p>The status of an issue.</p><p>Lives at the top level so both plan_service.proto and issue_service.proto</p><p>can reference it without a circular import.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+
+              <tr>
+                <td>ISSUE_STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Unspecified status.</p></td>
+              </tr>
+
+              <tr>
+                <td>OPEN</td>
+                <td>1</td>
+                <td><p>Issue is open and active.</p></td>
+              </tr>
+
+              <tr>
+                <td>DONE</td>
+                <td>2</td>
+                <td><p>Issue is completed.</p></td>
+              </tr>
+
+              <tr>
+                <td>CANCELED</td>
+                <td>3</td>
+                <td><p>Issue is canceled.</p></td>
+              </tr>
+
+          </tbody>
+        </table>
+
         <h3 id="bytebase.v1.RiskLevel">RiskLevel</h3>
         <p>RiskLevel is the risk level.</p>
         <table class="enum-table">
@@ -15686,7 +15721,7 @@ Keys are:
                   <td><a href="#bytebase.v1.ApprovalStatus">ApprovalStatus</a></td>
                   <td></td>
                   <td><p>The approval status of the linked issue.
-Unspecified when no linked issue exists. </p></td>
+Unspecified when no linked issue exists or the linked issue is a draft. </p></td>
                 </tr>
               
                 <tr>
@@ -15697,6 +15732,14 @@ Unspecified when no linked issue exists. </p></td>
 Ordered by environment deployment order. Empty when no rollout exists. </p></td>
                 </tr>
               
+                <tr>
+                  <td>issue_status</td>
+                  <td><a href="#bytebase.v1.IssueStatus">IssueStatus</a></td>
+                  <td></td>
+                  <td><p>The lifecycle status of the linked issue.
+Unspecified when no linked issue exists. </p></td>
+                </tr>
+
             </tbody>
           </table>
 
@@ -17816,41 +17859,6 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>REJECTED</td>
                 <td>3</td>
                 <td><p>Rejected.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.IssueStatus">IssueStatus</h3>
-        <p>The status of an issue.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>ISSUE_STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>Unspecified status.</p></td>
-              </tr>
-            
-              <tr>
-                <td>OPEN</td>
-                <td>1</td>
-                <td><p>Issue is open and active.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DONE</td>
-                <td>2</td>
-                <td><p>Issue is completed.</p></td>
-              </tr>
-            
-              <tr>
-                <td>CANCELED</td>
-                <td>3</td>
-                <td><p>Issue is canceled.</p></td>
               </tr>
             
           </tbody>

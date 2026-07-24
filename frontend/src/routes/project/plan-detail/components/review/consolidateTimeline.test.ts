@@ -1,9 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
-import {
-  IssueCommentSchema,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/common_pb";
+import { IssueCommentSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { consolidateConsecutive } from "./consolidateTimeline";
 import type { TimelineEntry } from "./timelineEvents";
 

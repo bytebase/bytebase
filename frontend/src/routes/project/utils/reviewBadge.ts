@@ -1,10 +1,7 @@
-import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 
 export interface ReviewBadgeInput {
   hasIssue: boolean;
-  // Pass undefined when the caller cannot observe issue status (e.g. Plan
-  // List, which reads from the Plan proto and does not have issue_status).
   issueStatus: IssueStatus | undefined;
   hasRollout: boolean;
   approvalStatus: ApprovalStatus | undefined;

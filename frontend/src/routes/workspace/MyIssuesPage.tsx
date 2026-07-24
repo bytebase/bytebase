@@ -22,9 +22,8 @@ import { PagedTableFooter, usePagedData } from "@/hooks/usePagedData";
 import { useURLSearchParam } from "@/hooks/useURLSearchParam";
 import { refreshIssueList } from "@/lib/issue/issueListRefresh";
 import { useAppStore } from "@/stores/app";
-import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   buildIssueFilterBySearchParams,
   buildSearchParamsBySearchText,

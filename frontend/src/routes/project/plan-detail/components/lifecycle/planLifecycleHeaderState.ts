@@ -6,8 +6,11 @@
 // the user's turn to review, whether they may run the frontier stage) are
 // computed by usePlanLifecycleHeader and passed in as plain values so this stays
 // pure and unit-testable.
-import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  ApprovalStatus,
+  IssueStatus,
+  State,
+} from "@/types/proto-es/v1/common_pb";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import type { PlanCheckSummary } from "../../utils/phaseSummary";
 import {

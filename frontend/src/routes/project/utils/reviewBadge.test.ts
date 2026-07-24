@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { getPlanDraftState, getReviewBadge } from "./reviewBadge";
 
 describe("getReviewBadge", () => {
@@ -200,126 +199,56 @@ describe("getReviewBadge", () => {
     });
   });
 
-  describe("without issue status (Plan List caller)", () => {
-    it("hasRollout=true + PENDING → 'bypassed' (closes BYT-9551 plan 201)", () => {
-      expect(
-        getReviewBadge({
-          hasIssue: true,
-          issueStatus: undefined,
-          hasRollout: true,
-          approvalStatus: ApprovalStatus.PENDING,
-        })
-      ).toEqual({ labelKey: "common.bypassed", variant: "default" });
-    });
-
-    describe("residual divergence vs Plan Detail — Category A (canceled issue)", () => {
-      // List cannot detect CANCELED without issue_status; renders the
-      // approval-derived badge instead of "closed". Documented in spec.
-      it.each<
-        [ApprovalStatus, { labelKey: string; variant: string } | undefined]
-      >([
-        [
-          ApprovalStatus.APPROVED,
-          { labelKey: "issue.table.approved", variant: "success" },
-        ],
-        [
-          ApprovalStatus.SKIPPED,
-          { labelKey: "common.skipped", variant: "default" },
-        ],
-        [
-          ApprovalStatus.REJECTED,
-          { labelKey: "common.rejected", variant: "warning" },
-        ],
-        [
-          ApprovalStatus.PENDING,
-          { labelKey: "common.under-review", variant: "secondary" },
-        ],
-      ])(
-        "would-be-canceled, approval=%s → approval badge (not 'closed')",
-        (approvalStatus, expected) => {
-          expect(
-            getReviewBadge({
-              hasIssue: true,
-              issueStatus: undefined,
-              hasRollout: false,
-              approvalStatus,
-            })
-          ).toEqual(expected);
-        }
-      );
-    });
-
-    it("residual divergence — Category C₂ (would-be-bypassed without rollout) renders 'under-review'", () => {
-      // List cannot detect "DONE && !hasRollout && PENDING" without
-      // issue_status; renders "under-review" instead of "bypassed".
-      expect(
-        getReviewBadge({
-          hasIssue: true,
-          issueStatus: undefined,
-          hasRollout: false,
-          approvalStatus: ApprovalStatus.PENDING,
-        })
-      ).toEqual({ labelKey: "common.under-review", variant: "secondary" });
-    });
-
-    describe("approval status mapping without rollout", () => {
-      it.each<
-        [ApprovalStatus, { labelKey: string; variant: string } | undefined]
-      >([
-        [
-          ApprovalStatus.APPROVED,
-          { labelKey: "issue.table.approved", variant: "success" },
-        ],
-        [
-          ApprovalStatus.SKIPPED,
-          { labelKey: "common.skipped", variant: "default" },
-        ],
-        [
-          ApprovalStatus.REJECTED,
-          { labelKey: "common.rejected", variant: "warning" },
-        ],
-        [ApprovalStatus.CHECKING, undefined],
-        [ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED, undefined],
-      ])("approval=%s", (approvalStatus, expected) => {
+  describe("with Plan List issue status", () => {
+    it.each<
+      [
+        string,
+        IssueStatus,
+        boolean,
+        ApprovalStatus,
+        { labelKey: string; variant: string },
+      ]
+    >([
+      [
+        "canceled issue",
+        IssueStatus.CANCELED,
+        false,
+        ApprovalStatus.PENDING,
+        { labelKey: "common.closed", variant: "default" },
+      ],
+      [
+        "done issue without rollout",
+        IssueStatus.DONE,
+        false,
+        ApprovalStatus.PENDING,
+        { labelKey: "common.bypassed", variant: "default" },
+      ],
+      [
+        "open issue with rollout",
+        IssueStatus.OPEN,
+        true,
+        ApprovalStatus.PENDING,
+        { labelKey: "common.bypassed", variant: "default" },
+      ],
+      [
+        "open issue awaiting review",
+        IssueStatus.OPEN,
+        false,
+        ApprovalStatus.PENDING,
+        { labelKey: "common.under-review", variant: "secondary" },
+      ],
+    ])(
+      "%s uses the same badge as Plan Detail",
+      (_name, issueStatus, hasRollout, approvalStatus, expected) => {
         expect(
           getReviewBadge({
             hasIssue: true,
-            issueStatus: undefined,
-            hasRollout: false,
+            issueStatus,
+            hasRollout,
             approvalStatus,
           })
         ).toEqual(expected);
-      });
-    });
-
-    describe("approval status mapping with rollout (PENDING handled separately as 'bypassed')", () => {
-      it.each<
-        [ApprovalStatus, { labelKey: string; variant: string } | undefined]
-      >([
-        [
-          ApprovalStatus.APPROVED,
-          { labelKey: "issue.table.approved", variant: "success" },
-        ],
-        [
-          ApprovalStatus.SKIPPED,
-          { labelKey: "common.skipped", variant: "default" },
-        ],
-        [
-          ApprovalStatus.REJECTED,
-          { labelKey: "common.rejected", variant: "warning" },
-        ],
-        [ApprovalStatus.CHECKING, undefined],
-        [ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED, undefined],
-      ])("approval=%s, hasRollout=true", (approvalStatus, expected) => {
-        expect(
-          getReviewBadge({
-            hasIssue: true,
-            issueStatus: undefined,
-            hasRollout: true,
-            approvalStatus,
-          })
-        ).toEqual(expected);
-      });
-    });
+      }
+    );
   });
 });

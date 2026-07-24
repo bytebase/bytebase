@@ -113,6 +113,20 @@ enum ApprovalStatus {
   SKIPPED = 5;
 }
 
+// The status of an issue.
+// Lives at the top level so both plan_service.proto and issue_service.proto
+// can reference it without a circular import.
+enum IssueStatus {
+  // Unspecified status.
+  ISSUE_STATUS_UNSPECIFIED = 0;
+  // Issue is open and active.
+  OPEN = 1;
+  // Issue is completed.
+  DONE = 2;
+  // Issue is canceled.
+  CANCELED = 3;
+}
+
 // Position in a text expressed as one-based line and one-based column.
 // We use 1-based numbering to match the majority of industry standards:
 // - Monaco Editor uses 1-based (https://microsoft.github.io/monaco-editor/typedoc/interfaces/IPosition.html)

@@ -1,6 +1,9 @@
-import type { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
-import { RiskLevel } from "@/types/proto-es/v1/common_pb";
-import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  type ApprovalStatus,
+  IssueStatus,
+  RiskLevel,
+} from "@/types/proto-es/v1/common_pb";
+import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 
 export interface IssueFilter {
   project: string;

@@ -1,10 +1,8 @@
 import { create } from "@bufbuild/protobuf";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import {
-  IssueSchema,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/common_pb";
+import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { emptySearchParams } from "./AdvancedSearch";
 import { IssueListItem, IssueSearchBar, PresetButtons } from "./IssueTable";
 

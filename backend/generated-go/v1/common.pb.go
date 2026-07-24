@@ -403,6 +403,65 @@ func (ApprovalStatus) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{4}
 }
 
+// The status of an issue.
+// Lives at the top level so both plan_service.proto and issue_service.proto
+// can reference it without a circular import.
+type IssueStatus int32
+
+const (
+	// Unspecified status.
+	IssueStatus_ISSUE_STATUS_UNSPECIFIED IssueStatus = 0
+	// Issue is open and active.
+	IssueStatus_OPEN IssueStatus = 1
+	// Issue is completed.
+	IssueStatus_DONE IssueStatus = 2
+	// Issue is canceled.
+	IssueStatus_CANCELED IssueStatus = 3
+)
+
+// Enum value maps for IssueStatus.
+var (
+	IssueStatus_name = map[int32]string{
+		0: "ISSUE_STATUS_UNSPECIFIED",
+		1: "OPEN",
+		2: "DONE",
+		3: "CANCELED",
+	}
+	IssueStatus_value = map[string]int32{
+		"ISSUE_STATUS_UNSPECIFIED": 0,
+		"OPEN":                     1,
+		"DONE":                     2,
+		"CANCELED":                 3,
+	}
+)
+
+func (x IssueStatus) Enum() *IssueStatus {
+	p := new(IssueStatus)
+	*p = x
+	return p
+}
+
+func (x IssueStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (IssueStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_common_proto_enumTypes[5].Descriptor()
+}
+
+func (IssueStatus) Type() protoreflect.EnumType {
+	return &file_v1_common_proto_enumTypes[5]
+}
+
+func (x IssueStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use IssueStatus.Descriptor instead.
+func (IssueStatus) EnumDescriptor() ([]byte, []int) {
+	return file_v1_common_proto_rawDescGZIP(), []int{5}
+}
+
 // RiskLevel is the risk level.
 type RiskLevel int32
 
@@ -444,11 +503,11 @@ func (x RiskLevel) String() string {
 }
 
 func (RiskLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_common_proto_enumTypes[5].Descriptor()
+	return file_v1_common_proto_enumTypes[6].Descriptor()
 }
 
 func (RiskLevel) Type() protoreflect.EnumType {
-	return &file_v1_common_proto_enumTypes[5]
+	return &file_v1_common_proto_enumTypes[6]
 }
 
 func (x RiskLevel) Number() protoreflect.EnumNumber {
@@ -457,7 +516,7 @@ func (x RiskLevel) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RiskLevel.Descriptor instead.
 func (RiskLevel) EnumDescriptor() ([]byte, []int) {
-	return file_v1_common_proto_rawDescGZIP(), []int{5}
+	return file_v1_common_proto_rawDescGZIP(), []int{6}
 }
 
 // Webhook integration type.
@@ -521,11 +580,11 @@ func (x WebhookType) String() string {
 }
 
 func (WebhookType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_common_proto_enumTypes[6].Descriptor()
+	return file_v1_common_proto_enumTypes[7].Descriptor()
 }
 
 func (WebhookType) Type() protoreflect.EnumType {
-	return &file_v1_common_proto_enumTypes[6]
+	return &file_v1_common_proto_enumTypes[7]
 }
 
 func (x WebhookType) Number() protoreflect.EnumNumber {
@@ -534,7 +593,7 @@ func (x WebhookType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WebhookType.Descriptor instead.
 func (WebhookType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_common_proto_rawDescGZIP(), []int{6}
+	return file_v1_common_proto_rawDescGZIP(), []int{7}
 }
 
 // StatementType represents the type of SQL statement.
@@ -690,11 +749,11 @@ func (x StatementType) String() string {
 }
 
 func (StatementType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_common_proto_enumTypes[7].Descriptor()
+	return file_v1_common_proto_enumTypes[8].Descriptor()
 }
 
 func (StatementType) Type() protoreflect.EnumType {
-	return &file_v1_common_proto_enumTypes[7]
+	return &file_v1_common_proto_enumTypes[8]
 }
 
 func (x StatementType) Number() protoreflect.EnumNumber {
@@ -703,7 +762,7 @@ func (x StatementType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use StatementType.Descriptor instead.
 func (StatementType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_common_proto_rawDescGZIP(), []int{7}
+	return file_v1_common_proto_rawDescGZIP(), []int{8}
 }
 
 // Position in a text expressed as one-based line and one-based column.
@@ -975,7 +1034,12 @@ const file_v1_common_proto_rawDesc = "" +
 	"\aPENDING\x10\x02\x12\f\n" +
 	"\bAPPROVED\x10\x03\x12\f\n" +
 	"\bREJECTED\x10\x04\x12\v\n" +
-	"\aSKIPPED\x10\x05*H\n" +
+	"\aSKIPPED\x10\x05*M\n" +
+	"\vIssueStatus\x12\x1c\n" +
+	"\x18ISSUE_STATUS_UNSPECIFIED\x10\x00\x12\b\n" +
+	"\x04OPEN\x10\x01\x12\b\n" +
+	"\x04DONE\x10\x02\x12\f\n" +
+	"\bCANCELED\x10\x03*H\n" +
 	"\tRiskLevel\x12\x1a\n" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
@@ -1058,7 +1122,7 @@ func file_v1_common_proto_rawDescGZIP() []byte {
 	return file_v1_common_proto_rawDescData
 }
 
-var file_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
+var file_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
 var file_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_v1_common_proto_goTypes = []any{
 	(State)(0),                     // 0: bytebase.v1.State
@@ -1066,12 +1130,13 @@ var file_v1_common_proto_goTypes = []any{
 	(VCSType)(0),                   // 2: bytebase.v1.VCSType
 	(ExportFormat)(0),              // 3: bytebase.v1.ExportFormat
 	(ApprovalStatus)(0),            // 4: bytebase.v1.ApprovalStatus
-	(RiskLevel)(0),                 // 5: bytebase.v1.RiskLevel
-	(WebhookType)(0),               // 6: bytebase.v1.WebhookType
-	(StatementType)(0),             // 7: bytebase.v1.StatementType
-	(*Position)(nil),               // 8: bytebase.v1.Position
-	(*Range)(nil),                  // 9: bytebase.v1.Range
-	(*PermissionDeniedDetail)(nil), // 10: bytebase.v1.PermissionDeniedDetail
+	(IssueStatus)(0),               // 5: bytebase.v1.IssueStatus
+	(RiskLevel)(0),                 // 6: bytebase.v1.RiskLevel
+	(WebhookType)(0),               // 7: bytebase.v1.WebhookType
+	(StatementType)(0),             // 8: bytebase.v1.StatementType
+	(*Position)(nil),               // 9: bytebase.v1.Position
+	(*Range)(nil),                  // 10: bytebase.v1.Range
+	(*PermissionDeniedDetail)(nil), // 11: bytebase.v1.PermissionDeniedDetail
 }
 var file_v1_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -1091,7 +1156,7 @@ func file_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_common_proto_rawDesc), len(file_v1_common_proto_rawDesc)),
-			NumEnums:      8,
+			NumEnums:      9,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,

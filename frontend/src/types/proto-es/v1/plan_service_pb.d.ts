@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { ApprovalStatus, ExportFormat, Position, State, StatementType } from "./common_pb";
+import type { ApprovalStatus, ExportFormat, IssueStatus, Position, State, StatementType } from "./common_pb";
 import type { Task_Status } from "./rollout_service_pb";
 import type { Advice_Level } from "./sql_service_pb";
 
@@ -273,7 +273,7 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
 
   /**
    * The approval status of the linked issue.
-   * Unspecified when no linked issue exists.
+   * Unspecified when no linked issue exists or the linked issue is a draft.
    *
    * @generated from field: bytebase.v1.ApprovalStatus approval_status = 13;
    */
@@ -286,6 +286,14 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
    * @generated from field: repeated bytebase.v1.Plan.RolloutStageSummary rollout_stage_summaries = 14;
    */
   rolloutStageSummaries: Plan_RolloutStageSummary[];
+
+  /**
+   * The lifecycle status of the linked issue.
+   * Unspecified when no linked issue exists.
+   *
+   * @generated from field: bytebase.v1.IssueStatus issue_status = 15;
+   */
+  issueStatus: IssueStatus;
 };
 
 /**

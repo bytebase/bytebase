@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useOnKeyChange } from "@/hooks/useOnKeyChange";
 import { cn } from "@/lib/utils";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getRolloutStatus } from "@/utils";
 import { getReviewBadge } from "../utils/reviewBadge";
