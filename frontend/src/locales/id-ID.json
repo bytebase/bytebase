@@ -1,0 +1,3383 @@
+{
+  "activity": {
+    "n-similar-activities": "{{count}} aktivitas serupa",
+    "sentence": {
+      "added-spec": "menambahkan",
+      "canceled-issue": "menutup isu",
+      "changed-description": "mengubah deskripsi",
+      "changed-from-to": "mengubah {{name}} dari \"{{oldValue}}\" menjadi \"{{newValue}}\"",
+      "changed-labels": "mengubah label",
+      "changed-targets-of": "mengubah target dari",
+      "created-issue": "membuat isu",
+      "disabled-prior-backup-on": "menonaktifkan cadangan sebelumnya pada",
+      "enabled-prior-backup-on": "mengaktifkan cadangan sebelumnya pada",
+      "modified-sql-of": "memodifikasi SQL dari",
+      "removed-spec": "menghapus",
+      "reopened-issue": "membuka ulang isu",
+      "resolved-issue": "menandai isu sebagai Selesai",
+      "review-done-rollout-created": "Review selesai, peluncuran dibuat",
+      "review-done-rollout-created-for-plan": "Review selesai, peluncuran dibuat untuk rencana",
+      "review-skipped-rollout-created": "Review dilewati, peluncuran dibuat",
+      "review-skipped-rollout-created-for-plan": "Review dilewati, peluncuran dibuat untuk rencana"
+    }
+  },
+  "agent": {
+    "active-only-chats": "Aktif saja",
+    "ai-not-configured": {
+      "configure": "Konfigurasi",
+      "contact-admin": "Hubungi admin ruang kerja Anda untuk mengonfigurasi AI.",
+      "description": "AI belum dikonfigurasi untuk ruang kerja ini.",
+      "title": "AI Belum Dikonfigurasi"
+    },
+    "archive-all-chats": "Arsipkan semua obrolan",
+    "archive-chat": "Arsipkan obrolan",
+    "archived-only-chats": "Diarsipkan saja",
+    "args": "Argumen",
+    "assistant-title": "Asisten AI",
+    "cancel": "Batal",
+    "chat-archived-label": "Diarsipkan",
+    "chat-default-title": "Obrolan Baru",
+    "chat-list-label": "Obrolan",
+    "chat-total-tokens": "Total token: {{count}}",
+    "close": "Tutup",
+    "confirm": "Konfirmasi",
+    "delete-all-chats": "Hapus semua obrolan",
+    "delete-all-chats-confirmation": "Apakah Anda yakin ingin menghapus semua obrolan yang diarsipkan? Tindakan ini tidak dapat dibatalkan.",
+    "delete-chat": "Hapus obrolan",
+    "delete-chat-confirmation": "Apakah Anda yakin ingin menghapus obrolan ini? Tindakan ini tidak dapat dibatalkan.",
+    "input-placeholder": "Tanyakan AI apa pun...",
+    "interrupted": "Terinterupsi",
+    "interrupted-retry-hint": "Percakapan terinterupsi. Anda dapat mencoba lagi atau mengirim pesan baru.",
+    "minimize": "Minimalkan",
+    "new-chat": "Obrolan Baru",
+    "pending-choose-hint": "Silakan pilih opsi di atas",
+    "pending-confirm-hint": "Silakan konfirmasi atau batalkan di atas",
+    "pending-input-hint": "Silakan berikan input di atas",
+    "rename-chat-placeholder": "Masukkan nama obrolan",
+    "reply": "Balas",
+    "result": "Hasil",
+    "retry-last-chat-turn": "Coba Lagi",
+    "self": "Agen",
+    "send": "Kirim",
+    "stop": "Berhenti",
+    "tool-answer": "Jawaban",
+    "tool-ask-user": "Bertanya ke pengguna",
+    "tool-ask-user-choose": "Pilih opsi",
+    "tool-ask-user-confirm": "Konfirmasi tindakan",
+    "tool-ask-user-input": "Berikan input",
+    "tool-completed": "Selesai",
+    "tool-default-value": "Bawaan",
+    "tool-failed": "Gagal",
+    "tool-options": "Opsi",
+    "tool-prompt": "Prompt",
+    "tool-response-submitted": "Respons terkirim",
+    "tool-value": "Nilai",
+    "unarchive-all-chats": "Buka arsip semua obrolan",
+    "unarchive-chat": "Buka arsip obrolan"
+  },
+  "audit-log": {
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "description": "Cari berdasarkan aktor log audit",
+          "title": "Aktor"
+        },
+        "level": {
+          "description": "Cari berdasarkan level log audit",
+          "title": "Level"
+        },
+        "method": {
+          "description": "Cari berdasarkan metode log audit",
+          "title": "Metode"
+        }
+      }
+    },
+    "export-finished": "Ekspor selesai",
+    "export-tooltip": "Harus memilih waktu mulai dan waktu akhir dalam 30 hari",
+    "table": {
+      "actor": "Aktor",
+      "created-ts": "Waktu",
+      "latency": "Latensi",
+      "level": "Level",
+      "method": "Metode",
+      "request": "Permintaan",
+      "response": "Respons",
+      "service-data": "Data Layanan",
+      "status": "Status"
+    }
+  },
+  "auth": {
+    "back-to-signin": "Kembali ke Masuk",
+    "close-window": "Tutup jendela ini",
+    "inactive-modal": {
+      "description": "Anda tidak aktif untuk beberapa waktu. Demi keamanan, Anda akan otomatis keluar dalam {{minutes}} menit.",
+      "stay-signed-in": "Tetap masuk",
+      "title": "Sesi Anda akan segera berakhir"
+    },
+    "login-as-another": {
+      "content": "Kami akan mengarahkan Anda ke halaman beranda.",
+      "title": "Anda telah masuk sebagai pengguna lain"
+    },
+    "oauth-callback": {
+      "invalid-state": "Otentikasi gagal: Status callback tidak valid. Silakan coba lagi.",
+      "opener-failed": "Otentikasi selesai, tetapi gagal berkomunikasi dengan jendela induk. Silakan tutup jendela ini dan coba lagi.",
+      "opener-unavailable": "Otentikasi selesai, tetapi jendela induk tidak tersedia. Silakan tutup jendela ini dan coba lagi.",
+      "please-close": "Otentikasi selesai. Silakan tutup jendela ini.",
+      "processing": "Memproses otentikasi...",
+      "security-failed": "Otentikasi gagal: Validasi keamanan gagal. Silakan coba lagi.",
+      "session-expired": "Otentikasi gagal: Sesi kedaluwarsa atau tidak valid. Silakan coba lagi.",
+      "success-close": "Otentikasi selesai. Anda dapat menutup jendela ini.",
+      "success-redirecting": "Berhasil diotorisasi. Mengarahkan kembali ke Bytebase..."
+    },
+    "password-forget": {
+      "failed-to-send-code": "Gagal mengirim kode reset kata sandi. Silakan coba lagi.",
+      "return-to-sign-in": "Kembali ke Masuk",
+      "selfhost": "Silakan hubungi Admin Bytebase Anda untuk mereset kata sandi.",
+      "send-reset-code": "Kirim kode reset",
+      "title": "Lupa kata sandi?"
+    },
+    "password-reset": {
+      "code-label": "Kode verifikasi",
+      "content": "Anda perlu mereset kata sandi sesuai dengan kebijakan pembatasan kata sandi.",
+      "invalid-or-expired-code": "Kode tidak valid atau kedaluwarsa. Silakan minta yang baru.",
+      "title": "Reset kata sandi Anda"
+    },
+    "sign-in": {
+      "code-sent-hint": "Kode verifikasi telah dikirim ke {{email}}.",
+      "continue-with-email": "Lanjutkan dengan email",
+      "continue-with-idp": "Lanjutkan dengan {{idp}}",
+      "email-code-tab": "Kode Email",
+      "failed-to-send-code": "Gagal mengirim kode verifikasi. {{error}}",
+      "forget-password": "Lupa kata sandi?",
+      "invited-email": "Anda telah diundang. Silakan masuk dengan {{email}}",
+      "new-user": "Baru di Bytebase?",
+      "resend-code": "Kirim ulang kode",
+      "resend-in": "Kirim ulang dalam {{seconds}}d",
+      "sign-in-or-create": "Masuk atau buat akun Anda",
+      "sign-in-to-account": "Masuk ke akun Anda",
+      "standard-tab": "Standar",
+      "tos": "Dengan melanjutkan, Anda menyetujui <terms>Ketentuan Layanan</terms> dan <privacy>Kebijakan Privasi</privacy> kami.",
+      "verification-code": "Kode verifikasi"
+    },
+    "sign-up": {
+      "accept-terms-and-policy": "Saya menerima <terms>Ketentuan Layanan</terms> dan <policy>Kebijakan Privasi</policy> Bytebase",
+      "admin-title": "Atur <account>akun admin</account>",
+      "create-admin-account": "Buat akun admin",
+      "existing-user": "Sudah punya akun?",
+      "title": "Daftarkan akun Anda"
+    },
+    "token-expired-description": "Token telah kedaluwarsa, silakan masuk lagi",
+    "token-expired-title": "Token kedaluwarsa"
+  },
+  "banner": {
+    "external-url": "Bytebase belum mengonfigurasi --external-url",
+    "license-expired": "Lisensi Anda untuk {{plan}} telah kedaluwarsa pada {{expireAt}}.",
+    "license-expires": "Lisensi Anda untuk {{plan}} akan kedaluwarsa dalam {{days}} hari pada {{expireAt}}.",
+    "trial-expires": "Uji coba gratis Anda untuk {{plan}} akan kedaluwarsa dalam {{days}} hari pada {{expireAt}}."
+  },
+  "bbkit": {
+    "confirm-button": {
+      "cannot-undo": "Anda tidak dapat membatalkan tindakan ini.",
+      "sure-to-delete": "Apakah Anda yakin ingin menghapus?"
+    }
+  },
+  "cel": {
+    "condition": {
+      "add": "Tambah kondisi",
+      "add-condition-in-group-placeholder": "Tambah {{plus}} untuk menambah kondisi",
+      "add-group": "Tambah grup kondisi",
+      "add-raw-expression": "Tambah ekspresi mentah",
+      "add-root-condition-placeholder": "Klik \"Tambah kondisi\" atau \"Tambah grup kondisi\" untuk menambah kondisi",
+      "description-tips": "Kondisi adalah aturan yang dapat dikonfigurasi melalui ekspresi. Misalnya, kondisi \"Lingkungan adalah prod\" akan mencocokkan isu yang dijalankan di lingkungan \"prod\".",
+      "group": {
+        "and": {
+          "description": "Semua berikut ini benar..."
+        },
+        "or": {
+          "description": "Salah satu berikut ini benar..."
+        },
+        "tooltip": "Grup kondisi adalah kumpulan kondisi yang dihubungkan oleh operator \"Dan\" dan \"Atau\"."
+      },
+      "input-value": "Input nilai",
+      "input-value-press-enter": "Input nilai, tekan Enter untuk konfirmasi",
+      "select-value": "Pilih nilai",
+      "self": "Kondisi"
+    }
+  },
+  "changelog": {
+    "current-schema-empty": "Skema saat ini kosong",
+    "no-schema-change": "Tidak ada perubahan skema",
+    "schema-snapshot-after-change": "Snapshot skema yang direkam setelah menerapkan perubahan ini",
+    "select": "Versi skema dicatat setiap kali perubahan skema diterapkan melalui Bytebase",
+    "self": "Changelog",
+    "show-diff": "Tampilkan diff"
+  },
+  "common": {
+    "Default": "Bawaan",
+    "access-denied": "Akses ditolak",
+    "action-required": "Tindakan Diperlukan",
+    "actions": "Tindakan",
+    "activated": "Diaktifkan",
+    "active": "Aktif",
+    "activity": "Aktivitas",
+    "add": "Tambah",
+    "add-permissions": "Tambah izin",
+    "added": "Ditambahkan",
+    "address": "Alamat",
+    "admin": "Admin",
+    "all": "Semua",
+    "allow": "Izinkan",
+    "and": "dan",
+    "approve": "Setujui",
+    "approved": "Disetujui",
+    "archive": "Arsipkan",
+    "archive-description": "Tandai \"{{name}}\" sebagai diarsipkan dan hanya-baca.",
+    "archive-resource": "Arsipkan {{type}}",
+    "archived": "Diarsipkan",
+    "back": "Kembali",
+    "back-to-workspace": "Kembali ke ruang kerja",
+    "bypassed": "Dilewati",
+    "cancel": "Batal",
+    "canceled": "Dibatalkan",
+    "cannot-undo-this-action": "Anda tidak dapat membatalkan tindakan ini",
+    "catalog": "Katalog",
+    "changelog": "Changelog",
+    "classification-level": "Level Klasifikasi",
+    "clear": "Bersihkan",
+    "clear-filters": "Bersihkan filter",
+    "close": "Tutup",
+    "close-mobile-sidebar": "Tutup sidebar seluler",
+    "closed": "Ditutup",
+    "collapse": "Ciutkan",
+    "column": "Kolom",
+    "comment": "Komentar",
+    "configure": "Konfigurasi",
+    "configure-now": "Konfigurasi sekarang",
+    "confirm": "Konfirmasi",
+    "confirm-archive": "Arsipkan Sumber Daya?",
+    "confirm-delete": "Hapus Sumber Daya?",
+    "confirm-to-revert": "Konfirmasi untuk membatalkan pengeditan Anda?",
+    "continue-anyway": "Tetap lanjutkan",
+    "copied": "Disalin",
+    "copy": "Salin",
+    "copy-all": "Salin semua",
+    "copy-failed": "Salin gagal",
+    "create": "Buat",
+    "created": "Dibuat",
+    "created-at": "Dibuat",
+    "creating": "Membuat",
+    "creator": "Pembuat",
+    "custom": "Kustom",
+    "danger-zone": "Zona Berbahaya",
+    "database": "Basis Data",
+    "database-group": "Grup Basis Data",
+    "databases": "Basis Data",
+    "deactivate": "Nonaktifkan",
+    "default": "Bawaan",
+    "definition": "Definisi",
+    "delete": "Hapus",
+    "delete-resource": "Hapus {{type}}",
+    "delete-resource-description": "Setelah Anda menghapus \"{{name}}\", tidak ada jalan kembali. Harap pastikan.",
+    "deleted": "Dihapus",
+    "deny": "Tolak",
+    "description": "Deskripsi",
+    "deselect-all": "Batalkan pilihan semua",
+    "detail": "Detail",
+    "detailed-guide": "panduan detail",
+    "dingtalk": "DingTalk",
+    "disable": "Nonaktifkan",
+    "discard-changes": "Buang perubahan",
+    "discord": "Discord",
+    "dismiss": "Tutup",
+    "download": "Unduh",
+    "draft": "Draf",
+    "duplicate": "Duplikat",
+    "duration": "Durasi",
+    "edit": "Edit",
+    "edited": "diedit",
+    "email": "Email",
+    "email-ascii-only": "Alamat email hanya mendukung karakter ASCII (huruf, angka, dan simbol seperti . _ - +).",
+    "empty": "Kosong",
+    "enable": "Aktifkan",
+    "enabled": "Diaktifkan",
+    "environment": "Lingkungan",
+    "environment-name": "Nama Lingkungan",
+    "environments": "Lingkungan",
+    "error": "Galat",
+    "expiration": "Kedaluwarsa",
+    "expired": "Kedaluwarsa",
+    "export": "Ekspor",
+    "failed": "Gagal",
+    "feishu": "Feishu",
+    "file-selector": {
+      "size-limit": "Ukuran file harus kurang dari {{size}} MiB",
+      "type-limit": "Hanya mendukung file {{extension}}"
+    },
+    "filter": "Filter",
+    "filter-by-name": "Filter berdasarkan nama",
+    "fork": "Fork",
+    "from": "Dari",
+    "general": "Umum",
+    "go-back": "Kembali",
+    "google-chat": "Google Chat",
+    "group": "Grup",
+    "groups": "Grup",
+    "history": "Riwayat",
+    "home": "Beranda",
+    "id": "ID",
+    "import": "Impor",
+    "in-progress": "Sedang berlangsung",
+    "info": "Info",
+    "input-value-press-enter": "Input nilai, tekan Enter untuk konfirmasi",
+    "instance": "Instance",
+    "instances": "Instance",
+    "is-required": "wajib diisi",
+    "issue": "Isu",
+    "issues": "Isu",
+    "items": "item",
+    "key": "Kunci",
+    "labels": "Label",
+    "language": "Bahasa",
+    "lark": "Lark",
+    "learn-more": "Pelajari lebih lanjut",
+    "leave-without-saving": "Tinggalkan tanpa menyimpan?",
+    "license": "Lisensi",
+    "line": "Baris",
+    "load-more": "Muat lebih banyak",
+    "loading": "Memuat",
+    "logout": "Keluar",
+    "manage": "Kelola",
+    "manually-select": "Pilih secara manual",
+    "maximize": "Maksimalkan",
+    "members": "Anggota",
+    "members_one": "Anggota",
+    "members_other": "Anggota",
+    "minutes": "Menit",
+    "missing-permission": "Izin yang diperlukan tidak ada",
+    "missing-required-permission": "Izin yang diperlukan tidak ada {{permissions}}",
+    "missing-required-permission-for-resource": "Izin yang diperlukan untuk sumber daya {{resource}} tidak ada",
+    "more": "Lainnya",
+    "n-items-selected": "{{n}} item dipilih",
+    "n-more": "+{{n}} lainnya",
+    "n-selected": "{{n}} dipilih",
+    "name": "Nama",
+    "next": "Lanjut",
+    "no": "Tidak",
+    "no-data": "Tidak ada data",
+    "no-license": "Tidak ada lisensi",
+    "not-started": "Belum dimulai",
+    "ok": "OK",
+    "only-creator-allowed-export": "Hanya pembuat yang diizinkan mengekspor",
+    "open": "Buka",
+    "open-mobile-sidebar": "Buka sidebar seluler",
+    "operation": "Operasi",
+    "operations": "Operasi",
+    "optional": "Opsional",
+    "or": "atau",
+    "overview": "Ikhtisar",
+    "password": "Kata Sandi",
+    "pending": "Tertunda",
+    "permissions": "Izin",
+    "plan": "Rencana",
+    "preview": "Pratinjau",
+    "previous": "Sebelumnya",
+    "project": "Proyek",
+    "projects": "Proyek",
+    "query": "Kueri",
+    "read-only": "Hanya-baca",
+    "reason": "Alasan",
+    "recent": "Terbaru",
+    "refresh": "Muat Ulang",
+    "regenerate": "Hasilkan Ulang",
+    "reject": "Tolak",
+    "rejected": "Ditolak",
+    "release": "Rilis",
+    "remaining": "tersisa",
+    "remove": "Hapus",
+    "removed": "Dihapus",
+    "render-failed": "Gagal menampilkan konten ini.",
+    "reopen": "Buka Ulang",
+    "reorder": "Susun Ulang",
+    "required-permission": "Izin yang diperlukan",
+    "required-workspace-permission": "Izin berikut diperlukan untuk menginisialisasi UX ruang kerja",
+    "reset": "Atur Ulang",
+    "resource": "Sumber Daya",
+    "resource-not-found": "Sumber daya tidak ditemukan",
+    "resources": "Sumber Daya",
+    "restore": "Pulihkan",
+    "restored": "Dipulihkan",
+    "retry": "Coba Lagi",
+    "revert": "Kembalikan",
+    "revoke": "Cabut",
+    "revoked": "Dicabut",
+    "role": {
+      "self": "Peran"
+    },
+    "rollback": "Rollback",
+    "rollout": "Peluncuran",
+    "rows": {
+      "n-rows": "{{n}} baris",
+      "self": "baris"
+    },
+    "rows-per-page": "Baris per halaman",
+    "run": "Jalankan",
+    "running": "Berjalan",
+    "save": "Simpan",
+    "schema": "Skema",
+    "scope": "Lingkup",
+    "search": "Cari",
+    "search-for-more": "Cari lebih banyak",
+    "search-no-result": "Tidak ada hasil yang cocok",
+    "select": "Silakan Pilih",
+    "select-all": "Pilih semua",
+    "selected": "dipilih",
+    "sensitive-placeholder": "Sensitif - hanya tulis",
+    "settings": "Pengaturan",
+    "share": "Bagikan",
+    "show-less": "Tampilkan lebih sedikit",
+    "show-more": "Tampilkan lebih banyak",
+    "sign-in": "Masuk",
+    "sign-in-as-admin": "Masuk sebagai administrator",
+    "sign-up": "Daftar",
+    "skip": "Lewati",
+    "skipped": "Dilewati",
+    "slack": "Slack",
+    "snapshot": "Snapshot",
+    "sql": "SQL",
+    "stage": "Tahap",
+    "state": "Status",
+    "statement": "Pernyataan",
+    "status": "Status",
+    "submit": "Kirim",
+    "succeed": "Berhasil",
+    "success": "Berhasil",
+    "system": "Sistem",
+    "table": "Tabel",
+    "task": "Tugas",
+    "teams": "Tim",
+    "text-wrap": "Bungkus Teks",
+    "tips": "Tips",
+    "title": "Judul",
+    "to": "Ke",
+    "total": "Total",
+    "total-n-items": "Total {{n}} item",
+    "transfer": "Transfer",
+    "type": "Tipe",
+    "type-to-search": "Ketik untuk mencari",
+    "unassigned": "Tidak Ditugaskan",
+    "under-review": "Dalam review",
+    "unknown": "Tidak Diketahui",
+    "unlimited": "Tak Terbatas",
+    "untitled": "Tanpa Judul",
+    "update": "Perbarui",
+    "updated": "Diperbarui",
+    "updating": "Memperbarui",
+    "upload": "Unggah",
+    "user": "Pengguna",
+    "username": "Nama Pengguna",
+    "users": "Pengguna",
+    "value": "Nilai",
+    "verify": "Verifikasi",
+    "version": "Versi",
+    "view": "Lihat",
+    "view-details": "Lihat Detail",
+    "view-doc": "Lihat dok",
+    "visibility": "Visibilitas",
+    "want-help": "Butuh bantuan",
+    "warning": "Peringatan",
+    "webhooks": "Webhook",
+    "wecom": "WeCom",
+    "write-only": "hanya tulis",
+    "yes": "Ya",
+    "you": "Anda"
+  },
+  "create-db": {
+    "cluster": "Klaster",
+    "database-owner-name": "Nama pemilik basis data",
+    "issue-title": "Judul isu",
+    "new-collection-name": "Nama Koleksi Baru",
+    "new-database-name": "Nama basis data baru",
+    "reserved-db-error": "{{databaseName}} adalah nama yang dicadangkan"
+  },
+  "custom-approval": {
+    "approval-flow": {
+      "fallback-rules": "Aturan Cadangan",
+      "fallback-rules-hint": "Aturan cadangan dievaluasi dari atas ke bawah hanya ketika tidak ada aturan khusus sumber yang cocok.",
+      "node": {
+        "add": "Tambah node",
+        "approver": "Penyetuju",
+        "delete": "Hapus node persetujuan",
+        "description": "Hanya satu persetujuan yang diperlukan pada node ini ketika ada beberapa penyetuju.",
+        "nodes": "Node persetujuan",
+        "order": "Urutan"
+      },
+      "self": "Alur Persetujuan",
+      "skip": "Tidak perlu persetujuan",
+      "template": {
+        "preset-descriptions": {
+          "drop-or-truncate": "Memerlukan persetujuan untuk pernyataan DROP TABLE atau TRUNCATE.",
+          "fallback": "Aturan catch-all yang cocok dengan semua permintaan. Tempatkan di akhir daftar aturan Anda.",
+          "high-affected-rows": "Memerlukan persetujuan ketika baris yang terpengaruh melebihi 100."
+        },
+        "presets": {
+          "drop-or-truncate": "Drop/Truncate Table",
+          "fallback": "Aturan Cadangan",
+          "high-affected-rows": "Baris Terpengaruh Tinggi"
+        },
+        "presets-title": "Prasetel"
+      }
+    },
+    "issue-review": {
+      "and-n-other-users": "{{names}} dan {{count}} pengguna lainnya",
+      "approved-by": "Disetujui oleh",
+      "approved-issue": "isu disetujui",
+      "disallow-approve-reason": {
+        "some-task-checks-are-still-running": "Beberapa pemeriksaan tugas masih berjalan.",
+        "some-task-checks-didnt-pass": "Beberapa pemeriksaan tugas tidak lulus."
+      },
+      "generating-approval-flow": "Menghasilkan alur persetujuan",
+      "re-request-review": "Minta ulang review",
+      "re-request-review-success": "Review berhasil diminta ulang",
+      "re-requested-review": "meminta ulang review isu",
+      "rejected-by": "Ditolak oleh",
+      "rejected-issue": "menolak isu",
+      "retry-approval-finding": "Coba Lagi",
+      "self-approval-not-allowed": "Persetujuan sendiri tidak diizinkan di proyek ini. Jadi Anda tidak dapat menyetujui isu Anda sendiri."
+    },
+    "risk": {
+      "description": "Penilaian risiko secara otomatis mengevaluasi perubahan basis data dan menetapkan tingkat risiko berdasarkan jenis operasi yang dilakukan.",
+      "how-it-works": "Bagaimana cara kerjanya",
+      "how-it-works-description": "Ketika Anda membuat perubahan basis data, Bytebase secara otomatis menganalisis pernyataan SQL dan menetapkan tingkat risiko (Rendah, Sedang, atau Tinggi) berdasarkan aturan yang telah ditentukan.",
+      "integration": "Integrasi dengan Alur Persetujuan",
+      "integration-description": "Tingkat risiko terintegrasi dengan sistem Persetujuan Kustom. Anda dapat mengonfigurasi alur persetujuan yang memerlukan tingkat review berbeda berdasarkan tingkat risiko perubahan yang dinilai.",
+      "risk-level-high": "Operasi risiko tinggi termasuk perubahan destruktif seperti DROP TABLE, TRUNCATE, atau modifikasi data skala besar.",
+      "risk-level-low": "Operasi risiko rendah termasuk kueri SELECT dan perubahan skema minor yang tidak mungkin menyebabkan masalah.",
+      "risk-level-moderate": "Operasi risiko sedang termasuk perubahan DDL standar seperti menambah kolom atau indeks.",
+      "risk-levels": "Tingkat Risiko",
+      "self": "Penilaian Risiko"
+    },
+    "risk-rule": {
+      "risk": {
+        "namespace": {
+          "change_database": "Ubah Basis Data",
+          "create_database": "Buat Basis Data",
+          "data_export": "Ekspor Data",
+          "request-access": "Minta Akses Just-In-Time",
+          "request-role": "Minta Peran"
+        },
+        "risk-level": {
+          "default": "Bawaan",
+          "high": "Tinggi",
+          "low": "Rendah",
+          "moderate": "Sedang"
+        }
+      }
+    },
+    "rule": {
+      "approval-rule-matching": {
+        "evaluation-order": "Aturan dievaluasi secara berurutan. Aturan khusus sumber dijalankan sebelum Aturan Cadangan.",
+        "multi-target": "Untuk rencana multi-target, aturan khusus sumber cocok dengan seluruh rencana jika ada target yang memenuhi kondisinya, dan aturan pertama yang cocok memilih alur persetujuan untuk seluruh rencana.",
+        "priority": "Tempatkan aturan untuk perubahan berisiko lebih tinggi sebelum yang berisiko lebih rendah. Untuk risiko serupa, tempatkan aturan yang lebih ketat atau lebih spesifik sebelum aturan yang lebih luas."
+      },
+      "first-match-wins": "Aturan dievaluasi secara berurutan. Aturan pertama yang cocok berlaku.",
+      "self": "Aturan Persetujuan Kustom"
+    },
+    "self": "Persetujuan Kustom"
+  },
+  "data-source": {
+    "additional-node-addresses": "Alamat node tambahan",
+    "admin": "Admin",
+    "automatic-query-data-source": "Sumber data kueri otomatis",
+    "connection-string-schema": "Skema string koneksi",
+    "connection-type": "Tipe koneksi",
+    "delete-read-only-data-source": "Hapus sumber data hanya-baca",
+    "direct-connection": "Koneksi langsung",
+    "extra-params": {
+      "description": "Parameter tambahan untuk string koneksi. Contoh: {{example}}",
+      "self": "Parameter Tambahan"
+    },
+    "no-read-only-data-source": "Tidak ada sumber data hanya-baca",
+    "private-key-passphrase": "Frasa sandi kunci privat",
+    "private-key-passphrase-placeholder": "Masukkan frasa sandi kunci privat",
+    "private-key-passphrase-tip": "Frasa sandi untuk mendekripsi kunci privat SSH",
+    "read-only": "Hanya-baca",
+    "read-replica-host": "Host replika baca",
+    "read-replica-port": "Port replika baca",
+    "replica-set": "Set replika",
+    "select-query-data-source": "Pilih sumber data kueri",
+    "snowflake-keypair-tip": "Gunakan pasangan kunci untuk otentikasi Snowflake",
+    "ssh": {
+      "host": "Host SSH",
+      "password": "Kata Sandi SSH",
+      "port": "Port SSH",
+      "private-key": "Kunci Privat SSH",
+      "ssh-key": "Kunci SSH",
+      "user": "Pengguna SSH"
+    },
+    "ssh-connection": "Koneksi SSH",
+    "ssh-type": {
+      "none": "Tidak Ada",
+      "tunnel-and-private-key": "Tunnel dan Kunci Privat"
+    },
+    "ssl": {
+      "ca-cert": "Sertifikat CA",
+      "ca-path": "Jalur CA",
+      "ca-placeholder": "Mulai sertifikat CA dengan -----BEGIN CERTIFICATE-----",
+      "ca-source": {
+        "file-path": "Jalur File",
+        "file-path-unavailable-saas": "Opsi jalur file tidak tersedia di lingkungan SaaS",
+        "inline-pem": "PEM Inline",
+        "self": "Sumber CA",
+        "system-trust": "Trust Sistem"
+      },
+      "client-cert": "Sertifikat Klien",
+      "client-cert-path": "Jalur Sertifikat Klien",
+      "client-cert-placeholder": "Mulai sertifikat klien dengan -----BEGIN CERTIFICATE-----",
+      "client-cert-source": {
+        "file-path": "Jalur File",
+        "file-path-unavailable-saas": "Opsi jalur file tidak tersedia di lingkungan SaaS",
+        "inline-pem": "PEM Inline",
+        "none": "Tidak Ada",
+        "self": "Sumber Sertifikat Klien"
+      },
+      "client-identity": "Identitas Klien",
+      "client-key": "Kunci Klien",
+      "client-key-path": "Jalur Kunci Klien",
+      "client-key-placeholder": "Mulai kunci klien dengan -----BEGIN PRIVATE KEY-----",
+      "configured": "Dikonfigurasi",
+      "connection-security": "Keamanan Koneksi",
+      "mutual-tls-unavailable-engine": "mTLS tidak tersedia untuk engine ini",
+      "posture": {
+        "disabled": "Nonaktif",
+        "mutual-tls": "mTLS",
+        "self": "Postur SSL",
+        "tls": "TLS"
+      },
+      "server-identity": "Identitas Server",
+      "verification-disabled-description": "Verifikasi sertifikat dinonaktifkan untuk koneksi ini.",
+      "verify-certificate": "Verifikasi Sertifikat",
+      "verify-certificate-tooltip": "Verifikasi sertifikat SSL/TLS server terhadap CA tepercaya"
+    },
+    "ssl-connection": "Koneksi SSL"
+  },
+  "database": {
+    "access-denied": "Akses ditolak",
+    "all": "Semua",
+    "change-database": "Ubah basis data",
+    "checks": "Pemeriksaan",
+    "classification": {
+      "description": "Atur klasifikasi untuk basis data ini",
+      "self": "Klasifikasi"
+    },
+    "column": "Kolom",
+    "columns": "Kolom",
+    "comment": "Komentar",
+    "create-database": "Buat basis data",
+    "data-size": "Ukuran data",
+    "edit-environment": "Edit lingkungan",
+    "edit-labels": "Edit label",
+    "edit-schema": "Edit skema",
+    "engine": "Engine",
+    "export-schema": "Ekspor skema",
+    "export-schema-multi-file": "Ekspor skema (multi-file)",
+    "export-schema-single-file": "Ekspor skema (file tunggal)",
+    "expression": "Ekspresi",
+    "external-database-name": "Nama basis data eksternal",
+    "external-server-name": "Nama server eksternal",
+    "failed-to-export-schema": "Gagal mengekspor skema",
+    "filter-database": "Filter basis data",
+    "foreign-key": {
+      "reference": "Referensi"
+    },
+    "foreign-keys": "Kunci Asing",
+    "index-size": "Ukuran indeks",
+    "indexes": "Indeks",
+    "labels": "Label",
+    "last-sync": "Sinkronisasi terakhir",
+    "mixed-label-values": "Nilai label campuran",
+    "mixed-label-values-warning": "Basis data yang dipilih memiliki nilai label yang berbeda untuk kunci yang sama",
+    "nullable": "Nullable",
+    "partition-tables": "Tabel Partisi",
+    "partitioned": "Dipartisi",
+    "revision": {
+      "add-more-files": "Tambah lebih banyak file",
+      "available-files": "File tersedia",
+      "available-files-description": "File yang akan disertakan dalam revisi ini",
+      "content-preview": "Pratinjau konten",
+      "delete-confirm-dialog": "Apakah Anda yakin ingin menghapus revisi ini?",
+      "drag-drop-or-click": "Seret dan lepas atau klik untuk mengunggah",
+      "filename": "Nama file",
+      "files-already-imported": "File sudah diimpor",
+      "files-already-imported-description": "File-file ini sudah diimpor sebagai revisi",
+      "from-local-files": "Dari file lokal",
+      "from-local-files-description": "Unggah file SQL dari komputer Anda",
+      "from-release": "Dari rilis",
+      "from-release-description": "Pilih dari rilis yang ada",
+      "import-revision": "Impor revisi",
+      "invalid-version-format": "Format versi tidak valid",
+      "no-files-found": "Tidak ada file ditemukan",
+      "no-releases-found": "Tidak ada rilis ditemukan",
+      "revision-type": "Tipe revisi",
+      "select-files": "Pilih file",
+      "select-files-description": "Pilih file SQL untuk direvisi",
+      "select-release": "Pilih rilis",
+      "select-release-description": "Pilih rilis untuk direvisi",
+      "select-source": "Pilih sumber",
+      "self": "Revisi",
+      "supported-formats": "Format yang didukung: SQL",
+      "type-declarative": "Deklaratif",
+      "type-versioned": "Versi",
+      "upload-files": "Unggah file",
+      "upload-files-description": "Unggah file SQL untuk revisi baru",
+      "uploaded-files": "File yang diunggah",
+      "version-already-exists": "Versi sudah ada"
+    },
+    "row-count-est": "Estimasi jumlah baris",
+    "row-count-estimate": "Estimasi jumlah baris",
+    "schema": {
+      "select": "Pilih skema",
+      "unspecified": "Tidak ditentukan"
+    },
+    "select": "Pilih basis data",
+    "successfully-exported-schema": "Skema berhasil diekspor",
+    "successfully-transferred-databases": "Basis data berhasil ditransfer",
+    "sync-complete-for-instance": "Sinkronisasi selesai untuk instance '{{0}}'",
+    "sync-database": "Sinkronisasi basis data",
+    "sync-schema": {
+      "copy-schema": "Salin skema",
+      "description": "Sinkronkan skema dari basis data sumber ke basis data target",
+      "generated-ddl-statement": "Pernyataan DDL yang dihasilkan",
+      "message": {
+        "no-diff-found": "Tidak ada perbedaan yang ditemukan",
+        "no-target-databases": "Tidak ada basis data target",
+        "select-a-target-database-first": "Pilih basis data target terlebih dahulu"
+      },
+      "no-diff": "Tidak ada perbedaan",
+      "preview-issue": "Pratinjau isu",
+      "schema-change": "Perubahan skema",
+      "schema-change-preview": "Pratinjau perubahan skema untuk '{{database}}'",
+      "select-source-schema": "Pilih skema sumber",
+      "select-target-databases": "Pilih basis data target",
+      "source-schema": "Skema sumber",
+      "synchronize-statements": "Sinkronkan pernyataan",
+      "synchronize-statements-description": "Terapkan pernyataan ini ke basis data target",
+      "target-databases": "Basis data target",
+      "title": "Sinkronisasi Skema",
+      "with-diff": "Dengan perbedaan"
+    },
+    "sync-schema-button": "Sinkronisasi Skema",
+    "sync-status": "Status sinkronisasi",
+    "sync-status-failed": "Sinkronisasi gagal",
+    "table": {
+      "select": "Pilih tabel",
+      "select-tip": "Pilih tabel untuk melihat datanya"
+    },
+    "transfer-project": "Transfer proyek",
+    "unassign": "Batalkan penugasan",
+    "unassign-alert-description": "Apakah Anda yakin ingin membatalkan penugasan basis data ini?",
+    "unassign-alert-title": "Batalkan Penugasan Basis Data",
+    "unassigned-databases": "Basis data tidak ditugaskan",
+    "unique": "Unik",
+    "visible": "Terlihat"
+  },
+  "database-group": {
+    "condition": {
+      "self": "Kondisi"
+    },
+    "delete-group": "Hapus grup {{name}}",
+    "load-database-failed": "Gagal memuat basis data",
+    "matched-databases": "Basis data yang cocok",
+    "no-matched-databases": "Tidak ada basis data yang cocok",
+    "select": "Pilih grup basis data",
+    "unmatched-databases": "Basis data tidak cocok",
+    "unmatched-databases-preview": "Pratinjau basis data yang tidak cocok"
+  },
+  "db": {
+    "catalog": {
+      "description": "Jelajahi katalog basis data"
+    },
+    "character-set": "Set karakter",
+    "collation": "Collation",
+    "collections": "Koleksi",
+    "encoding": "Encoding",
+    "extensions": "Ekstensi",
+    "external-tables": "Tabel Eksternal",
+    "failed-to-sync-schema": "Gagal menyinkronkan skema",
+    "failed-to-sync-schema-for-database-database-value-name": "Gagal menyinkronkan skema untuk basis data \"{{name}}\".",
+    "functions": "Fungsi",
+    "instance-databases-synced-action": "Buka instance",
+    "instance-databases-synced-description": "Basis data Anda telah disinkronkan. Anda sekarang dapat membuat isu dan menjalankan kueri.",
+    "instance-databases-synced-title": "Basis Data Disinkronkan",
+    "instance-no-databases-action": "Buat basis data",
+    "instance-no-databases-description": "Instance ini tidak memiliki basis data. Anda perlu membuat basis data untuk memulai.",
+    "instance-no-databases-title": "Tidak Ada Basis Data",
+    "n-databases-had-sync-errors": "{{0}} basis data mengalami galat sinkronisasi",
+    "packages": "Paket",
+    "partitions": "Partisi",
+    "procedures": "Prosedur",
+    "project-instance-synced-action": "Buat isu",
+    "project-instance-synced-description": "Anda telah berhasil menghubungkan instance. Sekarang Anda dapat mulai mengelola perubahan basis data.",
+    "project-instance-synced-sql-editor-action": "Buka SQL Editor",
+    "project-instance-synced-title": "Instance Terhubung",
+    "project-instance-syncing-description": "Kami sedang menyinkronkan basis data dari instance Anda. Ini mungkin memakan waktu beberapa saat.",
+    "project-instance-syncing-empty": "Tidak ada basis data yang disinkronkan",
+    "project-instance-syncing-title": "Menyinkronkan basis data dari <instance></instance>.",
+    "schema": {
+      "default": "Bawaan"
+    },
+    "sequence": {
+      "cacheSize": "Ukuran Cache",
+      "cycle": "Siklus",
+      "data-type": "Tipe Data",
+      "increment": "Kenaikan",
+      "lastValue": "Nilai Terakhir",
+      "max-value": "Nilai Maks",
+      "min-value": "Nilai Min",
+      "start": "Mulai"
+    },
+    "sequences": "Sequence",
+    "start-to-sync-schema": "Mulai sinkronisasi skema",
+    "streams": "Stream",
+    "successfully-synced-schema": "Skema berhasil disinkronkan",
+    "successfully-synced-schema-for-database-database-value-name": "Skema berhasil disinkronkan untuk basis data \"{{name}}\".",
+    "syncing-databases-for-instance": "Menyinkronkan basis data untuk instance {{0}}...",
+    "tables": "Tabel",
+    "tasks": "Tugas",
+    "trigger": {
+      "body": "Isi",
+      "event": "Peristiwa",
+      "timing": "Waktu"
+    },
+    "triggers": "Trigger",
+    "views": "Tampilan"
+  },
+  "environment": {
+    "delete-description": "Hapus lingkungan ini dan semua sumber dayanya",
+    "reorder": "Susun ulang lingkungan",
+    "select": "Pilih lingkungan",
+    "successfully-updated-environment": "Lingkungan '{{name}}' berhasil diperbarui."
+  },
+  "error-page": {
+    "error-details": "Detail galat",
+    "go-back-home": "Kembali ke beranda",
+    "not-found": "Halaman tidak ditemukan",
+    "something-went-wrong": "Terjadi kesalahan",
+    "unexpected-error-description": "Terjadi galat yang tidak terduga. Silakan coba lagi."
+  },
+  "export-data": {
+    "export-format": "Format ekspor",
+    "export-rows": "Ekspor baris",
+    "generate-password": "Hasilkan kata sandi",
+    "password-info": "Informasi kata sandi",
+    "password-optional": "Kata sandi (opsional)"
+  },
+  "gitops": {
+    "checklist": {
+      "database-group-recommendation": "Grup basis data direkomendasikan untuk deployment multi-basis data",
+      "external-url": "URL eksternal harus dikonfigurasi untuk webhook GitOps",
+      "target-databases": "Tentukan basis data target untuk pipeline GitOps",
+      "title": "Daftar Periksa GitOps",
+      "wif-notice-suffix": "diidentitas beban kerja Anda",
+      "wif-notice-text": "Pastikan penyedia Git memiliki akses yang diperlukan",
+      "workload-identity": "Identitas beban kerja harus dikonfigurasi"
+    },
+    "documentation": "Dokumentasi",
+    "overview": {
+      "description": "GitOps memungkinkan Anda mengelola perubahan basis data melalui alur kerja berbasis Git",
+      "description-git": "Hubungkan repositori Git Anda untuk mengelola perubahan skema",
+      "title": "Ikhtisar GitOps"
+    },
+    "self": "GitOps",
+    "test-setup": {
+      "description": "Uji konfigurasi GitOps Anda",
+      "naming-convention": "Konvensi penamaan",
+      "step-create-branch": "Buat cabang baru, tambahkan file di atas, dan buka pull request yang menargetkan {{branch}}.",
+      "step-merge": "Gabung PR",
+      "step-sql-review": "Review SQL",
+      "title": "Uji Pengaturan"
+    },
+    "workflow": {
+      "description": "Alur kerja GitOps untuk perubahan basis data",
+      "file-hint": "Simpan sebagai {{filePath}} di repositori Anda {{repository}}",
+      "provider-not-match": "Identitas beban kerja yang dipilih hanya berfungsi untuk {{provider}}.",
+      "self-hosted-runner": "Runner self-hosted",
+      "title": "Alur Kerja"
+    },
+    "workload-identity": {
+      "select-placeholder": "Pilih identitas beban kerja"
+    }
+  },
+  "identity-provider": {
+    "claims-description": "Petakan klaim dari penyedia identitas ke pengguna Bytebase",
+    "delete-warning": "Menghapus penyedia identitas akan memengaruhi pengguna yang masuk melaluinya",
+    "identity-provider-create-failed": "Gagal membuat penyedia identitas",
+    "identity-provider-created": "Penyedia identitas berhasil dibuat",
+    "identity-provider-delete-failed": "Gagal menghapus penyedia identitas",
+    "identity-provider-deleted": "Penyedia identitas berhasil dihapus",
+    "identity-provider-permission-denied": "Izin ditolak untuk penyedia identitas",
+    "identity-provider-update-failed": "Gagal memperbarui penyedia identitas",
+    "no-claims": "Tidak ada klaim",
+    "self": "Penyedia Identitas",
+    "test-connection": "Uji koneksi",
+    "test-connection-success": "Koneksi berhasil",
+    "userinfo-description": "Informasi pengguna dari penyedia identitas"
+  },
+  "instance": {
+    "account-locator": "Lokator akun",
+    "advanced-search": {
+      "scope": {
+        "host": {
+          "description": "Cari berdasarkan host",
+          "title": "Host"
+        },
+        "port": {
+          "description": "Cari berdasarkan port",
+          "title": "Port"
+        }
+      }
+    },
+    "archive-instance-instance-name": "Arsipkan instance '{{0}}'?",
+    "archived-instances-will-not-be-displayed": "Instance yang diarsipkan tidak akan ditampilkan",
+    "authentication-database": "Basis data otentikasi",
+    "cloud-sql-ip-type": {
+      "description": "Tipe IP untuk Cloud SQL",
+      "label": "Tipe IP",
+      "private": "Privat",
+      "psc": "PSC",
+      "public": "Publik"
+    },
+    "connect-database-to-project": "Hubungkan basis data ke proyek",
+    "connect-instance": "Hubungkan instance",
+    "connecting-database-to-project": "Menghubungkan basis data ke proyek",
+    "connection-info": "Info koneksi",
+    "connection-options": "Opsi koneksi",
+    "connection-recovery": {
+      "auth": {
+        "description": "Periksa kredensial otentikasi Anda",
+        "steps": {
+          "credentials": "Verifikasi nama pengguna dan kata sandi",
+          "method": "Pastikan metode otentikasi benar",
+          "retry": "Coba sambungkan kembali dengan kredensial yang benar"
+        },
+        "title": "Otentikasi"
+      },
+      "docs": "Lihat dokumentasi",
+      "network": {
+        "description": "Periksa konektivitas jaringan",
+        "steps": {
+          "address": "Verifikasi alamat host dan port",
+          "firewall": "Periksa aturan firewall",
+          "private-network": "Pastikan jaringan privat dapat dijangkau"
+        },
+        "title": "Jaringan"
+      },
+      "permission": {
+        "description": "Periksa izin pengguna basis data",
+        "steps": {
+          "account": "Pastikan akun pengguna memiliki akses",
+          "database": "Verifikasi akses basis data",
+          "workflow": "Periksa izin alur kerja"
+        },
+        "title": "Izin"
+      },
+      "timeout": {
+        "description": "Koneksi kehabisan waktu",
+        "steps": {
+          "load": "Periksa beban server",
+          "retry": "Coba sambungkan kembali",
+          "route": "Periksa rute jaringan"
+        },
+        "title": "Waktu Habis"
+      },
+      "tls": {
+        "description": "Periksa konfigurasi TLS",
+        "steps": {
+          "certificates": "Verifikasi sertifikat",
+          "hostname": "Periksa nama host",
+          "mode": "Pastikan mode TLS benar"
+        },
+        "title": "TLS"
+      },
+      "unknown": {
+        "description": "Penyebab tidak diketahui",
+        "steps": {
+          "fields": "Periksa semua field koneksi",
+          "help": "Hubungi dukungan",
+          "logs": "Periksa log untuk detail"
+        },
+        "title": "Tidak Diketahui"
+      },
+      "unsupported": {
+        "description": "Engine basis data tidak didukung",
+        "steps": {
+          "engine": "Periksa engine basis data",
+          "retry": "Coba engine lain",
+          "version": "Periksa versi engine"
+        },
+        "title": "Tidak Didukung"
+      }
+    },
+    "create-gcp-credentials": "Buat kredensial GCP",
+    "database-region": "Region basis data",
+    "default-role": "Peran bawaan",
+    "delete-active-confirmation": "Instance \"{{name}}\" masih aktif. Bytebase akan mengarsipkannya terlebih dahulu, lalu menghapusnya secara permanen. Tindakan ini tidak dapat dibatalkan. Ketik ID instance \"{{id}}\" untuk mengonfirmasi.",
+    "delete-confirmation": "Ini akan menghapus instance \"{{name}}\" secara permanen. Tindakan ini tidak dapat dibatalkan. Ketik ID instance \"{{id}}\" untuk mengonfirmasi.",
+    "endpoint": "Endpoint",
+    "external-id": "ID Eksternal",
+    "external-id-description": "ID unik untuk instance ini dari sistem eksternal",
+    "external-id-placeholder": "Masukkan ID eksternal",
+    "external-link": "Tautan eksternal",
+    "external-secret": {
+      "key-name": "Nama kunci",
+      "secret-name": "Nama rahasia"
+    },
+    "external-secret-azure": {
+      "secret-name": "Nama rahasia Azure",
+      "secret-name-tips": "Nama rahasia di Azure Key Vault",
+      "vault-url": "URL Vault Azure",
+      "vault-url-tips": "URL Azure Key Vault Anda"
+    },
+    "external-secret-gcp": {
+      "secret-name": "Nama rahasia GCP",
+      "secret-name-tips": "Nama rahasia di GCP Secret Manager"
+    },
+    "external-secret-vault": {
+      "vault-auth-type": {
+        "approle": {
+          "role-id": "ID Peran",
+          "secret-env-name": "Nama env rahasia",
+          "secret-id": "ID Rahasia",
+          "secret-plain-text": "Teks rahasia biasa",
+          "self": "AppRole"
+        },
+        "self": "Tipe Otentikasi Vault",
+        "token": {
+          "env-name": "Nama env",
+          "file-path": "Jalur file",
+          "self": "Token",
+          "type-environment": "Lingkungan",
+          "type-file": "File",
+          "type-plain": "Teks Biasa"
+        }
+      },
+      "vault-secret-engine-name": "Nama engine rahasia Vault",
+      "vault-secret-engine-tips": "Nama engine rahasia di Vault",
+      "vault-secret-key": "Kunci rahasia Vault",
+      "vault-secret-path": "Jalur rahasia Vault",
+      "vault-tls-config": "Konfigurasi TLS Vault",
+      "vault-url": "URL Vault"
+    },
+    "failed-to-connect-instance": "Gagal terhubung ke instance",
+    "failed-to-connect-instance-localhost": "Gagal terhubung ke instance localhost",
+    "filter-instance-name": "Filter berdasarkan nama instance",
+    "find-gcp-project-id": "Temukan ID proyek GCP",
+    "find-gcp-project-id-and-instance-id": "Temukan ID proyek GCP dan ID instance",
+    "force-archive-description": "Paksa arsipkan instance ini",
+    "grants": "Hibah",
+    "host-or-socket": "Host atau soket",
+    "iam-extension": {
+      "client-id": "ID Klien",
+      "client-secret": "Rahasia Klien",
+      "credential-source": "Sumber kredensial",
+      "default-credential": {
+        "aws": "Bytebase akan membaca kredensial dari variabel lingkungan <awsAccessKeyId>AWS_ACCESS_KEY_ID</awsAccessKeyId>/<awsSecretAccessKey>AWS_SECRET_ACCESS_KEY</awsSecretAccessKey>/<awsSessionToken>AWS_SESSION_TOKEN</awsSessionToken>, beralih ke file kredensial bersama <awsCredentialsPath>~/.aws/credentials</awsCredentialsPath> atau peran IAM di AWS ECS",
+        "azure": "Bytebase akan membaca kredensial dari variabel lingkungan <azureClientId>AZURE_CLIENT_ID</azureClientId>/<azureTenantId>AZURE_TENANT_ID</azureTenantId>/<azureClientSecret>AZURE_CLIENT_SECRET</azureClientSecret> atau <azureClientCertificatePath>AZURE_CLIENT_CERTIFICATE_PATH</azureClientCertificatePath>, dan beralih ke pengguna yang dilampirkan di VM Azure",
+        "gcp": "Bytebase akan membaca kredensial dari variabel lingkungan <googleApplicationCredentials>GOOGLE_APPLICATION_CREDENTIALS</googleApplicationCredentials>, beralih ke akun layanan yang dilampirkan di GCP GCE"
+      },
+      "saas-default-credential-restriction": "Kredensial default tidak tersedia di lingkungan SaaS",
+      "specific-credential": "Kredensial spesifik",
+      "tenant-id": "ID Tenant"
+    },
+    "info": {
+      "configure-database-user": {
+        "link": "Konfigurasi pengguna basis data"
+      },
+      "connect-instance": {
+        "link": "Hubungkan instance"
+      },
+      "mongodb": {
+        "authentication": {
+          "content": "Buat pengguna khusus \"{{user}}\" untuk Bytebase di basis data admin:"
+        },
+        "host": {
+          "content": "Host MongoDB dan port yang benar"
+        },
+        "ssh": {
+          "content": "Konfigurasi tunnel SSH untuk MongoDB"
+        },
+        "ssl": {
+          "content": "Konfigurasi SSL/TLS untuk MongoDB"
+        }
+      },
+      "mysql": {
+        "authentication": {
+          "content": "Buat pengguna khusus \"{{user}}\" untuk Bytebase guna mengelola basis data Anda. Jalankan SQL berikut:"
+        },
+        "host": {
+          "content": "Host MySQL dan port yang benar"
+        },
+        "ssh": {
+          "content": "Konfigurasi tunnel SSH untuk MySQL"
+        },
+        "ssl": {
+          "content": "Konfigurasi SSL/TLS untuk MySQL"
+        }
+      },
+      "postgresql": {
+        "authentication": {
+          "content": "Buat pengguna khusus \"{{user}}\" untuk Bytebase guna mengelola basis data Anda. Jalankan SQL berikut sebagai superuser:"
+        },
+        "host": {
+          "content": "Host PostgreSQL dan port yang benar"
+        },
+        "ssh": {
+          "content": "Konfigurasi tunnel SSH untuk PostgreSQL"
+        },
+        "ssl": {
+          "content": "Konfigurasi SSL/TLS untuk PostgreSQL"
+        }
+      },
+      "ssh-tunnel": {
+        "link": "Tunnel SSH"
+      },
+      "ssl-tls-connection": {
+        "link": "Koneksi SSL/TLS"
+      }
+    },
+    "info-panel": {
+      "no-info": "Tidak ada informasi"
+    },
+    "instance-id": "ID Instance",
+    "instance-name": "Nama Instance",
+    "new-instance": "Instance Baru",
+    "no-environment": "Tidak ada lingkungan",
+    "no-extra-params-configured": "Tidak ada parameter tambahan yang dikonfigurasi",
+    "no-params-yet-add-above": "Belum ada parameter. Tambah di atas.",
+    "no-password": "Tidak ada kata sandi",
+    "parameter-name-placeholder": "Nama parameter",
+    "parameter-value-placeholder": "Nilai parameter",
+    "password-type": {
+      "aws-iam": "AWS IAM",
+      "azure-iam": "Azure IAM",
+      "external-secret-aws": "Rahasia Eksternal AWS",
+      "external-secret-azure": "Rahasia Eksternal Azure",
+      "external-secret-gcp": "Rahasia Eksternal GCP",
+      "external-secret-vault": "Rahasia Eksternal Vault",
+      "google-iam": "Google IAM",
+      "password": "Kata Sandi"
+    },
+    "password-write-only": "Kata sandi (hanya tulis)",
+    "port": "Port",
+    "project-id": "ID Proyek",
+    "restore-instance-instance-name-to-normal-state": "Pulihkan instance '{{0}}' ke keadaan normal?",
+    "role-arn": "ARN Peran",
+    "role-arn-description": "Amazon Resource Name untuk peran IAM",
+    "role-arn-placeholder": "arn:aws:iam::123456789012:role/...",
+    "scan-interval": {
+      "default-never": "Bawaan (jangan pernah)",
+      "description": "Interval pemindaian untuk perubahan skema",
+      "min-value": "Nilai minimum {{value}} menit",
+      "self": "Interval Pemindaian"
+    },
+    "section": {
+      "basic-info": "Info Dasar",
+      "connection": "Koneksi"
+    },
+    "select-database-user": "Pilih pengguna basis data",
+    "selected-n-instances_one": "{{count}} instance dipilih",
+    "selected-n-instances_other": "{{count}} instance dipilih",
+    "sentence": {
+      "aws-rds": {
+        "mysql": {
+          "template": "Di bawah ini adalah contoh untuk membuat pengguna {{user}}@% dan memberikan hak istimewa yang dibutuhkan kepada pengguna."
+        },
+        "postgresql": {
+          "template": "Di bawah ini adalah contoh untuk membuat pengguna '{{user}}' dan memberikan hak istimewa yang dibutuhkan kepada pengguna."
+        }
+      },
+      "console": {
+        "snowflake": "Konsol Snowflake"
+      },
+      "create-admin-user": "Buat pengguna admin",
+      "create-admin-user-non-sql": "Buat pengguna admin (non-SQL)",
+      "create-readonly-user": "Buat pengguna hanya-baca",
+      "create-readonly-user-non-sql": "Buat pengguna hanya-baca (non-SQL)",
+      "create-user-example": {
+        "clickhouse": {
+          "sql-driven-workflow": "Alur kerja berbasis SQL",
+          "template": "Di bawah ini adalah contoh untuk membuat pengguna '{{user}}' dengan kata sandi {{password}} dan memberikan hak istimewa yang dibutuhkan kepada pengguna. Pertama Anda perlu mengaktifkan alur kerja ClickHouse yang digerakkan oleh SQL {{link}} dan kemudian jalankan kueri berikut untuk membuat pengguna."
+        },
+        "mysql": {
+          "template": "Di bawah ini adalah contoh untuk membuat pengguna {{user}}@% dengan kata sandi {{password}} dan memberikan hak istimewa yang dibutuhkan kepada pengguna."
+        },
+        "postgresql": {
+          "template": "Di bawah ini adalah contoh untuk membuat pengguna '{{user}}' dengan kata sandi {{password}} dan memberikan hak istimewa yang dibutuhkan kepada pengguna. Jika instance yang terhubung di-host sendiri, maka Anda dapat memberikan hak SUPERUSER.",
+          "warn": "Peringatan PostgreSQL"
+        },
+        "redis": {
+          "template": "Di bawah ini adalah contoh untuk membuat pengguna {{user}} dengan kata sandi {{password}} dan memberikan hak istimewa yang dibutuhkan kepada pengguna."
+        },
+        "snowflake": {
+          "template": "Di bawah ini adalah contoh untuk membuat pengguna '{{user}}' dengan kata sandi {{password}} untuk {{warehouse}} dan memberikan hak istimewa yang dibutuhkan kepada pengguna."
+        }
+      },
+      "firewall-info": "Informasi firewall",
+      "google-cloud-sql": {
+        "instance-name": "Nama instance Cloud SQL",
+        "instance-name-tips": "Nama koneksi instance harus terlihat seperti {{instance}}.",
+        "mysql": {
+          "template": "Buat akun layanan bernama {{user}}, lalu tambahkan ke Google Cloud SQL Anda sebagai pengguna IAM {{user}}@'%'. Berikan hak istimewa yang dibutuhkan kepada pengguna ini."
+        },
+        "postgresql": {
+          "template": "Buat akun layanan bernama {{user}}, lalu tambahkan ke Google Cloud SQL Anda sebagai pengguna IAM {{user}}@project-id.iam. Berikan hak istimewa yang dibutuhkan kepada pengguna ini."
+        }
+      },
+      "host": {
+        "none-snowflake": "Tidak ada host (Snowflake)"
+      },
+      "proxy": {
+        "snowflake": "Proxy Snowflake"
+      }
+    },
+    "show-how-to-create": "Tampilkan cara membuat",
+    "snowflake-web-console": "Konsol Web Snowflake",
+    "successfully-archived-instance": "Berhasil mengarsipkan instance '{{0}}'.",
+    "successfully-connected-instance": "Instance berhasil terhubung",
+    "successfully-created-instance-createdinstance-name": "Berhasil membuat instance '{{0}}'.",
+    "successfully-restored-instance": "Berhasil memulihkan instance '{{0}}'.",
+    "successfully-updated-instance-instance-name": "Berhasil memperbarui instance '{{0}}'.",
+    "sync": {
+      "self": "Sinkronisasi",
+      "sync-all": "Sinkronisasi semua",
+      "sync-all-tip": "Sinkronisasi semua basis data dari instance",
+      "sync-new": "Sinkronisasi basis data baru"
+    },
+    "sync-databases": {
+      "add-database": "Tambah basis data",
+      "description": "Sinkronisasi basis data dari instance",
+      "project-description": "Basis data yang disinkronkan akan ditambahkan ke <project>{{project}}</project>.",
+      "project-sync-all": "Sinkronisasi semua ke proyek",
+      "search-database": "Cari basis data",
+      "self": "Sinkronisasi Basis Data",
+      "sync-all": "Sinkronisasi semua"
+    },
+    "syncing": "Menyinkronkan",
+    "test-connection": "Uji koneksi",
+    "testing-connection": "Menguji koneksi",
+    "token-write-only": "Token (hanya tulis)",
+    "type-or-paste-credentials-write-only": "Ketik atau tempel kredensial (hanya tulis)",
+    "unable-to-connect": "Bytebase tidak dapat terhubung ke instance. Kami menyarankan Anda untuk meninjau kembali info koneksi. Namun tidak apa-apa untuk mengabaikan peringatan ini untuk saat ini. Anda masih dapat memperbaiki info koneksi dari halaman detail instance setelah pembuatan.\n\nDetail galat: {{0}}",
+    "users": "Pengguna",
+    "your-snowflake-account-locator": "Lokator akun Snowflake Anda"
+  },
+  "issue": {
+    "access-grant": {
+      "advanced-search": {
+        "scope": {
+          "export": {
+            "description": "Cari berdasarkan izin ekspor"
+          },
+          "status": {
+            "description": "Cari berdasarkan status"
+          },
+          "unmask": {
+            "description": "Cari berdasarkan izin unmask"
+          }
+        }
+      },
+      "details": "Detail hibah akses",
+      "duration-after-approval": "{{duration}} setelah isu disetujui",
+      "expired-at": "Kedaluwarsa pada",
+      "export-results-to-file": "Ekspor hasil ke file",
+      "this-grant-allows": "Hibah ini memungkinkan",
+      "unmask-data-in-results": "Unmask data dalam hasil"
+    },
+    "action-anyway": "Tetap lakukan {{action}}",
+    "advanced-search": {
+      "filter": "Filter",
+      "scope": {
+        "approval": {
+          "description": "Cari berdasarkan status persetujuan",
+          "title": "Persetujuan",
+          "value": {
+            "approved": "Disetujui",
+            "checking": "Memeriksa",
+            "pending": "Tertunda",
+            "rejected": "Ditolak",
+            "skipped": "Dilewati"
+          }
+        },
+        "creator": {
+          "description": "Cari berdasarkan pembuat",
+          "title": "Pembuat"
+        },
+        "current-approver": {
+          "description": "Cari berdasarkan penyetuju saat ini",
+          "title": "Penyetuju Saat Ini"
+        },
+        "database": {
+          "description": "Cari berdasarkan basis data"
+        },
+        "engine": {
+          "description": "Cari berdasarkan engine",
+          "title": "Engine"
+        },
+        "environment": {
+          "description": "Cari berdasarkan lingkungan",
+          "title": "Lingkungan"
+        },
+        "instance": {
+          "description": "Cari berdasarkan instance",
+          "title": "Instance"
+        },
+        "issue-label": {
+          "description": "Cari berdasarkan label isu",
+          "title": "Label Isu"
+        },
+        "issue-type": {
+          "description": "Cari berdasarkan tipe isu",
+          "title": "Tipe Isu",
+          "value": {
+            "access-grant": "Hibah Akses",
+            "database-change": "Perubahan Basis Data",
+            "database-export": "Ekspor Basis Data",
+            "role-grant": "Hibah Peran"
+          }
+        },
+        "label": {
+          "description": "Cari berdasarkan label"
+        },
+        "project": {
+          "description": "Cari berdasarkan proyek"
+        },
+        "state": {
+          "description": "Cari berdasarkan status"
+        },
+        "status": {
+          "description": "Cari berdasarkan status"
+        },
+        "table": {
+          "description": "Cari berdasarkan tabel",
+          "title": "Tabel"
+        },
+        "user": {
+          "description": "Cari berdasarkan pengguna"
+        }
+      }
+    },
+    "approval-flow": {
+      "self": "Alur Persetujuan"
+    },
+    "batch-transition": {
+      "close": "Tutup",
+      "closed": "Ditutup",
+      "not-allowed-tips": "Transisi batch tidak diizinkan untuk isu-isu ini",
+      "reopen": "Buka ulang",
+      "reopened": "Dibuka ulang"
+    },
+    "checks-manual-rollout-hint": "Pemeriksaan gagal. Peluncuran manual diperlukan.",
+    "checks-warning-hint": "Beberapa pemeriksaan menghasilkan peringatan",
+    "comment-editor": {
+      "nothing-to-preview": "Tidak ada yang dipratinjau",
+      "preview": "Pratinjau",
+      "toolbar": {
+        "bold": "Tebal",
+        "code": "Kode",
+        "hashtag": "Tagar",
+        "header": "Header",
+        "link": "Tautan"
+      },
+      "write": "Tulis"
+    },
+    "data-export": {
+      "creation-not-supported": "Pembuatan isu ekspor data tidak didukung",
+      "download-tooltip": "Unduh data yang diekspor",
+      "file-expired": "File kedaluwarsa",
+      "format": "Format",
+      "limits": "Batas",
+      "options": "Opsi"
+    },
+    "issue-name": "Nama isu",
+    "labels": "Label",
+    "leave-a-comment": "Tinggalkan komentar",
+    "my-issues": "Isu Saya",
+    "no-description-provided": "Tidak ada deskripsi yang diberikan",
+    "options-disabled-due-to-oversize": "Opsi dinonaktifkan karena ukuran terlalu besar",
+    "overwrite-current-statement": "Timpa pernyataan saat ini",
+    "review": {
+      "approve-description": "Setujui perubahan ini",
+      "comment-description": "Berikan komentar",
+      "reject-description": "Tolak perubahan ini",
+      "self": "Review"
+    },
+    "risk-level": {
+      "filter": "Filter tingkat risiko",
+      "high": "Tinggi",
+      "low": "Rendah",
+      "moderate": "Sedang",
+      "self": "Tingkat Risiko"
+    },
+    "role-grant": {
+      "all-databases": "Semua basis data",
+      "all-databases-tip": "Hibah ini berlaku untuk semua basis data",
+      "details": "Detail hibah peran",
+      "expired-at": "Kedaluwarsa pada",
+      "manually-select": "Pilih secara manual",
+      "use-cel": "Gunakan CEL"
+    },
+    "sort": {
+      "ascending": "Naik",
+      "created": "Dibuat",
+      "descending": "Turun",
+      "sort": "Urutkan",
+      "updated": "Diperbarui"
+    },
+    "statement-from-sheet-warning": "Pernyataan dari sheet",
+    "status-transition": {
+      "modal": {
+        "close": "Tutup",
+        "reopen": "Buka ulang"
+      }
+    },
+    "subtitle": "Subjudul isu",
+    "table": {
+      "approval-progress": "{{approved}}/{{total}} Persetujuan",
+      "approved": "Disetujui",
+      "closed": "Ditutup",
+      "creator": "Pembuat",
+      "name": "Nama",
+      "open": "Terbuka",
+      "updated": "Diperbarui",
+      "waiting-role": "Menunggu: {{role}}"
+    },
+    "task-run": {
+      "logs": "Log",
+      "session": "Sesi"
+    },
+    "title": {
+      "change-database": "Ubah Basis Data",
+      "change-from-sql-editor": "Perubahan dari SQL Editor",
+      "edit-schema": "Edit Skema",
+      "export-data": "Ekspor Data",
+      "request-role": "Minta Peran",
+      "request-specific-role": "Minta peran \"{{role}}\""
+    },
+    "transaction-mode": {
+      "label": "Mode transaksi"
+    },
+    "upload-sql": "Unggah SQL",
+    "upload-sql-file-max-size-exceeded": "Ukuran file maksimal ({{size}}) terlampaui.",
+    "waiting-approval": "Menunggu persetujuan"
+  },
+  "label": {
+    "add-label": "Tambah label",
+    "empty-label-value": "Nilai label kosong",
+    "error": {
+      "key-duplicated": "Kunci duplikat",
+      "key-necessary": "Kunci diperlukan",
+      "max-value-length-exceeded": "Panjang nilai tidak boleh melebihi {{length}} karakter",
+      "value-necessary": "Nilai diperlukan"
+    }
+  },
+  "landing": {
+    "changelog-for-version": "Changelog untuk versi {{version}}",
+    "last-visit": "Kunjungan terakhir",
+    "quick-link": {
+      "manage": "Kelola",
+      "self": "Tautan Cepat",
+      "visit-issues": "Kunjungi isu",
+      "visit-prjects": "Kunjungi proyek"
+    }
+  },
+  "masking": {
+    "reason": {
+      "algorithm": "Algoritma masking",
+      "classification": "Klasifikasi",
+      "context": "Konteks",
+      "semantic-type": "Tipe semantik",
+      "title": "Alasan masking"
+    }
+  },
+  "multi-factor": {
+    "auth-code": "Kode otentikasi",
+    "other-methods": {
+      "self": "Metode Lain",
+      "use-auth-app": {
+        "description": "Gunakan aplikasi otentikator untuk menghasilkan kode",
+        "self": "Gunakan Aplikasi Otentikator"
+      },
+      "use-recovery-code": {
+        "description": "Gunakan kode pemulihan jika Anda tidak memiliki akses ke aplikasi otentikator",
+        "self": "Gunakan Kode Pemulihan"
+      }
+    },
+    "recovery-code": "Kode pemulihan"
+  },
+  "oauth": {},
+  "oauth2": {
+    "consent": {
+      "description": "{{clientName}} meminta akses ke akun Anda",
+      "error-client-not-found": "Klien tidak ditemukan",
+      "error-load-failed": "Gagal memuat",
+      "error-missing-params": "Parameter tidak lengkap",
+      "error-switch-failed": "Gagal beralih akun",
+      "permission-access": "Akses izin",
+      "permissions": "Izin",
+      "title": "Konsen OAuth2",
+      "workspace-label": "Ruang kerja"
+    }
+  },
+  "plan": {
+    "add-spec": "Tambah spesifikasi",
+    "add-spec-pending-draft": "Tambah spesifikasi (draf tertunda)",
+    "checks": {
+      "completed": "Selesai",
+      "failed-to-run": "Gagal menjalankan",
+      "no-check-results": "Tidak ada hasil pemeriksaan",
+      "no-results-match-filters": "Tidak ada hasil yang cocok dengan filter",
+      "self": "Pemeriksaan",
+      "started": "Dimulai"
+    },
+    "create-plan": "Buat rencana",
+    "description": {
+      "placeholder": "Masukkan deskripsi rencana"
+    },
+    "draft-update-permission-required": "Izin diperlukan untuk memperbarui draf",
+    "editor": {
+      "save-changes-before-continuing": "Simpan perubahan sebelum melanjutkan"
+    },
+    "ghost": {
+      "configure": "Konfigurasi Ghost",
+      "parameters": "Parameter Ghost",
+      "requirements-not-met": "Persyaratan ghost tidak terpenuhi: {{databases}}",
+      "reset-to-defaults": "Reset ke bawaan"
+    },
+    "go-to-plan-page": "Buka halaman rencana",
+    "isolation-level": {
+      "read-committed": "Read Committed",
+      "read-uncommitted": "Read Uncommitted",
+      "repeatable-read": "Repeatable Read",
+      "self": "Tingkat Isolasi",
+      "serializable": "Serializable"
+    },
+    "labels-required-for-review": "Label diperlukan untuk review",
+    "lifecycle": {
+      "checking": "Memeriksa",
+      "checks-failing": "Pemeriksaan gagal",
+      "deployed": "Deploy",
+      "gate-checks-failed": "Pemeriksaan gerbang gagal",
+      "gate-checks-failed-sub": "{{failing}} gagal, {{passed}} lulus",
+      "gate-checks-passed": "Pemeriksaan gerbang lulus",
+      "gate-checks-passed-sub": "{{count}} lulus",
+      "gate-checks-running": "Pemeriksaan gerbang berjalan",
+      "gate-checks-running-sub": "{{running}} berjalan, {{passed}} lulus",
+      "gate-review-approved": "Review disetujui",
+      "gate-review-pending": "Review tertunda",
+      "gate-review-rejected": "Review ditolak",
+      "incomplete": "Tidak lengkap",
+      "preparing-rollout": "Menyiapkan peluncuran",
+      "rejected": "Ditolak",
+      "rerun": "Jalankan ulang",
+      "review-waiting": "Menunggu {{role}}",
+      "run": "Jalankan"
+    },
+    "meta": {
+      "created-by": "Dibuat oleh {{user}}"
+    },
+    "navigator": {
+      "changes": "Perubahan",
+      "checks": "Pemeriksaan",
+      "deploy": "Deploy",
+      "review": "Review",
+      "statement-empty": "Pernyataan kosong"
+    },
+    "new-plan": "Rencana Baru",
+    "options": {
+      "no-options-available": "Tidak ada opsi tersedia",
+      "self": "Opsi"
+    },
+    "overview": {
+      "no-checks": "Tidak ada pemeriksaan"
+    },
+    "phase": {
+      "create-rollout-action": "Buat peluncuran",
+      "deploy-description": "Deploy perubahan ini",
+      "deploy-description-gitops": "Perubahan akan di-deploy melalui GitOps",
+      "hide-details": "Sembunyikan detail",
+      "review-description": "Review perubahan ini",
+      "show-details": "Tampilkan detail"
+    },
+    "plans": "Rencana",
+    "pre-backup": {
+      "requirements-not-met": "Persyaratan pra-cadangan tidak terpenuhi: {{databases}}"
+    },
+    "ready-for-review": "Siap untuk review",
+    "review": {
+      "action": "Tindakan",
+      "activity": {
+        "add-a-comment": "Tambah komentar",
+        "created-this-plan": "membuat rencana ini",
+        "marked-ready-for-review": "menandai siap untuk review",
+        "n-hidden-events_one": "{{count}} peristiwa tersembunyi",
+        "n-hidden-events_other": "{{count}} peristiwa tersembunyi",
+        "self": "Aktivitas",
+        "show-all": "Tampilkan semua"
+      },
+      "approval-flow": {
+        "and-n-more_one": "dan {{count}} lainnya",
+        "and-n-more_other": "dan {{count}} lainnya",
+        "approved-by": "Disetujui oleh {{user}}",
+        "current": "Saat ini",
+        "n-approved": "{{n}} disetujui",
+        "n-pending": "{{n}} tertunda",
+        "n-reviewers_one": "{{count}} reviewer",
+        "n-reviewers_other": "{{count}} reviewer",
+        "no-reviewers": "Tidak ada reviewer",
+        "rejected-by": "Ditolak oleh {{user}}"
+      },
+      "comment-required-to-reject": "Komentar diperlukan untuk menolak",
+      "footer": {
+        "all-gates-passed": "Semua gerbang lulus",
+        "approved-but-checks-failed": "Disetujui tetapi pemeriksaan gagal",
+        "auto-rollout-after-approval": "Peluncuran otomatis setelah persetujuan",
+        "blocked-by-rejection": "Diblokir oleh penolakan",
+        "bypass-and-deploy": "Lewati dan deploy",
+        "confirm-acknowledge": "Saya mengakui risiko ini",
+        "confirm-bypass-title": "Konfirmasi bypass",
+        "confirm-checks-failed_one": "{{count}} pemeriksaan gagal",
+        "confirm-checks-failed_other": "{{count}} pemeriksaan gagal",
+        "confirm-checks-running": "Pemeriksaan masih berjalan",
+        "confirm-review-not-approved": "Review belum disetujui",
+        "confirm-review-rejected": "Review ditolak",
+        "creating-rollout-automatically": "Membuat peluncuran secara otomatis",
+        "errors-passed-not-created_one": "{{count}} galat, {{passed}} lulus. Rollout tidak dibuat secara otomatis.",
+        "errors-passed-not-created_other": "{{count}} galat, {{passed}} lulus. Rollout tidak dibuat secara otomatis.",
+        "gate-approval": "Persetujuan gerbang",
+        "gate-no-failed-checks": "Tidak ada pemeriksaan gagal",
+        "gates-blocked": "Gerbang diblokir",
+        "n-checks-failed_one": "{{count}} pemeriksaan gagal",
+        "n-checks-failed_other": "{{count}} pemeriksaan gagal",
+        "n-checks-passed_one": "{{count}} pemeriksaan lulus",
+        "n-checks-passed_other": "{{count}} pemeriksaan lulus",
+        "rollout-auto-creates": "Peluncuran akan dibuat secara otomatis",
+        "rollout-blocked-by-failed-checks": "Peluncuran diblokir oleh pemeriksaan gagal",
+        "rollout-not-created": "Peluncuran tidak dibuat",
+        "waiting-on-review": "Menunggu review"
+      },
+      "rejection": {
+        "guidance-prefix": "Berikan panduan untuk perbaikan",
+        "guidance-suffix": "Reviewer akan melihat ini",
+        "re-request-review": "Minta ulang review",
+        "title": "Ditolak oleh {{user}}"
+      }
+    },
+    "rollback": {
+      "description_one": "Kembalikan 1 tugas yang dipilih dari rollout #{{rolloutId}}.",
+      "description_other": "Kembalikan {{count}} tugas yang dipilih dari rollout #{{rolloutId}}.",
+      "title": "Rollback rollout #{{rolloutId}}"
+    },
+    "run": "Jalankan",
+    "select-isolation-level": "Pilih tingkat isolasi",
+    "select-targets": "Pilih target",
+    "spec": {
+      "change": "Perubahan spesifikasi",
+      "type": {
+        "database-change": "Perubahan Basis Data"
+      }
+    },
+    "state": {
+      "close-confirm": "Tutup rencana?",
+      "close-review-confirm": "Tutup review rencana?",
+      "reopen-confirm": "Buka ulang rencana?",
+      "reopen-review-confirm": "Buka ulang review rencana?"
+    },
+    "subtitle": "Subjudul rencana",
+    "summary": {
+      "last-approved-by": "Terakhir disetujui oleh {{name}}",
+      "n-changes": "{{n}} perubahan",
+      "n-database-groups": "{{n}} grup basis data",
+      "n-databases": "{{n}} basis data",
+      "n-error": "{{n}} galat",
+      "n-of-m-approved": "{{n}} dari {{m}} disetujui",
+      "n-of-m-tasks": "{{n}} dari {{m}} tugas",
+      "n-passed": "{{n}} lulus",
+      "n-warning": "{{n}} peringatan"
+    },
+    "targets": {
+      "no-targets-found": "Tidak ada target ditemukan",
+      "non-env-warning": {
+        "one": "{{count}} database akan dikecualikan dari rollout karena tidak memiliki lingkungan yang efektif:",
+        "other": "{{count}} database akan dikecualikan dari rollout karena tidak memiliki lingkungan yang efektif:"
+      },
+      "title": "Target",
+      "view-all": "Lihat semua ({{count}})"
+    },
+    "title-required": "Judul diperlukan"
+  },
+  "plugin": {
+    "ai": {
+      "actions": {
+        "explain-code": "Jelaskan kode",
+        "find-problems": "Cari masalah",
+        "insert-at-caret": "Sisipkan di kursor"
+      },
+      "ai-assistant": "Asisten AI",
+      "conversation": {
+        "delete": "Hapus",
+        "history-conversations": "Riwayat percakapan",
+        "new-conversation": "Percakapan baru",
+        "no-message": "Tidak ada pesan",
+        "rename": "Ubah nama",
+        "select-or-create": "Pilih atau {{create}} percakapan untuk memulai.",
+        "tips": {
+          "no-more": "Tidak ada lagi tips",
+          "suggest-prompt": "Saran prompt"
+        },
+        "untitled": "Tanpa judul",
+        "view-history-conversations": "Lihat riwayat percakapan"
+      },
+      "new-line": "Baris baru",
+      "not-configured": {
+        "contact-admin-to-configure": "Hubungi admin untuk mengonfigurasi",
+        "go-to-configure": "Buka konfigurasi",
+        "self": "AI Belum Dikonfigurasi"
+      },
+      "send": "Kirim",
+      "text-to-sql-placeholder": "Jelaskan kueri SQL yang ingin Anda buat..."
+    }
+  },
+  "policy": {
+    "environment-tier": {
+      "description": "Tingkat lingkungan untuk kebijakan ini",
+      "mark-env-as-production": "Tandai lingkungan sebagai produksi",
+      "name": "Tingkat Lingkungan"
+    },
+    "rollout": {
+      "auto": "Peluncuran otomatis",
+      "auto-info": "Peluncuran akan dilakukan secara otomatis setelah persetujuan",
+      "info": "Tugas dapat dieksekusi oleh pengguna dengan izin '{{permission}}' atau peran berikut.",
+      "name": "Kebijakan Peluncuran",
+      "tip": "Tips kebijakan peluncuran"
+    }
+  },
+  "project": {
+    "add-database": "Tambah basis data",
+    "add-database-empty-placeholder": "Belum ada basis data. Tambah basis data untuk memulai.",
+    "batch": {
+      "archive": {
+        "description": "Arsipkan item yang dipilih",
+        "error": "Gagal mengarsipkan",
+        "success_one": "Berhasil mengarsipkan {{count}} proyek",
+        "success_other": "Berhasil mengarsipkan {{count}} proyek",
+        "title_one": "Arsipkan {{count}} Proyek?",
+        "title_other": "Arsipkan {{count}} Proyek?"
+      },
+      "delete": {
+        "description": "Hapus item yang dipilih",
+        "error": "Gagal menghapus",
+        "success_one": "Berhasil menghapus {{count}} proyek",
+        "success_other": "Berhasil menghapus {{count}} proyek",
+        "title_one": "Hapus {{count}} Proyek?",
+        "title_other": "Hapus {{count}} Proyek?",
+        "warning": "Tindakan ini tidak dapat dibatalkan"
+      }
+    },
+    "connect-instance": "Hubungkan instance",
+    "connect-instance-empty-placeholder": "Hubungkan instance untuk mulai mengelola basis data",
+    "connect-instance-intro-description": "Hubungkan instance basis data Anda untuk mulai mengelola perubahan",
+    "connect-instance-intro-title": "Hubungkan Instance Anda",
+    "create-modal": {
+      "project-name": "Nama proyek",
+      "success-prompt": "Proyek {{name}} berhasil dibuat."
+    },
+    "filter-projects": "Filter proyek",
+    "masking-exemption": {
+      "advanced-search": {
+        "scope": {
+          "status": {
+            "description": "Cari berdasarkan status pengecualian"
+          }
+        }
+      },
+      "all-levels": "Semua tingkat",
+      "expires-in-days_one": "Kedaluwarsa dalam {{days}} hari",
+      "expires-in-days_other": "Kedaluwarsa dalam {{days}} hari",
+      "expires-today": "Kedaluwarsa hari ini",
+      "grant-exemption": "Berikan pengecualian",
+      "level": "Tingkat",
+      "n-exemptions_one": "{{n}} pengecualian",
+      "n-exemptions_other": "{{n}} pengecualian",
+      "no-exemptions": "Tidak ada pengecualian",
+      "no-reason": "Tidak ada alasan",
+      "revoke-exemption-title": "Cabut pengecualian penyamaran untuk {{member}}?",
+      "self": "Pengecualian Masking"
+    },
+    "members": {
+      "ddl-current-all": "Pernyataan {{kind}} dapat langsung dijalankan di SQL Editor di SEMUA lingkungan tanpa persetujuan.",
+      "ddl-current-none": "Pernyataan {{kind}} memerlukan persetujuan sebelum dijalankan di SQL Editor.",
+      "ddl-current-some": "Pernyataan {{kind}} dapat langsung dijalankan di SQL Editor di lingkungan yang terdaftar tanpa persetujuan.",
+      "ddl-warning": "Di lingkungan yang dipilih, pernyataan {{kind}} dapat langsung dijalankan di SQL Editor tanpa persetujuan.",
+      "description": "Kelola anggota proyek",
+      "edit-member": "Edit anggota - {{member}}",
+      "expiration-presets": {
+        "one-month": "1 bulan",
+        "one-week": "1 minggu",
+        "one-year": "1 tahun",
+        "three-months": "3 bulan"
+      },
+      "expires-at": "Kedaluwarsa: {{date}}",
+      "never-expires": "Tidak pernah kedaluwarsa",
+      "request-role": {
+        "disabled-reason": {
+          "allow-request-role-disabled": "Permintaan peran dinonaktifkan",
+          "feature-unavailable": "Fitur tidak tersedia"
+        },
+        "expiration-exceeds-max": "Kedaluwarsa tidak boleh melebihi batas ruang kerja yaitu {{days}} hari.",
+        "expiration-must-be-future": "Kedaluwarsa harus di masa depan",
+        "failed-to-build-expression": "Gagal membuat ekspresi",
+        "labels-misconfigured": {
+          "description": "Label tidak dikonfigurasi dengan benar",
+          "title": "Label Salah Konfigurasi"
+        },
+        "max-expiration-hint": "Maksimum yang diizinkan oleh kebijakan ruang kerja: {{days}} hari."
+      },
+      "revoke-role-from-member": "Cabut '{{role}}' dari '{{member}}'?"
+    },
+    "overview": {
+      "info-slot-content": "Konten slot info"
+    },
+    "select": "Pilih proyek",
+    "settings": {
+      "confirm-archive-project": "Mengarsipkan \"{{name}}\" akan membuatnya menjadi hanya-baca dan menyembunyikannya dari daftar proyek aktif. Semua isu, database, dan pengaturan akan dipertahankan. Anda dapat memulihkannya nanti dari daftar proyek yang diarsipkan.",
+      "confirm-delete-project": "Menghapus \"{{name}}\" akan secara permanen menghapus proyek dan semua data terkait termasuk isu, konfigurasi, dan riwayat. Semua database dalam proyek ini akan dipindahkan ke proyek default. Tindakan ini tidak dapat dibatalkan.",
+      "issue-related": {
+        "allow-jit": {
+          "description": "Izinkan akses Just-In-Time untuk proyek ini",
+          "self": "Izinkan JIT"
+        },
+        "allow-request-role": {
+          "description": "Izinkan pengguna meminta peran",
+          "self": "Izinkan Permintaan Peran"
+        },
+        "allow-self-approval": {
+          "description": "Izinkan pengguna menyetujui isu mereka sendiri",
+          "self": "Izinkan Persetujuan Sendiri"
+        },
+        "approval-flow-configured": "Alur persetujuan dikonfigurasi",
+        "approval-flow-fallback": "Alur persetujuan cadangan",
+        "approval-flow-not-configured": "Alur persetujuan belum dikonfigurasi",
+        "ci-sampling-size": {
+          "description": "Ukuran sampling untuk CI",
+          "self": "Ukuran Sampling CI"
+        },
+        "enforce-issue-title": {
+          "description": "Terapkan format judul isu",
+          "self": "Terapkan Judul Isu"
+        },
+        "enforce-sql-review": {
+          "description": "Terapkan review SQL untuk semua perubahan",
+          "self": "Terapkan Review SQL"
+        },
+        "labels": {
+          "configure-labels": "Konfigurasi label",
+          "description": "Kelola label isu untuk proyek ini",
+          "force-issue-labels": {
+            "description": "Paksa isu memiliki label",
+            "self": "Paksa Label Isu",
+            "warning": "Peringatan: isu yang ada mungkin tidak memiliki label"
+          },
+          "placeholder": "Pilih label",
+          "self": "Label"
+        },
+        "max-retries": {
+          "description": "Jumlah maksimum percobaan ulang",
+          "self": "Maks Percobaan Ulang"
+        },
+        "parallel_tasks_per_rollout": {
+          "description": "Jumlah tugas paralel per peluncuran",
+          "self": "Tugas Paralel"
+        },
+        "postgres-database-tenant-mode": {
+          "description": "Mode tenant basis data PostgreSQL",
+          "self": "Mode Tenant PostgreSQL"
+        },
+        "require-issue-approval": {
+          "description": "Memerlukan persetujuan isu",
+          "self": "Perlukan Persetujuan Isu"
+        },
+        "require-plan-check-no-error": {
+          "description": "Memerlukan pemeriksaan rencana tanpa galat",
+          "self": "Perlukan Pemeriksaan Rencana"
+        },
+        "self": "Terkait Isu",
+        "view-approval-flow": "Lihat alur persetujuan"
+      },
+      "project-labels": {
+        "description": "Label tingkat proyek",
+        "self": "Label Proyek"
+      },
+      "restore": {
+        "btn-text": "Pulihkan",
+        "title": "Pulihkan Proyek"
+      },
+      "success-updated": "Proyek berhasil diperbarui",
+      "update-failed": "Gagal memperbarui proyek"
+    },
+    "table": {
+      "name": "Nama"
+    },
+    "webhook": {
+      "activity-item": {
+        "issue-approval-notify": {
+          "label": "Notifikasi persetujuan isu",
+          "title": "Persetujuan Isu"
+        },
+        "issue-approved": {
+          "label": "Isu disetujui",
+          "title": "Isu Disetujui"
+        },
+        "issue-creation": {
+          "label": "Pembuatan isu",
+          "title": "Isu Dibuat"
+        },
+        "issue-sent-back": {
+          "label": "Isu dikembalikan",
+          "title": "Isu Dikembalikan"
+        },
+        "pipeline-completed": {
+          "label": "Pipeline selesai",
+          "title": "Pipeline Selesai"
+        },
+        "pipeline-failed": {
+          "label": "Pipeline gagal",
+          "title": "Pipeline Gagal"
+        }
+      },
+      "activity-support-direct-message": "Dukungan pesan langsung",
+      "creation": {
+        "desc": "Buat webhook terkait untuk saluran {{destination}} yang menerima pesan.",
+        "view-doc": "Lihat dokumentasi {{destination}}"
+      },
+      "deletion": {
+        "confirm-title": "Hapus webhook '{{title}}'?"
+      },
+      "destination": "Tujuan",
+      "direct-messages": "Pesan langsung",
+      "direct-messages-description": "Kirim pesan langsung untuk aktivitas tertentu",
+      "direct-messages-tip": "Tips pesan langsung",
+      "direct-messages-warning": "Peringatan pesan langsung",
+      "enable-direct-messages": "Aktifkan pesan langsung",
+      "fail-tested-title": "Pengujian gagal",
+      "self": "Webhook",
+      "success-created-prompt": "Webhook {{name}} berhasil dibuat.",
+      "success-deleted-prompt": "Webhook {{name}} berhasil dihapus.",
+      "success-tested-prompt": "Pengujian webhook berhasil",
+      "success-updated-prompt": "Webhook {{name}} berhasil diperbarui.",
+      "test-webhook": "Uji webhook",
+      "triggering-activity": "Aktivitas pemicu",
+      "webhook-url": "URL Webhook"
+    }
+  },
+  "quick-action": {
+    "create-db": "Buat basis data",
+    "create-project": "Buat proyek",
+    "new-project": "Proyek Baru"
+  },
+  "quick-start": {
+    "guide": "Panduan",
+    "notice": {
+      "desc": "Selesaikan langkah-langkah berikut untuk memulai",
+      "title": "Memulai"
+    },
+    "query-data": "Kueri data",
+    "self": "Mulai Cepat",
+    "view-an-issue": "Lihat isu",
+    "visit-database": "Kunjungi basis data",
+    "visit-environment": "Kunjungi lingkungan",
+    "visit-instance": "Kunjungi instance",
+    "visit-member": "Kunjungi anggota",
+    "visit-project": "Kunjungi proyek"
+  },
+  "refresh-remind": {},
+  "release": {
+    "and-n-more-files": "dan {{count}} file lainnya",
+    "change-tip": "Tips perubahan",
+    "file": "File",
+    "file-type": {
+      "declarative": "Deklaratif",
+      "unspecified": "Tidak ditentukan",
+      "versioned": "Versi"
+    },
+    "files": "File",
+    "not-found": "Rilis tidak ditemukan",
+    "releases": "Rilis",
+    "total-files": "Total file",
+    "usage-description": "Gunakan rilis untuk mengelola perubahan basis data",
+    "vcs-source": "Sumber VCS",
+    "vcs-type": {
+      "unspecified": "Tidak ditentukan"
+    },
+    "view-all-files": "Lihat semua file"
+  },
+  "remind": {
+    "role-expire": {
+      "checkbox": "Jangan tampilkan lagi",
+      "content": "Peran Anda akan segera kedaluwarsa",
+      "go-to-project": "Buka proyek",
+      "title": "Peran Akan Kedaluwarsa"
+    }
+  },
+  "resource": {
+    "delete-warning": "\"{{name}}\" akan dihapus. Tindakan ini tidak dapat dibatalkan.",
+    "delete-warning-retry": "Peringatan hapus - coba lagi",
+    "delete-warning-with-resources": "\"{{name}}\" digunakan oleh sumber daya berikut:"
+  },
+  "resource-id": {
+    "cannot-be-changed-later": "Tidak dapat diubah nanti",
+    "description": "ID {{resource}} adalah pengenal unik. Anda tidak dapat mengubahnya setelah dibuat.",
+    "self": "ID {{resource}}",
+    "validation": {
+      "duplicated": "ID {{resource}} sudah ada. Silakan pilih yang lain.",
+      "empty": "ID {{resource}} tidak boleh kosong",
+      "overflow": "ID {{resource}} terlalu panjang. Seharusnya kurang dari 64 karakter.",
+      "pattern": "ID {{resource}} dapat berupa huruf kecil, angka, atau tanda hubung. Harus dimulai dengan huruf kecil dan diakhiri dengan huruf atau angka."
+    }
+  },
+  "role": {
+    "custom-roles": {
+      "self": "Peran Kustom"
+    },
+    "gitops-service-agent": {
+      "description": "Agen layanan GitOps untuk otomatisasi",
+      "self": "Agen Layanan GitOps"
+    },
+    "import-from-role": "Impor dari peran",
+    "project-developer": {
+      "description": "Pengembang proyek - dapat membuat perubahan",
+      "self": "Pengembang Proyek"
+    },
+    "project-owner": {
+      "description": "Pemilik proyek - akses penuh ke proyek",
+      "self": "Pemilik Proyek"
+    },
+    "project-releaser": {
+      "description": "Pelepas proyek - dapat merilis perubahan",
+      "self": "Pelepas Proyek"
+    },
+    "project-roles": {
+      "self": "Peran Proyek"
+    },
+    "project-viewer": {
+      "description": "Pengamat proyek - akses hanya-baca",
+      "self": "Pengamat Proyek"
+    },
+    "select-role": "Pilih peran",
+    "self": "Peran",
+    "setting": {
+      "description": "Deskripsi pengaturan peran",
+      "description-placeholder": "Masukkan deskripsi peran",
+      "title-placeholder": "Masukkan judul peran"
+    },
+    "sql-editor-read-user": {
+      "description": "Pengguna baca SQL Editor",
+      "self": "Pengguna Baca SQL Editor"
+    },
+    "sql-editor-user": {
+      "description": "Pengguna SQL Editor",
+      "self": "Pengguna SQL Editor"
+    },
+    "title": "Judul peran",
+    "workspace-admin": {
+      "description": "Admin ruang kerja - akses penuh",
+      "self": "Admin Ruang Kerja"
+    },
+    "workspace-dba": {
+      "description": "DBA ruang kerja - mengelola basis data",
+      "self": "DBA Ruang Kerja"
+    },
+    "workspace-member": {
+      "description": "Anggota ruang kerja - akses dasar",
+      "self": "Anggota Ruang Kerja"
+    },
+    "workspace-roles": {
+      "self": "Peran Ruang Kerja"
+    }
+  },
+  "rollout": {
+    "no-stages": "Tidak ada tahap",
+    "no-tasks-created": "Tidak ada tugas yang dibuat",
+    "pending-tasks-preview": {
+      "action": "Tindakan",
+      "description": "Pratinjau tugas yang tertunda",
+      "no-pending-tasks": "Tidak ada tugas tertunda",
+      "task-count_one": "{{count}} tugas",
+      "task-count_other": "{{count}} tugas",
+      "title": "Tugas Tertunda"
+    },
+    "stage": {
+      "confirm-create": "Buat tahap?",
+      "self_one": "Tahap",
+      "self_other": "Tahap"
+    },
+    "task": {
+      "no-tasks": "Tidak ada tugas",
+      "selected-count": "{{count}} dipilih",
+      "statement-truncated-hint": "Pernyataan dipotong"
+    },
+    "task-execution-errors": "Galat eksekusi tugas"
+  },
+  "schema-diagram": {
+    "fit-content-with-view": "Sesuaikan konten dengan tampilan",
+    "self": "Diagram Skema"
+  },
+  "schema-editor": {
+    "actions": {
+      "add-column": "Tambah kolom",
+      "add-index": "Tambah indeks",
+      "add-partition": "Tambah partisi",
+      "create-function": "Buat fungsi",
+      "create-procedure": "Buat prosedur",
+      "create-schema": "Buat skema",
+      "create-table": "Buat tabel",
+      "create-view": "Buat tampilan",
+      "drop": "Hapus",
+      "drop-schema": "Hapus skema",
+      "drop-table": "Hapus tabel",
+      "rename": "Ubah nama",
+      "rename-table": "Ubah nama tabel",
+      "restore": "Pulihkan"
+    },
+    "column": {
+      "comment": "Komentar",
+      "default": "Bawaan",
+      "foreign-key": "Kunci Asing",
+      "name": "Nama",
+      "name-placeholder": "Masukkan nama kolom",
+      "not-null": "Not Null",
+      "on-update": "Saat Update",
+      "operations": "Operasi",
+      "primary": "Primer",
+      "type": "Tipe"
+    },
+    "columns": "Kolom",
+    "create-foreign-key": "Buat kunci asing",
+    "database": {
+      "collation": "Collation",
+      "comment": "Komentar",
+      "engine": "Engine",
+      "name": "Nama"
+    },
+    "default": {
+      "placeholder": "Nilai bawaan"
+    },
+    "edit-foreign-key": "Edit kunci asing",
+    "foreign-key": {
+      "name": "Nama",
+      "referenced-column": "Kolom referensi",
+      "referenced-schema": "Skema referensi",
+      "referenced-table": "Tabel referensi"
+    },
+    "index": {
+      "columns": "Kolom",
+      "dependency-columns": "Kolom dependensi",
+      "indexes": "Indeks",
+      "primary": "Primer",
+      "unique": "Unik"
+    },
+    "indexes": "Indeks",
+    "insert-sql": "Sisipkan SQL",
+    "no-diff": "Tidak ada perbedaan",
+    "partition": {
+      "expression": "Ekspresi",
+      "type": "Tipe",
+      "value": "Nilai"
+    },
+    "partitions": "Partisi",
+    "preview": "Pratinjau",
+    "raw-sql": "SQL Mentah",
+    "schema": {
+      "duplicate-name": "Nama skema duplikat",
+      "name-placeholder": "Masukkan nama skema",
+      "select": "Pilih skema"
+    },
+    "select-object-hint": "Pilih objek untuk diedit",
+    "self": "Editor Skema",
+    "table": {
+      "duplicate-name": "Nama tabel duplikat",
+      "name-placeholder": "Masukkan nama tabel",
+      "no-match": "Tidak ada tabel yang cocok",
+      "no-tables": "Tidak ada tabel"
+    },
+    "table-partition": {
+      "expression": "Ekspresi",
+      "partitions": "Partisi",
+      "type": "Tipe",
+      "value": "Nilai"
+    },
+    "template-database": "Basis data template"
+  },
+  "schema-template": {
+    "classification": {
+      "search": "Cari klasifikasi",
+      "select": "Pilih klasifikasi"
+    }
+  },
+  "sensitive-data": {
+    "self": "Data Sensitif"
+  },
+  "setting": {
+    "label": {
+      "key-placeholder": "Masukkan kunci label",
+      "value-placeholder": "Masukkan nilai label"
+    }
+  },
+  "settings": {
+    "general": {
+      "workspace": {
+        "access-token-duration": {
+          "description": "Durasi token akses sebelum kedaluwarsa",
+          "hours": "Jam",
+          "minutes": "Menit",
+          "self": "Durasi Token Akses"
+        },
+        "account": "Akun",
+        "ai-assistant": {
+          "api-key": {
+            "description": "Kunci API untuk asisten AI. {{viewDoc}}",
+            "find-my-key": "Cari kunci saya",
+            "placeholder": "Masukkan kunci API",
+            "self": "Kunci API"
+          },
+          "description": "Konfigurasi asisten AI untuk ruang kerja",
+          "enable-ai-assistant": "Aktifkan asisten AI",
+          "enabled-in-saas": "Diaktifkan di SaaS",
+          "endpoint": {
+            "description": "Endpoint API untuk asisten AI",
+            "self": "Endpoint"
+          },
+          "model": {
+            "description": "Model AI yang digunakan",
+            "self": "Model"
+          },
+          "provider": {
+            "azure_open_ai": "Azure OpenAI",
+            "claude": "Claude",
+            "gemini": "Gemini",
+            "open_ai": "OpenAI",
+            "self": "Penyedia"
+          },
+          "self": "Asisten AI"
+        },
+        "allow-admin-data-source": {
+          "description": "Izinkan akses sumber data admin",
+          "self": "Izinkan Sumber Data Admin"
+        },
+        "allow-email-code-signin": {
+          "description": "Izinkan masuk dengan kode email",
+          "enable": "Aktifkan masuk kode email",
+          "require-email-setting": "Memerlukan pengaturan email"
+        },
+        "announcement": {
+          "self": "Pengumuman"
+        },
+        "announcement-alert-level": {
+          "field": {
+            "critical": "Kritis",
+            "info": "Info",
+            "warning": "Peringatan"
+          }
+        },
+        "announcement-text": {
+          "description": "Teks pengumuman yang ditampilkan ke semua pengguna",
+          "placeholder": "Masukkan teks pengumuman",
+          "self": "Teks Pengumuman"
+        },
+        "announcement-theme": {
+          "background": "Latar belakang",
+          "custom": "Kustom",
+          "description": "Tema untuk pengumuman",
+          "self": "Tema Pengumuman",
+          "text": "Teks"
+        },
+        "audit-log-stdout": {
+          "description": "Log audit ke stdout",
+          "enable": "Aktifkan log audit stdout"
+        },
+        "branding": "Branding",
+        "config-partly-updated": "Konfigurasi sebagian diperbarui",
+        "config-updated": "Konfigurasi berhasil diperbarui",
+        "danger-zone": {
+          "confirm-description": "Ini akan menghapus secara permanen ruang kerja \"{{workspace}}\" dan semua datanya. Tindakan ini tidak dapat dibatalkan. Ketik nama ruang kerja untuk mengonfirmasi.",
+          "confirm-title": "Konfirmasi tindakan berbahaya",
+          "delete-failed": "Gagal menghapus",
+          "delete-workspace": "Hapus ruang kerja",
+          "deleted": "Dihapus",
+          "deleting": "Menghapus",
+          "description": "Tindakan berbahaya - berhati-hatilah",
+          "exit-confirm-description": "Anda akan kehilangan akses ke ruang kerja \"{{workspace}}\". Anda perlu diundang kembali untuk bergabung kembali.",
+          "exit-confirm-title": "Keluar dari ruang kerja?",
+          "exit-description": "Keluar dari ruang kerja ini",
+          "exit-failed": "Gagal keluar",
+          "exit-workspace": "Keluar dari ruang kerja",
+          "exited": "Keluar",
+          "exiting": "Keluar"
+        },
+        "data-copy": "Salin Data",
+        "data-export": "Ekspor Data",
+        "default-landing-page": {
+          "default-view-changed-to-sql-editor": "Tampilan bawaan diubah ke SQL Editor",
+          "go-to-sql-editor": "Buka SQL Editor",
+          "go-to-workspace": "Buka ruang kerja",
+          "self": "Halaman Bawaan",
+          "sql-editor": {
+            "description": "Buka SQL Editor secara bawaan",
+            "self": "SQL Editor"
+          },
+          "workspace": {
+            "description": "Buka halaman ruang kerja secara bawaan",
+            "self": "Ruang Kerja"
+          }
+        },
+        "disallow-password-signin": {
+          "description": "Larang masuk dengan kata sandi",
+          "enable": "Nonaktifkan masuk kata sandi",
+          "require-sso-setup": "Memerlukan pengaturan SSO"
+        },
+        "disallow-signup": {
+          "description": "Larang pendaftaran pengguna baru",
+          "enable": "Nonaktifkan pendaftaran"
+        },
+        "domain-restriction": {
+          "description": "Batasi akses ke domain tertentu",
+          "domain-input-placeholder": "Masukkan domain (contoh: company.com)",
+          "members-restriction": {
+            "description": "Batasi anggota berdasarkan domain",
+            "self": "Pembatasan Anggota"
+          },
+          "self": "Pembatasan Domain"
+        },
+        "drag-logo": "Seret logo",
+        "enable-debug": {
+          "enable": "Aktifkan debug"
+        },
+        "external-url": {
+          "cannot-edit-flag": "Tidak dapat mengedit bendera URL eksternal",
+          "description": "URL eksternal untuk ruang kerja ini",
+          "self": "URL Eksternal"
+        },
+        "extra-link": {
+          "placeholder": "Masukkan tautan tambahan",
+          "self": "Tautan Tambahan"
+        },
+        "failed-to-update-setting": "Gagal memperbarui pengaturan \"{{title}}\"",
+        "id": "ID",
+        "id-description": "ID unik untuk ruang kerja ini",
+        "inactive-session-timeout": {
+          "description": "Waktu tunggu sesi tidak aktif",
+          "hours": "Jam",
+          "self": "Waktu Tunggu Sesi"
+        },
+        "log": "Log",
+        "logo": "Logo",
+        "logo-aspect": "Aspek logo",
+        "logo-upload-tip": "{{extension}} hingga {{size}} MiB",
+        "maximum-expiration": {
+          "days": "Hari",
+          "never-expires": "Tidak pernah kedaluwarsa"
+        },
+        "maximum-request-expiration": {
+          "description": "Batas kedaluwarsa maksimum untuk permintaan",
+          "self": "Kedaluwarsa Permintaan Maks"
+        },
+        "maximum-role-expiration": {
+          "description": "Batas kedaluwarsa maksimum hanya berlaku untuk peran permintaan. <highlight>Pengaturan usang ini akan dihentikan di masa mendatang; gunakan alur akses tepat waktu (just-in-time) untuk akses sementara.</highlight>",
+          "self": "Kedaluwarsa Peran Maks"
+        },
+        "maximum-sql-result": {
+          "rows": {
+            "description": "Jumlah baris maksimum dalam hasil SQL",
+            "rows": "Baris",
+            "self": "Baris Maks"
+          },
+          "size": {
+            "default": "Batas bawaan {{limit}} MB",
+            "description": "Ukuran maksimum hasil SQL",
+            "self": "Ukuran Maks"
+          }
+        },
+        "no-limit": "Tanpa batas",
+        "password-restriction": {
+          "min-length": "Panjang minimum untuk kata sandi tidak boleh kurang dari {{min}} karakter",
+          "password-rotation": "Wajibkan pengguna mereset kata sandi mereka setiap {{day}} hari",
+          "require-letter": "Memerlukan huruf",
+          "require-number": "Memerlukan angka",
+          "require-reset-password-for-first-login": "Memerlukan reset kata sandi untuk login pertama",
+          "require-special-character": "Memerlukan karakter khusus",
+          "require-uppercase-letter": "Memerlukan huruf kapital",
+          "self": "Pembatasan Kata Sandi"
+        },
+        "product-improvement": {
+          "description": "Bantu kami meningkatkan produk",
+          "participate": "Berpartisipasi",
+          "self": "Peningkatan Produk"
+        },
+        "query-data-policy": {
+          "seconds": "Detik",
+          "timeout": {
+            "description": "Waktu tunggu kueri data",
+            "self": "Waktu Tunggu Kueri"
+          }
+        },
+        "refresh-token-duration": {
+          "days": "Hari",
+          "description": "Durasi token refresh",
+          "hours": "Jam",
+          "self": "Durasi Token Refresh"
+        },
+        "require-2fa": {
+          "description": "Memerlukan otentikasi dua faktor",
+          "enable": "Aktifkan 2FA"
+        },
+        "security": "Keamanan",
+        "select-logo": "Pilih logo",
+        "sql-editor-theme": {
+          "anchor": {
+            "accent": "Aksen",
+            "accent-tip": "Warna aksen untuk jangkar",
+            "background": "Latar belakang",
+            "background-tip": "Warna latar belakang jangkar",
+            "border": "Batas",
+            "border-tip": "Warna batas jangkar",
+            "text": "Teks",
+            "text-tip": "Warna teks jangkar"
+          },
+          "custom": "Kustom",
+          "description": "Kustomisasi tema SQL Editor",
+          "editor-theme": "Tema editor",
+          "editor-theme-tip": "Pilih tema untuk editor",
+          "self": "Tema SQL Editor"
+        },
+        "title": "Judul",
+        "watermark": {
+          "description": "Tampilkan watermark di halaman",
+          "enable": "Aktifkan watermark"
+        }
+      }
+    },
+    "im-integration": {
+      "description": "Konfigurasi integrasi pesan instan"
+    },
+    "mcp": {
+      "auth": {
+        "description": "Konfigurasi otentikasi MCP",
+        "title": "Otentikasi"
+      },
+      "description": "Konfigurasi Model Context Protocol",
+      "first-prompt": {
+        "description": "Prompt pertama untuk MCP",
+        "example": "Contoh prompt",
+        "title": "Prompt Pertama"
+      },
+      "general-config": {
+        "title": "Konfigurasi Umum"
+      },
+      "quick-start": {
+        "description": "Mulai cepat dengan MCP",
+        "title": "Mulai Cepat"
+      },
+      "setup": {
+        "add-to-config": "Tambah ke konfigurasi"
+      },
+      "title": "MCP"
+    },
+    "members": {
+      "action": {
+        "deactivate-confirm-title": "Nonaktifkan anggota?",
+        "reactivate-confirm-title": "Aktifkan kembali anggota?"
+      },
+      "add-member": "Tambah anggota",
+      "all-users": "Semua pengguna",
+      "assign-role": "Tetapkan peran",
+      "cannot-revoke-self": "Tidak dapat mencabut diri sendiri",
+      "copy-service-key": "Salin kunci layanan",
+      "entra-sync": {
+        "description": "Sinkronisasi dengan Microsoft Entra ID",
+        "endpoint": "Endpoint",
+        "endpoint-tip": "Endpoint Entra ID",
+        "reset-token": "Reset token",
+        "reset-token-warning": "Peringatan reset token",
+        "secret-token": "Token rahasia",
+        "secret-token-tip": "Token rahasia Entra",
+        "self": "Sinkronisasi Entra"
+      },
+      "grant-access": "Berikan akses",
+      "groups": {
+        "external-readonly": "Eksternal hanya-baca",
+        "form": {
+          "description": "Deskripsi grup",
+          "email": "Email grup",
+          "email-tips": "Alamat email grup",
+          "role": {
+            "member": "Anggota",
+            "owner": "Pemilik"
+          },
+          "title": "Judul grup"
+        },
+        "n-members": "{{n}} anggota",
+        "self": "Grup",
+        "workspace-domain-required": "Domain ruang kerja diperlukan"
+      },
+      "inactive-service-accounts": "Akun layanan tidak aktif",
+      "inactive-users": "Pengguna tidak aktif",
+      "inactive-workload-identities": "Identitas beban kerja tidak aktif",
+      "invite-email-hint": "Kirim undangan ke alamat email",
+      "pending-invite": "Undangan tertunda",
+      "reset-service-key": "Reset kunci layanan",
+      "reset-service-key-alert": "Peringatan reset kunci layanan",
+      "revoke-access": "Cabut akses",
+      "revoke-access-alert": "Peringatan cabut akses",
+      "revoke-allusers-alert": "Peringatan cabut semua pengguna",
+      "revoked": "Dicabut",
+      "search-member": "Cari anggota",
+      "select-account-hint": "Pilih akun",
+      "select-account_one": "Pilih {{n}} akun",
+      "select-account_other": "Pilih {{n}} akun",
+      "select-role_one": "Pilih {{n}} peran",
+      "select-role_other": "Pilih {{n}} peran",
+      "service-account": "Akun layanan",
+      "service-accounts": "Akun layanan",
+      "service-key-copied": "Kunci layanan disalin",
+      "show-inactive": "Tampilkan tidak aktif",
+      "table": {
+        "account": "Akun",
+        "groups": "Grup",
+        "roles": "Peran"
+      },
+      "view-by-members": "Lihat berdasarkan anggota",
+      "view-by-roles": "Lihat berdasarkan peran",
+      "workload-identities": "Identitas Beban Kerja",
+      "workload-identity": "Identitas Beban Kerja",
+      "workload-identity-advanced": "Lanjutan",
+      "workload-identity-all-branches-tags": "Semua cabang dan tag",
+      "workload-identity-allowed-branches-tags": "Cabang dan tag yang diizinkan",
+      "workload-identity-audience": "Audiens",
+      "workload-identity-branch": "Cabang",
+      "workload-identity-branch-hint": "Cabang Git yang diizinkan",
+      "workload-identity-gitlab-url": "URL GitLab",
+      "workload-identity-gitlab-url-hint": "URL instance GitLab",
+      "workload-identity-group": "Grup",
+      "workload-identity-issuer": "Issuer",
+      "workload-identity-owner": "Pemilik",
+      "workload-identity-platform": "Platform",
+      "workload-identity-project": "Proyek",
+      "workload-identity-project-hint": "Proyek Git",
+      "workload-identity-repo": "Repo",
+      "workload-identity-repo-hint": "Repositori Git",
+      "workload-identity-specific-branch": "Cabang spesifik",
+      "workload-identity-specific-tag": "Tag spesifik",
+      "workload-identity-subject": "Subjek",
+      "workload-identity-tag": "Tag",
+      "workload-identity-tag-hint": "Tag Git yang diizinkan"
+    },
+    "profile": {
+      "default-project-name": "Nama proyek bawaan",
+      "display-name": "Nama tampilan",
+      "display-name-placeholder": "Masukkan nama tampilan",
+      "email": "Email",
+      "password": "Kata Sandi",
+      "password-confirm": "Konfirmasi kata sandi",
+      "password-confirm-placeholder": "Masukkan ulang kata sandi",
+      "password-hint": "Minimal 8 karakter",
+      "password-mismatch": "Kata sandi tidak cocok",
+      "phone": "Telepon",
+      "phone-tips": "Nomor telepon",
+      "role": "Peran",
+      "setup-failed": "Gagal menyiapkan profil",
+      "setup-first-project": "Siapkan proyek pertama",
+      "setup-skip": "Lewati pengaturan",
+      "setup-success": "Profil berhasil disiapkan",
+      "setup-title": "Siapkan Profil",
+      "subscription": "Langganan",
+      "workspace-name": "Nama ruang kerja",
+      "workspace-name-placeholder": "Masukkan nama ruang kerja"
+    },
+    "sensitive-data": {
+      "algorithms": {
+        "add": "Tambah algoritma",
+        "edit": "Edit algoritma",
+        "error": {
+          "salt-required": "Salt diperlukan",
+          "slice-invalid-number": "Nomor irisan tidak valid",
+          "slice-overlap": "Irisan tumpang tindih",
+          "slice-required": "Irisan diperlukan",
+          "substitution-length": "Panjang substitusi tidak valid",
+          "substitution-required": "Substitusi diperlukan"
+        },
+        "full-mask": {
+          "self": "Mask Penuh",
+          "substitution": "Substitusi",
+          "substitution-label": "Karakter substitusi"
+        },
+        "inner-outer-mask": {
+          "inner-label": "Dalam",
+          "inner-mask": "Mask dalam",
+          "outer-label": "Luar",
+          "outer-mask": "Mask luar",
+          "prefix-length": "Panjang awalan",
+          "self": "Mask Dalam-Luar",
+          "suffix-length": "Panjang akhiran",
+          "type": "Tipe"
+        },
+        "md5-mask": {
+          "salt": "Salt",
+          "salt-label": "Salt MD5",
+          "self": "Mask MD5"
+        },
+        "range-mask": {
+          "label": "Label",
+          "self": "Mask Rentang",
+          "slice-end": "Akhir irisan",
+          "slice-start": "Awal irisan",
+          "substitution": "Substitusi"
+        },
+        "table": {
+          "masking-type": "Tipe Masking"
+        }
+      },
+      "classification": {
+        "empty-classification": "Klasifikasi kosong",
+        "guide-classification": "Panduan klasifikasi",
+        "guide-hierarchy": "Panduan hierarki",
+        "guide-intro": "Panduan pengantar klasifikasi",
+        "guide-levels": "Panduan tingkat",
+        "invalid-json": "JSON tidak valid",
+        "missing-classification": "Klasifikasi tidak ada",
+        "missing-levels": "Tingkat tidak ada"
+      },
+      "global-rules": {
+        "condition-order": "Urutan kondisi",
+        "delete-rule-tip": "Tips hapus aturan",
+        "description": "Aturan global untuk data sensitif",
+        "error": {
+          "invalid-condition": "Kondisi tidak valid",
+          "missing-semantic-type": "Tipe semantik tidak ada"
+        },
+        "re-order": "Susun ulang"
+      },
+      "grant-access": "Berikan akses",
+      "never-expires": "Tidak pernah kedaluwarsa",
+      "remove-sensitive-column-tips": "Tips hapus kolom sensitif",
+      "semantic-types": {
+        "label": "Label",
+        "select": "Pilih",
+        "self": "Tipe Semantik",
+        "table": {
+          "delete": "Hapus",
+          "description": "Deskripsi",
+          "icon": "Ikon",
+          "masking-algorithm": "Algoritma Masking",
+          "semantic-type": "Tipe Semantik"
+        },
+        "template": {
+          "description": "Deskripsi template",
+          "duplicate-warning": "Tipe semantik \"{{title}}\" sudah ada"
+        },
+        "use-predefined-type": "Gunakan tipe yang sudah ditentukan"
+      }
+    },
+    "sidebar": {
+      "audit-log": "Log Audit",
+      "custom-roles": "Peran Kustom",
+      "data-access": "Akses Data",
+      "data-classification": "Klasifikasi Data",
+      "general": "Umum",
+      "global-masking": "Masking Global",
+      "iam-and-admin": "IAM & Admin",
+      "im-integration": "Integrasi IM",
+      "integration": "Integrasi",
+      "mcp": "MCP",
+      "members": "Anggota",
+      "members-and-groups": "Anggota & Grup",
+      "profile": "Profil",
+      "security-and-policy": "Keamanan & Kebijakan",
+      "sso": "SSO",
+      "subscription": "Langganan",
+      "users-and-groups": "Pengguna & Grup"
+    },
+    "sso": {
+      "delete": "Hapus",
+      "description": "Konfigurasi Single Sign-On",
+      "form": {
+        "auth-url": "URL Otentikasi",
+        "auth-url-description": "URL endpoint otentikasi",
+        "auth-url-placeholder": "https://provider.com/auth",
+        "authentication-style": "Gaya Otentikasi",
+        "base-dn": "Base DN",
+        "base-dn-description": "Base Distinguished Name untuk LDAP",
+        "base-dn-placeholder": "dc=example,dc=com",
+        "bind-dn": "Bind DN",
+        "bind-dn-description": "Bind Distinguished Name untuk LDAP",
+        "bind-dn-placeholder": "cn=admin,dc=example,dc=com",
+        "bind-password": "Kata Sandi Bind",
+        "configuration": "Konfigurasi",
+        "configuration-description": "Konfigurasi penyedia SSO",
+        "custom-template-description": "Template kustom untuk SSO",
+        "display-name": "Nama tampilan",
+        "display-name-placeholder": "Masukkan nama tampilan",
+        "domain": "Domain",
+        "domain-description": "Domain yang terkait dengan SSO ini",
+        "domain-optional-hint": "Domain (opsional)",
+        "general-setting-description": "Pengaturan umum untuk SSO",
+        "github-template-description": "Template konfigurasi GitHub",
+        "gitlab-template-description": "Template konfigurasi GitLab",
+        "google-template-description": "Template konfigurasi Google",
+        "groups": "Grup",
+        "groups-description": "Petakan grup dari penyedia SSO",
+        "groups-placeholder": "Masukkan grup",
+        "host-placeholder": "ldap.example.com",
+        "identifier": "Identifier",
+        "identifier-placeholder": "Masukkan identifier",
+        "identifier-tips": "Tips identifier",
+        "identity-provider-needed-information": "Informasi yang diperlukan dari penyedia identitas",
+        "in-header": "Di Header",
+        "in-header-description": "Kirim token di header HTTP",
+        "in-parameters": "Di Parameter",
+        "in-parameters-description": "Kirim token sebagai parameter",
+        "issuer-url-description": "URL issuer untuk OIDC",
+        "issuer-url-placeholder": "https://provider.com",
+        "ldap-description": "Konfigurasi LDAP",
+        "ldaps": "LDAPS",
+        "ldaps-description": "Gunakan LDAP over SSL",
+        "microsoft-entra-template-description": "Template Microsoft Entra ID",
+        "name": "Nama",
+        "name-description": "Nama konfigurasi SSO",
+        "none": "Tidak Ada",
+        "none-description": "Tidak ada template",
+        "oauth2-description": "Konfigurasi OAuth2",
+        "oidc-description": "Konfigurasi OpenID Connect",
+        "openid-scopes-description": "Scope OpenID Connect",
+        "phone": "Telepon",
+        "phone-placeholder": "Nomor telepon",
+        "provider-type-readonly-hint": "Tipe penyedia hanya-baca",
+        "redirect-url": "URL Redirect",
+        "redirect-url-description": "URL redirect untuk callback",
+        "scopes": "Scope",
+        "scopes-description": "Scope yang diminta",
+        "scopes-placeholder": "openid profile email",
+        "scopes-placeholder-oidc": "openid",
+        "security-options": "Opsi Keamanan",
+        "security-protocol": "Protokol Keamanan",
+        "skip-tls-verification": "Lewati verifikasi TLS",
+        "skip-tls-warning": "Peringatan: melewati verifikasi TLS tidak aman",
+        "starttls": "StartTLS",
+        "starttls-description": "Gunakan StartTLS untuk koneksi LDAP",
+        "template-description": "Pilih template konfigurasi",
+        "token-url": "URL Token",
+        "token-url-description": "URL endpoint token",
+        "token-url-placeholder": "https://provider.com/token",
+        "type": "Tipe",
+        "type-description": "Tipe penyedia SSO",
+        "use-template": "Gunakan template",
+        "user-filter": "Filter Pengguna",
+        "user-filter-description": "Filter untuk mencari pengguna LDAP",
+        "user-filter-placeholder": "(uid={0})",
+        "user-info-url": "URL Info Pengguna",
+        "user-info-url-description": "URL endpoint info pengguna",
+        "user-info-url-placeholder": "https://provider.com/userinfo",
+        "user-information-mapping": "Pemetaan Informasi Pengguna",
+        "user-information-mapping-description": "Petakan atribut pengguna dari penyedia SSO"
+      }
+    }
+  },
+  "setup": {
+    "basic-info": "Info Dasar",
+    "data": {
+      "built-in": "Bawaan",
+      "built-in-desc": "Gunakan data bawaan untuk memulai",
+      "self-setup": "Konfigurasi sendiri"
+    },
+    "purposes": {
+      "alter-schema": "Ubah skema",
+      "query-data": "Kueri data",
+      "self": "Tujuan"
+    },
+    "self": "Pengaturan",
+    "skip-setup": "Lewati pengaturan",
+    "workflow": {
+      "self": "Alur Kerja",
+      "simple": "Sederhana",
+      "team": "Tim"
+    }
+  },
+  "sheet": {
+    "filter": {
+      "only-show-starred": "Hanya yang dibintangi",
+      "show-draft": "Tampilkan draf",
+      "show-mine": "Tampilkan milik saya",
+      "show-shared": "Tampilkan yang dibagikan"
+    },
+    "hint-tips": {
+      "confirm-multi-delete-content": "Apakah Anda yakin ingin menghapus sheet yang dipilih?",
+      "confirm-multi-delete-title": "Hapus beberapa sheet?",
+      "confirm-to-delete-sheet-title": "Hapus sheet?",
+      "confirm-to-duplicate-sheet": "Duplikat sheet?",
+      "delete-all-sheets": "Hapus semua sheet",
+      "duplicate-folder-name-content": "Apakah Anda ingin menggabungkan semua subfolder dan file ke dalam folder yang ada \"{{folder}}\"?",
+      "duplicate-folder-name-title": "Folder sudah ada",
+      "move-to-root-folder": "Pindahkan ke folder root",
+      "non-empty-folder-content": "Folder tidak kosong",
+      "non-empty-folder-title": "Folder Tidak Kosong"
+    },
+    "mine": "Milik Saya",
+    "move-worksheets": "Pindahkan worksheet",
+    "notifications": {
+      "duplicate-success": "Duplikasi berhasil"
+    },
+    "search-sheets": "Cari sheet",
+    "shared": "Dibagikan"
+  },
+  "sql-editor": {
+    "access-grants": "Hibah akses",
+    "access-search": {
+      "scope": {
+        "database": {
+          "description": "Cari berdasarkan basis data"
+        },
+        "export": {
+          "description": "Cari berdasarkan akses ekspor"
+        },
+        "status": {
+          "description": "Cari berdasarkan status"
+        },
+        "unmask": {
+          "description": "Cari berdasarkan akses unmask"
+        }
+      }
+    },
+    "access-type-export": "Ekspor",
+    "access-type-unmask": "Unmask",
+    "activate-access": "Aktifkan akses",
+    "activate-confirm": "Konfirmasi aktivasi",
+    "add-a-new-instance": "Tambah instance baru",
+    "admin-mode": {
+      "exit": "Keluar mode admin",
+      "self": "Mode Admin"
+    },
+    "allow-admin-mode-only": "Instance <instance></instance> hanya dapat diakses dalam mode admin.",
+    "and-more-grant": "… dan {{count}} hibah lainnya",
+    "and-more-grants": "… dan {{count}} hibah lainnya",
+    "and-n-more-databases": "dan {{n}} basis data lainnya",
+    "batch-export": {
+      "failed-for-db": "Gagal mengekspor data untuk {{db}}",
+      "partial": "Sebagian",
+      "self": "Ekspor Batch",
+      "tooltip": "Pilih paling banyak {{max}} basis data untuk mengekspor hasil kueri terbaru secara batch"
+    },
+    "batch-query": {
+      "batch": "Batch",
+      "description": "Kueri batch {{database}} basis data tambahan dan {{group}} grup basis data di bawah {{project}}.",
+      "select-data-source": {
+        "admin": "Admin",
+        "not-match": "Sumber data tidak cocok, mengharapkan {{expect}} tetapi mendapatkan {{actual}}.",
+        "readonly": "Hanya-baca",
+        "self": "Pilih sumber data",
+        "tooltip": "Pilih sumber data untuk kueri batch"
+      },
+      "show-or-hide-empty-query-results": "Tampilkan/sembunyikan hasil kueri kosong"
+    },
+    "binary-format": "Format biner",
+    "boolean-format": "Format boolean",
+    "can-not-execute-query": "Tidak dapat menjalankan kueri",
+    "cancel-selection": "Batalkan pilihan",
+    "choose-folder": "Pilih folder",
+    "choose-folder-tips": "Pilih folder untuk menyimpan",
+    "click-to-sync-now": "Klik untuk sinkronisasi sekarang",
+    "close-sheet": "Tutup sheet",
+    "column-display-format": "Format tampilan kolom",
+    "connect-in-admin-mode": "Hubungkan dalam mode admin",
+    "connect-to-a-database": "Hubungkan ke basis data",
+    "connection-lost": "Koneksi terputus",
+    "copy-all-column-names": "Salin semua nama kolom",
+    "copy-all-rows-as-csv": "Salin semua baris sebagai CSV",
+    "copy-all-rows-as-sql": "Salin semua baris sebagai SQL",
+    "copy-history-link": "Salin tautan riwayat",
+    "copy-name": "Salin nama",
+    "copy-selected-results": "Salin hasil yang dipilih dengan <action></action> atau <button></button>",
+    "copy-selected-rows-as-csv": "Salin baris yang dipilih sebagai CSV",
+    "copy-selected-rows-as-sql": "Salin baris yang dipilih sebagai SQL",
+    "copy-url": "Salin URL",
+    "ddl-dml-requires-data-change-plan": "Untuk mengeksekusi pernyataan DDL/DML di <environment></environment>, silakan kirim Rencana Perubahan Data untuk persetujuan.",
+    "download-as-file": "Unduh sebagai {{file}}",
+    "duration-day": "{{days}} hari",
+    "duration-days": "{{days}} hari",
+    "duration-hour": "{{hours}} jam",
+    "duration-hours": "{{hours}} jam",
+    "execute-query": "Jalankan kueri",
+    "executing-query": "Menjalankan kueri",
+    "expire-at": "Kedaluwarsa pada {{time}}",
+    "expire-in": "Kedaluwarsa dalam {{time}}",
+    "expired": "Kedaluwarsa",
+    "export-available-via-issue": "Ekspor tersedia melalui isu \"{{title}}\"",
+    "export-available-via-n-grants": "Ekspor tersedia melalui {{count}} hibah akses:",
+    "export-enabled-by-grant": "Ekspor diaktifkan oleh hibah",
+    "format": "Format",
+    "format-default": "Format bawaan",
+    "format-sql": "Format SQL",
+    "generate-sql": "Hasilkan SQL",
+    "grant-type-export": "Ekspor",
+    "grant-type-unmask": "Unmask",
+    "hex-format": "Format heks",
+    "hint-tips": {
+      "confirm-to-close-unsaved-sheet": {
+        "content": "Anda memiliki perubahan yang belum disimpan",
+        "title": "Sheet Belum Disimpan"
+      }
+    },
+    "invalid-database": "Basis data tidak valid {{database}}",
+    "jit": "JIT",
+    "last-synced": "Terakhir disinkronkan: <time></time>",
+    "link-access": "Akses tautan",
+    "loading-data": "Memuat data",
+    "loading-databases": "Memuat basis data",
+    "manage-connections": "Kelola koneksi",
+    "next-row": "Baris berikutnya",
+    "no-access-requests": "Tidak ada permintaan akses",
+    "no-data-available": "Tidak ada data tersedia",
+    "no-database-selected": "Tidak ada basis data dipilih",
+    "no-history-found": "Tidak ada riwayat ditemukan",
+    "no-queriable-database": "Tidak ada basis data yang dapat dikueri",
+    "notify-empty-statement": "Pernyataan kosong",
+    "only-select-allowed": "Hanya SELECT yang diizinkan",
+    "open-in-new-tab": "Buka di tab baru",
+    "opened-from-link": "Dibuka dari tautan",
+    "pending-query": "Kueri tertunda",
+    "preview-table-data": "Pratinjau data tabel",
+    "previous-row": "Baris sebelumnya",
+    "private": "Pribadi",
+    "private-desc": "Sheet pribadi hanya terlihat oleh Anda",
+    "project-read": "Baca proyek",
+    "project-read-desc": "Akses baca ke proyek",
+    "project-write": "Tulis proyek",
+    "project-write-desc": "Akses tulis ke proyek",
+    "query-context": {
+      "admin-data-source-is-disallowed-to-query": "Sumber data admin tidak diizinkan untuk kueri"
+    },
+    "query-history-not-found": "Riwayat kueri tidak ditemukan",
+    "query-time": "Waktu kueri",
+    "re-request": "Minta ulang",
+    "recent": "Terbaru",
+    "redis-command": {
+      "all-nodes": "Semua node",
+      "only-for-cluster": "Hanya untuk cluster",
+      "self": "Perintah Redis",
+      "single-node": "Node tunggal"
+    },
+    "request-aborted": "Permintaan dibatalkan",
+    "request-access": "Minta akses",
+    "request-data-access": "Minta akses data",
+    "request-export": "Minta ekspor",
+    "request-jit": "Minta JIT",
+    "request-query": "Minta kueri",
+    "result-detail": {
+      "next-match": "Cocok berikutnya",
+      "previous-match": "Cocok sebelumnya",
+      "search": "Cari"
+    },
+    "result-limit": {
+      "self": "Batas Hasil"
+    },
+    "revoke-access": "Cabut akses",
+    "revoke-confirm": "Konfirmasi cabut",
+    "rows": {
+      "self": "Baris"
+    },
+    "rows-affected": "Baris terpengaruh",
+    "rows-upper-limit": "Batas atas baris",
+    "save-sheet": "Simpan sheet",
+    "scroll-to-bottom": "Gulir ke bawah",
+    "scroll-to-top": "Gulir ke atas",
+    "search-history-by-statement": "Cari riwayat berdasarkan pernyataan",
+    "search-no-result": "Tidak ada hasil",
+    "search-scope-column-description": "Kolom dengan tipe {{type}}. Masukkan nilai dan tekan Enter untuk melompat ke baris yang cocok.",
+    "search-scope-row-number-description": "Cari nomor baris",
+    "search-scope-row-number-title": "Nomor Baris",
+    "select-a-database-to-start": "Pilih basis data untuk memulai",
+    "select-connection": "Pilih koneksi",
+    "select-encoding": "Pilih encoding",
+    "self": "SQL Editor",
+    "show-databases-without-query-permission": "Tampilkan basis data tanpa izin kueri",
+    "show-in-editor": "Tampilkan di editor",
+    "sync-in-progress": "Sinkronisasi sedang berlangsung",
+    "tab": {
+      "context-menu": {
+        "actions": {
+          "add-folder": "Tambah folder",
+          "add-worksheet": "Tambah worksheet",
+          "close": "Tutup",
+          "close-all": "Tutup semua",
+          "close-others": "Tutup lainnya",
+          "close-saved": "Tutup yang sudah disimpan",
+          "close-to-the-right": "Tutup ke kanan",
+          "multi-select": "Pilih banyak",
+          "rename": "Ubah nama"
+        }
+      },
+      "unsaved-worksheet": "Worksheet belum disimpan"
+    },
+    "table-empty-placeholder": "Tabel kosong",
+    "table-view": "Tampilan tabel",
+    "text-format": "Format teks",
+    "unable-to-connect-database": "Tidak dapat terhubung ke basis data {{name}}",
+    "upload-file": "Unggah file",
+    "url-copied-to-clipboard": "URL disalin ke clipboard",
+    "vertical-display": "Tampilan vertikal",
+    "view-database-detail": "Lihat detail basis data",
+    "view-detail": "Lihat detail",
+    "view-issue": "Lihat isu",
+    "view-schema-text": "Lihat teks skema",
+    "visualize-explain": "Visualisasikan explain",
+    "web-socket": {
+      "connection-status": {
+        "connected": "Terhubung",
+        "connecting": "Menghubungkan",
+        "disconnected": "Terputus",
+        "last-heartbeat": "Detak jantung terakhir pada {{time}}",
+        "title": "Status Koneksi"
+      },
+      "errors": {
+        "description": "Deskripsi galat WebSocket",
+        "disconnected": "WebSocket terputus",
+        "title": "Galat WebSocket"
+      }
+    }
+  },
+  "subscription": {
+    "contact-to-upgrade": "Hubungi kami untuk upgrade",
+    "contact-us": "Hubungi Kami",
+    "current": "Saat Ini",
+    "description": "Detail langganan Anda",
+    "disabled-feature": "Fitur dinonaktifkan",
+    "enterprise-free-trial": "Uji coba Enterprise gratis {{days}} hari",
+    "expired": "Kedaluwarsa",
+    "expires-at": "Kedaluwarsa pada",
+    "inquire-enterprise-plan": "Tanyakan paket Enterprise",
+    "instance-assignment": {
+      "assign-license": "Tetapkan lisensi",
+      "license": "Lisensi",
+      "manage-license": "Kelola lisensi",
+      "missing-license-attention": "Perhatian: lisensi tidak ada",
+      "n-license-remain": "{{n}} lisensi tersisa",
+      "require-license": "Memerlukan lisensi",
+      "success-notification": "Notifikasi berhasil",
+      "used-and-total-instance": "{{used}}/{{total}} instance digunakan",
+      "used-and-total-license": "{{used}}/{{total}} lisensi digunakan",
+      "used-and-total-user": "{{used}}/{{total}} pengguna digunakan"
+    },
+    "overuse-modal": {
+      "description": "Anda menggunakan fitur yang tidak tersedia di paket {{plan}}. Tingkatkan sekarang untuk memastikan akses berkelanjutan:"
+    },
+    "overuse-warning": "<neededPlan>{{neededPlan}}</neededPlan> pada paket {{currentPlan}} akan dibatasi. Tingkatkan sekarang untuk memastikan akses berkelanjutan.",
+    "plan": {
+      "enterprise": {
+        "desc": "Paket Enterprise untuk organisasi besar",
+        "label": "Enterprise",
+        "title": "Enterprise"
+      },
+      "free": {
+        "desc": "Paket gratis untuk memulai",
+        "label": "Gratis",
+        "title": "Gratis"
+      },
+      "team": {
+        "desc": "Paket Tim untuk kolaborasi",
+        "label": "Tim",
+        "title": "Tim"
+      },
+      "title": "Paket",
+      "try": "Coba"
+    },
+    "plan-compare": "Bandingkan paket",
+    "plan-features": "Fitur paket {{plan}}",
+    "purchase": {
+      "accept-terms-prefix": "Dengan melanjutkan, Anda menerima",
+      "and": "dan",
+      "billing-period": "Periode penagihan",
+      "cancel": "Batalkan",
+      "cancel-dialog": {
+        "comment-label": "Komentar",
+        "comment-placeholder": "Berikan alasan",
+        "confirm": "Konfirmasi pembatalan",
+        "description": "Apakah Anda yakin ingin membatalkan langganan?",
+        "keep": "Tetap",
+        "reason": {
+          "customer-service": "Layanan pelanggan",
+          "low-quality": "Kualitas rendah",
+          "missing-features": "Fitur tidak lengkap",
+          "other": "Lainnya",
+          "switched-service": "Beralih layanan",
+          "too-complex": "Terlalu rumit",
+          "too-expensive": "Terlalu mahal",
+          "unused": "Tidak digunakan"
+        },
+        "reason-label": "Alasan pembatalan",
+        "title": "Batalkan Langganan"
+      },
+      "cancel-pending": "Langganan Anda telah dibatalkan dan akan berakhir pada {{date}}.",
+      "canceled": "Dibatalkan",
+      "custom": "Kustom",
+      "discount": {
+        "month-off": "{{value}} bulan gratis",
+        "percentage-off": "bulan pertama diskon {{value}}%",
+        "price-off": "Potongan ${{value}}"
+      },
+      "enterprise-description": "Paket Enterprise dengan fitur lengkap",
+      "free-description": "Paket gratis",
+      "manage-invoices": "Kelola faktur",
+      "next-period-price": "Harga periode berikutnya",
+      "payment-info": "Informasi pembayaran",
+      "pending-description": "Menunggu konfirmasi pembayaran",
+      "pending-title": "Pembayaran Tertunda",
+      "per-user-per-month": "per pengguna per bulan",
+      "privacy-policy": "Kebijakan Privasi",
+      "pro-description": "Paket Professional",
+      "seats": "Kursi",
+      "see-comparison": "Lihat perbandingan",
+      "subscribe": "Langganan",
+      "terms-of-service": "Ketentuan Layanan",
+      "total-price": "Total harga",
+      "update": "Perbarui"
+    },
+    "request-n-days-trial": "Minta uji coba {{days}} hari (tanpa kartu kredit)",
+    "require-subscription": "Fitur ini memerlukan langganan {{requiredPlan}}, silakan beli lisensi Bytebase untuk membukanya.",
+    "required-plan-with-trial": "Fitur ini memerlukan paket {{requiredPlan}}. {{startTrial}}",
+    "trial-for-days": "Anda dapat memulai uji coba gratis selama {{days}} hari - tanpa kartu kredit.",
+    "trialing": "Uji coba",
+    "try-for-free": "Coba gratis",
+    "update": {
+      "failure": {
+        "description": "Gagal memperbarui langganan",
+        "title": "Pembaruan Gagal"
+      },
+      "success": {
+        "description": "Langganan berhasil diperbarui",
+        "title": "Pembaruan Berhasil"
+      }
+    },
+    "upgrade": "Upgrade",
+    "upgrade-now": "Upgrade sekarang",
+    "upload-license": "Unggah lisensi",
+    "usage": {
+      "instance-count": {
+        "runoutof": "Anda telah kehabisan kuota {{total}} instance Anda.",
+        "title": "Penggunaan Instance"
+      },
+      "user-count": {
+        "remaining": "Total kuota pengguna Anda adalah {{total}}, hanya tersisa {{count}} pengguna.",
+        "runoutof": "Anda telah kehabisan kuota {{total}} pengguna Anda.",
+        "title": "Penggunaan Pengguna",
+        "upgrade": "Upgrade"
+      }
+    },
+    "vcs-users": {
+      "active": "Aktif",
+      "download": "Unduh",
+      "download-failure": {
+        "description": "Gagal mengunduh pengguna VCS",
+        "title": "Unduh Gagal"
+      }
+    }
+  },
+  "task": {
+    "affected-rows": "Baris terpengaruh",
+    "cancel-task": "Batalkan tugas",
+    "cancel-task-description": "Batalkan tugas yang sedang berjalan",
+    "check-type": {
+      "affected-rows": {
+        "description": "Periksa jumlah baris yang terpengaruh",
+        "self": "Baris Terpengaruh"
+      },
+      "sql-review": {
+        "description": "Periksa review SQL",
+        "self": "Review SQL"
+      }
+    },
+    "created": "Dibuat",
+    "data-export-creator-only": "Hanya pembuat yang dapat mengekspor data",
+    "error": {
+      "scheduled-time-must-be-in-the-future": "Waktu yang dijadwalkan harus di masa depan"
+    },
+    "executed-by": "Dieksekusi oleh",
+    "execution-time": "Waktu eksekusi",
+    "no-cancelable-tasks": "Tidak ada tugas yang dapat dibatalkan",
+    "no-permission": "Tidak ada izin",
+    "no-runnable-tasks": "Tidak ada tugas yang dapat dijalankan",
+    "no-selectable-tasks": "Tidak ada tugas yang dapat dipilih",
+    "no-skippable-tasks": "Tidak ada tugas yang dapat dilewati",
+    "no-tasks-selected": "Tidak ada tugas dipilih",
+    "online-migration": {
+      "self": "Migrasi Online"
+    },
+    "prior-backup": "Cadangan sebelumnya",
+    "run-immediately": {
+      "description": "Jalankan tugas segera",
+      "self": "Jalankan Sekarang"
+    },
+    "run-task": "Jalankan tugas",
+    "schedule-for-later": {
+      "description": "Jadwalkan tugas untuk nanti",
+      "self": "Jadwalkan Nanti"
+    },
+    "select-scheduled-time": "Pilih waktu yang dijadwalkan",
+    "select-task": "Pilih tugas",
+    "skip-prior-backup": "Lewati cadangan sebelumnya",
+    "skip-prior-backup-description": "Lewati pembuatan cadangan sebelumnya",
+    "skip-task": "Lewati tugas",
+    "skipped-no-reason": "Dilewati tanpa alasan",
+    "started": "Dimulai",
+    "status": {
+      "available": "Tersedia",
+      "canceled": "Dibatalkan",
+      "done": "Selesai",
+      "failed": "Gagal",
+      "not-started": "Belum dimulai",
+      "pending": "Tertunda",
+      "running": "Berjalan",
+      "skipped": "Dilewati"
+    }
+  },
+  "task-run": {
+    "blocked-sessions": "Sesi diblokir",
+    "blocked-sessions-description": "Sesi yang diblokir oleh kueri ini",
+    "blocking-sessions": "Sesi memblokir",
+    "blocking-sessions-description": "Sesi yang memblokir kueri ini",
+    "history": "Riwayat",
+    "history-with-count": "Riwayat ({{count}})",
+    "latest": "Terbaru",
+    "log-detail": {
+      "backing-up": "Mencadangkan",
+      "backup-completed": "selesai ({{count}} tabel)",
+      "completed": "Selesai",
+      "computing": "Menghitung",
+      "dumping": "Membuang",
+      "retry-attempt": "percobaan {{current}}/{{max}}",
+      "syncing": "Menyinkronkan"
+    },
+    "log-type": {
+      "command-execute": "Eksekusi perintah",
+      "compute-diff": "Hitung perbedaan",
+      "database-sync": "Sinkronisasi basis data",
+      "ghost-migration": "Migrasi Ghost",
+      "prior-backup": "Cadangan sebelumnya",
+      "release-file-execute": "Eksekusi file rilis",
+      "retry": "Coba ulang",
+      "schema-dump": "Dump skema",
+      "transaction": "Transaksi"
+    },
+    "log-viewer": {
+      "collapse-all": "Ciutkan semua",
+      "expand-all": "Perluas semua",
+      "multiple-replicas-notice": "Pemberitahuan beberapa replika",
+      "replica-n": "Replika {{n}}",
+      "summary": "{{sections}} bagian · {{entries}} entri"
+    },
+    "no-blocking-sessions": "Tidak ada sesi memblokir",
+    "no-session-found": "Tidak ada sesi ditemukan",
+    "rollback": {
+      "available": "{{count}} rollback tersedia",
+      "no-statement-generated": "Tidak ada pernyataan yang dihasilkan",
+      "preview-statement": {
+        "description": "Pratinjau pernyataan rollback"
+      }
+    },
+    "run-number": "Jalankan #{{number}}",
+    "status": {
+      "enqueued": "Dalam antrian",
+      "enqueued-with-rollout-time": "Dalam antrian (peluncuran pada {{time}})",
+      "waiting-max-tasks-per-rollout": "Menunggu tugas lain selesai. Batas maksimum tugas yang berjalan per peluncuran telah tercapai. Laporan terakhir pada {{time}}."
+    }
+  },
+  "two-factor": {
+    "description": "Otentikasi dua faktor menambah lapisan keamanan ekstra",
+    "disable": {
+      "description": "Nonaktifkan otentikasi dua faktor",
+      "self": "Nonaktifkan 2FA"
+    },
+    "enabled": "2FA Diaktifkan",
+    "messages": {
+      "2fa-disabled": "2FA berhasil dinonaktifkan",
+      "2fa-enabled": "2FA berhasil diaktifkan",
+      "2fa-required": "2FA diperlukan untuk akun ini",
+      "cannot-disable": "Tidak dapat menonaktifkan 2FA",
+      "recovery-codes-regenerated": "Kode pemulihan berhasil dibuat ulang"
+    },
+    "recovery-codes": {
+      "description": "Simpan kode pemulihan ini di tempat yang aman",
+      "self": "Kode Pemulihan"
+    },
+    "self": "Otentikasi Dua Faktor",
+    "setup-steps": {
+      "download-recovery-codes": {
+        "keep-safe": {
+          "description": "Jaga kode tetap aman",
+          "self": "Jaga Aman"
+        },
+        "self": "Unduh Kode Pemulihan",
+        "tips": "Simpan kode ini"
+      },
+      "recovery-codes-saved": "Kode pemulihan telah disimpan",
+      "setup-auth-app": {
+        "description": "Siapkan aplikasi otentikator",
+        "expired-notice": "Kode telah kedaluwarsa",
+        "regenerate": "Buat ulang",
+        "scan-qr-code": {
+          "description": "Gunakan aplikasi otentikator dari ponsel Anda untuk memindai. Jika Anda tidak dapat memindai, {{action}}.",
+          "enter-the-text": "Atau masukkan kode ini secara manual",
+          "self": "Pindai Kode QR"
+        },
+        "self": "Siapkan Aplikasi Otentikator",
+        "time-remaining": "Waktu tersisa: {{time}}",
+        "verify-code": "Verifikasi kode"
+      }
+    },
+    "your-two-factor-secret": {
+      "copy-succeed": "Rahasia berhasil disalin",
+      "description": "Rahasia 2FA Anda",
+      "self": "Rahasia 2FA"
+    }
+  },
+  "worksheet": {
+    "self": "Worksheet"
+  },
+  "workspace-setup-guide": {
+    "actions": {
+      "change": "Ubah",
+      "query": "Kueri"
+    },
+    "descriptions": {
+      "database": "Kelola basis data Anda",
+      "instance": "Hubungkan instance basis data",
+      "project": "Atur basis data ke dalam proyek",
+      "sql-editor": "Jalankan kueri SQL"
+    },
+    "dismiss": "Tutup",
+    "intro": {
+      "database-description": "Basis data adalah tempat data Anda disimpan",
+      "database-title": "Basis Data",
+      "instance-description": "Instance adalah server basis data yang Anda kelola",
+      "instance-title": "Instance",
+      "project-description": "Proyek mengelompokkan basis data terkait",
+      "project-title": "Proyek",
+      "transfer-description": "Transfer data antara lingkungan",
+      "transfer-title": "Transfer"
+    },
+    "prepare-database-tip": "Siapkan basis data Anda",
+    "previous-step-required": "Langkah sebelumnya diperlukan",
+    "self": "Panduan Pengaturan Ruang Kerja",
+    "steps": {
+      "database": "Basis Data",
+      "instance": "Instance",
+      "project": "Proyek",
+      "query": "Kueri"
+    }
+  }
+}
