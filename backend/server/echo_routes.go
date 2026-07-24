@@ -156,10 +156,10 @@ func securityHeadersMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	// Note: connect-src allows 'data:' for Monaco Editor language definitions
 	scriptHashes := loadCSPHashes()
 	csp := "default-src 'self'; " +
-		"script-src 'self' " + strings.Join(scriptHashes, " ") + " 'wasm-unsafe-eval'; " +
+		"script-src 'self' " + strings.Join(scriptHashes, " ") + " 'wasm-unsafe-eval' https://www.googletagmanager.com; " +
 		"style-src 'self' 'unsafe-inline'; " +
-		"img-src 'self' data: blob: discordapp.com; " +
-		"connect-src 'self' data: ws: wss: https://api.github.com https://hub.bytebase.com; " +
+		"img-src 'self' data: blob: discordapp.com https://*.google-analytics.com; " +
+		"connect-src 'self' data: ws: wss: https://api.github.com https://hub.bytebase.com https://*.google-analytics.com; " +
 		"font-src 'self'; " +
 		"object-src 'none'; " +
 		"base-uri 'self'; " +
