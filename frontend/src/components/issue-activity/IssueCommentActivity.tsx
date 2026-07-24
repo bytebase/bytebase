@@ -5,8 +5,10 @@
 import { Loader2, Send } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { router } from "@/app/router";
-import { buildPlanDeployRouteFromPlanName } from "@/app/router/routeHelpers";
+import {
+  buildPlanDeployRouteFromPlanName,
+  buildSpecDetailRouteFromPlanName,
+} from "@/app/router/routeHelpers";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import {
   type ActivityIconSpec,
@@ -55,10 +57,9 @@ interface ActivityProps {
   issue?: Issue;
   plan?: Plan;
   comment: IssueComment;
-  // When true (the plan-detail review timeline, which already sits on the
-  // plan), spec/plan references render as plain text instead of links — the
-  // links would only redirect to the page you're already on (BYT-9710). The
-  // issue-detail page leaves this off so its navigation links stay.
+  // When true, plan and rollout references render as plain text in the
+  // plan-detail review timeline. Surviving change references still link to
+  // their canonical spec detail route.
   linkless?: boolean;
   renderPlanChangeReference?: PlanChangeReferenceRenderer;
 }
@@ -768,17 +769,10 @@ function SpecChangeRow({
   const specId = specInfo?.specId ?? specIdFromRef;
   const specIdShort = specId.slice(0, 8);
   // Only link to specs that still exist in the live plan — otherwise the spec
-  // view would silently bounce back to specs[0]. On the plan-detail timeline
-  // (linkless) we're already on the plan, so the link would just re-navigate to
-  // the current page and the id slice is meaningless noise — render plain text.
+  // view would silently bounce back to specs[0].
   const specRoute =
-    !linkless && specInfo?.specId
-      ? {
-          query: {
-            ...router.currentRoute.value.query,
-            spec: specInfo.specId,
-          },
-        }
+    plan?.name && specInfo?.specId
+      ? buildSpecDetailRouteFromPlanName(plan.name, specInfo.specId)
       : null;
 
   // On the plan-detail timeline (linkless) we identify the change by its 1-based
@@ -828,13 +822,15 @@ function SpecChangeRow({
       {children}{" "}
       {specRoute != null ? (
         <RouterLink
-          className="inline-flex items-center gap-1 hover:underline"
+          className="inline-flex min-w-0 items-center gap-1 text-main transition-colors hover:text-accent hover:underline focus-visible:text-accent focus-visible:underline focus-visible:outline-hidden"
           to={specRoute}
         >
           {chip}
         </RouterLink>
       ) : (
-        chip
+        <span className="inline-flex min-w-0 items-center gap-1 text-main">
+          {chip}
+        </span>
       )}
       {trailing != null ? <> {trailing}</> : null}
     </span>

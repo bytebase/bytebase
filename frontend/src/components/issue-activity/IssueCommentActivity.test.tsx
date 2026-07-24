@@ -1,6 +1,8 @@
 import { create } from "@bufbuild/protobuf";
 import { render, screen } from "@testing-library/react";
+import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { describe, expect, test, vi } from "vitest";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/app/router/handles";
 import {
   IssueComment_PlanUpdateSchema,
   Issue_Type,
@@ -62,6 +64,21 @@ vi.mock("@/components/monaco", () => ({
 
 vi.mock("@/components/UserAvatar", () => ({
   UserAvatar: () => <span data-testid="user-avatar" />,
+}));
+
+vi.mock("@/components/RouterLink", () => ({
+  RouterLink: ({
+    children,
+    to,
+    ...props
+  }: AnchorHTMLAttributes<HTMLAnchorElement> & {
+    children: ReactNode;
+    to: unknown;
+  }) => (
+    <a {...props} data-to={JSON.stringify(to)}>
+      {children}
+    </a>
+  ),
 }));
 
 const reviewSubmission = create(IssueCommentSchema, {
@@ -143,7 +160,7 @@ describe("IssueCommentRow", () => {
     expect(container.querySelector("[data-testid='user-avatar']")).toBeNull();
   });
 
-  test("renders a computed change reference for a SQL update", () => {
+  test("links a computed change reference from the plan timeline", () => {
     const fromSpec = changeSpec({
       sheet: "sheets/1",
       target: "orders",
@@ -167,7 +184,11 @@ describe("IssueCommentRow", () => {
       <IssueCommentRow
         comment={comment}
         isLast
-        plan={create(PlanSchema, { specs: [toSpec] })}
+        linkless
+        plan={create(PlanSchema, {
+          name: "projects/p1/plans/1",
+          specs: [toSpec],
+        })}
         renderPlanChangeReference={({ siblings, spec }) => (
           <span data-testid="change-reference">
             {siblings.indexOf(spec) + 1}{" "}
@@ -182,10 +203,23 @@ describe("IssueCommentRow", () => {
     expect(
       screen.getByText("activity.sentence.modified-sql-of")
     ).toBeInTheDocument();
-    expect(screen.getByTestId("change-reference")).toHaveTextContent(
-      "1 orders"
-    );
+    const reference = screen.getByTestId("change-reference");
+    expect(reference).toHaveTextContent("1 orders");
     expect(screen.getByText("Change")).toHaveAttribute("aria-hidden", "true");
+    const link = reference.closest("a");
+    expect(JSON.parse(link?.dataset.to ?? "")).toEqual({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+      params: {
+        planId: "1",
+        projectId: "p1",
+        specId: "spec-1",
+      },
+    });
+    expect(link).toHaveClass(
+      "text-main",
+      "hover:text-accent",
+      "hover:underline"
+    );
   });
 
   test("uses the new target in a changed-targets reference", () => {
@@ -256,7 +290,10 @@ describe("IssueCommentRow", () => {
       <IssueCommentRow
         comment={comment}
         isLast
-        plan={create(PlanSchema, { specs: [remainingSpec] })}
+        plan={create(PlanSchema, {
+          name: "projects/p1/plans/1",
+          specs: [remainingSpec],
+        })}
         renderPlanChangeReference={({ siblings, spec }) => (
           <span data-testid="change-reference">
             {siblings.indexOf(spec) + 1}{" "}
@@ -269,8 +306,8 @@ describe("IssueCommentRow", () => {
     );
 
     expect(screen.getByText("activity.sentence.removed-spec")).toBeVisible();
-    expect(screen.getByTestId("change-reference")).toHaveTextContent(
-      "2 employees"
-    );
+    const reference = screen.getByTestId("change-reference");
+    expect(reference).toHaveTextContent("2 employees");
+    expect(reference.closest("a")).toBeNull();
   });
 });

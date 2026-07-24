@@ -62,6 +62,9 @@ continue to use the live plan and `spec.id`.
   navigation identity.
 - Historical activity uses event snapshots for display identity and the live
   plan only to determine whether a spec link remains valid.
+- Surviving activity references link to the canonical spec detail route.
+  Deleted changes remain plain text because their historical `spec.id` has no
+  corresponding live change.
 
 ### Derivation rules
 
@@ -104,6 +107,8 @@ does not imply risk.
   for disambiguation, render it before the icon.
 - In issue activity sentences, keep the localized `Change` noun before the
   icon and computed title. The Plan tab uses only the compact identity.
+- Keep activity links visually neutral at rest. Reveal accent link color and
+  an underline only on hover or keyboard focus.
 - Keep the change number on the same baseline and at the same 14px scale as the
   title. Use tabular numerals, placeholder color, and normal weight to lower its
   emphasis without making it look detached. Do not use a badge, background, or
@@ -159,6 +164,8 @@ Update issue-activity tests to verify:
 - SQL updates replace the generic `Change` chip with the computed reference.
 - Target updates derive the title from the new target.
 - Removed changes retain their historical index and target title.
+- Surviving changes link to their canonical spec detail route, including from
+  the Plan review timeline; removed changes do not render a link.
 
 ## Verification
 
