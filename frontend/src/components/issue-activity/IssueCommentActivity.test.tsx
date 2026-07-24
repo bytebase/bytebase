@@ -69,13 +69,19 @@ vi.mock("@/components/UserAvatar", () => ({
 vi.mock("@/components/RouterLink", () => ({
   RouterLink: ({
     children,
+    preventScrollReset,
     to,
     ...props
   }: AnchorHTMLAttributes<HTMLAnchorElement> & {
     children: ReactNode;
+    preventScrollReset?: boolean;
     to: unknown;
   }) => (
-    <a {...props} data-to={JSON.stringify(to)}>
+    <a
+      {...props}
+      data-prevent-scroll-reset={preventScrollReset || undefined}
+      data-to={JSON.stringify(to)}
+    >
       {children}
     </a>
   ),
@@ -220,6 +226,7 @@ describe("IssueCommentRow", () => {
       "hover:text-accent",
       "hover:underline"
     );
+    expect(link).toHaveAttribute("data-prevent-scroll-reset", "true");
   });
 
   test("uses the new target in a changed-targets reference", () => {
@@ -246,7 +253,10 @@ describe("IssueCommentRow", () => {
       <IssueCommentRow
         comment={comment}
         isLast
-        plan={create(PlanSchema, { specs: [toSpec] })}
+        plan={create(PlanSchema, {
+          name: "projects/p1/plans/1",
+          specs: [toSpec],
+        })}
         renderPlanChangeReference={({ spec }) => (
           <span data-testid="change-reference">
             {spec.config.case === "changeDatabaseConfig"
@@ -260,8 +270,10 @@ describe("IssueCommentRow", () => {
     expect(
       screen.getByText("activity.sentence.changed-targets-of")
     ).toBeInTheDocument();
-    expect(screen.getByTestId("change-reference")).toHaveTextContent(
-      "employees"
+    const reference = screen.getByTestId("change-reference");
+    expect(reference).toHaveTextContent("employees");
+    expect(reference.closest("a")).not.toHaveAttribute(
+      "data-prevent-scroll-reset"
     );
   });
 
