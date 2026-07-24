@@ -217,23 +217,36 @@ export function ProjectSegment({
     <>
       <div className="inline-flex items-center">
         {hasProject && projectId ? (
-          <RouterLink
-            to={{
-              name: PROJECT_V1_ROUTE_ISSUES,
-              params: { projectId },
-            }}
-            onClick={() => {
-              const resolvedRoute = navigate.resolve({
+          onSelectProject ? (
+            <Button
+              type="button"
+              appearance="secondary"
+              size="sm"
+              onClick={(event) => onSelectProject(currentProject, event)}
+              className="h-auto px-2 py-1 text-sm gap-x-1.5"
+            >
+              <FolderKanban className="size-4 text-control-light shrink-0" />
+              <span className="truncate max-w-48">{currentProject.title}</span>
+            </Button>
+          ) : (
+            <RouterLink
+              to={{
                 name: PROJECT_V1_ROUTE_ISSUES,
                 params: { projectId },
-              });
-              record(resolvedRoute.fullPath);
-            }}
-            className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control hover:bg-control-bg cursor-pointer no-underline"
-          >
-            <FolderKanban className="size-4 text-control-light shrink-0" />
-            <span className="truncate max-w-48">{currentProject.title}</span>
-          </RouterLink>
+              }}
+              onClick={() => {
+                const resolvedRoute = navigate.resolve({
+                  name: PROJECT_V1_ROUTE_ISSUES,
+                  params: { projectId },
+                });
+                record(resolvedRoute.fullPath);
+              }}
+              className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control hover:bg-control-bg cursor-pointer no-underline"
+            >
+              <FolderKanban className="size-4 text-control-light shrink-0" />
+              <span className="truncate max-w-48">{currentProject.title}</span>
+            </RouterLink>
+          )
         ) : (
           <div className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control">
             <FolderKanban className="size-4 text-control-light shrink-0" />

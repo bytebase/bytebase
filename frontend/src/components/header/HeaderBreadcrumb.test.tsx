@@ -216,6 +216,36 @@ describe("HeaderBreadcrumb", () => {
     unmount();
   });
 
+  test("uses custom project selection when clicking the project title", () => {
+    const onSelectProject = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <HeaderBreadcrumb onSelectProject={onSelectProject} />
+    );
+
+    render();
+
+    expect(
+      container.querySelector(`a[data-route-name="${PROJECT_V1_ROUTE_ISSUES}"]`)
+    ).toBeNull();
+    const projectButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Recent Project")
+    );
+    expect(projectButton).not.toBeUndefined();
+
+    act(() => {
+      projectButton?.click();
+    });
+
+    expect(onSelectProject).toHaveBeenCalledTimes(1);
+    expect(onSelectProject).toHaveBeenCalledWith(
+      { name: "projects/recent-project", title: "Recent Project" },
+      expect.objectContaining({ ctrlKey: false, metaKey: false })
+    );
+    expect(mocks.record).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
   test("checks before switching workspace", () => {
     mocks.workspaceList = [
       {
