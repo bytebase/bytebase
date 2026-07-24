@@ -180,6 +180,28 @@ describe("behavior analytics privacy helpers", () => {
       )
     ).toEqual({});
   });
+
+  test("removes visible element text from autocapture payloads", () => {
+    expect(
+      sanitizeBehaviorProperties(
+        {
+          $el_text: "users/alice@example.com",
+          $elements: [
+            {
+              $el_text: "users/alice@example.com",
+              attr__href: "/users/alice@example.com",
+              tag_name: "a",
+            },
+          ],
+          $elements_chain: "a.users attr__href=/users/alice@example.com",
+          safe: true,
+        },
+        "$autocapture"
+      )
+    ).toEqual({
+      safe: true,
+    });
+  });
 });
 
 describe("behavior analytics metrics", () => {

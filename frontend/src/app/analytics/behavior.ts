@@ -168,6 +168,9 @@ export function createBehaviorMetric(
 function isForbiddenPropertyKey(key: string): boolean {
   const normalized = key.toLowerCase();
   return (
+    normalized === "$el_text" ||
+    normalized === "$elements" ||
+    normalized === "$elements_chain" ||
     normalized.includes("url") ||
     normalized.includes("path") ||
     normalized.includes("referrer") ||
