@@ -48,47 +48,34 @@ function CredentialSourceForm({
 
   const isDefaultCredentialDisabled = isSaaSMode && isIAMAuthentication;
 
-  const deriveCredentialSource = useCallback((): CredentialSource => {
-    const ext = dataSource.iamExtension;
-    if (
-      ext?.case === "azureCredential" ||
-      ext?.case === "awsCredential" ||
-      ext?.case === "gcpCredential"
-    ) {
-      return "specific-credential";
+  const expectedCredentialCase = useMemo(() => {
+    switch (dataSource.authenticationType) {
+      case DataSource_AuthenticationType.AWS_RDS_IAM:
+        return "awsCredential";
+      case DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM:
+        return "gcpCredential";
+      case DataSource_AuthenticationType.AZURE_IAM:
+        return "azureCredential";
+      default:
+        return undefined;
     }
-    return "default";
-  }, [dataSource.iamExtension]);
+  }, [dataSource.authenticationType]);
+  const hasCredentialForAuthenticationType =
+    dataSource.iamExtension?.case === expectedCredentialCase;
+  const credentialSource: CredentialSource =
+    hasCredentialForAuthenticationType || isDefaultCredentialDisabled
+      ? "specific-credential"
+      : "default";
 
-  const [credentialSource, setCredentialSource] = useState<CredentialSource>(
-    () => {
-      const derived = deriveCredentialSource();
-      if (isDefaultCredentialDisabled && derived === "default") {
-        return "specific-credential";
-      }
-      return derived;
-    }
-  );
+  const clearCredential = useCallback(() => {
+    onDataSourceChange({ iamExtension: { case: undefined } });
+  }, [onDataSourceChange]);
 
-  // Sync credentialSource when iamExtension changes externally
-  useEffect(() => {
-    setCredentialSource(deriveCredentialSource());
-  }, [deriveCredentialSource]);
-
-  // Force specific credential in SaaS mode for IAM authentication
-  useEffect(() => {
-    if (isDefaultCredentialDisabled && credentialSource === "default") {
-      setCredentialSource("specific-credential");
-    }
-  }, [isDefaultCredentialDisabled, credentialSource]);
-
-  // When credential source changes, update the iamExtension on the dataSource
-  useEffect(() => {
-    const authType = dataSource.authenticationType;
-    if (credentialSource === "default") {
-      onDataSourceChange({ iamExtension: { case: undefined } });
+  const applySpecificCredential = useCallback(() => {
+    if (dataSource.iamExtension?.case === expectedCredentialCase) {
       return;
     }
+    const authType = dataSource.authenticationType;
     switch (authType) {
       case DataSource_AuthenticationType.AWS_RDS_IAM:
         onDataSourceChange({
@@ -130,16 +117,32 @@ function CredentialSourceForm({
         });
         break;
     }
-  }, [credentialSource]);
+  }, [
+    dataSource.authenticationType,
+    dataSource.iamExtension,
+    expectedCredentialCase,
+    onDataSourceChange,
+  ]);
 
-  // Reset to default when authentication type changes
-  const [prevAuthType, setPrevAuthType] = useState(
-    dataSource.authenticationType
-  );
-  if (dataSource.authenticationType !== prevAuthType) {
-    setPrevAuthType(dataSource.authenticationType);
-    setCredentialSource("default");
-  }
+  useEffect(() => {
+    if (
+      dataSource.iamExtension?.case &&
+      dataSource.iamExtension.case !== expectedCredentialCase
+    ) {
+      clearCredential();
+      return;
+    }
+    if (isDefaultCredentialDisabled && !hasCredentialForAuthenticationType) {
+      applySpecificCredential();
+    }
+  }, [
+    applySpecificCredential,
+    clearCredential,
+    dataSource.iamExtension?.case,
+    expectedCredentialCase,
+    hasCredentialForAuthenticationType,
+    isDefaultCredentialDisabled,
+  ]);
 
   const options = useMemo(
     () => [
@@ -158,7 +161,11 @@ function CredentialSourceForm({
 
   const handleCredentialSourceChange = (value: CredentialSource) => {
     if (!allowEdit) return;
-    setCredentialSource(value);
+    if (value === "default") {
+      clearCredential();
+      return;
+    }
+    applySpecificCredential();
   };
 
   const updateAzureField = (
