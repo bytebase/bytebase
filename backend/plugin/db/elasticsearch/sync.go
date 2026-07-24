@@ -137,7 +137,7 @@ func (d *Driver) getHiddenIndices(ctx context.Context) (map[string]bool, error) 
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get index settings")
 		}
-		for indexName, indexData := range resp.Indices {
+		for indexName, indexData := range resp.GetIndices() {
 			var settings IndexSettingsResult
 			if err := json.Unmarshal(indexData.Settings, &settings.Settings); err != nil {
 				continue
