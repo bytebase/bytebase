@@ -49,6 +49,8 @@ func TestSecurityHeadersMiddleware_GA4Sources(t *testing.T) {
 			for _, googleSource := range []string{
 				"https://www.googletagmanager.com",
 				"https://*.google-analytics.com",
+				"https://*.analytics.google.com",
+				"https://*.googletagmanager.com",
 			} {
 				if got := strings.Contains(csp, googleSource); got != tt.wantGoogleGA4 {
 					t.Errorf("Content-Security-Policy contains %q = %t, want %t; csp=%q", googleSource, got, tt.wantGoogleGA4, csp)

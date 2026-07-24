@@ -86,6 +86,9 @@ describe("BytebaseLogo", () => {
     expect(img).not.toBeNull();
     expect(img?.getAttribute("src")).toBe("https://example.com/logo.png");
     expect(img?.getAttribute("alt")).toBe("Logo");
+    expect(img?.className).toContain("max-h-full");
+    expect(img?.className).toContain("max-w-full");
+    expect(img?.className).toContain("object-contain");
     expect(container.firstElementChild?.className).toContain("h-10");
     unmount();
   });
@@ -100,6 +103,9 @@ describe("BytebaseLogo", () => {
     expect(img).not.toBeNull();
     expect(img?.getAttribute("src")).toBe("/assets/logo-full.svg");
     expect(img?.getAttribute("alt")).toBe("Bytebase");
+    expect(img?.className).toContain("max-h-full");
+    expect(img?.className).toContain("max-w-full");
+    expect(img?.className).toContain("object-contain");
     unmount();
   });
 

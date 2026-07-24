@@ -31,8 +31,18 @@ vi.mock("@/components/PermissionGuard", () => ({
 }));
 
 vi.mock("@/components/BytebaseLogo", () => ({
-  BytebaseLogo: ({ builtinTheme }: { builtinTheme?: string }) => (
-    <div data-testid="welcome-logo" data-builtin-theme={builtinTheme} />
+  BytebaseLogo: ({
+    builtinTheme,
+    className,
+  }: {
+    builtinTheme?: string;
+    className?: string;
+  }) => (
+    <div
+      data-testid="welcome-logo"
+      data-builtin-theme={builtinTheme}
+      className={className}
+    />
   ),
 }));
 
@@ -103,6 +113,13 @@ describe("Welcome", () => {
       <Welcome onChangeConnection={() => {}} />
     );
     render();
+    expect(container.firstElementChild?.className).toContain("gap-y-10");
+    expect(
+      container.querySelector('[data-testid="welcome-logo"]')?.className
+    ).toContain("h-20");
+    expect(
+      container.querySelector('[data-testid="welcome-logo"]')?.className
+    ).toContain("w-44");
     expect(container.textContent).toContain("sql-editor.add-a-new-instance");
     expect(container.textContent).toContain("sql-editor.connect-to-a-database");
     unmount();

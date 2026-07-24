@@ -180,10 +180,14 @@ describe("ProjectSidebar", () => {
     );
     render();
 
+    const logoLink = container.querySelector("nav > a");
     const logo = container.querySelector("nav > a img");
+    expect(logoLink?.className).toContain("h-20");
+    expect(logoLink?.className).toContain("w-full");
     expect(logo?.getAttribute("src")).toBe("https://example.com/logo.png");
-    expect(logo?.className).toContain("h-8");
-    expect(logo?.className).toContain("w-auto");
+    expect(logo?.className).toContain("h-full");
+    expect(logo?.className).toContain("w-full");
+    expect(logo?.className).toContain("max-w-44");
     expect(logo?.className).toContain("object-contain");
 
     unmount();

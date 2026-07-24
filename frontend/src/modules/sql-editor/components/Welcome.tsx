@@ -40,8 +40,11 @@ export function Welcome({ onChangeConnection }: WelcomeProps) {
   };
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-y-4">
-      <BytebaseLogo builtinTheme={isDarkTheme(theme) ? "dark" : "light"} />
+    <div className="w-full h-full flex flex-col items-center justify-center gap-y-10">
+      <BytebaseLogo
+        builtinTheme={isDarkTheme(theme) ? "dark" : "light"}
+        className="h-20 w-44"
+      />
       <div className="flex items-center flex-wrap gap-4">
         {showCreateInstanceButton && (
           <WelcomeButton
