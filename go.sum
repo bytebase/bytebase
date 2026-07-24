@@ -949,8 +949,8 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/stripe/stripe-go/v86 v86.1.0 h1:xisqyg8BzooIEpaB74d8SD26d9JIPVQ1TkeB6t7gBKo=
-github.com/stripe/stripe-go/v86 v86.1.0/go.mod h1:Co7QRXCKGNOPTugAdvjgRo+KcMtd9hxy+pZMN0yThsQ=
+github.com/stripe/stripe-go/v86 v86.1.1 h1:Mk9thvAC+E/79GlMQbEqmIwNuCfZE1i6izKPhDJkqwc=
+github.com/stripe/stripe-go/v86 v86.1.1/go.mod h1:Co7QRXCKGNOPTugAdvjgRo+KcMtd9hxy+pZMN0yThsQ=
 github.com/testcontainers/testcontainers-go v0.43.0 h1:oEQx5MW2DGd9z3AeEQfB2lPM0eLs7ztyaGRu75bFo5A=
 github.com/testcontainers/testcontainers-go v0.43.0/go.mod h1:+VxkT2NQnKOZPKi6praMuMKYHYyOGXr0XSBSlSMCzFo=
 github.com/testcontainers/testcontainers-go/modules/mariadb v0.41.0 h1:t0J/TOgzTKCO+7Pc7wE6ITJXGCZFufisuokOWYVzNaQ=
