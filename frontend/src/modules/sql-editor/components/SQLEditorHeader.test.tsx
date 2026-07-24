@@ -319,7 +319,10 @@ describe("SQLEditorHeader", () => {
     expect(mocks.resolve).toHaveBeenCalledWith({
       name: "sql-editor.home",
     });
-    expect(mocks.record).toHaveBeenCalledWith("/sql-editor");
+    expect(mocks.record).toHaveBeenCalledWith(
+      "/sql-editor",
+      "workspaces/default"
+    );
     expect(mocks.push).toHaveBeenCalledWith({ name: "sql-editor.home" });
     expect(mocks.switchWorkspace).not.toHaveBeenCalled();
     expect(mocks.assignLocation).not.toHaveBeenCalled();
@@ -341,7 +344,10 @@ describe("SQLEditorHeader", () => {
     expect(mocks.resolve).toHaveBeenCalledWith({
       name: "sql-editor.home",
     });
-    expect(mocks.record).toHaveBeenCalledWith("/sql-editor");
+    expect(mocks.record).toHaveBeenCalledWith(
+      "/sql-editor",
+      "workspaces/other"
+    );
     expect(mocks.switchWorkspace).toHaveBeenCalledWith(
       "workspaces/other",
       false

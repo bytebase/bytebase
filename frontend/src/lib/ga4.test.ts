@@ -14,6 +14,7 @@ afterEach(() => {
   document.querySelector(ga4ScriptSelector)?.remove();
   delete window.dataLayer;
   delete window.gtag;
+  window.history.replaceState(null, "", "/");
 });
 
 describe("initializeGA4", () => {
@@ -35,6 +36,32 @@ describe("initializeGA4", () => {
     );
     expect(window.dataLayer).toHaveLength(2);
     expect(window.dataLayer?.[0][0]).toBe("js");
-    expect(window.dataLayer?.[1]).toEqual(["config", "G-4BZ4JH7449"]);
+    expect(window.dataLayer?.[1]).toEqual([
+      "config",
+      "G-4BZ4JH7449",
+      {
+        page_location: `${window.location.origin}/`,
+        page_path: "/",
+      },
+    ]);
+  });
+
+  test("sanitizes the initial page view URL", () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/oauth/callback?code=secret&state=token#fragment"
+    );
+
+    initializeGA4(true);
+
+    expect(window.dataLayer?.[1]).toEqual([
+      "config",
+      "G-4BZ4JH7449",
+      {
+        page_location: `${window.location.origin}/oauth/callback`,
+        page_path: "/oauth/callback",
+      },
+    ]);
   });
 });

@@ -92,7 +92,7 @@ export function SQLEditorHeader() {
       const route = navigate.resolve({
         name: SQL_EDITOR_HOME_MODULE,
       });
-      record(route.fullPath);
+      record(route.fullPath, workspaceName);
 
       if (workspaceName === workspace?.name) {
         if (event.ctrlKey || event.metaKey) {

@@ -23,5 +23,8 @@ export function initializeGA4(isSaaSMode: boolean): void {
     gaWindow.dataLayer?.push(args);
   };
   gaWindow.gtag("js", new Date());
-  gaWindow.gtag("config", GA4_MEASUREMENT_ID);
+  gaWindow.gtag("config", GA4_MEASUREMENT_ID, {
+    page_location: `${window.location.origin}${window.location.pathname}`,
+    page_path: window.location.pathname,
+  });
 }
