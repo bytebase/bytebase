@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
     >(),
   routerPush: vi.fn(),
   projectData: { name: "projects/test" } as { name: string },
+  themeDark: false,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -30,7 +31,19 @@ vi.mock("@/components/PermissionGuard", () => ({
 }));
 
 vi.mock("@/components/BytebaseLogo", () => ({
-  BytebaseLogo: () => null,
+  BytebaseLogo: ({
+    builtinTheme,
+    className,
+  }: {
+    builtinTheme?: string;
+    className?: string;
+  }) => (
+    <div
+      data-testid="welcome-logo"
+      data-builtin-theme={builtinTheme}
+      className={className}
+    />
+  ),
 }));
 
 vi.mock("@/hooks/useAppProject", () => ({
@@ -52,6 +65,16 @@ vi.mock("@/modules/sql-editor/store/editor-vue-state", () => ({
 
 vi.mock("@/assets/logo-full.svg", () => ({
   default: "/assets/logo-full.svg",
+}));
+
+vi.mock("@/modules/sql-editor/components/theme/SQLEditorThemeScope", () => ({
+  useSQLEditorTheme: () => ({
+    id: mocks.themeDark ? "dark" : "light",
+  }),
+}));
+
+vi.mock("@/modules/sql-editor/components/theme/derive", () => ({
+  isDarkTheme: () => mocks.themeDark,
 }));
 
 let Welcome: typeof import("./Welcome").Welcome;
@@ -78,6 +101,7 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.themeDark = false;
   // Default: both permissions granted.
   mocks.usePermissionCheck.mockReturnValue([true, undefined]);
   ({ Welcome } = await import("./Welcome"));
@@ -89,8 +113,29 @@ describe("Welcome", () => {
       <Welcome onChangeConnection={() => {}} />
     );
     render();
+    expect(container.firstElementChild?.className).toContain("gap-y-10");
+    expect(
+      container.querySelector('[data-testid="welcome-logo"]')?.className
+    ).toContain("h-20");
+    expect(
+      container.querySelector('[data-testid="welcome-logo"]')?.className
+    ).toContain("w-44");
     expect(container.textContent).toContain("sql-editor.add-a-new-instance");
     expect(container.textContent).toContain("sql-editor.connect-to-a-database");
+    unmount();
+  });
+
+  test("passes dark SQL Editor theme to the logo", () => {
+    mocks.themeDark = true;
+    const { container, render, unmount } = renderIntoContainer(
+      <Welcome onChangeConnection={() => {}} />
+    );
+    render();
+    expect(
+      container.querySelector('[data-testid="welcome-logo"]')?.getAttribute(
+        "data-builtin-theme"
+      )
+    ).toBe("dark");
     unmount();
   });
 

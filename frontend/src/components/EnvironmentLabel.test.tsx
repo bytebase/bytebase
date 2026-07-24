@@ -54,6 +54,11 @@ const environment = {
   tags: {},
 } as Environment;
 
+const defaultColorEnvironment = {
+  ...environment,
+  color: "",
+} as Environment;
+
 describe("EnvironmentBadge", () => {
   let root: Root | undefined;
 
@@ -77,5 +82,22 @@ describe("EnvironmentBadge", () => {
     expect(link?.getAttribute("data-path")).toBe("/environments/prod");
     expect(link?.className).toBe("hover:underline");
     expect(link?.textContent).toBe("Production");
+  });
+
+  test("uses readable default color with dark style options", async () => {
+    const rendered = await render(
+      <EnvironmentBadge
+        environment={defaultColorEnvironment}
+        hasEnvTierFeature={false}
+        styleOptions={{
+          defaultColorTextColor: "#818cf8",
+          backgroundAlpha: 0.18,
+        }}
+      />
+    );
+    root = rendered.root;
+
+    const badge = rendered.container.querySelector("span");
+    expect(badge?.style.color).toBe("rgb(129, 140, 248)");
   });
 });

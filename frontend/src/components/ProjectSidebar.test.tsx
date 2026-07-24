@@ -138,6 +138,7 @@ beforeEach(async () => {
     projectId: "sample",
   };
   mocks.defaultProject = "";
+  mocks.workspace.logo = "";
   ({ ProjectSidebar } = await import("./ProjectSidebar"));
 });
 
@@ -168,6 +169,26 @@ describe("ProjectSidebar", () => {
     ).find((link) => link.textContent?.includes("Masking Exemptions"));
 
     expect(maskingExemptionsLink?.className).toContain("whitespace-nowrap");
+
+    unmount();
+  });
+
+  test("gives the custom logo an explicit rendered size", () => {
+    mocks.workspace.logo = "https://example.com/logo.png";
+    const { container, render, unmount } = renderIntoContainer(
+      <ProjectSidebar />
+    );
+    render();
+
+    const logoLink = container.querySelector("nav > a");
+    const logo = container.querySelector("nav > a img");
+    expect(logoLink?.className).toContain("h-20");
+    expect(logoLink?.className).toContain("w-full");
+    expect(logo?.getAttribute("src")).toBe("https://example.com/logo.png");
+    expect(logo?.className).toContain("h-full");
+    expect(logo?.className).toContain("w-full");
+    expect(logo?.className).toContain("max-w-44");
+    expect(logo?.className).toContain("object-contain");
 
     unmount();
   });

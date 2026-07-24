@@ -8,6 +8,7 @@ import "./stylex-dev-css";
 // registers the SQL highlight.js language + theme used across the app.
 import "./lib/dayjs";
 import "./lib/highlight";
+import { initializeGA4 } from "./lib/ga4";
 import { useAppStore } from "./stores/app";
 import { isDev, isRelease, migrateStorageKeys } from "./utils";
 
@@ -31,6 +32,7 @@ migrateStorageKeys();
     initPromises.push(store.loadWorkspaceProfile());
   }
   await Promise.all(initPromises);
+  initializeGA4(store.isSaaSMode());
 
   const { mountReactRouterApp } = await import("./app/mountApp");
   await mountReactRouterApp("#app");

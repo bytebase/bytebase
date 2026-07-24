@@ -1,12 +1,13 @@
 import { create } from "@bufbuild/protobuf";
-import type { ReactElement } from "react";
+import { type ReactElement, useState } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DataSource_AuthenticationType,
   DataSource_CloudSQLIPType,
+  DataSource_GCPCredentialSchema,
   DataSourceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import {
@@ -27,9 +28,11 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
+const serverState = vi.hoisted(() => ({ isSaaSMode: false }));
+
 vi.mock("@/hooks/useAppState", () => ({
   useServerState: () => ({
-    isSaaSMode: false,
+    isSaaSMode: serverState.isSaaSMode,
   }),
 }));
 
@@ -67,6 +70,10 @@ function render(element: ReactElement) {
 }
 
 describe("CredentialSourceForm", () => {
+  beforeEach(() => {
+    serverState.isSaaSMode = false;
+  });
+
   test.each([
     [
       DataSource_AuthenticationType.AZURE_IAM,
@@ -80,20 +87,23 @@ describe("CredentialSourceForm", () => {
       DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM,
       "instance.iam-extension.default-credential.gcp",
     ],
-  ])("renders default credential help through i18n for authentication type %s", (authenticationType, expectedKey) => {
-    const { container, unmount } = render(
-      <CredentialSourceForm
-        dataSource={makeDataSource(authenticationType)}
-        engine={Engine.POSTGRES}
-        allowEdit={true}
-        onDataSourceChange={vi.fn()}
-      />
-    );
+  ])(
+    "renders default credential help through i18n for authentication type %s",
+    (authenticationType, expectedKey) => {
+      const { container, unmount } = render(
+        <CredentialSourceForm
+          dataSource={makeDataSource(authenticationType)}
+          engine={Engine.POSTGRES}
+          allowEdit={true}
+          onDataSourceChange={vi.fn()}
+        />
+      );
 
-    expect(container.textContent).toContain(expectedKey);
+      expect(container.textContent).toContain(expectedKey);
 
-    unmount();
-  });
+      unmount();
+    }
+  );
 
   test("shows the Cloud SQL IP selector only for Cloud SQL MySQL/Postgres IAM", () => {
     const { GOOGLE_CLOUD_SQL_IAM, PASSWORD } = DataSource_AuthenticationType;
@@ -152,5 +162,105 @@ describe("CredentialSourceForm", () => {
     ]);
     expect(offeredCloudSQLIPTypes(PRIVATE)).toEqual([PUBLIC, PRIVATE]);
     expect(offeredCloudSQLIPTypes(PSC)).toEqual([PUBLIC, PRIVATE, PSC]);
+  });
+
+  test("keeps the specific credential source selected after changing from default", () => {
+    function StatefulCredentialSourceForm() {
+      const [dataSource, setDataSource] = useState<EditDataSource>(() =>
+        makeDataSource(DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM)
+      );
+      return (
+        <CredentialSourceForm
+          dataSource={dataSource}
+          engine={Engine.POSTGRES}
+          allowEdit={true}
+          onDataSourceChange={(updates) =>
+            setDataSource((prev) => ({ ...prev, ...updates }))
+          }
+        />
+      );
+    }
+
+    const { container, unmount } = render(<StatefulCredentialSourceForm />);
+
+    const radios = container.querySelectorAll('[role="radio"]');
+    const specificCredential = radios[1] as HTMLElement;
+    act(() => {
+      specificCredential.click();
+    });
+
+    expect(specificCredential.getAttribute("aria-checked")).toBe("true");
+    expect(
+      container.querySelector("textarea")?.getAttribute("placeholder")
+    ).toBe("instance.type-or-paste-credentials-write-only");
+
+    unmount();
+  });
+
+  test("keeps the SaaS-forced specific credential source stable", () => {
+    serverState.isSaaSMode = true;
+
+    function StatefulCredentialSourceForm() {
+      const [dataSource, setDataSource] = useState<EditDataSource>(() =>
+        makeDataSource(DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM)
+      );
+      return (
+        <CredentialSourceForm
+          dataSource={dataSource}
+          engine={Engine.POSTGRES}
+          allowEdit={true}
+          onDataSourceChange={(updates) =>
+            setDataSource((prev) => ({ ...prev, ...updates }))
+          }
+        />
+      );
+    }
+
+    const { container, unmount } = render(<StatefulCredentialSourceForm />);
+
+    const radios = container.querySelectorAll('[role="radio"]');
+    const defaultCredential = radios[0] as HTMLElement;
+    const specificCredential = radios[1] as HTMLElement;
+
+    expect(defaultCredential.getAttribute("aria-checked")).toBe("false");
+    expect(specificCredential.getAttribute("aria-checked")).toBe("true");
+    expect(
+      container.querySelector("textarea")?.getAttribute("placeholder")
+    ).toBe("instance.type-or-paste-credentials-write-only");
+
+    unmount();
+  });
+
+  test("does not rewrite a credential that is already specific", () => {
+    const onDataSourceChange = vi.fn();
+    const dataSource = makeDataSource(
+      DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+    );
+    dataSource.iamExtension = {
+      case: "gcpCredential",
+      value: create(DataSource_GCPCredentialSchema, {
+        content: "{}",
+      }),
+    };
+
+    const { container, unmount } = render(
+      <CredentialSourceForm
+        dataSource={dataSource}
+        engine={Engine.POSTGRES}
+        allowEdit={true}
+        onDataSourceChange={onDataSourceChange}
+      />
+    );
+
+    const radios = container.querySelectorAll('[role="radio"]');
+    const specificCredential = radios[1] as HTMLElement;
+    act(() => {
+      specificCredential.click();
+    });
+
+    expect(specificCredential.getAttribute("aria-checked")).toBe("true");
+    expect(onDataSourceChange).not.toHaveBeenCalled();
+
+    unmount();
   });
 });

@@ -1,14 +1,18 @@
 import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_PROJECT_MODULE,
   useNavigate,
-  WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
 import { BytebaseLogo } from "@/components/BytebaseLogo";
 import { HeaderBreadcrumb } from "@/components/header/HeaderBreadcrumb";
 import { ProfileMenuTrigger } from "@/components/header/ProfileMenuTrigger";
-import { useRecentVisit } from "@/hooks/useAppState";
+import {
+  useRecentVisit,
+  useSwitchWorkspace,
+  useWorkspace,
+} from "@/hooks/useAppState";
 import { getProjectName, isValidProjectName } from "@/lib/resourceName";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
@@ -23,6 +27,8 @@ export function SQLEditorHeader() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { record } = useRecentVisit();
+  const workspace = useWorkspace();
+  const switchWorkspace = useSwitchWorkspace();
   const theme = useSQLEditorTheme();
   const projectName = useSQLEditorEditorState((s) => s.project);
   const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
@@ -63,7 +69,11 @@ export function SQLEditorHeader() {
       if (event.ctrlKey || event.metaKey) {
         window.open(route.fullPath, "_blank");
       } else {
-        void maybeSwitchProject(project.name);
+        void maybeSwitchProject(project.name).then((switchedProject) => {
+          if (switchedProject) {
+            void navigate.push(route);
+          }
+        });
       }
     },
     [maybeSwitchProject, navigate, record, setRecentProject]
@@ -81,11 +91,32 @@ export function SQLEditorHeader() {
     return true;
   }, [t]);
 
+  const handleSelectWorkspace = useCallback(
+    (workspaceName: string, event: React.MouseEvent<HTMLElement>) => {
+      const route = navigate.resolve({
+        name: SQL_EDITOR_HOME_MODULE,
+      });
+
+      if (workspaceName === workspace?.name) {
+        if (event.ctrlKey || event.metaKey) {
+          window.open(route.fullPath, "_blank");
+        } else {
+          void navigate.push({ name: SQL_EDITOR_HOME_MODULE });
+        }
+        return;
+      }
+
+      void switchWorkspace(workspaceName, false, true).then(() => {
+        globalThis.location.assign(route.fullPath);
+      });
+    },
+    [navigate, switchWorkspace, workspace?.name]
+  );
+
   return (
     <header className="h-12 shrink-0 border-b border-block-border bg-background px-3 flex items-center justify-between gap-x-4">
       <div className="min-w-0 flex items-center gap-x-4">
         <BytebaseLogo
-          redirect={WORKSPACE_ROUTE_LANDING}
           builtinTheme={isDarkTheme(theme) ? "dark" : "light"}
           className="h-9 md:h-10"
         />
@@ -94,6 +125,7 @@ export function SQLEditorHeader() {
           currentProjectName={projectName}
           projectSwitchExcludeDefaultProject={!allowAccessDefaultProject}
           onBeforeSwitchWorkspace={handleBeforeSwitchWorkspace}
+          onSelectWorkspace={handleSelectWorkspace}
           onSelectProject={handleSelectProject}
         />
       </div>

@@ -36,13 +36,13 @@ export function BytebaseLogo({
         <img
           src={customLogo}
           alt={t("settings.general.workspace.logo")}
-          className="h-full object-contain"
+          className="max-h-full max-w-full object-contain"
         />
       ) : (
         <img
           src={builtinLogo}
           alt="Bytebase"
-          className="h-8 md:h-10 w-auto object-contain"
+          className="max-h-full max-w-full object-contain"
         />
       )}
     </span>
@@ -51,7 +51,7 @@ export function BytebaseLogo({
   return (
     <div
       className={cn(
-        "shrink-0 max-w-44 flex items-center overflow-hidden",
+        "h-10 shrink-0 max-w-44 flex items-center overflow-hidden",
         className
       )}
     >

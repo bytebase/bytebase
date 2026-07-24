@@ -121,11 +121,13 @@ vi.mock("@/components/ui/input", () => ({
     placeholder,
     onFocus,
     onChange,
+    autoComplete,
   }: {
     value?: string;
     placeholder?: string;
     onFocus?: () => void;
     onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    autoComplete?: string;
   }) => (
     <input
       data-testid="folder-input"
@@ -133,6 +135,7 @@ vi.mock("@/components/ui/input", () => ({
       placeholder={placeholder}
       onFocus={onFocus}
       onChange={onChange}
+      autoComplete={autoComplete}
       readOnly={!onChange}
     />
   ),
@@ -229,6 +232,21 @@ describe("FolderForm", () => {
     expect(input).not.toBeNull();
     // "/my/foo/bar" → strip "/my" → "/foo/bar" → strip leading "/" → "foo/bar" → join as " / " → "foo / bar"
     expect(input.value).toBe("foo / bar");
+
+    unmount();
+  });
+
+  test("folder input disables browser autocomplete", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <FolderForm folder="/my/foo" onFolderChange={vi.fn()} />
+    );
+    render();
+
+    const input = container.querySelector(
+      "[data-testid='folder-input']"
+    ) as HTMLInputElement;
+    expect(input).not.toBeNull();
+    expect(input.autocomplete).toBe("off");
 
     unmount();
   });

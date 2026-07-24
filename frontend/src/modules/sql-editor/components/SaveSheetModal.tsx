@@ -115,6 +115,7 @@ export function SaveSheetModal() {
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t("common.untitled")}
               maxLength={200}
+              autoComplete="off"
             />
           </div>
           <FolderForm folder={folder} onFolderChange={setFolder} />

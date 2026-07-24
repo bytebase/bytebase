@@ -499,10 +499,14 @@ export function DashboardSidebar() {
     <nav className="flex-1 flex flex-col overflow-y-hidden border-r border-block-border">
       <RouterLink
         to={homeRoute}
-        className="p-2 shrink-0 m-auto cursor-pointer"
+        className="h-20 w-full shrink-0 cursor-pointer flex items-center justify-center px-4"
         onClick={handleHomeClick}
       >
-        <img src={logoSrc} alt="Bytebase" className="max-w-44" />
+        <img
+          src={logoSrc}
+          alt="Bytebase"
+          className="h-full w-full max-w-44 object-contain"
+        />
       </RouterLink>
       <MobileSidebarSwitchers />
       <div className="flex-1 overflow-y-auto px-2.5 pb-4 flex flex-col gap-y-1">

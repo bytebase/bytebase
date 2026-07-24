@@ -8,6 +8,14 @@ import type { SQLEditorTreeNode } from "@/types";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+const mocks = vi.hoisted(() => ({
+  EnvironmentLabel: vi.fn(
+    ({ environment }: { environment: { title: string } }) => (
+      <span data-testid="SharedEnvironmentLabel">{environment.title}</span>
+    )
+  ),
+}));
+
 vi.mock("./InstanceNode", () => ({
   InstanceNode: () => <div data-testid="InstanceNode" />,
 }));
@@ -17,19 +25,19 @@ vi.mock("./DatabaseNode", () => ({
 vi.mock("./LabelNode", () => ({
   LabelNode: () => <div data-testid="LabelNode" />,
 }));
-vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
-  useSQLEditorFeature: () => false,
+vi.mock("@/components/EnvironmentLabel", () => ({
+  EnvironmentLabel: mocks.EnvironmentLabel,
 }));
-vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
-  PlanFeature: { FEATURE_ENVIRONMENT_TIERS: "FEATURE_ENVIRONMENT_TIERS" },
+vi.mock("@/modules/sql-editor/components/theme/SQLEditorThemeScope", () => ({
+  useSQLEditorTheme: () => ({
+    tokens: {
+      "--color-background": "#1e1e1e",
+      "--color-accent-hover": "#818cf8",
+    },
+  }),
 }));
-vi.mock("@/types", () => ({
-  NULL_ENVIRONMENT_NAME: "environments/-",
-  UNKNOWN_ENVIRONMENT_NAME: "environments/-1",
-  DEFAULT_ENVIRONMENT_COLOR: "#4f46e5",
-}));
-vi.mock("@/utils", () => ({
-  hexToRgb: () => [128, 128, 128],
+vi.mock("@/modules/sql-editor/components/theme/derive", () => ({
+  isDarkTheme: () => true,
 }));
 
 let Label: typeof import("./Label").Label;
@@ -70,6 +78,7 @@ const makeNode = (
   }) as unknown as SQLEditorTreeNode;
 
 beforeEach(async () => {
+  vi.clearAllMocks();
   ({ Label } = await import("./Label"));
 });
 
@@ -111,6 +120,31 @@ describe("Label", () => {
     );
     render();
     expect(container.textContent).toContain("Dev");
+    unmount();
+  });
+
+  test("uses shared EnvironmentLabel for type=environment", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <Label node={makeNode("environment")} keyword="Dev" checked={false} />
+    );
+    render();
+    expect(
+      container.querySelector("[data-testid='SharedEnvironmentLabel']")
+    ).not.toBeNull();
+    expect(mocks.EnvironmentLabel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        environment: expect.objectContaining({ title: "Dev" }),
+        link: false,
+        styleOptions: {
+          defaultColorTextColor: "#818cf8",
+          backgroundAlpha: 0.18,
+        },
+      }),
+      undefined
+    );
+    expect(mocks.EnvironmentLabel.mock.calls[0][0]).not.toHaveProperty(
+      "keyword"
+    );
     unmount();
   });
 });

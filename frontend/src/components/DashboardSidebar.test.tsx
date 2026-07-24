@@ -254,8 +254,16 @@ describe("DashboardSidebar", () => {
 
     const logoLink = container.querySelector<HTMLAnchorElement>("nav > a");
     expect(logoLink?.getAttribute("href")).toBe("/sql-editor");
+    expect(logoLink?.className).toContain("h-20");
+    expect(logoLink?.className).toContain("w-full");
     expect(logoLink?.querySelector("img")?.getAttribute("src")).toBe(
       "https://example.com/logo.png"
+    );
+    expect(logoLink?.querySelector("img")?.className).toContain("h-full");
+    expect(logoLink?.querySelector("img")?.className).toContain("w-full");
+    expect(logoLink?.querySelector("img")?.className).toContain("max-w-44");
+    expect(logoLink?.querySelector("img")?.className).toContain(
+      "object-contain"
     );
 
     act(() => {

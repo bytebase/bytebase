@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   projectSwitchPanelProps: undefined as
     | { excludeDefaultProject?: boolean }
     | undefined,
+  onSelectWorkspace: vi.fn(),
   switchWorkspace: vi.fn(),
   workspaceList: [
     {
@@ -212,6 +213,108 @@ describe("HeaderBreadcrumb", () => {
     expect(
       container.querySelector('[data-testid="project-switch-panel"]')
     ).not.toBeNull();
+
+    unmount();
+  });
+
+  test("uses custom project selection when clicking the project title", () => {
+    const onSelectProject = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <HeaderBreadcrumb onSelectProject={onSelectProject} />
+    );
+
+    render();
+
+    expect(
+      container.querySelector(`a[data-route-name="${PROJECT_V1_ROUTE_ISSUES}"]`)
+    ).toBeNull();
+    const projectButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Recent Project")
+    );
+    expect(projectButton).not.toBeUndefined();
+
+    act(() => {
+      projectButton?.click();
+    });
+
+    expect(onSelectProject).toHaveBeenCalledTimes(1);
+    expect(onSelectProject).toHaveBeenCalledWith(
+      { name: "projects/recent-project", title: "Recent Project" },
+      expect.objectContaining({ ctrlKey: false, metaKey: false })
+    );
+    expect(mocks.record).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("uses custom workspace selection when clicking the workspace title", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <HeaderBreadcrumb onSelectWorkspace={mocks.onSelectWorkspace} />
+    );
+
+    render();
+
+    expect(
+      container.querySelector('a[data-route-name="workspace.landing"]')
+    ).toBeNull();
+    const workspaceButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent?.includes("Default Workspace"));
+    expect(workspaceButton).not.toBeUndefined();
+
+    act(() => {
+      workspaceButton?.click();
+    });
+
+    expect(mocks.onSelectWorkspace).toHaveBeenCalledWith(
+      "workspaces/default",
+      expect.objectContaining({ ctrlKey: false, metaKey: false })
+    );
+    expect(mocks.record).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("uses custom workspace selection when switching workspace", () => {
+    mocks.workspaceList = [
+      {
+        name: "workspaces/default",
+        title: "Default Workspace",
+      },
+      {
+        name: "workspaces/other",
+        title: "Other Workspace",
+      },
+    ];
+    const onBeforeSwitchWorkspace = vi.fn(() => true);
+    const { container, render, unmount } = renderIntoContainer(
+      <HeaderBreadcrumb
+        onBeforeSwitchWorkspace={onBeforeSwitchWorkspace}
+        onSelectWorkspace={mocks.onSelectWorkspace}
+      />
+    );
+
+    render();
+
+    const workspaceSwitchButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent === "");
+    act(() => {
+      workspaceSwitchButton?.click();
+    });
+    const otherWorkspaceButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent?.includes("Other Workspace"));
+    act(() => {
+      otherWorkspaceButton?.click();
+    });
+
+    expect(onBeforeSwitchWorkspace).toHaveBeenCalledTimes(1);
+    expect(mocks.onSelectWorkspace).toHaveBeenCalledWith(
+      "workspaces/other",
+      expect.objectContaining({ ctrlKey: false, metaKey: false })
+    );
+    expect(mocks.switchWorkspace).not.toHaveBeenCalled();
 
     unmount();
   });
