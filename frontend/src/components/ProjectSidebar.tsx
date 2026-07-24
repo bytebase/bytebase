@@ -436,7 +436,11 @@ export function ProjectSidebar() {
         className="p-2 shrink-0 m-auto cursor-pointer"
         onClick={handleHomeClick}
       >
-        <img src={logoSrc} alt="Bytebase" className="max-w-44" />
+        <img
+          src={logoSrc}
+          alt="Bytebase"
+          className="h-8 w-auto max-w-44 object-contain"
+        />
       </RouterLink>
       <div className="flex-1 overflow-y-auto px-2.5 pb-4 flex flex-col gap-y-1">
         {filteredItems.map((item, i) => renderItem(item, i))}

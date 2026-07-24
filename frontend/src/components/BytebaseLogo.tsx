@@ -51,7 +51,7 @@ export function BytebaseLogo({
   return (
     <div
       className={cn(
-        "shrink-0 max-w-44 flex items-center overflow-hidden",
+        "h-10 shrink-0 max-w-44 flex items-center overflow-hidden",
         className
       )}
     >

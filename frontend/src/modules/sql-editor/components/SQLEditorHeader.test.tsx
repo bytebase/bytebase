@@ -2,7 +2,6 @@ import type { ReactElement, ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { WORKSPACE_ROUTE_LANDING } from "@/app/router";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -232,7 +231,7 @@ describe("SQLEditorHeader", () => {
     render();
 
     const logo = container.querySelector("[data-testid='sql-editor-logo']");
-    expect(logo?.getAttribute("data-redirect")).toBe(WORKSPACE_ROUTE_LANDING);
+    expect(logo?.getAttribute("data-redirect")).toBeNull();
     expect(logo?.getAttribute("data-builtin-theme")).toBe("dark");
     expect(
       container.querySelector("[data-testid='sql-editor-breadcrumb']")

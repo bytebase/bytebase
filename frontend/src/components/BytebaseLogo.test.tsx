@@ -86,6 +86,7 @@ describe("BytebaseLogo", () => {
     expect(img).not.toBeNull();
     expect(img?.getAttribute("src")).toBe("https://example.com/logo.png");
     expect(img?.getAttribute("alt")).toBe("Logo");
+    expect(container.firstElementChild?.className).toContain("h-10");
     unmount();
   });
 

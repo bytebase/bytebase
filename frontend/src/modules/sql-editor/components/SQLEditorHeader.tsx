@@ -4,7 +4,6 @@ import {
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_PROJECT_MODULE,
   useNavigate,
-  WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
 import { BytebaseLogo } from "@/components/BytebaseLogo";
 import { HeaderBreadcrumb } from "@/components/header/HeaderBreadcrumb";
@@ -115,7 +114,6 @@ export function SQLEditorHeader() {
     <header className="h-12 shrink-0 border-b border-block-border bg-background px-3 flex items-center justify-between gap-x-4">
       <div className="min-w-0 flex items-center gap-x-4">
         <BytebaseLogo
-          redirect={WORKSPACE_ROUTE_LANDING}
           builtinTheme={isDarkTheme(theme) ? "dark" : "light"}
           className="h-9 md:h-10"
         />

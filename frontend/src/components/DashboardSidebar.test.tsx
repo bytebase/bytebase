@@ -257,6 +257,11 @@ describe("DashboardSidebar", () => {
     expect(logoLink?.querySelector("img")?.getAttribute("src")).toBe(
       "https://example.com/logo.png"
     );
+    expect(logoLink?.querySelector("img")?.className).toContain("h-8");
+    expect(logoLink?.querySelector("img")?.className).toContain("w-auto");
+    expect(logoLink?.querySelector("img")?.className).toContain(
+      "object-contain"
+    );
 
     act(() => {
       logoLink?.dispatchEvent(
