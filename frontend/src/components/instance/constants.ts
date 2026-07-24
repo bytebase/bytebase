@@ -11,8 +11,6 @@ export const defaultPortForEngine = (engine: Engine) => {
       return "5432";
     case Engine.SNOWFLAKE:
       return "";
-    case Engine.SQLITE:
-      return "";
     case Engine.TIDB:
       return "4000";
     case Engine.MONGODB:

@@ -57,7 +57,7 @@ func SQLStatementPrefix(engine storepb.Engine, resourceList []base.SchemaResourc
 	switch engine {
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_TIDB, storepb.Engine_OCEANBASE, storepb.Engine_SPANNER:
 		escapeQuote = "`"
-	case storepb.Engine_CLICKHOUSE, storepb.Engine_MSSQL, storepb.Engine_ORACLE, storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_SQLITE, storepb.Engine_SNOWFLAKE:
+	case storepb.Engine_CLICKHOUSE, storepb.Engine_MSSQL, storepb.Engine_ORACLE, storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_SNOWFLAKE:
 		escapeQuote = "\""
 	default:
 		return "", errors.Errorf("unsupported engine %v for exporting as SQL", engine)

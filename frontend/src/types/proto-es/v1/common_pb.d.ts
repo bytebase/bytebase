@@ -196,13 +196,6 @@ export enum Engine {
   SNOWFLAKE = 4,
 
   /**
-   * SQLite embedded database.
-   *
-   * @generated from enum value: SQLITE = 5;
-   */
-  SQLITE = 5,
-
-  /**
    * TiDB distributed SQL database.
    *
    * @generated from enum value: TIDB = 6;

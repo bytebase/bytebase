@@ -25,6 +25,7 @@ import {
   messages,
   progressiveDelay,
   WEBSOCKET_HEARTBEAT_INTERVAL,
+  WEBSOCKET_HEARTBEAT_TIMEOUT,
   WEBSOCKET_TIMEOUT,
 } from "./utils";
 
@@ -39,6 +40,12 @@ export type ConnectionState = {
   state: "initial" | "ready" | "closed" | "reconnecting";
   url: string;
   ws: Promise<WebSocket> | undefined;
+};
+
+type LanguageClientConnection = {
+  client: MonacoLanguageClient;
+  ws: WebSocket;
+  wsPromise: Promise<WebSocket>;
 };
 
 // Inline replacement for `monaco-languageclient`'s `MonacoLanguageClient`,
@@ -110,6 +117,8 @@ const state = {
   client: undefined as MonacoLanguageClient | undefined,
   clientInitialized: undefined as Promise<MonacoLanguageClient> | undefined,
 };
+let reconnectHeartbeatTimer: ReturnType<typeof setTimeout> | undefined;
+let reconnectJob: Promise<MonacoLanguageClient> | undefined;
 
 const setConnState = (patch: Partial<ConnectionState>) => {
   Object.assign(conn, patch);
@@ -129,37 +138,81 @@ const setHeartbeat = (patch: Partial<ConnectionState["heartbeat"]>) => {
   emit();
 };
 
-const useHeartbeat = (ws: WebSocket) => {
+const clearHeartbeat = () => {
+  clearTimeout(conn.heartbeat.timer);
+  conn.heartbeat = {
+    timer: undefined,
+    counter: 0,
+    timestamp: 0,
+  };
+  emit();
+};
+
+const clearReconnectHeartbeat = () => {
+  clearTimeout(reconnectHeartbeatTimer);
+  reconnectHeartbeatTimer = undefined;
+};
+
+const scheduleReconnectHeartbeat = () => {
+  if (reconnectHeartbeatTimer || conn.state === "ready") {
+    return;
+  }
+  reconnectHeartbeatTimer = setTimeout(() => {
+    reconnectHeartbeatTimer = undefined;
+    void reconnect().catch(() => undefined);
+  }, WEBSOCKET_HEARTBEAT_INTERVAL);
+};
+
+const startHeartbeat = (client: MonacoLanguageClient, ws: WebSocket) => {
+  let active = true;
+  let heartbeatResponseTimer: ReturnType<typeof setTimeout> | undefined;
+
   const cleanup = () => {
-    clearTimeout(conn.heartbeat.timer);
-    conn.heartbeat = {
-      timer: undefined,
-      counter: 0,
-      timestamp: 0,
-    };
-    emit();
+    active = false;
+    clearTimeout(heartbeatResponseTimer);
+    clearHeartbeat();
   };
 
   ws.addEventListener("error", cleanup);
   ws.addEventListener("close", cleanup);
 
   const ping = () => {
+    clearTimeout(heartbeatResponseTimer);
+    const counter = conn.heartbeat.counter + 1;
+    const timestamp = Date.now();
     setHeartbeat({
-      counter: conn.heartbeat.counter + 1,
-      timestamp: Date.now(),
+      counter,
+      timestamp,
     });
-    ws.send(
-      JSON.stringify({
-        jsonrpc: "2.0",
-        method: "$ping",
-        params: {
-          state: omit(conn.heartbeat, "timer"),
-        },
+
+    heartbeatResponseTimer = setTimeout(() => {
+      if (active && ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    }, WEBSOCKET_HEARTBEAT_TIMEOUT);
+
+    void Promise.resolve(
+      client.sendRequest("$ping", {
+        state: omit(conn.heartbeat, "timer"),
       })
-    );
-    setHeartbeat({
-      timer: setTimeout(ping, WEBSOCKET_HEARTBEAT_INTERVAL),
-    });
+    )
+      .then(() => {
+        if (!active) {
+          return;
+        }
+        clearTimeout(heartbeatResponseTimer);
+        heartbeatResponseTimer = undefined;
+        if (ws.readyState === WebSocket.OPEN) {
+          setHeartbeat({
+            timer: setTimeout(ping, WEBSOCKET_HEARTBEAT_INTERVAL),
+          });
+        }
+      })
+      .catch(() => {
+        if (active && ws.readyState === WebSocket.OPEN) {
+          ws.close();
+        }
+      });
   };
 
   ping();
@@ -214,8 +267,8 @@ const connectWebSocket = () => {
         if (conn.state === "ready" || conn.state === "closed") {
           return;
         }
+        clearReconnectHeartbeat();
         setConnState({ state: "ready", retries: 0 });
-        useHeartbeat(ws);
         resolve(ws);
       });
 
@@ -231,15 +284,7 @@ const connectWebSocket = () => {
   return promise;
 };
 
-const reconnect = async () => {
-  setConnState({
-    ws: undefined,
-    state: "initial",
-    retries: 0,
-  });
-
-  await refreshTokens();
-
+const disposeClient = () => {
   if (state.client) {
     try {
       state.client.dispose();
@@ -249,10 +294,44 @@ const reconnect = async () => {
     state.client = undefined;
   }
   state.clientInitialized = undefined;
-  await initializeLSPClient();
 };
 
-const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
+const reconnectRunner = async () => {
+  setConnState({
+    ws: undefined,
+    state: "initial",
+    retries: 0,
+  });
+
+  clearReconnectHeartbeat();
+  disposeClient();
+  try {
+    await refreshTokens();
+  } catch (err) {
+    setConnState({
+      ws: undefined,
+      state: "closed",
+      retries: 0,
+    });
+    scheduleReconnectHeartbeat();
+    throw err;
+  }
+
+  return initializeLSPClient();
+};
+
+const reconnect = () => {
+  if (reconnectJob) {
+    return reconnectJob;
+  }
+
+  reconnectJob = reconnectRunner().finally(() => {
+    reconnectJob = undefined;
+  });
+  return reconnectJob;
+};
+
+const createLanguageClient = async (): Promise<LanguageClientConnection> => {
   // `vscode-languageclient` touches the `vscode` API at construction time,
   // which requires `@codingame/monaco-vscode-api`'s `initialize()` to have
   // completed before `new MonacoLanguageClient(...)`,
@@ -264,51 +343,57 @@ const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
   // caller to have initialized services first. Await it here so callers
   // can fire-and-forget safely.
   await initializeMonacoServices();
-  const ws = await connectWebSocket();
+  const wsPromise = connectWebSocket();
+  const ws = await wsPromise;
   const socket = toSocket(ws);
   const reader = new WebSocketMessageReader(socket);
   const writer = new WebSocketMessageWriter(socket);
-  return new MonacoLanguageClient({
-    name: "Bytebase Language Client",
-    clientOptions: {
-      documentSelector: ["sql", "javascript"],
-      initializationOptions: {
-        performanceMode: true,
-        diagnosticDelay: 500,
-        disableFeaturesWhileTyping: true,
-      },
-      middleware: {
-        provideHover: throttle(async (document, position, token, next) => {
-          return next(document, position, token);
-        }, 300),
-        provideCompletionItem: throttle(
-          async (document, position, context, token, next) => {
-            const triggerCharacters = [".", ",", "(", " "];
-            if (
-              context.triggerKind === 1 &&
-              !triggerCharacters.includes(context.triggerCharacter || "")
-            ) {
-              return { items: [] };
-            }
-            return next(document, position, context, token);
+  return {
+    client: new MonacoLanguageClient({
+      name: "Bytebase Language Client",
+      clientOptions: {
+        documentSelector: ["sql", "javascript"],
+        initializationOptions: {
+          performanceMode: true,
+          diagnosticDelay: 500,
+          disableFeaturesWhileTyping: true,
+        },
+        middleware: {
+          provideHover: throttle(async (document, position, token, next) => {
+            return next(document, position, token);
+          }, 300),
+          provideCompletionItem: throttle(
+            async (document, position, context, token, next) => {
+              const triggerCharacters = [".", ",", "(", " "];
+              if (
+                context.triggerKind === 1 &&
+                !triggerCharacters.includes(context.triggerCharacter || "")
+              ) {
+                return { items: [] };
+              }
+              return next(document, position, context, token);
+            },
+            200
+          ),
+        },
+        errorHandler: {
+          error: () => ({ action: ErrorAction.Continue }),
+          closed: () => {
+            reconnect().catch((err) => errorNotification(err));
+            return { action: CloseAction.DoNotRestart };
           },
-          200
-        ),
-      },
-      errorHandler: {
-        error: () => ({ action: ErrorAction.Continue }),
-        closed: () => {
-          reconnect().catch((err) => errorNotification(err));
-          return { action: CloseAction.DoNotRestart };
         },
       },
-    },
-    messageTransports: { reader, writer },
-  });
+      messageTransports: { reader, writer },
+    }),
+    ws,
+    wsPromise,
+  };
 };
 
 const initializeRunner = async () => {
-  const client = await createLanguageClient();
+  const { client, ws, wsPromise } = await createLanguageClient();
+  const isCurrentConnection = () => conn.ws === wsPromise;
   client.onDidChangeState((event) => {
     if (event.newState === State.Running) {
       const { lastCommand } = conn;
@@ -318,13 +403,45 @@ const initializeRunner = async () => {
     }
   });
 
-  try {
-    await client.start();
-  } catch (err) {
-    errorNotification(err);
-  }
+  await client.start().catch((err) => {
+    try {
+      client.dispose();
+    } catch {
+      // ignore
+    }
+    if (
+      ws.readyState !== WebSocket.CLOSING &&
+      ws.readyState !== WebSocket.CLOSED
+    ) {
+      ws.close();
+    }
+    if (isCurrentConnection()) {
+      setConnState({
+        ws: undefined,
+        state: "closed",
+        retries: 0,
+      });
+      scheduleReconnectHeartbeat();
+    }
+    throw err;
+  });
 
+  if (!isCurrentConnection()) {
+    try {
+      client.dispose();
+    } catch {
+      // ignore
+    }
+    if (
+      ws.readyState !== WebSocket.CLOSING &&
+      ws.readyState !== WebSocket.CLOSED
+    ) {
+      ws.close();
+    }
+    return client;
+  }
   state.client = client;
+  startHeartbeat(client, ws);
   return client;
 };
 
@@ -332,9 +449,33 @@ export const initializeLSPClient = () => {
   if (state.clientInitialized) {
     return state.clientInitialized;
   }
-  const job = initializeRunner();
+  let job: Promise<MonacoLanguageClient>;
+  job = initializeRunner().catch((err) => {
+    if (state.clientInitialized === job) {
+      disposeClient();
+      if (conn.state !== "ready") {
+        setConnState({
+          ws: undefined,
+          state: "closed",
+          retries: 0,
+        });
+        scheduleReconnectHeartbeat();
+      }
+    }
+    throw err;
+  });
   state.clientInitialized = job;
   return job;
+};
+
+export const ensureLSPConnection = () => {
+  if (conn.state === "ready" || conn.state === "reconnecting") {
+    return state.clientInitialized ?? initializeLSPClient();
+  }
+  if (conn.state === "initial" && conn.ws) {
+    return state.clientInitialized ?? initializeLSPClient();
+  }
+  return reconnect();
 };
 
 export const executeCommand = async (

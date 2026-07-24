@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => {
       timestamp: 1_714_000_000_000,
     },
   };
+  const connectionListeners = new Set<() => void>();
   const model = {
     uri: {
       toString: () => "file:///test.sql",
@@ -24,6 +25,9 @@ const mocks = vi.hoisted(() => {
     getAllDecorations: () => [],
   };
   const subscription = { dispose: vi.fn() };
+  const handlers = {
+    modelContent: undefined as (() => void) | undefined,
+  };
   const editor = {
     addAction: vi.fn(() => subscription),
     createDecorationsCollection: vi.fn(() => ({ clear: vi.fn() })),
@@ -38,7 +42,10 @@ const mocks = vi.hoisted(() => {
     onDidChangeCursorPosition: vi.fn(() => subscription),
     onDidChangeCursorSelection: vi.fn(() => subscription),
     onDidChangeModel: vi.fn(() => subscription),
-    onDidChangeModelContent: vi.fn(() => subscription),
+    onDidChangeModelContent: vi.fn((handler: () => void) => {
+      handlers.modelContent = handler;
+      return subscription;
+    }),
     onDidContentSizeChange: vi.fn(() => subscription),
     setModel: vi.fn(),
     setValue: vi.fn(),
@@ -46,7 +53,15 @@ const mocks = vi.hoisted(() => {
   };
   return {
     connectionSnapshot,
+    connectionListeners,
+    currentWebSocket: undefined as
+      | {
+          addEventListener: ReturnType<typeof vi.fn>;
+          removeEventListener: ReturnType<typeof vi.fn>;
+        }
+      | undefined,
     editor,
+    handlers,
     model,
     subscription,
   };
@@ -122,11 +137,21 @@ vi.mock("./core", () => ({
 }));
 
 vi.mock("./lsp-client", () => ({
+  ensureLSPConnection: vi.fn(async () => ({})),
   executeCommand: vi.fn(async () => undefined),
   getConnectionStateSnapshot: vi.fn(() => mocks.connectionSnapshot),
-  getConnectionWebSocket: vi.fn(() => undefined),
+  getConnectionWebSocket: vi.fn(() =>
+    mocks.currentWebSocket
+      ? Promise.resolve(mocks.currentWebSocket as unknown as WebSocket)
+      : undefined
+  ),
   initializeLSPClient: vi.fn(async () => ({})),
-  subscribeConnectionState: vi.fn(() => () => undefined),
+  subscribeConnectionState: vi.fn((listener: () => void) => {
+    mocks.connectionListeners.add(listener);
+    return () => {
+      mocks.connectionListeners.delete(listener);
+    };
+  }),
 }));
 
 vi.mock("./suggest-icons", () => ({
@@ -134,6 +159,9 @@ vi.mock("./suggest-icons", () => ({
 }));
 
 vi.mock("./text-model", () => ({
+  getUriByFilename: vi.fn(async (filename: string) => ({
+    toString: () => `file:///${filename}`,
+  })),
   getOrCreateTextModel: vi.fn(async () => mocks.model),
   restoreViewState: vi.fn(),
   storeViewState: vi.fn(),
@@ -169,7 +197,38 @@ const renderIntoContainer = async (
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.connectionSnapshot = {
+    heartbeat: {
+      counter: 1,
+      timer: undefined,
+      timestamp: 1_714_000_000_000,
+    },
+    state: "ready",
+  };
+  mocks.connectionListeners.clear();
+  mocks.currentWebSocket = undefined;
+  mocks.handlers.modelContent = undefined;
 });
+
+const createWebSocket = () => ({
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+});
+
+const setConnectionState = (state: typeof mocks.connectionSnapshot.state) => {
+  mocks.connectionSnapshot = {
+    ...mocks.connectionSnapshot,
+    state,
+  };
+};
+
+const notifyConnectionState = async () => {
+  act(() => {
+    mocks.connectionListeners.forEach((listener) => listener());
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+};
 
 describe("MonacoEditor", () => {
   test("keeps the legacy heartbeat interpolation text", () => {
@@ -219,6 +278,82 @@ describe("MonacoEditor", () => {
     );
 
     expect(container.querySelector("[data-testid='tooltip']")).toBeNull();
+
+    unmount();
+  });
+
+  test("rebinds statement-range listener when the LSP socket recovers", async () => {
+    const firstWebSocket = createWebSocket();
+    const recoveredWebSocket = createWebSocket();
+    mocks.currentWebSocket = firstWebSocket;
+
+    const { unmount } = await renderIntoContainer(
+      createElement(MonacoEditor, {
+        content: "select 1",
+        enableDecorations: true,
+      })
+    );
+
+    expect(firstWebSocket.addEventListener).toHaveBeenCalledWith(
+      "message",
+      expect.any(Function)
+    );
+
+    setConnectionState("closed");
+    await notifyConnectionState();
+    expect(firstWebSocket.removeEventListener).toHaveBeenCalledWith(
+      "message",
+      expect.any(Function)
+    );
+
+    mocks.currentWebSocket = recoveredWebSocket;
+    setConnectionState("ready");
+    await notifyConnectionState();
+
+    expect(recoveredWebSocket.addEventListener).toHaveBeenCalledWith(
+      "message",
+      expect.any(Function)
+    );
+
+    unmount();
+  });
+
+  test("resends LSP metadata when the connection recovers", async () => {
+    const { executeCommand } = await import("./lsp-client");
+    setConnectionState("closed");
+
+    const { unmount } = await renderIntoContainer(
+      createElement(MonacoEditor, {
+        autoCompleteContext: {
+          database: "instances/prod/databases/db",
+          instance: "instances/prod",
+          scene: "query",
+          schema: "public",
+        },
+        content: "select 1",
+      })
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(executeCommand).not.toHaveBeenCalled();
+
+    setConnectionState("ready");
+    await notifyConnectionState();
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    expect(executeCommand).toHaveBeenCalledWith(
+      expect.anything(),
+      "setMetadata",
+      [
+        expect.objectContaining({
+          databaseName: "db",
+          documentUri: expect.stringContaining("file:///"),
+          instanceId: "instances/prod",
+          scene: "query",
+          schema: "public",
+        }),
+      ]
+    );
 
     unmount();
   });

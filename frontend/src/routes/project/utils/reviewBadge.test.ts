@@ -125,20 +125,24 @@ describe("getReviewBadge", () => {
         [IssueStatus.DONE, true, true],
         [IssueStatus.ISSUE_STATUS_UNSPECIFIED, false, false],
         [IssueStatus.ISSUE_STATUS_UNSPECIFIED, true, true],
-      ])("issueStatus=%s, hasRollout=%s (completed=%s)", (issueStatus, hasRollout, completed) => {
-        it.each(
-          approvalCases(completed)
-        )("approval=%s → %j", (approvalStatus, expected) => {
-          expect(
-            getReviewBadge({
-              hasIssue: true,
-              issueStatus,
-              hasRollout,
-              approvalStatus,
-            })
-          ).toEqual(expected);
-        });
-      });
+      ])(
+        "issueStatus=%s, hasRollout=%s (completed=%s)",
+        (issueStatus, hasRollout, completed) => {
+          it.each(approvalCases(completed))(
+            "approval=%s → %j",
+            (approvalStatus, expected) => {
+              expect(
+                getReviewBadge({
+                  hasIssue: true,
+                  issueStatus,
+                  hasRollout,
+                  approvalStatus,
+                })
+              ).toEqual(expected);
+            }
+          );
+        }
+      );
     });
   });
 
@@ -230,16 +234,19 @@ describe("getReviewBadge", () => {
           ApprovalStatus.PENDING,
           { labelKey: "common.under-review", variant: "secondary" },
         ],
-      ])("would-be-canceled, approval=%s → approval badge (not 'closed')", (approvalStatus, expected) => {
-        expect(
-          getReviewBadge({
-            hasIssue: true,
-            issueStatus: undefined,
-            hasRollout: false,
-            approvalStatus,
-          })
-        ).toEqual(expected);
-      });
+      ])(
+        "would-be-canceled, approval=%s → approval badge (not 'closed')",
+        (approvalStatus, expected) => {
+          expect(
+            getReviewBadge({
+              hasIssue: true,
+              issueStatus: undefined,
+              hasRollout: false,
+              approvalStatus,
+            })
+          ).toEqual(expected);
+        }
+      );
     });
 
     it("residual divergence — Category C₂ (would-be-bypassed without rollout) renders 'under-review'", () => {

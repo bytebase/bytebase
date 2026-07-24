@@ -13,7 +13,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// planUpdateFixture holds a project + sqlite instance + database + two sheets
+// planUpdateFixture holds a project + Postgres instance + database + two sheets
 // + plan + linked issue, ready for tests that mutate the plan and inspect
 // the resulting issue_comment audit rows.
 type planUpdateFixture struct {
@@ -38,18 +38,17 @@ func setupPlanUpdateFixture(t *testing.T, withIssue bool) *planUpdateFixture {
 	a.NoError(err)
 	t.Cleanup(func() { _ = ctl.Close(ctx) })
 
-	instanceRootDir := t.TempDir()
 	instanceName := "planUpdateInstance_" + generateRandomString("inst")
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       instanceName,
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)

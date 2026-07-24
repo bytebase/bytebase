@@ -15,6 +15,9 @@ func (ctl *controller) createDatabase(ctx context.Context, project *v1pb.Project
 	if instance.Engine == v1pb.Engine_POSTGRES {
 		characterSet = "UTF8"
 		collation = "en_US.UTF-8"
+		if owner == "" {
+			owner = "postgres"
+		}
 	}
 	environmentName := ""
 	if environment != nil {

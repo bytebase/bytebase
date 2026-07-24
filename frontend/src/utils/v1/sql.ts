@@ -154,7 +154,6 @@ const wrapSQLIdentifier = (id: string, engine: Engine) => {
   if (
     [
       Engine.POSTGRES,
-      Engine.SQLITE,
       Engine.SNOWFLAKE,
       Engine.ORACLE,
       Engine.REDSHIFT,

@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
-	"path"
 	"strings"
 	"sync"
 	"time"
@@ -68,8 +66,8 @@ func (*authInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) 
 var (
 	migrationStatement1 = `
 	CREATE TABLE book (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
+		id SERIAL PRIMARY KEY,
+		name TEXT
 	);`
 
 	//go:embed test-data/book_schema.result
@@ -77,14 +75,10 @@ var (
 
 	dataUpdateStatement = `
 	INSERT INTO book(name) VALUES
-		("byte"),
+		('byte'),
 		(NULL);
 	`
-	dumpedSchema = `CREATE TABLE book (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-`
+	dumpedSchema = wantBookSchema
 )
 
 type controller struct {
@@ -354,16 +348,6 @@ func (ctl *controller) Close(ctx context.Context) error {
 		}
 	}
 	return e
-}
-
-// provisionSQLiteInstance provisions a SQLite instance (a directory).
-func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error) {
-	p := path.Join(rootDir, name)
-	if err := os.MkdirAll(p, os.ModePerm); err != nil {
-		return "", errors.Wrapf(err, "failed to make directory %q", p)
-	}
-
-	return p, nil
 }
 
 // signupAndLogin will signup and login as user demo@example.com.

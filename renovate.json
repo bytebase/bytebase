@@ -57,6 +57,11 @@
       "matchPackageNames": ["/^i18next$/", "/^react-i18next$/", "/^i18next-/"]
     },
     {
+      "groupName": "react",
+      "description": "React 19's renderer enforces an exact version match between react and react-dom at startup, so bump them together",
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"]
+    },
+    {
       "matchPackageNames": ["@vitejs/plugin-legacy"],
       "matchUpdateTypes": ["major"],
       "enabled": false,

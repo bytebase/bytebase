@@ -891,9 +891,7 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get environments")
 		}
-		for i, env := range environmentSetting.GetEnvironments() {
-			environmentOrderMap[env.Id] = i
-		}
+		environmentOrderMap = common.EnvironmentOrderMap(environmentSetting.GetEnvironments())
 
 		taskStatusCounts, err := s.ListTaskStatusCountByPlanIDs(ctx, projectIDs, rolloutPlanUIDs)
 		if err != nil {

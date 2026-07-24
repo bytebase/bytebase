@@ -218,8 +218,6 @@ func convertToEngine(engine storepb.Engine) v1pb.Engine {
 		return v1pb.Engine_POSTGRES
 	case storepb.Engine_SNOWFLAKE:
 		return v1pb.Engine_SNOWFLAKE
-	case storepb.Engine_SQLITE:
-		return v1pb.Engine_SQLITE
 	case storepb.Engine_TIDB:
 		return v1pb.Engine_TIDB
 	case storepb.Engine_MONGODB:
@@ -275,8 +273,6 @@ func convertEngine(engine v1pb.Engine) storepb.Engine {
 		return storepb.Engine_POSTGRES
 	case v1pb.Engine_SNOWFLAKE:
 		return storepb.Engine_SNOWFLAKE
-	case v1pb.Engine_SQLITE:
-		return storepb.Engine_SQLITE
 	case v1pb.Engine_TIDB:
 		return storepb.Engine_TIDB
 	case v1pb.Engine_MONGODB:

@@ -248,18 +248,19 @@ describe("convertRuleMapToPolicyRuleList", () => {
     SQLReviewRule_Type.TABLE_DISALLOW_DML,
   ];
 
-  test.each(
-    requiredStringArrayRuleTypes
-  )("reports empty string-array rule %s", (type) => {
-    const ruleMap = new Map([
-      [Engine.MYSQL, new Map([[type, stringArrayRule(type, [])]])],
-    ]);
+  test.each(requiredStringArrayRuleTypes)(
+    "reports empty string-array rule %s",
+    (type) => {
+      const ruleMap = new Map([
+        [Engine.MYSQL, new Map([[type, stringArrayRule(type, [])]])],
+      ]);
 
-    expect(validateRuleMapByEngine(ruleMap)).toMatchObject({
-      type: "EMPTY_STRING_ARRAY",
-      rule: { type },
-    });
-  });
+      expect(validateRuleMapByEngine(ruleMap)).toMatchObject({
+        type: "EMPTY_STRING_ARRAY",
+        rule: { type },
+      });
+    }
+  );
 
   test("reports empty rule maps", () => {
     expect(validateRuleMapByEngine(new Map())).toEqual({

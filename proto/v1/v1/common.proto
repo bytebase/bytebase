@@ -25,8 +25,6 @@ enum Engine {
   POSTGRES = 3;
   // Snowflake cloud data warehouse.
   SNOWFLAKE = 4;
-  // SQLite embedded database.
-  SQLITE = 5;
   // TiDB distributed SQL database.
   TIDB = 6;
   // MongoDB document database.
