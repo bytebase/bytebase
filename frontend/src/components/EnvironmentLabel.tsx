@@ -14,6 +14,8 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hexToRgb } from "@/utils";
 
+const LIGHT_BADGE_BACKGROUND_ALPHA = 0.1;
+
 /**
  * Pure-presentational environment badge — no hooks, no store reads.
  *
@@ -28,11 +30,16 @@ export const EnvironmentBadge = memo(function EnvironmentBadge({
   hasEnvTierFeature,
   className,
   link,
+  styleOptions,
 }: {
   environment: Environment;
   hasEnvTierFeature: boolean;
   className?: string;
   link?: boolean;
+  styleOptions?: {
+    defaultColorTextColor?: string;
+    backgroundAlpha?: number;
+  };
 }) {
   const { t } = useTranslation();
 
@@ -41,9 +48,21 @@ export const EnvironmentBadge = memo(function EnvironmentBadge({
     environment.name === NULL_ENVIRONMENT_NAME;
   const isProtected =
     hasEnvTierFeature && environment.tags?.protected === "protected";
-  const bgColorRgb = isUnset
-    ? null
-    : hexToRgb(environment.color || DEFAULT_ENVIRONMENT_COLOR);
+  const color = environment.color || DEFAULT_ENVIRONMENT_COLOR;
+  const baseRgb = !isUnset ? hexToRgb(color) : [];
+  const displayRgb =
+    color.toLowerCase() === DEFAULT_ENVIRONMENT_COLOR.toLowerCase() &&
+    styleOptions?.defaultColorTextColor
+      ? hexToRgb(styleOptions.defaultColorTextColor)
+      : baseRgb;
+  const badgeStyle = !isUnset
+    ? {
+        backgroundColor: `rgba(${baseRgb.join(", ")}, ${
+          styleOptions?.backgroundAlpha ?? LIGHT_BADGE_BACKGROUND_ALPHA
+        })`,
+        color: `rgb(${displayRgb.join(", ")})`,
+      }
+    : undefined;
 
   const badge = (
     <span
@@ -51,14 +70,7 @@ export const EnvironmentBadge = memo(function EnvironmentBadge({
         "inline-flex items-center gap-x-1 px-1.5 rounded-xs truncate",
         className
       )}
-      style={
-        bgColorRgb && !isUnset
-          ? {
-              backgroundColor: `rgba(${bgColorRgb.join(", ")}, 0.1)`,
-              color: `rgb(${bgColorRgb.join(", ")})`,
-            }
-          : undefined
-      }
+      style={badgeStyle}
     >
       <span className="truncate">
         {isUnset ? (
@@ -108,11 +120,16 @@ export function EnvironmentLabel({
   environmentName,
   className,
   link,
+  styleOptions,
 }: {
   environment?: Environment;
   environmentName?: string;
   className?: string;
   link?: boolean;
+  styleOptions?: {
+    defaultColorTextColor?: string;
+    backgroundAlpha?: number;
+  };
 }) {
   // Always called (rules of hooks); result ignored when envProp is provided.
   const envFromStore = useEnvironment(environmentName || NULL_ENVIRONMENT_NAME);
@@ -126,6 +143,7 @@ export function EnvironmentLabel({
       hasEnvTierFeature={hasEnvTierFeature}
       className={className}
       link={link}
+      styleOptions={styleOptions}
     />
   );
 }

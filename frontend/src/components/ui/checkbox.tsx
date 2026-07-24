@@ -44,7 +44,7 @@ function Checkbox({
       indeterminate={indeterminate}
       onCheckedChange={(value) => onCheckedChange?.(value)}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center align-middle rounded-sm border bg-background transition-colors",
+        "inline-flex shrink-0 items-center justify-center align-middle rounded-sm border-2 bg-background transition-colors",
         ROOT_SIZE[size],
         "border-control-border hover:border-accent/60",
         "data-[checked]:bg-accent data-[checked]:border-accent",

@@ -6,6 +6,8 @@ import { BytebaseLogo } from "@/components/BytebaseLogo";
 import { usePermissionCheck } from "@/components/PermissionGuard";
 import { useAppProject } from "@/hooks/useAppProject";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
+import { isDarkTheme } from "./theme/derive";
+import { useSQLEditorTheme } from "./theme/SQLEditorThemeScope";
 import { WelcomeButton } from "./WelcomeButton";
 
 export type WelcomeProps = {
@@ -19,6 +21,7 @@ export type WelcomeProps = {
 
 export function Welcome({ onChangeConnection }: WelcomeProps) {
   const { t } = useTranslation();
+  const theme = useSQLEditorTheme();
   const projectName = useSQLEditorEditorState((s) => s.project);
 
   const resolvedProject = useAppProject(projectName);
@@ -38,7 +41,7 @@ export function Welcome({ onChangeConnection }: WelcomeProps) {
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-y-4">
-      <BytebaseLogo />
+      <BytebaseLogo builtinTheme={isDarkTheme(theme) ? "dark" : "light"} />
       <div className="flex items-center flex-wrap gap-4">
         {showCreateInstanceButton && (
           <WelcomeButton
