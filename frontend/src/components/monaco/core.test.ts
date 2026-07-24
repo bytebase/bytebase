@@ -7,13 +7,32 @@ import {
 
 const mocks = vi.hoisted(() => {
   const readOnlyContribution = { dispose: vi.fn() };
+  const editorIPadKeyboardContribution = { dispose: vi.fn() };
+  const originalEditorIPadKeyboardContribution = { dispose: vi.fn() };
+  const modifiedEditorIPadKeyboardContribution = { dispose: vi.fn() };
   const editor = {
-    getContribution: vi.fn(() => readOnlyContribution),
+    getContribution: vi.fn((id: string) =>
+      id === "editor.contrib.iPadShowKeyboard"
+        ? editorIPadKeyboardContribution
+        : readOnlyContribution
+    ),
+  };
+  const originalEditor = {
+    getContribution: vi.fn((id: string) =>
+      id === "editor.contrib.iPadShowKeyboard"
+        ? originalEditorIPadKeyboardContribution
+        : readOnlyContribution
+    ),
   };
   const modifiedEditor = {
-    getContribution: vi.fn(() => readOnlyContribution),
+    getContribution: vi.fn((id: string) =>
+      id === "editor.contrib.iPadShowKeyboard"
+        ? modifiedEditorIPadKeyboardContribution
+        : readOnlyContribution
+    ),
   };
   const diffEditor = {
+    getOriginalEditor: vi.fn(() => originalEditor),
     getModifiedEditor: vi.fn(() => modifiedEditor),
   };
   const monaco = {
@@ -30,8 +49,12 @@ const mocks = vi.hoisted(() => {
   return {
     diffEditor,
     editor,
+    editorIPadKeyboardContribution,
     modifiedEditor,
+    modifiedEditorIPadKeyboardContribution,
     monaco,
+    originalEditor,
+    originalEditorIPadKeyboardContribution,
     readOnlyContribution,
   };
 });
@@ -92,6 +115,32 @@ describe("monaco core", () => {
         editContext: false,
       })
     );
+  });
+
+  test("disables the iPad keyboard overlay for standalone editors", async () => {
+    await createMonacoEditor({ container: document.createElement("div") });
+
+    expect(mocks.editor.getContribution).toHaveBeenCalledWith(
+      "editor.contrib.iPadShowKeyboard"
+    );
+    expect(mocks.editorIPadKeyboardContribution.dispose).toHaveBeenCalledOnce();
+  });
+
+  test("disables the iPad keyboard overlay for both diff editors", async () => {
+    await createMonacoDiffEditor({ container: document.createElement("div") });
+
+    expect(mocks.originalEditor.getContribution).toHaveBeenCalledWith(
+      "editor.contrib.iPadShowKeyboard"
+    );
+    expect(mocks.modifiedEditor.getContribution).toHaveBeenCalledWith(
+      "editor.contrib.iPadShowKeyboard"
+    );
+    expect(
+      mocks.originalEditorIPadKeyboardContribution.dispose
+    ).toHaveBeenCalledOnce();
+    expect(
+      mocks.modifiedEditorIPadKeyboardContribution.dispose
+    ).toHaveBeenCalledOnce();
   });
 
   test("getResolvedTheme allows enumerated themes and falls back by type", async () => {

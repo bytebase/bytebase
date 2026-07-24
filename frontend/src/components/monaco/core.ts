@@ -80,6 +80,12 @@ export const isMonacoLoaded = (): boolean => {
   return monacoModule !== undefined;
 };
 
+const disableIPadShowKeyboard = (
+  editor: MonacoType.editor.IStandaloneCodeEditor
+) => {
+  editor.getContribution("editor.contrib.iPadShowKeyboard")?.dispose();
+};
+
 export const createMonacoEditor = async (config: {
   container: HTMLElement;
   options?: MonacoType.editor.IStandaloneEditorConstructionOptions;
@@ -98,6 +104,7 @@ export const createMonacoEditor = async (config: {
   });
 
   editor.getContribution("editor.contrib.readOnlyMessageController")?.dispose();
+  disableIPadShowKeyboard(editor);
   monacoEditorReadyDefer.resolve();
   return editor;
 };
@@ -119,10 +126,13 @@ export const createMonacoDiffEditor = async (config: {
     ...config.options,
   });
 
-  editor
-    .getModifiedEditor()
+  const originalEditor = editor.getOriginalEditor();
+  const modifiedEditor = editor.getModifiedEditor();
+  modifiedEditor
     .getContribution("editor.contrib.readOnlyMessageController")
     ?.dispose();
+  disableIPadShowKeyboard(originalEditor);
+  disableIPadShowKeyboard(modifiedEditor);
   monacoEditorReadyDefer.resolve();
   return editor;
 };
