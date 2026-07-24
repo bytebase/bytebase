@@ -49,9 +49,13 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
   // projects and guarantees `instanceResource` is populated (with a fallback)
   // so consumers can read engine / instance off any database.
   const composeDatabases = async (
-    databases: Database[]
+    databases: Database[],
+    silent = false
   ): Promise<Database[]> => {
-    await get().batchFetchProjects(databases.map((db) => db.project));
+    await get().batchFetchProjects(
+      databases.map((db) => db.project),
+      silent
+    );
     for (const database of databases) {
       if (!database.instanceResource) {
         database.instanceResource = {
@@ -66,9 +70,10 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
   // Compose then immutably merge into the by-name cache; returns the composed
   // list so callers can hand it straight back to their consumers.
   const upsertDatabases = async (
-    databases: Database[]
+    databases: Database[],
+    silent = false
   ): Promise<Database[]> => {
-    const composed = await composeDatabases(databases);
+    const composed = await composeDatabases(databases, silent);
     set((state) => {
       const next = { ...state.databasesByName };
       for (const db of composed) {
@@ -94,7 +99,7 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
         contextValues: createContextValues().set(silentContextKey, silent),
       })
       .then(async (database: Database) => {
-        const [composed] = await composeDatabases([database]);
+        const [composed] = await composeDatabases([database], silent);
         set((state) => {
           const { [name]: _, ...databaseRequests } = state.databaseRequests;
           return {
@@ -156,16 +161,19 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
     getOrFetchDatabaseByName: async (name, silent = true) =>
       (await fetchByName(name, silent)) ?? getUnknownDatabase(),
 
-    batchFetchDatabases: async (names) => {
+    batchFetchDatabases: async (names, silent = false) => {
       const validNames = uniq(names).filter(isValidDatabaseName);
       if (!validNames.length) return [];
       const response = await databaseServiceClientConnect.batchGetDatabases(
         createProto(BatchGetDatabasesRequestSchema, {
           parent: "-",
           names: validNames,
-        })
+        }),
+        {
+          contextValues: createContextValues().set(silentContextKey, silent),
+        }
       );
-      const composed = await composeDatabases(response.databases);
+      const composed = await composeDatabases(response.databases, silent);
       set((state) => {
         const next = { ...state.databasesByName };
         for (const db of composed) {
@@ -176,13 +184,13 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
       return composed;
     },
 
-    batchGetOrFetchDatabases: async (names) => {
+    batchGetOrFetchDatabases: async (names, silent = false) => {
       const validNames = uniq(names).filter(isValidDatabaseName);
       const pending = validNames.filter((name) => {
         const cached = get().databasesByName[name];
         return !(cached && isValidDatabaseName(cached.name));
       });
-      await get().batchFetchDatabases(pending);
+      await get().batchFetchDatabases(pending, silent);
       return validNames.map((name) => get().getDatabaseByName(name));
     },
 
@@ -222,7 +230,10 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
       if (parent.startsWith("instances/") && !skipCacheRemoval) {
         get().removeCacheByInstance(parent);
       }
-      const composed = await upsertDatabases(response.databases);
+      const composed = await upsertDatabases(
+        response.databases,
+        silent ?? false
+      );
       return {
         databases: composed,
         nextPageToken: response.nextPageToken,

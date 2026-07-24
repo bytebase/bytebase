@@ -5,8 +5,10 @@
 import { Loader2, Send } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { router } from "@/app/router";
-import { buildPlanDeployRouteFromPlanName } from "@/app/router/routeHelpers";
+import {
+  buildPlanDeployRouteFromPlanName,
+  buildSpecDetailRouteFromPlanName,
+} from "@/app/router/routeHelpers";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import {
   type ActivityIconSpec,
@@ -55,12 +57,20 @@ interface ActivityProps {
   issue?: Issue;
   plan?: Plan;
   comment: IssueComment;
-  // When true (the plan-detail review timeline, which already sits on the
-  // plan), spec/plan references render as plain text instead of links — the
-  // links would only redirect to the page you're already on (BYT-9710). The
-  // issue-detail page leaves this off so its navigation links stay.
+  // When true, plan and rollout references render as plain text in the
+  // plan-detail review timeline. Surviving change references still link to
+  // their canonical spec detail route.
   linkless?: boolean;
+  renderPlanChangeReference?: PlanChangeReferenceRenderer;
 }
+
+export type PlanChangeReferenceRenderer = ({
+  siblings,
+  spec,
+}: {
+  siblings: Plan_Spec[];
+  spec: Plan_Spec;
+}) => ReactNode;
 
 // A DONE issue-update that created the rollout for a database-change plan — the
 // timeline renders this as a "review done, rollout created" line rather than a
@@ -183,6 +193,7 @@ function IssueCommentHeader({
   issue,
   linkless,
   plan,
+  renderPlanChangeReference,
   similarCount,
 }: ActivityProps & { similarCount?: number }) {
   const { t } = useTranslation();
@@ -204,6 +215,7 @@ function IssueCommentHeader({
         issue={issue}
         linkless={linkless}
         plan={plan}
+        renderPlanChangeReference={renderPlanChangeReference}
       />
       {similarCount !== undefined && similarCount > 1 && (
         <Badge className="px-2 text-xs" variant="default">
@@ -229,6 +241,7 @@ export function IssueCommentRow({
   issue,
   linkless,
   plan,
+  renderPlanChangeReference,
   similarCount,
   subjectSuffix,
 }: ActivityProps & {
@@ -246,6 +259,7 @@ export function IssueCommentRow({
           issue={issue}
           linkless={linkless}
           plan={plan}
+          renderPlanChangeReference={renderPlanChangeReference}
           similarCount={similarCount}
         />
       }
@@ -398,6 +412,7 @@ function IssueCommentActionSentence({
   plan,
   comment,
   linkless,
+  renderPlanChangeReference,
 }: ActivityProps) {
   const { t } = useTranslation();
   const commentType = getIssueCommentType(comment);
@@ -539,6 +554,7 @@ function IssueCommentActionSentence({
     commentType === IssueCommentType.PLAN_UPDATE &&
     comment.event.case === "planUpdate"
   ) {
+    const { fromSpecs, toSpecs } = comment.event.value;
     const entries = diffPlanSpecsForEvent(comment.event.value);
     if (entries.length === 0) return null;
     if (entries.length === 1) {
@@ -548,6 +564,8 @@ function IssueCommentActionSentence({
           linkless={linkless}
           multi={false}
           plan={plan}
+          referenceSpecs={entries[0].kind === "removed" ? fromSpecs : toSpecs}
+          renderPlanChangeReference={renderPlanChangeReference}
         />
       );
     }
@@ -560,6 +578,8 @@ function IssueCommentActionSentence({
             linkless={linkless}
             multi
             plan={plan}
+            referenceSpecs={entry.kind === "removed" ? fromSpecs : toSpecs}
+            renderPlanChangeReference={renderPlanChangeReference}
           />
         ))}
       </div>
@@ -574,11 +594,15 @@ function SpecDiffRow({
   linkless,
   multi,
   plan,
+  referenceSpecs,
+  renderPlanChangeReference,
 }: {
   entry: SpecDiffEntry;
   linkless?: boolean;
   multi?: boolean;
   plan?: Plan;
+  referenceSpecs: Plan_Spec[];
+  renderPlanChangeReference?: PlanChangeReferenceRenderer;
 }) {
   const { t } = useTranslation();
   const planName = plan?.name ?? "";
@@ -588,6 +612,10 @@ function SpecDiffRow({
       <SpecChangeRow
         linkless={linkless}
         plan={plan}
+        reference={renderPlanChangeReference?.({
+          siblings: referenceSpecs,
+          spec: entry.spec,
+        })}
         showIndex={multi}
         specRef={specResourceName(planName, entry.spec)}
       >
@@ -601,6 +629,10 @@ function SpecDiffRow({
       <SpecChangeRow
         linkless={linkless}
         plan={plan}
+        reference={renderPlanChangeReference?.({
+          siblings: referenceSpecs,
+          spec: entry.spec,
+        })}
         showIndex={multi}
         specRef={specResourceName(planName, entry.spec)}
       >
@@ -672,6 +704,10 @@ function SpecDiffRow({
       <SpecChangeRow
         linkless={linkless}
         plan={plan}
+        reference={renderPlanChangeReference?.({
+          siblings: referenceSpecs,
+          spec: entry.to,
+        })}
         showIndex={multi}
         specRef={specResourceName(planName, entry.to)}
       >
@@ -692,6 +728,10 @@ function SpecDiffRow({
     <SpecChangeRow
       linkless={linkless}
       plan={plan}
+      reference={renderPlanChangeReference?.({
+        siblings: referenceSpecs,
+        spec: entry.to,
+      })}
       showIndex={multi}
       specRef={specResourceName(planName, entry.to)}
       trailing={trailingItems.length > 0 ? <>{trailingItems}</> : null}
@@ -709,6 +749,7 @@ function SpecChangeRow({
   children,
   linkless,
   plan,
+  reference,
   showIndex,
   specRef,
   trailing,
@@ -716,6 +757,7 @@ function SpecChangeRow({
   children: ReactNode;
   linkless?: boolean;
   plan?: Plan;
+  reference?: ReactNode;
   showIndex?: boolean;
   specRef: string;
   trailing?: ReactNode;
@@ -727,17 +769,10 @@ function SpecChangeRow({
   const specId = specInfo?.specId ?? specIdFromRef;
   const specIdShort = specId.slice(0, 8);
   // Only link to specs that still exist in the live plan — otherwise the spec
-  // view would silently bounce back to specs[0]. On the plan-detail timeline
-  // (linkless) we're already on the plan, so the link would just re-navigate to
-  // the current page and the id slice is meaningless noise — render plain text.
+  // view would silently bounce back to specs[0].
   const specRoute =
-    !linkless && specInfo?.specId
-      ? {
-          query: {
-            ...router.currentRoute.value.query,
-            spec: specInfo.specId,
-          },
-        }
+    plan?.name && specInfo?.specId
+      ? buildSpecDetailRouteFromPlanName(plan.name, specInfo.specId)
       : null;
 
   // On the plan-detail timeline (linkless) we identify the change by its 1-based
@@ -767,11 +802,19 @@ function SpecChangeRow({
     );
   }
 
-  const chip = (
+  const fallbackChip = (
     <span className="inline-flex items-center gap-1">
       {t("plan.spec.change")}
       {chipSuffix}
     </span>
+  );
+  const chip = reference ? (
+    <span className="inline-flex items-center gap-1">
+      <span aria-hidden="true">{t("plan.spec.change")}</span>
+      {reference}
+    </span>
+  ) : (
+    fallbackChip
   );
 
   return (
@@ -779,13 +822,15 @@ function SpecChangeRow({
       {children}{" "}
       {specRoute != null ? (
         <RouterLink
-          className="inline-flex items-center gap-1 hover:underline"
+          className="inline-flex min-w-0 items-center gap-1 text-main transition-colors hover:text-accent hover:underline focus-visible:text-accent focus-visible:underline focus-visible:outline-hidden"
           to={specRoute}
         >
           {chip}
         </RouterLink>
       ) : (
-        chip
+        <span className="inline-flex min-w-0 items-center gap-1 text-main">
+          {chip}
+        </span>
       )}
       {trailing != null ? <> {trailing}</> : null}
     </span>

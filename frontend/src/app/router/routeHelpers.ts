@@ -58,6 +58,18 @@ export const buildSpecDetailRouteForCurrentPage = (
   query: (currentRoute.query || {}) as Record<string, string | undefined>,
 });
 
+export const buildSpecDetailRouteFromPlanName = (
+  planName: string,
+  specId: string
+): RouteTarget => ({
+  name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+  params: {
+    projectId: extractProjectResourceName(planName),
+    planId: extractPlanUID(planName) || "_",
+    specId,
+  },
+});
+
 export const buildPlanDeployRouteFromPlanName = (
   planName: string,
   options?: Omit<BuildPlanDeployRouteParams, "projectId" | "planId">

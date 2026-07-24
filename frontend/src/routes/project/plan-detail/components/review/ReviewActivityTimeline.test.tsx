@@ -91,8 +91,20 @@ vi.mock("@/utils/iam/permission", () => ({
   hasProjectPermissionV2: () => false,
 }));
 
+vi.mock("../../hooks/usePlanChangeReferenceData", () => ({
+  usePlanChangeReferenceData: () => ({
+    databaseGroupsByName: {},
+    databasesByName: {},
+    environmentList: [],
+  }),
+}));
+
 vi.mock("../../shell/PlanDetailContext", () => ({
   usePlanDetailContext: () => ({ projectId: "p1" }),
+}));
+
+vi.mock("../PlanChangeReference", () => ({
+  PlanSpecChangeReference: () => <span data-testid="change-reference" />,
 }));
 
 vi.mock("./ReviewCommentComposer", () => ({

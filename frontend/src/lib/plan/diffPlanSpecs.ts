@@ -1,5 +1,6 @@
 import { clone, equals } from "@bufbuild/protobuf";
 import { isEqual } from "lodash-es";
+import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
   type Plan_Spec,
   Plan_SpecSchema,
@@ -61,6 +62,20 @@ export function diffPlanSpecsForEvent(eventValue: {
   const fresh = diffPlanSpecs(eventValue.fromSpecs, eventValue.toSpecs);
   planUpdateDiffCache.set(eventValue, fresh);
   return fresh;
+}
+
+export function collectPlanUpdateSpecs(comments: IssueComment[]): Plan_Spec[] {
+  const specs: Plan_Spec[] = [];
+  for (const comment of comments) {
+    if (comment.event.case !== "planUpdate") {
+      continue;
+    }
+    specs.push(
+      ...comment.event.value.fromSpecs,
+      ...comment.event.value.toSpecs
+    );
+  }
+  return specs;
 }
 
 export function diffPlanSpecs(

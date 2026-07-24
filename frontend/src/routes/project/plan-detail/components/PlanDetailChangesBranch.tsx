@@ -110,7 +110,9 @@ import { getStatementSize } from "@/utils/sheet";
 import { extractDatabaseGroupName } from "@/utils/v1/databaseGroup";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import { extractSheetUID, getSheetStatement } from "@/utils/v1/sheet";
+import { usePlanChangeReferenceData } from "../hooks/usePlanChangeReferenceData";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
+import { derivePlanChangeReference } from "../utils/changeReference";
 import {
   getDefaultGhostConfig,
   getGhostConfig as getGhostConfigFromStatement,
@@ -131,17 +133,14 @@ import {
   allowGhostForDatabase,
   getPlanOptionVisibility,
 } from "../utils/options";
-import {
-  getSelectedSpec,
-  getSpecTitle,
-  isReleaseBackedPlan,
-} from "../utils/spec";
+import { getSelectedSpec, isReleaseBackedPlan } from "../utils/spec";
 import { updateSpecSheetWithStatement } from "../utils/specMutation";
 import {
   filterPlanTargets,
   getDatabaseGroupRouteParams,
   splitInlineDatabases,
 } from "../utils/targets";
+import { PlanChangeReference } from "./PlanChangeReference";
 import { PlanDetailAggregateChecks } from "./PlanDetailAggregateChecks";
 import { PlanDetailDraftChecks } from "./PlanDetailDraftChecks";
 import { PlanDetailStatementSection } from "./PlanDetailStatementSection";
@@ -242,6 +241,7 @@ export function PlanDetailChangesBranch({
     () => (pendingNewSpec ? [...specs, pendingNewSpec] : specs),
     [specs, pendingNewSpec]
   );
+  const changeReferenceResources = usePlanChangeReferenceData(visibleSpecs);
   const selectedSpec = useMemo(() => {
     if (pendingNewSpec && isPendingSelected) {
       return pendingNewSpec;
@@ -596,8 +596,17 @@ export function PlanDetailChangesBranch({
         {visibleSpecs.map((spec, index) => {
           const isSelected = selectedSpec.id === spec.id;
           const isPending = pendingNewSpec?.id === spec.id;
+          const reference = derivePlanChangeReference({
+            index,
+            resources: changeReferenceResources,
+            siblings: visibleSpecs,
+            spec,
+            t,
+          });
           return (
             <PlanDetailTabItem
+              accessibleLabel={reference.accessibleLabel}
+              boundedWidth
               key={spec.id}
               action={
                 canModifySpecs && visibleSpecs.length > 1 ? (
@@ -644,15 +653,15 @@ export function PlanDetailChangesBranch({
               }}
               selected={isSelected}
             >
-              <span
+              <PlanChangeReference
+                ariaHidden
                 className={cn(
-                  "flex items-center gap-1 text-sm font-medium transition-colors",
+                  "text-sm font-medium transition-colors",
                   isSelected ? "" : "text-control-light hover:text-control"
                 )}
-              >
-                <span className="opacity-80">{index + 1}.</span>
-                <span>{getSpecTitle(spec, t)}</span>
-              </span>
+                density="tab"
+                reference={reference}
+              />
             </PlanDetailTabItem>
           );
         })}

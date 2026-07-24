@@ -65,7 +65,26 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (
+      key: string,
+      options?: Record<string, string | number>
+    ): string => {
+      if (key === "plan.spec.change-reference.accessible-label") {
+        return `Change ${options?.index}: ${options?.label}`;
+      }
+      if (key === "plan.spec.change-reference.database-count") {
+        return `${options?.count} databases`;
+      }
+      if (key === "plan.spec.change-reference.environment-overflow") {
+        return `${options?.environment} +${options?.count} environments`;
+      }
+      if (key === "plan.spec.change-reference.new-change") {
+        return "New change";
+      }
+      return key;
+    },
+  }),
 }));
 
 vi.mock("@bufbuild/protobuf", () => ({
@@ -469,12 +488,18 @@ vi.mock("./PlanDetailStatementSection", () => ({
 
 vi.mock("./PlanDetailTabStrip", () => ({
   PlanDetailTabItem: ({
+    accessibleLabel,
     children,
     onSelect,
   }: {
+    accessibleLabel?: string;
     children: ReactNode;
     onSelect?: () => void;
-  }) => <button onClick={onSelect}>{children}</button>,
+  }) => (
+    <button aria-label={accessibleLabel} onClick={onSelect}>
+      {children}
+    </button>
+  ),
   PlanDetailTabStrip: ({
     action,
     trailing,
@@ -674,6 +699,188 @@ async function flush() {
 }
 
 describe("PlanDetailChangesBranch", () => {
+  it("renders target-derived change references instead of generic types", async () => {
+    const page = buildPageState();
+    page.plan.specs = [
+      {
+        id: "spec-orders",
+        config: {
+          case: "changeDatabaseConfig",
+          value: { targets: [DB_WIDGETS] },
+        },
+      },
+      {
+        id: "spec-cogs",
+        config: {
+          case: "changeDatabaseConfig",
+          value: { targets: [DB_COGS] },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+
+    act(() => {
+      root.render(
+        <PlanDetailProvider value={page}>
+          <PlanDetailChangesBranch
+            selectedSpecId="spec-orders"
+            onSelectedSpecIdChange={vi.fn()}
+          />
+        </PlanDetailProvider>
+      );
+    });
+    await flush();
+
+    const references = [
+      ...container.querySelectorAll("[data-plan-change-reference]"),
+    ];
+    expect(
+      references.map((reference) =>
+        reference.getAttribute("data-plan-change-reference-label")
+      )
+    ).toEqual(["widgets", "cogs"]);
+    expect(references.map((reference) => reference.textContent)).toEqual([
+      "widgets",
+      "cogs",
+    ]);
+    expect(container.textContent).not.toContain(
+      "plan.spec.type.database-change"
+    );
+    expect(mocks.databaseStore.batchGetOrFetchDatabases).toHaveBeenCalledWith([
+      DB_WIDGETS,
+      DB_COGS,
+    ], true);
+  });
+
+  it("keeps base references when database enrichment fails", async () => {
+    mocks.databaseStore.batchGetOrFetchDatabases.mockRejectedValueOnce(
+      new Error("database enrichment failed")
+    );
+    const page = buildPageState();
+    page.plan.specs = [
+      {
+        id: "spec-widgets",
+        config: {
+          case: "changeDatabaseConfig",
+          value: { targets: [DB_WIDGETS] },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+
+    act(() => {
+      root.render(
+        <PlanDetailProvider value={page}>
+          <PlanDetailChangesBranch
+            selectedSpecId="spec-widgets"
+            onSelectedSpecIdChange={vi.fn()}
+          />
+        </PlanDetailProvider>
+      );
+    });
+    await flush();
+
+    expect(mocks.databaseStore.batchGetOrFetchDatabases).toHaveBeenCalledWith(
+      [DB_WIDGETS],
+      true
+    );
+    expect(
+      container
+        .querySelector("[data-plan-change-reference]")
+        ?.getAttribute("data-plan-change-reference-label")
+    ).toBe("widgets");
+  });
+
+  it("keeps same-target changes distinct through their accessible indexes", async () => {
+    const page = buildPageState();
+    page.plan.specs = [
+      {
+        id: "spec-1",
+        config: {
+          case: "changeDatabaseConfig",
+          value: { targets: [DB_WIDGETS] },
+        },
+      },
+      {
+        id: "spec-2",
+        config: {
+          case: "changeDatabaseConfig",
+          value: { targets: [DB_WIDGETS] },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+
+    act(() => {
+      root.render(
+        <PlanDetailProvider value={page}>
+          <PlanDetailChangesBranch
+            selectedSpecId="spec-1"
+            onSelectedSpecIdChange={vi.fn()}
+          />
+        </PlanDetailProvider>
+      );
+    });
+    await flush();
+
+    const referenceButtons = [
+      ...container.querySelectorAll("[data-plan-change-reference]"),
+    ].map((reference) => reference.closest("button"));
+    expect(
+      referenceButtons.map((button) => button?.getAttribute("aria-label"))
+    ).toEqual(["Change 1: widgets", "Change 2: widgets"]);
+    expect(
+      [...container.querySelectorAll("[data-plan-change-reference]")].map(
+        (reference) => reference.textContent
+      )
+    ).toEqual(["1widgets", "2widgets"]);
+  });
+
+  it("updates the reference when targets change without changing selection", async () => {
+    const page = buildPageState();
+    page.plan.specs = [
+      {
+        id: "spec-1",
+        config: {
+          case: "changeDatabaseConfig",
+          value: { targets: [DB_WIDGETS] },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+    const render = () =>
+      root.render(
+        <PlanDetailProvider value={page}>
+          <PlanDetailChangesBranch
+            selectedSpecId="spec-1"
+            onSelectedSpecIdChange={vi.fn()}
+          />
+        </PlanDetailProvider>
+      );
+
+    act(render);
+    await flush();
+    expect(
+      container
+        .querySelector("[data-plan-change-reference]")
+        ?.getAttribute("data-plan-change-reference-label")
+    ).toBe("widgets");
+
+    page.plan.specs = [
+      {
+        id: "spec-1",
+        config: {
+          case: "changeDatabaseConfig",
+          value: { targets: [DB_COGS] },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+    act(render);
+    await flush();
+
+    expect(
+      container
+        .querySelector("[data-plan-change-reference]")
+        ?.getAttribute("data-plan-change-reference-label")
+    ).toBe("cogs");
+  });
+
   it("renders all targets in a single scrollable sheet list", async () => {
     const page = buildPageState();
     const targets = Array.from(
@@ -860,9 +1067,15 @@ describe("PlanDetailChangesBranch", () => {
 
     expect(
       [...container.querySelectorAll("button")].filter((button) =>
-        button.textContent?.includes("plan.spec.type.database-change")
+        button.querySelector("[data-plan-change-reference]")
       )
     ).toHaveLength(2);
+    expect(
+      [...container.querySelectorAll("[data-plan-change-reference]")].map(
+        (reference) =>
+          reference.getAttribute("data-plan-change-reference-label")
+      )
+    ).toEqual(["New change", "group-a"]);
     expect(
       (
         [...container.querySelectorAll("button")].find(
@@ -890,7 +1103,7 @@ describe("PlanDetailChangesBranch", () => {
 
     expect(
       [...container.querySelectorAll("button")].filter((button) =>
-        button.textContent?.includes("plan.spec.type.database-change")
+        button.querySelector("[data-plan-change-reference]")
       )
     ).toHaveLength(1);
     expect(
@@ -1062,7 +1275,7 @@ describe("PlanDetailChangesBranch", () => {
     expect(container.textContent).toContain("spec-1:check-run-for-spec-1");
 
     const specTabs = [...container.querySelectorAll("button")].filter(
-      (button) => button.textContent?.includes("plan.spec.type.database-change")
+      (button) => button.querySelector("[data-plan-change-reference]")
     );
     expect(specTabs.length).toBe(2);
 
