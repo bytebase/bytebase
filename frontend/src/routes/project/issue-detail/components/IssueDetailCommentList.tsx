@@ -9,12 +9,14 @@ import {
   CommentCreator,
   canEditIssueComment,
   IssueCommentRow,
+  type PlanChangeReferenceRenderer,
 } from "@/components/issue-activity/IssueCommentActivity";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
+import { collectPlanUpdateSpecs } from "@/lib/plan/diffPlanSpecs";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
@@ -27,6 +29,8 @@ import {
 } from "@/types/proto-es/v1/issue_service_pb";
 import { extractProjectResourceName } from "@/utils";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
+import { PlanSpecChangeReference } from "../../plan-detail/components/PlanChangeReference";
+import { usePlanChangeReferenceData } from "../../plan-detail/hooks/usePlanChangeReferenceData";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 
 // Stable empty reference for the no-issue branch of the comments selector.
@@ -74,6 +78,22 @@ export function IssueDetailCommentList() {
   // inside the selector won't loop.
   const issueComments = useAppStore((state) =>
     issueName ? state.getIssueComments(issueName) : EMPTY_ISSUE_COMMENTS
+  );
+  const planUpdateSpecs = useMemo(
+    () => collectPlanUpdateSpecs(issueComments),
+    [issueComments]
+  );
+  const changeReferenceResources = usePlanChangeReferenceData(planUpdateSpecs);
+  const renderPlanChangeReference = useCallback<PlanChangeReferenceRenderer>(
+    ({ siblings, spec }) => (
+      <PlanSpecChangeReference
+        className="font-medium text-main"
+        resources={changeReferenceResources}
+        siblings={siblings}
+        spec={spec}
+      />
+    ),
+    [changeReferenceResources]
   );
   const issueUpdateKey = `${page.issue?.updateTime?.seconds ?? ""}:${page.issue?.updateTime?.nanos ?? ""}`;
   const [activeCommentName, setActiveCommentName] = useState<string>();
@@ -233,6 +253,7 @@ export function IssueDetailCommentList() {
               isLast={index === issueComments.length - 1}
               issue={page.issue}
               plan={page.plan}
+              renderPlanChangeReference={renderPlanChangeReference}
               subjectSuffix={
                 allowEditComment(item) && !activeCommentName ? (
                   <Button

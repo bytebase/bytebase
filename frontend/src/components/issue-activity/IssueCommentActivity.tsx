@@ -60,7 +60,16 @@ interface ActivityProps {
   // links would only redirect to the page you're already on (BYT-9710). The
   // issue-detail page leaves this off so its navigation links stay.
   linkless?: boolean;
+  renderPlanChangeReference?: PlanChangeReferenceRenderer;
 }
+
+export type PlanChangeReferenceRenderer = ({
+  siblings,
+  spec,
+}: {
+  siblings: Plan_Spec[];
+  spec: Plan_Spec;
+}) => ReactNode;
 
 // A DONE issue-update that created the rollout for a database-change plan — the
 // timeline renders this as a "review done, rollout created" line rather than a
@@ -183,6 +192,7 @@ function IssueCommentHeader({
   issue,
   linkless,
   plan,
+  renderPlanChangeReference,
   similarCount,
 }: ActivityProps & { similarCount?: number }) {
   const { t } = useTranslation();
@@ -204,6 +214,7 @@ function IssueCommentHeader({
         issue={issue}
         linkless={linkless}
         plan={plan}
+        renderPlanChangeReference={renderPlanChangeReference}
       />
       {similarCount !== undefined && similarCount > 1 && (
         <Badge className="px-2 text-xs" variant="default">
@@ -229,6 +240,7 @@ export function IssueCommentRow({
   issue,
   linkless,
   plan,
+  renderPlanChangeReference,
   similarCount,
   subjectSuffix,
 }: ActivityProps & {
@@ -246,6 +258,7 @@ export function IssueCommentRow({
           issue={issue}
           linkless={linkless}
           plan={plan}
+          renderPlanChangeReference={renderPlanChangeReference}
           similarCount={similarCount}
         />
       }
@@ -398,6 +411,7 @@ function IssueCommentActionSentence({
   plan,
   comment,
   linkless,
+  renderPlanChangeReference,
 }: ActivityProps) {
   const { t } = useTranslation();
   const commentType = getIssueCommentType(comment);
@@ -539,6 +553,7 @@ function IssueCommentActionSentence({
     commentType === IssueCommentType.PLAN_UPDATE &&
     comment.event.case === "planUpdate"
   ) {
+    const { fromSpecs, toSpecs } = comment.event.value;
     const entries = diffPlanSpecsForEvent(comment.event.value);
     if (entries.length === 0) return null;
     if (entries.length === 1) {
@@ -548,6 +563,8 @@ function IssueCommentActionSentence({
           linkless={linkless}
           multi={false}
           plan={plan}
+          referenceSpecs={entries[0].kind === "removed" ? fromSpecs : toSpecs}
+          renderPlanChangeReference={renderPlanChangeReference}
         />
       );
     }
@@ -560,6 +577,8 @@ function IssueCommentActionSentence({
             linkless={linkless}
             multi
             plan={plan}
+            referenceSpecs={entry.kind === "removed" ? fromSpecs : toSpecs}
+            renderPlanChangeReference={renderPlanChangeReference}
           />
         ))}
       </div>
@@ -574,11 +593,15 @@ function SpecDiffRow({
   linkless,
   multi,
   plan,
+  referenceSpecs,
+  renderPlanChangeReference,
 }: {
   entry: SpecDiffEntry;
   linkless?: boolean;
   multi?: boolean;
   plan?: Plan;
+  referenceSpecs: Plan_Spec[];
+  renderPlanChangeReference?: PlanChangeReferenceRenderer;
 }) {
   const { t } = useTranslation();
   const planName = plan?.name ?? "";
@@ -588,6 +611,10 @@ function SpecDiffRow({
       <SpecChangeRow
         linkless={linkless}
         plan={plan}
+        reference={renderPlanChangeReference?.({
+          siblings: referenceSpecs,
+          spec: entry.spec,
+        })}
         showIndex={multi}
         specRef={specResourceName(planName, entry.spec)}
       >
@@ -601,6 +628,10 @@ function SpecDiffRow({
       <SpecChangeRow
         linkless={linkless}
         plan={plan}
+        reference={renderPlanChangeReference?.({
+          siblings: referenceSpecs,
+          spec: entry.spec,
+        })}
         showIndex={multi}
         specRef={specResourceName(planName, entry.spec)}
       >
@@ -672,6 +703,10 @@ function SpecDiffRow({
       <SpecChangeRow
         linkless={linkless}
         plan={plan}
+        reference={renderPlanChangeReference?.({
+          siblings: referenceSpecs,
+          spec: entry.to,
+        })}
         showIndex={multi}
         specRef={specResourceName(planName, entry.to)}
       >
@@ -692,6 +727,10 @@ function SpecDiffRow({
     <SpecChangeRow
       linkless={linkless}
       plan={plan}
+      reference={renderPlanChangeReference?.({
+        siblings: referenceSpecs,
+        spec: entry.to,
+      })}
       showIndex={multi}
       specRef={specResourceName(planName, entry.to)}
       trailing={trailingItems.length > 0 ? <>{trailingItems}</> : null}
@@ -709,6 +748,7 @@ function SpecChangeRow({
   children,
   linkless,
   plan,
+  reference,
   showIndex,
   specRef,
   trailing,
@@ -716,6 +756,7 @@ function SpecChangeRow({
   children: ReactNode;
   linkless?: boolean;
   plan?: Plan;
+  reference?: ReactNode;
   showIndex?: boolean;
   specRef: string;
   trailing?: ReactNode;
@@ -767,11 +808,19 @@ function SpecChangeRow({
     );
   }
 
-  const chip = (
+  const fallbackChip = (
     <span className="inline-flex items-center gap-1">
       {t("plan.spec.change")}
       {chipSuffix}
     </span>
+  );
+  const chip = reference ? (
+    <span className="inline-flex items-center gap-1">
+      <span aria-hidden="true">{t("plan.spec.change")}</span>
+      {reference}
+    </span>
+  ) : (
+    fallbackChip
   );
 
   return (

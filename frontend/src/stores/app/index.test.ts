@@ -1,5 +1,6 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { silentContextKey } from "@/api/context-key";
 import { isValidDatabaseGroupName, UNKNOWN_PROJECT_NAME } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
@@ -1423,11 +1424,21 @@ describe("useAppStore", () => {
 
     const projects = await store
       .getState()
-      .batchFetchProjects([projectA.name, projectB.name]);
+      .batchFetchProjects([projectA.name, projectB.name], true);
 
     expect(projects).toEqual([projectA, projectB]);
     expect(mocks.batchGetProjects).toHaveBeenCalledTimes(1);
     expect(mocks.getProject).toHaveBeenCalledTimes(2);
+    expect(
+      mocks.batchGetProjects.mock.calls[0]?.[1]?.contextValues.get(
+        silentContextKey
+      )
+    ).toBe(true);
+    expect(
+      mocks.getProject.mock.calls.every(
+        (call) => call[1]?.contextValues.get(silentContextKey) === true
+      )
+    ).toBe(true);
   });
 
   test("keeps default project only when searchProjects opts in", async () => {
@@ -1876,6 +1887,30 @@ describe("useAppStore", () => {
     expect(third).toEqual(database);
     expect(mocks.getDatabase).toHaveBeenCalledTimes(1);
     expect(store.getState().databasesByName[dbName]).toEqual(database);
+  });
+
+  test("keeps database and project batch enrichment silent", async () => {
+    const dbName = "instances/i1/databases/db1";
+    const database = createProto(DatabaseSchema$, {
+      name: dbName,
+      project: projectA.name,
+    });
+    mocks.batchGetDatabases.mockResolvedValue({ databases: [database] });
+    mocks.batchGetProjects.mockResolvedValue({ projects: [projectA] });
+    const store = createAppStore();
+
+    await store.getState().batchGetOrFetchDatabases([dbName], true);
+
+    expect(
+      mocks.batchGetDatabases.mock.calls[0]?.[1]?.contextValues.get(
+        silentContextKey
+      )
+    ).toBe(true);
+    expect(
+      mocks.batchGetProjects.mock.calls[0]?.[1]?.contextValues.get(
+        silentContextKey
+      )
+    ).toBe(true);
   });
 
   test("fetchDatabases populates databasesByName from the list response", async () => {

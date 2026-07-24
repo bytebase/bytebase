@@ -387,7 +387,7 @@ export type ProjectSlice = {
     silent?: boolean
   ) => Promise<Project | undefined>;
   getOrFetchProjectByName: (name: string, silent?: boolean) => Promise<Project>;
-  batchFetchProjects: (names: string[]) => Promise<Project[]>;
+  batchFetchProjects: (names: string[], silent?: boolean) => Promise<Project[]>;
   // Returns ALL requested projects (fetching the missing ones first),
   // resolved through `getProjectByName` so the placeholder is filled in.
   batchGetOrFetchProjects: (names: string[]) => Promise<Project[]>;
@@ -518,8 +518,14 @@ export type DatabaseSlice = {
     name: string,
     silent?: boolean
   ) => Promise<Database>;
-  batchFetchDatabases: (names: string[]) => Promise<Database[]>;
-  batchGetOrFetchDatabases: (names: string[]) => Promise<Database[]>;
+  batchFetchDatabases: (
+    names: string[],
+    silent?: boolean
+  ) => Promise<Database[]>;
+  batchGetOrFetchDatabases: (
+    names: string[],
+    silent?: boolean
+  ) => Promise<Database[]>;
   fetchDatabases: (params: DatabaseListParams) => Promise<{
     databases: Database[];
     nextPageToken: string;

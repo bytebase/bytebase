@@ -21,7 +21,7 @@ describe("Tooltip", () => {
 
     act(() => {
       root.render(
-        <Tooltip content="Tip content">
+        <Tooltip content="Tip content" popupClassName="max-w-96">
           <button type="button">Trigger</button>
         </Tooltip>
       );
@@ -38,6 +38,9 @@ describe("Tooltip", () => {
     const overlayRoot = document.getElementById("bb-react-layer-overlay");
     expect(overlayRoot).toBeInstanceOf(HTMLDivElement);
     expect(overlayRoot?.textContent).toContain("Tip content");
+    expect(overlayRoot?.querySelector(".max-w-96")).toBeInstanceOf(
+      HTMLDivElement
+    );
 
     act(() => {
       root.unmount();

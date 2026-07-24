@@ -1681,6 +1681,15 @@
     "select-targets": "选择目标",
     "spec": {
       "change": "变更",
+      "change-reference": {
+        "accessible-label": "变更 {{index}}：{{label}}",
+        "database-count_one": "{{count}} 个数据库",
+        "database-count_other": "{{count}} 个数据库",
+        "environment-overflow_one": "{{environment}} +{{count}} 个环境",
+        "environment-overflow_other": "{{environment}} +{{count}} 个环境",
+        "new-change": "新变更",
+        "tooltip-title": "变更 {{index}}"
+      },
       "type": {
         "database-change": "数据库变更"
       }

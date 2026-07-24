@@ -1681,6 +1681,15 @@
     "select-targets": "Select Targets",
     "spec": {
       "change": "Change",
+      "change-reference": {
+        "accessible-label": "Change {{index}}: {{label}}",
+        "database-count_one": "{{count}} database",
+        "database-count_other": "{{count}} databases",
+        "environment-overflow_one": "{{environment}} +{{count}} environment",
+        "environment-overflow_other": "{{environment}} +{{count}} environments",
+        "new-change": "New change",
+        "tooltip-title": "Change {{index}}"
+      },
       "type": {
         "database-change": "Database Change"
       }
