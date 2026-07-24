@@ -3,6 +3,8 @@ import { CheckCircle, Circle, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { sqlServiceClientConnect } from "@/api";
+import { createBehaviorMetric } from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
 import { type RouteTarget, router, useCurrentRoute } from "@/app/router";
 import {
   DATABASE_ROUTE_DASHBOARD,
@@ -102,6 +104,13 @@ export function WorkspaceSetupGuide() {
   }, [currentRoute.name]);
 
   const onSelectStep = (step: SetupStep) => {
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("setup guide action clicked", {
+        properties: {
+          step: step.key,
+        },
+      })
+    );
     setSelectedStepKey(step.key);
     if (step.link) {
       void router.push(step.link);
@@ -311,10 +320,24 @@ export function WorkspaceSetupGuide() {
     highlightedStep && !highlightedStep.done ? highlightedStep : activeStep;
 
   const handleCreateFirstChange = () => {
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("setup guide action clicked", {
+        properties: {
+          step: "createFirstChange",
+        },
+      })
+    );
     void preCreateIssue(setupState.projectName, [setupState.databaseName]);
   };
 
   const handleDismiss = () => {
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("setup guide dismissed", {
+        properties: {
+          step: actionStep.key,
+        },
+      })
+    );
     useAppStore.getState().saveIntroStateByKey({
       key: WORKSPACE_SETUP_GUIDE_DISMISSED_KEY,
       newState: true,

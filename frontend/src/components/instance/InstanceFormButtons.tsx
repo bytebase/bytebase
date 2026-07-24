@@ -2,6 +2,8 @@ import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { createBehaviorMetric } from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
 import { router } from "@/app/router";
 import {
   INSTANCE_ROUTE_DETAIL,
@@ -307,6 +309,13 @@ export function InstanceFormButtons({
   };
 
   const tryCreate = async () => {
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("instance create clicked", {
+        routeId: router.currentRoute.value.name?.toString(),
+        resource: projectContext?.name,
+      })
+    );
+
     const editingDS = adminDataSource;
     const testResult = await testConnection(editingDS, true);
     if (testResult.success) {
@@ -521,6 +530,12 @@ export function InstanceFormButtons({
 
   const testConnectionForCurrentEditingDS = async () => {
     if (!editingDataSource) return;
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("instance connection test clicked", {
+        routeId: router.currentRoute.value.name?.toString(),
+      })
+    );
+
     const testResult = await testConnection(editingDataSource, false);
     if (!testResult.success) {
       maybeOpenConnectionOptions(editingDataSource);

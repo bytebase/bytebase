@@ -71,6 +71,7 @@
     "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@35.0.3",
     "normalize-wheel": "^1.0.1",
     "pev2": "1.23.0",
+    "posthog-js": "^1.406.2",
     "pouchdb": "^9.0.0",
     "pouchdb-find": "^9.0.0",
     "qrcode.react": "^4.2.0",

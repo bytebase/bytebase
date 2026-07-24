@@ -52,6 +52,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      - name: Write frontend release env
+        run: |
+          {
+            echo "BB_POSTHOG_KEY=${{ secrets.BB_POSTHOG_KEY }}"
+            echo "BB_POSTHOG_HOST=${{ vars.BB_POSTHOG_HOST }}"
+            echo "BB_POSTHOG_RECORDING_SAMPLE_RATE=${{ vars.BB_POSTHOG_RECORDING_SAMPLE_RATE || '1' }}"
+          } > frontend/.env.release
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
         with:

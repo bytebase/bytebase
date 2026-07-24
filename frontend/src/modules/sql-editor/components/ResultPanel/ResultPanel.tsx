@@ -172,7 +172,11 @@ export function ResultPanel() {
               // (`TabsTrigger` does, our `Tooltip` wrapper doesn't). With
               // Tooltip on the outside, the trigger renders `TabsTrigger`
               // directly and the right-click handler reaches the DOM.
-              <Tooltip key={context.id} content={context.params.statement}>
+              <Tooltip
+                key={context.id}
+                content={context.params.statement}
+                popupClassName="ph-no-capture"
+              >
                 <TabContextMenu
                   onSelect={(action) => {
                     switch (action) {

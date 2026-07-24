@@ -11,9 +11,11 @@ const mocks = vi.hoisted(() => ({
   visibleDatabases: [] as { name: string }[],
   databasesByName: {} as Record<string, { name: string }>,
   instancesByName: {} as Record<string, { name: string; title: string }>,
+  routerCurrentName: "workspace.project.database",
   routerCurrentQuery: {} as Record<string, unknown>,
   routerPush: vi.fn(),
   useProductIntro: vi.fn(),
+  captureMetric: vi.fn(),
   removeDatabaseMetadataCache: vi.fn(),
   fetchInstance: vi.fn(),
   fetchInstanceList: vi.fn(async () => ({
@@ -53,9 +55,18 @@ vi.mock("@/app/router", () => ({
     resolve: ({ name }: { name?: string }) => ({ href: `/${name ?? ""}` }),
     currentRoute: {
       get value() {
-        return { query: mocks.routerCurrentQuery };
+        return {
+          name: mocks.routerCurrentName,
+          query: mocks.routerCurrentQuery,
+        };
       },
     },
+  },
+}));
+
+vi.mock("@/app/analytics/provider", () => ({
+  behaviorAnalytics: {
+    captureMetric: mocks.captureMetric,
   },
 }));
 
@@ -217,6 +228,7 @@ beforeEach(async () => {
   mocks.visibleDatabases = [];
   mocks.databasesByName = {};
   mocks.instancesByName = {};
+  mocks.routerCurrentName = "workspace.project.database";
   mocks.routerCurrentQuery = {};
   mocks.workspacePermissions = new Set([
     "bb.instances.create",
@@ -291,6 +303,13 @@ describe("ProjectDatabasesPage", () => {
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: "workspace.instance.create",
       query: { project: "demo" },
+    });
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "connect database clicked",
+      properties: {
+        route_id: "workspace.project.database",
+        resource: "projects/demo",
+      },
     });
 
     act(() => {

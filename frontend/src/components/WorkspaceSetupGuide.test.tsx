@@ -41,6 +41,7 @@ const mocks = vi.hoisted(() => ({
   preCreateIssue: vi.fn(),
   currentRoute: { name: "workspace.home" } as { name?: string },
   routerPush: vi.fn(),
+  captureMetric: vi.fn(),
   defaultProjectName: "projects/default",
 }));
 
@@ -85,6 +86,12 @@ vi.mock("@/app/router", () => ({
     push: mocks.routerPush,
   },
   useCurrentRoute: () => mocks.currentRoute,
+}));
+
+vi.mock("@/app/analytics/provider", () => ({
+  behaviorAnalytics: {
+    captureMetric: mocks.captureMetric,
+  },
 }));
 
 vi.mock("@/stores/app", () => {
@@ -360,11 +367,37 @@ describe("WorkspaceSetupGuide", () => {
       key: dismissedIntroStateKey,
       newState: true,
     });
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "setup guide dismissed",
+      properties: {
+        step: "hasProject",
+      },
+    });
     expect(mocks.introState[dismissedIntroStateKey]).toBe(true);
 
     await render(<WorkspaceSetupGuide />);
 
     expect(container.textContent).toBe("");
+  });
+
+  it("captures the selected setup guide action", async () => {
+    await render(<WorkspaceSetupGuide />);
+
+    const instanceStep = container.querySelector(
+      "[data-testid='setup-step-hasInstance']"
+    ) as HTMLButtonElement | null;
+
+    await act(async () => {
+      instanceStep?.click();
+      await Promise.resolve();
+    });
+
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "setup guide action clicked",
+      properties: {
+        step: "hasInstance",
+      },
+    });
   });
 
   it("stays hidden after it is dismissed", async () => {

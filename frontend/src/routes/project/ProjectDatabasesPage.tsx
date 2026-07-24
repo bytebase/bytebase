@@ -3,6 +3,8 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Plus, SquareTerminal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
+import { createBehaviorMetric } from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
 import { router } from "@/app/router";
 import {
   INSTANCE_ROUTE_CREATE,
@@ -510,12 +512,24 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const handleCreateFirstChange = useCallback(() => {
     const firstDatabase = visibleDatabases[0];
     if (!firstDatabase) return;
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("post sync first change clicked", {
+        routeId: router.currentRoute.value.name?.toString(),
+        resource: projectName,
+      })
+    );
     preCreateIssue(projectName, [firstDatabase.name]);
   }, [projectName, visibleDatabases]);
 
   const handleOpenFirstDatabaseInSQLEditor = useCallback(() => {
     const firstDatabase = visibleDatabases[0];
     if (!firstDatabase) return;
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("post sync sql editor clicked", {
+        routeId: router.currentRoute.value.name?.toString(),
+        resource: projectName,
+      })
+    );
     const { instanceName, databaseName } = extractDatabaseResourceName(
       firstDatabase.name
     );
@@ -527,7 +541,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         database: databaseName,
       },
     });
-  }, [projectId, visibleDatabases]);
+  }, [projectId, projectName, visibleDatabases]);
 
   useProductIntro({
     id: CONNECT_DATABASE_PRODUCT_INTRO,
@@ -550,6 +564,12 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     if (checkingWorkspaceInstance) return;
     if (emptyProjectShouldConnectInstance) {
       if (!hasWorkspacePermissionV2("bb.instances.create")) return;
+      behaviorAnalytics.captureMetric(
+        createBehaviorMetric("connect database clicked", {
+          routeId: router.currentRoute.value.name?.toString(),
+          resource: projectName,
+        })
+      );
       router.push({
         name: INSTANCE_ROUTE_CREATE,
         query: { project: projectId },
@@ -557,7 +577,12 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       return;
     }
     setShowCreateDrawer(true);
-  }, [checkingWorkspaceInstance, emptyProjectShouldConnectInstance, projectId]);
+  }, [
+    checkingWorkspaceInstance,
+    emptyProjectShouldConnectInstance,
+    projectId,
+    projectName,
+  ]);
 
   return (
     <ProjectPageLayout>

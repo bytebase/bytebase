@@ -2,6 +2,7 @@ import { useRef } from "react";
 import type { Location } from "react-router";
 import { matchRoutes, Outlet, useBlocker } from "react-router";
 import { AuthGate } from "@/app/AuthGate";
+import { RouteBehaviorRecorder } from "@/app/analytics/RouteBehaviorRecorder";
 import type { ReactRoute } from "@/app/router";
 import { buildReactRoute, runBeforeEachGuards } from "@/app/router";
 import { NavigationScrollRestoration } from "@/app/router/NavigationScrollRestoration";
@@ -70,6 +71,7 @@ export function RootLayout() {
       <AgentWindow />
       <SessionExpiredSurfaceGate />
       <LeaveGuardBlocker />
+      <RouteBehaviorRecorder />
       <NavigationScrollRestoration>
         <AuthGate>
           <Outlet />

@@ -16,12 +16,14 @@ import { InstanceFormButtons } from "./InstanceFormButtons";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  routerCurrentName: "workspace.instance.create",
   routerCurrentQuery: {} as Record<string, unknown>,
   routerPush: vi.fn(),
   pushNotification: vi.fn(),
   createInstance: vi.fn(),
   fetchDatabases: vi.fn(),
   batchUpdateDatabases: vi.fn(),
+  captureMetric: vi.fn(),
   context: undefined as Record<string, unknown> | undefined,
 }));
 
@@ -41,9 +43,18 @@ vi.mock("@/app/router", () => ({
     push: mocks.routerPush,
     currentRoute: {
       get value() {
-        return { query: mocks.routerCurrentQuery };
+        return {
+          name: mocks.routerCurrentName,
+          query: mocks.routerCurrentQuery,
+        };
       },
     },
+  },
+}));
+
+vi.mock("@/app/analytics/provider", () => ({
+  behaviorAnalytics: {
+    captureMetric: mocks.captureMetric,
   },
 }));
 
@@ -148,6 +159,7 @@ const flushPromises = async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.routerCurrentName = "workspace.instance.create";
   mocks.routerCurrentQuery = {};
 
   const adminDataSource = {
@@ -269,6 +281,75 @@ describe("InstanceFormButtons", () => {
       },
     });
     expect(mocks.context?.onDismiss).not.toHaveBeenCalled();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "instance create clicked",
+      properties: {
+        route_id: "workspace.instance.create",
+        resource: "projects/demo",
+      },
+    });
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  test("captures standalone connection test clicks on instance edit", async () => {
+    mocks.routerCurrentName = "workspace.instance.detail";
+    const adminDataSource = create(DataSourceSchema, {
+      id: "admin",
+      type: DataSourceType.ADMIN,
+      host: "127.0.0.1",
+      port: "5432",
+    });
+    mocks.context = {
+      ...mocks.context,
+      instance: create(InstanceSchema, {
+        name: "instances/prod",
+        title: "Production",
+        engine: Engine.POSTGRES,
+        dataSources: [adminDataSource],
+      }),
+      isCreating: false,
+      adminDataSource: {
+        ...adminDataSource,
+        pendingCreate: false,
+        updatedPassword: "",
+        updatedMasterPassword: "",
+        updatedToken: "",
+      },
+      editingDataSource: {
+        ...adminDataSource,
+        pendingCreate: false,
+        updatedPassword: "",
+        updatedMasterPassword: "",
+        updatedToken: "",
+      },
+      valueChanged: true,
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<InstanceFormButtons />);
+    });
+
+    const testConnectionButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) =>
+      button.textContent?.includes("instance.test-connection")
+    ) as HTMLButtonElement;
+    await act(async () => {
+      testConnectionButton.click();
+      await flushPromises();
+    });
+
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "instance connection test clicked",
+      properties: {
+        route_id: "workspace.instance.detail",
+      },
+    });
 
     await act(async () => {
       root.unmount();

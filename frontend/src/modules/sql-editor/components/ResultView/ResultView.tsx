@@ -234,7 +234,7 @@ export function ResultView({
     <div
       className={cn(
         "relative flex flex-col justify-start items-start pb-1 overflow-y-auto h-full w-full",
-        "bg-background"
+        "bg-background ph-no-capture"
       )}
     >
       {executeParams && resultSet && !showPlaceholder && (
@@ -272,7 +272,11 @@ export function ResultView({
               <div className="flex items-center justify-between gap-x-2">
                 <TabsList>
                   {filteredResults.map((result, i) => (
-                    <Tooltip key={i} content={result.statement}>
+                    <Tooltip
+                      key={i}
+                      content={result.statement}
+                      popupClassName="ph-no-capture"
+                    >
                       <TabsTrigger value={tabName(i)}>
                         <div className="flex items-center gap-x-2 mb-1">
                           <span>{tabName(i)}</span>
