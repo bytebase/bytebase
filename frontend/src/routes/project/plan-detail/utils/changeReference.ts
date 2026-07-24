@@ -134,6 +134,9 @@ const deriveQualifiedReference = (
 export const splitPlanChangeReferenceLabel = (
   text: string
 ): { prefix: string; suffix: string } => {
+  if (typeof Intl === "undefined" || typeof Intl.Segmenter !== "function") {
+    return { prefix: text, suffix: "" };
+  }
   const graphemes = Array.from(
     new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text),
     ({ segment }) => segment

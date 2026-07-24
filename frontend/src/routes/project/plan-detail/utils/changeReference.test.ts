@@ -457,4 +457,24 @@ describe("splitPlanChangeReferenceLabel", () => {
     expect(split.prefix + split.suffix).toBe(text);
     expect(split.suffix).toBe("on_archive");
   });
+
+  it("falls back to end truncation without Intl.Segmenter", () => {
+    const segmenter = Intl.Segmenter;
+    Object.defineProperty(Intl, "Segmenter", {
+      configurable: true,
+      value: undefined,
+    });
+    try {
+      const text = "customer_orders_production_archive";
+      expect(splitPlanChangeReferenceLabel(text)).toEqual({
+        prefix: text,
+        suffix: "",
+      });
+    } finally {
+      Object.defineProperty(Intl, "Segmenter", {
+        configurable: true,
+        value: segmenter,
+      });
+    }
+  });
 });
