@@ -1,7 +1,7 @@
 import { Trans, useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { router } from "@/app/router";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/app/router/handles";
+import { buildPlanCreateRoute } from "@/app/router/routeHelpers";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { applyPlanTitleToQuery } from "@/lib/plan/title";
@@ -66,7 +66,6 @@ export function ExecuteHint({ database, onClose }: Props) {
     const { databaseName } = extractDatabaseResourceName(db.name);
 
     const query: Record<string, string> = {
-      template: "bb.plan.change-database",
       databaseList: db.name,
       sqlStorageKey,
     };
@@ -76,15 +75,9 @@ export function ExecuteHint({ database, onClose }: Props) {
       () => `[${databaseName}] ${t("issue.title.change-from-sql-editor")}`
     );
 
-    const route = router.resolve({
-      name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(db.project),
-        planId: "create",
-        specId: "placeholder",
-      },
-      query,
-    });
+    const route = router.resolve(
+      buildPlanCreateRoute(extractProjectResourceName(db.project), query)
+    );
     window.open(route.fullPath, "_blank");
   };
 

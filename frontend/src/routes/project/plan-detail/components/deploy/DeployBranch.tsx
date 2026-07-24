@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
+import { buildStageRoute } from "@/app/router/routeHelpers";
 import { Button } from "@/components/ui/button";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -44,7 +45,7 @@ async function loadPendingGroups(
 export function DeployBranch() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  // Full task resource name resolved from the ?taskId= deep link.
+  // Full task resource name resolved from the task route.
   const selectedTaskName = page.selectedTaskName;
   const projectName = `projects/${page.projectId}`;
   const [pendingOpen, setPendingOpen] = useState(false);
@@ -106,12 +107,16 @@ export function DeployBranch() {
       }
     }
     if (page.routeStageId) {
-      return page.rollout.stages.find((stage) =>
+      const routeStage = page.rollout.stages.find((stage) =>
         stage.name.endsWith(`/${page.routeStageId}`)
       );
+      if (routeStage) {
+        return routeStage;
+      }
     }
-    // Default to the frontier (first non-complete) stage, falling back to the
-    // first stage once every stage is complete.
+    // A missing route stage canonicalizes to the rollout route. Render that
+    // route's frontier synchronously too, so a stale URL cannot flash the
+    // misleading empty-stage state before the replace settles.
     return getFrontierStage(page.rollout) ?? page.rollout.stages[0];
   }, [page.rollout, page.routeStageId, selectedTaskName, optimisticStageName]);
 
@@ -168,11 +173,7 @@ export function DeployBranch() {
   }
 
   if (!selectedStage) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-control-light">{t("rollout.no-stages")}</p>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -191,13 +192,12 @@ export function DeployBranch() {
           if (stage.name === selectedStage.name) {
             return;
           }
-          const stageId = extractStageUID(stage.name);
           setOptimisticStageName(stage.name);
           // The URL carries only the stage; each stage's card expansion is its
           // own local state (kept alive across switches), so there's nothing
           // per-task to restore through the URL.
-          const target = { query: { phase: "deploy", stageId } };
-          // A stage switch is an internal same-path query change and a pure
+          const target = buildStageRoute(stage.name);
+          // A stage switch is an internal resource selection and a pure
           // visibility flip — keep-alive preserves every stage's editor state,
           // so no edit is lost. Bypass the unsaved-edits guard so it doesn't
           // cancel this push or pop a spurious discard dialog. Arm it ONLY when
@@ -213,7 +213,7 @@ export function DeployBranch() {
           ) {
             page.bypassLeaveGuardOnce();
           }
-          void router.push(target);
+          void router.push(target, { preventScrollReset: true });
         }}
         rollout={page.rollout}
         selectedStageId={selectedStage.name}

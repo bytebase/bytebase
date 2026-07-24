@@ -136,7 +136,7 @@ const mocks = vi.hoisted(() => {
     extractInstanceResourceName: vi.fn(() => "inst1"),
     extractPlanUID: vi.fn(() => "123"),
     extractProjectResourceName: vi.fn(() => "db333"),
-    buildPlanDeployRouteFromPlanName: vi.fn(() => ({
+    buildPlanRolloutRouteFromPlanName: vi.fn(() => ({
       name: "plan.detail",
       params: {},
     })),
@@ -213,7 +213,7 @@ vi.mock("@/app/router", async (importOriginal) => ({
 
 vi.mock("@/app/router/routeHelpers", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router/routeHelpers")>()),
-  buildPlanDeployRouteFromPlanName: mocks.buildPlanDeployRouteFromPlanName,
+  buildPlanRolloutRouteFromPlanName: mocks.buildPlanRolloutRouteFromPlanName,
 }));
 
 vi.mock("@/stores", () => ({

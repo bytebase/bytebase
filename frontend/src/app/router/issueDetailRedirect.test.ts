@@ -15,6 +15,7 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { issueDetailRedirectLoader } from "./issueDetailRedirect";
+import { setAppRouter } from "./navigation";
 
 const PLAN_NAME = "projects/p1/plans/456";
 
@@ -43,10 +44,22 @@ const run = (
 beforeEach(() => {
   mocks.getIssue.mockReset();
   mocks.getPlan.mockReset();
+  setAppRouter({
+    navigate: vi.fn(),
+    state: {
+      initialized: false,
+      location: {
+        pathname: "/projects/p1/issues/123",
+        search: "",
+        hash: "",
+      },
+      matches: [],
+    },
+  });
 });
 
 describe("issueDetailRedirectLoader", () => {
-  test("redirects a schema/data change issue to Plan Detail", async () => {
+  test("redirects a schema/data change issue to the Plan Detail root", async () => {
     mocks.getIssue.mockResolvedValue(
       makeIssue(Issue_Type.DATABASE_CHANGE, PLAN_NAME)
     );
@@ -57,7 +70,33 @@ describe("issueDetailRedirectLoader", () => {
     expect(res).toBeInstanceOf(Response);
     expect(res?.status).toBe(302);
     expect(res?.headers.get("Location")).toBe("/projects/p1/plans/456");
+    expect(res?.headers.get("X-Remix-Replace")).toBe("true");
     expect(mocks.getPlan).toHaveBeenCalledOnce();
+  });
+
+  test("preserves the referring entry for an in-app issue navigation", async () => {
+    setAppRouter({
+      navigate: vi.fn(),
+      state: {
+        initialized: true,
+        location: {
+          pathname: "/projects/p1/issues",
+          search: "",
+          hash: "",
+        },
+        matches: [],
+        navigation: { historyAction: "PUSH" },
+      },
+    });
+    mocks.getIssue.mockResolvedValue(
+      makeIssue(Issue_Type.DATABASE_CHANGE, PLAN_NAME)
+    );
+    mocks.getPlan.mockResolvedValue(makePlan(["changeDatabaseConfig"]));
+
+    const res = await run({ projectId: "p1", issueId: "123" });
+
+    expect(res?.headers.get("Location")).toBe("/projects/p1/plans/456");
+    expect(res?.headers.get("X-Remix-Replace")).toBeNull();
   });
 
   test("redirects a Draft Review Issue URL to its Plan", async () => {
@@ -72,7 +111,40 @@ describe("issueDetailRedirectLoader", () => {
     expect(mocks.getPlan).not.toHaveBeenCalled();
   });
 
-  test("preserves the query string on redirect", async () => {
+  test.each(["changes", "review", "deploy"])(
+    "preserves an explicit %s phase intent",
+    async (phase) => {
+      mocks.getIssue.mockResolvedValue(
+        makeIssue(Issue_Type.DATABASE_CHANGE, PLAN_NAME)
+      );
+      mocks.getPlan.mockResolvedValue(makePlan(["changeDatabaseConfig"]));
+
+      const res = await run(
+        { projectId: "p1", issueId: "123" },
+        `http://localhost/projects/p1/issues/123?phase=${phase}`
+      );
+
+      expect(res?.headers.get("Location")).toBe(
+        `/projects/p1/plans/456?phase=${phase}`
+      );
+    }
+  );
+
+  test("drops an invalid phase intent", async () => {
+    mocks.getIssue.mockResolvedValue(
+      makeIssue(Issue_Type.DATABASE_CHANGE, PLAN_NAME)
+    );
+    mocks.getPlan.mockResolvedValue(makePlan(["changeDatabaseConfig"]));
+
+    const res = await run(
+      { projectId: "p1", issueId: "123" },
+      "http://localhost/projects/p1/issues/123?phase=unknown"
+    );
+
+    expect(res?.headers.get("Location")).toBe("/projects/p1/plans/456");
+  });
+
+  test("preserves neutral query state but drops incompatible selectors", async () => {
     mocks.getIssue.mockResolvedValue(
       makeIssue(Issue_Type.DATABASE_CHANGE, PLAN_NAME)
     );
@@ -83,9 +155,7 @@ describe("issueDetailRedirectLoader", () => {
       "http://localhost/projects/p1/issues/123?stageId=7&foo=bar"
     );
 
-    expect(res?.headers.get("Location")).toBe(
-      "/projects/p1/plans/456?stageId=7&foo=bar"
-    );
+    expect(res?.headers.get("Location")).toBe("/projects/p1/plans/456?foo=bar");
   });
 
   test("keeps a create-database issue on Issue Detail", async () => {

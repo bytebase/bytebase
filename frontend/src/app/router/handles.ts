@@ -104,8 +104,7 @@ export const PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES = `${PROJECT_V1_ROUTE_DASHBOAR
 export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE_DASHBOARD}.settings`;
 export const PROJECT_V1_ROUTE_RELEASES = `${PROJECT_V1_ROUTE_DASHBOARD}.release`;
 export const PROJECT_V1_ROUTE_RELEASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.release.detail`;
-export const PROJECT_V1_ROUTE_ROLLOUTS = `${PROJECT_V1_ROUTE_DASHBOARD}.rollouts`;
-export const PROJECT_V1_ROUTE_PLAN_ROLLOUT = `${PROJECT_V1_ROUTE_ROLLOUTS}.rollout`;
+export const PROJECT_V1_ROUTE_PLAN_ROLLOUT = `${PROJECT_V1_ROUTE_PLAN_DETAIL}.rollout`;
 export const PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE = `${PROJECT_V1_ROUTE_PLAN_ROLLOUT}.stage`;
 export const PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK = `${PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE}.task`;
 export const PROJECT_V1_ROUTE_GITOPS = `${PROJECT_V1_ROUTE_DASHBOARD}.gitops`;
@@ -114,6 +113,28 @@ export const PROJECT_V1_ROUTE_GITOPS = `${PROJECT_V1_ROUTE_DASHBOARD}.gitops`;
 export const PLAN_DETAIL_PHASE_CHANGES = "changes";
 export const PLAN_DETAIL_PHASE_REVIEW = "review";
 export const PLAN_DETAIL_PHASE_DEPLOY = "deploy";
+
+// A route whose path (not its query) owns the plan-detail selection. Kept in
+// lockstep with the canonicalization and selection hooks that must agree on
+// what a URL means.
+export const isPlanDetailResourceRoute = (
+  routeName: string | undefined
+): boolean =>
+  routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS ||
+  routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL ||
+  routeName === PROJECT_V1_ROUTE_PLAN_ROLLOUT ||
+  routeName === PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE ||
+  routeName === PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK;
+
+export const isPlanDetailPhase = (
+  value: unknown
+): value is
+  | typeof PLAN_DETAIL_PHASE_CHANGES
+  | typeof PLAN_DETAIL_PHASE_REVIEW
+  | typeof PLAN_DETAIL_PHASE_DEPLOY =>
+  value === PLAN_DETAIL_PHASE_CHANGES ||
+  value === PLAN_DETAIL_PHASE_REVIEW ||
+  value === PLAN_DETAIL_PHASE_DEPLOY;
 
 // Normalize a query value (string | string[] | undefined) to a single string.
 // Ported vue-free from projectV1RouteHelpers.getRouteQueryString.

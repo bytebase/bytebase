@@ -91,10 +91,7 @@ export const formatIssueTitle = (
 };
 
 /** Generates a title for database change plan issues. */
-export const generatePlanTitle = (
-  template: "bb.plan.change-database",
-  databaseNameList?: string[]
-): string => {
+export const generatePlanTitle = (databaseNameList?: string[]): string => {
   return formatIssueTitle(
     i18n.t("issue.title.change-database"),
     databaseNameList

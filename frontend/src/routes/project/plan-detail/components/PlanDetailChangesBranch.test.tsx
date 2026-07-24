@@ -625,7 +625,11 @@ function TestHarness({ rerenderToken }: { rerenderToken: number }) {
   );
 }
 
-function StatefulSpecHarness() {
+function StatefulSpecHarness({
+  targets = [[], []],
+}: {
+  targets?: [string[], string[]];
+}) {
   const [selectedSpecId, setSelectedSpecId] = useState("spec-1");
   const page = buildPageState();
   page.plan.specs = [
@@ -634,7 +638,7 @@ function StatefulSpecHarness() {
       config: {
         case: "changeDatabaseConfig",
         value: {
-          targets: [],
+          targets: targets[0],
         },
       },
     },
@@ -643,7 +647,7 @@ function StatefulSpecHarness() {
       config: {
         case: "changeDatabaseConfig",
         value: {
-          targets: [],
+          targets: targets[1],
         },
       },
     },
@@ -1073,6 +1077,50 @@ describe("PlanDetailChangesBranch", () => {
 
     expect(container.textContent).toContain("spec-2:");
     expect(container.textContent).not.toContain("spec-2:check-run-for-spec-1");
+  });
+
+  it("does not show target loading when switching between cached changes", () => {
+    mocks.databaseStore.getOrFetchDatabaseByName.mockImplementation(
+      () => new Promise(() => {})
+    );
+
+    act(() => {
+      root.render(
+        <StatefulSpecHarness targets={[[DB_WIDGETS], [DB_COGS]]} />
+      );
+    });
+
+    expect(
+      container.querySelector('[data-testid="targets-loading"]')
+    ).toBeNull();
+
+    const specTabs = [...container.querySelectorAll("button")].filter(
+      (button) => button.textContent?.includes("plan.spec.type.database-change")
+    );
+    expect(specTabs.length).toBe(2);
+
+    act(() => {
+      specTabs[1]?.click();
+    });
+
+    expect(
+      container.querySelector('[data-testid="targets-loading"]')
+    ).toBeNull();
+  });
+
+  it("shows target loading while a change target is not cached", () => {
+    mocks.databaseStore.getDatabaseByName.mockReturnValue({ name: "" });
+    mocks.databaseStore.getOrFetchDatabaseByName.mockImplementation(
+      () => new Promise(() => {})
+    );
+
+    act(() => {
+      root.render(<StatefulSpecHarness targets={[[DB_WIDGETS], []]} />);
+    });
+
+    expect(
+      container.querySelector('[data-testid="targets-loading"]')
+    ).not.toBeNull();
   });
 
   it("keeps hook order stable when the selected spec appears after an empty render", async () => {

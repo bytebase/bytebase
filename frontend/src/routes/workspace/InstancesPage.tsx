@@ -13,7 +13,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router, useCurrentRoute } from "@/app/router";
 import { INSTANCE_ROUTE_CREATE } from "@/app/router/handles";
-import { useScrollRestorationLoadMore } from "@/app/router/NavigationScrollRestoration";
+import {
+  markListScrollRestorationEntry,
+  useListScrollRestorationLoadMore,
+} from "@/app/router/NavigationScrollRestoration";
 import {
   AdvancedSearch,
   getValueFromScopes,
@@ -703,7 +706,7 @@ export function InstancesPage() {
       fetchInstances(false);
     }
   }, [isFetchingMore, fetchInstances]);
-  useScrollRestorationLoadMore({
+  useListScrollRestorationLoadMore({
     dataList: instances,
     hasMore,
     isFetchingMore,
@@ -858,6 +861,7 @@ export function InstancesPage() {
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");
       } else {
+        markListScrollRestorationEntry();
         router.push(url);
       }
     },

@@ -11,12 +11,10 @@ import { loadTestEnv, type TestEnv } from "../framework/env";
 test.setTimeout(240_000);
 
 const ISSUE_COUNT = 18;
-const PLAN_COUNT = 55;
 let env: TestEnv & { api: BytebaseApiClient };
 let sharedContext: BrowserContext;
 let page: Page;
 let issueListUrl: string;
-let planListUrl: string;
 let originalExternalUrl = "";
 
 type SavedViewport = {
@@ -98,9 +96,6 @@ test.beforeAll(async ({ browser }) => {
   issueListUrl = `${env.baseURL}/projects/${projectId}/issues?q=${encodeURIComponent(
     searchToken
   )}`;
-  planListUrl = `${env.baseURL}/projects/${projectId}/plans?q=${encodeURIComponent(
-    searchToken
-  )}`;
 
   const setting = await env.api.getSetting("WORKSPACE_PROFILE");
   originalExternalUrl =
@@ -108,7 +103,7 @@ test.beforeAll(async ({ browser }) => {
       ?.workspaceProfile?.externalUrl ?? "";
 
   const sheet = await env.api.createSheet(env.project, "SELECT 1;");
-  for (let i = 0; i < PLAN_COUNT; i++) {
+  for (let i = 0; i < ISSUE_COUNT; i++) {
     const title = `${searchToken} issue ${i}`;
     const plan = await env.api.createPlan(env.project, title, [
       {
@@ -121,14 +116,12 @@ test.beforeAll(async ({ browser }) => {
       { length: (i % 4) + 1 },
       () => `${searchToken} variable-height content`
     ).join("\n");
-    if (i < ISSUE_COUNT) {
-      await env.api.createIssue(
-        env.project,
-        title,
-        plan.name,
-        repeatedDescription
-      );
-    }
+    await env.api.createIssue(
+      env.project,
+      title,
+      plan.name,
+      repeatedDescription
+    );
   }
 
   sharedContext = await browser.newContext({
@@ -158,16 +151,6 @@ test.describe("dashboard scroll restoration", () => {
       listUrl: issueListUrl,
       rowTestId: "issue-list-item",
       rowCount: ISSUE_COUNT,
-    });
-  });
-
-  test("restores every loaded page in the paginated Plans view", async () => {
-    await env.api.setWorkspaceExternalUrl(env.baseURL);
-    await expectBackRestored({
-      detailUrlPattern: /\/projects\/[^/]+\/plans\//,
-      listUrl: planListUrl,
-      rowTestId: "plan-list-item",
-      rowCount: PLAN_COUNT,
     });
   });
 

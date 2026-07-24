@@ -2104,7 +2104,6 @@
     }
   },
   "rollout": {
-    "no-stages": "No hay etapas disponibles",
     "no-tasks-created": "Aún no se han creado tareas",
     "pending-tasks-preview": {
       "action": "Vista previa",

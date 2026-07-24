@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useOnKeyChange } from "@/hooks/useOnKeyChange";
 import { cn } from "@/lib/utils";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
@@ -44,12 +45,15 @@ function phaseLineClass(from: PhaseStatus, to: PhaseStatus): string {
 export function ProjectPlanDetailPage(props: {
   projectId: string;
   planId: string;
+  routeHash?: string;
   routeName?: string;
   routeQuery?: Record<string, unknown>;
   specId?: string;
+  stageId?: string;
+  taskId?: string;
 }) {
   return (
-    <PlanDetailStoreProvider>
+    <PlanDetailStoreProvider key={`${props.projectId}/${props.planId}`}>
       <ProjectPlanDetailPageInner {...props} />
     </PlanDetailStoreProvider>
   );
@@ -58,15 +62,21 @@ export function ProjectPlanDetailPage(props: {
 function ProjectPlanDetailPageInner({
   projectId,
   planId,
+  routeHash,
   routeName,
   routeQuery,
   specId,
+  stageId,
+  taskId,
 }: {
   projectId: string;
   planId: string;
+  routeHash?: string;
   routeName?: string;
   routeQuery?: Record<string, unknown>;
   specId?: string;
+  stageId?: string;
+  taskId?: string;
 }) {
   const { t } = useTranslation();
   const [pageHost, setPageHost] = useState<HTMLDivElement | null>(null);
@@ -89,9 +99,12 @@ function ProjectPlanDetailPageInner({
   const page = usePlanDetailPage({
     projectId,
     planId,
+    routeHash,
     routeName,
     routeQuery,
     specId,
+    stageId,
+    taskId,
   });
   const isGitOpsPlan = useMemo(
     () => isReleaseBackedPlan(page.plan.specs),
@@ -101,6 +114,7 @@ function ProjectPlanDetailPageInner({
   // before an issue exists it shows as an upcoming step. Only GitOps
   // release-backed plans, which bypass review entirely, hide it.
   const reviewVisible = !isGitOpsPlan;
+  const selectPhase = page.expandPhase;
 
   const phaseConfigs = useMemo(() => {
     const hasIssue = !!page.issue;
@@ -219,26 +233,20 @@ function ProjectPlanDetailPageInner({
     };
   }, [page.isCreating, page.issue, page.rollout, reviewVisible, t]);
 
-  useEffect(() => {
-    setSelectedSpecId(specId ?? "");
-  }, [page.pageKey]);
-
-  // Mirror the URL specId into local state. We deliberately don't include
-  // selectedSpecId in the deps — children (e.g. PlanDetailChangesBranch) may
-  // set selectedSpecId to a draft spec that has no URL yet, and snapping it
-  // back to specId here would defeat the selection.
-  useEffect(() => {
+  // Route-driven spec changes reset during render, so the first paint after a
+  // Back/Forward or tab navigation already shows the destination spec. The
+  // keyed provider remounts this subtree when the plan itself changes.
+  useOnKeyChange(`${page.pageKey}:${specId ?? ""}`, () => {
     if (!page.isCreating && specId) {
       setSelectedSpecId(specId);
     }
-  }, [page.isCreating, specId]);
+  });
 
-  // Default to the first spec when nothing is selected.
-  useEffect(() => {
-    if (!selectedSpecId && page.plan.specs.length > 0) {
-      setSelectedSpecId(page.plan.specs[0].id);
-    }
-  }, [page.plan.specs, selectedSpecId]);
+  // A create route has no persisted spec resource in its URL. Derive the
+  // initial selection during render so the first ready paint already shows the
+  // first client-local spec, without a placeholder route or a follow-up effect.
+  const effectiveSelectedSpecId =
+    selectedSpecId || page.plan.specs[0]?.id || "";
 
   return (
     <PlanDetailProvider value={page}>
@@ -279,14 +287,14 @@ function ProjectPlanDetailPageInner({
                 icon={<Code2 className="size-3 md:size-4" />}
                 lineClass={phaseConfigs.changes.lineClass}
                 label={t("plan.navigator.changes")}
-                onSelect={() => page.expandPhase("changes")}
+                onSelect={() => selectPhase("changes")}
                 status={phaseConfigs.changes.status}
                 onToggle={() => page.togglePhase("changes")}
                 summary={buildChangesSummary(page.plan, t)}
               >
                 <PlanDetailChangesBranch
                   onSelectedSpecIdChange={setSelectedSpecId}
-                  selectedSpecId={selectedSpecId}
+                  selectedSpecId={effectiveSelectedSpecId}
                 />
               </PhaseSection>
 
@@ -298,7 +306,7 @@ function ProjectPlanDetailPageInner({
                   icon={<MessageSquareMore className="size-3 md:size-4" />}
                   lineClass={phaseConfigs.review.lineClass}
                   label={t("plan.navigator.review")}
-                  onSelect={() => page.expandPhase("review")}
+                  onSelect={() => selectPhase("review")}
                   status={phaseConfigs.review.status}
                   onToggle={() => page.togglePhase("review")}
                   summary={buildReviewSummary(page.issue, t)}
@@ -320,7 +328,7 @@ function ProjectPlanDetailPageInner({
                 isLast
                 label={t("plan.navigator.deploy")}
                 status={phaseConfigs.deploy.status}
-                onSelect={() => page.expandPhase("deploy")}
+                onSelect={() => selectPhase("deploy")}
                 onToggle={() => page.togglePhase("deploy")}
                 summary={buildDeploySummary(
                   page.issue?.draft ? undefined : page.rollout,

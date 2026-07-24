@@ -68,6 +68,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useCurrentUser } from "@/hooks/useAppState";
+import { useOnKeyChange } from "@/hooks/useOnKeyChange";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { useSessionPageSize } from "@/hooks/useSessionPageSize";
 import { seedSheetStatement } from "@/hooks/useSheetStatement";
@@ -163,10 +164,13 @@ const pushSpecDetailRoute = (
   planId: string,
   specId: string
 ) =>
-  router.push({
-    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-    params: { planId, projectId, specId },
-  });
+  router.push(
+    {
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+      params: { planId, projectId, specId },
+    },
+    { preventScrollReset: true }
+  );
 
 type IsolationLevel =
   | "READ_UNCOMMITTED"
@@ -1314,16 +1318,25 @@ function TargetsSection({
   }, [selectedSpec]);
   const [showAllTargetsDialog, setShowAllTargetsDialog] = useState(false);
   const [searchText, setSearchText] = useState("");
-  // Start loading when there are targets to resolve, so the first paint shows
-  // the spinner instead of blank (unknownDatabase) chips.
-  const [isLoadingTargets, setIsLoadingTargets] = useState(
-    () => targets.length > 0
-  );
-  const [isLoadingAllTargets, setIsLoadingAllTargets] = useState(false);
   const visibleTargets = useMemo(
     () => targets.slice(0, Math.min(DEFAULT_VISIBLE_TARGETS, targets.length)),
     [targets]
   );
+  const visibleTargetsKey = useMemo(
+    () => visibleTargets.join("\0"),
+    [visibleTargets]
+  );
+  const visibleTargetsCached = useMemo(
+    () => areTargetsCached(visibleTargets, databasesByName),
+    [databasesByName, visibleTargets]
+  );
+  const [isLoadingTargets, setIsLoadingTargets] = useState(
+    () => visibleTargets.length > 0 && !visibleTargetsCached
+  );
+  const [isLoadingAllTargets, setIsLoadingAllTargets] = useState(false);
+  useOnKeyChange(visibleTargetsKey, () => {
+    setIsLoadingTargets(visibleTargets.length > 0 && !visibleTargetsCached);
+  });
   const nonEnvDatabaseNames = useMemo(() => {
     if (isLoadingTargets) return [];
     return targets
@@ -1366,7 +1379,7 @@ function TargetsSection({
   useEffect(() => {
     let canceled = false;
     const load = async () => {
-      if (targets.length === 0) {
+      if (visibleTargets.length === 0 || visibleTargetsCached) {
         setIsLoadingTargets(false);
         return;
       }
@@ -1381,7 +1394,7 @@ function TargetsSection({
     return () => {
       canceled = true;
     };
-  }, [targets, visibleTargets]);
+  }, [visibleTargets, visibleTargetsCached]);
 
   useEffect(() => {
     if (!showAllTargetsDialog) return;
@@ -1445,7 +1458,10 @@ function TargetsSection({
           />
         )}
         {isLoadingTargets ? (
-          <div className="flex items-center justify-center py-2">
+          <div
+            className="flex items-center justify-center py-2"
+            data-testid="targets-loading"
+          >
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-control-border border-t-accent" />
           </div>
         ) : targets.length > 0 ? (
@@ -2176,4 +2192,26 @@ async function fetchTargets(targets: string[]) {
       }
     })
   );
+}
+
+function areTargetsCached(
+  targets: string[],
+  databasesByName: Record<string, Database>
+): boolean {
+  const store = useAppStore.getState();
+  return targets.every((target) => {
+    if (isValidDatabaseName(target)) {
+      return isValidDatabaseName(databasesByName[target]?.name ?? "");
+    }
+    if (!isValidDatabaseGroupName(target)) {
+      return true;
+    }
+    const group = store.getDBGroupByName(target, DatabaseGroupView.FULL);
+    return (
+      isValidDatabaseGroupName(group.name) &&
+      (group.matchedDatabases ?? []).every((database) =>
+        isValidDatabaseName(databasesByName[database.name]?.name ?? "")
+      )
+    );
+  });
 }

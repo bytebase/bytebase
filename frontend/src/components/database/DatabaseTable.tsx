@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { router } from "@/app/router";
-import { useScrollRestorationLoadMore } from "@/app/router/NavigationScrollRestoration";
+import { useListScrollRestorationLoadMore } from "@/app/router/NavigationScrollRestoration";
 import { PagedTableFooter } from "@/hooks/usePagedData";
 import {
   getPageSizeOptions,
@@ -24,6 +24,7 @@ export interface DatabaseTableProps {
   mode?: DatabaseTableMode;
   /** Row click selects instead of navigating to the database page. */
   selectOnRowClick?: boolean;
+  onOpenDatabase?: () => void;
   selectedNames?: Set<string>;
   onSelectedNamesChange?: (names: Set<string>) => void;
   /**
@@ -71,6 +72,7 @@ export function DatabaseTable({
   parent,
   mode = "ALL",
   selectOnRowClick = false,
+  onOpenDatabase,
   selectedNames,
   onSelectedNamesChange,
   onDatabasesChange,
@@ -166,7 +168,7 @@ export function DatabaseTable({
       fetchDatabases(false);
     }
   }, [isFetchingMore, fetchDatabases]);
-  useScrollRestorationLoadMore({
+  useListScrollRestorationLoadMore({
     dataList: databases,
     hasMore: !selectOnRowClick && hasMore,
     isFetchingMore,
@@ -182,14 +184,18 @@ export function DatabaseTable({
     onLoadingChange?.(loading);
   }, [loading, onLoadingChange]);
 
-  const handleRowClick = useCallback((db: Database, e: React.MouseEvent) => {
-    const url = router.resolve(autoDatabaseRoute(db)).fullPath;
-    if (e.ctrlKey || e.metaKey) {
-      window.open(url, "_blank");
-    } else {
-      router.push(url);
-    }
-  }, []);
+  const handleRowClick = useCallback(
+    (db: Database, e: React.MouseEvent) => {
+      const url = router.resolve(autoDatabaseRoute(db)).fullPath;
+      if (e.ctrlKey || e.metaKey) {
+        window.open(url, "_blank");
+      } else {
+        onOpenDatabase?.();
+        router.push(url);
+      }
+    },
+    [onOpenDatabase]
+  );
 
   const pageSizeOptions = getPageSizeOptions();
 

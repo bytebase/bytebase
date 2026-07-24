@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router";
 import {
-  markScrollRestorationEntry,
-  useScrollRestorationKey,
-  useScrollRestorationLoadMore,
+  markListScrollRestorationEntry,
+  useListScrollRestorationKey,
+  useListScrollRestorationLoadMore,
 } from "@/app/router/NavigationScrollRestoration";
 import type { SearchParams } from "@/components/AdvancedSearch";
 import {
@@ -38,8 +37,7 @@ const serializeSearchParams = (params: SearchParams): string =>
   buildSearchTextBySearchParams(params);
 
 export function MyIssuesPage() {
-  const location = useLocation();
-  const scrollRestorationKey = useScrollRestorationKey();
+  const listScrollRestorationKey = useListScrollRestorationKey();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -104,10 +102,10 @@ export function MyIssuesPage() {
   const paged = usePagedData<Issue>({
     sessionKey: "bb.issue-table.my-issues",
     cacheKey: viewCacheKey,
-    cacheRestoreToken: scrollRestorationKey,
+    cacheRestoreToken: listScrollRestorationKey,
     fetchList: fetchIssueList,
   });
-  useScrollRestorationLoadMore(paged);
+  useListScrollRestorationLoadMore(paged);
 
   useEffect(() => {
     if (paged.dataList.length === 0) {
@@ -146,11 +144,6 @@ export function MyIssuesPage() {
       return next;
     });
   }, []);
-  const handleOpenIssue = useCallback(
-    () => markScrollRestorationEntry(location),
-    [location]
-  );
-
   const toggleSelectAll = useCallback(() => {
     setSelectedNames((prev) => {
       const allSelected =
@@ -191,7 +184,7 @@ export function MyIssuesPage() {
           issues={paged.dataList}
           selectedNames={selectedNames}
           onToggleSelection={toggleSelection}
-          onOpenIssue={handleOpenIssue}
+          onOpenIssue={markListScrollRestorationEntry}
           showProject
         />
         {paged.dataList.length > 0 && (

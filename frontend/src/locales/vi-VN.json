@@ -2104,7 +2104,6 @@
     }
   },
   "rollout": {
-    "no-stages": "Không có giai đoạn nào",
     "no-tasks-created": "Chưa có tác vụ nào được tạo",
     "pending-tasks-preview": {
       "action": "Xem trước",

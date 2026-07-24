@@ -52,6 +52,9 @@ export function useDerivedPlanState(params: {
     if (!routeTaskId || !snapshot.rollout) {
       return undefined;
     }
+    // Route canonicalization corrects a stale/mismatched stage. Resolve the
+    // task globally for this render so selection never flashes to a default
+    // while that replace settles.
     for (const stage of snapshot.rollout.stages) {
       const task = stage.tasks.find((item) =>
         item.name.endsWith(`/${routeTaskId}`)

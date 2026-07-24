@@ -9,6 +9,9 @@ export type RouterState = {
   location: RouterLocation;
   matches: RouterMatch[];
   initialized: boolean;
+  navigation?: {
+    historyAction?: "POP" | "PUSH" | "REPLACE";
+  };
   preventScrollReset?: boolean;
 };
 export type NavigationOptions = {

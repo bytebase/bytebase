@@ -882,11 +882,13 @@ const projectV1Routes: RouteObject[] = [
           (m) => m.ProjectGitOpsPage
         ),
       },
-      // Plan detail — three routes share ProjectPlanDetailPage.
+      // Plan Detail owns one persistent shell per plan. Nested resource routes
+      // only update the leaf selection passed to that shell; they must not
+      // mount another page/provider or restart the plan snapshot and polling.
       {
         path: "plans/:planId",
         handle: {
-          name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+          layoutAsPage: true,
           requiredPermissionList: (): Permission[] => [
             "bb.plans.get",
             "bb.planCheckRuns.get",
@@ -897,36 +899,32 @@ const projectV1Routes: RouteObject[] = [
           () => import("@/routes/project/plan-detail/ProjectPlanDetailPage"),
           (m) => m.ProjectPlanDetailPage
         ),
-      },
-      {
-        path: "plans/:planId/specs",
-        handle: {
-          name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-          requiredPermissionList: (): Permission[] => [
-            "bb.plans.get",
-            "bb.planCheckRuns.get",
-            "bb.taskRuns.list",
-          ],
-        },
-        lazy: lazyPage(
-          () => import("@/routes/project/plan-detail/ProjectPlanDetailPage"),
-          (m) => m.ProjectPlanDetailPage
-        ),
-      },
-      {
-        path: "plans/:planId/specs/:specId",
-        handle: {
-          name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-          requiredPermissionList: (): Permission[] => [
-            "bb.plans.get",
-            "bb.planCheckRuns.get",
-            "bb.taskRuns.list",
-          ],
-        },
-        lazy: lazyPage(
-          () => import("@/routes/project/plan-detail/ProjectPlanDetailPage"),
-          (m) => m.ProjectPlanDetailPage
-        ),
+        children: [
+          {
+            index: true,
+            handle: { name: PROJECT_V1_ROUTE_PLAN_DETAIL },
+          },
+          {
+            path: "specs",
+            handle: { name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS },
+          },
+          {
+            path: "specs/:specId",
+            handle: { name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL },
+          },
+          {
+            path: "rollout",
+            handle: { name: PROJECT_V1_ROUTE_PLAN_ROLLOUT },
+          },
+          {
+            path: "rollout/stages/:stageId",
+            handle: { name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE },
+          },
+          {
+            path: "rollout/stages/:stageId/tasks/:taskId",
+            handle: { name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK },
+          },
+        ],
       },
       // Issue detail. Schema/data change issues redirect to Plan Detail — the
       // canonical review surface (BYT-9721); create-database, export, and grant
@@ -943,34 +941,6 @@ const projectV1Routes: RouteObject[] = [
           () => import("@/routes/project/ProjectIssueDetailPage"),
           (m) => m.ProjectIssueDetailPage
         ),
-      },
-      // Legacy rollout paths. The plan detail page now hosts the rollout: it
-      // shows the deploy phase when the plan has a rollout and selects a
-      // stage/task from the `?stageId=`/`?taskId=` query (see
-      // usePlanDetailPage). So these path-based deep links redirect to the plan
-      // detail page, converting the path stage/task into that query form so the
-      // selection is preserved. The route names are kept so bookmarks resolve.
-      {
-        path: "plans/:planId/rollout",
-        handle: { name: PROJECT_V1_ROUTE_PLAN_ROLLOUT },
-        loader: ({ params }) =>
-          redirect(`/projects/${params.projectId}/plans/${params.planId}`),
-      },
-      {
-        path: "plans/:planId/rollout/stages/:stageId",
-        handle: { name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE },
-        loader: ({ params }) =>
-          redirect(
-            `/projects/${params.projectId}/plans/${params.planId}?stageId=${params.stageId}`
-          ),
-      },
-      {
-        path: "plans/:planId/rollout/stages/:stageId/tasks/:taskId",
-        handle: { name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK },
-        loader: ({ params }) =>
-          redirect(
-            `/projects/${params.projectId}/plans/${params.planId}?stageId=${params.stageId}&taskId=${params.taskId}`
-          ),
       },
     ],
   },

@@ -1,6 +1,9 @@
 import { matchRoutes, type RouteObject } from "react-router";
 import { describe, expect, it } from "vitest";
-import { WORKSPACE_ROUTE_404 } from "@/app/router/handles";
+import {
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+  WORKSPACE_ROUTE_404,
+} from "@/app/router/handles";
 import { routes } from "./routes";
 
 // Guardrail for the "blank body" route bug class. During the Vue→React router
@@ -103,5 +106,15 @@ describe("react route table reachability", () => {
 
     expect(leafHandle?.name).toBe(WORKSPACE_ROUTE_404);
     expect(leafRoute?.loader).toBeTypeOf("function");
+  });
+
+  it("keeps the specs collection as a selection-only plan-detail route", () => {
+    const path = "/projects/p/plans/1/specs";
+    const matched = matchRoutes(routes, path);
+    const leaf = matched?.at(-1);
+    expect((leaf?.route.handle as { name?: string })?.name).toBe(
+      PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS
+    );
+    expect(leaf?.route.loader).toBeUndefined();
   });
 });

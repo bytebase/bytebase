@@ -33,15 +33,13 @@ describe("planQueryNameForProject", () => {
 
 describe("applyPlanTitleToQuery", () => {
   it("does not set query.name when the project enforces manual title", () => {
-    const query: Record<string, string> = {
-      template: "bb.plan.change-database",
-    };
+    const query: Record<string, string> = {};
     applyPlanTitleToQuery(
       query,
       { enforceIssueTitle: true },
       () => "Auto Title"
     );
-    expect(query).toEqual({ template: "bb.plan.change-database" });
+    expect(query).toEqual({});
     expect(query.name).toBeUndefined();
   });
 
@@ -64,7 +62,6 @@ describe("applyPlanTitleToQuery", () => {
 
   it("preserves pre-existing keys on the query", () => {
     const query: Record<string, string> = {
-      template: "bb.plan.change-database",
       databaseList: "db1,db2",
     };
     applyPlanTitleToQuery(
@@ -73,7 +70,6 @@ describe("applyPlanTitleToQuery", () => {
       () => "Auto Title"
     );
     expect(query).toEqual({
-      template: "bb.plan.change-database",
       databaseList: "db1,db2",
       name: "Auto Title",
     });
@@ -81,11 +77,11 @@ describe("applyPlanTitleToQuery", () => {
 
   it("clears a pre-existing query.name when enforceIssueTitle is true", () => {
     const query: Record<string, string> = {
-      template: "bb.plan.change-database",
+      databaseList: "db1",
       name: "stale auto title",
     };
     applyPlanTitleToQuery(query, { enforceIssueTitle: true }, () => "fresh");
     expect(query.name).toBeUndefined();
-    expect(query.template).toBe("bb.plan.change-database"); // untouched
+    expect(query.databaseList).toBe("db1");
   });
 });

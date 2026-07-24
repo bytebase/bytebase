@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
+import { buildTaskDetailRoute } from "@/app/router/routeHelpers";
 import { Button } from "@/components/ui/button";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { useOnKeyChange } from "@/hooks/useOnKeyChange";
@@ -10,7 +11,6 @@ import {
   Task_Status,
   type TaskRun,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { extractStageUID, extractTaskUID } from "@/utils/v1/issue/rollout";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { DeployTaskItem } from "./DeployTaskItem";
 import { DeployTaskToolbar } from "./DeployTaskToolbar";
@@ -30,20 +30,12 @@ const autoExpandTaskName = (tasks: Task[]): string | undefined =>
     ) ?? tasks[0]
   )?.name;
 
-// The shareable ?stageId&taskId= shape for a task.
-const deployTaskQuery = (stageName: string, taskName: string) => ({
-  phase: "deploy",
-  stageId: extractStageUID(stageName),
-  taskId: extractTaskUID(taskName),
-});
-
 const initialExpandedNames = (
   tasks: Task[],
   selectedTaskName?: string
 ): Set<string> => {
-  // An explicit ?taskId= selection is the user's focus — open only that task.
-  // (Matches focusedTaskName's selection-wins logic; opening the auto pick too
-  // would leave two unrelated cards expanded on reload of a deep link.)
+  // An explicit task resource selection is the user's focus — open only it;
+  // opening the auto pick too would show two unrelated cards on a deep link.
   if (
     selectedTaskName &&
     tasks.some((task) => task.name === selectedTaskName)
@@ -81,7 +73,7 @@ export function DeployTaskList({
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  // Full task resource name resolved from the ?taskId= deep link.
+  // Full task resource name resolved from the task resource route.
   const selectedTaskName = page.selectedTaskName;
   const filteredTasks = stage.tasks;
   // The stage object is rebuilt every poll tick, so passing it to the memoized
@@ -103,19 +95,9 @@ export function DeployTaskList({
   const [selectedTaskNames, setSelectedTaskNames] = useState<Set<string>>(
     new Set()
   );
-  // The focused task of this stage — the last card the user opened, defaulting
-  // to the auto-expand pick or an incoming deep link. It is mirrored into
-  // ?stageId&taskId= while this stage is active (the effect below), so the
-  // address bar is a shareable link to this stage + task, and switching back to
-  // a visited stage restores it.
-  const [focusedTaskName, setFocusedTaskName] = useState<string | undefined>(
-    () =>
-      (isTaskInStage(selectedTaskName) ? selectedTaskName : undefined) ??
-      autoExpandTaskName(filteredTasks)
-  );
   // A card scrolls into view only for an EXTERNAL arrival (a shared link or
-  // back/forward), never for a ?taskId= this list wrote itself. The mirror
-  // effect records the value it writes here, and the route-settle handler below
+  // back/forward), never for a task route this list wrote itself. The explicit
+  // card-open handler records the value here, and the route-settle handler below
   // CONSUMES it (one-shot). A persistent marker would misread a later external
   // navigation back to a previously self-opened task as a self-write and fail
   // to scroll (BYT-9765).
@@ -143,14 +125,6 @@ export function DeployTaskList({
       initialDisplayedCount(filteredTasks, selectedTaskName)
     );
     setExpandedTaskNames(initialExpandedNames(filteredTasks, selectedTaskName));
-    // Reseed the focused task too: a task may have become RUNNING/FAILED while
-    // this stage was mounted-but-hidden, so the default-open card — and the URL
-    // mirror that follows it — must reflect the current statuses, not the ones
-    // captured at the hidden mount (which would write a stale ?taskId=).
-    setFocusedTaskName(
-      (isTaskInStage(selectedTaskName) ? selectedTaskName : undefined) ??
-        autoExpandTaskName(filteredTasks)
-    );
   }
 
   // When the visible task set changes (a plan edit, a filter change), re-derive
@@ -175,14 +149,10 @@ export function DeployTaskList({
       );
       return remaining.length === prev.size ? prev : new Set(remaining);
     });
-    // Keep focus valid: fall back to the default if the focused task is gone.
-    setFocusedTaskName((prev) =>
-      isTaskInStage(prev) ? prev : autoExpandTaskName(filteredTasks)
-    );
   });
 
-  // When ?taskId= settles to a task in this stage, focus + reveal it. Scroll
-  // only when it is an external arrival (not a ?taskId= we just wrote) — decided
+  // When a task route settles in this stage, focus + reveal it. Scroll only
+  // when it is an external arrival (not a route we just wrote) — decided
   // here, once the route has settled, so the transient render during our own
   // write can't be mistaken for an arrival.
   useOnKeyChange(selectedTaskName ?? "", () => {
@@ -198,48 +168,20 @@ export function DeployTaskList({
         prev.has(selectedTaskName) ? prev : new Set(prev).add(selectedTaskName)
       );
       setDisplayedTaskCount((count) => Math.max(count, index + 1));
-      setFocusedTaskName(selectedTaskName);
       setArrivalTaskName(wasSelfWrite ? undefined : selectedTaskName);
     } else {
       setArrivalTaskName(undefined);
     }
   });
 
-  // Mirror the focused task into ?stageId&taskId= while this stage is active,
-  // so the URL is a shareable link. Only the active stage writes (a hidden
-  // keep-alive list must not hijack the address bar); recording the write in
-  // pendingSelfWriteRef keeps its own route echo from scrolling the card.
   const { isEditing, bypassLeaveGuardOnce } = page;
-  useEffect(() => {
-    if (
-      readonly ||
-      !active ||
-      !focusedTaskName ||
-      selectedTaskName === focusedTaskName
-    ) {
-      return;
-    }
-    pendingSelfWriteRef.current = focusedTaskName;
-    // This is an internal, same-path query sync (a shareable ?taskId=), not a
-    // page leave — bypass the unsaved-edits guard so it doesn't cancel the write
-    // (which would strand pendingSelfWriteRef and desync focus from the URL) or
-    // pop a spurious discard dialog mid-edit. Only while editing, so the one-shot
-    // bypass is consumed by this navigation instead of lingering to a real leave.
-    if (isEditing) {
-      bypassLeaveGuardOnce();
-    }
-    void router.replace({
-      query: deployTaskQuery(stage.name, focusedTaskName),
-    });
-  }, [
+  const taskNavigationRef = useLatestRef({
     active,
-    readonly,
-    focusedTaskName,
-    selectedTaskName,
-    stage.name,
-    isEditing,
     bypassLeaveGuardOnce,
-  ]);
+    isEditing,
+    readonly,
+    selectedTaskName,
+  });
 
   const visibleTasks = filteredTasks.slice(0, displayedTaskCount);
   const hasMoreTasks = filteredTasks.length > displayedTaskCount;
@@ -250,21 +192,39 @@ export function DeployTaskList({
   );
 
   // One control per card: toggle it open or closed (local state; keep-alive
-  // preserves it across stage switches). Opening focuses the task, which the
-  // effect above mirrors into the URL. Stable identities so the memoized cards
-  // don't re-render when the list does.
-  const toggleTask = useCallback((task: Task) => {
-    const willExpand = !expandedTaskNamesRef.current.has(task.name);
-    setExpandedTaskNames((prev) => {
-      const next = new Set(prev);
-      if (next.has(task.name)) next.delete(task.name);
-      else next.add(task.name);
-      return next;
-    });
-    if (willExpand) {
-      setFocusedTaskName(task.name);
-    }
-  }, []);
+  // preserves it across stage switches). Explicitly opening a task also pushes
+  // its resource route. Stable identities so the memoized cards don't re-render
+  // when the list does.
+  const toggleTask = useCallback(
+    (task: Task) => {
+      const willExpand = !expandedTaskNamesRef.current.has(task.name);
+      setExpandedTaskNames((prev) => {
+        const next = new Set(prev);
+        if (next.has(task.name)) next.delete(task.name);
+        else next.add(task.name);
+        return next;
+      });
+      const navigation = taskNavigationRef.current;
+      if (
+        willExpand &&
+        navigation.active &&
+        !navigation.readonly &&
+        navigation.selectedTaskName !== task.name
+      ) {
+        // Only this explicit card-open writes a task route. Expansion state
+        // survives keep-alive switches, but cannot rewrite Back/Forward or an
+        // explicit stage/phase selection.
+        pendingSelfWriteRef.current = task.name;
+        if (navigation.isEditing) {
+          navigation.bypassLeaveGuardOnce();
+        }
+        void router.push(buildTaskDetailRoute(task.name), {
+          preventScrollReset: true,
+        });
+      }
+    },
+    [taskNavigationRef]
+  );
   const toggleSelect = useCallback((task: Task) => {
     setSelectedTaskNames((prev) => {
       const next = new Set(prev);

@@ -13,7 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { router } from "@/app/router";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/app/router/handles";
+import { buildPlanCreateRoute } from "@/app/router/routeHelpers";
 import { DatabaseSelect } from "@/components/DatabaseSelect";
 import { EngineIcon } from "@/components/EngineIcon";
 import { EnvironmentSelect } from "@/components/EnvironmentSelect";
@@ -391,7 +391,6 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
       useAppStore.getState().getDatabaseByName(name)
     );
     const query: Record<string, string> = {
-      template: "bb.plan.change-database",
       mode: "normal",
     };
     const sqlMap: Record<string, string> = {};
@@ -408,22 +407,15 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     if (!project) return; // defensive: should not happen if the page rendered
     applyPlanTitleToQuery(query, project, () =>
       generatePlanTitle(
-        "bb.plan.change-database",
         targetDatabases.map(
           (db) => extractDatabaseResourceName(db.name).databaseName
         )
       )
     );
 
-    router.push({
-      name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(project.name),
-        planId: "create",
-        specId: "placeholder",
-      },
-      query,
-    });
+    router.push(
+      buildPlanCreateRoute(extractProjectResourceName(project.name), query)
+    );
   }, [selectedDatabaseNameList, schemaDiffCache, project]);
 
   if (!project) return null;

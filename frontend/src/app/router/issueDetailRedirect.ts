@@ -1,6 +1,8 @@
 import { create } from "@bufbuild/protobuf";
-import { type LoaderFunctionArgs, redirect } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/api";
+import { canonicalRedirect } from "@/app/router/canonicalRedirect";
+import { buildPlanDetailLegacySearch } from "@/app/router/planDetailRouteQuery";
 import { shouldStayOnPlanDetailPage } from "@/lib/plan/workflow";
 import { issueNamePrefix, projectNamePrefix } from "@/stores/modules/v1/common";
 import {
@@ -10,6 +12,17 @@ import {
 import { GetPlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { extractPlanUID } from "@/utils/v1/issue/plan";
 
+const planDetailRedirect = (
+  projectId: string,
+  planId: string,
+  requestUrl: string
+): Response => {
+  const query = buildPlanDetailLegacySearch(requestUrl);
+  return canonicalRedirect(
+    `/projects/${projectId}/plans/${planId}${query ? `?${query}` : ""}`
+  );
+};
+
 // Plan Detail is the canonical review surface for Draft Review Issues and
 // schema/data change plans. Drafts redirect directly from their linked plan;
 // submitted create-database, export, and grant issues stay on Issue Detail.
@@ -18,9 +31,9 @@ import { extractPlanUID } from "@/utils/v1/issue/plan";
 // changes from create-database plans. Drafts do not need that fetch: their
 // lifecycle and metadata always belong on the linked Plan Detail surface.
 //
-// Every issue-detail entry point navigates to this route by name, so this single
-// guard covers deep links, inbox/notifications, and review CTAs without patching
-// call sites. Old issue-detail URLs resolve via this redirect rather than 404.
+// A valid legacy phase remains authoritative. A generic issue URL redirects to
+// the plan root so Plan Detail can derive the current lifecycle phase from its
+// snapshot without a second navigation.
 export async function issueDetailRedirectLoader({
   params,
   request,
@@ -44,8 +57,7 @@ export async function issueDetailRedirectLoader({
     if (issue.draft) {
       const planId = extractPlanUID(issue.plan);
       if (!planId) return null;
-      const { search } = new URL(request.url);
-      return redirect(`/projects/${projectId}/plans/${planId}${search}`);
+      return planDetailRedirect(projectId, planId, request.url);
     }
     // Submitted export and grant issues stay on Issue Detail; skip the plan
     // fetch for them. DATABASE_CHANGE remains ambiguous until the plan loads.
@@ -65,8 +77,7 @@ export async function issueDetailRedirectLoader({
     if (!planId) {
       return null;
     }
-    const { search } = new URL(request.url);
-    return redirect(`/projects/${projectId}/plans/${planId}${search}`);
+    return planDetailRedirect(projectId, planId, request.url);
   } catch {
     // 404/403/network → fall through to Issue Detail, which has its own
     // not-found / permission-denied handling. Avoids turning a transient error

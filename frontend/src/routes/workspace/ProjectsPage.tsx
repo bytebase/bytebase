@@ -3,7 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router, useCurrentRoute } from "@/app/router";
 import { PROJECT_V1_ROUTE_ISSUES } from "@/app/router/handles";
-import { useScrollRestorationLoadMore } from "@/app/router/NavigationScrollRestoration";
+import {
+  markListScrollRestorationEntry,
+  useListScrollRestorationLoadMore,
+} from "@/app/router/NavigationScrollRestoration";
 import {
   AdvancedSearch,
   getValueFromScopes,
@@ -439,7 +442,7 @@ export function ProjectsPage() {
       fetchProjects(false);
     }
   }, [isFetchingMore, fetchProjects]);
-  useScrollRestorationLoadMore({
+  useListScrollRestorationLoadMore({
     dataList: projects,
     hasMore,
     isFetchingMore,
@@ -600,6 +603,7 @@ export function ProjectsPage() {
       if (e.ctrlKey || e.metaKey) {
         window.open(route.fullPath, "_blank");
       } else {
+        markListScrollRestorationEntry();
         router.push(projectIssuesRoute(project));
       }
     },

@@ -16,8 +16,6 @@ import {
   setLocalSheetStatement,
 } from "./localSheet";
 
-type PlanTemplate = "bb.plan.change-database";
-
 type InitialSQL = {
   sqlMap?: Record<string, string>;
   sql?: string;
@@ -106,13 +104,6 @@ export const createPlanSkeleton = async (
   project: Project,
   query: Record<string, string>
 ) => {
-  const template = query.template as PlanTemplate | undefined;
-  if (!template || template !== "bb.plan.change-database") {
-    throw new Error(
-      "Only change-database plan creation is supported from the plan detail route."
-    );
-  }
-
   const databaseList = query.databaseList ?? "";
   // Guard the empty case: "".split(",") yields [""], which would create a spec
   // with a single empty-string target.

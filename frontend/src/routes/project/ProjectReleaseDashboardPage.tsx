@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { releaseServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
-import { useScrollRestorationLoadMore } from "@/app/router/NavigationScrollRestoration";
+import {
+  markListScrollRestorationEntry,
+  useListScrollRestorationLoadMore,
+} from "@/app/router/NavigationScrollRestoration";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import {
@@ -87,7 +90,7 @@ export function ProjectReleaseDashboardPage({
     sessionKey: `project-${projectName}-releases`,
     fetchList: fetchReleaseList,
   });
-  useScrollRestorationLoadMore(paged);
+  useListScrollRestorationLoadMore(paged);
 
   return (
     <ProjectPageLayout>
@@ -239,6 +242,7 @@ function ReleaseRow({ release }: { release: Release }) {
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");
       } else {
+        markListScrollRestorationEntry();
         router.push(url);
       }
     },
