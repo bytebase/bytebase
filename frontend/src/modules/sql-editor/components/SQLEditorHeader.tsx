@@ -69,7 +69,11 @@ export function SQLEditorHeader() {
       if (event.ctrlKey || event.metaKey) {
         window.open(route.fullPath, "_blank");
       } else {
-        void maybeSwitchProject(project.name);
+        void maybeSwitchProject(project.name).then((switchedProject) => {
+          if (switchedProject) {
+            void navigate.push(route);
+          }
+        });
       }
     },
     [maybeSwitchProject, navigate, record, setRecentProject]

@@ -212,6 +212,9 @@ beforeEach(async () => {
   mocks.hasProjectPermission.mockImplementation(
     () => mocks.allowAccessDefaultProject
   );
+  mocks.maybeSwitchProject.mockImplementation(async (projectName: string) => {
+    return projectName;
+  });
   mocks.loadWorkspacePermissionState.mockResolvedValue(undefined);
   mocks.themeDark = true;
   window.alert = vi.fn();
@@ -276,11 +279,11 @@ describe("SQLEditorHeader", () => {
     unmount();
   });
 
-  test("switches the SQL Editor project from the breadcrumb switcher", () => {
+  test("switches the SQL Editor project from the breadcrumb switcher", async () => {
     const { render, unmount } = renderIntoContainer(<SQLEditorHeader />);
     render();
 
-    act(() => {
+    await act(async () => {
       mocks.breadcrumbProps?.onSelectProject?.(
         { name: "projects/other-project" },
         { ctrlKey: false, metaKey: false }
@@ -300,6 +303,34 @@ describe("SQLEditorHeader", () => {
     expect(mocks.maybeSwitchProject).toHaveBeenCalledWith(
       "projects/other-project"
     );
+    expect(mocks.push).toHaveBeenCalledWith({
+      fullPath: "/sql-editor/projects/other-project",
+    });
+    expect(window.open).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("navigates to the SQL Editor project route when clicking the current project", async () => {
+    const { render, unmount } = renderIntoContainer(<SQLEditorHeader />);
+    render();
+
+    await act(async () => {
+      mocks.breadcrumbProps?.onSelectProject?.(
+        { name: "projects/recent-project" },
+        { ctrlKey: false, metaKey: false }
+      );
+    });
+
+    expect(mocks.record).toHaveBeenCalledWith(
+      "/sql-editor/projects/recent-project"
+    );
+    expect(mocks.maybeSwitchProject).toHaveBeenCalledWith(
+      "projects/recent-project"
+    );
+    expect(mocks.push).toHaveBeenCalledWith({
+      fullPath: "/sql-editor/projects/recent-project",
+    });
     expect(window.open).not.toHaveBeenCalled();
 
     unmount();
