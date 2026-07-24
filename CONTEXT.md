@@ -60,6 +60,26 @@ _Avoid_: Plan, rollout, issue
 The recorded history of a database migration after execution. It is evidence that a change ran, not the proposed change itself.
 _Avoid_: Change request, release
 
+**Leader Type**:
+A singleton Bytebase responsibility that at most one replica may hold for each Leader Resource. Every type declares exactly one allowed resource kind.
+_Avoid_: Leadership Role, work claim, job, primary replica
+
+**Leader Resource**:
+The boundary within which a Leader Type is exclusive. `global` represents the entire Bytebase installation; other values identify one canonical Bytebase resource.
+_Avoid_: Leadership Scope, work item
+
+**Leadership Term**:
+One replica's uninterrupted, generation-specific authority to hold a Leader Type for a Leader Resource. Reacquiring an expired lease begins a new term even when the same replica succeeds.
+_Avoid_: Session, process lifetime, work claim
+
+**Leadership Lease**:
+The time-bounded grant underlying a Leadership Term. Expiration ends the authority granted by the term even if its work has not stopped.
+_Avoid_: Heartbeat, work claim
+
+**Work Claim**:
+A replica's right to process one independently distributable unit of work. It does not represent continuous ownership of a Leader Type.
+_Avoid_: Leader Type, Leadership Term, Leadership Lease
+
 **Composite Type**:
 A PostgreSQL-family standalone named row type (`CREATE TYPE x AS (...)`, `pg_type.typtype = 'c'` excluding table row types). Distinct from enums, domains, ranges, Oracle object types, and SQL Server table/alias types — each is its own concept with its own name.
 _Avoid_: UDT, user-defined type, custom type, object type

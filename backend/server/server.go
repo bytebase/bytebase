@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/leader"
 	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
 	"github.com/bytebase/bytebase/backend/component/sheet"
@@ -60,6 +61,7 @@ type Server struct {
 	taskScheduler      *taskrun.Scheduler
 	planCheckScheduler *plancheck.Scheduler
 	schemaSyncer       *schemasync.Syncer
+	leaderManager      *leader.Manager
 	approvalRunner     *review.Runner
 	notifyListener     *notifylistener.Listener
 	dataCleaner        *cleaner.DataCleaner
@@ -209,11 +211,12 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 	s.webhookManager = webhook.NewManager(stores, profile)
 	s.dbFactory = dbfactory.New(s.store, s.licenseService)
+	s.leaderManager = leader.NewManager(stores, profile.ReplicaID)
 
 	// Configure echo server.
 	s.echoServer = echo.New()
 
-	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.licenseService)
+	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.licenseService, s.leaderManager)
 	s.approvalRunner = review.NewRunner(stores, s.bus, s.webhookManager, s.licenseService)
 
 	s.taskScheduler = taskrun.NewScheduler(stores, s.bus, s.webhookManager, s.licenseService, profile)

@@ -601,6 +601,13 @@ CREATE TABLE replica_heartbeat (
     last_heartbeat TIMESTAMPTZ NOT NULL
 );
 
+CREATE TABLE leader_lease (
+    type TEXT PRIMARY KEY,
+    replica_id TEXT NOT NULL,
+    generation BIGINT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL
+);
+
 CREATE TABLE task_run_log (
     project text NOT NULL REFERENCES project(resource_id),
     task_run_id integer NOT NULL,

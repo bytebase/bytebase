@@ -17,9 +17,6 @@ const (
 	// AdvisoryLockKeyMigration is used by the schema migrator to ensure only
 	// one replica runs database migrations at a time.
 	AdvisoryLockKeyMigration AdvisoryLockKey = 1002
-	// AdvisoryLockKeySchemaSyncer is used by the schema syncer to ensure only
-	// one replica runs periodic schema sync at a time.
-	AdvisoryLockKeySchemaSyncer AdvisoryLockKey = 1003
 	// AdvisoryLockKeyVCSProviderUser is used as the namespace for active VCS
 	// provider user limit checks and upserts.
 	AdvisoryLockKeyVCSProviderUser AdvisoryLockKey = 1004
@@ -33,35 +30,6 @@ const (
 func AcquirePlanIssueRolloutAdvisoryLock(ctx context.Context, tx *sql.Tx, projectID string, planUID int64) error {
 	key := projectID + "/" + strconv.FormatInt(planUID, 10)
 	return AcquireAdvisoryXactLockWithStringKey(ctx, tx, AdvisoryLockKeyPlanIssueRollout, key)
-}
-
-// AdvisoryLock holds a dedicated connection for a session-level advisory lock.
-type AdvisoryLock struct {
-	conn *sql.Conn
-	key  AdvisoryLockKey
-}
-
-// TryAdvisoryLock attempts to acquire a session-level advisory lock using a
-// dedicated connection. Returns (lock, true) if acquired, (nil, false) if
-// already held by another session. Caller must call lock.Release() when done.
-func TryAdvisoryLock(ctx context.Context, db *sql.DB, key AdvisoryLockKey) (*AdvisoryLock, bool, error) {
-	conn, err := db.Conn(ctx)
-	if err != nil {
-		return nil, false, err
-	}
-
-	var acquired bool
-	if err := conn.QueryRowContext(ctx, "SELECT pg_try_advisory_lock($1)", int64(key)).Scan(&acquired); err != nil {
-		conn.Close()
-		return nil, false, err
-	}
-
-	if !acquired {
-		conn.Close()
-		return nil, false, nil
-	}
-
-	return &AdvisoryLock{conn: conn, key: key}, true, nil
 }
 
 // TryAdvisoryXactLock attempts to acquire a transaction-level advisory lock.
@@ -101,33 +69,4 @@ func AcquireAdvisoryXactLock(ctx context.Context, tx *sql.Tx, key AdvisoryLockKe
 func AcquireAdvisoryXactLockWithStringKey(ctx context.Context, tx *sql.Tx, namespace AdvisoryLockKey, key string) error {
 	_, err := tx.ExecContext(ctx, "SELECT pg_advisory_xact_lock($1, hashtext($2))", int32(namespace), key)
 	return err
-}
-
-// Release releases the advisory lock and returns the connection to the pool.
-// Uses context.Background() to ensure cleanup completes even if parent ctx is cancelled.
-func (l *AdvisoryLock) Release() error {
-	if l.conn == nil {
-		return nil
-	}
-	// Unlock then close; closing also releases but explicit unlock is cleaner
-	_, _ = l.conn.ExecContext(context.Background(), "SELECT pg_advisory_unlock($1)", int64(l.key))
-	return l.conn.Close()
-}
-
-// AcquireAdvisoryLock acquires a session-level advisory lock, blocking until
-// the lock is available. Caller must call lock.Release() when done.
-// This is useful for migrations where we want to wait rather than fail fast.
-func AcquireAdvisoryLock(ctx context.Context, db *sql.DB, key AdvisoryLockKey) (*AdvisoryLock, error) {
-	conn, err := db.Conn(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// pg_advisory_lock blocks until the lock is acquired
-	if _, err := conn.ExecContext(ctx, "SELECT pg_advisory_lock($1)", int64(key)); err != nil {
-		conn.Close()
-		return nil, err
-	}
-
-	return &AdvisoryLock{conn: conn, key: key}, nil
 }
