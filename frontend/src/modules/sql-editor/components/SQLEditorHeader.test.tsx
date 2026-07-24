@@ -15,6 +15,10 @@ const mocks = vi.hoisted(() => ({
         currentProjectName?: string;
         projectSwitchExcludeDefaultProject?: boolean;
         onBeforeSwitchWorkspace?: () => boolean;
+        onSelectWorkspace?: (
+          workspaceName: string,
+          event: { ctrlKey?: boolean; metaKey?: boolean }
+        ) => void;
         onSelectProject?: (
           project: { name: string },
           event: { ctrlKey?: boolean; metaKey?: boolean }
@@ -23,6 +27,9 @@ const mocks = vi.hoisted(() => ({
     | undefined,
   maybeSwitchProject: vi.fn().mockResolvedValue(undefined),
   record: vi.fn(),
+  switchWorkspace: vi.fn().mockResolvedValue(undefined),
+  assignLocation: vi.fn(),
+  push: vi.fn(),
   setRecentProject: vi.fn(),
   loadWorkspacePermissionState: vi.fn().mockResolvedValue(undefined),
   hasProjectPermission: vi.fn(),
@@ -57,9 +64,11 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@/app/router", () => ({
+  SQL_EDITOR_HOME_MODULE: "sql-editor.home",
   SQL_EDITOR_PROJECT_MODULE: "sql-editor.project",
   WORKSPACE_ROUTE_LANDING: "workspace.landing",
   useNavigate: () => ({
+    push: mocks.push,
     resolve: mocks.resolve,
   }),
 }));
@@ -67,6 +76,10 @@ vi.mock("@/app/router", () => ({
 vi.mock("@/hooks/useAppState", () => ({
   useRecentVisit: () => ({
     record: mocks.record,
+  }),
+  useSwitchWorkspace: () => mocks.switchWorkspace,
+  useWorkspace: () => ({
+    name: "workspaces/default",
   }),
 }));
 
@@ -204,6 +217,10 @@ beforeEach(async () => {
   mocks.themeDark = true;
   window.alert = vi.fn();
   window.open = vi.fn();
+  Object.defineProperty(globalThis, "location", {
+    writable: true,
+    value: { ...globalThis.location, assign: mocks.assignLocation },
+  });
   ({ SQLEditorHeader } = await import("./SQLEditorHeader"));
 });
 
@@ -232,6 +249,7 @@ describe("SQLEditorHeader", () => {
     );
     expect(mocks.loadWorkspacePermissionState).toHaveBeenCalled();
     expect(mocks.breadcrumbProps?.onBeforeSwitchWorkspace?.()).toBe(true);
+    expect(mocks.breadcrumbProps?.onSelectWorkspace).toEqual(expect.any(Function));
     expect(window.alert).not.toHaveBeenCalled();
 
     unmount();
@@ -284,6 +302,53 @@ describe("SQLEditorHeader", () => {
       "projects/other-project"
     );
     expect(window.open).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("keeps SQL Editor when clicking the current workspace", () => {
+    const { render, unmount } = renderIntoContainer(<SQLEditorHeader />);
+    render();
+
+    act(() => {
+      mocks.breadcrumbProps?.onSelectWorkspace?.("workspaces/default", {
+        ctrlKey: false,
+        metaKey: false,
+      });
+    });
+
+    expect(mocks.resolve).toHaveBeenCalledWith({
+      name: "sql-editor.home",
+    });
+    expect(mocks.record).toHaveBeenCalledWith("/sql-editor");
+    expect(mocks.push).toHaveBeenCalledWith({ name: "sql-editor.home" });
+    expect(mocks.switchWorkspace).not.toHaveBeenCalled();
+    expect(mocks.assignLocation).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("keeps SQL Editor when switching workspace", async () => {
+    const { render, unmount } = renderIntoContainer(<SQLEditorHeader />);
+    render();
+
+    await act(async () => {
+      mocks.breadcrumbProps?.onSelectWorkspace?.("workspaces/other", {
+        ctrlKey: false,
+        metaKey: false,
+      });
+    });
+
+    expect(mocks.resolve).toHaveBeenCalledWith({
+      name: "sql-editor.home",
+    });
+    expect(mocks.record).toHaveBeenCalledWith("/sql-editor");
+    expect(mocks.switchWorkspace).toHaveBeenCalledWith(
+      "workspaces/other",
+      false
+    );
+    expect(mocks.assignLocation).toHaveBeenCalledWith("/sql-editor");
+    expect(mocks.push).not.toHaveBeenCalled();
 
     unmount();
   });

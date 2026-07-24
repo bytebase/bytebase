@@ -48,7 +48,7 @@ export function Label(props: Props) {
   return null;
 }
 
-function EnvironmentNodeLabel({ node }: { node: SQLEditorTreeNode }) {
+function EnvironmentNodeLabel({ node }: Readonly<{ node: SQLEditorTreeNode }>) {
   const environment = (node as SQLEditorTreeNode<"environment">).meta.target;
   const theme = useSQLEditorTheme();
   const darkTheme = isDarkTheme(theme);

@@ -126,11 +126,13 @@ vi.mock("@/components/ui/input", () => ({
     onChange,
     placeholder,
     maxLength,
+    autoComplete,
   }: {
     value: string;
     onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     placeholder?: string;
     maxLength?: number;
+    autoComplete?: string;
   }) => (
     <input
       data-testid="title-input"
@@ -138,6 +140,7 @@ vi.mock("@/components/ui/input", () => ({
       onChange={onChange}
       placeholder={placeholder}
       maxLength={maxLength}
+      autoComplete={autoComplete}
     />
   ),
 }));
@@ -231,6 +234,23 @@ describe("SaveSheetModal", () => {
     ) as HTMLInputElement;
     expect(input).not.toBeNull();
     expect(input.value).toBe("Untitled");
+
+    unmount();
+  });
+
+  test("title input disables browser autocomplete", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <SaveSheetModal />
+    );
+    render();
+
+    emitSaveSheet({ tab: tabWithoutWorksheet });
+
+    const input = container.querySelector(
+      "[data-testid='title-input']"
+    ) as HTMLInputElement;
+    expect(input).not.toBeNull();
+    expect(input.autocomplete).toBe("off");
 
     unmount();
   });

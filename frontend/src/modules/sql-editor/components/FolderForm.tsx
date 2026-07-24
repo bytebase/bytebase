@@ -118,6 +118,7 @@ export function FolderForm({ folder, onFolderChange }: Props) {
           data-testid="folder-input"
           value={formattedFolderPath}
           placeholder={t("sql-editor.choose-folder")}
+          autoComplete="off"
           onFocus={() => setShowPopover(true)}
           onClick={() => setShowPopover(true)}
           onChange={(e) => handleInput(e.target.value)}

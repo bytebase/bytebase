@@ -1,5 +1,10 @@
 import { Building2, Check, ChevronDown, FolderKanban } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import {
+  type MouseEvent as ReactMouseEvent,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
   useCurrentRoute,
@@ -41,6 +46,10 @@ export type HeaderBreadcrumbProps = {
   currentProjectName?: string;
   projectSwitchExcludeDefaultProject?: boolean;
   onBeforeSwitchWorkspace?: () => boolean;
+  onSelectWorkspace?: (
+    workspaceName: string,
+    event: ReactMouseEvent<HTMLElement>
+  ) => void;
   onSelectProject?: NonNullable<ProjectSwitchPanelProps["onSelectProject"]>;
 };
 
@@ -78,7 +87,11 @@ function planVariant(
 // ---------------------------------------------------------------------------
 export function WorkspaceSegment({
   onBeforeSwitchWorkspace,
-}: Pick<HeaderBreadcrumbProps, "onBeforeSwitchWorkspace"> = {}) {
+  onSelectWorkspace,
+}: Pick<
+  HeaderBreadcrumbProps,
+  "onBeforeSwitchWorkspace" | "onSelectWorkspace"
+> = {}) {
   const { t } = useTranslation();
   const workspace = useWorkspace();
   const workspaceList = useWorkspaceList();
@@ -93,36 +106,66 @@ export function WorkspaceSegment({
   const navigate = useNavigate();
 
   const onSwitch = useCallback(
-    (workspaceName: string) => {
+    (workspaceName: string, event: ReactMouseEvent<HTMLElement>) => {
       if (workspaceName === currentWorkspaceName) return;
       if (onBeforeSwitchWorkspace && !onBeforeSwitchWorkspace()) return;
       setOpen(false);
+      if (onSelectWorkspace) {
+        onSelectWorkspace(workspaceName, event);
+        return;
+      }
       void switchWorkspace(workspaceName);
     },
-    [currentWorkspaceName, onBeforeSwitchWorkspace, switchWorkspace]
+    [
+      currentWorkspaceName,
+      onBeforeSwitchWorkspace,
+      onSelectWorkspace,
+      switchWorkspace,
+    ]
   );
 
   return (
     <div className="inline-flex items-center">
-      <RouterLink
-        to={{ name: WORKSPACE_ROUTE_LANDING }}
-        onClick={() => {
-          const route = navigate.resolve({ name: WORKSPACE_ROUTE_LANDING });
-          record(route.fullPath);
-        }}
-        className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control hover:bg-control-bg cursor-pointer no-underline"
-      >
-        <Building2 className="size-4 text-control-light shrink-0" />
-        <span className="truncate max-w-40">{workspace?.title}</span>
-        {label && (
-          <Badge
-            variant={planVariant(currentPlan)}
-            className="text-[10px] px-1.5 py-0 hidden lg:block"
-          >
-            {label}
-          </Badge>
-        )}
-      </RouterLink>
+      {onSelectWorkspace ? (
+        <Button
+          type="button"
+          appearance="secondary"
+          size="sm"
+          onClick={(event) => onSelectWorkspace(currentWorkspaceName, event)}
+          className="h-auto px-2 py-1 text-sm gap-x-1.5"
+        >
+          <Building2 className="size-4 text-control-light shrink-0" />
+          <span className="truncate max-w-40">{workspace?.title}</span>
+          {label && (
+            <Badge
+              variant={planVariant(currentPlan)}
+              className="text-[10px] px-1.5 py-0 hidden lg:block"
+            >
+              {label}
+            </Badge>
+          )}
+        </Button>
+      ) : (
+        <RouterLink
+          to={{ name: WORKSPACE_ROUTE_LANDING }}
+          onClick={() => {
+            const route = navigate.resolve({ name: WORKSPACE_ROUTE_LANDING });
+            record(route.fullPath);
+          }}
+          className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control hover:bg-control-bg cursor-pointer no-underline"
+        >
+          <Building2 className="size-4 text-control-light shrink-0" />
+          <span className="truncate max-w-40">{workspace?.title}</span>
+          {label && (
+            <Badge
+              variant={planVariant(currentPlan)}
+              className="text-[10px] px-1.5 py-0 hidden lg:block"
+            >
+              {label}
+            </Badge>
+          )}
+        </RouterLink>
+      )}
       {hasMultiple && (
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger
@@ -154,7 +197,7 @@ export function WorkspaceSegment({
                       ? "bg-control-bg font-medium text-accent"
                       : "text-control hover:bg-control-bg"
                   )}
-                  onClick={() => onSwitch(ws.name)}
+                  onClick={(event) => onSwitch(ws.name, event)}
                 >
                   <span className="flex flex-col items-start min-w-0">
                     <span className="truncate w-full text-left">
@@ -304,12 +347,16 @@ export function HeaderBreadcrumb({
   currentProjectName,
   projectSwitchExcludeDefaultProject,
   onBeforeSwitchWorkspace,
+  onSelectWorkspace,
   onSelectProject,
 }: HeaderBreadcrumbProps = {}) {
   return (
     <div className="flex items-center gap-x-1">
       <div className="hidden md:flex items-center gap-x-1">
-        <WorkspaceSegment onBeforeSwitchWorkspace={onBeforeSwitchWorkspace} />
+        <WorkspaceSegment
+          onBeforeSwitchWorkspace={onBeforeSwitchWorkspace}
+          onSelectWorkspace={onSelectWorkspace}
+        />
         <span className="text-control-placeholder select-none">/</span>
       </div>
       <ProjectSegment
