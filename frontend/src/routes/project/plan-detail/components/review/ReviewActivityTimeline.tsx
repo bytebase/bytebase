@@ -1,5 +1,12 @@
 import { FileText, Loader2, Pencil } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import {
@@ -8,6 +15,7 @@ import {
   CommentIconBadge,
   canEditIssueComment,
   IssueCommentRow,
+  type PlanChangeReferenceRenderer,
   ReviewSubmissionIcon,
   ReviewSubmissionSentence,
 } from "@/components/issue-activity/IssueCommentActivity";
@@ -15,7 +23,10 @@ import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
-import { diffPlanSpecsForEvent } from "@/lib/plan/diffPlanSpecs";
+import {
+  collectPlanUpdateSpecs,
+  diffPlanSpecsForEvent,
+} from "@/lib/plan/diffPlanSpecs";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -27,7 +38,9 @@ import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
+import { usePlanChangeReferenceData } from "../../hooks/usePlanChangeReferenceData";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
+import { PlanSpecChangeReference } from "../PlanChangeReference";
 import { consolidateConsecutive } from "./consolidateTimeline";
 import { foldTimeline } from "./foldTimeline";
 import { ReviewCommentComposer } from "./ReviewCommentComposer";
@@ -50,6 +63,22 @@ export function ReviewActivityTimeline({
   const page = usePlanDetailContext();
   const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
   const [expanded, setExpanded] = useState(false);
+  const planUpdateSpecs = useMemo(
+    () => collectPlanUpdateSpecs(comments),
+    [comments]
+  );
+  const changeReferenceResources = usePlanChangeReferenceData(planUpdateSpecs);
+  const renderPlanChangeReference = useCallback<PlanChangeReferenceRenderer>(
+    ({ siblings, spec }) => (
+      <PlanSpecChangeReference
+        className="font-medium text-main"
+        resources={changeReferenceResources}
+        siblings={siblings}
+        spec={spec}
+      />
+    ),
+    [changeReferenceResources]
+  );
 
   useEffect(() => {
     setExpanded(false);
@@ -111,6 +140,7 @@ export function ReviewActivityTimeline({
               isLast={isLast}
               key={item.entry.id}
               plan={plan}
+              renderPlanChangeReference={renderPlanChangeReference}
             />
           );
         })}
@@ -178,11 +208,13 @@ function ActivityRow({
   issue,
   isLast,
   plan,
+  renderPlanChangeReference,
 }: {
   entry: TimelineEntry;
   issue: Issue;
   isLast: boolean;
   plan: Plan;
+  renderPlanChangeReference: PlanChangeReferenceRenderer;
 }) {
   const source = entry.source;
   if (source.type === "comment") {
@@ -192,6 +224,7 @@ function ActivityRow({
         isLast={isLast}
         issue={issue}
         plan={plan}
+        renderPlanChangeReference={renderPlanChangeReference}
         similarCount={entry.similarCount}
       />
     );
@@ -264,12 +297,14 @@ function ReviewCommentRow({
   isLast,
   issue,
   plan,
+  renderPlanChangeReference,
   similarCount,
 }: {
   comment: IssueComment;
   isLast: boolean;
   issue: Issue;
   plan: Plan;
+  renderPlanChangeReference: PlanChangeReferenceRenderer;
   similarCount?: number;
 }) {
   const { t } = useTranslation();
@@ -399,6 +434,7 @@ function ReviewCommentRow({
       issue={issue}
       linkless
       plan={plan}
+      renderPlanChangeReference={renderPlanChangeReference}
       similarCount={similarCount}
       subjectSuffix={subjectSuffix}
     />

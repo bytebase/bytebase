@@ -186,7 +186,7 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
       return request;
     },
 
-    batchFetchProjects: async (names) => {
+    batchFetchProjects: async (names, silent = false) => {
       const validNames = [...new Set(names)].filter(
         (name) => isValidProjectName(name) && name !== defaultProjectName(get)
       );
@@ -194,7 +194,10 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
 
       try {
         const response = await projectServiceClientConnect.batchGetProjects(
-          createProto(BatchGetProjectsRequestSchema, { names: validNames })
+          createProto(BatchGetProjectsRequestSchema, { names: validNames }),
+          {
+            contextValues: createContextValues().set(silentContextKey, silent),
+          }
         );
         set((state) => ({
           projectsByName: {
@@ -207,7 +210,7 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
         return response.projects;
       } catch {
         const projects = await Promise.all(
-          validNames.map((name) => get().fetchProject(name))
+          validNames.map((name) => get().fetchProject(name, silent))
         );
         return projects.filter(
           (project): project is NonNullable<typeof project> => Boolean(project)

@@ -1,4 +1,3 @@
-import type { TFunction } from "i18next";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 
 export const getSelectedSpec = ({
@@ -19,17 +18,4 @@ export const isReleaseBackedPlan = (specs: Plan_Spec[]): boolean => {
       spec.config?.case === "changeDatabaseConfig" &&
       !!spec.config.value.release
   );
-};
-
-export const getSpecTitle = (spec: Plan_Spec, t: TFunction): string => {
-  if (spec.config.case === "createDatabaseConfig") {
-    return t("common.database");
-  }
-  if (spec.config.case === "changeDatabaseConfig") {
-    return t("plan.spec.type.database-change");
-  }
-  if (spec.config.case === "exportDataConfig") {
-    return t("common.export");
-  }
-  return t("common.unknown");
 };

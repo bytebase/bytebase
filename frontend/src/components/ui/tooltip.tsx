@@ -1,5 +1,6 @@
 import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 
 interface TooltipProps {
@@ -7,6 +8,7 @@ interface TooltipProps {
   readonly children: ReactNode;
   readonly side?: "top" | "bottom" | "left" | "right";
   readonly delayDuration?: number;
+  readonly popupClassName?: string;
 }
 
 export function Tooltip({
@@ -14,6 +16,7 @@ export function Tooltip({
   children,
   side = "top",
   delayDuration = 100,
+  popupClassName,
 }: TooltipProps) {
   if (!content) {
     return <>{children}</>;
@@ -31,7 +34,12 @@ export function Tooltip({
             sideOffset={4}
             className={LAYER_SURFACE_CLASS}
           >
-            <BaseTooltip.Popup className="max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md">
+            <BaseTooltip.Popup
+              className={cn(
+                "max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md",
+                popupClassName
+              )}
+            >
               {content}
               <BaseTooltip.Arrow className="fill-main" />
             </BaseTooltip.Popup>
@@ -52,6 +60,7 @@ export function BlockTooltip({
   children,
   side = "top",
   delayDuration = 100,
+  popupClassName,
 }: TooltipProps) {
   if (!content) {
     return <>{children}</>;
@@ -69,7 +78,12 @@ export function BlockTooltip({
             sideOffset={4}
             className={LAYER_SURFACE_CLASS}
           >
-            <BaseTooltip.Popup className="max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md">
+            <BaseTooltip.Popup
+              className={cn(
+                "max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md",
+                popupClassName
+              )}
+            >
               {content}
               <BaseTooltip.Arrow className="fill-main" />
             </BaseTooltip.Popup>

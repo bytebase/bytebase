@@ -38,12 +38,16 @@ export function PlanDetailTabStrip({
 }
 
 export function PlanDetailTabItem({
+  accessibleLabel,
   action,
+  boundedWidth = false,
   children,
   onSelect,
   selected,
 }: {
+  accessibleLabel?: string;
   action?: ReactNode;
+  boundedWidth?: boolean;
   children: ReactNode;
   onSelect: () => void;
   selected: boolean;
@@ -54,13 +58,18 @@ export function PlanDetailTabItem({
         // No transition here: the tab body swaps in the same commit, so a
         // color fade makes the highlight lag the content and read as flicker.
         "relative flex shrink-0 items-center rounded-t-lg border",
+        boundedWidth && "min-w-40 max-w-64",
         selected
           ? "border-gray-200 border-b-transparent bg-white"
           : "border-b-gray-200 border-transparent hover:opacity-80"
       )}
     >
       <button
-        className="flex min-h-9 shrink-0 items-center gap-2 px-4 py-2 text-left"
+        aria-label={accessibleLabel}
+        className={cn(
+          "flex min-h-9 min-w-0 items-center gap-2 px-4 py-2 text-left",
+          boundedWidth ? "flex-1" : "shrink-0"
+        )}
         onClick={onSelect}
         type="button"
       >

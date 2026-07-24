@@ -1683,6 +1683,15 @@
     "select-targets": "対象を選択",
     "spec": {
       "change": "変更",
+      "change-reference": {
+        "accessible-label": "変更 {{index}}: {{label}}",
+        "database-count_one": "{{count}} 個のデータベース",
+        "database-count_other": "{{count}} 個のデータベース",
+        "environment-overflow_one": "{{environment}} +{{count}} 環境",
+        "environment-overflow_other": "{{environment}} +{{count}} 環境",
+        "new-change": "新しい変更",
+        "tooltip-title": "変更 {{index}}"
+      },
       "type": {
         "database-change": "データベース変更"
       }

@@ -33,7 +33,10 @@ type DatabaseAccess = {
     name: string,
     silent?: boolean
   ) => Promise<Database>;
-  batchGetOrFetchDatabases: (names: string[]) => Promise<Database[]>;
+  batchGetOrFetchDatabases: (
+    names: string[],
+    silent?: boolean
+  ) => Promise<Database[]>;
   fetchDatabases: (params: DatabaseListParams) => Promise<{
     databases: Database[];
     nextPageToken: string;
@@ -63,8 +66,8 @@ export const getDatabaseByName = (name: string) =>
 export const getOrFetchDatabaseByName = (name: string, silent?: boolean) =>
   databaseAccess.getOrFetchDatabaseByName(name, silent);
 
-export const batchGetOrFetchDatabases = (names: string[]) =>
-  databaseAccess.batchGetOrFetchDatabases(names);
+export const batchGetOrFetchDatabases = (names: string[], silent?: boolean) =>
+  databaseAccess.batchGetOrFetchDatabases(names, silent);
 
 export const fetchDatabases = (params: DatabaseListParams) =>
   databaseAccess.fetchDatabases(params);

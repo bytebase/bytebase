@@ -1683,6 +1683,15 @@
     "select-targets": "Seleccionar destinos",
     "spec": {
       "change": "Cambio",
+      "change-reference": {
+        "accessible-label": "Cambio {{index}}: {{label}}",
+        "database-count_one": "{{count}} base de datos",
+        "database-count_other": "{{count}} bases de datos",
+        "environment-overflow_one": "{{environment}} +{{count}} entorno",
+        "environment-overflow_other": "{{environment}} +{{count}} entornos",
+        "new-change": "Nuevo cambio",
+        "tooltip-title": "Cambio {{index}}"
+      },
       "type": {
         "database-change": "Cambio de base de datos"
       }
