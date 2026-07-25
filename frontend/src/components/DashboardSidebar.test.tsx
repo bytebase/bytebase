@@ -4,11 +4,9 @@ import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
   DATABASE_ROUTE_DASHBOARD,
-  SQL_EDITOR_HOME_MODULE,
   WORKSPACE_ROUTE_LANDING,
   WORKSPACE_ROUTE_MEMBERS,
 } from "@/app/router";
-import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -21,9 +19,7 @@ const mocks = vi.hoisted(() => ({
     params: {},
     query: {},
   },
-  databaseChangeMode: 1,
   isSaaSMode: false,
-  workspaceLogo: "",
   project: undefined as { name: string; title: string } | undefined,
   workspace: {
     name: "workspaces/default",
@@ -108,7 +104,6 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
-  useAppFeature: () => mocks.databaseChangeMode,
   useIsSaaSMode: () => mocks.isSaaSMode,
   useProject: () => mocks.project,
   useRecentVisit: () => ({
@@ -118,10 +113,7 @@ vi.mock("@/hooks/useAppState", () => ({
     subscription: mocks.subscription,
   }),
   useSwitchWorkspace: () => vi.fn(),
-  useWorkspace: () => ({
-    ...mocks.workspace,
-    logo: mocks.workspaceLogo,
-  }),
+  useWorkspace: () => mocks.workspace,
   useWorkspaceList: () => mocks.workspaceList,
 }));
 
@@ -141,7 +133,6 @@ vi.mock("@/app/router", () => ({
   PROJECT_V1_ROUTE_DASHBOARD: "workspace.project",
   SETTING_ROUTE_WORKSPACE_GENERAL: "setting.workspace.general",
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION: "setting.workspace.subscription",
-  SQL_EDITOR_HOME_MODULE: "sql-editor.home",
   WORKSPACE_ROUTE_AUDIT_LOG: "workspace.audit-log",
   WORKSPACE_ROUTE_CUSTOM_APPROVAL: "workspace.custom-approval",
   WORKSPACE_ROUTE_DATA_CLASSIFICATION: "workspace.data-classification",
@@ -160,10 +151,6 @@ vi.mock("@/app/router", () => ({
   WORKSPACE_ROUTE_USER_PROFILE: "workspace.user-profile",
   WORKSPACE_ROUTE_USERS: "workspace.users",
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES: "workspace.workload-identities",
-}));
-
-vi.mock("@/assets/logo-full.svg", () => ({
-  default: "/assets/logo-full.svg",
 }));
 
 vi.mock("@/components/header/ProjectCreateDialog", () => ({
@@ -200,9 +187,7 @@ beforeEach(async () => {
   mocks.currentRoute.name = WORKSPACE_ROUTE_LANDING;
   mocks.currentRoute.fullPath = "/";
   mocks.currentRoute.params = {};
-  mocks.databaseChangeMode = DatabaseChangeMode.PIPELINE;
   mocks.isSaaSMode = false;
-  mocks.workspaceLogo = "";
   mocks.project = undefined;
   mocks.workspace = {
     name: "workspaces/default",
@@ -244,36 +229,18 @@ describe("DashboardSidebar", () => {
     saas.unmount();
   });
 
-  test("uses database-change mode for the logo route and records visits", () => {
-    mocks.databaseChangeMode = DatabaseChangeMode.EDITOR;
-    mocks.workspaceLogo = "https://example.com/logo.png";
+  test("does not render the workspace logo in the sidebar", () => {
+    mocks.workspace.logo = "https://example.com/logo.png";
     const { container, render, unmount } = renderIntoContainer(
       <DashboardSidebar />
     );
     render();
 
-    const logoLink = container.querySelector<HTMLAnchorElement>("nav > a");
-    expect(logoLink?.getAttribute("href")).toBe("/sql-editor");
-    expect(logoLink?.className).toContain("h-20");
-    expect(logoLink?.className).toContain("w-full");
-    expect(logoLink?.querySelector("img")?.getAttribute("src")).toBe(
-      "https://example.com/logo.png"
-    );
-    expect(logoLink?.querySelector("img")?.className).toContain("h-full");
-    expect(logoLink?.querySelector("img")?.className).toContain("w-full");
-    expect(logoLink?.querySelector("img")?.className).toContain("max-w-44");
-    expect(logoLink?.querySelector("img")?.className).toContain(
-      "object-contain"
-    );
-
-    act(() => {
-      logoLink?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
-      );
-    });
-
-    expect(mocks.record).toHaveBeenCalledWith("/sql-editor");
-    expect(mocks.push).toHaveBeenCalledWith({ name: SQL_EDITOR_HOME_MODULE });
+    expect(container.querySelector("nav > a > img")).toBeNull();
+    expect(
+      container.querySelector("nav > div:last-child")?.className
+    ).toContain("pt-3");
+    expect(mocks.record).not.toHaveBeenCalled();
 
     unmount();
   });
@@ -291,10 +258,7 @@ describe("DashboardSidebar", () => {
     expect(switcherBlock?.className).toContain("md:hidden");
     expect(switcherBlock?.textContent).toContain("Default Workspace");
     expect(switcherBlock?.textContent).toContain("Select project");
-    expect(switcherBlock?.previousElementSibling?.tagName).toBe("A");
-    expect(
-      switcherBlock?.previousElementSibling?.querySelector("img")
-    ).not.toBeNull();
+    expect(switcherBlock?.previousElementSibling).toBeNull();
 
     unmount();
   });

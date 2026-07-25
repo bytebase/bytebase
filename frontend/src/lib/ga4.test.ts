@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { initializeGA4 } from "./ga4";
 
 const ga4ScriptSelector = "script#bytebase-ga4-tag";
@@ -11,6 +11,7 @@ declare global {
 }
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   document.querySelector(ga4ScriptSelector)?.remove();
   delete window.dataLayer;
   delete window.gtag;
@@ -18,7 +19,17 @@ afterEach(() => {
 });
 
 describe("initializeGA4", () => {
+  test("does not load GA4 without a measurement ID", () => {
+    initializeGA4(true);
+
+    expect(document.querySelector(ga4ScriptSelector)).toBeNull();
+    expect(window.dataLayer).toBeUndefined();
+    expect(window.gtag).toBeUndefined();
+  });
+
   test("does not load GA4 outside SaaS mode", () => {
+    vi.stubEnv("BB_GA4_MEASUREMENT_ID", "G-TEST");
+
     initializeGA4(false);
 
     expect(document.querySelector(ga4ScriptSelector)).toBeNull();
@@ -27,18 +38,20 @@ describe("initializeGA4", () => {
   });
 
   test("loads the shared GA4 property in SaaS mode", () => {
+    vi.stubEnv("BB_GA4_MEASUREMENT_ID", "G-TEST");
+
     initializeGA4(true);
 
     const script = document.querySelector<HTMLScriptElement>(ga4ScriptSelector);
     expect(script?.async).toBe(true);
     expect(script?.src).toBe(
-      "https://www.googletagmanager.com/gtag/js?id=G-4BZ4JH7449"
+      "https://www.googletagmanager.com/gtag/js?id=G-TEST"
     );
     expect(window.dataLayer).toHaveLength(2);
     expect(window.dataLayer?.[0][0]).toBe("js");
     expect(window.dataLayer?.[1]).toEqual([
       "config",
-      "G-4BZ4JH7449",
+      "G-TEST",
       {
         page_location: `${window.location.origin}/`,
         page_path: "/",
@@ -47,6 +60,8 @@ describe("initializeGA4", () => {
   });
 
   test("sanitizes the initial page view URL", () => {
+    vi.stubEnv("BB_GA4_MEASUREMENT_ID", "G-TEST");
+
     window.history.replaceState(
       null,
       "",
@@ -57,7 +72,7 @@ describe("initializeGA4", () => {
 
     expect(window.dataLayer?.[1]).toEqual([
       "config",
-      "G-4BZ4JH7449",
+      "G-TEST",
       {
         page_location: `${window.location.origin}/oauth/callback`,
         page_path: "/oauth/callback",

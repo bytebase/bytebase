@@ -112,19 +112,30 @@ describe("DashboardBodyShell", () => {
     expect(
       harness.container.querySelector('[data-label="bb-main-body-wrapper"]')
     ).not.toBeNull();
-    expect(
-      harness.container.querySelector('[data-label="bb-dashboard-header"]')
-    ).not.toBeNull();
+    const header = harness.container.querySelector(
+      '[data-label="bb-dashboard-header"]'
+    );
+    const body = harness.container.querySelector(
+      '[data-label="bb-dashboard-body"]'
+    );
+    const mainBody = harness.container.querySelector(
+      '[data-label="bb-main-body-wrapper"]'
+    );
+    const sidebar = harness.container.querySelector(
+      '[data-label="bb-dashboard-static-sidebar"]'
+    );
+    expect(header).not.toBeNull();
+    expect(body).not.toBeNull();
+    expect(header?.nextElementSibling).toBe(body);
+    expect(body?.contains(sidebar)).toBe(true);
+    expect(body?.contains(mainBody)).toBe(true);
+    expect(mainBody?.contains(header)).toBe(false);
     expect(
       harness.container.querySelector(
-        '[data-testid="dashboard-header"][data-show-logo="false"][data-show-mobile-toggle="true"]'
+        '[data-testid="dashboard-header"][data-show-logo="true"][data-show-mobile-toggle="true"]'
       )
     ).not.toBeNull();
-    expect(
-      harness.container.querySelector(
-        '[data-label="bb-dashboard-static-sidebar"]'
-      )
-    ).not.toBeNull();
+    expect(sidebar).not.toBeNull();
 
     harness.unmount();
   });
