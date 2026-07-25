@@ -237,4 +237,19 @@ describe("RouteBehaviorRecorder", () => {
       },
     });
   });
+
+  test("keeps the current page session when only route query changes", async () => {
+    await act(async () => {
+      root.render(<RouteBehaviorRecorder />);
+    });
+
+    mocks.route.fullPath =
+      "/projects/customer-a/databases?email=a@example.com&filter=prod";
+
+    await act(async () => {
+      root.render(<RouteBehaviorRecorder />);
+    });
+
+    expect(mocks.analytics.captureMetric).not.toHaveBeenCalled();
+  });
 });

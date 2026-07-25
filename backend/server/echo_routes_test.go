@@ -60,6 +60,13 @@ func TestSecurityHeadersMiddleware_GA4Sources(t *testing.T) {
 	}
 }
 
+func TestSecurityHeadersMiddleware_SaaSAllowsPostHog(t *testing.T) {
+	csp := testSecurityHeadersCSP(t, true)
+	if !strings.Contains(csp, "https://us.i.posthog.com") {
+		t.Errorf("Content-Security-Policy = %q, want to contain PostHog host", csp)
+	}
+}
+
 func testSecurityHeadersCSP(t *testing.T, saas bool) string {
 	t.Helper()
 

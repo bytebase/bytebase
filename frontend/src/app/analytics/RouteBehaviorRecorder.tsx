@@ -112,7 +112,7 @@ function EnabledRouteBehaviorRecorder() {
             visibleDurationMs: 0,
           }
         : undefined;
-  }, [config, route.name, route.fullPath]);
+  }, [config, route.name]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
