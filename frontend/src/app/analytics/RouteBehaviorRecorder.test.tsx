@@ -237,4 +237,44 @@ describe("RouteBehaviorRecorder", () => {
       },
     });
   });
+
+  test("keeps the current page session when only route query changes", async () => {
+    await act(async () => {
+      root.render(<RouteBehaviorRecorder />);
+    });
+
+    mocks.route.fullPath =
+      "/projects/customer-a/databases?email=a@example.com&filter=prod";
+
+    await act(async () => {
+      root.render(<RouteBehaviorRecorder />);
+    });
+
+    expect(mocks.analytics.captureMetric).not.toHaveBeenCalled();
+  });
+
+  test("emits a page session metric when route path changes", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000);
+
+    await act(async () => {
+      root.render(<RouteBehaviorRecorder />);
+    });
+
+    vi.setSystemTime(6_000);
+    mocks.route.fullPath = "/projects/customer-b/databases";
+
+    await act(async () => {
+      root.render(<RouteBehaviorRecorder />);
+    });
+
+    expect(mocks.analytics.captureMetric).toHaveBeenCalledWith({
+      event: "page session",
+      properties: expect.objectContaining({
+        route_id: "workspace.project.database",
+        duration_ms: 5000,
+        visible_duration_ms: 5000,
+      }),
+    });
+  });
 });

@@ -44,6 +44,7 @@ function EnabledRouteBehaviorRecorder() {
   const currentUserName = useAppStore((state) => state.currentUserName);
   const workspaceName = useAppStore((state) => state.workspaceResourceName());
   const pageSessionRef = useRef<ActivePageSession | undefined>(undefined);
+  const routePath = route.fullPath.split(/[?#]/, 1)[0];
 
   const config = useMemo(
     () =>
@@ -112,7 +113,7 @@ function EnabledRouteBehaviorRecorder() {
             visibleDurationMs: 0,
           }
         : undefined;
-  }, [config, route.name, route.fullPath]);
+  }, [config, route.name, routePath]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
