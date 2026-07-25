@@ -59,8 +59,7 @@ jobs:
           BB_POSTHOG_RECORDING_SAMPLE_RATE: ${{ vars.BB_POSTHOG_RECORDING_SAMPLE_RATE || '1' }}
         run: |
           if [ -z "${BB_POSTHOG_KEY}" ] || [ -z "${BB_POSTHOG_HOST}" ]; then
-            echo "BB_POSTHOG_KEY and BB_POSTHOG_HOST must be configured for Bytebase Cloud frontend analytics." >&2
-            exit 1
+            echo "BB_POSTHOG_KEY or BB_POSTHOG_HOST is not configured. Frontend analytics will be disabled." >&2
           fi
           {
             echo "BB_POSTHOG_KEY=${BB_POSTHOG_KEY}"
