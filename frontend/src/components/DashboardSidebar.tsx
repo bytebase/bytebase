@@ -20,10 +20,8 @@ import {
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
-  router,
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-  SQL_EDITOR_HOME_MODULE,
   useCurrentRoute,
   WORKSPACE_ROUTE_AUDIT_LOG,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
@@ -44,16 +42,9 @@ import {
   WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/app/router";
-import logoFull from "@/assets/logo-full.svg";
 import { MobileSidebarSwitchers } from "@/components/header/HeaderBreadcrumb";
 import { RouterLink } from "@/components/RouterLink";
-import {
-  useAppFeature,
-  useIsSaaSMode,
-  useRecentVisit,
-  useWorkspace,
-} from "@/hooks/useAppState";
-import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
+import { useIsSaaSMode } from "@/hooks/useAppState";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -299,9 +290,6 @@ export function DashboardSidebar() {
   const rawItems = useSidebarItems();
   const filteredItems = useMemo(() => filterSidebarList(rawItems), [rawItems]);
   const currentRoute = useCurrentRoute();
-  const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
-  const workspace = useWorkspace();
-  const { record } = useRecentVisit();
   const currentRouteName = currentRoute.name ?? "";
 
   // -- Expand / collapse state -----------------------------------------------
@@ -363,16 +351,6 @@ export function DashboardSidebar() {
 
   // -- Navigation ------------------------------------------------------------
 
-  const homeRoute = useMemo(() => {
-    const target =
-      databaseChangeMode === DatabaseChangeMode.EDITOR
-        ? SQL_EDITOR_HOME_MODULE
-        : WORKSPACE_ROUTE_LANDING;
-    return {
-      name: target,
-    };
-  }, [databaseChangeMode]);
-
   const onGroupClick = useCallback((item: SidebarItem, key: string) => {
     if (item.children && item.children.length > 0) {
       manualToggledRef.current.add(key);
@@ -388,15 +366,6 @@ export function DashboardSidebar() {
       });
     }
   }, []);
-
-  const handleHomeClick = useCallback(() => {
-    const route = router.resolve(homeRoute);
-    record(route.fullPath);
-  }, [homeRoute, record]);
-
-  // -- Logo ------------------------------------------------------------------
-
-  const logoSrc = workspace?.logo || logoFull;
 
   // -- Render ----------------------------------------------------------------
 
@@ -497,19 +466,8 @@ export function DashboardSidebar() {
 
   return (
     <nav className="flex-1 flex flex-col overflow-y-hidden border-r border-block-border">
-      <RouterLink
-        to={homeRoute}
-        className="h-20 w-full shrink-0 cursor-pointer flex items-center justify-center px-4"
-        onClick={handleHomeClick}
-      >
-        <img
-          src={logoSrc}
-          alt="Bytebase"
-          className="h-full w-full max-w-44 object-contain"
-        />
-      </RouterLink>
       <MobileSidebarSwitchers />
-      <div className="flex-1 overflow-y-auto px-2.5 pb-4 flex flex-col gap-y-1">
+      <div className="flex-1 overflow-y-auto px-2.5 pt-3 pb-4 flex flex-col gap-y-1">
         {filteredItems.map((item, i) => renderItem(item, i))}
       </div>
     </nav>

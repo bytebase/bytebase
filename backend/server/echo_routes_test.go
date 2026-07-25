@@ -60,11 +60,23 @@ func TestSecurityHeadersMiddleware_GA4Sources(t *testing.T) {
 	}
 }
 
-func TestSecurityHeadersMiddleware_SaaSAllowsPostHogIngestionHosts(t *testing.T) {
+func TestSecurityHeadersMiddleware_SaaSAllowsPostHogHosts(t *testing.T) {
 	csp := testSecurityHeadersCSP(t, true)
-	if !strings.Contains(csp, "https://*.i.posthog.com") {
-		t.Errorf("Content-Security-Policy = %q, want to contain PostHog ingestion hosts", csp)
+	for _, directive := range []string{"script-src", "connect-src"} {
+		if source := cspDirective(csp, directive); !strings.Contains(source, "https://*.i.posthog.com") {
+			t.Errorf("Content-Security-Policy %q directive = %q, want to contain PostHog hosts; csp=%q", directive, source, csp)
+		}
 	}
+}
+
+func cspDirective(csp string, directive string) string {
+	for _, source := range strings.Split(csp, ";") {
+		source = strings.TrimSpace(source)
+		if strings.HasPrefix(source, directive+" ") {
+			return source
+		}
+	}
+	return ""
 }
 
 func testSecurityHeadersCSP(t *testing.T, saas bool) string {

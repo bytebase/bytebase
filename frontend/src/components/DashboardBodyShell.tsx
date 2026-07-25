@@ -98,11 +98,29 @@ export function DashboardBodyShell({
       mainContainer: mainContainerRef.current,
     };
     onReady?.(targets);
-  }, [isDesktop, onReady, showHeader, showWorkspaceChrome, variant]);
+  }, [isDesktop, onReady, showWorkspaceChrome]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="flex flex-1 overflow-hidden">
+      {showHeader ? (
+        <nav
+          className="shrink-0 border-b border-block-border bg-white"
+          data-label="bb-dashboard-header"
+        >
+          <div className="mx-auto max-w-full">
+            <DashboardHeader
+              showLogo={showHeader}
+              showMobileSidebarToggle={showWorkspaceChrome}
+              onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
+            />
+          </div>
+        </nav>
+      ) : null}
+
+      <div
+        className="flex flex-1 overflow-hidden"
+        data-label="bb-dashboard-body"
+      >
         {showWorkspaceChrome ? (
           <>
             {createPortal(mobileSidebarOverlay, getLayerRoot("overlay"))}
@@ -128,21 +146,6 @@ export function DashboardBodyShell({
           )}
           data-label="bb-main-body-wrapper"
         >
-          {showHeader ? (
-            <nav
-              className="border-b border-block-border bg-white"
-              data-label="bb-dashboard-header"
-            >
-              <div className="mx-auto max-w-full">
-                <DashboardHeader
-                  showLogo={variant === "issues"}
-                  showMobileSidebarToggle={showWorkspaceChrome}
-                  onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
-                />
-              </div>
-            </nav>
-          ) : null}
-
           <div
             id="bb-layout-main"
             data-scroll-restoration-id={MAIN_SCROLL_RESTORATION_ID}

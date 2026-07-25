@@ -29,9 +29,6 @@ const mocks = vi.hoisted(() => ({
       };
     }
   ),
-  workspace: {
-    logo: "",
-  },
 }));
 
 const t = vi.hoisted(
@@ -69,10 +66,6 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-vi.mock("@/hooks/useAppState", () => ({
-  useWorkspace: () => mocks.workspace,
-}));
-
 vi.mock("@/hooks/useRecentVisit", () => ({
   useRecentVisit: () => ({
     record: mocks.record,
@@ -106,10 +99,6 @@ vi.mock("@/stores/app", () => {
   return { useAppStore };
 });
 
-vi.mock("@/assets/logo-full.svg", () => ({
-  default: "/assets/logo-full.svg",
-}));
-
 let ProjectSidebar: typeof import("./ProjectSidebar").ProjectSidebar;
 
 const renderIntoContainer = (element: ReactElement) => {
@@ -138,7 +127,6 @@ beforeEach(async () => {
     projectId: "sample",
   };
   mocks.defaultProject = "";
-  mocks.workspace.logo = "";
   ({ ProjectSidebar } = await import("./ProjectSidebar"));
 });
 
@@ -173,22 +161,16 @@ describe("ProjectSidebar", () => {
     unmount();
   });
 
-  test("gives the custom logo an explicit rendered size", () => {
-    mocks.workspace.logo = "https://example.com/logo.png";
+  test("does not render the workspace logo in the sidebar", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ProjectSidebar />
     );
     render();
 
-    const logoLink = container.querySelector("nav > a");
-    const logo = container.querySelector("nav > a img");
-    expect(logoLink?.className).toContain("h-20");
-    expect(logoLink?.className).toContain("w-full");
-    expect(logo?.getAttribute("src")).toBe("https://example.com/logo.png");
-    expect(logo?.className).toContain("h-full");
-    expect(logo?.className).toContain("w-full");
-    expect(logo?.className).toContain("max-w-44");
-    expect(logo?.className).toContain("object-contain");
+    expect(container.querySelector("nav > a > img")).toBeNull();
+    expect(
+      container.querySelector("nav > div:last-child")?.className
+    ).toContain("pt-3");
 
     unmount();
   });

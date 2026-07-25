@@ -159,7 +159,7 @@ func securityHeadersMiddleware(saas bool) echo.MiddlewareFunc {
 	imgSrc := "img-src 'self' data: blob: discordapp.com"
 	connectSrc := "connect-src 'self' data: ws: wss: https://api.github.com https://hub.bytebase.com"
 	if saas {
-		scriptSrc += " https://www.googletagmanager.com"
+		scriptSrc += " https://www.googletagmanager.com https://*.i.posthog.com"
 		imgSrc += " https://*.google-analytics.com https://*.googletagmanager.com"
 		connectSrc += " https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.i.posthog.com"
 	}

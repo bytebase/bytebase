@@ -17,7 +17,6 @@ import {
   PROJECT_V1_ROUTE_AUDIT_LOGS,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DATABASES,
-  PROJECT_V1_ROUTE_DETAIL,
   PROJECT_V1_ROUTE_GITOPS,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_MASKING_EXEMPTION,
@@ -30,9 +29,7 @@ import {
   PROJECT_V1_ROUTE_WEBHOOKS,
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/app/router/handles";
-import logoFull from "@/assets/logo-full.svg";
 import { RouterLink } from "@/components/RouterLink";
-import { useWorkspace } from "@/hooks/useAppState";
 import { useRecentVisit } from "@/hooks/useRecentVisit";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
@@ -236,8 +233,6 @@ export function ProjectSidebar() {
   const currentRouteName = route.name?.toString() ?? "";
   const projectId = (route.params.projectId as string | undefined) ?? "";
 
-  const customLogo = useWorkspace()?.logo ?? "";
-
   const { record } = useRecentVisit();
   const recordVisitRef = useRef(record);
   recordVisitRef.current = record;
@@ -334,23 +329,6 @@ export function ProjectSidebar() {
     [projectId]
   );
 
-  const homeRoute = useMemo(
-    () => ({
-      name: PROJECT_V1_ROUTE_DETAIL,
-      params: { projectId },
-    }),
-    [projectId]
-  );
-
-  const handleHomeClick = useCallback(() => {
-    const route = router.resolve(homeRoute);
-    recordVisitRef.current?.(route.fullPath);
-  }, [homeRoute]);
-
-  // -- Logo ------------------------------------------------------------------
-
-  const logoSrc = customLogo || logoFull;
-
   // -- Render ----------------------------------------------------------------
 
   const renderChildren = (children: SidebarItem[], parentIndex: number) => {
@@ -431,18 +409,7 @@ export function ProjectSidebar() {
 
   return (
     <nav className="flex-1 flex flex-col overflow-y-hidden border-r border-block-border">
-      <RouterLink
-        to={homeRoute}
-        className="h-20 w-full shrink-0 cursor-pointer flex items-center justify-center px-4"
-        onClick={handleHomeClick}
-      >
-        <img
-          src={logoSrc}
-          alt="Bytebase"
-          className="h-full w-full max-w-44 object-contain"
-        />
-      </RouterLink>
-      <div className="flex-1 overflow-y-auto px-2.5 pb-4 flex flex-col gap-y-1">
+      <div className="flex-1 overflow-y-auto px-2.5 pt-3 pb-4 flex flex-col gap-y-1">
         {filteredItems.map((item, i) => renderItem(item, i))}
       </div>
     </nav>
