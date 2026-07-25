@@ -161,7 +161,7 @@ func securityHeadersMiddleware(saas bool) echo.MiddlewareFunc {
 	if saas {
 		scriptSrc += " https://www.googletagmanager.com"
 		imgSrc += " https://*.google-analytics.com https://*.googletagmanager.com"
-		connectSrc += " https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://us.i.posthog.com"
+		connectSrc += " https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.i.posthog.com"
 	}
 	csp := "default-src 'self'; " +
 		scriptSrc + "; " +
