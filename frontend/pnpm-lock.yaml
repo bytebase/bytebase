@@ -203,8 +203,8 @@ importers:
         specifier: 7.8.5
         version: 7.8.5
       slug:
-        specifier: 11.0.1
-        version: 11.0.1
+        specifier: 12.0.1
+        version: 12.0.1
       sql-formatter:
         specifier: 15.8.2
         version: 15.8.2
@@ -3929,8 +3929,8 @@ packages:
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
 
-  slug@11.0.1:
-    resolution: {integrity: sha512-VrM060OM/E7rdLQSnp6JHrzFfJFmqQBp0+TMhZStnEB8PfNliaZ9UWYjTHGHLUFVJorZ8TjVd/aKvIxHWU2O7g==}
+  slug@12.0.1:
+    resolution: {integrity: sha512-p8lJZLw/5GDmxXO3FKjiOYjiBMFGDc+/8DgutoXKqjn8KX7buzbkX1unEavO7T+GHGLTOyeb7VjWTRWpb8wmuQ==}
     hasBin: true
 
   source-map-js@1.2.1:
@@ -8316,7 +8316,7 @@ snapshots:
 
   siginfo@2.0.0: {}
 
-  slug@11.0.1: {}
+  slug@12.0.1: {}
 
   source-map-js@1.2.1: {}
 
