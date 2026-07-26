@@ -14,7 +14,7 @@ import (
 	// Import go-ora Oracle driver.
 
 	"github.com/pkg/errors"
-	goora "github.com/sijms/go-ora/v2"
+	goora "github.com/sijms/go-ora/v3"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
