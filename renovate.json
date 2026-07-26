@@ -1,9 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "schedule": ["* * 31 2 *"],
   "postUpdateOptions": ["gomodTidy", "pnpmDedupe"],
-  "allowedCommands": ["^pnpm install --no-frozen-lockfile$"],
   "customManagers": [
     {
       "customType": "regex",
@@ -80,7 +78,9 @@
     }
   ],
   "ignoreDeps": [
+    "github.com/pingcap/tidb",
     "github.com/pingcap/tidb/pkg/parser",
+    "github.com/form3tech-oss/jwt-go",
     "github.com/elastic/go-elasticsearch/v7",
     "typescript-6"
   ]
