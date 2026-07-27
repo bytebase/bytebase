@@ -23,11 +23,11 @@ import { useCurrentUser } from "@/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/hooks/usePagedData";
 import { useURLSearchParam } from "@/hooks/useURLSearchParam";
 import { refreshIssueList } from "@/lib/issue/issueListRefresh";
+import { projectIssuesPagedDataCacheScope } from "@/lib/projectPagedDataCache";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   buildIssueFilterBySearchParams,
   buildSearchParamsBySearchText,
@@ -35,7 +35,6 @@ import {
   mergeSearchParams,
   type SearchScope as VueSearchScope,
 } from "@/utils";
-import { projectIssuesPagedDataCacheScope } from "./pagedDataCacheScope";
 
 const serializeSearchParams = (params: SearchParams): string =>
   buildSearchTextBySearchParams({

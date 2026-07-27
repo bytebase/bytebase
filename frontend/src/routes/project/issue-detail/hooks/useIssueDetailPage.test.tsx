@@ -1,11 +1,18 @@
 import { create } from "@bufbuild/protobuf";
+import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { State } from "@/types/proto-es/v1/common_pb";
 import {
-  IssueSchema,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+  clearPagedDataCache,
+  readPagedDataCache,
+  writePagedDataCache,
+} from "@/hooks/pagedDataCache";
+import {
+  projectIssuesPagedDataCacheScope,
+  projectPlansPagedDataCacheScope,
+} from "@/lib/projectPagedDataCache";
+import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
+import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import {
@@ -78,6 +85,7 @@ const issue = create(IssueSchema, {
   title: "Issue",
   plan: "projects/foo/plans/1",
   status: IssueStatus.OPEN,
+  updateTime: { seconds: 1n, nanos: 0 },
 });
 
 const plan = create(PlanSchema, {
@@ -106,6 +114,7 @@ const rolloutWithStatus = (status: Task_Status) =>
 describe("useIssueDetailPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearPagedDataCache();
     mocks.getIssue.mockResolvedValue(issue);
     mocks.getPlan.mockResolvedValue(plan);
     mocks.getPlanCheckRun.mockRejectedValue(new Error("no plan check run"));
@@ -166,5 +175,35 @@ describe("useIssueDetailPage", () => {
     expect(result.current.rollout?.stages[0].tasks[0].status).toBe(
       Task_Status.SKIPPED
     );
+  });
+
+  test("invalidates Issue and Plan lists when the linked Issue changes", async () => {
+    const { result } = renderHook(() =>
+      useIssueDetailPage({ issueId: "1", pageHost: null, projectId: "foo" })
+    );
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    writePagedDataCache(
+      "plans",
+      { dataList: ["plan"], hasMore: false, nextPageToken: "" },
+      projectPlansPagedDataCacheScope("foo")
+    );
+    writePagedDataCache(
+      "issues",
+      { dataList: ["issue"], hasMore: false, nextPageToken: "" },
+      projectIssuesPagedDataCacheScope("foo")
+    );
+
+    act(() => {
+      result.current.patchState({
+        issue: create(IssueSchema, {
+          ...result.current.issue!,
+          status: IssueStatus.CANCELED,
+          updateTime: create(TimestampSchema, { seconds: 2n, nanos: 0 }),
+        }),
+      });
+    });
+
+    expect(readPagedDataCache("plans")).toBeUndefined();
+    expect(readPagedDataCache("issues")).toBeUndefined();
   });
 });

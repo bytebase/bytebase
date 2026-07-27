@@ -11,13 +11,13 @@ import { router } from "@/app/router";
 import { WORKSPACE_ROUTE_403, WORKSPACE_ROUTE_404 } from "@/app/router/handles";
 import { buildPermissionDeniedRouteQuery } from "@/app/router/permissionDenied";
 import { useProjectByName } from "@/hooks/useProjectByName";
+import { invalidateProjectPagedDataCacheIfChanged } from "@/lib/projectPagedDataCache";
 import { projectNamePrefix } from "@/stores";
 import { useAppStore } from "@/stores/app";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import {
   GetIssueRequestSchema,
   type Issue,
-  IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   GetPlanCheckRunRequestSchema,
@@ -34,7 +34,6 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { UNKNOWN_PLAN_NAME, unknownPlan } from "@/types/v1/issue/plan";
 import { getRolloutFromPlan, minmax, setDocumentTitle } from "@/utils";
-import { invalidateProjectPagedDataCacheIfChanged } from "../../pagedDataCacheScope";
 import type { ProjectIssueDetailPageProps } from "../types";
 import {
   type IssueDetailType,
@@ -317,6 +316,12 @@ export const useIssueDetailPage = ({
       invalidateProjectPagedDataCacheIfChanged(
         previous.projectId,
         "issues",
+        previous.issue,
+        patch.issue
+      );
+      invalidateProjectPagedDataCacheIfChanged(
+        previous.projectId,
+        "plans",
         previous.issue,
         patch.issue
       );

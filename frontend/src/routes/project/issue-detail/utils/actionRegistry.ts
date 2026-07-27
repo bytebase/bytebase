@@ -1,12 +1,15 @@
 import type { TFunction } from "i18next";
 import { first, orderBy } from "lodash-es";
 import { extractUserEmail } from "@/stores";
-import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
+import {
+  ApprovalStatus,
+  IssueStatus,
+  State,
+} from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Issue_Approver_Status,
   Issue_Type,
-  IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";

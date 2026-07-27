@@ -6,9 +6,10 @@ import {
 } from "@/hooks/pagedDataCache";
 import {
   invalidateProjectPagedDataCacheIfChanged,
+  invalidateProjectPlansPagedDataCacheForIssues,
   projectIssuesPagedDataCacheScope,
   projectPlansPagedDataCacheScope,
-} from "./pagedDataCacheScope";
+} from "./projectPagedDataCache";
 
 describe("project paged data cache scopes", () => {
   beforeEach(clearPagedDataCache);
@@ -70,6 +71,35 @@ describe("project paged data cache scopes", () => {
     );
 
     expect(readPagedDataCache("plans")?.dataList).toEqual(["plan"]);
+  });
+
+  test("invalidates Plan caches for every Plan-backed Issue project", () => {
+    writePagedDataCache(
+      "plans-a",
+      { dataList: ["plan-a"], hasMore: false, nextPageToken: "" },
+      projectPlansPagedDataCacheScope("a")
+    );
+    writePagedDataCache(
+      "plans-b",
+      { dataList: ["plan-b"], hasMore: false, nextPageToken: "" },
+      projectPlansPagedDataCacheScope("b")
+    );
+    writePagedDataCache(
+      "plans-c",
+      { dataList: ["plan-c"], hasMore: false, nextPageToken: "" },
+      projectPlansPagedDataCacheScope("c")
+    );
+
+    invalidateProjectPlansPagedDataCacheForIssues([
+      { name: "projects/a/issues/1", plan: "projects/a/plans/1" },
+      { name: "projects/a/issues/2", plan: "projects/a/plans/2" },
+      { name: "projects/b/issues/1", plan: "projects/b/plans/1" },
+      { name: "projects/c/issues/1", plan: "" },
+    ]);
+
+    expect(readPagedDataCache("plans-a")).toBeUndefined();
+    expect(readPagedDataCache("plans-b")).toBeUndefined();
+    expect(readPagedDataCache("plans-c")?.dataList).toEqual(["plan-c"]);
   });
 
   test("keeps the cache when the detail route changes resources", () => {

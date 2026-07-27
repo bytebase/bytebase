@@ -14,9 +14,9 @@ import { cn } from "@/lib/utils";
 import { extractUserEmail, pushNotification } from "@/stores";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Color } from "@/types/proto-es/google/type/color_pb";
+import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
   IssueSchema,
-  IssueStatus,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { colorToHex, hasProjectPermissionV2 } from "@/utils";

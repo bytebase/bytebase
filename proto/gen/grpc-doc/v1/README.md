@@ -34,6 +34,7 @@
     - [ApprovalStatus](#bytebase-v1-ApprovalStatus)
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
+    - [IssueStatus](#bytebase-v1-IssueStatus)
     - [RiskLevel](#bytebase-v1-RiskLevel)
     - [State](#bytebase-v1-State)
     - [StatementType](#bytebase-v1-StatementType)
@@ -328,7 +329,6 @@
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
     - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
-    - [IssueStatus](#bytebase-v1-IssueStatus)
   
     - [IssueService](#bytebase-v1-IssueService)
   
@@ -1154,6 +1154,22 @@ Data export format.
 | JSON | 2 | JavaScript Object Notation format. |
 | SQL | 3 | SQL statements format. |
 | XLSX | 4 | Microsoft Excel spreadsheet format. |
+
+
+
+<a name="bytebase-v1-IssueStatus"></a>
+
+### IssueStatus
+The status of an issue.
+Lives at the top level so both plan_service.proto and issue_service.proto
+can reference it without a circular import.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ISSUE_STATUS_UNSPECIFIED | 0 | Unspecified status. |
+| OPEN | 1 | Issue is open and active. |
+| DONE | 2 | Issue is completed. |
+| CANCELED | 3 | Issue is canceled. |
 
 
 
@@ -5220,8 +5236,9 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | plan_check_run_status_count | [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry) | repeated | The status count of the latest plan check runs. Keys are: - SUCCESS - WARNING - ERROR - RUNNING |
 | has_rollout | [bool](#bool) |  | Whether the plan has started the rollout. |
-| approval_status | [ApprovalStatus](#bytebase-v1-ApprovalStatus) |  | The approval status of the linked issue. Unspecified when no linked issue exists. |
+| approval_status | [ApprovalStatus](#bytebase-v1-ApprovalStatus) |  | The approval status of the linked issue. Unspecified when no linked issue exists or the linked issue is a draft. |
 | rollout_stage_summaries | [Plan.RolloutStageSummary](#bytebase-v1-Plan-RolloutStageSummary) | repeated | Per-stage rollout status summary. Ordered by environment deployment order. Empty when no rollout exists. |
+| issue_status | [IssueStatus](#bytebase-v1-IssueStatus) |  | The lifecycle status of the linked issue. Unspecified when no linked issue exists. |
 
 
 
@@ -6049,20 +6066,6 @@ Approval status values.
 | PENDING | 1 | Approval pending. |
 | APPROVED | 2 | Approved. |
 | REJECTED | 3 | Rejected. |
-
-
-
-<a name="bytebase-v1-IssueStatus"></a>
-
-### IssueStatus
-The status of an issue.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ISSUE_STATUS_UNSPECIFIED | 0 | Unspecified status. |
-| OPEN | 1 | Issue is open and active. |
-| DONE | 2 | Issue is completed. |
-| CANCELED | 3 | Issue is canceled. |
 
 
  

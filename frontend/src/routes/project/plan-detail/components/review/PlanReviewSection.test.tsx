@@ -2,12 +2,12 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
-import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  IssueComment_Approval_Status,
+  ApprovalStatus,
   IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+} from "@/types/proto-es/v1/common_pb";
+import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueComment_Approval_Status } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { PlanDetailPageState } from "../../shell/hooks/types";
 import { PlanDetailProvider } from "../../shell/PlanDetailContext";

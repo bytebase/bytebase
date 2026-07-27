@@ -1,4 +1,5 @@
 import { invalidatePagedDataCacheScope } from "@/hooks/pagedDataCache";
+import { extractProjectResourceName } from "@/utils/v1/project";
 
 type VersionedResource = {
   name: string;
@@ -19,6 +20,24 @@ export const projectIssuesPagedDataCacheScope = (projectId: string): string =>
 export const projectPlansPagedDataCacheScope = (projectId: string): string =>
   projectPagedDataCacheScope("plans", projectId);
 
+export const invalidateProjectPlansPagedDataCache = (
+  projectId: string
+): void => {
+  invalidatePagedDataCacheScope(projectPlansPagedDataCacheScope(projectId));
+};
+
+export const invalidateProjectPlansPagedDataCacheForIssues = (
+  issues: { name: string; plan: string }[]
+): void => {
+  for (const projectId of new Set(
+    issues
+      .filter((issue) => issue.plan !== "")
+      .map((issue) => extractProjectResourceName(issue.name))
+  )) {
+    invalidateProjectPlansPagedDataCache(projectId);
+  }
+};
+
 export const invalidateProjectPagedDataCacheIfChanged = (
   projectId: string,
   resource: "issues" | "plans",
@@ -37,9 +56,9 @@ export const invalidateProjectPagedDataCacheIfChanged = (
     return;
   }
 
-  invalidatePagedDataCacheScope(
-    resource === "plans"
-      ? projectPlansPagedDataCacheScope(projectId)
-      : projectIssuesPagedDataCacheScope(projectId)
-  );
+  if (resource === "plans") {
+    invalidateProjectPlansPagedDataCache(projectId);
+    return;
+  }
+  invalidatePagedDataCacheScope(projectIssuesPagedDataCacheScope(projectId));
 };

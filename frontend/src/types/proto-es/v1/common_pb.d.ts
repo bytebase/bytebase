@@ -492,6 +492,48 @@ export enum ApprovalStatus {
 export declare const ApprovalStatusSchema: GenEnum<ApprovalStatus>;
 
 /**
+ * The status of an issue.
+ * Lives at the top level so both plan_service.proto and issue_service.proto
+ * can reference it without a circular import.
+ *
+ * @generated from enum bytebase.v1.IssueStatus
+ */
+export enum IssueStatus {
+  /**
+   * Unspecified status.
+   *
+   * @generated from enum value: ISSUE_STATUS_UNSPECIFIED = 0;
+   */
+  ISSUE_STATUS_UNSPECIFIED = 0,
+
+  /**
+   * Issue is open and active.
+   *
+   * @generated from enum value: OPEN = 1;
+   */
+  OPEN = 1,
+
+  /**
+   * Issue is completed.
+   *
+   * @generated from enum value: DONE = 2;
+   */
+  DONE = 2,
+
+  /**
+   * Issue is canceled.
+   *
+   * @generated from enum value: CANCELED = 3;
+   */
+  CANCELED = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.IssueStatus.
+ */
+export declare const IssueStatusSchema: GenEnum<IssueStatus>;
+
+/**
  * RiskLevel is the risk level.
  *
  * @generated from enum bytebase.v1.RiskLevel

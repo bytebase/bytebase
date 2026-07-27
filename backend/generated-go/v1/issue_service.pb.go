@@ -27,63 +27,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// The status of an issue.
-type IssueStatus int32
-
-const (
-	// Unspecified status.
-	IssueStatus_ISSUE_STATUS_UNSPECIFIED IssueStatus = 0
-	// Issue is open and active.
-	IssueStatus_OPEN IssueStatus = 1
-	// Issue is completed.
-	IssueStatus_DONE IssueStatus = 2
-	// Issue is canceled.
-	IssueStatus_CANCELED IssueStatus = 3
-)
-
-// Enum value maps for IssueStatus.
-var (
-	IssueStatus_name = map[int32]string{
-		0: "ISSUE_STATUS_UNSPECIFIED",
-		1: "OPEN",
-		2: "DONE",
-		3: "CANCELED",
-	}
-	IssueStatus_value = map[string]int32{
-		"ISSUE_STATUS_UNSPECIFIED": 0,
-		"OPEN":                     1,
-		"DONE":                     2,
-		"CANCELED":                 3,
-	}
-)
-
-func (x IssueStatus) Enum() *IssueStatus {
-	p := new(IssueStatus)
-	*p = x
-	return p
-}
-
-func (x IssueStatus) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (IssueStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_issue_service_proto_enumTypes[0].Descriptor()
-}
-
-func (IssueStatus) Type() protoreflect.EnumType {
-	return &file_v1_issue_service_proto_enumTypes[0]
-}
-
-func (x IssueStatus) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use IssueStatus.Descriptor instead.
-func (IssueStatus) EnumDescriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{0}
-}
-
 // The type of issue.
 type Issue_Type int32
 
@@ -129,11 +72,11 @@ func (x Issue_Type) String() string {
 }
 
 func (Issue_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_issue_service_proto_enumTypes[1].Descriptor()
+	return file_v1_issue_service_proto_enumTypes[0].Descriptor()
 }
 
 func (Issue_Type) Type() protoreflect.EnumType {
-	return &file_v1_issue_service_proto_enumTypes[1]
+	return &file_v1_issue_service_proto_enumTypes[0]
 }
 
 func (x Issue_Type) Number() protoreflect.EnumNumber {
@@ -186,11 +129,11 @@ func (x Issue_Approver_Status) String() string {
 }
 
 func (Issue_Approver_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_issue_service_proto_enumTypes[2].Descriptor()
+	return file_v1_issue_service_proto_enumTypes[1].Descriptor()
 }
 
 func (Issue_Approver_Status) Type() protoreflect.EnumType {
-	return &file_v1_issue_service_proto_enumTypes[2]
+	return &file_v1_issue_service_proto_enumTypes[1]
 }
 
 func (x Issue_Approver_Status) Number() protoreflect.EnumNumber {
@@ -243,11 +186,11 @@ func (x IssueComment_Approval_Status) String() string {
 }
 
 func (IssueComment_Approval_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_issue_service_proto_enumTypes[3].Descriptor()
+	return file_v1_issue_service_proto_enumTypes[2].Descriptor()
 }
 
 func (IssueComment_Approval_Status) Type() protoreflect.EnumType {
-	return &file_v1_issue_service_proto_enumTypes[3]
+	return &file_v1_issue_service_proto_enumTypes[2]
 }
 
 func (x IssueComment_Approval_Status) Number() protoreflect.EnumNumber {
@@ -2374,12 +2317,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\n" +
 	"from_specs\x18\x01 \x03(\v2\x16.bytebase.v1.Plan.SpecR\tfromSpecs\x121\n" +
 	"\bto_specs\x18\x02 \x03(\v2\x16.bytebase.v1.Plan.SpecR\atoSpecsB\a\n" +
-	"\x05event*M\n" +
-	"\vIssueStatus\x12\x1c\n" +
-	"\x18ISSUE_STATUS_UNSPECIFIED\x10\x00\x12\b\n" +
-	"\x04OPEN\x10\x01\x12\b\n" +
-	"\x04DONE\x10\x02\x12\f\n" +
-	"\bCANCELED\x10\x032\xec\x10\n" +
+	"\x05event2\xec\x10\n" +
 	"\fIssueService\x12\x80\x01\n" +
 	"\bGetIssue\x12\x1c.bytebase.v1.GetIssueRequest\x1a\x12.bytebase.v1.Issue\"B\xdaA\x04name\x8a\xea0\rbb.issues.get\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/issues/*}\x12\x9c\x01\n" +
 	"\vCreateIssue\x12\x1f.bytebase.v1.CreateIssueRequest\x1a\x12.bytebase.v1.Issue\"X\xdaA\fparent,issue\x8a\xea0\x10bb.issues.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02':\x05issue\"\x1e/v1/{parent=projects/*}/issues\x12\x94\x01\n" +
@@ -2409,41 +2347,41 @@ func file_v1_issue_service_proto_rawDescGZIP() []byte {
 	return file_v1_issue_service_proto_rawDescData
 }
 
-var file_v1_issue_service_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_v1_issue_service_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_v1_issue_service_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_v1_issue_service_proto_goTypes = []any{
-	(IssueStatus)(0),                        // 0: bytebase.v1.IssueStatus
-	(Issue_Type)(0),                         // 1: bytebase.v1.Issue.Type
-	(Issue_Approver_Status)(0),              // 2: bytebase.v1.Issue.Approver.Status
-	(IssueComment_Approval_Status)(0),       // 3: bytebase.v1.IssueComment.Approval.Status
-	(*GetIssueRequest)(nil),                 // 4: bytebase.v1.GetIssueRequest
-	(*CreateIssueRequest)(nil),              // 5: bytebase.v1.CreateIssueRequest
-	(*ListIssuesRequest)(nil),               // 6: bytebase.v1.ListIssuesRequest
-	(*ListIssuesResponse)(nil),              // 7: bytebase.v1.ListIssuesResponse
-	(*SearchIssuesRequest)(nil),             // 8: bytebase.v1.SearchIssuesRequest
-	(*SearchIssuesResponse)(nil),            // 9: bytebase.v1.SearchIssuesResponse
-	(*UpdateIssueRequest)(nil),              // 10: bytebase.v1.UpdateIssueRequest
-	(*BatchUpdateIssuesStatusRequest)(nil),  // 11: bytebase.v1.BatchUpdateIssuesStatusRequest
-	(*BatchUpdateIssuesStatusResponse)(nil), // 12: bytebase.v1.BatchUpdateIssuesStatusResponse
-	(*ApproveIssueRequest)(nil),             // 13: bytebase.v1.ApproveIssueRequest
-	(*RejectIssueRequest)(nil),              // 14: bytebase.v1.RejectIssueRequest
-	(*RequestIssueRequest)(nil),             // 15: bytebase.v1.RequestIssueRequest
-	(*RetryIssueApprovalRequest)(nil),       // 16: bytebase.v1.RetryIssueApprovalRequest
-	(*Issue)(nil),                           // 17: bytebase.v1.Issue
-	(*RoleGrant)(nil),                       // 18: bytebase.v1.RoleGrant
-	(*ApprovalTemplate)(nil),                // 19: bytebase.v1.ApprovalTemplate
-	(*ApprovalFlow)(nil),                    // 20: bytebase.v1.ApprovalFlow
-	(*ListIssueCommentsRequest)(nil),        // 21: bytebase.v1.ListIssueCommentsRequest
-	(*ListIssueCommentsResponse)(nil),       // 22: bytebase.v1.ListIssueCommentsResponse
-	(*CreateIssueCommentRequest)(nil),       // 23: bytebase.v1.CreateIssueCommentRequest
-	(*UpdateIssueCommentRequest)(nil),       // 24: bytebase.v1.UpdateIssueCommentRequest
-	(*IssueComment)(nil),                    // 25: bytebase.v1.IssueComment
-	(*Issue_Approver)(nil),                  // 26: bytebase.v1.Issue.Approver
-	(*IssueComment_Approval)(nil),           // 27: bytebase.v1.IssueComment.Approval
-	(*IssueComment_IssueUpdate)(nil),        // 28: bytebase.v1.IssueComment.IssueUpdate
-	(*IssueComment_ReviewSubmission)(nil),   // 29: bytebase.v1.IssueComment.ReviewSubmission
-	(*IssueComment_PlanUpdate)(nil),         // 30: bytebase.v1.IssueComment.PlanUpdate
-	(*fieldmaskpb.FieldMask)(nil),           // 31: google.protobuf.FieldMask
+	(Issue_Type)(0),                         // 0: bytebase.v1.Issue.Type
+	(Issue_Approver_Status)(0),              // 1: bytebase.v1.Issue.Approver.Status
+	(IssueComment_Approval_Status)(0),       // 2: bytebase.v1.IssueComment.Approval.Status
+	(*GetIssueRequest)(nil),                 // 3: bytebase.v1.GetIssueRequest
+	(*CreateIssueRequest)(nil),              // 4: bytebase.v1.CreateIssueRequest
+	(*ListIssuesRequest)(nil),               // 5: bytebase.v1.ListIssuesRequest
+	(*ListIssuesResponse)(nil),              // 6: bytebase.v1.ListIssuesResponse
+	(*SearchIssuesRequest)(nil),             // 7: bytebase.v1.SearchIssuesRequest
+	(*SearchIssuesResponse)(nil),            // 8: bytebase.v1.SearchIssuesResponse
+	(*UpdateIssueRequest)(nil),              // 9: bytebase.v1.UpdateIssueRequest
+	(*BatchUpdateIssuesStatusRequest)(nil),  // 10: bytebase.v1.BatchUpdateIssuesStatusRequest
+	(*BatchUpdateIssuesStatusResponse)(nil), // 11: bytebase.v1.BatchUpdateIssuesStatusResponse
+	(*ApproveIssueRequest)(nil),             // 12: bytebase.v1.ApproveIssueRequest
+	(*RejectIssueRequest)(nil),              // 13: bytebase.v1.RejectIssueRequest
+	(*RequestIssueRequest)(nil),             // 14: bytebase.v1.RequestIssueRequest
+	(*RetryIssueApprovalRequest)(nil),       // 15: bytebase.v1.RetryIssueApprovalRequest
+	(*Issue)(nil),                           // 16: bytebase.v1.Issue
+	(*RoleGrant)(nil),                       // 17: bytebase.v1.RoleGrant
+	(*ApprovalTemplate)(nil),                // 18: bytebase.v1.ApprovalTemplate
+	(*ApprovalFlow)(nil),                    // 19: bytebase.v1.ApprovalFlow
+	(*ListIssueCommentsRequest)(nil),        // 20: bytebase.v1.ListIssueCommentsRequest
+	(*ListIssueCommentsResponse)(nil),       // 21: bytebase.v1.ListIssueCommentsResponse
+	(*CreateIssueCommentRequest)(nil),       // 22: bytebase.v1.CreateIssueCommentRequest
+	(*UpdateIssueCommentRequest)(nil),       // 23: bytebase.v1.UpdateIssueCommentRequest
+	(*IssueComment)(nil),                    // 24: bytebase.v1.IssueComment
+	(*Issue_Approver)(nil),                  // 25: bytebase.v1.Issue.Approver
+	(*IssueComment_Approval)(nil),           // 26: bytebase.v1.IssueComment.Approval
+	(*IssueComment_IssueUpdate)(nil),        // 27: bytebase.v1.IssueComment.IssueUpdate
+	(*IssueComment_ReviewSubmission)(nil),   // 28: bytebase.v1.IssueComment.ReviewSubmission
+	(*IssueComment_PlanUpdate)(nil),         // 29: bytebase.v1.IssueComment.PlanUpdate
+	(*fieldmaskpb.FieldMask)(nil),           // 30: google.protobuf.FieldMask
+	(IssueStatus)(0),                        // 31: bytebase.v1.IssueStatus
 	(*timestamppb.Timestamp)(nil),           // 32: google.protobuf.Timestamp
 	(RiskLevel)(0),                          // 33: bytebase.v1.RiskLevel
 	(ApprovalStatus)(0),                     // 34: bytebase.v1.ApprovalStatus
@@ -2452,66 +2390,66 @@ var file_v1_issue_service_proto_goTypes = []any{
 	(*Plan_Spec)(nil),                       // 37: bytebase.v1.Plan.Spec
 }
 var file_v1_issue_service_proto_depIdxs = []int32{
-	17, // 0: bytebase.v1.CreateIssueRequest.issue:type_name -> bytebase.v1.Issue
-	17, // 1: bytebase.v1.ListIssuesResponse.issues:type_name -> bytebase.v1.Issue
-	17, // 2: bytebase.v1.SearchIssuesResponse.issues:type_name -> bytebase.v1.Issue
-	17, // 3: bytebase.v1.UpdateIssueRequest.issue:type_name -> bytebase.v1.Issue
-	31, // 4: bytebase.v1.UpdateIssueRequest.update_mask:type_name -> google.protobuf.FieldMask
-	0,  // 5: bytebase.v1.BatchUpdateIssuesStatusRequest.status:type_name -> bytebase.v1.IssueStatus
-	1,  // 6: bytebase.v1.Issue.type:type_name -> bytebase.v1.Issue.Type
-	0,  // 7: bytebase.v1.Issue.status:type_name -> bytebase.v1.IssueStatus
-	26, // 8: bytebase.v1.Issue.approvers:type_name -> bytebase.v1.Issue.Approver
-	19, // 9: bytebase.v1.Issue.approval_template:type_name -> bytebase.v1.ApprovalTemplate
+	16, // 0: bytebase.v1.CreateIssueRequest.issue:type_name -> bytebase.v1.Issue
+	16, // 1: bytebase.v1.ListIssuesResponse.issues:type_name -> bytebase.v1.Issue
+	16, // 2: bytebase.v1.SearchIssuesResponse.issues:type_name -> bytebase.v1.Issue
+	16, // 3: bytebase.v1.UpdateIssueRequest.issue:type_name -> bytebase.v1.Issue
+	30, // 4: bytebase.v1.UpdateIssueRequest.update_mask:type_name -> google.protobuf.FieldMask
+	31, // 5: bytebase.v1.BatchUpdateIssuesStatusRequest.status:type_name -> bytebase.v1.IssueStatus
+	0,  // 6: bytebase.v1.Issue.type:type_name -> bytebase.v1.Issue.Type
+	31, // 7: bytebase.v1.Issue.status:type_name -> bytebase.v1.IssueStatus
+	25, // 8: bytebase.v1.Issue.approvers:type_name -> bytebase.v1.Issue.Approver
+	18, // 9: bytebase.v1.Issue.approval_template:type_name -> bytebase.v1.ApprovalTemplate
 	32, // 10: bytebase.v1.Issue.create_time:type_name -> google.protobuf.Timestamp
 	32, // 11: bytebase.v1.Issue.update_time:type_name -> google.protobuf.Timestamp
-	18, // 12: bytebase.v1.Issue.role_grant:type_name -> bytebase.v1.RoleGrant
+	17, // 12: bytebase.v1.Issue.role_grant:type_name -> bytebase.v1.RoleGrant
 	33, // 13: bytebase.v1.Issue.risk_level:type_name -> bytebase.v1.RiskLevel
 	34, // 14: bytebase.v1.Issue.approval_status:type_name -> bytebase.v1.ApprovalStatus
 	35, // 15: bytebase.v1.RoleGrant.condition:type_name -> google.type.Expr
 	36, // 16: bytebase.v1.RoleGrant.expiration:type_name -> google.protobuf.Duration
-	20, // 17: bytebase.v1.ApprovalTemplate.flow:type_name -> bytebase.v1.ApprovalFlow
-	25, // 18: bytebase.v1.ListIssueCommentsResponse.issue_comments:type_name -> bytebase.v1.IssueComment
-	25, // 19: bytebase.v1.CreateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
-	25, // 20: bytebase.v1.UpdateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
-	31, // 21: bytebase.v1.UpdateIssueCommentRequest.update_mask:type_name -> google.protobuf.FieldMask
+	19, // 17: bytebase.v1.ApprovalTemplate.flow:type_name -> bytebase.v1.ApprovalFlow
+	24, // 18: bytebase.v1.ListIssueCommentsResponse.issue_comments:type_name -> bytebase.v1.IssueComment
+	24, // 19: bytebase.v1.CreateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
+	24, // 20: bytebase.v1.UpdateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
+	30, // 21: bytebase.v1.UpdateIssueCommentRequest.update_mask:type_name -> google.protobuf.FieldMask
 	32, // 22: bytebase.v1.IssueComment.create_time:type_name -> google.protobuf.Timestamp
 	32, // 23: bytebase.v1.IssueComment.update_time:type_name -> google.protobuf.Timestamp
-	27, // 24: bytebase.v1.IssueComment.approval:type_name -> bytebase.v1.IssueComment.Approval
-	28, // 25: bytebase.v1.IssueComment.issue_update:type_name -> bytebase.v1.IssueComment.IssueUpdate
-	30, // 26: bytebase.v1.IssueComment.plan_update:type_name -> bytebase.v1.IssueComment.PlanUpdate
-	29, // 27: bytebase.v1.IssueComment.review_submission:type_name -> bytebase.v1.IssueComment.ReviewSubmission
-	2,  // 28: bytebase.v1.Issue.Approver.status:type_name -> bytebase.v1.Issue.Approver.Status
-	3,  // 29: bytebase.v1.IssueComment.Approval.status:type_name -> bytebase.v1.IssueComment.Approval.Status
-	0,  // 30: bytebase.v1.IssueComment.IssueUpdate.from_status:type_name -> bytebase.v1.IssueStatus
-	0,  // 31: bytebase.v1.IssueComment.IssueUpdate.to_status:type_name -> bytebase.v1.IssueStatus
+	26, // 24: bytebase.v1.IssueComment.approval:type_name -> bytebase.v1.IssueComment.Approval
+	27, // 25: bytebase.v1.IssueComment.issue_update:type_name -> bytebase.v1.IssueComment.IssueUpdate
+	29, // 26: bytebase.v1.IssueComment.plan_update:type_name -> bytebase.v1.IssueComment.PlanUpdate
+	28, // 27: bytebase.v1.IssueComment.review_submission:type_name -> bytebase.v1.IssueComment.ReviewSubmission
+	1,  // 28: bytebase.v1.Issue.Approver.status:type_name -> bytebase.v1.Issue.Approver.Status
+	2,  // 29: bytebase.v1.IssueComment.Approval.status:type_name -> bytebase.v1.IssueComment.Approval.Status
+	31, // 30: bytebase.v1.IssueComment.IssueUpdate.from_status:type_name -> bytebase.v1.IssueStatus
+	31, // 31: bytebase.v1.IssueComment.IssueUpdate.to_status:type_name -> bytebase.v1.IssueStatus
 	37, // 32: bytebase.v1.IssueComment.PlanUpdate.from_specs:type_name -> bytebase.v1.Plan.Spec
 	37, // 33: bytebase.v1.IssueComment.PlanUpdate.to_specs:type_name -> bytebase.v1.Plan.Spec
-	4,  // 34: bytebase.v1.IssueService.GetIssue:input_type -> bytebase.v1.GetIssueRequest
-	5,  // 35: bytebase.v1.IssueService.CreateIssue:input_type -> bytebase.v1.CreateIssueRequest
-	6,  // 36: bytebase.v1.IssueService.ListIssues:input_type -> bytebase.v1.ListIssuesRequest
-	8,  // 37: bytebase.v1.IssueService.SearchIssues:input_type -> bytebase.v1.SearchIssuesRequest
-	10, // 38: bytebase.v1.IssueService.UpdateIssue:input_type -> bytebase.v1.UpdateIssueRequest
-	21, // 39: bytebase.v1.IssueService.ListIssueComments:input_type -> bytebase.v1.ListIssueCommentsRequest
-	23, // 40: bytebase.v1.IssueService.CreateIssueComment:input_type -> bytebase.v1.CreateIssueCommentRequest
-	24, // 41: bytebase.v1.IssueService.UpdateIssueComment:input_type -> bytebase.v1.UpdateIssueCommentRequest
-	11, // 42: bytebase.v1.IssueService.BatchUpdateIssuesStatus:input_type -> bytebase.v1.BatchUpdateIssuesStatusRequest
-	13, // 43: bytebase.v1.IssueService.ApproveIssue:input_type -> bytebase.v1.ApproveIssueRequest
-	14, // 44: bytebase.v1.IssueService.RejectIssue:input_type -> bytebase.v1.RejectIssueRequest
-	15, // 45: bytebase.v1.IssueService.RequestIssue:input_type -> bytebase.v1.RequestIssueRequest
-	16, // 46: bytebase.v1.IssueService.RetryIssueApproval:input_type -> bytebase.v1.RetryIssueApprovalRequest
-	17, // 47: bytebase.v1.IssueService.GetIssue:output_type -> bytebase.v1.Issue
-	17, // 48: bytebase.v1.IssueService.CreateIssue:output_type -> bytebase.v1.Issue
-	7,  // 49: bytebase.v1.IssueService.ListIssues:output_type -> bytebase.v1.ListIssuesResponse
-	9,  // 50: bytebase.v1.IssueService.SearchIssues:output_type -> bytebase.v1.SearchIssuesResponse
-	17, // 51: bytebase.v1.IssueService.UpdateIssue:output_type -> bytebase.v1.Issue
-	22, // 52: bytebase.v1.IssueService.ListIssueComments:output_type -> bytebase.v1.ListIssueCommentsResponse
-	25, // 53: bytebase.v1.IssueService.CreateIssueComment:output_type -> bytebase.v1.IssueComment
-	25, // 54: bytebase.v1.IssueService.UpdateIssueComment:output_type -> bytebase.v1.IssueComment
-	12, // 55: bytebase.v1.IssueService.BatchUpdateIssuesStatus:output_type -> bytebase.v1.BatchUpdateIssuesStatusResponse
-	17, // 56: bytebase.v1.IssueService.ApproveIssue:output_type -> bytebase.v1.Issue
-	17, // 57: bytebase.v1.IssueService.RejectIssue:output_type -> bytebase.v1.Issue
-	17, // 58: bytebase.v1.IssueService.RequestIssue:output_type -> bytebase.v1.Issue
-	17, // 59: bytebase.v1.IssueService.RetryIssueApproval:output_type -> bytebase.v1.Issue
+	3,  // 34: bytebase.v1.IssueService.GetIssue:input_type -> bytebase.v1.GetIssueRequest
+	4,  // 35: bytebase.v1.IssueService.CreateIssue:input_type -> bytebase.v1.CreateIssueRequest
+	5,  // 36: bytebase.v1.IssueService.ListIssues:input_type -> bytebase.v1.ListIssuesRequest
+	7,  // 37: bytebase.v1.IssueService.SearchIssues:input_type -> bytebase.v1.SearchIssuesRequest
+	9,  // 38: bytebase.v1.IssueService.UpdateIssue:input_type -> bytebase.v1.UpdateIssueRequest
+	20, // 39: bytebase.v1.IssueService.ListIssueComments:input_type -> bytebase.v1.ListIssueCommentsRequest
+	22, // 40: bytebase.v1.IssueService.CreateIssueComment:input_type -> bytebase.v1.CreateIssueCommentRequest
+	23, // 41: bytebase.v1.IssueService.UpdateIssueComment:input_type -> bytebase.v1.UpdateIssueCommentRequest
+	10, // 42: bytebase.v1.IssueService.BatchUpdateIssuesStatus:input_type -> bytebase.v1.BatchUpdateIssuesStatusRequest
+	12, // 43: bytebase.v1.IssueService.ApproveIssue:input_type -> bytebase.v1.ApproveIssueRequest
+	13, // 44: bytebase.v1.IssueService.RejectIssue:input_type -> bytebase.v1.RejectIssueRequest
+	14, // 45: bytebase.v1.IssueService.RequestIssue:input_type -> bytebase.v1.RequestIssueRequest
+	15, // 46: bytebase.v1.IssueService.RetryIssueApproval:input_type -> bytebase.v1.RetryIssueApprovalRequest
+	16, // 47: bytebase.v1.IssueService.GetIssue:output_type -> bytebase.v1.Issue
+	16, // 48: bytebase.v1.IssueService.CreateIssue:output_type -> bytebase.v1.Issue
+	6,  // 49: bytebase.v1.IssueService.ListIssues:output_type -> bytebase.v1.ListIssuesResponse
+	8,  // 50: bytebase.v1.IssueService.SearchIssues:output_type -> bytebase.v1.SearchIssuesResponse
+	16, // 51: bytebase.v1.IssueService.UpdateIssue:output_type -> bytebase.v1.Issue
+	21, // 52: bytebase.v1.IssueService.ListIssueComments:output_type -> bytebase.v1.ListIssueCommentsResponse
+	24, // 53: bytebase.v1.IssueService.CreateIssueComment:output_type -> bytebase.v1.IssueComment
+	24, // 54: bytebase.v1.IssueService.UpdateIssueComment:output_type -> bytebase.v1.IssueComment
+	11, // 55: bytebase.v1.IssueService.BatchUpdateIssuesStatus:output_type -> bytebase.v1.BatchUpdateIssuesStatusResponse
+	16, // 56: bytebase.v1.IssueService.ApproveIssue:output_type -> bytebase.v1.Issue
+	16, // 57: bytebase.v1.IssueService.RejectIssue:output_type -> bytebase.v1.Issue
+	16, // 58: bytebase.v1.IssueService.RequestIssue:output_type -> bytebase.v1.Issue
+	16, // 59: bytebase.v1.IssueService.RetryIssueApproval:output_type -> bytebase.v1.Issue
 	47, // [47:60] is the sub-list for method output_type
 	34, // [34:47] is the sub-list for method input_type
 	34, // [34:34] is the sub-list for extension type_name
@@ -2539,7 +2477,7 @@ func file_v1_issue_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_issue_service_proto_rawDesc), len(file_v1_issue_service_proto_rawDesc)),
-			NumEnums:      4,
+			NumEnums:      3,
 			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   1,

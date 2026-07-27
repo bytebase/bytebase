@@ -9,13 +9,16 @@ import {
 } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import type { IssueFilter } from "@/types";
-import { ApprovalStatus, RiskLevel } from "@/types/proto-es/v1/common_pb";
+import {
+  ApprovalStatus,
+  IssueStatus,
+  RiskLevel,
+} from "@/types/proto-es/v1/common_pb";
 import {
   CreateIssueRequestSchema,
   GetIssueRequestSchema,
   type Issue,
   Issue_Type,
-  IssueStatus,
   SearchIssuesRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {

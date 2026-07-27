@@ -3,8 +3,7 @@
 // "require issue approval" / "require no failed checks" settings are
 // client-side gates, so the action hides whenever clicking it would violate
 // one of them in the current state. The status line renders for everyone.
-import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import type { PlanCheckSummary } from "../../utils/phaseSummary";
 
 export type ReadinessFooterStateKind =

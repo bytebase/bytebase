@@ -241,12 +241,16 @@ message Plan {
   bool has_rollout = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The approval status of the linked issue.
-  // Unspecified when no linked issue exists.
+  // Unspecified when no linked issue exists or the linked issue is a draft.
   ApprovalStatus approval_status = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Per-stage rollout status summary.
   // Ordered by environment deployment order. Empty when no rollout exists.
   repeated RolloutStageSummary rollout_stage_summaries = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The lifecycle status of the linked issue.
+  // Unspecified when no linked issue exists.
+  IssueStatus issue_status = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.

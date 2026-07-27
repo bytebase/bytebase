@@ -35,11 +35,10 @@ import {
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import {
   BatchUpdateIssuesStatusRequestSchema,
   IssueSchema,
-  IssueStatus,
   ListIssueCommentsRequestSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";

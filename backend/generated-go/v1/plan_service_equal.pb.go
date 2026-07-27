@@ -315,6 +315,9 @@ func (x *Plan) Equal(y *Plan) bool {
 			return false
 		}
 	}
+	if x.IssueStatus != y.IssueStatus {
+		return false
+	}
 	return true
 }
 

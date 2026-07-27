@@ -67,6 +67,7 @@ import {
   useURLSearchParam,
 } from "@/hooks/useURLSearchParam";
 import { applyPlanTitleToQuery } from "@/lib/plan/title";
+import { projectPlansPagedDataCacheScope } from "@/lib/projectPagedDataCache";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -97,7 +98,6 @@ import {
   extractStageUID,
   getStageStatusFromCounts,
 } from "@/utils/v1/issue/rollout";
-import { projectPlansPagedDataCacheScope } from "./pagedDataCacheScope";
 import { isReleaseBackedPlan } from "./plan-detail/utils/spec";
 import {
   getPlanDraftState,
@@ -458,7 +458,7 @@ function PlanTable({
           ctx.approvalTag ? (
             <Badge
               variant={ctx.approvalTag.variant}
-              className="whitespace-nowrap"
+              className="font-normal whitespace-nowrap"
             >
               {ctx.approvalTag.label}
             </Badge>
@@ -631,26 +631,16 @@ function PlanRow({
     [onOpenPlan, planUrl]
   );
 
-  // Approval status
-  // Plan List passes issueStatus=undefined because the Plan proto does not
-  // expose issue_status. Two divergence categories vs Plan Detail remain by
-  // design (see the spec's "Residual divergences" table):
-  //   Category A — CANCELED issues render the approval-derived badge here
-  //     instead of "Closed".
-  //   Category C₂ — issue manually marked DONE with no rollout while approval
-  //     is still PENDING renders "Under Review" here instead of "Bypassed".
-  // To close those gaps, expose issue_status on the Plan proto and pass it
-  // through here. Bug history: BYT-9551.
   const approvalTag = useMemo(() => {
     const badge = getReviewBadge({
       hasIssue: plan.issue !== "",
-      issueStatus: undefined,
+      issueStatus: plan.issueStatus,
       hasRollout: plan.hasRollout,
       approvalStatus: plan.approvalStatus,
     });
     if (!badge) return undefined;
     return { label: t(badge.labelKey), variant: badge.variant };
-  }, [plan.approvalStatus, plan.hasRollout, plan.issue, t]);
+  }, [plan.approvalStatus, plan.hasRollout, plan.issue, plan.issueStatus, t]);
 
   const ctx: PlanRowContext = {
     creator,

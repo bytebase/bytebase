@@ -9,14 +9,10 @@ import {
 } from "@/stores/app/databaseAccess";
 import { getProjectByName } from "@/stores/app/projectAccess";
 import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
-import {
-  type Issue,
-  Issue_Type,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { type Issue, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
