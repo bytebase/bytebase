@@ -295,6 +295,12 @@ func (in *APIAuthInterceptor) getUserConnect(ctx context.Context, accessTokenStr
 
 // GetUserEmailFromMFATempToken returns the user email from the MFA temp token.
 func GetUserEmailFromMFATempToken(token string, secret string) (string, error) {
+	userEmail, _, err := GetUserEmailAndLoginMethodFromMFATempToken(token, secret)
+	return userEmail, err
+}
+
+// GetUserEmailAndLoginMethodFromMFATempToken returns the user email and original login method from the MFA temp token.
+func GetUserEmailAndLoginMethodFromMFATempToken(token string, secret string) (string, string, error) {
 	claims := &claimsMessage{}
 	_, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Name {
@@ -308,12 +314,12 @@ func GetUserEmailFromMFATempToken(token string, secret string) (string, error) {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("unexpected MFA temp token kid=%v", t.Header["kid"]))
 	})
 	if err != nil {
-		return "", connect.NewError(connect.CodeUnauthenticated, errs.New("failed to parse claim"))
+		return "", "", connect.NewError(connect.CodeUnauthenticated, errs.New("failed to parse claim"))
 	}
 	if !audienceContains(claims.Audience, MFATempTokenAudience) {
-		return "", connect.NewError(connect.CodeUnauthenticated, errs.New("invalid MFA temp token, audience mismatch"))
+		return "", "", connect.NewError(connect.CodeUnauthenticated, errs.New("invalid MFA temp token, audience mismatch"))
 	}
-	return claims.Subject, nil
+	return claims.Subject, claims.LoginMethod, nil
 }
 
 // AuthenticateToken validates a JWT access token and returns the user and token expiry.

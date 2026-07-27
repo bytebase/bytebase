@@ -456,7 +456,7 @@ export function useRecentProjects({
 
   useEffect(() => {
     if (projectNames.length > 0) {
-      void batchFetchProjects(projectNames);
+      void batchFetchProjects(projectNames, true);
     }
   }, [batchFetchProjects, projectNames]);
 

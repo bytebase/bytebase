@@ -30,6 +30,7 @@ func HashToken(token string) string {
 type claimsMessage struct {
 	jwt.RegisteredClaims
 	WorkspaceID string `json:"workspace_id,omitempty"`
+	LoginMethod string `json:"login_method,omitempty"`
 }
 
 // oauth2ClaimsMessage extends claimsMessage with OAuth2-specific fields.
@@ -52,12 +53,21 @@ func GenerateAccessToken(userEmail string, workspaceID string, secret string, to
 
 // GenerateMFATempToken generates a temporary token for MFA.
 func GenerateMFATempToken(userEmail string, secret string, tokenDuration time.Duration) (string, error) {
+	return GenerateMFATempTokenWithLoginMethod(userEmail, "", secret, tokenDuration)
+}
+
+// GenerateMFATempTokenWithLoginMethod generates a temporary token for MFA with the original login method.
+func GenerateMFATempTokenWithLoginMethod(userEmail string, loginMethod string, secret string, tokenDuration time.Duration) (string, error) {
 	expirationTime := time.Now().Add(tokenDuration)
-	return generateToken(userEmail, "", MFATempTokenAudience, expirationTime, []byte(secret))
+	return generateTokenWithLoginMethod(userEmail, "", MFATempTokenAudience, expirationTime, []byte(secret), loginMethod)
 }
 
 // generateToken creates a JWT token for web authentication.
 func generateToken(userEmail string, workspaceID string, aud string, expirationTime time.Time, secret []byte) (string, error) {
+	return generateTokenWithLoginMethod(userEmail, workspaceID, aud, expirationTime, secret, "")
+}
+
+func generateTokenWithLoginMethod(userEmail string, workspaceID string, aud string, expirationTime time.Time, secret []byte, loginMethod string) (string, error) {
 	claims := &claimsMessage{
 		RegisteredClaims: jwt.RegisteredClaims{
 			Audience:  jwt.ClaimStrings{aud},
@@ -67,6 +77,7 @@ func generateToken(userEmail string, workspaceID string, aud string, expirationT
 			Subject:   userEmail,
 		},
 		WorkspaceID: workspaceID,
+		LoginMethod: loginMethod,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

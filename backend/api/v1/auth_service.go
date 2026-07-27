@@ -74,6 +74,47 @@ var (
 	invalidCredentialsError = connect.NewError(connect.CodeUnauthenticated, errors.Errorf(errMsgInvalidCredentials))
 )
 
+type loginAuthMethod string
+
+const (
+	loginAuthMethodPassword  loginAuthMethod = "password"
+	loginAuthMethodIDP       loginAuthMethod = "idp"
+	loginAuthMethodEmailCode loginAuthMethod = "email_code"
+)
+
+func loginAuthMethodFromRequest(request *v1pb.LoginRequest) loginAuthMethod {
+	if request.GetIdpName() != "" {
+		return loginAuthMethodIDP
+	}
+	if request.EmailCode != nil && *request.EmailCode != "" {
+		return loginAuthMethodEmailCode
+	}
+	return loginAuthMethodPassword
+}
+
+func loginAuthMethodFromString(method string) loginAuthMethod {
+	switch loginAuthMethod(method) {
+	case loginAuthMethodIDP:
+		return loginAuthMethodIDP
+	case loginAuthMethodEmailCode:
+		return loginAuthMethodEmailCode
+	default:
+		return loginAuthMethodPassword
+	}
+}
+
+func loginAuthMethodFromMFATempToken(token string, secret string) (string, loginAuthMethod, error) {
+	email, method, err := auth.GetUserEmailAndLoginMethodFromMFATempToken(token, secret)
+	if err != nil {
+		return "", loginAuthMethodPassword, err
+	}
+	return email, loginAuthMethodFromString(method), nil
+}
+
+func (m loginAuthMethod) requiresPasswordReset() bool {
+	return m == loginAuthMethodPassword
+}
+
 // AuthService implements the auth service.
 type AuthService struct {
 	v1connect.UnimplementedAuthServiceHandler
@@ -101,7 +142,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	mfaSecondLogin := request.GetMfaTempToken() != ""
 
 	// 1. Authenticate user (password, IDP, or MFA completion)
-	loginUser, err := s.authenticateLogin(ctx, request)
+	loginUser, loginMethod, err := s.authenticateLogin(ctx, request)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +174,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	}
 
 	// 4. Check if MFA challenge needed (returns early with temp token)
-	if resp, err := s.checkMFARequired(ctx, loginUser, workspaceID, mfaSecondLogin); err != nil {
+	if resp, err := s.checkMFARequired(ctx, loginUser, workspaceID, mfaSecondLogin, loginMethod); err != nil {
 		return nil, err
 	} else if resp != nil {
 		return resp, nil
@@ -146,7 +187,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	}
 
 	// 6. Build response and finalize
-	requireResetPassword := s.needResetPassword(ctx, loginUser, workspaceID)
+	requireResetPassword := loginMethod.requiresPasswordReset() && s.needResetPassword(ctx, loginUser, workspaceID)
 	return s.finalizeLogin(ctx, req, loginUser, token, workspaceID, requireResetPassword)
 }
 
@@ -934,55 +975,58 @@ func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessag
 }
 
 // authenticateLogin handles all authentication paths: password, IDP, or MFA completion.
-// Returns the authenticated user and whether password reset is required.
-func (s *AuthService) authenticateLogin(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
+func (s *AuthService) authenticateLogin(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, loginAuthMethod, error) {
 	mfaSecondLogin := request.GetMfaTempToken() != ""
 
 	if mfaSecondLogin {
 		return s.completeMFALogin(ctx, request)
 	}
 
-	if request.GetIdpName() != "" {
-		return s.getOrCreateUserWithIDP(ctx, request)
+	loginMethod := loginAuthMethodFromRequest(request)
+	if loginMethod == loginAuthMethodIDP {
+		user, err := s.getOrCreateUserWithIDP(ctx, request)
+		return user, loginAuthMethodIDP, err
 	}
 
-	if request.EmailCode != nil && *request.EmailCode != "" {
-		return s.authenticateEmailCodeLogin(ctx, request)
+	if loginMethod == loginAuthMethodEmailCode {
+		user, err := s.authenticateEmailCodeLogin(ctx, request)
+		return user, loginAuthMethodEmailCode, err
 	}
 
-	return s.getAndVerifyUser(ctx, request)
+	user, err := s.getAndVerifyUser(ctx, request)
+	return user, loginAuthMethodPassword, err
 }
 
 // completeMFALogin validates MFA temp token and verifies OTP or recovery code.
-func (s *AuthService) completeMFALogin(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
-	userEmail, err := auth.GetUserEmailFromMFATempToken(*request.MfaTempToken, s.secret)
+func (s *AuthService) completeMFALogin(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, loginAuthMethod, error) {
+	userEmail, loginMethod, err := loginAuthMethodFromMFATempToken(*request.MfaTempToken, s.secret)
 	if err != nil {
-		return nil, err
+		return nil, loginAuthMethodPassword, err
 	}
 	user, err := s.store.GetUserByEmail(ctx, userEmail)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user"))
+		return nil, loginAuthMethodPassword, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user"))
 	}
 	if user == nil {
-		return nil, invalidCredentialsError
+		return nil, loginAuthMethodPassword, invalidCredentialsError
 	}
 
 	if err := s.checkMFALockout(ctx, user.Email); err != nil {
-		return nil, err
+		return nil, loginAuthMethodPassword, err
 	}
 
 	if request.OtpCode != nil {
 		if err := challengeMFACode(user, *request.OtpCode); err != nil {
-			return nil, err
+			return nil, loginAuthMethodPassword, err
 		}
 	} else if request.RecoveryCode != nil {
 		if err := s.challengeRecoveryCode(ctx, user, *request.RecoveryCode); err != nil {
-			return nil, err
+			return nil, loginAuthMethodPassword, err
 		}
 	} else {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("OTP or recovery code is required for MFA"))
+		return nil, loginAuthMethodPassword, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("OTP or recovery code is required for MFA"))
 	}
-	return user, nil
+	return user, loginMethod, nil
 }
 
 // validateLoginPermissions checks if the user is allowed to login.
@@ -1036,7 +1080,7 @@ func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.
 
 // checkMFARequired checks if MFA is required and returns a response with temp token if so.
 // Returns (nil, nil) if MFA is not required or already completed.
-func (s *AuthService) checkMFARequired(ctx context.Context, user *store.UserMessage, workspaceID string, mfaSecondLogin bool) (*connect.Response[v1pb.LoginResponse], error) {
+func (s *AuthService) checkMFARequired(ctx context.Context, user *store.UserMessage, workspaceID string, mfaSecondLogin bool, loginMethod loginAuthMethod) (*connect.Response[v1pb.LoginResponse], error) {
 	if mfaSecondLogin {
 		return nil, nil
 	}
@@ -1047,7 +1091,7 @@ func (s *AuthService) checkMFARequired(ctx context.Context, user *store.UserMess
 		return nil, nil
 	}
 
-	mfaTempToken, err := auth.GenerateMFATempToken(user.Email, s.secret, mfaTempTokenDuration)
+	mfaTempToken, err := auth.GenerateMFATempTokenWithLoginMethod(user.Email, string(loginMethod), s.secret, mfaTempTokenDuration)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate MFA temp token"))
 	}
@@ -1229,7 +1273,7 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		}
 	} else {
 		// First step: check if MFA is required for the target workspace.
-		if resp, err := s.checkMFARequired(ctx, user, workspaceID, false); err != nil {
+		if resp, err := s.checkMFARequired(ctx, user, workspaceID, false, loginAuthMethodPassword); err != nil {
 			return nil, err
 		} else if resp != nil {
 			return resp, nil

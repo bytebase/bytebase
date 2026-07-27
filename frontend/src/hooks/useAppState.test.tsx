@@ -58,10 +58,37 @@ describe("useRecentProjects", () => {
     const { result } = renderHook(() => useRecentProjects());
 
     await waitFor(() => {
-      expect(mocks.batchFetchProjects).toHaveBeenCalledWith(["projects/app"]);
+      expect(mocks.batchFetchProjects).toHaveBeenCalledWith(
+        ["projects/app"],
+        true
+      );
     });
 
     expect(result.current.projects).toEqual([]);
+  });
+
+  test("loads recent projects silently and omits inaccessible cached projects", async () => {
+    const accessibleProject = { name: "projects/app" } as Project;
+    localStorage.setItem(
+      recentProjectsKey,
+      JSON.stringify(["projects/app", "projects/removed"])
+    );
+    mocks.getProjectByName.mockImplementation((name: string) =>
+      name === accessibleProject.name
+        ? accessibleProject
+        : { name: "projects/-1" }
+    );
+
+    const { result } = renderHook(() => useRecentProjects());
+
+    await waitFor(() => {
+      expect(mocks.batchFetchProjects).toHaveBeenCalledWith(
+        ["projects/app", "projects/removed"],
+        true
+      );
+    });
+
+    expect(result.current.projects).toEqual([accessibleProject]);
   });
 
   test("keeps the synthesized default project when requested", async () => {
