@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/labstack/echo/v5"
+
+	"github.com/bytebase/bytebase/backend/component/config"
 )
 
 func TestSecurityHeadersMiddleware_GA4Sources(t *testing.T) {
@@ -66,6 +68,40 @@ func TestSecurityHeadersMiddleware_SaaSAllowsPostHogHosts(t *testing.T) {
 		if source := cspDirective(csp, directive); !strings.Contains(source, "https://*.i.posthog.com") {
 			t.Errorf("Content-Security-Policy %q directive = %q, want to contain PostHog hosts; csp=%q", directive, source, csp)
 		}
+	}
+}
+
+func TestMetricsRouteDisabledInSaaS(t *testing.T) {
+	tests := []struct {
+		name       string
+		saas       bool
+		wantStatus int
+	}{
+		{
+			name:       "self-host exposes metrics",
+			saas:       false,
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "SaaS does not expose metrics",
+			saas:       true,
+			wantStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := echo.New()
+			registerMetricsRoute(e, &config.Profile{SaaS: tt.saas})
+
+			req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+			rec := httptest.NewRecorder()
+			e.ServeHTTP(rec, req)
+
+			if rec.Code != tt.wantStatus {
+				t.Fatalf("GET /metrics status = %d, want %d", rec.Code, tt.wantStatus)
+			}
+		})
 	}
 }
 

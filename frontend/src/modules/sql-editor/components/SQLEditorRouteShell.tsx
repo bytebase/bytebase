@@ -48,7 +48,7 @@ import {
   getDefaultPagination,
   getSheetStatement,
   isWorksheetReadableV1,
-  STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB,
+  storageKeySqlEditorSidebarTab,
 } from "@/utils";
 import { SQLEditorHomePage } from "./SQLEditorHomePage";
 
@@ -568,7 +568,7 @@ export function SQLEditorRouteShell() {
       "project-context-ready",
       ({ data: { project } }) => {
         if (!project) return;
-        requestAnimationFrame(() => restoreLastVisitedSidebarTab());
+        requestAnimationFrame(() => restoreLastVisitedSidebarTab(project));
       }
     );
     return () => {
@@ -576,20 +576,20 @@ export function SQLEditorRouteShell() {
     };
   }, []);
 
-  const sidebarRestoredRef = useRef(false);
-  const restoreLastVisitedSidebarTab = () => {
+  const sidebarRestoredProjectRef = useRef("");
+  const restoreLastVisitedSidebarTab = (project: string) => {
     // A query-history deep link forces the HISTORY panel open, ahead of the
     // `?panel=` override and the localStorage default.
     if (useSQLEditorStore.getState().linkedQueryHistory) {
       setAsidePanelTab("HISTORY");
-      sidebarRestoredRef.current = true;
+      sidebarRestoredProjectRef.current = project;
       return;
     }
 
     let stored: AsidePanelTab = "WORKSHEET";
     try {
       const raw = window.localStorage.getItem(
-        STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB
+        storageKeySqlEditorSidebarTab(project)
       );
       if (raw) {
         const parsed = JSON.parse(raw);
@@ -611,16 +611,16 @@ export function SQLEditorRouteShell() {
     } else {
       setAsidePanelTab(stored);
     }
-    sidebarRestoredRef.current = true;
+    sidebarRestoredProjectRef.current = project;
   };
 
   // Persist sidebar tab changes back to localStorage (debounced).
   const asidePanelTab = useSQLEditorStore((s) => s.asidePanelTab);
   const persistSidebarRef = useRef(
-    debounce((tab: AsidePanelTab) => {
+    debounce((project: string, tab: AsidePanelTab) => {
       try {
         window.localStorage.setItem(
-          STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB,
+          storageKeySqlEditorSidebarTab(project),
           JSON.stringify(tab)
         );
       } catch {
@@ -629,9 +629,10 @@ export function SQLEditorRouteShell() {
     }, 100)
   );
   useEffect(() => {
-    if (!sidebarRestoredRef.current) return;
-    persistSidebarRef.current(asidePanelTab);
-  }, [asidePanelTab]);
+    if (!isValidProjectName(projectNameState)) return;
+    if (sidebarRestoredProjectRef.current !== projectNameState) return;
+    persistSidebarRef.current(projectNameState, asidePanelTab);
+  }, [asidePanelTab, projectNameState]);
 
   // ---- unsaved-tabs guard -----------------------------------------------
 

@@ -185,17 +185,19 @@ export function WorkspaceSetupGuide() {
         }
       }
 
-      try {
-        const queryHistoryResult =
-          await sqlServiceClientConnect.searchQueryHistories(
-            create(SearchQueryHistoriesRequestSchema, {
-              pageSize: 1,
-              filter: 'type == "QUERY"',
-            })
-          );
-        hasFirstQuery = queryHistoryResult.queryHistories.length > 0;
-      } catch {
-        hasFirstQuery = false;
+      if (databaseName) {
+        try {
+          const queryHistoryResult =
+            await sqlServiceClientConnect.searchQueryHistories(
+              create(SearchQueryHistoriesRequestSchema, {
+                pageSize: 1,
+                filter: 'type == "QUERY"',
+              })
+            );
+          hasFirstQuery = queryHistoryResult.queryHistories.length > 0;
+        } catch {
+          hasFirstQuery = false;
+        }
       }
 
       setSetupState({

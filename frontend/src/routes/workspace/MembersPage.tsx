@@ -2253,7 +2253,6 @@ export function MembersPage({ projectId }: { projectId?: string }) {
       {!projectName && remainingUserCount <= 3 && (
         <Alert
           variant="warning"
-          className="mb-2"
           title={t("subscription.usage.user-count.title")}
           description={
             <>
@@ -2272,7 +2271,6 @@ export function MembersPage({ projectId }: { projectId?: string }) {
       )}
       {projectName && (
         <ProjectPageInfo
-          className="mb-2"
           description={
             <>
               {t("project.members.description")}{" "}

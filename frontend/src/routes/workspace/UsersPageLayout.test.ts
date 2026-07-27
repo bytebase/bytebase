@@ -20,7 +20,7 @@ describe("UsersPage drawer layout", () => {
     );
     const hintErrorIndex = source.indexOf('passwordHint ? "text-error" : ""');
     const passwordInputIndex = source.indexOf(
-      'className="relative mt-1 flex w-full items-center"'
+      'className="relative flex w-full items-center"'
     );
 
     expect(passwordTitleIndex).toBeGreaterThan(-1);
@@ -39,5 +39,13 @@ describe("UsersPage drawer layout", () => {
     expect(source).not.toContain("FormLabel");
     expect(source).not.toContain("textlabel");
     expect(source).not.toContain("textinfolabel");
+  });
+
+  test("does not require password when creating a user", () => {
+    const source = readFileSync(join(sectionDir, "UsersPage.tsx"), "utf8");
+
+    expect(source).not.toContain("(isEditMode || password.length > 0)");
+    expect(source).toContain("password,");
+    expect(source).toContain("backend will generate a random password");
   });
 });

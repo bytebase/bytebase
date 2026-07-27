@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { createBehaviorMetric } from "@/app/analytics/behavior";
 import { behaviorAnalytics } from "@/app/analytics/provider";
-import { router } from "@/app/router";
+import { router, useCurrentRoute } from "@/app/router";
 import {
   INSTANCE_ROUTE_CREATE,
   SQL_EDITOR_DATABASE_MODULE,
@@ -83,6 +83,7 @@ import {
 
 export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
+  const currentRoute = useCurrentRoute();
   const removeDatabaseMetadataCache = useAppStore(
     (s) => s.removeDatabaseMetadataCache
   );
@@ -239,11 +240,11 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
   const [visibleDatabases, setVisibleDatabases] = useState<Database[]>([]);
   const syncingInstanceId = useMemo(() => {
-    const { syncingInstance } = router.currentRoute.value.query;
+    const { syncingInstance } = currentRoute.query;
     return typeof syncingInstance === "string" && syncingInstance
       ? syncingInstance
       : undefined;
-  }, []);
+  }, [currentRoute.query]);
   const syncingInstanceName = syncingInstanceId
     ? `${instanceNamePrefix}${syncingInstanceId}`
     : undefined;
@@ -673,18 +674,6 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
               <span>{t("db.project-instance-synced-description")}</span>
               <div className="ml-auto flex flex-wrap items-center gap-x-2 gap-y-2">
                 <PermissionGuard
-                  permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}
-                  project={project}
-                >
-                  <Button
-                    size="sm"
-                    appearance="outline"
-                    onClick={handleCreateFirstChange}
-                  >
-                    {t("db.project-instance-synced-action")}
-                  </Button>
-                </PermissionGuard>
-                <PermissionGuard
                   permissions={["bb.sql.select"]}
                   project={project}
                 >
@@ -694,6 +683,18 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
                   >
                     <SquareTerminal className="size-4" />
                     {t("db.project-instance-synced-sql-editor-action")}
+                  </Button>
+                </PermissionGuard>
+                <PermissionGuard
+                  permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}
+                  project={project}
+                >
+                  <Button
+                    size="sm"
+                    appearance="outline"
+                    onClick={handleCreateFirstChange}
+                  >
+                    {t("db.project-instance-synced-action")}
                   </Button>
                 </PermissionGuard>
               </div>

@@ -63,6 +63,41 @@ func configureEchoRouters(
 
 	registerPprof(e, &profile.RuntimeDebug)
 
+	registerMetricsRoute(e, profile)
+
+	e.GET("/healthz", func(c *echo.Context) error {
+		return c.String(http.StatusOK, "OK")
+	})
+
+	// LSP server.
+	e.GET(lspAPI, lspServer.Router)
+
+	hookGroup := e.Group(webhookAPIPrefix)
+	scimGroup := hookGroup.Group(scimAPIPrefix)
+	directorySyncServer.RegisterDirectorySyncRoutes(scimGroup)
+
+	// Stripe (SaaS only, requires both API key and webhook secret).
+	if profile.SaaS && profile.StripeAPISecret != "" && profile.StripeWebhookSecret != "" {
+		stripeplugin.Init(profile.StripeAPISecret)
+		stripeGroup := hookGroup.Group("/stripe")
+		stripeWebhookHandler.RegisterRoutes(stripeGroup)
+	}
+
+	// OAuth2 server.
+	oauth2Service.RegisterRoutes(e)
+
+	// MCP server.
+	mcpServer.RegisterRoutes(e)
+
+	// Embed frontend (must be last to serve as fallback for SPA routes).
+	embedFrontend(e)
+}
+
+func registerMetricsRoute(e *echo.Echo, profile *config.Profile) {
+	if profile.SaaS {
+		return
+	}
+
 	// Prometheus metrics - use custom registry to avoid duplicate registration in tests
 	registry := prometheus.NewRegistry()
 	e.Use(echoprometheus.NewMiddlewareWithConfig(echoprometheus.MiddlewareConfig{
@@ -93,33 +128,6 @@ func configureEchoRouters(
 			promhttp.HandlerOpts{},
 		),
 	)))
-
-	e.GET("/healthz", func(c *echo.Context) error {
-		return c.String(http.StatusOK, "OK")
-	})
-
-	// LSP server.
-	e.GET(lspAPI, lspServer.Router)
-
-	hookGroup := e.Group(webhookAPIPrefix)
-	scimGroup := hookGroup.Group(scimAPIPrefix)
-	directorySyncServer.RegisterDirectorySyncRoutes(scimGroup)
-
-	// Stripe (SaaS only, requires both API key and webhook secret).
-	if profile.SaaS && profile.StripeAPISecret != "" && profile.StripeWebhookSecret != "" {
-		stripeplugin.Init(profile.StripeAPISecret)
-		stripeGroup := hookGroup.Group("/stripe")
-		stripeWebhookHandler.RegisterRoutes(stripeGroup)
-	}
-
-	// OAuth2 server.
-	oauth2Service.RegisterRoutes(e)
-
-	// MCP server.
-	mcpServer.RegisterRoutes(e)
-
-	// Embed frontend (must be last to serve as fallback for SPA routes).
-	embedFrontend(e)
 }
 
 func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {

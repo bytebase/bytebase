@@ -618,11 +618,7 @@ function UserForm({
   }, [email, isEditMode, enforceIdentityDomain, workspaceDomains]);
 
   const isFormValid =
-    email.length > 0 &&
-    emailDomainValid &&
-    !passwordHint &&
-    !passwordMismatch &&
-    (isEditMode || password.length > 0);
+    email.length > 0 && emailDomainValid && !passwordHint && !passwordMismatch;
 
   // Dirty tracking — in edit mode the Update button is disabled unless
   // something actually changed. Create mode is always "dirty".
@@ -667,6 +663,7 @@ function UserForm({
   };
 
   const handleCreate = async () => {
+    // Empty password is valid on create; backend will generate a random password.
     const createdUser = await createUser({
       ...create(UserSchema, {}),
       title: title || extractUserTitle(email),
@@ -808,7 +805,6 @@ function UserForm({
             <FormField>
               <FormTitle id="user-form-password-title">
                 {t("settings.profile.password")}
-                <span className="ml-0.5 text-error">*</span>
               </FormTitle>
               <span
                 className={`flex items-center gap-x-1 text-sm text-control-placeholder ${
@@ -835,7 +831,7 @@ function UserForm({
                   <CircleAlert className="w-4 cursor-help" />
                 </Tooltip>
               </span>
-              <div className="relative mt-1 flex w-full items-center">
+              <div className="relative flex w-full items-center">
                 <Input
                   id="user-form-password"
                   aria-labelledby="user-form-password-title"
@@ -864,9 +860,8 @@ function UserForm({
             <FormField>
               <FormTitle id="user-form-password-confirm-title">
                 {t("settings.profile.password-confirm")}
-                <span className="ml-0.5 text-error">*</span>
               </FormTitle>
-              <div className="relative mt-1 flex w-full items-center">
+              <div className="relative flex w-full items-center">
                 <Input
                   id="user-form-password-confirm"
                   aria-labelledby="user-form-password-confirm-title"
