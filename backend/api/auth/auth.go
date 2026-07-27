@@ -300,7 +300,7 @@ func GetUserEmailFromMFATempToken(token string, secret string) (string, error) {
 }
 
 // GetUserEmailAndLoginMethodFromMFATempToken returns the user email and original login method from the MFA temp token.
-func GetUserEmailAndLoginMethodFromMFATempToken(token string, secret string) (string, string, error) {
+func GetUserEmailAndLoginMethodFromMFATempToken(token, secret string) (string, string, error) {
 	claims := &claimsMessage{}
 	_, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Name {

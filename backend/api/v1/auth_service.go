@@ -103,7 +103,7 @@ func loginAuthMethodFromString(method string) loginAuthMethod {
 	}
 }
 
-func loginAuthMethodFromMFATempToken(token string, secret string) (string, loginAuthMethod, error) {
+func loginAuthMethodFromMFATempToken(token, secret string) (string, loginAuthMethod, error) {
 	email, method, err := auth.GetUserEmailAndLoginMethodFromMFATempToken(token, secret)
 	if err != nil {
 		return "", loginAuthMethodPassword, err
