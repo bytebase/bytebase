@@ -120,12 +120,16 @@ describe("LifecycleAdvance tier 1", () => {
     expect(onBlocked).toHaveBeenCalledOnce();
   });
 
-  test("empties itself when the last blocker resolves, with no second press", () => {
+  test("stays closed after the last blocker resolves", () => {
     const { rerender } = render(<Harness blockers={[fix("title")]} />);
     pressPrimary();
     expect(screen.getByRole("alert")).toBeInTheDocument();
 
     rerender(<Harness blockers={[]} />);
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    rerender(<Harness blockers={[fix("title")]} />);
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });

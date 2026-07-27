@@ -59,10 +59,12 @@ export function LifecycleAdvanceButton({
     surface === "decision" && blockers.length === 0 && decision !== undefined;
   const dismiss = () => setSurface("none");
 
-  // Keep the selected tier valid so a transiently invalid decision cannot
-  // reopen without another press.
+  // Clear or switch an invalid tier so it cannot reopen without another press.
   useEffect(() => {
     setSurface((current) => {
+      if (current === "blockers" && blockers.length === 0) {
+        return "none";
+      }
       if (current !== "decision") {
         return current;
       }
