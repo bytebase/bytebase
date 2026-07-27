@@ -14,8 +14,8 @@ importers:
         specifier: ^1.3.0
         version: 1.6.0(@date-fns/tz@1.5.0)(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@buf/googleapis_googleapis.bufbuild_es':
-        specifier: 2.10.2-20260414192239-c17df5b2beca.1
-        version: 2.10.2-20260414192239-c17df5b2beca.1(@bufbuild/protobuf@2.13.0)
+        specifier: 2.13.0-20260414192239-c17df5b2beca.1
+        version: 2.13.0-20260414192239-c17df5b2beca.1(@bufbuild/protobuf@2.13.0)
       '@bufbuild/protobuf':
         specifier: 2.13.0
         version: 2.13.0
@@ -1011,10 +1011,10 @@ packages:
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
 
-  '@buf/googleapis_googleapis.bufbuild_es@2.10.2-20260414192239-c17df5b2beca.1':
-    resolution: {integrity: sha512-+cPFrXmQ8X80yjoP/SvW5CcvX34TS04grzX1bqsXHrz61kZIPy4mtT4REo2uJ/Kk7UJ4n/gdv/x9uwyvRjQIow==}
+  '@buf/googleapis_googleapis.bufbuild_es@2.13.0-20260414192239-c17df5b2beca.1':
+    resolution: {integrity: sha512-DWQ4U0zz+9vf4KuB5Bt/nrYOzNnNEMy0hqHWHlDbOiXMd89Ex6hWIblzwpp8RGuGR6/wrxaGcZP+qrEIY1e/Mg==}
     peerDependencies:
-      '@bufbuild/protobuf': ^2.10.2
+      '@bufbuild/protobuf': ^2.13.0
 
   '@bufbuild/protobuf@2.13.0':
     resolution: {integrity: sha512-acq7c49vxfm1ggJ95P70TX7ABDM0vxr1SYD3BB0o0jnBLB4OAqeHyKuN+cD3w80gXEDQ2zxHpR6CUeA+O/aU9g==}
@@ -5210,7 +5210,7 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@buf/googleapis_googleapis.bufbuild_es@2.10.2-20260414192239-c17df5b2beca.1(@bufbuild/protobuf@2.13.0)':
+  '@buf/googleapis_googleapis.bufbuild_es@2.13.0-20260414192239-c17df5b2beca.1(@bufbuild/protobuf@2.13.0)':
     dependencies:
       '@bufbuild/protobuf': 2.13.0
 
