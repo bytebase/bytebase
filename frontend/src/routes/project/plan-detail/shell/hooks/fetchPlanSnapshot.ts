@@ -8,10 +8,10 @@ import {
   userServiceClientConnect,
 } from "@/api";
 import { silentContextKey } from "@/api/context-key";
+import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
   GetIssueRequestSchema,
   type Issue,
-  IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   GetPlanCheckRunRequestSchema,

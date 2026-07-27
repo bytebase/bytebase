@@ -1,9 +1,23 @@
 import { create } from "@bufbuild/protobuf";
+import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { renderHook, waitFor } from "@testing-library/react";
 import { act, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  clearPagedDataCache,
+  readPagedDataCache,
+  writePagedDataCache,
+} from "@/hooks/pagedDataCache";
+import {
+  projectIssuesPagedDataCacheScope,
+  projectPlansPagedDataCacheScope,
+} from "@/lib/projectPagedDataCache";
+import {
+  ApprovalStatus,
+  IssueStatus,
+  State,
+} from "@/types/proto-es/v1/common_pb";
+import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import {
@@ -104,6 +118,7 @@ const buildSnapshotPatch = ({
 describe("usePlanDetailPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearPagedDataCache();
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     mocks.fetchPlanSnapshot.mockImplementation(
       async (_projectId: string, planId: string) =>
@@ -129,6 +144,48 @@ describe("usePlanDetailPage", () => {
     expect(result.current.activePhases).toEqual(
       new Set(["changes", "review", "deploy"])
     );
+  });
+
+  test("invalidates Issue and Plan lists when the linked Issue changes", async () => {
+    mocks.fetchPlanSnapshot.mockResolvedValue(
+      buildSnapshotPatch({
+        planId: "plan-1",
+        issue: create(IssueSchema, {
+          name: "projects/foo/issues/1",
+          plan: "projects/foo/plans/plan-1",
+          status: IssueStatus.OPEN,
+          updateTime: { seconds: 1n, nanos: 0 },
+        }),
+      })
+    );
+    const { result } = renderHook(
+      () => usePlanDetailPage({ projectId: "foo", planId: "plan-1" }),
+      { wrapper }
+    );
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    writePagedDataCache(
+      "plans",
+      { dataList: ["plan"], hasMore: false, nextPageToken: "" },
+      projectPlansPagedDataCacheScope("foo")
+    );
+    writePagedDataCache(
+      "issues",
+      { dataList: ["issue"], hasMore: false, nextPageToken: "" },
+      projectIssuesPagedDataCacheScope("foo")
+    );
+
+    act(() => {
+      result.current.patchState({
+        issue: create(IssueSchema, {
+          ...result.current.issue!,
+          status: IssueStatus.CANCELED,
+          updateTime: create(TimestampSchema, { seconds: 2n, nanos: 0 }),
+        }),
+      });
+    });
+
+    expect(readPagedDataCache("plans")).toBeUndefined();
+    expect(readPagedDataCache("issues")).toBeUndefined();
   });
 
   test("defaults to only the deploy phase on the deploy route query", async () => {

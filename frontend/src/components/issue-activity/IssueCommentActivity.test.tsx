@@ -3,13 +3,13 @@ import { render, screen } from "@testing-library/react";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { describe, expect, test, vi } from "vitest";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/app/router/handles";
+import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
   IssueComment_PlanUpdateSchema,
   Issue_Type,
   IssueComment_ReviewSubmissionSchema,
   IssueCommentSchema,
   IssueSchema,
-  IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,

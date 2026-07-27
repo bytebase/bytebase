@@ -498,18 +498,6 @@ message RoleGrant {
   google.protobuf.Duration expiration = 4;
 }
 
-// The status of an issue.
-enum IssueStatus {
-  // Unspecified status.
-  ISSUE_STATUS_UNSPECIFIED = 0;
-  // Issue is open and active.
-  OPEN = 1;
-  // Issue is completed.
-  DONE = 2;
-  // Issue is canceled.
-  CANCELED = 3;
-}
-
 message ApprovalTemplate {
   // The approval flow definition.
   ApprovalFlow flow = 1;

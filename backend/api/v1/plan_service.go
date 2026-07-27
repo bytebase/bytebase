@@ -910,6 +910,7 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 
 		if issue := issueByPlanKey[key]; issue != nil {
 			v1Plan.Issue = common.FormatIssue(issue.ProjectID, issue.UID)
+			v1Plan.IssueStatus = convertToIssueStatus(issue.Status)
 			if !issue.Payload.GetDraft() {
 				v1Plan.ApprovalStatus = computeApprovalStatus(issue.Payload.GetApproval())
 			}

@@ -14,8 +14,8 @@ importers:
         specifier: ^1.3.0
         version: 1.6.0(@date-fns/tz@1.5.0)(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@buf/googleapis_googleapis.bufbuild_es':
-        specifier: 2.10.2-20260414192239-c17df5b2beca.1
-        version: 2.10.2-20260414192239-c17df5b2beca.1(@bufbuild/protobuf@2.13.0)
+        specifier: 2.13.0-20260414192239-c17df5b2beca.1
+        version: 2.13.0-20260414192239-c17df5b2beca.1(@bufbuild/protobuf@2.13.0)
       '@bufbuild/protobuf':
         specifier: 2.13.0
         version: 2.13.0
@@ -132,10 +132,10 @@ importers:
         version: 4.3.0
       lucide-react:
         specifier: ^1.14.0
-        version: 1.26.0(react@19.2.8)
+        version: 1.27.0(react@19.2.8)
       lucide-static:
         specifier: ^1.14.0
-        version: 1.26.0
+        version: 1.27.0
       markdown-it:
         specifier: ^14.1.0
         version: 14.3.0
@@ -168,7 +168,7 @@ importers:
         version: 19.2.8
       react-arborist:
         specifier: ^3.5.0
-        version: 3.15.1(@types/node@24.13.3)(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 3.16.0(@types/node@24.13.3)(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react-day-picker:
         specifier: ^10.0.1
         version: 10.0.1(@types/react@19.2.17)(react@19.2.8)
@@ -1011,10 +1011,10 @@ packages:
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
 
-  '@buf/googleapis_googleapis.bufbuild_es@2.10.2-20260414192239-c17df5b2beca.1':
-    resolution: {integrity: sha512-+cPFrXmQ8X80yjoP/SvW5CcvX34TS04grzX1bqsXHrz61kZIPy4mtT4REo2uJ/Kk7UJ4n/gdv/x9uwyvRjQIow==}
+  '@buf/googleapis_googleapis.bufbuild_es@2.13.0-20260414192239-c17df5b2beca.1':
+    resolution: {integrity: sha512-DWQ4U0zz+9vf4KuB5Bt/nrYOzNnNEMy0hqHWHlDbOiXMd89Ex6hWIblzwpp8RGuGR6/wrxaGcZP+qrEIY1e/Mg==}
     peerDependencies:
-      '@bufbuild/protobuf': ^2.10.2
+      '@bufbuild/protobuf': ^2.13.0
 
   '@bufbuild/protobuf@2.13.0':
     resolution: {integrity: sha512-acq7c49vxfm1ggJ95P70TX7ABDM0vxr1SYD3BB0o0jnBLB4OAqeHyKuN+cD3w80gXEDQ2zxHpR6CUeA+O/aU9g==}
@@ -3249,13 +3249,13 @@ packages:
   ltgt@2.2.1:
     resolution: {integrity: sha512-AI2r85+4MquTw9ZYqabu4nMwy9Oftlfa/e/52t9IjtfG+mGBbTNdAoZ3RQKLHR6r0wQnwZnPIEh/Ya6XTWAKNA==}
 
-  lucide-react@1.26.0:
-    resolution: {integrity: sha512-raglYVR2+VkMfJL158krjVmE+rV5ST2lzA/KQm1FRSjMHT4MnWaegHxoVEpmc2So3nOEhp9oGejJwAPX8MoAjg==}
+  lucide-react@1.27.0:
+    resolution: {integrity: sha512-rJicGl/3Fly/E0rOH1YmPZ6e49JCnKknh1ox1vpHnkfjujAkKA6sqUZvH3MTAaXXjgexyUwgNwTJzTtYuAFYJw==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  lucide-static@1.26.0:
-    resolution: {integrity: sha512-6yCpa2ONICjlE19BuneIi75ASd9cCZhqJlzhAlQBi+99m2aZd2cNzxFVbDgPu7JLBZR2uDYO/EpLYtnhGw5Niw==}
+  lucide-static@1.27.0:
+    resolution: {integrity: sha512-ev1Wufm+RsKpQ6CfmS0PgYF+NTB1aaltfE+jUgBYGB8PV5b5qqHpzsTLPsMWFRFdpVMv66eIK8/Xf9d8cl3HhA==}
 
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
@@ -3662,8 +3662,8 @@ packages:
     resolution: {integrity: sha512-80WNmd9DA0tmZrw9qQa62GPPWfuXJknrmVmLcxvq4uZBdYqb1wYoKTmnlGUchvVWe0XiLupYkBoXVOxz3C8DYQ==}
     engines: {node: '>=0.12'}
 
-  react-arborist@3.15.1:
-    resolution: {integrity: sha512-+2Cv1u0TLWd4QhdMceZOWcS1B5NaSDuyNEjihPDL8df3zfaOMZyQ/YgNKuJ3P6V0O8XbRWqzWRkxhi3pJo/Qsg==}
+  react-arborist@3.16.0:
+    resolution: {integrity: sha512-Pp1TQXETKMeg/0yAMGBFIwze7IfZaghDScX4vekJ4Ge8/t7uYifbDBhEGUSOYaDuahE1f8fyBIrlN2pLD4ysTA==}
     peerDependencies:
       react: '>= 16.14'
       react-dom: '>= 16.14'
@@ -5210,7 +5210,7 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@buf/googleapis_googleapis.bufbuild_es@2.10.2-20260414192239-c17df5b2beca.1(@bufbuild/protobuf@2.13.0)':
+  '@buf/googleapis_googleapis.bufbuild_es@2.13.0-20260414192239-c17df5b2beca.1(@bufbuild/protobuf@2.13.0)':
     dependencies:
       '@bufbuild/protobuf': 2.13.0
 
@@ -7313,11 +7313,11 @@ snapshots:
 
   ltgt@2.2.1: {}
 
-  lucide-react@1.26.0(react@19.2.8):
+  lucide-react@1.27.0(react@19.2.8):
     dependencies:
       react: 19.2.8
 
-  lucide-static@1.26.0: {}
+  lucide-static@1.27.0: {}
 
   lz-string@1.5.0: {}
 
@@ -7974,7 +7974,7 @@ snapshots:
       discontinuous-range: 1.0.0
       ret: 0.1.15
 
-  react-arborist@3.15.1(@types/node@24.13.3)(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+  react-arborist@3.16.0(@types/node@24.13.3)(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
       react: 19.2.8
       react-dnd: 14.0.5(@types/node@24.13.3)(@types/react@19.2.17)(react@19.2.8)

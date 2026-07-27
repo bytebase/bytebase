@@ -8,8 +8,7 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { State } from "@/types/proto-es/v1/common_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import type { PlanDetailPageState } from "../shell/hooks/types";
 import { PlanDetailHeader } from "./PlanDetailHeader";
 import { PlanDetailHeaderDetails } from "./PlanDetailHeaderDetails";

@@ -41,6 +41,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { invalidateProjectPlansPagedDataCacheForIssues } from "@/lib/projectPagedDataCache";
 import { displayRoleTitleFromList } from "@/lib/role";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
@@ -50,12 +51,15 @@ import {
   isValidProjectName,
   unknownUser,
 } from "@/types";
-import { ApprovalStatus, RiskLevel } from "@/types/proto-es/v1/common_pb";
+import {
+  ApprovalStatus,
+  IssueStatus,
+  RiskLevel,
+} from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   BatchUpdateIssuesStatusRequestSchema,
   Issue_Type,
-  IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Label } from "@/types/proto-es/v1/project_service_pb";
 import {
@@ -1082,6 +1086,7 @@ export function BatchIssueStatusActionDrawer({
         reason: comment,
       });
       await issueServiceClientConnect.batchUpdateIssuesStatus(request);
+      invalidateProjectPlansPagedDataCacheForIssues(issues);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",

@@ -5,9 +5,8 @@ import {
   type AccessGrant,
   AccessGrant_Status,
 } from "@/types/proto-es/v1/access_grant_service_pb";
-import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { formatAbsoluteDateTime } from "@/utils/datetime";
 
 export type AccessGrantFilterStatus =

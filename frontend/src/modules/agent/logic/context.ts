@@ -1,7 +1,7 @@
 import type { ReactRoute } from "@/app/router";
 import { useAppStore } from "@/stores/app";
-import { Engine, State } from "@/types/proto-es/v1/common_pb";
-import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { Engine, IssueStatus, State } from "@/types/proto-es/v1/common_pb";
+import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 
 interface PageContext {
   user?: { name: string; email: string; title: string };

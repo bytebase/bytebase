@@ -13,14 +13,19 @@ import {
   PLAN_DETAIL_PHASE_DEPLOY,
   PLAN_DETAIL_PHASE_REVIEW,
 } from "@/app/router/handles";
+import { invalidateProjectPagedDataCacheIfChanged } from "@/lib/projectPagedDataCache";
 import {
   preserveTaskRunIdentities,
   sameMessage,
   sameMessageList,
 } from "@/lib/protoIdentity";
 import { useAppStore } from "@/stores/app";
-import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
-import { IssueSchema, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  ApprovalStatus,
+  IssueStatus,
+  State,
+} from "@/types/proto-es/v1/common_pb";
+import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import {
   PlanCheckRunSchema,
   PlanSchema,
@@ -37,7 +42,6 @@ import { unknownProject } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
 import { setDocumentTitle } from "@/utils";
 import { isTaskActivelyTransitioning } from "@/utils/v1/issue/rollout";
-import { invalidateProjectPagedDataCacheIfChanged } from "../../../pagedDataCacheScope";
 import type { PlanDetailPhase } from "../../shared/stores/types";
 import { usePlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
 import {
@@ -279,6 +283,12 @@ export const usePlanDetailPage = ({
       invalidateProjectPagedDataCacheIfChanged(
         prevSnapshot.projectId,
         "issues",
+        prevSnapshot.issue,
+        patch.issue
+      );
+      invalidateProjectPagedDataCacheIfChanged(
+        prevSnapshot.projectId,
+        "plans",
         prevSnapshot.issue,
         patch.issue
       );

@@ -20,9 +20,9 @@ import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { getProjectName, projectNamePrefix } from "@/stores/modules/v1/common";
+import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
   IssueSchema,
-  IssueStatus,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { colorToHex, hasProjectPermissionV2 } from "@/utils";

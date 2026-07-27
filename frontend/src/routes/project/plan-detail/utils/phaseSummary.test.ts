@@ -1,6 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
-import { type Issue, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  ApprovalStatus,
+  IssueStatus,
+  State,
+} from "@/types/proto-es/v1/common_pb";
+import { type Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";

@@ -35,12 +35,11 @@ import {
   IssueCommentType,
 } from "@/stores/app/issueComment";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
-import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Issue_Type,
   IssueComment_Approval_Status,
-  IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";

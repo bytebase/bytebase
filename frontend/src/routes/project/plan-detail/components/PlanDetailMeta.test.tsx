@@ -5,7 +5,7 @@ import {
   type ReactNode,
 } from "react";
 import { beforeEach, expect, test, vi } from "vitest";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import type { PlanDetailPageState } from "../shell/hooks/types";
 import { PlanDetailMeta } from "./PlanDetailMeta";
 

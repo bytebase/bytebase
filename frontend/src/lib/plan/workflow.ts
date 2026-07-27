@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import type {
   CreateIssueRequest,
   Issue,
@@ -8,7 +9,6 @@ import {
   CreateIssueRequestSchema,
   Issue_Type,
   IssueSchema,
-  IssueStatus,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type {

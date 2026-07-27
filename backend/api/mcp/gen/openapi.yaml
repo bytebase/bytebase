@@ -13030,7 +13030,10 @@ components:
         - OPEN
         - DONE
         - CANCELED
-      description: The status of an issue.
+      description: |-
+        The status of an issue.
+         Lives at the top level so both plan_service.proto and issue_service.proto
+         can reference it without a circular import.
     bytebase.v1.KerberosConfig:
       type: object
       properties:
@@ -15133,7 +15136,7 @@ components:
           title: approval_status
           description: |-
             The approval status of the linked issue.
-             Unspecified when no linked issue exists.
+             Unspecified when no linked issue exists or the linked issue is a draft.
           $ref: '#/components/schemas/bytebase.v1.ApprovalStatus'
         rolloutStageSummaries:
           type: array
@@ -15143,6 +15146,12 @@ components:
           description: |-
             Per-stage rollout status summary.
              Ordered by environment deployment order. Empty when no rollout exists.
+        issueStatus:
+          title: issue_status
+          description: |-
+            The lifecycle status of the linked issue.
+             Unspecified when no linked issue exists.
+          $ref: '#/components/schemas/bytebase.v1.IssueStatus'
       title: Plan
       additionalProperties: false
     bytebase.v1.Plan.ChangeDatabaseConfig:

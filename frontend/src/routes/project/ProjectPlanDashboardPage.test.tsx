@@ -2,7 +2,11 @@ import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { State } from "@/types/proto-es/v1/common_pb";
+import {
+  ApprovalStatus,
+  IssueStatus,
+  State,
+} from "@/types/proto-es/v1/common_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { ProjectPlanDashboardPage } from "./ProjectPlanDashboardPage";
 
@@ -29,6 +33,20 @@ const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   usePagedData: vi.fn(),
 }));
+
+const pagedData = (dataList: Plan[]) => ({
+  dataList,
+  hasMore: true,
+  isFetchingMore: false,
+  isLoading: false,
+  loadMore: vi.fn(),
+  onPageSizeChange: vi.fn(),
+  pageSize: 50,
+  pageSizeOptions: [50, 100],
+  refresh: vi.fn(),
+  removeCache: vi.fn(),
+  updateCache: vi.fn(),
+});
 
 vi.mock("react-i18next", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react-i18next")>()),
@@ -71,8 +89,13 @@ vi.mock("@/components/TaskStatusIcon", () => ({
 }));
 
 vi.mock("@/components/ui/badge", () => ({
-  Badge: ({ children }: { children: ReactNode }) =>
-    createElement("span", {}, children),
+  Badge: ({
+    children,
+    className,
+  }: {
+    children: ReactNode;
+    className?: string;
+  }) => createElement("span", { className }, children),
 }));
 
 vi.mock("@/components/ui/button", () => ({
@@ -186,19 +209,7 @@ describe("ProjectPlanDashboardPage scroll restoration", () => {
     root = createRoot(container);
     mocks.usePagedData.mockReset();
     mocks.listScrollRestorationKey = undefined;
-    mocks.usePagedData.mockReturnValue({
-      dataList: [plan],
-      hasMore: true,
-      isFetchingMore: false,
-      isLoading: false,
-      loadMore: vi.fn(),
-      onPageSizeChange: vi.fn(),
-      pageSize: 50,
-      pageSizeOptions: [50, 100],
-      refresh: vi.fn(),
-      removeCache: vi.fn(),
-      updateCache: vi.fn(),
-    });
+    mocks.usePagedData.mockReturnValue(pagedData([plan]));
   });
 
   afterEach(() => {
@@ -284,5 +295,84 @@ describe("ProjectPlanDashboardPage scroll restoration", () => {
         '[data-scroll-restoration-anchor="projects/foo/plans/1"]'
       )
     ).not.toBeNull();
+  });
+
+  test.each([
+    {
+      name: "a canceled linked Issue as closed",
+      issueStatus: IssueStatus.CANCELED,
+      hasRollout: false,
+      expected: "common.closed",
+    },
+    {
+      name: "a done linked Issue without rollout as bypassed",
+      issueStatus: IssueStatus.DONE,
+      hasRollout: false,
+      expected: "common.bypassed",
+    },
+    {
+      name: "an open linked Issue awaiting review as under review",
+      issueStatus: IssueStatus.OPEN,
+      hasRollout: false,
+      expected: "common.under-review",
+    },
+    {
+      name: "an open linked Issue with rollout as bypassed",
+      issueStatus: IssueStatus.OPEN,
+      hasRollout: true,
+      expected: "common.bypassed",
+    },
+  ])("renders $name", ({ issueStatus, hasRollout, expected }) => {
+    mocks.usePagedData.mockReturnValue(
+      pagedData([
+        {
+          ...plan,
+          issue: "projects/foo/issues/1",
+          issueStatus,
+          hasRollout,
+          approvalStatus: ApprovalStatus.PENDING,
+        },
+      ])
+    );
+
+    act(() => {
+      root.render(
+        <MemoryRouter>
+          <ProjectPlanDashboardPage projectId="foo" />
+        </MemoryRouter>
+      );
+    });
+
+    const reviewBadge = Array.from(container.querySelectorAll("span")).find(
+      (element) => element.textContent === expected
+    );
+    expect(reviewBadge).toHaveClass("font-normal");
+  });
+
+  test("keeps Plan deletion and review closure as separate badges", () => {
+    mocks.usePagedData.mockReturnValue(
+      pagedData([
+        {
+          ...plan,
+          state: State.DELETED,
+          issue: "projects/foo/issues/1",
+          issueStatus: IssueStatus.CANCELED,
+          approvalStatus: ApprovalStatus.PENDING,
+        },
+      ])
+    );
+
+    act(() => {
+      root.render(
+        <MemoryRouter>
+          <ProjectPlanDashboardPage projectId="foo" />
+        </MemoryRouter>
+      );
+    });
+
+    const closedBadges = Array.from(container.querySelectorAll("span")).filter(
+      (element) => element.textContent === "common.closed"
+    );
+    expect(closedBadges).toHaveLength(2);
   });
 });

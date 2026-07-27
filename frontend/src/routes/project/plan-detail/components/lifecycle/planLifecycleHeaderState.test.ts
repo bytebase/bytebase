@@ -1,7 +1,10 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
-import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  ApprovalStatus,
+  IssueStatus,
+  State,
+} from "@/types/proto-es/v1/common_pb";
 import {
   RolloutSchema,
   StageSchema,
