@@ -33,6 +33,8 @@ export const STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE =
   "bb.sql-editor.ai-panel-size";
 export const STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB =
   "bb.sql-editor.sidebar.last-visited-tab";
+export const storageKeySqlEditorSidebarTab = (project: string) =>
+  `${STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB}.${project}`;
 export const STORAGE_KEY_SQL_EDITOR_CODE_VIEWER_FORMAT =
   "bb.sql-editor.editor-panel.code-viewer.format";
 export const STORAGE_KEY_SQL_EDITOR_DETAIL_FORMAT =
