@@ -258,6 +258,55 @@ describe("LifecycleAdvance tier 2", () => {
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
+
+  test("switches an open decision to blockers when checks restart", () => {
+    const { rerender } = render(<Harness decision={DECISION} />);
+    pressPrimary();
+
+    rerender(
+      <Harness
+        blockers={[
+          { id: "checks-running", kind: "wait", message: "checks are running" },
+        ]}
+      />
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent("checks are running");
+    expect(
+      screen.queryByRole("button", { name: "plan.submit-review-anyway" })
+    ).not.toBeInTheDocument();
+  });
+
+  test("lets new blockers outrank a still-valid open decision", () => {
+    const { rerender } = render(<Harness decision={DECISION} />);
+    pressPrimary();
+
+    rerender(
+      <Harness blockers={[fix("statement")]} decision={DECISION} />
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent("statement");
+    expect(
+      screen.queryByRole("button", { name: "plan.submit-review-anyway" })
+    ).not.toBeInTheDocument();
+
+    rerender(<Harness decision={DECISION} />);
+
+    expect(screen.queryByTestId("popover")).not.toBeInTheDocument();
+  });
+
+  test("closes an open decision when it is no longer required", () => {
+    const { rerender } = render(<Harness decision={DECISION} />);
+    pressPrimary();
+
+    rerender(<Harness />);
+
+    expect(screen.queryByTestId("popover")).not.toBeInTheDocument();
+
+    rerender(<Harness decision={DECISION} />);
+
+    expect(screen.queryByTestId("popover")).not.toBeInTheDocument();
+  });
 });
 
 describe("LifecycleAdvance in flight", () => {

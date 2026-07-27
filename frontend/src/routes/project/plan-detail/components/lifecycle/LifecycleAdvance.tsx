@@ -17,7 +17,7 @@
 // Callers reset it by navigation: key the element on the plan so a surface
 // opened for one plan cannot greet the reader on the next.
 import { CircleX, Clock3, Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent } from "@/components/ui/popover";
@@ -52,10 +52,29 @@ export function LifecycleAdvanceButton({
   );
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Derived, not stored: resolving the last condition closes the popover with
-  // no second press and no effect.
-  const showBlockers = surface === "blockers" && blockers.length > 0;
+  // Derived visibility prevents prop changes from briefly rendering a stale
+  // tier before the stored surface is reconciled below.
+  const showBlockers = surface !== "none" && blockers.length > 0;
+  const showDecision =
+    surface === "decision" && blockers.length === 0 && decision !== undefined;
   const dismiss = () => setSurface("none");
+
+  // Keep the selected tier valid so a transiently invalid decision cannot
+  // reopen without another press.
+  useEffect(() => {
+    setSurface((current) => {
+      if (current !== "decision") {
+        return current;
+      }
+      if (blockers.length > 0) {
+        return "blockers";
+      }
+      if (!decision) {
+        return "none";
+      }
+      return current;
+    });
+  }, [blockers.length, decision]);
 
   const press = () => {
     if (blockers.length > 0) {
@@ -82,7 +101,7 @@ export function LifecycleAdvanceButton({
         onOpenChange={(open) => {
           if (!open) dismiss();
         }}
-        open={showBlockers || surface === "decision"}
+        open={showBlockers || showDecision}
       >
         <PopoverContent
           align="end"
