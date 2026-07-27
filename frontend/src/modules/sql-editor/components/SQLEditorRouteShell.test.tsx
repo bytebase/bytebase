@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { ReactRoute } from "@/app/router";
+import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import type { SQLEditorTab } from "@/types";
 import { SQLEditorRouteShell } from "./SQLEditorRouteShell";
 
@@ -200,6 +201,7 @@ const renderShell = () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   mocks.maybeSwitchProject.mockImplementation(
     async (project: string) => project
   );
@@ -433,6 +435,26 @@ describe("SQLEditorRouteShell", () => {
         table: "users",
       },
     });
+
+    unmount();
+  });
+
+  test("restores the sidebar tab from project-scoped localStorage", async () => {
+    localStorage.setItem(
+      "bb.sql-editor.sidebar.last-visited-tab.projects/proj1",
+      JSON.stringify("SCHEMA")
+    );
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await sqlEditorEvents.emit("project-context-ready", {
+        project: "projects/proj1",
+      });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    });
+
+    expect(mocks.setAsidePanelTab).toHaveBeenCalledWith("SCHEMA");
 
     unmount();
   });

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useAppProject } from "@/hooks/useAppProject";
 import type { AsidePanelTab } from "@/modules/sql-editor/store";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
@@ -12,11 +13,18 @@ import { TabItem } from "./TabItem";
  * Replaces frontend/src/views/sql-editor/AsidePanel/GutterBar/GutterBar.vue.
  */
 export function GutterBar() {
+  const asidePanelTab = useSQLEditorStore((s) => s.asidePanelTab);
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const projectName = useSQLEditorEditorState((s) => s.project);
 
   const resolvedProject = useAppProject(projectName);
   const project = projectName ? resolvedProject : undefined;
+
+  useEffect(() => {
+    if (asidePanelTab === "ACCESS" && !project?.allowJustInTimeAccess) {
+      setAsidePanelTab("WORKSHEET");
+    }
+  }, [asidePanelTab, project?.allowJustInTimeAccess, setAsidePanelTab]);
 
   const handleClickTab = (target: AsidePanelTab) => {
     setAsidePanelTab(target);

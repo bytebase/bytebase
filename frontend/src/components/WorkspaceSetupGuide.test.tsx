@@ -925,7 +925,7 @@ describe("WorkspaceSetupGuide", () => {
     ).toContain("workspace-setup-guide.actions.query");
   });
 
-  it("checks first query before a project database exists", async () => {
+  it("skips first query check before a project database exists", async () => {
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
@@ -940,12 +940,7 @@ describe("WorkspaceSetupGuide", () => {
     });
     await render(<WorkspaceSetupGuide />);
 
-    expect(mocks.searchQueryHistories).toHaveBeenCalledWith(
-      expect.objectContaining({
-        pageSize: 1,
-        filter: 'type == "QUERY"',
-      })
-    );
+    expect(mocks.searchQueryHistories).not.toHaveBeenCalled();
     expect(container.querySelector("[data-testid='active-action']")).toBeNull();
   });
 

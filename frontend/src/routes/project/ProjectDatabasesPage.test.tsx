@@ -62,6 +62,10 @@ vi.mock("@/app/router", () => ({
       },
     },
   },
+  useCurrentRoute: () => ({
+    name: mocks.routerCurrentName,
+    query: mocks.routerCurrentQuery,
+  }),
 }));
 
 vi.mock("@/app/analytics/provider", () => ({
@@ -419,6 +423,35 @@ describe("ProjectDatabasesPage", () => {
     });
   });
 
+  test("updates syncing guidance when the syncing instance query changes", async () => {
+    mocks.instancesByName = {
+      "instances/prod": { name: "instances/prod", title: "Prod Instance" },
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.textContent).not.toContain(
+      "db.project-instance-syncing-title"
+    );
+
+    mocks.routerCurrentQuery = { syncingInstance: "prod" };
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.textContent).toContain(
+      "db.project-instance-syncing-titleProd Instance"
+    );
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("falls back to create database after redirected instance sync finds no databases", async () => {
     vi.useFakeTimers();
     mocks.routerCurrentQuery = { syncingInstance: "prod" };
@@ -519,6 +552,10 @@ describe("ProjectDatabasesPage", () => {
     ) as HTMLButtonElement;
     expect(sqlEditorButton.className).toContain("bg-accent");
     expect(nextActionButton.className).toContain("border-control-border");
+    expect(
+      sqlEditorButton.compareDocumentPosition(nextActionButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
     await act(async () => {
       sqlEditorButton.click();
     });

@@ -124,6 +124,17 @@ describe("GutterBar", () => {
     unmount();
   });
 
+  test("falls back from ACCESS when the project does not allow JIT access", () => {
+    mocks.projectData = { allowJustInTimeAccess: false };
+    mocks.state.asidePanelTab = "ACCESS";
+
+    const { render, unmount } = renderIntoContainer(<GutterBar />);
+    render();
+
+    expect(mocks.setAsidePanelTab).toHaveBeenCalledWith("WORKSHEET");
+    unmount();
+  });
+
   test("does not render the Bytebase logo", () => {
     mocks.projectData = { allowJustInTimeAccess: false };
     const { container, render, unmount } = renderIntoContainer(<GutterBar />);
