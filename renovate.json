@@ -75,6 +75,12 @@
       "matchPackageNames": ["google.golang.org/genproto"],
       "enabled": false,
       "description": "Revisions after 0afa2a65878a delete the bigtable, datastore, firestore, pubsub and spanner package trees, which moved into the per-product client libraries with no split-out genproto module replacing them. cloud.google.com/go/spanner still requires an older genproto and test-imports genproto/googleapis/spanner/admin/database/v1, so `go mod tidy` cannot resolve the graph and fails outright. Re-enable once cloud.google.com/go/spanner drops the deleted packages. This pins only the root module — googleapis/api and googleapis/rpc are separate modules, lost nothing, and keep updating."
+    },
+    {
+      "matchPackageNames": ["github.com/sijms/go-ora/v3"],
+      "matchUpdateTypes": ["digest"],
+      "enabled": false,
+      "description": "This module is pinned to an untagged master commit because v3.0.1 cannot open a second connection to the same Oracle server (FastLogin cookie replay, fixed upstream in sijms/go-ora#732 but unreleased). Digest updates therefore walk master unreviewed: they arrive with a bare commit hash instead of a pseudo-version, which makes go.mod unparseable, and the commits are untested — 25a17b8b0c14 regressed every Oracle query with 'TTC error: received code 2 during response reading'. Re-enable, and move to a normal version range, once upstream tags v3.0.2 or later."
     }
   ],
   "ignoreDeps": [

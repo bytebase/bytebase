@@ -1,6 +1,6 @@
 module github.com/bytebase/bytebase
 
-go 1.26.3
+go 1.26.5
 
 // workaround mssql-docker default TLS cert negative serial number problem
 // https://github.com/microsoft/mssql-docker/issues/895
@@ -77,7 +77,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/v9 v9.21.0
 	github.com/shopspring/decimal v1.4.0
-	github.com/sijms/go-ora/v3 25a17b8b0c14
+	github.com/sijms/go-ora/v3 v3.0.2-0.20260725105946-e99dcc874d16
 	github.com/snowflakedb/gosnowflake/v2 v2.1.0
 	github.com/sourcegraph/conc v0.3.0
 	github.com/sourcegraph/jsonrpc2 v0.2.1
