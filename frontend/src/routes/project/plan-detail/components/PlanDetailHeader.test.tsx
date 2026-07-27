@@ -54,23 +54,6 @@ vi.mock("@/api", () => ({
   },
 }));
 
-vi.mock("@/components/IssueLabelSelect", () => ({
-  IssueLabelSelect: ({
-    onChange,
-    selected,
-  }: {
-    onChange: (labels: string[]) => void;
-    selected: string[];
-  }) => (
-    <div>
-      <output data-testid="selected-labels">{selected.join(",")}</output>
-      <button onClick={() => onChange(["replacement"])} type="button">
-        select replacement label
-      </button>
-    </div>
-  ),
-}));
-
 vi.mock("@/components/MarkdownEditor", () => ({
   MarkdownEditor: ({ content }: { content: string }) => <span>{content}</span>,
 }));
@@ -89,76 +72,17 @@ vi.mock("@/components/ui/button", () => ({
   }) => <button {...props}>{children}</button>,
 }));
 
-vi.mock("@/components/ui/checkbox", () => ({
-  Checkbox: ({
-    checked,
-    onCheckedChange,
-  }: {
-    checked: boolean;
-    onCheckedChange?: (checked: boolean) => void;
-  }) => (
-    <input
-      checked={checked}
-      onChange={(event) => onCheckedChange?.(event.target.checked)}
-      type="checkbox"
-    />
-  ),
-}));
-
 vi.mock("@/components/ui/textarea", () => ({
   Textarea: (props: TextareaHTMLAttributes<HTMLTextAreaElement>) => (
     <textarea {...props} />
   ),
 }));
 
-vi.mock("@/components/ui/popover", async () => {
-  const React = await vi.importActual<typeof import("react")>("react");
-  const PopoverContext = React.createContext<{
-    onOpenChange?: (open: boolean) => void;
-    open: boolean;
-  }>({ open: false });
-
-  return {
-    Popover: ({
-      children,
-      onOpenChange,
-      open = false,
-    }: {
-      children: ReactNode;
-      onOpenChange?: (open: boolean) => void;
-      open?: boolean;
-    }) => (
-      <PopoverContext.Provider value={{ onOpenChange, open }}>
-        <div>{children}</div>
-      </PopoverContext.Provider>
-    ),
-    PopoverContent: ({ children }: { children: ReactNode }) => {
-      const { open } = React.useContext(PopoverContext);
-      return open ? <div>{children}</div> : null;
-    },
-    PopoverTrigger: ({
-      children,
-      render,
-    }: {
-      children: ReactNode;
-      render?: ReactElement<ButtonHTMLAttributes<HTMLButtonElement>>;
-    }) => {
-      const { onOpenChange, open } = React.useContext(PopoverContext);
-      if (!isValidElement(render)) return <>{children}</>;
-      const originalOnClick = render.props.onClick;
-      return cloneElement(
-        render,
-        {
-          onClick: (event) => {
-            originalOnClick?.(event);
-            onOpenChange?.(!open);
-          },
-        },
-        children
-      );
-    },
-  };
-});
+vi.mock("@/components/ui/popover", () => ({
+  Popover: ({ children, open }: { children: ReactNode; open?: boolean }) =>
+    open ? <div>{children}</div> : null,
+  PopoverContent: ({ children }: { children: ReactNode }) => <>{children}</>,
+}));
 
 vi.mock("@/components/ui/dropdown-menu", () => ({
   DropdownMenu: ({ children }: { children: ReactNode }) => (
@@ -481,51 +405,29 @@ describe("PlanDetailHeader draft ownership", () => {
     ).toBeVisible();
   });
 
-  test("resets review labels and warning acknowledgment after navigation", () => {
+  test("does not carry a revealed notice to the next plan", () => {
     mocks.permissions = new Set(["bb.plans.update", "bb.issues.update"]);
     mocks.lifecycle = { kind: "ready-for-review" };
     mocks.page = {
       ...makePage(),
-      issue: { ...makePage().issue!, labels: ["old"] },
-      plan: {
-        ...makePage().plan,
-        planCheckRunStatusCount: { ERROR: 1 },
-        specs: [{ config: { case: "changeDatabaseConfig", value: {} } }],
-      },
+      isEditing: true,
     } as unknown as PlanDetailPageState;
     const { rerender } = render(<PlanDetailHeader />);
 
     fireEvent.click(
       screen.getByRole("button", { name: "plan.ready-for-review" })
     );
-    fireEvent.click(
-      screen.getByRole("button", { name: "select replacement label" })
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "plan.editor.save-changes-before-continuing"
     );
-    fireEvent.click(screen.getByRole("checkbox"));
-    expect(screen.getByTestId("selected-labels")).toHaveTextContent(
-      "replacement"
-    );
-    expect(screen.getByRole("checkbox")).toBeChecked();
 
-    mocks.page = {
-      ...mocks.page,
-      pageKey: "plan-456",
-      issue: { ...mocks.page.issue!, labels: ["new"] },
-      plan: {
-        ...mocks.page.plan,
-        name: "projects/p1/plans/456",
-      },
-    };
+    mocks.page = { ...mocks.page, pageKey: "plan-456" };
     rerender(<PlanDetailHeader />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "plan.ready-for-review" })
-    );
-    expect(screen.getByTestId("selected-labels")).toHaveTextContent("new");
-    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  test("submits labels from the Ready for Review popover and surfaces a single failure", async () => {
+  test("submits the draft in one press and surfaces a single failure", async () => {
     const failure = new Error("approval setup failed");
     mocks.permissions = new Set(["bb.plans.update", "bb.issues.update"]);
     mocks.lifecycle = { kind: "ready-for-review" };
@@ -539,20 +441,17 @@ describe("PlanDetailHeader draft ownership", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "plan.ready-for-review" })
     );
-    expect(screen.getByTestId("selected-labels")).toHaveTextContent("old");
-    fireEvent.click(
-      screen.getByRole("button", { name: "select replacement label" })
-    );
-    fireEvent.click(screen.getByRole("button", { name: "common.confirm" }));
+
+    // No form stands between the press and the submission.
+    expect(
+      screen.queryByRole("button", { name: "common.confirm" })
+    ).not.toBeInTheDocument();
 
     await waitFor(() => expect(mocks.updateIssue).toHaveBeenCalledOnce());
     expect(mocks.updateIssue).toHaveBeenCalledWith(
       expect.objectContaining({
-        issue: expect.objectContaining({
-          draft: false,
-          labels: ["replacement"],
-        }),
-        updateMask: { paths: ["draft", "labels"] },
+        issue: expect.objectContaining({ draft: false }),
+        updateMask: { paths: ["draft"] },
       })
     );
     await waitFor(() =>
@@ -565,6 +464,98 @@ describe("PlanDetailHeader draft ownership", () => {
     );
     expect(mocks.updateIssue).toHaveBeenCalledOnce();
     expect(mocks.patchState).not.toHaveBeenCalled();
+  });
+
+  test("leaves label edits to the metadata row", async () => {
+    mocks.permissions = new Set(["bb.plans.update", "bb.issues.update"]);
+    mocks.lifecycle = { kind: "ready-for-review" };
+    mocks.page = {
+      ...makePage(),
+      issue: { ...makePage().issue!, labels: ["keep-me"] },
+    };
+    render(<PlanDetailHeader />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "plan.ready-for-review" })
+    );
+
+    await waitFor(() => expect(mocks.updateIssue).toHaveBeenCalledOnce());
+    expect(
+      mocks.updateIssue.mock.calls[0][0].updateMask.paths
+    ).not.toContain("labels");
+  });
+
+  test("lists a missing update permission instead of disabling the action", () => {
+    mocks.permissions = new Set(["bb.plans.update"]);
+    mocks.lifecycle = { kind: "ready-for-review" };
+    mocks.page = makePage();
+    render(<PlanDetailHeader />);
+
+    const submit = screen.getByRole("button", {
+      name: "plan.ready-for-review",
+    });
+    expect(submit).toBeEnabled();
+    fireEvent.click(submit);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "plan.draft-update-permission-required"
+    );
+    expect(mocks.updateIssue).not.toHaveBeenCalled();
+  });
+
+  test("confirms a named override before submitting past failed checks", async () => {
+    mocks.permissions = new Set(["bb.plans.update", "bb.issues.update"]);
+    mocks.lifecycle = { kind: "ready-for-review" };
+    const page = makePage();
+    mocks.page = {
+      ...page,
+      plan: {
+        ...page.plan,
+        planCheckRunStatusCount: { ERROR: 1 },
+        specs: [{ config: { case: "changeDatabaseConfig", value: {} } }],
+      },
+    } as unknown as PlanDetailPageState;
+    render(<PlanDetailHeader />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "plan.ready-for-review" })
+    );
+
+    expect(mocks.updateIssue).not.toHaveBeenCalled();
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "plan.submit-review-anyway" })
+    );
+
+    await waitFor(() => expect(mocks.updateIssue).toHaveBeenCalledOnce());
+  });
+
+  test("blocks rather than confirms failed checks where SQL review is enforced", () => {
+    mocks.permissions = new Set(["bb.plans.update", "bb.issues.update"]);
+    mocks.lifecycle = { kind: "ready-for-review" };
+    const page = makePage();
+    mocks.page = {
+      ...page,
+      plan: {
+        ...page.plan,
+        planCheckRunStatusCount: { ERROR: 1 },
+        specs: [{ config: { case: "changeDatabaseConfig", value: {} } }],
+      },
+      project: { ...page.project, enforceSqlReview: true },
+    } as unknown as PlanDetailPageState;
+    render(<PlanDetailHeader />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "plan.ready-for-review" })
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "plan.submit-review-anyway" })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
+    );
+    expect(mocks.updateIssue).not.toHaveBeenCalled();
   });
 
   test("ignores a title update response from the previous plan", async () => {
@@ -701,7 +692,7 @@ describe("PlanDetailHeader draft ownership", () => {
     expect(screen.getByRole("button", { name: "common.create" })).toBeEnabled();
   });
 
-  test("keeps invalid draft creation blocked without a confirmation panel", () => {
+  test("lists every blocker instead of disabling Create", () => {
     mocks.permissions = new Set(["bb.plans.create", "bb.issues.create"]);
     mocks.lifecycle = { kind: "create" };
     const page = makePage({ creating: true });
@@ -712,10 +703,67 @@ describe("PlanDetailHeader draft ownership", () => {
 
     render(<PlanDetailHeader />);
 
-    expect(screen.getByRole("button", { name: "common.create" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "common.create" })).toHaveAttribute(
-      "title",
-      "plan.title-required"
+    const create = screen.getByRole("button", { name: "common.create" });
+    expect(create).toBeEnabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    fireEvent.click(create);
+
+    expect(mocks.createPlan).not.toHaveBeenCalled();
+    const notice = screen.getByRole("alert");
+    expect(notice).toHaveTextContent("plan.cannot-create");
+    expect(notice).toHaveTextContent("plan.title-required");
+  });
+
+  test("puts the cursor in the empty title when that is the blocker", () => {
+    mocks.permissions = new Set(["bb.plans.create", "bb.issues.create"]);
+    mocks.lifecycle = { kind: "create" };
+    const page = makePage({ creating: true });
+    mocks.page = { ...page, plan: { ...page.plan, title: "" } };
+
+    render(<PlanDetailHeader />);
+    // Create mode focuses the title on mount; move focus away so the assertion
+    // is about the blocked press and not about that.
+    const createButton = screen.getByRole("button", { name: "common.create" });
+    createButton.focus();
+    expect(document.activeElement).toBe(createButton);
+
+    fireEvent.click(createButton);
+
+    expect(document.activeElement).toBe(
+      screen.getByPlaceholderText("common.untitled")
+    );
+  });
+
+  test("clears the create notice as the blocker resolves", () => {
+    mocks.permissions = new Set(["bb.plans.create", "bb.issues.create"]);
+    mocks.lifecycle = { kind: "create" };
+    const page = makePage({ creating: true });
+    mocks.page = { ...page, plan: { ...page.plan, title: "" } };
+    const { rerender } = render(<PlanDetailHeader />);
+    fireEvent.click(screen.getByRole("button", { name: "common.create" }));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+
+    mocks.page = { ...mocks.page, plan: { ...mocks.page.plan, title: "Named" } };
+    rerender(<PlanDetailHeader />);
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  test("lists a missing create permission instead of disabling Create", () => {
+    mocks.permissions = new Set(["bb.plans.create"]);
+    mocks.lifecycle = { kind: "create" };
+    mocks.page = makePage({ creating: true });
+
+    render(<PlanDetailHeader />);
+
+    const create = screen.getByRole("button", { name: "common.create" });
+    expect(create).toBeEnabled();
+    fireEvent.click(create);
+
+    expect(mocks.createPlan).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "common.missing-required-permission"
     );
   });
 

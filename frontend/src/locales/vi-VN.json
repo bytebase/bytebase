@@ -1294,7 +1294,6 @@
       "this-grant-allows": "Cấp quyền này cho phép",
       "unmask-data-in-results": "Hiển thị dữ liệu nhạy cảm trong kết quả"
     },
-    "action-anyway": "{{action}} bằng mọi cách",
     "advanced-search": {
       "filter": "Bộ lọc",
       "scope": {
@@ -1532,6 +1531,10 @@
   "plan": {
     "add-spec": "Thêm thay đổi",
     "add-spec-pending-draft": "Lưu hoặc hủy thay đổi đang chờ trước khi thêm thay đổi khác",
+    "blocker": {
+      "clears-on-its-own": "Tự động hoàn tất"
+    },
+    "cannot-create": "Không thể tạo kế hoạch",
     "checks": {
       "completed": "Đã hoàn thành kiểm tra kế hoạch",
       "failed-to-run": "Không thể chạy kiểm tra kế hoạch",
@@ -1544,7 +1547,7 @@
     "description": {
       "placeholder": "Thêm mô tả"
     },
-    "draft-update-permission-required": "Bạn có thể xem bản nháp này, nhưng cần bb.issues.update để chỉnh sửa nhãn hoặc gửi đi xem xét.",
+    "draft-update-permission-required": "Bạn có thể xem bản nháp này, nhưng cần bb.issues.update để chỉnh sửa nhãn vấn đề hoặc gửi đi xem xét.",
     "editor": {
       "save-changes-before-continuing": "Vui lòng lưu hoặc hủy thay đổi của bạn trước khi tiếp tục"
     },
@@ -1562,7 +1565,7 @@
       "self": "Mức Độ Cô Lập",
       "serializable": "Tuần tự hóa"
     },
-    "labels-required-for-review": "Cần có nhãn trước khi review",
+    "labels-required-for-review": "Cần có nhãn vấn đề trước khi review",
     "lifecycle": {
       "checking": "Đang kiểm tra…",
       "checks-failing": "Kiểm tra thất bại",
@@ -1594,6 +1597,7 @@
       "statement-empty": "Câu lệnh đang trống"
     },
     "new-plan": "Kế hoạch mới",
+    "not-ready-for-review": "Chưa sẵn sàng để xem xét",
     "options": {
       "no-options-available": "Không có tùy chọn nào khả dụng",
       "self": "Tùy chọn"
@@ -1702,6 +1706,7 @@
       "reopen-confirm": "Mở lại kế hoạch này?",
       "reopen-review-confirm": "Mở lại đợt xem xét này?"
     },
+    "submit-review-anyway": "Vẫn gửi",
     "subtitle": "Soạn thảo các thay đổi cơ sở dữ liệu và chạy các bước kiểm tra sơ bộ trước khi tạo vấn đề để phê duyệt.",
     "summary": {
       "last-approved-by": "Phê duyệt gần nhất bởi {{name}}",

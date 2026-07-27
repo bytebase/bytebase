@@ -1294,7 +1294,6 @@
       "this-grant-allows": "このアクセス権限で許可される操作",
       "unmask-data-in-results": "結果内の機密データのマスクを解除"
     },
-    "action-anyway": "まだ {{action}} が必要です",
     "advanced-search": {
       "filter": "フィルター",
       "scope": {
@@ -1532,6 +1531,10 @@
   "plan": {
     "add-spec": "変更を追加",
     "add-spec-pending-draft": "新しい変更を追加する前に、保留中の変更を保存または破棄してください",
+    "blocker": {
+      "clears-on-its-own": "自動的に解消されます"
+    },
+    "cannot-create": "プランを作成できません",
     "checks": {
       "completed": "プランチェックが完了しました",
       "failed-to-run": "プランチェックの実行に失敗しました",
@@ -1544,7 +1547,7 @@
     "description": {
       "placeholder": "説明を追加"
     },
-    "draft-update-permission-required": "この下書きは表示できますが、ラベルの編集やレビューへの提出には bb.issues.update が必要です。",
+    "draft-update-permission-required": "この下書きは表示できますが、イシューラベルの編集やレビューへの提出には bb.issues.update が必要です。",
     "editor": {
       "save-changes-before-continuing": "続行する前に変更を保存またはキャンセルしてください"
     },
@@ -1562,7 +1565,7 @@
       "self": "分離レベル",
       "serializable": "直列化可能"
     },
-    "labels-required-for-review": "レビュー前にラベルが必要です",
+    "labels-required-for-review": "レビュー前にイシューラベルが必要です",
     "lifecycle": {
       "checking": "チェック中…",
       "checks-failing": "チェック失敗",
@@ -1594,6 +1597,7 @@
       "statement-empty": "ステートメントが空です"
     },
     "new-plan": "プランの作成",
+    "not-ready-for-review": "レビューの準備ができていません",
     "options": {
       "no-options-available": "利用可能なオプションはありません",
       "self": "オプション"
@@ -1702,6 +1706,7 @@
       "reopen-confirm": "このプランを再開きますか？",
       "reopen-review-confirm": "このレビューを再開しますか？"
     },
+    "submit-review-anyway": "それでも提出する",
     "subtitle": "承認のためにイシューを作成する前に、データベースの変更を下書きし、事前チェックを実行します。",
     "summary": {
       "last-approved-by": "{{name}} が最後に承認",

@@ -1294,7 +1294,6 @@
       "this-grant-allows": "Esta concesión permite",
       "unmask-data-in-results": "Desenmascarar datos sensibles en los resultados"
     },
-    "action-anyway": "{{action}} de todos modos",
     "advanced-search": {
       "filter": "Filtrar",
       "scope": {
@@ -1532,6 +1531,10 @@
   "plan": {
     "add-spec": "Agregar cambio",
     "add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
+    "blocker": {
+      "clears-on-its-own": "Se resuelve solo"
+    },
+    "cannot-create": "No se puede crear el plan",
     "checks": {
       "completed": "Se completaron las verificaciones del plan",
       "failed-to-run": "No se pudieron ejecutar las verificaciones del plan",
@@ -1544,7 +1547,7 @@
     "description": {
       "placeholder": "Agregar descripción"
     },
-    "draft-update-permission-required": "Puedes ver este borrador, pero necesitas bb.issues.update para editar etiquetas o enviarlo a revisión.",
+    "draft-update-permission-required": "Puedes ver este borrador, pero necesitas bb.issues.update para editar etiquetas de problema o enviarlo a revisión.",
     "editor": {
       "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar."
     },
@@ -1562,7 +1565,7 @@
       "self": "Nivel de Aislamiento",
       "serializable": "Serializable"
     },
-    "labels-required-for-review": "Se requieren etiquetas antes de la revisión",
+    "labels-required-for-review": "Se requieren etiquetas de problema antes de la revisión",
     "lifecycle": {
       "checking": "Comprobando…",
       "checks-failing": "Comprobaciones fallidas",
@@ -1594,6 +1597,7 @@
       "statement-empty": "La sentencia está vacía"
     },
     "new-plan": "Nuevo plan",
+    "not-ready-for-review": "No está listo para revisión",
     "options": {
       "no-options-available": "No hay opciones disponibles",
       "self": "Opciones"
@@ -1702,6 +1706,7 @@
       "reopen-confirm": "¿Reabrir este plan?",
       "reopen-review-confirm": "¿Reabrir esta revisión?"
     },
+    "submit-review-anyway": "Enviar de todos modos",
     "subtitle": "Redactar cambios en la base de datos y ejecutar comprobaciones previas antes de crear un problema para su aprobación.",
     "summary": {
       "last-approved-by": "Última aprobación por {{name}}",

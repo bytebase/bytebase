@@ -16,9 +16,6 @@ import type {
   Plan,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import type { Project } from "@/types/proto-es/v1/project_service_pb";
-
-type T = (key: string, options?: Record<string, unknown>) => string;
 
 export class DraftReviewIssueCreationError extends Error {
   readonly plan: Plan;
@@ -73,13 +70,14 @@ export async function createPlanWithDraftReview({
   }
 }
 
+// Submitting only flips the draft flag. Labels are owned by the plan metadata
+// row, which persists them on change — the submit path must not write them back
+// and silently undo an edit made while the header was open.
 export async function submitDraftReview({
   issue,
-  labels,
   updateIssue,
 }: {
   issue: Issue;
-  labels: string[];
   updateIssue: (request: UpdateIssueRequest) => Promise<Issue>;
 }): Promise<Issue> {
   return updateIssue(
@@ -87,9 +85,8 @@ export async function submitDraftReview({
       issue: create(IssueSchema, {
         ...issue,
         draft: false,
-        labels,
       }),
-      updateMask: { paths: ["draft", "labels"] },
+      updateMask: { paths: ["draft"] },
     })
   );
 }
@@ -104,95 +101,4 @@ export const shouldStayOnPlanDetailPage = (plan: Plan): boolean => {
       spec.config?.case === "createDatabaseConfig" ||
       spec.config?.case === "exportDataConfig"
   );
-};
-
-export const hasChecksWarning = (plan: Plan): boolean => {
-  const statusCount = plan.planCheckRunStatusCount || {};
-  const hasError =
-    (statusCount.ERROR ?? 0) > 0 || (statusCount.FAILED ?? 0) > 0;
-  return (
-    hasError &&
-    plan.specs.length > 0 &&
-    plan.specs.every((spec) => spec.config?.case === "changeDatabaseConfig")
-  );
-};
-
-export const getCreatePlanBlockingReasons = ({
-  title,
-  emptySpecCount,
-  t,
-}: {
-  title: string;
-  emptySpecCount: number;
-  t: T;
-}): string[] => {
-  const reasons: string[] = [];
-  if (!title.trim()) {
-    reasons.push(t("plan.title-required"));
-  }
-  if (emptySpecCount > 0) {
-    reasons.push(t("plan.navigator.statement-empty"));
-  }
-  return reasons;
-};
-
-export const getCreateIssueBlockingErrors = ({
-  emptySpecCount,
-  plan,
-  project,
-  t,
-}: {
-  emptySpecCount: number;
-  plan: Plan;
-  project: Pick<Project, "enforceSqlReview">;
-  t: T;
-}): string[] => {
-  const errors: string[] = [];
-  const statusCount = plan.planCheckRunStatusCount || {};
-
-  if (emptySpecCount > 0) {
-    errors.push(t("plan.navigator.statement-empty"));
-  }
-  if (plan.specs.some((spec) => spec.config?.case === "exportDataConfig")) {
-    errors.push(t("issue.data-export.creation-not-supported"));
-  }
-  if ((statusCount.AVAILABLE ?? 0) > 0 || (statusCount.RUNNING ?? 0) > 0) {
-    errors.push(
-      t(
-        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
-      )
-    );
-  }
-  if (
-    ((statusCount.ERROR ?? 0) > 0 || (statusCount.FAILED ?? 0) > 0) &&
-    project.enforceSqlReview
-  ) {
-    errors.push(
-      t(
-        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
-      )
-    );
-  }
-
-  return errors;
-};
-
-export const getCreateIssueConfirmErrors = ({
-  blockingErrors,
-  project,
-  selectedLabelCount,
-  t,
-}: {
-  blockingErrors: string[];
-  project: Pick<Project, "forceIssueLabels">;
-  selectedLabelCount: number;
-  t: T;
-}): string[] => {
-  const errors = [...blockingErrors];
-
-  if (project.forceIssueLabels && selectedLabelCount === 0) {
-    errors.push(t("plan.labels-required-for-review"));
-  }
-
-  return errors;
 };
