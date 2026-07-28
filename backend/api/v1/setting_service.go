@@ -194,13 +194,26 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
 		}
 		payload := convertWorkspaceProfileSetting(request.Msg.Setting.Value.GetWorkspaceProfile())
-		oldSetting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
+		// Merge onto the profile as stored in the database, not the setting
+		// cache: the whole profile is written back below, so a stale cached base
+		// would silently revert fields changed out-of-band (e.g. an emergency
+		// SQL flip of the MCP kill switch) when an admin saves an unrelated
+		// field.
+		freshSetting, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", storeSettingName, err))
 		}
-		// The store returns the cached profile object; mutate a clone so a
-		// validate-only request never alters the served in-memory state.
-		oldSetting = proto.CloneOf(oldSetting)
+		if freshSetting == nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("cannot find setting %v", storeSettingName))
+		}
+		profileValue, ok := freshSetting.Value.(*storepb.WorkspaceProfileSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storeSettingName))
+		}
+		// The uncached read still lands in the setting cache (ListSettings
+		// caches what it returns), so mutate a clone: a validate-only request
+		// must never alter the served in-memory state.
+		oldSetting := proto.CloneOf(profileValue)
 
 		for _, path := range request.Msg.UpdateMask.Paths {
 			switch path {

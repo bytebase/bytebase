@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -102,4 +103,37 @@ func TestMCPCapabilitySettingRoundTrip(t *testing.T) {
 	got, err = ctl.getMCPCapability(ctx)
 	a.NoError(err)
 	a.Equal(v1pb.WorkspaceProfileSetting_DISABLED, got)
+
+	// Saving an unrelated profile field must not revert a ceiling written
+	// out-of-band (emergency SQL): the update path writes the whole profile
+	// back, so merging onto a stale cached base would silently clear the kill
+	// switch. The cache is warm from the reads above and holds DISABLED; flip
+	// the stored value behind the server's back, then update another field.
+	db, err := sql.Open("pgx", ctl.profile.PgURL)
+	a.NoError(err)
+	defer db.Close()
+	_, err = db.ExecContext(ctx, `
+		UPDATE setting SET value = jsonb_set(value, '{mcpCapability}', '"READ_ONLY"')
+		WHERE name = 'WORKSPACE_PROFILE';
+	`)
+	a.NoError(err)
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		AllowMissing: true,
+		Setting: &v1pb.Setting{
+			Name: "settings/" + v1pb.Setting_WORKSPACE_PROFILE.String(),
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceProfile{
+					WorkspaceProfile: &v1pb.WorkspaceProfileSetting{EnableMetricCollection: true},
+				},
+			},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{"value.workspace_profile.enable_metric_collection"},
+		},
+	}))
+	a.NoError(err)
+	got, err = ctl.getMCPCapability(ctx)
+	a.NoError(err)
+	a.Equal(v1pb.WorkspaceProfileSetting_READ_ONLY, got,
+		"an unrelated profile update must merge onto the stored profile, not a stale cached one")
 }
