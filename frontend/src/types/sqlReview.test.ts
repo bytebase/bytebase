@@ -14,7 +14,6 @@ import sqlReviewSchema from "./sql-review-schema.yaml";
 import {
   convertPolicyRuleToRuleTemplate,
   convertRuleMapToPolicyRuleList,
-  isBuiltinRule,
   type RuleTemplateV2,
   TEMPLATE_LIST_V2,
   validateRuleMapByEngine,
@@ -389,13 +388,12 @@ describe("convertRuleMapToPolicyRuleList", () => {
 });
 
 describe("TEMPLATE_LIST_V2", () => {
-  test("start from scratch still includes built-in rules", () => {
+  test("start from scratch does not persist built-in rules", () => {
     const template = TEMPLATE_LIST_V2.find(
       (template) => template.id === "bb.sql-review.empty"
     );
 
     expect(template).toBeTruthy();
-    expect(template?.ruleList.length).toBeGreaterThan(0);
-    expect(template?.ruleList.every(isBuiltinRule)).toBe(true);
+    expect(template?.ruleList).toHaveLength(0);
   });
 });

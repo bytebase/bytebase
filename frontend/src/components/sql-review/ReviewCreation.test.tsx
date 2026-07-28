@@ -65,15 +65,7 @@ vi.mock("@/types", async (importOriginal) => {
     TEMPLATE_LIST_V2: [
       {
         id: "bb.sql-review.empty",
-        ruleList: [
-          {
-            type: 110,
-            category: "BUILTIN",
-            engine: 2,
-            level: 1,
-            componentList: [],
-          },
-        ],
+        ruleList: [],
       },
     ],
   };
@@ -201,8 +193,42 @@ const invalidStringArrayRule: RuleTemplateV2 = {
   ],
 };
 
+const validMySQLRule: RuleTemplateV2 = {
+  type: SQLReviewRule_Type.TABLE_REQUIRE_PK,
+  category: "TABLE",
+  engine: Engine.MYSQL,
+  level: SQLReviewRule_Level.WARNING,
+  componentList: [],
+};
+
 describe("ReviewCreation", () => {
-  test("starts from scratch with built-in rules in create mode", () => {
+  test("uses shared form fields for basic information", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <ReviewCreation selectedRuleList={[]} selectedResources={[]} />
+    );
+
+    render();
+
+    expect(
+      container.querySelector('[data-slot="form-field-group"]')
+    ).toBeTruthy();
+    const formField = container.querySelector('[data-slot="form-field"]');
+    expect(formField).toBeTruthy();
+    expect(formField?.querySelector('[aria-label="resource-id"]')).toBeTruthy();
+    expect(formField?.textContent).toContain(
+      "sql-review.create.basic-info.display-name"
+    );
+    expect(formField?.textContent).toContain(
+      "sql-review.create.basic-info.display-name-label"
+    );
+    expect(
+      container.querySelector('[data-testid="template-selector"]')
+    ).toBeTruthy();
+
+    unmount();
+  });
+
+  test("starts from scratch with an empty rule list in create mode", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ReviewCreation selectedRuleList={[]} selectedResources={[]} />
     );
@@ -221,12 +247,9 @@ describe("ReviewCreation", () => {
       nextButton!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(mocks.ruleTableProps).toHaveLength(1);
-    const ruleList = (
-      mocks.ruleTableProps[0] as { ruleList?: RuleTemplateV2[] }
-    ).ruleList;
-    expect(ruleList?.length).toBeGreaterThan(0);
-    expect(ruleList?.every((rule) => rule.category === "BUILTIN")).toBe(true);
+    expect(mocks.ruleTableProps).toHaveLength(0);
+    expect(container.textContent).toContain("common.no-data");
+    expect(container.textContent).toContain("sql-review.add-rules");
 
     unmount();
   });
@@ -331,7 +354,10 @@ describe("ReviewCreation", () => {
 
   test("opens the rule selection panel on the selected engine", () => {
     const { container, render, unmount } = renderIntoContainer(
-      <ReviewCreation selectedRuleList={[]} selectedResources={[]} />
+      <ReviewCreation
+        selectedRuleList={[validMySQLRule]}
+        selectedResources={[]}
+      />
     );
 
     render();
@@ -376,7 +402,10 @@ describe("ReviewCreation", () => {
 
   test("keeps the rule selection panel engine independent from editor tab resets", () => {
     const { container, render, unmount } = renderIntoContainer(
-      <ReviewCreation selectedRuleList={[]} selectedResources={[]} />
+      <ReviewCreation
+        selectedRuleList={[validMySQLRule]}
+        selectedResources={[]}
+      />
     );
 
     render();

@@ -733,7 +733,7 @@
     "bb-sql-review-dev": "基本的なテンプレート",
     "bb-sql-review-dev-desc": "一般的な誤用からデータベースを守るための基本的なカバレッジ。",
     "bb-sql-review-empty": "ゼロから始めます",
-    "bb-sql-review-empty-desc": "組み込みルールのみで開始します。必要なルールは自分で追加してください。",
+    "bb-sql-review-empty-desc": "設定済みルールなしで開始します。必要なルールは自分で追加してください。",
     "bb-sql-review-prod": "高度なテンプレート",
     "bb-sql-review-prod-desc": "データベースの総合的な保護とベストプラクティスを提供します。",
     "bb-sql-review-sample": "サンプルテンプレート",

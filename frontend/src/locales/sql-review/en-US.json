@@ -733,7 +733,7 @@
     "bb-sql-review-dev": "Basic Template",
     "bb-sql-review-dev-desc": "Basic coverage to defend your databases from common misusage.",
     "bb-sql-review-empty": "Start from scratch",
-    "bb-sql-review-empty-desc": "Start with only built-in rules. Add the rules you need yourself.",
+    "bb-sql-review-empty-desc": "Start with no configured rules. Add the rules you need yourself.",
     "bb-sql-review-prod": "Advanced Template",
     "bb-sql-review-prod-desc": "Comprehensive policy where you have total protection and best practices for your databases.",
     "bb-sql-review-sample": "Sample Template",

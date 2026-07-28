@@ -733,7 +733,7 @@
     "bb-sql-review-dev": "Mẫu Cơ bản",
     "bb-sql-review-dev-desc": "Bảo vệ cơ bản để bảo vệ cơ sở dữ liệu khỏi những sai sót thường gặp.",
     "bb-sql-review-empty": "Bắt đầu lại từ đầu",
-    "bb-sql-review-empty-desc": "Bắt đầu chỉ với các quy tắc tích hợp sẵn. Tự thêm các quy tắc bạn cần.",
+    "bb-sql-review-empty-desc": "Bắt đầu mà không có quy tắc được cấu hình. Tự thêm các quy tắc bạn cần.",
     "bb-sql-review-prod": "Mẫu Nâng cao",
     "bb-sql-review-prod-desc": "Chính sách toàn diện, nơi bạn có sự bảo vệ và các phương pháp tốt nhất cho cơ sở dữ liệu.",
     "bb-sql-review-sample": "Mẫu Ví dụ",
