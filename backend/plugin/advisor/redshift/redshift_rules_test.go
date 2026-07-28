@@ -15,8 +15,9 @@ import (
 func TestRedshiftTableDropNamingConventionUsesOmniAST(t *testing.T) {
 	sm := sheet.NewManager()
 	rule := &storepb.SQLReviewRule{
-		Type:  storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION,
-		Level: storepb.SQLReviewRule_WARNING,
+		Type:   storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION,
+		Level:  storepb.SQLReviewRule_WARNING,
+		Engine: storepb.Engine_REDSHIFT,
 		Payload: &storepb.SQLReviewRule_NamingPayload{
 			NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{
 				Format: "_delete$",

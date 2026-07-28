@@ -46,14 +46,30 @@
   "enable-description": "このポリシーを有効にすると、関連付けられたリソースへのルール適用が開始されます。",
   "enabled-rules": "開かれたルールの数",
   "engine": {
+    "bigquery": "BigQuery",
+    "cassandra": "Cassandra",
+    "clickhouse": "ClickHouse",
+    "cockroachdb": "CockroachDB",
+    "cosmosdb": "Cosmos DB",
+    "databricks": "Databricks",
+    "doris": "Doris",
+    "dynamodb": "DynamoDB",
+    "elasticsearch": "Elasticsearch",
+    "hive": "Hive",
     "mariadb": "MariaDB",
+    "mongodb": "MongoDB",
     "mssql": "SQL Server",
     "mysql": "MySQL",
     "oceanbase": "OceanBase",
     "oracle": "Oracle",
     "postgres": "PostgreSQL",
+    "redis": "Redis",
+    "redshift": "Redshift",
     "snowflake": "Snowflake",
-    "tidb": "TiDB"
+    "spanner": "Spanner",
+    "starrocks": "StarRocks",
+    "tidb": "TiDB",
+    "trino": "Trino"
   },
   "input-then-press-enter": "入力後、Enterを押して追加します",
   "level": {
@@ -82,6 +98,15 @@
     "BUILTIN_PRIOR_BACKUP_CHECK": {
       "description": "このルールは、データが変更される前にバックアップを作成できるかどうかを確認します。バックアップ ターゲット データベースの存在を確認し、サポートされていないシナリオを禁止します。これは組み込みであり、スキップできません。",
       "title": "事前のバックアップ実行可能性チェック"
+    },
+    "BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE": {
+      "component": {
+        "number": {
+          "title": "最大サイズ (MB)"
+        }
+      },
+      "description": "大きな SQL ファイルは SQL レビューが対応するサイズを超え、パーサーベースのレビューがスキップされる場合があります。ファイルサイズを制限して、その動作を明確にします。",
+      "title": "SQL ファイルサイズを制限する"
     },
     "BUILTIN_WALK_THROUGH_CHECK": {
       "description": "SQL文の実行をシミュレートして、現在のデータベーススキーマとの整合性を検証します。存在しないテーブル、カラム、インデックスの参照などの問題を検出します。",
@@ -708,7 +733,7 @@
     "bb-sql-review-dev": "基本的なテンプレート",
     "bb-sql-review-dev-desc": "一般的な誤用からデータベースを守るための基本的なカバレッジ。",
     "bb-sql-review-empty": "ゼロから始めます",
-    "bb-sql-review-empty-desc": "組み込みルールのみで開始します。必要なルールは自分で追加してください。",
+    "bb-sql-review-empty-desc": "設定済みルールなしで開始します。必要なルールは自分で追加してください。",
     "bb-sql-review-prod": "高度なテンプレート",
     "bb-sql-review-prod-desc": "データベースの総合的な保護とベストプラクティスを提供します。",
     "bb-sql-review-sample": "サンプルテンプレート",

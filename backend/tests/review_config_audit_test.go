@@ -35,8 +35,9 @@ func TestReviewConfigAuditLog(t *testing.T) {
 		Enabled: true,
 		Rules: []*v1pb.SQLReviewRule{
 			{
-				Type:  v1pb.SQLReviewRule_STATEMENT_DISALLOW_COMMIT,
-				Level: v1pb.SQLReviewRule_ERROR,
+				Type:   v1pb.SQLReviewRule_STATEMENT_DISALLOW_COMMIT,
+				Level:  v1pb.SQLReviewRule_ERROR,
+				Engine: v1pb.Engine_POSTGRES,
 			},
 		},
 	}

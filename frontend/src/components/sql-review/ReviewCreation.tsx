@@ -107,6 +107,9 @@ export function ReviewCreation({
   const [showRuleSelectPanel, setShowRuleSelectPanel] = useState(false);
   const [setupFinished, setSetupFinished] = useState(false);
   const [focusedEngine, setFocusedEngine] = useState<Engine | undefined>();
+  const [ruleSelectPanelEngine, setRuleSelectPanelEngine] = useState<
+    Engine | undefined
+  >();
   const [focusedRuleKey, setFocusedRuleKey] = useState<string | undefined>();
   const [focusedRuleSignal, setFocusedRuleSignal] = useState(0);
 
@@ -201,6 +204,11 @@ export function ReviewCreation({
     });
     setRuleUpdated(true);
   }, []);
+
+  const openRuleSelectPanel = useCallback(() => {
+    setRuleSelectPanelEngine(focusedEngine);
+    setShowRuleSelectPanel(true);
+  }, [focusedEngine]);
 
   // --- Step navigation ---
 
@@ -439,7 +447,7 @@ export function ReviewCreation({
             ) : (
               <div className="py-12 border rounded-sm flex flex-col items-center gap-y-4 text-control-light">
                 <p>{t("common.no-data")}</p>
-                <Button onClick={() => setShowRuleSelectPanel(true)}>
+                <Button onClick={openRuleSelectPanel}>
                   <Plus className="size-4 mr-1" />
                   {t("sql-review.add-rules")}
                 </Button>
@@ -449,9 +457,9 @@ export function ReviewCreation({
             <RulesSelectPanel
               show={showRuleSelectPanel}
               selectedRuleMap={ruleMapByEngine}
-              selectedEngine={focusedEngine}
+              selectedEngine={ruleSelectPanelEngine}
               onClose={() => setShowRuleSelectPanel(false)}
-              onSelectedEngineChange={setFocusedEngine}
+              onSelectedEngineChange={setRuleSelectPanelEngine}
               onRuleSelect={(rule) => upsertRule(rule, {})}
               onRuleRemove={removeRule}
             />
@@ -481,10 +489,7 @@ export function ReviewCreation({
         right={
           <>
             {currentStep === STEP_CONFIGURE_RULES && (
-              <Button
-                appearance="outline"
-                onClick={() => setShowRuleSelectPanel(true)}
-              >
+              <Button appearance="outline" onClick={openRuleSelectPanel}>
                 {t("sql-review.add-or-remove-rules")}
               </Button>
             )}
