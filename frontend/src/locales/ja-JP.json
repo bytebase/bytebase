@@ -2389,6 +2389,25 @@
             "self": "最大SQL結果サイズ"
           }
         },
+        "mcp": {
+          "capability": {
+            "description": "このワークスペースで MCP(Model Context Protocol)セッションに許可される最大の権限です。変更は次の MCP リクエストから直ちに適用されます。",
+            "disabled": {
+              "description": "すべての MCP 接続を拒否します。",
+              "self": "無効"
+            },
+            "read-only": {
+              "description": "きめ細かな読み取り専用制御のために予約されています(未提供)。提供されるまでは、これを選択すると MCP 接続は完全に拒否され、「無効」と同じ動作になります。",
+              "self": "読み取り専用"
+            },
+            "read-write": {
+              "description": "MCP セッションは読み書きできますが、各ユーザー自身の権限の範囲内に制限されます。未設定の場合のデフォルトです。",
+              "self": "読み書き"
+            },
+            "self": "MCP アクセス"
+          },
+          "self": "MCP"
+        },
         "no-limit": "値が0以下の場合、制限なし",
         "password-restriction": {
           "min-length": "パスワードの最小文字数は {{min}} 文字以上である必要があります",

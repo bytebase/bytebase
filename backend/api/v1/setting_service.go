@@ -299,6 +299,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				oldSetting.EnforceIdentityDomain = payload.EnforceIdentityDomain
 			case "value.workspace_profile.database_change_mode":
 				oldSetting.DatabaseChangeMode = payload.DatabaseChangeMode
+			case "value.workspace_profile.mcp_capability":
+				if err := validateMCPCapability(payload.McpCapability); err != nil {
+					return nil, err
+				}
+				oldSetting.McpCapability = payload.McpCapability
 			case "value.workspace_profile.allow_email_code_signin":
 				if s.profile.SaaS {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("allow_email_code_signin cannot be changed in SaaS mode"))
@@ -930,6 +935,20 @@ func validateAnnouncementTheme(t *storepb.WorkspaceProfileSetting_Announcement_A
 	}
 	if !isOpaqueColor(t.Text) {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("announcement theme text invalid"))
+	}
+	return nil
+}
+
+// validateMCPCapability rejects an explicit write of UNSPECIFIED — absent has
+// defined resolver semantics (it resolves to MCP_READ_WRITE), so writing
+// "unspecified" is a caller bug — and unknown enum numbers, which proto3 open
+// enums would otherwise let through.
+func validateMCPCapability(capability storepb.WorkspaceProfileSetting_MCPCapability) error {
+	if capability == storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("mcp_capability cannot be set to MCP_CAPABILITY_UNSPECIFIED; choose an explicit capability or omit the update mask path to leave it unset"))
+	}
+	if _, ok := storepb.WorkspaceProfileSetting_MCPCapability_name[int32(capability)]; !ok {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown mcp_capability value %d", capability))
 	}
 	return nil
 }
