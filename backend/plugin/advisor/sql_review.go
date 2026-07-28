@@ -102,7 +102,7 @@ func SQLReviewCheck(
 		for _, r := range GetBuiltinRules(checkContext.DBType) {
 			overridden := false
 			for _, userRule := range ruleList {
-				if userRule.Type == r.Type && (userRule.Engine == r.Engine || userRule.Engine == storepb.Engine_ENGINE_UNSPECIFIED) {
+				if userRule.Type == r.Type && userRule.Engine == r.Engine {
 					overridden = true
 					break
 				}
