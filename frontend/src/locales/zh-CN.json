@@ -1294,7 +1294,6 @@
       "this-grant-allows": "此授权允许",
       "unmask-data-in-results": "在结果中查看未脱敏的敏感数据"
     },
-    "action-anyway": "仍要{{action}}",
     "advanced-search": {
       "filter": "过滤",
       "scope": {
@@ -1532,6 +1531,10 @@
   "plan": {
     "add-spec": "添加变更",
     "add-spec-pending-draft": "请先保存或放弃当前的待处理变更，然后再添加新变更",
+    "blocker": {
+      "clears-on-its-own": "将自动完成"
+    },
+    "cannot-create": "无法创建变更计划",
     "checks": {
       "completed": "已完成计划检查",
       "failed-to-run": "运行计划检查失败",
@@ -1544,7 +1547,7 @@
     "description": {
       "placeholder": "添加描述"
     },
-    "draft-update-permission-required": "你可以查看此草稿，但需要 bb.issues.update 才能编辑标签或提交审批。",
+    "draft-update-permission-required": "你可以查看此草稿，但需要 bb.issues.update 才能编辑工单标签或提交审批。",
     "editor": {
       "save-changes-before-continuing": "请保存或取消更改，然后再继续"
     },
@@ -1562,7 +1565,7 @@
       "self": "隔离级别",
       "serializable": "串行化"
     },
-    "labels-required-for-review": "提交审批前必须设置标签",
+    "labels-required-for-review": "提交审批前必须设置工单标签",
     "lifecycle": {
       "checking": "检查中…",
       "checks-failing": "检查失败",
@@ -1594,6 +1597,7 @@
       "statement-empty": "语句为空"
     },
     "new-plan": "创建变更计划",
+    "not-ready-for-review": "尚未准备好提交审核",
     "options": {
       "no-options-available": "暂无可配置项",
       "self": "配置项"
@@ -1702,6 +1706,7 @@
       "reopen-confirm": "确认重新打开这个计划？",
       "reopen-review-confirm": "确认重新打开这个审批？"
     },
+    "submit-review-anyway": "仍然提交",
     "subtitle": "草拟数据库变更并运行预检查，然后创建工单以请求审批。",
     "summary": {
       "last-approved-by": "最后由 {{name}} 审批",

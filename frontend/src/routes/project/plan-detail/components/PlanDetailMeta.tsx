@@ -61,6 +61,7 @@ export function PlanDetailMeta() {
           issueLabels={project?.issueLabels ?? []}
           labels={page.creationIssueLabels}
           onUpdate={page.setCreationIssueLabels}
+          required={project?.forceIssueLabels ?? false}
         />
       </div>
     );
@@ -111,6 +112,7 @@ export function PlanDetailMeta() {
             issueLabels={project?.issueLabels ?? []}
             labels={page.issue.labels || []}
             onUpdate={handleLabelsUpdate}
+            required={page.issue.draft && (project?.forceIssueLabels ?? false)}
           />
         </>
       )}
@@ -123,11 +125,14 @@ function InlineLabels({
   issueLabels,
   labels,
   onUpdate,
+  required,
 }: {
   allowChange: boolean;
   issueLabels: Array<{ color?: Color; value: string }>;
   labels: string[];
   onUpdate: (labels: string[]) => Promise<void> | void;
+  /** The project forces issue labels, so submitting for review needs one. */
+  required: boolean;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -204,6 +209,11 @@ function InlineLabels({
         >
           <Plus className="size-3" />
           <span>{t("issue.labels")}</span>
+          {/* Only while unsatisfied: once a label is picked the trigger is an
+              "add another" affordance, and the requirement is already met. */}
+          {required && labels.length === 0 && (
+            <span className="text-error">*</span>
+          )}
         </PopoverTrigger>
         <PopoverContent
           side="bottom"
