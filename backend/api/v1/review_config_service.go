@@ -329,6 +329,9 @@ func validateSQLReviewRules(rules []*v1pb.SQLReviewRule) error {
 		if rule.Type == v1pb.SQLReviewRule_TYPE_UNSPECIFIED {
 			return errors.Errorf("invalid rule type: TYPE_UNSPECIFIED is not allowed")
 		}
+		if rule.Engine == v1pb.Engine_ENGINE_UNSPECIFIED {
+			return errors.Errorf("invalid rule engine: ENGINE_UNSPECIFIED is not allowed for rule %q", rule.Type)
+		}
 		if err := validateSQLReviewRule(rule); err != nil {
 			return err
 		}

@@ -99,6 +99,18 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			errMsg:  "invalid rule type: TYPE_UNSPECIFIED is not allowed",
 		},
 		{
+			name: "invalid ENGINE_UNSPECIFIED",
+			rules: []*v1pb.SQLReviewRule{
+				{
+					Type:   v1pb.SQLReviewRule_TABLE_REQUIRE_PK,
+					Level:  v1pb.SQLReviewRule_ERROR,
+					Engine: v1pb.Engine_ENGINE_UNSPECIFIED,
+				},
+			},
+			wantErr: true,
+			errMsg:  "invalid rule engine: ENGINE_UNSPECIFIED is not allowed for rule \"TABLE_REQUIRE_PK\"",
+		},
+		{
 			name: "multiple rules with one invalid",
 			rules: []*v1pb.SQLReviewRule{
 				{
