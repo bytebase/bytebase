@@ -122,7 +122,7 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 				"mixed DDL and DML",
 				"mixed DML statements",
 				"does not exist",
-				"exceeds the maximum limit",
+				"exceeds the maximum SQL size",
 			},
 		},
 		{
@@ -147,8 +147,8 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 			statement:       largeStatement,
 			backupDBPresent: true,
 			wantContentSubstr: []string{
-				"exceeds the maximum limit",
-				"for backup",
+				"The SQL size is",
+				"exceeds the maximum SQL size",
 			},
 		},
 		{
