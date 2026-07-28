@@ -117,24 +117,12 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		transactionMode = common.GetDefaultTransactionMode()
 	}
 
-	var commands []base.Statement
-	if len(statement) <= common.MaxSheetCheckSize {
-		// Use Oracle sql parser.
-		singleSQLs, err := plsqlparser.SplitSQL(statement)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to split sql")
-		}
-		singleSQLs = base.FilterEmptyStatements(singleSQLs)
-		if len(singleSQLs) == 0 {
-			return 0, nil
-		}
-		commands = singleSQLs
-	} else {
-		commands = []base.Statement{
-			{
-				Text: statement,
-			},
-		}
+	commands, err := buildExecuteCommands(statement)
+	if err != nil {
+		return 0, err
+	}
+	if len(commands) == 0 {
+		return 0, nil
 	}
 
 	conn, err := d.db.Conn(ctx)
@@ -148,6 +136,14 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return d.executeInAutoCommitMode(ctx, conn, commands, opts)
 	}
 	return d.executeInTransactionMode(ctx, conn, commands, opts)
+}
+
+func buildExecuteCommands(statement string) ([]base.Statement, error) {
+	commands, err := plsqlparser.SplitSQL(statement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split sql")
+	}
+	return base.FilterEmptyStatements(commands), nil
 }
 
 // executeInTransactionMode executes statements within a single transaction

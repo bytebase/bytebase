@@ -83,6 +83,15 @@
       "description": "Quy tắc này kiểm tra xem có thể tạo bản sao lưu trước khi thay đổi dữ liệu hay không. Nó xác minh sự tồn tại của cơ sở dữ liệu đích sao lưu và không cho phép các kịch bản không được hỗ trợ. Nó được tích hợp sẵn và không thể bỏ qua.",
       "title": "Kiểm tra tính khả thi của sao lưu trước"
     },
+    "BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE": {
+      "component": {
+        "number": {
+          "title": "Kích thước tối đa (MB)"
+        }
+      },
+      "description": "Các tệp SQL lớn có thể vượt quá kích thước được hỗ trợ bởi quy trình đánh giá SQL và bỏ qua đánh giá dựa trên trình phân tích cú pháp. Giới hạn kích thước tệp để làm rõ hành vi này.",
+      "title": "Hạn chế kích thước tệp SQL"
+    },
     "BUILTIN_WALK_THROUGH_CHECK": {
       "description": "Xác thực các câu lệnh SQL với schema cơ sở dữ liệu hiện tại bằng cách mô phỏng việc thực thi. Phát hiện các vấn đề như tham chiếu đến bảng, cột hoặc chỉ mục không tồn tại.",
       "title": "Kiểm tra mô phỏng schema"

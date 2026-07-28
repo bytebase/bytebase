@@ -23,6 +23,8 @@ export interface NumberPayload {
   type: "NUMBER";
   default: number;
   value?: number;
+  unit?: string;
+  factor?: number;
 }
 
 // StringPayload is the string type payload configuration options and default value.
@@ -549,6 +551,7 @@ export const convertPolicyRuleToRuleTemplate = (
     case SQLReviewRule_Type.TABLE_LIMIT_SIZE:
     case SQLReviewRule_Type.STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT:
     case SQLReviewRule_Type.STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION:
+    case SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE:
       if (!numberComponent) {
         throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
       }
@@ -560,7 +563,10 @@ export const convertPolicyRuleToRuleTemplate = (
             ...numberComponent,
             payload: {
               ...numberComponent.payload,
-              value: payload.number,
+              value: numberPayloadToDisplayValue(
+                payload.number,
+                numberComponent.payload as NumberPayload
+              ),
             } as NumberPayload,
           },
         ],
@@ -568,6 +574,24 @@ export const convertPolicyRuleToRuleTemplate = (
   }
 
   throw new Error(`Invalid rule ${ruleTemplate.type}`);
+};
+
+const numberPayloadToDisplayValue = (
+  value: unknown,
+  payload: NumberPayload
+): number | undefined => {
+  if (typeof value !== "number") {
+    return undefined;
+  }
+  return value / (payload.factor ?? 1);
+};
+
+const numberPayloadToStorageValue = (payload: NumberPayload): number => {
+  const value = payload.value ?? payload.default;
+  if (!payload.factor) {
+    return value;
+  }
+  return Math.round(value * payload.factor);
 };
 
 const mergeIndividualConfigAsRule = (
@@ -726,6 +750,7 @@ const mergeIndividualConfigAsRule = (
     case SQLReviewRule_Type.TABLE_LIMIT_SIZE:
     case SQLReviewRule_Type.STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT:
     case SQLReviewRule_Type.STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION:
+    case SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE:
       if (!numberPayload) {
         throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);
       }
@@ -734,7 +759,7 @@ const mergeIndividualConfigAsRule = (
         payload: {
           case: "numberPayload",
           value: create(SQLReviewRule_NumberRulePayloadSchema, {
-            number: numberPayload.value ?? numberPayload.default,
+            number: numberPayloadToStorageValue(numberPayload),
           }),
         },
       };

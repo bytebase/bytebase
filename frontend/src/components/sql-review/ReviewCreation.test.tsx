@@ -373,4 +373,55 @@ describe("ReviewCreation", () => {
 
     unmount();
   });
+
+  test("keeps the rule selection panel engine independent from editor tab resets", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <ReviewCreation selectedRuleList={[]} selectedResources={[]} />
+    );
+
+    render();
+
+    act(() => {
+      mocks.resourceIdOnChange("custom-policy");
+    });
+    const nextButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "common.next"
+    );
+    expect(nextButton).toBeTruthy();
+
+    act(() => {
+      nextButton!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const addRulesButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "sql-review.add-or-remove-rules"
+    );
+    expect(addRulesButton).toBeTruthy();
+
+    act(() => {
+      addRulesButton!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const panelProps = mocks.rulesSelectPanelProps.at(-1) as {
+      onSelectedEngineChange?: (engine: Engine) => void;
+      selectedEngine?: Engine;
+    };
+    act(() => {
+      panelProps.onSelectedEngineChange?.(Engine.POSTGRES);
+    });
+
+    const mainTabsProps = mocks.tabsByEngineProps.at(-1) as {
+      onSelectedEngineChange?: (engine: Engine) => void;
+    };
+    act(() => {
+      mainTabsProps.onSelectedEngineChange?.(Engine.MYSQL);
+    });
+
+    const latestPanelProps = mocks.rulesSelectPanelProps.at(-1) as {
+      selectedEngine?: Engine;
+    };
+    expect(latestPanelProps.selectedEngine).toBe(Engine.POSTGRES);
+
+    unmount();
+  });
 });

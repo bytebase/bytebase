@@ -112,6 +112,24 @@ const tableDenyListRule = (list: string[]): RuleTemplateV2 => ({
   ],
 });
 
+const maximumSQLSizeRule = (): RuleTemplateV2 => ({
+  type: SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+  category: "BUILTIN",
+  engine: Engine.MYSQL,
+  level: SQLReviewRule_Level.WARNING,
+  componentList: [
+    {
+      key: "number",
+      payload: {
+        type: "NUMBER",
+        default: 2,
+        unit: "MB",
+        factor: 1024 * 1024,
+      },
+    },
+  ],
+});
+
 beforeEach(async () => {
   ({ RuleConfig, RuleEditDialog, RuleLevelSwitch } = await import(
     "./RuleComponents"
@@ -208,6 +226,73 @@ describe("RuleEditDialog", () => {
     expect(tag).toBeTruthy();
     expect(tag?.className).toContain("bg-background");
     expect(tag?.className).toContain("border-control-border");
+
+    unmount();
+  });
+
+  test("renders maximum SQL size in MB instead of raw bytes", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <RuleConfig rule={maximumSQLSizeRule()} disabled={false} size="medium" />
+    );
+
+    render();
+
+    const input = container.querySelector("input");
+    expect(input).toBeTruthy();
+    expect(input?.value).toBe("2");
+    expect(container.textContent).toContain("MB");
+
+    unmount();
+  });
+
+  test("preserves maximum SQL size unit metadata when saving from the modal", () => {
+    const onUpdateRule = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <RuleEditDialog
+        rule={maximumSQLSizeRule()}
+        disabled={false}
+        onUpdateRule={onUpdateRule}
+        onCancel={vi.fn()}
+      />
+    );
+
+    render();
+
+    const input = container.querySelector("input");
+    expect(input).toBeTruthy();
+    act(() => {
+      const valueSetter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value"
+      )?.set;
+      valueSetter?.call(input, "3");
+      input?.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    const updateButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "common.update"
+    );
+    expect(updateButton).toBeTruthy();
+    act(() => {
+      updateButton?.click();
+    });
+
+    const update = onUpdateRule.mock.calls[0]?.[0] as Partial<RuleTemplateV2>;
+    const payload = update.componentList?.[0]?.payload;
+    expect(payload?.type).toBe("NUMBER");
+    expect(
+      payload?.type === "NUMBER"
+        ? {
+            value: payload.value,
+            unit: payload.unit,
+            factor: payload.factor,
+          }
+        : undefined
+    ).toEqual({
+      value: 3,
+      unit: "MB",
+      factor: 1024 * 1024,
+    });
 
     unmount();
   });

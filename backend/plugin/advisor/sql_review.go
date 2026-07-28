@@ -97,21 +97,32 @@ func SQLReviewCheck(
 	ruleList []*storepb.SQLReviewRule,
 	checkContext Context,
 ) ([]*storepb.Advice, error) {
-	stmts, parseResult := sm.GetStatementsForChecks(checkContext.DBType, statements)
-	asts := base.ExtractASTs(stmts)
-
 	if !checkContext.NoAppendBuiltin {
 		// Append builtin rules only if the user hasn't overridden them in their config.
-		userRuleTypes := make(map[storepb.SQLReviewRule_Type]bool, len(ruleList))
-		for _, r := range ruleList {
-			userRuleTypes[r.Type] = true
-		}
 		for _, r := range GetBuiltinRules(checkContext.DBType) {
-			if !userRuleTypes[r.Type] {
-				ruleList = append(ruleList, r)
+			overridden := false
+			for _, userRule := range ruleList {
+				if userRule.Type == r.Type && (userRule.Engine == r.Engine || userRule.Engine == storepb.Engine_ENGINE_UNSPECIFIED) {
+					overridden = true
+					break
+				}
 			}
+			if overridden {
+				continue
+			}
+			ruleList = append(ruleList, r)
 		}
 	}
+
+	preParseAdvices := sqlReviewCheckPreParseRules(statements, ruleList, checkContext)
+	if len(preParseAdvices) > 0 {
+		// The maximum SQL size rule guards parser-based review. Once it fires,
+		// stop here so large SQL does not continue into parsing.
+		return preParseAdvices, nil
+	}
+
+	stmts, parseResult := sm.GetStatementsForChecks(checkContext.DBType, statements)
+	asts := base.ExtractASTs(stmts)
 
 	if asts == nil || len(ruleList) == 0 {
 		return parseResult, nil
@@ -141,6 +152,9 @@ func SQLReviewCheck(
 
 	var errorAdvices, warningAdvices []*storepb.Advice
 	for _, rule := range ruleList {
+		if rule.Type == storepb.SQLReviewRule_BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE {
+			continue
+		}
 		if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED && rule.Engine != checkContext.DBType {
 			continue
 		}
@@ -191,4 +205,53 @@ func SQLReviewCheck(
 	advices = append(advices, errorAdvices...)
 	advices = append(advices, warningAdvices...)
 	return advices, nil
+}
+
+func sqlReviewCheckPreParseRules(statements string, ruleList []*storepb.SQLReviewRule, checkContext Context) []*storepb.Advice {
+	for _, rule := range ruleList {
+		if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED && rule.Engine != checkContext.DBType {
+			continue
+		}
+		if rule.Type == storepb.SQLReviewRule_BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE {
+			advice := checkStatementMaximumSQLSize(statements, rule)
+			if advice != nil {
+				return []*storepb.Advice{advice}
+			}
+			return nil
+		}
+	}
+	return nil
+}
+
+func checkStatementMaximumSQLSize(statements string, rule *storepb.SQLReviewRule) *storepb.Advice {
+	status, err := NewStatusBySQLReviewRuleLevel(rule.Level)
+	if err != nil {
+		return &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    code.Internal.Int32(),
+			Title:   rule.Type.String(),
+			Content: fmt.Sprintf("Rule check failed: %v", err),
+		}
+	}
+	numberPayload := rule.GetNumberPayload()
+	if numberPayload == nil {
+		return &storepb.Advice{
+			Status:  storepb.Advice_ERROR,
+			Code:    code.Internal.Int32(),
+			Title:   rule.Type.String(),
+			Content: "number_payload is required for this rule",
+		}
+	}
+
+	size := len(statements)
+	maximum := int(numberPayload.Number)
+	if size <= maximum {
+		return nil
+	}
+	return &storepb.Advice{
+		Status:  status,
+		Code:    code.StatementExceedMaximumSQLSize.Int32(),
+		Title:   rule.Type.String(),
+		Content: fmt.Sprintf("The SQL size is %d bytes, which exceeds the maximum SQL size of %d bytes.", size, maximum),
+	}
 }

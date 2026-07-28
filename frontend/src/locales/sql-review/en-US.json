@@ -83,6 +83,15 @@
       "description": "This rule checks whether a backup can be created before data changes. It verifies the existence of the backup target database and disallows non-supported scenarios. It's builtin and cannot skip.",
       "title": "Prior backup feasibility check"
     },
+    "BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE": {
+      "component": {
+        "number": {
+          "title": "Maximum size in MB"
+        }
+      },
+      "description": "Large SQL files can exceed the supported SQL review size and skip parser-based review. Limit the file size to make the behavior explicit.",
+      "title": "Restrict the SQL file size"
+    },
     "BUILTIN_WALK_THROUGH_CHECK": {
       "description": "Validates SQL statements against the current database schema by simulating their execution. Detects issues like referencing non-existent tables, columns, or indexes.",
       "title": "Schema walk-through validation"

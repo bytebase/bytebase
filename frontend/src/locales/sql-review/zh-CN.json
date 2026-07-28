@@ -83,6 +83,15 @@
       "description": "此规则检查是否可以在数据更改之前创建备份。它会验证备份目标数据库是否存在，并禁止不支持的方案。它是内置的，无法跳过。",
       "title": "事先备份可行性检查"
     },
+    "BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE": {
+      "component": {
+        "number": {
+          "title": "最大大小 (MB)"
+        }
+      },
+      "description": "大型 SQL 文件可能超过 SQL 审核支持的大小并跳过基于解析器的审核。限制文件大小可以让该行为更明确。",
+      "title": "限制 SQL 文件大小"
+    },
     "BUILTIN_WALK_THROUGH_CHECK": {
       "description": "通过模拟执行来验证 SQL 语句与当前数据库 Schema 的一致性。检测引用不存在的表、列或索引等问题。",
       "title": "Schema 模拟执行检查"

@@ -218,13 +218,21 @@ export function RuleConfig({
           )}
 
           {config.payload.type === "NUMBER" && (
-            <Input
-              type="number"
-              value={(payload[index] as number) ?? 0}
-              disabled={disabled}
-              placeholder={`${config.payload.default}`}
-              onChange={(e) => updatePayload(index, Number(e.target.value))}
-            />
+            <div className="flex items-center gap-x-2">
+              <Input
+                type="number"
+                value={(payload[index] as number) ?? 0}
+                disabled={disabled}
+                placeholder={`${config.payload.default}`}
+                step={config.payload.unit ? "any" : undefined}
+                onChange={(e) => updatePayload(index, Number(e.target.value))}
+              />
+              {config.payload.unit && (
+                <span className="text-sm text-control-placeholder">
+                  {config.payload.unit}
+                </span>
+              )}
+            </div>
           )}
 
           {config.payload.type === "BOOLEAN" && (

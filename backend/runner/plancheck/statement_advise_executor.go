@@ -48,16 +48,6 @@ func (e *StatementAdviseExecutor) RunForTarget(ctx context.Context, target *Chec
 	if fullSheet == nil {
 		return nil, errors.Errorf("sheet full %s not found", target.SheetSha256)
 	}
-	if fullSheet.Size > common.MaxSheetCheckSize {
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.Advice_WARNING,
-				Code:    common.SizeExceeded.Int32(),
-				Title:   "Large SQL review policy is disabled",
-				Content: "",
-			},
-		}, nil
-	}
 	enablePriorBackup := target.EnablePriorBackup
 	enableGhost := target.EnableGhost
 

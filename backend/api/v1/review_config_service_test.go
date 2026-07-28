@@ -44,6 +44,37 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "valid maximum SQL size rule",
+			rules: []*v1pb.SQLReviewRule{
+				{
+					Type:   v1pb.SQLReviewRule_BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+					Level:  v1pb.SQLReviewRule_ERROR,
+					Engine: v1pb.Engine_ORACLE,
+					Payload: &v1pb.SQLReviewRule_NumberPayload{
+						NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+							Number: 2097152,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "maximum SQL size rule requires positive number",
+			rules: []*v1pb.SQLReviewRule{
+				{
+					Type:   v1pb.SQLReviewRule_BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+					Level:  v1pb.SQLReviewRule_ERROR,
+					Engine: v1pb.Engine_ORACLE,
+					Payload: &v1pb.SQLReviewRule_NumberPayload{
+						NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{},
+					},
+				},
+			},
+			wantErr: true,
+			errMsg:  "number payload must be positive for rule BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE",
+		},
+		{
 			name: "invalid LEVEL_UNSPECIFIED",
 			rules: []*v1pb.SQLReviewRule{
 				{

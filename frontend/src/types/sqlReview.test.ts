@@ -1,14 +1,18 @@
+import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   SQLReviewRule_Level,
+  SQLReviewRule_NumberRulePayloadSchema,
   SQLReviewRule_Type,
+  SQLReviewRuleSchema,
 } from "@/types/proto-es/v1/review_config_service_pb";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 import {
+  convertPolicyRuleToRuleTemplate,
   convertRuleMapToPolicyRuleList,
   isBuiltinRule,
   type RuleTemplateV2,
@@ -300,6 +304,87 @@ describe("convertRuleMapToPolicyRuleList", () => {
     expect(rules).toHaveLength(2);
     expect(getStringArrayList(rules[0])).toEqual(["audit_log"]);
     expect(getStringArrayList(rules[1])).toEqual(["user"]);
+  });
+
+  test("stores maximum SQL size rule in bytes when edited in MB", () => {
+    const ruleMap: Map<
+      Engine,
+      Map<SQLReviewRule_Type, RuleTemplateV2>
+    > = new Map([
+      [
+        Engine.MYSQL,
+        new Map([
+          [
+            SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+            {
+              type: SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+              category: "BUILTIN",
+              engine: Engine.MYSQL,
+              level: SQLReviewRule_Level.WARNING,
+              componentList: [
+                {
+                  key: "number",
+                  payload: {
+                    type: "NUMBER",
+                    default: 2,
+                    value: 2,
+                    unit: "MB",
+                    factor: 1024 * 1024,
+                  },
+                },
+              ],
+            },
+          ],
+        ]),
+      ],
+    ]);
+
+    const [rule] = convertRuleMapToPolicyRuleList(ruleMap);
+
+    expect(rule.payload.case).toBe("numberPayload");
+    expect(
+      rule.payload.case === "numberPayload" ? rule.payload.value.number : 0
+    ).toBe(2 * 1024 * 1024);
+  });
+
+  test("displays maximum SQL size rule in MB when loaded from bytes", () => {
+    const ruleTemplate: RuleTemplateV2 = {
+      type: SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+      category: "BUILTIN",
+      engine: Engine.MYSQL,
+      level: SQLReviewRule_Level.WARNING,
+      componentList: [
+        {
+          key: "number",
+          payload: {
+            type: "NUMBER",
+            default: 2,
+            unit: "MB",
+            factor: 1024 * 1024,
+          },
+        },
+      ],
+    };
+    const policyRule = create(SQLReviewRuleSchema, {
+      type: SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+      engine: Engine.MYSQL,
+      level: SQLReviewRule_Level.WARNING,
+      payload: {
+        case: "numberPayload",
+        value: create(SQLReviewRule_NumberRulePayloadSchema, {
+          number: 10 * 1024 * 1024,
+        }),
+      },
+    });
+
+    const rule = convertPolicyRuleToRuleTemplate(policyRule, ruleTemplate);
+
+    expect(rule.componentList[0].payload.type).toBe("NUMBER");
+    expect(
+      rule.componentList[0].payload.type === "NUMBER"
+        ? rule.componentList[0].payload.value
+        : 0
+    ).toBe(10);
   });
 });
 
