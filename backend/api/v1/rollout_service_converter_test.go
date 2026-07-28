@@ -12,6 +12,27 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+func TestConvertToTaskRunStatus(t *testing.T) {
+	tests := []struct {
+		storeStatus storepb.TaskRun_Status
+		want        v1pb.TaskRun_Status
+	}{
+		{storeStatus: storepb.TaskRun_STATUS_UNSPECIFIED, want: v1pb.TaskRun_STATUS_UNSPECIFIED},
+		{storeStatus: storepb.TaskRun_PENDING, want: v1pb.TaskRun_PENDING},
+		{storeStatus: storepb.TaskRun_AVAILABLE, want: v1pb.TaskRun_AVAILABLE},
+		{storeStatus: storepb.TaskRun_RUNNING, want: v1pb.TaskRun_RUNNING},
+		{storeStatus: storepb.TaskRun_DONE, want: v1pb.TaskRun_DONE},
+		{storeStatus: storepb.TaskRun_FAILED, want: v1pb.TaskRun_FAILED},
+		{storeStatus: storepb.TaskRun_CANCELED, want: v1pb.TaskRun_CANCELED},
+	}
+
+	for _, test := range tests {
+		t.Run(test.storeStatus.String(), func(t *testing.T) {
+			require.Equal(t, test.want, convertToTaskRunStatus(test.storeStatus))
+		})
+	}
+}
+
 func TestConvertToTaskRunLogEntries_GhostMigration(t *testing.T) {
 	start := time.Date(2026, 5, 8, 10, 0, 0, 0, time.UTC)
 	end := start.Add(3 * time.Second)

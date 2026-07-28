@@ -30,7 +30,6 @@ const (
 	Engine_MYSQL              Engine = 2
 	Engine_POSTGRES           Engine = 3
 	Engine_SNOWFLAKE          Engine = 4
-	Engine_SQLITE             Engine = 5
 	Engine_TIDB               Engine = 6
 	Engine_MONGODB            Engine = 7
 	Engine_REDIS              Engine = 8
@@ -61,7 +60,6 @@ var (
 		2:  "MYSQL",
 		3:  "POSTGRES",
 		4:  "SNOWFLAKE",
-		5:  "SQLITE",
 		6:  "TIDB",
 		7:  "MONGODB",
 		8:  "REDIS",
@@ -89,7 +87,6 @@ var (
 		"MYSQL":              2,
 		"POSTGRES":           3,
 		"SNOWFLAKE":          4,
-		"SQLITE":             5,
 		"TIDB":               6,
 		"MONGODB":            7,
 		"REDIS":              8,
@@ -804,16 +801,14 @@ const file_store_common_proto_rawDesc = "" +
 	"\x06column\x18\x02 \x01(\x05R\x06column\"/\n" +
 	"\x05Range\x12\x14\n" +
 	"\x05start\x18\x01 \x01(\x05R\x05start\x12\x10\n" +
-	"\x03end\x18\x02 \x01(\x05R\x03end*\xf0\x02\n" +
+	"\x03end\x18\x02 \x01(\x05R\x03end*\xe4\x02\n" +
 	"\x06Engine\x12\x16\n" +
 	"\x12ENGINE_UNSPECIFIED\x10\x00\x12\x0e\n" +
 	"\n" +
 	"CLICKHOUSE\x10\x01\x12\t\n" +
 	"\x05MYSQL\x10\x02\x12\f\n" +
 	"\bPOSTGRES\x10\x03\x12\r\n" +
-	"\tSNOWFLAKE\x10\x04\x12\n" +
-	"\n" +
-	"\x06SQLITE\x10\x05\x12\b\n" +
+	"\tSNOWFLAKE\x10\x04\x12\b\n" +
 	"\x04TIDB\x10\x06\x12\v\n" +
 	"\aMONGODB\x10\a\x12\t\n" +
 	"\x05REDIS\x10\b\x12\n" +

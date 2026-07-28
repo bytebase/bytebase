@@ -35,7 +35,7 @@ func configureEchoRouters(
 	profile *config.Profile,
 ) {
 	e.Use(recoverMiddleware)
-	e.Use(securityHeadersMiddleware)
+	e.Use(securityHeadersMiddleware(profile.SaaS))
 
 	if profile.Mode == common.ReleaseModeDev {
 		e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
@@ -62,6 +62,41 @@ func configureEchoRouters(
 	}))
 
 	registerPprof(e, &profile.RuntimeDebug)
+
+	registerMetricsRoute(e, profile)
+
+	e.GET("/healthz", func(c *echo.Context) error {
+		return c.String(http.StatusOK, "OK")
+	})
+
+	// LSP server.
+	e.GET(lspAPI, lspServer.Router)
+
+	hookGroup := e.Group(webhookAPIPrefix)
+	scimGroup := hookGroup.Group(scimAPIPrefix)
+	directorySyncServer.RegisterDirectorySyncRoutes(scimGroup)
+
+	// Stripe (SaaS only, requires both API key and webhook secret).
+	if profile.SaaS && profile.StripeAPISecret != "" && profile.StripeWebhookSecret != "" {
+		stripeplugin.Init(profile.StripeAPISecret)
+		stripeGroup := hookGroup.Group("/stripe")
+		stripeWebhookHandler.RegisterRoutes(stripeGroup)
+	}
+
+	// OAuth2 server.
+	oauth2Service.RegisterRoutes(e)
+
+	// MCP server.
+	mcpServer.RegisterRoutes(e)
+
+	// Embed frontend (must be last to serve as fallback for SPA routes).
+	embedFrontend(e)
+}
+
+func registerMetricsRoute(e *echo.Echo, profile *config.Profile) {
+	if profile.SaaS {
+		return
+	}
 
 	// Prometheus metrics - use custom registry to avoid duplicate registration in tests
 	registry := prometheus.NewRegistry()
@@ -93,33 +128,6 @@ func configureEchoRouters(
 			promhttp.HandlerOpts{},
 		),
 	)))
-
-	e.GET("/healthz", func(c *echo.Context) error {
-		return c.String(http.StatusOK, "OK")
-	})
-
-	// LSP server.
-	e.GET(lspAPI, lspServer.Router)
-
-	hookGroup := e.Group(webhookAPIPrefix)
-	scimGroup := hookGroup.Group(scimAPIPrefix)
-	directorySyncServer.RegisterDirectorySyncRoutes(scimGroup)
-
-	// Stripe (SaaS only, requires both API key and webhook secret).
-	if profile.SaaS && profile.StripeAPISecret != "" && profile.StripeWebhookSecret != "" {
-		stripeplugin.Init(profile.StripeAPISecret)
-		stripeGroup := hookGroup.Group("/stripe")
-		stripeWebhookHandler.RegisterRoutes(stripeGroup)
-	}
-
-	// OAuth2 server.
-	oauth2Service.RegisterRoutes(e)
-
-	// MCP server.
-	mcpServer.RegisterRoutes(e)
-
-	// Embed frontend (must be last to serve as fallback for SPA routes).
-	embedFrontend(e)
 }
 
 func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
@@ -145,7 +153,7 @@ func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func securityHeadersMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+func securityHeadersMiddleware(saas bool) echo.MiddlewareFunc {
 	// Content Security Policy
 	// Note: style-src allows 'unsafe-inline' temporarily due to inline styles in Vue components
 	// TODO: Migrate inline styles to CSS classes and remove 'unsafe-inline'
@@ -155,30 +163,40 @@ func securityHeadersMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	//       Monaco's TextMate service embeds WASM that requires runtime compilation
 	// Note: connect-src allows 'data:' for Monaco Editor language definitions
 	scriptHashes := loadCSPHashes()
+	scriptSrc := "script-src 'self' " + strings.Join(scriptHashes, " ") + " 'wasm-unsafe-eval'"
+	imgSrc := "img-src 'self' data: blob: discordapp.com"
+	connectSrc := "connect-src 'self' data: ws: wss: https://api.github.com https://hub.bytebase.com"
+	if saas {
+		scriptSrc += " https://www.googletagmanager.com https://*.i.posthog.com"
+		imgSrc += " https://*.google-analytics.com https://*.googletagmanager.com"
+		connectSrc += " https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.i.posthog.com"
+	}
 	csp := "default-src 'self'; " +
-		"script-src 'self' " + strings.Join(scriptHashes, " ") + " 'wasm-unsafe-eval'; " +
+		scriptSrc + "; " +
 		"style-src 'self' 'unsafe-inline'; " +
-		"img-src 'self' data: blob: discordapp.com; " +
-		"connect-src 'self' data: ws: wss: https://api.github.com https://hub.bytebase.com; " +
+		imgSrc + "; " +
+		connectSrc + "; " +
 		"font-src 'self'; " +
 		"object-src 'none'; " +
 		"base-uri 'self'; " +
 		"form-action 'self'; " +
 		"frame-ancestors 'self'"
 
-	return func(c *echo.Context) error {
-		// Allow popups to maintain window.opener for OAuth flows
-		c.Response().Header().Set("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
-		// Prevent being embedded in iframes from different origins
-		c.Response().Header().Set("X-Frame-Options", "SAMEORIGIN")
-		// Prevent MIME-type sniffing
-		c.Response().Header().Set("X-Content-Type-Options", "nosniff")
-		// Force HTTPS in production (only if request is already HTTPS)
-		if c.Request().TLS != nil || c.Request().Header.Get("X-Forwarded-Proto") == "https" {
-			// max-age=31536000 (1 year), includeSubDomains for all subdomains
-			c.Response().Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			// Allow popups to maintain window.opener for OAuth flows
+			c.Response().Header().Set("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
+			// Prevent being embedded in iframes from different origins
+			c.Response().Header().Set("X-Frame-Options", "SAMEORIGIN")
+			// Prevent MIME-type sniffing
+			c.Response().Header().Set("X-Content-Type-Options", "nosniff")
+			// Force HTTPS in production (only if request is already HTTPS)
+			if c.Request().TLS != nil || c.Request().Header.Get("X-Forwarded-Proto") == "https" {
+				// max-age=31536000 (1 year), includeSubDomains for all subdomains
+				c.Response().Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+			}
+			c.Response().Header().Set("Content-Security-Policy", csp)
+			return next(c)
 		}
-		c.Response().Header().Set("Content-Security-Policy", csp)
-		return next(c)
 	}
 }

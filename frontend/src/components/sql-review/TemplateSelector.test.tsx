@@ -1,0 +1,145 @@
+import type { ReactElement } from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import type { SQLReviewPolicyTemplateV2 } from "@/types/sqlReview";
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+const reviewTemplate: SQLReviewPolicyTemplateV2 & {
+  review: { name: string; resources: string[] };
+} = {
+  id: "reviews/example",
+  ruleList: [],
+  review: {
+    name: "Existing policy",
+    resources: ["environments/test"],
+  },
+};
+
+const mocks = vi.hoisted(() => ({
+  useTranslation: vi.fn(() => ({
+    t: (key: string) => key,
+  })),
+  rulesToTemplate: vi.fn(() => reviewTemplate),
+  getOrFetchProjectByName: vi.fn(),
+  getProjectByName: vi.fn(() => undefined),
+  useSQLReviewStore: vi.fn(),
+}));
+
+let TemplateSelector: typeof import("./TemplateSelector").TemplateSelector;
+
+vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
+  useTranslation: mocks.useTranslation,
+}));
+
+vi.mock("@/lib/sql-review/utils", () => ({
+  rulesToTemplate: mocks.rulesToTemplate,
+}));
+
+vi.mock("@/components/EnvironmentLabel", () => ({
+  EnvironmentLabel: ({ environmentName }: { environmentName: string }) => (
+    <span>{environmentName}</span>
+  ),
+}));
+
+vi.mock("@/types", () => ({
+  TEMPLATE_LIST_V2: [
+    {
+      id: "builtin/default",
+      ruleList: [],
+    },
+  ],
+}));
+
+// The project getters that previously lived on the Pinia `useProjectV1Store`
+// now live on the Zustand app store, accessed via both the callable selector
+// form (`useAppStore((s) => s.projectsByName)`) and `useAppStore.getState()`.
+const appStoreState = {
+  get getOrFetchProjectByName() {
+    return mocks.getOrFetchProjectByName;
+  },
+  get getProjectByName() {
+    return mocks.getProjectByName;
+  },
+  projectsByName: {},
+};
+vi.mock("@/stores/app", () => ({
+  useAppStore: Object.assign(
+    (selector: (state: unknown) => unknown) => selector(appStoreState),
+    {
+      getState: () => appStoreState,
+    }
+  ),
+}));
+
+vi.mock("@/stores/sqlReview", () => ({
+  useSQLReviewStore: mocks.useSQLReviewStore,
+}));
+
+const renderIntoContainer = (element: ReactElement) => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+
+  return {
+    container,
+    render: () => {
+      act(() => {
+        root.render(element);
+      });
+    },
+    unmount: () =>
+      act(() => {
+        root.unmount();
+      }),
+  };
+};
+
+beforeEach(async () => {
+  mocks.useTranslation.mockReset();
+  mocks.useTranslation.mockReturnValue({
+    t: (key: string) => key,
+  });
+  mocks.rulesToTemplate.mockReset();
+  mocks.rulesToTemplate.mockReturnValue(reviewTemplate);
+  mocks.getOrFetchProjectByName.mockReset();
+  mocks.getProjectByName.mockReset();
+  mocks.getProjectByName.mockReturnValue(undefined);
+  mocks.useSQLReviewStore.mockReset();
+  mocks.useSQLReviewStore.mockReturnValue({
+    reviewPolicyList: [{ id: "policy-1" }],
+    fetchReviewPolicyList: vi.fn(),
+  });
+  ({ TemplateSelector } = await import("./TemplateSelector"));
+});
+
+describe("TemplateSelector", () => {
+  test("renders review templates as semantic buttons", () => {
+    const onSelectTemplate = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <TemplateSelector onSelectTemplate={onSelectTemplate} />
+    );
+
+    render();
+
+    const buttons = [...container.querySelectorAll("button")];
+    const reviewButton = buttons.find((button) =>
+      button.textContent?.includes("Existing policy")
+    );
+
+    expect(reviewButton).toBeTruthy();
+
+    act(() => {
+      reviewButton?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+
+    expect(onSelectTemplate).toHaveBeenCalledWith(reviewTemplate);
+
+    unmount();
+  });
+});

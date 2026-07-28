@@ -1,0 +1,77 @@
+import { ChevronLeft, FunctionSquare } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useAppDatabaseMetadata } from "@/hooks/useAppDatabaseMetadata";
+import { extractKeyWithPosition, keyWithPosition } from "@/lib/keyWithPosition";
+import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
+import { CodeViewer } from "../common/CodeViewer";
+import { PanelSearchBox } from "../common/PanelSearchBox";
+import { useViewStateNav } from "../common/useViewStateNav";
+import { FunctionsTable } from "./FunctionsTable";
+
+export function FunctionsPanel() {
+  const { database } = useConnectionOfCurrentSQLEditorTab();
+  const databaseName = database.name;
+  const db = database;
+  const databaseMetadata = useAppDatabaseMetadata(databaseName ?? "", {
+    autoFetch: false,
+  });
+
+  const {
+    schema: schemaName,
+    detail,
+    setDetail,
+    clearDetail,
+  } = useViewStateNav();
+
+  const [keyword, setKeyword] = useState("");
+
+  const schema = databaseMetadata.schemas.find((s) => s.name === schemaName);
+  const [funcName, funcPosition] = extractKeyWithPosition(detail?.func ?? "");
+  const func = schema?.functions.find(
+    (f, i) => f.name === funcName && i === funcPosition
+  );
+
+  if (!db || !schema) return null;
+
+  if (func) {
+    return (
+      <CodeViewer
+        db={db}
+        title={func.name}
+        code={func.definition}
+        onBack={() => clearDetail()}
+        titlePrefix={
+          <Button
+            appearance="secondary"
+            className="h-8 px-1 text-sm"
+            onClick={() => clearDetail()}
+          >
+            <ChevronLeft className="size-5" />
+            <FunctionSquare className="size-4 text-control" />
+            <span className="truncate">{func.name}</span>
+          </Button>
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="h-full overflow-hidden flex flex-col">
+      <div className="w-full h-11 py-2 px-2 border-b border-block-border flex flex-row gap-x-2 justify-end items-center">
+        <PanelSearchBox value={keyword} onChange={setKeyword} />
+      </div>
+      <div className="flex-1 min-h-0">
+        <FunctionsTable
+          database={databaseMetadata}
+          schema={schema}
+          funcs={schema.functions}
+          keyword={keyword}
+          onSelect={({ func: target, position }) =>
+            setDetail({ func: keyWithPosition(target.name, position) })
+          }
+        />
+      </div>
+    </div>
+  );
+}

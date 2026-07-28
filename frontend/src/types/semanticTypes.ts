@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import i18n from "@/react/i18n";
+import i18n from "@/lib/i18n";
 import type { Algorithm } from "@/types/proto-es/v1/setting_service_pb";
 import {
   type SemanticTypeSetting_SemanticType,

@@ -1,4 +1,4 @@
-import type { ConditionGroupExpr } from "@/plugins/cel";
+import type { ConditionGroupExpr } from "@/modules/cel";
 import type { ApprovalFlow } from "@/types/proto-es/v1/issue_service_pb";
 import type { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 

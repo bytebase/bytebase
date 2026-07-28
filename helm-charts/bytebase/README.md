@@ -19,6 +19,20 @@ install <RELEASE_NAME> bytebase-repo/bytebase
 - Kubernetes 1.24+
 - Helm 3.9.0+
 
+## Pinning container images by digest
+
+Set `bytebase.version` to a combined `tag@digest` reference. Kubernetes pulls by digest and treats the tag as documentation.
+
+```bash
+helm -n <YOUR_NAMESPACE> \
+--set-string "bytebase.version"="{VERSION}@sha256:{DIGEST}" \
+install <RELEASE_NAME> bytebase-repo/bytebase
+```
+
+The BusyBox init container used when `bytebase.option.externalPg.escapePassword` is enabled defaults to a fixed tag via `bytebase.busyboxVersion`, which also accepts a combined `tag@digest` reference. Azure Marketplace deployments can use the same combined reference in `global.azure.images.bytebase.tag`.
+
+When upgrading from chart 1.1.4, move any digest configured through `bytebase.digest`, `bytebase.busyboxDigest`, or `global.azure.images.bytebase.digest` into the corresponding version or tag value. The chart rejects these removed settings to prevent an upgrade from silently losing digest pinning.
+
 ## High availability note
 
 The bundled Helm chart currently deploys Bytebase as a single-replica StatefulSet. It does not expose a Helm value for running multiple Bytebase application replicas.
@@ -49,7 +63,7 @@ $ helm -n bytebase \
 --set "bytebase.option.port"=443 \
 --set "bytebase.option.externalPg.url"="postgresql://bytebase:bytebase@database.bytebase.ap-east-1.rds.amazonaws.com/bytebase" \
 --set "bytebase.option.external-url"="https://bytebase.ngrok-free.app" \
---set "bytebase.version"=2.11.1 \
+--set "bytebase.version"=3.20.1 \
 --set "bytebase.persistence.enabled"="true" \
 --set "bytebase.persistence.storage"="10Gi" \
 --set "bytebase.persistence.storageClass"="csi-disk" \
@@ -87,8 +101,9 @@ upgrade bytebase-release bytebase-repo/bytebase
 
 |                        Parameter                         |                                                                                                                Description                                                                                                                 |                         Default Value                          |
 | :------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------: |
-|                    `bytebase.version`                    |                                                                                                  The version of Bytebase to be installed.                                                                                                  |                            "2.11.1"                            |
+|                    `bytebase.version`                    |                                                  The version of Bytebase to be installed. May embed a digest as a combined reference, for example `3.21.0@sha256:abc123`.                                                  |                            "latest"                            |
 |              `bytebase.registryMirrorHost`               |                                                                              The host for the Docker registry mirror. Leave empty for default registry usage.                                                                              |                               ""                               |
+|                `bytebase.busyboxVersion`                 |                                                  Tag of the BusyBox init container used when PostgreSQL password escaping is enabled. May embed a digest, for example `1.37.0@sha256:abc123`.                                                  |                            "1.37.0"                            |
 |                  `bytebase.option.port`                  |                                                                                                      Port where Bytebase server runs.                                                                                                      |                              8080                              |
 |                  `bytebase.option.data`                  |                                                                                                  Data directory of Bytebase data stored.                                                                                                   |                       /var/opt/bytebase                        |
 |              `bytebase.option.external-url`              |                                                The address for users to visit Bytebase, visit [our docs](https://docs.bytebase.com/get-started/self-host/external-url/) to get more details.                                                 | "<https://docs.bytebase.com/get-started/self-host/external-url>" |

@@ -1,22 +1,18 @@
 import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
-import i18n from "@/react/i18n";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/react/router/handles";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/app/router/handles";
+import i18n from "@/lib/i18n";
+import { projectNamePrefix } from "@/stores";
 import {
   getDatabaseByName,
   getDatabaseList,
-} from "@/react/stores/app/databaseAccess";
-import { getProjectByName } from "@/react/stores/app/projectAccess";
-import { projectNamePrefix } from "@/store";
+} from "@/stores/app/databaseAccess";
+import { getProjectByName } from "@/stores/app/projectAccess";
 import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
-import {
-  type Issue,
-  Issue_Type,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { type Issue, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -91,10 +87,7 @@ export const formatIssueTitle = (
 };
 
 /** Generates a title for database change plan issues. */
-export const generatePlanTitle = (
-  template: "bb.plan.change-database",
-  databaseNameList?: string[]
-): string => {
+export const generatePlanTitle = (databaseNameList?: string[]): string => {
   return formatIssueTitle(
     i18n.t("issue.title.change-database"),
     databaseNameList

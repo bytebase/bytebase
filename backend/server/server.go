@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/telemetry"
@@ -34,7 +35,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
-	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/cleaner"
 	"github.com/bytebase/bytebase/backend/runner/heartbeat"
 	"github.com/bytebase/bytebase/backend/runner/monitor"
@@ -60,7 +60,7 @@ type Server struct {
 	taskScheduler      *taskrun.Scheduler
 	planCheckScheduler *plancheck.Scheduler
 	schemaSyncer       *schemasync.Syncer
-	approvalRunner     *approval.Runner
+	approvalRunner     *review.Runner
 	notifyListener     *notifylistener.Listener
 	dataCleaner        *cleaner.DataCleaner
 	heartbeatRunner    *heartbeat.Runner
@@ -214,7 +214,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.echoServer = echo.New()
 
 	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.licenseService)
-	s.approvalRunner = approval.NewRunner(stores, s.bus, s.webhookManager, s.licenseService)
+	s.approvalRunner = review.NewRunner(stores, s.bus, s.webhookManager, s.licenseService)
 
 	s.taskScheduler = taskrun.NewScheduler(stores, s.bus, s.webhookManager, s.licenseService, profile)
 	s.taskScheduler.Register(storepb.Task_DATABASE_CREATE, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer))

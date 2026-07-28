@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -167,17 +166,16 @@ func seedFailingSheet(ctx context.Context, t *testing.T, ctl *controller, projec
 	return resp.Msg.Name
 }
 
-// unblockFailingTask creates the missing table inside the SQLite database file
-// so subsequent runs of seedFailingSheet's SQL succeed. db.Close() flushes
-// WAL/journal so the file is consistent before the retry is enqueued.
-func unblockFailingTask(t *testing.T, instanceDir, dbName string) {
+// unblockFailingTask creates the missing table inside the test database on the
+// instance's Postgres container so subsequent runs of seedFailingSheet's SQL
+// succeed.
+func unblockFailingTask(t *testing.T, pgContainer *Container, dbName string) {
 	t.Helper()
-	dbPath := filepath.Join(instanceDir, dbName+".db")
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=%s", pgContainer.host, pgContainer.port, dbName))
 	require.NoError(t, err)
 	defer func() {
 		if cerr := db.Close(); cerr != nil {
-			t.Errorf("close sqlite handle for %s: %v", dbPath, cerr)
+			t.Errorf("close postgres handle for %s: %v", dbName, cerr)
 		}
 	}()
 	_, err = db.Exec("CREATE TABLE IF NOT EXISTS __force_fail_target(id INT);")

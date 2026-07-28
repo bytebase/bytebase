@@ -13,7 +13,7 @@ import (
 // Dump dumps database.
 func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
 	resp, err := d.dbClient.GetDatabaseDdl(ctx, &databasepb.GetDatabaseDdlRequest{
-		Database: getDSN(d.config.DataSource.Host, d.databaseName),
+		Database: getDSN(d.instancePath(), d.databaseName),
 	})
 	if err != nil {
 		return err

@@ -20,9 +20,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	instanceRootDir := t.TempDir()
-	instanceName := "testInstance1"
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 
 	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
@@ -34,10 +32,10 @@ func TestDatabaseEnvironment(t *testing.T) {
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "test",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new(prodEnvironment.Name),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Id: "admin-ds", Host: instanceDir}},
+			DataSources: []*v1pb.DataSource{pgContainer.dataSource(v1pb.DataSourceType_ADMIN, "admin-ds")},
 		},
 	}))
 	a.NoError(err)

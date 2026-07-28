@@ -830,6 +830,15 @@ export declare type SchemaMetadata = Message<"bytebase.v1.SchemaMetadata"> & {
    * @generated from field: string comment = 16;
    */
   comment: string;
+
+  /**
+   * The composite_types is the list of user-defined composite types in a
+   * schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row
+   * types and derived types.
+   *
+   * @generated from field: repeated bytebase.v1.CompositeTypeMetadata composite_types = 17;
+   */
+  compositeTypes: CompositeTypeMetadata[];
 };
 
 /**
@@ -876,6 +885,79 @@ export declare type EnumTypeMetadata = Message<"bytebase.v1.EnumTypeMetadata"> &
  * Use `create(EnumTypeMetadataSchema)` to create a new message.
  */
 export declare const EnumTypeMetadataSchema: GenMessage<EnumTypeMetadata>;
+
+/**
+ * @generated from message bytebase.v1.CompositeTypeMetadata
+ */
+export declare type CompositeTypeMetadata = Message<"bytebase.v1.CompositeTypeMetadata"> & {
+  /**
+   * The name of the composite type.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The ordered attributes of the composite type.
+   *
+   * @generated from field: repeated bytebase.v1.CompositeTypeAttribute attributes = 2;
+   */
+  attributes: CompositeTypeAttribute[];
+
+  /**
+   * The comment describing the composite type.
+   *
+   * @generated from field: string comment = 3;
+   */
+  comment: string;
+};
+
+/**
+ * Describes the message bytebase.v1.CompositeTypeMetadata.
+ * Use `create(CompositeTypeMetadataSchema)` to create a new message.
+ */
+export declare const CompositeTypeMetadataSchema: GenMessage<CompositeTypeMetadata>;
+
+/**
+ * @generated from message bytebase.v1.CompositeTypeAttribute
+ */
+export declare type CompositeTypeAttribute = Message<"bytebase.v1.CompositeTypeAttribute"> & {
+  /**
+   * The name of the attribute.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The attribute type. User-defined types are always schema-qualified.
+   *
+   * @generated from field: string type = 2;
+   */
+  type: string;
+
+  /**
+   * The non-default collation of the attribute as an emit-ready SQL
+   * identifier reference (quoted as needed, schema-qualified when outside
+   * pg_catalog), empty otherwise. e.g. `"C"` or `locale.en_us`.
+   *
+   * @generated from field: string collation = 3;
+   */
+  collation: string;
+
+  /**
+   * The comment describing the attribute.
+   *
+   * @generated from field: string comment = 4;
+   */
+  comment: string;
+};
+
+/**
+ * Describes the message bytebase.v1.CompositeTypeAttribute.
+ * Use `create(CompositeTypeAttributeSchema)` to create a new message.
+ */
+export declare const CompositeTypeAttributeSchema: GenMessage<CompositeTypeAttribute>;
 
 /**
  * @generated from message bytebase.v1.EventMetadata

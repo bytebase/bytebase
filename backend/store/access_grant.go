@@ -360,7 +360,7 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 					if !ok {
 						return nil, errors.Errorf("status value must be a string")
 					}
-					return qb.Q().Space("access_grant.status = ?", statusStr), nil
+					return getAccessGrantStatusFilter(statusStr)
 				case "query":
 					queryStr, ok := value.(string)
 					if !ok {
@@ -450,15 +450,19 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 				if len(rawList) == 0 {
 					return nil, errors.Errorf("empty list value for filter %v", variable)
 				}
-				var statuses []string
+				q := qb.Q()
 				for _, raw := range rawList {
 					s, ok := raw.(string)
 					if !ok {
 						return nil, errors.Errorf("status value must be a string")
 					}
-					statuses = append(statuses, s)
+					qq, err := getAccessGrantStatusFilter(s)
+					if err != nil {
+						return nil, err
+					}
+					q.Or("?", qq)
 				}
-				return qb.Q().Space("access_grant.status = ANY(?)", statuses), nil
+				return qb.Q().Space("(?)", q), nil
 			case celoperators.GreaterEquals, celoperators.LessEquals, celoperators.Greater, celoperators.Less:
 				variable, rawValue := getVariableAndValueFromExpr(expr)
 				value, ok := rawValue.(string)
@@ -501,4 +505,26 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 		return nil, err
 	}
 	return qb.Q().Space("(?)", q), nil
+}
+
+func getAccessGrantStatusFilter(status string) (*qb.Query, error) {
+	rejectedIssueQ := qb.Q().Space("EXISTS (SELECT 1 FROM issue, jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND COALESCE((issue.payload->'approval'->>'approvalFindingDone')::boolean, false) AND issue.payload->'approval'->'approvalTemplate' IS NOT NULL AND approver->>'status' = ?)", storepb.IssuePayloadApproval_Approver_REJECTED.String())
+	canceledIssueQ := qb.Q().Space("EXISTS (SELECT 1 FROM issue WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND issue.status = ?)", storepb.Issue_CANCELED.String())
+
+	switch status {
+	case "ACTIVE":
+		return qb.Q().Space("(access_grant.status = ? AND access_grant.expire_time > now())", storepb.AccessGrant_ACTIVE.String()), nil
+	case "EXPIRED":
+		return qb.Q().Space("(access_grant.status = ? AND access_grant.expire_time <= now())", storepb.AccessGrant_ACTIVE.String()), nil
+	case "REVOKED":
+		return qb.Q().Space("access_grant.status = ?", storepb.AccessGrant_REVOKED.String()), nil
+	case "PENDING":
+		return qb.Q().Space("(access_grant.status = ? AND NOT ? AND NOT ?)", storepb.AccessGrant_PENDING.String(), canceledIssueQ, rejectedIssueQ), nil
+	case "CANCELED":
+		return qb.Q().Space("(access_grant.status = ? AND ? AND NOT ?)", storepb.AccessGrant_PENDING.String(), canceledIssueQ, rejectedIssueQ), nil
+	case "REJECTED":
+		return qb.Q().Space("(access_grant.status = ? AND ?)", storepb.AccessGrant_PENDING.String(), rejectedIssueQ), nil
+	default:
+		return nil, errors.Errorf("unsupported status %q", status)
+	}
 }

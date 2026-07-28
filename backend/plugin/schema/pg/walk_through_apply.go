@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/omni/pg/catalog"
+	omniparser "github.com/bytebase/omni/pg/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
@@ -95,6 +96,31 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, catBefore, ca
 			for i, et := range sm.EnumTypes {
 				if et.Name == e.Name {
 					sm.EnumTypes[i].Values = e.ToValues
+					break
+				}
+			}
+		default:
+		}
+	}
+
+	for _, ct := range diff.CompositeTypes {
+		if ct.Action == catalog.DiffDrop {
+			if sm := findSchema(result, ct.SchemaName); sm != nil {
+				sm.CompositeTypes = removeCompositeTypeByName(sm.CompositeTypes, ct.Name)
+			}
+			continue
+		}
+		if ct.To == nil {
+			continue
+		}
+		sm := findOrCreateSchema(result, ct.SchemaName)
+		switch ct.Action {
+		case catalog.DiffAdd:
+			sm.CompositeTypes = append(sm.CompositeTypes, compositeTypeToProto(catAfter, ct.Name, nil, ct.To, nil))
+		case catalog.DiffModify:
+			for i, existing := range sm.CompositeTypes {
+				if existing.Name == ct.Name {
+					sm.CompositeTypes[i] = compositeTypeToProto(catAfter, ct.Name, ct.From, ct.To, existing)
 					break
 				}
 			}
@@ -687,4 +713,168 @@ func removeFunctionByIdentity(funcs []*storepb.FunctionMetadata, identity string
 		}
 	}
 	return out
+}
+
+// compositeTypeToProto builds metadata from the catalog relation, preserving
+// the type comment and per-attribute comments/collations from the previous
+// metadata (the catalog does not track comments, and it only keeps the bare
+// collation name) for attributes that survive by name. Attributes unchanged
+// between from and to keep their previous metadata verbatim, so a composite
+// degraded to the text-backed pseudo fallback does not rewrite untouched
+// attributes to text — mirroring the per-column granularity of table diffs.
+//
+// Within a degraded composite this is a deliberate trade-off: an attribute
+// genuinely altered TO text is indistinguishable from an unchanged one (both
+// read text in from and to), so that rare change is missed in favor of not
+// corrupting every untouched attribute. Walk-through metadata is advisory;
+// post-execution sync restores ground truth. The root fix is modeling the
+// types the loader cannot install today (e.g. domains).
+func compositeTypeToProto(cat *catalog.Catalog, name string, from, to *catalog.Relation, previous *storepb.CompositeTypeMetadata) *storepb.CompositeTypeMetadata {
+	previousAttributes := make(map[string]*storepb.CompositeTypeAttribute)
+	composite := &storepb.CompositeTypeMetadata{Name: name}
+	if previous != nil {
+		composite.Comment = previous.Comment
+		composite.SkipDump = previous.SkipDump
+		for _, attribute := range previous.Attributes {
+			previousAttributes[attribute.Name] = attribute
+		}
+	}
+	fromByAttNum := make(map[int16]*catalog.Column)
+	if from != nil {
+		for _, c := range from.Columns {
+			if c != nil {
+				fromByAttNum[c.AttNum] = c
+			}
+		}
+	}
+	for _, c := range to.Columns {
+		if c == nil || c.Name == "" {
+			continue
+		}
+		// The attribute number is the stable column identity: it survives
+		// RENAME ATTRIBUTE and is never reused, so a dropped-and-re-added
+		// attribute (same name, new attnum) correctly reads as a new column
+		// while a renamed survivor still carries its previous metadata.
+		fc := fromByAttNum[c.AttNum]
+		if fc != nil &&
+			fc.TypeOID == c.TypeOID && fc.TypeMod == c.TypeMod && fc.CollationName == c.CollationName {
+			if prev := previousAttributes[fc.Name]; prev != nil {
+				composite.Attributes = append(composite.Attributes, &storepb.CompositeTypeAttribute{
+					Name:      c.Name,
+					Type:      prev.Type,
+					Collation: prev.Collation,
+					Comment:   prev.Comment,
+				})
+				continue
+			}
+		}
+		attribute := &storepb.CompositeTypeAttribute{
+			Name: c.Name,
+			Type: qualifyWalkThroughAttributeType(cat, c.TypeOID, cat.FormatType(c.TypeOID, c.TypeMod)),
+		}
+		// Previous metadata is only consulted for the column identity that
+		// survived (same attnum): a dropped-and-re-added attribute must not
+		// inherit the old attribute's collation reference or comment.
+		var surviving *storepb.CompositeTypeAttribute
+		if fc != nil {
+			surviving = previousAttributes[fc.Name]
+		}
+		if c.CollationName != "" {
+			// The catalog keeps only the bare collation name, so a collation
+			// introduced by walk-through DDL loses its schema qualifier here
+			// (same limitation as below). Walk-through metadata is advisory —
+			// the authoritative metadata is re-synced from the database after
+			// execution, which stores the properly qualified reference.
+			attribute.Collation = "\"" + c.CollationName + "\""
+			// Substitute the previous emit-ready (possibly schema-qualified)
+			// reference only when it names the same collation — a changed
+			// collation must reflect the catalog's current value.
+			if surviving != nil && collationReferenceBareName(surviving.Collation) == c.CollationName {
+				attribute.Collation = surviving.Collation
+			}
+		}
+		if surviving != nil {
+			attribute.Comment = surviving.Comment
+		}
+		composite.Attributes = append(composite.Attributes, attribute)
+	}
+	return composite
+}
+
+func removeCompositeTypeByName(composites []*storepb.CompositeTypeMetadata, name string) []*storepb.CompositeTypeMetadata {
+	out := make([]*storepb.CompositeTypeMetadata, 0, len(composites))
+	for _, composite := range composites {
+		if composite.Name != name {
+			out = append(out, composite)
+		}
+	}
+	return out
+}
+
+// collationReferenceBareName extracts the bare collation name from a stored
+// emit-ready reference (e.g. `"C"` -> C, `locale.en_us` -> en_us) for
+// comparison with the catalog's collation name. The comparison cannot see
+// schema qualifiers — the omni catalog only records the bare collation name —
+// so switching an attribute between two same-named collations in different
+// schemas keeps the previous reference. Known, accepted limitation.
+func collationReferenceBareName(reference string) string {
+	if _, name, ok := parseQualifiedTypeIdent(reference); ok {
+		return name
+	}
+	name := strings.Trim(reference, `"`)
+	return strings.ReplaceAll(name, `""`, `"`)
+}
+
+// qualifyWalkThroughAttributeType enforces the CompositeTypeAttribute.Type
+// contract: user-defined types are always schema-qualified. FormatType
+// renders search-path-visible types unqualified, so the (element) type's
+// namespace is resolved and prepended when missing. System-schema types come
+// back unqualified from QueryPgNamespace and stay untouched.
+func qualifyWalkThroughAttributeType(cat *catalog.Catalog, typeOID uint32, formatted string) string {
+	t := cat.TypeByOID(typeOID)
+	if t == nil {
+		return formatted
+	}
+	element := t
+	if t.Elem != 0 && t.Len == -1 {
+		if el := cat.TypeByOID(t.Elem); el != nil {
+			element = el
+		}
+	}
+	schemaName := ""
+	for _, row := range cat.QueryPgNamespace() {
+		if row.OID == element.Namespace {
+			schemaName = row.NspName
+			break
+		}
+	}
+	// QueryPgNamespace already omits builtin-OID schemas; the explicit check
+	// keeps the invariant independent of the catalog's OID layout and covers
+	// information_schema, mirroring the sync query's exclusions.
+	if schemaName == "" || wtIsSystemSchema(schemaName) {
+		return formatted
+	}
+	prefix := quoteWalkThroughIdent(schemaName) + "."
+	quotedPrefix := `"` + strings.ReplaceAll(schemaName, `"`, `""`) + `".`
+	if strings.HasPrefix(formatted, prefix) || strings.HasPrefix(formatted, quotedPrefix) {
+		return formatted
+	}
+	return prefix + formatted
+}
+
+// quoteWalkThroughIdent mirrors quote_ident: quote when the name needs it,
+// including reserved keywords.
+func quoteWalkThroughIdent(name string) string {
+	simple := name != ""
+	for i, r := range name {
+		if (r >= 'a' && r <= 'z') || r == '_' || (i > 0 && ((r >= '0' && r <= '9') || r == '$')) {
+			continue
+		}
+		simple = false
+		break
+	}
+	if simple && !omniparser.IsReservedKeyword(name) {
+		return name
+	}
+	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }

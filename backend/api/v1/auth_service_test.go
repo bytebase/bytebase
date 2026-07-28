@@ -2,6 +2,12 @@ package v1
 
 import (
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/api/auth"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func TestExtractDomain(t *testing.T) {
@@ -33,4 +39,86 @@ func TestExtractDomain(t *testing.T) {
 			t.Errorf("extractDomain %s, got %s, want %s", test.domain, got, test.want)
 		}
 	}
+}
+
+func TestLoginAuthMethodRequiresPasswordReset(t *testing.T) {
+	emailCode := "123456"
+	tests := []struct {
+		name    string
+		request *v1pb.LoginRequest
+		want    bool
+	}{
+		{
+			name:    "password login enforces password reset",
+			request: &v1pb.LoginRequest{Email: "user@example.com", Password: "password"},
+			want:    true,
+		},
+		{
+			name:    "idp login skips password reset",
+			request: &v1pb.LoginRequest{IdpName: "idps/okta"},
+			want:    false,
+		},
+		{
+			name:    "email code login skips password reset",
+			request: &v1pb.LoginRequest{Email: "user@example.com", EmailCode: &emailCode},
+			want:    false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := loginAuthMethodFromRequest(test.request).requiresPasswordReset()
+			require.Equal(t, test.want, got)
+		})
+	}
+}
+
+func TestMFATempTokenPreservesLoginAuthMethod(t *testing.T) {
+	const secret = "test-secret"
+
+	tests := []struct {
+		name       string
+		method     loginAuthMethod
+		wantReset  bool
+		wantMethod loginAuthMethod
+	}{
+		{
+			name:       "password mfa completion enforces password reset",
+			method:     loginAuthMethodPassword,
+			wantReset:  true,
+			wantMethod: loginAuthMethodPassword,
+		},
+		{
+			name:       "idp mfa completion skips password reset",
+			method:     loginAuthMethodIDP,
+			wantReset:  false,
+			wantMethod: loginAuthMethodIDP,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			token, err := auth.GenerateMFATempTokenWithLoginMethod("user@example.com", string(test.method), secret, time.Minute)
+			require.NoError(t, err)
+
+			email, method, err := loginAuthMethodFromMFATempToken(token, secret)
+			require.NoError(t, err)
+			require.Equal(t, "user@example.com", email)
+			require.Equal(t, test.wantMethod, method)
+			require.Equal(t, test.wantReset, method.requiresPasswordReset())
+		})
+	}
+}
+
+func TestLegacyMFATempTokenDefaultsToPasswordLoginAuthMethod(t *testing.T) {
+	const secret = "test-secret"
+
+	token, err := auth.GenerateMFATempToken("user@example.com", secret, time.Minute)
+	require.NoError(t, err)
+
+	email, method, err := loginAuthMethodFromMFATempToken(token, secret)
+	require.NoError(t, err)
+	require.Equal(t, "user@example.com", email)
+	require.Equal(t, loginAuthMethodPassword, method)
+	require.True(t, method.requiresPasswordReset())
 }

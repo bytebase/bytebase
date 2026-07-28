@@ -15,6 +15,7 @@ message IssueCommentPayload {
     Approval approval = 2;
     IssueUpdate issue_update = 3;
     PlanUpdate plan_update = 7;
+    ReviewSubmission review_submission = 8;
   }
 
   message Approval {
@@ -31,6 +32,9 @@ message IssueCommentPayload {
     repeated string from_labels = 7;
     repeated string to_labels = 8;
   }
+
+  // ReviewSubmission records that an issue entered review.
+  message ReviewSubmission {}
 
   // PlanUpdate carries before/after snapshots of plan.config.specs,
   // emitted once per PlanService.UpdatePlan call whose specs branch

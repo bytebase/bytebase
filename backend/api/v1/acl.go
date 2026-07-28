@@ -78,11 +78,10 @@ type aclStreamingConn struct {
 }
 
 func (c *aclStreamingConn) Receive(msg any) error {
-	err := c.interceptor.doACLCheck(c.ctx, msg, c.fullMethod)
-	if err != nil {
+	if err := c.StreamingHandlerConn.Receive(msg); err != nil {
 		return err
 	}
-	return c.StreamingHandlerConn.Receive(msg)
+	return c.interceptor.doACLCheck(c.ctx, msg, c.fullMethod)
 }
 
 // hasAllowMissingEnabled checks if the request has allow_missing field set to true.

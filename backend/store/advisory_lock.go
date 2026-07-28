@@ -23,12 +23,14 @@ const (
 	// AdvisoryLockKeyVCSProviderUser is used as the namespace for active VCS
 	// provider user limit checks and upserts.
 	AdvisoryLockKeyVCSProviderUser AdvisoryLockKey = 1004
-	// AdvisoryLockKeyPlanIssueRollout serializes linked issue creation and
-	// rollout creation for the same plan.
+	// AdvisoryLockKeyPlanIssueRollout serializes Plan review changes, linked
+	// Bytebase Issue creation, and Rollout creation for the same Plan.
 	AdvisoryLockKeyPlanIssueRollout AdvisoryLockKey = 1005
 )
 
-func acquirePlanIssueRolloutAdvisoryLock(ctx context.Context, tx *sql.Tx, projectID string, planUID int64) error {
+// AcquirePlanIssueRolloutAdvisoryLock serializes coordinated Plan, linked Issue,
+// Rollout, and Plan Check Run transactions for one Plan.
+func AcquirePlanIssueRolloutAdvisoryLock(ctx context.Context, tx *sql.Tx, projectID string, planUID int64) error {
 	key := projectID + "/" + strconv.FormatInt(planUID, 10)
 	return AcquireAdvisoryXactLockWithStringKey(ctx, tx, AdvisoryLockKeyPlanIssueRollout, key)
 }

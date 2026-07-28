@@ -505,81 +505,21 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 		return nil, errors.Wrapf(err, "failed to update principal email")
 	}
 
-	// 1b. Update creator/deleter columns that previously relied on ON UPDATE CASCADE.
-	creatorUpdates := []string{
-		"UPDATE plan SET creator = $1 WHERE creator = $2",
-		"UPDATE task_run SET creator = $1 WHERE creator = $2",
-		"UPDATE issue SET creator = $1 WHERE creator = $2",
-		"UPDATE issue_comment SET creator = $1 WHERE creator = $2",
-		"UPDATE query_history SET creator = $1 WHERE creator = $2",
-		"UPDATE worksheet SET creator = $1 WHERE creator = $2",
-		"UPDATE worksheet_organizer SET principal = $1 WHERE principal = $2",
-		"UPDATE revision SET deleter = $1 WHERE deleter = $2",
-		"UPDATE release SET creator = $1 WHERE creator = $2",
-		"UPDATE access_grant SET creator = $1 WHERE creator = $2",
-	}
-	for _, stmt := range creatorUpdates {
-		if _, err := tx.ExecContext(ctx, stmt, newEmail, user.Email); err != nil {
-			return nil, errors.Wrapf(err, "failed to update creator/deleter references")
-		}
-	}
-
-	// 2. Update RoleGrant in issue payload.
-	// The user in RoleGrant is stored as "users/{email}" within the JSON payload.
-	// We use text replacement for the specific path.
 	oldUserRef := common.FormatUserEmail(user.Email)
 	newUserRef := common.FormatUserEmail(newEmail)
 
-	// 'roleGrant' is the json key for role_grant field in Issue proto.
-	query = qb.Q().Space(`
-		UPDATE issue 
-		SET payload = jsonb_set(payload, '{roleGrant,user}', to_jsonb(?::text)) 
-		WHERE payload->'roleGrant'->>'user' = ?`,
-		newUserRef, oldUserRef)
-	sqlStr, args, err = query.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build update role grant sql")
-	}
-	if _, err := tx.ExecContext(ctx, sqlStr, args...); err != nil {
-		return nil, errors.Wrapf(err, "failed to update issue role grant")
+	updateReference := func(stmt string) error {
+		if _, err := tx.ExecContext(ctx, stmt, newEmail, user.Email); err != nil {
+			return errors.Wrapf(err, "failed to update creator/deleter references")
+		}
+		return nil
 	}
 
-	// 2b. Update Approval approvers in Issue payload
-	// The principal in approvers is stored as "users/{email}" within the JSON payload.
-	// We need to update each approver's principal field if it matches the old user reference.
-	approverSQL := `
-		UPDATE issue
-		SET payload = (
-			SELECT jsonb_set(
-				issue.payload,
-				'{approval,approvers}',
-				COALESCE(
-					(
-						SELECT jsonb_agg(
-							CASE
-								WHEN approver->>'principal' = $1 THEN
-									jsonb_set(approver, '{principal}', to_jsonb($2::text))
-								ELSE approver
-							END
-						)
-						FROM jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver
-					),
-					'[]'::jsonb
-				)
-			)
-		)
-		WHERE payload->'approval' ? 'approvers'
-		  AND EXISTS (
-			  SELECT 1
-			  FROM jsonb_array_elements(payload->'approval'->'approvers') AS approver
-			  WHERE approver->>'principal' = $1
-		  )`
-
-	if _, err := tx.ExecContext(ctx, approverSQL, oldUserRef, newUserRef); err != nil {
-		return nil, errors.Wrapf(err, "failed to update issue approval approvers")
+	if err := updateReference("UPDATE query_history SET creator = $1 WHERE creator = $2"); err != nil {
+		return nil, err
 	}
 
-	// 3. Update Policies
+	// 2. Update Policies
 	// Update IAM policies: bindings->members array contains user references
 	// Update MASKING_EXEMPTION policies: exemptions->members field contains user references
 	var invalidatedPolicies []struct {
@@ -741,7 +681,88 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	}
 	rows.Close()
 
-	// 4. Update User Groups
+	if err := updateReference("UPDATE worksheet_organizer SET principal = $1 WHERE principal = $2"); err != nil {
+		return nil, err
+	}
+	if err := updateReference("UPDATE worksheet SET creator = $1 WHERE creator = $2"); err != nil {
+		return nil, err
+	}
+	if err := updateReference("UPDATE issue_comment SET creator = $1 WHERE creator = $2"); err != nil {
+		return nil, err
+	}
+	if err := updateReference("UPDATE issue SET creator = $1 WHERE creator = $2"); err != nil {
+		return nil, err
+	}
+
+	// Update RoleGrant in issue payload.
+	// The user in RoleGrant is stored as "users/{email}" within the JSON payload.
+	// We use text replacement for the specific path.
+	// 'roleGrant' is the json key for role_grant field in Issue proto.
+	query = qb.Q().Space(`
+		UPDATE issue
+		SET payload = jsonb_set(payload, '{roleGrant,user}', to_jsonb(?::text))
+		WHERE payload->'roleGrant'->>'user' = ?`,
+		newUserRef, oldUserRef)
+	sqlStr, args, err = query.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build update role grant sql")
+	}
+	if _, err := tx.ExecContext(ctx, sqlStr, args...); err != nil {
+		return nil, errors.Wrapf(err, "failed to update issue role grant")
+	}
+
+	// Update Approval approvers in Issue payload.
+	// The principal in approvers is stored as "users/{email}" within the JSON payload.
+	// We need to update each approver's principal field if it matches the old user reference.
+	approverSQL := `
+		UPDATE issue
+		SET payload = (
+			SELECT jsonb_set(
+				issue.payload,
+				'{approval,approvers}',
+				COALESCE(
+					(
+						SELECT jsonb_agg(
+							CASE
+								WHEN approver->>'principal' = $1 THEN
+									jsonb_set(approver, '{principal}', to_jsonb($2::text))
+								ELSE approver
+							END
+						)
+						FROM jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver
+					),
+					'[]'::jsonb
+				)
+			)
+		)
+		WHERE payload->'approval' ? 'approvers'
+		  AND EXISTS (
+			  SELECT 1
+			  FROM jsonb_array_elements(payload->'approval'->'approvers') AS approver
+			  WHERE approver->>'principal' = $1
+		  )`
+
+	if _, err := tx.ExecContext(ctx, approverSQL, oldUserRef, newUserRef); err != nil {
+		return nil, errors.Wrapf(err, "failed to update issue approval approvers")
+	}
+
+	if err := updateReference("UPDATE task_run SET creator = $1 WHERE creator = $2"); err != nil {
+		return nil, err
+	}
+	if err := updateReference("UPDATE plan SET creator = $1 WHERE creator = $2"); err != nil {
+		return nil, err
+	}
+	if err := updateReference("UPDATE access_grant SET creator = $1 WHERE creator = $2"); err != nil {
+		return nil, err
+	}
+	if err := updateReference("UPDATE release SET creator = $1 WHERE creator = $2"); err != nil {
+		return nil, err
+	}
+	if err := updateReference("UPDATE revision SET deleter = $1 WHERE deleter = $2"); err != nil {
+		return nil, err
+	}
+
+	// Update User Groups.
 	// Update user_group.payload to replace old user reference with new one in members array.
 	// Members are stored as GroupMember objects with member field in "users/{email}" format.
 	userGroupSQL := `

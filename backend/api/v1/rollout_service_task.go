@@ -370,7 +370,7 @@ func checkCharacterSetCollationOwner(dbType storepb.Engine, characterSet, collat
 		if owner == "" {
 			return errors.Errorf("database owner is required for CockroachDB")
 		}
-	case storepb.Engine_SQLITE, storepb.Engine_MONGODB, storepb.Engine_MSSQL, storepb.Engine_DORIS, storepb.Engine_STARROCKS:
+	case storepb.Engine_MONGODB, storepb.Engine_MSSQL, storepb.Engine_DORIS, storepb.Engine_STARROCKS:
 		// no-op.
 	default:
 		if characterSet == "" {
@@ -414,9 +414,6 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 		return fmt.Sprintf("CREATE DATABASE `%s`%s;", databaseName, clusterPart), nil
 	case storepb.Engine_SNOWFLAKE:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
-	case storepb.Engine_SQLITE:
-		// This is a fake CREATE DATABASE and USE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
-		return fmt.Sprintf("CREATE DATABASE '%s';", databaseName), nil
 	case storepb.Engine_MONGODB:
 		// MongoDB has no top-level CREATE DATABASE — a database is implicitly created
 		// when its first collection is. We pass the database name to the engine driver

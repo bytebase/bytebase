@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 
-vi.mock("@/react/i18n", () => ({
+vi.mock("@/lib/i18n", () => ({
   default: {
     t: (key: string) => key,
   },
 }));
 
-vi.mock("@/store", () => ({
+vi.mock("@/stores", () => ({
   useSubscriptionV1Store: () => ({ currentPlan: 0 }),
 }));
 

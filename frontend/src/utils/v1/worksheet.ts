@@ -1,6 +1,6 @@
-import { getProjectByName } from "@/react/stores/app/projectAccess";
-import { getCurrentUserV1 } from "@/store";
-import { extractUserEmail } from "@/store/modules/v1/common";
+import { getCurrentUserV1 } from "@/stores";
+import { getProjectByName } from "@/stores/app/projectAccess";
+import { extractUserEmail } from "@/stores/modules/v1/common";
 import { UNKNOWN_ID, UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
@@ -75,7 +75,7 @@ export const isWorksheetWritableV1 = (sheet: Worksheet) => {
   return false;
 };
 
-// `extractWorksheetConnection` moved to `@/react/lib/sqlEditorConnection`
+// `extractWorksheetConnection` moved to `@/lib/sqlEditorConnection`
 // so the database lookup can go through the React app store without
-// dragging `@/react/stores/app` into the `@/utils` import graph (which
+// dragging `@/stores/app` into the `@/utils` import graph (which
 // would create a static ESM cycle).

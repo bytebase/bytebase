@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net"
 	"regexp"
 	"strconv"
 	"strings"
@@ -63,8 +64,11 @@ func newDriver() db.Driver {
 // Open opens a Spanner driver. It must connect to a specific database.
 // If database isn't provided, part of the driver cannot function.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	if config.DataSource.Host == "" {
-		return nil, errors.New("host cannot be empty")
+	if config.DataSource.ProjectId == "" {
+		return nil, errors.New("project ID cannot be empty")
+	}
+	if config.DataSource.InstanceId == "" {
+		return nil, errors.New("instance ID cannot be empty")
 	}
 	d.config = config
 	d.connCtx = config.ConnectionContext
@@ -77,9 +81,19 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		}
 		o = append(o, credOption)
 	}
+	// host and port optionally override the default spanner.googleapis.com:443
+	// endpoint, e.g. with a Private Service Connect endpoint. gRPC defaults to
+	// port 443 when no port is given.
+	if host := config.DataSource.Host; host != "" {
+		endpoint := host
+		if port := config.DataSource.Port; port != "" {
+			endpoint = net.JoinHostPort(host, port)
+		}
+		o = append(o, option.WithEndpoint(endpoint))
+	}
 	if config.ConnectionContext.DatabaseName != "" {
 		d.databaseName = config.ConnectionContext.DatabaseName
-		dsn := getDSN(d.config.DataSource.Host, config.ConnectionContext.DatabaseName)
+		dsn := getDSN(d.instancePath(), config.ConnectionContext.DatabaseName)
 		client, err := spanner.NewClient(
 			ctx,
 			dsn,
@@ -111,7 +125,7 @@ func (d *Driver) Close(_ context.Context) error {
 // Ping pings the instance.
 func (d *Driver) Ping(ctx context.Context) error {
 	iter := d.dbClient.ListDatabases(ctx, &databasepb.ListDatabasesRequest{
-		Parent: d.config.DataSource.Host,
+		Parent: d.instancePath(),
 	})
 	_, err := iter.Next()
 	if err == iterator.Done {
@@ -186,7 +200,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 func (d *Driver) executeDDL(ctx context.Context, stmts []string, _ db.ExecuteOptions) (int64, error) {
 	op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
-		Database:   getDSN(d.config.DataSource.Host, d.databaseName),
+		Database:   getDSN(d.instancePath(), d.databaseName),
 		Statements: stmts,
 	})
 	if err != nil {
@@ -243,7 +257,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, stmts []string, _ 
 
 func (d *Driver) creataDatabase(ctx context.Context, createStatement string, extraStatement []string) error {
 	op, err := d.dbClient.CreateDatabase(ctx, &databasepb.CreateDatabaseRequest{
-		Parent:          d.config.DataSource.Host,
+		Parent:          d.instancePath(),
 		CreateStatement: createStatement,
 		ExtraStatements: extraStatement,
 	})
@@ -302,8 +316,14 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result%s;", stmt, limitPart)
 }
 
-func getDSN(host, database string) string {
-	return fmt.Sprintf("%s/databases/%s", host, database)
+// instancePath returns the Spanner instance resource name,
+// e.g. projects/<project>/instances/<instance>.
+func (d *Driver) instancePath() string {
+	return fmt.Sprintf("projects/%s/instances/%s", d.config.DataSource.ProjectId, d.config.DataSource.InstanceId)
+}
+
+func getDSN(instancePath, database string) string {
+	return fmt.Sprintf("%s/databases/%s", instancePath, database)
 }
 
 // get `<database>` from `projects/<project>/instances/<instance>/databases/<database>`.
@@ -346,7 +366,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			}
 			if util.IsDDL(statement) {
 				op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
-					Database:   getDSN(d.config.DataSource.Host, d.databaseName),
+					Database:   getDSN(d.instancePath(), d.databaseName),
 					Statements: []string{statement},
 				})
 				if err != nil {

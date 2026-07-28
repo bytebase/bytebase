@@ -146,12 +146,19 @@ When using declarative mode, you must follow these steps:
 1. **Database Support**: Currently only PostgreSQL is supported.
 
 2. **Supported SQL Statements**: The following PostgreSQL statements are supported:
+   - `CREATE SCHEMA`
    - `CREATE TABLE`
    - `CREATE INDEX` / `CREATE UNIQUE INDEX`
-   - `CREATE VIEW`
-   - `CREATE SEQUENCE`
+   - `CREATE VIEW` / `CREATE MATERIALIZED VIEW`
+   - `CREATE SEQUENCE` / `ALTER SEQUENCE`
    - `CREATE FUNCTION`
-   - `ALTER SEQUENCE`
+   - `CREATE TYPE ... AS ENUM` (enum types)
+   - `CREATE TYPE ... AS (...)` (composite types)
+   - `CREATE TRIGGER`
+   - `CREATE EXTENSION`
+   - `COMMENT ON`
+
+   > **Note**: Domain and range types (`CREATE DOMAIN`, `CREATE TYPE ... AS RANGE`) are parsed, but schema sync does not yet capture them, so databases relying on them are not yet fully supported in declarative mode.
 
 3. **Schema Requirements**: You must use fully qualified names (with schema prefix) for all database objects in your schema files:
    ```sql

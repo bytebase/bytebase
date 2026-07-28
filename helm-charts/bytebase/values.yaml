@@ -19,6 +19,9 @@
 bytebase:
   version: latest
   registryMirrorHost: ""
+  # Tag for the BusyBox init container used to escape PostgreSQL passwords.
+  # May also embed a digest, for example 1.37.0@sha256:abc123.
+  busyboxVersion: "1.37.0"
   option:
     port: 8080
     data: "/var/opt/bytebase"

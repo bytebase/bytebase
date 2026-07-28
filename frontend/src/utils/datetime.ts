@@ -1,4 +1,4 @@
-import i18n from "@/react/i18n";
+import i18n from "@/lib/i18n";
 
 export const RELATIVE_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 export const DEFAULT_NOW_THRESHOLD_MS = 10_000;

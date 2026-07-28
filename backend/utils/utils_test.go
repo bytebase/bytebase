@@ -63,6 +63,7 @@ func TestCheckIssueApprovedForPlan(t *testing.T) {
 		issue     *storepb.Issue
 		plan      *storepb.PlanConfig
 		want      bool
+		wantErr   string
 	}{
 		{
 			name:      "database change approved for matching plan version",
@@ -109,6 +110,64 @@ func TestCheckIssueApprovedForPlan(t *testing.T) {
 			plan: &storepb.PlanConfig{ApprovalInputVersion: 2},
 			want: true,
 		},
+		{
+			name:      "empty approval flow skips approval",
+			issueType: storepb.Issue_DATABASE_CHANGE,
+			issue: &storepb.Issue{
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone:  true,
+					ApprovalInputVersion: 2,
+					ApprovalTemplate: &storepb.ApprovalTemplate{
+						Flow: &storepb.ApprovalFlow{},
+					},
+				},
+			},
+			plan: &storepb.PlanConfig{ApprovalInputVersion: 2},
+			want: true,
+		},
+		{
+			name:      "empty approval role is invalid",
+			issueType: storepb.Issue_DATABASE_CHANGE,
+			issue: &storepb.Issue{
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone:  true,
+					ApprovalInputVersion: 2,
+					ApprovalTemplate: &storepb.ApprovalTemplate{
+						Flow: &storepb.ApprovalFlow{Roles: []string{""}},
+					},
+				},
+			},
+			plan:    &storepb.PlanConfig{ApprovalInputVersion: 2},
+			wantErr: "approval template role at position 1 cannot be empty",
+		},
+		{
+			name:      "blank approval role is invalid",
+			issueType: storepb.Issue_DATABASE_CHANGE,
+			issue: &storepb.Issue{
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone:  true,
+					ApprovalInputVersion: 2,
+					ApprovalTemplate: &storepb.ApprovalTemplate{
+						Flow: &storepb.ApprovalFlow{Roles: []string{" "}},
+					},
+				},
+			},
+			plan:    &storepb.PlanConfig{ApprovalInputVersion: 2},
+			wantErr: "approval template role at position 1 cannot be empty",
+		},
+		{
+			name:      "nil approval flow is invalid",
+			issueType: storepb.Issue_DATABASE_CHANGE,
+			issue: &storepb.Issue{
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone:  true,
+					ApprovalInputVersion: 2,
+					ApprovalTemplate:     &storepb.ApprovalTemplate{},
+				},
+			},
+			plan:    &storepb.PlanConfig{ApprovalInputVersion: 2},
+			wantErr: "approval template flow cannot be nil",
+		},
 	}
 
 	for _, tt := range tests {
@@ -119,6 +178,11 @@ func TestCheckIssueApprovedForPlan(t *testing.T) {
 			}, &store.PlanMessage{
 				Config: tt.plan,
 			})
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.False(t, got)
+				return
+			}
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})

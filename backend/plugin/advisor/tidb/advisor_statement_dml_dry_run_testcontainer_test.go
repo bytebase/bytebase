@@ -49,7 +49,7 @@ func TestStatementDMLDryRunTiDBContainer(t *testing.T) {
 	}
 
 	sm := sheet.NewManager()
-	rule := &storepb.SQLReviewRule{Type: storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN, Level: storepb.SQLReviewRule_WARNING}
+	rule := &storepb.SQLReviewRule{Type: storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN, Level: storepb.SQLReviewRule_WARNING, Engine: storepb.Engine_TIDB}
 
 	testCases := []struct {
 		name       string

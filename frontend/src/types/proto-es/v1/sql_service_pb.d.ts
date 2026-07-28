@@ -1202,6 +1202,84 @@ export declare type SearchQueryHistoriesRequest = Message<"bytebase.v1.SearchQue
 export declare const SearchQueryHistoriesRequestSchema: GenMessage<SearchQueryHistoriesRequest>;
 
 /**
+ * @generated from message bytebase.v1.ListQueryHistoriesRequest
+ */
+export declare type ListQueryHistoriesRequest = Message<"bytebase.v1.ListQueryHistoriesRequest"> & {
+  /**
+   * The parent project whose query histories are listed.
+   * Format: projects/{project}
+   *
+   * @generated from field: string parent = 1;
+   */
+  parent: string;
+
+  /**
+   * The maximum number of histories to return.
+   * The service may return fewer than this value.
+   * If unspecified, at most 10 history entries will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   *
+   * @generated from field: int32 page_size = 2;
+   */
+  pageSize: number;
+
+  /**
+   * A page token, received from a previous `ListQueryHistories` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * @generated from field: string page_token = 3;
+   */
+  pageToken: string;
+
+  /**
+   * Filter is the filter to apply on the list query histories.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Supported filter:
+   * - creator: the user full name in "users/{email}" format, support "==" operator.
+   *
+   * For example:
+   * creator == "users/{email}"
+   *
+   * @generated from field: string filter = 4;
+   */
+  filter: string;
+};
+
+/**
+ * Describes the message bytebase.v1.ListQueryHistoriesRequest.
+ * Use `create(ListQueryHistoriesRequestSchema)` to create a new message.
+ */
+export declare const ListQueryHistoriesRequestSchema: GenMessage<ListQueryHistoriesRequest>;
+
+/**
+ * @generated from message bytebase.v1.ListQueryHistoriesResponse
+ */
+export declare type ListQueryHistoriesResponse = Message<"bytebase.v1.ListQueryHistoriesResponse"> & {
+  /**
+   * The list of query histories.
+   *
+   * @generated from field: repeated bytebase.v1.QueryHistory query_histories = 1;
+   */
+  queryHistories: QueryHistory[];
+
+  /**
+   * A token to retrieve next page of history.
+   * Pass this value in the page_token field in the subsequent call to
+   * `ListQueryHistories` method to retrieve the next page of history.
+   *
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
+};
+
+/**
+ * Describes the message bytebase.v1.ListQueryHistoriesResponse.
+ * Use `create(ListQueryHistoriesResponseSchema)` to create a new message.
+ */
+export declare const ListQueryHistoriesResponseSchema: GenMessage<ListQueryHistoriesResponse>;
+
+/**
  * @generated from message bytebase.v1.GetQueryHistoryRequest
  */
 export declare type GetQueryHistoryRequest = Message<"bytebase.v1.GetQueryHistoryRequest"> & {
@@ -1479,6 +1557,17 @@ export declare const SQLService: GenService<{
     methodKind: "unary";
     input: typeof SearchQueryHistoriesRequestSchema;
     output: typeof SearchQueryHistoriesResponseSchema;
+  },
+  /**
+   * ListQueryHistories lists query histories of all users in a project.
+   * Permissions required: bb.queryHistories.list
+   *
+   * @generated from rpc bytebase.v1.SQLService.ListQueryHistories
+   */
+  listQueryHistories: {
+    methodKind: "unary";
+    input: typeof ListQueryHistoriesRequestSchema;
+    output: typeof ListQueryHistoriesResponseSchema;
   },
   /**
    * GetQueryHistory gets a single query history for the caller.

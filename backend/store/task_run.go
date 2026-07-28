@@ -298,12 +298,18 @@ func (s *Store) UpdateTaskRunStartAt(ctx context.Context, projectID string, task
 
 // CreatePendingTaskRuns creates pending task runs.
 // This operation is idempotent and safe for concurrent calls:
-// - Uses WHERE NOT EXISTS to skip tasks that already have active (PENDING/RUNNING/DONE) task runs
+// - Excludes skipped tasks and tasks that already have active (PENDING/RUNNING/DONE) task runs
 // - Uses ON CONFLICT DO NOTHING to handle race conditions where two requests try to create the same task run
 // - The unique constraint on (task_id, attempt) ensures no duplicates
 func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creates ...*TaskRunMessage) error {
 	if len(creates) == 0 {
 		return nil
+	}
+	projectID := creates[0].ProjectID
+	for _, create := range creates[1:] {
+		if create.ProjectID != projectID {
+			return common.Errorf(common.Invalid, "all task runs in a batch must belong to the same project")
+		}
 	}
 
 	var taskUIDs []int64
@@ -335,29 +341,62 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		}
 	}
 
-	projectID := creates[0].ProjectID
-
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
 
+	lockQ := qb.Q().Space(`
+		SELECT task.project, task.id
+		FROM (
+			SELECT
+				unnest(CAST(? AS TEXT[])) AS project,
+				unnest(CAST(? AS BIGINT[])) AS task_id
+		) requested_tasks
+		JOIN task ON task.project = requested_tasks.project AND task.id = requested_tasks.task_id
+		ORDER BY task.project, task.id
+		FOR UPDATE OF task`, projects, taskUIDs)
+	lockQuery, lockArgs, err := lockQ.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build task lock sql")
+	}
+	lockedTaskCount := 0
+	if err := func() error {
+		rows, err := tx.QueryContext(ctx, lockQuery, lockArgs...)
+		if err != nil {
+			return errors.Wrapf(err, "failed to lock tasks")
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var lockedProjectID string
+			var lockedTaskUID int64
+			if err := rows.Scan(&lockedProjectID, &lockedTaskUID); err != nil {
+				return errors.Wrapf(err, "failed to scan locked task")
+			}
+			lockedTaskCount++
+		}
+		if err := rows.Err(); err != nil {
+			return errors.Wrapf(err, "failed to read locked tasks")
+		}
+		return nil
+	}(); err != nil {
+		return err
+	}
+	if lockedTaskCount == 0 {
+		return nil
+	}
+
+	// Keep the child-to-parent lock order used by project deletion: task, then project.
 	baseID, err := nextProjectID(ctx, tx, "task_run", projectID)
 	if err != nil {
 		return err
 	}
 
-	// Single query that:
-	// 1. Assigns per-project IDs using ROW_NUMBER() + baseID
-	// 2. Filters out tasks with existing PENDING/RUNNING/DONE task runs (idempotent)
-	// 3. Calculates next attempt for each remaining task
-	// 4. Inserts task runs
-	// 5. Uses ON CONFLICT DO NOTHING to handle race conditions
+	// Assign per-project IDs, filter existing task runs, and insert new pending runs.
 	q := qb.Q().Space(`
-		WITH candidates AS (
+		WITH requested_tasks AS (
 			SELECT
-				(ROW_NUMBER() OVER ()) + ? - 1 AS new_id,
 				tasks.project,
 				tasks.task_id,
 				tasks.run_at
@@ -367,6 +406,15 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 					unnest(CAST(? AS BIGINT[])) AS task_id,
 					unnest(CAST(? AS TIMESTAMPTZ[])) AS run_at
 			) tasks
+			JOIN task ON task.project = tasks.project AND task.id = tasks.task_id
+			WHERE (task.payload->>'skipped')::BOOLEAN IS NOT TRUE
+		), candidates AS (
+			SELECT
+				(ROW_NUMBER() OVER ()) + ? - 1 AS new_id,
+				tasks.project,
+				tasks.task_id,
+				tasks.run_at
+			FROM requested_tasks tasks
 			WHERE NOT EXISTS (
 				SELECT 1 FROM task_run
 				WHERE task_run.task_id = tasks.task_id
@@ -395,7 +443,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 			?
 		FROM candidates
 		ON CONFLICT (project, task_id, attempt) DO NOTHING
-	`, baseID, projects, taskUIDs, runAts,
+	`, projects, taskUIDs, runAts, baseID,
 		storepb.TaskRun_PENDING.String(), storepb.TaskRun_AVAILABLE.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String(),
 		creatorPtr, storepb.TaskRun_PENDING.String(), payloadStr)
 

@@ -28,6 +28,8 @@ func getVCSUser(platform world.JobPlatform) *v1pb.VCSUser {
 		return getGitLabVCSUser()
 	case world.Bitbucket:
 		return getBitbucketVCSUser()
+	case world.AzureDevOps:
+		return getAzureDevOpsVCSUser()
 	default:
 		return nil
 	}
@@ -200,6 +202,70 @@ func getBitbucketVCSUser() *v1pb.VCSUser {
 	}
 }
 
+func getAzureDevOpsVCSUser() *v1pb.VCSUser {
+	pullRequestID := os.Getenv("SYSTEM_PULLREQUEST_PULLREQUESTID")
+	collectionURI := firstNonEmpty(os.Getenv("SYSTEM_COLLECTIONURI"), os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI"))
+	accessToken := os.Getenv("SYSTEM_ACCESSTOKEN")
+	if pullRequestID == "" || collectionURI == "" || accessToken == "" {
+		return nil
+	}
+
+	requestURL, err := buildAzureDevOpsPullRequestURL(collectionURI, pullRequestID)
+	if err != nil {
+		slog.Warn("failed to build Azure DevOps pull request URL for VCS user attribution", "error", err)
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)
+	if err != nil {
+		slog.Warn("failed to create Azure DevOps pull request request for VCS user attribution", "error", err)
+		return nil
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		slog.Warn("failed to get Azure DevOps pull request for VCS user attribution", "error", err)
+		return nil
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		slog.Warn("failed to get Azure DevOps pull request for VCS user attribution", "status", resp.Status)
+		return nil
+	}
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		slog.Warn("failed to read Azure DevOps pull request for VCS user attribution", "error", err)
+		return nil
+	}
+	var pullRequest struct {
+		CreatedBy struct {
+			ID          string `json:"id"`
+			UniqueName  string `json:"uniqueName"`
+			DisplayName string `json:"displayName"`
+			Descriptor  string `json:"descriptor"`
+		} `json:"createdBy"`
+	}
+	if err := json.Unmarshal(data, &pullRequest); err != nil {
+		slog.Warn("failed to parse Azure DevOps pull request for VCS user attribution", "error", err)
+		return nil
+	}
+
+	creator := pullRequest.CreatedBy
+	if creator.ID == "" || isAzureDevOpsBotUser(creator.Descriptor, creator.UniqueName) {
+		return nil
+	}
+	return &v1pb.VCSUser{
+		VcsType:     v1pb.VCSType_AZURE_DEVOPS,
+		UserId:      creator.ID,
+		UserName:    creator.UniqueName,
+		DisplayName: creator.DisplayName,
+	}
+}
+
 func buildGitLabMergeRequestURL(apiURL, projectID, mergeRequestIID string) (string, error) {
 	parsedURL, err := url.Parse(apiURL)
 	if err != nil {
@@ -239,6 +305,17 @@ func buildBitbucketPullRequestURL(apiURL, workspace, repoSlug, pullRequestID str
 	return parsedURL.String(), nil
 }
 
+func buildAzureDevOpsPullRequestURL(collectionURI, pullRequestID string) (string, error) {
+	parsedURL, err := url.Parse(collectionURI)
+	if err != nil {
+		return "", err
+	}
+	parsedURL.Path = strings.TrimRight(parsedURL.Path, "/") + "/_apis/git/pullrequests/" + url.PathEscape(pullRequestID)
+	parsedURL.RawQuery = url.Values{"api-version": {"7.1"}}.Encode()
+	parsedURL.Fragment = ""
+	return parsedURL.String(), nil
+}
+
 func firstNonEmpty(values ...string) string {
 	for _, value := range values {
 		if value != "" {
@@ -255,6 +332,11 @@ func isGitLabBotUser(userName string) bool {
 
 func isBitbucketBotUser(userType, userName string) bool {
 	return isBotUser(userType, userName) || strings.EqualFold(userType, "app") || strings.EqualFold(userType, "app_user")
+}
+
+func isAzureDevOpsBotUser(descriptor, userName string) bool {
+	lowerDescriptor := strings.ToLower(descriptor)
+	return strings.HasPrefix(lowerDescriptor, "svc.") || strings.HasPrefix(lowerDescriptor, "aadsp.") || isBotUser("", userName)
 }
 
 func isBotUser(userType, userName string) bool {

@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import { WebhookType } from "../proto-es/v1/common_pb";
 
-vi.mock("@/react/i18n", () => ({
+vi.mock("@/lib/i18n", () => ({
   default: {
     t: (key: string) => (key === "common.google-chat" ? "Google Chat" : key),
   },

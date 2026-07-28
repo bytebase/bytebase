@@ -60,6 +60,16 @@ func (x *IssueCommentPayload_IssueUpdate) Equal(y *IssueCommentPayload_IssueUpda
 	return true
 }
 
+func (x *IssueCommentPayload_ReviewSubmission) Equal(y *IssueCommentPayload_ReviewSubmission) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}
+
 func (x *IssueCommentPayload_PlanUpdate) Equal(y *IssueCommentPayload_PlanUpdate) bool {
 	if x == y {
 		return true
@@ -103,6 +113,9 @@ func (x *IssueCommentPayload) Equal(y *IssueCommentPayload) bool {
 		return false
 	}
 	if !x.GetPlanUpdate().Equal(y.GetPlanUpdate()) {
+		return false
+	}
+	if !x.GetReviewSubmission().Equal(y.GetReviewSubmission()) {
 		return false
 	}
 	return true

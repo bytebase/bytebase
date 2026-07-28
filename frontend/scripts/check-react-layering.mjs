@@ -20,16 +20,16 @@ import ts from "typescript-6";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
-const REACT_DIR = resolve(ROOT, "src/react");
+const SOURCE_DIR = resolve(ROOT, "src");
 const REPORT_ONLY = process.argv.includes("--report-only");
 
 const APPROVED_PREFIXES = [
-  "src/react/components/ui/",
-  "src/react/plugins/agent/",
+  "src/components/ui/",
+  "src/modules/agent/",
 ];
 
 const APPROVED_FILES = new Set([
-  "src/react/components/auth/SessionExpiredSurface.tsx",
+  "src/app/components/SessionExpiredSurface.tsx",
 ]);
 
 const CLASS_ATTR_PATTERN = /\bclass(Name)?\s*=\s*/g;
@@ -656,7 +656,7 @@ export const scanFile = (file) => {
   return scanSource(source, rel);
 };
 
-export const scanReactLayering = () => findFiles(REACT_DIR).flatMap(scanFile);
+export const scanReactLayering = () => findFiles(SOURCE_DIR).flatMap(scanFile);
 
 const main = () => {
   const violations = scanReactLayering();

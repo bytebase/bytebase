@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"regexp"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -27,7 +28,7 @@ func convertToV1Instance(instance *store.InstanceMessage, activation bool) *v1pb
 		Environment:   buildEnvironmentName(instance.EnvironmentID),
 		Activation:    activation,
 		SyncInterval:  instance.Metadata.GetSyncInterval(),
-		SyncDatabases: instance.Metadata.GetSyncDatabases(),
+		SyncDatabases: convertToV1SyncDatabases(instance.Metadata.SyncDatabases),
 		Roles:         convertInstanceRoles(instance, instance.Metadata.GetRoles()),
 		LastSyncTime:  instance.Metadata.GetLastSyncTime(),
 		Labels:        instance.Metadata.GetLabels(),
@@ -67,6 +68,7 @@ func convertToStoreInstance(instanceID string, instance *v1pb.Instance) (*store.
 	if err != nil {
 		return nil, err
 	}
+	normalizeGCPDataSources(convertEngine(instance.Engine), datasources)
 
 	var environmentID *string
 	if instance.Environment != nil && *instance.Environment != "" {
@@ -87,10 +89,28 @@ func convertToStoreInstance(instanceID string, instance *v1pb.Instance) (*store.
 			Activation:    instance.GetActivation(),
 			DataSources:   datasources,
 			SyncInterval:  instance.GetSyncInterval(),
-			SyncDatabases: instance.GetSyncDatabases(),
+			SyncDatabases: convertToStoreSyncDatabases(instance.SyncDatabases),
 			Labels:        instance.GetLabels(),
 		},
 	}, nil
+}
+
+func convertToV1SyncDatabases(syncDatabases *storepb.SyncDatabases) *v1pb.SyncDatabases {
+	if syncDatabases == nil {
+		return nil
+	}
+	return &v1pb.SyncDatabases{
+		Databases: syncDatabases.Databases,
+	}
+}
+
+func convertToStoreSyncDatabases(syncDatabases *v1pb.SyncDatabases) *storepb.SyncDatabases {
+	if syncDatabases == nil {
+		return nil
+	}
+	return &storepb.SyncDatabases{
+		Databases: syncDatabases.Databases,
+	}
 }
 
 func convertToV1InstanceResource(instanceMessage *store.InstanceMessage, activation bool) *v1pb.InstanceResource {
@@ -102,6 +122,31 @@ func convertToV1InstanceResource(instanceMessage *store.InstanceMessage, activat
 		DataSources:   convertDataSources(instanceMessage.Metadata.GetDataSources()),
 		Activation:    activation,
 		Environment:   buildEnvironmentName(instanceMessage.EnvironmentID),
+	}
+}
+
+var legacySpannerHostRegexp = regexp.MustCompile(`^projects/([^/]+)/instances/([^/]+)$`)
+
+// normalizeGCPDataSources rewrites legacy GCP data sources in place. host used
+// to carry the Spanner instance path (projects/<p>/instances/<i>) or the
+// BigQuery project ID; these now live in project_id/instance_id while
+// host/port optionally override the default Google API endpoint.
+func normalizeGCPDataSources(engine storepb.Engine, dataSources []*storepb.DataSource) {
+	for _, ds := range dataSources {
+		switch engine {
+		case storepb.Engine_SPANNER:
+			if m := legacySpannerHostRegexp.FindStringSubmatch(ds.GetHost()); m != nil {
+				ds.ProjectId = m[1]
+				ds.InstanceId = m[2]
+				ds.Host = ""
+			}
+		case storepb.Engine_BIGQUERY:
+			if ds.GetProjectId() == "" && ds.GetHost() != "" {
+				ds.ProjectId = ds.GetHost()
+				ds.Host = ""
+			}
+		default:
+		}
 	}
 }
 
@@ -231,6 +276,8 @@ func convertDataSources(dataSources []*storepb.DataSource) []*v1pb.DataSource {
 			MasterName:                ds.GetMasterName(),
 			MasterUsername:            ds.GetMasterUsername(),
 			ExtraConnectionParameters: ds.GetExtraConnectionParameters(),
+			ProjectId:                 ds.GetProjectId(),
+			InstanceId:                ds.GetInstanceId(),
 			SslCaSet:                  ds.GetSslCa() != "",
 			SslCertSet:                ds.GetSslCert() != "",
 			SslKeySet:                 ds.GetSslKey() != "",
@@ -548,6 +595,8 @@ func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, erro
 		MasterUsername:                     dataSource.MasterUsername,
 		MasterPassword:                     dataSource.MasterPassword,
 		ExtraConnectionParameters:          dataSource.ExtraConnectionParameters,
+		ProjectId:                          dataSource.ProjectId,
+		InstanceId:                         dataSource.InstanceId,
 	}
 
 	switch dataSource.AuthenticationType {

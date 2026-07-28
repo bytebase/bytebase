@@ -1,5 +1,5 @@
-import type { Selection as MonacoSelection } from "@/react/components/monaco/types";
-import i18n from "@/react/i18n";
+import type { Selection as MonacoSelection } from "@/components/monaco/types";
+import i18n from "@/lib/i18n";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import type { SQLResultSetV1 } from "../v1/sql";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "./editor";

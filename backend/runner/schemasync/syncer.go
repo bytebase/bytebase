@@ -330,7 +330,6 @@ func (s *Syncer) SyncInstanceWithOptions(ctx context.Context, instance *store.In
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.ResourceID)
@@ -347,7 +346,7 @@ func (s *Syncer) SyncInstanceWithOptions(ctx context.Context, instance *store.In
 	}
 
 	for _, databaseMetadata := range instanceMeta.Databases {
-		if len(instance.Metadata.GetSyncDatabases()) > 0 && !slices.Contains(instance.Metadata.GetSyncDatabases(), databaseMetadata.Name) {
+		if instance.Metadata.SyncDatabases != nil && !slices.Contains(instance.Metadata.SyncDatabases.Databases, databaseMetadata.Name) {
 			continue
 		}
 		filteredDatabaseMetadatas = append(filteredDatabaseMetadatas, databaseMetadata)

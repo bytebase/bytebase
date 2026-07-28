@@ -1,9 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "schedule": ["* * 31 2 *"],
+  "extends": ["config:recommended", "schedule:monthly"],
   "postUpdateOptions": ["gomodTidy", "pnpmDedupe"],
-  "allowedCommands": ["^pnpm install --no-frozen-lockfile$"],
   "customManagers": [
     {
       "customType": "regex",
@@ -57,6 +55,11 @@
       "matchPackageNames": ["/^i18next$/", "/^react-i18next$/", "/^i18next-/"]
     },
     {
+      "groupName": "react",
+      "description": "React 19's renderer enforces an exact version match between react and react-dom at startup, so bump them together",
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"]
+    },
+    {
       "matchPackageNames": ["@vitejs/plugin-legacy"],
       "matchUpdateTypes": ["major"],
       "enabled": false,
@@ -67,10 +70,17 @@
       "matchUpdateTypes": ["major"],
       "enabled": false,
       "description": "v10 dropped the browser-field mapping on the root export, so `import \"vscode-languageclient\"` loads the common build and the browser RAL is never installed — the LSP client dies with 'No runtime abstraction layer installed'. Re-enable after migrating imports to vscode-languageclient/browser and verifying LSP in a real browser."
+    },
+    {
+      "matchPackageNames": ["google.golang.org/genproto"],
+      "enabled": false,
+      "description": "Revisions after 0afa2a65878a delete the bigtable, datastore, firestore, pubsub and spanner package trees, which moved into the per-product client libraries with no split-out genproto module replacing them. cloud.google.com/go/spanner still requires an older genproto and test-imports genproto/googleapis/spanner/admin/database/v1, so `go mod tidy` cannot resolve the graph and fails outright. Re-enable once cloud.google.com/go/spanner drops the deleted packages. This pins only the root module — googleapis/api and googleapis/rpc are separate modules, lost nothing, and keep updating."
     }
   ],
   "ignoreDeps": [
+    "github.com/pingcap/tidb",
     "github.com/pingcap/tidb/pkg/parser",
+    "github.com/form3tech-oss/jwt-go",
     "github.com/elastic/go-elasticsearch/v7",
     "typescript-6"
   ]

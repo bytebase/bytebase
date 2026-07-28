@@ -26,19 +26,18 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Provision an instance.
-	instanceRootDir := t.TempDir()
 	instanceName := "testInstance1"
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       instanceName,
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -95,9 +94,10 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	changelogs := resp.Msg.Changelogs
 	// Expect 3 changelogs: 2 migrations + baseline (auto-created on first migration)
 	a.Equal(3, len(changelogs))
-	// First changelog should be the data update migration (most recent)
+	// First changelog should be the data update migration (most recent).
+	// DML-only migrations skip the schema dump, so it carries no schema.
 	a.Equal(v1pb.Changelog_DONE, changelogs[0].Status)
-	a.Equal(dumpedSchema, changelogs[0].Schema)
+	a.Empty(changelogs[0].Schema)
 	// Second changelog should be the schema migration
 	a.Equal(v1pb.Changelog_DONE, changelogs[1].Status)
 	a.Equal(dumpedSchema, changelogs[1].Schema)
@@ -330,9 +330,8 @@ func TestMarkTaskAsDone(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Provision an instance.
-	instanceRootDir := t.TempDir()
 	instanceName := "testInstance1"
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
+	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 
 	// Add an instance.
@@ -340,10 +339,10 @@ func TestMarkTaskAsDone(t *testing.T) {
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       instanceName,
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -422,5 +421,6 @@ func TestMarkTaskAsDone(t *testing.T) {
 	dbMetadataResp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)}))
 	a.NoError(err)
 	dbMetadata := dbMetadataResp.Msg
-	a.Equal("", dbMetadata.Schema)
+	// The only migration was skipped, so the schema must not contain the book table.
+	a.NotContains(dbMetadata.Schema, "book")
 }

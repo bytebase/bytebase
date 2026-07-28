@@ -6,13 +6,10 @@ import "./assets/css/tailwind.css";
 import "./stylex-dev-css";
 // Side-effect: configures the shared dayjs singleton (localizedFormat) and
 // registers the SQL highlight.js language + theme used across the app.
-import "./plugins/dayjs";
-import "./plugins/highlight";
-// Side-effect: registers the bb.vue-notification window listener and
-// constructs the toastManager singleton. Must load before any auth/error
-// interceptor can fire pushNotification during bootstrap RPCs.
-import "./react/lib/toast";
-import { useAppStore } from "./react/stores/app";
+import "./lib/dayjs";
+import "./lib/highlight";
+import { initializeGA4 } from "./lib/ga4";
+import { useAppStore } from "./stores/app";
 import { isDev, isRelease, migrateStorageKeys } from "./utils";
 
 console.debug("dev:", isDev());
@@ -35,7 +32,8 @@ migrateStorageKeys();
     initPromises.push(store.loadWorkspaceProfile());
   }
   await Promise.all(initPromises);
+  initializeGA4(store.isSaaSMode());
 
-  const { mountReactRouterApp } = await import("./react/app/mountApp");
+  const { mountReactRouterApp } = await import("./app/mountApp");
   await mountReactRouterApp("#app");
 })();

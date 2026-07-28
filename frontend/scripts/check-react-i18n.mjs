@@ -37,10 +37,10 @@ const DYNAMIC_PREFIXES = [
   "settings.sidebar.",
   // Stored as messageKey string literals and translated via t(messageKey) at
   // render, not as literal t("…") calls. See
-  // frontend/src/react/pages/auth/OAuthCallbackPage.tsx.
+  // frontend/src/routes/auth/OAuthCallbackPage.tsx.
   "auth.oauth-callback.",
   // Returned from getReviewBadge as labelKey string literals, not invoked
-  // via t("…") in source. See frontend/src/react/pages/project/utils/reviewBadge.ts.
+  // via t("…") in source. See frontend/src/routes/project/utils/reviewBadge.ts.
   "common.bypassed",
   "common.closed",
   "common.rejected",
@@ -51,12 +51,12 @@ const DYNAMIC_PREFIXES = [
   // MembersPage.tsx (EXPIRATION_PRESETS), not as literal t("…") calls.
   "project.members.expiration-presets.",
   // Keys consumed by SHARED non-React `.ts` modules that translate via
-  // `@/react/i18n` (the same react-i18next instance — vue-i18n is gone), but
+  // `@/lib/i18n` (the same react-i18next instance — vue-i18n is gone), but
   // live OUTSIDE this checker's React-only scan, so they read as unused. They
   // must stay in the canonical locale files. Listed with the shared caller
   // that uses them:
   //   - role.*.self / .description — displayRoleTitle / displayRoleTitleFromList
-  //     (src/utils/role.ts, src/react/lib/role.ts)
+  //     (src/utils/role.ts, src/lib/role.ts)
   "role.",
   //   - project.webhook.activity-item.* — projectWebhookV1ActivityItemList
   //     (src/types/v1/projectWebhook.ts)
@@ -77,7 +77,7 @@ const DYNAMIC_PREFIXES = [
   //   - data-source.{admin,read-only} — dataSourceType (src/utils/v1/instance.ts)
   "data-source.admin",
   "data-source.read-only",
-  //   - sheet.{mine,shared} — src/views/sql-editor/Sheet/context.ts
+  //   - sheet.{mine,shared} — src/modules/sql-editor/model/Sheet/context.ts
   "sheet.mine",
   "sheet.shared",
   //   - task.status.* — stringifyTaskStatus / stringifyTaskRunStatus
@@ -89,7 +89,7 @@ const DYNAMIC_PREFIXES = [
   "task.status.not-started",
   "task.status.pending",
   "task.status.running",
-  //   - auth.token-expired-description — src/connect/middlewares/authInterceptorMiddleware.ts
+  //   - auth.token-expired-description — src/api/middlewares/authInterceptorMiddleware.ts
   "auth.token-expired-description",
   //   - issue.title.export-data — src/utils/v1/issue/issue.ts
   "issue.title.export-data",

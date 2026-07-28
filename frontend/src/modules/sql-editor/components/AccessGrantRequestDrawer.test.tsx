@@ -1,0 +1,697 @@
+import type { ReactElement } from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+const mocks = vi.hoisted(() => ({
+  useTranslation: vi.fn(() => ({ t: (key: string) => key })),
+  // Zustand editor store project read.
+  project: "projects/proj1" as string,
+  // Current tab connection database used to derive default targets.
+  currentTabDatabase: "instances/inst1/databases/db1" as string | undefined,
+  // New zustand setters.
+  setAsidePanelTab: vi.fn(),
+  setHighlightAccessGrantName: vi.fn(),
+  pushNotification: vi.fn(),
+  fetchDatabases: vi
+    .fn()
+    .mockResolvedValue({ databases: [], nextPageToken: "" }),
+  createAccessGrant: vi.fn(),
+  routerResolve: vi.fn(() => ({ fullPath: "/projects/proj1/issues/123" })),
+  // Captures the multi picker's server-search callback (undefined pre-fix).
+  dbOnSearch: undefined as ((q: string) => void) | undefined,
+  maximumRequestExpirationSeconds: undefined as number | undefined,
+}));
+
+vi.mock("react-i18next", () => ({
+  useTranslation: mocks.useTranslation,
+}));
+
+vi.mock("@/hooks/useAppState", () => ({
+  useCurrentUser: () => ({
+    name: "users/me",
+    email: "me@example.com",
+  }),
+}));
+
+vi.mock("@/stores/app", () => {
+  // `notify` reuses the `pushNotification` vi.fn so the existing test
+  // assertions on `mocks.pushNotification` keep working after the migration
+  // from the Pinia helper to the app-store notification slice.
+  const state = () => ({
+    fetchDatabases: mocks.fetchDatabases,
+    notify: mocks.pushNotification,
+    // Consumed by useWorkspaceSQLEditorTheme and expiration policy handling.
+    // Empty profile resolves to the default SQL Editor theme and no cap.
+    getWorkspaceProfile: () => ({
+      maximumRequestExpiration:
+        mocks.maximumRequestExpirationSeconds === undefined
+          ? undefined
+          : { seconds: BigInt(mocks.maximumRequestExpirationSeconds) },
+    }),
+    // Consumed by the shared DatabaseSelect (rendered by the drawer's picker).
+    workspaceResourceName: () => "workspaces/-",
+    getDatabaseByName: () => ({ name: "" }),
+  });
+  return {
+    useAppStore: Object.assign(
+      (selector: (s: ReturnType<typeof state>) => unknown) => selector(state()),
+      { getState: state }
+    ),
+  };
+});
+
+// Zustand editor store — active project read.
+vi.mock("@/modules/sql-editor/store/editor", () => ({
+  useSQLEditorEditorState: (selector: (s: { project: string }) => unknown) =>
+    selector({ project: mocks.project }),
+}));
+
+// Zustand tab store — imperative getter to derive default targets, plus the
+// reactive hook consumed by useActiveSQLEditorTheme (drives the drawer's Monaco
+// theme). The tab has no mode, so the active theme resolves to the default.
+vi.mock("@/modules/sql-editor/store/tab", () => ({
+  getSQLEditorTabsState: () => ({
+    currentTabId: "tab1",
+    tabsById: new Map([
+      ["tab1", { connection: { database: mocks.currentTabDatabase } }],
+    ]),
+  }),
+  useSQLEditorTabState: (
+    selector: (s: {
+      currentTabId: string;
+      tabsById: Map<string, { mode?: string }>;
+    }) => unknown
+  ) =>
+    selector({
+      currentTabId: "tab1",
+      tabsById: new Map([["tab1", {}]]),
+    }),
+}));
+
+vi.mock("@/modules/sql-editor/store", () => ({
+  useSQLEditorStore: (
+    selector: (s: {
+      setAsidePanelTab: (tab: string) => void;
+      setHighlightAccessGrantName: (v: string | undefined) => void;
+    }) => unknown
+  ) =>
+    selector({
+      setAsidePanelTab: mocks.setAsidePanelTab,
+      setHighlightAccessGrantName: mocks.setHighlightAccessGrantName,
+    }),
+}));
+
+vi.mock("@/api", () => ({
+  accessGrantServiceClientConnect: {
+    createAccessGrant: mocks.createAccessGrant,
+  },
+}));
+
+vi.mock("@/app/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/app/router")>()),
+  router: {
+    resolve: mocks.routerResolve,
+  },
+}));
+
+vi.mock("@/utils", () => ({
+  extractDatabaseResourceName: vi.fn((name: string) => {
+    const parts = name.split("/");
+    return {
+      databaseName: parts[parts.length - 1] ?? name,
+      instance: parts[1] ?? "",
+    };
+  }),
+  extractIssueUID: vi.fn((name: string) => name.split("/").pop() ?? "123"),
+  extractProjectResourceName: vi.fn((name: string) => {
+    const match = name.match(/projects\/(.+?)(?:\/|$)/);
+    return match?.[1] ?? "";
+  }),
+  // Consumed by the shared DatabaseSelect (rendered by the drawer's picker).
+  getDefaultPagination: () => 50,
+  getInstanceResource: () => ({ engine: 0, title: "" }),
+  getDatabaseEnvironment: () => ({ name: "environments/prod" }),
+}));
+
+vi.mock("@bufbuild/protobuf", () => ({
+  create: vi.fn((_schema: unknown, data: unknown) => data),
+}));
+
+vi.mock("@bufbuild/protobuf/wkt", () => ({
+  DurationSchema: {},
+  TimestampSchema: {},
+}));
+
+vi.mock("@/types/proto-es/v1/access_grant_service_pb", () => ({
+  AccessGrant_Status: { PENDING: 1, ACTIVE: 2 },
+  AccessGrantSchema: {},
+  CreateAccessGrantRequestSchema: {},
+}));
+
+vi.mock("@/components/ui/sheet", () => ({
+  Sheet: ({
+    children,
+    open,
+    onOpenChange,
+  }: {
+    children: React.ReactNode;
+    open: boolean;
+    onOpenChange: (next: boolean) => void;
+  }) => (
+    <div
+      data-testid="sheet"
+      data-open={open}
+      onClick={() => onOpenChange(false)}
+    >
+      {children}
+    </div>
+  ),
+  SheetContent: ({
+    children,
+    ...props
+  }: React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }) => (
+    <div data-testid="sheet-content" {...props}>
+      {children}
+    </div>
+  ),
+  SheetHeader: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="sheet-header">{children}</div>
+  ),
+  SheetTitle: ({ children }: { children: React.ReactNode }) => (
+    <h2 data-testid="sheet-title">{children}</h2>
+  ),
+  SheetBody: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="sheet-body">{children}</div>
+  ),
+  SheetFooter: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="sheet-footer">{children}</div>
+  ),
+}));
+
+vi.mock("@/components/ui/alert", () => ({
+  Alert: ({
+    children,
+    title,
+    description,
+  }: {
+    children?: React.ReactNode;
+    title?: React.ReactNode;
+    description?: React.ReactNode;
+  }) => (
+    <div data-testid="alert">
+      {title}
+      {description}
+      {children}
+    </div>
+  ),
+}));
+
+vi.mock("@/components/ui/button", () => ({
+  Button: ({
+    children,
+    onClick,
+    disabled,
+    "data-submit-btn": submitBtn,
+    ...props
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    disabled?: boolean;
+    "data-submit-btn"?: boolean;
+    [key: string]: unknown;
+  }) => (
+    <button
+      data-submit-btn={submitBtn ? "" : undefined}
+      disabled={disabled}
+      onClick={onClick}
+      {...props}
+    >
+      {children}
+    </button>
+  ),
+}));
+
+// The drawer now renders the real DatabaseSelect, which imports EngineIcon and
+// EnvironmentLabel. Stub them so their transitive proto-es imports don't load
+// (they conflict with this file's minimal @bufbuild/protobuf(/wkt) mocks). They
+// are only referenced inside the picker's option.render, never invoked here
+// because the Combobox mock below renders plain <option> labels.
+vi.mock("@/components/EngineIcon", () => ({ EngineIcon: () => null }));
+vi.mock("@/components/EnvironmentLabel", () => ({
+  EnvironmentLabel: () => null,
+}));
+
+vi.mock("@/components/ui/combobox", () => ({
+  Combobox: ({
+    value,
+    onChange,
+    options,
+    multiple,
+    onSearch,
+  }: {
+    value: string | string[];
+    onChange: (val: string | string[]) => void;
+    options: { value: string; label: string }[];
+    multiple?: boolean;
+    onSearch?: (q: string) => void;
+  }) => {
+    // Only the multi database picker sets this; the single Expiration combobox
+    // (multiple falsy) is skipped. Pre-fix the local MultiDatabaseSelect passes
+    // no onSearch, so this stays undefined — the red bug-repro assertion.
+    if (multiple) mocks.dbOnSearch = onSearch;
+    return (
+      <select
+        data-testid={multiple ? "multi-combobox" : "combobox"}
+        multiple={multiple}
+        value={multiple ? (value as string[]) : (value as string)}
+        onChange={(e) => {
+          if (multiple) {
+            const selected = Array.from(e.target.selectedOptions).map(
+              (o) => o.value
+            );
+            onChange(selected);
+          } else {
+            onChange(e.target.value);
+          }
+        }}
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    );
+  },
+}));
+
+vi.mock("@/components/ui/expiration-picker", () => ({
+  ExpirationPicker: ({
+    value,
+    onChange,
+  }: {
+    value?: string;
+    onChange: (val: string | undefined) => void;
+  }) => (
+    <input
+      data-testid="expiration-picker"
+      type="datetime-local"
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value || undefined)}
+    />
+  ),
+}));
+
+vi.mock("@/components/ui/textarea", () => ({
+  Textarea: ({
+    value,
+    onChange,
+    ...props
+  }: {
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+    [key: string]: unknown;
+  }) => (
+    <textarea
+      data-testid="textarea"
+      value={value}
+      onChange={onChange}
+      {...props}
+    />
+  ),
+}));
+
+vi.mock("@/components/monaco/MonacoEditor", () => ({
+  MonacoEditor: ({
+    content,
+    onChange,
+    autoHeight,
+  }: {
+    content: string;
+    onChange?: (val: string) => void;
+    autoHeight?: boolean;
+  }) => (
+    <textarea
+      data-testid="monaco-editor"
+      data-auto-height={String(autoHeight)}
+      value={content}
+      onChange={(e) => onChange?.(e.target.value)}
+    />
+  ),
+}));
+
+let AccessGrantRequestDrawer: typeof import("./AccessGrantRequestDrawer").AccessGrantRequestDrawer;
+
+const renderIntoContainer = (element: ReactElement) => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  document.body.appendChild(container);
+  return {
+    container,
+    render: () => {
+      act(() => {
+        root.render(element);
+      });
+    },
+    unmount: () => {
+      act(() => {
+        root.unmount();
+      });
+      container.remove();
+    },
+  };
+};
+
+const setupMocks = () => {
+  mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
+
+  mocks.project = "projects/proj1";
+  mocks.currentTabDatabase = "instances/inst1/databases/db1";
+
+  mocks.fetchDatabases.mockResolvedValue({ databases: [], nextPageToken: "" });
+  // vi.clearAllMocks() does not reset a plain hoisted property.
+  mocks.dbOnSearch = undefined;
+  mocks.maximumRequestExpirationSeconds = undefined;
+};
+
+beforeEach(async () => {
+  vi.clearAllMocks();
+  setupMocks();
+
+  // Mock window.open
+  Object.defineProperty(window, "open", {
+    value: vi.fn(),
+    writable: true,
+  });
+
+  ({ AccessGrantRequestDrawer } = await import("./AccessGrantRequestDrawer"));
+});
+
+afterEach(() => {
+  document.body.innerHTML = "";
+});
+
+describe("AccessGrantRequestDrawer", () => {
+  test("shows the workspace maximum expiration hint when SQL access grants are capped", () => {
+    mocks.maximumRequestExpirationSeconds = 30 * 24 * 60 * 60;
+    const onClose = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        targets={["instances/inst1/databases/mydb"]}
+        query="SELECT id FROM orders"
+        onClose={onClose}
+      />
+    );
+    render();
+
+    expect(container.textContent).toContain(
+      "project.members.request-role.max-expiration-hint"
+    );
+
+    unmount();
+  });
+
+  test("renders with pre-filled targets, query, unmask when passed as props", () => {
+    const onClose = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        targets={["instances/inst1/databases/mydb"]}
+        query="SELECT id FROM orders"
+        unmask={true}
+        onClose={onClose}
+      />
+    );
+    render();
+
+    const monacoEditor = container.querySelector(
+      "[data-testid='monaco-editor']"
+    ) as HTMLTextAreaElement;
+    expect(monacoEditor).not.toBeNull();
+    expect(monacoEditor.value).toBe("SELECT id FROM orders");
+
+    const checkbox = container.querySelector(
+      "input[type='checkbox']"
+    ) as HTMLInputElement;
+    expect(checkbox).not.toBeNull();
+    expect(checkbox.checked).toBe(true);
+
+    unmount();
+  });
+
+  test("statement editor is fixed-height (autoHeight=false) so a long query can't overflow and cover the reason box", () => {
+    const onClose = vi.fn();
+    // A tall statement is what triggered the bug: MonacoEditor's default
+    // autoHeight grows the editor to its content (clamped to 600px), overflowing
+    // the 160px (h-40) wrapper and painting over the fields below it — hiding the
+    // reason box. The fix pins autoHeight={false} so it stays a fixed, internally
+    // scrolling box. jsdom has no layout engine, so we assert the prop contract.
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        targets={["instances/inst1/databases/mydb"]}
+        query={"SELECT id,\n".repeat(40) + "FROM orders"}
+        onClose={onClose}
+      />
+    );
+    render();
+
+    const monacoEditor = container.querySelector(
+      "[data-testid='monaco-editor']"
+    ) as HTMLTextAreaElement;
+    expect(monacoEditor).not.toBeNull();
+    expect(monacoEditor.getAttribute("data-auto-height")).toBe("false");
+
+    unmount();
+  });
+
+  test("clicking the drawer content does not bubble to the component that opened it", () => {
+    const onOwnerClick = vi.fn();
+    const onClose = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <div onClick={onOwnerClick}>
+        <AccessGrantRequestDrawer
+          targets={["instances/inst1/databases/mydb"]}
+          query="SELECT id FROM orders"
+          onClose={onClose}
+        />
+      </div>
+    );
+    render();
+
+    const textarea = container.querySelector(
+      "[data-testid='textarea']"
+    ) as HTMLTextAreaElement;
+    expect(textarea).not.toBeNull();
+
+    act(() => {
+      textarea.click();
+    });
+
+    expect(onOwnerClick).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("Submit button disabled when required fields missing", () => {
+    const onClose = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantRequestDrawer onClose={onClose} />
+    );
+    render();
+
+    // No targets, no query, no reason — submit should be disabled
+    const submitBtn = container.querySelector(
+      "[data-submit-btn]"
+    ) as HTMLButtonElement;
+    expect(submitBtn).not.toBeNull();
+    expect(submitBtn.disabled).toBe(true);
+
+    unmount();
+  });
+
+  test("Submit calls createAccessGrant with correct payload shape", async () => {
+    const mockResponse = {
+      status: 2, // ACTIVE
+      issue: "",
+      name: "projects/proj1/accessGrants/grant-new",
+    };
+    mocks.createAccessGrant.mockResolvedValue(mockResponse);
+
+    const onClose = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        targets={["instances/inst1/databases/db1"]}
+        query="SELECT * FROM t"
+        onClose={onClose}
+      />
+    );
+    render();
+
+    // Fill in reason
+    const textarea = container.querySelector(
+      "[data-testid='textarea']"
+    ) as HTMLTextAreaElement;
+    await act(async () => {
+      Object.defineProperty(textarea, "value", {
+        writable: true,
+        value: "test reason",
+      });
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      const changeEvent = new Event("change", { bubbles: true });
+      Object.defineProperty(changeEvent, "target", {
+        writable: false,
+        value: textarea,
+      });
+      textarea.dispatchEvent(changeEvent);
+    });
+
+    // Submit button should now be enabled (targets + query + reason filled)
+    const submitBtn = container.querySelector(
+      "[data-submit-btn]"
+    ) as HTMLButtonElement;
+    expect(submitBtn).not.toBeNull();
+
+    // Manually trigger submit
+    await act(async () => {
+      submitBtn.click();
+    });
+
+    // createAccessGrant should have been called
+    expect(mocks.createAccessGrant).toHaveBeenCalled();
+    unmount();
+  });
+
+  test("On success ACTIVE without issue → sets asidePanelTab and highlightAccessGrantName", async () => {
+    const mockResponse = {
+      status: 2, // ACTIVE
+      issue: "",
+      name: "projects/proj1/accessGrants/grant-xyz",
+    };
+    mocks.createAccessGrant.mockResolvedValue(mockResponse);
+
+    const onClose = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        targets={["instances/inst1/databases/db1"]}
+        query="SELECT * FROM t"
+        onClose={onClose}
+      />
+    );
+    render();
+
+    // Fill reason
+    const textarea = container.querySelector(
+      "[data-testid='textarea']"
+    ) as HTMLTextAreaElement;
+    await act(async () => {
+      Object.defineProperty(textarea, "value", {
+        writable: true,
+        value: "my reason",
+      });
+      const changeEvent = new Event("change", { bubbles: true });
+      Object.defineProperty(changeEvent, "target", {
+        writable: false,
+        value: textarea,
+      });
+      textarea.dispatchEvent(changeEvent);
+    });
+
+    const submitBtn = container.querySelector(
+      "[data-submit-btn]"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      submitBtn.click();
+    });
+
+    // After submit: check pushNotification was called and zustand setters were invoked
+    expect(mocks.pushNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ style: "SUCCESS" })
+    );
+    expect(mocks.setAsidePanelTab).toHaveBeenCalledWith("ACCESS");
+    expect(mocks.setHighlightAccessGrantName).toHaveBeenCalledWith(
+      "projects/proj1/accessGrants/grant-xyz"
+    );
+    expect(onClose).toHaveBeenCalled();
+    unmount();
+  });
+
+  test("typing in the Request Data Access database picker re-queries the server (BYT-9801)", async () => {
+    const onClose = vi.fn();
+    const { render: renderFn, unmount } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        targets={["instances/inst1/databases/db1"]}
+        onClose={onClose}
+      />
+    );
+    renderFn();
+    await act(async () => {
+      await Promise.resolve(); // let the picker's mount fetch resolve
+    });
+
+    // Pre-fix: the local MultiDatabaseSelect passes no onSearch → undefined.
+    expect(mocks.dbOnSearch).toBeTypeOf("function");
+
+    await act(async () => {
+      mocks.dbOnSearch?.("orders");
+      await Promise.resolve();
+    });
+
+    expect(mocks.fetchDatabases).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: expect.objectContaining({ query: "orders" }),
+      })
+    );
+    unmount();
+  });
+
+  test("pre-filled targets are submitted to createAccessGrant", async () => {
+    mocks.createAccessGrant.mockResolvedValue({
+      status: 2,
+      issue: "",
+      name: "projects/proj1/accessGrants/g",
+    });
+    const onClose = vi.fn();
+    const {
+      container,
+      render: renderFn,
+      unmount,
+    } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        targets={["instances/inst1/databases/db1"]}
+        query="SELECT * FROM t"
+        onClose={onClose}
+      />
+    );
+    renderFn();
+
+    const textarea = container.querySelector(
+      "[data-testid='textarea']"
+    ) as HTMLTextAreaElement;
+    await act(async () => {
+      const changeEvent = new Event("change", { bubbles: true });
+      Object.defineProperty(textarea, "value", { writable: true, value: "r" });
+      Object.defineProperty(changeEvent, "target", {
+        writable: false,
+        value: textarea,
+      });
+      textarea.dispatchEvent(changeEvent);
+    });
+
+    const submitBtn = container.querySelector(
+      "[data-submit-btn]"
+    ) as HTMLButtonElement;
+    await act(async () => submitBtn.click());
+
+    expect(mocks.createAccessGrant).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accessGrant: expect.objectContaining({
+          targets: ["instances/inst1/databases/db1"],
+        }),
+      })
+    );
+    unmount();
+  });
+});

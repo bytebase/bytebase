@@ -25,7 +25,6 @@ func EngineSupportSQLReview(engine storepb.Engine) bool {
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
@@ -62,7 +61,6 @@ func EngineSupportSDLExport(engine storepb.Engine) bool {
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
@@ -107,7 +105,6 @@ func EngineSupportQueryNewACL(engine storepb.Engine) bool {
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
 		storepb.Engine_OCEANBASE,
@@ -146,7 +143,6 @@ func EngineSupportMasking(e storepb.Engine) bool {
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
@@ -189,7 +185,6 @@ func EngineSupportAutoComplete(e storepb.Engine) bool {
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_REDIS,
 		storepb.Engine_SPANNER,
 		storepb.Engine_BIGQUERY,
@@ -222,7 +217,6 @@ func EngineSupportStatementAdvise(e storepb.Engine) bool {
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
@@ -258,7 +252,6 @@ func EngineSupportStatementReport(e storepb.Engine) bool {
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
@@ -294,7 +287,6 @@ func EngineSupportPriorBackup(e storepb.Engine) bool {
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
@@ -321,7 +313,6 @@ func EngineSupportCreateDatabase(e storepb.Engine) bool {
 	//exhaustive:enforce
 	switch e {
 	case
-		storepb.Engine_SQLITE,
 		storepb.Engine_MYSQL,
 		storepb.Engine_POSTGRES,
 		storepb.Engine_MSSQL,
@@ -375,7 +366,6 @@ func EngineSupportQuerySpanPlainField(e storepb.Engine) bool {
 		storepb.Engine_DATABRICKS,
 		storepb.Engine_COSMOSDB,
 		storepb.Engine_TRINO,
-		storepb.Engine_SQLITE,
 		storepb.Engine_POSTGRES,
 		storepb.Engine_MSSQL,
 		storepb.Engine_SNOWFLAKE,
@@ -412,7 +402,6 @@ func EngineSupportSyntaxCheck(e storepb.Engine) bool {
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
@@ -448,7 +437,6 @@ func BackupDatabaseNameOfEngine(e storepb.Engine) string {
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,

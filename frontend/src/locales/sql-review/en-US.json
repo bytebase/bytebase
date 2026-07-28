@@ -46,14 +46,30 @@
   "enable-description": "Enabling this policy will start enforcing its rules on the attached resources.",
   "enabled-rules": "Enabled rules",
   "engine": {
+    "bigquery": "BigQuery",
+    "cassandra": "Cassandra",
+    "clickhouse": "ClickHouse",
+    "cockroachdb": "CockroachDB",
+    "cosmosdb": "Cosmos DB",
+    "databricks": "Databricks",
+    "doris": "Doris",
+    "dynamodb": "DynamoDB",
+    "elasticsearch": "Elasticsearch",
+    "hive": "Hive",
     "mariadb": "MariaDB",
+    "mongodb": "MongoDB",
     "mssql": "SQL Server",
     "mysql": "MySQL",
     "oceanbase": "OceanBase",
     "oracle": "Oracle",
     "postgres": "PostgreSQL",
+    "redis": "Redis",
+    "redshift": "Redshift",
     "snowflake": "Snowflake",
-    "tidb": "TiDB"
+    "spanner": "Spanner",
+    "starrocks": "StarRocks",
+    "tidb": "TiDB",
+    "trino": "Trino"
   },
   "input-then-press-enter": "Input the value then press enter to add",
   "level": {
@@ -82,6 +98,15 @@
     "BUILTIN_PRIOR_BACKUP_CHECK": {
       "description": "This rule checks whether a backup can be created before data changes. It verifies the existence of the backup target database and disallows non-supported scenarios. It's builtin and cannot skip.",
       "title": "Prior backup feasibility check"
+    },
+    "BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE": {
+      "component": {
+        "number": {
+          "title": "Maximum size in MB"
+        }
+      },
+      "description": "Large SQL files can exceed the supported SQL review size and skip parser-based review. Limit the file size to make the behavior explicit.",
+      "title": "Restrict the SQL file size"
     },
     "BUILTIN_WALK_THROUGH_CHECK": {
       "description": "Validates SQL statements against the current database schema by simulating their execution. Detects issues like referencing non-existent tables, columns, or indexes.",
@@ -708,7 +733,7 @@
     "bb-sql-review-dev": "Basic Template",
     "bb-sql-review-dev-desc": "Basic coverage to defend your databases from common misusage.",
     "bb-sql-review-empty": "Start from scratch",
-    "bb-sql-review-empty-desc": "Start with only built-in rules. Add the rules you need yourself.",
+    "bb-sql-review-empty-desc": "Start with no configured rules. Add the rules you need yourself.",
     "bb-sql-review-prod": "Advanced Template",
     "bb-sql-review-prod-desc": "Comprehensive policy where you have total protection and best practices for your databases.",
     "bb-sql-review-sample": "Sample Template",

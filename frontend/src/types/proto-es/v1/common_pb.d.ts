@@ -196,13 +196,6 @@ export enum Engine {
   SNOWFLAKE = 4,
 
   /**
-   * SQLite embedded database.
-   *
-   * @generated from enum value: SQLITE = 5;
-   */
-  SQLITE = 5,
-
-  /**
    * TiDB distributed SQL database.
    *
    * @generated from enum value: TIDB = 6;
@@ -451,7 +444,7 @@ export declare const ExportFormatSchema: GenEnum<ExportFormat>;
  */
 export enum ApprovalStatus {
   /**
-   * Unspecified approval status.
+   * No approval workflow has started, including for a linked draft issue.
    *
    * @generated from enum value: APPROVAL_STATUS_UNSPECIFIED = 0;
    */
@@ -497,6 +490,48 @@ export enum ApprovalStatus {
  * Describes the enum bytebase.v1.ApprovalStatus.
  */
 export declare const ApprovalStatusSchema: GenEnum<ApprovalStatus>;
+
+/**
+ * The status of an issue.
+ * Lives at the top level so both plan_service.proto and issue_service.proto
+ * can reference it without a circular import.
+ *
+ * @generated from enum bytebase.v1.IssueStatus
+ */
+export enum IssueStatus {
+  /**
+   * Unspecified status.
+   *
+   * @generated from enum value: ISSUE_STATUS_UNSPECIFIED = 0;
+   */
+  ISSUE_STATUS_UNSPECIFIED = 0,
+
+  /**
+   * Issue is open and active.
+   *
+   * @generated from enum value: OPEN = 1;
+   */
+  OPEN = 1,
+
+  /**
+   * Issue is completed.
+   *
+   * @generated from enum value: DONE = 2;
+   */
+  DONE = 2,
+
+  /**
+   * Issue is canceled.
+   *
+   * @generated from enum value: CANCELED = 3;
+   */
+  CANCELED = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.IssueStatus.
+ */
+export declare const IssueStatusSchema: GenEnum<IssueStatus>;
 
 /**
  * RiskLevel is the risk level.

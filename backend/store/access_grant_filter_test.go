@@ -149,6 +149,40 @@ func TestGetListAccessGrantFilter(t *testing.T) {
 			wantErr:     true,
 			errContains: "export value must be a boolean",
 		},
+		{
+			name:     "pending status excludes canceled and rejected pending grants",
+			filter:   `status == "PENDING"`,
+			wantSQL:  "((access_grant.status = $1 AND NOT EXISTS (SELECT 1 FROM issue WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND issue.status = $2) AND NOT EXISTS (SELECT 1 FROM issue, jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND COALESCE((issue.payload->'approval'->>'approvalFindingDone')::boolean, false) AND issue.payload->'approval'->'approvalTemplate' IS NOT NULL AND approver->>'status' = $3)))",
+			wantArgs: []any{"PENDING", "CANCELED", "REJECTED"},
+			wantErr:  false,
+		},
+		{
+			name:     "canceled status excludes rejected pending grants",
+			filter:   `status == "CANCELED"`,
+			wantSQL:  "((access_grant.status = $1 AND EXISTS (SELECT 1 FROM issue WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND issue.status = $2) AND NOT EXISTS (SELECT 1 FROM issue, jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND COALESCE((issue.payload->'approval'->>'approvalFindingDone')::boolean, false) AND issue.payload->'approval'->'approvalTemplate' IS NOT NULL AND approver->>'status' = $3)))",
+			wantArgs: []any{"PENDING", "CANCELED", "REJECTED"},
+			wantErr:  false,
+		},
+		{
+			name:     "rejected status matches rejected pending grants",
+			filter:   `status == "REJECTED"`,
+			wantSQL:  "((access_grant.status = $1 AND EXISTS (SELECT 1 FROM issue, jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND COALESCE((issue.payload->'approval'->>'approvalFindingDone')::boolean, false) AND issue.payload->'approval'->'approvalTemplate' IS NOT NULL AND approver->>'status' = $2)))",
+			wantArgs: []any{"PENDING", "REJECTED"},
+			wantErr:  false,
+		},
+		{
+			name:        "status rejects unknown status",
+			filter:      `status == "DONE"`,
+			wantErr:     true,
+			errContains: `unsupported status "DONE"`,
+		},
+		{
+			name:     "status in combines display-status filters",
+			filter:   `status in ["PENDING", "REJECTED"]`,
+			wantSQL:  "(((access_grant.status = $1 AND NOT EXISTS (SELECT 1 FROM issue WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND issue.status = $2) AND NOT EXISTS (SELECT 1 FROM issue, jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND COALESCE((issue.payload->'approval'->>'approvalFindingDone')::boolean, false) AND issue.payload->'approval'->'approvalTemplate' IS NOT NULL AND approver->>'status' = $3)) OR (access_grant.status = $4 AND EXISTS (SELECT 1 FROM issue, jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND COALESCE((issue.payload->'approval'->>'approvalFindingDone')::boolean, false) AND issue.payload->'approval'->'approvalTemplate' IS NOT NULL AND approver->>'status' = $5))))",
+			wantArgs: []any{"PENDING", "CANCELED", "REJECTED", "PENDING", "REJECTED"},
+			wantErr:  false,
+		},
 	}
 
 	for _, tt := range tests {

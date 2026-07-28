@@ -484,13 +484,16 @@ type Plan struct {
 	// Whether the plan has started the rollout.
 	HasRollout bool `protobuf:"varint,12,opt,name=has_rollout,json=hasRollout,proto3" json:"has_rollout,omitempty"`
 	// The approval status of the linked issue.
-	// Unspecified when no linked issue exists.
+	// Unspecified when no linked issue exists or the linked issue is a draft.
 	ApprovalStatus ApprovalStatus `protobuf:"varint,13,opt,name=approval_status,json=approvalStatus,proto3,enum=bytebase.v1.ApprovalStatus" json:"approval_status,omitempty"`
 	// Per-stage rollout status summary.
 	// Ordered by environment deployment order. Empty when no rollout exists.
 	RolloutStageSummaries []*Plan_RolloutStageSummary `protobuf:"bytes,14,rep,name=rollout_stage_summaries,json=rolloutStageSummaries,proto3" json:"rollout_stage_summaries,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	// The lifecycle status of the linked issue.
+	// Unspecified when no linked issue exists.
+	IssueStatus   IssueStatus `protobuf:"varint,15,opt,name=issue_status,json=issueStatus,proto3,enum=bytebase.v1.IssueStatus" json:"issue_status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Plan) Reset() {
@@ -612,6 +615,13 @@ func (x *Plan) GetRolloutStageSummaries() []*Plan_RolloutStageSummary {
 		return x.RolloutStageSummaries
 	}
 	return nil
+}
+
+func (x *Plan) GetIssueStatus() IssueStatus {
+	if x != nil {
+		return x.IssueStatus
+	}
+	return IssueStatus_ISSUE_STATUS_UNSPECIFIED
 }
 
 type GetPlanCheckRunRequest struct {
@@ -1656,7 +1666,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x03\xe0A\x02R\x04plan\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xcd\x0f\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x8f\x10\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
@@ -1674,7 +1684,8 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\vhas_rollout\x18\f \x01(\bB\x03\xe0A\x03R\n" +
 	"hasRollout\x12I\n" +
 	"\x0fapproval_status\x18\r \x01(\x0e2\x1b.bytebase.v1.ApprovalStatusB\x03\xe0A\x03R\x0eapprovalStatus\x12b\n" +
-	"\x17rollout_stage_summaries\x18\x0e \x03(\v2%.bytebase.v1.Plan.RolloutStageSummaryB\x03\xe0A\x03R\x15rolloutStageSummaries\x1a\xb4\x02\n" +
+	"\x17rollout_stage_summaries\x18\x0e \x03(\v2%.bytebase.v1.Plan.RolloutStageSummaryB\x03\xe0A\x03R\x15rolloutStageSummaries\x12@\n" +
+	"\fissue_status\x18\x0f \x01(\x0e2\x18.bytebase.v1.IssueStatusB\x03\xe0A\x03R\vissueStatus\x1a\xb4\x02\n" +
 	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12^\n" +
 	"\x16create_database_config\x18\x02 \x01(\v2&.bytebase.v1.Plan.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12^\n" +
@@ -1818,11 +1829,12 @@ var file_v1_plan_service_proto_goTypes = []any{
 	(State)(0),                                   // 25: bytebase.v1.State
 	(*timestamppb.Timestamp)(nil),                // 26: google.protobuf.Timestamp
 	(ApprovalStatus)(0),                          // 27: bytebase.v1.ApprovalStatus
-	(ExportFormat)(0),                            // 28: bytebase.v1.ExportFormat
-	(Task_Status)(0),                             // 29: bytebase.v1.Task.Status
-	(Advice_Level)(0),                            // 30: bytebase.v1.Advice.Level
-	(StatementType)(0),                           // 31: bytebase.v1.StatementType
-	(*Position)(nil),                             // 32: bytebase.v1.Position
+	(IssueStatus)(0),                             // 28: bytebase.v1.IssueStatus
+	(ExportFormat)(0),                            // 29: bytebase.v1.ExportFormat
+	(Task_Status)(0),                             // 30: bytebase.v1.Task.Status
+	(Advice_Level)(0),                            // 31: bytebase.v1.Advice.Level
+	(StatementType)(0),                           // 32: bytebase.v1.StatementType
+	(*Position)(nil),                             // 33: bytebase.v1.Position
 }
 var file_v1_plan_service_proto_depIdxs = []int32{
 	7,  // 0: bytebase.v1.ListPlansResponse.plans:type_name -> bytebase.v1.Plan
@@ -1836,41 +1848,42 @@ var file_v1_plan_service_proto_depIdxs = []int32{
 	15, // 8: bytebase.v1.Plan.plan_check_run_status_count:type_name -> bytebase.v1.Plan.PlanCheckRunStatusCountEntry
 	27, // 9: bytebase.v1.Plan.approval_status:type_name -> bytebase.v1.ApprovalStatus
 	19, // 10: bytebase.v1.Plan.rollout_stage_summaries:type_name -> bytebase.v1.Plan.RolloutStageSummary
-	0,  // 11: bytebase.v1.PlanCheckRun.status:type_name -> bytebase.v1.PlanCheckRun.Status
-	21, // 12: bytebase.v1.PlanCheckRun.results:type_name -> bytebase.v1.PlanCheckRun.Result
-	26, // 13: bytebase.v1.PlanCheckRun.create_time:type_name -> google.protobuf.Timestamp
-	16, // 14: bytebase.v1.Plan.Spec.create_database_config:type_name -> bytebase.v1.Plan.CreateDatabaseConfig
-	17, // 15: bytebase.v1.Plan.Spec.change_database_config:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig
-	18, // 16: bytebase.v1.Plan.Spec.export_data_config:type_name -> bytebase.v1.Plan.ExportDataConfig
-	28, // 17: bytebase.v1.Plan.ExportDataConfig.format:type_name -> bytebase.v1.ExportFormat
-	20, // 18: bytebase.v1.Plan.RolloutStageSummary.task_status_counts:type_name -> bytebase.v1.Plan.TaskStatusCount
-	29, // 19: bytebase.v1.Plan.TaskStatusCount.status:type_name -> bytebase.v1.Task.Status
-	30, // 20: bytebase.v1.PlanCheckRun.Result.status:type_name -> bytebase.v1.Advice.Level
-	1,  // 21: bytebase.v1.PlanCheckRun.Result.type:type_name -> bytebase.v1.PlanCheckRun.Result.Type
-	22, // 22: bytebase.v1.PlanCheckRun.Result.sql_summary_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
-	23, // 23: bytebase.v1.PlanCheckRun.Result.sql_review_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlReviewReport
-	31, // 24: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.statement_types:type_name -> bytebase.v1.StatementType
-	32, // 25: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.start_position:type_name -> bytebase.v1.Position
-	32, // 26: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.end_position:type_name -> bytebase.v1.Position
-	2,  // 27: bytebase.v1.PlanService.GetPlan:input_type -> bytebase.v1.GetPlanRequest
-	3,  // 28: bytebase.v1.PlanService.ListPlans:input_type -> bytebase.v1.ListPlansRequest
-	5,  // 29: bytebase.v1.PlanService.CreatePlan:input_type -> bytebase.v1.CreatePlanRequest
-	6,  // 30: bytebase.v1.PlanService.UpdatePlan:input_type -> bytebase.v1.UpdatePlanRequest
-	8,  // 31: bytebase.v1.PlanService.GetPlanCheckRun:input_type -> bytebase.v1.GetPlanCheckRunRequest
-	9,  // 32: bytebase.v1.PlanService.RunPlanChecks:input_type -> bytebase.v1.RunPlanChecksRequest
-	11, // 33: bytebase.v1.PlanService.CancelPlanCheckRun:input_type -> bytebase.v1.CancelPlanCheckRunRequest
-	7,  // 34: bytebase.v1.PlanService.GetPlan:output_type -> bytebase.v1.Plan
-	4,  // 35: bytebase.v1.PlanService.ListPlans:output_type -> bytebase.v1.ListPlansResponse
-	7,  // 36: bytebase.v1.PlanService.CreatePlan:output_type -> bytebase.v1.Plan
-	7,  // 37: bytebase.v1.PlanService.UpdatePlan:output_type -> bytebase.v1.Plan
-	13, // 38: bytebase.v1.PlanService.GetPlanCheckRun:output_type -> bytebase.v1.PlanCheckRun
-	10, // 39: bytebase.v1.PlanService.RunPlanChecks:output_type -> bytebase.v1.RunPlanChecksResponse
-	12, // 40: bytebase.v1.PlanService.CancelPlanCheckRun:output_type -> bytebase.v1.CancelPlanCheckRunResponse
-	34, // [34:41] is the sub-list for method output_type
-	27, // [27:34] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	28, // 11: bytebase.v1.Plan.issue_status:type_name -> bytebase.v1.IssueStatus
+	0,  // 12: bytebase.v1.PlanCheckRun.status:type_name -> bytebase.v1.PlanCheckRun.Status
+	21, // 13: bytebase.v1.PlanCheckRun.results:type_name -> bytebase.v1.PlanCheckRun.Result
+	26, // 14: bytebase.v1.PlanCheckRun.create_time:type_name -> google.protobuf.Timestamp
+	16, // 15: bytebase.v1.Plan.Spec.create_database_config:type_name -> bytebase.v1.Plan.CreateDatabaseConfig
+	17, // 16: bytebase.v1.Plan.Spec.change_database_config:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig
+	18, // 17: bytebase.v1.Plan.Spec.export_data_config:type_name -> bytebase.v1.Plan.ExportDataConfig
+	29, // 18: bytebase.v1.Plan.ExportDataConfig.format:type_name -> bytebase.v1.ExportFormat
+	20, // 19: bytebase.v1.Plan.RolloutStageSummary.task_status_counts:type_name -> bytebase.v1.Plan.TaskStatusCount
+	30, // 20: bytebase.v1.Plan.TaskStatusCount.status:type_name -> bytebase.v1.Task.Status
+	31, // 21: bytebase.v1.PlanCheckRun.Result.status:type_name -> bytebase.v1.Advice.Level
+	1,  // 22: bytebase.v1.PlanCheckRun.Result.type:type_name -> bytebase.v1.PlanCheckRun.Result.Type
+	22, // 23: bytebase.v1.PlanCheckRun.Result.sql_summary_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
+	23, // 24: bytebase.v1.PlanCheckRun.Result.sql_review_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlReviewReport
+	32, // 25: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.statement_types:type_name -> bytebase.v1.StatementType
+	33, // 26: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.start_position:type_name -> bytebase.v1.Position
+	33, // 27: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.end_position:type_name -> bytebase.v1.Position
+	2,  // 28: bytebase.v1.PlanService.GetPlan:input_type -> bytebase.v1.GetPlanRequest
+	3,  // 29: bytebase.v1.PlanService.ListPlans:input_type -> bytebase.v1.ListPlansRequest
+	5,  // 30: bytebase.v1.PlanService.CreatePlan:input_type -> bytebase.v1.CreatePlanRequest
+	6,  // 31: bytebase.v1.PlanService.UpdatePlan:input_type -> bytebase.v1.UpdatePlanRequest
+	8,  // 32: bytebase.v1.PlanService.GetPlanCheckRun:input_type -> bytebase.v1.GetPlanCheckRunRequest
+	9,  // 33: bytebase.v1.PlanService.RunPlanChecks:input_type -> bytebase.v1.RunPlanChecksRequest
+	11, // 34: bytebase.v1.PlanService.CancelPlanCheckRun:input_type -> bytebase.v1.CancelPlanCheckRunRequest
+	7,  // 35: bytebase.v1.PlanService.GetPlan:output_type -> bytebase.v1.Plan
+	4,  // 36: bytebase.v1.PlanService.ListPlans:output_type -> bytebase.v1.ListPlansResponse
+	7,  // 37: bytebase.v1.PlanService.CreatePlan:output_type -> bytebase.v1.Plan
+	7,  // 38: bytebase.v1.PlanService.UpdatePlan:output_type -> bytebase.v1.Plan
+	13, // 39: bytebase.v1.PlanService.GetPlanCheckRun:output_type -> bytebase.v1.PlanCheckRun
+	10, // 40: bytebase.v1.PlanService.RunPlanChecks:output_type -> bytebase.v1.RunPlanChecksResponse
+	12, // 41: bytebase.v1.PlanService.CancelPlanCheckRun:output_type -> bytebase.v1.CancelPlanCheckRunResponse
+	35, // [35:42] is the sub-list for method output_type
+	28, // [28:35] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_v1_plan_service_proto_init() }

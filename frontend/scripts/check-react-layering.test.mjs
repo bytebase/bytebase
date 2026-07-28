@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
 import { scanSource } from "./check-react-layering.mjs";
 
-const FEATURE_FILE = "src/react/pages/project/Feature.tsx";
-const APPROVED_FILE = "src/react/components/ui/overlay.tsx";
+const FEATURE_FILE = "src/routes/project/Feature.tsx";
+const APPROVED_FILE = "src/components/ui/overlay.tsx";
 
 describe("check-react-layering", () => {
   test("flags raw overlay classes stored in local constants", () => {

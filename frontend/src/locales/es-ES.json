@@ -672,6 +672,7 @@
     "column": "Columna",
     "columns": "Columnas",
     "comment": "Comentario",
+    "create-database": "Crear base de datos",
     "data-size": "Tamaño de datos",
     "edit-environment": "Editar entorno",
     "edit-labels": "Editar etiquetas",
@@ -804,17 +805,23 @@
     "failed-to-sync-schema": "Error al sincronizar el esquema",
     "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos \"{{name}}\".",
     "functions": "Funciones",
+    "instance-databases-synced-action": "Transferir al proyecto",
+    "instance-databases-synced-description": "Transfiere las bases de datos a un proyecto para empezar cambios gobernados.",
+    "instance-databases-synced-title": "Transferir bases de datos a un proyecto",
+    "instance-no-databases-action": "Crear base de datos",
+    "instance-no-databases-description": "Crea una base de datos en esta instancia y luego transfiérela a un proyecto para empezar cambios gobernados.",
+    "instance-no-databases-title": "No se encontraron bases de datos",
     "n-databases-had-sync-errors": "{{0}} base(s) de datos tuvieron errores de sincronización",
     "packages": "Paquetes",
     "partitions": "Particiones",
     "procedures": "Procedimientos",
-    "project-instance-synced-action": "Crear primer cambio",
-    "project-instance-synced-description": "Tu base de datos está lista en este proyecto. Empieza con un cambio de base de datos gobernado cuando estés listo.",
+    "project-instance-synced-action": "Crear cambio de base de datos",
+    "project-instance-synced-description": "Tu base de datos está lista en este proyecto. Empieza consultando datos en SQL Editor, o crea un cambio de base de datos gobernado cuando lo necesites.",
     "project-instance-synced-sql-editor-action": "Abrir SQL Editor",
     "project-instance-synced-title": "Base de datos conectada",
     "project-instance-syncing-description": "Esto puede tardar de unos segundos a unos minutos. Puedes actualizar esta página más tarde.",
     "project-instance-syncing-empty": "Las bases de datos aún se están sincronizando. Actualiza esta página en un momento para verlas aquí.",
-    "project-instance-syncing-title": "Las bases de datos de {{instance}} se están sincronizando.",
+    "project-instance-syncing-title": "Las bases de datos de <instance></instance> se están sincronizando.",
     "schema": {
       "default": "Esquema predeterminado"
     },
@@ -940,6 +947,7 @@
       "public": "IP pública"
     },
     "connect-database-to-project": "Conectar base de datos al proyecto",
+    "connect-instance": "Conectar instancia",
     "connecting-database-to-project": "Conectando base de datos...",
     "connection-info": "Información de conexión",
     "connection-options": "Opciones de conexión",
@@ -1012,6 +1020,8 @@
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "database-region": "Región de la base de datos",
     "default-role": "Rol predeterminado",
+    "delete-active-confirmation": "La instancia \"{{name}}\" está activa. Bytebase la archivará primero y luego la eliminará permanentemente. Esta acción no se puede deshacer. Escribe el ID de la instancia \"{{id}}\" para confirmar.",
+    "delete-confirmation": "Esto eliminará permanentemente la instancia \"{{name}}\". Esta acción no se puede deshacer. Escribe el ID de la instancia \"{{id}}\" para confirmar.",
     "endpoint": "Punto final",
     "external-id": "ID externo",
     "external-id-description": "ID externo para seguridad adicional al asumir el rol (opcional)",
@@ -1063,6 +1073,8 @@
     "find-gcp-project-id": "Para encontrar el ID del proyecto de GCP, consulta",
     "find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
     "force-archive-description": "Forzar a archivar. Todas las bases de datos quedarán desasignadas.",
+    "gcp-endpoint-tip": "Opcional. Reemplaza el punto de conexión predeterminado de la API de Google, p. ej., un punto de conexión de Private Service Connect como {{example}}.",
+    "gcp-endpoint-toggle": "Configurar un punto de conexión de API personalizado",
     "grants": "Concesiones",
     "host-or-socket": "Host o Socket",
     "iam-extension": {
@@ -1282,7 +1294,6 @@
       "this-grant-allows": "Esta concesión permite",
       "unmask-data-in-results": "Desenmascarar datos sensibles en los resultados"
     },
-    "action-anyway": "{{action}} de todos modos",
     "advanced-search": {
       "filter": "Filtrar",
       "scope": {
@@ -1520,6 +1531,9 @@
   "plan": {
     "add-spec": "Agregar cambio",
     "add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
+    "blocker": {
+      "clears-on-its-own": "Se resuelve solo"
+    },
     "cannot-create": "No se puede crear el plan",
     "checks": {
       "completed": "Se completaron las verificaciones del plan",
@@ -1533,6 +1547,7 @@
     "description": {
       "placeholder": "Agregar descripción"
     },
+    "draft-update-permission-required": "Puedes ver este borrador, pero necesitas bb.issues.update para editar etiquetas de problema o enviarlo a revisión.",
     "editor": {
       "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar."
     },
@@ -1550,7 +1565,7 @@
       "self": "Nivel de Aislamiento",
       "serializable": "Serializable"
     },
-    "labels-required-for-review": "Se requieren etiquetas antes de la revisión",
+    "labels-required-for-review": "Se requieren etiquetas de problema antes de la revisión",
     "lifecycle": {
       "checking": "Comprobando…",
       "checks-failing": "Comprobaciones fallidas",
@@ -1564,6 +1579,7 @@
       "gate-review-approved": "Cambios aprobados",
       "gate-review-pending": "Revisión en curso",
       "gate-review-rejected": "Cambios solicitados",
+      "incomplete": "Incompleto",
       "preparing-rollout": "Preparando despliegue…",
       "rejected": "Rechazado",
       "rerun": "Reejecutar",
@@ -1581,6 +1597,7 @@
       "statement-empty": "La sentencia está vacía"
     },
     "new-plan": "Nuevo plan",
+    "not-ready-for-review": "No está listo para revisión",
     "options": {
       "no-options-available": "No hay opciones disponibles",
       "self": "Opciones"
@@ -1660,11 +1677,25 @@
         "title": "Rechazado por {{user}}"
       }
     },
+    "rollback": {
+      "description_one": "Revertir 1 tarea seleccionada del rollout #{{rolloutId}}.",
+      "description_other": "Revertir {{count}} tareas seleccionadas del rollout #{{rolloutId}}.",
+      "title": "Revertir rollout #{{rolloutId}}"
+    },
     "run": "Volver a verificar",
     "select-isolation-level": "Seleccionar nivel de aislamiento",
     "select-targets": "Seleccionar destinos",
     "spec": {
       "change": "Cambio",
+      "change-reference": {
+        "accessible-label": "Cambio {{index}}: {{label}}",
+        "database-count_one": "{{count}} base de datos",
+        "database-count_other": "{{count}} bases de datos",
+        "environment-overflow_one": "{{environment}} +{{count}} entorno",
+        "environment-overflow_other": "{{environment}} +{{count}} entornos",
+        "new-change": "Nuevo cambio",
+        "tooltip-title": "Cambio {{index}}"
+      },
       "type": {
         "database-change": "Cambio de base de datos"
       }
@@ -1675,6 +1706,7 @@
       "reopen-confirm": "¿Reabrir este plan?",
       "reopen-review-confirm": "¿Reabrir esta revisión?"
     },
+    "submit-review-anyway": "Enviar de todos modos",
     "subtitle": "Redactar cambios en la base de datos y ejecutar comprobaciones previas antes de crear un problema para su aprobación.",
     "summary": {
       "last-approved-by": "Última aprobación por {{name}}",
@@ -1766,10 +1798,10 @@
         "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente."
       }
     },
-    "connect-database": "Conectar base de datos",
-    "connect-database-empty-placeholder": "Conecta una instancia para sincronizar bases de datos en este proyecto",
-    "connect-database-intro-description": "Conecta una base de datos para que Bytebase pueda sincronizarla en este proyecto.",
-    "connect-database-intro-title": "Conecta tu primera base de datos",
+    "connect-instance": "Conectar instancia",
+    "connect-instance-empty-placeholder": "Conecta una instancia para sincronizar bases de datos en este proyecto",
+    "connect-instance-intro-description": "Conecta una instancia para que Bytebase sincronice bases de datos en este proyecto.",
+    "connect-instance-intro-title": "Conectar la instancia",
     "create-modal": {
       "project-name": "Proyecto Nombre",
       "success-prompt": "Proyecto {{name}} creado exitosamente."
@@ -2088,7 +2120,6 @@
     }
   },
   "rollout": {
-    "no-stages": "No hay etapas disponibles",
     "no-tasks-created": "Aún no se han creado tareas",
     "pending-tasks-preview": {
       "action": "Vista previa",
@@ -2948,11 +2979,6 @@
     "no-data-available": "No hay datos disponibles",
     "no-database-selected": "No se ha seleccionado una base de datos",
     "no-history-found": "No se encontró historial",
-    "no-project": {
-      "contact-the-admin-to-grant-access": "Póngase en contacto con el administrador para otorgar acceso.",
-      "go-to-create": "ir a crear",
-      "not-member-of-any-projects": "No eres miembro de ningún proyecto."
-    },
     "no-queriable-database": "No hay base de datos consultable",
     "notify-empty-statement": "Ingrese sus declaraciones SQL en el editor",
     "only-select-allowed": "Solo se permiten ejecutar declaraciones de solo lectura.",
@@ -3355,5 +3381,37 @@
   },
   "worksheet": {
     "self": "Hoja de trabajo"
+  },
+  "workspace-setup-guide": {
+    "actions": {
+      "change": "Crear cambio de base de datos",
+      "query": "Ir a SQL Editor"
+    },
+    "descriptions": {
+      "database": "Crea o transfiere una base de datos a un proyecto antes de consultar datos.",
+      "instance": "Conecta una instancia para que Bytebase pueda sincronizar tus bases de datos.",
+      "project": "Crea un proyecto para organizar bases de datos y cambios.",
+      "sql-editor": "Consulta datos en SQL Editor o crea un cambio de base de datos gobernado."
+    },
+    "dismiss": "Cerrar guía",
+    "intro": {
+      "database-description": "Crea una base de datos en tu instancia conectada.",
+      "database-title": "Crear base de datos",
+      "instance-description": "Crea una instancia para que Bytebase pueda conectarse a tu servidor de base de datos.",
+      "instance-title": "Conectar la instancia",
+      "project-description": "Crea primero un proyecto. Las bases de datos se pueden sincronizar en él después de conectar la instancia.",
+      "project-title": "Crear un proyecto",
+      "transfer-description": "Selecciona una o más bases de datos y transfiérelas al proyecto.",
+      "transfer-title": "Seleccionar bases de datos"
+    },
+    "prepare-database-tip": "Selecciona las bases de datos para transferirlas al proyecto.",
+    "previous-step-required": "Debes terminar el paso anterior.",
+    "self": "Configurar Bytebase",
+    "steps": {
+      "database": "Preparar base de datos",
+      "instance": "Conectar instancia",
+      "project": "Crear proyecto",
+      "query": "Consultar datos"
+    }
   }
 }

@@ -2,10 +2,13 @@ package pg
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"slices"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -93,6 +96,44 @@ func TestCompletion(t *testing.T) {
 
 func listDatbaseNamesForTest(_ context.Context, _ string) ([]string, error) {
 	return []string{"db"}, nil
+}
+
+// Completion cost must be bounded by the caret's statement, not the whole
+// sheet: a broken statement anywhere after the caret must not make the
+// FROM-clause re-parse loop shrink through the entire trailing document
+// (BYT-9886).
+func TestCompletionWithBrokenTrailingStatementScalesLinearly(t *testing.T) {
+	a := require.New(t)
+
+	// The caret is unqualified, so column candidates can only come from the
+	// tables parseTableReferences extracts out of the FROM clause; an
+	// over-truncated (empty) fragment cannot pass this test.
+	var sheet strings.Builder
+	sheet.WriteString("SELECT  FROM t1 JOIN t2 a2 ON t1.c1 = a2.c1;\n")
+	sheet.WriteString("SELEC broken FROM oops;\n")
+	for i := range 2000 {
+		fmt.Fprintf(&sheet, "SELECT col_a, col_b, col_c FROM table_%04d WHERE col_a = %d AND col_b LIKE 'pattern%%' ORDER BY col_c LIMIT 100;\n", i, i)
+	}
+
+	started := time.Now()
+	result, err := base.Completion(context.Background(), storepb.Engine_POSTGRES, base.CompletionContext{
+		Scene:             base.SceneTypeAll,
+		DefaultDatabase:   "db",
+		Metadata:          getMetadataForTest,
+		ListDatabaseNames: listDatbaseNamesForTest,
+	}, sheet.String(), 1, 7 /* caret in the select list, right after "SELECT " */)
+	elapsed := time.Since(started)
+
+	a.NoError(err)
+	var texts []string
+	for _, candidate := range result {
+		if candidate.Type == base.CandidateTypeColumn {
+			texts = append(texts, candidate.Text)
+		}
+	}
+	a.Contains(texts, "c1")
+	a.Contains(texts, "c2")
+	a.Less(elapsed, 2*time.Second)
 }
 
 func getMetadataForTest(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {

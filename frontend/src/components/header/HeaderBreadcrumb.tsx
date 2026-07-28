@@ -1,0 +1,384 @@
+import { Building2, Check, ChevronDown, FolderKanban } from "lucide-react";
+import {
+  type MouseEvent as ReactMouseEvent,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+import { useTranslation } from "react-i18next";
+import {
+  useCurrentRoute,
+  useNavigate,
+  WORKSPACE_ROUTE_LANDING,
+} from "@/app/router";
+import { PROJECT_V1_ROUTE_ISSUES } from "@/app/router/handles";
+import { RouterLink } from "@/components/RouterLink";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  useProject,
+  useRecentVisit,
+  useSubscription,
+  useSwitchWorkspace,
+  useWorkspace,
+  useWorkspaceList,
+} from "@/hooks/useAppState";
+import {
+  isValidProjectName,
+  projectNamePrefix,
+  workspaceNamePrefix,
+} from "@/lib/resourceName";
+import { cn } from "@/lib/utils";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
+import { ProjectCreateDialog } from "./ProjectCreateDialog";
+import {
+  ProjectSwitchPanel,
+  type ProjectSwitchPanelProps,
+} from "./ProjectSwitchPanel";
+
+export type HeaderBreadcrumbProps = {
+  projectId?: string;
+  currentProjectName?: string;
+  projectSwitchExcludeDefaultProject?: boolean;
+  onBeforeSwitchWorkspace?: () => boolean;
+  onSelectWorkspace?: (
+    workspaceName: string,
+    event: ReactMouseEvent<HTMLElement>
+  ) => void;
+  onSelectProject?: NonNullable<ProjectSwitchPanelProps["onSelectProject"]>;
+};
+
+function planLabel(
+  t: (key: string) => string,
+  plan: PlanType
+): string | undefined {
+  switch (plan) {
+    case PlanType.FREE:
+      return t("subscription.plan.free.title");
+    case PlanType.TEAM:
+      return t("subscription.plan.team.title");
+    case PlanType.ENTERPRISE:
+      return t("subscription.plan.enterprise.title");
+    default:
+      return undefined;
+  }
+}
+
+function planVariant(
+  plan: PlanType
+): "default" | "secondary" | "success" | "warning" {
+  switch (plan) {
+    case PlanType.TEAM:
+      return "default";
+    case PlanType.ENTERPRISE:
+      return "secondary";
+    default:
+      return "success";
+  }
+}
+
+// ---------------------------------------------------------------------------
+// WorkspaceSegment — shows workspace name + plan badge + optional dropdown
+// ---------------------------------------------------------------------------
+export function WorkspaceSegment({
+  onBeforeSwitchWorkspace,
+  onSelectWorkspace,
+}: Pick<
+  HeaderBreadcrumbProps,
+  "onBeforeSwitchWorkspace" | "onSelectWorkspace"
+> = {}) {
+  const { t } = useTranslation();
+  const workspace = useWorkspace();
+  const workspaceList = useWorkspaceList();
+  const currentWorkspaceName = workspace?.name ?? "";
+  const { subscription } = useSubscription();
+  const currentPlan = subscription?.plan ?? PlanType.FREE;
+  const label = planLabel(t, currentPlan);
+  const hasMultiple = workspaceList.length > 1;
+  const switchWorkspace = useSwitchWorkspace();
+  const [open, setOpen] = useState(false);
+  const { record } = useRecentVisit();
+  const navigate = useNavigate();
+
+  const onSwitch = useCallback(
+    (workspaceName: string, event: ReactMouseEvent<HTMLElement>) => {
+      if (workspaceName === currentWorkspaceName) return;
+      if (onBeforeSwitchWorkspace && !onBeforeSwitchWorkspace()) return;
+      setOpen(false);
+      if (onSelectWorkspace) {
+        onSelectWorkspace(workspaceName, event);
+        return;
+      }
+      void switchWorkspace(workspaceName);
+    },
+    [
+      currentWorkspaceName,
+      onBeforeSwitchWorkspace,
+      onSelectWorkspace,
+      switchWorkspace,
+    ]
+  );
+
+  return (
+    <div className="inline-flex items-center">
+      {onSelectWorkspace ? (
+        <Button
+          type="button"
+          appearance="secondary"
+          size="sm"
+          onClick={(event) => onSelectWorkspace(currentWorkspaceName, event)}
+          className="h-auto px-2 py-1 text-sm gap-x-1.5"
+        >
+          <Building2 className="size-4 text-control-light shrink-0" />
+          <span className="truncate max-w-40">{workspace?.title}</span>
+          {label && (
+            <Badge
+              variant={planVariant(currentPlan)}
+              className="text-[10px] px-1.5 py-0 hidden lg:block"
+            >
+              {label}
+            </Badge>
+          )}
+        </Button>
+      ) : (
+        <RouterLink
+          to={{ name: WORKSPACE_ROUTE_LANDING }}
+          onClick={() => {
+            const route = navigate.resolve({ name: WORKSPACE_ROUTE_LANDING });
+            record(route.fullPath);
+          }}
+          className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control hover:bg-control-bg cursor-pointer no-underline"
+        >
+          <Building2 className="size-4 text-control-light shrink-0" />
+          <span className="truncate max-w-40">{workspace?.title}</span>
+          {label && (
+            <Badge
+              variant={planVariant(currentPlan)}
+              className="text-[10px] px-1.5 py-0 hidden lg:block"
+            >
+              {label}
+            </Badge>
+          )}
+        </RouterLink>
+      )}
+      {hasMultiple && (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger
+            render={
+              <button
+                type="button"
+                className="inline-flex items-center rounded-xs p-1 text-control-placeholder hover:bg-control-bg cursor-pointer"
+              />
+            }
+          >
+            <ChevronDown className="size-3.5" />
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            sideOffset={6}
+            className="min-w-[14rem] p-1!"
+          >
+            {workspaceList.map((ws) => {
+              const workspaceId = ws.name.startsWith(workspaceNamePrefix)
+                ? ws.name.slice(workspaceNamePrefix.length)
+                : ws.name;
+              return (
+                <button
+                  key={ws.name}
+                  type="button"
+                  className={cn(
+                    "w-full flex items-center justify-between rounded-xs px-3 py-1.5 text-sm cursor-pointer gap-x-2",
+                    ws.name === currentWorkspaceName
+                      ? "bg-control-bg font-medium text-accent"
+                      : "text-control hover:bg-control-bg"
+                  )}
+                  onClick={(event) => onSwitch(ws.name, event)}
+                >
+                  <span className="flex flex-col items-start min-w-0">
+                    <span className="truncate w-full text-left">
+                      {ws.title}
+                    </span>
+                    <span
+                      className="truncate w-full text-left text-xs font-normal text-control-light"
+                      title={workspaceId}
+                    >
+                      {workspaceId}
+                    </span>
+                  </span>
+                  {ws.name === currentWorkspaceName && (
+                    <Check className="size-4 shrink-0" />
+                  )}
+                </button>
+              );
+            })}
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ProjectSegment — shows project name + dropdown, only when inside a project
+// ---------------------------------------------------------------------------
+export function ProjectSegment({
+  projectId: projectIdOverride,
+  currentProjectName: currentProjectNameOverride,
+  projectSwitchExcludeDefaultProject = true,
+  onSelectProject,
+}: Pick<
+  HeaderBreadcrumbProps,
+  | "projectId"
+  | "currentProjectName"
+  | "projectSwitchExcludeDefaultProject"
+  | "onSelectProject"
+> = {}) {
+  const { t } = useTranslation();
+  const route = useCurrentRoute();
+  const [open, setOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const projectId =
+    projectIdOverride ?? (route.params.projectId as string | undefined);
+  const currentProjectName =
+    currentProjectNameOverride ??
+    (projectId ? `${projectNamePrefix}${projectId}` : "");
+  const currentProject = useProject(currentProjectName);
+  const hasProject = isValidProjectName(currentProject?.name);
+  const { record } = useRecentVisit();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setOpen(false);
+  }, [route.fullPath]);
+
+  return (
+    <>
+      <div className="inline-flex items-center">
+        {hasProject && projectId ? (
+          onSelectProject ? (
+            <Button
+              type="button"
+              appearance="secondary"
+              size="sm"
+              onClick={(event) => onSelectProject(currentProject, event)}
+              className="h-auto px-2 py-1 text-sm gap-x-1.5"
+            >
+              <FolderKanban className="size-4 text-control-light shrink-0" />
+              <span className="truncate max-w-48">{currentProject.title}</span>
+            </Button>
+          ) : (
+            <RouterLink
+              to={{
+                name: PROJECT_V1_ROUTE_ISSUES,
+                params: { projectId },
+              }}
+              onClick={() => {
+                const resolvedRoute = navigate.resolve({
+                  name: PROJECT_V1_ROUTE_ISSUES,
+                  params: { projectId },
+                });
+                record(resolvedRoute.fullPath);
+              }}
+              className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control hover:bg-control-bg cursor-pointer no-underline"
+            >
+              <FolderKanban className="size-4 text-control-light shrink-0" />
+              <span className="truncate max-w-48">{currentProject.title}</span>
+            </RouterLink>
+          )
+        ) : (
+          <div className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control">
+            <FolderKanban className="size-4 text-control-light shrink-0" />
+            <span className="truncate max-w-48 text-control-placeholder">
+              {t("project.select")}
+            </span>
+          </div>
+        )}
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger
+            render={
+              <Button
+                type="button"
+                appearance="secondary"
+                aria-label={t("project.select")}
+                size="xs"
+                className="size-6 p-0 text-control-placeholder"
+              />
+            }
+          >
+            <ChevronDown className="size-3.5" />
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            sideOffset={6}
+            className="w-[24rem] max-w-[calc(100vw-2rem)] p-0! py-3!"
+          >
+            <ProjectSwitchPanel
+              currentProjectName={currentProjectName}
+              excludeDefaultProject={projectSwitchExcludeDefaultProject}
+              onSelectProject={onSelectProject}
+              onClose={() => setOpen(false)}
+              onRequestCreate={() => {
+                setOpen(false);
+                setCreateOpen(true);
+              }}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <ProjectCreateDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+      />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// HeaderBreadcrumb — the assembled breadcrumb bar
+// ---------------------------------------------------------------------------
+export function HeaderBreadcrumb({
+  projectId,
+  currentProjectName,
+  projectSwitchExcludeDefaultProject,
+  onBeforeSwitchWorkspace,
+  onSelectWorkspace,
+  onSelectProject,
+}: HeaderBreadcrumbProps = {}) {
+  return (
+    <div className="flex items-center gap-x-1">
+      <div className="hidden md:flex items-center gap-x-1">
+        <WorkspaceSegment
+          onBeforeSwitchWorkspace={onBeforeSwitchWorkspace}
+          onSelectWorkspace={onSelectWorkspace}
+        />
+        <span className="text-control-placeholder select-none">/</span>
+      </div>
+      <ProjectSegment
+        projectId={projectId}
+        currentProjectName={currentProjectName}
+        projectSwitchExcludeDefaultProject={projectSwitchExcludeDefaultProject}
+        onSelectProject={onSelectProject}
+      />
+    </div>
+  );
+}
+
+export function MobileSidebarSwitchers() {
+  return (
+    <div
+      data-label="bb-mobile-sidebar-switchers"
+      className="md:hidden border-b border-block-border px-2.5 py-2"
+    >
+      <div className="flex flex-col gap-y-1">
+        <WorkspaceSegment />
+        <ProjectSegment />
+      </div>
+    </div>
+  );
+}

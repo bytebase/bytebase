@@ -672,6 +672,7 @@
     "column": "Cột",
     "columns": "Cột",
     "comment": "Bình luận",
+    "create-database": "Tạo cơ sở dữ liệu",
     "data-size": "Kích thước dữ liệu",
     "edit-environment": "Chỉnh sửa Môi trường",
     "edit-labels": "Chỉnh sửa nhãn",
@@ -804,17 +805,23 @@
     "failed-to-sync-schema": "Đồng bộ hóa lược đồ thất bại",
     "failed-to-sync-schema-for-database-database-value-name": "Đồng bộ schema thất bại cho cơ sở dữ liệu \"{{name}}\".",
     "functions": "Hàm",
+    "instance-databases-synced-action": "Chuyển sang dự án",
+    "instance-databases-synced-description": "Chuyển cơ sở dữ liệu sang một dự án để bắt đầu thay đổi được quản trị.",
+    "instance-databases-synced-title": "Chuyển cơ sở dữ liệu sang dự án",
+    "instance-no-databases-action": "Tạo cơ sở dữ liệu",
+    "instance-no-databases-description": "Tạo cơ sở dữ liệu trong instance này, sau đó chuyển nó sang một dự án để bắt đầu thay đổi được quản trị.",
+    "instance-no-databases-title": "Không tìm thấy cơ sở dữ liệu",
     "n-databases-had-sync-errors": "{{0}} cơ sở dữ liệu gặp lỗi đồng bộ",
     "packages": "Gói",
     "partitions": "Phân vùng",
     "procedures": "Thủ tục",
-    "project-instance-synced-action": "Tạo thay đổi đầu tiên",
-    "project-instance-synced-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy bắt đầu bằng một thay đổi cơ sở dữ liệu được quản trị khi bạn sẵn sàng.",
+    "project-instance-synced-action": "Tạo thay đổi cơ sở dữ liệu",
+    "project-instance-synced-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy bắt đầu bằng cách truy vấn dữ liệu trong SQL Editor, hoặc tạo thay đổi cơ sở dữ liệu được quản trị khi cần.",
     "project-instance-synced-sql-editor-action": "Mở SQL Editor",
     "project-instance-synced-title": "Đã kết nối cơ sở dữ liệu",
     "project-instance-syncing-description": "Quá trình này có thể mất vài giây đến vài phút. Bạn có thể làm mới trang này sau.",
     "project-instance-syncing-empty": "Cơ sở dữ liệu vẫn đang được đồng bộ hóa. Hãy làm mới trang này sau ít phút để thấy chúng ở đây.",
-    "project-instance-syncing-title": "Cơ sở dữ liệu từ {{instance}} đang được đồng bộ hóa.",
+    "project-instance-syncing-title": "Cơ sở dữ liệu từ <instance></instance> đang được đồng bộ hóa.",
     "schema": {
       "default": "Schema mặc định"
     },
@@ -940,6 +947,7 @@
       "public": "IP công khai"
     },
     "connect-database-to-project": "Kết nối cơ sở dữ liệu với dự án",
+    "connect-instance": "Kết nối instance",
     "connecting-database-to-project": "Đang kết nối cơ sở dữ liệu...",
     "connection-info": "Thông tin kết nối",
     "connection-options": "Tùy chọn kết nối",
@@ -1012,6 +1020,8 @@
     "create-gcp-credentials": "Để tạo thông tin xác thực, xem",
     "database-region": "Khu vực cơ sở dữ liệu",
     "default-role": "Vai trò mặc định",
+    "delete-active-confirmation": "Instance \"{{name}}\" đang hoạt động. Bytebase sẽ lưu trữ instance này trước, sau đó xóa vĩnh viễn. Không thể hoàn tác hành động này. Nhập ID instance \"{{id}}\" để xác nhận.",
+    "delete-confirmation": "Thao tác này sẽ xóa vĩnh viễn instance \"{{name}}\". Không thể hoàn tác hành động này. Nhập ID instance \"{{id}}\" để xác nhận.",
     "endpoint": "Điểm cuối",
     "external-id": "ID bên ngoài",
     "external-id-description": "ID bên ngoài để bảo mật bổ sung khi đảm nhận vai trò (tùy chọn)",
@@ -1063,6 +1073,8 @@
     "find-gcp-project-id": "Để tìm ID dự án GCP, xem",
     "find-gcp-project-id-and-instance-id": "Để tìm ID dự án GCP và ID phiên bản, xem",
     "force-archive-description": "Buộc lưu trữ. Tất cả cơ sở dữ liệu sẽ bị hủy gán.",
+    "gcp-endpoint-tip": "Tùy chọn. Ghi đè điểm cuối Google API mặc định, ví dụ: điểm cuối Private Service Connect như {{example}}.",
+    "gcp-endpoint-toggle": "Thiết lập điểm cuối API tùy chỉnh",
     "grants": "Quyền",
     "host-or-socket": "Máy chủ hoặc Socket",
     "iam-extension": {
@@ -1282,7 +1294,6 @@
       "this-grant-allows": "Cấp quyền này cho phép",
       "unmask-data-in-results": "Hiển thị dữ liệu nhạy cảm trong kết quả"
     },
-    "action-anyway": "{{action}} bằng mọi cách",
     "advanced-search": {
       "filter": "Bộ lọc",
       "scope": {
@@ -1520,6 +1531,9 @@
   "plan": {
     "add-spec": "Thêm thay đổi",
     "add-spec-pending-draft": "Lưu hoặc hủy thay đổi đang chờ trước khi thêm thay đổi khác",
+    "blocker": {
+      "clears-on-its-own": "Tự động hoàn tất"
+    },
     "cannot-create": "Không thể tạo kế hoạch",
     "checks": {
       "completed": "Đã hoàn thành kiểm tra kế hoạch",
@@ -1533,6 +1547,7 @@
     "description": {
       "placeholder": "Thêm mô tả"
     },
+    "draft-update-permission-required": "Bạn có thể xem bản nháp này, nhưng cần bb.issues.update để chỉnh sửa nhãn vấn đề hoặc gửi đi xem xét.",
     "editor": {
       "save-changes-before-continuing": "Vui lòng lưu hoặc hủy thay đổi của bạn trước khi tiếp tục"
     },
@@ -1550,7 +1565,7 @@
       "self": "Mức Độ Cô Lập",
       "serializable": "Tuần tự hóa"
     },
-    "labels-required-for-review": "Cần có nhãn trước khi review",
+    "labels-required-for-review": "Cần có nhãn vấn đề trước khi review",
     "lifecycle": {
       "checking": "Đang kiểm tra…",
       "checks-failing": "Kiểm tra thất bại",
@@ -1564,6 +1579,7 @@
       "gate-review-approved": "Đã duyệt thay đổi",
       "gate-review-pending": "Đang xem xét",
       "gate-review-rejected": "Yêu cầu thay đổi",
+      "incomplete": "Chưa hoàn tất",
       "preparing-rollout": "Đang chuẩn bị triển khai…",
       "rejected": "Đã từ chối",
       "rerun": "Chạy lại",
@@ -1581,6 +1597,7 @@
       "statement-empty": "Câu lệnh đang trống"
     },
     "new-plan": "Kế hoạch mới",
+    "not-ready-for-review": "Chưa sẵn sàng để xem xét",
     "options": {
       "no-options-available": "Không có tùy chọn nào khả dụng",
       "self": "Tùy chọn"
@@ -1660,11 +1677,25 @@
         "title": "Bị {{user}} từ chối"
       }
     },
+    "rollback": {
+      "description_one": "Hoàn tác 1 tác vụ đã chọn từ bản triển khai #{{rolloutId}}.",
+      "description_other": "Hoàn tác {{count}} tác vụ đã chọn từ bản triển khai #{{rolloutId}}.",
+      "title": "Hoàn tác bản triển khai #{{rolloutId}}"
+    },
     "run": "Kiểm tra lại",
     "select-isolation-level": "Chọn mức độ cô lập",
     "select-targets": "Chọn mục tiêu",
     "spec": {
       "change": "Thay đổi",
+      "change-reference": {
+        "accessible-label": "Thay đổi {{index}}: {{label}}",
+        "database-count_one": "{{count}} cơ sở dữ liệu",
+        "database-count_other": "{{count}} cơ sở dữ liệu",
+        "environment-overflow_one": "{{environment}} +{{count}} môi trường",
+        "environment-overflow_other": "{{environment}} +{{count}} môi trường",
+        "new-change": "Thay đổi mới",
+        "tooltip-title": "Thay đổi {{index}}"
+      },
       "type": {
         "database-change": "Thay đổi cơ sở dữ liệu"
       }
@@ -1675,6 +1706,7 @@
       "reopen-confirm": "Mở lại kế hoạch này?",
       "reopen-review-confirm": "Mở lại đợt xem xét này?"
     },
+    "submit-review-anyway": "Vẫn gửi",
     "subtitle": "Soạn thảo các thay đổi cơ sở dữ liệu và chạy các bước kiểm tra sơ bộ trước khi tạo vấn đề để phê duyệt.",
     "summary": {
       "last-approved-by": "Phê duyệt gần nhất bởi {{name}}",
@@ -1766,10 +1798,10 @@
         "warning": "Hành động này không thể hoàn tác. Tất cả dữ liệu dự án bao gồm vấn đề, cấu hình và lịch sử sẽ bị xóa vĩnh viễn."
       }
     },
-    "connect-database": "Kết nối cơ sở dữ liệu",
-    "connect-database-empty-placeholder": "Kết nối một phiên bản để đồng bộ cơ sở dữ liệu vào dự án này",
-    "connect-database-intro-description": "Kết nối cơ sở dữ liệu để Bytebase đồng bộ vào dự án này.",
-    "connect-database-intro-title": "Kết nối cơ sở dữ liệu đầu tiên",
+    "connect-instance": "Kết nối instance",
+    "connect-instance-empty-placeholder": "Kết nối instance để đồng bộ cơ sở dữ liệu vào dự án này",
+    "connect-instance-intro-description": "Kết nối instance để Bytebase đồng bộ cơ sở dữ liệu vào dự án này.",
+    "connect-instance-intro-title": "Kết nối instance",
     "create-modal": {
       "project-name": "Dự án Tên",
       "success-prompt": "Đã tạo thành công dự án {{name}}."
@@ -2088,7 +2120,6 @@
     }
   },
   "rollout": {
-    "no-stages": "Không có giai đoạn nào",
     "no-tasks-created": "Chưa có tác vụ nào được tạo",
     "pending-tasks-preview": {
       "action": "Xem trước",
@@ -2948,11 +2979,6 @@
     "no-data-available": "Không có dữ liệu",
     "no-database-selected": "Chưa chọn cơ sở dữ liệu",
     "no-history-found": "Không tìm thấy lịch sử",
-    "no-project": {
-      "contact-the-admin-to-grant-access": "Liên hệ với quản trị viên để cấp quyền truy cập.",
-      "go-to-create": "Đi tới tạo",
-      "not-member-of-any-projects": "Bạn không phải là thành viên của bất kỳ dự án nào."
-    },
     "no-queriable-database": "Không có cơ sở dữ liệu có thể truy vấn",
     "notify-empty-statement": "Vui lòng nhập câu lệnh SQL của bạn vào trình soạn thảo",
     "only-select-allowed": "Chỉ cho phép thực thi câu lệnh chỉ đọc.",
@@ -3355,5 +3381,37 @@
   },
   "worksheet": {
     "self": "Bảng tính"
+  },
+  "workspace-setup-guide": {
+    "actions": {
+      "change": "Tạo thay đổi cơ sở dữ liệu",
+      "query": "Đi tới SQL Editor"
+    },
+    "descriptions": {
+      "database": "Tạo hoặc chuyển cơ sở dữ liệu vào dự án trước khi truy vấn dữ liệu.",
+      "instance": "Kết nối instance để Bytebase có thể đồng bộ cơ sở dữ liệu của bạn.",
+      "project": "Tạo dự án để quản lý cơ sở dữ liệu và thay đổi.",
+      "sql-editor": "Truy vấn dữ liệu trong SQL Editor hoặc tạo thay đổi cơ sở dữ liệu được quản trị."
+    },
+    "dismiss": "Đóng hướng dẫn",
+    "intro": {
+      "database-description": "Tạo cơ sở dữ liệu trong instance đã kết nối.",
+      "database-title": "Tạo cơ sở dữ liệu",
+      "instance-description": "Tạo instance để Bytebase có thể kết nối tới máy chủ cơ sở dữ liệu của bạn.",
+      "instance-title": "Kết nối instance",
+      "project-description": "Tạo một dự án trước. Cơ sở dữ liệu có thể được đồng bộ vào dự án đó sau khi instance được kết nối.",
+      "project-title": "Tạo dự án",
+      "transfer-description": "Chọn một hoặc nhiều cơ sở dữ liệu, sau đó chuyển chúng vào dự án.",
+      "transfer-title": "Chọn cơ sở dữ liệu"
+    },
+    "prepare-database-tip": "Chọn cơ sở dữ liệu để chuyển vào dự án.",
+    "previous-step-required": "Bạn cần hoàn thành bước trước đó.",
+    "self": "Thiết lập Bytebase",
+    "steps": {
+      "database": "Chuẩn bị cơ sở dữ liệu",
+      "instance": "Kết nối instance",
+      "project": "Tạo dự án",
+      "query": "Truy vấn dữ liệu"
+    }
   }
 }

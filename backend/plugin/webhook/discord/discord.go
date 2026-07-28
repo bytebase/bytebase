@@ -119,6 +119,9 @@ func (*Receiver) Post(context webhook.Context) error {
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return errors.Errorf("failed to POST webhook %s, status code: %d, response body: %s", context.URL, resp.StatusCode, b)
 	}
+	if resp.StatusCode == http.StatusNoContent || len(b) == 0 {
+		return nil
+	}
 
 	webhookResponse := &WebhookResponse{}
 	if err := json.Unmarshal(b, webhookResponse); err != nil {

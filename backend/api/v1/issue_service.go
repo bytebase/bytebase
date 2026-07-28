@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 	"strings"
 	"time"
 
@@ -19,12 +18,12 @@ import (
 	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -37,9 +36,8 @@ type IssueService struct {
 	bus            *bus.Bus
 	licenseService *enterprise.LicenseService
 	iamManager     *iam.Manager
+	reviewWorkflow *review.Workflow
 }
-
-var errStaleApprovalFinding = errors.New("stale approval finding")
 
 type filterIssueMessage struct {
 	ApprovalStatus *v1pb.ApprovalStatus
@@ -61,6 +59,7 @@ func NewIssueService(
 		bus:            bus,
 		licenseService: licenseService,
 		iamManager:     iamManager,
+		reviewWorkflow: review.NewWorkflow(store),
 	}
 }
 
@@ -419,33 +418,42 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	}
 	created := false
 	issueToCreate := issue
-	existing, err := s.findLinkedIssueForCreate(ctx, issueToCreate)
-	if err != nil {
-		return nil, err
-	}
-	if existing != nil {
-		issue = existing
-	} else {
-		issue, err = s.store.CreateIssue(ctx, issueToCreate)
+	if issueToCreate.Payload.GetDraft() {
+		result, err := s.reviewWorkflow.CreateDraftIssue(ctx, review.CreateDraftIssueInput{
+			Workspace: common.GetWorkspaceIDFromContext(ctx),
+			Issue:     issueToCreate,
+		})
 		if err != nil {
-			if errors.Is(err, store.ErrPlanHasRollout) {
-				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot create a draft issue because the plan already has a rollout"))
-			}
-			existing, lookupErr := s.findLinkedIssueForCreate(ctx, issueToCreate)
-			if lookupErr != nil {
-				return nil, lookupErr
-			}
-			if existing == nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
-			}
+			return nil, mapDraftCreationError(err)
+		}
+		issue = result.Issue
+		created = result.Created
+	} else {
+		existing, err := s.findLinkedIssueForCreate(ctx, issueToCreate)
+		if err != nil {
+			return nil, err
+		}
+		if existing != nil {
 			issue = existing
 		} else {
-			created = true
+			issue, err = s.store.CreateIssue(ctx, issueToCreate)
+			if err != nil {
+				existing, lookupErr := s.findLinkedIssueForCreate(ctx, issueToCreate)
+				if lookupErr != nil {
+					return nil, lookupErr
+				}
+				if existing == nil {
+					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
+				}
+				issue = existing
+			} else {
+				created = true
+			}
 		}
 	}
 
 	if created && !issue.Payload.GetDraft() {
-		issue, err = postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)
+		issue, err = startIssueWorkflow(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
@@ -457,6 +465,25 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	}
 
 	return connect.NewResponse(converted), nil
+}
+
+func mapDraftCreationError(err error) error {
+	var workflowErr *review.Error
+	if !errors.As(err, &workflowErr) {
+		return connect.NewError(connect.CodeInternal, err)
+	}
+	switch workflowErr.Code {
+	case review.ErrorNotFound:
+		return connect.NewError(connect.CodeNotFound, workflowErr)
+	case review.ErrorInvalidAction:
+		return connect.NewError(connect.CodeInvalidArgument, workflowErr)
+	case review.ErrorFailedPrecondition:
+		return connect.NewError(connect.CodeFailedPrecondition, workflowErr)
+	case review.ErrorConflict:
+		return connect.NewError(connect.CodeAlreadyExists, workflowErr)
+	default:
+		return connect.NewError(connect.CodeInternal, workflowErr)
+	}
 }
 
 func (s *IssueService) findLinkedIssueForCreate(ctx context.Context, issue *store.IssueMessage) (*store.IssueMessage, error) {
@@ -587,14 +614,11 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		if plan == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
 		}
-		if request.Issue.GetDraft() {
-			if err := validateDraftReviewPlan(plan); err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, err)
-			}
-		}
-		for _, spec := range plan.Config.GetSpecs() {
-			if spec.GetExportDataConfig() != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data export issue creation is no longer supported"))
+		if !request.Issue.GetDraft() {
+			for _, spec := range plan.Config.GetSpecs() {
+				if spec.GetExportDataConfig() != nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data export issue creation is no longer supported"))
+				}
 			}
 		}
 		planUID = &plan.UID
@@ -642,40 +666,6 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 	return issue, nil
 }
 
-func validateDraftReviewPlan(plan *store.PlanMessage) error {
-	if plan.Deleted {
-		return errors.Errorf("draft issues require an active plan")
-	}
-	specs := plan.Config.GetSpecs()
-	if len(specs) == 0 {
-		return errors.Errorf("draft issues require a database plan")
-	}
-
-	var kind string
-	for _, spec := range specs {
-		var specKind string
-		switch config := spec.Config.(type) {
-		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-			specKind = "create database"
-		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-			if config.ChangeDatabaseConfig.GetRelease() != "" {
-				return errors.Errorf("draft issues are not supported for GitOps plans")
-			}
-			specKind = "change database"
-		case *storepb.PlanConfig_Spec_ExportDataConfig:
-			return errors.Errorf("draft issues are not supported for export plans")
-		default:
-			return errors.Errorf("draft issues require a database plan")
-		}
-		if kind == "" {
-			kind = specKind
-		} else if kind != specKind {
-			return errors.Errorf("draft issues are not supported for mixed plans")
-		}
-	}
-	return nil
-}
-
 func (s *IssueService) getSubmittedIssueForApprovalAction(ctx context.Context, name string) (*store.IssueMessage, error) {
 	issue, err := s.getIssueMessage(ctx, name)
 	if err != nil {
@@ -687,375 +677,8 @@ func (s *IssueService) getSubmittedIssueForApprovalAction(ctx context.Context, n
 	return issue, nil
 }
 
-// ApproveIssue approves the approval flow of the issue.
-func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1pb.ApproveIssueRequest]) (*connect.Response[v1pb.Issue], error) {
-	issue, err := s.getSubmittedIssueForApprovalAction(ctx, req.Msg.Name)
-	if err != nil {
-		return nil, err
-	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &issue.ProjectID})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
-	}
-	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
-	}
-	payload := issue.Payload
-	if payload.Approval == nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("issue payload approval is nil"))
-	}
-	if !payload.Approval.ApprovalFindingDone {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding is not done"))
-	}
-	if payload.Approval.ApprovalTemplate == nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
-	}
-
-	plan, approvalInputVersion, err := s.getIssuePlanApprovalInputVersion(ctx, issue)
-	if err != nil {
-		return nil, err
-	}
-
-	rejectedRole := utils.FindRejectedRole(payload.Approval)
-	if rejectedRole != "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot approve because the issue has been rejected"))
-	}
-
-	role := utils.FindNextPendingRole(payload.Approval)
-	if role == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the issue has been approved"))
-	}
-
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-
-	canApprove := s.isUserReviewer(ctx, issue, role, user)
-	if !canApprove {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot approve because the user does not have the required permission"))
-	}
-
-	if !project.Setting.GetAllowSelfApproval() && issue.CreatorEmail == user.Email {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot approve because self-approval is not allowed for this project"))
-	}
-
-	payload.Approval.Approvers = append(payload.Approval.Approvers, &storepb.IssuePayloadApproval_Approver{
-		Status:    storepb.IssuePayloadApproval_Approver_APPROVED,
-		Principal: common.FormatUserEmail(user.Email),
-	})
-
-	approved, err := utils.CheckIssueApprovedForPlan(issue, plan)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check if the approval is approved"))
-	}
-
-	issue, err = s.updateIssueApprovalPayload(ctx, issue, &storepb.Issue{Approval: payload.Approval}, plan, approvalInputVersion)
-	if err != nil {
-		if errors.Is(err, errStaleApprovalFinding) {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot approve because approval finding is stale"))
-		}
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	if plan != nil {
-		plan, _, err = s.getIssuePlanApprovalInputVersion(ctx, issue)
-		if err != nil {
-			return nil, err
-		}
-		approved, err = utils.CheckIssueApprovedForPlan(issue, plan)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check if the approval is approved"))
-		}
-	}
-
-	if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
-		ProjectID: issue.ProjectID,
-		IssueUID:  issue.UID,
-		Payload: &storepb.IssueCommentPayload{
-			Comment: req.Msg.Comment,
-			Event: &storepb.IssueCommentPayload_Approval_{
-				Approval: &storepb.IssueCommentPayload_Approval{
-					Status: storepb.IssuePayloadApproval_Approver_APPROVED,
-				},
-			},
-		},
-	}); err != nil {
-		slog.Warn("failed to create issue comment", log.BBError(err))
-	}
-
-	approval.NotifyApprovalRequested(ctx, s.store, s.webhookManager, issue, project)
-
-	// If the issue is approved, notify the creator and complete access request if applicable.
-	if approved {
-		approval.NotifyIssueApproved(ctx, s.store, s.webhookManager, issue, project, user)
-		issue, err = completeAccessRequestIssue(ctx, s.store, user.Email, issue)
-		if err != nil {
-			slog.Debug("failed to complete role grant issue", log.BBError(err))
-		}
-	}
-
-	issueV1, err := s.convertToIssue(issue)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
-	}
-
-	// Auto-create rollout if this approval completes the approval flow
-	if issueV1.ApprovalStatus == v1pb.ApprovalStatus_APPROVED {
-		if issue.PlanUID != nil {
-			s.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: issue.ProjectID, PlanID: *issue.PlanUID}
-		}
-	}
-
-	return connect.NewResponse(issueV1), nil
-}
-
-// RejectIssue rejects a issue.
-func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1pb.RejectIssueRequest]) (*connect.Response[v1pb.Issue], error) {
-	issue, err := s.getSubmittedIssueForApprovalAction(ctx, req.Msg.Name)
-	if err != nil {
-		return nil, err
-	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &issue.ProjectID})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
-	}
-	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
-	}
-	payload := issue.Payload
-	if payload.Approval == nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("issue payload approval is nil"))
-	}
-	if !payload.Approval.ApprovalFindingDone {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding is not done"))
-	}
-	if payload.Approval.ApprovalTemplate == nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
-	}
-
-	plan, approvalInputVersion, err := s.getIssuePlanApprovalInputVersion(ctx, issue)
-	if err != nil {
-		return nil, err
-	}
-
-	rejectedRole := utils.FindRejectedRole(payload.Approval)
-	if rejectedRole != "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot reject because the issue has been rejected"))
-	}
-
-	role := utils.FindNextPendingRole(payload.Approval)
-	if role == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the issue has been approved"))
-	}
-
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-
-	canApprove := s.isUserReviewer(ctx, issue, role, user)
-	if !canApprove {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot reject because the user does not have the required permission"))
-	}
-
-	if !project.Setting.GetAllowSelfApproval() && issue.CreatorEmail == user.Email {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot reject because self-approval is not allowed for this project"))
-	}
-
-	payload.Approval.Approvers = append(payload.Approval.Approvers, &storepb.IssuePayloadApproval_Approver{
-		Status:    storepb.IssuePayloadApproval_Approver_REJECTED,
-		Principal: common.FormatUserEmail(user.Email),
-	})
-
-	issue, err = s.updateIssueApprovalPayload(ctx, issue, &storepb.Issue{Approval: payload.Approval}, plan, approvalInputVersion)
-	if err != nil {
-		if errors.Is(err, errStaleApprovalFinding) {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot reject because approval finding is stale"))
-		}
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
-		ProjectID: issue.ProjectID,
-		IssueUID:  issue.UID,
-		Payload: &storepb.IssueCommentPayload{
-			Comment: req.Msg.Comment,
-			Event: &storepb.IssueCommentPayload_Approval_{
-				Approval: &storepb.IssueCommentPayload_Approval{
-					Status: storepb.IssuePayloadApproval_Approver_REJECTED,
-				},
-			},
-		},
-	}); err != nil {
-		slog.Warn("failed to create issue comment", log.BBError(err))
-	}
-
-	creatorAccount, err := s.store.GetAccountByEmail(ctx, issue.CreatorEmail)
-	if err != nil {
-		slog.Warn("failed to get issue creator", log.BBError(err))
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get issue creator"))
-	}
-
-	// Trigger ISSUE_SENT_BACK webhook
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Type:    storepb.Activity_ISSUE_SENT_BACK,
-		Project: webhook.NewProject(project),
-		SentBack: &webhook.EventIssueSentBack{
-			Approver: &webhook.User{
-				Name:  user.Name,
-				Email: user.Email,
-				Phone: user.Phone,
-			},
-			Creator: &webhook.User{
-				Name:  creatorAccount.Name,
-				Email: creatorAccount.Email,
-				Phone: creatorAccount.Phone,
-			},
-			Issue:  webhook.NewIssue(issue),
-			Reason: req.Msg.Comment,
-		},
-	})
-
-	issueV1, err := s.convertToIssue(issue)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
-	}
-	return connect.NewResponse(issueV1), nil
-}
-
-// RequestIssue requests a issue.
-func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1pb.RequestIssueRequest]) (*connect.Response[v1pb.Issue], error) {
-	issue, err := s.getSubmittedIssueForApprovalAction(ctx, req.Msg.Name)
-	if err != nil {
-		return nil, err
-	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &issue.ProjectID})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
-	}
-	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
-	}
-	payload := issue.Payload
-	if payload.Approval == nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("issue payload approval is nil"))
-	}
-	if !payload.Approval.ApprovalFindingDone {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding is not done"))
-	}
-	if payload.Approval.ApprovalTemplate == nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
-	}
-
-	plan, approvalInputVersion, err := s.getIssuePlanApprovalInputVersion(ctx, issue)
-	if err != nil {
-		return nil, err
-	}
-
-	rejectedRole := utils.FindRejectedRole(payload.Approval)
-	if rejectedRole == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot request issues because the issue is not rejected"))
-	}
-
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-
-	canRequest := canRequestIssue(issue.CreatorEmail, user)
-	if !canRequest {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot request issues because you are not the issue creator"))
-	}
-
-	var updatedApprovers []*storepb.IssuePayloadApproval_Approver
-	for _, approver := range payload.Approval.Approvers {
-		if approver.Status == storepb.IssuePayloadApproval_Approver_REJECTED {
-			continue
-		}
-		updatedApprovers = append(updatedApprovers, approver)
-	}
-	payload.Approval.Approvers = updatedApprovers
-
-	issue, err = s.updateIssueApprovalPayload(ctx, issue, &storepb.Issue{Approval: payload.Approval}, plan, approvalInputVersion)
-	if err != nil {
-		if errors.Is(err, errStaleApprovalFinding) {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot request issue because approval finding is stale"))
-		}
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	approval.NotifyApprovalRequested(ctx, s.store, s.webhookManager, issue, project)
-
-	if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
-		ProjectID: issue.ProjectID,
-		IssueUID:  issue.UID,
-		Payload: &storepb.IssueCommentPayload{
-			Comment: req.Msg.Comment,
-			Event: &storepb.IssueCommentPayload_Approval_{
-				Approval: &storepb.IssueCommentPayload_Approval{
-					Status: storepb.IssuePayloadApproval_Approver_PENDING,
-				},
-			},
-		},
-	}); err != nil {
-		slog.Warn("failed to create issue comment", log.BBError(err))
-	}
-
-	issueV1, err := s.convertToIssue(issue)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
-	}
-	return connect.NewResponse(issueV1), nil
-}
-
-func (s *IssueService) getIssuePlanApprovalInputVersion(ctx context.Context, issue *store.IssueMessage) (*store.PlanMessage, int64, error) {
-	if issue.Type != storepb.Issue_DATABASE_CHANGE || issue.PlanUID == nil {
-		return nil, 0, nil
-	}
-
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
-	if err != nil {
-		return nil, 0, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get plan"))
-	}
-	if plan == nil {
-		return nil, 0, connect.NewError(connect.CodeNotFound, errors.New("plan not found"))
-	}
-	if plan.Config == nil {
-		return plan, 0, nil
-	}
-	return plan, plan.Config.GetApprovalInputVersion(), nil
-}
-
-func (s *IssueService) updateIssueApprovalPayload(ctx context.Context, issue *store.IssueMessage, payloadPatch *storepb.Issue, plan *store.PlanMessage, approvalInputVersion int64) (*store.IssueMessage, error) {
-	if plan == nil {
-		updatedIssue, err := s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
-			PayloadUpsert: payloadPatch,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to update issue")
-		}
-		return updatedIssue, nil
-	}
-
-	updatedIssue, err := s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert:                    payloadPatch,
-		RequirePlanApprovalInputVersion:  &approvalInputVersion,
-		RequireIssueApprovalInputVersion: &approvalInputVersion,
-	})
-	if err != nil {
-		if errors.Is(err, store.ErrIssueUpdateSkipped) {
-			return nil, errStaleApprovalFinding
-		}
-		return nil, errors.Wrapf(err, "failed to update issue")
-	}
-	if updatedIssue == nil {
-		return nil, errors.New("issue not found after update")
-	}
-	return updatedIssue, nil
-}
-
 // RetryIssueApproval re-runs approval-template finding for an issue stuck
-// in CHECKING. The synchronous post-create path in `postCreateIssue`
+// in CHECKING. The synchronous workflow-start path in `startIssueWorkflow`
 // swallows errors (e.g. CEL evaluation failure against a malformed
 // workspace approval rule), and there is no event-driven retry for
 // non-DATABASE_CHANGE issue types — once stuck, only this RPC (or a
@@ -1105,11 +728,13 @@ func (s *IssueService) RetryIssueApproval(ctx context.Context, req *connect.Requ
 		return connect.NewResponse(issueV1), nil
 	}
 
-	if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, issue); err != nil {
+	approvalResult, err := review.FindAndApplyApprovalTemplate(ctx, s.store, s.licenseService, issue)
+	if err != nil {
 		// Surface the underlying cause (e.g. CEL error in the workspace
 		// approval rule) so the operator can fix it.
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Wrap(err, "approval finding still failing"))
 	}
+	review.DispatchApprovalEvents(ctx, s.store, s.webhookManager, approvalResult)
 
 	uid := issue.UID
 	refreshed, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
@@ -1212,118 +837,132 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
 	}
 
-	updateMasks := map[string]bool{}
-
-	patch := &store.UpdateIssueMessage{}
-	hasDirectIssueUpdate := false
-	var issueCommentCreates []*store.IssueCommentMessage
-	var labelsChangedWithApprovalReset bool
-	var labelsForApprovalReset []string
+	submitting := false
+	labelsForSubmission := store.CanonicalizeIssueLabels(issue.Payload.GetLabels())
+	labelsSetForSubmission := false
 	for _, path := range req.Msg.UpdateMask.Paths {
-		updateMasks[path] = true
+		switch path {
+		case "labels":
+			labelsForSubmission = store.CanonicalizeIssueLabels(req.Msg.Issue.Labels)
+			labelsSetForSubmission = true
+		case "draft":
+			if req.Msg.Issue.GetDraft() {
+				if !issue.Payload.GetDraft() {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("a submitted issue cannot be changed back to draft"))
+				}
+			} else if issue.Payload.GetDraft() {
+				submitting = true
+			}
+		default:
+			// Other update paths do not affect draft submission preparation.
+		}
+	}
+
+	expectedDraft := issue.Payload.GetDraft()
+	metadataInput := review.UpdateIssueMetadataInput{
+		Workspace:     common.GetWorkspaceIDFromContext(ctx),
+		ProjectID:     issue.ProjectID,
+		IssueUID:      issue.UID,
+		ExpectedDraft: &expectedDraft,
+	}
+	hasMetadataPatch := false
+	var issueCommentCreates []*store.IssueCommentMessage
+	for _, path := range req.Msg.UpdateMask.Paths {
+		if issue.Payload.GetDraft() && (path == "title" || path == "description") {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("draft issue %s metadata must be updated through its Plan", req.Msg.Issue.Name))
+		}
 		switch path {
 		case "title":
 			trimmed := strings.TrimSpace(req.Msg.Issue.Title)
 			if trimmed == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("title cannot be empty"))
 			}
-			if trimmed == issue.Title {
-				// No-op update — skip both the patch and the audit comment so we
-				// don't pollute the timeline with "changed name from X to X".
-				continue
-			}
-
-			patch.Title = &trimmed
-			hasDirectIssueUpdate = true
-
-			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-				IssueUID: issue.UID,
-				Payload: &storepb.IssueCommentPayload{
-					Event: &storepb.IssueCommentPayload_IssueUpdate_{
-						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-							FromTitle: &issue.Title,
-							ToTitle:   &trimmed,
-						},
-					},
-				},
-			})
+			metadataInput.Title = &trimmed
+			hasMetadataPatch = true
 
 		case "description":
-			if req.Msg.Issue.Description == issue.Description {
-				continue
-			}
-			patch.Description = &req.Msg.Issue.Description
-			hasDirectIssueUpdate = true
-
-			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-				IssueUID: issue.UID,
-				Payload: &storepb.IssueCommentPayload{
-					Event: &storepb.IssueCommentPayload_IssueUpdate_{
-						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-							FromDescription: &issue.Description,
-							ToDescription:   &req.Msg.Issue.Description,
-						},
-					},
-				},
-			})
+			metadataInput.Description = &req.Msg.Issue.Description
+			hasMetadataPatch = true
 
 		case "labels":
-			labels := store.CanonicalizeIssueLabels(req.Msg.Issue.Labels)
-			if slices.Equal(issue.Payload.Labels, labels) {
-				continue
+			if !submitting {
+				labels := append([]string(nil), req.Msg.Issue.Labels...)
+				metadataInput.Labels = &labels
+				hasMetadataPatch = true
 			}
-			resetApprovalForLabels, err := s.shouldResetApprovalForIssueLabels(ctx, issue)
-			if err != nil {
-				return nil, err
-			}
-			if resetApprovalForLabels {
-				labelsChangedWithApprovalReset = true
-				labelsForApprovalReset = labels
-			} else {
-				if len(labels) == 0 {
-					patch.RemoveLabels = true
-				} else {
-					if patch.PayloadUpsert == nil {
-						patch.PayloadUpsert = &storepb.Issue{}
-					}
-					patch.PayloadUpsert.Labels = labels
-				}
-				hasDirectIssueUpdate = true
-			}
-
-			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-				IssueUID: issue.UID,
-				Payload: &storepb.IssueCommentPayload{
-					Event: &storepb.IssueCommentPayload_IssueUpdate_{
-						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-							FromLabels: issue.Payload.Labels,
-							ToLabels:   labels,
-						},
-					},
-				},
-			})
+		case "draft":
+			// Submission is committed below through the review workflow.
 		default:
 		}
 	}
 
-	if hasDirectIssueUpdate {
-		issue, err = s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, patch)
+	if hasMetadataPatch {
+		result, err := s.reviewWorkflow.UpdateIssueMetadata(ctx, metadataInput)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
+			return nil, mapIssueSubmissionError(err)
+		}
+		issue = result.Issue
+		for _, event := range result.Events {
+			switch event := event.(type) {
+			case review.IssueTitleUpdatedEvent:
+				issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+					IssueUID: issue.UID,
+					Payload: &storepb.IssueCommentPayload{
+						Event: &storepb.IssueCommentPayload_IssueUpdate_{
+							IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+								FromTitle: &event.FromTitle,
+								ToTitle:   &event.ToTitle,
+							},
+						},
+					},
+				})
+			case review.IssueDescriptionUpdatedEvent:
+				issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+					IssueUID: issue.UID,
+					Payload: &storepb.IssueCommentPayload{
+						Event: &storepb.IssueCommentPayload_IssueUpdate_{
+							IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+								FromDescription: &event.FromDescription,
+								ToDescription:   &event.ToDescription,
+							},
+						},
+					},
+				})
+			case review.IssueLabelsUpdatedEvent:
+				issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+					IssueUID: issue.UID,
+					Payload: &storepb.IssueCommentPayload{
+						Event: &storepb.IssueCommentPayload_IssueUpdate_{
+							IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+								FromLabels: event.FromLabels,
+								ToLabels:   event.ToLabels,
+							},
+						},
+					},
+				})
+			case review.ApprovalCheckEvent:
+				s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
+			default:
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("unexpected issue metadata event %T", event))
+			}
 		}
 	}
 
-	if labelsChangedWithApprovalReset {
-		updatedIssue, approvalResetApplied, err := s.store.UpdateIssueLabelsAndMaybeResetApproval(ctx, issue.ProjectID, issue.UID, labelsForApprovalReset)
+	var submissionResult *review.SubmitIssueResult
+	if submitting {
+		submissionResult, err = s.reviewWorkflow.SubmitIssue(ctx, review.SubmitIssueInput{
+			Workspace: common.GetWorkspaceIDFromContext(ctx),
+			ProjectID: issue.ProjectID,
+			IssueUID:  issue.UID,
+			Labels:    labelsForSubmission,
+			LabelsSet: labelsSetForSubmission,
+		})
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update issue labels"))
+			return nil, mapIssueSubmissionError(err)
 		}
-		if updatedIssue == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.New("issue not found after issue label update"))
-		}
-		issue = updatedIssue
-		if approvalResetApplied {
-			s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
+		issue = submissionResult.Issue
+		if submissionResult.LabelsChanged {
+			issueCommentCreates = append(issueCommentCreates, newIssueLabelsUpdateComment(issue.UID, submissionResult.PreviousLabels, labelsForSubmission))
 		}
 	}
 
@@ -1334,6 +973,21 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		slog.Warn("failed to create issue comments", "issue id", issue.UID, log.BBError(err))
 	}
 
+	if submissionResult != nil {
+		for _, event := range submissionResult.Events {
+			switch event.(type) {
+			case review.SubmittedEvent:
+				recordReviewSubmission(ctx, s.store, user.Email, issue)
+			case review.IssueCreatedEvent:
+				emitIssueCreated(ctx, s.webhookManager, submissionResult.Project, user.Name, user.Email, issue)
+			case review.ApprovalCheckEvent:
+				s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
+			default:
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("unexpected submission event %T", event))
+			}
+		}
+	}
+
 	issueV1, err := s.convertToIssue(issue)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
@@ -1341,27 +995,39 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	return connect.NewResponse(issueV1), nil
 }
 
-func (s *IssueService) shouldResetApprovalForIssueLabels(ctx context.Context, issue *store.IssueMessage) (bool, error) {
-	if issue.Payload.GetDraft() {
-		return false, nil
+func newIssueLabelsUpdateComment(issueUID int64, fromLabels, toLabels []string) *store.IssueCommentMessage {
+	return &store.IssueCommentMessage{
+		IssueUID: issueUID,
+		Payload: &storepb.IssueCommentPayload{
+			Event: &storepb.IssueCommentPayload_IssueUpdate_{
+				IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+					FromLabels: fromLabels,
+					ToLabels:   toLabels,
+				},
+			},
+		},
 	}
+}
 
-	if issue.Type != storepb.Issue_DATABASE_CHANGE || issue.PlanUID == nil {
-		return false, nil
+func mapIssueSubmissionError(err error) error {
+	var workflowErr *review.Error
+	if !errors.As(err, &workflowErr) {
+		return connect.NewError(connect.CodeInternal, err)
 	}
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
-	if err != nil {
-		return false, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get plan for issue label update"))
+	switch workflowErr.Code {
+	case review.ErrorNotFound:
+		return connect.NewError(connect.CodeNotFound, workflowErr)
+	case review.ErrorInvalidAction:
+		return connect.NewError(connect.CodeInvalidArgument, workflowErr)
+	case review.ErrorFailedPrecondition:
+		return connect.NewError(connect.CodeFailedPrecondition, workflowErr)
+	case review.ErrorPermissionDenied:
+		return connect.NewError(connect.CodePermissionDenied, workflowErr)
+	case review.ErrorConflict:
+		return connect.NewError(connect.CodeAborted, workflowErr)
+	default:
+		return connect.NewError(connect.CodeInternal, workflowErr)
 	}
-	if plan == nil {
-		return false, connect.NewError(connect.CodeNotFound, errors.New("plan not found for issue label update"))
-	}
-	for _, spec := range plan.Config.GetSpecs() {
-		if _, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig); ok {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 // BatchUpdateIssuesStatus batch updates issues status.
@@ -1617,11 +1283,6 @@ func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue %d not found in project %s", issueUID, projectID))
 	}
 	return issue, nil
-}
-
-func (s *IssueService) isUserReviewer(ctx context.Context, issue *store.IssueMessage, role string, user *store.UserMessage) bool {
-	roles := s.getUserRoleMap(ctx, issue.ProjectID, user)
-	return roles[role]
 }
 
 func canRequestIssue(issueCreatorEmail string, user *store.UserMessage) bool {

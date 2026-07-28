@@ -46,14 +46,30 @@
   "enable-description": "Bật chính sách này sẽ bắt đầu áp dụng các quy tắc của nó trên các tài nguyên đã đính kèm.",
   "enabled-rules": "Quy tắc được bật",
   "engine": {
+    "bigquery": "BigQuery",
+    "cassandra": "Cassandra",
+    "clickhouse": "ClickHouse",
+    "cockroachdb": "CockroachDB",
+    "cosmosdb": "Cosmos DB",
+    "databricks": "Databricks",
+    "doris": "Doris",
+    "dynamodb": "DynamoDB",
+    "elasticsearch": "Elasticsearch",
+    "hive": "Hive",
     "mariadb": "MariaDB",
+    "mongodb": "MongoDB",
     "mssql": "SQL Server",
     "mysql": "MySQL",
     "oceanbase": "OceanBase",
     "oracle": "Oracle",
     "postgres": "PostgreSQL",
+    "redis": "Redis",
+    "redshift": "Redshift",
     "snowflake": "Snowflake",
-    "tidb": "TiDB"
+    "spanner": "Spanner",
+    "starrocks": "StarRocks",
+    "tidb": "TiDB",
+    "trino": "Trino"
   },
   "input-then-press-enter": "Nhập giá trị sau đó nhấn enter để thêm",
   "level": {
@@ -82,6 +98,15 @@
     "BUILTIN_PRIOR_BACKUP_CHECK": {
       "description": "Quy tắc này kiểm tra xem có thể tạo bản sao lưu trước khi thay đổi dữ liệu hay không. Nó xác minh sự tồn tại của cơ sở dữ liệu đích sao lưu và không cho phép các kịch bản không được hỗ trợ. Nó được tích hợp sẵn và không thể bỏ qua.",
       "title": "Kiểm tra tính khả thi của sao lưu trước"
+    },
+    "BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE": {
+      "component": {
+        "number": {
+          "title": "Kích thước tối đa (MB)"
+        }
+      },
+      "description": "Các tệp SQL lớn có thể vượt quá kích thước được hỗ trợ bởi quy trình đánh giá SQL và bỏ qua đánh giá dựa trên trình phân tích cú pháp. Giới hạn kích thước tệp để làm rõ hành vi này.",
+      "title": "Hạn chế kích thước tệp SQL"
     },
     "BUILTIN_WALK_THROUGH_CHECK": {
       "description": "Xác thực các câu lệnh SQL với schema cơ sở dữ liệu hiện tại bằng cách mô phỏng việc thực thi. Phát hiện các vấn đề như tham chiếu đến bảng, cột hoặc chỉ mục không tồn tại.",
@@ -708,7 +733,7 @@
     "bb-sql-review-dev": "Mẫu Cơ bản",
     "bb-sql-review-dev-desc": "Bảo vệ cơ bản để bảo vệ cơ sở dữ liệu khỏi những sai sót thường gặp.",
     "bb-sql-review-empty": "Bắt đầu lại từ đầu",
-    "bb-sql-review-empty-desc": "Bắt đầu chỉ với các quy tắc tích hợp sẵn. Tự thêm các quy tắc bạn cần.",
+    "bb-sql-review-empty-desc": "Bắt đầu mà không có quy tắc được cấu hình. Tự thêm các quy tắc bạn cần.",
     "bb-sql-review-prod": "Mẫu Nâng cao",
     "bb-sql-review-prod-desc": "Chính sách toàn diện, nơi bạn có sự bảo vệ và các phương pháp tốt nhất cho cơ sở dữ liệu.",
     "bb-sql-review-sample": "Mẫu Ví dụ",

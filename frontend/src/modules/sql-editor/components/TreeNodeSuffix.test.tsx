@@ -1,0 +1,270 @@
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import type { WorksheetFolderNode } from "@/modules/sql-editor/model/Sheet";
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+// Stub ResizeObserver — not provided by jsdom
+globalThis.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
+// ---- mocks ------------------------------------------------------------------
+
+const mocks = vi.hoisted(() => ({
+  useTranslation: vi.fn(() => ({ t: (key: string) => key })),
+  getSQLEditorTabsState: vi.fn(),
+  getWorksheetByName: vi.fn<(name: string) => unknown>(),
+  getUserByIdentifier: vi.fn<() => { title: string } | undefined>(() => ({
+    title: "Test User",
+  })),
+  getOrFetchUserByIdentifier: vi.fn(async () => ({ title: "Test User" })),
+  useSheetContext: vi.fn(),
+}));
+
+vi.mock("react-i18next", () => ({
+  useTranslation: mocks.useTranslation,
+}));
+
+vi.mock("@/stores/app", () => {
+  const state = {
+    getWorksheetByName: mocks.getWorksheetByName,
+    getUserByIdentifier: mocks.getUserByIdentifier,
+    getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
+  };
+  return {
+    useAppStore: Object.assign(
+      (selector: (s: typeof state) => unknown) => selector(state),
+      { getState: () => state }
+    ),
+  };
+});
+
+vi.mock("@/modules/sql-editor/store/tab", () => ({
+  getSQLEditorTabsState: mocks.getSQLEditorTabsState,
+}));
+
+vi.mock("@/modules/sql-editor/model/Sheet", () => ({
+  useSheetContext: mocks.useSheetContext,
+}));
+
+vi.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({
+    children,
+    content,
+  }: {
+    children: React.ReactNode;
+    content: React.ReactNode;
+  }) => (
+    <div>
+      <div data-testid="tooltip-content">{content}</div>
+      {children}
+    </div>
+  ),
+}));
+
+vi.mock("@/types/proto-es/v1/worksheet_service_pb", () => ({
+  Worksheet_Visibility: {
+    PRIVATE: 0,
+    PROJECT_READ: 1,
+    PROJECT_WRITE: 2,
+  },
+}));
+
+// ---- helpers ----------------------------------------------------------------
+
+const makeNode = (
+  overrides?: Partial<WorksheetFolderNode>
+): WorksheetFolderNode => ({
+  key: "/my/folder",
+  label: "folder",
+  editable: true,
+  children: [],
+  empty: false,
+  ...overrides,
+});
+
+const makeWorksheetNode = (
+  overrides?: Partial<WorksheetFolderNode>
+): WorksheetFolderNode =>
+  makeNode({
+    key: "/my/folder/ws1",
+    label: "My Query",
+    worksheet: {
+      name: "worksheets/ws1",
+      title: "My Query",
+      folders: [],
+      type: "worksheet",
+    },
+    ...overrides,
+  });
+
+const renderIntoContainer = (element: React.ReactElement) => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  document.body.appendChild(container);
+  return {
+    container,
+    render: () => {
+      act(() => {
+        root.render(element);
+      });
+    },
+    unmount: () => {
+      act(() => {
+        root.unmount();
+      });
+      container.remove();
+    },
+  };
+};
+
+let TreeNodeSuffix: typeof import("./TreeNodeSuffix").TreeNodeSuffix;
+
+beforeEach(async () => {
+  mocks.getWorksheetByName.mockImplementation((name: string) => ({
+    name,
+    starred: false,
+    visibility: 0, // PRIVATE
+    creator: "users/test@example.com",
+  }));
+  mocks.getSQLEditorTabsState.mockReturnValue({
+    tabsById: new Map(),
+    closeTab: vi.fn(),
+  });
+  mocks.getUserByIdentifier.mockReturnValue({ title: "Test User" });
+  mocks.getOrFetchUserByIdentifier.mockResolvedValue({ title: "Test User" });
+  mocks.useSheetContext.mockReturnValue({
+    isWorksheetCreator: vi.fn(() => true),
+  });
+
+  ({ TreeNodeSuffix } = await import("./TreeNodeSuffix"));
+});
+
+afterEach(() => {
+  document.body.innerHTML = "";
+  vi.resetModules();
+});
+
+describe("TreeNodeSuffix", () => {
+  test("renders star icon for worksheet node; click fires onToggleStar with correct args", () => {
+    const node = makeWorksheetNode();
+    const onToggleStar = vi.fn();
+    const onSharePanelShow = vi.fn();
+    const onContextMenuShow = vi.fn();
+
+    const { container, render, unmount } = renderIntoContainer(
+      <TreeNodeSuffix
+        node={node}
+        view="my"
+        onToggleStar={onToggleStar}
+        onSharePanelShow={onSharePanelShow}
+        onContextMenuShow={onContextMenuShow}
+      />
+    );
+    render();
+
+    // Finds the star SVG by its lucide class
+    const starSvg = container.querySelector("svg.lucide-star");
+    expect(starSvg).not.toBeNull();
+
+    // Click the star
+    act(() => {
+      starSvg?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(onToggleStar).toHaveBeenCalledWith({
+      worksheet: "worksheets/ws1",
+      starred: true, // was false, toggled to true
+    });
+
+    unmount();
+  });
+
+  test("does not render star icon for folder nodes", () => {
+    const node = makeNode(); // folder, no worksheet
+    const onToggleStar = vi.fn();
+    const onSharePanelShow = vi.fn();
+    const onContextMenuShow = vi.fn();
+
+    const { container, render, unmount } = renderIntoContainer(
+      <TreeNodeSuffix
+        node={node}
+        view="my"
+        onToggleStar={onToggleStar}
+        onSharePanelShow={onSharePanelShow}
+        onContextMenuShow={onContextMenuShow}
+      />
+    );
+    render();
+
+    const starSvg = container.querySelector("svg.lucide-star");
+    expect(starSvg).toBeNull();
+
+    unmount();
+  });
+
+  test("fetches worksheet creator before rendering the raw identifier", () => {
+    mocks.getUserByIdentifier.mockReturnValue(undefined);
+    const node = makeWorksheetNode();
+    const onToggleStar = vi.fn();
+    const onSharePanelShow = vi.fn();
+    const onContextMenuShow = vi.fn();
+
+    const { render, unmount } = renderIntoContainer(
+      <TreeNodeSuffix
+        node={node}
+        view="my"
+        onToggleStar={onToggleStar}
+        onSharePanelShow={onSharePanelShow}
+        onContextMenuShow={onContextMenuShow}
+      />
+    );
+    render();
+
+    expect(mocks.getOrFetchUserByIdentifier).toHaveBeenCalledWith({
+      identifier: "users/test@example.com",
+    });
+
+    unmount();
+  });
+
+  test('"More" button fires onContextMenuShow with the node', () => {
+    const node = makeWorksheetNode();
+    const onContextMenuShow = vi.fn();
+    const onToggleStar = vi.fn();
+    const onSharePanelShow = vi.fn();
+
+    const { container, render, unmount } = renderIntoContainer(
+      <TreeNodeSuffix
+        node={node}
+        view="my"
+        onToggleStar={onToggleStar}
+        onSharePanelShow={onSharePanelShow}
+        onContextMenuShow={onContextMenuShow}
+      />
+    );
+    render();
+
+    // lucide-react renders MoreHorizontal as "lucide-ellipsis"
+    const moreSvg = container.querySelector("svg.lucide-ellipsis");
+    expect(moreSvg).not.toBeNull();
+
+    act(() => {
+      moreSvg?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    // React wraps native events in SyntheticBaseEvent (not native MouseEvent)
+    expect(onContextMenuShow).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "click" }),
+      node
+    );
+
+    unmount();
+  });
+});

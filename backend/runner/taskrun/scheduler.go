@@ -225,6 +225,17 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 		}
 	}
 
+	project, err := s.store.GetProjectByResourceID(ctx, plan.ProjectID)
+	if err != nil || project == nil {
+		slog.Error("failed to get project for completion webhook", log.BBError(err))
+		return
+	}
+	environmentSetting, err := s.store.GetEnvironment(ctx, project.Workspace)
+	if err != nil {
+		slog.Error("failed to get environments for completion webhook", log.BBError(err))
+		return
+	}
+
 	// All tasks complete and successful - try to claim completion notification
 	claimed, err := s.store.ClaimPipelineCompletionNotification(ctx, ref.ProjectID, planID)
 	if err != nil {
@@ -235,25 +246,13 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 		return // Already sent
 	}
 
-	project, err := s.store.GetProjectByResourceID(ctx, plan.ProjectID)
-	if err != nil || project == nil {
-		slog.Error("failed to get project for completion webhook", log.BBError(err))
-		return
-	}
-
-	// Use environment from the first task (all tasks should be in the same environment for a rollout)
-	environment := ""
-	if len(tasks) > 0 {
-		environment = tasks[0].Environment
-	}
-
 	// Send PIPELINE_COMPLETED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Type:    storepb.Activity_PIPELINE_COMPLETED,
 		Project: webhook.NewProject(project),
 		RolloutCompleted: &webhook.EventRolloutCompleted{
 			Rollout:     webhook.NewRollout(plan),
-			Environment: environment,
+			Environment: completionWebhookEnvironment(tasks, common.EnvironmentOrderMap(environmentSetting.GetEnvironments())),
 		},
 	})
 
@@ -299,4 +298,20 @@ func (s *Scheduler) autoResolveIssue(ctx context.Context, projectID string, plan
 		return
 	}
 	slog.Info("auto-resolved deferred rollout issue", slog.String("project", projectID), slog.Int64("issueUID", issue.UID), slog.Int64("planID", planID))
+}
+
+func completionWebhookEnvironment(tasks []*store.TaskMessage, environmentOrderMap map[string]int) string {
+	lastEnvironment := ""
+	lastOrder := -1
+	for _, task := range tasks {
+		order, ok := environmentOrderMap[task.Environment]
+		if !ok {
+			continue
+		}
+		if lastEnvironment == "" || order > lastOrder {
+			lastEnvironment = task.Environment
+			lastOrder = order
+		}
+	}
+	return lastEnvironment
 }

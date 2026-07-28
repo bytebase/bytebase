@@ -1,4 +1,4 @@
-import { getProjectNameReleaseId } from "@/store/modules/v1/common";
+import { getProjectNameReleaseId } from "@/stores/modules/v1/common";
 import { UNKNOWN_ID } from "./const";
 
 export const isValidReleaseName = (name: unknown): name is string => {

@@ -3,6 +3,14 @@ peerDependencyRules:
     typescript: '6'
 
 allowBuilds:
+  # code-inspector-plugin v2 adds an optional "terminal mode" backed by the
+  # node-pty native module (optionalDependency of @code-inspector/core).
+  # We only use the click-to-open-in-IDE flow; both build scripts exist
+  # solely for terminal mode — node-pty's node-gyp compile and core's
+  # postinstall probe of that binding — and the plugin disables terminal
+  # mode gracefully when node-pty is unavailable. Explicit `false` skips
+  # the builds without triggering ERR_PNPM_IGNORED_BUILDS.
+  '@code-inspector/core': false
   core-js: true
   esbuild: true
   # `pouchdb` pulls leveldown in transitively (leveldown@5.6.0 via
@@ -13,3 +21,5 @@ allowBuilds:
   # `false` opts out of the build without triggering pnpm 11's
   # ERR_PNPM_IGNORED_BUILDS error.
   leveldown: false
+  # See the @code-inspector/core comment above.
+  node-pty: false

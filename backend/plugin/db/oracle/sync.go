@@ -61,7 +61,11 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	var databases []*storepb.DatabaseSchemaMetadata
 	for _, schema := range schemas {
 		databases = append(databases, &storepb.DatabaseSchemaMetadata{
-			Name:        schema,
+			// The driver can hand back raw non-UTF-8 bytes for dictionary
+			// strings on non-UTF-8 charsets (e.g. ZHS16GBK values ending in a
+			// truncated multi-byte character); proto string fields reject them
+			// at marshal time, so sanitize at the source.
+			Name:        common.SanitizeUTF8String(schema),
 			ServiceName: "",
 		})
 	}
@@ -141,6 +145,12 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		Procedures:        procedures,
 		Packages:          packages,
 	})
+	// Deep-sanitize every string field (names, definitions, defaults, …), not
+	// just comments: the go-ora driver returns wholly-unconverted raw bytes
+	// for any GBK/SJIS/Big5 value that ends in a dangling multi-byte lead
+	// byte, and one invalid string anywhere fails proto marshaling for the
+	// entire database metadata (BYT-9916).
+	common.SanitizeUTF8Message(databaseMetadata)
 	return databaseMetadata, nil
 }
 

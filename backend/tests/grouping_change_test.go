@@ -15,7 +15,7 @@ import (
 
 // TestCreateDatabaseGroup tests creating database and verify the grouping result.
 // For each test case:
-// 1. The test provides a number of sqlite instances equal to the number of prepareInstances and creates the specified matchDatabase and unmatchedDatabase in the corresponding instances.
+// 1. The test provides a number of Postgres instances equal to the number of prepareInstances and creates the specified matchDatabase and unmatchedDatabase in the corresponding instances.
 // 2. The database group is then created with the specified expr.
 // 3. The results obtained are compared with the results given in prepareInstance and they should be consistent.
 func TestCreateDatabaseGroup(t *testing.T) {
@@ -120,16 +120,16 @@ func TestCreateDatabaseGroup(t *testing.T) {
 
 			instanceResourceID2InstanceTitle := make(map[string]string)
 			for _, prepareInstance := range tc.prepareInstances {
-				instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), t.Name())
+				pgContainer, err := provisionPgInstance(ctx, t)
 				a.NoError(err)
 				instanceResourceID := generateRandomString("instance")
 				instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 					InstanceId: instanceResourceID,
 					Instance: &v1pb.Instance{
 						Title:       prepareInstance.instanceTitle,
-						Engine:      v1pb.Engine_SQLITE,
+						Engine:      v1pb.Engine_POSTGRES,
 						Environment: new("environments/prod"),
-						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+						DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 						Activation:  true,
 					},
 				}))

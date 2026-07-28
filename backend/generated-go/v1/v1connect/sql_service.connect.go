@@ -40,6 +40,9 @@ const (
 	// SQLServiceSearchQueryHistoriesProcedure is the fully-qualified name of the SQLService's
 	// SearchQueryHistories RPC.
 	SQLServiceSearchQueryHistoriesProcedure = "/bytebase.v1.SQLService/SearchQueryHistories"
+	// SQLServiceListQueryHistoriesProcedure is the fully-qualified name of the SQLService's
+	// ListQueryHistories RPC.
+	SQLServiceListQueryHistoriesProcedure = "/bytebase.v1.SQLService/ListQueryHistories"
 	// SQLServiceGetQueryHistoryProcedure is the fully-qualified name of the SQLService's
 	// GetQueryHistory RPC.
 	SQLServiceGetQueryHistoryProcedure = "/bytebase.v1.SQLService/GetQueryHistory"
@@ -62,6 +65,9 @@ type SQLServiceClient interface {
 	// SearchQueryHistories searches query histories for the caller.
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
+	// ListQueryHistories lists query histories of all users in a project.
+	// Permissions required: bb.queryHistories.list
+	ListQueryHistories(context.Context, *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error)
 	// GetQueryHistory gets a single query history for the caller.
 	// Permissions required: None (only returns the caller's own query history)
 	GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error)
@@ -105,6 +111,12 @@ func NewSQLServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(sQLServiceMethods.ByName("SearchQueryHistories")),
 			connect.WithClientOptions(opts...),
 		),
+		listQueryHistories: connect.NewClient[v1.ListQueryHistoriesRequest, v1.ListQueryHistoriesResponse](
+			httpClient,
+			baseURL+SQLServiceListQueryHistoriesProcedure,
+			connect.WithSchema(sQLServiceMethods.ByName("ListQueryHistories")),
+			connect.WithClientOptions(opts...),
+		),
 		getQueryHistory: connect.NewClient[v1.GetQueryHistoryRequest, v1.QueryHistory](
 			httpClient,
 			baseURL+SQLServiceGetQueryHistoryProcedure,
@@ -137,6 +149,7 @@ type sQLServiceClient struct {
 	query                *connect.Client[v1.QueryRequest, v1.QueryResponse]
 	adminExecute         *connect.Client[v1.AdminExecuteRequest, v1.AdminExecuteResponse]
 	searchQueryHistories *connect.Client[v1.SearchQueryHistoriesRequest, v1.SearchQueryHistoriesResponse]
+	listQueryHistories   *connect.Client[v1.ListQueryHistoriesRequest, v1.ListQueryHistoriesResponse]
 	getQueryHistory      *connect.Client[v1.GetQueryHistoryRequest, v1.QueryHistory]
 	export               *connect.Client[v1.ExportRequest, v1.ExportResponse]
 	diffMetadata         *connect.Client[v1.DiffMetadataRequest, v1.DiffMetadataResponse]
@@ -156,6 +169,11 @@ func (c *sQLServiceClient) AdminExecute(ctx context.Context) *connect.BidiStream
 // SearchQueryHistories calls bytebase.v1.SQLService.SearchQueryHistories.
 func (c *sQLServiceClient) SearchQueryHistories(ctx context.Context, req *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error) {
 	return c.searchQueryHistories.CallUnary(ctx, req)
+}
+
+// ListQueryHistories calls bytebase.v1.SQLService.ListQueryHistories.
+func (c *sQLServiceClient) ListQueryHistories(ctx context.Context, req *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error) {
+	return c.listQueryHistories.CallUnary(ctx, req)
 }
 
 // GetQueryHistory calls bytebase.v1.SQLService.GetQueryHistory.
@@ -189,6 +207,9 @@ type SQLServiceHandler interface {
 	// SearchQueryHistories searches query histories for the caller.
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
+	// ListQueryHistories lists query histories of all users in a project.
+	// Permissions required: bb.queryHistories.list
+	ListQueryHistories(context.Context, *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error)
 	// GetQueryHistory gets a single query history for the caller.
 	// Permissions required: None (only returns the caller's own query history)
 	GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error)
@@ -228,6 +249,12 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sQLServiceMethods.ByName("SearchQueryHistories")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sQLServiceListQueryHistoriesHandler := connect.NewUnaryHandler(
+		SQLServiceListQueryHistoriesProcedure,
+		svc.ListQueryHistories,
+		connect.WithSchema(sQLServiceMethods.ByName("ListQueryHistories")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sQLServiceGetQueryHistoryHandler := connect.NewUnaryHandler(
 		SQLServiceGetQueryHistoryProcedure,
 		svc.GetQueryHistory,
@@ -260,6 +287,8 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 			sQLServiceAdminExecuteHandler.ServeHTTP(w, r)
 		case SQLServiceSearchQueryHistoriesProcedure:
 			sQLServiceSearchQueryHistoriesHandler.ServeHTTP(w, r)
+		case SQLServiceListQueryHistoriesProcedure:
+			sQLServiceListQueryHistoriesHandler.ServeHTTP(w, r)
 		case SQLServiceGetQueryHistoryProcedure:
 			sQLServiceGetQueryHistoryHandler.ServeHTTP(w, r)
 		case SQLServiceExportProcedure:
@@ -287,6 +316,10 @@ func (UnimplementedSQLServiceHandler) AdminExecute(context.Context, *connect.Bid
 
 func (UnimplementedSQLServiceHandler) SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.SearchQueryHistories is not implemented"))
+}
+
+func (UnimplementedSQLServiceHandler) ListQueryHistories(context.Context, *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.ListQueryHistories is not implemented"))
 }
 
 func (UnimplementedSQLServiceHandler) GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error) {

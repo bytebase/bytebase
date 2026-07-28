@@ -1,10 +1,13 @@
 package oracle
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
@@ -77,4 +80,28 @@ END update_salary;`
 	require.NoError(t, err)
 	commands = base.FilterEmptyStatements(commands)
 	require.Len(t, commands, 9)
+}
+
+func TestBuildExecuteCommandsSplitsLargeOracleScript(t *testing.T) {
+	var builder strings.Builder
+	builder.WriteString(`CREATE TABLE APPS.M_SKU_STOCK_KEY_TMP (
+  SKU_CODE VARCHAR2(100) NOT NULL,
+  STOCK_KEY VARCHAR2(100)
+);
+`)
+	builder.WriteString("CREATE INDEX IDX_TMP_SKU_CODE ON APPS.M_SKU_STOCK_KEY_TMP(SKU_CODE);\n")
+	for i := 0; builder.Len() <= common.MaxSheetCheckSize+1024; i++ {
+		_, err := fmt.Fprintf(&builder, "INSERT INTO APPS.M_SKU_STOCK_KEY_TMP(SKU_CODE, STOCK_KEY) VALUES('SKU_%06d', '%s');\n", i, strings.Repeat("x", 64))
+		require.NoError(t, err)
+	}
+	statement := builder.String()
+	require.Greater(t, len(statement), common.MaxSheetCheckSize)
+
+	commands, err := buildExecuteCommands(statement)
+	require.NoError(t, err)
+
+	require.Greater(t, len(commands), 2)
+	require.NotEqual(t, statement, commands[0].Text)
+	require.Equal(t, "CREATE TABLE APPS.M_SKU_STOCK_KEY_TMP (\n  SKU_CODE VARCHAR2(100) NOT NULL,\n  STOCK_KEY VARCHAR2(100)\n)", strings.TrimSpace(commands[0].Text))
+	require.Equal(t, "CREATE INDEX IDX_TMP_SKU_CODE ON APPS.M_SKU_STOCK_KEY_TMP(SKU_CODE)", strings.TrimSpace(commands[1].Text))
 }

@@ -28,6 +28,34 @@ func buildCreateEnumStmt(schema string, enum *storepb.EnumTypeMetadata) *ast.Cre
 	}
 }
 
+// buildCompositeTypeStmt translates CompositeTypeMetadata + schema into a
+// CompositeTypeStmt. Attribute types are parsed via typeNameFromString; an
+// error on any attribute propagates so the loader can pseudo the whole type.
+func buildCompositeTypeStmt(schema string, composite *storepb.CompositeTypeMetadata) (*ast.CompositeTypeStmt, error) {
+	cols := make([]ast.Node, 0, len(composite.Attributes))
+	for _, attribute := range composite.Attributes {
+		if attribute.Name == "" {
+			continue
+		}
+		if attribute.Type == "" {
+			return nil, errors.Errorf("attribute %q: empty type", attribute.Name)
+		}
+		tn, err := typeNameFromString(attribute.Type)
+		if err != nil {
+			return nil, errors.Wrapf(err, "attribute %q", attribute.Name)
+		}
+		cols = append(cols, &ast.ColumnDef{
+			Colname:    attribute.Name,
+			TypeName:   tn,
+			CollClause: qsCollateClauseFromReference(attribute.Collation),
+		})
+	}
+	return &ast.CompositeTypeStmt{
+		Typevar:    &ast.RangeVar{Schemaname: schema, Relname: composite.Name},
+		Coldeflist: &ast.List{Items: cols},
+	}, nil
+}
+
 // buildCreateStmt translates TableMetadata into a CreateStmt with real
 // column types. Column types are parsed via typeNameFromString; an error on
 // any single column propagates back so the loader can pseudo the whole
@@ -242,4 +270,22 @@ func splitTopLevelCommas(s string) []string {
 	}
 	parts = append(parts, strings.TrimSpace(s[start:]))
 	return parts
+}
+
+// qsCollateClauseFromReference converts a stored emit-ready collation
+// reference (quoted as needed, schema-qualified outside pg_catalog) into an
+// AST collate clause. Returns nil for no collation.
+func qsCollateClauseFromReference(reference string) *ast.CollateClause {
+	if reference == "" {
+		return nil
+	}
+	var items []ast.Node
+	if schemaName, collationName, ok := splitQualifiedName(reference); ok {
+		items = []ast.Node{&ast.String{Str: schemaName}, &ast.String{Str: collationName}}
+	} else {
+		name := strings.Trim(reference, `"`)
+		name = strings.ReplaceAll(name, `""`, `"`)
+		items = []ast.Node{&ast.String{Str: name}}
+	}
+	return &ast.CollateClause{Collname: &ast.List{Items: items}}
 }

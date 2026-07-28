@@ -47,6 +47,9 @@ type MetadataDiff struct {
 	// Enum type changes
 	EnumTypeChanges []*EnumTypeDiff
 
+	// Composite type changes
+	CompositeTypeChanges []*CompositeTypeDiff
+
 	// Extension changes
 	ExtensionChanges []*ExtensionDiff
 
@@ -231,6 +234,15 @@ type EnumTypeDiff struct {
 	EnumTypeName string
 	OldEnumType  *storepb.EnumTypeMetadata
 	NewEnumType  *storepb.EnumTypeMetadata
+}
+
+// CompositeTypeDiff represents changes to a composite type.
+type CompositeTypeDiff struct {
+	Action            MetadataDiffAction
+	SchemaName        string
+	CompositeTypeName string
+	OldCompositeType  *storepb.CompositeTypeMetadata
+	NewCompositeType  *storepb.CompositeTypeMetadata
 }
 
 // ExtensionDiff represents changes to an extension.
@@ -453,6 +465,18 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 		}
 	}
 
+	// Add all composite types
+	for _, compositeProto := range schemaProto.CompositeTypes {
+		if !compositeProto.GetSkipDump() {
+			diff.CompositeTypeChanges = append(diff.CompositeTypeChanges, &CompositeTypeDiff{
+				Action:            MetadataDiffActionCreate,
+				SchemaName:        schemaName,
+				CompositeTypeName: compositeProto.Name,
+				NewCompositeType:  compositeProto,
+			})
+		}
+	}
+
 	// Add all events
 	for _, eventProto := range schemaProto.Events {
 		diff.EventChanges = append(diff.EventChanges, &EventDiff{
@@ -525,6 +549,9 @@ func compareSchemaObjects(engine storepb.Engine, diff *MetadataDiff, schemaName 
 
 	// Compare enum types
 	compareEnumTypes(diff, schemaName, oldSchema, newSchema)
+
+	// Compare composite types
+	compareCompositeTypes(diff, schemaName, oldSchema, newSchema)
 
 	// Compare events
 	compareEvents(diff, schemaName, oldSchema, newSchema)
@@ -1970,6 +1997,77 @@ func compareEnumTypes(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 	}
 }
 
+func compareCompositeTypes(diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+	oldSchemaProto := oldSchema.GetProto()
+	newSchemaProto := newSchema.GetProto()
+
+	oldCompositeMap := make(map[string]*storepb.CompositeTypeMetadata)
+	for _, composite := range oldSchemaProto.CompositeTypes {
+		if !composite.GetSkipDump() {
+			oldCompositeMap[composite.Name] = composite
+		}
+	}
+
+	newCompositeMap := make(map[string]*storepb.CompositeTypeMetadata)
+	for _, composite := range newSchemaProto.CompositeTypes {
+		if !composite.GetSkipDump() {
+			newCompositeMap[composite.Name] = composite
+		}
+	}
+
+	// Check for dropped composite types
+	for compositeName, oldComposite := range oldCompositeMap {
+		if _, exists := newCompositeMap[compositeName]; !exists {
+			diff.CompositeTypeChanges = append(diff.CompositeTypeChanges, &CompositeTypeDiff{
+				Action:            MetadataDiffActionDrop,
+				SchemaName:        schemaName,
+				CompositeTypeName: compositeName,
+				OldCompositeType:  oldComposite,
+			})
+		}
+	}
+
+	// Check for new and modified composite types
+	for compositeName, newComposite := range newCompositeMap {
+		if oldComposite, exists := oldCompositeMap[compositeName]; !exists {
+			diff.CompositeTypeChanges = append(diff.CompositeTypeChanges, &CompositeTypeDiff{
+				Action:            MetadataDiffActionCreate,
+				SchemaName:        schemaName,
+				CompositeTypeName: compositeName,
+				NewCompositeType:  newComposite,
+			})
+		} else if !compositeTypesEqual(oldComposite, newComposite) {
+			diff.CompositeTypeChanges = append(diff.CompositeTypeChanges, &CompositeTypeDiff{
+				Action:            MetadataDiffActionAlter,
+				SchemaName:        schemaName,
+				CompositeTypeName: compositeName,
+				OldCompositeType:  oldComposite,
+				NewCompositeType:  newComposite,
+			})
+		}
+	}
+}
+
+// compositeTypesEqual checks attributes (order-sensitive) and comments.
+func compositeTypesEqual(oldComposite, newComposite *storepb.CompositeTypeMetadata) bool {
+	if oldComposite.Comment != newComposite.Comment {
+		return false
+	}
+	if len(oldComposite.Attributes) != len(newComposite.Attributes) {
+		return false
+	}
+	for i, oldAttribute := range oldComposite.Attributes {
+		newAttribute := newComposite.Attributes[i]
+		if oldAttribute.Name != newAttribute.Name ||
+			oldAttribute.Type != newAttribute.Type ||
+			oldAttribute.Collation != newAttribute.Collation ||
+			oldAttribute.Comment != newAttribute.Comment {
+			return false
+		}
+	}
+	return true
+}
+
 // enumValuesEqual checks if two enum value slices are equal.
 func enumValuesEqual(oldValues, newValues []string) bool {
 	if len(oldValues) != len(newValues) {
@@ -2216,6 +2314,13 @@ func FilterPostgresArchiveSchema(diff *MetadataDiff) *MetadataDiff {
 	for _, enumChange := range diff.EnumTypeChanges {
 		if enumChange.SchemaName != archiveSchemaName {
 			filtered.EnumTypeChanges = append(filtered.EnumTypeChanges, enumChange)
+		}
+	}
+
+	// Filter composite type changes
+	for _, compositeChange := range diff.CompositeTypeChanges {
+		if compositeChange.SchemaName != archiveSchemaName {
+			filtered.CompositeTypeChanges = append(filtered.CompositeTypeChanges, compositeChange)
 		}
 	}
 

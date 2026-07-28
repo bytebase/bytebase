@@ -91,6 +91,12 @@ func extractUserTypeRefs(typeStr string) []UserTypeRef {
 // the caller's job to split.
 func stripTypeModifiers(typeStr string) string {
 	s := strings.TrimSpace(typeStr)
+	// Array suffixes wrap the element type: "public.addr[]" refers to
+	// public.addr. Quoted identifiers end with a quote, so a genuine name
+	// containing "[]" is never clipped.
+	for strings.HasSuffix(s, "[]") {
+		s = strings.TrimSpace(strings.TrimSuffix(s, "[]"))
+	}
 	s = stripTimeZoneSuffix(s)
 	s = stripParens(s)
 	return strings.TrimSpace(s)

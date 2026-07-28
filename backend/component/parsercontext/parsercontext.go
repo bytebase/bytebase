@@ -5,7 +5,7 @@
 // Lives outside the api/v1 package so both the api layer (e.g. sql_service,
 // release_service_check) and the runner layer (approval rule evaluation,
 // taskrun export executor) can use these without creating an import cycle
-// — `api/v1` imports `runner/approval`, so `runner/approval` can't import
+// — `api/v1` imports the review workflow, so the workflow can't import
 // from `api/v1` in return.
 package parsercontext
 

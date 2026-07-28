@@ -46,14 +46,30 @@
   "enable-description": "Habilitar esta política comenzará a aplicar sus reglas a los recursos adjuntos.",
   "enabled-rules": "Reglas habilitadas",
   "engine": {
+    "bigquery": "BigQuery",
+    "cassandra": "Cassandra",
+    "clickhouse": "ClickHouse",
+    "cockroachdb": "CockroachDB",
+    "cosmosdb": "Cosmos DB",
+    "databricks": "Databricks",
+    "doris": "Doris",
+    "dynamodb": "DynamoDB",
+    "elasticsearch": "Elasticsearch",
+    "hive": "Hive",
     "mariadb": "MariaDB",
+    "mongodb": "MongoDB",
     "mssql": "SQL Server",
     "mysql": "MySQL",
     "oceanbase": "OceanBase",
     "oracle": "Oracle",
     "postgres": "PostgreSQL",
+    "redis": "Redis",
+    "redshift": "Redshift",
     "snowflake": "Snowflake",
-    "tidb": "TiDB"
+    "spanner": "Spanner",
+    "starrocks": "StarRocks",
+    "tidb": "TiDB",
+    "trino": "Trino"
   },
   "input-then-press-enter": "Ingrese el valor y luego presione enter para agregar",
   "level": {
@@ -82,6 +98,15 @@
     "BUILTIN_PRIOR_BACKUP_CHECK": {
       "description": "Esta regla verifica si se puede crear una copia de seguridad antes de que se modifiquen los datos. Verifica la existencia de la base de datos de destino de la copia de seguridad y rechaza los escenarios no admitidos. Está incorporada y no se puede omitir.",
       "title": "Comprobación previa de viabilidad de la copia de seguridad"
+    },
+    "BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE": {
+      "component": {
+        "number": {
+          "title": "Tamaño máximo en MB"
+        }
+      },
+      "description": "Los archivos SQL grandes pueden superar el tamaño admitido por la revisión SQL y omitir la revisión basada en el analizador. Limite el tamaño del archivo para que el comportamiento sea explícito.",
+      "title": "Limitar el tamaño del archivo SQL"
     },
     "BUILTIN_WALK_THROUGH_CHECK": {
       "description": "Valida las sentencias SQL contra el esquema de base de datos actual simulando su ejecución. Detecta problemas como hacer referencia a tablas, columnas o índices inexistentes.",
@@ -708,7 +733,7 @@
     "bb-sql-review-dev": "Plantilla Básica",
     "bb-sql-review-dev-desc": "Cobertura básica para defender sus bases de datos de uso indebido común.",
     "bb-sql-review-empty": "Empezar desde el principio",
-    "bb-sql-review-empty-desc": "Comience solo con reglas integradas. Agregue usted mismo las reglas que necesite.",
+    "bb-sql-review-empty-desc": "Comience sin reglas configuradas. Agregue usted mismo las reglas que necesite.",
     "bb-sql-review-prod": "Plantilla Avanzada",
     "bb-sql-review-prod-desc": "Política completa donde se tiene protección total y mejores prácticas para sus bases de datos.",
     "bb-sql-review-sample": "Plantilla de Muestra",

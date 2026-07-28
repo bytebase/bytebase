@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { ApprovalStatus, RiskLevel } from "./common_pb";
+import type { ApprovalStatus, IssueStatus, RiskLevel } from "./common_pb";
 import type { Expr } from "../google/type/expr_pb";
 import type { Plan_Spec } from "./plan_service_pb";
 
@@ -998,6 +998,14 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
      */
     value: IssueComment_PlanUpdate;
     case: "planUpdate";
+  } | {
+    /**
+     * Review submission event.
+     *
+     * @generated from field: bytebase.v1.IssueComment.ReviewSubmission review_submission = 13;
+     */
+    value: IssueComment_ReviewSubmission;
+    case: "reviewSubmission";
   } | { case: undefined; value?: undefined };
 };
 
@@ -1121,6 +1129,20 @@ export declare type IssueComment_IssueUpdate = Message<"bytebase.v1.IssueComment
 export declare const IssueComment_IssueUpdateSchema: GenMessage<IssueComment_IssueUpdate>;
 
 /**
+ * Review submission event information.
+ *
+ * @generated from message bytebase.v1.IssueComment.ReviewSubmission
+ */
+export declare type IssueComment_ReviewSubmission = Message<"bytebase.v1.IssueComment.ReviewSubmission"> & {
+};
+
+/**
+ * Describes the message bytebase.v1.IssueComment.ReviewSubmission.
+ * Use `create(IssueComment_ReviewSubmissionSchema)` to create a new message.
+ */
+export declare const IssueComment_ReviewSubmissionSchema: GenMessage<IssueComment_ReviewSubmission>;
+
+/**
  * Plan update event information (snapshot of plan.config.specs before
  * and after a PlanService.UpdatePlan call that mutated specs).
  *
@@ -1143,46 +1165,6 @@ export declare type IssueComment_PlanUpdate = Message<"bytebase.v1.IssueComment.
  * Use `create(IssueComment_PlanUpdateSchema)` to create a new message.
  */
 export declare const IssueComment_PlanUpdateSchema: GenMessage<IssueComment_PlanUpdate>;
-
-/**
- * The status of an issue.
- *
- * @generated from enum bytebase.v1.IssueStatus
- */
-export enum IssueStatus {
-  /**
-   * Unspecified status.
-   *
-   * @generated from enum value: ISSUE_STATUS_UNSPECIFIED = 0;
-   */
-  ISSUE_STATUS_UNSPECIFIED = 0,
-
-  /**
-   * Issue is open and active.
-   *
-   * @generated from enum value: OPEN = 1;
-   */
-  OPEN = 1,
-
-  /**
-   * Issue is completed.
-   *
-   * @generated from enum value: DONE = 2;
-   */
-  DONE = 2,
-
-  /**
-   * Issue is canceled.
-   *
-   * @generated from enum value: CANCELED = 3;
-   */
-  CANCELED = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.IssueStatus.
- */
-export declare const IssueStatusSchema: GenEnum<IssueStatus>;
 
 /**
  * IssueService manages issues for tracking database changes and tasks.

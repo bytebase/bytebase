@@ -42,7 +42,7 @@ func TestActionCheckCommand(t *testing.T) {
 
 		// Create a valid migration file
 		migrationContent := `CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
@@ -72,7 +72,7 @@ func TestActionCheckCommand(t *testing.T) {
 			Name: database.Name + "/metadata",
 		}))
 		a.NoError(err)
-		// Verify no user tables exist (only SQLite system tables)
+		// Verify no user tables exist
 		for _, schema := range metadata.Msg.Schemas {
 			for _, table := range schema.Tables {
 				a.NotEqual("users", table.Name, "Check command should not create tables")
@@ -114,7 +114,7 @@ func TestActionCheckCommand(t *testing.T) {
 
 		// Create a valid migration file
 		migrationContent := `CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
@@ -144,7 +144,7 @@ func TestActionCheckCommand(t *testing.T) {
 			Name: database.Name + "/metadata",
 		}))
 		a.NoError(err)
-		// Verify no user tables exist (only SQLite system tables)
+		// Verify no user tables exist
 		for _, schema := range metadata.Msg.Schemas {
 			for _, table := range schema.Tables {
 				a.NotEqual("users", table.Name, "Check command should not create tables")
@@ -183,7 +183,7 @@ func TestActionCheckCommand(t *testing.T) {
 		a.NoError(err)
 
 		// Execute check with file that has syntax errors
-		result, err := executeActionCommand(ctx,
+		_, err = executeActionCommand(ctx,
 			"check",
 			"--url", ctl.rootURL,
 			"--service-account", "demo@example.com",
@@ -193,17 +193,11 @@ func TestActionCheckCommand(t *testing.T) {
 			"--file-pattern", filepath.Join(testDataDir, "00001_syntax_error.sql"),
 			"--check-release", "FAIL_ON_ERROR",
 		)
-		a.NoError(err)
 
-		// The command may or may not fail depending on how syntax errors are handled
-		// The key verification is that syntax issues are detected and reported
-
-		// E2E Verification for check command with syntax errors:
-		// The check should detect syntax errors without modifying databases
-
-		// The command should complete successfully regardless of syntax issues in the SQL
-		// The check API validates the request but may not deeply parse SQL syntax
-		a.NoError(result.Error, "Command should complete successfully")
+		// Postgres parses the statement, so the release check reports the syntax
+		// error and FAIL_ON_ERROR makes the command exit with an error.
+		a.Error(err)
+		a.Contains(err.Error(), "error(s) in release check")
 
 		// Verify NO database changes occurred
 		metadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
@@ -533,24 +527,21 @@ func executeActionCommand(ctx context.Context, args ...string) (*ActionResult, e
 	}, err
 }
 
-// createTestDatabase creates a test SQLite database instance and database
+// createTestDatabase creates a test Postgres database instance and database
 func (ctl *controller) createTestDatabase(ctx context.Context, t *testing.T) *v1pb.Database {
 	a := require.New(t)
 
-	// Create SQLite instance
-	instanceDir := t.TempDir()
+	// Create Postgres instance
+	pgContainer, err := provisionPgInstance(ctx, t)
+	a.NoError(err)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst")[:8],
 		Instance: &v1pb.Instance{
 			Title:       "Test Instance",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -672,7 +663,7 @@ func TestActionRolloutCommand(t *testing.T) {
 		// Create test data directory and migration file
 		testDataDir := t.TempDir()
 		migrationContent := `CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
@@ -808,7 +799,7 @@ func TestActionRolloutCommand(t *testing.T) {
 
 		// Create 00001_create_users.sql
 		migrationContent1 := `CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
@@ -1675,7 +1666,7 @@ func TestActionErrorScenarios(t *testing.T) {
 		// Create test data directory and migration file
 		testDataDir := t.TempDir()
 		migrationContent := `CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
@@ -1710,7 +1701,7 @@ func TestActionErrorScenarios(t *testing.T) {
 		// Create test data directory and migration file
 		testDataDir := t.TempDir()
 		migrationContent := `CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`

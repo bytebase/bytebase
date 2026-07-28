@@ -55,6 +55,7 @@ type objectKind int
 const (
 	kindSchema objectKind = iota
 	kindEnum
+	kindComposite
 	kindTable
 	kindView
 	kindMatView
@@ -71,11 +72,12 @@ type objectEntry struct {
 	name   string
 
 	// Exactly one of the following is populated based on kind.
-	enumMeta    *storepb.EnumTypeMetadata
-	tableMeta   *storepb.TableMetadata
-	viewMeta    *storepb.ViewMetadata
-	matViewMeta *storepb.MaterializedViewMetadata
-	funcMeta    *storepb.FunctionMetadata
+	enumMeta      *storepb.EnumTypeMetadata
+	compositeMeta *storepb.CompositeTypeMetadata
+	tableMeta     *storepb.TableMetadata
+	viewMeta      *storepb.ViewMetadata
+	matViewMeta   *storepb.MaterializedViewMetadata
+	funcMeta      *storepb.FunctionMetadata
 }
 
 // key returns a canonical kind-prefixed identifier used for dependency
@@ -89,7 +91,7 @@ func (e *objectEntry) key() string {
 	switch e.kind {
 	case kindSchema:
 		return "schema:" + e.schema
-	case kindEnum:
+	case kindEnum, kindComposite:
 		return "type:" + e.schema + "." + e.name
 	case kindTable, kindView, kindMatView:
 		return "rel:" + e.schema + "." + e.name
@@ -130,6 +132,8 @@ func kindLabel(k objectKind) string {
 		return "0schema"
 	case kindEnum:
 		return "1enum"
+	case kindComposite:
+		return "1composite"
 	case kindTable:
 		return "2table"
 	case kindView:
@@ -203,6 +207,14 @@ func (l *catalogLoader) collectObjects() []*objectEntry {
 				schema:   sm.Name,
 				name:     enum.Name,
 				enumMeta: enum,
+			})
+		}
+		for _, composite := range sm.CompositeTypes {
+			out = append(out, &objectEntry{
+				kind:          kindComposite,
+				schema:        sm.Name,
+				name:          composite.Name,
+				compositeMeta: composite,
 			})
 		}
 		for _, tbl := range sm.Tables {
@@ -374,6 +386,18 @@ func buildDependencyEdges(objects []*objectEntry, index map[string]*objectEntry)
 			for _, at := range argTypes {
 				for _, ref := range extractUserTypeRefs(at) {
 					if k := typeRefKey(ref); index[k] != nil {
+						deps = append(deps, k)
+					}
+				}
+			}
+		case kindComposite:
+			for _, attribute := range obj.compositeMeta.Attributes {
+				for _, ref := range extractUserTypeRefs(attribute.Type) {
+					if k := typeRefKey(ref); index[k] != nil {
+						deps = append(deps, k)
+					}
+					// An attribute may be typed with a table/view row type.
+					if k := relationKey(ref.Schema, ref.Name); index[k] != nil {
 						deps = append(deps, k)
 					}
 				}
@@ -562,6 +586,12 @@ func (l *catalogLoader) installReal(obj *objectEntry) error {
 		return err
 	case kindEnum:
 		return l.cat.DefineEnum(buildCreateEnumStmt(obj.schema, obj.enumMeta))
+	case kindComposite:
+		stmt, err := buildCompositeTypeStmt(obj.schema, obj.compositeMeta)
+		if err != nil {
+			return err
+		}
+		return l.cat.DefineCompositeType(stmt)
 	case kindTable:
 		stmt, err := buildCreateStmt(obj.schema, obj.tableMeta)
 		if err != nil {
@@ -602,6 +632,27 @@ func (l *catalogLoader) installPseudo(obj *objectEntry) error {
 		return errors.New("schema has no pseudo form")
 	case kindEnum:
 		return l.cat.DefineEnum(pseudoCreateEnumStmt(obj.schema, obj.name))
+	case kindComposite:
+		// Name-preserving, text-backed fallback when metadata attributes are
+		// known, so (col).field access still resolves; the "_broken" shape
+		// remains for composites with no attribute information at all.
+		if len(obj.compositeMeta.GetAttributes()) > 0 {
+			items := make([]ast.Node, 0, len(obj.compositeMeta.Attributes))
+			for _, attribute := range obj.compositeMeta.Attributes {
+				if attribute.Name == "" {
+					continue
+				}
+				items = append(items, &ast.ColumnDef{
+					Colname:  attribute.Name,
+					TypeName: pseudoTextTypeName(),
+				})
+			}
+			return l.cat.DefineCompositeType(&ast.CompositeTypeStmt{
+				Typevar:    &ast.RangeVar{Schemaname: obj.schema, Relname: obj.name},
+				Coldeflist: &ast.List{Items: items},
+			})
+		}
+		return l.cat.DefineCompositeType(pseudoCompositeTypeStmt(obj.schema, obj.name))
 	case kindTable:
 		cols := columnNamesFromTableMetadata(obj.tableMeta)
 		return l.cat.DefineRelation(pseudoCreateTableStmt(obj.schema, obj.name, cols), 'r')

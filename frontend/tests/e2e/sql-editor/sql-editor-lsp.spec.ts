@@ -1,7 +1,7 @@
 // SQL Editor — LSP smoke test (completion over the /lsp websocket).
 //
 // Locks the language-client wiring in
-// frontend/src/react/components/monaco/lsp-client.ts: the inline
+// frontend/src/components/monaco/lsp-client.ts: the inline
 // BaseLanguageClient subclass must start against the websocket transports,
 // complete the LSP initialize handshake, deliver `setMetadata` via
 // workspace/executeCommand, and surface schema-aware completions in

@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import i18n from "@/react/i18n";
+import i18n from "@/lib/i18n";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { SQLReviewRule } from "@/types/proto-es/v1/review_config_service_pb";
 import {
@@ -23,6 +23,8 @@ export interface NumberPayload {
   type: "NUMBER";
   default: number;
   value?: number;
+  unit?: string;
+  factor?: number;
 }
 
 // StringPayload is the string type payload configuration options and default value.
@@ -193,25 +195,6 @@ export const ruleTemplateMapV2 = getRuleMapByEngine(
   convertRuleTemplateV2Raw(sqlReviewSchema as unknown as RuleTemplateV2Raw[])
 );
 
-const getBuiltinRuleMap = (): Map<
-  Engine,
-  Map<SQLReviewRule_Type, RuleTemplateV2>
-> => {
-  const ruleMap = new Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>();
-  for (const [engine, engineMap] of ruleTemplateMapV2) {
-    const builtinMap = new Map<SQLReviewRule_Type, RuleTemplateV2>();
-    for (const [type, rule] of engineMap) {
-      if (isBuiltinRule(rule)) {
-        builtinMap.set(type, { ...rule });
-      }
-    }
-    if (builtinMap.size > 0) {
-      ruleMap.set(engine, builtinMap);
-    }
-  }
-  return ruleMap;
-};
-
 // Build the frontend template list based on schema and template.
 export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
   interface PayloadObject {
@@ -291,9 +274,7 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
 
   resp.unshift({
     id: "bb.sql-review.empty",
-    ruleList: [...getBuiltinRuleMap().values()].flatMap((ruleMap) => [
-      ...ruleMap.values(),
-    ]),
+    ruleList: [],
   });
 
   return resp;
@@ -549,6 +530,7 @@ export const convertPolicyRuleToRuleTemplate = (
     case SQLReviewRule_Type.TABLE_LIMIT_SIZE:
     case SQLReviewRule_Type.STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT:
     case SQLReviewRule_Type.STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION:
+    case SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE:
       if (!numberComponent) {
         throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
       }
@@ -560,7 +542,10 @@ export const convertPolicyRuleToRuleTemplate = (
             ...numberComponent,
             payload: {
               ...numberComponent.payload,
-              value: payload.number,
+              value: numberPayloadToDisplayValue(
+                payload.number,
+                numberComponent.payload as NumberPayload
+              ),
             } as NumberPayload,
           },
         ],
@@ -568,6 +553,24 @@ export const convertPolicyRuleToRuleTemplate = (
   }
 
   throw new Error(`Invalid rule ${ruleTemplate.type}`);
+};
+
+const numberPayloadToDisplayValue = (
+  value: unknown,
+  payload: NumberPayload
+): number | undefined => {
+  if (typeof value !== "number") {
+    return undefined;
+  }
+  return value / (payload.factor ?? 1);
+};
+
+const numberPayloadToStorageValue = (payload: NumberPayload): number => {
+  const value = payload.value ?? payload.default;
+  if (!payload.factor) {
+    return value;
+  }
+  return Math.round(value * payload.factor);
 };
 
 const mergeIndividualConfigAsRule = (
@@ -726,6 +729,7 @@ const mergeIndividualConfigAsRule = (
     case SQLReviewRule_Type.TABLE_LIMIT_SIZE:
     case SQLReviewRule_Type.STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT:
     case SQLReviewRule_Type.STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION:
+    case SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE:
       if (!numberPayload) {
         throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);
       }
@@ -734,7 +738,7 @@ const mergeIndividualConfigAsRule = (
         payload: {
           case: "numberPayload",
           value: create(SQLReviewRule_NumberRulePayloadSchema, {
-            number: numberPayload.value ?? numberPayload.default,
+            number: numberPayloadToStorageValue(numberPayload),
           }),
         },
       };

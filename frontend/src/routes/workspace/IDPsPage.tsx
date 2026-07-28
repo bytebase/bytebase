@@ -1,0 +1,2141 @@
+import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
+import {
+  ArrowRight,
+  Building,
+  Database,
+  GitBranch,
+  GitFork,
+  Globe,
+  Info,
+  Key,
+  Plus,
+  ShieldCheck,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { identityProviderServiceClientConnect } from "@/api";
+import { router } from "@/app/router";
+import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/app/router/handles";
+import { FeatureAttention } from "@/components/FeatureAttention";
+import { FeatureBadge } from "@/components/FeatureBadge";
+import { LearnMoreLink } from "@/components/LearnMoreLink";
+import { PermissionGuard } from "@/components/PermissionGuard";
+import {
+  ResourceIdField,
+  type ResourceIdFieldRef,
+} from "@/components/ResourceIdField";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { FormField, FormFieldGroup, FormTitle } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  WorkspacePageInfo,
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/components/WorkspacePageLayout";
+import { useIdentityProviderList } from "@/hooks/useAppState";
+import { writeTextToClipboard } from "@/lib/clipboard";
+import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
+import {
+  getIdentityProviderResourceId,
+  idpNamePrefix,
+} from "@/stores/modules/v1/common";
+import type { OAuthWindowEventPayload } from "@/types";
+import type {
+  IdentityProvider,
+  LDAPIdentityProviderConfig,
+  OAuth2IdentityProviderConfig,
+  OIDCIdentityProviderConfig,
+  TestIdentityProviderResponse,
+} from "@/types/proto-es/v1/idp_service_pb";
+import {
+  CreateIdentityProviderRequestSchema,
+  FieldMappingSchema,
+  IdentityProviderConfigSchema,
+  IdentityProviderSchema,
+  IdentityProviderType,
+  LDAPIdentityProviderConfig_SecurityProtocol,
+  LDAPIdentityProviderConfigSchema,
+  OAuth2AuthStyle,
+  OAuth2IdentityProviderConfigSchema,
+  OIDCIdentityProviderConfigSchema,
+  TestIdentityProviderRequestSchema,
+} from "@/types/proto-es/v1/idp_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  hasWorkspacePermissionV2,
+  identityProviderTypeToString,
+  openWindowForSSO,
+} from "@/utils";
+
+// ============================================================
+// Escape key stack
+// ============================================================
+
+const escapeStack: (() => void)[] = [];
+
+function useEscapeKey(onEscape: () => void) {
+  useEffect(() => {
+    escapeStack.push(onEscape);
+    const handler = (e: KeyboardEvent) => {
+      if (
+        e.key === "Escape" &&
+        escapeStack[escapeStack.length - 1] === onEscape
+      ) {
+        onEscape();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => {
+      document.removeEventListener("keydown", handler);
+      const idx = escapeStack.lastIndexOf(onEscape);
+      if (idx >= 0) escapeStack.splice(idx, 1);
+    };
+  }, [onEscape]);
+}
+
+// ============================================================
+// Types
+// ============================================================
+
+interface OAuth2Template {
+  title: string;
+  domain: string;
+  domainDisabled?: boolean;
+  feature: PlanFeature;
+  config: OAuth2IdentityProviderConfig;
+}
+
+interface FieldMappingState {
+  identifier: string;
+  displayName: string;
+  phone: string;
+  groups: string;
+}
+
+// ============================================================
+// ExternalURLInfo
+// ============================================================
+
+function ExternalURLInfo({ type }: { type: IdentityProviderType }) {
+  const { t } = useTranslation();
+  const externalUrl = useAppStore((s) => s.serverInfo?.externalUrl ?? "");
+
+  const redirectUrl = useMemo(() => {
+    const url = externalUrl || window.origin;
+    if (type === IdentityProviderType.OAUTH2) {
+      return `${url}/oauth/callback`;
+    }
+    if (type === IdentityProviderType.OIDC) {
+      return `${url}/oidc/callback`;
+    }
+    return "";
+  }, [externalUrl, type]);
+
+  if (!redirectUrl) return null;
+
+  const handleCopy = async () => {
+    if (await writeTextToClipboard(redirectUrl)) {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.copied"),
+      });
+    }
+  };
+
+  return (
+    <div className="p-4 rounded-sm border border-gray-200 bg-gray-50">
+      <div className="flex items-start gap-x-3">
+        <Info className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900 mb-2">
+            {t("settings.sso.form.identity-provider-needed-information")}
+          </p>
+          <p className="text-sm text-gray-600 mb-3">
+            {t("settings.sso.form.redirect-url-description")}
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t("settings.sso.form.redirect-url")}
+            </label>
+            <div className="flex items-center gap-x-2">
+              <Input
+                value={redirectUrl}
+                readOnly
+                className="flex-1 font-mono"
+              />
+              <Button appearance="outline" size="sm" onClick={handleCopy}>
+                {t("common.copy")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// TestConnectionResultDialog
+// ============================================================
+
+function TestConnectionResultDialog({
+  response,
+  onClose,
+}: {
+  response: TestIdentityProviderResponse;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Dialog open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DialogContent className="w-[32rem] max-w-[calc(100vw-2rem)] p-6">
+        <div className="flex items-center gap-x-2">
+          <div className="size-6 text-success">&#10003;</div>
+          <DialogTitle>
+            {t("identity-provider.test-connection-success")}
+          </DialogTitle>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-y-4">
+          <p className="text-sm text-control-light">
+            {t("identity-provider.userinfo-description")}
+          </p>
+          <div className="bg-gray-50 rounded-xs p-4">
+            <div className="flex flex-col gap-y-1">
+              {Object.entries(response.userInfo).map(([key, value]) => (
+                <div
+                  key={key}
+                  className="grid grid-cols-3 gap-2 py-1 border-b border-gray-200 last:border-b-0"
+                >
+                  <div
+                    className="text-sm font-medium text-control truncate"
+                    title={key}
+                  >
+                    {key}
+                  </div>
+                  <div
+                    className="col-span-2 text-sm text-main break-all"
+                    title={value}
+                  >
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <p className="text-sm text-control-light">
+            {t("identity-provider.claims-description")}
+          </p>
+          <div className="bg-gray-50 rounded-xs p-4">
+            {Object.keys(response.claims).length === 0 ? (
+              <div className="text-sm text-control-light italic">
+                {t("identity-provider.no-claims")}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-y-1">
+                {Object.entries(response.claims).map(([key, value]) => (
+                  <div
+                    key={key}
+                    className="grid grid-cols-3 gap-2 py-1 border-b border-gray-200 last:border-b-0"
+                  >
+                    <div
+                      className="text-sm font-medium text-control truncate"
+                      title={key}
+                    >
+                      {key}
+                    </div>
+                    <div
+                      className="col-span-2 text-sm text-main break-all"
+                      title={value}
+                    >
+                      {value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-4">
+          <Button onClick={onClose}>{t("common.close")}</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ============================================================
+// TestConnectionButton
+// ============================================================
+
+function TestConnectionButton({
+  idp,
+  disabled,
+  isCreating,
+}: {
+  idp: IdentityProvider;
+  disabled: boolean;
+  isCreating?: boolean;
+}) {
+  const { t } = useTranslation();
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] =
+    useState<TestIdentityProviderResponse | null>(null);
+  const currentEventNameRef = useRef("");
+  const idpRef = useRef(idp);
+  idpRef.current = idp;
+  const testingRef = useRef(false);
+
+  // Stable event handler that reads latest state via refs
+  const handleOAuthEventRef = useRef(async (event: Event) => {
+    if (testingRef.current) return;
+    const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
+    if (payload.error) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Request error occurred",
+        description: payload.error,
+      });
+      return;
+    }
+
+    try {
+      testingRef.current = true;
+      setTesting(true);
+      const currentIdp = idpRef.current;
+      const isOidc = currentIdp.type === IdentityProviderType.OIDC;
+      const request = create(TestIdentityProviderRequestSchema, {
+        identityProvider: currentIdp,
+        context: isOidc
+          ? { case: "oidcContext", value: { code: payload.code } }
+          : { case: "oauth2Context", value: { code: payload.code } },
+      });
+      const response =
+        await identityProviderServiceClientConnect.testIdentityProvider(
+          request
+        );
+      setTestResult(response);
+    } catch (error) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Request error occurred",
+        description: (error as ConnectError).message,
+      });
+    } finally {
+      testingRef.current = false;
+      setTesting(false);
+    }
+  });
+
+  useEffect(() => {
+    return () => {
+      if (currentEventNameRef.current) {
+        window.removeEventListener(
+          currentEventNameRef.current,
+          handleOAuthEventRef.current as EventListener,
+          false
+        );
+      }
+    };
+  }, []);
+
+  const testConnection = async () => {
+    if (testingRef.current) return;
+
+    if (
+      idp.type === IdentityProviderType.OAUTH2 ||
+      idp.type === IdentityProviderType.OIDC
+    ) {
+      let idpForTesting: IdentityProvider = idp;
+      if (isCreating && idp.type === IdentityProviderType.OIDC) {
+        const request = create(CreateIdentityProviderRequestSchema, {
+          identityProviderId: idp.name,
+          identityProvider: idp,
+          validateOnly: true,
+        });
+        const response =
+          await identityProviderServiceClientConnect.createIdentityProvider(
+            request
+          );
+        idpForTesting = response;
+      }
+
+      const eventName = `bb.oauth.signin.${idpForTesting.name}`;
+      if (currentEventNameRef.current) {
+        window.removeEventListener(
+          currentEventNameRef.current,
+          handleOAuthEventRef.current as EventListener,
+          false
+        );
+      }
+      window.addEventListener(
+        eventName,
+        handleOAuthEventRef.current as EventListener,
+        false
+      );
+      currentEventNameRef.current = eventName;
+
+      try {
+        await openWindowForSSO(idpForTesting);
+      } catch (error) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: "Request error occurred",
+          description: (error as ConnectError).message,
+        });
+      }
+    } else if (idp.type === IdentityProviderType.LDAP) {
+      try {
+        testingRef.current = true;
+        setTesting(true);
+        const request = create(TestIdentityProviderRequestSchema, {
+          identityProvider: idp,
+        });
+        const response =
+          await identityProviderServiceClientConnect.testIdentityProvider(
+            request
+          );
+        setTestResult(response);
+      } catch (error) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: "Request error occurred",
+          description: (error as ConnectError).message,
+        });
+      } finally {
+        testingRef.current = false;
+        setTesting(false);
+      }
+    }
+  };
+
+  return (
+    <>
+      <Button
+        appearance="outline"
+        disabled={disabled || testing}
+        onClick={testConnection}
+      >
+        {t("identity-provider.test-connection")}
+      </Button>
+      {testResult && (
+        <TestConnectionResultDialog
+          response={testResult}
+          onClose={() => setTestResult(null)}
+        />
+      )}
+    </>
+  );
+}
+
+// ============================================================
+// ProviderConfigForm
+// ============================================================
+
+function ProviderConfigForm({
+  providerType,
+  configForOAuth2,
+  configForOIDC,
+  configForLDAP,
+  scopesString,
+  onUpdateOAuth2,
+  onUpdateOIDC,
+  onUpdateLDAP,
+  onUpdateScopes,
+}: {
+  providerType: IdentityProviderType;
+  configForOAuth2: OAuth2IdentityProviderConfig;
+  configForOIDC: OIDCIdentityProviderConfig;
+  configForLDAP: LDAPIdentityProviderConfig;
+  scopesString: string;
+  onUpdateOAuth2: (config: OAuth2IdentityProviderConfig) => void;
+  onUpdateOIDC: (config: OIDCIdentityProviderConfig) => void;
+  onUpdateLDAP: (config: LDAPIdentityProviderConfig) => void;
+  onUpdateScopes: (scopes: string) => void;
+}) {
+  const { t } = useTranslation();
+
+  if (providerType === IdentityProviderType.OAUTH2) {
+    return (
+      <FormFieldGroup>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField>
+            <FormTitle id="sso-oauth2-client-id-title">
+              Client ID <span className="text-error">*</span>
+            </FormTitle>
+            <Input
+              id="sso-oauth2-client-id"
+              aria-labelledby="sso-oauth2-client-id-title"
+              value={configForOAuth2.clientId}
+              onChange={(e) =>
+                onUpdateOAuth2({
+                  ...configForOAuth2,
+                  clientId: e.target.value,
+                })
+              }
+              placeholder="e.g. 6655asd77895265aa110ac0d3"
+            />
+          </FormField>
+          <FormField>
+            <FormTitle id="sso-oauth2-client-secret-title">
+              Client Secret <span className="text-error">*</span>
+            </FormTitle>
+            <Input
+              id="sso-oauth2-client-secret"
+              aria-labelledby="sso-oauth2-client-secret-title"
+              type="password"
+              value={configForOAuth2.clientSecret}
+              onChange={(e) =>
+                onUpdateOAuth2({
+                  ...configForOAuth2,
+                  clientSecret: e.target.value,
+                })
+              }
+              placeholder="e.g. 5bbezxc3972ca304de70c5d70a6aa932asd8"
+            />
+          </FormField>
+        </div>
+
+        <FormField>
+          <FormTitle id="sso-oauth2-auth-url-title">
+            {t("settings.sso.form.auth-url")}{" "}
+            <span className="text-error">*</span>
+          </FormTitle>
+          <Input
+            id="sso-oauth2-auth-url"
+            aria-labelledby="sso-oauth2-auth-url-title"
+            value={configForOAuth2.authUrl}
+            onChange={(e) =>
+              onUpdateOAuth2({ ...configForOAuth2, authUrl: e.target.value })
+            }
+            placeholder={t("settings.sso.form.auth-url-placeholder")}
+          />
+          <span className="text-sm text-control-placeholder">
+            {t("settings.sso.form.auth-url-description")}
+          </span>
+        </FormField>
+
+        <FormField>
+          <FormTitle id="sso-oauth2-token-url-title">
+            {t("settings.sso.form.token-url")}{" "}
+            <span className="text-error">*</span>
+          </FormTitle>
+          <Input
+            id="sso-oauth2-token-url"
+            aria-labelledby="sso-oauth2-token-url-title"
+            value={configForOAuth2.tokenUrl}
+            onChange={(e) =>
+              onUpdateOAuth2({ ...configForOAuth2, tokenUrl: e.target.value })
+            }
+            placeholder={t("settings.sso.form.token-url-placeholder")}
+          />
+          <span className="text-sm text-control-placeholder">
+            {t("settings.sso.form.token-url-description")}
+          </span>
+        </FormField>
+
+        <FormField>
+          <FormTitle id="sso-oauth2-user-info-url-title">
+            {t("settings.sso.form.user-info-url")}{" "}
+            <span className="text-error">*</span>
+          </FormTitle>
+          <Input
+            id="sso-oauth2-user-info-url"
+            aria-labelledby="sso-oauth2-user-info-url-title"
+            value={configForOAuth2.userInfoUrl}
+            onChange={(e) =>
+              onUpdateOAuth2({
+                ...configForOAuth2,
+                userInfoUrl: e.target.value,
+              })
+            }
+            placeholder={t("settings.sso.form.user-info-url-placeholder")}
+          />
+          <span className="text-sm text-control-placeholder">
+            {t("settings.sso.form.user-info-url-description")}
+          </span>
+        </FormField>
+
+        <FormField>
+          <FormTitle id="sso-oauth2-scopes-title">
+            {t("settings.sso.form.scopes")}{" "}
+            <span className="text-error">*</span>
+          </FormTitle>
+          <Input
+            id="sso-oauth2-scopes"
+            aria-labelledby="sso-oauth2-scopes-title"
+            value={scopesString}
+            onChange={(e) => onUpdateScopes(e.target.value)}
+            placeholder={t("settings.sso.form.scopes-placeholder")}
+          />
+          <span className="text-sm text-control-placeholder">
+            {t("settings.sso.form.scopes-description")}
+          </span>
+        </FormField>
+
+        <FormField
+          title={
+            <>
+              {t("settings.sso.form.authentication-style")}{" "}
+              <span className="text-error">*</span>
+            </>
+          }
+        >
+          <RadioGroup
+            className="flex-col items-stretch gap-y-3"
+            value={String(configForOAuth2.authStyle)}
+            onValueChange={(value) =>
+              onUpdateOAuth2({
+                ...configForOAuth2,
+                authStyle: Number(value) as OAuth2AuthStyle,
+              })
+            }
+          >
+            <RadioGroupItem
+              value={String(OAuth2AuthStyle.IN_PARAMS)}
+              className="items-start gap-x-3"
+              radioClassName="mt-1"
+            >
+              <div>
+                <div className="font-medium">
+                  {t("settings.sso.form.in-parameters")}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {t("settings.sso.form.in-parameters-description")}
+                </div>
+              </div>
+            </RadioGroupItem>
+            <RadioGroupItem
+              value={String(OAuth2AuthStyle.IN_HEADER)}
+              className="items-start gap-x-3"
+              radioClassName="mt-1"
+            >
+              <div>
+                <div className="font-medium">
+                  {t("settings.sso.form.in-header")}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {t("settings.sso.form.in-header-description")}
+                </div>
+              </div>
+            </RadioGroupItem>
+          </RadioGroup>
+        </FormField>
+
+        <FormField title={<>{t("settings.sso.form.security-options")}</>}>
+          <label className="flex items-center gap-x-2 cursor-pointer">
+            <Checkbox
+              checked={configForOAuth2.skipTlsVerify}
+              onCheckedChange={(checked) =>
+                onUpdateOAuth2({
+                  ...configForOAuth2,
+                  skipTlsVerify: checked,
+                })
+              }
+            />
+            <span>{t("settings.sso.form.skip-tls-verification")}</span>
+          </label>
+          <span className="text-sm text-control-placeholder ml-6">
+            {t("settings.sso.form.skip-tls-warning")}
+          </span>
+        </FormField>
+      </FormFieldGroup>
+    );
+  }
+
+  if (providerType === IdentityProviderType.OIDC) {
+    return (
+      <FormFieldGroup>
+        <FormField>
+          <FormTitle id="sso-oidc-issuer-title">
+            Issuer URL <span className="text-error">*</span>
+          </FormTitle>
+          <Input
+            id="sso-oidc-issuer"
+            aria-labelledby="sso-oidc-issuer-title"
+            value={configForOIDC.issuer}
+            onChange={(e) =>
+              onUpdateOIDC({ ...configForOIDC, issuer: e.target.value })
+            }
+            placeholder={t("settings.sso.form.issuer-url-placeholder")}
+          />
+          <span className="text-sm text-control-placeholder">
+            {t("settings.sso.form.issuer-url-description")}
+          </span>
+        </FormField>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField>
+            <FormTitle id="sso-oidc-client-id-title">
+              Client ID <span className="text-error">*</span>
+            </FormTitle>
+            <Input
+              id="sso-oidc-client-id"
+              aria-labelledby="sso-oidc-client-id-title"
+              value={configForOIDC.clientId}
+              onChange={(e) =>
+                onUpdateOIDC({ ...configForOIDC, clientId: e.target.value })
+              }
+              placeholder="e.g. 6655asd77895265aa110ac0d3"
+            />
+          </FormField>
+          <FormField>
+            <FormTitle id="sso-oidc-client-secret-title">
+              Client Secret <span className="text-error">*</span>
+            </FormTitle>
+            <Input
+              id="sso-oidc-client-secret"
+              aria-labelledby="sso-oidc-client-secret-title"
+              type="password"
+              value={configForOIDC.clientSecret}
+              onChange={(e) =>
+                onUpdateOIDC({
+                  ...configForOIDC,
+                  clientSecret: e.target.value,
+                })
+              }
+              placeholder="e.g. 5bbezxc3972ca304de70c5d70a6aa932asd8"
+            />
+          </FormField>
+        </div>
+
+        <FormField>
+          <FormTitle id="sso-oidc-scopes-title">
+            {t("settings.sso.form.scopes")}{" "}
+            <span className="text-error">*</span>
+          </FormTitle>
+          <Input
+            id="sso-oidc-scopes"
+            aria-labelledby="sso-oidc-scopes-title"
+            value={scopesString}
+            onChange={(e) => onUpdateScopes(e.target.value)}
+            placeholder={t("settings.sso.form.scopes-placeholder-oidc")}
+          />
+          <span className="text-sm text-control-placeholder">
+            {t("settings.sso.form.openid-scopes-description")}
+          </span>
+        </FormField>
+
+        <FormField
+          title={
+            <>
+              {t("settings.sso.form.authentication-style")}{" "}
+              <span className="text-error">*</span>
+            </>
+          }
+        >
+          <RadioGroup
+            className="flex-col items-stretch gap-y-3"
+            value={String(configForOIDC.authStyle)}
+            onValueChange={(value) =>
+              onUpdateOIDC({
+                ...configForOIDC,
+                authStyle: Number(value) as OAuth2AuthStyle,
+              })
+            }
+          >
+            <RadioGroupItem
+              value={String(OAuth2AuthStyle.IN_PARAMS)}
+              className="items-start gap-x-3"
+              radioClassName="mt-1"
+            >
+              <div>
+                <div className="font-medium">
+                  {t("settings.sso.form.in-parameters")}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {t("settings.sso.form.in-parameters-description")}
+                </div>
+              </div>
+            </RadioGroupItem>
+            <RadioGroupItem
+              value={String(OAuth2AuthStyle.IN_HEADER)}
+              className="items-start gap-x-3"
+              radioClassName="mt-1"
+            >
+              <div>
+                <div className="font-medium">
+                  {t("settings.sso.form.in-header")}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {t("settings.sso.form.in-header-description")}
+                </div>
+              </div>
+            </RadioGroupItem>
+          </RadioGroup>
+        </FormField>
+
+        <FormField title={<>{t("settings.sso.form.security-options")}</>}>
+          <label className="flex items-center gap-x-2 cursor-pointer">
+            <Checkbox
+              checked={configForOIDC.skipTlsVerify}
+              onCheckedChange={(checked) =>
+                onUpdateOIDC({
+                  ...configForOIDC,
+                  skipTlsVerify: checked,
+                })
+              }
+            />
+            <span>{t("settings.sso.form.skip-tls-verification")}</span>
+          </label>
+          <span className="text-sm text-control-placeholder ml-6">
+            {t("settings.sso.form.skip-tls-warning")}
+          </span>
+        </FormField>
+      </FormFieldGroup>
+    );
+  }
+
+  if (providerType === IdentityProviderType.LDAP) {
+    return (
+      <FormFieldGroup>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <FormField className="md:col-span-2">
+            <FormTitle id="sso-ldap-host-title">
+              Host <span className="text-error">*</span>
+            </FormTitle>
+            <Input
+              id="sso-ldap-host"
+              aria-labelledby="sso-ldap-host-title"
+              value={configForLDAP.host}
+              onChange={(e) =>
+                onUpdateLDAP({ ...configForLDAP, host: e.target.value })
+              }
+              placeholder={t("settings.sso.form.host-placeholder")}
+            />
+          </FormField>
+          <FormField>
+            <FormTitle id="sso-ldap-port-title">
+              Port <span className="text-error">*</span>
+            </FormTitle>
+            <Input
+              id="sso-ldap-port"
+              aria-labelledby="sso-ldap-port-title"
+              type="number"
+              value={configForLDAP.port}
+              onChange={(e) =>
+                onUpdateLDAP({
+                  ...configForLDAP,
+                  port: parseInt(e.target.value, 10) || 0,
+                })
+              }
+              min={1}
+              max={65535}
+              placeholder="389"
+            />
+          </FormField>
+        </div>
+
+        <FormField>
+          <FormTitle id="sso-ldap-bind-dn-title">
+            {t("settings.sso.form.bind-dn")}{" "}
+            <span className="text-error">*</span>
+          </FormTitle>
+          <Input
+            id="sso-ldap-bind-dn"
+            aria-labelledby="sso-ldap-bind-dn-title"
+            value={configForLDAP.bindDn}
+            onChange={(e) =>
+              onUpdateLDAP({ ...configForLDAP, bindDn: e.target.value })
+            }
+            placeholder={t("settings.sso.form.bind-dn-placeholder")}
+          />
+          <span className="text-sm text-control-placeholder">
+            {t("settings.sso.form.bind-dn-description")}
+          </span>
+        </FormField>
+
+        <FormField>
+          <FormTitle id="sso-ldap-bind-password-title">
+            {t("settings.sso.form.bind-password")}{" "}
+            <span className="text-error">*</span>
+          </FormTitle>
+          <Input
+            id="sso-ldap-bind-password"
+            aria-labelledby="sso-ldap-bind-password-title"
+            type="password"
+            value={configForLDAP.bindPassword}
+            onChange={(e) =>
+              onUpdateLDAP({
+                ...configForLDAP,
+                bindPassword: e.target.value,
+              })
+            }
+            placeholder="••••••••"
+          />
+        </FormField>
+
+        <FormField>
+          <FormTitle id="sso-ldap-base-dn-title">
+            {t("settings.sso.form.base-dn")}{" "}
+            <span className="text-error">*</span>
+          </FormTitle>
+          <Input
+            id="sso-ldap-base-dn"
+            aria-labelledby="sso-ldap-base-dn-title"
+            value={configForLDAP.baseDn}
+            onChange={(e) =>
+              onUpdateLDAP({ ...configForLDAP, baseDn: e.target.value })
+            }
+            placeholder={t("settings.sso.form.base-dn-placeholder")}
+          />
+          <span className="text-sm text-control-placeholder">
+            {t("settings.sso.form.base-dn-description")}
+          </span>
+        </FormField>
+
+        <FormField>
+          <FormTitle id="sso-ldap-user-filter-title">
+            {t("settings.sso.form.user-filter")}{" "}
+            <span className="text-error">*</span>
+          </FormTitle>
+          <Input
+            id="sso-ldap-user-filter"
+            aria-labelledby="sso-ldap-user-filter-title"
+            value={configForLDAP.userFilter}
+            onChange={(e) =>
+              onUpdateLDAP({ ...configForLDAP, userFilter: e.target.value })
+            }
+            placeholder={t("settings.sso.form.user-filter-placeholder")}
+          />
+          <span className="text-sm text-control-placeholder">
+            {t("settings.sso.form.user-filter-description")}
+          </span>
+        </FormField>
+
+        <FormField
+          title={
+            <>
+              {t("settings.sso.form.security-protocol")}{" "}
+              <span className="text-error">*</span>
+            </>
+          }
+        >
+          <RadioGroup
+            className="flex-col items-stretch gap-y-3"
+            value={String(configForLDAP.securityProtocol)}
+            onValueChange={(value) =>
+              onUpdateLDAP({
+                ...configForLDAP,
+                securityProtocol: Number(
+                  value
+                ) as LDAPIdentityProviderConfig_SecurityProtocol,
+              })
+            }
+          >
+            <RadioGroupItem
+              value={String(
+                LDAPIdentityProviderConfig_SecurityProtocol.START_TLS
+              )}
+              className="items-start gap-x-3"
+              radioClassName="mt-1"
+            >
+              <div>
+                <div className="font-medium">
+                  {t("settings.sso.form.starttls")}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {t("settings.sso.form.starttls-description")}
+                </div>
+              </div>
+            </RadioGroupItem>
+            <RadioGroupItem
+              value={String(LDAPIdentityProviderConfig_SecurityProtocol.LDAPS)}
+              className="items-start gap-x-3"
+              radioClassName="mt-1"
+            >
+              <div>
+                <div className="font-medium">
+                  {t("settings.sso.form.ldaps")}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {t("settings.sso.form.ldaps-description")}
+                </div>
+              </div>
+            </RadioGroupItem>
+            <RadioGroupItem
+              value={String(
+                LDAPIdentityProviderConfig_SecurityProtocol.SECURITY_PROTOCOL_UNSPECIFIED
+              )}
+              className="items-start gap-x-3"
+              radioClassName="mt-1"
+            >
+              <div>
+                <div className="font-medium">{t("settings.sso.form.none")}</div>
+                <div className="text-sm text-gray-600">
+                  {t("settings.sso.form.none-description")}
+                </div>
+              </div>
+            </RadioGroupItem>
+          </RadioGroup>
+        </FormField>
+
+        <FormField title={<>{t("settings.sso.form.security-options")}</>}>
+          <label className="flex items-center gap-x-2 cursor-pointer">
+            <Checkbox
+              checked={configForLDAP.skipTlsVerify}
+              onCheckedChange={(checked) =>
+                onUpdateLDAP({
+                  ...configForLDAP,
+                  skipTlsVerify: checked,
+                })
+              }
+            />
+            <span>{t("settings.sso.form.skip-tls-verification")}</span>
+          </label>
+          <span className="text-sm text-control-placeholder ml-6">
+            {t("settings.sso.form.skip-tls-warning")}
+          </span>
+        </FormField>
+      </FormFieldGroup>
+    );
+  }
+
+  return null;
+}
+
+// ============================================================
+// FieldMappingForm
+// ============================================================
+
+function FieldMappingForm({
+  providerType,
+  fieldMapping,
+  onChange,
+}: {
+  providerType: IdentityProviderType;
+  fieldMapping: FieldMappingState;
+  onChange: (mapping: FieldMappingState) => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <FormFieldGroup>
+      <FormField>
+        <div className="grid grid-cols-[256px_1fr] gap-4 items-center">
+          <Input
+            value={fieldMapping.identifier}
+            onChange={(e) =>
+              onChange({ ...fieldMapping, identifier: e.target.value })
+            }
+            placeholder={t("settings.sso.form.identifier-placeholder")}
+          />
+          <div className="flex items-center text-base">
+            <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
+            <p className="flex items-center font-semibold text-gray-800">
+              {t("settings.sso.form.identifier")}
+              <span className="ml-0.5 text-error">*</span>
+              <span
+                className="ml-1"
+                title={t("settings.sso.form.identifier-tips")}
+              >
+                <Info className="w-4 h-4 text-blue-500" />
+              </span>
+            </p>
+          </div>
+        </div>
+      </FormField>
+
+      <FormField>
+        <div className="grid grid-cols-[256px_1fr] gap-4 items-center">
+          <Input
+            value={fieldMapping.displayName}
+            onChange={(e) =>
+              onChange({ ...fieldMapping, displayName: e.target.value })
+            }
+            placeholder={t("settings.sso.form.display-name-placeholder")}
+          />
+          <div className="flex items-center text-base">
+            <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
+            <p className="font-semibold text-gray-800">
+              {t("settings.sso.form.display-name")}
+            </p>
+          </div>
+        </div>
+      </FormField>
+
+      <FormField>
+        <div className="grid grid-cols-[256px_1fr] gap-4 items-center">
+          <Input
+            value={fieldMapping.phone}
+            onChange={(e) =>
+              onChange({ ...fieldMapping, phone: e.target.value })
+            }
+            placeholder={t("settings.sso.form.phone-placeholder")}
+          />
+          <div className="flex items-center text-base">
+            <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
+            <p className="font-semibold text-gray-800">
+              {t("settings.sso.form.phone")}
+            </p>
+          </div>
+        </div>
+      </FormField>
+
+      {providerType === IdentityProviderType.OIDC && (
+        <FormField>
+          <div className="grid grid-cols-[256px_1fr] gap-4 items-center">
+            <Input
+              value={fieldMapping.groups}
+              onChange={(e) =>
+                onChange({ ...fieldMapping, groups: e.target.value })
+              }
+              placeholder={t("settings.sso.form.groups-placeholder")}
+            />
+            <div className="flex items-center text-base">
+              <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
+              <p className="font-semibold text-gray-800">
+                {t("settings.sso.form.groups")}
+              </p>
+            </div>
+          </div>
+          <span className="text-sm text-control-placeholder">
+            {t("settings.sso.form.groups-description")}
+          </span>
+        </FormField>
+      )}
+    </FormFieldGroup>
+  );
+}
+
+// ============================================================
+// CreateWizardDrawer
+// ============================================================
+
+function getTemplateList(hasEnterpriseSSOFeature: boolean): OAuth2Template[] {
+  return [
+    {
+      title: "Google",
+      domain: "google.com",
+      domainDisabled: !hasEnterpriseSSOFeature,
+      feature: PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO,
+      config: create(OAuth2IdentityProviderConfigSchema, {
+        clientId: "",
+        clientSecret: "",
+        authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+        tokenUrl: "https://oauth2.googleapis.com/token",
+        userInfoUrl: "https://www.googleapis.com/oauth2/v2/userinfo",
+        scopes: [
+          "https://www.googleapis.com/auth/userinfo.email",
+          "https://www.googleapis.com/auth/userinfo.profile",
+        ],
+        skipTlsVerify: false,
+        authStyle: OAuth2AuthStyle.IN_PARAMS,
+        fieldMapping: create(FieldMappingSchema, {
+          identifier: "email",
+          displayName: "name",
+          phone: "",
+          groups: "",
+        }),
+      }),
+    },
+    {
+      title: "GitHub",
+      domain: "github.com",
+      domainDisabled: !hasEnterpriseSSOFeature,
+      feature: PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO,
+      config: create(OAuth2IdentityProviderConfigSchema, {
+        clientId: "",
+        clientSecret: "",
+        authUrl: "https://github.com/login/oauth/authorize",
+        tokenUrl: "https://github.com/login/oauth/access_token",
+        userInfoUrl: "https://api.github.com/user",
+        scopes: ["user:email"],
+        skipTlsVerify: false,
+        authStyle: OAuth2AuthStyle.IN_PARAMS,
+        fieldMapping: create(FieldMappingSchema, {
+          identifier: "email",
+          displayName: "name",
+          phone: "",
+          groups: "",
+        }),
+      }),
+    },
+    {
+      title: "GitLab",
+      domain: "gitlab.com",
+      feature: PlanFeature.FEATURE_ENTERPRISE_SSO,
+      config: create(OAuth2IdentityProviderConfigSchema, {
+        clientId: "",
+        clientSecret: "",
+        authUrl: "https://gitlab.com/oauth/authorize",
+        tokenUrl: "https://gitlab.com/oauth/token",
+        userInfoUrl: "https://gitlab.com/api/v4/user",
+        scopes: ["read_user"],
+        skipTlsVerify: false,
+        authStyle: OAuth2AuthStyle.IN_PARAMS,
+        fieldMapping: create(FieldMappingSchema, {
+          identifier: "email",
+          displayName: "name",
+          phone: "",
+          groups: "",
+        }),
+      }),
+    },
+    {
+      title: "Microsoft Entra",
+      domain: "",
+      feature: PlanFeature.FEATURE_ENTERPRISE_SSO,
+      config: create(OAuth2IdentityProviderConfigSchema, {
+        clientId: "",
+        clientSecret: "",
+        authUrl:
+          "https://login.microsoftonline.com/{uuid}/oauth2/v2.0/authorize",
+        tokenUrl: "https://login.microsoftonline.com/{uuid}/oauth2/v2.0/token",
+        userInfoUrl: "https://graph.microsoft.com/v1.0/me",
+        scopes: ["user.read"],
+        skipTlsVerify: false,
+        authStyle: OAuth2AuthStyle.IN_PARAMS,
+        fieldMapping: create(FieldMappingSchema, {
+          identifier: "userPrincipalName",
+          displayName: "displayName",
+          phone: "",
+          groups: "",
+        }),
+      }),
+    },
+    {
+      title: "Custom",
+      domain: "",
+      feature: PlanFeature.FEATURE_ENTERPRISE_SSO,
+      config: create(OAuth2IdentityProviderConfigSchema, {
+        clientId: "",
+        clientSecret: "",
+        authUrl: "",
+        tokenUrl: "",
+        userInfoUrl: "",
+        scopes: [],
+        skipTlsVerify: false,
+        authStyle: OAuth2AuthStyle.IN_PARAMS,
+        fieldMapping: create(FieldMappingSchema, {
+          identifier: "",
+          displayName: "",
+          phone: "",
+          groups: "",
+        }),
+      }),
+    },
+  ];
+}
+
+const PROVIDER_TYPE_LIST = [
+  {
+    type: IdentityProviderType.OAUTH2,
+    feature: PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO,
+  },
+  {
+    type: IdentityProviderType.OIDC,
+    feature: PlanFeature.FEATURE_ENTERPRISE_SSO,
+  },
+  {
+    type: IdentityProviderType.LDAP,
+    feature: PlanFeature.FEATURE_ENTERPRISE_SSO,
+  },
+];
+
+function getProviderIcon(type: IdentityProviderType) {
+  switch (type) {
+    case IdentityProviderType.OAUTH2:
+      return Key;
+    case IdentityProviderType.OIDC:
+      return ShieldCheck;
+    case IdentityProviderType.LDAP:
+      return Database;
+    default:
+      return Key;
+  }
+}
+
+function getTemplateIcon(title: string) {
+  switch (title.toLowerCase()) {
+    case "google":
+      return Globe;
+    case "github":
+      return GitBranch;
+    case "gitlab":
+      return GitFork;
+    case "microsoft entra":
+      return Building;
+    default:
+      return Key;
+  }
+}
+
+function CreateWizardDrawer({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: (provider: IdentityProvider) => void;
+}) {
+  const { t } = useTranslation();
+  const createIdentityProvider = useAppStore(
+    (state) => state.createIdentityProvider
+  );
+  const identityProviderList = useIdentityProviderList();
+  useEscapeKey(onClose);
+
+  const hasEnterpriseSSOFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_ENTERPRISE_SSO)
+  );
+
+  const [currentStep, setCurrentStep] = useState(1);
+  const [selectedType, setSelectedType] = useState<IdentityProviderType>(
+    IdentityProviderType.OAUTH2
+  );
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<OAuth2Template | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const [title, setTitle] = useState("");
+  const [domain, setDomain] = useState("");
+  const [resourceId, setResourceId] = useState("");
+  const [resourceIdValid, setResourceIdValid] = useState(true);
+  const resourceIdFieldRef = useRef<ResourceIdFieldRef>(null);
+
+  const [configForOAuth2, setConfigForOAuth2] =
+    useState<OAuth2IdentityProviderConfig>(
+      create(OAuth2IdentityProviderConfigSchema, {
+        authStyle: OAuth2AuthStyle.IN_PARAMS,
+      })
+    );
+  const [configForOIDC, setConfigForOIDC] =
+    useState<OIDCIdentityProviderConfig>(
+      create(OIDCIdentityProviderConfigSchema, {
+        authStyle: OAuth2AuthStyle.IN_PARAMS,
+      })
+    );
+  const [configForLDAP, setConfigForLDAP] =
+    useState<LDAPIdentityProviderConfig>(
+      create(LDAPIdentityProviderConfigSchema, { port: 389 })
+    );
+  const [scopesString, setScopesString] = useState("");
+  const [fieldMapping, setFieldMapping] = useState<FieldMappingState>({
+    identifier: "",
+    displayName: "",
+    phone: "",
+    groups: "",
+  });
+
+  const templateList = useMemo(
+    () => getTemplateList(hasEnterpriseSSOFeature),
+    [hasEnterpriseSSOFeature]
+  );
+
+  // Initialize with first template on mount
+  useEffect(() => {
+    const first = templateList[0];
+    if (first) {
+      applyTemplate(first);
+    }
+  }, []);
+
+  const applyTemplate = useCallback((template: OAuth2Template) => {
+    setSelectedTemplate(template);
+    setTitle(template.title);
+    setDomain(template.domain);
+    setConfigForOAuth2(
+      create(OAuth2IdentityProviderConfigSchema, {
+        clientId: template.config.clientId || "",
+        clientSecret: template.config.clientSecret || "",
+        authUrl: template.config.authUrl || "",
+        tokenUrl: template.config.tokenUrl || "",
+        userInfoUrl: template.config.userInfoUrl || "",
+        scopes: template.config.scopes || [],
+        skipTlsVerify: template.config.skipTlsVerify || false,
+        authStyle: template.config.authStyle || OAuth2AuthStyle.IN_PARAMS,
+      })
+    );
+    setScopesString((template.config.scopes || []).join(" "));
+    const fm = template.config.fieldMapping;
+    setFieldMapping({
+      identifier: fm?.identifier || "",
+      displayName: fm?.displayName || "",
+      phone: fm?.phone || "",
+      groups: fm?.groups || "",
+    });
+  }, []);
+
+  const maxSteps = selectedType === IdentityProviderType.OAUTH2 ? 5 : 4;
+  const isLastStep = currentStep === maxSteps;
+
+  const isConfigurationValid = useMemo(() => {
+    if (selectedType === IdentityProviderType.OAUTH2) {
+      return !!(
+        configForOAuth2.clientId &&
+        configForOAuth2.clientSecret &&
+        configForOAuth2.authUrl &&
+        configForOAuth2.tokenUrl &&
+        configForOAuth2.userInfoUrl &&
+        scopesString
+      );
+    }
+    if (selectedType === IdentityProviderType.OIDC) {
+      return !!(
+        configForOIDC.clientId &&
+        configForOIDC.clientSecret &&
+        configForOIDC.issuer &&
+        scopesString
+      );
+    }
+    if (selectedType === IdentityProviderType.LDAP) {
+      return !!(
+        configForLDAP.host &&
+        configForLDAP.port &&
+        configForLDAP.bindDn &&
+        configForLDAP.bindPassword &&
+        configForLDAP.baseDn &&
+        configForLDAP.userFilter
+      );
+    }
+    return false;
+  }, [
+    selectedType,
+    configForOAuth2,
+    configForOIDC,
+    configForLDAP,
+    scopesString,
+  ]);
+
+  const canProceed = useMemo(() => {
+    const isOAuth2 = selectedType === IdentityProviderType.OAUTH2;
+    switch (currentStep) {
+      case 1:
+        return !!selectedType;
+      case 2:
+        if (isOAuth2) return !!selectedTemplate;
+        return !!(title && resourceId && resourceIdValid);
+      case 3:
+        if (isOAuth2) return !!(title && resourceId && resourceIdValid);
+        return isConfigurationValid;
+      case 4:
+        if (isOAuth2) return isConfigurationValid;
+        return !!fieldMapping.identifier;
+      case 5:
+        return !!fieldMapping.identifier;
+      default:
+        return false;
+    }
+  }, [
+    currentStep,
+    selectedType,
+    selectedTemplate,
+    title,
+    resourceId,
+    resourceIdValid,
+    isConfigurationValid,
+    fieldMapping.identifier,
+  ]);
+
+  const canCreate = !!(
+    title &&
+    resourceId &&
+    isConfigurationValid &&
+    fieldMapping.identifier
+  );
+
+  const allowTestConnection = isConfigurationValid && !!fieldMapping.identifier;
+
+  const buildIdpToCreate = useCallback((): IdentityProvider => {
+    const base = create(IdentityProviderSchema, {
+      name: resourceId,
+      title,
+      domain,
+      type: selectedType,
+    });
+
+    if (selectedType === IdentityProviderType.OAUTH2) {
+      base.config = create(IdentityProviderConfigSchema, {
+        config: {
+          case: "oauth2Config",
+          value: create(OAuth2IdentityProviderConfigSchema, {
+            ...configForOAuth2,
+            scopes: scopesString.split(" ").filter(Boolean),
+            fieldMapping: create(FieldMappingSchema, fieldMapping),
+          }),
+        },
+      });
+    } else if (selectedType === IdentityProviderType.OIDC) {
+      base.config = create(IdentityProviderConfigSchema, {
+        config: {
+          case: "oidcConfig",
+          value: create(OIDCIdentityProviderConfigSchema, {
+            ...configForOIDC,
+            scopes: scopesString.split(" ").filter(Boolean),
+            fieldMapping: create(FieldMappingSchema, fieldMapping),
+          }),
+        },
+      });
+    } else if (selectedType === IdentityProviderType.LDAP) {
+      base.config = create(IdentityProviderConfigSchema, {
+        config: {
+          case: "ldapConfig",
+          value: create(LDAPIdentityProviderConfigSchema, {
+            ...configForLDAP,
+            fieldMapping: create(FieldMappingSchema, fieldMapping),
+          }),
+        },
+      });
+    }
+
+    return base;
+  }, [
+    resourceId,
+    title,
+    domain,
+    selectedType,
+    configForOAuth2,
+    configForOIDC,
+    configForLDAP,
+    scopesString,
+    fieldMapping,
+  ]);
+
+  const idpToCreate = useMemo(() => buildIdpToCreate(), [buildIdpToCreate]);
+
+  const handleTypeChange = (type: IdentityProviderType) => {
+    setSelectedType(type);
+    if (type === IdentityProviderType.OAUTH2) {
+      const first = templateList[0];
+      if (first) applyTemplate(first);
+    } else {
+      setTitle("");
+      setDomain("");
+      setScopesString("");
+      setFieldMapping({
+        identifier: "",
+        displayName: "",
+        phone: "",
+        groups: "",
+      });
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentStep > 1) setCurrentStep(currentStep - 1);
+  };
+
+  const handleNext = () => {
+    if (currentStep < maxSteps && canProceed) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!canCreate) return;
+    setIsCreating(true);
+    try {
+      const createdProvider = await createIdentityProvider(idpToCreate);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("identity-provider.identity-provider-created"),
+      });
+      onCreated(createdProvider);
+    } catch (error) {
+      if (error instanceof ConnectError && error.code === Code.AlreadyExists) {
+        resourceIdFieldRef.current?.addValidationError(
+          (error as ConnectError).message
+        );
+      } else {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("identity-provider.identity-provider-create-failed"),
+        });
+      }
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const validateResourceId = useCallback(
+    async (val: string) => {
+      if (
+        val &&
+        identityProviderList.some(
+          (idp) => idp.name === `${idpNamePrefix}${val}`
+        )
+      ) {
+        return [
+          {
+            type: "error" as const,
+            message: t("resource-id.validation.duplicated", {
+              resource: "SSO",
+            }),
+          },
+        ];
+      }
+      return [];
+    },
+    [identityProviderList, t]
+  );
+
+  // Step labels
+  const stepLabels = useMemo(() => {
+    const labels = [t("settings.sso.form.type")];
+    if (selectedType === IdentityProviderType.OAUTH2) {
+      labels.push(t("settings.sso.form.use-template"));
+    }
+    labels.push(t("common.general"));
+    labels.push(t("settings.sso.form.configuration"));
+    labels.push(t("settings.sso.form.user-information-mapping"));
+    return labels;
+  }, [selectedType, t]);
+
+  const getProviderDescription = (type: IdentityProviderType) => {
+    switch (type) {
+      case IdentityProviderType.OAUTH2:
+        return t("settings.sso.form.oauth2-description");
+      case IdentityProviderType.OIDC:
+        return t("settings.sso.form.oidc-description");
+      case IdentityProviderType.LDAP:
+        return t("settings.sso.form.ldap-description");
+      default:
+        return "";
+    }
+  };
+
+  const getTemplateDescription = (templateTitle: string) => {
+    switch (templateTitle.toLowerCase()) {
+      case "google":
+        return t("settings.sso.form.google-template-description");
+      case "github":
+        return t("settings.sso.form.github-template-description");
+      case "gitlab":
+        return t("settings.sso.form.gitlab-template-description");
+      case "microsoft entra":
+        return t("settings.sso.form.microsoft-entra-template-description");
+      case "custom":
+        return t("settings.sso.form.custom-template-description");
+      default:
+        return "";
+    }
+  };
+
+  // Determine which step content to render
+  const isOAuth2 = selectedType === IdentityProviderType.OAUTH2;
+  const basicInfoStep = isOAuth2 ? 3 : 2;
+  const configStep = isOAuth2 ? 4 : 3;
+  const mappingStep = isOAuth2 ? 5 : 4;
+
+  return (
+    <Sheet open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <SheetContent width="large" className="bg-white">
+        <SheetHeader>
+          <SheetTitle>{t("identity-provider.self")}</SheetTitle>
+        </SheetHeader>
+
+        {/* Content */}
+        <SheetBody className="px-6 py-6">
+          <div className="flex flex-col gap-y-6">
+            {/* Step indicators */}
+            <div className="flex items-center gap-x-2">
+              {stepLabels.map((label, i) => {
+                const stepNum = i + 1;
+                const isActive = stepNum === currentStep;
+                const isComplete = stepNum < currentStep;
+                return (
+                  <div key={i} className="flex items-center gap-x-2">
+                    {i > 0 && (
+                      <div
+                        className={`w-8 h-px ${isComplete ? "bg-accent" : "bg-gray-300"}`}
+                      />
+                    )}
+                    <div className="flex items-center gap-x-1.5">
+                      <div
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
+                          isActive
+                            ? "bg-accent text-white"
+                            : isComplete
+                              ? "bg-accent/20 text-accent"
+                              : "bg-gray-200 text-gray-500"
+                        }`}
+                      >
+                        {stepNum}
+                      </div>
+                      <span
+                        className={`text-sm ${isActive ? "font-medium text-main" : "text-gray-500"}`}
+                      >
+                        {label}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Step content */}
+            <div className="bg-white rounded-sm border border-gray-200 px-6 pt-6 pb-10">
+              {/* Step 1: Select provider type */}
+              {currentStep === 1 && (
+                <div className="flex flex-col gap-y-6">
+                  <div className="text-center flex flex-col gap-y-2">
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {t("settings.sso.form.type")}
+                    </h2>
+                    <p className="text-gray-600">
+                      {t("settings.sso.form.type-description")}
+                    </p>
+                  </div>
+                  <RadioGroup
+                    className="max-w-2xl mx-auto w-full flex-col items-stretch gap-4"
+                    value={String(selectedType)}
+                    onValueChange={(value) => {
+                      const item = PROVIDER_TYPE_LIST.find(
+                        (item) => String(item.type) === value
+                      );
+                      if (
+                        item &&
+                        useAppStore.getState().hasFeature(item.feature)
+                      ) {
+                        handleTypeChange(item.type);
+                      }
+                    }}
+                  >
+                    {PROVIDER_TYPE_LIST.map((item) => {
+                      const Icon = getProviderIcon(item.type);
+                      const hasFeature = useAppStore
+                        .getState()
+                        .hasFeature(item.feature);
+                      return (
+                        <div
+                          key={item.type}
+                          className={`block border rounded-sm p-4 transition-colors cursor-pointer ${
+                            selectedType === item.type
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          } ${!hasFeature ? "opacity-50 cursor-not-allowed" : ""}`}
+                          onClick={() => {
+                            if (hasFeature) {
+                              handleTypeChange(item.type);
+                            }
+                          }}
+                        >
+                          <div className="flex items-start gap-x-3">
+                            <RadioGroupItem
+                              value={String(item.type)}
+                              aria-label={identityProviderTypeToString(
+                                item.type
+                              )}
+                              disabled={!hasFeature}
+                              radioClassName="mt-1.5"
+                            />
+                            <Icon
+                              className="w-6 h-6 mt-1 shrink-0"
+                              strokeWidth={1.5}
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-x-2">
+                                <span className="text-lg font-medium text-gray-900">
+                                  {identityProviderTypeToString(item.type)}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {getProviderDescription(item.type)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </RadioGroup>
+                </div>
+              )}
+
+              {/* Step 2 for OAuth2: Select template */}
+              {currentStep === 2 && isOAuth2 && (
+                <div className="flex flex-col gap-y-6">
+                  <div className="text-center flex flex-col gap-y-2">
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {t("settings.sso.form.use-template")}
+                    </h2>
+                    <p className="text-gray-600">
+                      {t("settings.sso.form.template-description")}
+                    </p>
+                  </div>
+                  <RadioGroup
+                    className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4"
+                    value={selectedTemplate?.title ?? ""}
+                    onValueChange={(value) => {
+                      const template = templateList.find(
+                        (template) => template.title === value
+                      );
+                      if (
+                        template &&
+                        useAppStore.getState().hasFeature(template.feature)
+                      ) {
+                        applyTemplate(template);
+                      }
+                    }}
+                  >
+                    {templateList.map((tmpl) => {
+                      const Icon = getTemplateIcon(tmpl.title);
+                      const hasFeature = useAppStore
+                        .getState()
+                        .hasFeature(tmpl.feature);
+                      return (
+                        <div
+                          key={tmpl.title}
+                          className={`block border rounded-sm p-4 transition-colors cursor-pointer ${
+                            selectedTemplate?.title === tmpl.title
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          } ${!hasFeature ? "opacity-50 cursor-not-allowed" : ""}`}
+                          onClick={() => {
+                            if (hasFeature) {
+                              applyTemplate(tmpl);
+                            }
+                          }}
+                        >
+                          <div className="flex items-center gap-x-3">
+                            <RadioGroupItem
+                              value={tmpl.title}
+                              aria-label={tmpl.title}
+                              disabled={!hasFeature}
+                            />
+                            <Icon
+                              className="w-8 h-8 shrink-0"
+                              strokeWidth={1}
+                            />
+                            <div className="flex-1">
+                              <span className="text-base font-medium text-gray-900">
+                                {tmpl.title}
+                              </span>
+                              <p className="text-sm text-gray-600">
+                                {getTemplateDescription(tmpl.title)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </RadioGroup>
+                </div>
+              )}
+
+              {/* Basic information step */}
+              {currentStep === basicInfoStep && (
+                <div className="flex flex-col gap-y-6">
+                  <div className="text-center flex flex-col gap-y-2">
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {t("common.general")}
+                    </h2>
+                    <p className="text-gray-600">
+                      {t("settings.sso.form.general-setting-description")}
+                    </p>
+                  </div>
+                  <FormFieldGroup className="max-w-2xl mx-auto w-full">
+                    <FormField>
+                      <FormTitle id="sso-create-name-title">
+                        {t("settings.sso.form.name")}{" "}
+                        <span className="text-error">*</span>
+                      </FormTitle>
+                      <Input
+                        id="sso-create-name"
+                        aria-labelledby="sso-create-name-title"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder={t("settings.sso.form.name-description")}
+                        className="mb-2"
+                      />
+                      <ResourceIdField
+                        ref={resourceIdFieldRef}
+                        value={resourceId}
+                        resourceName="SSO"
+                        resourceTitle={title}
+                        suffix
+                        validate={validateResourceId}
+                        onChange={setResourceId}
+                        onValidationChange={setResourceIdValid}
+                      />
+                    </FormField>
+                    <FormField>
+                      <FormTitle id="sso-create-domain-title">
+                        {t("settings.sso.form.domain")}
+                      </FormTitle>
+                      <Input
+                        id="sso-create-domain"
+                        aria-labelledby="sso-create-domain-title"
+                        value={domain}
+                        onChange={(e) => setDomain(e.target.value)}
+                        disabled={selectedTemplate?.domainDisabled}
+                        placeholder={t("settings.sso.form.domain-description")}
+                      />
+                      <span className="text-sm text-control-placeholder">
+                        {t("settings.sso.form.domain-optional-hint")}
+                      </span>
+                    </FormField>
+                  </FormFieldGroup>
+                </div>
+              )}
+
+              {/* Configuration step */}
+              {currentStep === configStep && (
+                <div className="flex flex-col gap-y-6">
+                  <div className="text-center flex flex-col gap-y-2">
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {t("settings.sso.form.configuration")}
+                    </h2>
+                    <p className="text-gray-600">
+                      {t("settings.sso.form.configuration-description")}
+                    </p>
+                  </div>
+                  <div className="max-w-3xl mx-auto w-full">
+                    {(selectedType === IdentityProviderType.OAUTH2 ||
+                      selectedType === IdentityProviderType.OIDC) && (
+                      <div className="mb-6">
+                        <ExternalURLInfo type={selectedType} />
+                      </div>
+                    )}
+                    <ProviderConfigForm
+                      providerType={selectedType}
+                      configForOAuth2={configForOAuth2}
+                      configForOIDC={configForOIDC}
+                      configForLDAP={configForLDAP}
+                      scopesString={scopesString}
+                      onUpdateOAuth2={setConfigForOAuth2}
+                      onUpdateOIDC={setConfigForOIDC}
+                      onUpdateLDAP={setConfigForLDAP}
+                      onUpdateScopes={setScopesString}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* User information mapping step */}
+              {currentStep === mappingStep && (
+                <div className="flex flex-col gap-y-6">
+                  <div className="text-center flex flex-col gap-y-2">
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {t("settings.sso.form.user-information-mapping")}
+                    </h2>
+                    <p className="text-gray-600">
+                      {t(
+                        "settings.sso.form.user-information-mapping-description"
+                      )}{" "}
+                      <LearnMoreLink
+                        href="https://docs.bytebase.com/administration/sso/oauth2#user-information-field-mapping?source=console"
+                        className="text-accent ml-1"
+                      />
+                    </p>
+                  </div>
+                  <div className="max-w-2xl mx-auto flex flex-col gap-y-6 w-full">
+                    <FieldMappingForm
+                      providerType={selectedType}
+                      fieldMapping={fieldMapping}
+                      onChange={setFieldMapping}
+                    />
+                    <div>
+                      <TestConnectionButton
+                        disabled={!allowTestConnection}
+                        isCreating
+                        idp={idpToCreate}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </SheetBody>
+
+        {/* Footer */}
+        <SheetFooter>
+          {currentStep === 1 ? (
+            <Button appearance="outline" onClick={onClose}>
+              {t("common.cancel")}
+            </Button>
+          ) : (
+            <Button appearance="outline" onClick={handlePrev}>
+              {t("common.back")}
+            </Button>
+          )}
+          {!isLastStep ? (
+            <Button disabled={!canProceed} onClick={handleNext}>
+              {t("common.next")}
+            </Button>
+          ) : (
+            <Button disabled={!canCreate || isCreating} onClick={handleCreate}>
+              {t("common.create")}
+            </Button>
+          )}
+        </SheetFooter>
+
+        {isCreating && (
+          <div className="absolute inset-0 z-10 bg-white/50 flex items-center justify-center">
+            <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+// ============================================================
+// IDPsPage (main)
+// ============================================================
+
+export function IDPsPage() {
+  const { t } = useTranslation();
+  const identityProviderList = useIdentityProviderList();
+  const listIdentityProviders = useAppStore(
+    (state) => state.listIdentityProviders
+  );
+
+  const [ready, setReady] = useState(false);
+  const [showCreateDrawer, setShowCreateDrawer] = useState(false);
+
+  const hasSSOFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO)
+  );
+  const canCreate = hasWorkspacePermissionV2("bb.identityProviders.create");
+
+  useEffect(() => {
+    listIdentityProviders(
+      useAppStore.getState().workspaceResourceName()
+    ).finally(() => setReady(true));
+  }, [listIdentityProviders]);
+
+  const handleCreateSSO = () => {
+    if (!hasSSOFeature) return;
+    setShowCreateDrawer(true);
+  };
+
+  const handleProviderCreated = (provider: IdentityProvider) => {
+    setShowCreateDrawer(false);
+    router.replace({
+      name: WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
+      params: {
+        idpId: getIdentityProviderResourceId(provider.name),
+      },
+    });
+  };
+
+  const handleRowClick = (idp: IdentityProvider) => {
+    router.push({
+      name: WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
+      params: {
+        idpId: getIdentityProviderResourceId(idp.name),
+      },
+    });
+  };
+
+  return (
+    <WorkspacePageLayout className="gap-y-4">
+      <FeatureAttention feature={PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO} />
+
+      <WorkspacePageInfo
+        description={
+          <>
+            {t("settings.sso.description")}{" "}
+            <LearnMoreLink
+              href="https://docs.bytebase.com/administration/sso/overview?source=console"
+              className="text-accent"
+            />
+          </>
+        }
+      />
+
+      <WorkspacePageToolbar align="end">
+        <PermissionGuard permissions={["bb.identityProviders.create"]}>
+          <Button disabled={!canCreate} onClick={handleCreateSSO}>
+            <FeatureBadge
+              feature={PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO}
+              clickable={false}
+              className="mr-1 text-white inline-flex"
+              fallback={<Plus className="h-4 w-4 mr-1" />}
+            />
+            {t("common.create")}
+          </Button>
+        </PermissionGuard>
+      </WorkspacePageToolbar>
+
+      {ready ? (
+        <div className="border rounded-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-control-bg">
+                <TableHead className="w-40">{t("common.id")}</TableHead>
+                <TableHead>{t("common.name")}</TableHead>
+                <TableHead className="w-32">{t("common.type")}</TableHead>
+                <TableHead className="w-48">
+                  {t("settings.sso.form.domain")}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {identityProviderList.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className="py-8 text-center text-control-light"
+                  >
+                    {t("common.no-data")}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                identityProviderList.map((idp) => (
+                  <TableRow
+                    key={idp.name}
+                    className="cursor-pointer"
+                    onClick={() => handleRowClick(idp)}
+                  >
+                    <TableCell>
+                      {getIdentityProviderResourceId(idp.name)}
+                    </TableCell>
+                    <TableCell>{idp.title}</TableCell>
+                    <TableCell>
+                      {identityProviderTypeToString(idp.type)}
+                    </TableCell>
+                    <TableCell>{idp.domain || "-"}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center h-32">
+          <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+        </div>
+      )}
+
+      {showCreateDrawer && (
+        <CreateWizardDrawer
+          onClose={() => setShowCreateDrawer(false)}
+          onCreated={handleProviderCreated}
+        />
+      )}
+    </WorkspacePageLayout>
+  );
+}

@@ -672,6 +672,7 @@
     "column": "Column",
     "columns": "Columns",
     "comment": "Comment",
+    "create-database": "Create database",
     "data-size": "Data size",
     "edit-environment": "Edit Environment",
     "edit-labels": "Edit Labels",
@@ -804,17 +805,23 @@
     "failed-to-sync-schema": "Failed to sync schema",
     "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database \"{{name}}\".",
     "functions": "Functions",
+    "instance-databases-synced-action": "Transfer to project",
+    "instance-databases-synced-description": "Transfer databases to a project to start governed changes.",
+    "instance-databases-synced-title": "Transfer databases to a project",
+    "instance-no-databases-action": "Create database",
+    "instance-no-databases-description": "Create a database in this instance, then transfer it to a project to start governed changes.",
+    "instance-no-databases-title": "No databases found",
     "n-databases-had-sync-errors": "{{0}} database(s) had sync errors",
     "packages": "Packages",
     "partitions": "Partitions",
     "procedures": "Procedures",
-    "project-instance-synced-action": "Create first change",
-    "project-instance-synced-description": "Your database is ready in this project. Start with a governed database change when you are ready.",
+    "project-instance-synced-action": "Create database change",
+    "project-instance-synced-description": "Your database is ready in this project. Start by querying data in SQL Editor, or create a governed database change when needed.",
     "project-instance-synced-sql-editor-action": "Open SQL Editor",
     "project-instance-synced-title": "Database connected",
     "project-instance-syncing-description": "This may take a few seconds to a few minutes. You can refresh this page later.",
     "project-instance-syncing-empty": "Databases are still syncing. Refresh this page in a moment to see them here.",
-    "project-instance-syncing-title": "Databases from {{instance}} are syncing.",
+    "project-instance-syncing-title": "Databases from <instance></instance> are syncing.",
     "schema": {
       "default": "Default schema"
     },
@@ -940,6 +947,7 @@
       "public": "Public IP"
     },
     "connect-database-to-project": "Connect database to project",
+    "connect-instance": "Connect instance",
     "connecting-database-to-project": "Connecting database...",
     "connection-info": "Connection info",
     "connection-options": "Connection Options",
@@ -1012,6 +1020,8 @@
     "create-gcp-credentials": "To create credentials, see",
     "database-region": "Database Region",
     "default-role": "Default role",
+    "delete-active-confirmation": "Instance \"{{name}}\" is active. Bytebase will archive it first, then permanently delete it. This action cannot be undone. Type the instance ID \"{{id}}\" to confirm.",
+    "delete-confirmation": "This will permanently delete instance \"{{name}}\". This action cannot be undone. Type the instance ID \"{{id}}\" to confirm.",
     "endpoint": "Endpoint",
     "external-id": "External ID",
     "external-id-description": "External ID for additional security when assuming role (optional)",
@@ -1063,6 +1073,8 @@
     "find-gcp-project-id": "To find GCP Project ID, see",
     "find-gcp-project-id-and-instance-id": "To find GCP Project ID and instance ID, see",
     "force-archive-description": "Force to archive. All databases will be unassigned.",
+    "gcp-endpoint-tip": "Optional. Overrides the default Google API endpoint, e.g. with a Private Service Connect endpoint like {{example}}.",
+    "gcp-endpoint-toggle": "Set a custom API endpoint",
     "grants": "Grants",
     "host-or-socket": "Host or Socket",
     "iam-extension": {
@@ -1282,7 +1294,6 @@
       "this-grant-allows": "This grant allows",
       "unmask-data-in-results": "Unmask sensitive data in results"
     },
-    "action-anyway": "{{action}} anyway",
     "advanced-search": {
       "filter": "Filter",
       "scope": {
@@ -1520,6 +1531,9 @@
   "plan": {
     "add-spec": "Add Change",
     "add-spec-pending-draft": "Save or discard the pending change before adding another",
+    "blocker": {
+      "clears-on-its-own": "Clears on its own"
+    },
     "cannot-create": "Cannot create plan",
     "checks": {
       "completed": "Plan checks completed",
@@ -1533,6 +1547,7 @@
     "description": {
       "placeholder": "Add description"
     },
+    "draft-update-permission-required": "You can view this draft, but you need bb.issues.update to edit issue labels or submit it for review.",
     "editor": {
       "save-changes-before-continuing": "Please save or cancel your changes before continuing"
     },
@@ -1550,7 +1565,7 @@
       "self": "Isolation Level",
       "serializable": "Serializable"
     },
-    "labels-required-for-review": "Labels are required before review",
+    "labels-required-for-review": "Issue Labels are required before review",
     "lifecycle": {
       "checking": "Checking…",
       "checks-failing": "Checks failing",
@@ -1564,6 +1579,7 @@
       "gate-review-approved": "Changes approved",
       "gate-review-pending": "Review in progress",
       "gate-review-rejected": "Changes requested",
+      "incomplete": "Incomplete",
       "preparing-rollout": "Preparing rollout…",
       "rejected": "Rejected",
       "rerun": "Rerun",
@@ -1581,6 +1597,7 @@
       "statement-empty": "Statement is empty"
     },
     "new-plan": "New Plan",
+    "not-ready-for-review": "Not ready for review",
     "options": {
       "no-options-available": "No options available",
       "self": "Options"
@@ -1660,11 +1677,25 @@
         "title": "Rejected by {{user}}"
       }
     },
+    "rollback": {
+      "description_one": "Roll back 1 selected task from rollout #{{rolloutId}}.",
+      "description_other": "Roll back {{count}} selected tasks from rollout #{{rolloutId}}.",
+      "title": "Rollback rollout #{{rolloutId}}"
+    },
     "run": "Run checks",
     "select-isolation-level": "Select isolation level",
     "select-targets": "Select Targets",
     "spec": {
       "change": "Change",
+      "change-reference": {
+        "accessible-label": "Change {{index}}: {{label}}",
+        "database-count_one": "{{count}} database",
+        "database-count_other": "{{count}} databases",
+        "environment-overflow_one": "{{environment}} +{{count}} environment",
+        "environment-overflow_other": "{{environment}} +{{count}} environments",
+        "new-change": "New change",
+        "tooltip-title": "Change {{index}}"
+      },
       "type": {
         "database-change": "Database Change"
       }
@@ -1675,6 +1706,7 @@
       "reopen-confirm": "Reopen this plan?",
       "reopen-review-confirm": "Reopen this review?"
     },
+    "submit-review-anyway": "Submit anyway",
     "subtitle": "Draft database changes and run pre-checks before creating an issue for approval.",
     "summary": {
       "last-approved-by": "Last approved by {{name}}",
@@ -1766,10 +1798,10 @@
         "warning": "This action cannot be undone. All project data including issues, configurations, and history will be permanently removed."
       }
     },
-    "connect-database": "Connect database",
-    "connect-database-empty-placeholder": "Connect an instance to sync databases into this project",
-    "connect-database-intro-description": "Connect a database so Bytebase can sync it into this project.",
-    "connect-database-intro-title": "Connect your first database",
+    "connect-instance": "Connect instance",
+    "connect-instance-empty-placeholder": "Connect an instance to sync databases into this project",
+    "connect-instance-intro-description": "Connect an instance so Bytebase can sync databases into this project.",
+    "connect-instance-intro-title": "Connect the instance",
     "create-modal": {
       "project-name": "Project Name",
       "success-prompt": "Successfully created project {{name}}."
@@ -2088,7 +2120,6 @@
     }
   },
   "rollout": {
-    "no-stages": "No stages available",
     "no-tasks-created": "No tasks created yet",
     "pending-tasks-preview": {
       "action": "Preview",
@@ -2948,11 +2979,6 @@
     "no-data-available": "No data available",
     "no-database-selected": "No database selected",
     "no-history-found": "No history found",
-    "no-project": {
-      "contact-the-admin-to-grant-access": "Contact to the admin to grant access.",
-      "go-to-create": "Go to create",
-      "not-member-of-any-projects": "You are not any member of any projects."
-    },
     "no-queriable-database": "No queriable database",
     "notify-empty-statement": "Please input your SQL statements in the editor",
     "only-select-allowed": "Only read-only statements are allowed to execute.",
@@ -3355,5 +3381,37 @@
   },
   "worksheet": {
     "self": "Worksheet"
+  },
+  "workspace-setup-guide": {
+    "actions": {
+      "change": "Create database change",
+      "query": "Go to SQL Editor"
+    },
+    "descriptions": {
+      "database": "Create or transfer a database into a project before querying data.",
+      "instance": "Connect an instance so Bytebase can sync your databases.",
+      "project": "Create a project to organize databases and changes.",
+      "sql-editor": "Query data in SQL Editor, or create a governed database change."
+    },
+    "dismiss": "Dismiss guide",
+    "intro": {
+      "database-description": "Create a database in your connected instance.",
+      "database-title": "Create a database",
+      "instance-description": "Create an instance so Bytebase can connect to your database server.",
+      "instance-title": "Connect the instance",
+      "project-description": "Create a project first. Databases can be synced into it after the instance is connected.",
+      "project-title": "Create a project",
+      "transfer-description": "Select one or more databases, then transfer them to the project.",
+      "transfer-title": "Select databases"
+    },
+    "prepare-database-tip": "Select databases to transfer to the project.",
+    "previous-step-required": "You need to finish the previous step.",
+    "self": "Set up Bytebase",
+    "steps": {
+      "database": "Prepare database",
+      "instance": "Connect instance",
+      "project": "Create project",
+      "query": "Query data"
+    }
   }
 }

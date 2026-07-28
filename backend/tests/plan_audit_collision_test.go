@@ -84,3 +84,30 @@ func TestCollision_PlanSpecAuditEmission(t *testing.T) {
 	afterB := snapshotProject(ctx, t, ctl, fixture.ProjectB)
 	assertProjectUnchanged(t, beforeB, afterB, "project B after plan A spec audit emission")
 }
+
+// TestCollision_PlanMetadataUpdate verifies the ordinary Store.UpdatePlan path
+// remains scoped by the full (project, id) key.
+func TestCollision_PlanMetadataUpdate(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	fixture := setupCollidingProjects(ctx, t, ctl)
+	beforeB := snapshotProject(ctx, t, ctl, fixture.ProjectB)
+	updated, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+		Plan: &v1pb.Plan{
+			Name:  fixture.PlanA.Name,
+			Title: "updated only in project A",
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title"}},
+	}))
+	a.NoError(err)
+	a.Equal("updated only in project A", updated.Msg.Title)
+	afterB := snapshotProject(ctx, t, ctl, fixture.ProjectB)
+	assertProjectUnchanged(t, beforeB, afterB, "project B after plan A metadata update")
+}

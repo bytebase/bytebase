@@ -69,6 +69,14 @@ func CheckApprovalApproved(approval *storepb.IssuePayloadApproval) (bool, error)
 	if approval.ApprovalTemplate == nil {
 		return true, nil
 	}
+	if approval.ApprovalTemplate.Flow == nil {
+		return false, errors.Errorf("approval template flow cannot be nil")
+	}
+	for i, role := range approval.ApprovalTemplate.Flow.Roles {
+		if strings.TrimSpace(role) == "" {
+			return false, errors.Errorf("approval template role at position %d cannot be empty", i+1)
+		}
+	}
 	return FindRejectedRole(approval) == "" && FindNextPendingRole(approval) == "", nil
 }
 

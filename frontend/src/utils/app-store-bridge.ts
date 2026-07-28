@@ -9,7 +9,7 @@ import type { User } from "@/types/proto-es/v1/user_service_pb";
 import type { Environment } from "@/types/v1/environment";
 
 // Narrow, synchronous accessors into the React app store for shared `@/utils`
-// code. The app store *registers* these at init (see `@/react/stores/app`)
+// code. The app store *registers* these at init (see `@/stores/app`)
 // rather than `@/utils` importing the store directly — a static import would
 // create an `@/utils` → app-store load-time cycle (the barrel-graph hazard
 // that also gates the permission checkers in `./iam/permission`).

@@ -247,6 +247,11 @@ type plpgsqlAnalyzer struct {
 	// cteMap holds CTE definitions for resolving column refs through CTEs.
 	cteMap       map[string]*ast.SelectStmt
 	resolvingCTE map[cteResolveKey]bool
+	// qualifiedFrom marks fromTables keys whose FROM item carried an
+	// explicit schema qualifier, so fallback resolution does not probe the
+	// search path for them. Reset per fallback statement; nested subquery
+	// collection during one statement accumulates into the same scope.
+	qualifiedFrom map[string]bool
 }
 
 type cteResolveKey struct {
@@ -757,7 +762,10 @@ func (a *plpgsqlAnalyzer) fallbackExtractLineage(origSQL string, selStmt *ast.Se
 		return nil
 	}
 
-	// Collect table references from the FROM clause.
+	// Collect table references from the FROM clause. The explicit-schema
+	// markers are scoped to this statement — a previous fallback query's
+	// qualified FROM must not pin a later query's unqualified reference.
+	a.qualifiedFrom = make(map[string]bool)
 	fromTables := a.collectFromTables(selStmt)
 
 	var results []base.SourceColumnSet
@@ -817,6 +825,41 @@ func (a *plpgsqlAnalyzer) collectFromTables(selStmt *ast.SelectStmt) map[string]
 	return tables
 }
 
+// resolveFallbackRelation resolves a textual fallback resource against the
+// catalog. Unqualified FROM items default to "public" in collectTablesFromNode,
+// so on a miss the extractor's search path is probed the way PostgreSQL
+// would resolve the name.
+// pushMarkerScope opens a nested explicit-qualification scope seeded from
+// the current one, so markers collected inside a subquery or CTE apply to
+// that scope's resolution but never leak outward. The returned restore
+// function reinstates the caller's scope; the returned map is the nested
+// scope for selective exports.
+func (a *plpgsqlAnalyzer) pushMarkerScope() (func(), map[string]bool) {
+	outer := a.qualifiedFrom
+	nested := make(map[string]bool, len(outer))
+	for k, v := range outer {
+		nested[k] = v
+	}
+	a.qualifiedFrom = nested
+	return func() { a.qualifiedFrom = outer }, nested
+}
+
+func (a *plpgsqlAnalyzer) resolveFallbackRelation(fromKey, schemaName, tableName string) *catalog.Relation {
+	// collectTablesFromNode defaults unqualified FROM items to "public"; for
+	// those (and only those — explicitly qualified items resolve exactly),
+	// the configured search path decides resolution order, exactly like
+	// PostgreSQL. The literal public lookup remains the last resort for
+	// search paths that do not contain public.
+	if schemaName == "public" && !a.qualifiedFrom[fromKey] {
+		for _, pathSchema := range a.extractor.searchPath {
+			if rel := a.extractor.cat.GetRelation(pathSchema, tableName); rel != nil {
+				return rel
+			}
+		}
+	}
+	return a.extractor.cat.GetRelation(schemaName, tableName)
+}
+
 func (a *plpgsqlAnalyzer) collectTablesFromNode(node ast.Node, tables map[string]base.ColumnResource) {
 	switch v := node.(type) {
 	case *ast.RangeVar:
@@ -829,29 +872,63 @@ func (a *plpgsqlAnalyzer) collectTablesFromNode(node ast.Node, tables map[string
 			Schema:   schema,
 			Table:    v.Relname,
 		}
+		// The newest FROM item owns its key's qualification marker in this
+		// scope: set it when explicitly qualified, clear any inherited one
+		// when not — an inner unqualified FROM must not be pinned by a
+		// same-named outer explicit FROM.
+		if a.qualifiedFrom == nil {
+			a.qualifiedFrom = make(map[string]bool)
+		}
 		tables[strings.ToLower(v.Relname)] = resource
+		if v.Schemaname != "" {
+			a.qualifiedFrom[strings.ToLower(v.Relname)] = true
+		} else {
+			delete(a.qualifiedFrom, strings.ToLower(v.Relname))
+		}
 		if v.Alias != nil && v.Alias.Aliasname != "" {
 			tables[strings.ToLower(v.Alias.Aliasname)] = resource
+			if v.Schemaname != "" {
+				a.qualifiedFrom[strings.ToLower(v.Alias.Aliasname)] = true
+			} else {
+				delete(a.qualifiedFrom, strings.ToLower(v.Alias.Aliasname))
+			}
 		}
 	case *ast.RangeSubselect:
 		// For subquery aliases like (SELECT * FROM t) result, collect inner tables
 		// and map them under the alias so column refs can be resolved.
 		if v.Subquery != nil {
 			if subSel, ok := v.Subquery.(*ast.SelectStmt); ok {
+				restore, nested := a.pushMarkerScope()
 				innerTables := a.collectFromTables(subSel)
-				// Add inner tables to the outer fromTables.
+				restore()
+				if a.qualifiedFrom == nil {
+					a.qualifiedFrom = make(map[string]bool)
+				}
+				// Add inner tables to the outer fromTables. Every key this
+				// branch writes takes ownership of its qualification marker:
+				// set from the borrowed resource's inner marker, cleared
+				// otherwise — never inherited from the outer scope.
 				for k, res := range innerTables {
 					if _, exists := tables[k]; !exists {
 						tables[k] = res
+						if nested[k] {
+							a.qualifiedFrom[k] = true
+						} else {
+							delete(a.qualifiedFrom, k)
+						}
 					}
 				}
 				// If the subquery has an alias, also map all inner tables'
 				// columns as accessible through the alias.
 				if v.Alias != nil && v.Alias.Aliasname != "" {
 					alias := strings.ToLower(v.Alias.Aliasname)
-					// Use the first inner table as the primary source for column lookup.
-					for _, res := range innerTables {
+					for k, res := range innerTables {
 						tables[alias] = res
+						if nested[k] {
+							a.qualifiedFrom[alias] = true
+						} else {
+							delete(a.qualifiedFrom, alias)
+						}
 						break
 					}
 				}
@@ -898,6 +975,10 @@ func (a *plpgsqlAnalyzer) extractColumnRefsFromExpr(node ast.Node, fromTables ma
 	case *ast.SubLink:
 		if v.Subselect != nil {
 			if subSel, ok := v.Subselect.(*ast.SelectStmt); ok {
+				// The subquery's qualification markers apply only within its
+				// own resolution scope.
+				restore, _ := a.pushMarkerScope()
+				defer restore()
 				subTables := a.collectFromTables(subSel)
 				for k, val := range fromTables {
 					if _, exists := subTables[k]; !exists {
@@ -1007,13 +1088,21 @@ func (a *plpgsqlAnalyzer) resolveColumnRef(cr *ast.ColumnRef, fromTables map[str
 			return
 		}
 		// Check if it's a column name in any FROM table.
-		for _, resource := range fromTables {
-			rel := a.extractor.cat.GetRelation(resource.Schema, resource.Table)
-			if rel != nil && relationHasColumn(rel, colName) {
+		for fromKey, resource := range fromTables {
+			rel := a.resolveFallbackRelation(fromKey, resource.Schema, resource.Table)
+			// Standalone composite types are not FROM-able.
+			if rel != nil && rel.RelKind != 'c' && relationHasColumn(rel, colName) {
+				// Emit the schema the relation actually resolved to — an
+				// unqualified item may have resolved through the search
+				// path, not the public default.
+				emitSchema, emitTable := resource.Schema, resource.Table
+				if rel.Schema != nil {
+					emitSchema, emitTable = rel.Schema.Name, rel.Name
+				}
 				result[base.ColumnResource{
 					Database: resource.Database,
-					Schema:   resource.Schema,
-					Table:    resource.Table,
+					Schema:   emitSchema,
+					Table:    emitTable,
 					Column:   colName,
 				}] = true
 				return
@@ -1021,13 +1110,17 @@ func (a *plpgsqlAnalyzer) resolveColumnRef(cr *ast.ColumnRef, fromTables map[str
 		}
 		// Check if it's a whole-row reference (table alias used as value, e.g., to_jsonb(t1)).
 		if resource, ok := fromTables[strings.ToLower(colName)]; ok {
-			rel := a.extractor.cat.GetRelation(resource.Schema, resource.Table)
-			if rel != nil {
+			rel := a.resolveFallbackRelation(strings.ToLower(colName), resource.Schema, resource.Table)
+			if rel != nil && rel.RelKind != 'c' {
+				emitSchema, emitTable := resource.Schema, resource.Table
+				if rel.Schema != nil {
+					emitSchema, emitTable = rel.Schema.Name, rel.Name
+				}
 				for _, col := range rel.Columns {
 					result[base.ColumnResource{
 						Database: resource.Database,
-						Schema:   resource.Schema,
-						Table:    resource.Table,
+						Schema:   emitSchema,
+						Table:    emitTable,
 						Column:   col.Name,
 					}] = true
 				}
@@ -1046,10 +1139,21 @@ func (a *plpgsqlAnalyzer) resolveColumnRef(cr *ast.ColumnRef, fromTables map[str
 					return
 				}
 			}
+			// A known standalone composite type is not FROM-able; suppress
+			// lineage for it (unknown relations keep the textual fallback);
+			// a resolved relation supplies the schema it actually lives in.
+			rel := a.resolveFallbackRelation(tableName, resource.Schema, resource.Table)
+			if rel != nil && rel.RelKind == 'c' {
+				return
+			}
+			emitSchema, emitTable := resource.Schema, resource.Table
+			if rel != nil && rel.Schema != nil {
+				emitSchema, emitTable = rel.Schema.Name, rel.Name
+			}
 			result[base.ColumnResource{
 				Database: resource.Database,
-				Schema:   resource.Schema,
-				Table:    resource.Table,
+				Schema:   emitSchema,
+				Table:    emitTable,
 				Column:   colName,
 			}] = true
 		}
@@ -1075,7 +1179,10 @@ func (a *plpgsqlAnalyzer) resolveThroughCTE(cteSel *ast.SelectStmt, colName stri
 	a.resolvingCTE[key] = true
 	defer delete(a.resolvingCTE, key)
 
-	// Build FROM tables for the CTE's query.
+	// Build FROM tables for the CTE's query; its qualification markers are
+	// scoped to this resolution.
+	restoreMarkers, _ := a.pushMarkerScope()
+	defer restoreMarkers()
 	cteTables := a.collectFromTables(cteSel)
 	// Include parent CTEs for nested CTE references.
 	if a.cteMap != nil {

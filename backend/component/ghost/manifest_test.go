@@ -10,10 +10,10 @@ import (
 )
 
 // frontendFlagManifestPath is the gh-ost flag manifest the "Configure" UI builds
-// its parameter list from (frontend/src/react/components/ghost/constants.ts
+// its parameter list from (frontend/src/components/ghost/constants.ts
 // imports it). The path is relative to this package directory, where `go test`
 // runs.
-const frontendFlagManifestPath = "../../../frontend/src/react/components/ghost/flags.json"
+const frontendFlagManifestPath = "../../../frontend/src/components/ghost/flags.json"
 
 // TestFrontendFlagManifestInSync fails if the frontend gh-ost flag manifest
 // drifts from the backend allowlist/defaults, so a flag added, removed, or

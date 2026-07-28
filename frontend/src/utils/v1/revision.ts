@@ -1,5 +1,5 @@
-import i18n from "@/react/i18n";
-import { getDatabaseByName } from "@/react/stores/app/databaseAccess";
+import i18n from "@/lib/i18n";
+import { getDatabaseByName } from "@/stores/app/databaseAccess";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import { Revision_Type } from "@/types/proto-es/v1/revision_service_pb";
 import { databaseV1Url, extractDatabaseResourceName } from "./database";

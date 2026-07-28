@@ -370,7 +370,31 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrapf(err, "failed to delete policies for project %s", resourceID)
 	}
 
-	// Delete worksheets associated with this project
+	// Delete worksheet_organizer entries referencing project principals.
+	q = qb.Q().Space(`DELETE FROM worksheet_organizer
+		WHERE principal IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
+		   OR principal IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
+	sql, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrap(err, "failed to build worksheet_organizer delete query")
+	}
+	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+		return errors.Wrapf(err, "failed to delete worksheet_organizer for project %s", resourceID)
+	}
+
+	// Delete worksheets created by project service accounts or workload identities.
+	q = qb.Q().Space(`DELETE FROM worksheet
+		WHERE creator IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
+		   OR creator IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
+	sql, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrap(err, "failed to build worksheet delete query for principals")
+	}
+	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+		return errors.Wrapf(err, "failed to delete worksheets for project principals %s", resourceID)
+	}
+
+	// Reassign remaining worksheets associated with this project.
 	q = qb.Q().Space("UPDATE worksheet SET project = ? WHERE project = ?", defaultProjectID, resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
@@ -440,7 +464,40 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrapf(err, "failed to delete task_run for project %s", resourceID)
 	}
 
-	// Delete tasks in plans of this project
+	// Lock tasks in full primary-key order before deleting them. Pending Task Run
+	// creation uses the same order, so concurrent batches cannot form a wait cycle.
+	q = qb.Q().Space(`
+		SELECT project, id
+		FROM task
+		WHERE project = ?
+		ORDER BY project, id
+		FOR UPDATE`, resourceID)
+	sql, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrap(err, "failed to build task lock query")
+	}
+	if err := func() error {
+		rows, err := tx.QueryContext(ctx, sql, args...)
+		if err != nil {
+			return errors.Wrapf(err, "failed to lock tasks for project %s", resourceID)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var lockedProjectID string
+			var lockedTaskID int64
+			if err := rows.Scan(&lockedProjectID, &lockedTaskID); err != nil {
+				return errors.Wrap(err, "failed to scan locked task")
+			}
+		}
+		if err := rows.Err(); err != nil {
+			return errors.Wrap(err, "failed to read locked tasks")
+		}
+		return nil
+	}(); err != nil {
+		return err
+	}
+
+	// Delete tasks in plans of this project after acquiring every task lock.
 	q = qb.Q().Space("DELETE FROM task WHERE project = ?", resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
@@ -490,6 +547,18 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrapf(err, "failed to delete db_groups for project %s", resourceID)
 	}
 
+	// Nullify revision.deleter references.
+	q = qb.Q().Space(`UPDATE revision SET deleter = NULL
+		WHERE deleter IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
+		   OR deleter IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
+	sql, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrap(err, "failed to build revision update query")
+	}
+	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+		return errors.Wrapf(err, "failed to nullify revision.deleter for project %s", resourceID)
+	}
+
 	// Move databases to the default project instead of deleting them
 	q = qb.Q().Space("UPDATE db SET project = ? WHERE project = ?", defaultProjectID, resourceID)
 	sql, args, err = q.ToSQL()
@@ -508,44 +577,6 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 	}
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete project_webhook for project %s", resourceID)
-	}
-
-	// Delete resources referencing project service accounts and workload identities.
-
-	// Delete worksheet_organizer entries
-	q = qb.Q().Space(`DELETE FROM worksheet_organizer
-		WHERE principal IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
-		   OR principal IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build worksheet_organizer delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete worksheet_organizer for project %s", resourceID)
-	}
-
-	// Delete worksheets created by project service accounts or workload identities
-	q = qb.Q().Space(`DELETE FROM worksheet
-		WHERE creator IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
-		   OR creator IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build worksheet delete query for principals")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete worksheets for project principals %s", resourceID)
-	}
-
-	// Nullify revision.deleter references
-	q = qb.Q().Space(`UPDATE revision SET deleter = NULL
-		WHERE deleter IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
-		   OR deleter IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build revision update query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to nullify revision.deleter for project %s", resourceID)
 	}
 
 	// Delete project service accounts

@@ -1,0 +1,535 @@
+import { create } from "@bufbuild/protobuf";
+import { ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { FeatureAttention } from "@/components/FeatureAttention";
+import { FeatureBadge } from "@/components/FeatureBadge";
+import { PermissionGuard } from "@/components/PermissionGuard";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { useDatabaseCatalog } from "@/hooks/useDatabaseCatalog";
+import type { MaskData, MaskDataTarget } from "@/lib/sensitive-data/types";
+import {
+  getMaskDataIdentifier,
+  isCurrentColumnException,
+} from "@/lib/sensitive-data/utils";
+import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
+import type { Permission } from "@/types";
+import type {
+  ColumnCatalog,
+  DatabaseCatalog,
+  ObjectSchema,
+  TableCatalog,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import { ObjectSchema_Type } from "@/types/proto-es/v1/database_catalog_service_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import {
+  MaskingExemptionPolicySchema,
+  PolicyType,
+} from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  type SemanticTypeSetting_SemanticType,
+  Setting_SettingName,
+} from "@/types/proto-es/v1/setting_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  getDatabaseProject,
+  getInstanceResource,
+  hasProjectPermissionV2,
+  instanceV1MaskingForNoSQL,
+} from "@/utils";
+import { GrantAccessDialog } from "../catalog/GrantAccessDialog";
+import { SensitiveColumnTable } from "../catalog/SensitiveColumnTable";
+
+const GRANT_ACCESS_PERMISSIONS: Permission[] = [
+  "bb.policies.createMaskingExemptionPolicy",
+  "bb.policies.updateMaskingExemptionPolicy",
+  "bb.databaseCatalogs.get",
+];
+
+const flattenObjectSchema = (
+  parentPath: string,
+  objectSchema: ObjectSchema
+): {
+  column: string;
+  semanticTypeId: string;
+  target: ObjectSchema;
+}[] => {
+  switch (objectSchema.type) {
+    case ObjectSchema_Type.OBJECT: {
+      const result: {
+        column: string;
+        semanticTypeId: string;
+        target: ObjectSchema;
+      }[] = [];
+      if (objectSchema.kind?.case === "structKind") {
+        for (const [key, schema] of Object.entries(
+          objectSchema.kind.value.properties ?? {}
+        )) {
+          result.push(
+            ...flattenObjectSchema(
+              [parentPath, key].filter((item) => item).join("."),
+              schema
+            )
+          );
+        }
+      }
+      return result;
+    }
+    case ObjectSchema_Type.ARRAY:
+      if (
+        objectSchema.kind?.case === "arrayKind" &&
+        objectSchema.kind.value.kind
+      ) {
+        return flattenObjectSchema(parentPath, objectSchema.kind.value.kind);
+      }
+      return [];
+    default:
+      return [
+        {
+          column: parentPath,
+          semanticTypeId: objectSchema.semanticType,
+          target: objectSchema,
+        },
+      ];
+  }
+};
+
+const flattenSensitiveColumnList = (catalog?: DatabaseCatalog): MaskData[] => {
+  if (!catalog) {
+    return [];
+  }
+
+  const result: MaskData[] = [];
+
+  for (const schema of catalog.schemas) {
+    for (const table of schema.tables) {
+      if (table.kind?.case === "columns") {
+        for (const column of table.kind.value.columns ?? []) {
+          if (!column.semanticType && !column.classification) {
+            continue;
+          }
+          result.push({
+            schema: schema.name,
+            table: table.name,
+            column: column.name,
+            semanticTypeId: column.semanticType,
+            classificationId: column.classification,
+            target: column,
+          });
+        }
+      }
+
+      if (table.kind?.case === "objectSchema") {
+        const flattened = flattenObjectSchema("", table.kind.value);
+        result.push(
+          ...flattened.map((item) => ({
+            ...item,
+            schema: schema.name,
+            table: table.name,
+            classificationId: "",
+            disableClassification: true,
+          }))
+        );
+      }
+
+      if (table.classification) {
+        result.push({
+          schema: schema.name,
+          table: table.name,
+          column: "",
+          semanticTypeId: "",
+          disableSemanticType: true,
+          classificationId: table.classification,
+          target: table,
+        });
+      }
+    }
+  }
+
+  return result;
+};
+
+const hasSemanticType = (
+  target: MaskDataTarget
+): target is ColumnCatalog | ObjectSchema => {
+  return "semanticType" in target;
+};
+
+const hasClassificationType = (
+  target: MaskDataTarget
+): target is ColumnCatalog | TableCatalog => {
+  return "classification" in target;
+};
+
+const itemKey = (item: MaskData) => {
+  return getMaskDataIdentifier(item);
+};
+
+export function DatabaseCatalogPanel({ database }: { database: Database }) {
+  const { t } = useTranslation();
+
+  const catalog = useDatabaseCatalog(database.name, false);
+  const project = getDatabaseProject(database);
+  const instance = getInstanceResource(database);
+  const isMaskingForNoSQL = instanceV1MaskingForNoSQL(instance);
+  const hasUpdateCatalogPermission = hasProjectPermissionV2(
+    project,
+    "bb.databaseCatalogs.update"
+  );
+  const hasGrantAccessPermission = GRANT_ACCESS_PERMISSIONS.every(
+    (permission) => hasProjectPermissionV2(project, permission)
+  );
+
+  const semanticTypeSetting = useAppStore((s) =>
+    s.getSettingByName(Setting_SettingName.SEMANTIC_TYPES)
+  );
+  const semanticTypeList = useMemo<SemanticTypeSetting_SemanticType[]>(() => {
+    return semanticTypeSetting?.value?.value.case === "semanticType"
+      ? ((semanticTypeSetting.value.value.value.types ??
+          []) as SemanticTypeSetting_SemanticType[])
+      : [];
+  }, [semanticTypeSetting]);
+  const classificationConfig = useAppStore((s) =>
+    s.getProjectClassification(project.dataClassificationConfigId ?? "")
+  );
+  const hasSensitiveDataFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING, instance)
+  );
+
+  const [searchText, setSearchText] = useState("");
+  const [checkedColumnList, setCheckedColumnList] = useState<MaskData[]>([]);
+  const [showFeatureDialog, setShowFeatureDialog] = useState(false);
+  const [showGrantAccessDialog, setShowGrantAccessDialog] = useState(false);
+  const [pendingDeleteItem, setPendingDeleteItem] = useState<MaskData | null>(
+    null
+  );
+
+  useEffect(() => {
+    const store = useAppStore.getState();
+    void store.getOrFetchSettingByName(
+      Setting_SettingName.SEMANTIC_TYPES,
+      true
+    );
+    void store.getOrFetchSettingByName(
+      Setting_SettingName.DATA_CLASSIFICATION,
+      true
+    );
+  }, []);
+
+  useEffect(() => {
+    setSearchText("");
+    setCheckedColumnList([]);
+    setShowFeatureDialog(false);
+    setShowGrantAccessDialog(false);
+    setPendingDeleteItem(null);
+  }, [database.name]);
+
+  const semanticTypeOptions = useMemo(
+    () =>
+      semanticTypeList.map((semanticType) => ({
+        label: semanticType.title || semanticType.id,
+        value: semanticType.id,
+      })),
+    [semanticTypeList]
+  );
+  const classificationOptions = useMemo(
+    () =>
+      Object.values(classificationConfig?.classification ?? {}).map(
+        (classification) => ({
+          label: classification.title || classification.id,
+          value: classification.id,
+        })
+      ),
+    [classificationConfig]
+  );
+  const columnList = useMemo(
+    () => flattenSensitiveColumnList(catalog),
+    [catalog]
+  );
+  const filteredColumnList = useMemo(() => {
+    const keyword = searchText.trim().toLowerCase();
+    if (!keyword) {
+      return columnList;
+    }
+    return columnList.filter((item) => {
+      return (
+        item.schema.toLowerCase().includes(keyword) ||
+        item.table.toLowerCase().includes(keyword) ||
+        item.column.toLowerCase().includes(keyword)
+      );
+    });
+  }, [columnList, searchText]);
+  const grantAccessColumnList = useMemo(
+    () =>
+      checkedColumnList.map((maskData) => ({
+        database,
+        maskData,
+      })),
+    [checkedColumnList, database]
+  );
+  const openGrantAccessDialog =
+    showGrantAccessDialog && checkedColumnList.length > 0;
+
+  const removeMaskingExceptions = async (sensitiveColumn: MaskData) => {
+    const policy = await useAppStore
+      .getState()
+      .getOrFetchPolicyByParentAndType({
+        parentPath: database.project,
+        policyType: PolicyType.MASKING_EXEMPTION,
+      });
+    if (!policy) {
+      return;
+    }
+
+    const exemptions = (
+      policy.policy?.case === "maskingExemptionPolicy"
+        ? policy.policy.value.exemptions
+        : []
+    ).filter(
+      (exception) =>
+        !isCurrentColumnException(exception, {
+          database,
+          maskData: sensitiveColumn,
+        })
+    );
+
+    policy.policy = {
+      case: "maskingExemptionPolicy",
+      value: create(MaskingExemptionPolicySchema, {
+        exemptions,
+      }),
+    };
+
+    await useAppStore.getState().upsertPolicy({
+      parentPath: database.project,
+      policy,
+    });
+  };
+
+  const handleDelete = async (item: MaskData) => {
+    setCheckedColumnList((current) =>
+      current.filter(
+        (selectedColumn) => itemKey(selectedColumn) !== itemKey(item)
+      )
+    );
+    if (hasSemanticType(item.target)) {
+      item.target.semanticType = "";
+      item.semanticTypeId = "";
+    }
+    if (hasClassificationType(item.target)) {
+      item.target.classification = "";
+      item.classificationId = "";
+    }
+    await useAppStore.getState().updateDatabaseCatalog(catalog);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.removed"),
+    });
+    await removeMaskingExceptions(item);
+  };
+
+  const handleSemanticTypeChange = async (
+    item: MaskData,
+    semanticTypeId: string
+  ) => {
+    if (!hasSemanticType(item.target)) {
+      return;
+    }
+    item.target.semanticType = semanticTypeId;
+    item.semanticTypeId = semanticTypeId;
+    await useAppStore.getState().updateDatabaseCatalog(catalog);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
+  };
+
+  const handleClassificationChange = async (
+    item: MaskData,
+    classificationId: string
+  ) => {
+    if (!hasClassificationType(item.target)) {
+      return;
+    }
+    item.target.classification = classificationId;
+    item.classificationId = classificationId;
+    await useAppStore.getState().updateDatabaseCatalog(catalog);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
+  };
+
+  const handleGrantAccessClick = () => {
+    if (!hasSensitiveDataFeature) {
+      setShowFeatureDialog(true);
+      return;
+    }
+    setShowGrantAccessDialog(true);
+  };
+
+  const closeGrantAccessDialog = () => {
+    setShowGrantAccessDialog(false);
+    setCheckedColumnList([]);
+  };
+
+  const handleDeleteConfirmed = async () => {
+    if (!pendingDeleteItem) {
+      return;
+    }
+    const item = pendingDeleteItem;
+    setPendingDeleteItem(null);
+    await handleDelete(item);
+  };
+
+  return (
+    <div className="flex flex-col gap-y-4">
+      <FeatureAttention
+        feature={PlanFeature.FEATURE_DATA_MASKING}
+        instance={instance}
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Input
+          value={searchText}
+          onChange={(event) => setSearchText(event.target.value)}
+          placeholder={t("common.search")}
+          className="w-full max-w-sm"
+        />
+
+        {!isMaskingForNoSQL && (
+          <PermissionGuard
+            permissions={GRANT_ACCESS_PERMISSIONS}
+            project={project}
+          >
+            {({ disabled }) => (
+              <Button
+                type="button"
+                className="w-full sm:w-auto"
+                disabled={
+                  disabled ||
+                  !hasGrantAccessPermission ||
+                  checkedColumnList.length === 0
+                }
+                onClick={handleGrantAccessClick}
+              >
+                {hasSensitiveDataFeature ? (
+                  <ShieldCheck className="w-4 h-4" />
+                ) : (
+                  <FeatureBadge
+                    feature={PlanFeature.FEATURE_DATA_MASKING}
+                    instance={instance}
+                    clickable={false}
+                    className="text-white"
+                  />
+                )}
+                {t("settings.sensitive-data.grant-access")}
+              </Button>
+            )}
+          </PermissionGuard>
+        )}
+      </div>
+
+      <SensitiveColumnTable
+        database={database}
+        columnList={filteredColumnList}
+        checkedColumnList={checkedColumnList}
+        showSelection={!isMaskingForNoSQL}
+        canEdit={hasUpdateCatalogPermission && hasSensitiveDataFeature}
+        showOperation={hasUpdateCatalogPermission && hasSensitiveDataFeature}
+        semanticTypeOptions={semanticTypeOptions}
+        classificationOptions={classificationOptions}
+        onCheckedColumnListChange={(columnList) =>
+          setCheckedColumnList(columnList)
+        }
+        onSemanticTypeChange={handleSemanticTypeChange}
+        onClassificationChange={handleClassificationChange}
+        onDelete={(item) => setPendingDeleteItem(item)}
+      />
+
+      <Dialog open={showFeatureDialog} onOpenChange={setShowFeatureDialog}>
+        <DialogContent className="p-6">
+          <DialogTitle>{t("common.warning")}</DialogTitle>
+          <div className="mt-3">
+            <FeatureAttention
+              feature={PlanFeature.FEATURE_DATA_MASKING}
+              instance={instance}
+            />
+          </div>
+          <div className="mt-6 flex justify-end gap-x-2">
+            <Button
+              type="button"
+              appearance="outline"
+              onClick={() => setShowFeatureDialog(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <GrantAccessDialog
+        open={openGrantAccessDialog}
+        projectName={database.project}
+        columnList={grantAccessColumnList}
+        instance={instance}
+        onDismiss={closeGrantAccessDialog}
+      />
+
+      <AlertDialog
+        open={pendingDeleteItem !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingDeleteItem(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>{t("common.warning")}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("settings.sensitive-data.remove-sensitive-column-tips")}
+          </AlertDialogDescription>
+          <div className="mt-4 flex flex-col gap-2 text-sm text-main">
+            {pendingDeleteItem ? (
+              <div className="rounded-xs border border-control-border px-3 py-2">
+                {pendingDeleteItem.schema
+                  ? `${pendingDeleteItem.schema}.${pendingDeleteItem.table}`
+                  : pendingDeleteItem.table}
+                {pendingDeleteItem.column ? `.${pendingDeleteItem.column}` : ""}
+              </div>
+            ) : null}
+          </div>
+          <AlertDialogFooter>
+            <Button
+              type="button"
+              appearance="outline"
+              onClick={() => setPendingDeleteItem(null)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void handleDeleteConfirmed()}
+            >
+              {t("common.delete")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

@@ -189,19 +189,16 @@ func TestAccessGrantMaximumExpiration(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Create an instance and database to target.
-	instanceDir := t.TempDir()
+	pgContainer, err := provisionPgInstance(ctx, t)
+	a.NoError(err)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
 			Title:       "Test Instance",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)

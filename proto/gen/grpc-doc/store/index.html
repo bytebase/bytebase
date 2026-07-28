@@ -376,6 +376,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.CompositeTypeAttribute"><span class="badge">M</span>CompositeTypeAttribute</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.CompositeTypeMetadata"><span class="badge">M</span>CompositeTypeMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.DatabaseConfig"><span class="badge">M</span>DatabaseConfig</a>
                 </li>
               
@@ -723,6 +731,10 @@
                   <a href="#bytebase.store.SASLConfig"><span class="badge">M</span>SASLConfig</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.SyncDatabases"><span class="badge">M</span>SyncDatabases</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.store.DataSource.AuthenticationType"><span class="badge">E</span>DataSource.AuthenticationType</a>
@@ -838,6 +850,10 @@
               
                 <li>
                   <a href="#bytebase.store.IssueCommentPayload.PlanUpdate"><span class="badge">M</span>IssueCommentPayload.PlanUpdate</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.IssueCommentPayload.ReviewSubmission"><span class="badge">M</span>IssueCommentPayload.ReviewSubmission</a>
                 </li>
               
               
@@ -1898,12 +1914,6 @@ Examples:
               <tr>
                 <td>SNOWFLAKE</td>
                 <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SQLITE</td>
-                <td>5</td>
                 <td><p></p></td>
               </tr>
             
@@ -3427,6 +3437,98 @@ int32). Captured from information_schema.COLUMNS.SRS_ID and rendered as the
                   <td><p>Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23&#43; only.
 Captured from information_schema.COLUMNS.EXTRA containing INVISIBLE and
 rendered as the `/*!80023 INVISIBLE */` column attribute. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.CompositeTypeAttribute">CompositeTypeAttribute</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the attribute. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The attribute type. User-defined types are always schema-qualified. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The non-default collation of the attribute as an emit-ready SQL
+identifier reference (quoted as needed, schema-qualified when outside
+pg_catalog), empty otherwise. e.g. `&#34;C&#34;` or `locale.en_us`. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.CompositeTypeMetadata">CompositeTypeMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the composite type. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>attributes</td>
+                  <td><a href="#bytebase.store.CompositeTypeAttribute">CompositeTypeAttribute</a></td>
+                  <td>repeated</td>
+                  <td><p>The ordered attributes of the composite type. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>skip_dump</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -5063,6 +5165,14 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>composite_types</td>
+                  <td><a href="#bytebase.store.CompositeTypeMetadata">CompositeTypeMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of user-defined composite types in a schema (PostgreSQL family,
+CREATE TYPE ... AS). Excludes table/view row types and derived types. </p></td>
                 </tr>
               
             </tbody>
@@ -7399,6 +7509,24 @@ CLOUD_SQL_IP_TYPE_UNSPECIFIED is treated as PUBLIC for backward compatibility. <
 For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p></td>
                 </tr>
               
+                <tr>
+                  <td>project_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>project_id and instance_id are the GCP resource identifiers.
+project_id is used by Spanner and BigQuery; instance_id is used by Spanner.
+For these engines, host and port optionally override the default Google API
+endpoint (e.g. a Private Service Connect endpoint like
+spanner-nonprod.p.googleapis.com). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>instance_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7858,10 +7986,10 @@ Only set to true for development or when certificates cannot be properly validat
               
                 <tr>
                   <td>sync_databases</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
+                  <td><a href="#bytebase.store.SyncDatabases">SyncDatabases</a></td>
+                  <td></td>
                   <td><p>Enable sync for the following databases.
-Default empty, means sync all schemas &amp; databases. </p></td>
+Not set means sync all schemas &amp; databases. </p></td>
                 </tr>
               
                 <tr>
@@ -8059,6 +8187,30 @@ For MySQL, it is the global privileges as GRANT statements, which means it only 
                   <td>krb_config</td>
                   <td><a href="#bytebase.store.KerberosConfig">KerberosConfig</a></td>
                   <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SyncDatabases">SyncDatabases</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>databases</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
               
@@ -8864,6 +9016,13 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>review_submission</td>
+                  <td><a href="#bytebase.store.IssueCommentPayload.ReviewSubmission">IssueCommentPayload.ReviewSubmission</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8996,6 +9155,13 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
           </table>
 
           
+
+        
+      
+        <h3 id="bytebase.store.IssueCommentPayload.ReviewSubmission">IssueCommentPayload.ReviewSubmission</h3>
+        <p>ReviewSubmission records that an issue entered review.</p>
+
+        
 
         
       
@@ -11384,6 +11550,12 @@ IM integration setting should be set for this function to work. </p></td>
               <tr>
                 <td>STATEMENT_DISALLOW_TRUNCATE</td>
                 <td>111</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE</td>
+                <td>112</td>
                 <td><p></p></td>
               </tr>
             

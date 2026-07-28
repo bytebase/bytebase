@@ -672,6 +672,7 @@
     "column": "列",
     "columns": "列",
     "comment": "注释",
+    "create-database": "创建数据库",
     "data-size": "数据大小",
     "edit-environment": "编辑环境",
     "edit-labels": "编辑标签",
@@ -804,17 +805,23 @@
     "failed-to-sync-schema": "同步 schema 失败",
     "failed-to-sync-schema-for-database-database-value-name": "同步数据库 \"{{name}}\" 的 schema 失败。",
     "functions": "函数",
+    "instance-databases-synced-action": "转移到项目",
+    "instance-databases-synced-description": "将数据库转移到项目后，即可开始创建受管变更。",
+    "instance-databases-synced-title": "将数据库转移到项目",
+    "instance-no-databases-action": "创建数据库",
+    "instance-no-databases-description": "在该实例中创建数据库，然后将其转移到项目以开始受管变更。",
+    "instance-no-databases-title": "未找到数据库",
     "n-databases-had-sync-errors": "{{0}} 个数据库同步出错",
     "packages": "包",
     "partitions": "分区",
     "procedures": "存储过程",
-    "project-instance-synced-action": "创建第一个变更",
-    "project-instance-synced-description": "你的数据库已在此项目中就绪。准备好后，可以从受管数据库变更开始。",
+    "project-instance-synced-action": "创建数据库变更",
+    "project-instance-synced-description": "你的数据库已在此项目中就绪。可以先在 SQL Editor 中查询数据，也可以在需要时创建受管数据库变更。",
     "project-instance-synced-sql-editor-action": "打开 SQL Editor",
     "project-instance-synced-title": "数据库已连接",
     "project-instance-syncing-description": "这可能需要几秒到几分钟。你可以稍后刷新此页面。",
     "project-instance-syncing-empty": "数据库仍在同步中。稍后刷新此页面即可在这里看到它们。",
-    "project-instance-syncing-title": "{{instance}} 的数据库正在同步。",
+    "project-instance-syncing-title": "<instance></instance> 的数据库正在同步。",
     "schema": {
       "default": "默认 Schema"
     },
@@ -940,6 +947,7 @@
       "public": "公共 IP"
     },
     "connect-database-to-project": "连接数据库到项目",
+    "connect-instance": "连接实例",
     "connecting-database-to-project": "正在连接数据库...",
     "connection-info": "连接信息",
     "connection-options": "连接选项",
@@ -1012,6 +1020,8 @@
     "create-gcp-credentials": "创建凭据的方法见",
     "database-region": "数据库区域",
     "default-role": "默认角色",
+    "delete-active-confirmation": "实例“{{name}}”当前处于活动状态。Bytebase 将先归档该实例，然后永久删除它。此操作无法撤销。请输入实例 ID “{{id}}” 以确认。",
+    "delete-confirmation": "这将永久删除实例“{{name}}”。此操作无法撤销。请输入实例 ID “{{id}}” 以确认。",
     "endpoint": "端点",
     "external-id": "外部 ID",
     "external-id-description": "承担角色时用于额外安全性的外部 ID（可选）",
@@ -1063,6 +1073,8 @@
     "find-gcp-project-id": "查看 GCP 项目 ID 的方法见",
     "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
     "force-archive-description": "强制归档。所有数据库均将被取消分配。",
+    "gcp-endpoint-tip": "可选。覆盖默认的 Google API 端点，例如 Private Service Connect 端点 {{example}}。",
+    "gcp-endpoint-toggle": "设置自定义 API 端点",
     "grants": "权限",
     "host-or-socket": "Host 或 Socket",
     "iam-extension": {
@@ -1282,7 +1294,6 @@
       "this-grant-allows": "此授权允许",
       "unmask-data-in-results": "在结果中查看未脱敏的敏感数据"
     },
-    "action-anyway": "仍要{{action}}",
     "advanced-search": {
       "filter": "过滤",
       "scope": {
@@ -1520,6 +1531,9 @@
   "plan": {
     "add-spec": "添加变更",
     "add-spec-pending-draft": "请先保存或放弃当前的待处理变更，然后再添加新变更",
+    "blocker": {
+      "clears-on-its-own": "将自动完成"
+    },
     "cannot-create": "无法创建变更计划",
     "checks": {
       "completed": "已完成计划检查",
@@ -1533,6 +1547,7 @@
     "description": {
       "placeholder": "添加描述"
     },
+    "draft-update-permission-required": "你可以查看此草稿，但需要 bb.issues.update 才能编辑工单标签或提交审批。",
     "editor": {
       "save-changes-before-continuing": "请保存或取消更改，然后再继续"
     },
@@ -1550,7 +1565,7 @@
       "self": "隔离级别",
       "serializable": "串行化"
     },
-    "labels-required-for-review": "提交审批前必须设置标签",
+    "labels-required-for-review": "提交审批前必须设置工单标签",
     "lifecycle": {
       "checking": "检查中…",
       "checks-failing": "检查失败",
@@ -1564,6 +1579,7 @@
       "gate-review-approved": "变更已批准",
       "gate-review-pending": "审批中",
       "gate-review-rejected": "请求变更",
+      "incomplete": "不完整",
       "preparing-rollout": "正在准备发布…",
       "rejected": "已拒绝",
       "rerun": "重新执行",
@@ -1581,6 +1597,7 @@
       "statement-empty": "语句为空"
     },
     "new-plan": "创建变更计划",
+    "not-ready-for-review": "尚未准备好提交审核",
     "options": {
       "no-options-available": "暂无可配置项",
       "self": "配置项"
@@ -1660,11 +1677,25 @@
         "title": "被 {{user}} 拒绝"
       }
     },
+    "rollback": {
+      "description_one": "回滚发布 #{{rolloutId}} 中选中的 1 个任务。",
+      "description_other": "回滚发布 #{{rolloutId}} 中选中的 {{count}} 个任务。",
+      "title": "回滚发布 #{{rolloutId}}"
+    },
     "run": "重新检查",
     "select-isolation-level": "选择隔离级别",
     "select-targets": "选择目标",
     "spec": {
       "change": "变更",
+      "change-reference": {
+        "accessible-label": "变更 {{index}}：{{label}}",
+        "database-count_one": "{{count}} 个数据库",
+        "database-count_other": "{{count}} 个数据库",
+        "environment-overflow_one": "{{environment}} +{{count}} 个环境",
+        "environment-overflow_other": "{{environment}} +{{count}} 个环境",
+        "new-change": "新变更",
+        "tooltip-title": "变更 {{index}}"
+      },
       "type": {
         "database-change": "数据库变更"
       }
@@ -1675,6 +1706,7 @@
       "reopen-confirm": "确认重新打开这个计划？",
       "reopen-review-confirm": "确认重新打开这个审批？"
     },
+    "submit-review-anyway": "仍然提交",
     "subtitle": "草拟数据库变更并运行预检查，然后创建工单以请求审批。",
     "summary": {
       "last-approved-by": "最后由 {{name}} 审批",
@@ -1766,10 +1798,10 @@
         "warning": "此操作无法撤消。包括工单、配置和历史记录在内的所有项目数据将被永久删除。"
       }
     },
-    "connect-database": "连接数据库",
-    "connect-database-empty-placeholder": "连接实例，将数据库同步到此项目",
-    "connect-database-intro-description": "连接数据库后，Bytebase 会将它同步到这个项目中。",
-    "connect-database-intro-title": "连接第一个数据库",
+    "connect-instance": "连接实例",
+    "connect-instance-empty-placeholder": "连接实例，将数据库同步到此项目",
+    "connect-instance-intro-description": "连接实例后，Bytebase 会将数据库同步到这个项目中。",
+    "connect-instance-intro-title": "连接实例",
     "create-modal": {
       "project-name": "项目名称",
       "success-prompt": "成功创建 {{name}}."
@@ -2088,7 +2120,6 @@
     }
   },
   "rollout": {
-    "no-stages": "暂无阶段",
     "no-tasks-created": "尚未创建任务",
     "pending-tasks-preview": {
       "action": "预览",
@@ -2948,11 +2979,6 @@
     "no-data-available": "暂无数据",
     "no-database-selected": "未选择数据库",
     "no-history-found": "暂无历史记录",
-    "no-project": {
-      "contact-the-admin-to-grant-access": "联系管理员以授予访问权限。",
-      "go-to-create": "去创建",
-      "not-member-of-any-projects": "你不是任何项目的成员。"
-    },
     "no-queriable-database": "没有可查询的数据库",
     "notify-empty-statement": "请在编辑器中输入 SQL 语句",
     "only-select-allowed": "只允许执行只读语句",
@@ -3355,5 +3381,37 @@
   },
   "worksheet": {
     "self": "工作表"
+  },
+  "workspace-setup-guide": {
+    "actions": {
+      "change": "创建数据库变更",
+      "query": "前往 SQL Editor"
+    },
+    "descriptions": {
+      "database": "创建数据库或将数据库转移到项目中，然后查询数据。",
+      "instance": "连接实例，让 Bytebase 可以同步你的数据库。",
+      "project": "创建项目来管理数据库和变更。",
+      "sql-editor": "在 SQL Editor 中查询数据，或创建受管数据库变更。"
+    },
+    "dismiss": "关闭指南",
+    "intro": {
+      "database-description": "在已连接的实例中创建数据库。",
+      "database-title": "创建数据库",
+      "instance-description": "创建实例，让 Bytebase 可以连接到你的数据库服务器。",
+      "instance-title": "连接实例",
+      "project-description": "先创建一个项目。实例连接后，数据库可以同步到该项目中。",
+      "project-title": "创建项目",
+      "transfer-description": "选择一个或多个数据库，然后转移到项目。",
+      "transfer-title": "选择数据库"
+    },
+    "prepare-database-tip": "选择数据库并转移到项目。",
+    "previous-step-required": "你需要先完成上一步。",
+    "self": "设置 Bytebase",
+    "steps": {
+      "database": "准备数据库",
+      "instance": "连接实例",
+      "project": "创建项目",
+      "query": "查询数据"
+    }
   }
 }
