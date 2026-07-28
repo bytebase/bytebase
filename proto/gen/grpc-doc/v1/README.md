@@ -6892,7 +6892,7 @@ workspaces are unaffected.
 | ---- | ------ | ----------- |
 | MCP_CAPABILITY_UNSPECIFIED | 0 |  |
 | MCP_DISABLED | 1 | MCP connections are rejected. |
-| MCP_READ_ONLY | 3 | MCP may inspect metadata and run read-only queries. (Enforced from P1b.) |
+| MCP_READ_ONLY | 3 | MCP may inspect metadata and run read-only queries. Not enforceable yet: until per-tool enforcement ships, this fails closed and refuses all MCP connections, the same as MCP_DISABLED. |
 | MCP_READ_WRITE | 4 | MCP may perform mutations, still bounded by the user&#39;s RBAC. |
 
 

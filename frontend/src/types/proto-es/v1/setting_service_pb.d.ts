@@ -765,7 +765,9 @@ export enum WorkspaceProfileSetting_MCPCapability {
   MCP_DISABLED = 1,
 
   /**
-   * MCP may inspect metadata and run read-only queries. (Enforced from P1b.)
+   * MCP may inspect metadata and run read-only queries. Not enforceable yet:
+   * until per-tool enforcement ships, this fails closed and refuses all MCP
+   * connections, the same as MCP_DISABLED.
    *
    * @generated from enum value: MCP_READ_ONLY = 3;
    */

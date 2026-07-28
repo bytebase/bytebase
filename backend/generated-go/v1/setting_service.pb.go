@@ -155,7 +155,9 @@ const (
 	WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED WorkspaceProfileSetting_MCPCapability = 0
 	// MCP connections are rejected.
 	WorkspaceProfileSetting_MCP_DISABLED WorkspaceProfileSetting_MCPCapability = 1
-	// MCP may inspect metadata and run read-only queries. (Enforced from P1b.)
+	// MCP may inspect metadata and run read-only queries. Not enforceable yet:
+	// until per-tool enforcement ships, this fails closed and refuses all MCP
+	// connections, the same as MCP_DISABLED.
 	WorkspaceProfileSetting_MCP_READ_ONLY WorkspaceProfileSetting_MCPCapability = 3
 	// MCP may perform mutations, still bounded by the user's RBAC.
 	WorkspaceProfileSetting_MCP_READ_WRITE WorkspaceProfileSetting_MCPCapability = 4
