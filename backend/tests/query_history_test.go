@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -67,9 +68,42 @@ func TestListQueryHistories(t *testing.T) {
 		a.Len(queryResp.Msg.Results, 1)
 	}
 
+	// 2b. Create a second project with its own database and history so we can
+	// assert that listing is scoped to the parent project.
+	otherProjectID := generateRandomString("qh-other")
+	otherProjectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+		Project: &v1pb.Project{
+			Name:              fmt.Sprintf("projects/%s", otherProjectID),
+			Title:             otherProjectID,
+			AllowSelfApproval: true,
+		},
+		ProjectId: otherProjectID,
+	}))
+	a.NoError(err)
+	otherProject := otherProjectResp.Msg
+
+	const otherDatabaseName = "history_db_other"
+	err = ctl.createDatabase(ctx, otherProject, instance, nil, otherDatabaseName, "postgres")
+	a.NoError(err)
+
+	otherDatabaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, otherDatabaseName),
+	}))
+	a.NoError(err)
+	otherDatabase := otherDatabaseResp.Msg
+
+	const otherStatement = "SELECT 33;"
+	otherQueryResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:      otherDatabase.Name,
+		Statement: otherStatement,
+		Limit:     10,
+	}))
+	a.NoError(err)
+	a.Len(otherQueryResp.Msg.Results, 1)
+
 	// Grab one history name for the GetQueryHistory checks below.
 	searchResp, err := ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
-		Filter: fmt.Sprintf("project == %q", ctl.project.Name),
+		Parent: ctl.project.Name,
 	}))
 	a.NoError(err)
 	a.GreaterOrEqual(len(searchResp.Msg.QueryHistories), 2)
@@ -149,6 +183,33 @@ func TestListQueryHistories(t *testing.T) {
 		a.Equal(fmt.Sprintf("users/%s", ownerEmail), history.Creator)
 	}
 
+	// Listing is scoped to the parent project: the other project's history must
+	// not leak in, and its name must carry the parent project prefix.
+	for _, history := range listResp.Msg.QueryHistories {
+		a.Contains(history.Name, ctl.project.Name+"/queryHistories/")
+		a.NotEqual(otherStatement, history.Statement)
+		a.NotEqual(otherDatabase.Name, history.Database)
+	}
+
+	// The grant is on ctl.project only, so listing the other project is denied.
+	_, err = ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+		Parent: otherProject.Name,
+	}))
+	a.Error(err)
+	a.Equal(connect.CodePermissionDenied, connect.CodeOf(err))
+
+	// The owner (workspace admin) listing the other project sees only that
+	// project's single history.
+	ctl.authInterceptor.token = ownerToken
+	otherListResp, err := ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+		Parent: otherProject.Name,
+	}))
+	a.NoError(err)
+	a.Len(otherListResp.Msg.QueryHistories, 1)
+	a.Equal(otherStatement, otherListResp.Msg.QueryHistories[0].Statement)
+	a.Contains(otherListResp.Msg.QueryHistories[0].Name, otherProject.Name+"/queryHistories/")
+	ctl.authInterceptor.token = auditorToken
+
 	// Creator filter pins to the given user.
 	listResp, err = ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
 		Parent: ctl.project.Name,
@@ -182,9 +243,97 @@ func TestListQueryHistories(t *testing.T) {
 	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 
 	// SearchQueryHistories stays caller-scoped: the auditor sees nothing.
-	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{}))
+	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+	}))
 	a.NoError(err)
 	a.Empty(searchResp.Msg.QueryHistories)
 
+	// 7. Cross-project listing via the AIP-159 wildcard parent "projects/-"
+	// requires a workspace-level grant, so the project-scoped auditor is denied.
+	_, err = ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+		Parent: "projects/-",
+	}))
+	a.Error(err)
+	a.Equal(connect.CodePermissionDenied, connect.CodeOf(err))
+
+	// The owner (workspace admin) lists across all projects and sees rows from
+	// both projects, each named under its own project.
+	ctl.authInterceptor.token = ownerToken
+	wildcardResp, err := ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+		Parent: "projects/-",
+	}))
+	a.NoError(err)
+	a.GreaterOrEqual(len(wildcardResp.Msg.QueryHistories), 3)
+	mainProjectCount, otherProjectCount := 0, 0
+	for _, history := range wildcardResp.Msg.QueryHistories {
+		switch {
+		case strings.HasPrefix(history.Name, ctl.project.Name+"/queryHistories/"):
+			mainProjectCount++
+		case strings.HasPrefix(history.Name, otherProject.Name+"/queryHistories/"):
+			otherProjectCount++
+			a.Equal(otherStatement, history.Statement)
+		default:
+			a.Failf("unexpected project in wildcard listing", "history %q", history.Name)
+		}
+	}
+	a.GreaterOrEqual(mainProjectCount, 2)
+	a.Equal(1, otherProjectCount)
+
+	// The creator filter composes with the wildcard parent.
+	wildcardResp, err = ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+		Parent: "projects/-",
+		Filter: fmt.Sprintf("creator == \"users/%s\"", auditorEmail),
+	}))
+	a.NoError(err)
+	a.Empty(wildcardResp.Msg.QueryHistories)
+
+	// 8. SearchQueryHistories takes the same parent semantics as
+	// ListQueryHistories while staying caller-scoped.
+	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+	}))
+	a.NoError(err)
+	a.GreaterOrEqual(len(searchResp.Msg.QueryHistories), 2)
+	for _, history := range searchResp.Msg.QueryHistories {
+		a.Contains(history.Name, ctl.project.Name+"/queryHistories/")
+		a.NotEqual(otherStatement, history.Statement)
+	}
+
+	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: otherProject.Name,
+	}))
+	a.NoError(err)
+	a.Len(searchResp.Msg.QueryHistories, 1)
+	a.Equal(otherStatement, searchResp.Msg.QueryHistories[0].Statement)
+
+	// The wildcard parent searches across all projects.
+	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: "projects/-",
+	}))
+	a.NoError(err)
+	a.GreaterOrEqual(len(searchResp.Msg.QueryHistories), 3)
+
+	// The parent is required.
+	_, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	// A nonexistent parent project is rejected, consistent with
+	// ListQueryHistories.
+	_, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: "projects/no-such-project",
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+
+	// Search stays caller-scoped even with the wildcard parent: the auditor
+	// has run no queries and sees nothing.
+	ctl.authInterceptor.token = auditorToken
+	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: "projects/-",
+	}))
+	a.NoError(err)
+	a.Empty(searchResp.Msg.QueryHistories)
 	ctl.authInterceptor.token = ownerToken
 }

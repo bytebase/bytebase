@@ -43,9 +43,10 @@ service SQLService {
   // Permissions required: None (only returns caller's own query histories)
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
     option (google.api.http) = {
-      post: "/v1/queryHistories:search"
+      post: "/v1/{parent=projects/*}/queryHistories:search"
       body: "*"
     };
+    option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
@@ -487,6 +488,12 @@ message DiffMetadataResponse {
 }
 
 message SearchQueryHistoriesRequest {
+  // The parent project to search query histories in.
+  // Format: projects/{project}
+  // Use "projects/-" to search across all projects
+  // (https://google.aip.dev/159).
+  string parent = 4 [(google.api.field_behavior) = REQUIRED];
+
   // The maximum number of histories to return.
   // The service may return fewer than this value.
   // If unspecified, at most 10 history entries will be returned.
@@ -521,6 +528,9 @@ message SearchQueryHistoriesRequest {
 message ListQueryHistoriesRequest {
   // The parent project whose query histories are listed.
   // Format: projects/{project}
+  // Use "projects/-" to list query histories across all projects
+  // (https://google.aip.dev/159); this requires the bb.queryHistories.list
+  // permission on the workspace.
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Project"}

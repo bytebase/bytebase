@@ -114,6 +114,36 @@ describe("getQueryHistoryCacheKey", () => {
   });
 });
 
+describe("queryHistory slice — request parent scoping", () => {
+  test("passes the project as parent and keeps project out of the CEL filter", async () => {
+    searchQueryHistoriesMock.mockResolvedValue({
+      queryHistories: [],
+      nextPageToken: "",
+    });
+    const store = makeStore();
+    await store.getState().fetchQueryHistoryList(filter);
+    await store.getState().mergeLatest(filter);
+    expect(searchQueryHistoriesMock).toHaveBeenCalledTimes(2);
+    for (const call of searchQueryHistoriesMock.mock.calls) {
+      const request = call[0] as { parent: string; filter: string };
+      expect(request.parent).toBe("projects/p1");
+      expect(request.filter).not.toContain("project ==");
+    }
+  });
+
+  test("falls back to the projects/- wildcard without a valid project", async () => {
+    searchQueryHistoriesMock.mockResolvedValue({
+      queryHistories: [],
+      nextPageToken: "",
+    });
+    const store = makeStore();
+    await store.getState().fetchQueryHistoryList({ project: "", database: "" });
+    expect(searchQueryHistoriesMock.mock.calls[0][0]).toMatchObject({
+      parent: "projects/-",
+    });
+  });
+});
+
 describe("queryHistory slice — fetchQueryHistoryList", () => {
   test("replaces the list on first page (no pageToken)", async () => {
     searchQueryHistoriesMock.mockResolvedValue({

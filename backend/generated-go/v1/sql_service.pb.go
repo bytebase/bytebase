@@ -1752,6 +1752,11 @@ func (x *DiffMetadataResponse) GetDiff() string {
 
 type SearchQueryHistoriesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// The parent project to search query histories in.
+	// Format: projects/{project}
+	// Use "projects/-" to search across all projects
+	// (https://google.aip.dev/159).
+	Parent string `protobuf:"bytes,4,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of histories to return.
 	// The service may return fewer than this value.
 	// If unspecified, at most 10 history entries will be returned.
@@ -1813,6 +1818,13 @@ func (*SearchQueryHistoriesRequest) Descriptor() ([]byte, []int) {
 	return file_v1_sql_service_proto_rawDescGZIP(), []int{14}
 }
 
+func (x *SearchQueryHistoriesRequest) GetParent() string {
+	if x != nil {
+		return x.Parent
+	}
+	return ""
+}
+
 func (x *SearchQueryHistoriesRequest) GetPageSize() int32 {
 	if x != nil {
 		return x.PageSize
@@ -1838,6 +1850,9 @@ type ListQueryHistoriesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent project whose query histories are listed.
 	// Format: projects/{project}
+	// Use "projects/-" to list query histories across all projects
+	// (https://google.aip.dev/159); this requires the bb.queryHistories.list
+	// permission on the workspace.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of histories to return.
 	// The service may return fewer than this value.
@@ -3084,8 +3099,9 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x0ftarget_metadata\x18\x02 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0etargetMetadata\x12+\n" +
 	"\x06engine\x18\x03 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\"*\n" +
 	"\x14DiffMetadataResponse\x12\x12\n" +
-	"\x04diff\x18\x01 \x01(\tR\x04diff\"q\n" +
+	"\x04diff\x18\x01 \x01(\tR\x04diff\"\x8e\x01\n" +
 	"\x1bSearchQueryHistoriesRequest\x12\x1b\n" +
+	"\x06parent\x18\x04 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\x12\x16\n" +
@@ -3135,13 +3151,13 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\aContent\x12N\n" +
 	"\x05parts\x18\x01 \x03(\v28.bytebase.v1.AICompletionResponse.Candidate.Content.PartR\x05parts\x1a\x1a\n" +
 	"\x04Part\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text2\x8e\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text2\xab\n" +
 	"\n" +
 	"\n" +
 	"SQLService\x12\x8f\x01\n" +
 	"\x05Query\x12\x19.bytebase.v1.QueryRequest\x1a\x1a.bytebase.v1.QueryResponse\"O\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02-:\x01*\"(/v1/{name=instances/*/databases/*}:query\x12\x89\x01\n" +
-	"\fAdminExecute\x12 .bytebase.v1.AdminExecuteRequest\x1a!.bytebase.v1.AdminExecuteResponse\"0\x8a\xea0\fbb.sql.admin\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1:adminExecute(\x010\x01\x12\x95\x01\n" +
-	"\x14SearchQueryHistories\x12(.bytebase.v1.SearchQueryHistoriesRequest\x1a).bytebase.v1.SearchQueryHistoriesResponse\"(\x90\xea0\x02\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/v1/queryHistories:search\x12\xbc\x01\n" +
+	"\fAdminExecute\x12 .bytebase.v1.AdminExecuteRequest\x1a!.bytebase.v1.AdminExecuteResponse\"0\x8a\xea0\fbb.sql.admin\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1:adminExecute(\x010\x01\x12\xb2\x01\n" +
+	"\x14SearchQueryHistories\x12(.bytebase.v1.SearchQueryHistoriesRequest\x1a).bytebase.v1.SearchQueryHistoriesResponse\"E\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x022:\x01*\"-/v1/{parent=projects/*}/queryHistories:search\x12\xbc\x01\n" +
 	"\x12ListQueryHistories\x12&.bytebase.v1.ListQueryHistoriesRequest\x1a'.bytebase.v1.ListQueryHistoriesResponse\"U\xdaA\x06parent\x8a\xea0\x16bb.queryHistories.list\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{parent=projects/*}/queryHistories\x12\x85\x01\n" +
 	"\x0fGetQueryHistory\x12#.bytebase.v1.GetQueryHistoryRequest\x1a\x19.bytebase.v1.QueryHistory\"2\x90\xea0\x02\x82\xd3\xe4\x93\x02(\x12&/v1/{name=projects/*/queryHistories/*}\x12\x84\x02\n" +
 	"\x06Export\x12\x1a.bytebase.v1.ExportRequest\x1a\x1b.bytebase.v1.ExportResponse\"\xc0\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x9d\x01:\x01*Z1:\x01*\",/v1/{name=projects/*/plans/*/rollout}:exportZ::\x01*\"5/v1/{name=projects/*/plans/*/rollout/stages/*}:export\")/v1/{name=instances/*/databases/*}:export\x12\x81\x01\n" +
