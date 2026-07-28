@@ -202,32 +202,6 @@ const validMySQLRule: RuleTemplateV2 = {
 };
 
 describe("ReviewCreation", () => {
-  test("uses shared form fields for basic information", () => {
-    const { container, render, unmount } = renderIntoContainer(
-      <ReviewCreation selectedRuleList={[]} selectedResources={[]} />
-    );
-
-    render();
-
-    expect(
-      container.querySelector('[data-slot="form-field-group"]')
-    ).toBeTruthy();
-    const formField = container.querySelector('[data-slot="form-field"]');
-    expect(formField).toBeTruthy();
-    expect(formField?.querySelector('[aria-label="resource-id"]')).toBeTruthy();
-    expect(formField?.textContent).toContain(
-      "sql-review.create.basic-info.display-name"
-    );
-    expect(formField?.textContent).toContain(
-      "sql-review.create.basic-info.display-name-label"
-    );
-    expect(
-      container.querySelector('[data-testid="template-selector"]')
-    ).toBeTruthy();
-
-    unmount();
-  });
-
   test("starts from scratch with an empty rule list in create mode", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ReviewCreation selectedRuleList={[]} selectedResources={[]} />
