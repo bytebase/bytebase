@@ -209,7 +209,7 @@ func SQLReviewCheck(
 
 func sqlReviewCheckPreParseRules(statements string, ruleList []*storepb.SQLReviewRule, checkContext Context) []*storepb.Advice {
 	for _, rule := range ruleList {
-		if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED && rule.Engine != checkContext.DBType {
+		if rule.Engine == storepb.Engine_ENGINE_UNSPECIFIED || rule.Engine != checkContext.DBType {
 			continue
 		}
 		if rule.Type == storepb.SQLReviewRule_BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE {

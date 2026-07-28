@@ -169,6 +169,43 @@ func TestSQLReviewCheckMaximumSQLSizeBuiltinRunsWithMySQLOnlyConfigForPostgres(t
 	require.Equal(t, storepb.SQLReviewRule_BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE.String(), adviceList[0].Title)
 }
 
+func TestSQLReviewCheckMaximumSQLSizeUsesExactEngineRule(t *testing.T) {
+	sm := sheet.NewManager()
+	statement := strings.Repeat("not sql\n", common.MaxSheetCheckSize/len("not sql\n")+1)
+
+	adviceList, err := SQLReviewCheck(context.Background(), sm, statement, []*storepb.SQLReviewRule{
+		{
+			Type:   storepb.SQLReviewRule_BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+			Level:  storepb.SQLReviewRule_WARNING,
+			Engine: storepb.Engine_ENGINE_UNSPECIFIED,
+			Payload: &storepb.SQLReviewRule_NumberPayload{
+				NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
+					Number: int32(len(statement) + 1),
+				},
+			},
+		},
+		{
+			Type:   storepb.SQLReviewRule_BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+			Level:  storepb.SQLReviewRule_ERROR,
+			Engine: storepb.Engine_POSTGRES,
+			Payload: &storepb.SQLReviewRule_NumberPayload{
+				NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
+					Number: 10,
+				},
+			},
+		},
+	}, Context{
+		DBType:          storepb.Engine_POSTGRES,
+		NoAppendBuiltin: true,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, adviceList, 1)
+	require.Equal(t, storepb.Advice_ERROR, adviceList[0].Status)
+	require.Equal(t, code.StatementExceedMaximumSQLSize.Int32(), adviceList[0].Code)
+	require.Equal(t, storepb.SQLReviewRule_BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE.String(), adviceList[0].Title)
+}
+
 func TestSQLReviewCheckMaximumSQLSizeUsesConfiguredMaximum(t *testing.T) {
 	sm := sheet.NewManager()
 	statement := strings.Repeat("not sql\n", common.MaxSheetCheckSize/len("not sql\n")+1)
