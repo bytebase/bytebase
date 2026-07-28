@@ -33,18 +33,13 @@ interface LocalState {
 }
 
 // Unset resolves to READ_WRITE server-side, so it renders as Read-write.
-// METADATA_ONLY is not offered in the picker (it has no enforcement yet) and
-// renders as Read-only, the option with the same current behavior: the server
-// refuses MCP connections for both until fine-grained enforcement ships.
 const normalizeCapability = (
   capability: WorkspaceProfileSetting_MCPCapability
 ): WorkspaceProfileSetting_MCPCapability => {
   switch (capability) {
     case WorkspaceProfileSetting_MCPCapability.MCP_DISABLED:
-      return capability;
-    case WorkspaceProfileSetting_MCPCapability.MCP_METADATA_ONLY:
     case WorkspaceProfileSetting_MCPCapability.MCP_READ_ONLY:
-      return WorkspaceProfileSetting_MCPCapability.MCP_READ_ONLY;
+      return capability;
     default:
       return WorkspaceProfileSetting_MCPCapability.MCP_READ_WRITE;
   }

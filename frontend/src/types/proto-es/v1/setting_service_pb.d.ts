@@ -765,18 +765,7 @@ export enum WorkspaceProfileSetting_MCPCapability {
   MCP_DISABLED = 1,
 
   /**
-   * Intended: MCP may inspect control-plane and schema metadata only. Until
-   * fine-grained enforcement ships, choosing this refuses all MCP
-   * connections, the same as MCP_DISABLED.
-   *
-   * @generated from enum value: MCP_METADATA_ONLY = 2;
-   */
-  MCP_METADATA_ONLY = 2,
-
-  /**
-   * Intended: MCP may inspect metadata and run read-only queries. Until
-   * fine-grained enforcement ships, choosing this refuses all MCP
-   * connections, the same as MCP_DISABLED.
+   * MCP may inspect metadata and run read-only queries. (Enforced from P1b.)
    *
    * @generated from enum value: MCP_READ_ONLY = 3;
    */

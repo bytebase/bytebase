@@ -6892,8 +6892,7 @@ workspaces are unaffected.
 | ---- | ------ | ----------- |
 | MCP_CAPABILITY_UNSPECIFIED | 0 |  |
 | MCP_DISABLED | 1 | MCP connections are rejected. |
-| MCP_METADATA_ONLY | 2 | Intended: MCP may inspect control-plane and schema metadata only. Until fine-grained enforcement ships, choosing this refuses all MCP connections, the same as MCP_DISABLED. |
-| MCP_READ_ONLY | 3 | Intended: MCP may inspect metadata and run read-only queries. Until fine-grained enforcement ships, choosing this refuses all MCP connections, the same as MCP_DISABLED. |
+| MCP_READ_ONLY | 3 | MCP may inspect metadata and run read-only queries. (Enforced from P1b.) |
 | MCP_READ_WRITE | 4 | MCP may perform mutations, still bounded by the user&#39;s RBAC. |
 
 

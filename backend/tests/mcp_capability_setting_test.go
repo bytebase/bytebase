@@ -64,7 +64,6 @@ func TestMCPCapabilitySettingRoundTrip(t *testing.T) {
 
 	for _, want := range []v1pb.WorkspaceProfileSetting_MCPCapability{
 		v1pb.WorkspaceProfileSetting_MCP_DISABLED,
-		v1pb.WorkspaceProfileSetting_MCP_METADATA_ONLY,
 		v1pb.WorkspaceProfileSetting_MCP_READ_ONLY,
 		v1pb.WorkspaceProfileSetting_MCP_READ_WRITE,
 	} {
@@ -74,10 +73,12 @@ func TestMCPCapabilitySettingRoundTrip(t *testing.T) {
 		a.Equal(want, got, want.String())
 	}
 
-	// Explicit UNSPECIFIED and unknown enum numbers are rejected, and the
-	// stored value is left untouched.
+	// Explicit UNSPECIFIED and unknown enum numbers — including the reserved
+	// number 2 (was METADATA_ONLY) — are rejected, and the stored value is left
+	// untouched.
 	for _, invalid := range []v1pb.WorkspaceProfileSetting_MCPCapability{
 		v1pb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED,
+		v1pb.WorkspaceProfileSetting_MCPCapability(2),
 		v1pb.WorkspaceProfileSetting_MCPCapability(99),
 	} {
 		err = ctl.setMCPCapability(ctx, invalid)

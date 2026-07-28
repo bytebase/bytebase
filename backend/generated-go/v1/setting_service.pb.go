@@ -155,13 +155,7 @@ const (
 	WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED WorkspaceProfileSetting_MCPCapability = 0
 	// MCP connections are rejected.
 	WorkspaceProfileSetting_MCP_DISABLED WorkspaceProfileSetting_MCPCapability = 1
-	// Intended: MCP may inspect control-plane and schema metadata only. Until
-	// fine-grained enforcement ships, choosing this refuses all MCP
-	// connections, the same as MCP_DISABLED.
-	WorkspaceProfileSetting_MCP_METADATA_ONLY WorkspaceProfileSetting_MCPCapability = 2
-	// Intended: MCP may inspect metadata and run read-only queries. Until
-	// fine-grained enforcement ships, choosing this refuses all MCP
-	// connections, the same as MCP_DISABLED.
+	// MCP may inspect metadata and run read-only queries. (Enforced from P1b.)
 	WorkspaceProfileSetting_MCP_READ_ONLY WorkspaceProfileSetting_MCPCapability = 3
 	// MCP may perform mutations, still bounded by the user's RBAC.
 	WorkspaceProfileSetting_MCP_READ_WRITE WorkspaceProfileSetting_MCPCapability = 4
@@ -172,14 +166,12 @@ var (
 	WorkspaceProfileSetting_MCPCapability_name = map[int32]string{
 		0: "MCP_CAPABILITY_UNSPECIFIED",
 		1: "MCP_DISABLED",
-		2: "MCP_METADATA_ONLY",
 		3: "MCP_READ_ONLY",
 		4: "MCP_READ_WRITE",
 	}
 	WorkspaceProfileSetting_MCPCapability_value = map[string]int32{
 		"MCP_CAPABILITY_UNSPECIFIED": 0,
 		"MCP_DISABLED":               1,
-		"MCP_METADATA_ONLY":          2,
 		"MCP_READ_ONLY":              3,
 		"MCP_READ_WRITE":             4,
 	}
@@ -3534,7 +3526,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkH\x00R\x04lark\x12@\n" +
 	"\bdingtalk\x18\x06 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkH\x00R\bdingtalk\x127\n" +
 	"\x05teams\x18\a \x01(\v2\x1f.bytebase.v1.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\xb7\x10\n" +
+	"\apayload\"\xa6\x10\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -3571,13 +3563,12 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18require_uppercase_letter\x18\x04 \x01(\bR\x16requireUppercaseLetter\x12:\n" +
 	"\x19require_special_character\x18\x05 \x01(\bR\x17requireSpecialCharacter\x12Q\n" +
 	"&require_reset_password_for_first_login\x18\x06 \x01(\bR!requireResetPasswordForFirstLogin\x12F\n" +
-	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotation\"\x7f\n" +
+	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotation\"n\n" +
 	"\rMCPCapability\x12\x1e\n" +
 	"\x1aMCP_CAPABILITY_UNSPECIFIED\x10\x00\x12\x10\n" +
-	"\fMCP_DISABLED\x10\x01\x12\x15\n" +
-	"\x11MCP_METADATA_ONLY\x10\x02\x12\x11\n" +
+	"\fMCP_DISABLED\x10\x01\x12\x11\n" +
 	"\rMCP_READ_ONLY\x10\x03\x12\x12\n" +
-	"\x0eMCP_READ_WRITE\x10\x04J\x04\b\x10\x10\x11\"\xf3\x01\n" +
+	"\x0eMCP_READ_WRITE\x10\x04\"\x04\b\x02\x10\x02J\x04\b\x10\x10\x11\"\xf3\x01\n" +
 	"\x15SQLEditorThemeSetting\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +

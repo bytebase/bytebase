@@ -20807,7 +20807,6 @@ components:
       enum:
         - MCP_CAPABILITY_UNSPECIFIED
         - MCP_DISABLED
-        - MCP_METADATA_ONLY
         - MCP_READ_ONLY
         - MCP_READ_WRITE
       description: |-
