@@ -135,7 +135,7 @@ func SQLReviewCheck(
 		}
 		if advice := schema.WalkThroughWithContext(checkContext.DBType, walkThroughContext, checkContext.FinalMetadata, asts); advice != nil {
 			for _, rule := range ruleList {
-				if rule.Type == storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK {
+				if rule.Engine == checkContext.DBType && rule.Type == storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK {
 					if status, err := NewStatusBySQLReviewRuleLevel(rule.Level); err == nil {
 						advice.Status = status
 					}
@@ -155,7 +155,7 @@ func SQLReviewCheck(
 		if rule.Type == storepb.SQLReviewRule_BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE {
 			continue
 		}
-		if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED && rule.Engine != checkContext.DBType {
+		if rule.Engine != checkContext.DBType {
 			continue
 		}
 

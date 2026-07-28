@@ -206,6 +206,24 @@ func TestSQLReviewCheckMaximumSQLSizeUsesExactEngineRule(t *testing.T) {
 	require.Equal(t, storepb.SQLReviewRule_BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE.String(), adviceList[0].Title)
 }
 
+func TestSQLReviewCheckSkipsEngineUnspecifiedRule(t *testing.T) {
+	sm := sheet.NewManager()
+
+	adviceList, err := SQLReviewCheck(context.Background(), sm, "COMMIT;", []*storepb.SQLReviewRule{
+		{
+			Type:   storepb.SQLReviewRule_STATEMENT_DISALLOW_COMMIT,
+			Level:  storepb.SQLReviewRule_ERROR,
+			Engine: storepb.Engine_ENGINE_UNSPECIFIED,
+		},
+	}, Context{
+		DBType:          storepb.Engine_POSTGRES,
+		NoAppendBuiltin: true,
+	})
+
+	require.NoError(t, err)
+	require.Empty(t, adviceList)
+}
+
 func TestSQLReviewCheckMaximumSQLSizeUsesConfiguredMaximum(t *testing.T) {
 	sm := sheet.NewManager()
 	statement := strings.Repeat("not sql\n", common.MaxSheetCheckSize/len("not sql\n")+1)
