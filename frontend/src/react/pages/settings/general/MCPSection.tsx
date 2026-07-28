@@ -33,15 +33,21 @@ interface LocalState {
 }
 
 // Unset resolves to READ_WRITE server-side, so it renders as Read-write.
-const normalizeCapability = (
+// Unknown or reserved stored values fail closed at /mcp, so they render as
+// Disabled — the option matching their actual behavior; selecting Read-only
+// or Read-write then persists a valid value.
+export const normalizeCapability = (
   capability: WorkspaceProfileSetting_MCPCapability
 ): WorkspaceProfileSetting_MCPCapability => {
   switch (capability) {
+    case WorkspaceProfileSetting_MCPCapability.MCP_CAPABILITY_UNSPECIFIED:
+    case WorkspaceProfileSetting_MCPCapability.MCP_READ_WRITE:
+      return WorkspaceProfileSetting_MCPCapability.MCP_READ_WRITE;
     case WorkspaceProfileSetting_MCPCapability.MCP_DISABLED:
     case WorkspaceProfileSetting_MCPCapability.MCP_READ_ONLY:
       return capability;
     default:
-      return WorkspaceProfileSetting_MCPCapability.MCP_READ_WRITE;
+      return WorkspaceProfileSetting_MCPCapability.MCP_DISABLED;
   }
 };
 
