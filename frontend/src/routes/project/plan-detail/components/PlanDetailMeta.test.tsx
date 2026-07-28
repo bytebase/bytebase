@@ -185,6 +185,63 @@ test("does not warn about missing Issue labels during creation", () => {
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
 
+const labelsTrigger = () =>
+  screen.getByRole("button", { name: /issue\.labels/ });
+
+const creating = (overrides: Record<string, unknown> = {}) => {
+  const page = makePage();
+  return {
+    ...page,
+    isCreating: true,
+    issue: undefined,
+    project: { ...page.project, forceIssueLabels: true },
+    ...overrides,
+  } as unknown as PlanDetailPageState;
+};
+
+test("marks the labels control required while the project forces one and none is set", () => {
+  mocks.page = creating();
+
+  render(<PlanDetailMeta />);
+
+  expect(labelsTrigger()).toHaveTextContent("*");
+});
+
+test("drops the required marker once a label satisfies it", () => {
+  mocks.creationIssueLabels = ["alpha"];
+  mocks.page = creating();
+
+  render(<PlanDetailMeta />);
+
+  expect(labelsTrigger()).not.toHaveTextContent("*");
+});
+
+test("does not mark the control required when the project does not force labels", () => {
+  const page = makePage();
+  mocks.page = {
+    ...page,
+    isCreating: true,
+    issue: undefined,
+  } as unknown as PlanDetailPageState;
+
+  render(<PlanDetailMeta />);
+
+  expect(labelsTrigger()).not.toHaveTextContent("*");
+});
+
+test("does not mark labels required after the draft is submitted", () => {
+  const page = makePage();
+  mocks.page = {
+    ...page,
+    issue: { ...page.issue!, draft: false, labels: [] },
+    project: { ...page.project, forceIssueLabels: true },
+  };
+
+  render(<PlanDetailMeta />);
+
+  expect(labelsTrigger()).not.toHaveTextContent("*");
+});
+
 test("keeps draft labels read-only without issues.update and editable with it", async () => {
   const { rerender } = render(<PlanDetailMeta />);
 

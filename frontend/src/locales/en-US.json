@@ -1294,7 +1294,6 @@
       "this-grant-allows": "This grant allows",
       "unmask-data-in-results": "Unmask sensitive data in results"
     },
-    "action-anyway": "{{action}} anyway",
     "advanced-search": {
       "filter": "Filter",
       "scope": {
@@ -1532,6 +1531,10 @@
   "plan": {
     "add-spec": "Add Change",
     "add-spec-pending-draft": "Save or discard the pending change before adding another",
+    "blocker": {
+      "clears-on-its-own": "Clears on its own"
+    },
+    "cannot-create": "Cannot create plan",
     "checks": {
       "completed": "Plan checks completed",
       "failed-to-run": "Failed to run plan checks",
@@ -1544,7 +1547,7 @@
     "description": {
       "placeholder": "Add description"
     },
-    "draft-update-permission-required": "You can view this draft, but you need bb.issues.update to edit labels or submit it for review.",
+    "draft-update-permission-required": "You can view this draft, but you need bb.issues.update to edit issue labels or submit it for review.",
     "editor": {
       "save-changes-before-continuing": "Please save or cancel your changes before continuing"
     },
@@ -1562,7 +1565,7 @@
       "self": "Isolation Level",
       "serializable": "Serializable"
     },
-    "labels-required-for-review": "Labels are required before review",
+    "labels-required-for-review": "Issue Labels are required before review",
     "lifecycle": {
       "checking": "Checking…",
       "checks-failing": "Checks failing",
@@ -1594,6 +1597,7 @@
       "statement-empty": "Statement is empty"
     },
     "new-plan": "New Plan",
+    "not-ready-for-review": "Not ready for review",
     "options": {
       "no-options-available": "No options available",
       "self": "Options"
@@ -1702,6 +1706,7 @@
       "reopen-confirm": "Reopen this plan?",
       "reopen-review-confirm": "Reopen this review?"
     },
+    "submit-review-anyway": "Submit anyway",
     "subtitle": "Draft database changes and run pre-checks before creating an issue for approval.",
     "summary": {
       "last-approved-by": "Last approved by {{name}}",

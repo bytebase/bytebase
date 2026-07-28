@@ -1,17 +1,11 @@
 import { clone, create } from "@bufbuild/protobuf";
-import { EllipsisVertical, Loader2 } from "lucide-react";
+import { EllipsisVertical } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/app/router/handles";
-import {
-  type IssueLabel,
-  IssueLabelSelect,
-} from "@/components/IssueLabelSelect";
-import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,17 +13,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   createPlanWithDraftReview,
   DraftReviewIssueCreationError,
-  getCreateIssueBlockingErrors,
-  getCreateIssueConfirmErrors,
-  getCreatePlanBlockingReasons,
-  hasChecksWarning,
   submitDraftReview,
 } from "@/lib/plan/workflow";
 import { cn } from "@/lib/utils";
@@ -56,6 +41,16 @@ import { usePlanDetailSpecValidation } from "../hooks/usePlanDetailSpecValidatio
 import { focusPlanPhase } from "../shell/focusPhase";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { getLocalSheetByName, removeLocalSheet } from "../utils/localSheet";
+import {
+  getCreatePlanBlockers,
+  getSubmitReviewAdvance,
+  NO_ADVANCE,
+  NO_BLOCKERS,
+} from "./lifecycle/advanceState";
+import {
+  LifecycleAdvanceButton,
+  type LifecycleAdvanceProps,
+} from "./lifecycle/LifecycleAdvance";
 import { PlanLifecycleSlot } from "./lifecycle/PlanLifecycleSlot";
 import { PlanLifecycleStamp } from "./lifecycle/PlanLifecycleStamp";
 import { slotHasPrimaryControl } from "./lifecycle/planLifecycleHeaderState";
@@ -75,41 +70,20 @@ export function PlanDetailHeader() {
   const [title, setTitle] = useState(persistedTitle);
   const [editingTitle, setEditingTitle] = useState(false);
   const [updating, setUpdating] = useState(false);
-  const [showReviewPopover, setShowReviewPopover] = useState(false);
-  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
-  const [checksWarningAcknowledged, setChecksWarningAcknowledged] =
-    useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
   const { emptySpecIdSet } = usePlanDetailSpecValidation(page.plan.specs ?? []);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleAutoFocusedRef = useRef(false);
   const pageKeyRef = useRef(page.pageKey);
   pageKeyRef.current = page.pageKey;
-  const createPlanBlockingReasons = useMemo(
-    () =>
-      getCreatePlanBlockingReasons({
-        title: page.plan.title,
-        emptySpecCount: emptySpecIdSet.size,
-        t,
-      }),
-    [emptySpecIdSet.size, page.plan.title, t]
-  );
-  const canCreatePlan = hasProjectPermissionV2(project, "bb.plans.create");
-  const canCreateIssue = hasProjectPermissionV2(project, "bb.issues.create");
-  const canCreateDraftReview = canCreatePlan && canCreateIssue;
-  const createPermissionReason = canCreateDraftReview
-    ? undefined
-    : t("common.missing-required-permission", {
-        permissions: ["bb.plans.create", "bb.issues.create"]
-          .filter(
-            (permission) =>
-              !hasProjectPermissionV2(
-                project,
-                permission as "bb.plans.create" | "bb.issues.create"
-              )
-          )
-          .join(", "),
-      });
+  const missingCreatePermissions = (
+    ["bb.plans.create", "bb.issues.create"] as const
+  ).filter((permission) => !hasProjectPermissionV2(project, permission));
+  const createPermissionReason = missingCreatePermissions.length
+    ? t("common.missing-required-permission", {
+        permissions: missingCreatePermissions.join(", "),
+      })
+    : undefined;
 
   const canUpdatePlan =
     page.plan.creator === currentUser.name ||
@@ -119,9 +93,6 @@ export function PlanDetailHeader() {
     setTitle(persistedTitle);
     setEditingTitle(false);
     setUpdating(false);
-    setShowReviewPopover(false);
-    setSelectedLabels(draftIssue ? (page.issue?.labels ?? []) : []);
-    setChecksWarningAcknowledged(false);
     setSubmittingReview(false);
     titleAutoFocusedRef.current = false;
     setEditing("title", false);
@@ -132,12 +103,6 @@ export function PlanDetailHeader() {
       setTitle((prev) => (prev === persistedTitle ? prev : persistedTitle));
     }
   }, [editingTitle, persistedTitle]);
-
-  useEffect(() => {
-    if (draftIssue && !showReviewPopover) {
-      setSelectedLabels(page.issue?.labels ?? []);
-    }
-  }, [draftIssue, page.issue?.labels, showReviewPopover]);
 
   const allowTitleEdit = useMemo(() => {
     if (page.readonly) return false;
@@ -201,13 +166,6 @@ export function PlanDetailHeader() {
     !draftIssue &&
     page.issue.status === IssueStatus.CANCELED &&
     canUpdateIssue;
-
-  const submitDisabled = page.isEditing || !canUpdateIssue;
-  const submitDisabledReason = page.isEditing
-    ? t("plan.editor.save-changes-before-continuing")
-    : !canUpdateIssue
-      ? t("plan.draft-update-permission-required")
-      : undefined;
 
   const saveTitle = async () => {
     if (page.isCreating) {
@@ -427,6 +385,64 @@ export function PlanDetailHeader() {
     ? secondaryActions.slice(1)
     : secondaryActions;
 
+  // Everything standing between the reader and the next lifecycle state, as
+  // data. A missing permission is one more entry rather than a separate header
+  // state, so the action never disappears or goes dead.
+  // Only the state that renders the advance resolves it: in create mode every
+  // title keystroke hands out a fresh `page.plan`, and the submit resolver walks
+  // the specs for a result create mode never reads.
+  const isCreating = lifecycle.kind === "create";
+  const isSubmitting = lifecycle.kind === "ready-for-review";
+  // Labels come from the metadata row, which persists them on change — the
+  // submit path only counts them, so key the memo on the count, not the array.
+  const selectedLabelCount = page.issue?.labels?.length ?? 0;
+
+  const createBlockers = useMemo(
+    () =>
+      isCreating
+        ? getCreatePlanBlockers({
+            emptySpecCount: emptySpecIdSet.size,
+            permissionReason: createPermissionReason,
+            title: page.plan.title,
+            t,
+          })
+        : NO_BLOCKERS,
+    [
+      createPermissionReason,
+      emptySpecIdSet.size,
+      isCreating,
+      page.plan.title,
+      t,
+    ]
+  );
+
+  const submitAdvance = useMemo(
+    () =>
+      isSubmitting
+        ? getSubmitReviewAdvance({
+            emptySpecCount: emptySpecIdSet.size,
+            isEditing: page.isEditing,
+            permissionReason: canUpdateIssue
+              ? undefined
+              : t("plan.draft-update-permission-required"),
+            plan: page.plan,
+            project,
+            selectedLabelCount,
+            t,
+          })
+        : NO_ADVANCE,
+    [
+      canUpdateIssue,
+      emptySpecIdSet.size,
+      isSubmitting,
+      page.isEditing,
+      page.plan,
+      project,
+      selectedLabelCount,
+      t,
+    ]
+  );
+
   const createSheets = async (actionPageKey: string) => {
     for (const spec of page.plan.specs) {
       let config = null;
@@ -450,7 +466,7 @@ export function PlanDetailHeader() {
   };
 
   const handleCreatePlan = async () => {
-    if (createPlanBlockingReasons.length > 0 || !canCreateDraftReview) {
+    if (createBlockers.length > 0) {
       return;
     }
     const actionPageKey = page.pageKey;
@@ -502,51 +518,8 @@ export function PlanDetailHeader() {
     }
   };
 
-  const createIssueBlockingErrors = useMemo(
-    () =>
-      getCreateIssueBlockingErrors({
-        emptySpecCount: emptySpecIdSet.size,
-        plan: page.plan,
-        project,
-        t,
-      }),
-    [emptySpecIdSet.size, page.plan, project, t]
-  );
-  const createDisabledReason =
-    createPermissionReason ?? createPlanBlockingReasons[0];
-  const showChecksWarning = useMemo(
-    () => hasChecksWarning(page.plan),
-    [page.plan]
-  );
-  const createIssueConfirmErrors = useMemo(
-    () =>
-      getCreateIssueConfirmErrors({
-        blockingErrors: createIssueBlockingErrors,
-        project,
-        selectedLabelCount: selectedLabels.length,
-        t,
-      }),
-    [createIssueBlockingErrors, project, selectedLabels.length, t]
-  );
-
-  const resetReviewPopoverDraft = () => {
-    setSelectedLabels(page.issue?.labels ?? []);
-    setChecksWarningAcknowledged(false);
-  };
-
-  const handleReviewPopoverOpenChange = (open: boolean) => {
-    setShowReviewPopover(open);
-    if (!open) {
-      resetReviewPopoverDraft();
-    }
-  };
-
   const handleSubmitDraftReview = async () => {
-    if (
-      !page.issue?.draft ||
-      !canUpdateIssue ||
-      createIssueConfirmErrors.length > 0
-    ) {
+    if (!page.issue?.draft || submitAdvance.blockers.length > 0) {
       return;
     }
     const actionPageKey = page.pageKey;
@@ -554,12 +527,10 @@ export function PlanDetailHeader() {
       setSubmittingReview(true);
       const submittedIssue = await submitDraftReview({
         issue: page.issue,
-        labels: selectedLabels,
         updateIssue: (request) =>
           issueServiceClientConnect.updateIssue(request),
       });
       if (pageKeyRef.current !== actionPageKey) return;
-      handleReviewPopoverOpenChange(false);
       patchState({ issue: submittedIssue });
       await page.refreshState();
       if (pageKeyRef.current !== actionPageKey) return;
@@ -578,6 +549,32 @@ export function PlanDetailHeader() {
       }
     }
   };
+
+  let advance: LifecycleAdvanceProps | undefined;
+  if (isCreating) {
+    advance = {
+      blockers: createBlockers,
+      busy: updating,
+      heading: t("plan.cannot-create"),
+      onAdvance: () => void handleCreatePlan(),
+      // The empty title is the one blocker whose field is already in this row.
+      onBlocked: (blockers) => {
+        if (blockers.some((blocker) => blocker.id === "title")) {
+          titleInputRef.current?.focus();
+        }
+      },
+      verb: t("common.create"),
+    };
+  } else if (isSubmitting) {
+    advance = {
+      blockers: submitAdvance.blockers,
+      busy: submittingReview,
+      decision: submitAdvance.decision,
+      heading: t("plan.not-ready-for-review"),
+      onAdvance: () => void handleSubmitDraftReview(),
+      verb: t("plan.ready-for-review"),
+    };
+  }
 
   return (
     <div className="px-2 py-2 sm:px-4">
@@ -625,55 +622,10 @@ export function PlanDetailHeader() {
           {/* Lifecycle slot: one primary advance/status per state. Create and
               ready-for-review stay here (coupled to the title/create flow); all
               other states render through PlanLifecycleSlot. */}
-          {lifecycle.kind === "create" ? (
-            <Button
-              disabled={
-                updating ||
-                !canCreateDraftReview ||
-                createPlanBlockingReasons.length > 0
-              }
-              onClick={() => void handleCreatePlan()}
-              title={createDisabledReason}
-            >
-              {updating && <Loader2 className="mr-2 size-4 animate-spin" />}
-              {t("common.create")}
-            </Button>
-          ) : lifecycle.kind === "ready-for-review" ? (
-            <Popover
-              open={showReviewPopover}
-              onOpenChange={handleReviewPopoverOpenChange}
-            >
-              <PopoverTrigger
-                render={
-                  <Button
-                    disabled={submitDisabled}
-                    title={submitDisabledReason}
-                  />
-                }
-              >
-                {t("plan.ready-for-review")}
-              </PopoverTrigger>
-              <PopoverContent
-                align="end"
-                className="w-[min(28rem,calc(100vw-2rem))] px-4 py-4"
-              >
-                <ReadyForReviewPopoverContent
-                  checksWarningAcknowledged={checksWarningAcknowledged}
-                  confirmErrors={createIssueConfirmErrors}
-                  forceIssueLabels={project.forceIssueLabels}
-                  issueLabels={project.issueLabels ?? []}
-                  onCancel={() => handleReviewPopoverOpenChange(false)}
-                  onChecksWarningAcknowledgedChange={
-                    setChecksWarningAcknowledged
-                  }
-                  onConfirm={() => void handleSubmitDraftReview()}
-                  onSelectedLabelsChange={setSelectedLabels}
-                  selectedLabels={selectedLabels}
-                  showChecksWarning={showChecksWarning}
-                  submitting={submittingReview}
-                />
-              </PopoverContent>
-            </Popover>
+          {advance ? (
+            // Keyed on the plan so a surface opened for one plan cannot greet
+            // the reader on the next.
+            <LifecycleAdvanceButton key={page.pageKey} {...advance} />
           ) : (
             <PlanLifecycleSlot state={lifecycle} />
           )}
@@ -709,90 +661,6 @@ export function PlanDetailHeader() {
             </DropdownMenu>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function ReadyForReviewPopoverContent({
-  checksWarningAcknowledged,
-  confirmErrors,
-  forceIssueLabels,
-  issueLabels,
-  onCancel,
-  onChecksWarningAcknowledgedChange,
-  onConfirm,
-  onSelectedLabelsChange,
-  selectedLabels,
-  showChecksWarning,
-  submitting,
-}: {
-  checksWarningAcknowledged: boolean;
-  confirmErrors: string[];
-  forceIssueLabels: boolean;
-  issueLabels: IssueLabel[];
-  onCancel: () => void;
-  onChecksWarningAcknowledgedChange?: (checked: boolean) => void;
-  onConfirm: () => void;
-  onSelectedLabelsChange: (labels: string[]) => void;
-  selectedLabels: string[];
-  showChecksWarning: boolean;
-  submitting: boolean;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <div className="flex flex-col gap-y-4">
-      {showChecksWarning && (
-        <Alert variant="warning" description={t("issue.checks-warning-hint")} />
-      )}
-      <IssueLabelSelect
-        labels={issueLabels}
-        onChange={onSelectedLabelsChange}
-        required={forceIssueLabels}
-        selected={selectedLabels}
-      />
-      {showChecksWarning && (
-        <label className="flex items-center gap-x-2 text-sm text-control">
-          <Checkbox
-            checked={checksWarningAcknowledged}
-            onCheckedChange={(checked) =>
-              onChecksWarningAcknowledgedChange?.(checked)
-            }
-          />
-          <span>
-            {t("issue.action-anyway", {
-              action: t("common.confirm"),
-            })}
-          </span>
-        </label>
-      )}
-      {confirmErrors.length > 0 && (
-        <Alert
-          variant="error"
-          description={
-            <span className="whitespace-pre-line">
-              {confirmErrors.join("\n")}
-            </span>
-          }
-        />
-      )}
-      <div className="flex justify-start gap-x-2 pt-1">
-        <Button
-          disabled={
-            confirmErrors.length > 0 ||
-            (showChecksWarning && !checksWarningAcknowledged) ||
-            submitting
-          }
-          onClick={onConfirm}
-          size="sm"
-        >
-          {submitting && <Loader2 className="size-4 animate-spin" />}
-          {t("common.confirm")}
-        </Button>
-        <Button onClick={onCancel} size="sm" appearance="secondary">
-          {t("common.cancel")}
-        </Button>
       </div>
     </div>
   );
