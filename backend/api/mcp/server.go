@@ -228,7 +228,14 @@ func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapabili
 // unset ceiling resolves to MCP_READ_WRITE so workspaces that never configured
 // one keep working; a genuine lookup error fails closed to MCP_DISABLED so a
 // policy that cannot be read never silently permits MCP. A missing setting row
-// (GetSetting returns nil, nil) is treated as unset, not an error.
+// is treated as unset, not an error.
+//
+// The read deliberately bypasses the store's setting cache (ListSettings hits
+// the database; GetSetting serves the cache): the cache has no TTL and only
+// in-process writes refresh it, so a profile cached as unset would keep
+// admitting MCP indefinitely after the ceiling is flipped by an out-of-band
+// admin path (direct SQL, another process). A kill switch must observe the
+// stored truth on the next request.
 func (s *Server) mcpCapability(ctx context.Context, workspaceID string) storepb.WorkspaceProfileSetting_MCPCapability {
 	if s.store == nil {
 		return storepb.WorkspaceProfileSetting_MCP_READ_WRITE
@@ -238,15 +245,17 @@ func (s *Server) mcpCapability(ctx context.Context, workspaceID string) storepb.
 			workspaceID = id
 		}
 	}
-	setting, err := s.store.GetSetting(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE)
+	name := storepb.SettingName_WORKSPACE_PROFILE
+	settings, err := s.store.ListSettings(ctx, &store.FindSettingMessage{Workspace: workspaceID, Name: &name})
 	if err != nil {
 		slog.Warn("failed to read MCP capability policy; failing closed",
 			slog.String("workspace", workspaceID), log.BBError(err))
 		return storepb.WorkspaceProfileSetting_MCP_DISABLED
 	}
-	if setting == nil {
+	if len(settings) == 0 {
 		return storepb.WorkspaceProfileSetting_MCP_READ_WRITE
 	}
+	setting := settings[0]
 	profile, ok := setting.Value.(*storepb.WorkspaceProfileSetting)
 	if !ok {
 		return storepb.WorkspaceProfileSetting_MCP_READ_WRITE

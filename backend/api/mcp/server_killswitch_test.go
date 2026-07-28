@@ -107,6 +107,76 @@ func TestMCPKillSwitchEndToEnd(t *testing.T) {
 		"workspace with no MCP ceiling must default to allowed (backward compatible)")
 }
 
+// TestMCPKillSwitchBypassesSettingCache pins that the /mcp gate reads the
+// stored policy fresh instead of through the store's setting cache. The cache
+// has no TTL and only in-process writes refresh it, so with a cache-enabled
+// store (the non-HA production shape) a profile cached as unset would keep
+// admitting MCP forever after the ceiling is flipped by an out-of-band admin
+// path (direct SQL, another process) — the kill switch must observe the stored
+// truth on the next request.
+func TestMCPKillSwitchBypassesSettingCache(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	db := container.GetDB()
+	require.NoError(t, migrator.MigrateSchema(ctx, db))
+
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('ws-cached');
+	`)
+	require.NoError(t, err)
+
+	pgURL := fmt.Sprintf(
+		"host=%s port=%s user=postgres password=root-password database=postgres",
+		container.GetHost(), container.GetPort(),
+	)
+	s, err := store.New(ctx, pgURL, true /* enableCache */)
+	require.NoError(t, err)
+
+	// A profile row with no MCP ceiling, as any configured workspace has.
+	_, err = s.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_WORKSPACE_PROFILE,
+		Workspace: "ws-cached",
+		Value:     &storepb.WorkspaceProfileSetting{},
+	})
+	require.NoError(t, err)
+
+	secret := "test-secret-key"
+	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
+	srv, err := NewServer(s, profile, secret)
+	require.NoError(t, err)
+
+	statusFor := func() int {
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+tokenForWorkspace(t, secret, "ws-cached"))
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		handler := srv.authMiddleware(func(c *echo.Context) error {
+			return c.String(http.StatusOK, "success")
+		})
+		if err := handler(c); err != nil {
+			echo.DefaultHTTPErrorHandler(true)(c, err)
+		}
+		return rec.Code
+	}
+
+	// First request: unset ceiling → allowed. This also primes the setting cache.
+	require.Equal(t, http.StatusOK, statusFor())
+
+	// Flip the ceiling behind the store's back, as an emergency SQL toggle would.
+	_, err = db.ExecContext(ctx, `
+		UPDATE setting SET value = jsonb_set(value, '{mcpCapability}', '"MCP_DISABLED"')
+		WHERE workspace = 'ws-cached' AND name = 'WORKSPACE_PROFILE';
+	`)
+	require.NoError(t, err)
+
+	require.Equal(t, http.StatusForbidden, statusFor(),
+		"a ceiling written out-of-band must be enforced on the next request, not served stale from the setting cache")
+}
+
 func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 	t.Helper()
 	claims := jwt.MapClaims{
