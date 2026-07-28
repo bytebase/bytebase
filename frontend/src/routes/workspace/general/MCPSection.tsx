@@ -37,13 +37,13 @@ export const normalizeCapability = (
 ): WorkspaceProfileSetting_MCPCapability => {
   switch (capability) {
     case WorkspaceProfileSetting_MCPCapability.MCP_CAPABILITY_UNSPECIFIED:
-    case WorkspaceProfileSetting_MCPCapability.MCP_READ_WRITE:
-      return WorkspaceProfileSetting_MCPCapability.MCP_READ_WRITE;
-    case WorkspaceProfileSetting_MCPCapability.MCP_DISABLED:
-    case WorkspaceProfileSetting_MCPCapability.MCP_READ_ONLY:
+    case WorkspaceProfileSetting_MCPCapability.READ_WRITE:
+      return WorkspaceProfileSetting_MCPCapability.READ_WRITE;
+    case WorkspaceProfileSetting_MCPCapability.DISABLED:
+    case WorkspaceProfileSetting_MCPCapability.READ_ONLY:
       return capability;
     default:
-      return WorkspaceProfileSetting_MCPCapability.MCP_DISABLED;
+      return WorkspaceProfileSetting_MCPCapability.DISABLED;
   }
 };
 
@@ -104,21 +104,21 @@ export const MCPSection = forwardRef<SectionHandle, MCPSectionProps>(
 
     const options = [
       {
-        capability: WorkspaceProfileSetting_MCPCapability.MCP_DISABLED,
+        capability: WorkspaceProfileSetting_MCPCapability.DISABLED,
         label: t("settings.general.workspace.mcp.capability.disabled.self"),
         description: t(
           "settings.general.workspace.mcp.capability.disabled.description"
         ),
       },
       {
-        capability: WorkspaceProfileSetting_MCPCapability.MCP_READ_ONLY,
+        capability: WorkspaceProfileSetting_MCPCapability.READ_ONLY,
         label: t("settings.general.workspace.mcp.capability.read-only.self"),
         description: t(
           "settings.general.workspace.mcp.capability.read-only.description"
         ),
       },
       {
-        capability: WorkspaceProfileSetting_MCPCapability.MCP_READ_WRITE,
+        capability: WorkspaceProfileSetting_MCPCapability.READ_WRITE,
         label: t("settings.general.workspace.mcp.capability.read-write.self"),
         description: t(
           "settings.general.workspace.mcp.capability.read-write.description"

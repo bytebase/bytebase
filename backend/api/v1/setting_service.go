@@ -952,7 +952,7 @@ func validateAnnouncementTheme(t *storepb.WorkspaceProfileSetting_Announcement_A
 }
 
 // validateMCPCapability rejects an explicit write of UNSPECIFIED — absent has
-// defined resolver semantics (it resolves to MCP_READ_WRITE), so writing
+// defined resolver semantics (it resolves to READ_WRITE), so writing
 // "unspecified" is a caller bug — and unknown enum numbers, which proto3 open
 // enums would otherwise let through.
 func validateMCPCapability(capability storepb.WorkspaceProfileSetting_MCPCapability) error {

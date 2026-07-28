@@ -167,8 +167,8 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		// Enforce the workspace MCP capability ceiling before dispatching to any
-		// tool. MCP_DISABLED — and, until per-tool enforcement lands in a later
-		// phase, the not-yet-enforceable MCP_READ_ONLY ceiling — reject the
+		// tool. DISABLED — and, until per-tool enforcement lands in a later
+		// phase, the not-yet-enforceable READ_ONLY ceiling — reject the
 		// connection outright. Read live so an admin change takes effect on the
 		// next request without re-issuing tokens.
 		if !mcpConnectionAllowed(s.mcpCapability(c.Request().Context(), workspaceID)) {
@@ -209,15 +209,15 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 
 // mcpConnectionAllowed reports whether an MCP connection may proceed under the
 // resolved workspace capability ceiling. This phase enforces the connection-level
-// gate only: MCP_DISABLED is rejected, and the not-yet-enforceable
-// MCP_READ_ONLY ceiling is also rejected — a ceiling the server cannot yet
+// gate only: DISABLED is rejected, and the not-yet-enforceable
+// READ_ONLY ceiling is also rejected — a ceiling the server cannot yet
 // apply per-tool must fail closed rather than silently grant read-write. A
 // later phase turns it into allow-with-clamp. Unknown stored values (e.g. a
 // reserved number) hit the default arm and fail closed too.
 func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapability) bool {
 	switch capability {
 	case storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED,
-		storepb.WorkspaceProfileSetting_MCP_READ_WRITE:
+		storepb.WorkspaceProfileSetting_READ_WRITE:
 		return true
 	default:
 		return false
@@ -225,8 +225,8 @@ func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapabili
 }
 
 // mcpCapability resolves the workspace's effective MCP capability ceiling. An
-// unset ceiling resolves to MCP_READ_WRITE so workspaces that never configured
-// one keep working; a genuine lookup error fails closed to MCP_DISABLED so a
+// unset ceiling resolves to READ_WRITE so workspaces that never configured
+// one keep working; a genuine lookup error fails closed to DISABLED so a
 // policy that cannot be read never silently permits MCP. A missing setting row
 // is treated as unset, not an error.
 //
@@ -238,7 +238,7 @@ func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapabili
 // stored truth on the next request.
 func (s *Server) mcpCapability(ctx context.Context, workspaceID string) storepb.WorkspaceProfileSetting_MCPCapability {
 	if s.store == nil {
-		return storepb.WorkspaceProfileSetting_MCP_READ_WRITE
+		return storepb.WorkspaceProfileSetting_READ_WRITE
 	}
 	if workspaceID == "" && !s.profile.SaaS {
 		if id, err := s.store.GetWorkspaceID(ctx); err == nil {
@@ -250,20 +250,20 @@ func (s *Server) mcpCapability(ctx context.Context, workspaceID string) storepb.
 	if err != nil {
 		slog.Warn("failed to read MCP capability policy; failing closed",
 			slog.String("workspace", workspaceID), log.BBError(err))
-		return storepb.WorkspaceProfileSetting_MCP_DISABLED
+		return storepb.WorkspaceProfileSetting_DISABLED
 	}
 	if len(settings) == 0 {
-		return storepb.WorkspaceProfileSetting_MCP_READ_WRITE
+		return storepb.WorkspaceProfileSetting_READ_WRITE
 	}
 	setting := settings[0]
 	profile, ok := setting.Value.(*storepb.WorkspaceProfileSetting)
 	if !ok {
-		return storepb.WorkspaceProfileSetting_MCP_READ_WRITE
+		return storepb.WorkspaceProfileSetting_READ_WRITE
 	}
 	if capability := profile.GetMcpCapability(); capability != storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED {
 		return capability
 	}
-	return storepb.WorkspaceProfileSetting_MCP_READ_WRITE
+	return storepb.WorkspaceProfileSetting_READ_WRITE
 }
 
 // buildResourceMetadataURL returns the absolute URL of the protected resource

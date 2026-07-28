@@ -50,7 +50,7 @@ func (ctl *controller) getMCPCapability(ctx context.Context) (v1pb.WorkspaceProf
 // TestMCPCapabilitySettingRoundTrip verifies the workspace MCP capability
 // ceiling round-trips through the v1 settings API for every defined value, and
 // that an explicit write of UNSPECIFIED is rejected — absent has defined
-// resolver semantics (it resolves to MCP_READ_WRITE), so writing "unspecified"
+// resolver semantics (it resolves to READ_WRITE), so writing "unspecified"
 // is a caller bug.
 func TestMCPCapabilitySettingRoundTrip(t *testing.T) {
 	t.Parallel()
@@ -68,9 +68,9 @@ func TestMCPCapabilitySettingRoundTrip(t *testing.T) {
 	a.Equal(v1pb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, capability)
 
 	for _, want := range []v1pb.WorkspaceProfileSetting_MCPCapability{
-		v1pb.WorkspaceProfileSetting_MCP_DISABLED,
-		v1pb.WorkspaceProfileSetting_MCP_READ_ONLY,
-		v1pb.WorkspaceProfileSetting_MCP_READ_WRITE,
+		v1pb.WorkspaceProfileSetting_DISABLED,
+		v1pb.WorkspaceProfileSetting_READ_ONLY,
+		v1pb.WorkspaceProfileSetting_READ_WRITE,
 	} {
 		a.NoError(ctl.setMCPCapability(ctx, want), want.String())
 		got, err := ctl.getMCPCapability(ctx)
@@ -92,14 +92,14 @@ func TestMCPCapabilitySettingRoundTrip(t *testing.T) {
 	}
 	got, err := ctl.getMCPCapability(ctx)
 	a.NoError(err)
-	a.Equal(v1pb.WorkspaceProfileSetting_MCP_READ_WRITE, got)
+	a.Equal(v1pb.WorkspaceProfileSetting_READ_WRITE, got)
 
 	// A validate-only update must not leak into served state: the store caches
 	// the profile object, so an in-place mutation would flip the live /mcp gate
 	// without persisting anything.
-	a.NoError(ctl.setMCPCapability(ctx, v1pb.WorkspaceProfileSetting_MCP_DISABLED))
-	a.NoError(ctl.updateMCPCapability(ctx, v1pb.WorkspaceProfileSetting_MCP_READ_WRITE, true))
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.WorkspaceProfileSetting_DISABLED))
+	a.NoError(ctl.updateMCPCapability(ctx, v1pb.WorkspaceProfileSetting_READ_WRITE, true))
 	got, err = ctl.getMCPCapability(ctx)
 	a.NoError(err)
-	a.Equal(v1pb.WorkspaceProfileSetting_MCP_DISABLED, got)
+	a.Equal(v1pb.WorkspaceProfileSetting_DISABLED, got)
 }

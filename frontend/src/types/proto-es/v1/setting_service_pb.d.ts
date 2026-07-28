@@ -668,7 +668,7 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   /**
    * The maximum capability available to MCP (Model Context Protocol) sessions in
    * this workspace, acting as an admin-set ceiling. Unset is treated as
-   * MCP_READ_WRITE for backward compatibility; MCP_DISABLED rejects all MCP
+   * READ_WRITE for backward compatibility; DISABLED rejects all MCP
    * connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected —
    * omit the update mask path to leave the ceiling unset.
    *
@@ -746,7 +746,7 @@ export declare const WorkspaceProfileSetting_PasswordRestrictionSchema: GenMessa
 /**
  * MCPCapability is the maximum capability an MCP (Model Context Protocol)
  * session may have in the workspace. It is a ceiling: a session runs at this
- * level or lower. Unset (UNSPECIFIED) is treated as MCP_READ_WRITE so existing
+ * level or lower. Unset (UNSPECIFIED) is treated as READ_WRITE so existing
  * workspaces are unaffected.
  *
  * @generated from enum bytebase.v1.WorkspaceProfileSetting.MCPCapability
@@ -760,25 +760,25 @@ export enum WorkspaceProfileSetting_MCPCapability {
   /**
    * MCP connections are rejected.
    *
-   * @generated from enum value: MCP_DISABLED = 1;
+   * @generated from enum value: DISABLED = 1;
    */
-  MCP_DISABLED = 1,
+  DISABLED = 1,
 
   /**
    * MCP may inspect metadata and run read-only queries. Not enforceable yet:
    * until per-tool enforcement ships, this fails closed and refuses all MCP
-   * connections, the same as MCP_DISABLED.
+   * connections, the same as DISABLED.
    *
-   * @generated from enum value: MCP_READ_ONLY = 3;
+   * @generated from enum value: READ_ONLY = 3;
    */
-  MCP_READ_ONLY = 3,
+  READ_ONLY = 3,
 
   /**
    * MCP may perform mutations, still bounded by the user's RBAC.
    *
-   * @generated from enum value: MCP_READ_WRITE = 4;
+   * @generated from enum value: READ_WRITE = 4;
    */
-  MCP_READ_WRITE = 4,
+  READ_WRITE = 4,
 }
 
 /**

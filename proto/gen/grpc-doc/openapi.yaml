@@ -29400,7 +29400,7 @@ components:
           description: |-
             The maximum capability available to MCP (Model Context Protocol) sessions in
              this workspace, acting as an admin-set ceiling. Unset is treated as
-             MCP_READ_WRITE for backward compatibility; MCP_DISABLED rejects all MCP
+             READ_WRITE for backward compatibility; DISABLED rejects all MCP
              connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected —
              omit the update mask path to leave the ceiling unset.
           $ref: '#/components/schemas/bytebase.v1.WorkspaceProfileSetting.MCPCapability'
@@ -29411,13 +29411,13 @@ components:
       title: MCPCapability
       enum:
         - MCP_CAPABILITY_UNSPECIFIED
-        - MCP_DISABLED
-        - MCP_READ_ONLY
-        - MCP_READ_WRITE
+        - DISABLED
+        - READ_ONLY
+        - READ_WRITE
       description: |-
         MCPCapability is the maximum capability an MCP (Model Context Protocol)
          session may have in the workspace. It is a ceiling: a session runs at this
-         level or lower. Unset (UNSPECIFIED) is treated as MCP_READ_WRITE so existing
+         level or lower. Unset (UNSPECIFIED) is treated as READ_WRITE so existing
          workspaces are unaffected.
     bytebase.v1.WorkspaceProfileSetting.PasswordRestriction:
       type: object

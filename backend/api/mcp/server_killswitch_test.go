@@ -25,8 +25,8 @@ import (
 )
 
 // TestMCPConnectionAllowed pins the connection-level gate: only an unset ceiling
-// and MCP_READ_WRITE admit a connection in this phase. MCP_DISABLED, the
-// not-yet-enforceable MCP_READ_ONLY ceiling, and unknown stored values (such as
+// and READ_WRITE admit a connection in this phase. DISABLED, the
+// not-yet-enforceable READ_ONLY ceiling, and unknown stored values (such as
 // the reserved number 2) all fail closed so a ceiling the server cannot apply
 // per-tool never silently grants read-write.
 func TestMCPConnectionAllowed(t *testing.T) {
@@ -35,10 +35,10 @@ func TestMCPConnectionAllowed(t *testing.T) {
 		allowed    bool
 	}{
 		{storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, true},
-		{storepb.WorkspaceProfileSetting_MCP_READ_WRITE, true},
-		{storepb.WorkspaceProfileSetting_MCP_DISABLED, false},
+		{storepb.WorkspaceProfileSetting_READ_WRITE, true},
+		{storepb.WorkspaceProfileSetting_DISABLED, false},
 		{storepb.WorkspaceProfileSetting_MCPCapability(2), false}, // reserved (was METADATA_ONLY)
-		{storepb.WorkspaceProfileSetting_MCP_READ_ONLY, false},
+		{storepb.WorkspaceProfileSetting_READ_ONLY, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.capability.String(), func(t *testing.T) {
@@ -48,7 +48,7 @@ func TestMCPConnectionAllowed(t *testing.T) {
 }
 
 // TestMCPKillSwitchEndToEnd drives the /mcp auth middleware against a real store:
-// a workspace with MCP_DISABLED is rejected server-side with 403, while a
+// a workspace with DISABLED is rejected server-side with 403, while a
 // workspace that never configured a ceiling defaults to allowed (backward
 // compatible). This is the server-side enforcement the kill-switch promises —
 // the token authenticates fine; policy, not auth, blocks the disabled workspace.
@@ -76,7 +76,7 @@ func TestMCPKillSwitchEndToEnd(t *testing.T) {
 	_, err = s.UpsertSetting(ctx, &store.SettingMessage{
 		Name:      storepb.SettingName_WORKSPACE_PROFILE,
 		Workspace: "ws-disabled",
-		Value:     &storepb.WorkspaceProfileSetting{McpCapability: storepb.WorkspaceProfileSetting_MCP_DISABLED},
+		Value:     &storepb.WorkspaceProfileSetting{McpCapability: storepb.WorkspaceProfileSetting_DISABLED},
 	})
 	require.NoError(t, err)
 
@@ -102,7 +102,7 @@ func TestMCPKillSwitchEndToEnd(t *testing.T) {
 	}
 
 	require.Equal(t, http.StatusForbidden, statusFor("ws-disabled"),
-		"MCP_DISABLED workspace must be rejected server-side despite a valid token")
+		"DISABLED workspace must be rejected server-side despite a valid token")
 	require.Equal(t, http.StatusOK, statusFor("ws-open"),
 		"workspace with no MCP ceiling must default to allowed (backward compatible)")
 }
@@ -168,7 +168,7 @@ func TestMCPKillSwitchBypassesSettingCache(t *testing.T) {
 
 	// Flip the ceiling behind the store's back, as an emergency SQL toggle would.
 	_, err = db.ExecContext(ctx, `
-		UPDATE setting SET value = jsonb_set(value, '{mcpCapability}', '"MCP_DISABLED"')
+		UPDATE setting SET value = jsonb_set(value, '{mcpCapability}', '"DISABLED"')
 		WHERE workspace = 'ws-cached' AND name = 'WORKSPACE_PROFILE';
 	`)
 	require.NoError(t, err)

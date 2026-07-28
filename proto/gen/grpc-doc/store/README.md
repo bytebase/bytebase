@@ -4753,7 +4753,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | sql_editor_theme_id | [string](#string) |  | Enforced SQL Editor theme id: OPAQUE — a frontend-resolved built-in preset id OR a custom theme&#39;s uuid. Empty ⇒ default light. |
 | sql_editor_custom_theme | [SQLEditorThemeSetting](#bytebase-store-SQLEditorThemeSetting) |  | The enforced CUSTOM theme&#39;s full definition — present ONLY when sql_editor_theme_id is a custom uuid. tokens is always complete. |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for request role. Deprecated: use just-in-time access request flows instead. |
-| mcp_capability | [WorkspaceProfileSetting.MCPCapability](#bytebase-store-WorkspaceProfileSetting-MCPCapability) |  | The maximum capability available to MCP (Model Context Protocol) sessions in this workspace, acting as an admin-set ceiling. Unset is treated as MCP_READ_WRITE for backward compatibility; MCP_DISABLED rejects all MCP connections. Enforced server-side by the /mcp endpoint. |
+| mcp_capability | [WorkspaceProfileSetting.MCPCapability](#bytebase-store-WorkspaceProfileSetting-MCPCapability) |  | The maximum capability available to MCP (Model Context Protocol) sessions in this workspace, acting as an admin-set ceiling. Unset is treated as READ_WRITE for backward compatibility; DISABLED rejects all MCP connections. Enforced server-side by the /mcp endpoint. |
 
 
 
@@ -4939,15 +4939,15 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 ### WorkspaceProfileSetting.MCPCapability
 MCPCapability is the maximum capability an MCP (Model Context Protocol)
 session may have in the workspace. It is a ceiling: a session runs at this
-level or lower. Unset (UNSPECIFIED) is treated as MCP_READ_WRITE so existing
+level or lower. Unset (UNSPECIFIED) is treated as READ_WRITE so existing
 workspaces are unaffected.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | MCP_CAPABILITY_UNSPECIFIED | 0 |  |
-| MCP_DISABLED | 1 | MCP connections are rejected. |
-| MCP_READ_ONLY | 3 | MCP may inspect metadata and run read-only queries. (Enforced from P1b.) |
-| MCP_READ_WRITE | 4 | MCP may perform mutations, still bounded by the user&#39;s RBAC. |
+| DISABLED | 1 | MCP connections are rejected. |
+| READ_ONLY | 3 | MCP may inspect metadata and run read-only queries. (Enforced from P1b.) |
+| READ_WRITE | 4 | MCP may perform mutations, still bounded by the user&#39;s RBAC. |
 
 
  

@@ -203,9 +203,9 @@ func TestValidateMCPCapability(t *testing.T) {
 		wantErr    bool
 	}{
 		{"unspecified rejected", storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, true},
-		{"disabled", storepb.WorkspaceProfileSetting_MCP_DISABLED, false},
-		{"read only", storepb.WorkspaceProfileSetting_MCP_READ_ONLY, false},
-		{"read write", storepb.WorkspaceProfileSetting_MCP_READ_WRITE, false},
+		{"disabled", storepb.WorkspaceProfileSetting_DISABLED, false},
+		{"read only", storepb.WorkspaceProfileSetting_READ_ONLY, false},
+		{"read write", storepb.WorkspaceProfileSetting_READ_WRITE, false},
 		{"reserved value rejected", storepb.WorkspaceProfileSetting_MCPCapability(2), true},
 		{"unknown value rejected", storepb.WorkspaceProfileSetting_MCPCapability(99), true},
 	}
