@@ -184,8 +184,9 @@ func TestMySQLRowLimitAdvisorsCapExplainEstimateByLimit(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, tc.statement, []*storepb.SQLReviewRule{
 				{
-					Type:  tc.ruleType,
-					Level: storepb.SQLReviewRule_WARNING,
+					Type:   tc.ruleType,
+					Level:  storepb.SQLReviewRule_WARNING,
+					Engine: storepb.Engine_MYSQL,
 					Payload: &storepb.SQLReviewRule_NumberPayload{
 						NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
 							Number: 5,
@@ -241,7 +242,7 @@ func TestMySQLBuiltinWalkThroughCheckTableExists(t *testing.T) {
 	}, nil, nil, storepb.Engine_MYSQL, true)
 
 	adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "CREATE TABLE user(id INT);", []*storepb.SQLReviewRule{
-		{Type: storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK, Level: storepb.SQLReviewRule_WARNING},
+		{Type: storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK, Level: storepb.SQLReviewRule_WARNING, Engine: storepb.Engine_MYSQL},
 	}, advisor.Context{
 		DBType:        storepb.Engine_MYSQL,
 		FinalMetadata: finalMetadata,

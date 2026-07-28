@@ -44,8 +44,9 @@ func TestSearchPathResolution(t *testing.T) {
 
 	stmt := "SELECT * FROM tech_book WHERE UPPER(name) = 'X';"
 	rule := &storepb.SQLReviewRule{
-		Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
-		Level: storepb.SQLReviewRule_WARNING,
+		Type:   storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
+		Level:  storepb.SQLReviewRule_WARNING,
+		Engine: storepb.Engine_POSTGRES,
 	}
 	originalMetadata := model.NewDatabaseMetadata(dbSchema, nil, nil, storepb.Engine_POSTGRES, true /* isCaseSensitive */)
 	checkCtx := advisor.Context{
@@ -95,8 +96,9 @@ func TestSearchPathSessionUserResolution(t *testing.T) {
 
 	stmt := "SELECT * FROM tech_book WHERE UPPER(name) = 'X';"
 	rule := &storepb.SQLReviewRule{
-		Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
-		Level: storepb.SQLReviewRule_WARNING,
+		Type:   storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
+		Level:  storepb.SQLReviewRule_WARNING,
+		Engine: storepb.Engine_POSTGRES,
 	}
 	originalMetadata := model.NewDatabaseMetadata(dbSchema, nil, nil, storepb.Engine_POSTGRES, true)
 	checkCtx := advisor.Context{

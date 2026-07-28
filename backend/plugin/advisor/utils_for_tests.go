@@ -403,8 +403,14 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 		require.True(t, ok, "failed to clone metadata")
 		finalMetadata := model.NewDatabaseMetadata(metadata, nil, nil, dbType, isCaseSensitive)
 
-		// Use the rule provided by the caller (already has Type, Level, and Payload set)
-		ruleList := []*storepb.SQLReviewRule{rule}
+		// Use the rule provided by the caller (already has Type, Level, and Payload set).
+		// Old test fixtures omit Engine for brevity; production rule configs must set it.
+		testRule, ok := proto.Clone(rule).(*storepb.SQLReviewRule)
+		require.True(t, ok, "failed to clone rule")
+		if testRule.Engine == storepb.Engine_ENGINE_UNSPECIFIED {
+			testRule.Engine = dbType
+		}
+		ruleList := []*storepb.SQLReviewRule{testRule}
 
 		checkCtx := Context{
 			DBType:                dbType,

@@ -422,8 +422,9 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 				},
 			}
 			rule := &storepb.SQLReviewRule{
-				Type:  storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
-				Level: storepb.SQLReviewRule_WARNING,
+				Type:   storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
+				Level:  storepb.SQLReviewRule_WARNING,
+				Engine: storepb.Engine_TIDB,
 			}
 			adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, tc.statement, []*storepb.SQLReviewRule{rule}, ctx)
 			require.NoError(t, err)
