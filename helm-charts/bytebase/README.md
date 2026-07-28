@@ -21,16 +21,17 @@ install <RELEASE_NAME> bytebase-repo/bytebase
 
 ## Pinning container images by digest
 
-Set `bytebase.digest` to a complete OCI digest, including the algorithm prefix. The chart keeps the configured version tag for readability, but Kubernetes uses the digest to select the image.
+Set `bytebase.version` to a combined `tag@digest` reference. Kubernetes pulls by digest and treats the tag as documentation.
 
 ```bash
 helm -n <YOUR_NAMESPACE> \
---set "bytebase.version"={VERSION} \
---set-string "bytebase.digest"="sha256:{DIGEST}" \
+--set-string "bytebase.version"="{VERSION}@sha256:{DIGEST}" \
 install <RELEASE_NAME> bytebase-repo/bytebase
 ```
 
-Set `bytebase.busyboxDigest` to pin the BusyBox init container used when `bytebase.option.externalPg.escapePassword` is enabled. Azure Marketplace deployments can set `global.azure.images.bytebase.digest` for the image copied to the Azure registry.
+The BusyBox init container used when `bytebase.option.externalPg.escapePassword` is enabled defaults to a fixed tag via `bytebase.busyboxVersion`, which also accepts a combined `tag@digest` reference. Azure Marketplace deployments can use the same combined reference in `global.azure.images.bytebase.tag`.
+
+When upgrading from chart 1.1.4, move any digest configured through `bytebase.digest`, `bytebase.busyboxDigest`, or `global.azure.images.bytebase.digest` into the corresponding version or tag value. The chart rejects these removed settings to prevent an upgrade from silently losing digest pinning.
 
 ## High availability note
 
@@ -100,10 +101,9 @@ upgrade bytebase-release bytebase-repo/bytebase
 
 |                        Parameter                         |                                                                                                                Description                                                                                                                 |                         Default Value                          |
 | :------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------: |
-|                    `bytebase.version`                    |                                                                                                  The version of Bytebase to be installed.                                                                                                  |                            "latest"                            |
-|                    `bytebase.digest`                     |                                                OCI digest used to pin the Bytebase image. Include the algorithm prefix, for example `sha256:abc123`. The digest takes precedence over the version tag.                                                |                               ""                               |
+|                    `bytebase.version`                    |                                                  The version of Bytebase to be installed. May embed a digest as a combined reference, for example `3.21.0@sha256:abc123`.                                                  |                            "latest"                            |
 |              `bytebase.registryMirrorHost`               |                                                                              The host for the Docker registry mirror. Leave empty for default registry usage.                                                                              |                               ""                               |
-|                `bytebase.busyboxDigest`                  |                                                          OCI digest used to pin the BusyBox init container when PostgreSQL password escaping is enabled.                                                          |                               ""                               |
+|                `bytebase.busyboxVersion`                 |                                                  Tag of the BusyBox init container used when PostgreSQL password escaping is enabled. May embed a digest, for example `1.37.0@sha256:abc123`.                                                  |                            "1.37.0"                            |
 |                  `bytebase.option.port`                  |                                                                                                      Port where Bytebase server runs.                                                                                                      |                              8080                              |
 |                  `bytebase.option.data`                  |                                                                                                  Data directory of Bytebase data stored.                                                                                                   |                       /var/opt/bytebase                        |
 |              `bytebase.option.external-url`              |                                                The address for users to visit Bytebase, visit [our docs](https://docs.bytebase.com/get-started/self-host/external-url/) to get more details.                                                 | "<https://docs.bytebase.com/get-started/self-host/external-url>" |
