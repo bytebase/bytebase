@@ -15,6 +15,7 @@ import { AuditLogSection } from "./AuditLogSection";
 import { BrandingSection } from "./BrandingSection";
 import { DangerZoneSection } from "./DangerZoneSection";
 import { GeneralSection } from "./GeneralSection";
+import { MCPSection } from "./MCPSection";
 import { ProductImprovementSection } from "./ProductImprovementSection";
 import { SecuritySection } from "./SecuritySection";
 import { SQLEditorSection } from "./SQLEditorSection";
@@ -33,6 +34,7 @@ export function GeneralPage() {
   const securityRef = useRef<SectionHandle>(null);
   const sqlEditorRef = useRef<SectionHandle>(null);
   const aiRef = useRef<SectionHandle>(null);
+  const mcpRef = useRef<SectionHandle>(null);
   const announcementRef = useRef<SectionHandle>(null);
   const productImprovementRef = useRef<SectionHandle>(null);
   const auditLogRef = useRef<SectionHandle>(null);
@@ -49,6 +51,7 @@ export function GeneralPage() {
     securityRef,
     sqlEditorRef,
     aiRef,
+    mcpRef,
     announcementRef,
     productImprovementRef,
     auditLogRef,
@@ -82,6 +85,10 @@ export function GeneralPage() {
       {
         name: t("settings.general.workspace.ai-assistant.self"),
         handle: aiRef.current!,
+      },
+      {
+        name: t("settings.general.workspace.mcp.self"),
+        handle: mcpRef.current!,
       },
       {
         name: t("settings.general.workspace.announcement.self"),
@@ -174,6 +181,11 @@ export function GeneralPage() {
       <AIAugmentationSection
         ref={aiRef}
         title={t("settings.general.workspace.ai-assistant.self")}
+        onDirtyChange={onDirtyChange}
+      />
+      <MCPSection
+        ref={mcpRef}
+        title={t("settings.general.workspace.mcp.self")}
         onDirtyChange={onDirtyChange}
       />
       <AnnouncementSection

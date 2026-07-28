@@ -664,6 +664,17 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: google.protobuf.Duration maximum_role_expiration = 25;
    */
   maximumRoleExpiration?: Duration | undefined;
+
+  /**
+   * The maximum capability available to MCP (Model Context Protocol) sessions in
+   * this workspace, acting as an admin-set ceiling. Unset is treated as
+   * MCP_READ_WRITE for backward compatibility; MCP_DISABLED rejects all MCP
+   * connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected —
+   * omit the update mask path to leave the ceiling unset.
+   *
+   * @generated from field: bytebase.v1.WorkspaceProfileSetting.MCPCapability mcp_capability = 26;
+   */
+  mcpCapability: WorkspaceProfileSetting_MCPCapability;
 };
 
 /**
@@ -731,6 +742,49 @@ export declare type WorkspaceProfileSetting_PasswordRestriction = Message<"byteb
  * Use `create(WorkspaceProfileSetting_PasswordRestrictionSchema)` to create a new message.
  */
 export declare const WorkspaceProfileSetting_PasswordRestrictionSchema: GenMessage<WorkspaceProfileSetting_PasswordRestriction>;
+
+/**
+ * MCPCapability is the maximum capability an MCP (Model Context Protocol)
+ * session may have in the workspace. It is a ceiling: a session runs at this
+ * level or lower. Unset (UNSPECIFIED) is treated as MCP_READ_WRITE so existing
+ * workspaces are unaffected.
+ *
+ * @generated from enum bytebase.v1.WorkspaceProfileSetting.MCPCapability
+ */
+export enum WorkspaceProfileSetting_MCPCapability {
+  /**
+   * @generated from enum value: MCP_CAPABILITY_UNSPECIFIED = 0;
+   */
+  MCP_CAPABILITY_UNSPECIFIED = 0,
+
+  /**
+   * MCP connections are rejected.
+   *
+   * @generated from enum value: MCP_DISABLED = 1;
+   */
+  MCP_DISABLED = 1,
+
+  /**
+   * MCP may inspect metadata and run read-only queries. Not enforceable yet:
+   * until per-tool enforcement ships, this fails closed and refuses all MCP
+   * connections, the same as MCP_DISABLED.
+   *
+   * @generated from enum value: MCP_READ_ONLY = 3;
+   */
+  MCP_READ_ONLY = 3,
+
+  /**
+   * MCP may perform mutations, still bounded by the user's RBAC.
+   *
+   * @generated from enum value: MCP_READ_WRITE = 4;
+   */
+  MCP_READ_WRITE = 4,
+}
+
+/**
+ * Describes the enum bytebase.v1.WorkspaceProfileSetting.MCPCapability.
+ */
+export declare const WorkspaceProfileSetting_MCPCapabilitySchema: GenEnum<WorkspaceProfileSetting_MCPCapability>;
 
 /**
  * @generated from message bytebase.v1.SQLEditorThemeSetting

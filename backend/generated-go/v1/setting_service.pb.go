@@ -145,6 +145,67 @@ func (Setting_SettingName) EnumDescriptor() ([]byte, []int) {
 	return file_v1_setting_service_proto_rawDescGZIP(), []int{5, 0}
 }
 
+// MCPCapability is the maximum capability an MCP (Model Context Protocol)
+// session may have in the workspace. It is a ceiling: a session runs at this
+// level or lower. Unset (UNSPECIFIED) is treated as MCP_READ_WRITE so existing
+// workspaces are unaffected.
+type WorkspaceProfileSetting_MCPCapability int32
+
+const (
+	WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED WorkspaceProfileSetting_MCPCapability = 0
+	// MCP connections are rejected.
+	WorkspaceProfileSetting_MCP_DISABLED WorkspaceProfileSetting_MCPCapability = 1
+	// MCP may inspect metadata and run read-only queries. Not enforceable yet:
+	// until per-tool enforcement ships, this fails closed and refuses all MCP
+	// connections, the same as MCP_DISABLED.
+	WorkspaceProfileSetting_MCP_READ_ONLY WorkspaceProfileSetting_MCPCapability = 3
+	// MCP may perform mutations, still bounded by the user's RBAC.
+	WorkspaceProfileSetting_MCP_READ_WRITE WorkspaceProfileSetting_MCPCapability = 4
+)
+
+// Enum value maps for WorkspaceProfileSetting_MCPCapability.
+var (
+	WorkspaceProfileSetting_MCPCapability_name = map[int32]string{
+		0: "MCP_CAPABILITY_UNSPECIFIED",
+		1: "MCP_DISABLED",
+		3: "MCP_READ_ONLY",
+		4: "MCP_READ_WRITE",
+	}
+	WorkspaceProfileSetting_MCPCapability_value = map[string]int32{
+		"MCP_CAPABILITY_UNSPECIFIED": 0,
+		"MCP_DISABLED":               1,
+		"MCP_READ_ONLY":              3,
+		"MCP_READ_WRITE":             4,
+	}
+)
+
+func (x WorkspaceProfileSetting_MCPCapability) Enum() *WorkspaceProfileSetting_MCPCapability {
+	p := new(WorkspaceProfileSetting_MCPCapability)
+	*p = x
+	return p
+}
+
+func (x WorkspaceProfileSetting_MCPCapability) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (WorkspaceProfileSetting_MCPCapability) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_setting_service_proto_enumTypes[2].Descriptor()
+}
+
+func (WorkspaceProfileSetting_MCPCapability) Type() protoreflect.EnumType {
+	return &file_v1_setting_service_proto_enumTypes[2]
+}
+
+func (x WorkspaceProfileSetting_MCPCapability) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use WorkspaceProfileSetting_MCPCapability.Descriptor instead.
+func (WorkspaceProfileSetting_MCPCapability) EnumDescriptor() ([]byte, []int) {
+	return file_v1_setting_service_proto_rawDescGZIP(), []int{8, 0}
+}
+
 type WorkspaceApprovalSetting_Rule_Source int32
 
 const (
@@ -184,11 +245,11 @@ func (x WorkspaceApprovalSetting_Rule_Source) String() string {
 }
 
 func (WorkspaceApprovalSetting_Rule_Source) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_setting_service_proto_enumTypes[2].Descriptor()
+	return file_v1_setting_service_proto_enumTypes[3].Descriptor()
 }
 
 func (WorkspaceApprovalSetting_Rule_Source) Type() protoreflect.EnumType {
-	return &file_v1_setting_service_proto_enumTypes[2]
+	return &file_v1_setting_service_proto_enumTypes[3]
 }
 
 func (x WorkspaceApprovalSetting_Rule_Source) Number() protoreflect.EnumNumber {
@@ -233,11 +294,11 @@ func (x Algorithm_InnerOuterMask_MaskType) String() string {
 }
 
 func (Algorithm_InnerOuterMask_MaskType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_setting_service_proto_enumTypes[3].Descriptor()
+	return file_v1_setting_service_proto_enumTypes[4].Descriptor()
 }
 
 func (Algorithm_InnerOuterMask_MaskType) Type() protoreflect.EnumType {
-	return &file_v1_setting_service_proto_enumTypes[3]
+	return &file_v1_setting_service_proto_enumTypes[4]
 }
 
 func (x Algorithm_InnerOuterMask_MaskType) Number() protoreflect.EnumNumber {
@@ -288,11 +349,11 @@ func (x AISetting_Provider) String() string {
 }
 
 func (AISetting_Provider) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_setting_service_proto_enumTypes[4].Descriptor()
+	return file_v1_setting_service_proto_enumTypes[5].Descriptor()
 }
 
 func (AISetting_Provider) Type() protoreflect.EnumType {
-	return &file_v1_setting_service_proto_enumTypes[4]
+	return &file_v1_setting_service_proto_enumTypes[5]
 }
 
 func (x AISetting_Provider) Number() protoreflect.EnumNumber {
@@ -334,11 +395,11 @@ func (x EmailSetting_Type) String() string {
 }
 
 func (EmailSetting_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_setting_service_proto_enumTypes[5].Descriptor()
+	return file_v1_setting_service_proto_enumTypes[6].Descriptor()
 }
 
 func (EmailSetting_Type) Type() protoreflect.EnumType {
-	return &file_v1_setting_service_proto_enumTypes[5]
+	return &file_v1_setting_service_proto_enumTypes[6]
 }
 
 func (x EmailSetting_Type) Number() protoreflect.EnumNumber {
@@ -386,11 +447,11 @@ func (x EmailSetting_SMTPConfig_Encryption) String() string {
 }
 
 func (EmailSetting_SMTPConfig_Encryption) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_setting_service_proto_enumTypes[6].Descriptor()
+	return file_v1_setting_service_proto_enumTypes[7].Descriptor()
 }
 
 func (EmailSetting_SMTPConfig_Encryption) Type() protoreflect.EnumType {
-	return &file_v1_setting_service_proto_enumTypes[6]
+	return &file_v1_setting_service_proto_enumTypes[7]
 }
 
 func (x EmailSetting_SMTPConfig_Encryption) Number() protoreflect.EnumNumber {
@@ -441,11 +502,11 @@ func (x EmailSetting_SMTPConfig_Authentication) String() string {
 }
 
 func (EmailSetting_SMTPConfig_Authentication) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_setting_service_proto_enumTypes[7].Descriptor()
+	return file_v1_setting_service_proto_enumTypes[8].Descriptor()
 }
 
 func (EmailSetting_SMTPConfig_Authentication) Type() protoreflect.EnumType {
-	return &file_v1_setting_service_proto_enumTypes[7]
+	return &file_v1_setting_service_proto_enumTypes[8]
 }
 
 func (x EmailSetting_SMTPConfig_Authentication) Number() protoreflect.EnumNumber {
@@ -1038,8 +1099,14 @@ type WorkspaceProfileSetting struct {
 	// The max expiration duration for request role.
 	// Deprecated: use just-in-time access request flows instead.
 	MaximumRoleExpiration *durationpb.Duration `protobuf:"bytes,25,opt,name=maximum_role_expiration,json=maximumRoleExpiration,proto3" json:"maximum_role_expiration,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	// The maximum capability available to MCP (Model Context Protocol) sessions in
+	// this workspace, acting as an admin-set ceiling. Unset is treated as
+	// MCP_READ_WRITE for backward compatibility; MCP_DISABLED rejects all MCP
+	// connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected —
+	// omit the update mask path to leave the ceiling unset.
+	McpCapability WorkspaceProfileSetting_MCPCapability `protobuf:"varint,26,opt,name=mcp_capability,json=mcpCapability,proto3,enum=bytebase.v1.WorkspaceProfileSetting_MCPCapability" json:"mcp_capability,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WorkspaceProfileSetting) Reset() {
@@ -1238,6 +1305,13 @@ func (x *WorkspaceProfileSetting) GetMaximumRoleExpiration() *durationpb.Duratio
 		return x.MaximumRoleExpiration
 	}
 	return nil
+}
+
+func (x *WorkspaceProfileSetting) GetMcpCapability() WorkspaceProfileSetting_MCPCapability {
+	if x != nil {
+		return x.McpCapability
+	}
+	return WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED
 }
 
 type SQLEditorThemeSetting struct {
@@ -3454,7 +3528,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkH\x00R\x04lark\x12@\n" +
 	"\bdingtalk\x18\x06 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkH\x00R\bdingtalk\x127\n" +
 	"\x05teams\x18\a \x01(\v2\x1f.bytebase.v1.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\xdb\x0e\n" +
+	"\apayload\"\xa6\x10\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -3481,7 +3555,8 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x17allow_email_code_signin\x18\x16 \x01(\bR\x14allowEmailCodeSignin\x12-\n" +
 	"\x13sql_editor_theme_id\x18\x17 \x01(\tR\x10sqlEditorThemeId\x12Y\n" +
 	"\x17sql_editor_custom_theme\x18\x18 \x01(\v2\".bytebase.v1.SQLEditorThemeSettingR\x14sqlEditorCustomTheme\x12Q\n" +
-	"\x17maximum_role_expiration\x18\x19 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x1a\x93\x03\n" +
+	"\x17maximum_role_expiration\x18\x19 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12Y\n" +
+	"\x0emcp_capability\x18\x1a \x01(\x0e22.bytebase.v1.WorkspaceProfileSetting.MCPCapabilityR\rmcpCapability\x1a\x93\x03\n" +
 	"\x13PasswordRestriction\x12\x1d\n" +
 	"\n" +
 	"min_length\x18\x01 \x01(\x05R\tminLength\x12%\n" +
@@ -3490,7 +3565,12 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18require_uppercase_letter\x18\x04 \x01(\bR\x16requireUppercaseLetter\x12:\n" +
 	"\x19require_special_character\x18\x05 \x01(\bR\x17requireSpecialCharacter\x12Q\n" +
 	"&require_reset_password_for_first_login\x18\x06 \x01(\bR!requireResetPasswordForFirstLogin\x12F\n" +
-	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotationJ\x04\b\x10\x10\x11\"\xf3\x01\n" +
+	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotation\"n\n" +
+	"\rMCPCapability\x12\x1e\n" +
+	"\x1aMCP_CAPABILITY_UNSPECIFIED\x10\x00\x12\x10\n" +
+	"\fMCP_DISABLED\x10\x01\x12\x11\n" +
+	"\rMCP_READ_ONLY\x10\x03\x12\x12\n" +
+	"\x0eMCP_READ_WRITE\x10\x04\"\x04\b\x02\x10\x02J\x04\b\x10\x10\x11\"\xf3\x01\n" +
 	"\x15SQLEditorThemeSetting\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
@@ -3664,144 +3744,146 @@ func file_v1_setting_service_proto_rawDescGZIP() []byte {
 	return file_v1_setting_service_proto_rawDescData
 }
 
-var file_v1_setting_service_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
+var file_v1_setting_service_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
 var file_v1_setting_service_proto_msgTypes = make([]protoimpl.MessageInfo, 44)
 var file_v1_setting_service_proto_goTypes = []any{
 	(DatabaseChangeMode)(0),                             // 0: bytebase.v1.DatabaseChangeMode
 	(Setting_SettingName)(0),                            // 1: bytebase.v1.Setting.SettingName
-	(WorkspaceApprovalSetting_Rule_Source)(0),           // 2: bytebase.v1.WorkspaceApprovalSetting.Rule.Source
-	(Algorithm_InnerOuterMask_MaskType)(0),              // 3: bytebase.v1.Algorithm.InnerOuterMask.MaskType
-	(AISetting_Provider)(0),                             // 4: bytebase.v1.AISetting.Provider
-	(EmailSetting_Type)(0),                              // 5: bytebase.v1.EmailSetting.Type
-	(EmailSetting_SMTPConfig_Encryption)(0),             // 6: bytebase.v1.EmailSetting.SMTPConfig.Encryption
-	(EmailSetting_SMTPConfig_Authentication)(0),         // 7: bytebase.v1.EmailSetting.SMTPConfig.Authentication
-	(*ListSettingsRequest)(nil),                         // 8: bytebase.v1.ListSettingsRequest
-	(*ListSettingsResponse)(nil),                        // 9: bytebase.v1.ListSettingsResponse
-	(*GetSettingRequest)(nil),                           // 10: bytebase.v1.GetSettingRequest
-	(*GetSettingResponse)(nil),                          // 11: bytebase.v1.GetSettingResponse
-	(*UpdateSettingRequest)(nil),                        // 12: bytebase.v1.UpdateSettingRequest
-	(*Setting)(nil),                                     // 13: bytebase.v1.Setting
-	(*SettingValue)(nil),                                // 14: bytebase.v1.SettingValue
-	(*AppIMSetting)(nil),                                // 15: bytebase.v1.AppIMSetting
-	(*WorkspaceProfileSetting)(nil),                     // 16: bytebase.v1.WorkspaceProfileSetting
-	(*SQLEditorThemeSetting)(nil),                       // 17: bytebase.v1.SQLEditorThemeSetting
-	(*Announcement)(nil),                                // 18: bytebase.v1.Announcement
-	(*WorkspaceApprovalSetting)(nil),                    // 19: bytebase.v1.WorkspaceApprovalSetting
-	(*DataClassificationSetting)(nil),                   // 20: bytebase.v1.DataClassificationSetting
-	(*SemanticTypeSetting)(nil),                         // 21: bytebase.v1.SemanticTypeSetting
-	(*Algorithm)(nil),                                   // 22: bytebase.v1.Algorithm
-	(*AISetting)(nil),                                   // 23: bytebase.v1.AISetting
-	(*EnvironmentSetting)(nil),                          // 24: bytebase.v1.EnvironmentSetting
-	(*EmailSetting)(nil),                                // 25: bytebase.v1.EmailSetting
-	(*TestEmailSettingRequest)(nil),                     // 26: bytebase.v1.TestEmailSettingRequest
-	(*TestEmailSettingResponse)(nil),                    // 27: bytebase.v1.TestEmailSettingResponse
-	(*AppIMSetting_Slack)(nil),                          // 28: bytebase.v1.AppIMSetting.Slack
-	(*AppIMSetting_Feishu)(nil),                         // 29: bytebase.v1.AppIMSetting.Feishu
-	(*AppIMSetting_Wecom)(nil),                          // 30: bytebase.v1.AppIMSetting.Wecom
-	(*AppIMSetting_Lark)(nil),                           // 31: bytebase.v1.AppIMSetting.Lark
-	(*AppIMSetting_DingTalk)(nil),                       // 32: bytebase.v1.AppIMSetting.DingTalk
-	(*AppIMSetting_Teams)(nil),                          // 33: bytebase.v1.AppIMSetting.Teams
-	(*AppIMSetting_IMSetting)(nil),                      // 34: bytebase.v1.AppIMSetting.IMSetting
-	(*WorkspaceProfileSetting_PasswordRestriction)(nil), // 35: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
-	nil,                                    // 36: bytebase.v1.SQLEditorThemeSetting.TokensEntry
-	(*Announcement_AnnouncementTheme)(nil), // 37: bytebase.v1.Announcement.AnnouncementTheme
-	(*WorkspaceApprovalSetting_Rule)(nil),  // 38: bytebase.v1.WorkspaceApprovalSetting.Rule
-	(*DataClassificationSetting_DataClassificationConfig)(nil),                    // 39: bytebase.v1.DataClassificationSetting.DataClassificationConfig
-	(*DataClassificationSetting_DataClassificationConfig_Level)(nil),              // 40: bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
-	(*DataClassificationSetting_DataClassificationConfig_DataClassification)(nil), // 41: bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification
-	nil,                                      // 42: bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-	(*SemanticTypeSetting_SemanticType)(nil), // 43: bytebase.v1.SemanticTypeSetting.SemanticType
-	(*Algorithm_FullMask)(nil),               // 44: bytebase.v1.Algorithm.FullMask
-	(*Algorithm_RangeMask)(nil),              // 45: bytebase.v1.Algorithm.RangeMask
-	(*Algorithm_MD5Mask)(nil),                // 46: bytebase.v1.Algorithm.MD5Mask
-	(*Algorithm_InnerOuterMask)(nil),         // 47: bytebase.v1.Algorithm.InnerOuterMask
-	(*Algorithm_RangeMask_Slice)(nil),        // 48: bytebase.v1.Algorithm.RangeMask.Slice
-	(*EnvironmentSetting_Environment)(nil),   // 49: bytebase.v1.EnvironmentSetting.Environment
-	nil,                                      // 50: bytebase.v1.EnvironmentSetting.Environment.TagsEntry
-	(*EmailSetting_SMTPConfig)(nil),          // 51: bytebase.v1.EmailSetting.SMTPConfig
-	(*fieldmaskpb.FieldMask)(nil),            // 52: google.protobuf.FieldMask
-	(*durationpb.Duration)(nil),              // 53: google.protobuf.Duration
-	(WebhookType)(0),                         // 54: bytebase.v1.WebhookType
-	(*color.Color)(nil),                      // 55: google.type.Color
-	(*ApprovalTemplate)(nil),                 // 56: bytebase.v1.ApprovalTemplate
-	(*expr.Expr)(nil),                        // 57: google.type.Expr
+	(WorkspaceProfileSetting_MCPCapability)(0),          // 2: bytebase.v1.WorkspaceProfileSetting.MCPCapability
+	(WorkspaceApprovalSetting_Rule_Source)(0),           // 3: bytebase.v1.WorkspaceApprovalSetting.Rule.Source
+	(Algorithm_InnerOuterMask_MaskType)(0),              // 4: bytebase.v1.Algorithm.InnerOuterMask.MaskType
+	(AISetting_Provider)(0),                             // 5: bytebase.v1.AISetting.Provider
+	(EmailSetting_Type)(0),                              // 6: bytebase.v1.EmailSetting.Type
+	(EmailSetting_SMTPConfig_Encryption)(0),             // 7: bytebase.v1.EmailSetting.SMTPConfig.Encryption
+	(EmailSetting_SMTPConfig_Authentication)(0),         // 8: bytebase.v1.EmailSetting.SMTPConfig.Authentication
+	(*ListSettingsRequest)(nil),                         // 9: bytebase.v1.ListSettingsRequest
+	(*ListSettingsResponse)(nil),                        // 10: bytebase.v1.ListSettingsResponse
+	(*GetSettingRequest)(nil),                           // 11: bytebase.v1.GetSettingRequest
+	(*GetSettingResponse)(nil),                          // 12: bytebase.v1.GetSettingResponse
+	(*UpdateSettingRequest)(nil),                        // 13: bytebase.v1.UpdateSettingRequest
+	(*Setting)(nil),                                     // 14: bytebase.v1.Setting
+	(*SettingValue)(nil),                                // 15: bytebase.v1.SettingValue
+	(*AppIMSetting)(nil),                                // 16: bytebase.v1.AppIMSetting
+	(*WorkspaceProfileSetting)(nil),                     // 17: bytebase.v1.WorkspaceProfileSetting
+	(*SQLEditorThemeSetting)(nil),                       // 18: bytebase.v1.SQLEditorThemeSetting
+	(*Announcement)(nil),                                // 19: bytebase.v1.Announcement
+	(*WorkspaceApprovalSetting)(nil),                    // 20: bytebase.v1.WorkspaceApprovalSetting
+	(*DataClassificationSetting)(nil),                   // 21: bytebase.v1.DataClassificationSetting
+	(*SemanticTypeSetting)(nil),                         // 22: bytebase.v1.SemanticTypeSetting
+	(*Algorithm)(nil),                                   // 23: bytebase.v1.Algorithm
+	(*AISetting)(nil),                                   // 24: bytebase.v1.AISetting
+	(*EnvironmentSetting)(nil),                          // 25: bytebase.v1.EnvironmentSetting
+	(*EmailSetting)(nil),                                // 26: bytebase.v1.EmailSetting
+	(*TestEmailSettingRequest)(nil),                     // 27: bytebase.v1.TestEmailSettingRequest
+	(*TestEmailSettingResponse)(nil),                    // 28: bytebase.v1.TestEmailSettingResponse
+	(*AppIMSetting_Slack)(nil),                          // 29: bytebase.v1.AppIMSetting.Slack
+	(*AppIMSetting_Feishu)(nil),                         // 30: bytebase.v1.AppIMSetting.Feishu
+	(*AppIMSetting_Wecom)(nil),                          // 31: bytebase.v1.AppIMSetting.Wecom
+	(*AppIMSetting_Lark)(nil),                           // 32: bytebase.v1.AppIMSetting.Lark
+	(*AppIMSetting_DingTalk)(nil),                       // 33: bytebase.v1.AppIMSetting.DingTalk
+	(*AppIMSetting_Teams)(nil),                          // 34: bytebase.v1.AppIMSetting.Teams
+	(*AppIMSetting_IMSetting)(nil),                      // 35: bytebase.v1.AppIMSetting.IMSetting
+	(*WorkspaceProfileSetting_PasswordRestriction)(nil), // 36: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
+	nil,                                    // 37: bytebase.v1.SQLEditorThemeSetting.TokensEntry
+	(*Announcement_AnnouncementTheme)(nil), // 38: bytebase.v1.Announcement.AnnouncementTheme
+	(*WorkspaceApprovalSetting_Rule)(nil),  // 39: bytebase.v1.WorkspaceApprovalSetting.Rule
+	(*DataClassificationSetting_DataClassificationConfig)(nil),                    // 40: bytebase.v1.DataClassificationSetting.DataClassificationConfig
+	(*DataClassificationSetting_DataClassificationConfig_Level)(nil),              // 41: bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
+	(*DataClassificationSetting_DataClassificationConfig_DataClassification)(nil), // 42: bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification
+	nil,                                      // 43: bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	(*SemanticTypeSetting_SemanticType)(nil), // 44: bytebase.v1.SemanticTypeSetting.SemanticType
+	(*Algorithm_FullMask)(nil),               // 45: bytebase.v1.Algorithm.FullMask
+	(*Algorithm_RangeMask)(nil),              // 46: bytebase.v1.Algorithm.RangeMask
+	(*Algorithm_MD5Mask)(nil),                // 47: bytebase.v1.Algorithm.MD5Mask
+	(*Algorithm_InnerOuterMask)(nil),         // 48: bytebase.v1.Algorithm.InnerOuterMask
+	(*Algorithm_RangeMask_Slice)(nil),        // 49: bytebase.v1.Algorithm.RangeMask.Slice
+	(*EnvironmentSetting_Environment)(nil),   // 50: bytebase.v1.EnvironmentSetting.Environment
+	nil,                                      // 51: bytebase.v1.EnvironmentSetting.Environment.TagsEntry
+	(*EmailSetting_SMTPConfig)(nil),          // 52: bytebase.v1.EmailSetting.SMTPConfig
+	(*fieldmaskpb.FieldMask)(nil),            // 53: google.protobuf.FieldMask
+	(*durationpb.Duration)(nil),              // 54: google.protobuf.Duration
+	(WebhookType)(0),                         // 55: bytebase.v1.WebhookType
+	(*color.Color)(nil),                      // 56: google.type.Color
+	(*ApprovalTemplate)(nil),                 // 57: bytebase.v1.ApprovalTemplate
+	(*expr.Expr)(nil),                        // 58: google.type.Expr
 }
 var file_v1_setting_service_proto_depIdxs = []int32{
-	13, // 0: bytebase.v1.ListSettingsResponse.settings:type_name -> bytebase.v1.Setting
-	13, // 1: bytebase.v1.GetSettingResponse.setting:type_name -> bytebase.v1.Setting
-	13, // 2: bytebase.v1.UpdateSettingRequest.setting:type_name -> bytebase.v1.Setting
-	52, // 3: bytebase.v1.UpdateSettingRequest.update_mask:type_name -> google.protobuf.FieldMask
-	14, // 4: bytebase.v1.Setting.value:type_name -> bytebase.v1.SettingValue
-	15, // 5: bytebase.v1.SettingValue.app_im:type_name -> bytebase.v1.AppIMSetting
-	16, // 6: bytebase.v1.SettingValue.workspace_profile:type_name -> bytebase.v1.WorkspaceProfileSetting
-	19, // 7: bytebase.v1.SettingValue.workspace_approval:type_name -> bytebase.v1.WorkspaceApprovalSetting
-	20, // 8: bytebase.v1.SettingValue.data_classification:type_name -> bytebase.v1.DataClassificationSetting
-	21, // 9: bytebase.v1.SettingValue.semantic_type:type_name -> bytebase.v1.SemanticTypeSetting
-	23, // 10: bytebase.v1.SettingValue.ai:type_name -> bytebase.v1.AISetting
-	24, // 11: bytebase.v1.SettingValue.environment:type_name -> bytebase.v1.EnvironmentSetting
-	25, // 12: bytebase.v1.SettingValue.email:type_name -> bytebase.v1.EmailSetting
-	34, // 13: bytebase.v1.AppIMSetting.settings:type_name -> bytebase.v1.AppIMSetting.IMSetting
-	53, // 14: bytebase.v1.WorkspaceProfileSetting.refresh_token_duration:type_name -> google.protobuf.Duration
-	18, // 15: bytebase.v1.WorkspaceProfileSetting.announcement:type_name -> bytebase.v1.Announcement
-	53, // 16: bytebase.v1.WorkspaceProfileSetting.maximum_request_expiration:type_name -> google.protobuf.Duration
+	14, // 0: bytebase.v1.ListSettingsResponse.settings:type_name -> bytebase.v1.Setting
+	14, // 1: bytebase.v1.GetSettingResponse.setting:type_name -> bytebase.v1.Setting
+	14, // 2: bytebase.v1.UpdateSettingRequest.setting:type_name -> bytebase.v1.Setting
+	53, // 3: bytebase.v1.UpdateSettingRequest.update_mask:type_name -> google.protobuf.FieldMask
+	15, // 4: bytebase.v1.Setting.value:type_name -> bytebase.v1.SettingValue
+	16, // 5: bytebase.v1.SettingValue.app_im:type_name -> bytebase.v1.AppIMSetting
+	17, // 6: bytebase.v1.SettingValue.workspace_profile:type_name -> bytebase.v1.WorkspaceProfileSetting
+	20, // 7: bytebase.v1.SettingValue.workspace_approval:type_name -> bytebase.v1.WorkspaceApprovalSetting
+	21, // 8: bytebase.v1.SettingValue.data_classification:type_name -> bytebase.v1.DataClassificationSetting
+	22, // 9: bytebase.v1.SettingValue.semantic_type:type_name -> bytebase.v1.SemanticTypeSetting
+	24, // 10: bytebase.v1.SettingValue.ai:type_name -> bytebase.v1.AISetting
+	25, // 11: bytebase.v1.SettingValue.environment:type_name -> bytebase.v1.EnvironmentSetting
+	26, // 12: bytebase.v1.SettingValue.email:type_name -> bytebase.v1.EmailSetting
+	35, // 13: bytebase.v1.AppIMSetting.settings:type_name -> bytebase.v1.AppIMSetting.IMSetting
+	54, // 14: bytebase.v1.WorkspaceProfileSetting.refresh_token_duration:type_name -> google.protobuf.Duration
+	19, // 15: bytebase.v1.WorkspaceProfileSetting.announcement:type_name -> bytebase.v1.Announcement
+	54, // 16: bytebase.v1.WorkspaceProfileSetting.maximum_request_expiration:type_name -> google.protobuf.Duration
 	0,  // 17: bytebase.v1.WorkspaceProfileSetting.database_change_mode:type_name -> bytebase.v1.DatabaseChangeMode
-	53, // 18: bytebase.v1.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
-	35, // 19: bytebase.v1.WorkspaceProfileSetting.password_restriction:type_name -> bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
-	53, // 20: bytebase.v1.WorkspaceProfileSetting.access_token_duration:type_name -> google.protobuf.Duration
-	53, // 21: bytebase.v1.WorkspaceProfileSetting.query_timeout:type_name -> google.protobuf.Duration
-	17, // 22: bytebase.v1.WorkspaceProfileSetting.sql_editor_custom_theme:type_name -> bytebase.v1.SQLEditorThemeSetting
-	53, // 23: bytebase.v1.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
-	36, // 24: bytebase.v1.SQLEditorThemeSetting.tokens:type_name -> bytebase.v1.SQLEditorThemeSetting.TokensEntry
-	37, // 25: bytebase.v1.Announcement.theme:type_name -> bytebase.v1.Announcement.AnnouncementTheme
-	38, // 26: bytebase.v1.WorkspaceApprovalSetting.rules:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule
-	39, // 27: bytebase.v1.DataClassificationSetting.configs:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig
-	43, // 28: bytebase.v1.SemanticTypeSetting.types:type_name -> bytebase.v1.SemanticTypeSetting.SemanticType
-	44, // 29: bytebase.v1.Algorithm.full_mask:type_name -> bytebase.v1.Algorithm.FullMask
-	45, // 30: bytebase.v1.Algorithm.range_mask:type_name -> bytebase.v1.Algorithm.RangeMask
-	46, // 31: bytebase.v1.Algorithm.md5_mask:type_name -> bytebase.v1.Algorithm.MD5Mask
-	47, // 32: bytebase.v1.Algorithm.inner_outer_mask:type_name -> bytebase.v1.Algorithm.InnerOuterMask
-	4,  // 33: bytebase.v1.AISetting.provider:type_name -> bytebase.v1.AISetting.Provider
-	49, // 34: bytebase.v1.EnvironmentSetting.environments:type_name -> bytebase.v1.EnvironmentSetting.Environment
-	5,  // 35: bytebase.v1.EmailSetting.type:type_name -> bytebase.v1.EmailSetting.Type
-	51, // 36: bytebase.v1.EmailSetting.smtp:type_name -> bytebase.v1.EmailSetting.SMTPConfig
-	25, // 37: bytebase.v1.TestEmailSettingRequest.email_setting:type_name -> bytebase.v1.EmailSetting
-	54, // 38: bytebase.v1.AppIMSetting.IMSetting.type:type_name -> bytebase.v1.WebhookType
-	28, // 39: bytebase.v1.AppIMSetting.IMSetting.slack:type_name -> bytebase.v1.AppIMSetting.Slack
-	29, // 40: bytebase.v1.AppIMSetting.IMSetting.feishu:type_name -> bytebase.v1.AppIMSetting.Feishu
-	30, // 41: bytebase.v1.AppIMSetting.IMSetting.wecom:type_name -> bytebase.v1.AppIMSetting.Wecom
-	31, // 42: bytebase.v1.AppIMSetting.IMSetting.lark:type_name -> bytebase.v1.AppIMSetting.Lark
-	32, // 43: bytebase.v1.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.v1.AppIMSetting.DingTalk
-	33, // 44: bytebase.v1.AppIMSetting.IMSetting.teams:type_name -> bytebase.v1.AppIMSetting.Teams
-	53, // 45: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.password_rotation:type_name -> google.protobuf.Duration
-	55, // 46: bytebase.v1.SQLEditorThemeSetting.TokensEntry.value:type_name -> google.type.Color
-	55, // 47: bytebase.v1.Announcement.AnnouncementTheme.background:type_name -> google.type.Color
-	55, // 48: bytebase.v1.Announcement.AnnouncementTheme.text:type_name -> google.type.Color
-	56, // 49: bytebase.v1.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.v1.ApprovalTemplate
-	57, // 50: bytebase.v1.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
-	2,  // 51: bytebase.v1.WorkspaceApprovalSetting.Rule.source:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule.Source
-	40, // 52: bytebase.v1.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
-	42, // 53: bytebase.v1.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-	41, // 54: bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification
-	22, // 55: bytebase.v1.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.v1.Algorithm
-	48, // 56: bytebase.v1.Algorithm.RangeMask.slices:type_name -> bytebase.v1.Algorithm.RangeMask.Slice
-	3,  // 57: bytebase.v1.Algorithm.InnerOuterMask.type:type_name -> bytebase.v1.Algorithm.InnerOuterMask.MaskType
-	50, // 58: bytebase.v1.EnvironmentSetting.Environment.tags:type_name -> bytebase.v1.EnvironmentSetting.Environment.TagsEntry
-	55, // 59: bytebase.v1.EnvironmentSetting.Environment.color:type_name -> google.type.Color
-	6,  // 60: bytebase.v1.EmailSetting.SMTPConfig.encryption:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Encryption
-	7,  // 61: bytebase.v1.EmailSetting.SMTPConfig.authentication:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Authentication
-	8,  // 62: bytebase.v1.SettingService.ListSettings:input_type -> bytebase.v1.ListSettingsRequest
-	10, // 63: bytebase.v1.SettingService.GetSetting:input_type -> bytebase.v1.GetSettingRequest
-	12, // 64: bytebase.v1.SettingService.UpdateSetting:input_type -> bytebase.v1.UpdateSettingRequest
-	26, // 65: bytebase.v1.SettingService.TestEmailSetting:input_type -> bytebase.v1.TestEmailSettingRequest
-	9,  // 66: bytebase.v1.SettingService.ListSettings:output_type -> bytebase.v1.ListSettingsResponse
-	13, // 67: bytebase.v1.SettingService.GetSetting:output_type -> bytebase.v1.Setting
-	13, // 68: bytebase.v1.SettingService.UpdateSetting:output_type -> bytebase.v1.Setting
-	27, // 69: bytebase.v1.SettingService.TestEmailSetting:output_type -> bytebase.v1.TestEmailSettingResponse
-	66, // [66:70] is the sub-list for method output_type
-	62, // [62:66] is the sub-list for method input_type
-	62, // [62:62] is the sub-list for extension type_name
-	62, // [62:62] is the sub-list for extension extendee
-	0,  // [0:62] is the sub-list for field type_name
+	54, // 18: bytebase.v1.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
+	36, // 19: bytebase.v1.WorkspaceProfileSetting.password_restriction:type_name -> bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
+	54, // 20: bytebase.v1.WorkspaceProfileSetting.access_token_duration:type_name -> google.protobuf.Duration
+	54, // 21: bytebase.v1.WorkspaceProfileSetting.query_timeout:type_name -> google.protobuf.Duration
+	18, // 22: bytebase.v1.WorkspaceProfileSetting.sql_editor_custom_theme:type_name -> bytebase.v1.SQLEditorThemeSetting
+	54, // 23: bytebase.v1.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
+	2,  // 24: bytebase.v1.WorkspaceProfileSetting.mcp_capability:type_name -> bytebase.v1.WorkspaceProfileSetting.MCPCapability
+	37, // 25: bytebase.v1.SQLEditorThemeSetting.tokens:type_name -> bytebase.v1.SQLEditorThemeSetting.TokensEntry
+	38, // 26: bytebase.v1.Announcement.theme:type_name -> bytebase.v1.Announcement.AnnouncementTheme
+	39, // 27: bytebase.v1.WorkspaceApprovalSetting.rules:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule
+	40, // 28: bytebase.v1.DataClassificationSetting.configs:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig
+	44, // 29: bytebase.v1.SemanticTypeSetting.types:type_name -> bytebase.v1.SemanticTypeSetting.SemanticType
+	45, // 30: bytebase.v1.Algorithm.full_mask:type_name -> bytebase.v1.Algorithm.FullMask
+	46, // 31: bytebase.v1.Algorithm.range_mask:type_name -> bytebase.v1.Algorithm.RangeMask
+	47, // 32: bytebase.v1.Algorithm.md5_mask:type_name -> bytebase.v1.Algorithm.MD5Mask
+	48, // 33: bytebase.v1.Algorithm.inner_outer_mask:type_name -> bytebase.v1.Algorithm.InnerOuterMask
+	5,  // 34: bytebase.v1.AISetting.provider:type_name -> bytebase.v1.AISetting.Provider
+	50, // 35: bytebase.v1.EnvironmentSetting.environments:type_name -> bytebase.v1.EnvironmentSetting.Environment
+	6,  // 36: bytebase.v1.EmailSetting.type:type_name -> bytebase.v1.EmailSetting.Type
+	52, // 37: bytebase.v1.EmailSetting.smtp:type_name -> bytebase.v1.EmailSetting.SMTPConfig
+	26, // 38: bytebase.v1.TestEmailSettingRequest.email_setting:type_name -> bytebase.v1.EmailSetting
+	55, // 39: bytebase.v1.AppIMSetting.IMSetting.type:type_name -> bytebase.v1.WebhookType
+	29, // 40: bytebase.v1.AppIMSetting.IMSetting.slack:type_name -> bytebase.v1.AppIMSetting.Slack
+	30, // 41: bytebase.v1.AppIMSetting.IMSetting.feishu:type_name -> bytebase.v1.AppIMSetting.Feishu
+	31, // 42: bytebase.v1.AppIMSetting.IMSetting.wecom:type_name -> bytebase.v1.AppIMSetting.Wecom
+	32, // 43: bytebase.v1.AppIMSetting.IMSetting.lark:type_name -> bytebase.v1.AppIMSetting.Lark
+	33, // 44: bytebase.v1.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.v1.AppIMSetting.DingTalk
+	34, // 45: bytebase.v1.AppIMSetting.IMSetting.teams:type_name -> bytebase.v1.AppIMSetting.Teams
+	54, // 46: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.password_rotation:type_name -> google.protobuf.Duration
+	56, // 47: bytebase.v1.SQLEditorThemeSetting.TokensEntry.value:type_name -> google.type.Color
+	56, // 48: bytebase.v1.Announcement.AnnouncementTheme.background:type_name -> google.type.Color
+	56, // 49: bytebase.v1.Announcement.AnnouncementTheme.text:type_name -> google.type.Color
+	57, // 50: bytebase.v1.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.v1.ApprovalTemplate
+	58, // 51: bytebase.v1.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
+	3,  // 52: bytebase.v1.WorkspaceApprovalSetting.Rule.source:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule.Source
+	41, // 53: bytebase.v1.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
+	43, // 54: bytebase.v1.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	42, // 55: bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification
+	23, // 56: bytebase.v1.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.v1.Algorithm
+	49, // 57: bytebase.v1.Algorithm.RangeMask.slices:type_name -> bytebase.v1.Algorithm.RangeMask.Slice
+	4,  // 58: bytebase.v1.Algorithm.InnerOuterMask.type:type_name -> bytebase.v1.Algorithm.InnerOuterMask.MaskType
+	51, // 59: bytebase.v1.EnvironmentSetting.Environment.tags:type_name -> bytebase.v1.EnvironmentSetting.Environment.TagsEntry
+	56, // 60: bytebase.v1.EnvironmentSetting.Environment.color:type_name -> google.type.Color
+	7,  // 61: bytebase.v1.EmailSetting.SMTPConfig.encryption:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Encryption
+	8,  // 62: bytebase.v1.EmailSetting.SMTPConfig.authentication:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Authentication
+	9,  // 63: bytebase.v1.SettingService.ListSettings:input_type -> bytebase.v1.ListSettingsRequest
+	11, // 64: bytebase.v1.SettingService.GetSetting:input_type -> bytebase.v1.GetSettingRequest
+	13, // 65: bytebase.v1.SettingService.UpdateSetting:input_type -> bytebase.v1.UpdateSettingRequest
+	27, // 66: bytebase.v1.SettingService.TestEmailSetting:input_type -> bytebase.v1.TestEmailSettingRequest
+	10, // 67: bytebase.v1.SettingService.ListSettings:output_type -> bytebase.v1.ListSettingsResponse
+	14, // 68: bytebase.v1.SettingService.GetSetting:output_type -> bytebase.v1.Setting
+	14, // 69: bytebase.v1.SettingService.UpdateSetting:output_type -> bytebase.v1.Setting
+	28, // 70: bytebase.v1.SettingService.TestEmailSetting:output_type -> bytebase.v1.TestEmailSettingResponse
+	67, // [67:71] is the sub-list for method output_type
+	63, // [63:67] is the sub-list for method input_type
+	63, // [63:63] is the sub-list for extension type_name
+	63, // [63:63] is the sub-list for extension extendee
+	0,  // [0:63] is the sub-list for field type_name
 }
 
 func init() { file_v1_setting_service_proto_init() }
@@ -3845,7 +3927,7 @@ func file_v1_setting_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_setting_service_proto_rawDesc), len(file_v1_setting_service_proto_rawDesc)),
-			NumEnums:      8,
+			NumEnums:      9,
 			NumMessages:   44,
 			NumExtensions: 0,
 			NumServices:   1,

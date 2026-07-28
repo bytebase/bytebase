@@ -277,6 +277,7 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		QueryTimeout:             v1Setting.QueryTimeout,
 		SqlEditorThemeId:         v1Setting.SqlEditorThemeId,
 		SqlEditorCustomTheme:     convertToStoreSQLEditorThemeSetting(v1Setting.SqlEditorCustomTheme),
+		McpCapability:            storepb.WorkspaceProfileSetting_MCPCapability(v1Setting.McpCapability),
 	}
 
 	// Convert announcement if present. The store only holds the theme colors.
@@ -352,6 +353,7 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		QueryTimeout:             storeSetting.QueryTimeout,
 		SqlEditorThemeId:         storeSetting.SqlEditorThemeId,
 		SqlEditorCustomTheme:     convertToV1SQLEditorThemeSetting(storeSetting.SqlEditorCustomTheme),
+		McpCapability:            v1pb.WorkspaceProfileSetting_MCPCapability(storeSetting.McpCapability),
 	}
 }
 
