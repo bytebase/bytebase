@@ -2420,6 +2420,25 @@
             "self": "最大 SQL 结果大小"
           }
         },
+        "mcp": {
+          "capability": {
+            "description": "此工作空间中 MCP(Model Context Protocol)会话可用的最高能力上限。变更对下一个 MCP 请求立即生效。",
+            "disabled": {
+              "description": "拒绝所有 MCP 连接。",
+              "self": "禁用"
+            },
+            "read-only": {
+              "description": "为细粒度只读控制预留,该能力尚未上线。在此之前,选择此项将完全拒绝 MCP 连接,效果与“禁用”相同。",
+              "self": "只读"
+            },
+            "read-write": {
+              "description": "MCP 会话可以读写,仍受每个用户自身权限的约束。未配置时默认为此项。",
+              "self": "读写"
+            },
+            "self": "MCP 访问"
+          },
+          "self": "MCP"
+        },
         "no-limit": "当值 <= 0 时无限制",
         "password-restriction": {
           "min-length": "密码最小长度不得少于 {{min}} 个字符",

@@ -2420,6 +2420,25 @@
             "self": "Kích thước kết quả SQL tối đa"
           }
         },
+        "mcp": {
+          "capability": {
+            "description": "Khả năng tối đa dành cho các phiên MCP (Model Context Protocol) trong không gian làm việc này. Thay đổi áp dụng ngay cho yêu cầu MCP tiếp theo.",
+            "disabled": {
+              "description": "Từ chối tất cả kết nối MCP.",
+              "self": "Tắt"
+            },
+            "read-only": {
+              "description": "Dành cho cơ chế kiểm soát chỉ đọc chi tiết, hiện chưa được phát hành. Cho đến khi đó, chọn tùy chọn này sẽ từ chối hoàn toàn các kết nối MCP, giống như Tắt.",
+              "self": "Chỉ đọc"
+            },
+            "read-write": {
+              "description": "Các phiên MCP có thể đọc và ghi, vẫn bị giới hạn bởi quyền của từng người dùng. Đây là mặc định khi chưa cấu hình.",
+              "self": "Đọc và ghi"
+            },
+            "self": "Truy cập MCP"
+          },
+          "self": "MCP"
+        },
         "no-limit": "Không giới hạn khi giá trị <= 0",
         "password-restriction": {
           "min-length": "Độ dài tối thiểu cho mật khẩu không được ít hơn {{min}} ký tự",

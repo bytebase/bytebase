@@ -240,7 +240,15 @@ func (s *Store) GetSetting(ctx context.Context, workspace string, name storepb.S
 	if v, ok := s.settingCache.Get(getSettingCacheKey(workspace, name)); ok && s.enableCache {
 		return v, nil
 	}
+	return s.GetSettingUncached(ctx, workspace, name)
+}
 
+// GetSettingUncached reads the setting directly from the database, bypassing
+// the setting cache. The cache has no TTL and only in-process writes refresh
+// it, so callers that must observe out-of-band writes (enforcement gates) or
+// that merge-and-write the value back (read-modify-write updates) use this to
+// avoid acting on a stale cached copy.
+func (s *Store) GetSettingUncached(ctx context.Context, workspace string, name storepb.SettingName) (*SettingMessage, error) {
 	settings, err := s.ListSettings(ctx, &FindSettingMessage{Workspace: workspace, Name: &name})
 	if err != nil {
 		return nil, err

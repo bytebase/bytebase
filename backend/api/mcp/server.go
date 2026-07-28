@@ -2,7 +2,9 @@
 package mcp
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -13,7 +15,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -162,6 +166,15 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			workspaceID = ""
 		}
 
+		// Enforce the workspace MCP capability ceiling before dispatching to any
+		// tool. DISABLED — and, until per-tool enforcement lands in a later
+		// phase, the not-yet-enforceable READ_ONLY ceiling — reject the
+		// connection outright. Read live so an admin change takes effect on the
+		// next request without re-issuing tokens.
+		if !mcpConnectionAllowed(s.mcpCapability(c.Request().Context(), workspaceID)) {
+			return echo.NewHTTPError(http.StatusForbidden, "MCP access is disabled for this workspace by policy")
+		}
+
 		// Store access token and workspace ID in request context for MCP tools.
 		ctx := c.Request().Context()
 		ctx = withAccessToken(ctx, tokenStr)
@@ -192,6 +205,62 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 		),
 	)
 	return echo.NewHTTPError(http.StatusUnauthorized, errDescription)
+}
+
+// mcpConnectionAllowed reports whether an MCP connection may proceed under the
+// resolved workspace capability ceiling. This phase enforces the connection-level
+// gate only: DISABLED is rejected, and the not-yet-enforceable
+// READ_ONLY ceiling is also rejected — a ceiling the server cannot yet
+// apply per-tool must fail closed rather than silently grant read-write. A
+// later phase turns it into allow-with-clamp. Unknown stored values (e.g. a
+// reserved number) hit the default arm and fail closed too.
+func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapability) bool {
+	switch capability {
+	case storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED,
+		storepb.WorkspaceProfileSetting_READ_WRITE:
+		return true
+	default:
+		return false
+	}
+}
+
+// mcpCapability resolves the workspace's effective MCP capability ceiling. An
+// unset ceiling resolves to READ_WRITE so workspaces that never configured
+// one keep working; a genuine lookup error fails closed to DISABLED so a
+// policy that cannot be read never silently permits MCP. A missing setting row
+// is treated as unset, not an error.
+//
+// The read deliberately bypasses the store's setting cache: the cache has no
+// TTL and only in-process writes refresh it, so a profile cached as unset
+// would keep admitting MCP indefinitely after the ceiling is flipped by an
+// out-of-band admin path (direct SQL, another process). A kill switch must
+// observe the stored truth on the next request.
+func (s *Server) mcpCapability(ctx context.Context, workspaceID string) storepb.WorkspaceProfileSetting_MCPCapability {
+	if s.store == nil {
+		return storepb.WorkspaceProfileSetting_READ_WRITE
+	}
+	if workspaceID == "" && !s.profile.SaaS {
+		if id, err := s.store.GetWorkspaceID(ctx); err == nil {
+			workspaceID = id
+		}
+	}
+	setting, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE)
+	if err != nil {
+		slog.Warn("failed to read MCP capability policy; failing closed",
+			slog.String("workspace", workspaceID), log.BBError(err))
+		return storepb.WorkspaceProfileSetting_DISABLED
+	}
+	if setting == nil {
+		return storepb.WorkspaceProfileSetting_READ_WRITE
+	}
+	profile, ok := setting.Value.(*storepb.WorkspaceProfileSetting)
+	if !ok {
+		return storepb.WorkspaceProfileSetting_READ_WRITE
+	}
+	if capability := profile.GetMcpCapability(); capability != storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED {
+		return capability
+	}
+	return storepb.WorkspaceProfileSetting_READ_WRITE
 }
 
 // buildResourceMetadataURL returns the absolute URL of the protected resource

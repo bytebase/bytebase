@@ -12,6 +12,7 @@ const configurableSections = [
   "AuditLogSection.tsx",
   "BrandingSection.tsx",
   "GeneralSection.tsx",
+  "MCPSection.tsx",
   "ProductImprovementSection.tsx",
   "SecuritySection.tsx",
   "SQLEditorSection.tsx",

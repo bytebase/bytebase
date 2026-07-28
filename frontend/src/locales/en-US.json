@@ -2420,6 +2420,25 @@
             "self": "Maximum SQL result size"
           }
         },
+        "mcp": {
+          "capability": {
+            "description": "The maximum capability available to MCP (Model Context Protocol) sessions in this workspace. Changes apply to the next MCP request immediately.",
+            "disabled": {
+              "description": "All MCP connections are rejected.",
+              "self": "Disabled"
+            },
+            "read-only": {
+              "description": "Reserved for fine-grained read-only enforcement, which has not shipped yet. Until it does, choosing this refuses MCP connections entirely, the same as Disabled.",
+              "self": "Read-only"
+            },
+            "read-write": {
+              "description": "MCP sessions can read and write, still bounded by each user's own permissions. This is the default when not configured.",
+              "self": "Read-write"
+            },
+            "self": "MCP access"
+          },
+          "self": "MCP"
+        },
         "no-limit": "No limit when the value <= 0",
         "password-restriction": {
           "min-length": "Minimum length for password should no less than {{min}} characters",

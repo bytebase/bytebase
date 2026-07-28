@@ -196,6 +196,31 @@ func TestValidateAnnouncementTheme(t *testing.T) {
 	}
 }
 
+func TestValidateMCPCapability(t *testing.T) {
+	cases := []struct {
+		name       string
+		capability storepb.WorkspaceProfileSetting_MCPCapability
+		wantErr    bool
+	}{
+		{"unspecified rejected", storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, true},
+		{"disabled", storepb.WorkspaceProfileSetting_DISABLED, false},
+		{"read only", storepb.WorkspaceProfileSetting_READ_ONLY, false},
+		{"read write", storepb.WorkspaceProfileSetting_READ_WRITE, false},
+		{"reserved value rejected", storepb.WorkspaceProfileSetting_MCPCapability(2), true},
+		{"unknown value rejected", storepb.WorkspaceProfileSetting_MCPCapability(99), true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateMCPCapability(tc.capability)
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestValidateEnvironmentsColor(t *testing.T) {
 	service := &SettingService{}
 	env := func(color *colorpb.Color) *v1pb.EnvironmentSetting_Environment {
