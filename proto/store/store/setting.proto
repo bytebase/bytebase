@@ -73,8 +73,8 @@ message WorkspaceProfileSetting {
     MCP_CAPABILITY_UNSPECIFIED = 0;
     // MCP connections are rejected.
     MCP_DISABLED = 1;
-    // MCP may inspect control-plane and schema metadata only. (Enforced from P1b.)
-    MCP_METADATA_ONLY = 2;
+    // Was MCP_METADATA_ONLY; the Metadata-only tier is deferred out of the design.
+    reserved 2;
     // MCP may inspect metadata and run read-only queries. (Enforced from P1b.)
     MCP_READ_ONLY = 3;
     // MCP may perform mutations, still bounded by the user's RBAC.

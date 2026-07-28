@@ -25,9 +25,10 @@ import (
 )
 
 // TestMCPConnectionAllowed pins the connection-level gate: only an unset ceiling
-// and MCP_READ_WRITE admit a connection in this phase. MCP_DISABLED and the
-// not-yet-enforceable MCP_METADATA_ONLY / MCP_READ_ONLY ceilings all fail closed
-// so a ceiling the server cannot apply per-tool never silently grants read-write.
+// and MCP_READ_WRITE admit a connection in this phase. MCP_DISABLED, the
+// not-yet-enforceable MCP_READ_ONLY ceiling, and unknown stored values (such as
+// the reserved number 2) all fail closed so a ceiling the server cannot apply
+// per-tool never silently grants read-write.
 func TestMCPConnectionAllowed(t *testing.T) {
 	tests := []struct {
 		capability storepb.WorkspaceProfileSetting_MCPCapability
@@ -36,7 +37,7 @@ func TestMCPConnectionAllowed(t *testing.T) {
 		{storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, true},
 		{storepb.WorkspaceProfileSetting_MCP_READ_WRITE, true},
 		{storepb.WorkspaceProfileSetting_MCP_DISABLED, false},
-		{storepb.WorkspaceProfileSetting_MCP_METADATA_ONLY, false},
+		{storepb.WorkspaceProfileSetting_MCPCapability(2), false}, // reserved (was METADATA_ONLY)
 		{storepb.WorkspaceProfileSetting_MCP_READ_ONLY, false},
 	}
 	for _, tt := range tests {

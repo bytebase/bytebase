@@ -157,8 +157,6 @@ const (
 	WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED WorkspaceProfileSetting_MCPCapability = 0
 	// MCP connections are rejected.
 	WorkspaceProfileSetting_MCP_DISABLED WorkspaceProfileSetting_MCPCapability = 1
-	// MCP may inspect control-plane and schema metadata only. (Enforced from P1b.)
-	WorkspaceProfileSetting_MCP_METADATA_ONLY WorkspaceProfileSetting_MCPCapability = 2
 	// MCP may inspect metadata and run read-only queries. (Enforced from P1b.)
 	WorkspaceProfileSetting_MCP_READ_ONLY WorkspaceProfileSetting_MCPCapability = 3
 	// MCP may perform mutations, still bounded by the user's RBAC.
@@ -170,14 +168,12 @@ var (
 	WorkspaceProfileSetting_MCPCapability_name = map[int32]string{
 		0: "MCP_CAPABILITY_UNSPECIFIED",
 		1: "MCP_DISABLED",
-		2: "MCP_METADATA_ONLY",
 		3: "MCP_READ_ONLY",
 		4: "MCP_READ_WRITE",
 	}
 	WorkspaceProfileSetting_MCPCapability_value = map[string]int32{
 		"MCP_CAPABILITY_UNSPECIFIED": 0,
 		"MCP_DISABLED":               1,
-		"MCP_METADATA_ONLY":          2,
 		"MCP_READ_ONLY":              3,
 		"MCP_READ_WRITE":             4,
 	}
@@ -2888,7 +2884,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\n" +
 	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/type/color.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"P\n" +
 	"\rSystemSetting\x12\x18\n" +
-	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03R\vauth_secretR\fworkspace_id\"\xe1\x13\n" +
+	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03R\vauth_secretR\fworkspace_id\"\xd0\x13\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2939,13 +2935,12 @@ const file_store_setting_proto_rawDesc = "" +
 	" DATABASE_CHANGE_MODE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bPIPELINE\x10\x01\x12\n" +
 	"\n" +
-	"\x06EDITOR\x10\x02\"\x7f\n" +
+	"\x06EDITOR\x10\x02\"n\n" +
 	"\rMCPCapability\x12\x1e\n" +
 	"\x1aMCP_CAPABILITY_UNSPECIFIED\x10\x00\x12\x10\n" +
-	"\fMCP_DISABLED\x10\x01\x12\x15\n" +
-	"\x11MCP_METADATA_ONLY\x10\x02\x12\x11\n" +
+	"\fMCP_DISABLED\x10\x01\x12\x11\n" +
 	"\rMCP_READ_ONLY\x10\x03\x12\x12\n" +
-	"\x0eMCP_READ_WRITE\x10\x04J\x04\b\x10\x10\x11\"\xf6\x01\n" +
+	"\x0eMCP_READ_WRITE\x10\x04\"\x04\b\x02\x10\x02J\x04\b\x10\x10\x11\"\xf6\x01\n" +
 	"\x15SQLEditorThemeSetting\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +

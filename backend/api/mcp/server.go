@@ -168,9 +168,9 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		// Enforce the workspace MCP capability ceiling before dispatching to any
 		// tool. MCP_DISABLED — and, until per-tool enforcement lands in a later
-		// phase, the not-yet-enforceable MCP_METADATA_ONLY / MCP_READ_ONLY
-		// ceilings — reject the connection outright. Read live so an admin change
-		// takes effect on the next request without re-issuing tokens.
+		// phase, the not-yet-enforceable MCP_READ_ONLY ceiling — reject the
+		// connection outright. Read live so an admin change takes effect on the
+		// next request without re-issuing tokens.
 		if !mcpConnectionAllowed(s.mcpCapability(c.Request().Context(), workspaceID)) {
 			return echo.NewHTTPError(http.StatusForbidden, "MCP access is disabled for this workspace by policy")
 		}
@@ -210,9 +210,10 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 // mcpConnectionAllowed reports whether an MCP connection may proceed under the
 // resolved workspace capability ceiling. This phase enforces the connection-level
 // gate only: MCP_DISABLED is rejected, and the not-yet-enforceable
-// MCP_METADATA_ONLY / MCP_READ_ONLY ceilings are also rejected — a ceiling the
-// server cannot yet apply per-tool must fail closed rather than silently grant
-// read-write. A later phase turns those two into allow-with-clamp.
+// MCP_READ_ONLY ceiling is also rejected — a ceiling the server cannot yet
+// apply per-tool must fail closed rather than silently grant read-write. A
+// later phase turns it into allow-with-clamp. Unknown stored values (e.g. a
+// reserved number) hit the default arm and fail closed too.
 func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapability) bool {
 	switch capability {
 	case storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED,
