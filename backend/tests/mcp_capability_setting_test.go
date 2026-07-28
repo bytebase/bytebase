@@ -13,8 +13,13 @@ import (
 
 // setMCPCapability sets the workspace MCP capability ceiling via the settings API.
 func (ctl *controller) setMCPCapability(ctx context.Context, capability v1pb.WorkspaceProfileSetting_MCPCapability) error {
+	return ctl.updateMCPCapability(ctx, capability, false)
+}
+
+func (ctl *controller) updateMCPCapability(ctx context.Context, capability v1pb.WorkspaceProfileSetting_MCPCapability, validateOnly bool) error {
 	_, err := ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 		AllowMissing: true,
+		ValidateOnly: validateOnly,
 		Setting: &v1pb.Setting{
 			Name: "settings/" + v1pb.Setting_WORKSPACE_PROFILE.String(),
 			Value: &v1pb.SettingValue{
@@ -88,4 +93,13 @@ func TestMCPCapabilitySettingRoundTrip(t *testing.T) {
 	got, err := ctl.getMCPCapability(ctx)
 	a.NoError(err)
 	a.Equal(v1pb.WorkspaceProfileSetting_MCP_READ_WRITE, got)
+
+	// A validate-only update must not leak into served state: the store caches
+	// the profile object, so an in-place mutation would flip the live /mcp gate
+	// without persisting anything.
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.WorkspaceProfileSetting_MCP_DISABLED))
+	a.NoError(ctl.updateMCPCapability(ctx, v1pb.WorkspaceProfileSetting_MCP_READ_WRITE, true))
+	got, err = ctl.getMCPCapability(ctx)
+	a.NoError(err)
+	a.Equal(v1pb.WorkspaceProfileSetting_MCP_DISABLED, got)
 }

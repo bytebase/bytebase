@@ -197,6 +197,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", storeSettingName, err))
 		}
+		// The store returns the cached profile object; mutate a clone so a
+		// validate-only request never alters the served in-memory state.
+		oldSetting = proto.CloneOf(oldSetting)
 
 		for _, path := range request.Msg.UpdateMask.Paths {
 			switch path {
