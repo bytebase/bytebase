@@ -56,8 +56,10 @@ type WorkSheetMessage struct {
 
 // FindWorkSheetMessage is the API message for finding sheets.
 type FindWorkSheetMessage struct {
-	// Required field
-	ProjectIDs     []string
+	// Either ProjectIDs or Workspace is required.
+	ProjectIDs []string
+	Workspace  string
+
 	PrincipalEmail string
 
 	ResourceID *string
@@ -66,8 +68,9 @@ type FindWorkSheetMessage struct {
 	LoadFull bool
 
 	FilterQ *qb.Query
-	Limit   *int
-	Offset  *int
+
+	Limit  *int
+	Offset *int
 }
 
 // PatchWorkSheetMessage is the message to patch a sheet.
@@ -99,7 +102,7 @@ func (s *Store) GetWorkSheet(ctx context.Context, find *FindWorkSheetMessage) (*
 
 // ListWorkSheets returns a list of sheets.
 func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage) ([]*WorkSheetMessage, error) {
-	if len(find.ProjectIDs) == 0 {
+	if len(find.ProjectIDs) == 0 && find.Workspace == "" {
 		return nil, errors.Errorf("empty project filter")
 	}
 	statementField := fmt.Sprintf("LEFT(worksheet.statement, %d)", common.MaxSheetSize)
@@ -122,12 +125,15 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage) 
 			OCTET_LENGTH(worksheet.statement),
 			COALESCE(worksheet_organizer.payload, '{}')
 		FROM worksheet
-		LEFT JOIN worksheet_organizer ON worksheet_organizer.worksheet = worksheet.resource_id AND worksheet_organizer.principal = '%s'
-		WHERE TRUE`, statementField, find.PrincipalEmail))
+		LEFT JOIN worksheet_organizer ON worksheet_organizer.worksheet = worksheet.resource_id AND worksheet_organizer.principal = ?
+		WHERE TRUE`, statementField), find.PrincipalEmail)
 
+	if find.Workspace != "" {
+		q.And("EXISTS (SELECT 1 FROM project WHERE project.resource_id = worksheet.project AND project.workspace = ? AND project.deleted = FALSE)", find.Workspace)
+	}
 	if len(find.ProjectIDs) == 1 {
 		q.And("worksheet.project = ?", find.ProjectIDs[0])
-	} else {
+	} else if len(find.ProjectIDs) > 1 {
 		q.And("worksheet.project = ANY(?)", find.ProjectIDs)
 	}
 
@@ -492,6 +498,75 @@ func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter str
 			}
 		default:
 			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	q, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+	return qb.Q().Space("(?)", q), nil
+}
+
+func GetListWorksheetFilter(filter string) (*qb.Query, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, errors.New("failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (*qb.Query, error)
+	getFilter = func(expr celast.Expr) (*qb.Query, error) {
+		if expr.Kind() != celast.CallKind {
+			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+		q := qb.Q()
+		functionName := expr.AsCall().FunctionName()
+		switch functionName {
+		case celoperators.LogicalOr:
+			for _, arg := range expr.AsCall().Args() {
+				qq, err := getFilter(arg)
+				if err != nil {
+					return nil, err
+				}
+				q.Or("?", qq)
+			}
+			return qb.Q().Space("(?)", q), nil
+		case celoperators.LogicalAnd:
+			for _, arg := range expr.AsCall().Args() {
+				qq, err := getFilter(arg)
+				if err != nil {
+					return nil, err
+				}
+				q.And("?", qq)
+			}
+			return qb.Q().Space("(?)", q), nil
+		case celoperators.Equals, celoperators.NotEquals:
+			variable, value := getVariableAndValueFromExpr(expr)
+			if variable != "creator" {
+				return nil, errors.Errorf("unsupported variable %q", variable)
+			}
+			creator, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("invalid creator value %q", value)
+			}
+			creatorEmail := strings.TrimPrefix(creator, "users/")
+			if creatorEmail == "" {
+				return nil, errors.New("invalid empty creator identifier")
+			}
+			if functionName == celoperators.Equals {
+				return qb.Q().Space("worksheet.creator = ?", creatorEmail), nil
+			}
+			return qb.Q().Space("worksheet.creator != ?", creatorEmail), nil
+		default:
+			return nil, errors.Errorf("unexpected function %v", functionName)
 		}
 	}
 
