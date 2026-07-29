@@ -51,5 +51,11 @@ func (x *OAuth2AuthorizationCodeConfig) Equal(y *OAuth2AuthorizationCodeConfig) 
 	if x.CodeChallengeMethod != y.CodeChallengeMethod {
 		return false
 	}
+	if x.Resource != y.Resource {
+		return false
+	}
+	if x.Scope != y.Scope {
+		return false
+	}
 	return true
 }

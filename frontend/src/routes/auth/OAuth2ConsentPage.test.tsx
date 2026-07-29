@@ -429,4 +429,61 @@ describe("OAuth2ConsentPage", () => {
     submitSpy.mockRestore();
     unmount();
   });
+
+  // The consent page is the only hop between /authorize's validation of
+  // `resource`/`scope` and the POST that persists them. Dropping either one
+  // silently unbinds the grant, and the allow and deny paths build their field
+  // lists separately, so both are asserted.
+  test("forwards resource and scope on both the allow and deny paths", async () => {
+    mocks.currentRoute.value.query = {
+      client_id: "c1",
+      redirect_uri: "https://app/callback",
+      state: "s",
+      code_challenge: "ch",
+      code_challenge_method: "S256",
+      resource: "https://bb.example.com/mcp",
+      scope: "mcp:read-only",
+    };
+    mocks.fetchImpl.mockResolvedValue({
+      ok: true,
+      json: async () => ({ client_name: "Acme" }),
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <OAuth2ConsentPage />
+    );
+    render();
+    await flushPromises();
+
+    const allowForm = container.querySelector<HTMLFormElement>(
+      'form[method="POST"]'
+    );
+    expect(
+      allowForm?.querySelector<HTMLInputElement>('input[name="resource"]')?.value
+    ).toBe("https://bb.example.com/mcp");
+    expect(
+      allowForm?.querySelector<HTMLInputElement>('input[name="scope"]')?.value
+    ).toBe("mcp:read-only");
+
+    const denyBtn = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("button")
+    ).find((b) => b.textContent === "common.deny");
+    let denyFields: Record<string, string> = {};
+    const submitSpy = vi
+      .spyOn(HTMLFormElement.prototype, "submit")
+      .mockImplementation(function (this: HTMLFormElement) {
+        denyFields = Object.fromEntries(
+          Array.from(this.querySelectorAll("input")).map((i) => [
+            i.name,
+            i.value,
+          ])
+        );
+      });
+    act(() => {
+      denyBtn?.click();
+    });
+    expect(denyFields.resource).toBe("https://bb.example.com/mcp");
+    expect(denyFields.scope).toBe("mcp:read-only");
+    submitSpy.mockRestore();
+    unmount();
+  });
 });

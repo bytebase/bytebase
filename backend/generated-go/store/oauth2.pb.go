@@ -94,8 +94,15 @@ type OAuth2AuthorizationCodeConfig struct {
 	RedirectUri         string                 `protobuf:"bytes,1,opt,name=redirect_uri,json=redirectUri,proto3" json:"redirect_uri,omitempty"`
 	CodeChallenge       string                 `protobuf:"bytes,2,opt,name=code_challenge,json=codeChallenge,proto3" json:"code_challenge,omitempty"`
 	CodeChallengeMethod string                 `protobuf:"bytes,3,opt,name=code_challenge_method,json=codeChallengeMethod,proto3" json:"code_challenge_method,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// The canonical resource URI (RFC 8707) this grant is bound to, validated at
+	// consent time against the configured external URL. Empty for clients that
+	// omit the resource parameter.
+	Resource string `protobuf:"bytes,4,opt,name=resource,proto3" json:"resource,omitempty"`
+	// The scope string consented to, stored verbatim. Empty means no scope was
+	// requested.
+	Scope         string `protobuf:"bytes,5,opt,name=scope,proto3" json:"scope,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OAuth2AuthorizationCodeConfig) Reset() {
@@ -149,6 +156,20 @@ func (x *OAuth2AuthorizationCodeConfig) GetCodeChallengeMethod() string {
 	return ""
 }
 
+func (x *OAuth2AuthorizationCodeConfig) GetResource() string {
+	if x != nil {
+		return x.Resource
+	}
+	return ""
+}
+
+func (x *OAuth2AuthorizationCodeConfig) GetScope() string {
+	if x != nil {
+		return x.Scope
+	}
+	return ""
+}
+
 var File_store_oauth2_proto protoreflect.FileDescriptor
 
 const file_store_oauth2_proto_rawDesc = "" +
@@ -160,11 +181,13 @@ const file_store_oauth2_proto_rawDesc = "" +
 	"\rredirect_uris\x18\x02 \x03(\tR\fredirectUris\x12\x1f\n" +
 	"\vgrant_types\x18\x03 \x03(\tR\n" +
 	"grantTypes\x12;\n" +
-	"\x1atoken_endpoint_auth_method\x18\x04 \x01(\tR\x17tokenEndpointAuthMethod\"\x9d\x01\n" +
+	"\x1atoken_endpoint_auth_method\x18\x04 \x01(\tR\x17tokenEndpointAuthMethod\"\xcf\x01\n" +
 	"\x1dOAuth2AuthorizationCodeConfig\x12!\n" +
 	"\fredirect_uri\x18\x01 \x01(\tR\vredirectUri\x12%\n" +
 	"\x0ecode_challenge\x18\x02 \x01(\tR\rcodeChallenge\x122\n" +
-	"\x15code_challenge_method\x18\x03 \x01(\tR\x13codeChallengeMethodB\x8e\x01\n" +
+	"\x15code_challenge_method\x18\x03 \x01(\tR\x13codeChallengeMethod\x12\x1a\n" +
+	"\bresource\x18\x04 \x01(\tR\bresource\x12\x14\n" +
+	"\x05scope\x18\x05 \x01(\tR\x05scopeB\x8e\x01\n" +
 	"\x12com.bytebase.storeB\vOauth2ProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
