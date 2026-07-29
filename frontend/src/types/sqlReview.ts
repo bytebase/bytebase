@@ -763,7 +763,8 @@ export const convertRuleMapToPolicyRuleList = (
 
 export type RuleMapValidationError =
   | { type: "EMPTY_RULE_LIST" }
-  | { type: "EMPTY_STRING_ARRAY"; rule: RuleTemplateV2 };
+  | { type: "EMPTY_STRING_ARRAY"; rule: RuleTemplateV2 }
+  | { type: "INVALID_NUMBER"; rule: RuleTemplateV2 };
 
 const nonEmptyStringArrayRuleTypeList = new Set<SQLReviewRule_Type>([
   SQLReviewRule_Type.COLUMN_REQUIRED,
@@ -788,6 +789,12 @@ export const validateRuleMapByEngine = (
       if (hasEmptyRequiredStringArray(rule)) {
         return { type: "EMPTY_STRING_ARRAY", rule };
       }
+      if (
+        rule.type === SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE &&
+        hasInvalidNumber(rule)
+      ) {
+        return { type: "INVALID_NUMBER", rule };
+      }
     }
   }
 
@@ -811,6 +818,18 @@ const hasEmptyRequiredStringArray = (rule: RuleTemplateV2): boolean => {
     (stringArrayPayload?.value ?? stringArrayPayload?.default ?? []).length ===
     0
   );
+};
+
+const hasInvalidNumber = (rule: RuleTemplateV2): boolean => {
+  const numberPayload = rule.componentList.find(
+    (c) => c.payload.type === "NUMBER"
+  )?.payload as NumberPayload | undefined;
+  if (!numberPayload) {
+    return false;
+  }
+
+  const value = numberPayloadToStorageValue(numberPayload);
+  return !Number.isFinite(value) || value <= 0;
 };
 
 // The convertRuleTemplateToPolicyRule will convert rule template to review policy rule for backend useage.

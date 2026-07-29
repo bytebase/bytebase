@@ -11,7 +11,9 @@ import {
 } from "@/app/router/handles";
 import { ResourceIdField } from "@/components/ResourceIdField";
 import { Button } from "@/components/ui/button";
+import { FormField, FormFieldGroup } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { StepIndicator } from "@/components/ui/step-indicator";
 import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import {
@@ -342,80 +344,57 @@ export function ReviewCreation({
     [store, t]
   );
 
-  // --- Step indicators ---
-
   const steps = [
-    { label: t("sql-review.create.basic-info.name") },
-    { label: t("sql-review.create.configure-rule.name") },
+    { title: t("sql-review.create.basic-info.name") },
+    { title: t("sql-review.create.configure-rule.name") },
   ];
 
   return (
     <div className="w-full h-full flex flex-col">
       {/* Step bar */}
       <div className="sticky top-0 z-10 bg-background border-b px-4 pb-4">
-        <div className="flex items-center gap-x-2">
-          {steps.map((step, index) => (
-            <div key={index} className="flex items-center gap-x-2">
-              {index > 0 && <div className="w-8 h-px bg-control-border" />}
-              <div
-                className={`flex items-center gap-x-2 px-3 py-1.5 rounded-full text-sm font-medium ${
-                  index === currentStep
-                    ? "bg-accent text-accent-text"
-                    : index < currentStep
-                      ? "bg-success/10 text-success"
-                      : "bg-control-bg text-control-light"
-                }`}
-              >
-                <span className="inline-flex items-center justify-center size-5 rounded-full text-xs bg-background/20">
-                  {index + 1}
-                </span>
-                {step.label}
-              </div>
-            </div>
-          ))}
-        </div>
+        <StepIndicator steps={steps} currentIndex={currentStep} />
       </div>
 
       {/* Step content */}
       <div className="flex-1 overflow-y-auto p-4">
         {currentStep === STEP_BASIC_INFO && (
-          <div className="flex flex-col gap-y-4 max-w-2xl">
-            <div className="flex flex-col gap-y-2 max-w-2xl">
-              {/* Display name */}
-              <div>
-                <label className="textlabel">
-                  {t("sql-review.create.basic-info.display-name")}
-                  <span className="text-error ml-0.5">*</span>
-                </label>
-                <p className="mt-1 textinfolabel">
-                  {t("sql-review.create.basic-info.display-name-label")}
-                </p>
+          <div className="max-w-2xl">
+            <FormFieldGroup>
+              <FormField
+                title={
+                  <>
+                    {t("sql-review.create.basic-info.display-name")}
+                    <span className="text-error ml-0.5">*</span>
+                  </>
+                }
+                description={t(
+                  "sql-review.create.basic-info.display-name-label"
+                )}
+              >
                 <Input
-                  className="mt-2"
                   value={policyName}
                   onChange={(e) => setPolicyName(e.target.value)}
                 />
-              </div>
 
-              {/* Resource ID */}
-              <ResourceIdField
-                value={resourceId}
-                resourceName={t("sql-review.review-policy")}
-                resourceTitle={policyName}
-                suffix
-                readonly={!!policy}
-                onChange={setResourceId}
-                validate={validateResourceId}
+                <ResourceIdField
+                  value={resourceId}
+                  resourceName={t("sql-review.review-policy")}
+                  resourceTitle={policyName}
+                  suffix
+                  readonly={!!policy}
+                  onChange={setResourceId}
+                  validate={validateResourceId}
+                />
+              </FormField>
+
+              <TemplateSelector
+                selectedTemplateId={
+                  pendingApplyTemplate?.id ?? selectedTemplateId
+                }
+                onSelectTemplate={tryApplyTemplate}
               />
-            </div>
-
-            {/* Template selector */}
-            <TemplateSelector
-              selectedTemplateId={
-                pendingApplyTemplate?.id ?? selectedTemplateId
-              }
-              onSelectTemplate={tryApplyTemplate}
-            />
+            </FormFieldGroup>
           </div>
         )}
 

@@ -10,10 +10,12 @@ import {
   PROJECT_V1_ROUTE_DATABASES,
 } from "@/app/router/handles";
 import {
+  PREPARE_DATABASE_PRODUCT_INTRO,
+  PREPARE_DATABASE_TRANSFER_TIP,
   PRODUCT_INTRO_QUERY_KEY,
+  PRODUCT_INTRO_TIP_QUERY_KEY,
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
-import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
@@ -283,7 +285,11 @@ export function InstanceFormButtons({
         router.push({
           name: INSTANCE_ROUTE_DETAIL,
           params: { instanceId },
-          query: { syncingInstance: instanceId },
+          query: {
+            syncingInstance: instanceId,
+            [PRODUCT_INTRO_QUERY_KEY]: PREPARE_DATABASE_PRODUCT_INTRO,
+            [PRODUCT_INTRO_TIP_QUERY_KEY]: PREPARE_DATABASE_TRANSFER_TIP,
+          },
           hash: "databases",
         });
       }
@@ -626,7 +632,7 @@ export function InstanceFormButtons({
     <>
       {connectionFailureDialog}
       <StickyActionFooter
-        className={cn("mt-4", className)}
+        className={className}
         left={
           <Button
             appearance="outline"

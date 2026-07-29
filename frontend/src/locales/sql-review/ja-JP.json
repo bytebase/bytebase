@@ -741,6 +741,7 @@
   },
   "title": "SQL レビューポリシー",
   "validation": {
+    "number-positive": "{{rule}} には正の数を入力してください。",
     "rule-required": "少なくとも 1 つのルールを選択してください。",
     "string-array-required": "{{rule}} に少なくとも 1 つの値を追加してください。"
   }

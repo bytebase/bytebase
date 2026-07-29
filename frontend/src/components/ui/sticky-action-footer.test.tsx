@@ -73,18 +73,42 @@ describe("StickyActionFooter", () => {
     );
     expect(content?.firstElementChild).toBe(left);
     expect(content?.lastElementChild).toBe(right);
+    expect(content?.className).toContain("gap-x-2");
+    expect(content?.className).toContain("gap-y-2");
     expect(left?.textContent).toBe("Cancel");
+    expect(left?.className).toContain("gap-x-2");
+    expect(left?.className).toContain("gap-y-2");
     expect(left?.className).toContain(
       stylex.props(stickyActionFooterSideStyle()).className ?? ""
     );
     expect(right?.textContent).toBe("TestSave");
     expect(right?.className).toContain("gap-x-2");
+    expect(right?.className).toContain("gap-y-2");
     expect(right?.className).toContain(
       stylex.props(
         stickyActionFooterSideStyle(),
         stickyActionFooterRightStyle()
       ).className ?? ""
     );
+
+    unmount();
+  });
+
+  test("allows callers to align footer content with the surrounding page edge", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(StickyActionFooter, {
+        contentPadding: false,
+        left: createElement("button", { type: "button" }, "Cancel"),
+        right: createElement("button", { type: "button" }, "Save"),
+      })
+    );
+
+    const content = container.querySelector(
+      '[data-slot="sticky-action-footer-content"]'
+    );
+
+    expect(content).not.toHaveClass("px-4");
+    expect(content).not.toHaveClass("sm:px-6");
 
     unmount();
   });

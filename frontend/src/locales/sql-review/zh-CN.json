@@ -741,6 +741,7 @@
   },
   "title": "SQL 审核策略",
   "validation": {
+    "number-positive": "请为 {{rule}} 输入一个正数。",
     "rule-required": "请选择至少一条规则。",
     "string-array-required": "请为 {{rule}} 添加至少一个值。"
   }

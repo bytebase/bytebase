@@ -1144,6 +1144,9 @@
       },
       "ssl-tls-connection": {
         "link": "Kết nối SSL/TLS"
+      },
+      "sync-databases": {
+        "content": "Khi bật, Bytebase sẽ phát hiện và đồng bộ tất cả cơ sở dữ liệu trong phiên bản này khi tạo. Tắt tùy chọn này nếu bây giờ bạn chỉ muốn đồng bộ các cơ sở dữ liệu đã chọn; bạn có thể đồng bộ thêm cơ sở dữ liệu sau từ trang phiên bản."
       }
     },
     "info-panel": {

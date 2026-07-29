@@ -117,6 +117,22 @@ beforeEach(async () => {
 });
 
 describe("TemplateSelector", () => {
+  test("uses shared form field for the selector title", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <TemplateSelector onSelectTemplate={vi.fn()} />
+    );
+
+    render();
+
+    const formField = container.querySelector('[data-slot="form-field"]');
+    expect(formField).toBeTruthy();
+    expect(
+      formField?.querySelector('[data-slot="form-field-title"]')?.textContent
+    ).toContain("sql-review.create.basic-info.choose-template");
+
+    unmount();
+  });
+
   test("renders review templates as semantic buttons", () => {
     const onSelectTemplate = vi.fn();
     const { container, render, unmount } = renderIntoContainer(

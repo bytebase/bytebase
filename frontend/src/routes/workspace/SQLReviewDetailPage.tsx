@@ -242,149 +242,157 @@ export function SQLReviewDetailPage({
   }
 
   return (
-    <div className="px-4 py-4">
-      {/* Disabled warning */}
-      {!reviewPolicy.enforce && (
-        <Alert
-          variant="warning"
-          className="mb-4"
-          description={t("sql-review.disabled")}
-        />
-      )}
-
-      {/* Header: title + actions */}
-      <div className="flex flex-col gap-y-2 items-start md:items-center gap-x-2 justify-center md:flex-row">
-        {editingTitle ? (
-          <Input
-            className="flex-1 text-xl font-bold"
-            defaultValue={reviewPolicy.name}
-            autoFocus
-            onBlur={(e) => changeName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter")
-                changeName((e.target as HTMLInputElement).value);
-            }}
-          />
-        ) : (
-          <h1
-            className="flex-1 text-xl font-bold truncate cursor-text px-0.5"
-            onClick={() => {
-              if (hasUpdatePermission) {
-                setEditingTitle(true);
-              }
-            }}
-          >
-            {reviewPolicy.name}
-          </h1>
-        )}
-        <div className="flex gap-x-2">
-          <PermissionGuard permissions={["bb.reviewConfigs.update"]}>
-            {reviewPolicy.enforce ? (
-              <Button
-                appearance="outline"
-                disabled={!hasUpdatePermission}
-                onClick={() => setShowDisableModal(true)}
-              >
-                {t("common.disable")}
-              </Button>
-            ) : (
-              <Button
-                appearance="outline"
-                disabled={!hasUpdatePermission}
-                onClick={() => setShowEnableModal(true)}
-              >
-                {t("common.enable")}
-              </Button>
-            )}
-          </PermissionGuard>
-          <PermissionGuard permissions={["bb.policies.update"]}>
-            <Button
-              appearance="outline"
-              disabled={!hasWorkspacePermissionV2("bb.policies.update")}
-              onClick={() => setShowResourcePanel(true)}
-            >
-              {t("sql-review.attach-resource.change-resources")}
-            </Button>
-          </PermissionGuard>
-          <PermissionGuard permissions={["bb.reviewConfigs.update"]}>
-            <Button
-              disabled={!hasUpdatePermission}
-              onClick={() => setEditMode(true)}
-            >
-              {t("sql-review.create.configure-rule.change-template")}
-            </Button>
-          </PermissionGuard>
-        </div>
-      </div>
-
-      {/* Attached resources */}
-      <div className="mt-4 flex flex-col gap-y-4">
-        {reviewPolicy.resources.length === 0 && (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div
+        data-slot="sql-review-detail-content"
+        className="min-h-0 flex-1 overflow-y-auto px-4 py-4"
+      >
+        {/* Disabled warning */}
+        {!reviewPolicy.enforce && (
           <Alert
             variant="warning"
-            description={
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">
-                    {t("sql-review.attach-resource.no-linked-resources")}
-                  </p>
-                  <p className="text-sm mt-1">
-                    {t("sql-review.attach-resource.label")}
-                  </p>
-                </div>
-                <Button
-                  appearance="outline"
-                  size="sm"
-                  onClick={() => setShowResourcePanel(true)}
-                >
-                  {t("sql-review.attach-resource.self")}
-                </Button>
-              </div>
-            }
+            className="mb-4"
+            description={t("sql-review.disabled")}
           />
         )}
-        <div className="flex flex-wrap gap-y-2 gap-x-2">
-          {reviewPolicy.resources.map((resource) => (
-            <Badge key={resource} variant="default">
-              <ResourceLink resource={resource} />
-            </Badge>
-          ))}
-        </div>
-      </div>
 
-      {/* Rules by engine */}
-      <div className="mt-5">
-        <TabsByEngine ruleMapByEngine={ruleMapByEngine}>
-          {(ruleList, engine) => (
-            <RuleTableWithFilter
-              engine={engine}
-              ruleList={ruleList}
-              editable={hasUpdatePermission}
-              onRuleUpsert={markChange}
-              onRuleRemove={removeRule}
+        {/* Header: title + actions */}
+        <div className="flex flex-col gap-y-2 items-start md:items-center gap-x-2 justify-center md:flex-row">
+          {editingTitle ? (
+            <Input
+              className="flex-1 text-xl font-bold"
+              defaultValue={reviewPolicy.name}
+              autoFocus
+              onBlur={(e) => changeName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter")
+                  changeName((e.target as HTMLInputElement).value);
+              }}
+            />
+          ) : (
+            <h1
+              className="flex-1 text-xl font-bold truncate cursor-text px-0.5"
+              onClick={() => {
+                if (hasUpdatePermission) {
+                  setEditingTitle(true);
+                }
+              }}
+            >
+              {reviewPolicy.name}
+            </h1>
+          )}
+          <div className="flex gap-x-2">
+            <PermissionGuard permissions={["bb.reviewConfigs.update"]}>
+              {reviewPolicy.enforce ? (
+                <Button
+                  appearance="outline"
+                  disabled={!hasUpdatePermission}
+                  onClick={() => setShowDisableModal(true)}
+                >
+                  {t("common.disable")}
+                </Button>
+              ) : (
+                <Button
+                  appearance="outline"
+                  disabled={!hasUpdatePermission}
+                  onClick={() => setShowEnableModal(true)}
+                >
+                  {t("common.enable")}
+                </Button>
+              )}
+            </PermissionGuard>
+            <PermissionGuard permissions={["bb.policies.update"]}>
+              <Button
+                appearance="outline"
+                disabled={!hasWorkspacePermissionV2("bb.policies.update")}
+                onClick={() => setShowResourcePanel(true)}
+              >
+                {t("sql-review.attach-resource.change-resources")}
+              </Button>
+            </PermissionGuard>
+            <PermissionGuard permissions={["bb.reviewConfigs.update"]}>
+              <Button
+                disabled={!hasUpdatePermission}
+                onClick={() => setEditMode(true)}
+              >
+                {t("sql-review.create.configure-rule.change-template")}
+              </Button>
+            </PermissionGuard>
+          </div>
+        </div>
+
+        {/* Attached resources */}
+        <div className="mt-4 flex flex-col gap-y-4">
+          {reviewPolicy.resources.length === 0 && (
+            <Alert
+              variant="warning"
+              description={
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">
+                      {t("sql-review.attach-resource.no-linked-resources")}
+                    </p>
+                    <p className="text-sm mt-1">
+                      {t("sql-review.attach-resource.label")}
+                    </p>
+                  </div>
+                  <Button
+                    appearance="outline"
+                    size="sm"
+                    onClick={() => setShowResourcePanel(true)}
+                  >
+                    {t("sql-review.attach-resource.self")}
+                  </Button>
+                </div>
+              }
             />
           )}
-        </TabsByEngine>
-      </div>
+          <div className="flex flex-wrap gap-y-2 gap-x-2">
+            {reviewPolicy.resources.map((resource) => (
+              <Badge key={resource} variant="default">
+                <ResourceLink resource={resource} />
+              </Badge>
+            ))}
+          </div>
+        </div>
 
-      {/* Delete button */}
-      <hr className="my-6" />
-      <PermissionGuard permissions={["bb.reviewConfigs.delete"]}>
-        <Button
-          variant="destructive"
-          appearance="outline"
-          disabled={!hasDeletePermission}
-          onClick={() => setShowDeleteConfirm(true)}
-        >
-          <Trash2 className="w-4 h-4 mr-1" />
-          {t("sql-review.delete")}
-        </Button>
-      </PermissionGuard>
+        {/* Rules by engine */}
+        <div className="mt-5">
+          <TabsByEngine ruleMapByEngine={ruleMapByEngine}>
+            {(ruleList, engine) => (
+              <RuleTableWithFilter
+                engine={engine}
+                ruleList={ruleList}
+                editable={hasUpdatePermission}
+                onRuleUpsert={markChange}
+                onRuleRemove={removeRule}
+              />
+            )}
+          </TabsByEngine>
+        </div>
+
+        <div data-slot="sql-review-detail-bottom-actions" className="mt-6">
+          {/* Delete button */}
+          <hr className="mb-6" />
+          <PermissionGuard permissions={["bb.reviewConfigs.delete"]}>
+            <Button
+              variant="destructive"
+              appearance="outline"
+              className="self-start"
+              disabled={!hasDeletePermission}
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              {t("sql-review.delete")}
+            </Button>
+          </PermissionGuard>
+        </div>
+      </div>
 
       {/* Sticky save bar when rules changed */}
       {rulesUpdated && (
         <StickyActionFooter
-          className="mt-4 py-2 border-control-border"
+          className="shrink-0 border-control-border"
           left={
             <Button appearance="outline" onClick={onCancelChanges}>
               {t("common.cancel")}

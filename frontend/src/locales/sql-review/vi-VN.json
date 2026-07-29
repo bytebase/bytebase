@@ -741,6 +741,7 @@
   },
   "title": "Đánh giá SQL",
   "validation": {
+    "number-positive": "Nhập số dương cho {{rule}}.",
     "rule-required": "Chọn ít nhất một quy tắc.",
     "string-array-required": "Thêm ít nhất một giá trị cho {{rule}}."
   }

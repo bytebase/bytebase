@@ -239,6 +239,28 @@ describe("convertRuleMapToPolicyRuleList", () => {
     ],
   });
 
+  const numberRule = (
+    type: SQLReviewRule_Type,
+    value: number
+  ): RuleTemplateV2 => ({
+    type,
+    category: "BUILTIN",
+    engine: Engine.MYSQL,
+    level: SQLReviewRule_Level.ERROR,
+    componentList: [
+      {
+        key: "number",
+        payload: {
+          type: "NUMBER",
+          default: 2,
+          value,
+          unit: "MB",
+          factor: 1024 * 1024,
+        },
+      },
+    ],
+  });
+
   const requiredStringArrayRuleTypes = [
     SQLReviewRule_Type.COLUMN_REQUIRED,
     SQLReviewRule_Type.COLUMN_TYPE_DISALLOW_LIST,
@@ -269,6 +291,59 @@ describe("convertRuleMapToPolicyRuleList", () => {
     expect(validateRuleMapByEngine(new Map())).toEqual({
       type: "EMPTY_RULE_LIST",
     });
+  });
+
+  test("reports non-positive number payloads after unit conversion", () => {
+    const ruleMap = new Map([
+      [
+        Engine.MYSQL,
+        new Map([
+          [
+            SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+            numberRule(
+              SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+              0
+            ),
+          ],
+        ]),
+      ],
+    ]);
+
+    expect(validateRuleMapByEngine(ruleMap)).toMatchObject({
+      type: "INVALID_NUMBER",
+      rule: { type: SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE },
+    });
+  });
+
+  test("allows zero number payloads for naming rules", () => {
+    const rule: RuleTemplateV2 = {
+      type: SQLReviewRule_Type.NAMING_TABLE,
+      category: "NAMING",
+      engine: Engine.MYSQL,
+      level: SQLReviewRule_Level.ERROR,
+      componentList: [
+        {
+          key: "format",
+          payload: {
+            type: "STRING",
+            default: "^[a-z]+(_[a-z]+)*$",
+          },
+        },
+        {
+          key: "max-length",
+          payload: {
+            type: "NUMBER",
+            default: 0,
+            value: 0,
+          },
+        },
+      ],
+    };
+    const ruleMap = new Map([
+      [Engine.MYSQL, new Map([[SQLReviewRule_Type.NAMING_TABLE, rule]])],
+    ]);
+
+    expect(validateRuleMapByEngine(ruleMap)).toBeUndefined();
   });
 
   test("keeps configured table DDL and DML deny-list rules valid", () => {

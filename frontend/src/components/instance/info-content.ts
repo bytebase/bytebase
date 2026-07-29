@@ -7,7 +7,8 @@ export type InfoSection =
   | "authentication"
   | "ssl"
   | "ssh"
-  | "database";
+  | "database"
+  | "sync-databases";
 
 export type InfoSnippetContentKey =
   | "instance.info.mongodb.authentication.content"
@@ -21,7 +22,8 @@ export type InfoSnippetContentKey =
   | "instance.info.postgresql.authentication.content"
   | "instance.info.postgresql.host.content"
   | "instance.info.postgresql.ssh.content"
-  | "instance.info.postgresql.ssl.content";
+  | "instance.info.postgresql.ssl.content"
+  | "instance.info.sync-databases.content";
 
 export type InfoSnippetLinkTitleKey =
   | "instance.info.configure-database-user.link"
@@ -209,11 +211,17 @@ const engineContentMap: Partial<
   [Engine.MONGODB]: mongodbContent,
 };
 
+const sharedContent: Partial<Record<InfoSection, InfoSnippet>> = {
+  "sync-databases": {
+    contentKey: "instance.info.sync-databases.content",
+  },
+};
+
 export const getInfoContent = (
   engine: Engine,
   section: InfoSection
 ): InfoSnippet | undefined => {
-  return engineContentMap[engine]?.[section];
+  return engineContentMap[engine]?.[section] ?? sharedContent[section];
 };
 
 export const hasInfoContent = (engine: Engine, section: InfoSection): boolean =>

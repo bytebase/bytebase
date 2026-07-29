@@ -19,17 +19,18 @@ export function ProjectDatabaseGroupCreatePage({
   if (!project) return null;
 
   return (
-    <DatabaseGroupForm
-      className="py-4 h-full"
-      readonly={false}
-      project={project}
-      onDismiss={() => router.back()}
-      onCreated={(databaseGroupName) => {
-        router.push({
-          name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
-          params: { databaseGroupName },
-        });
-      }}
-    />
+    <div className="min-h-full flex-1 relative flex flex-col px-4 pt-4">
+      <DatabaseGroupForm
+        readonly={false}
+        project={project}
+        onDismiss={() => router.back()}
+        onCreated={(databaseGroupName) => {
+          router.push({
+            name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+            params: { databaseGroupName },
+          });
+        }}
+      />
+    </div>
   );
 }

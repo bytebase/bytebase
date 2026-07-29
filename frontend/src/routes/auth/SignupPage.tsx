@@ -105,26 +105,24 @@ export function SignupPage() {
 
   return (
     <>
-      <div className="h-full flex flex-col justify-center mx-auto w-full max-w-sm">
+      <div className="h-full flex flex-col justify-center gap-y-4 mx-auto w-full max-w-sm">
         <div>
-          <BytebaseLogo className="mx-auto mb-8" />
+          <BytebaseLogo className="mx-auto" />
           <h2 className="text-2xl leading-9 font-medium text-main mt-4">
             {needAdminSetup ? (
-              <p className="text-accent font-semibold text-center">
-                <Trans
-                  i18nKey="auth.sign-up.admin-title"
-                  components={{
-                    account: <span className="text-accent font-semibold" />,
-                  }}
-                />
-              </p>
+              <Trans
+                i18nKey="auth.sign-up.admin-title"
+                components={{
+                  account: <span />,
+                }}
+              />
             ) : (
               <span>{t("auth.sign-up.title")}</span>
             )}
           </h2>
         </div>
 
-        <div className="mt-8">
+        <div>
           <form className="flex flex-col gap-y-6 mt-6" onSubmit={trySignup}>
             <div>
               <label

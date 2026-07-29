@@ -58,6 +58,12 @@ vi.mock("@/components/auth/AuthFooter", () => ({
   AuthFooter: () => null,
 }));
 
+vi.mock("@/components/BytebaseLogo", () => ({
+  BytebaseLogo: ({ className }: { className?: string }) => (
+    <div className={className} data-testid="bytebase-logo" />
+  ),
+}));
+
 vi.mock("@/components/ComponentPermissionGuard", () => ({
   ComponentPermissionGuard: ({ children }: { children: React.ReactNode }) =>
     children,
@@ -134,6 +140,23 @@ beforeEach(async () => {
 });
 
 describe("SetupPage", () => {
+  test("shows the Bytebase logo above setup steps", async () => {
+    const { container, render, unmount } = renderIntoContainer(<SetupPage />);
+    render();
+    await flushPromises();
+
+    const logo = container.querySelector('[data-testid="bytebase-logo"]');
+    const stepIndicator = container.querySelector(
+      '[data-slot="step-indicator"]'
+    );
+    expect(logo).toBeTruthy();
+    expect(logo?.compareDocumentPosition(stepIndicator as Node)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+
+    unmount();
+  });
+
   test("finishes setup by navigating to the workspace landing page", async () => {
     const { container, render, unmount } = renderIntoContainer(<SetupPage />);
     render();

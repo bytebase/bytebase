@@ -524,7 +524,6 @@ export function ProjectWebhookForm({
 
       {/* Footer */}
       <StickyActionFooter
-        className="w-full"
         left={
           create ? (
             <Button appearance="outline" onClick={cancel}>

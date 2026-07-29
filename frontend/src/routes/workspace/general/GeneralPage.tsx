@@ -222,6 +222,7 @@ export function GeneralPage() {
 
       {isDirty && (
         <StickyActionFooter
+          contentPadding={false}
           left={
             <Button appearance="outline" onClick={handleRevert}>
               {t("common.cancel")}

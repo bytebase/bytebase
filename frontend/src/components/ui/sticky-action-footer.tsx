@@ -10,6 +10,8 @@ import {
 
 type StickyActionFooterProps = Readonly<
   ComponentProps<"div"> & {
+    contentClassName?: string;
+    contentPadding?: boolean;
     left?: ReactNode;
     right?: ReactNode;
     leftClassName?: string;
@@ -19,6 +21,8 @@ type StickyActionFooterProps = Readonly<
 
 function StickyActionFooter({
   className,
+  contentClassName,
+  contentPadding = true,
   left,
   leftClassName,
   right,
@@ -49,19 +53,32 @@ function StickyActionFooter({
     >
       <div
         data-slot="sticky-action-footer-content"
-        className={cn("px-4 sm:px-6", contentStylexProps.className)}
+        className={cn(
+          "gap-x-2 gap-y-2",
+          contentPadding && "px-4 sm:px-6",
+          contentStylexProps.className,
+          contentClassName
+        )}
         style={contentStylexProps.style}
       >
         <div
           data-slot="sticky-action-footer-left"
-          className={cn(leftStylexProps.className, leftClassName)}
+          className={cn(
+            "flex-wrap gap-x-2 gap-y-2",
+            leftStylexProps.className,
+            leftClassName
+          )}
           style={leftStylexProps.style}
         >
           {left}
         </div>
         <div
           data-slot="sticky-action-footer-right"
-          className={cn("gap-x-2", rightStylexProps.className, rightClassName)}
+          className={cn(
+            "flex-wrap gap-x-2 gap-y-2",
+            rightStylexProps.className,
+            rightClassName
+          )}
           style={rightStylexProps.style}
         >
           {right}
