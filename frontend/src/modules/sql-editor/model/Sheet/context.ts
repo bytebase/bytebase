@@ -718,7 +718,7 @@ const fetchSheetListFor = async (view: SheetViewMode) => {
         );
         break;
       case "shared":
-        await sheetStore.fetchWorksheetList(
+        await sheetStore.fetchSharedWorksheetList(
           project,
           [
             `creator != "users/${email}"`,

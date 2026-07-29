@@ -13,6 +13,7 @@ import {
   CreateWorksheetRequestSchema,
   DeleteWorksheetRequestSchema,
   GetWorksheetRequestSchema,
+  ListWorksheetsRequestSchema,
   SearchWorksheetsRequestSchema,
   UpdateWorksheetOrganizerRequestSchema,
   UpdateWorksheetRequestSchema,
@@ -67,6 +68,14 @@ export const createWorksheetSlice: AppSliceCreator<WorksheetSlice> = (
     } catch {
       // Best-effort hydration; the worksheet entry is still cached below.
     }
+  };
+
+  const cacheWorksheetList = async (worksheets: Worksheet[]) => {
+    await hydrateRelatedResources(worksheets);
+    for (const worksheet of worksheets) {
+      setCacheEntry(worksheet, "BASIC");
+    }
+    return worksheets;
   };
 
   const updateCacheWithOrganizer = (organizer: WorksheetOrganizer) => {
@@ -139,11 +148,14 @@ export const createWorksheetSlice: AppSliceCreator<WorksheetSlice> = (
       const response = await worksheetServiceClientConnect.searchWorksheets(
         createProto(SearchWorksheetsRequestSchema, { parent, filter })
       );
-      await hydrateRelatedResources(response.worksheets);
-      for (const worksheet of response.worksheets) {
-        setCacheEntry(worksheet, "BASIC");
-      }
-      return response.worksheets;
+      return cacheWorksheetList(response.worksheets);
+    },
+
+    fetchSharedWorksheetList: async (parent, filter) => {
+      const response = await worksheetServiceClientConnect.listWorksheets(
+        createProto(ListWorksheetsRequestSchema, { parent, filter })
+      );
+      return cacheWorksheetList(response.worksheets);
     },
 
     createWorksheet: async (worksheet) => {

@@ -54,6 +54,7 @@ import {
   UserSchema,
 } from "@/types/proto-es/v1/user_service_pb";
 import { WorkloadIdentitySchema } from "@/types/proto-es/v1/workload_identity_service_pb";
+import { WorksheetSchema } from "@/types/proto-es/v1/worksheet_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
 import { hexToColor } from "@/utils";
 import {
@@ -118,6 +119,8 @@ const mocks = vi.hoisted(() => ({
   listDatabaseGroups: vi.fn(),
   getSheet: vi.fn(),
   createSheet: vi.fn(),
+  searchWorksheets: vi.fn(),
+  listWorksheets: vi.fn(),
   listInstanceRoles: vi.fn(),
   listGroups: vi.fn(),
   batchGetGroups: vi.fn(),
@@ -209,6 +212,10 @@ vi.mock("@/api", () => ({
   sheetServiceClientConnect: {
     getSheet: mocks.getSheet,
     createSheet: mocks.createSheet,
+  },
+  worksheetServiceClientConnect: {
+    searchWorksheets: mocks.searchWorksheets,
+    listWorksheets: mocks.listWorksheets,
   },
   instanceRoleServiceClientConnect: {
     listInstanceRoles: mocks.listInstanceRoles,
@@ -1972,6 +1979,54 @@ describe("useAppStore", () => {
     expect(first).toEqual(sheet);
     expect(second).toEqual(sheet);
     expect(mocks.getSheet).toHaveBeenCalledTimes(1);
+  });
+
+  test("uses search worksheets for my worksheets and list worksheets for shared worksheets", async () => {
+    const myWorksheet = createProto(WorksheetSchema, {
+      name: "projects/p1/worksheets/my",
+      project: "projects/p1",
+      creator: "users/me@example.com",
+    });
+    const sharedWorksheet = createProto(WorksheetSchema, {
+      name: "projects/p1/worksheets/shared",
+      project: "projects/p1",
+      creator: "users/other@example.com",
+    });
+    mocks.searchWorksheets.mockResolvedValueOnce({
+      worksheets: [myWorksheet],
+    });
+    mocks.listWorksheets.mockResolvedValueOnce({
+      worksheets: [sharedWorksheet],
+    });
+    mocks.batchGetProjects.mockResolvedValue({ projects: [] });
+    mocks.batchGetDatabases.mockResolvedValue({ databases: [] });
+    mocks.batchGetUsers.mockResolvedValue({ users: [] });
+    const store = createAppStore();
+
+    await expect(
+      store
+        .getState()
+        .fetchWorksheetList("projects/p1", 'creator == "users/me@example.com"')
+    ).resolves.toEqual([myWorksheet]);
+    await expect(
+      store
+        .getState()
+        .fetchSharedWorksheetList(
+          "projects/p1",
+          'creator != "users/me@example.com"'
+        )
+    ).resolves.toEqual([sharedWorksheet]);
+
+    expect(mocks.searchWorksheets).toHaveBeenCalledTimes(1);
+    expect(mocks.searchWorksheets.mock.calls[0]?.[0]).toMatchObject({
+      parent: "projects/p1",
+      filter: 'creator == "users/me@example.com"',
+    });
+    expect(mocks.listWorksheets).toHaveBeenCalledTimes(1);
+    expect(mocks.listWorksheets.mock.calls[0]?.[0]).toMatchObject({
+      parent: "projects/p1",
+      filter: 'creator != "users/me@example.com"',
+    });
   });
 
   test("deduplicates instance role fetches per instance", async () => {
