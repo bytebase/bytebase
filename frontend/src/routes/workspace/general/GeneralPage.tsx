@@ -7,7 +7,7 @@ import { WorkspacePageLayout } from "@/components/WorkspacePageLayout";
 import { useServerState } from "@/hooks/useAppState";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/stores";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, isDev } from "@/utils";
 import { AccountSection } from "./AccountSection";
 import { AIAugmentationSection } from "./AIAugmentationSection";
 import { AnnouncementSection } from "./AnnouncementSection";
@@ -87,14 +87,16 @@ export function GeneralPage() {
         handle: aiRef.current!,
       },
       {
-        name: t("settings.general.workspace.mcp.self"),
-        handle: mcpRef.current!,
-      },
-      {
         name: t("settings.general.workspace.announcement.self"),
         handle: announcementRef.current!,
       },
     ];
+    if (mcpRef.current) {
+      sections.push({
+        name: t("settings.general.workspace.mcp.self"),
+        handle: mcpRef.current,
+      });
+    }
     if (productImprovementRef.current) {
       sections.push({
         name: t("settings.general.workspace.product-improvement.self"),
@@ -183,11 +185,15 @@ export function GeneralPage() {
         title={t("settings.general.workspace.ai-assistant.self")}
         onDirtyChange={onDirtyChange}
       />
-      <MCPSection
-        ref={mcpRef}
-        title={t("settings.general.workspace.mcp.self")}
-        onDirtyChange={onDirtyChange}
-      />
+      {/* Hidden in prod builds until release readiness; the settings API and
+          server-side enforcement stay live intentionally. */}
+      {isDev() && (
+        <MCPSection
+          ref={mcpRef}
+          title={t("settings.general.workspace.mcp.self")}
+          onDirtyChange={onDirtyChange}
+        />
+      )}
       <AnnouncementSection
         ref={announcementRef}
         title={t("settings.general.workspace.announcement.self")}
