@@ -1,7 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import type { ConnectError } from "@connectrpc/connect";
-import { Check } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,6 +12,7 @@ import {
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { Button } from "@/components/ui/button";
 import { OtpInput } from "@/components/ui/otp-input";
+import { StepIndicator } from "@/components/ui/step-indicator";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -216,8 +216,8 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
       : recoveryCodesDownloaded;
 
   const steps = [
-    t("two-factor.setup-steps.setup-auth-app.self"),
-    t("two-factor.setup-steps.download-recovery-codes.self"),
+    { title: t("two-factor.setup-steps.setup-auth-app.self") },
+    { title: t("two-factor.setup-steps.download-recovery-codes.self") },
   ];
 
   return (
@@ -231,33 +231,11 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
       </p>
 
       {/* Step indicator */}
-      <div className="flex items-center gap-x-4 mb-8">
-        {steps.map((title, index) => (
-          <div key={index} className="flex items-center gap-x-2">
-            <div
-              className={`flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium ${
-                index < currentStep
-                  ? "bg-accent text-white"
-                  : index === currentStep
-                    ? "bg-accent text-white"
-                    : "bg-gray-200 text-gray-600"
-              }`}
-            >
-              {index < currentStep ? <Check className="w-4 h-4" /> : index + 1}
-            </div>
-            <span
-              className={`text-sm font-medium ${
-                index === currentStep ? "text-accent" : "text-gray-500"
-              }`}
-            >
-              {title}
-            </span>
-            {index < steps.length - 1 && (
-              <div className="w-12 h-px bg-gray-300 ml-2" />
-            )}
-          </div>
-        ))}
-      </div>
+      <StepIndicator
+        className="mb-8"
+        steps={steps}
+        currentIndex={currentStep}
+      />
 
       {/* Step content */}
       {currentStep === SETUP_AUTH_APP_STEP && (

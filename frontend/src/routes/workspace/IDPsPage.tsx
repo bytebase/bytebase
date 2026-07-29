@@ -39,6 +39,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { StepIndicator } from "@/components/ui/step-indicator";
 import {
   Table,
   TableBody,
@@ -1659,40 +1660,10 @@ function CreateWizardDrawer({
         <SheetBody className="px-6 py-6">
           <div className="flex flex-col gap-y-6">
             {/* Step indicators */}
-            <div className="flex items-center gap-x-2">
-              {stepLabels.map((label, i) => {
-                const stepNum = i + 1;
-                const isActive = stepNum === currentStep;
-                const isComplete = stepNum < currentStep;
-                return (
-                  <div key={i} className="flex items-center gap-x-2">
-                    {i > 0 && (
-                      <div
-                        className={`w-8 h-px ${isComplete ? "bg-accent" : "bg-gray-300"}`}
-                      />
-                    )}
-                    <div className="flex items-center gap-x-1.5">
-                      <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
-                          isActive
-                            ? "bg-accent text-white"
-                            : isComplete
-                              ? "bg-accent/20 text-accent"
-                              : "bg-gray-200 text-gray-500"
-                        }`}
-                      >
-                        {stepNum}
-                      </div>
-                      <span
-                        className={`text-sm ${isActive ? "font-medium text-main" : "text-gray-500"}`}
-                      >
-                        {label}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <StepIndicator
+              steps={stepLabels.map((title) => ({ title }))}
+              currentIndex={currentStep - 1}
+            />
 
             {/* Step content */}
             <div className="bg-white rounded-sm border border-gray-200 px-6 pt-6 pb-10">

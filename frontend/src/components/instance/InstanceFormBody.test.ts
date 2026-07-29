@@ -59,7 +59,8 @@ describe("InstanceFormBody", () => {
 
     expect(source).not.toContain("instance.sync-databases.project-self");
     expect(source).not.toContain("showLabel && !hasProjectContext");
-    expect(source).toContain("title={showLabel");
+    expect(source).toContain("title=");
+    expect(source).toContain("showLabel ? (");
     expect(source).toContain("instance.sync-databases.description");
     expect(source).toContain('t("instance.sync-databases.self")');
     expect(source).toContain("instance.sync-databases.project-description");
@@ -74,6 +75,33 @@ describe("InstanceFormBody", () => {
     expect(source).toContain('className="underline underline-offset-2"');
     expect(source).toContain('target="_blank"');
     expect(source).toContain('rel="noopener noreferrer"');
+  });
+
+  test("offers sync-all database details from the create instance form", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+    const titleIndex = source.indexOf('t("instance.sync-databases.self")');
+    const infoTriggerIndex = source.indexOf(
+      'onOpenInfoPanel("sync-databases")'
+    );
+    const descriptionIndex = source.indexOf(
+      't("instance.sync-databases.description")'
+    );
+    const checkboxIndex = source.indexOf("<Checkbox", descriptionIndex);
+
+    expect(source).toContain(
+      "onOpenInfoPanel?: (section: InfoSection) => void"
+    );
+    expect(source).toContain("onOpenInfoPanel={onOpenInfoPanel}");
+    expect(source).toContain(
+      'className="inline-flex size-4 shrink-0 items-center justify-center text-accent leading-none"'
+    );
+    expect(source).toContain('<Info className="size-3.5" />');
+    expect(infoTriggerIndex).toBeGreaterThan(titleIndex);
+    expect(infoTriggerIndex).toBeLessThan(descriptionIndex);
+    expect(infoTriggerIndex).toBeLessThan(checkboxIndex);
   });
 
   test("lets users load more database sync options", () => {

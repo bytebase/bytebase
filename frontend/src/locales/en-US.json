@@ -1144,6 +1144,9 @@
       },
       "ssl-tls-connection": {
         "link": "SSL/TLS Connection"
+      },
+      "sync-databases": {
+        "content": "When enabled, Bytebase discovers and syncs every database in this instance during creation. Disable it if you only want to sync selected databases now; you can sync more databases later from the instance page."
       }
     },
     "info-panel": {

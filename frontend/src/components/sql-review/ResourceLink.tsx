@@ -1,14 +1,12 @@
-import { ShieldAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { EnvironmentLabel } from "@/components/EnvironmentLabel";
 import { ProjectLabel } from "@/components/ProjectLabel";
 import { RouterLink, type RouterLinkProps } from "@/components/RouterLink";
-import { useEnvironment, usePlanFeature } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
 import {
   environmentNamePrefix,
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 type ResourceLinkAnchorProps = Pick<
   RouterLinkProps,
@@ -23,16 +21,51 @@ export function ResourceLink({
   resource: string;
   showResourceType?: boolean;
 } & ResourceLinkAnchorProps) {
+  const { t } = useTranslation();
+
   if (resource.startsWith(environmentNamePrefix)) {
-    return (
-      <EnvironmentResourceLink
-        resource={resource}
-        showResourceType={showResourceType}
+    const environmentLink = (
+      <RouterLink
         {...linkProps}
-      />
+        to={{ path: `/${resource}` }}
+        className={cn(
+          "inline-flex items-center gap-x-1 normal-link",
+          linkProps.className
+        )}
+      >
+        <EnvironmentLabel environmentName={resource} />
+      </RouterLink>
     );
+
+    if (showResourceType) {
+      return (
+        <span className="inline-flex min-w-0 max-w-full items-center gap-x-1">
+          <span className="text-control-light text-xs">
+            {t("common.environment")}:
+          </span>
+          {environmentLink}
+        </span>
+      );
+    }
+    return environmentLink;
   }
+
   if (resource.startsWith(projectNamePrefix)) {
+    if (showResourceType) {
+      return (
+        <span className="inline-flex min-w-0 max-w-full items-center gap-x-1">
+          <span className="text-control-light text-xs">
+            {t("common.project")}:
+          </span>
+          <ProjectLabel
+            projectName={resource}
+            link={true}
+            showResourceType={false}
+            {...linkProps}
+          />
+        </span>
+      );
+    }
     return (
       <ProjectLabel
         projectName={resource}
@@ -43,38 +76,4 @@ export function ResourceLink({
     );
   }
   return <span className={linkProps.className}>{resource}</span>;
-}
-
-function EnvironmentResourceLink({
-  resource,
-  showResourceType,
-  className,
-  ...linkProps
-}: {
-  resource: string;
-  showResourceType: boolean;
-} & ResourceLinkAnchorProps) {
-  const { t } = useTranslation();
-  const environment = useEnvironment(resource);
-  const hasEnvTierFeature = usePlanFeature(
-    PlanFeature.FEATURE_ENVIRONMENT_TIERS
-  );
-  const isProtected =
-    hasEnvTierFeature && environment.tags?.protected === "protected";
-
-  return (
-    <RouterLink
-      {...linkProps}
-      to={{ path: `/${resource}` }}
-      className={cn("inline-flex items-center gap-x-1 normal-link", className)}
-    >
-      {showResourceType && (
-        <span className="text-control-light text-xs mr-0.5">
-          {t("common.environment")}:
-        </span>
-      )}
-      <span>{environment.title || resource}</span>
-      {isProtected && <ShieldAlert className="w-3.5 h-3.5 shrink-0" />}
-    </RouterLink>
-  );
 }

@@ -88,6 +88,7 @@ beforeEach(async () => {
   mocks.useEnvironment.mockReturnValue({
     name: "environments/prod",
     title: "Prod",
+    color: "#123456",
     tags: { protected: "protected" },
   });
   mocks.usePlanFeature.mockReturnValue(true);
@@ -114,6 +115,13 @@ describe("ResourceLink", () => {
     expect(links[0].className).toContain("normal-link");
     expect(links[0].textContent).toContain("Prod");
     expect(links[0].querySelector("svg")).toBeTruthy();
+    const environmentBadge = links[0].querySelector<HTMLElement>(
+      "span[style]"
+    );
+    expect(environmentBadge?.style.backgroundColor).toBe(
+      "rgba(18, 52, 86, 0.1)"
+    );
+    expect(environmentBadge?.style.color).toBe("rgb(18, 52, 86)");
     expect(links[1].className).toContain("normal-link");
     expect(links[1].textContent).toContain("Sample project");
 
@@ -130,6 +138,26 @@ describe("ResourceLink", () => {
     const link = container.querySelector("a");
     expect(link?.textContent).toBe("Sample project");
     expect(link?.textContent).not.toContain("common.project");
+
+    unmount();
+  });
+
+  test("keeps resource type labels outside resource anchors", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <div>
+        <ResourceLink resource="environments/prod" />
+        <ResourceLink resource="projects/sample" />
+      </div>
+    );
+
+    render();
+
+    const links = [...container.querySelectorAll("a")];
+    expect(links).toHaveLength(2);
+    expect(links[0].textContent).toBe("Prod");
+    expect(links[1].textContent).toBe("Sample project");
+    expect(container.textContent).toContain("common.environment:");
+    expect(container.textContent).toContain("common.project:");
 
     unmount();
   });

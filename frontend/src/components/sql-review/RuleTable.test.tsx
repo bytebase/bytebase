@@ -5,7 +5,11 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { getRuleKey } from "@/lib/sql-review/utils";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
-import { getRuleLocalization, ruleTemplateMapV2 } from "@/types/sqlReview";
+import {
+  getRuleLocalization,
+  ruleTemplateMapV2,
+  ruleTypeToString,
+} from "@/types/sqlReview";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -113,6 +117,10 @@ vi.mock("@/components/ui/tabs", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 vi.mock("./RuleComponents", () => ({
   RuleConfig: () => <div data-testid="rule-config" />,
   RuleEditDialog: () => <div data-testid="rule-edit-dialog" />,
@@ -179,6 +187,30 @@ describe("RuleTable", () => {
       ].slice(0, 20) as RuleTemplateV2[],
     },
   ];
+  const getRuleWithPayload = () => {
+    const rule = ruleList[0].ruleList.find(
+      (rule) => rule.componentList.length > 0
+    );
+    if (!rule) {
+      throw new Error("expected a SQL review rule with payload");
+    }
+    return rule;
+  };
+  const getRuleWithoutPayload = () => {
+    const rule = ruleList[0].ruleList.find((rule) => {
+      if (rule.componentList.length > 0) {
+        return false;
+      }
+      return !!getRuleLocalization(
+        ruleTypeToString(rule.type),
+        rule.engine
+      ).description;
+    });
+    if (!rule) {
+      throw new Error("expected a SQL review rule without payload");
+    }
+    return rule;
+  };
 
   test("opening one edit dialog does not rerender every visible rule row", () => {
     const { container, render, unmount } = renderIntoContainer(
@@ -191,10 +223,11 @@ describe("RuleTable", () => {
     const levelSwitchRenderCountAfterInitialRender =
       mocks.ruleLevelSwitch.mock.calls.length;
 
-    const editButton = [...container.querySelectorAll("button")].find(
-      (button) => button.textContent === "common.edit"
+    const editButton = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="common.edit"]'
     );
     expect(editButton).toBeTruthy();
+    expect(editButton?.textContent).toBe("");
 
     act(() => {
       editButton!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -213,9 +246,122 @@ describe("RuleTable", () => {
     unmount();
   });
 
-  test("expanding one rule does not rerender every visible rule row", () => {
+  test("desktop rule row uses compact edit action and aligned expanded details", () => {
+    const rule = getRuleWithPayload();
     const { container, render, unmount } = renderIntoContainer(
-      <RuleTable ruleList={ruleList} editable />
+      <RuleTable
+        ruleList={[{ value: "all", label: "All", ruleList: [rule] }]}
+        editable
+      />
+    );
+
+    render();
+
+    const editButton = container.querySelector<HTMLButtonElement>(
+      'tbody tr[data-sql-review-rule-view="desktop"] button[aria-label="common.edit"]'
+    );
+    expect(editButton).toBeTruthy();
+    expect(editButton?.className).toContain("size-7");
+    expect(editButton?.textContent).toBe("");
+    expect(editButton?.className).not.toContain("border");
+
+    const deleteButton = container.querySelector<HTMLButtonElement>(
+      'tbody tr[data-sql-review-rule-view="desktop"] button[aria-label="common.delete"]'
+    );
+    expect(deleteButton).toBeTruthy();
+    expect(deleteButton?.className).toContain("size-7");
+    expect(deleteButton?.textContent).toBe("");
+    expect(deleteButton?.className).not.toContain("border");
+    expect(editButton?.parentElement?.className).toContain("gap-x-1");
+    const expandCell = container.querySelector(
+      'tbody tr[data-sql-review-rule-view="desktop"] td:first-child'
+    );
+    expect(expandCell?.className).toContain("align-top");
+    expect(expandCell?.className).toContain("pt-4");
+
+    const levelCell = container.querySelector(
+      'tbody tr[data-sql-review-rule-view="desktop"] td:nth-child(3)'
+    );
+    expect(levelCell?.className).toContain("align-top");
+    expect(levelCell?.className).toContain("pt-4");
+
+    const operationsCell = container.querySelector(
+      'tbody tr[data-sql-review-rule-view="desktop"] td:nth-child(4)'
+    );
+    expect(operationsCell?.className).toContain("align-top");
+    expect(operationsCell?.className).toContain("pt-4");
+
+    const title = container.querySelector(
+      'tbody tr[data-sql-review-rule-view="desktop"] td:nth-child(2) span'
+    );
+    expect(title?.className).toContain("font-medium");
+    expect(title?.className).toContain("text-main");
+
+    const description = container.querySelector(
+      'tbody tr[data-sql-review-rule-view="desktop"] td:nth-child(2) p'
+    );
+    expect(description).toBeTruthy();
+    expect(description?.className).toContain("text-xs");
+    expect(description?.className).toContain("text-control-light");
+
+    const expandButton = container.querySelector<HTMLButtonElement>(
+      "tbody tr[data-sql-review-rule-view='desktop'] td:first-child button"
+    );
+    expect(expandButton).toBeTruthy();
+    act(() => {
+      expandButton!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const rows = container.querySelectorAll("tbody tr");
+    const detailRow = rows[1];
+    expect(detailRow?.className).toContain("bg-control-bg/20");
+
+    const detailCells = detailRow?.querySelectorAll("td");
+    expect(detailCells).toHaveLength(2);
+    expect(detailCells?.[0]?.textContent).toBe("");
+    expect(detailCells?.[1]?.getAttribute("colspan")).toBe("3");
+    expect(detailCells?.[1]?.className).toContain("px-4");
+    expect(detailCells?.[1]?.className).not.toContain("px-10");
+    expect(
+      detailCells?.[1]?.querySelector('[data-testid="rule-config"]')
+    ).toBeTruthy();
+    expect(detailCells?.[1]?.querySelector("p")).toBeFalsy();
+
+    unmount();
+  });
+
+  test("desktop rule row only expands rules with payload", () => {
+    const rule = getRuleWithoutPayload();
+    const { container, render, unmount } = renderIntoContainer(
+      <RuleTable
+        ruleList={[{ value: "all", label: "All", ruleList: [rule] }]}
+        editable
+      />
+    );
+
+    render();
+
+    expect(
+      container.querySelector(
+        'tbody tr[data-sql-review-rule-view="desktop"] td:nth-child(2) p'
+      )
+    ).toBeTruthy();
+    expect(
+      container.querySelector(
+        "tbody tr[data-sql-review-rule-view='desktop'] td:first-child button"
+      )
+    ).toBeFalsy();
+
+    unmount();
+  });
+
+  test("expanding one rule does not rerender every visible rule row", () => {
+    const rule = getRuleWithPayload();
+    const { container, render, unmount } = renderIntoContainer(
+      <RuleTable
+        ruleList={[{ value: "all", label: "All", ruleList: [rule] }]}
+        editable
+      />
     );
 
     render();

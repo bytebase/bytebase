@@ -212,6 +212,8 @@ function getSnippetContentTranslation(
       return t("instance.info.postgresql.ssh.content");
     case "instance.info.postgresql.ssl.content":
       return t("instance.info.postgresql.ssl.content");
+    case "instance.info.sync-databases.content":
+      return t("instance.info.sync-databases.content");
   }
   const exhaustive: never = key;
   return exhaustive;

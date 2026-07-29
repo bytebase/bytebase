@@ -31,7 +31,10 @@ export function BytebaseLogo({
   const builtinLogo = builtinTheme === "dark" ? logoFullDark : logoFull;
 
   const content = (
-    <span className="h-full w-full select-none flex flex-row justify-center items-center">
+    <span className={cn(
+      "h-full w-full select-none flex flex-row justify-center items-center",
+      customLogo ? "" : "px-1 py-0.5"
+    )}>
       {customLogo ? (
         <img
           src={customLogo}

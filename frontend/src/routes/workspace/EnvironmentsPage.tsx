@@ -849,7 +849,6 @@ function EnvironmentDetail({
       {/* Sticky bottom buttons */}
       {canEdit && hasChanges && (
         <StickyActionFooter
-          className="-bottom-2 bg-white"
           left={
             <Button appearance="outline" onClick={revert}>
               {t("common.cancel")}

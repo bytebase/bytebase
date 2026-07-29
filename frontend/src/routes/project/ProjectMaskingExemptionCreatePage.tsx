@@ -302,7 +302,6 @@ export function ProjectMaskingExemptionCreatePage({
 
       {/* Footer */}
       <StickyActionFooter
-        className="py-3"
         left={
           <Button appearance="outline" onClick={onDismiss}>
             {t("common.cancel")}

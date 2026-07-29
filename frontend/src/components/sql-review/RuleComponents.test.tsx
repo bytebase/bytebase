@@ -195,12 +195,87 @@ describe("RuleEditDialog", () => {
     unmount();
   });
 
+  test("uses shared form fields in the edit dialog body", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <RuleEditDialog
+        rule={maximumSQLSizeRule()}
+        disabled={false}
+        onUpdateRule={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    render();
+
+    const formFields = container.querySelectorAll('[data-slot="form-field"]');
+    expect(formFields.length).toBeGreaterThanOrEqual(2);
+    expect(container.textContent).toContain("sql-review.level.name");
+    expect(container.textContent).toContain(
+      "sql-review.rule.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE.component.number.title"
+    );
+
+    unmount();
+  });
+
+  test("disables update when maximum SQL size is not positive", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <RuleEditDialog
+        rule={maximumSQLSizeRule()}
+        disabled={false}
+        onUpdateRule={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    render();
+
+    const input = container.querySelector<HTMLInputElement>(
+      'input[type="number"]'
+    );
+    expect(input).toBeTruthy();
+
+    act(() => {
+      const valueSetter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value"
+      )?.set;
+      valueSetter?.call(input, "0");
+      input!.dispatchEvent(new Event("input", { bubbles: true }));
+      input!.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    const updateButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "common.update"
+    );
+    expect(updateButton).toBeTruthy();
+    expect(updateButton).toBeDisabled();
+
+    unmount();
+  });
+
+  test("uses shared form rows for rule config payload controls", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <RuleConfig rule={maximumSQLSizeRule()} disabled={false} />
+    );
+
+    render();
+
+    expect(
+      container.querySelector('[data-slot="form-field-group"]')
+    ).toBeTruthy();
+    expect(container.querySelector('[data-slot="form-field"]')).toBeTruthy();
+    expect(
+      container.querySelector('[data-slot="form-control-row"]')
+    ).toBeTruthy();
+
+    unmount();
+  });
+
   test("adds top spacing before the editable string-array input", () => {
     const { container, render, unmount } = renderIntoContainer(
       <RuleConfig
         rule={tableDenyListRule(["id"])}
         disabled={false}
-        size="medium"
       />
     );
 
@@ -215,7 +290,7 @@ describe("RuleEditDialog", () => {
 
   test("renders read-only string-array labels with visible chip backgrounds", () => {
     const { container, render, unmount } = renderIntoContainer(
-      <RuleConfig rule={tableDenyListRule(["id"])} disabled size="small" />
+      <RuleConfig rule={tableDenyListRule(["id"])} disabled />
     );
 
     render();
@@ -232,7 +307,7 @@ describe("RuleEditDialog", () => {
 
   test("renders maximum SQL size in MB instead of raw bytes", () => {
     const { container, render, unmount } = renderIntoContainer(
-      <RuleConfig rule={maximumSQLSizeRule()} disabled={false} size="medium" />
+      <RuleConfig rule={maximumSQLSizeRule()} disabled={false} />
     );
 
     render();

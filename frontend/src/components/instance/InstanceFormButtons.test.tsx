@@ -416,7 +416,11 @@ describe("InstanceFormButtons", () => {
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: "workspace.instance.detail",
       params: { instanceId: "prod" },
-      query: { syncingInstance: "prod" },
+      query: {
+        syncingInstance: "prod",
+        intro: "prepare-database",
+        tip: "transfer-databases-to-project",
+      },
       hash: "databases",
     });
 

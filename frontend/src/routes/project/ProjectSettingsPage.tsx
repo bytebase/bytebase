@@ -1127,6 +1127,7 @@ export function ProjectSettingsPage() {
         {/* ============================================================= */}
         {allowEdit && isDirty && (
           <StickyActionFooter
+            contentPadding={false}
             left={
               <Button appearance="outline" onClick={revert}>
                 {t("common.cancel")}

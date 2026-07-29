@@ -6,6 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  FormControlRow,
+  FormField,
+  FormFieldGroup,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tooltip } from "@/components/ui/tooltip";
 import i18n from "@/lib/i18n";
@@ -137,7 +142,6 @@ export function RuleLevelBadge({ level, suffix }: RuleLevelBadgeProps) {
 interface RuleConfigProps {
   rule: RuleTemplateV2;
   disabled: boolean;
-  size: "small" | "medium";
   payloadRef?: React.MutableRefObject<PayloadValueType[]>;
   onPayloadChange?: (payload: PayloadValueType[]) => void;
 }
@@ -161,7 +165,6 @@ function configTooltip(
 export function RuleConfig({
   rule,
   disabled,
-  size,
   payloadRef,
   onPayloadChange,
 }: RuleConfigProps) {
@@ -190,39 +193,40 @@ export function RuleConfig({
   };
 
   return (
-    <div className="flex flex-col gap-y-4">
+    <FormFieldGroup>
       {rule.componentList.map((config, index) => (
-        <div key={index} className="flex flex-col gap-y-1">
-          {config.payload.type !== "BOOLEAN" && (
-            <div className="flex items-center gap-x-1">
-              <p
-                className={`font-medium ${size !== "small" ? "text-lg text-control mb-2" : ""}`}
-              >
-                {configTitle(rule, config)}
-              </p>
-              {configTooltip(rule, config) && (
-                <Tooltip content={configTooltip(rule, config)}>
-                  <CircleHelpIcon className="w-4 h-4" />
-                </Tooltip>
-              )}
-            </div>
-          )}
-
+        <FormField
+          key={index}
+          title={
+            config.payload.type !== "BOOLEAN" ? (
+              <div className="flex items-center gap-x-1">
+                <p className="font-medium">{configTitle(rule, config)}</p>
+                {configTooltip(rule, config) && (
+                  <Tooltip content={configTooltip(rule, config)}>
+                    <CircleHelpIcon className="w-4 h-4" />
+                  </Tooltip>
+                )}
+              </div>
+            ) : undefined
+          }
+        >
           {config.payload.type === "STRING" && (
             <Input
               value={(payload[index] as string) ?? ""}
               disabled={disabled}
               placeholder={`${config.payload.default}`}
+              autoComplete="off"
               onChange={(e) => updatePayload(index, e.target.value)}
             />
           )}
 
           {config.payload.type === "NUMBER" && (
-            <div className="flex items-center gap-x-2">
+            <FormControlRow>
               <Input
                 type="number"
                 value={(payload[index] as number) ?? 0}
                 disabled={disabled}
+                autoComplete="off"
                 placeholder={`${config.payload.default}`}
                 step={config.payload.unit ? "any" : undefined}
                 onChange={(e) => updatePayload(index, Number(e.target.value))}
@@ -232,11 +236,11 @@ export function RuleConfig({
                   {config.payload.unit}
                 </span>
               )}
-            </div>
+            </FormControlRow>
           )}
 
           {config.payload.type === "BOOLEAN" && (
-            <label className="flex items-center gap-x-2">
+            <FormControlRow>
               <Checkbox
                 checked={(payload[index] as boolean) ?? false}
                 disabled={disabled}
@@ -248,7 +252,7 @@ export function RuleConfig({
                   <CircleHelpIcon className="w-4 h-4" />
                 </Tooltip>
               )}
-            </label>
+            </FormControlRow>
           )}
 
           {config.payload.type === "STRING_ARRAY" &&
@@ -269,9 +273,9 @@ export function RuleConfig({
               onChange={(val) => updatePayload(index, val)}
             />
           )}
-        </div>
+        </FormField>
       ))}
-    </div>
+    </FormFieldGroup>
   );
 }
 
@@ -340,6 +344,7 @@ function StringArrayInput({
           <Input
             className="mt-2 min-w-[20rem] flex-1"
             value={inputValue}
+            autoComplete="off"
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
           />
@@ -442,27 +447,30 @@ export function RuleEditDialog({
             </div>
           </div>
 
-          <RuleLevelSwitch
-            level={level}
-            disabled={disabled}
-            editable={!disabled}
-            onLevelChange={setLevel}
-          />
-
           {localization.description && (
             <p className="text-sm text-control-placeholder">
               {localization.description}
             </p>
           )}
 
-          {rule.componentList.length > 0 && (
-            <RuleConfig
-              rule={rule}
-              disabled={disabled}
-              size="medium"
-              onPayloadChange={setPayload}
-            />
-          )}
+          <FormFieldGroup>
+            <FormField title={t("sql-review.level.name")}>
+              <RuleLevelSwitch
+                level={level}
+                disabled={disabled}
+                editable={!disabled}
+                onLevelChange={setLevel}
+              />
+            </FormField>
+
+            {rule.componentList.length > 0 && (
+              <RuleConfig
+                rule={rule}
+                disabled={disabled}
+                onPayloadChange={setPayload}
+              />
+            )}
+          </FormFieldGroup>
 
           <div className="flex justify-end gap-x-2">
             <Button appearance="outline" onClick={onCancel}>

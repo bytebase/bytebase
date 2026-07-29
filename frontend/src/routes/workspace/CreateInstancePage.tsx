@@ -125,6 +125,7 @@ function CreateInstanceFormInner() {
       ssl: t("data-source.ssl-connection"),
       ssh: t("data-source.ssh-connection"),
       database: t("common.database"),
+      "sync-databases": t("instance.sync-databases.sync-all"),
     };
     return titleMap[activeInfoSection] ?? "";
   }, [activeInfoSection, t]);

@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip } from "@/components/ui/tooltip";
 import { getRuleKey } from "@/lib/sql-review/utils";
 import { cn } from "@/lib/utils";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
@@ -447,10 +448,12 @@ function RuleTableRow({
     () => getRuleLocalization(ruleTypeToString(rule.type), rule.engine),
     [rule.engine, rule.type]
   );
-  const expandable = !!(loc.description || rule.componentList.length > 0);
+  const expandable = rule.componentList.length > 0;
 
   const colSpan =
     2 + (supportSelect ? 1 : 0) + (hideLevel ? 0 : 1) + (supportSelect ? 0 : 1);
+  const leadingCellCount = 1 + (supportSelect ? 1 : 0);
+  const detailColSpan = colSpan - leadingCellCount;
 
   const updateLevel = (level: SQLReviewRule_Level) => {
     onRuleUpsert?.(rule, { level });
@@ -461,11 +464,11 @@ function RuleTableRow({
   };
 
   useEffect(() => {
-    if (focusRuleSignal === undefined) {
+    if (focusRuleSignal === undefined || !expandable) {
       return;
     }
     setExpanded(true);
-  }, [focusRuleSignal]);
+  }, [focusRuleSignal, expandable]);
 
   return (
     <>
@@ -479,7 +482,10 @@ function RuleTableRow({
         )}
         onClick={supportSelect ? onToggleRule : undefined}
       >
-        <TableCell className="w-8" onClick={(e) => e.stopPropagation()}>
+        <TableCell
+          className="w-8 align-top pt-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           {expandable && (
             <button
               type="button"
@@ -495,28 +501,41 @@ function RuleTableRow({
           )}
         </TableCell>
         {supportSelect && (
-          <TableCell className="w-8" onClick={(e) => e.stopPropagation()}>
+          <TableCell
+            className="w-8 align-top pt-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Checkbox
               checked={isSelected}
               onCheckedChange={() => onToggleRule()}
             />
           </TableCell>
         )}
-        <TableCell>
-          <div className="flex items-center gap-x-2">
-            <span>{loc.title}</span>
-            <a
-              href={`https://docs.bytebase.com/sql-review/review-rules#${rule.type}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center text-control-light hover:text-control"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </a>
+        <TableCell className="align-top">
+          <div className="flex flex-col gap-y-1">
+            <div className="flex items-center gap-x-2">
+              <span className="font-semibold text-base text-main">{loc.title}</span>
+              <a
+                href={`https://docs.bytebase.com/sql-review/review-rules#${rule.type}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-control-light hover:text-control"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+            {loc.description && (
+              <p className="max-w-5xl text-sm leading-5 text-control-light">
+                {loc.description}
+              </p>
+            )}
           </div>
         </TableCell>
         {!hideLevel && (
-          <TableCell onClick={(e) => e.stopPropagation()}>
+          <TableCell
+            className="align-top pt-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <RuleLevelSwitch
               level={rule.level}
               disabled={!editable}
@@ -525,47 +544,48 @@ function RuleTableRow({
           </TableCell>
         )}
         {!supportSelect && (
-          <TableCell onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-end gap-x-2">
-              <Button
-                appearance="outline"
-                size="sm"
-                onClick={() => setEditing(true)}
-              >
-                {editable ? t("common.edit") : t("common.view")}
-              </Button>
-              {editable && !isBuiltinRule(rule) && (
+          <TableCell
+            className="align-top pt-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-end gap-x-1">
+              <Tooltip content={editable ? t("common.edit") : t("common.view")}>
                 <Button
-                  variant="destructive"
-                  appearance="outline"
+                  appearance="secondary"
                   size="sm"
-                  onClick={() => onRuleRemove?.(rule)}
+                  className="size-7 p-0 text-control hover:text-accent"
+                  aria-label={editable ? t("common.edit") : t("common.view")}
+                  onClick={() => setEditing(true)}
                 >
-                  {t("common.delete")}
+                  <Pencil className="size-4" />
                 </Button>
+              </Tooltip>
+              {editable && !isBuiltinRule(rule) && (
+                <Tooltip content={t("common.delete")}>
+                  <Button
+                    variant="destructive"
+                    appearance="secondary"
+                    size="sm"
+                    className="size-7 p-0 text-error hover:bg-error/10 hover:text-error"
+                    aria-label={t("common.delete")}
+                    onClick={() => onRuleRemove?.(rule)}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </Tooltip>
               )}
             </div>
           </TableCell>
         )}
       </TableRow>
-      {expanded && (
-        <TableRow>
-          <TableCell
-            colSpan={colSpan}
-            className={cn(
-              "px-10 bg-control-bg/40",
-              highlighted && "bg-error/5"
-            )}
-          >
-            {loc.description && (
-              <p className="text-control-light">{loc.description}</p>
-            )}
-            {rule.componentList.length > 0 && loc.description && (
-              <hr className="my-4 border-control-border" />
-            )}
-            {rule.componentList.length > 0 && (
-              <RuleConfig rule={rule} disabled size="small" />
-            )}
+      {expanded && expandable && (
+        <TableRow
+          className={cn("bg-control-bg/20", highlighted && "bg-error/5")}
+        >
+          <TableCell />
+          {supportSelect && <TableCell />}
+          <TableCell colSpan={detailColSpan} className="px-4 py-4 pr-10">
+            <RuleConfig rule={rule} disabled />
           </TableCell>
         </TableRow>
       )}

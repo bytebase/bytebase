@@ -741,6 +741,7 @@
   },
   "title": "SQL Review",
   "validation": {
+    "number-positive": "Enter a positive number for {{rule}}.",
     "rule-required": "Select at least one rule.",
     "string-array-required": "Add at least one value for {{rule}}."
   }

@@ -140,4 +140,19 @@ describe("InfoPanel i18n", () => {
 
     unmount();
   });
+
+  test("renders sync database guidance from locale keys", async () => {
+    const { InfoPanelContent } = await import("./InfoPanel");
+    const { container, render, unmount } = renderIntoContainer(
+      <InfoPanelContent engine={Engine.POSTGRES} section="sync-databases" />
+    );
+
+    render();
+
+    expect(container.querySelector("p")?.textContent).toBe(
+      "instance.info.sync-databases.content"
+    );
+
+    unmount();
+  });
 });

@@ -198,7 +198,7 @@ export function DatabaseGroupForm({
 
   return (
     <div className={`flex-1 flex flex-col ${className ?? ""}`}>
-      <div className="flex-1 mb-6 px-4">
+      <div className="flex-1 mb-6">
         <div className="w-full">
           <p className="font-medium text-main mb-2">{t("common.name")}</p>
           <Input
@@ -223,8 +223,8 @@ export function DatabaseGroupForm({
 
         <hr className="my-6" />
 
-        <div className="w-full grid grid-cols-5 gap-x-6">
-          <div className="col-span-3">
+        <div className="flex w-full flex-col gap-y-6 xl:flex-row xl:items-start xl:gap-x-8">
+          <div className="max-w-full xl:w-fit">
             <p className="pl-1 font-medium text-main mb-2">
               {t("database-group.condition.self")}
             </p>
@@ -236,7 +236,7 @@ export function DatabaseGroupForm({
               onUpdate={setExpr}
             />
           </div>
-          <div className="col-span-2">
+          <div className="w-full xl:w-[28rem]">
             <MatchedDatabaseView
               project={project.name}
               expr={expr}
@@ -248,7 +248,7 @@ export function DatabaseGroupForm({
 
       {!readonly && (
         <StickyActionFooter
-          className="pt-4 pb-2"
+          contentPadding={false}
           left={
             <Button appearance="outline" onClick={onDismiss}>
               {t("common.cancel")}

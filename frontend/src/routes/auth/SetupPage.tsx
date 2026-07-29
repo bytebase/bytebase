@@ -10,6 +10,7 @@ import {
   WORKSPACE_ROUTE_LANDING,
 } from "@/app/router/handles";
 import { AuthFooter } from "@/components/auth/AuthFooter";
+import { BytebaseLogo } from "@/components/BytebaseLogo";
 import { ComponentPermissionGuard } from "@/components/ComponentPermissionGuard";
 import {
   ResourceIdField,
@@ -18,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useAppFeature } from "@/hooks/useAppState";
+import { StepIndicator } from "@/components/ui/step-indicator";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { isValidProjectName } from "@/types";
@@ -100,15 +101,6 @@ function SetupWizard() {
 
   const resourceFieldRef = useRef<ResourceIdFieldRef>(null);
   const [resourceValid, setResourceValid] = useState(false);
-
-  const enableOnboarding = useAppStore((s) => s.enableOnboarding());
-  const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
-
-  useEffect(() => {
-    if (!enableOnboarding) {
-      router.push(homePath(databaseChangeMode));
-    }
-  }, [enableOnboarding, databaseChangeMode]);
 
   const steps = [
     t("setup.basic-info"),
@@ -192,24 +184,13 @@ function SetupWizard() {
     },
     [t]
   );
+  const stepItems = steps.map((title) => ({ title }));
 
   return (
     <div className="w-full mx-auto max-w-2xl py-6 px-4 flex flex-col gap-4">
+      <BytebaseLogo className="mx-auto mb-6 h-14 max-w-64" />
       <div className="sticky top-0 bg-white z-10 pb-4 border-b border-control-border">
-        <ol className="flex items-center gap-x-4 text-sm">
-          {steps.map((label, i) => (
-            <li
-              key={label}
-              className={
-                i === currentStep
-                  ? "text-accent font-medium"
-                  : "text-control-light"
-              }
-            >
-              {i + 1}. {label}
-            </li>
-          ))}
-        </ol>
+        <StepIndicator steps={stepItems} currentIndex={currentStep} />
       </div>
 
       {currentStep === 0 && (

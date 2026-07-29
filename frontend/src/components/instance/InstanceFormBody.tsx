@@ -478,6 +478,7 @@ function SyncDatabases({
   showLabel,
   allowEdit,
   projectName,
+  onOpenInfoPanel,
   syncDatabases,
   onSyncDatabasesChange,
 }: {
@@ -485,6 +486,7 @@ function SyncDatabases({
   showLabel: boolean;
   allowEdit: boolean;
   projectName?: string;
+  onOpenInfoPanel?: (section: InfoSection) => void;
   syncDatabases?: SyncDatabasesMessage;
   onSyncDatabasesChange: (databases: string[], syncAll: boolean) => void;
 }) {
@@ -601,7 +603,22 @@ function SyncDatabases({
   return (
     <FormField
       className="sm:col-span-4 sm:col-start-1"
-      title={showLabel ? t("instance.sync-databases.self") : undefined}
+      title={
+        showLabel ? (
+          <span className="flex items-center gap-x-1">
+            {t("instance.sync-databases.self")}
+            {onOpenInfoPanel && (
+              <button
+                type="button"
+                className="inline-flex size-4 shrink-0 items-center justify-center text-accent leading-none"
+                onClick={() => onOpenInfoPanel("sync-databases")}
+              >
+                <Info className="size-3.5" />
+              </button>
+            )}
+          </span>
+        ) : undefined
+      }
       description={
         showLabel ? t("instance.sync-databases.description") : undefined
       }
@@ -1775,6 +1792,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                     isCreating ? allowEdit && !!allowCreate : allowEdit
                   }
                   projectName={routeProjectName}
+                  onOpenInfoPanel={onOpenInfoPanel}
                   syncDatabases={basicInfo.syncDatabases}
                   onSyncDatabasesChange={handleChangeSyncDatabases}
                 />

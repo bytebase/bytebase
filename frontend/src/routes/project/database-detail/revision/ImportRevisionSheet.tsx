@@ -23,6 +23,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  StepIndicator,
+  type StepIndicatorStep,
+} from "@/components/ui/step-indicator";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -369,7 +373,10 @@ export function ImportRevisionSheet({
           <SheetTitle>{t("database.revision.import-revision")}</SheetTitle>
         </SheetHeader>
         <SheetBody className="gap-y-4">
-          <StepIndicator source={selectedSource} currentStep={currentStep} />
+          <ImportRevisionStepIndicator
+            source={selectedSource}
+            currentStep={currentStep}
+          />
           {currentStep === Step.SELECT_SOURCE && (
             <SourceSelector
               selectedSource={selectedSource}
@@ -480,7 +487,7 @@ export function ImportRevisionSheet({
   );
 }
 
-function StepIndicator({
+function ImportRevisionStepIndicator({
   source,
   currentStep,
 }: {
@@ -488,42 +495,33 @@ function StepIndicator({
   currentStep: Step;
 }) {
   const { t } = useTranslation();
-  const steps =
+  const steps: StepIndicatorStep[] =
     source === "release"
       ? [
-          [Step.SELECT_SOURCE, t("database.revision.select-source")],
-          [Step.SELECT_RELEASE, t("database.revision.select-release")],
-          [Step.SELECT_FILES, t("database.revision.select-files")],
+          {
+            key: Step.SELECT_SOURCE,
+            title: t("database.revision.select-source"),
+          },
+          {
+            key: Step.SELECT_RELEASE,
+            title: t("database.revision.select-release"),
+          },
+          {
+            key: Step.SELECT_FILES,
+            title: t("database.revision.select-files"),
+          },
         ]
       : [
-          [Step.SELECT_SOURCE, t("database.revision.select-source")],
-          [Step.UPLOAD_FILES, t("database.revision.upload-files")],
+          {
+            key: Step.SELECT_SOURCE,
+            title: t("database.revision.select-source"),
+          },
+          {
+            key: Step.UPLOAD_FILES,
+            title: t("database.revision.upload-files"),
+          },
         ];
-  return (
-    <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-      {steps.map(([step, label], index) => (
-        <li key={step} className="flex items-center gap-x-2">
-          <span
-            className={cn(
-              "inline-flex size-6 items-center justify-center rounded-full border text-xs",
-              step === currentStep
-                ? "border-accent bg-accent text-accent-text"
-                : "border-control-border text-control-light"
-            )}
-          >
-            {index + 1}
-          </span>
-          <span
-            className={
-              step === currentStep ? "text-control" : "text-control-light"
-            }
-          >
-            {label}
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
+  return <StepIndicator steps={steps} currentKey={currentStep} />;
 }
 
 function SourceSelector({

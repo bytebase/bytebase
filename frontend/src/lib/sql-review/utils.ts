@@ -106,6 +106,11 @@ export const getRuleMapValidationErrorTitle = (
     ruleTypeToString(error.rule.type),
     error.rule.engine
   ).title;
+  if (error.type === "INVALID_NUMBER") {
+    return i18n.t("sql-review.validation.number-positive", {
+      rule: ruleTitle,
+    });
+  }
   return i18n.t("sql-review.validation.string-array-required", {
     rule: ruleTitle,
   });

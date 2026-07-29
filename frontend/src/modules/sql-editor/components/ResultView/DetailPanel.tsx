@@ -360,6 +360,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
                     className="h-7 min-w-0 flex-1 border-0 px-2 text-sm focus:ring-0"
                     placeholder={t("sql-editor.result-detail.search")}
                     value={searchQuery}
+                    autoComplete="off"
                     onChange={(event) => setSearchQuery(event.target.value)}
                     onKeyDown={handleSearchKeyDown}
                   />

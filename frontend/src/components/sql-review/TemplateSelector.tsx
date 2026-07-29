@@ -3,6 +3,7 @@ import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
 import { Badge } from "@/components/ui/badge";
+import { FormField } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { rulesToTemplate } from "@/lib/sql-review/utils";
@@ -92,87 +93,91 @@ export function TemplateSelector({
     template.id === selectedTemplateId;
 
   return (
-    <div className="flex flex-col gap-y-2">
-      <p className="textlabel">
-        {t("sql-review.create.basic-info.choose-template")}
-        {required && <span className="text-error"> *</span>}
-      </p>
-
-      {reviewPolicyTemplateList.length > 0 && (
+    <FormField
+      title={
         <>
-          <div className="flex flex-wrap gap-4">
-            {reviewPolicyTemplateList.map((template) => (
-              <button
-                type="button"
-                key={template.id}
-                aria-pressed={isSelected(template)}
-                className={cn(
-                  "relative flex w-full cursor-pointer flex-col rounded-sm border border-control-border px-6 py-4 text-left transition-colors sm:max-w-xs",
-                  "hover:bg-control-bg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
-                  isSelected(template) && "bg-control-bg"
-                )}
-                onClick={() => onSelectTemplate(template)}
-              >
-                <div className="text-left flex flex-col gap-y-2">
-                  <span className="text-base font-medium">
-                    {template.review?.name}
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {template.review?.resources.map((resource) => (
-                      <ResourceBadge key={resource} resource={resource} />
-                    ))}
-                  </div>
-                  <p className="text-sm">
-                    <span className="mr-2">
-                      {t("sql-review.enabled-rules")}:
-                    </span>
-                    <span>{template.ruleList.length}</span>
-                  </p>
-                </div>
-                {isSelected(template) && (
-                  <CheckCircle className="absolute right-3 top-3 size-7 text-accent" />
-                )}
-              </button>
-            ))}
-          </div>
-
-          <Separator className="my-2" />
+          {t("sql-review.create.basic-info.choose-template")}
+          {required && <span className="text-error ml-0.5">*</span>}
         </>
-      )}
-
-      <div className="flex flex-wrap gap-4">
-        {builtInTemplateList.map((template) => (
-          <button
-            type="button"
-            key={template.id}
-            aria-pressed={isSelected(template)}
-            className={cn(
-              "relative flex w-full cursor-pointer flex-col rounded-sm border border-control-border px-6 py-4 text-left transition-colors sm:max-w-xs",
-              "hover:bg-control-bg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
-              isSelected(template) && "bg-control-bg"
-            )}
-            onClick={() => onSelectTemplate(template)}
-          >
-            <div className="text-left flex flex-col gap-y-2">
-              <span className="text-base font-medium">
-                {t(`sql-review.template.${template.id.split(".").join("-")}`)}
-              </span>
-              <p className="text-sm text-control-light">
-                {t(
-                  `sql-review.template.${template.id.split(".").join("-")}-desc`
-                )}
-              </p>
-              <p className="text-sm">
-                <span className="mr-2">{t("sql-review.enabled-rules")}:</span>
-                <span>{template.ruleList.length}</span>
-              </p>
+      }
+    >
+      <div className="flex flex-col gap-y-2">
+        {reviewPolicyTemplateList.length > 0 && (
+          <>
+            <div className="flex flex-wrap gap-4">
+              {reviewPolicyTemplateList.map((template) => (
+                <button
+                  type="button"
+                  key={template.id}
+                  aria-pressed={isSelected(template)}
+                  className={cn(
+                    "relative flex w-full cursor-pointer flex-col rounded-sm border border-control-border px-6 py-4 text-left transition-colors sm:max-w-xs",
+                    "hover:bg-control-bg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
+                    isSelected(template) && "bg-control-bg"
+                  )}
+                  onClick={() => onSelectTemplate(template)}
+                >
+                  <div className="text-left flex flex-col gap-y-2">
+                    <span className="text-base font-medium">
+                      {template.review?.name}
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {template.review?.resources.map((resource) => (
+                        <ResourceBadge key={resource} resource={resource} />
+                      ))}
+                    </div>
+                    <p className="text-sm">
+                      <span className="mr-2">
+                        {t("sql-review.enabled-rules")}:
+                      </span>
+                      <span>{template.ruleList.length}</span>
+                    </p>
+                  </div>
+                  {isSelected(template) && (
+                    <CheckCircle className="absolute right-3 top-3 size-7 text-accent" />
+                  )}
+                </button>
+              ))}
             </div>
-            {isSelected(template) && (
-              <CheckCircle className="absolute right-3 top-3 size-7 text-accent" />
-            )}
-          </button>
-        ))}
+
+            <Separator className="my-2" />
+          </>
+        )}
+
+        <div className="flex flex-wrap gap-4">
+          {builtInTemplateList.map((template) => (
+            <button
+              type="button"
+              key={template.id}
+              aria-pressed={isSelected(template)}
+              className={cn(
+                "relative flex w-full cursor-pointer flex-col rounded-sm border border-control-border px-6 py-4 text-left transition-colors sm:max-w-xs",
+                "hover:bg-control-bg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
+                isSelected(template) && "bg-control-bg"
+              )}
+              onClick={() => onSelectTemplate(template)}
+            >
+              <div className="text-left flex flex-col gap-y-2">
+                <span className="text-base font-medium">
+                  {t(`sql-review.template.${template.id.split(".").join("-")}`)}
+                </span>
+                <p className="text-sm text-control-light">
+                  {t(
+                    `sql-review.template.${template.id.split(".").join("-")}-desc`
+                  )}
+                </p>
+                <p className="text-sm">
+                  <span className="mr-2">{t("sql-review.enabled-rules")}:</span>
+                  <span>{template.ruleList.length}</span>
+                </p>
+              </div>
+              {isSelected(template) && (
+                <CheckCircle className="absolute right-3 top-3 size-7 text-accent" />
+              )}
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+    </FormField>
   );
 }

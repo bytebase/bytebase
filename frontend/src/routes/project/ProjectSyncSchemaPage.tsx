@@ -46,6 +46,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { StepIndicator } from "@/components/ui/step-indicator";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { useProjectByName } from "@/hooks/useProjectByName";
@@ -523,50 +524,6 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
         </DialogContent>
       </Dialog>
     </ProjectPageLayout>
-  );
-}
-
-// ============================================================
-// StepIndicator
-// ============================================================
-
-function StepIndicator({
-  steps,
-  currentIndex,
-}: {
-  steps: { title: string }[];
-  currentIndex: number;
-}) {
-  return (
-    <div className="flex items-center gap-x-2 px-0.5">
-      {steps.map((step, i) => (
-        <div key={i} className="flex items-center gap-x-2">
-          {i > 0 && <div className="w-8 h-px bg-control-border" />}
-          <div className="flex items-center gap-x-2">
-            <div
-              className={cn(
-                "size-6 rounded-full flex items-center justify-center text-xs font-medium",
-                i <= currentIndex
-                  ? "bg-accent text-accent-text"
-                  : "bg-control-bg-hover text-control-light"
-              )}
-            >
-              {i + 1}
-            </div>
-            <span
-              className={cn(
-                "text-sm",
-                i <= currentIndex
-                  ? "text-accent font-medium"
-                  : "text-control-light"
-              )}
-            >
-              {step.title}
-            </span>
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }
 

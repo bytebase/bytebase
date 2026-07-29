@@ -239,6 +239,28 @@ describe("convertRuleMapToPolicyRuleList", () => {
     ],
   });
 
+  const numberRule = (
+    type: SQLReviewRule_Type,
+    value: number
+  ): RuleTemplateV2 => ({
+    type,
+    category: "BUILTIN",
+    engine: Engine.MYSQL,
+    level: SQLReviewRule_Level.ERROR,
+    componentList: [
+      {
+        key: "number",
+        payload: {
+          type: "NUMBER",
+          default: 2,
+          value,
+          unit: "MB",
+          factor: 1024 * 1024,
+        },
+      },
+    ],
+  });
+
   const requiredStringArrayRuleTypes = [
     SQLReviewRule_Type.COLUMN_REQUIRED,
     SQLReviewRule_Type.COLUMN_TYPE_DISALLOW_LIST,
@@ -268,6 +290,28 @@ describe("convertRuleMapToPolicyRuleList", () => {
   test("reports empty rule maps", () => {
     expect(validateRuleMapByEngine(new Map())).toEqual({
       type: "EMPTY_RULE_LIST",
+    });
+  });
+
+  test("reports non-positive number payloads after unit conversion", () => {
+    const ruleMap = new Map([
+      [
+        Engine.MYSQL,
+        new Map([
+          [
+            SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+            numberRule(
+              SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+              0
+            ),
+          ],
+        ]),
+      ],
+    ]);
+
+    expect(validateRuleMapByEngine(ruleMap)).toMatchObject({
+      type: "INVALID_NUMBER",
+      rule: { type: SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE },
     });
   });
 

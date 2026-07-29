@@ -1144,6 +1144,9 @@
       },
       "ssl-tls-connection": {
         "link": "Conexión SSL/TLS"
+      },
+      "sync-databases": {
+        "content": "Cuando está activado, Bytebase descubre y sincroniza todas las bases de datos de esta instancia durante la creación. Desactívelo si ahora solo quiere sincronizar bases de datos seleccionadas; puede sincronizar más bases de datos más tarde desde la página de la instancia."
       }
     },
     "info-panel": {

@@ -35,6 +35,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import type { DatabaseFilter } from "@/lib/databaseFilter";
+import {
+  PREPARE_DATABASE_PRODUCT_INTRO,
+  PREPARE_DATABASE_TRANSFER_TIP,
+  PRODUCT_INTRO_TIP_QUERY_KEY,
+  useProductIntro,
+} from "@/lib/productIntro";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -126,10 +132,17 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     setSelectedNames(new Set());
   }, []);
 
-  const syncingInstanceId = useMemo(() => {
-    const query = new URLSearchParams(location.search);
-    return query.get("syncingInstance") || undefined;
-  }, [location.search]);
+  const locationQuery = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search]
+  );
+  const syncingInstanceId = useMemo(
+    () => locationQuery.get("syncingInstance") || undefined,
+    [locationQuery]
+  );
+  const showPrepareDatabaseTip =
+    locationQuery.get(PRODUCT_INTRO_TIP_QUERY_KEY) ===
+    PREPARE_DATABASE_TRANSFER_TIP;
 
   useEffect(() => {
     if (!syncingInstanceId || visibleDatabases.length > 0) {
@@ -502,6 +515,14 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     syncingRefreshExhausted;
   const showPostSyncTransferAction =
     !!syncingInstanceId && visibleDatabases.length > 0 && hasUserProject;
+  const shouldShowTransferIntro =
+    showPrepareDatabaseTip && showPostSyncTransferAction;
+  useProductIntro({
+    id: PREPARE_DATABASE_PRODUCT_INTRO,
+    title: t("workspace-setup-guide.intro.transfer-title"),
+    description: t("workspace-setup-guide.intro.transfer-description"),
+    disabled: !shouldShowTransferIntro,
+  });
   const syncingInstanceName = syncingInstanceId
     ? `${instanceNamePrefix}${syncingInstanceId}`
     : undefined;
@@ -665,6 +686,11 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
               onSelectedNamesChange={setSelectedNames}
               onDatabasesChange={setVisibleDatabases}
               refreshToken={refreshToken}
+              selectionColumnIntroTarget={
+                shouldShowTransferIntro
+                  ? PREPARE_DATABASE_PRODUCT_INTRO
+                  : undefined
+              }
             />
             {/* Batch operations bar is fixed within the visible main content. */}
             <DatabaseBatchOperationsBar

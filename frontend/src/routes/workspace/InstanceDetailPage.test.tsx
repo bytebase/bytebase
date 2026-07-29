@@ -153,16 +153,29 @@ vi.mock("@/components/database", () => ({
   DatabaseBatchOperationsBar: () => null,
   DatabaseTable: ({
     onDatabasesChange,
+    selectionColumnIntroTarget,
   }: {
     onDatabasesChange?: (databases: Database[]) => void;
+    selectionColumnIntroTarget?: string;
   }) => {
     useEffect(() => {
       onDatabasesChange?.(mocks.databases);
     }, [onDatabasesChange]);
-    return <div />;
+    return (
+      <div
+        data-selection-column-intro-target={selectionColumnIntroTarget ?? ""}
+      />
+    );
   },
   LabelEditorSheet: () => null,
   TransferProjectSheet: () => null,
+}));
+
+vi.mock("@/lib/productIntro", () => ({
+  PREPARE_DATABASE_PRODUCT_INTRO: "prepare-database",
+  PREPARE_DATABASE_TRANSFER_TIP: "transfer-databases-to-project",
+  PRODUCT_INTRO_TIP_QUERY_KEY: "tip",
+  useProductIntro: vi.fn(),
 }));
 
 import { InstanceDetailPage } from "./InstanceDetailPage";
@@ -230,5 +243,22 @@ describe("InstanceDetailPage", () => {
     expect(container.textContent).toContain(
       "db.instance-databases-synced-title"
     );
+  });
+
+  it("highlights the database selection column for the post-sync transfer guide", async () => {
+    mocks.location.search =
+      "?syncingInstance=prod&intro=prepare-database&tip=transfer-databases-to-project";
+    mocks.projects = [
+      { name: "projects/default" },
+      { name: "projects/app" },
+    ] as Project[];
+
+    await render(<InstanceDetailPage instanceId="prod" />);
+
+    expect(
+      container
+        .querySelector("[data-selection-column-intro-target]")
+        ?.getAttribute("data-selection-column-intro-target")
+    ).toBe("prepare-database");
   });
 });

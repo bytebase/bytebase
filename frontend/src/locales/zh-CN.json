@@ -1144,6 +1144,9 @@
       },
       "ssl-tls-connection": {
         "link": "SSL/TLS 连接"
+      },
+      "sync-databases": {
+        "content": "启用后，Bytebase 会在创建实例时发现并同步该实例中的所有数据库。如果现在只想同步选中的数据库，请关闭此选项；之后仍可在实例页面同步更多数据库。"
       }
     },
     "info-panel": {
