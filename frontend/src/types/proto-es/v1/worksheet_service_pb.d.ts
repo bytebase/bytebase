@@ -75,11 +75,14 @@ export declare type ListWorksheetsRequest = Message<"bytebase.v1.ListWorksheetsR
    *
    * Supported filter:
    * - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+   * - starred: should be "true" or "false", filter starred/unstarred worksheets, support "==" operator.
    * - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
    *
    * For example:
    * creator == "users/{email}"
    * creator != "users/{email}"
+   * starred == true
+   * starred == false
    * visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
    * visibility == "PRIVATE"
    *
@@ -279,27 +282,6 @@ export declare type SearchWorksheetsRequest = Message<"bytebase.v1.SearchWorkshe
    * @generated from field: string parent = 1;
    */
   parent: string;
-
-  /**
-   * To filter the search result.
-   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-   *
-   * Supported filter:
-   * - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
-   * - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
-   * - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
-   *
-   * For example:
-   * creator == "users/{email}"
-   * creator != "users/{email}"
-   * starred == true
-   * starred == false
-   * visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
-   * visibility == "PRIVATE"
-   *
-   * @generated from field: string filter = 2;
-   */
-  filter: string;
 };
 
 /**
@@ -507,10 +489,10 @@ export declare const WorksheetService: GenService<{
     output: typeof ListWorksheetsResponseSchema;
   },
   /**
-   * Search for worksheets.
-   * This is used for finding my worksheets or worksheets shared by other people.
-   * The sheet accessibility is the same as GetWorksheet().
-   * Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+   * Search for worksheets in a project.
+   * This is used for finding worksheets created by the caller.
+   * `projects/-` is not supported.
+   * Permissions required: creator
    *
    * @generated from rpc bytebase.v1.WorksheetService.SearchWorksheets
    */

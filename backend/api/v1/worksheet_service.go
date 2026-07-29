@@ -193,7 +193,7 @@ func (s *WorksheetService) ListWorksheets(
 	}), nil
 }
 
-// SearchWorksheets returns a list of worksheets based on the search filters.
+// SearchWorksheets returns a list of worksheets created by the caller in a project.
 func (s *WorksheetService) SearchWorksheets(
 	ctx context.Context,
 	req *connect.Request[v1pb.SearchWorksheetsRequest],
@@ -208,17 +208,16 @@ func (s *WorksheetService) SearchWorksheets(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if projectID == "-" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("SearchWorksheets does not support projects/-"))
+	}
 
 	worksheetFind := &store.FindWorkSheetMessage{
 		ProjectIDs:     []string{projectID},
 		PrincipalEmail: user.Email,
 	}
 
-	filterQ, err := store.GetListSheetFilter(ctx, s.store, user.Email, request.Filter)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	worksheetFind.FilterQ = filterQ
+	worksheetFind.FilterQ = store.GetListCreatorSheetFilter(user.Email)
 
 	worksheetList, err := s.store.ListWorkSheets(ctx, worksheetFind)
 	if err != nil {

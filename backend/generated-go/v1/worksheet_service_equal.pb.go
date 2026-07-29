@@ -197,9 +197,6 @@ func (x *SearchWorksheetsRequest) Equal(y *SearchWorksheetsRequest) bool {
 	if x.Parent != y.Parent {
 		return false
 	}
-	if x.Filter != y.Filter {
-		return false
-	}
 	return true
 }
 

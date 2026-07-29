@@ -345,6 +345,20 @@ describe("WorksheetPane", () => {
     unmount();
   });
 
+  test("keeps worksheet list scrolling vertical-only", () => {
+    setupDefaultMocks();
+    const { container, render, unmount } = renderIntoContainer(
+      <WorksheetPane />
+    );
+    render();
+
+    const scrollContainer = container.querySelector(".worksheet-scroll");
+    expect(scrollContainer?.className).toContain("overflow-x-hidden");
+    expect(scrollContainer?.className).toContain("min-w-0");
+
+    unmount();
+  });
+
   test("2. Hides 'my' SheetTree when showMine is false", () => {
     setupDefaultMocks({ showMine: false });
     const { container, render, unmount } = renderIntoContainer(

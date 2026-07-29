@@ -144,9 +144,9 @@ export const createWorksheetSlice: AppSliceCreator<WorksheetSlice> = (
       return promise;
     },
 
-    fetchWorksheetList: async (parent, filter) => {
+    fetchWorksheetList: async (parent) => {
       const response = await worksheetServiceClientConnect.searchWorksheets(
-        createProto(SearchWorksheetsRequestSchema, { parent, filter })
+        createProto(SearchWorksheetsRequestSchema, { parent })
       );
       return cacheWorksheetList(response.worksheets);
     },

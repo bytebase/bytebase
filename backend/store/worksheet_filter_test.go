@@ -35,10 +35,10 @@ func TestGetListWorksheetFilter(t *testing.T) {
 			wantArgs: []any{[]string{"PROJECT_READ", "PROJECT_WRITE"}},
 		},
 		{
-			name:        "starred unsupported",
-			filter:      `starred == true`,
-			wantErr:     true,
-			errContains: `unsupported variable "starred"`,
+			name:     "starred filter",
+			filter:   `starred == true`,
+			wantSQL:  "(worksheet.resource_id IN (SELECT worksheet FROM worksheet_organizer WHERE principal = $1 AND (payload->>'starred')::boolean = $2))",
+			wantArgs: []any{"demo@example.com", true},
 		},
 	}
 
@@ -65,4 +65,14 @@ func TestGetListWorksheetFilter(t *testing.T) {
 			require.Equal(t, tt.wantArgs, args)
 		})
 	}
+}
+
+func TestGetListCreatorSheetFilter(t *testing.T) {
+	q := GetListCreatorSheetFilter("demo@example.com")
+	require.NotNil(t, q)
+
+	sql, args, err := q.ToSQL()
+	require.NoError(t, err)
+	require.Equal(t, "worksheet.creator = $1", sql)
+	require.Equal(t, []any{"demo@example.com"}, args)
 }

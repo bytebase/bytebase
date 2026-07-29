@@ -625,7 +625,7 @@ export type WorksheetSlice = {
     name: string,
     silent?: boolean
   ) => Promise<Worksheet | undefined>;
-  fetchWorksheetList: (parent: string, filter: string) => Promise<Worksheet[]>;
+  fetchWorksheetList: (parent: string) => Promise<Worksheet[]>;
   fetchSharedWorksheetList: (
     parent: string,
     filter: string

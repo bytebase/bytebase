@@ -2004,9 +2004,7 @@ describe("useAppStore", () => {
     const store = createAppStore();
 
     await expect(
-      store
-        .getState()
-        .fetchWorksheetList("projects/p1", 'creator == "users/me@example.com"')
+      store.getState().fetchWorksheetList("projects/p1")
     ).resolves.toEqual([myWorksheet]);
     await expect(
       store
@@ -2020,7 +2018,6 @@ describe("useAppStore", () => {
     expect(mocks.searchWorksheets).toHaveBeenCalledTimes(1);
     expect(mocks.searchWorksheets.mock.calls[0]?.[0]).toMatchObject({
       parent: "projects/p1",
-      filter: 'creator == "users/me@example.com"',
     });
     expect(mocks.listWorksheets).toHaveBeenCalledTimes(1);
     expect(mocks.listWorksheets.mock.calls[0]?.[0]).toMatchObject({

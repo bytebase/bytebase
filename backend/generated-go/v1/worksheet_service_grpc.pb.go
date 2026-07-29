@@ -51,10 +51,10 @@ type WorksheetServiceClient interface {
 	// The sheet accessibility is the same as GetWorksheet().
 	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
 	ListWorksheets(ctx context.Context, in *ListWorksheetsRequest, opts ...grpc.CallOption) (*ListWorksheetsResponse, error)
-	// Search for worksheets.
-	// This is used for finding my worksheets or worksheets shared by other people.
-	// The sheet accessibility is the same as GetWorksheet().
-	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+	// Search for worksheets in a project.
+	// This is used for finding worksheets created by the caller.
+	// `projects/-` is not supported.
+	// Permissions required: creator
 	SearchWorksheets(ctx context.Context, in *SearchWorksheetsRequest, opts ...grpc.CallOption) (*SearchWorksheetsResponse, error)
 	// Update a worksheet.
 	// The users can access this method if,
@@ -186,10 +186,10 @@ type WorksheetServiceServer interface {
 	// The sheet accessibility is the same as GetWorksheet().
 	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
 	ListWorksheets(context.Context, *ListWorksheetsRequest) (*ListWorksheetsResponse, error)
-	// Search for worksheets.
-	// This is used for finding my worksheets or worksheets shared by other people.
-	// The sheet accessibility is the same as GetWorksheet().
-	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+	// Search for worksheets in a project.
+	// This is used for finding worksheets created by the caller.
+	// `projects/-` is not supported.
+	// Permissions required: creator
 	SearchWorksheets(context.Context, *SearchWorksheetsRequest) (*SearchWorksheetsResponse, error)
 	// Update a worksheet.
 	// The users can access this method if,

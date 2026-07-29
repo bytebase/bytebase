@@ -130,9 +130,11 @@ vi.mock("@/components/ui/tree", () => ({
   Tree: ({
     data,
     renderNode,
+    className,
   }: {
     data: MockTreeItem[];
     renderNode: (args: MockRenderArgs) => React.ReactNode;
+    className?: string;
   }) => {
     const renderAll = (items: MockTreeItem[]): React.ReactNode[] =>
       items.flatMap((item) => [
@@ -142,7 +144,11 @@ vi.mock("@/components/ui/tree", () => ({
         }),
         ...(item.children ? renderAll(item.children) : []),
       ]);
-    return <div data-testid="tree">{renderAll(data)}</div>;
+    return (
+      <div data-testid="tree" className={className}>
+        {renderAll(data)}
+      </div>
+    );
   },
 }));
 
@@ -529,6 +535,51 @@ describe("SheetTree", () => {
       "[data-testid='highlight-label']"
     );
     expect(labels.length).toBeGreaterThan(0);
+
+    unmount();
+  });
+
+  test("clips long worksheet names instead of widening the tree", () => {
+    const defaultMocks = setupDefaultMocks();
+    const longTitle =
+      "bytebase-3.12.2 May 9, 2026, 10:33:59 AM GMT+8 with a very long worksheet name";
+    const rootNode = makeFolderNode("/my", [
+      {
+        ...makeWorksheetNode("/my/long-title"),
+        label: longTitle,
+        worksheet: {
+          name: "worksheets/long-title",
+          title: longTitle,
+          folders: [],
+          type: "worksheet",
+        },
+      },
+    ]);
+    defaultMocks.viewContext._sheetTree.value = rootNode;
+
+    const { container, render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={vi.fn()}
+      />
+    );
+    render();
+
+    expect(container.querySelector("[data-testid='tree']")?.className).toEqual(
+      expect.stringContaining("overflow-x-hidden")
+    );
+    const row = container.querySelector(
+      `[data-item-key="/my/long-title"]`
+    ) as HTMLElement | null;
+    expect(row?.className).toEqual(expect.stringContaining("max-w-full"));
+    expect(row?.className).toEqual(expect.stringContaining("overflow-hidden"));
+    const label = row?.querySelector(".tree-label") as HTMLElement | null;
+    expect(label?.className).toEqual(expect.stringContaining("min-w-0"));
+    expect(label?.className).toEqual(expect.stringContaining("overflow-hidden"));
+    expect(
+      row?.querySelector("[data-testid='highlight-label']")?.className
+    ).toEqual(expect.stringContaining("truncate"));
 
     unmount();
   });

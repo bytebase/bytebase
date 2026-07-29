@@ -712,10 +712,7 @@ const fetchSheetListFor = async (view: SheetViewMode) => {
     const project = getSQLEditorEditorState().project;
     switch (view) {
       case "my":
-        await sheetStore.fetchWorksheetList(
-          project,
-          `creator == "users/${email}"`
-        );
+        await sheetStore.fetchWorksheetList(project);
         break;
       case "shared":
         await sheetStore.fetchSharedWorksheetList(

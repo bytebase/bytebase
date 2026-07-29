@@ -48,10 +48,10 @@ service WorksheetService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
-  // Search for worksheets.
-  // This is used for finding my worksheets or worksheets shared by other people.
-  // The sheet accessibility is the same as GetWorksheet().
-  // Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+  // Search for worksheets in a project.
+  // This is used for finding worksheets created by the caller.
+  // `projects/-` is not supported.
+  // Permissions required: creator
   rpc SearchWorksheets(SearchWorksheetsRequest) returns (SearchWorksheetsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/worksheets:search"
@@ -135,11 +135,14 @@ message ListWorksheetsRequest {
   //
   // Supported filter:
   // - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+  // - starred: should be "true" or "false", filter starred/unstarred worksheets, support "==" operator.
   // - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
   //
   // For example:
   // creator == "users/{email}"
   // creator != "users/{email}"
+  // starred == true
+  // starred == false
   // visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
   // visibility == "PRIVATE"
   string filter = 2;
@@ -215,23 +218,6 @@ message SearchWorksheetsRequest {
   // The parent resource of the worksheets.
   // Format: projects/{project}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // To filter the search result.
-  // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-  //
-  // Supported filter:
-  // - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
-  // - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
-  // - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
-  //
-  // For example:
-  // creator == "users/{email}"
-  // creator != "users/{email}"
-  // starred == true
-  // starred == false
-  // visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
-  // visibility == "PRIVATE"
-  string filter = 2;
 }
 
 message SearchWorksheetsResponse {

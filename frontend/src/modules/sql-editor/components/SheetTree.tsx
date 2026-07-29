@@ -949,7 +949,7 @@ export function SheetTree({
           style={rowStyle}
           data-item-key={folderNode.key}
           className={cn(
-            "flex items-center gap-x-1 w-full py-0.5 text-sm cursor-pointer select-none",
+            "flex items-center gap-x-1 w-full max-w-full overflow-hidden py-0.5 text-sm cursor-pointer select-none",
             // Align with the connection-panel database tree: subtle neutral
             // hover, accent-tinted selection (was a too-light gray fill).
             "hover:bg-control-bg/70 rounded-xs",
@@ -1008,7 +1008,7 @@ export function SheetTree({
           </span>
 
           {/* Label / rename input */}
-          <span className="tree-label flex-1 min-w-0">
+          <span className="tree-label flex-1 min-w-0 overflow-hidden">
             {isEditing ? (
               <Input
                 ref={inputRef}
@@ -1370,7 +1370,7 @@ export function SheetTree({
 
   // ---- Main render ---------------------------------------------------------
   return (
-    <div className="flex flex-col items-stretch gap-y-1 relative worksheet-tree">
+    <div className="flex min-w-0 max-w-full flex-col items-stretch gap-y-1 overflow-x-hidden relative worksheet-tree">
       <Tree<WorksheetFolderNode>
         data={treeData}
         renderNode={renderNode}
@@ -1381,7 +1381,7 @@ export function SheetTree({
         height={treeHeight}
         rowHeight={ROW_HEIGHT}
         indent={12}
-        className="text-sm"
+        className="min-w-0 max-w-full overflow-x-hidden text-sm"
         onMove={handleMove}
         disableDrag={view === "draft" || !!editingNode || multiSelectMode}
         disableDrop={

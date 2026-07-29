@@ -193,11 +193,14 @@ type ListWorksheetsRequest struct {
 	//
 	// Supported filter:
 	// - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+	// - starred: should be "true" or "false", filter starred/unstarred worksheets, support "==" operator.
 	// - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
 	//
 	// For example:
 	// creator == "users/{email}"
 	// creator != "users/{email}"
+	// starred == true
+	// starred == false
 	// visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
 	// visibility == "PRIVATE"
 	Filter        string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
@@ -629,23 +632,7 @@ type SearchWorksheetsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource of the worksheets.
 	// Format: projects/{project}
-	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// To filter the search result.
-	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-	//
-	// Supported filter:
-	// - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
-	// - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
-	// - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
-	//
-	// For example:
-	// creator == "users/{email}"
-	// creator != "users/{email}"
-	// starred == true
-	// starred == false
-	// visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
-	// visibility == "PRIVATE"
-	Filter        string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
+	Parent        string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -683,13 +670,6 @@ func (*SearchWorksheetsRequest) Descriptor() ([]byte, []int) {
 func (x *SearchWorksheetsRequest) GetParent() string {
 	if x != nil {
 		return x.Parent
-	}
-	return ""
-}
-
-func (x *SearchWorksheetsRequest) GetFilter() string {
-	if x != nil {
-		return x.Filter
 	}
 	return ""
 }
@@ -924,10 +904,9 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\astarred\x18\x02 \x01(\bR\astarred\x12\x18\n" +
 	"\afolders\x18\x03 \x03(\tR\afolders\"1\n" +
 	"\x16DeleteWorksheetRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"N\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"6\n" +
 	"\x17SearchWorksheetsRequest\x12\x1b\n" +
-	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x16\n" +
-	"\x06filter\x18\x02 \x01(\tR\x06filter\"R\n" +
+	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\"R\n" +
 	"\x18SearchWorksheetsResponse\x126\n" +
 	"\n" +
 	"worksheets\x18\x01 \x03(\v2\x16.bytebase.v1.WorksheetR\n" +

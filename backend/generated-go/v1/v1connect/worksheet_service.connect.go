@@ -77,10 +77,10 @@ type WorksheetServiceClient interface {
 	// The sheet accessibility is the same as GetWorksheet().
 	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
 	ListWorksheets(context.Context, *connect.Request[v1.ListWorksheetsRequest]) (*connect.Response[v1.ListWorksheetsResponse], error)
-	// Search for worksheets.
-	// This is used for finding my worksheets or worksheets shared by other people.
-	// The sheet accessibility is the same as GetWorksheet().
-	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+	// Search for worksheets in a project.
+	// This is used for finding worksheets created by the caller.
+	// `projects/-` is not supported.
+	// Permissions required: creator
 	SearchWorksheets(context.Context, *connect.Request[v1.SearchWorksheetsRequest]) (*connect.Response[v1.SearchWorksheetsResponse], error)
 	// Update a worksheet.
 	// The users can access this method if,
@@ -234,10 +234,10 @@ type WorksheetServiceHandler interface {
 	// The sheet accessibility is the same as GetWorksheet().
 	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
 	ListWorksheets(context.Context, *connect.Request[v1.ListWorksheetsRequest]) (*connect.Response[v1.ListWorksheetsResponse], error)
-	// Search for worksheets.
-	// This is used for finding my worksheets or worksheets shared by other people.
-	// The sheet accessibility is the same as GetWorksheet().
-	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+	// Search for worksheets in a project.
+	// This is used for finding worksheets created by the caller.
+	// `projects/-` is not supported.
+	// Permissions required: creator
 	SearchWorksheets(context.Context, *connect.Request[v1.SearchWorksheetsRequest]) (*connect.Response[v1.SearchWorksheetsResponse], error)
 	// Update a worksheet.
 	// The users can access this method if,

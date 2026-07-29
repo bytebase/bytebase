@@ -34187,11 +34187,14 @@ The syntax and semantics of CEL are documented at https://github.com/google/cel-
 
 Supported filter:
 - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
+- starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred worksheets, support &#34;==&#34; operator.
 - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
 
 For example:
 creator == &#34;users/{email}&#34;
 creator != &#34;users/{email}&#34;
+starred == true
+starred == false
 visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;]
 visibility == &#34;PRIVATE&#34; </p></td>
                 </tr>
@@ -34243,27 +34246,6 @@ visibility == &#34;PRIVATE&#34; </p></td>
                   <td></td>
                   <td><p>The parent resource of the worksheets.
 Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>To filter the search result.
-The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter:
-- creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
-- starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator.
-- visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
-
-For example:
-creator == &#34;users/{email}&#34;
-creator != &#34;users/{email}&#34;
-starred == true
-starred == false
-visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;]
-visibility == &#34;PRIVATE&#34; </p></td>
                 </tr>
               
             </tbody>
@@ -34614,10 +34596,10 @@ Permissions required: bb.worksheets.get (or creator, or project member for share
                 <td>SearchWorksheets</td>
                 <td><a href="#bytebase.v1.SearchWorksheetsRequest">SearchWorksheetsRequest</a></td>
                 <td><a href="#bytebase.v1.SearchWorksheetsResponse">SearchWorksheetsResponse</a></td>
-                <td><p>Search for worksheets.
-This is used for finding my worksheets or worksheets shared by other people.
-The sheet accessibility is the same as GetWorksheet().
-Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)</p></td>
+                <td><p>Search for worksheets in a project.
+This is used for finding worksheets created by the caller.
+`projects/-` is not supported.
+Permissions required: creator</p></td>
               </tr>
             
               <tr>
