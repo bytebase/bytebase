@@ -186,11 +186,14 @@ export function WorkspaceSetupGuide() {
       }
 
       if (databaseName) {
+        // databaseName is only set from the project database lookup, so
+        // projectName is always concrete here — which SearchQueryHistories
+        // requires (it has no cross-project wildcard).
         try {
           const queryHistoryResult =
             await sqlServiceClientConnect.searchQueryHistories(
               create(SearchQueryHistoriesRequestSchema, {
-                parent: "projects/-",
+                parent: projectName,
                 pageSize: 1,
                 filter: 'type == "QUERY"',
               })

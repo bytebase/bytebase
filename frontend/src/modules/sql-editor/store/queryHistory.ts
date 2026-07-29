@@ -4,6 +4,7 @@ import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
 import {
   GetQueryHistoryRequestSchema,
   SearchQueryHistoriesRequestSchema,
+  SearchQueryHistoriesResponseSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { isValidDatabaseName } from "@/types/v1/database";
 import { isValidProjectName } from "@/types/v1/project";
@@ -18,12 +19,11 @@ import type {
 
 const EMPTY_ENTRY: QueryHistoryEntry = { queryHistories: [] };
 
-// Project scoping travels in `parent` (AIP-159; "projects/-" means all
-// projects), so the CEL filter only carries the non-project dimensions.
-const getSearchParent = (filter: QueryHistoryFilter) =>
-  isValidProjectName(filter.project)
-    ? (filter.project as string)
-    : "projects/-";
+// Project scoping travels in `parent`, so the CEL filter only carries the
+// non-project dimensions. SearchQueryHistories requires a concrete parent
+// project — there is no cross-project wildcard — so both fetch paths no-op
+// until the editor's project context resolves.
+const EMPTY_RESPONSE = create(SearchQueryHistoriesResponseSchema, {});
 
 const getListQueryHistoryFilter = (filter: QueryHistoryFilter) => {
   const params = [`type == "QUERY"`];
@@ -55,12 +55,15 @@ export const createQueryHistorySlice: SQLEditorSliceCreator<
   queryHistoryByKey: {},
 
   fetchQueryHistoryList: async (filter) => {
+    if (!isValidProjectName(filter.project)) {
+      return EMPTY_RESPONSE;
+    }
     const key = getQueryHistoryCacheKey(filter);
     const existing = get().queryHistoryByKey[key] ?? EMPTY_ENTRY;
     const pageToken = existing.nextPageToken;
 
     const request = create(SearchQueryHistoriesRequestSchema, {
-      parent: getSearchParent(filter),
+      parent: filter.project,
       pageSize: 5,
       pageToken,
       filter: getListQueryHistoryFilter(filter),
@@ -114,10 +117,13 @@ export const createQueryHistorySlice: SQLEditorSliceCreator<
    * the list.
    */
   mergeLatest: async (filter) => {
+    if (!isValidProjectName(filter.project)) {
+      return EMPTY_RESPONSE;
+    }
     const key = getQueryHistoryCacheKey(filter);
     const resp = await sqlServiceClientConnect.searchQueryHistories(
       create(SearchQueryHistoriesRequestSchema, {
-        parent: getSearchParent(filter),
+        parent: filter.project,
         pageSize: 5,
         filter: getListQueryHistoryFilter(filter),
       })

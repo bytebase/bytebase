@@ -131,16 +131,16 @@ describe("queryHistory slice — request parent scoping", () => {
     }
   });
 
-  test("falls back to the projects/- wildcard without a valid project", async () => {
-    searchQueryHistoriesMock.mockResolvedValue({
-      queryHistories: [],
-      nextPageToken: "",
-    });
+  test("skips the request entirely without a valid project", async () => {
     const store = makeStore();
-    await store.getState().fetchQueryHistoryList({ project: "", database: "" });
-    expect(searchQueryHistoriesMock.mock.calls[0][0]).toMatchObject({
-      parent: "projects/-",
-    });
+    const emptyFilter: QueryHistoryFilter = { project: "", database: "" };
+    const fetchResp = await store.getState().fetchQueryHistoryList(emptyFilter);
+    const mergeResp = await store.getState().mergeLatest(emptyFilter);
+    expect(searchQueryHistoriesMock).not.toHaveBeenCalled();
+    expect(fetchResp.queryHistories).toEqual([]);
+    expect(mergeResp.queryHistories).toEqual([]);
+    const entry = selectQueryHistoryEntry(emptyFilter)(store.getState());
+    expect(entry.queryHistories).toEqual([]);
   });
 });
 

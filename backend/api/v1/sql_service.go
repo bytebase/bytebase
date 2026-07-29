@@ -1406,7 +1406,8 @@ func (s *SQLService) createQueryHistory(database *store.DatabaseMessage, queryTy
 }
 
 // SearchQueryHistories lists the caller's own query histories in the parent
-// project, or across all projects for the AIP-159 wildcard "projects/-".
+// project. The AIP-159 wildcard "projects/-" is rejected: cross-project reads
+// are reserved for the IAM-gated ListQueryHistories.
 func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Request[v1pb.SearchQueryHistoriesRequest]) (*connect.Response[v1pb.SearchQueryHistoriesResponse], error) {
 	request := req.Msg
 	user, ok := GetUserFromContext(ctx)
@@ -1415,7 +1416,7 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Requ
 	}
 
 	find := &store.FindQueryHistoryMessage{Creator: &user.Email}
-	if err := s.resolveQueryHistoryParent(ctx, request.Parent, find); err != nil {
+	if err := s.resolveQueryHistoryParent(ctx, request.Parent, find, false); err != nil {
 		return nil, err
 	}
 
@@ -1483,7 +1484,7 @@ func (s *SQLService) paginatedQueryHistories(ctx context.Context, find *store.Fi
 func (s *SQLService) ListQueryHistories(ctx context.Context, req *connect.Request[v1pb.ListQueryHistoriesRequest]) (*connect.Response[v1pb.ListQueryHistoriesResponse], error) {
 	request := req.Msg
 	find := &store.FindQueryHistoryMessage{}
-	if err := s.resolveQueryHistoryParent(ctx, request.Parent, find); err != nil {
+	if err := s.resolveQueryHistoryParent(ctx, request.Parent, find, true); err != nil {
 		return nil, err
 	}
 
@@ -1505,15 +1506,18 @@ func (s *SQLService) ListQueryHistories(ctx context.Context, req *connect.Reques
 
 // resolveQueryHistoryParent applies the parent scope to find: a concrete
 // "projects/{id}" parent must exist in the caller's workspace and scopes by
-// project; the AIP-159 wildcard "projects/-" scopes by workspace, which is
-// mandatory because query_history rows are workspace-scoped only through
-// their project.
-func (s *SQLService) resolveQueryHistoryParent(ctx context.Context, parent string, find *store.FindQueryHistoryMessage) error {
+// project. When allowWildcard is set, the AIP-159 wildcard "projects/-"
+// scopes by workspace instead, which is mandatory because query_history rows
+// are workspace-scoped only through their project.
+func (s *SQLService) resolveQueryHistoryParent(ctx context.Context, parent string, find *store.FindQueryHistoryMessage, allowWildcard bool) error {
 	projectID, err := common.GetProjectID(parent)
 	if err != nil {
 		return connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if projectID == "-" {
+		if !allowWildcard {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`the wildcard parent "projects/-" is not supported; specify a concrete project`))
+		}
 		workspaceID := common.GetWorkspaceIDFromContext(ctx)
 		if workspaceID == "" {
 			return connect.NewError(connect.CodeInternal, errors.Errorf("workspace not found in context"))
