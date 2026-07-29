@@ -636,6 +636,11 @@ CREATE TABLE oauth2_refresh_token (
     -- Workspace inherited from the authorization code that originally issued
     -- this refresh token; preserved across refresh.
     workspace text REFERENCES workspace(resource_id),
+    -- Canonical RFC 8707 resource URI and the consented scope string, both
+    -- inherited from the authorization code and carried forward unchanged by
+    -- every refresh. Nullable: clients may omit either parameter.
+    resource text,
+    scope text,
     expires_at timestamptz NOT NULL
 );
 

@@ -9092,6 +9092,23 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The canonical resource URI (RFC 8707) this grant is bound to, validated at
+consent time against the configured external URL. Empty for clients that
+omit the resource parameter. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scope</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The scope string consented to, stored verbatim. Empty means no scope was
+requested. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 

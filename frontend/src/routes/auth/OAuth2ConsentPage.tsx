@@ -49,6 +49,11 @@ export function OAuth2ConsentPage() {
   const oauthState = (query.state as string) || "";
   const codeChallenge = (query.code_challenge as string) || "";
   const codeChallengeMethod = (query.code_challenge_method as string) || "";
+  // RFC 8707 resource indicator and RFC 6749 scope, forwarded verbatim from the
+  // /authorize redirect. The backend validated them there and re-validates the
+  // values this page posts back, so this page only has to not drop them.
+  const resource = (query.resource as string) || "";
+  const scope = (query.scope as string) || "";
 
   const initRef = useRef(false);
   useEffect(() => {
@@ -146,6 +151,8 @@ export function OAuth2ConsentPage() {
       ["state", oauthState],
       ["code_challenge", codeChallenge],
       ["code_challenge_method", codeChallengeMethod],
+      ["resource", resource],
+      ["scope", scope],
       ["action", "deny"],
     ];
     for (const [name, value] of fields) {
@@ -248,6 +255,8 @@ export function OAuth2ConsentPage() {
                 name="code_challenge_method"
                 value={codeChallengeMethod}
               />
+              <input type="hidden" name="resource" value={resource} />
+              <input type="hidden" name="scope" value={scope} />
               <div className="flex gap-x-2">
                 <Button
                   type="button"

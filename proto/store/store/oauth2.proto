@@ -15,4 +15,11 @@ message OAuth2AuthorizationCodeConfig {
   string redirect_uri = 1;
   string code_challenge = 2;
   string code_challenge_method = 3;
+  // The canonical resource URI (RFC 8707) this grant is bound to, validated at
+  // consent time against the configured external URL. Empty for clients that
+  // omit the resource parameter.
+  string resource = 4;
+  // The scope string consented to, stored verbatim. Empty means no scope was
+  // requested.
+  string scope = 5;
 }

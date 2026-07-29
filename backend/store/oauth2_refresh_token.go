@@ -19,19 +19,30 @@ type OAuth2RefreshTokenMessage struct {
 	// workspace_id claim. Empty only for refresh tokens created before the
 	// 3.18.2 migration.
 	Workspace string
+	// Resource is the canonical RFC 8707 resource URI the grant is bound to,
+	// validated against the configured external URL at consent time. Empty when
+	// the client omitted the resource parameter (or for pre-3.21.5 tokens).
+	Resource string
+	// Scope is the consented scope string, stored verbatim. Carried forward
+	// unchanged by every refresh — a refresh never widens a grant.
+	Scope     string
 	ExpiresAt time.Time
 }
 
-func (s *Store) CreateOAuth2RefreshToken(ctx context.Context, create *OAuth2RefreshTokenMessage) (*OAuth2RefreshTokenMessage, error) {
-	var workspaceArg any
-	if create.Workspace != "" {
-		workspaceArg = create.Workspace
+// nullIfEmpty maps "" onto a NULL bind argument so the nullable oauth2 columns
+// stay NULL instead of storing an empty string.
+func nullIfEmpty(v string) any {
+	if v == "" {
+		return nil
 	}
+	return v
+}
 
+func (s *Store) CreateOAuth2RefreshToken(ctx context.Context, create *OAuth2RefreshTokenMessage) (*OAuth2RefreshTokenMessage, error) {
 	q := qb.Q().Space(`
-		INSERT INTO oauth2_refresh_token (token_hash, client_id, user_email, workspace, expires_at)
-		VALUES (?, ?, ?, ?, ?)
-	`, create.TokenHash, create.ClientID, create.UserEmail, workspaceArg, create.ExpiresAt)
+		INSERT INTO oauth2_refresh_token (token_hash, client_id, user_email, workspace, resource, scope, expires_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, create.TokenHash, create.ClientID, create.UserEmail, nullIfEmpty(create.Workspace), nullIfEmpty(create.Resource), nullIfEmpty(create.Scope), create.ExpiresAt)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -46,7 +57,7 @@ func (s *Store) CreateOAuth2RefreshToken(ctx context.Context, create *OAuth2Refr
 
 func (s *Store) GetOAuth2RefreshToken(ctx context.Context, clientID, tokenHash string) (*OAuth2RefreshTokenMessage, error) {
 	q := qb.Q().Space(`
-		SELECT token_hash, client_id, user_email, workspace, expires_at
+		SELECT token_hash, client_id, user_email, workspace, resource, scope, expires_at
 		FROM oauth2_refresh_token
 		WHERE token_hash = ? AND client_id = ?
 	`, tokenHash, clientID)
@@ -57,9 +68,9 @@ func (s *Store) GetOAuth2RefreshToken(ctx context.Context, clientID, tokenHash s
 	}
 
 	msg := &OAuth2RefreshTokenMessage{}
-	var workspace sql.NullString
+	var workspace, resource, scope sql.NullString
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&msg.TokenHash, &msg.ClientID, &msg.UserEmail, &workspace, &msg.ExpiresAt,
+		&msg.TokenHash, &msg.ClientID, &msg.UserEmail, &workspace, &resource, &scope, &msg.ExpiresAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -67,6 +78,8 @@ func (s *Store) GetOAuth2RefreshToken(ctx context.Context, clientID, tokenHash s
 		return nil, errors.Wrap(err, "failed to get OAuth2 refresh token")
 	}
 	msg.Workspace = workspace.String
+	msg.Resource = resource.String
+	msg.Scope = scope.String
 	return msg, nil
 }
 
