@@ -125,6 +125,20 @@ func TestValidateScope(t *testing.T) {
 				"an unrecognized scope must be refused, not silently dropped — a client would otherwise believe it holds something we never granted")
 		})
 	}
+
+	// A grant is bound to ONE predefined set (proposal v2 §4). The scopes are a
+	// ladder, not additive permissions, so a combination names no resolvable set
+	// — and persisting one would hand P1b a scope string it cannot map.
+	for _, scope := range []string{
+		"mcp:read-only mcp:read-write",
+		"mcp:read-write mcp:read-only",
+		"mcp:read-only mcp:read-only",
+	} {
+		t.Run("combined tiers rejected: "+scope, func(t *testing.T) {
+			require.Error(t, validateScope(scope),
+				"two known tokens are still not a set we can resolve; the tier choice is single-valued")
+		})
+	}
 }
 
 func TestSingleValue(t *testing.T) {
@@ -168,9 +182,15 @@ func TestCheckConsentedResource(t *testing.T) {
 		{"noncanonical value that is not equivalent", url.Values{"resource": {"https://bb.example.com:443/mcp"}}, consented, "invalid_target"},
 		{"malformed value", url.Values{"resource": {"not a uri"}}, consented, "invalid_target"},
 		{"repeated value", url.Values{"resource": {consented, consented}}, consented, "invalid_target"},
-		// A grant consented without a resource cannot acquire one at the token
-		// endpoint — that would be a resource binding the user never approved.
-		{"resource on a grant that consented none", url.Values{"resource": {consented}}, "", "invalid_target"},
+		// A grant with no stored resource predates the column (or the client never
+		// sent one). RFC 8707 clients keep sending `resource` on every exchange
+		// and refresh, so rejecting here would fail live sessions across upgrade.
+		// Accepted and ignored — an unbound grant stays unbound, which the
+		// lifecycle test asserts end to end.
+		{"resource on a grant that consented none is accepted, not bound", url.Values{"resource": {consented}}, "", ""},
+		{"any resource on an unbound grant is accepted", url.Values{"resource": {"https://evil.example.com/mcp"}}, "", ""},
+		// Shape is still checked, so a genuinely broken value is still reported.
+		{"malformed value on an unbound grant", url.Values{"resource": {"urn:nope"}}, "", "invalid_target"},
 		{"omitted on a grant that consented none", url.Values{}, "", ""},
 	}
 	for _, tc := range cases {
@@ -199,7 +219,10 @@ func TestCheckConsentedScope(t *testing.T) {
 		{"exact match", url.Values{"scope": {"mcp:read-only"}}, "mcp:read-only", ""},
 		{"widening is rejected", url.Values{"scope": {"mcp:read-write"}}, "mcp:read-only", "invalid_scope"},
 		{"narrowing is rejected too (the grant record is the authority)", url.Values{"scope": {"mcp:read-only"}}, "mcp:read-write", "invalid_scope"},
-		{"scope on a grant that consented none", url.Values{"scope": {"mcp:read-only"}}, "", "invalid_scope"},
+		// Same upgrade path as the resource: RFC 6749 §6 permits `scope` on a
+		// refresh, so a grant issued before the column must not start failing.
+		// Ignored, not adopted — the grant keeps its empty scope.
+		{"scope on a grant that consented none is accepted, not adopted", url.Values{"scope": {"mcp:read-only"}}, "", ""},
 		{"repeated value", url.Values{"scope": {"mcp:read-only", "mcp:read-write"}}, "mcp:read-only", "invalid_scope"},
 	}
 	for _, tc := range cases {

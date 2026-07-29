@@ -117,9 +117,9 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 	}{
 		{"resource on another host", url.Values{"resource": {"https://evil.example.com/mcp"}}, "invalid_target"},
 		{"noncanonical resource", url.Values{"resource": {"https://bb.example.com:443/mcp"}}, "invalid_target"},
-		{"multiple resources", url.Values{"resource": {testResource, testResource}}, "invalid_target"},
+		{"resource parameter repeated", url.Values{"resource": {testResource, testResource}}, "invalid_target"},
 		{"unknown scope", url.Values{"scope": {"mcp:admin"}}, "invalid_scope"},
-		{"multiple scopes", url.Values{"scope": {"mcp:read-only", "mcp:read-write"}}, "invalid_scope"},
+		{"scope parameter repeated", url.Values{"scope": {"mcp:read-only", "mcp:read-write"}}, "invalid_scope"},
 	}
 	for _, tc := range rejections {
 		t.Run("consent rejected: "+tc.name, func(t *testing.T) {
@@ -265,24 +265,53 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 			"the canonical form must survive rotation, not drift back to what the client sent")
 	})
 
-	t.Run("token exchange rejects a resource the grant never consented to", func(t *testing.T) {
+	t.Run("a grant with no consented resource survives a resource-bearing exchange", func(t *testing.T) {
+		// This is the upgrade path. A code or refresh token issued before 3.21.5
+		// has no stored resource, and RFC 8707 clients keep sending `resource` on
+		// every exchange and refresh — so rejecting the parameter here would fail
+		// in-flight codes and every live session at its next refresh. The
+		// parameter is accepted and ignored, and the grant must stay UNBOUND:
+		// accepting a binding here would be a resource the user never consented
+		// to, and would let PR 3 mint an MCP-audience token off a legacy grant.
 		code := consentOK(t, configured, url.Values{})
 
-		rec := postToken(t, configured, url.Values{
+		first := tokenOK(t, configured, url.Values{
 			"grant_type":    {"authorization_code"},
 			"code":          {code},
 			"redirect_uri":  {testRedirectURI},
 			"code_verifier": {testCodeVerifier},
 			"client_id":     {testClientID},
 			"resource":      {testResource},
+			"scope":         {"mcp:read-write"},
 		})
-		require.Equal(t, http.StatusBadRequest, rec.Code)
-		require.Equal(t, "invalid_target", errorCode(t, rec))
+		require.Empty(t, first.Scope, "an unbound grant must not adopt the scope the client asked for")
 
-		// Rejected before consumption: the code survives for a correct retry.
-		still, err := st.GetOAuth2AuthorizationCode(ctx, testClientID, code)
+		stored, err := st.GetOAuth2RefreshToken(ctx, testClientID, auth.HashToken(first.RefreshToken))
 		require.NoError(t, err)
-		require.NotNil(t, still, "a rejected exchange must not burn the authorization code")
+		require.NotNil(t, stored)
+		require.Empty(t, stored.Resource, "the requested resource must be ignored, never bound to a grant that never consented to one")
+		require.Empty(t, stored.Scope)
+
+		// And the same on refresh, so a legacy session keeps working indefinitely
+		// until PR 3 retires it deliberately.
+		second := tokenOK(t, configured, url.Values{
+			"grant_type":    {"refresh_token"},
+			"refresh_token": {first.RefreshToken},
+			"client_id":     {testClientID},
+			"resource":      {testResource},
+		})
+		rotated, err := st.GetOAuth2RefreshToken(ctx, testClientID, auth.HashToken(second.RefreshToken))
+		require.NoError(t, err)
+		require.NotNil(t, rotated)
+		require.Empty(t, rotated.Resource)
+	})
+
+	t.Run("consent rejects two scope tiers in one parameter", func(t *testing.T) {
+		// Distinct from the repeated-parameter case above: one `scope` value
+		// carrying both tiers. A grant binds to a single predefined set, so a
+		// combination names nothing resolvable.
+		redirect := consent(t, configured, url.Values{"scope": {"mcp:read-only mcp:read-write"}})
+		require.Equal(t, "invalid_scope", redirect.Query().Get("error"))
 	})
 }
 
