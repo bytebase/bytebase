@@ -137,6 +137,31 @@ describe("Tree", () => {
     expect(container.textContent).toContain("Beta");
   });
 
+  test("passes rowClassName to the arborist row wrapper", async () => {
+    const nodes = [makeNode("a", "Alpha")];
+
+    await act(async () => {
+      root.render(
+        <Tree
+          data={nodes}
+          rowClassName="custom-row-class"
+          renderNode={({ node, style }) => (
+            <div style={style} data-testid={`node-${node.id}`}>
+              {node.data.data.label}
+            </div>
+          )}
+          height={200}
+        />
+      );
+    });
+
+    expect(
+      container.querySelector('[data-testid="node-a"]')?.closest(
+        ".custom-row-class"
+      )
+    ).not.toBeNull();
+  });
+
   test("clicking a row fires onSelect with that row's id", async () => {
     const nodes = [makeNode("x", "X Node"), makeNode("y", "Y Node")];
     const handleSelect = vi.fn();

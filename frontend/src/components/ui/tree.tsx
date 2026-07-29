@@ -46,6 +46,7 @@ export interface TreeProps<T> {
       }) => boolean);
 
   readonly className?: string;
+  readonly rowClassName?: string;
 }
 
 export function Tree<T>({
@@ -65,6 +66,7 @@ export function Tree<T>({
   disableDrag = true,
   disableDrop = true,
   className,
+  rowClassName,
 }: TreeProps<T>) {
   const { t } = useTranslation();
   const treeRef = useRef<TreeApi<TreeDataNode<T>> | null>(null);
@@ -205,6 +207,7 @@ export function Tree<T>({
           rowHeight={rowHeight}
           indent={indent}
           width="100%"
+          rowClassName={rowClassName}
         >
           {({ node, style, dragHandle }) =>
             renderNode({ node, style, dragHandle })

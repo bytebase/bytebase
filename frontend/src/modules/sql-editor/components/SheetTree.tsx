@@ -1382,6 +1382,7 @@ export function SheetTree({
         rowHeight={ROW_HEIGHT}
         indent={12}
         className="min-w-0 max-w-full overflow-x-hidden text-sm"
+        rowClassName="min-w-0! max-w-full! overflow-hidden"
         onMove={handleMove}
         disableDrag={view === "draft" || !!editingNode || multiSelectMode}
         disableDrop={

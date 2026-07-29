@@ -131,17 +131,26 @@ vi.mock("@/components/ui/tree", () => ({
     data,
     renderNode,
     className,
+    rowClassName,
   }: {
     data: MockTreeItem[];
     renderNode: (args: MockRenderArgs) => React.ReactNode;
     className?: string;
+    rowClassName?: string;
   }) => {
     const renderAll = (items: MockTreeItem[]): React.ReactNode[] =>
       items.flatMap((item) => [
-        renderNode({
-          node: { id: item.id, data: item, isSelected: false, isOpen: false },
-          style: {},
-        }),
+        <div key={item.id} data-testid="tree-row" className={rowClassName}>
+          {renderNode({
+            node: {
+              id: item.id,
+              data: item,
+              isSelected: false,
+              isOpen: false,
+            },
+            style: {},
+          })}
+        </div>,
         ...(item.children ? renderAll(item.children) : []),
       ]);
     return (
@@ -569,6 +578,12 @@ describe("SheetTree", () => {
     expect(container.querySelector("[data-testid='tree']")?.className).toEqual(
       expect.stringContaining("overflow-x-hidden")
     );
+    expect(
+      container.querySelector("[data-testid='tree-row']")?.className
+    ).toEqual(expect.stringContaining("min-w-0!"));
+    expect(
+      container.querySelector("[data-testid='tree-row']")?.className
+    ).toEqual(expect.stringContaining("max-w-full!"));
     const row = container.querySelector(
       `[data-item-key="/my/long-title"]`
     ) as HTMLElement | null;
