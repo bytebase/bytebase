@@ -877,9 +877,11 @@ func queryRetryStopOnError(
 	// Split the statement into individual SQLs
 	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), statement)
 	if err != nil {
-		// Engines without splitter support (MongoDB, Redis, Elasticsearch) fall back to
-		// treating the entire statement as a single unit. These engines also don't have
-		// GetQuerySpan support, so queryRetry will return nil spans (old behavior).
+		// Engines without splitter support (e.g. Redis) and statements that fail to
+		// split (e.g. MongoDB parse errors) fall back to treating the entire
+		// statement as a single unit. Where GetQuerySpan is supported (e.g. MongoDB),
+		// it re-parses the raw text and surfaces the parse error; otherwise
+		// queryRetry returns nil spans (old behavior).
 		return queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{{Text: statement}}, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, false)
 	}
 

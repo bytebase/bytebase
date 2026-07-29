@@ -13,6 +13,7 @@ func TestSplitSQL(t *testing.T) {
 		wantCount   int
 		wantTexts   []string
 		wantNil     bool
+		wantError   bool
 	}{
 		{
 			description: "single statement",
@@ -85,11 +86,32 @@ func TestSplitSQL(t *testing.T) {
 			wantCount:   1,
 			wantTexts:   []string{`db["my-collection"].find({})`},
 		},
+		{
+			// BYT-9950: constant arithmetic in createIndex options must split
+			// as a single statement instead of failing to parse.
+			description: "createIndex with arithmetic TTL expression",
+			statement: `db.cs_customer_frequency.createIndex(
+  { trans_date: 1 },
+  { expireAfterSeconds: 90 * 24 * 60 * 60, name: "cs_customer_frequency_idx2" }
+);`,
+			wantCount: 1,
+		},
+		{
+			// Splitting is strict: an unparseable statement fails the whole
+			// batch instead of being silently dropped (BYT-9950).
+			description: "valid statement followed by invalid fails",
+			statement:   "db.users.find();\nthis is not mongosh",
+			wantError:   true,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			result, err := SplitSQL(tc.statement)
+			if tc.wantError {
+				require.Error(t, err)
+				return
+			}
 			require.NoError(t, err)
 
 			if tc.wantNil {
