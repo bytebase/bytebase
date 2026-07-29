@@ -121,13 +121,17 @@ func (s *Service) parseGrantParams(ctx context.Context, values url.Values) (gran
 
 // checkConsentedResource verifies a token request's `resource` against the value
 // the grant was consented for. Omitting it is allowed (the consented value
-// stands); naming a different one — or one that was never consented — is not,
-// because the token would then be bound somewhere the user never approved.
+// stands); naming a different one is not, because the token would then be bound
+// somewhere the user never approved.
 //
 // The bare origin is accepted here too, matching what validateResource accepts at
 // consent time. The equivalence is derived from the stored value rather than from
 // the configured external URL on purpose: comparing against live config would make
 // every outstanding grant unusable the moment an admin changes the external URL.
+//
+// A grant with no stored resource has no constraint to check, so the parameter is
+// accepted and ignored rather than rejected — see the comment on the empty case
+// below.
 func checkConsentedResource(values url.Values, consented string) *oauth2Failure {
 	requested, err := singleValue(values, "resource")
 	if err != nil {
@@ -139,6 +143,17 @@ func checkConsentedResource(values url.Values, consented string) *oauth2Failure 
 	canonical, err := canonicalizeResourceURI(requested)
 	if err != nil {
 		return &oauth2Failure{code: "invalid_target", description: err.Error()}
+	}
+	// Codes and refresh tokens issued before 3.21.5 read back with no resource,
+	// and RFC 8707 clients send `resource` on every exchange *and* every refresh.
+	// Rejecting it would fail each in-flight code and every live session at its
+	// next refresh, for up to a refresh-token lifetime after upgrade. Accept it
+	// without binding: the stored value stays empty and is what gets carried
+	// forward, so an unbound grant cannot acquire a binding here. Retiring that
+	// population is PR 3's job (spec §"PR 3": legacy refresh grants require
+	// re-consent), and it needs the audience change to do it coherently.
+	if consented == "" {
+		return nil
 	}
 	if canonical != consented && canonical+mcpResourcePath != consented {
 		return &oauth2Failure{
@@ -154,12 +169,18 @@ func checkConsentedResource(values url.Values, consented string) *oauth2Failure 
 // match exactly. Narrowing is not supported here either: the grant record is the
 // authority, and changing what a session may do happens on the grant page, never
 // by asking for a different scope at the token endpoint.
+//
+// A grant with no stored scope is treated the same way as one with no stored
+// resource, and for the same upgrade reason: RFC 6749 §6 lets a client send
+// `scope` on a refresh, so a pre-3.21.5 grant would start failing its refreshes.
+// The requested value is ignored rather than adopted, so the grant keeps the
+// (empty) scope it was issued with.
 func checkConsentedScope(values url.Values, consented string) *oauth2Failure {
 	requested, err := singleValue(values, "scope")
 	if err != nil {
 		return &oauth2Failure{code: "invalid_scope", description: err.Error()}
 	}
-	if requested == "" || requested == consented {
+	if requested == "" || requested == consented || consented == "" {
 		return nil
 	}
 	return &oauth2Failure{
@@ -249,13 +270,24 @@ func canonicalizeResourceURI(resource string) (string, error) {
 }
 
 // validateScope accepts an empty scope (the common case today — no client asks
-// for one) and otherwise requires every space-delimited token to be a scope we
-// actually define.
+// for one) and otherwise requires exactly one token from the known vocabulary.
+//
+// Exactly one, not a set of them: a grant is bound to a single predefined
+// permission set (proposal v2 §4 — "consent binds the grant to a predefined
+// set", stored as one set reference). The scopes are a ladder, not additive
+// permissions, so `mcp:read-only mcp:read-write` names no set that can be
+// resolved. Accepting it would persist and echo a scope string with no
+// representation in the model P1b enforces against.
 func validateScope(scope string) error {
-	for token := range strings.FieldsSeq(scope) {
-		if !slices.Contains(knownScopes, token) {
-			return errors.Errorf("unknown scope %q; supported scopes are %s", token, strings.Join(knownScopes, " "))
-		}
+	tokens := strings.Fields(scope)
+	if len(tokens) == 0 {
+		return nil
+	}
+	if len(tokens) > 1 {
+		return errors.Errorf("scope must name exactly one permission set, got %d tokens; supported scopes are %s", len(tokens), strings.Join(knownScopes, " "))
+	}
+	if !slices.Contains(knownScopes, tokens[0]) {
+		return errors.Errorf("unknown scope %q; supported scopes are %s", tokens[0], strings.Join(knownScopes, " "))
 	}
 	return nil
 }
