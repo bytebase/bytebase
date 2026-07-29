@@ -89,6 +89,18 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 			"the token endpoint compares against this value, so it must already be canonical")
 	})
 
+	t.Run("a bare origin is consented as the canonical MCP resource", func(t *testing.T) {
+		// Accepting the bare origin (our unsuffixed RFC 9728 document publishes
+		// it) must not put a second spelling in the grant: PR 3 binds the token
+		// audience to the stored value, and two spellings would mean two
+		// audiences to honor at /mcp for as long as any grant lives.
+		code := consentOK(t, configured, url.Values{"resource": {"https://bb.example.com"}})
+
+		got, err := st.GetOAuth2AuthorizationCode(ctx, testClientID, code)
+		require.NoError(t, err)
+		require.Equal(t, testResource, got.Config.Resource)
+	})
+
 	t.Run("no resource and no scope still consents (clients that predate both)", func(t *testing.T) {
 		code := consentOK(t, configured, url.Values{})
 
@@ -218,6 +230,39 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		require.NotNil(t, rotated)
 		require.Equal(t, testResource, rotated.Resource)
 		require.Equal(t, "mcp:read-write", rotated.Scope)
+	})
+
+	t.Run("a bare-origin grant refreshes as the canonical resource, named either way", func(t *testing.T) {
+		// Consent with the bare origin, then drive the whole exchange naming the
+		// bare origin at every step. The stored value stays the canonical MCP
+		// URI throughout, and the same normalization applies at the token end so
+		// the client is never told its own spelling is wrong.
+		code := consentOK(t, configured, url.Values{"resource": {"https://bb.example.com/"}})
+
+		first := tokenOK(t, configured, url.Values{
+			"grant_type":    {"authorization_code"},
+			"code":          {code},
+			"redirect_uri":  {testRedirectURI},
+			"code_verifier": {testCodeVerifier},
+			"client_id":     {testClientID},
+			"resource":      {"https://bb.example.com"},
+		})
+		stored, err := st.GetOAuth2RefreshToken(ctx, testClientID, auth.HashToken(first.RefreshToken))
+		require.NoError(t, err)
+		require.NotNil(t, stored)
+		require.Equal(t, testResource, stored.Resource)
+
+		second := tokenOK(t, configured, url.Values{
+			"grant_type":    {"refresh_token"},
+			"refresh_token": {first.RefreshToken},
+			"client_id":     {testClientID},
+			"resource":      {"https://bb.example.com"},
+		})
+		rotated, err := st.GetOAuth2RefreshToken(ctx, testClientID, auth.HashToken(second.RefreshToken))
+		require.NoError(t, err)
+		require.NotNil(t, rotated)
+		require.Equal(t, testResource, rotated.Resource,
+			"the canonical form must survive rotation, not drift back to what the client sent")
 	})
 
 	t.Run("token exchange rejects a resource the grant never consented to", func(t *testing.T) {

@@ -123,6 +123,11 @@ func (s *Service) parseGrantParams(ctx context.Context, values url.Values) (gran
 // the grant was consented for. Omitting it is allowed (the consented value
 // stands); naming a different one — or one that was never consented — is not,
 // because the token would then be bound somewhere the user never approved.
+//
+// The bare origin is accepted here too, matching what validateResource accepts at
+// consent time. The equivalence is derived from the stored value rather than from
+// the configured external URL on purpose: comparing against live config would make
+// every outstanding grant unusable the moment an admin changes the external URL.
 func checkConsentedResource(values url.Values, consented string) *oauth2Failure {
 	requested, err := singleValue(values, "resource")
 	if err != nil {
@@ -135,7 +140,7 @@ func checkConsentedResource(values url.Values, consented string) *oauth2Failure 
 	if err != nil {
 		return &oauth2Failure{code: "invalid_target", description: err.Error()}
 	}
-	if canonical != consented {
+	if canonical != consented && canonical+mcpResourcePath != consented {
 		return &oauth2Failure{
 			code:        "invalid_target",
 			description: "resource does not match the resource this grant was authorized for",
@@ -178,13 +183,19 @@ func singleValue(values url.Values, name string) (string, error) {
 	return got[0], nil
 }
 
-// validateResource canonicalizes a client-supplied resource indicator and checks
-// that it names this server. trustedBaseURL must come from the configured
-// external URL; an empty one means we cannot prove anything about the value and
-// yields errExternalURLNotConfigured.
+// validateResource checks that a client-supplied resource indicator names this
+// server and returns the form to consent to. trustedBaseURL must come from the
+// configured external URL; an empty one means we cannot prove anything about the
+// value and yields errExternalURLNotConfigured.
 //
-// Accepted: the canonical MCP resource URI (<base>/mcp) and the bare origin
-// (<base>) — the two values our own RFC 9728 metadata documents publish.
+// Accepted inputs: the canonical MCP resource URI (<base>/mcp) and the bare
+// origin (<base>) — the two values our own RFC 9728 metadata documents publish,
+// so a client that read either one must not be turned away.
+//
+// Stored form: always <base>/mcp, whichever of the two was sent. PR 3 binds the
+// access token's audience to this stored value, and two accepted spellings of one
+// resource would mean two audiences to accept at /mcp — forever, since grants are
+// long-lived. Normalizing at the door keeps the audience single-valued.
 func validateResource(resource, trustedBaseURL string) (string, error) {
 	if trustedBaseURL == "" {
 		return "", errExternalURLNotConfigured
@@ -193,14 +204,15 @@ func validateResource(resource, trustedBaseURL string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "configured external URL %q is not a usable absolute URL", trustedBaseURL)
 	}
+	mcpResource := base + mcpResourcePath
 	canonical, err := canonicalizeResourceURI(resource)
 	if err != nil {
 		return "", err
 	}
-	if canonical != base && canonical != base+mcpResourcePath {
-		return "", errors.Errorf("resource %q is not this server's MCP resource; expected %q", canonical, base+mcpResourcePath)
+	if canonical != base && canonical != mcpResource {
+		return "", errors.Errorf("resource %q is not this server's MCP resource; expected %q", canonical, mcpResource)
 	}
-	return canonical, nil
+	return mcpResource, nil
 }
 
 // canonicalizeResourceURI normalizes the two differences a resource URI may
