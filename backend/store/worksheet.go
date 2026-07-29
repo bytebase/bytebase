@@ -434,6 +434,23 @@ func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter str
 		case "visibility":
 			visibility := WorkSheetVisibility(value.(string))
 			return qb.Q().Space("worksheet.visibility = ?", visibility), nil
+		case "folder":
+			folder, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("invalid folder value %q", value)
+			}
+			folder = strings.Trim(folder, "/")
+			if folder == "" {
+				return nil, errors.New("invalid empty folder")
+			}
+			q := qb.Q()
+			for i, segment := range strings.Split(folder, "/") {
+				if segment == "" {
+					return nil, errors.Errorf("invalid folder %q", value)
+				}
+				q.And(fmt.Sprintf("worksheet_organizer.payload->'folders'->>%d = ?", i), segment)
+			}
+			return qb.Q().Space("(?)", q), nil
 		default:
 			return nil, errors.Errorf("unsupport variable %q", variable)
 		}

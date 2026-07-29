@@ -12146,9 +12146,9 @@ When paginating, all other parameters provided to `ListWorksheets` must match th
 | parent | [string](#string) |  | The parent resource of the worksheets. Format: projects/{project} |
 | filter | [string](#string) |  | To filter the search result. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
+Supported filter: - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator. - folder: the worksheet organizer folder path, support &#34;==&#34; operator.
 
-For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;] visibility == &#34;PRIVATE&#34; |
+For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;] visibility == &#34;PRIVATE&#34; folder == &#34;foo/bar&#34; |
 | page_size | [int32](#int32) |  | The maximum number of worksheets to return. The service may return fewer than this value. If unspecified, at most 10 worksheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `SearchWorksheets` call. Provide this to retrieve the subsequent page. |
 

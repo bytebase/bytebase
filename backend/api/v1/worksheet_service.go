@@ -212,6 +212,9 @@ func (s *WorksheetService) SearchWorksheets(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if projectID == "-" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(`SearchWorksheets does not support parent "projects/-"`))
+	}
 	if request.PageSize < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("page size cannot be negative"))
 	}

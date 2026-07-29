@@ -237,16 +237,19 @@ vi.mock("@/components/ui/input", () => ({
     onBlur,
     onKeyDown,
     id,
+    className,
   }: {
     value?: string;
     onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onBlur?: () => void;
     onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
     id?: string;
+    className?: string;
   }) => (
     <input
       data-testid="rename-input"
       id={id}
+      className={className}
       value={value ?? ""}
       onChange={onChange}
       onBlur={onBlur}
@@ -809,6 +812,47 @@ describe("SheetTree", () => {
     });
 
     expect(defaultMocks.viewContext.fetchNextPage).toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("8. Rename input is not clipped by display-mode row overflow", () => {
+    const defaultMocks = setupDefaultMocks();
+    const wsNode = makeWorksheetNode("/my/ws-with-long-title");
+    const rootNode = makeFolderNode("/my", [wsNode]);
+    defaultMocks.viewContext._sheetTree.value = rootNode;
+    defaultMocks.editingNode.value = {
+      node: wsNode,
+      rawLabel: "bytebase-3.12.2 May 9, 2026, 12:12:02 PM GMT+8",
+    };
+
+    const { container, render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={vi.fn()}
+      />
+    );
+    render();
+
+    const input = container.querySelector(
+      "[data-testid='rename-input']"
+    ) as HTMLInputElement | null;
+    expect(input).not.toBeNull();
+    expect(input?.className).toContain("w-full");
+    expect(input?.className).toContain("h-6");
+
+    const label = input?.closest(".tree-label");
+    expect(label?.className).toContain("overflow-visible");
+
+    const row = input?.closest("[data-item-key='/my/ws-with-long-title']");
+    expect(row?.className).toContain("overflow-visible");
+    expect(row?.className).toContain("py-0");
+
+    const tree = container.querySelector("[data-testid='tree']");
+    expect(tree?.className).toContain(
+      "[&_[role=treeitem]]:overflow-visible"
+    );
 
     unmount();
   });

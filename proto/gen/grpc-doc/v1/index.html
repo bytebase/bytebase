@@ -34283,6 +34283,7 @@ Supported filter:
 - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
 - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator.
 - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
+- folder: the worksheet organizer folder path, support &#34;==&#34; operator.
 
 For example:
 creator == &#34;users/{email}&#34;
@@ -34290,7 +34291,8 @@ creator != &#34;users/{email}&#34;
 starred == true
 starred == false
 visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;]
-visibility == &#34;PRIVATE&#34; </p></td>
+visibility == &#34;PRIVATE&#34;
+folder == &#34;foo/bar&#34; </p></td>
                 </tr>
               
                 <tr>

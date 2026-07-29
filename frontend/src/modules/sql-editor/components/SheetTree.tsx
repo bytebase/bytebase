@@ -955,7 +955,8 @@ export function SheetTree({
           style={rowStyle}
           data-item-key={folderNode.key}
           className={cn(
-            "flex min-w-0 max-w-full items-center gap-x-1 overflow-hidden py-0.5 text-sm cursor-pointer select-none",
+            "flex min-w-0 max-w-full items-center gap-x-1 text-sm cursor-pointer select-none",
+            isEditing ? "overflow-visible py-0" : "overflow-hidden py-0.5",
             // Align with the connection-panel database tree: subtle neutral
             // hover, accent-tinted selection (was a too-light gray fill).
             "hover:bg-control-bg/70 rounded-xs",
@@ -1014,7 +1015,12 @@ export function SheetTree({
           </span>
 
           {/* Label / rename input */}
-          <span className="tree-label min-w-0 flex-1 overflow-hidden">
+          <span
+            className={cn(
+              "tree-label min-w-0 flex-1",
+              isEditing ? "overflow-visible" : "overflow-hidden"
+            )}
+          >
             {isEditing ? (
               <Input
                 ref={inputRef}
@@ -1025,7 +1031,7 @@ export function SheetTree({
                 // store and is frozen — mutating `node.label` silently
                 // no-ops, which froze the input (could not type).
                 value={editingNode.rawLabel}
-                className="h-5 py-0 text-xs px-1!"
+                className="h-6 w-full min-w-0 py-0 text-sm px-1!"
                 autoFocus
                 onBlur={() => handleRenameNode()}
                 onKeyDown={(e) => {
@@ -1387,7 +1393,12 @@ export function SheetTree({
         height={treeHeight}
         rowHeight={ROW_HEIGHT}
         indent={12}
-        className="min-w-0 max-w-full overflow-x-hidden text-sm [&_[role=treeitem]]:!min-w-0 [&_[role=treeitem]]:!max-w-full [&_[role=treeitem]]:overflow-hidden"
+        className={cn(
+          "min-w-0 max-w-full overflow-x-hidden text-sm [&_[role=treeitem]]:!min-w-0 [&_[role=treeitem]]:!max-w-full",
+          editingNode
+            ? "[&_[role=treeitem]]:overflow-visible"
+            : "[&_[role=treeitem]]:overflow-hidden"
+        )}
         onMove={handleMove}
         disableDrag={view === "draft" || !!editingNode || multiSelectMode}
         disableDrop={

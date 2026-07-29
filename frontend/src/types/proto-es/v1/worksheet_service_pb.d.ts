@@ -315,6 +315,7 @@ export declare type SearchWorksheetsRequest = Message<"bytebase.v1.SearchWorkshe
    * - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
    * - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
    * - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
+   * - folder: the worksheet organizer folder path, support "==" operator.
    *
    * For example:
    * creator == "users/{email}"
@@ -323,6 +324,7 @@ export declare type SearchWorksheetsRequest = Message<"bytebase.v1.SearchWorkshe
    * starred == false
    * visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
    * visibility == "PRIVATE"
+   * folder == "foo/bar"
    *
    * @generated from field: string filter = 2;
    */

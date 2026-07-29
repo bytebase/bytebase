@@ -7,6 +7,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -136,6 +137,85 @@ func TestListWorksheets(t *testing.T) {
 	_, err = ctl.worksheetServiceClient.ListWorksheets(ctx, connect.NewRequest(&v1pb.ListWorksheetsRequest{
 		Parent: "projects/-",
 		Filter: `visibility == "PROJECT_READ"`,
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+}
+
+func TestSearchWorksheetsFilterByFolder(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	createWorksheet := func(title string) *v1pb.Worksheet {
+		resp, err := ctl.worksheetServiceClient.CreateWorksheet(ctx, connect.NewRequest(&v1pb.CreateWorksheetRequest{
+			Parent: ctl.project.Name,
+			Worksheet: &v1pb.Worksheet{
+				Title:      title,
+				Content:    []byte("SELECT 1;"),
+				Visibility: v1pb.Worksheet_PRIVATE,
+			},
+		}))
+		a.NoError(err)
+		return resp.Msg
+	}
+	setFolders := func(worksheet *v1pb.Worksheet, folders []string) {
+		_, err := ctl.worksheetServiceClient.UpdateWorksheetOrganizer(ctx, connect.NewRequest(&v1pb.UpdateWorksheetOrganizerRequest{
+			Organizer: &v1pb.WorksheetOrganizer{
+				Worksheet: worksheet.Name,
+				Folders:   folders,
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folders"}},
+		}))
+		a.NoError(err)
+	}
+
+	alphaWorksheet := createWorksheet("alpha")
+	setFolders(alphaWorksheet, []string{"alpha"})
+	alphaChildWorksheet := createWorksheet("alpha-child")
+	setFolders(alphaChildWorksheet, []string{"alpha", "beta"})
+	alphabetWorksheet := createWorksheet("alphabet")
+	setFolders(alphabetWorksheet, []string{"alphabet"})
+	nestedAlphaWorksheet := createWorksheet("nested-alpha")
+	setFolders(nestedAlphaWorksheet, []string{"gamma", "alpha"})
+	rootWorksheet := createWorksheet("root")
+
+	resp, err := ctl.worksheetServiceClient.SearchWorksheets(ctx, connect.NewRequest(&v1pb.SearchWorksheetsRequest{
+		Parent: ctl.project.Name,
+		Filter: `folder == "alpha"`,
+	}))
+	a.NoError(err)
+	a.ElementsMatch(
+		[]string{alphaWorksheet.Name, alphaChildWorksheet.Name},
+		worksheetNames(resp.Msg.Worksheets),
+	)
+	a.NotContains(worksheetNames(resp.Msg.Worksheets), alphabetWorksheet.Name)
+	a.NotContains(worksheetNames(resp.Msg.Worksheets), nestedAlphaWorksheet.Name)
+	a.NotContains(worksheetNames(resp.Msg.Worksheets), rootWorksheet.Name)
+
+	childResp, err := ctl.worksheetServiceClient.SearchWorksheets(ctx, connect.NewRequest(&v1pb.SearchWorksheetsRequest{
+		Parent: ctl.project.Name,
+		Filter: `folder == "alpha/beta"`,
+	}))
+	a.NoError(err)
+	a.ElementsMatch([]string{alphaChildWorksheet.Name}, worksheetNames(childResp.Msg.Worksheets))
+}
+
+func TestSearchWorksheetsRejectsWildcardProject(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	_, err = ctl.worksheetServiceClient.SearchWorksheets(ctx, connect.NewRequest(&v1pb.SearchWorksheetsRequest{
+		Parent: "projects/-",
 	}))
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
