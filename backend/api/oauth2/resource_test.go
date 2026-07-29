@@ -22,6 +22,9 @@ func TestValidateResource(t *testing.T) {
 			"callers key on this sentinel to return the actionable setup error instead of a generic OAuth failure")
 	})
 
+	// Every accepted input resolves to the same stored form. PR 3 binds the token
+	// audience to what is stored, so a second accepted spelling would become a
+	// second audience to honor at /mcp for the life of every grant.
 	accepted := []struct {
 		name string
 		in   string
@@ -32,9 +35,10 @@ func TestValidateResource(t *testing.T) {
 		{"scheme and host case are normalized", "HTTPS://BB.Example.COM/mcp", "https://bb.example.com/mcp"},
 		// Our own RFC 9728 document at the unsuffixed well-known path publishes
 		// the bare origin as `resource`, so a client that read it must not be
-		// rejected for using the value we advertised.
-		{"bare origin", "https://bb.example.com", "https://bb.example.com"},
-		{"bare origin with trailing slash", "https://bb.example.com/", "https://bb.example.com"},
+		// rejected for using the value we advertised — but it is stored as the
+		// canonical MCP URI, not echoed back as the origin.
+		{"bare origin normalizes to the MCP resource", "https://bb.example.com", "https://bb.example.com/mcp"},
+		{"bare origin with trailing slash", "https://bb.example.com/", "https://bb.example.com/mcp"},
 	}
 	for _, tc := range accepted {
 		t.Run("accepted: "+tc.name, func(t *testing.T) {
@@ -85,6 +89,22 @@ func TestValidateResource(t *testing.T) {
 		got, err := validateResource("https://bb.example.com/mcp", "https://BB.Example.com")
 		require.NoError(t, err)
 		require.Equal(t, "https://bb.example.com/mcp", got)
+	})
+
+	t.Run("every accepted spelling collapses to one stored value", func(t *testing.T) {
+		stored := map[string]struct{}{}
+		for _, in := range []string{
+			"https://bb.example.com/mcp",
+			"https://bb.example.com/mcp/",
+			"HTTPS://BB.Example.COM/mcp",
+			"https://bb.example.com",
+			"https://bb.example.com/",
+		} {
+			got, err := validateResource(in, testTrustedBase)
+			require.NoError(t, err)
+			stored[got] = struct{}{}
+		}
+		require.Len(t, stored, 1, "more than one stored spelling would force PR 3 to accept multiple audiences")
 	})
 }
 
@@ -139,6 +159,11 @@ func TestCheckConsentedResource(t *testing.T) {
 		{"omitted keeps the consented resource", url.Values{}, consented, ""},
 		{"exact match", url.Values{"resource": {consented}}, consented, ""},
 		{"noncanonical but equivalent match", url.Values{"resource": {"HTTPS://BB.example.com/mcp/"}}, consented, ""},
+		// Same normalization at both ends: consent stores <base>/mcp for a bare
+		// origin, so the token endpoint must accept a bare origin against it.
+		{"bare origin matches a /mcp-stored grant", url.Values{"resource": {"https://bb.example.com"}}, consented, ""},
+		{"bare origin with trailing slash matches", url.Values{"resource": {"https://bb.example.com/"}}, consented, ""},
+		{"bare origin of a different host still fails", url.Values{"resource": {"https://evil.example.com"}}, consented, "invalid_target"},
 		{"different resource", url.Values{"resource": {"https://evil.example.com/mcp"}}, consented, "invalid_target"},
 		{"noncanonical value that is not equivalent", url.Values{"resource": {"https://bb.example.com:443/mcp"}}, consented, "invalid_target"},
 		{"malformed value", url.Values{"resource": {"not a uri"}}, consented, "invalid_target"},
