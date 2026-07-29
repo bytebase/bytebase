@@ -86,7 +86,7 @@ func TestSyncSchema(t *testing.T) {
 	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, false)
 	a.NoError(err)
 
-	resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
+	resp, err := ctl.changelogServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
 		Parent: database.Name,
 		View:   v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
 	}))

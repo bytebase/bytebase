@@ -62,13 +62,13 @@ import {
   type Language,
   languageOfEngineV1,
 } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   Changelog_Status,
   ChangelogView,
-  DiffSchemaRequestSchema,
-} from "@/types/proto-es/v1/database_service_pb";
+} from "@/types/proto-es/v1/changelog_service_pb";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { DiffSchemaRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   databaseV1Url,

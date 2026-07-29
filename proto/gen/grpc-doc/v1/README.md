@@ -156,7 +156,6 @@
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
     - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
     - [BoundingBox](#bytebase-v1-BoundingBox)
-    - [Changelog](#bytebase-v1-Changelog)
     - [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata)
     - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
     - [CompositeTypeAttribute](#bytebase-v1-CompositeTypeAttribute)
@@ -179,7 +178,6 @@
     - [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata)
     - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
     - [GenerationMetadata](#bytebase-v1-GenerationMetadata)
-    - [GetChangelogRequest](#bytebase-v1-GetChangelogRequest)
     - [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest)
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
     - [GetDatabaseSDLSchemaRequest](#bytebase-v1-GetDatabaseSDLSchemaRequest)
@@ -188,8 +186,6 @@
     - [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse)
     - [GridLevel](#bytebase-v1-GridLevel)
     - [IndexMetadata](#bytebase-v1-IndexMetadata)
-    - [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest)
-    - [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse)
     - [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest)
     - [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse)
     - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
@@ -210,8 +206,6 @@
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
   
-    - [Changelog.Status](#bytebase-v1-Changelog-Status)
-    - [ChangelogView](#bytebase-v1-ChangelogView)
     - [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration)
     - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
     - [GetDatabaseSDLSchemaRequest.SDLFormat](#bytebase-v1-GetDatabaseSDLSchemaRequest-SDLFormat)
@@ -476,6 +470,17 @@
     - [BatchParseResponse](#bytebase-v1-BatchParseResponse)
   
     - [CelService](#bytebase-v1-CelService)
+  
+- [v1/changelog_service.proto](#v1_changelog_service-proto)
+    - [Changelog](#bytebase-v1-Changelog)
+    - [GetChangelogRequest](#bytebase-v1-GetChangelogRequest)
+    - [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest)
+    - [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse)
+  
+    - [Changelog.Status](#bytebase-v1-Changelog-Status)
+    - [ChangelogView](#bytebase-v1-ChangelogView)
+  
+    - [ChangelogService](#bytebase-v1-ChangelogService)
   
 - [v1/database_catalog_service.proto](#v1_database_catalog_service-proto)
     - [ColumnCatalog](#bytebase-v1-ColumnCatalog)
@@ -3123,27 +3128,6 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 
 
 
-<a name="bytebase-v1-Changelog"></a>
-
-### Changelog
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| status | [Changelog.Status](#bytebase-v1-Changelog-Status) |  |  |
-| schema | [string](#string) |  |  |
-| schema_size | [int64](#int64) |  |  |
-| task_run | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
-| plan_title | [string](#string) |  | The title of the plan associated with this changelog&#39;s task run. This field is populated by deriving the plan from task_run for display purposes. |
-
-
-
-
-
-
 <a name="bytebase-v1-CheckConstraintMetadata"></a>
 
 ### CheckConstraintMetadata
@@ -3570,22 +3554,6 @@ FunctionMetadata is the metadata for functions.
 
 
 
-<a name="bytebase-v1-GetChangelogRequest"></a>
-
-### GetChangelogRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the changelog to retrieve. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
-| view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-GetDatabaseMetadataRequest"></a>
 
 ### GetDatabaseMetadataRequest
@@ -3728,47 +3696,6 @@ IndexMetadata is the metadata for indexes.
 | spatial_config | [SpatialIndexConfig](#bytebase-v1-SpatialIndexConfig) |  | Spatial index configuration for spatial databases like SQL Server, PostgreSQL with PostGIS, etc. |
 | opclass_names | [string](#string) | repeated | https://www.postgresql.org/docs/current/catalog-pg-opclass.html Name of the operator class for each column. (PostgreSQL specific). |
 | opclass_defaults | [bool](#bool) | repeated | True if the operator class is the default. (PostgreSQL specific). |
-
-
-
-
-
-
-<a name="bytebase-v1-ListChangelogsRequest"></a>
-
-### ListChangelogsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent of the changelogs. Format: instances/{instance}/databases/{database} |
-| page_size | [int32](#int32) |  | The maximum number of changelogs to return. The service may return fewer than this value. If unspecified, at most 10 changelogs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from the previous call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided must match the call that provided the page token. |
-| view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
-| filter | [string](#string) |  | Filter is used to filter changelogs returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter: - status: the changelog status, support &#34;==&#34; operation. check Changelog.Status for available values. - create_time: the changelog create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
-
-Example: status == &#34;DONE&#34; status == &#34;FAILED&#34; &amp;&amp; type == &#34;SDL&#34; create_time &gt;= &#34;2024-01-01T00:00:00Z&#34; &amp;&amp; create_time &lt;= &#34;2024-01-02T00:00:00Z&#34; |
-
-
-
-
-
-
-<a name="bytebase-v1-ListChangelogsResponse"></a>
-
-### ListChangelogsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| changelogs | [Changelog](#bytebase-v1-Changelog) | repeated | The list of changelogs. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -4195,33 +4122,6 @@ ViewMetadata is the metadata for views.
  
 
 
-<a name="bytebase-v1-Changelog-Status"></a>
-
-### Changelog.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| DONE | 2 |  |
-| FAILED | 3 |  |
-
-
-
-<a name="bytebase-v1-ChangelogView"></a>
-
-### ChangelogView
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CHANGELOG_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
-| CHANGELOG_VIEW_BASIC | 1 |  |
-| CHANGELOG_VIEW_FULL | 2 |  |
-
-
-
 <a name="bytebase-v1-ColumnMetadata-IdentityGeneration"></a>
 
 ### ColumnMetadata.IdentityGeneration
@@ -4379,8 +4279,6 @@ DatabaseService manages databases and their schemas.
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) | Retrieves database schema as DDL statements. Permissions required: bb.databases.getSchema |
 | GetDatabaseSDLSchema | [GetDatabaseSDLSchemaRequest](#bytebase-v1-GetDatabaseSDLSchemaRequest) | [DatabaseSDLSchema](#bytebase-v1-DatabaseSDLSchema) | Retrieves database schema in SDL (Schema Definition Language) format. Permissions required: bb.databases.getSchema |
 | DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) | Compares and generates migration statements between two schemas. Permissions required: bb.databases.get |
-| ListChangelogs | [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest) | [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse) | Lists migration history for a database. Permissions required: bb.changelogs.list |
-| GetChangelog | [GetChangelogRequest](#bytebase-v1-GetChangelogRequest) | [Changelog](#bytebase-v1-Changelog) | Retrieves a specific changelog entry. Permissions required: bb.changelogs.get |
 | GetSchemaString | [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest) | [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse) | Generates schema DDL for a database object. Permissions required: bb.databases.getSchema |
 
  
@@ -8200,6 +8098,138 @@ CelService manages CEL (Common Expression Language) parsing and formatting opera
 | ----------- | ------------ | ------------- | ------------|
 | BatchParse | [BatchParseRequest](#bytebase-v1-BatchParseRequest) | [BatchParseResponse](#bytebase-v1-BatchParseResponse) | Parses multiple CEL expression strings into AST representations. Permissions required: None |
 | BatchDeparse | [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest) | [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse) | Converts multiple CEL AST representations back into expression strings. Permissions required: None |
+
+ 
+
+
+
+<a name="v1_changelog_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/changelog_service.proto
+
+
+
+<a name="bytebase-v1-Changelog"></a>
+
+### Changelog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| status | [Changelog.Status](#bytebase-v1-Changelog-Status) |  |  |
+| schema | [string](#string) |  |  |
+| schema_size | [int64](#int64) |  |  |
+| task_run | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+| plan_title | [string](#string) |  | The title of the plan associated with this changelog&#39;s task run. This field is populated by deriving the plan from task_run for display purposes. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetChangelogRequest"></a>
+
+### GetChangelogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the changelog to retrieve. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
+| view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ListChangelogsRequest"></a>
+
+### ListChangelogsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent of the changelogs. Format: instances/{instance}/databases/{database} |
+| page_size | [int32](#int32) |  | The maximum number of changelogs to return. The service may return fewer than this value. If unspecified, at most 10 changelogs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from the previous call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided must match the call that provided the page token. |
+| view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
+| filter | [string](#string) |  | Filter is used to filter changelogs returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - status: the changelog status, support &#34;==&#34; operation. check Changelog.Status for available values. - create_time: the changelog create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
+
+Example: status == &#34;DONE&#34; status == &#34;FAILED&#34; &amp;&amp; type == &#34;SDL&#34; create_time &gt;= &#34;2024-01-01T00:00:00Z&#34; &amp;&amp; create_time &lt;= &#34;2024-01-02T00:00:00Z&#34; |
+
+
+
+
+
+
+<a name="bytebase-v1-ListChangelogsResponse"></a>
+
+### ListChangelogsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| changelogs | [Changelog](#bytebase-v1-Changelog) | repeated | The list of changelogs. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-Changelog-Status"></a>
+
+### Changelog.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| DONE | 2 |  |
+| FAILED | 3 |  |
+
+
+
+<a name="bytebase-v1-ChangelogView"></a>
+
+### ChangelogView
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGELOG_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
+| CHANGELOG_VIEW_BASIC | 1 |  |
+| CHANGELOG_VIEW_FULL | 2 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-ChangelogService"></a>
+
+### ChangelogService
+ChangelogService manages database migration history.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListChangelogs | [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest) | [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse) | Lists migration history for a database. Permissions required: bb.changelogs.list |
+| GetChangelog | [GetChangelogRequest](#bytebase-v1-GetChangelogRequest) | [Changelog](#bytebase-v1-Changelog) | Retrieves a specific changelog entry. Permissions required: bb.changelogs.get |
 
  
 

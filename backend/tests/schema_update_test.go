@@ -86,7 +86,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, false)
 	a.NoError(err)
 
-	resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
+	resp, err := ctl.changelogServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
 		Parent: database.Name,
 		View:   v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
 	}))
@@ -103,6 +103,14 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.Equal(dumpedSchema, changelogs[1].Schema)
 	// Third changelog should be the baseline
 	a.Equal(v1pb.Changelog_DONE, changelogs[2].Status)
+
+	getResp, err := ctl.changelogServiceClient.GetChangelog(ctx, connect.NewRequest(&v1pb.GetChangelogRequest{
+		Name: changelogs[0].Name,
+		View: v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
+	}))
+	a.NoError(err)
+	a.Equal(changelogs[0].Name, getResp.Msg.Name)
+	a.Equal(v1pb.Changelog_DONE, getResp.Msg.Status)
 }
 
 func TestGetLatestSchema(t *testing.T) {

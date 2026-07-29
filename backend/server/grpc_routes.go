@@ -96,6 +96,7 @@ func configureGrpcRouters(
 	auditLogService := apiv1.NewAuditLogService(stores, licenseService)
 	authService := apiv1.NewAuthService(stores, secret, licenseService, profile, iamManager)
 	celService := apiv1.NewCelService()
+	changelogService := apiv1.NewChangelogService(stores)
 	databaseCatalogService := apiv1.NewDatabaseCatalogService(stores)
 	databaseGroupService := apiv1.NewDatabaseGroupService(stores, licenseService)
 	databaseService := apiv1.NewDatabaseService(stores, schemaSyncer, profile, iamManager, licenseService)
@@ -161,6 +162,9 @@ func configureGrpcRouters(
 
 	celPath, celHandler := v1connect.NewCelServiceHandler(celService, handlerOpts)
 	connectHandlers[celPath] = celHandler
+
+	changelogPath, changelogHandler := v1connect.NewChangelogServiceHandler(changelogService, handlerOpts)
+	connectHandlers[changelogPath] = changelogHandler
 
 	databaseCatalogPath, databaseCatalogHandler := v1connect.NewDatabaseCatalogServiceHandler(databaseCatalogService, handlerOpts)
 	connectHandlers[databaseCatalogPath] = databaseCatalogHandler
@@ -245,6 +249,7 @@ func configureGrpcRouters(
 		v1connect.AuditLogServiceName,
 		v1connect.AuthServiceName,
 		v1connect.CelServiceName,
+		v1connect.ChangelogServiceName,
 		v1connect.DatabaseCatalogServiceName,
 		v1connect.DatabaseGroupServiceName,
 		v1connect.DatabaseServiceName,
@@ -306,6 +311,9 @@ func configureGrpcRouters(
 		return err
 	}
 	if err := v1pb.RegisterCelServiceHandler(ctx, mux, grpcConn); err != nil {
+		return err
+	}
+	if err := v1pb.RegisterChangelogServiceHandler(ctx, mux, grpcConn); err != nil {
 		return err
 	}
 	if err := v1pb.RegisterDatabaseCatalogServiceHandler(ctx, mux, grpcConn); err != nil {

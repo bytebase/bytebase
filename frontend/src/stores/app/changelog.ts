@@ -1,11 +1,11 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { databaseServiceClientConnect } from "@/api";
+import { changelogServiceClientConnect } from "@/api";
 import { UNKNOWN_ID } from "@/types";
 import {
   ChangelogView,
   GetChangelogRequestSchema,
   ListChangelogsRequestSchema,
-} from "@/types/proto-es/v1/database_service_pb";
+} from "@/types/proto-es/v1/changelog_service_pb";
 import { extractChangelogUID } from "@/utils/v1/changelog";
 import type { AppSliceCreator, ChangelogSlice } from "./types";
 
@@ -63,7 +63,7 @@ export const createChangelogSlice: AppSliceCreator<ChangelogSlice> = (
       view,
       filter: params.filter,
     });
-    const response = await databaseServiceClientConnect.listChangelogs(
+    const response = await changelogServiceClientConnect.listChangelogs(
       createProto(ListChangelogsRequestSchema, {
         parent,
         pageSize: params.pageSize,
@@ -125,7 +125,7 @@ export const createChangelogSlice: AppSliceCreator<ChangelogSlice> = (
   fetchChangelog: async (params) => {
     if (!params.name) return undefined;
     const view = normalizeView(params.view);
-    const changelog = await databaseServiceClientConnect.getChangelog(
+    const changelog = await changelogServiceClientConnect.getChangelog(
       createProto(GetChangelogRequestSchema, {
         name: params.name,
         view,

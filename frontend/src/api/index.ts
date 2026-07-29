@@ -8,6 +8,7 @@ import { AuthService } from "@/types/proto-es/v1/auth_service_pb";
 import { CelService } from "@/types/proto-es/v1/cel_service_pb";
 import { DatabaseCatalogService } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { DatabaseGroupService } from "@/types/proto-es/v1/database_group_service_pb";
+import { ChangelogService } from "@/types/proto-es/v1/changelog_service_pb";
 import { DatabaseService } from "@/types/proto-es/v1/database_service_pb";
 import { GroupService } from "@/types/proto-es/v1/group_service_pb";
 import { IdentityProviderService } from "@/types/proto-es/v1/idp_service_pb";
@@ -178,5 +179,10 @@ export const rolloutServiceClientConnect = createClient(
 
 export const databaseServiceClientConnect = createClient(
   DatabaseService,
+  transport
+);
+
+export const changelogServiceClientConnect = createClient(
+  ChangelogService,
   transport
 );

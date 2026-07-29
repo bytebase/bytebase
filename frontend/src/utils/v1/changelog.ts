@@ -1,11 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { getDatabaseByName } from "@/stores/app/databaseAccess";
 import { UNKNOWN_ID } from "@/types";
-import type {
-  Changelog,
-  Database,
-} from "@/types/proto-es/v1/database_service_pb";
-import { ChangelogSchema } from "@/types/proto-es/v1/database_service_pb";
+import type { Changelog } from "@/types/proto-es/v1/changelog_service_pb";
+import { ChangelogSchema } from "@/types/proto-es/v1/changelog_service_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { databaseV1Url, extractDatabaseResourceName } from "./database";
 
 export const extractChangelogUID = (name: string) => {

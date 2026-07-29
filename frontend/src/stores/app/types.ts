@@ -8,6 +8,12 @@ import type { NotificationCreate } from "@/types/notification";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
 import type { LoginRequest } from "@/types/proto-es/v1/auth_service_pb";
+import type {
+  Changelog,
+  ChangelogView,
+  GetChangelogRequest,
+  ListChangelogsRequest,
+} from "@/types/proto-es/v1/changelog_service_pb";
 import type { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
@@ -16,8 +22,6 @@ import type {
 } from "@/types/proto-es/v1/database_group_service_pb";
 import type {
   BatchUpdateDatabasesRequest,
-  Changelog,
-  ChangelogView,
   Database,
   DatabaseMetadata,
   DatabaseSchema,
@@ -26,8 +30,6 @@ import type {
   ExtensionMetadata,
   ExternalTableMetadata,
   FunctionMetadata,
-  GetChangelogRequest,
-  ListChangelogsRequest,
   SchemaMetadata,
   TableMetadata,
   UpdateDatabaseRequest,

@@ -769,10 +769,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Changelog"><span class="badge">M</span>Changelog</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.CheckConstraintMetadata"><span class="badge">M</span>CheckConstraintMetadata</a>
                 </li>
               
@@ -861,10 +857,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.GetChangelogRequest"><span class="badge">M</span>GetChangelogRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetDatabaseMetadataRequest"><span class="badge">M</span>GetDatabaseMetadataRequest</a>
                 </li>
               
@@ -894,14 +886,6 @@
               
                 <li>
                   <a href="#bytebase.v1.IndexMetadata"><span class="badge">M</span>IndexMetadata</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListChangelogsRequest"><span class="badge">M</span>ListChangelogsRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListChangelogsResponse"><span class="badge">M</span>ListChangelogsResponse</a>
                 </li>
               
                 <li>
@@ -980,14 +964,6 @@
                   <a href="#bytebase.v1.ViewMetadata"><span class="badge">M</span>ViewMetadata</a>
                 </li>
               
-              
-                <li>
-                  <a href="#bytebase.v1.Changelog.Status"><span class="badge">E</span>Changelog.Status</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ChangelogView"><span class="badge">E</span>ChangelogView</a>
-                </li>
               
                 <li>
                   <a href="#bytebase.v1.ColumnMetadata.IdentityGeneration"><span class="badge">E</span>ColumnMetadata.IdentityGeneration</a>
@@ -2006,6 +1982,45 @@
               
                 <li>
                   <a href="#bytebase.v1.CelService"><span class="badge">S</span>CelService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#v1%2fchangelog_service.proto">v1/changelog_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.Changelog"><span class="badge">M</span>Changelog</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetChangelogRequest"><span class="badge">M</span>GetChangelogRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListChangelogsRequest"><span class="badge">M</span>ListChangelogsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListChangelogsResponse"><span class="badge">M</span>ListChangelogsResponse</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.v1.Changelog.Status"><span class="badge">E</span>Changelog.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ChangelogView"><span class="badge">E</span>ChangelogView</a>
+                </li>
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.ChangelogService"><span class="badge">S</span>ChangelogService</a>
                 </li>
               
             </ul>
@@ -9562,73 +9577,6 @@ A maximum of 1000 databases can be modified in a batch. </p></td>
 
         
       
-        <h3 id="bytebase.v1.Changelog">Changelog</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>status</td>
-                  <td><a href="#bytebase.v1.Changelog.Status">Changelog.Status</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema_size</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>task_run</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>plan_title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The title of the plan associated with this changelog&#39;s task run.
-This field is populated by deriving the plan from task_run for display purposes. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.CheckConstraintMetadata">CheckConstraintMetadata</h3>
         <p>CheckConstraintMetadata is the metadata for check constraints.</p>
 
@@ -10813,38 +10761,6 @@ For PostgreSQL, it&#39;s the list of tables that the function depends on the ret
 
         
       
-        <h3 id="bytebase.v1.GetChangelogRequest">GetChangelogRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the changelog to retrieve.
-Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>view</td>
-                  <td><a href="#bytebase.v1.ChangelogView">ChangelogView</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.GetDatabaseMetadataRequest">GetDatabaseMetadataRequest</h3>
         <p></p>
 
@@ -11222,107 +11138,6 @@ Name of the operator class for each column. (PostgreSQL specific). </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td>repeated</td>
                   <td><p>True if the operator class is the default. (PostgreSQL specific). </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListChangelogsRequest">ListChangelogsRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent of the changelogs.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of changelogs to return. The service may return fewer
-than this value. If unspecified, at most 10 changelogs will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from the previous call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>view</td>
-                  <td><a href="#bytebase.v1.ChangelogView">ChangelogView</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Filter is used to filter changelogs returned in the list.
-The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter:
-- status: the changelog status, support &#34;==&#34; operation. check Changelog.Status for available values.
-- create_time: the changelog create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
-
-Example:
-status == &#34;DONE&#34;
-status == &#34;FAILED&#34; &amp;&amp; type == &#34;SDL&#34;
-create_time &gt;= &#34;2024-01-01T00:00:00Z&#34; &amp;&amp; create_time &lt;= &#34;2024-01-02T00:00:00Z&#34; </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListChangelogsResponse">ListChangelogsResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>changelogs</td>
-                  <td><a href="#bytebase.v1.Changelog">Changelog</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of changelogs. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
                 </tr>
               
             </tbody>
@@ -12742,71 +12557,6 @@ In this situation, `update_mask` is ignored. </p></td>
       
 
       
-        <h3 id="bytebase.v1.Changelog.Status">Changelog.Status</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PENDING</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DONE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FAILED</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.ChangelogView">ChangelogView</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>CHANGELOG_VIEW_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>The default / unset value.
-The API will default to the BASIC view.</p></td>
-              </tr>
-            
-              <tr>
-                <td>CHANGELOG_VIEW_BASIC</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CHANGELOG_VIEW_FULL</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
         <h3 id="bytebase.v1.ColumnMetadata.IdentityGeneration">ColumnMetadata.IdentityGeneration</h3>
         <p></p>
         <table class="enum-table">
@@ -13242,22 +12992,6 @@ Permissions required: bb.databases.get</p></td>
               </tr>
             
               <tr>
-                <td>ListChangelogs</td>
-                <td><a href="#bytebase.v1.ListChangelogsRequest">ListChangelogsRequest</a></td>
-                <td><a href="#bytebase.v1.ListChangelogsResponse">ListChangelogsResponse</a></td>
-                <td><p>Lists migration history for a database.
-Permissions required: bb.changelogs.list</p></td>
-              </tr>
-            
-              <tr>
-                <td>GetChangelog</td>
-                <td><a href="#bytebase.v1.GetChangelogRequest">GetChangelogRequest</a></td>
-                <td><a href="#bytebase.v1.Changelog">Changelog</a></td>
-                <td><p>Retrieves a specific changelog entry.
-Permissions required: bb.changelogs.get</p></td>
-              </tr>
-            
-              <tr>
                 <td>GetSchemaString</td>
                 <td><a href="#bytebase.v1.GetSchemaStringRequest">GetSchemaStringRequest</a></td>
                 <td><a href="#bytebase.v1.GetSchemaStringResponse">GetSchemaStringResponse</a></td>
@@ -13418,26 +13152,6 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td>POST</td>
                 <td>/v1/{name=instances/*/databases/*/changelogs/*}:diffSchema</td>
                 <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListChangelogs</td>
-                <td>GET</td>
-                <td>/v1/{parent=instances/*/databases/*}/changelogs</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GetChangelog</td>
-                <td>GET</td>
-                <td>/v1/{name=instances/*/databases/*/changelogs/*}</td>
-                <td></td>
               </tr>
               
             
@@ -23542,6 +23256,351 @@ Permissions required: None</p></td>
                 <td>POST</td>
                 <td>/v1/cel/batchDeparse</td>
                 <td>*</td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="v1/changelog_service.proto">v1/changelog_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.Changelog">Changelog</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#bytebase.v1.Changelog.Status">Changelog.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema_size</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>task_run</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>plan_title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The title of the plan associated with this changelog&#39;s task run.
+This field is populated by deriving the plan from task_run for display purposes. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetChangelogRequest">GetChangelogRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the changelog to retrieve.
+Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>view</td>
+                  <td><a href="#bytebase.v1.ChangelogView">ChangelogView</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListChangelogsRequest">ListChangelogsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent of the changelogs.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of changelogs to return. The service may return fewer
+than this value. If unspecified, at most 10 changelogs will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from the previous call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>view</td>
+                  <td><a href="#bytebase.v1.ChangelogView">ChangelogView</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is used to filter changelogs returned in the list.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter:
+- status: the changelog status, support &#34;==&#34; operation. check Changelog.Status for available values.
+- create_time: the changelog create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
+
+Example:
+status == &#34;DONE&#34;
+status == &#34;FAILED&#34; &amp;&amp; type == &#34;SDL&#34;
+create_time &gt;= &#34;2024-01-01T00:00:00Z&#34; &amp;&amp; create_time &lt;= &#34;2024-01-02T00:00:00Z&#34; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListChangelogsResponse">ListChangelogsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>changelogs</td>
+                  <td><a href="#bytebase.v1.Changelog">Changelog</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of changelogs. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.v1.Changelog.Status">Changelog.Status</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PENDING</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DONE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FAILED</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.ChangelogView">ChangelogView</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CHANGELOG_VIEW_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>The default / unset value.
+The API will default to the BASIC view.</p></td>
+              </tr>
+            
+              <tr>
+                <td>CHANGELOG_VIEW_BASIC</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CHANGELOG_VIEW_FULL</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.ChangelogService">ChangelogService</h3>
+        <p>ChangelogService manages database migration history.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>ListChangelogs</td>
+                <td><a href="#bytebase.v1.ListChangelogsRequest">ListChangelogsRequest</a></td>
+                <td><a href="#bytebase.v1.ListChangelogsResponse">ListChangelogsResponse</a></td>
+                <td><p>Lists migration history for a database.
+Permissions required: bb.changelogs.list</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetChangelog</td>
+                <td><a href="#bytebase.v1.GetChangelogRequest">GetChangelogRequest</a></td>
+                <td><a href="#bytebase.v1.Changelog">Changelog</a></td>
+                <td><p>Retrieves a specific changelog entry.
+Permissions required: bb.changelogs.get</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>ListChangelogs</td>
+                <td>GET</td>
+                <td>/v1/{parent=instances/*/databases/*}/changelogs</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetChangelog</td>
+                <td>GET</td>
+                <td>/v1/{name=instances/*/databases/*/changelogs/*}</td>
+                <td></td>
               </tr>
               
             

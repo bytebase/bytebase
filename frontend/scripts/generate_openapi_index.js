@@ -157,6 +157,9 @@ const paths = spec.paths || {};
 for (const [pathStr, pathItem] of Object.entries(paths)) {
   const op = pathItem && pathItem.post;
   if (!op) continue;
+  // Deprecated operations (e.g. compatibility aliases kept for one release)
+  // still serve, but agents should only discover the canonical surface.
+  if (op.deprecated) continue;
 
   // /bytebase.v1.SQLService/Query -> service=SQLService, method=Query
   const trimmed = pathStr.replace(/^\/bytebase\.v1\./, "");

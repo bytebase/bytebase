@@ -1,10 +1,8 @@
 import { useCallback } from "react";
 import { PagedTableFooter, usePagedData } from "@/hooks/usePagedData";
 import { useAppStore } from "@/stores/app";
-import type {
-  Changelog,
-  Database,
-} from "@/types/proto-es/v1/database_service_pb";
+import type { Changelog } from "@/types/proto-es/v1/changelog_service_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { DatabaseChangelogTable } from "../changelog/DatabaseChangelogTable";
 
 export function DatabaseChangelogPanel({ database }: { database: Database }) {
