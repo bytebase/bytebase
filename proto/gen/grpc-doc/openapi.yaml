@@ -2501,12 +2501,12 @@ paths:
   /v1/instances/{instance}/databases/{database}/changelogs:
     get:
       tags:
-        - DatabaseService
+        - ChangelogService
       summary: ListChangelogs
       description: |-
         Lists migration history for a database.
          Permissions required: bb.changelogs.list
-      operationId: DatabaseService_ListChangelogs
+      operationId: ChangelogService_ListChangelogs
       parameters:
         - name: instance
           in: path
@@ -2573,12 +2573,12 @@ paths:
   /v1/instances/{instance}/databases/{database}/changelogs/{changelog}:
     get:
       tags:
-        - DatabaseService
+        - ChangelogService
       summary: GetChangelog
       description: |-
         Retrieves a specific changelog entry.
          Permissions required: bb.changelogs.get
-      operationId: DatabaseService_GetChangelog
+      operationId: ChangelogService_GetChangelog
       parameters:
         - name: instance
           in: path
@@ -30944,6 +30944,8 @@ tags:
     description: AuthService handles user authentication operations.
   - name: CelService
     description: CelService manages CEL (Common Expression Language) parsing and formatting operations.
+  - name: ChangelogService
+    description: ChangelogService manages database migration history.
   - name: DatabaseCatalogService
     description: DatabaseCatalogService manages database schema metadata and classification.
   - name: DatabaseGroupService

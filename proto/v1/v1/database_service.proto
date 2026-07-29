@@ -139,24 +139,6 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Lists migration history for a database.
-  // Permissions required: bb.changelogs.list
-  rpc ListChangelogs(ListChangelogsRequest) returns (ListChangelogsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/changelogs"};
-    option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.changelogs.list";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
-  // Retrieves a specific changelog entry.
-  // Permissions required: bb.changelogs.get
-  rpc GetChangelog(GetChangelogRequest) returns (Changelog) {
-    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changelogs/*}"};
-    option (google.api.method_signature) = "name";
-    option (bytebase.v1.permission) = "bb.changelogs.get";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
   // Generates schema DDL for a database object.
   // Permissions required: bb.databases.getSchema
   rpc GetSchemaString(GetSchemaStringRequest) returns (GetSchemaStringResponse) {
@@ -1400,100 +1382,6 @@ message DatabaseSDLSchema {
   // - "text/plain; charset=utf-8" for SINGLE_FILE format
   // - "application/zip" for MULTI_FILE format
   string content_type = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-}
-
-enum ChangelogView {
-  // The default / unset value.
-  // The API will default to the BASIC view.
-  CHANGELOG_VIEW_UNSPECIFIED = 0;
-  CHANGELOG_VIEW_BASIC = 1;
-  CHANGELOG_VIEW_FULL = 2;
-}
-
-message ListChangelogsRequest {
-  // The parent of the changelogs.
-  // Format: instances/{instance}/databases/{database}
-  string parent = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
-  ];
-
-  // The maximum number of changelogs to return. The service may return fewer
-  // than this value. If unspecified, at most 10 changelogs will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 2;
-
-  // A page token, received from the previous call.
-  // Provide this to retrieve the subsequent page.
-  //
-  // When paginating, all other parameters provided must match
-  // the call that provided the page token.
-  string page_token = 3;
-
-  ChangelogView view = 4;
-
-  // Filter is used to filter changelogs returned in the list.
-  // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-  //
-  // Supported filter:
-  // - status: the changelog status, support "==" operation. check Changelog.Status for available values.
-  // - create_time: the changelog create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
-  //
-  // Example:
-  // status == "DONE"
-  // status == "FAILED" && type == "SDL"
-  // create_time >= "2024-01-01T00:00:00Z" && create_time <= "2024-01-02T00:00:00Z"
-  string filter = 5;
-}
-
-message ListChangelogsResponse {
-  // The list of changelogs.
-  repeated Changelog changelogs = 1;
-
-  // A token, which can be sent as `page_token` to retrieve the next page.
-  // If this field is omitted, there are no subsequent pages.
-  string next_page_token = 2;
-}
-
-message GetChangelogRequest {
-  // The name of the changelog to retrieve.
-  // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/DatabaseChangelog"}
-  ];
-
-  ChangelogView view = 2;
-}
-
-message Changelog {
-  option (google.api.resource) = {
-    type: "bytebase.com/DatabaseChangelog"
-    pattern: "instances/{instance}/databases/{database}/changelogs/{changelog}"
-  };
-
-  // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-  string name = 1;
-
-  google.protobuf.Timestamp create_time = 2;
-
-  enum Status {
-    STATUS_UNSPECIFIED = 0;
-    PENDING = 1;
-    DONE = 2;
-    FAILED = 3;
-  }
-  Status status = 3;
-
-  string schema = 7;
-  int64 schema_size = 8;
-
-  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-  string task_run = 11;
-
-  // The title of the plan associated with this changelog's task run.
-  // This field is populated by deriving the plan from task_run for display purposes.
-  string plan_title = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message GetSchemaStringRequest {

@@ -30,8 +30,6 @@ const (
 	DatabaseService_GetDatabaseSchema_FullMethodName    = "/bytebase.v1.DatabaseService/GetDatabaseSchema"
 	DatabaseService_GetDatabaseSDLSchema_FullMethodName = "/bytebase.v1.DatabaseService/GetDatabaseSDLSchema"
 	DatabaseService_DiffSchema_FullMethodName           = "/bytebase.v1.DatabaseService/DiffSchema"
-	DatabaseService_ListChangelogs_FullMethodName       = "/bytebase.v1.DatabaseService/ListChangelogs"
-	DatabaseService_GetChangelog_FullMethodName         = "/bytebase.v1.DatabaseService/GetChangelog"
 	DatabaseService_GetSchemaString_FullMethodName      = "/bytebase.v1.DatabaseService/GetSchemaString"
 )
 
@@ -74,12 +72,6 @@ type DatabaseServiceClient interface {
 	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(ctx context.Context, in *DiffSchemaRequest, opts ...grpc.CallOption) (*DiffSchemaResponse, error)
-	// Lists migration history for a database.
-	// Permissions required: bb.changelogs.list
-	ListChangelogs(ctx context.Context, in *ListChangelogsRequest, opts ...grpc.CallOption) (*ListChangelogsResponse, error)
-	// Retrieves a specific changelog entry.
-	// Permissions required: bb.changelogs.get
-	GetChangelog(ctx context.Context, in *GetChangelogRequest, opts ...grpc.CallOption) (*Changelog, error)
 	// Generates schema DDL for a database object.
 	// Permissions required: bb.databases.getSchema
 	GetSchemaString(ctx context.Context, in *GetSchemaStringRequest, opts ...grpc.CallOption) (*GetSchemaStringResponse, error)
@@ -203,26 +195,6 @@ func (c *databaseServiceClient) DiffSchema(ctx context.Context, in *DiffSchemaRe
 	return out, nil
 }
 
-func (c *databaseServiceClient) ListChangelogs(ctx context.Context, in *ListChangelogsRequest, opts ...grpc.CallOption) (*ListChangelogsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListChangelogsResponse)
-	err := c.cc.Invoke(ctx, DatabaseService_ListChangelogs_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *databaseServiceClient) GetChangelog(ctx context.Context, in *GetChangelogRequest, opts ...grpc.CallOption) (*Changelog, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Changelog)
-	err := c.cc.Invoke(ctx, DatabaseService_GetChangelog_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *databaseServiceClient) GetSchemaString(ctx context.Context, in *GetSchemaStringRequest, opts ...grpc.CallOption) (*GetSchemaStringResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetSchemaStringResponse)
@@ -272,12 +244,6 @@ type DatabaseServiceServer interface {
 	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error)
-	// Lists migration history for a database.
-	// Permissions required: bb.changelogs.list
-	ListChangelogs(context.Context, *ListChangelogsRequest) (*ListChangelogsResponse, error)
-	// Retrieves a specific changelog entry.
-	// Permissions required: bb.changelogs.get
-	GetChangelog(context.Context, *GetChangelogRequest) (*Changelog, error)
 	// Generates schema DDL for a database object.
 	// Permissions required: bb.databases.getSchema
 	GetSchemaString(context.Context, *GetSchemaStringRequest) (*GetSchemaStringResponse, error)
@@ -323,12 +289,6 @@ func (UnimplementedDatabaseServiceServer) GetDatabaseSDLSchema(context.Context, 
 }
 func (UnimplementedDatabaseServiceServer) DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DiffSchema not implemented")
-}
-func (UnimplementedDatabaseServiceServer) ListChangelogs(context.Context, *ListChangelogsRequest) (*ListChangelogsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListChangelogs not implemented")
-}
-func (UnimplementedDatabaseServiceServer) GetChangelog(context.Context, *GetChangelogRequest) (*Changelog, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetChangelog not implemented")
 }
 func (UnimplementedDatabaseServiceServer) GetSchemaString(context.Context, *GetSchemaStringRequest) (*GetSchemaStringResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSchemaString not implemented")
@@ -552,42 +512,6 @@ func _DatabaseService_DiffSchema_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DatabaseService_ListChangelogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListChangelogsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).ListChangelogs(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_ListChangelogs_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).ListChangelogs(ctx, req.(*ListChangelogsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DatabaseService_GetChangelog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetChangelogRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).GetChangelog(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_GetChangelog_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).GetChangelog(ctx, req.(*GetChangelogRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _DatabaseService_GetSchemaString_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetSchemaStringRequest)
 	if err := dec(in); err != nil {
@@ -656,14 +580,6 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DiffSchema",
 			Handler:    _DatabaseService_DiffSchema_Handler,
-		},
-		{
-			MethodName: "ListChangelogs",
-			Handler:    _DatabaseService_ListChangelogs_Handler,
-		},
-		{
-			MethodName: "GetChangelog",
-			Handler:    _DatabaseService_GetChangelog_Handler,
 		},
 		{
 			MethodName: "GetSchemaString",

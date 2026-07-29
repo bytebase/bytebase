@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { ChangelogSchema } from "@/types/proto-es/v1/database_service_pb";
+import { ChangelogSchema } from "@/types/proto-es/v1/changelog_service_pb";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }

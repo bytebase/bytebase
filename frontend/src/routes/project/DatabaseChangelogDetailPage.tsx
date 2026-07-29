@@ -18,11 +18,11 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { Switch } from "@/components/ui/switch";
 import { useAppStore } from "@/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
-import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
+  type Changelog,
   Changelog_Status,
   ChangelogView,
-} from "@/types/proto-es/v1/database_service_pb";
+} from "@/types/proto-es/v1/changelog_service_pb";
 import {
   GetTaskRunLogRequestSchema,
   type TaskRunLogEntry,

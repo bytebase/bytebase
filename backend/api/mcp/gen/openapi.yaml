@@ -870,6 +870,82 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchParseResponse'
+  /bytebase.v1.ChangelogService/GetChangelog:
+    post:
+      tags:
+        - bytebase.v1.ChangelogService
+      summary: GetChangelog
+      description: |-
+        Retrieves a specific changelog entry.
+         Permissions required: bb.changelogs.get
+      operationId: bytebase.v1.ChangelogService.GetChangelog
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetChangelogRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.Changelog'
+  /bytebase.v1.ChangelogService/ListChangelogs:
+    post:
+      tags:
+        - bytebase.v1.ChangelogService
+      summary: ListChangelogs
+      description: |-
+        Lists migration history for a database.
+         Permissions required: bb.changelogs.list
+      operationId: bytebase.v1.ChangelogService.ListChangelogs
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListChangelogsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListChangelogsResponse'
   /bytebase.v1.DatabaseCatalogService/GetDatabaseCatalog:
     post:
       tags:
@@ -1289,44 +1365,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.DiffSchemaResponse'
-  /bytebase.v1.DatabaseService/GetChangelog:
-    post:
-      tags:
-        - bytebase.v1.DatabaseService
-      summary: GetChangelog
-      description: |-
-        Retrieves a specific changelog entry.
-         Permissions required: bb.changelogs.get
-      operationId: bytebase.v1.DatabaseService.GetChangelog
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.GetChangelogRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.Changelog'
   /bytebase.v1.DatabaseService/GetDatabase:
     post:
       tags:
@@ -1517,44 +1555,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.GetSchemaStringResponse'
-  /bytebase.v1.DatabaseService/ListChangelogs:
-    post:
-      tags:
-        - bytebase.v1.DatabaseService
-      summary: ListChangelogs
-      description: |-
-        Lists migration history for a database.
-         Permissions required: bb.changelogs.list
-      operationId: bytebase.v1.DatabaseService.ListChangelogs
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.ListChangelogsRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.ListChangelogsResponse'
   /bytebase.v1.DatabaseService/ListDatabases:
     post:
       tags:
@@ -22525,6 +22525,8 @@ tags:
     description: AuthService handles user authentication operations.
   - name: bytebase.v1.CelService
     description: CelService manages CEL (Common Expression Language) parsing and formatting operations.
+  - name: bytebase.v1.ChangelogService
+    description: ChangelogService manages database migration history.
   - name: bytebase.v1.DatabaseCatalogService
     description: DatabaseCatalogService manages database schema metadata and classification.
   - name: bytebase.v1.DatabaseGroupService

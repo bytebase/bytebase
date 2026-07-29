@@ -8,16 +8,16 @@ import {
   AccessGrantSchema,
 } from "@/types/proto-es/v1/access_grant_service_pb";
 import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
+import {
+  ChangelogSchema,
+  ChangelogView,
+} from "@/types/proto-es/v1/changelog_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
   DatabaseGroupSchema,
   DatabaseGroupView,
 } from "@/types/proto-es/v1/database_group_service_pb";
-import {
-  ChangelogSchema,
-  ChangelogView,
-  DatabaseSchema$,
-} from "@/types/proto-es/v1/database_service_pb";
+import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
 import { GroupSchema } from "@/types/proto-es/v1/group_service_pb";
 import {
   BindingSchema,
@@ -194,12 +194,14 @@ vi.mock("@/api", () => ({
   instanceServiceClientConnect: {
     getInstance: mocks.getInstance,
   },
+  changelogServiceClientConnect: {
+    listChangelogs: mocks.listChangelogs,
+    getChangelog: mocks.getChangelog,
+  },
   databaseServiceClientConnect: {
     getDatabase: mocks.getDatabase,
     batchGetDatabases: mocks.batchGetDatabases,
     listDatabases: mocks.listDatabases,
-    listChangelogs: mocks.listChangelogs,
-    getChangelog: mocks.getChangelog,
     getDatabaseMetadata: mocks.getDatabaseMetadata,
   },
   databaseGroupServiceClientConnect: {

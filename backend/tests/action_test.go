@@ -751,7 +751,7 @@ func TestActionRolloutCommand(t *testing.T) {
 		a.Equal(release.Name, updatedDatabase.Msg.Release, "Database release should match the applied release")
 
 		// 6. Verify change history was recorded
-		changelogs, err := ctl.databaseServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
+		changelogs, err := ctl.changelogServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
 			Parent: database.Name,
 		}))
 		a.NoError(err)
@@ -951,7 +951,7 @@ func TestActionRolloutCommand(t *testing.T) {
 		// 6. Verify change history was recorded
 		// Note: Versioned releases create one MIGRATE changelog for the entire release (not per file)
 		// Plus a BASELINE changelog if this is the first migration for the database
-		changelogs, err := ctl.databaseServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
+		changelogs, err := ctl.changelogServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
 			Parent: database.Name,
 		}))
 		a.NoError(err)

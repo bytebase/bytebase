@@ -15,7 +15,7 @@ import { getDateForPbTimestampProtoEs } from "@/types";
 import {
   type Changelog,
   Changelog_Status,
-} from "@/types/proto-es/v1/database_service_pb";
+} from "@/types/proto-es/v1/changelog_service_pb";
 import { changelogLink } from "@/utils/v1/changelog";
 
 function ChangelogStatusIcon({ status }: { status: Changelog_Status }) {
