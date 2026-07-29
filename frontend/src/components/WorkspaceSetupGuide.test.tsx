@@ -710,7 +710,7 @@ describe("WorkspaceSetupGuide", () => {
     expect(container.querySelector("[data-testid='active-action']")).toBeNull();
   });
 
-  it("passes the wildcard parent to the query history check", async () => {
+  it("scopes the query history check to the found project", async () => {
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
@@ -730,7 +730,7 @@ describe("WorkspaceSetupGuide", () => {
     await render(<WorkspaceSetupGuide />);
 
     expect(mocks.searchQueryHistories).toHaveBeenCalledWith(
-      expect.objectContaining({ parent: "projects/-" })
+      expect.objectContaining({ parent: "projects/project-a" })
     );
   });
 

@@ -4950,7 +4950,7 @@ Syntax error with position information for editor highlighting
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent project to search query histories in. Format: projects/{project} Use &#34;projects/-&#34; to search across all projects (https://google.aip.dev/159). |
+| parent | [string](#string) |  | The parent project to search query histories in. Format: projects/{project} The AIP-159 wildcard &#34;projects/-&#34; is not supported; use ListQueryHistories for cross-project reads. |
 | page_size | [int32](#int32) |  | The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 10 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListQueryHistory` call. Provide this to retrieve the subsequent page. |
 | filter | [string](#string) |  | Filter is the filter to apply on the search query history The syntax and semantics of CEL are documented at https://github.com/google/cel-spec

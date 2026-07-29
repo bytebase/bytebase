@@ -1155,8 +1155,8 @@ export declare type SearchQueryHistoriesRequest = Message<"bytebase.v1.SearchQue
   /**
    * The parent project to search query histories in.
    * Format: projects/{project}
-   * Use "projects/-" to search across all projects
-   * (https://google.aip.dev/159).
+   * The AIP-159 wildcard "projects/-" is not supported; use
+   * ListQueryHistories for cross-project reads.
    *
    * @generated from field: string parent = 4;
    */

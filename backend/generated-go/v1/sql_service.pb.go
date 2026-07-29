@@ -1754,8 +1754,8 @@ type SearchQueryHistoriesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent project to search query histories in.
 	// Format: projects/{project}
-	// Use "projects/-" to search across all projects
-	// (https://google.aip.dev/159).
+	// The AIP-159 wildcard "projects/-" is not supported; use
+	// ListQueryHistories for cross-project reads.
 	Parent string `protobuf:"bytes,4,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of histories to return.
 	// The service may return fewer than this value.

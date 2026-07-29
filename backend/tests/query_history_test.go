@@ -288,8 +288,9 @@ func TestListQueryHistories(t *testing.T) {
 	a.NoError(err)
 	a.Empty(wildcardResp.Msg.QueryHistories)
 
-	// 8. SearchQueryHistories takes the same parent semantics as
-	// ListQueryHistories while staying caller-scoped.
+	// 8. SearchQueryHistories requires a concrete parent project and stays
+	// caller-scoped; cross-project reads are reserved for the IAM-gated
+	// ListQueryHistories.
 	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
 		Parent: ctl.project.Name,
 	}))
@@ -307,12 +308,12 @@ func TestListQueryHistories(t *testing.T) {
 	a.Len(searchResp.Msg.QueryHistories, 1)
 	a.Equal(otherStatement, searchResp.Msg.QueryHistories[0].Statement)
 
-	// The wildcard parent searches across all projects.
-	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+	// The AIP-159 wildcard parent is rejected.
+	_, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
 		Parent: "projects/-",
 	}))
-	a.NoError(err)
-	a.GreaterOrEqual(len(searchResp.Msg.QueryHistories), 3)
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 
 	// The parent is required.
 	_, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{}))
@@ -326,14 +327,4 @@ func TestListQueryHistories(t *testing.T) {
 	}))
 	a.Error(err)
 	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
-
-	// Search stays caller-scoped even with the wildcard parent: the auditor
-	// has run no queries and sees nothing.
-	ctl.authInterceptor.token = auditorToken
-	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
-		Parent: "projects/-",
-	}))
-	a.NoError(err)
-	a.Empty(searchResp.Msg.QueryHistories)
-	ctl.authInterceptor.token = ownerToken
 }
