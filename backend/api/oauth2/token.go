@@ -16,6 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common/log"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -268,10 +269,10 @@ func (s *Service) handleRefreshTokenGrant(c *echo.Context, client *store.OAuth2C
 	// are carried forward verbatim, and a request naming different ones is
 	// rejected rather than honored. Checked before the token is consumed so a
 	// rejected refresh leaves the client able to retry correctly.
-	if failure := checkConsentedResource(formValues, refreshToken.Resource); failure != nil {
+	if failure := checkConsentedResource(formValues, refreshToken.Config.GetResource()); failure != nil {
 		return tokenFailure(c, failure)
 	}
-	if failure := checkConsentedScope(formValues, refreshToken.Scope); failure != nil {
+	if failure := checkConsentedScope(formValues, refreshToken.Config.GetScope()); failure != nil {
 		return tokenFailure(c, failure)
 	}
 
@@ -308,8 +309,8 @@ func (s *Service) handleRefreshTokenGrant(c *echo.Context, client *store.OAuth2C
 	return s.issueTokens(c, client, issuedGrant{
 		userEmail:   user.Email,
 		workspaceID: workspaceID,
-		resource:    refreshToken.Resource,
-		scope:       refreshToken.Scope,
+		resource:    refreshToken.Config.GetResource(),
+		scope:       refreshToken.Config.GetScope(),
 	})
 }
 
@@ -416,8 +417,10 @@ func (s *Service) issueTokens(c *echo.Context, client *store.OAuth2ClientMessage
 			ClientID:  client.ClientID,
 			UserEmail: grant.userEmail,
 			Workspace: grant.workspaceID,
-			Resource:  grant.resource,
-			Scope:     grant.scope,
+			Config: &storepb.OAuth2RefreshTokenConfig{
+				Resource: grant.resource,
+				Scope:    grant.scope,
+			},
 			ExpiresAt: now.Add(refreshTokenExpiry),
 		}); err != nil {
 			return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to store refresh token")

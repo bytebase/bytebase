@@ -35,6 +35,22 @@ func (x *OAuth2ClientConfig) Equal(y *OAuth2ClientConfig) bool {
 	return true
 }
 
+func (x *OAuth2RefreshTokenConfig) Equal(y *OAuth2RefreshTokenConfig) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Resource != y.Resource {
+		return false
+	}
+	if x.Scope != y.Scope {
+		return false
+	}
+	return true
+}
+
 func (x *OAuth2AuthorizationCodeConfig) Equal(y *OAuth2AuthorizationCodeConfig) bool {
 	if x == y {
 		return true

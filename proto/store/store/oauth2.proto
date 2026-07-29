@@ -11,6 +11,20 @@ message OAuth2ClientConfig {
   string token_endpoint_auth_method = 4;
 }
 
+// OAuth2RefreshTokenConfig is the consented grant state carried from the
+// authorization code onto every refresh token issued from it, and re-issued
+// unchanged by each refresh. Kept as a message rather than flat columns so the
+// grant can gain fields without a schema migration.
+message OAuth2RefreshTokenConfig {
+  // The canonical resource URI (RFC 8707) this grant is bound to, validated at
+  // consent time against the configured external URL. Empty for clients that
+  // omit the resource parameter.
+  string resource = 1;
+  // The scope string consented to, stored verbatim. Empty means no scope was
+  // requested.
+  string scope = 2;
+}
+
 message OAuth2AuthorizationCodeConfig {
   string redirect_uri = 1;
   string code_challenge = 2;

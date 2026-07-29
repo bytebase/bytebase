@@ -856,6 +856,10 @@
                   <a href="#bytebase.store.OAuth2ClientConfig"><span class="badge">M</span>OAuth2ClientConfig</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.OAuth2RefreshTokenConfig"><span class="badge">M</span>OAuth2RefreshTokenConfig</a>
+                </li>
+              
               
               
               
@@ -9152,6 +9156,40 @@ requested. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.OAuth2RefreshTokenConfig">OAuth2RefreshTokenConfig</h3>
+        <p>OAuth2RefreshTokenConfig is the consented grant state carried from the</p><p>authorization code onto every refresh token issued from it, and re-issued</p><p>unchanged by each refresh. Kept as a message rather than flat columns so the</p><p>grant can gain fields without a schema migration.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The canonical resource URI (RFC 8707) this grant is bound to, validated at
+consent time against the configured external URL. Empty for clients that
+omit the resource parameter. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scope</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The scope string consented to, stored verbatim. Empty means no scope was
+requested. </p></td>
                 </tr>
               
             </tbody>

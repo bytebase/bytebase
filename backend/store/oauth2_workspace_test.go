@@ -127,17 +127,19 @@ func TestOAuth2WorkspaceBinding(t *testing.T) {
 		require.Empty(t, got.Workspace)
 	})
 
-	// The resource/scope columns (3.21.5) are the durable half of the token
-	// boundary: a refresh reads them back to re-issue the same grant, so a
-	// dropped value would silently widen or unbind the session.
-	t.Run("refresh token round-trips resource and scope", func(t *testing.T) {
+	// The refresh token's config payload (3.21.5) is the durable half of the token
+	// boundary: a refresh reads it back to re-issue the same grant, so a dropped
+	// value would silently widen or unbind the session.
+	t.Run("refresh token config round-trips resource and scope", func(t *testing.T) {
 		_, err := s.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
 			TokenHash: "rt-hash-3",
 			ClientID:  "client-A",
 			UserEmail: "demo@example.com",
 			Workspace: "ws-test",
-			Resource:  "https://bb.example.com/mcp",
-			Scope:     "mcp:read-only",
+			Config: &storepb.OAuth2RefreshTokenConfig{
+				Resource: "https://bb.example.com/mcp",
+				Scope:    "mcp:read-only",
+			},
 			ExpiresAt: time.Now().Add(30 * 24 * time.Hour),
 		})
 		require.NoError(t, err)
@@ -145,13 +147,13 @@ func TestOAuth2WorkspaceBinding(t *testing.T) {
 		got, err := s.GetOAuth2RefreshToken(ctx, "client-A", "rt-hash-3")
 		require.NoError(t, err)
 		require.NotNil(t, got)
-		require.Equal(t, "https://bb.example.com/mcp", got.Resource)
-		require.Equal(t, "mcp:read-only", got.Scope)
+		require.Equal(t, "https://bb.example.com/mcp", got.Config.GetResource())
+		require.Equal(t, "mcp:read-only", got.Config.GetScope())
 	})
 
-	t.Run("refresh token with no resource or scope stays empty", func(t *testing.T) {
-		// Both parameters are optional, and rows written before 3.21.5 have
-		// NULL — either way the handler must see "" and carry "" forward.
+	t.Run("refresh token with no config stays empty", func(t *testing.T) {
+		// Both parameters are optional, and rows written before 3.21.5 default to
+		// '{}' — either way the handler must see "" and carry "" forward.
 		_, err := s.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
 			TokenHash: "rt-hash-4",
 			ClientID:  "client-A",
@@ -164,8 +166,8 @@ func TestOAuth2WorkspaceBinding(t *testing.T) {
 		got, err := s.GetOAuth2RefreshToken(ctx, "client-A", "rt-hash-4")
 		require.NoError(t, err)
 		require.NotNil(t, got)
-		require.Empty(t, got.Resource)
-		require.Empty(t, got.Scope)
+		require.Empty(t, got.Config.GetResource())
+		require.Empty(t, got.Config.GetScope())
 	})
 
 	t.Run("auth code config round-trips resource and scope", func(t *testing.T) {
