@@ -3019,6 +3019,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ListWorksheetsRequest"><span class="badge">M</span>ListWorksheetsRequest</a>
+                </li>
+
+                <li>
+                  <a href="#bytebase.v1.ListWorksheetsResponse"><span class="badge">M</span>ListWorksheetsResponse</a>
+                </li>
+
+                <li>
                   <a href="#bytebase.v1.SearchWorksheetsRequest"><span class="badge">M</span>SearchWorksheetsRequest</a>
                 </li>
               
@@ -34151,6 +34159,101 @@ Format: projects/{project}/worksheets/{worksheet} </p></td>
 
         
       
+        <h3 id="bytebase.v1.ListWorksheetsRequest">ListWorksheetsRequest</h3>
+        <p></p>
+
+
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource of the worksheets.
+Format: projects/{project}
+Use &#34;projects/-&#34; to list worksheets across all projects. </p></td>
+                </tr>
+
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>To filter the list result.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter:
+- creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
+
+For example:
+creator == &#34;users/{email}&#34;
+creator != &#34;users/{email}&#34; </p></td>
+                </tr>
+
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of worksheets to return. The service may return fewer than
+this value.
+If unspecified, at most 10 worksheets will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListWorksheets` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListWorksheets` must match
+the call that provided the page token. </p></td>
+                </tr>
+
+            </tbody>
+          </table>
+
+
+
+
+
+        <h3 id="bytebase.v1.ListWorksheetsResponse">ListWorksheetsResponse</h3>
+        <p></p>
+
+
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+
+                <tr>
+                  <td>worksheets</td>
+                  <td><a href="#bytebase.v1.Worksheet">Worksheet</a></td>
+                  <td>repeated</td>
+                  <td><p>The worksheets from the specified parent. </p></td>
+                </tr>
+
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token to retrieve next page of worksheets.
+Pass this value in the page_token field in the subsequent call to
+`ListWorksheets` method to retrieve the next page of worksheets. </p></td>
+                </tr>
+
+            </tbody>
+          </table>
+
+
+
+
+
         <h3 id="bytebase.v1.SearchWorksheetsRequest">SearchWorksheetsRequest</h3>
         <p></p>
 
@@ -34525,6 +34628,15 @@ Permissions required: bb.worksheets.get (or creator, or project member for share
               </tr>
             
               <tr>
+                <td>ListWorksheets</td>
+                <td><a href="#bytebase.v1.ListWorksheetsRequest">ListWorksheetsRequest</a></td>
+                <td><a href="#bytebase.v1.ListWorksheetsResponse">ListWorksheetsResponse</a></td>
+                <td><p>List worksheets.
+This is used for listing worksheets in a project, or across all projects by using `projects/-`.
+Permissions required: bb.worksheets.list</p></td>
+              </tr>
+
+              <tr>
                 <td>SearchWorksheets</td>
                 <td><a href="#bytebase.v1.SearchWorksheetsRequest">SearchWorksheetsRequest</a></td>
                 <td><a href="#bytebase.v1.SearchWorksheetsResponse">SearchWorksheetsResponse</a></td>
@@ -34613,6 +34725,16 @@ Permissions required: bb.worksheets.manage (or creator, or project member for PR
             
               
               
+              <tr>
+                <td>ListWorksheets</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/worksheets</td>
+                <td></td>
+              </tr>
+
+
+
+
               <tr>
                 <td>SearchWorksheets</td>
                 <td>POST</td>

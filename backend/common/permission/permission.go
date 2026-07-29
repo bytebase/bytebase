@@ -150,6 +150,7 @@ const (
 	WorkloadIdentitiesUndelete           Permission = "bb.workloadIdentities.undelete"
 	WorkloadIdentitiesUpdate             Permission = "bb.workloadIdentities.update"
 	WorksheetsGet                        Permission = "bb.worksheets.get"
+	WorksheetsList                       Permission = "bb.worksheets.list"
 	WorksheetsManage                     Permission = "bb.worksheets.manage"
 	WorkspacesGetIamPolicy               Permission = "bb.workspaces.getIamPolicy"
 	WorkspacesSetIamPolicy               Permission = "bb.workspaces.setIamPolicy"

@@ -57,6 +57,89 @@ export declare type GetWorksheetRequest = Message<"bytebase.v1.GetWorksheetReque
 export declare const GetWorksheetRequestSchema: GenMessage<GetWorksheetRequest>;
 
 /**
+ * @generated from message bytebase.v1.ListWorksheetsRequest
+ */
+export declare type ListWorksheetsRequest = Message<"bytebase.v1.ListWorksheetsRequest"> & {
+  /**
+   * The parent resource of the worksheets.
+   * Format: projects/{project}
+   * Use "projects/-" to list worksheets across all projects.
+   *
+   * @generated from field: string parent = 1;
+   */
+  parent: string;
+
+  /**
+   * To filter the list result.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Supported filter:
+   * - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+   *
+   * For example:
+   * creator == "users/{email}"
+   * creator != "users/{email}"
+   *
+   * @generated from field: string filter = 2;
+   */
+  filter: string;
+
+  /**
+   * The maximum number of worksheets to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 10 worksheets will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   *
+   * @generated from field: int32 page_size = 3;
+   */
+  pageSize: number;
+
+  /**
+   * A page token, received from a previous `ListWorksheets` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListWorksheets` must match
+   * the call that provided the page token.
+   *
+   * @generated from field: string page_token = 4;
+   */
+  pageToken: string;
+};
+
+/**
+ * Describes the message bytebase.v1.ListWorksheetsRequest.
+ * Use `create(ListWorksheetsRequestSchema)` to create a new message.
+ */
+export declare const ListWorksheetsRequestSchema: GenMessage<ListWorksheetsRequest>;
+
+/**
+ * @generated from message bytebase.v1.ListWorksheetsResponse
+ */
+export declare type ListWorksheetsResponse = Message<"bytebase.v1.ListWorksheetsResponse"> & {
+  /**
+   * The worksheets from the specified parent.
+   *
+   * @generated from field: repeated bytebase.v1.Worksheet worksheets = 1;
+   */
+  worksheets: Worksheet[];
+
+  /**
+   * A token to retrieve next page of worksheets.
+   * Pass this value in the page_token field in the subsequent call to
+   * `ListWorksheets` method to retrieve the next page of worksheets.
+   *
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
+};
+
+/**
+ * Describes the message bytebase.v1.ListWorksheetsResponse.
+ * Use `create(ListWorksheetsResponseSchema)` to create a new message.
+ */
+export declare const ListWorksheetsResponseSchema: GenMessage<ListWorksheetsResponse>;
+
+/**
  * @generated from message bytebase.v1.UpdateWorksheetRequest
  */
 export declare type UpdateWorksheetRequest = Message<"bytebase.v1.UpdateWorksheetRequest"> & {
@@ -436,6 +519,18 @@ export declare const WorksheetService: GenService<{
     methodKind: "unary";
     input: typeof GetWorksheetRequestSchema;
     output: typeof WorksheetSchema;
+  },
+  /**
+   * List worksheets.
+   * This is used for listing worksheets in a project, or across all projects by using `projects/-`.
+   * Permissions required: bb.worksheets.list
+   *
+   * @generated from rpc bytebase.v1.WorksheetService.ListWorksheets
+   */
+  listWorksheets: {
+    methodKind: "unary";
+    input: typeof ListWorksheetsRequestSchema;
+    output: typeof ListWorksheetsResponseSchema;
   },
   /**
    * Search for worksheets.

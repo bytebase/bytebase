@@ -7279,6 +7279,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Worksheet'
+  /bytebase.v1.WorksheetService/ListWorksheets:
+    post:
+      tags:
+        - bytebase.v1.WorksheetService
+      summary: ListWorksheets
+      description: |-
+        List worksheets.
+         This is used for listing worksheets in a project, or across all projects by using `projects/-`.
+         Permissions required: bb.worksheets.list
+      operationId: bytebase.v1.WorksheetService.ListWorksheets
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListWorksheetsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListWorksheetsResponse'
   /bytebase.v1.WorksheetService/SearchWorksheets:
     post:
       tags:
@@ -14502,6 +14541,67 @@ components:
       title: ListWorkloadIdentitiesResponse
       additionalProperties: false
       description: Response message for listing workload identities.
+    bytebase.v1.ListWorksheetsRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource of the worksheets.
+             Format: projects/{project}
+             Use "projects/-" to list worksheets across all projects.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            To filter the list result.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+
+             For example:
+             creator == "users/{email}"
+             creator != "users/{email}"
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: |-
+            The maximum number of worksheets to return. The service may return fewer than
+             this value.
+             If unspecified, at most 10 worksheets will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            A page token, received from a previous `ListWorksheets` call.
+             Provide this to retrieve the subsequent page.
+
+             When paginating, all other parameters provided to `ListWorksheets` must match
+             the call that provided the page token.
+      title: ListWorksheetsRequest
+      additionalProperties: false
+    bytebase.v1.ListWorksheetsResponse:
+      type: object
+      properties:
+        worksheets:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.Worksheet'
+          title: worksheets
+          description: The worksheets from the specified parent.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token to retrieve next page of worksheets.
+             Pass this value in the page_token field in the subsequent call to
+             `ListWorksheets` method to retrieve the next page of worksheets.
+      title: ListWorksheetsResponse
+      additionalProperties: false
     bytebase.v1.ListWorkspacesRequest:
       type: object
       title: ListWorkspacesRequest
