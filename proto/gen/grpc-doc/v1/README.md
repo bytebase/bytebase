@@ -12107,6 +12107,8 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 Supported filter: - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
 
 For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;] visibility == &#34;PRIVATE&#34; |
+| page_size | [int32](#int32) |  | The maximum number of worksheets to return. The service may return fewer than this value. If unspecified, at most 10 worksheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchWorksheets` call. Provide this to retrieve the subsequent page. |
 
 
 
@@ -12122,6 +12124,7 @@ For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#3
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | worksheets | [Worksheet](#bytebase-v1-Worksheet) | repeated | The worksheets that matched the search criteria. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of worksheets. Pass this value in the page_token field in the subsequent call to `SearchWorksheets` method to retrieve the next page of worksheets. |
 
 
 

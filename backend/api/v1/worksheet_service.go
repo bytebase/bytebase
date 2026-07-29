@@ -142,10 +142,25 @@ func (s *WorksheetService) SearchWorksheets(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if request.PageSize < 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("page size cannot be negative"))
+	}
+
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
 
 	worksheetFind := &store.FindWorkSheetMessage{
 		ProjectIDs:     []string{projectID},
 		PrincipalEmail: user.Email,
+		Limit:          &limitPlusOne,
+		Offset:         &offset.offset,
 	}
 
 	filterQ, err := store.GetListSheetFilter(ctx, s.store, user.Email, request.Filter)
@@ -157,6 +172,13 @@ func (s *WorksheetService) SearchWorksheets(
 	worksheetList, err := s.store.ListWorkSheets(ctx, worksheetFind)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list worksheets: %v", err))
+	}
+	nextPageToken := ""
+	if len(worksheetList) == limitPlusOne {
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate next page token: %v", err))
+		}
+		worksheetList = worksheetList[:offset.limit]
 	}
 
 	var v1pbWorksheets []*v1pb.Worksheet
@@ -173,7 +195,8 @@ func (s *WorksheetService) SearchWorksheets(
 		v1pbWorksheets = append(v1pbWorksheets, v1pbWorksheet)
 	}
 	return connect.NewResponse(&v1pb.SearchWorksheetsResponse{
-		Worksheets: v1pbWorksheets,
+		Worksheets:    v1pbWorksheets,
+		NextPageToken: nextPageToken,
 	}), nil
 }
 

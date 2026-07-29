@@ -16,7 +16,7 @@
  */
 
 import { Loader2 } from "lucide-react";
-import type { Ref } from "react";
+import type { CSSProperties, Ref } from "react";
 import {
   useCallback,
   useEffect,
@@ -196,8 +196,11 @@ export function SheetTree({
   const {
     isInitialized,
     isLoading,
+    hasMore,
+    isFetchingNextPage,
     sheetTree,
     fetchSheetList,
+    fetchNextPage,
     folderContext,
     getFoldersForWorksheet,
     events,
@@ -937,10 +940,13 @@ export function SheetTree({
       const ROW_GUTTER_X = 8;
       const indentPadding =
         typeof style.paddingLeft === "number" ? style.paddingLeft : 0;
-      const rowStyle = {
+      const rowStyle: CSSProperties = {
         ...style,
         paddingLeft: indentPadding + ROW_GUTTER_X,
         paddingRight: ROW_GUTTER_X,
+        width: "100%",
+        maxWidth: "100%",
+        boxSizing: "border-box",
       };
       return (
         <div
@@ -949,7 +955,7 @@ export function SheetTree({
           style={rowStyle}
           data-item-key={folderNode.key}
           className={cn(
-            "flex items-center gap-x-1 w-full py-0.5 text-sm cursor-pointer select-none",
+            "flex min-w-0 max-w-full items-center gap-x-1 overflow-hidden py-0.5 text-sm cursor-pointer select-none",
             // Align with the connection-panel database tree: subtle neutral
             // hover, accent-tinted selection (was a too-light gray fill).
             "hover:bg-control-bg/70 rounded-xs",
@@ -1008,7 +1014,7 @@ export function SheetTree({
           </span>
 
           {/* Label / rename input */}
-          <span className="tree-label flex-1 min-w-0">
+          <span className="tree-label min-w-0 flex-1 overflow-hidden">
             {isEditing ? (
               <Input
                 ref={inputRef}
@@ -1370,7 +1376,7 @@ export function SheetTree({
 
   // ---- Main render ---------------------------------------------------------
   return (
-    <div className="flex flex-col items-stretch gap-y-1 relative worksheet-tree">
+    <div className="relative flex min-w-0 max-w-full flex-col items-stretch gap-y-1 overflow-x-hidden worksheet-tree">
       <Tree<WorksheetFolderNode>
         data={treeData}
         renderNode={renderNode}
@@ -1381,7 +1387,7 @@ export function SheetTree({
         height={treeHeight}
         rowHeight={ROW_HEIGHT}
         indent={12}
-        className="text-sm"
+        className="min-w-0 max-w-full overflow-x-hidden text-sm [&_[role=treeitem]]:!min-w-0 [&_[role=treeitem]]:!max-w-full [&_[role=treeitem]]:overflow-hidden"
         onMove={handleMove}
         disableDrag={view === "draft" || !!editingNode || multiSelectMode}
         disableDrop={
@@ -1390,6 +1396,21 @@ export function SheetTree({
             : ({ parentNode: p }) => !!p?.data.data.worksheet
         }
       />
+
+      {hasMore && (
+        <Button
+          appearance="secondary"
+          size="xs"
+          className="mx-1 justify-center"
+          disabled={isFetchingNextPage || isLoading}
+          onClick={() => {
+            void fetchNextPage();
+          }}
+        >
+          {isFetchingNextPage && <Loader2 className="size-3 animate-spin" />}
+          {isFetchingNextPage ? t("common.loading") : t("common.load-more")}
+        </Button>
+      )}
 
       {/* Share popover — anchored at the same coordinates as the context
           menu (the row's More button or the cursor). Opens when the user

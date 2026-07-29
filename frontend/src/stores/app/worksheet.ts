@@ -135,15 +135,23 @@ export const createWorksheetSlice: AppSliceCreator<WorksheetSlice> = (
       return promise;
     },
 
-    fetchWorksheetList: async (parent, filter) => {
+    fetchWorksheetList: async (parent, filter, params = {}) => {
       const response = await worksheetServiceClientConnect.searchWorksheets(
-        createProto(SearchWorksheetsRequestSchema, { parent, filter })
+        createProto(SearchWorksheetsRequestSchema, {
+          parent,
+          filter,
+          pageSize: params.pageSize,
+          pageToken: params.pageToken,
+        })
       );
       await hydrateRelatedResources(response.worksheets);
       for (const worksheet of response.worksheets) {
         setCacheEntry(worksheet, "BASIC");
       }
-      return response.worksheets;
+      return {
+        worksheets: response.worksheets,
+        nextPageToken: response.nextPageToken,
+      };
     },
 
     createWorksheet: async (worksheet) => {

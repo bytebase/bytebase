@@ -11948,6 +11948,21 @@ paths:
                      starred == false
                      visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
                      visibility == "PRIVATE"
+                pageSize:
+                  type: integer
+                  title: page_size
+                  format: int32
+                  description: |-
+                    The maximum number of worksheets to return. The service may return fewer than
+                     this value.
+                     If unspecified, at most 10 worksheets will be returned.
+                     The maximum value is 1000; values above 1000 will be coerced to 1000.
+                pageToken:
+                  type: string
+                  title: page_token
+                  description: |-
+                    A page token, received from a previous `SearchWorksheets` call.
+                     Provide this to retrieve the subsequent page.
               title: SearchWorksheetsRequest
               additionalProperties: false
         required: true
@@ -26185,6 +26200,21 @@ components:
              starred == false
              visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
              visibility == "PRIVATE"
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: |-
+            The maximum number of worksheets to return. The service may return fewer than
+             this value.
+             If unspecified, at most 10 worksheets will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            A page token, received from a previous `SearchWorksheets` call.
+             Provide this to retrieve the subsequent page.
       title: SearchWorksheetsRequest
       required:
         - parent
@@ -26198,6 +26228,13 @@ components:
             $ref: '#/components/schemas/bytebase.v1.Worksheet'
           title: worksheets
           description: The worksheets that matched the search criteria.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token to retrieve next page of worksheets.
+             Pass this value in the page_token field in the subsequent call to
+             `SearchWorksheets` method to retrieve the next page of worksheets.
       title: SearchWorksheetsResponse
       additionalProperties: false
     bytebase.v1.SemanticTypeSetting:

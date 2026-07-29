@@ -244,6 +244,24 @@ export declare type SearchWorksheetsRequest = Message<"bytebase.v1.SearchWorkshe
    * @generated from field: string filter = 2;
    */
   filter: string;
+
+  /**
+   * The maximum number of worksheets to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 10 worksheets will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   *
+   * @generated from field: int32 page_size = 3;
+   */
+  pageSize: number;
+
+  /**
+   * A page token, received from a previous `SearchWorksheets` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * @generated from field: string page_token = 4;
+   */
+  pageToken: string;
 };
 
 /**
@@ -262,6 +280,15 @@ export declare type SearchWorksheetsResponse = Message<"bytebase.v1.SearchWorksh
    * @generated from field: repeated bytebase.v1.Worksheet worksheets = 1;
    */
   worksheets: Worksheet[];
+
+  /**
+   * A token to retrieve next page of worksheets.
+   * Pass this value in the page_token field in the subsequent call to
+   * `SearchWorksheets` method to retrieve the next page of worksheets.
+   *
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
 };
 
 /**

@@ -166,6 +166,12 @@ func (x *SearchWorksheetsRequest) Equal(y *SearchWorksheetsRequest) bool {
 	if x.Filter != y.Filter {
 		return false
 	}
+	if x.PageSize != y.PageSize {
+		return false
+	}
+	if x.PageToken != y.PageToken {
+		return false
+	}
 	return true
 }
 
@@ -183,6 +189,9 @@ func (x *SearchWorksheetsResponse) Equal(y *SearchWorksheetsResponse) bool {
 		if !x.Worksheets[i].Equal(y.Worksheets[i]) {
 			return false
 		}
+	}
+	if x.NextPageToken != y.NextPageToken {
+		return false
 	}
 	return true
 }

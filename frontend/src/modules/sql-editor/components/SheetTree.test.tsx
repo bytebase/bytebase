@@ -130,9 +130,11 @@ vi.mock("@/components/ui/tree", () => ({
   Tree: ({
     data,
     renderNode,
+    className,
   }: {
     data: MockTreeItem[];
     renderNode: (args: MockRenderArgs) => React.ReactNode;
+    className?: string;
   }) => {
     const renderAll = (items: MockTreeItem[]): React.ReactNode[] =>
       items.flatMap((item) => [
@@ -142,7 +144,11 @@ vi.mock("@/components/ui/tree", () => ({
         }),
         ...(item.children ? renderAll(item.children) : []),
       ]);
-    return <div data-testid="tree">{renderAll(data)}</div>;
+    return (
+      <div data-testid="tree" className={className}>
+        {renderAll(data)}
+      </div>
+    );
   },
 }));
 
@@ -211,11 +217,13 @@ vi.mock("@/components/ui/button", () => ({
   Button: ({
     children,
     onClick,
+    disabled,
   }: {
     children: React.ReactNode;
     onClick?: () => void;
+    disabled?: boolean;
   }) => (
-    <button data-testid="button" onClick={onClick}>
+    <button data-testid="button" disabled={disabled} onClick={onClick}>
       {children}
     </button>
   ),
@@ -414,11 +422,14 @@ const setupDefaultMocks = () => {
   const viewContext = {
     isInitialized: true,
     isLoading: false,
+    isFetchingNextPage: false,
+    hasMore: false,
     get sheetTree() {
       return viewContext._sheetTree.value;
     },
     _sheetTree: { value: rootNode } as { value: WorksheetFolderNode },
     fetchSheetList: vi.fn(),
+    fetchNextPage: vi.fn(),
     folderContext,
     getFoldersForWorksheet: vi.fn((path: string) => [path]),
     events: {
@@ -523,6 +534,7 @@ describe("SheetTree", () => {
     // Tree primitive is rendered
     const tree = document.body.querySelector("[data-testid='tree']");
     expect(tree).not.toBeNull();
+    expect(tree?.className).toContain("[&_[role=treeitem]]:!min-w-0");
 
     // HighlightLabelText nodes are rendered (root node + children)
     const labels = container.querySelectorAll(
@@ -768,6 +780,35 @@ describe("SheetTree", () => {
     });
 
     expect(deleteWorksheetByName).toHaveBeenCalledWith("worksheets/ws2");
+
+    unmount();
+  });
+
+  test("7. Load more button fetches the next page", async () => {
+    const defaultMocks = setupDefaultMocks();
+    defaultMocks.viewContext.hasMore = true;
+
+    const { container, render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={vi.fn()}
+      />
+    );
+    render();
+
+    const loadMoreButton = Array.from(
+      container.querySelectorAll("[data-testid='button']")
+    ).find((button) => button.textContent?.includes("common.load-more")) as
+      | HTMLButtonElement
+      | undefined;
+    expect(loadMoreButton).not.toBeUndefined();
+
+    await act(async () => {
+      loadMoreButton?.click();
+    });
+
+    expect(defaultMocks.viewContext.fetchNextPage).toHaveBeenCalled();
 
     unmount();
   });

@@ -533,7 +533,15 @@ type SearchWorksheetsRequest struct {
 	// starred == false
 	// visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
 	// visibility == "PRIVATE"
-	Filter        string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
+	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
+	// The maximum number of worksheets to return. The service may return fewer than
+	// this value.
+	// If unspecified, at most 10 worksheets will be returned.
+	// The maximum value is 1000; values above 1000 will be coerced to 1000.
+	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// A page token, received from a previous `SearchWorksheets` call.
+	// Provide this to retrieve the subsequent page.
+	PageToken     string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -582,10 +590,28 @@ func (x *SearchWorksheetsRequest) GetFilter() string {
 	return ""
 }
 
+func (x *SearchWorksheetsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *SearchWorksheetsRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 type SearchWorksheetsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The worksheets that matched the search criteria.
-	Worksheets    []*Worksheet `protobuf:"bytes,1,rep,name=worksheets,proto3" json:"worksheets,omitempty"`
+	Worksheets []*Worksheet `protobuf:"bytes,1,rep,name=worksheets,proto3" json:"worksheets,omitempty"`
+	// A token to retrieve next page of worksheets.
+	// Pass this value in the page_token field in the subsequent call to
+	// `SearchWorksheets` method to retrieve the next page of worksheets.
+	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -625,6 +651,13 @@ func (x *SearchWorksheetsResponse) GetWorksheets() []*Worksheet {
 		return x.Worksheets
 	}
 	return nil
+}
+
+func (x *SearchWorksheetsResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 type Worksheet struct {
@@ -805,14 +838,18 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\astarred\x18\x02 \x01(\bR\astarred\x12\x18\n" +
 	"\afolders\x18\x03 \x03(\tR\afolders\"1\n" +
 	"\x16DeleteWorksheetRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"N\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"\x8a\x01\n" +
 	"\x17SearchWorksheetsRequest\x12\x1b\n" +
 	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x16\n" +
-	"\x06filter\x18\x02 \x01(\tR\x06filter\"R\n" +
+	"\x06filter\x18\x02 \x01(\tR\x06filter\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\"z\n" +
 	"\x18SearchWorksheetsResponse\x126\n" +
 	"\n" +
 	"worksheets\x18\x01 \x03(\v2\x16.bytebase.v1.WorksheetR\n" +
-	"worksheets\"\xd1\x04\n" +
+	"worksheets\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xd1\x04\n" +
 	"\tWorksheet\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x1d\n" +
 	"\aproject\x18\x02 \x01(\tB\x03\xe0A\x03R\aproject\x12\x1a\n" +

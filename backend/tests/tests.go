@@ -101,6 +101,7 @@ type controller struct {
 	databaseServiceClient         v1connect.DatabaseServiceClient
 	databaseCatalogServiceClient  v1connect.DatabaseCatalogServiceClient
 	sheetServiceClient            v1connect.SheetServiceClient
+	worksheetServiceClient        v1connect.WorksheetServiceClient
 	sqlServiceClient              v1connect.SQLServiceClient
 	subscriptionServiceClient     v1connect.SubscriptionServiceClient
 	actuatorServiceClient         v1connect.ActuatorServiceClient
@@ -292,6 +293,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.databaseServiceClient = v1connect.NewDatabaseServiceClient(ctl.client, baseURL, interceptors)
 	ctl.databaseCatalogServiceClient = v1connect.NewDatabaseCatalogServiceClient(ctl.client, baseURL, interceptors)
 	ctl.sheetServiceClient = v1connect.NewSheetServiceClient(ctl.client, baseURL, interceptors)
+	ctl.worksheetServiceClient = v1connect.NewWorksheetServiceClient(ctl.client, baseURL, interceptors)
 	ctl.sqlServiceClient = v1connect.NewSQLServiceClient(ctl.client, baseURL, interceptors)
 	ctl.subscriptionServiceClient = v1connect.NewSubscriptionServiceClient(ctl.client, baseURL, interceptors)
 	ctl.actuatorServiceClient = v1connect.NewActuatorServiceClient(ctl.client, baseURL, interceptors)

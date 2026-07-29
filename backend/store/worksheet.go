@@ -66,6 +66,8 @@ type FindWorkSheetMessage struct {
 	LoadFull bool
 
 	FilterQ *qb.Query
+	Limit   *int
+	Offset  *int
 }
 
 // PatchWorkSheetMessage is the message to patch a sheet.
@@ -135,6 +137,14 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage) 
 
 	if v := find.ResourceID; v != nil {
 		q.And("worksheet.resource_id = ?", *v)
+	}
+
+	q.Space("ORDER BY worksheet.updated_at DESC, worksheet.resource_id DESC")
+	if v := find.Limit; v != nil {
+		q.Space("LIMIT ?", *v)
+	}
+	if v := find.Offset; v != nil {
+		q.Space("OFFSET ?", *v)
 	}
 
 	query, args, err := q.ToSQL()

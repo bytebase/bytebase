@@ -25,6 +25,7 @@ import {
   Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
+  getDefaultPagination,
   getSheetStatement,
   isWorksheetReadableV1,
   storageKeySqlEditorWorksheetFilter,
@@ -95,6 +96,9 @@ export interface ViewContext {
   folderContext: FolderContext;
   events: SheetTreeEvents;
   fetchSheetList: () => Promise<void>;
+  fetchNextPage: () => Promise<void>;
+  hasMore: boolean;
+  isFetchingNextPage: boolean;
   rebuildTree: () => void;
   getKeyForWorksheet: (worksheet: WorksheetLikeItem) => string;
   getFoldersForWorksheet: (path: string) => string[];
@@ -114,9 +118,12 @@ const INITIAL_FILTER: WorksheetFilter = {
 
 interface ViewState {
   isLoading: boolean;
+  isFetchingNextPage: boolean;
   isInitialized: boolean;
   sheetTree: WorksheetFolderNode;
   folders: string[];
+  worksheetNames: string[];
+  nextPageToken: string;
 }
 
 interface SheetContextState {
@@ -139,9 +146,12 @@ interface SheetContextState {
     next: { node: WorksheetFolderNode; rawLabel: string } | undefined
   ) => void;
   setViewIsLoading: (view: SheetViewMode, loading: boolean) => void;
+  setViewIsFetchingNextPage: (view: SheetViewMode, loading: boolean) => void;
   setViewIsInitialized: (view: SheetViewMode, initialized: boolean) => void;
   setViewSheetTree: (view: SheetViewMode, tree: WorksheetFolderNode) => void;
   setViewFolders: (view: SheetViewMode, folders: string[]) => void;
+  setViewWorksheetNames: (view: SheetViewMode, names: string[]) => void;
+  setViewNextPageToken: (view: SheetViewMode, token: string) => void;
   /** Replace the entire state (used by project / user-scope reload). */
   hydrate: (next: Partial<SheetContextState>) => void;
 }
@@ -158,9 +168,12 @@ const emptyRootNode = (view: SheetViewMode): WorksheetFolderNode => ({
 
 const emptyViewState = (view: SheetViewMode): ViewState => ({
   isLoading: false,
+  isFetchingNextPage: false,
   isInitialized: false,
   sheetTree: emptyRootNode(view),
   folders: [rootPathFor(view)],
+  worksheetNames: [],
+  nextPageToken: "",
 });
 
 const initialViewStates: Record<SheetViewMode, ViewState> = {
@@ -214,6 +227,11 @@ const useSheetContextStore: UseBoundStore<StoreApi<SheetContextState>> =
           s.viewStates[view].isLoading = loading;
         });
       },
+      setViewIsFetchingNextPage(view, loading) {
+        set((s) => {
+          s.viewStates[view].isFetchingNextPage = loading;
+        });
+      },
       setViewIsInitialized(view, initialized) {
         set((s) => {
           s.viewStates[view].isInitialized = initialized;
@@ -227,6 +245,16 @@ const useSheetContextStore: UseBoundStore<StoreApi<SheetContextState>> =
       setViewFolders(view, folders) {
         set((s) => {
           s.viewStates[view].folders = folders;
+        });
+      },
+      setViewWorksheetNames(view, names) {
+        set((s) => {
+          s.viewStates[view].worksheetNames = names;
+        });
+      },
+      setViewNextPageToken(view, token) {
+        set((s) => {
+          s.viewStates[view].nextPageToken = token;
         });
       },
       hydrate(next) {
@@ -628,10 +656,14 @@ const worksheetsForView = (view: SheetViewMode): Worksheet[] => {
   // the previous Pinia path had.
   const email = useAppStore.getState().currentUser?.email ?? "";
   const creator = `users/${email}`;
-  let list = useAppStore
+  const appState = useAppStore.getState();
+  let list = useSheetContextStore
     .getState()
-    .worksheetList()
-    .filter((sheet) => {
+    .viewStates[view].worksheetNames.map((name) =>
+      appState.getWorksheetByName(name)
+    )
+    .filter((sheet): sheet is Worksheet => {
+      if (!sheet) return false;
       if (sheet.project !== project) return false;
       const mine = sheet.creator === creator;
       return view === "my" ? mine : !mine;
@@ -707,28 +739,12 @@ const fetchSheetListFor = async (view: SheetViewMode) => {
   const state = useSheetContextStore.getState();
   state.setViewIsLoading(view, true);
   try {
-    const sheetStore = useAppStore.getState();
-    const email = sheetStore.currentUser?.email ?? "";
-    const project = getSQLEditorEditorState().project;
-    switch (view) {
-      case "my":
-        await sheetStore.fetchWorksheetList(
-          project,
-          `creator == "users/${email}"`
-        );
-        break;
-      case "shared":
-        await sheetStore.fetchWorksheetList(
-          project,
-          [
-            `creator != "users/${email}"`,
-            `visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`,
-          ].join(" && ")
-        );
-        break;
-      default:
-        break;
-    }
+    const { worksheets, nextPageToken } = await fetchSheetPageFor(view, "");
+    state.setViewWorksheetNames(
+      view,
+      worksheets.map((worksheet) => worksheet.name)
+    );
+    state.setViewNextPageToken(view, nextPageToken);
     rebuildTreeImpl(view);
     state.setViewIsInitialized(view, true);
   } finally {
@@ -736,11 +752,73 @@ const fetchSheetListFor = async (view: SheetViewMode) => {
   }
 };
 
+const fetchNextSheetPageFor = async (view: SheetViewMode) => {
+  const state = useSheetContextStore.getState();
+  const viewState = state.viewStates[view];
+  if (
+    (view !== "my" && view !== "shared") ||
+    !viewState.nextPageToken ||
+    viewState.isFetchingNextPage ||
+    viewState.isLoading
+  ) {
+    return;
+  }
+
+  state.setViewIsFetchingNextPage(view, true);
+  try {
+    const { worksheets, nextPageToken } = await fetchSheetPageFor(
+      view,
+      viewState.nextPageToken
+    );
+    const names = new Set(
+      useSheetContextStore.getState().viewStates[view].worksheetNames
+    );
+    for (const worksheet of worksheets) {
+      names.add(worksheet.name);
+    }
+    state.setViewWorksheetNames(view, [...names]);
+    state.setViewNextPageToken(view, nextPageToken);
+    rebuildTreeImpl(view);
+  } finally {
+    state.setViewIsFetchingNextPage(view, false);
+  }
+};
+
+const fetchSheetPageFor = async (
+  view: SheetViewMode,
+  pageToken: string
+): Promise<{ worksheets: Worksheet[]; nextPageToken: string }> => {
+  if (view !== "my" && view !== "shared") {
+    return { worksheets: [], nextPageToken: "" };
+  }
+  const sheetStore = useAppStore.getState();
+  const email = sheetStore.currentUser?.email ?? "";
+  const project = getSQLEditorEditorState().project;
+  const filter =
+    view === "my"
+      ? `creator == "users/${email}"`
+      : [
+          `creator != "users/${email}"`,
+          `visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`,
+        ].join(" && ");
+  return sheetStore.fetchWorksheetList(project, filter, {
+    pageSize: getDefaultPagination(),
+    pageToken,
+  });
+};
+
 const buildViewContext = (view: SheetViewMode): ViewContext => {
   const folderContext = getFolderContext(view);
   return {
     get isLoading() {
       return useSheetContextStore.getState().viewStates[view].isLoading;
+    },
+    get isFetchingNextPage() {
+      return useSheetContextStore.getState().viewStates[view]
+        .isFetchingNextPage;
+    },
+    get hasMore() {
+      return !!useSheetContextStore.getState().viewStates[view].nextPageToken;
     },
     get isInitialized() {
       return useSheetContextStore.getState().viewStates[view].isInitialized;
@@ -758,6 +836,7 @@ const buildViewContext = (view: SheetViewMode): ViewContext => {
     folderContext,
     events: getEvents(view),
     fetchSheetList: () => fetchSheetListFor(view),
+    fetchNextPage: () => fetchNextSheetPageFor(view),
     rebuildTree: () => getRebuildTreeFn(view)(),
     getKeyForWorksheet: (ws) => getKeyForWorksheet(view, ws),
     getFoldersForWorksheet: (path) => getFoldersForWorksheet(view, path),

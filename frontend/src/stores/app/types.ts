@@ -625,7 +625,14 @@ export type WorksheetSlice = {
     name: string,
     silent?: boolean
   ) => Promise<Worksheet | undefined>;
-  fetchWorksheetList: (parent: string, filter: string) => Promise<Worksheet[]>;
+  fetchWorksheetList: (
+    parent: string,
+    filter: string,
+    params?: {
+      pageSize?: number;
+      pageToken?: string;
+    }
+  ) => Promise<{ worksheets: Worksheet[]; nextPageToken: string }>;
   createWorksheet: (worksheet: Worksheet) => Promise<Worksheet>;
   patchWorksheet: (
     worksheet: Worksheet,
