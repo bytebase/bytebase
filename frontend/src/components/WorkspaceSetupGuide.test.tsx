@@ -125,7 +125,7 @@ vi.mock("@/stores/app", () => {
 });
 
 vi.mock("@/api", () => ({
-  sqlServiceClientConnect: {
+  queryHistoryServiceClientConnect: {
     searchQueryHistories: mocks.searchQueryHistories,
   },
 }));

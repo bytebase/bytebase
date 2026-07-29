@@ -4190,6 +4190,120 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Project'
+  /bytebase.v1.QueryHistoryService/GetQueryHistory:
+    post:
+      tags:
+        - bytebase.v1.QueryHistoryService
+      summary: GetQueryHistory
+      description: |-
+        GetQueryHistory gets a single query history for the caller.
+         Permissions required: None (only returns the caller's own query history)
+      operationId: bytebase.v1.QueryHistoryService.GetQueryHistory
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetQueryHistoryRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.QueryHistory'
+  /bytebase.v1.QueryHistoryService/ListQueryHistories:
+    post:
+      tags:
+        - bytebase.v1.QueryHistoryService
+      summary: ListQueryHistories
+      description: |-
+        ListQueryHistories lists query histories of all users in a project.
+         Permissions required: bb.queryHistories.list
+      operationId: bytebase.v1.QueryHistoryService.ListQueryHistories
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListQueryHistoriesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListQueryHistoriesResponse'
+  /bytebase.v1.QueryHistoryService/SearchQueryHistories:
+    post:
+      tags:
+        - bytebase.v1.QueryHistoryService
+      summary: SearchQueryHistories
+      description: |-
+        SearchQueryHistories searches query histories for the caller.
+         Permissions required: None (only returns caller's own query histories)
+      operationId: bytebase.v1.QueryHistoryService.SearchQueryHistories
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.SearchQueryHistoriesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SearchQueryHistoriesResponse'
   /bytebase.v1.ReleaseService/CheckRelease:
     post:
       tags:
@@ -5571,7 +5685,9 @@ paths:
         - bytebase.v1.SQLService
       summary: GetQueryHistory
       description: |-
-        GetQueryHistory gets a single query history for the caller.
+        Deprecated: use QueryHistoryService.GetQueryHistory instead.
+         Delegating alias kept for upgrade transition; will be removed in a future release.
+         No HTTP binding: the REST route is served by QueryHistoryService.
          Permissions required: None (only returns the caller's own query history)
       operationId: bytebase.v1.SQLService.GetQueryHistory
       parameters:
@@ -5603,13 +5719,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.QueryHistory'
+      deprecated: true
   /bytebase.v1.SQLService/ListQueryHistories:
     post:
       tags:
         - bytebase.v1.SQLService
       summary: ListQueryHistories
       description: |-
-        ListQueryHistories lists query histories of all users in a project.
+        Deprecated: use QueryHistoryService.ListQueryHistories instead.
+         Delegating alias kept for upgrade transition; will be removed in a future release.
+         No HTTP binding: the REST route is served by QueryHistoryService.
          Permissions required: bb.queryHistories.list
       operationId: bytebase.v1.SQLService.ListQueryHistories
       parameters:
@@ -5641,6 +5760,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListQueryHistoriesResponse'
+      deprecated: true
   /bytebase.v1.SQLService/Query:
     post:
       tags:
@@ -5685,7 +5805,9 @@ paths:
         - bytebase.v1.SQLService
       summary: SearchQueryHistories
       description: |-
-        SearchQueryHistories searches query histories for the caller.
+        Deprecated: use QueryHistoryService.SearchQueryHistories instead.
+         Delegating alias kept for upgrade transition; will be removed in a future release.
+         No HTTP binding: the REST route is served by QueryHistoryService.
          Permissions required: None (only returns caller's own query histories)
       operationId: bytebase.v1.SQLService.SearchQueryHistories
       parameters:
@@ -5717,6 +5839,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.SearchQueryHistoriesResponse'
+      deprecated: true
   /bytebase.v1.ServiceAccountService/CreateServiceAccount:
     post:
       tags:
@@ -22505,6 +22628,8 @@ tags:
     description: InstanceService manages database instances and their connections.
   - name: bytebase.v1.DatabaseService
     description: DatabaseService manages databases and their schemas.
+  - name: bytebase.v1.QueryHistoryService
+    description: QueryHistoryService manages query history records of SQL Editor queries and exports.
   - name: bytebase.v1.SQLService
     description: SQLService executes SQL queries and manages query operations.
   - name: bytebase.v1.PlanService

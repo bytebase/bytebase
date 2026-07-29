@@ -7,6 +7,7 @@ Database Management:
 
 SQL & Queries:
 - SQLService: execute SQL queries, export query results, SQL check/lint, parse SQL, differencing
+- QueryHistoryService: query/export history records of SQL Editor sessions
 - SheetService: internal saved SQL sheets (system use)
 - WorksheetService: user-facing saved SQL worksheets
 

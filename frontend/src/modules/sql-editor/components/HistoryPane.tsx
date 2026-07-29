@@ -28,7 +28,7 @@ import {
 } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
 import { DEBOUNCE_SEARCH_DELAY, getDateForPbTimestampProtoEs } from "@/types";
-import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
+import type { QueryHistory } from "@/types/proto-es/v1/query_history_service_pb";
 import { extractProjectResourceName, extractQueryHistoryUID } from "@/utils";
 import { HistorySearchInput } from "./HistorySearchInput";
 

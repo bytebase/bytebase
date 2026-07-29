@@ -1012,6 +1012,49 @@
         
           
           <li>
+            <a href="#v1%2fquery_history_service.proto">v1/query_history_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.GetQueryHistoryRequest"><span class="badge">M</span>GetQueryHistoryRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListQueryHistoriesRequest"><span class="badge">M</span>ListQueryHistoriesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListQueryHistoriesResponse"><span class="badge">M</span>ListQueryHistoriesResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.QueryHistory"><span class="badge">M</span>QueryHistory</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchQueryHistoriesRequest"><span class="badge">M</span>SearchQueryHistoriesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchQueryHistoriesResponse"><span class="badge">M</span>SearchQueryHistoriesResponse</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.v1.QueryHistory.Type"><span class="badge">E</span>QueryHistory.Type</a>
+                </li>
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.QueryHistoryService"><span class="badge">S</span>QueryHistoryService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2fsql_service.proto">v1/sql_service.proto</a>
             <ul>
               
@@ -1068,23 +1111,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.GetQueryHistoryRequest"><span class="badge">M</span>GetQueryHistoryRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListQueryHistoriesRequest"><span class="badge">M</span>ListQueryHistoriesRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListQueryHistoriesResponse"><span class="badge">M</span>ListQueryHistoriesResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.MaskingReason"><span class="badge">M</span>MaskingReason</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.QueryHistory"><span class="badge">M</span>QueryHistory</a>
                 </li>
               
                 <li>
@@ -1135,14 +1162,6 @@
                   <a href="#bytebase.v1.RowValue.TimestampTZ"><span class="badge">M</span>RowValue.TimestampTZ</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.v1.SearchQueryHistoriesRequest"><span class="badge">M</span>SearchQueryHistoriesRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SearchQueryHistoriesResponse"><span class="badge">M</span>SearchQueryHistoriesResponse</a>
-                </li>
-              
               
                 <li>
                   <a href="#bytebase.v1.Advice.Level"><span class="badge">E</span>Advice.Level</a>
@@ -1150,10 +1169,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Advice.RuleType"><span class="badge">E</span>Advice.RuleType</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.QueryHistory.Type"><span class="badge">E</span>QueryHistory.Type</a>
                 </li>
               
                 <li>
@@ -13172,6 +13187,428 @@ Permissions required: bb.databases.getSchema</p></td>
     
       
       <div class="file-heading">
+        <h2 id="v1/query_history_service.proto">v1/query_history_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.GetQueryHistoryRequest">GetQueryHistoryRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the query history to retrieve.
+Format: projects/{project}/queryHistories/{id} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListQueryHistoriesRequest">ListQueryHistoriesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent project whose query histories are listed.
+Format: projects/{project}
+Use &#34;projects/-&#34; to list query histories across all projects
+(https://google.aip.dev/159); this requires the bb.queryHistories.list
+permission on the workspace. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of histories to return.
+The service may return fewer than this value.
+If unspecified, at most 10 history entries will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListQueryHistories` call.
+Provide this to retrieve the subsequent page. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is the filter to apply on the list query histories.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter:
+- creator: the user full name in &#34;users/{email}&#34; format, support &#34;==&#34; operator.
+
+For example:
+creator == &#34;users/{email}&#34; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListQueryHistoriesResponse">ListQueryHistoriesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>query_histories</td>
+                  <td><a href="#bytebase.v1.QueryHistory">QueryHistory</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of query histories. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token to retrieve next page of history.
+Pass this value in the page_token field in the subsequent call to
+`ListQueryHistories` method to retrieve the next page of history. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.QueryHistory">QueryHistory</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name for the query history.
+Format: projects/{project}/queryHistories/{id} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The database name to execute the query.
+Format: instances/{instance}/databases/{databaseName} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>creator</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>statement</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>duration</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.QueryHistory.Type">QueryHistory.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchQueryHistoriesRequest">SearchQueryHistoriesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent project to search query histories in.
+Format: projects/{project}
+The AIP-159 wildcard &#34;projects/-&#34; is not supported; use
+ListQueryHistories for cross-project reads. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of histories to return.
+The service may return fewer than this value.
+If unspecified, at most 10 history entries will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListQueryHistory` call.
+Provide this to retrieve the subsequent page. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is the filter to apply on the search query history
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter:
+- project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
+- database: the database full name in &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator.
+- instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator.
+- type: the type, should be &#34;QUERY&#34; or &#34;EXPORT&#34;, support &#34;==&#34; operator.
+- statement: the SQL statement, support &#34;.contains()&#34; operator.
+
+For example:
+project == &#34;projects/{project}&#34;
+database == &#34;instances/{instance}/databases/{database}&#34;
+instance == &#34;instances/{instance}&#34;
+type == &#34;QUERY&#34;
+type == &#34;EXPORT&#34;
+statement.contains(&#34;select&#34;)
+type == &#34;QUERY&#34; &amp;&amp; statement.contains(&#34;select&#34;) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchQueryHistoriesResponse">SearchQueryHistoriesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>query_histories</td>
+                  <td><a href="#bytebase.v1.QueryHistory">QueryHistory</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of history. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token to retrieve next page of history.
+Pass this value in the page_token field in the subsequent call to
+`ListQueryHistory` method to retrieve the next page of history. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.v1.QueryHistory.Type">QueryHistory.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Unspecified query history type.</p></td>
+              </tr>
+            
+              <tr>
+                <td>QUERY</td>
+                <td>1</td>
+                <td><p>Query execution for data retrieval.</p></td>
+              </tr>
+            
+              <tr>
+                <td>EXPORT</td>
+                <td>2</td>
+                <td><p>Data export operation to file.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.QueryHistoryService">QueryHistoryService</h3>
+        <p>QueryHistoryService manages query history records of SQL Editor queries and exports.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SearchQueryHistories</td>
+                <td><a href="#bytebase.v1.SearchQueryHistoriesRequest">SearchQueryHistoriesRequest</a></td>
+                <td><a href="#bytebase.v1.SearchQueryHistoriesResponse">SearchQueryHistoriesResponse</a></td>
+                <td><p>SearchQueryHistories searches query histories for the caller.
+Permissions required: None (only returns caller&#39;s own query histories)</p></td>
+              </tr>
+            
+              <tr>
+                <td>ListQueryHistories</td>
+                <td><a href="#bytebase.v1.ListQueryHistoriesRequest">ListQueryHistoriesRequest</a></td>
+                <td><a href="#bytebase.v1.ListQueryHistoriesResponse">ListQueryHistoriesResponse</a></td>
+                <td><p>ListQueryHistories lists query histories of all users in a project.
+Permissions required: bb.queryHistories.list</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetQueryHistory</td>
+                <td><a href="#bytebase.v1.GetQueryHistoryRequest">GetQueryHistoryRequest</a></td>
+                <td><a href="#bytebase.v1.QueryHistory">QueryHistory</a></td>
+                <td><p>GetQueryHistory gets a single query history for the caller.
+Permissions required: None (only returns the caller&#39;s own query history)</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>SearchQueryHistories</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/queryHistories:search</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListQueryHistories</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/queryHistories</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetQueryHistory</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/queryHistories/*}</td>
+                <td></td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
         <h2 id="v1/sql_service.proto">v1/sql_service.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -13653,124 +14090,6 @@ Empty when the user was authorized through normal ACL rather than a grant. </p><
 
         
       
-        <h3 id="bytebase.v1.GetQueryHistoryRequest">GetQueryHistoryRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the query history to retrieve.
-Format: projects/{project}/queryHistories/{id} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListQueryHistoriesRequest">ListQueryHistoriesRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent project whose query histories are listed.
-Format: projects/{project}
-Use &#34;projects/-&#34; to list query histories across all projects
-(https://google.aip.dev/159); this requires the bb.queryHistories.list
-permission on the workspace. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of histories to return.
-The service may return fewer than this value.
-If unspecified, at most 10 history entries will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListQueryHistories` call.
-Provide this to retrieve the subsequent page. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Filter is the filter to apply on the list query histories.
-The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter:
-- creator: the user full name in &#34;users/{email}&#34; format, support &#34;==&#34; operator.
-
-For example:
-creator == &#34;users/{email}&#34; </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListQueryHistoriesResponse">ListQueryHistoriesResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>query_histories</td>
-                  <td><a href="#bytebase.v1.QueryHistory">QueryHistory</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of query histories. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token to retrieve next page of history.
-Pass this value in the page_token field in the subsequent call to
-`ListQueryHistories` method to retrieve the next page of history. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.MaskingReason">MaskingReason</h3>
         <p></p>
 
@@ -13828,81 +14147,6 @@ Pass this value in the page_token field in the subsequent call to
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Icon associated with the semantic type (if any). </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.QueryHistory">QueryHistory</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name for the query history.
-Format: projects/{project}/queryHistories/{id} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database name to execute the query.
-Format: instances/{instance}/databases/{databaseName} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>creator</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>statement</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>error</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>duration</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.QueryHistory.Type">QueryHistory.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -14598,108 +14842,6 @@ time.Time.Zone() </p></td>
 
         
       
-        <h3 id="bytebase.v1.SearchQueryHistoriesRequest">SearchQueryHistoriesRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent project to search query histories in.
-Format: projects/{project}
-The AIP-159 wildcard &#34;projects/-&#34; is not supported; use
-ListQueryHistories for cross-project reads. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of histories to return.
-The service may return fewer than this value.
-If unspecified, at most 10 history entries will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListQueryHistory` call.
-Provide this to retrieve the subsequent page. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Filter is the filter to apply on the search query history
-The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter:
-- project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
-- database: the database full name in &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator.
-- instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator.
-- type: the type, should be &#34;QUERY&#34; or &#34;EXPORT&#34;, support &#34;==&#34; operator.
-- statement: the SQL statement, support &#34;.contains()&#34; operator.
-
-For example:
-project == &#34;projects/{project}&#34;
-database == &#34;instances/{instance}/databases/{database}&#34;
-instance == &#34;instances/{instance}&#34;
-type == &#34;QUERY&#34;
-type == &#34;EXPORT&#34;
-statement.contains(&#34;select&#34;)
-type == &#34;QUERY&#34; &amp;&amp; statement.contains(&#34;select&#34;) </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SearchQueryHistoriesResponse">SearchQueryHistoriesResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>query_histories</td>
-                  <td><a href="#bytebase.v1.QueryHistory">QueryHistory</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of history. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token to retrieve next page of history.
-Pass this value in the page_token field in the subsequent call to
-`ListQueryHistory` method to retrieve the next page of history. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
 
       
         <h3 id="bytebase.v1.Advice.Level">Advice.Level</h3>
@@ -14763,35 +14905,6 @@ These are non-configurable, mandatory checks for schema health.</p></td>
                 <td>2</td>
                 <td><p>AI-powered rule defined by user in natural language.
 These are custom, flexible checks powered by AI models.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.QueryHistory.Type">QueryHistory.Type</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>Unspecified query history type.</p></td>
-              </tr>
-            
-              <tr>
-                <td>QUERY</td>
-                <td>1</td>
-                <td><p>Query execution for data retrieval.</p></td>
-              </tr>
-            
-              <tr>
-                <td>EXPORT</td>
-                <td>2</td>
-                <td><p>Data export operation to file.</p></td>
               </tr>
             
           </tbody>
@@ -14975,7 +15088,9 @@ Permissions required: bb.sql.admin</p></td>
                 <td>SearchQueryHistories</td>
                 <td><a href="#bytebase.v1.SearchQueryHistoriesRequest">SearchQueryHistoriesRequest</a></td>
                 <td><a href="#bytebase.v1.SearchQueryHistoriesResponse">SearchQueryHistoriesResponse</a></td>
-                <td><p>SearchQueryHistories searches query histories for the caller.
+                <td><p>Deprecated: use QueryHistoryService.SearchQueryHistories instead.
+Delegating alias kept for upgrade transition; will be removed in a future release.
+No HTTP binding: the REST route is served by QueryHistoryService.
 Permissions required: None (only returns caller&#39;s own query histories)</p></td>
               </tr>
             
@@ -14983,7 +15098,9 @@ Permissions required: None (only returns caller&#39;s own query histories)</p></
                 <td>ListQueryHistories</td>
                 <td><a href="#bytebase.v1.ListQueryHistoriesRequest">ListQueryHistoriesRequest</a></td>
                 <td><a href="#bytebase.v1.ListQueryHistoriesResponse">ListQueryHistoriesResponse</a></td>
-                <td><p>ListQueryHistories lists query histories of all users in a project.
+                <td><p>Deprecated: use QueryHistoryService.ListQueryHistories instead.
+Delegating alias kept for upgrade transition; will be removed in a future release.
+No HTTP binding: the REST route is served by QueryHistoryService.
 Permissions required: bb.queryHistories.list</p></td>
               </tr>
             
@@ -14991,7 +15108,9 @@ Permissions required: bb.queryHistories.list</p></td>
                 <td>GetQueryHistory</td>
                 <td><a href="#bytebase.v1.GetQueryHistoryRequest">GetQueryHistoryRequest</a></td>
                 <td><a href="#bytebase.v1.QueryHistory">QueryHistory</a></td>
-                <td><p>GetQueryHistory gets a single query history for the caller.
+                <td><p>Deprecated: use QueryHistoryService.GetQueryHistory instead.
+Delegating alias kept for upgrade transition; will be removed in a future release.
+No HTTP binding: the REST route is served by QueryHistoryService.
 Permissions required: None (only returns the caller&#39;s own query history)</p></td>
               </tr>
             
@@ -15025,6 +15144,37 @@ Permissions required: None (authenticated users only, requires AI to be enabled)
         
           
           
+          <h4>Methods with deprecated option</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Option</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              <tr>
+                <td>SearchQueryHistories</td>
+                <td><p>true</p></td>
+              </tr>
+            
+              <tr>
+                <td>ListQueryHistories</td>
+                <td><p>true</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetQueryHistory</td>
+                <td><p>true</p></td>
+              </tr>
+            
+            </tbody>
+          </table>
+          
+        
+          
+          
           <h4>Methods with HTTP bindings</h4>
           <table>
             <thead>
@@ -15053,36 +15203,6 @@ Permissions required: None (authenticated users only, requires AI to be enabled)
                 <td>AdminExecute</td>
                 <td>GET</td>
                 <td>/v1:adminExecute</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>SearchQueryHistories</td>
-                <td>POST</td>
-                <td>/v1/{parent=projects/*}/queryHistories:search</td>
-                <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListQueryHistories</td>
-                <td>GET</td>
-                <td>/v1/{parent=projects/*}/queryHistories</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GetQueryHistory</td>
-                <td>GET</td>
-                <td>/v1/{name=projects/*/queryHistories/*}</td>
                 <td></td>
               </tr>
               

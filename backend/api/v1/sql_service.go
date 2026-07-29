@@ -47,6 +47,9 @@ type SQLService struct {
 	dbFactory      *dbfactory.DBFactory
 	licenseService *enterprise.LicenseService
 	iamManager     *iam.Manager
+	// queryHistoryService backs the deprecated query history aliases until
+	// they are removed.
+	queryHistoryService *QueryHistoryService
 }
 
 // NewSQLService creates a SQLService.
@@ -56,13 +59,15 @@ func NewSQLService(
 	dbFactory *dbfactory.DBFactory,
 	licenseService *enterprise.LicenseService,
 	iamManager *iam.Manager,
+	queryHistoryService *QueryHistoryService,
 ) *SQLService {
 	return &SQLService{
-		store:          store,
-		schemaSyncer:   schemaSyncer,
-		dbFactory:      dbFactory,
-		licenseService: licenseService,
-		iamManager:     iamManager,
+		store:               store,
+		schemaSyncer:        schemaSyncer,
+		dbFactory:           dbFactory,
+		licenseService:      licenseService,
+		iamManager:          iamManager,
+		queryHistoryService: queryHistoryService,
 	}
 }
 
@@ -1405,168 +1410,28 @@ func (s *SQLService) createQueryHistory(database *store.DatabaseMessage, queryTy
 	}
 }
 
-// SearchQueryHistories lists the caller's own query histories in the parent
-// project. The AIP-159 wildcard "projects/-" is rejected: cross-project reads
-// are reserved for the IAM-gated ListQueryHistories.
+// SearchQueryHistories is a deprecated delegating alias for
+// QueryHistoryService.SearchQueryHistories, kept so gRPC/Connect callers of
+// the old method name keep working during upgrade. It will be removed in a
+// future release.
 func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Request[v1pb.SearchQueryHistoriesRequest]) (*connect.Response[v1pb.SearchQueryHistoriesResponse], error) {
-	request := req.Msg
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-
-	find := &store.FindQueryHistoryMessage{Creator: &user.Email}
-	if err := s.resolveQueryHistoryParent(ctx, request.Parent, find, false); err != nil {
-		return nil, err
-	}
-
-	filterQ, err := store.GetListQueryHistoryFilter(request.Filter)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	find.FilterQ = filterQ
-
-	histories, nextPageToken, err := s.paginatedQueryHistories(ctx, find, request.PageToken, request.PageSize)
-	if err != nil {
-		return nil, err
-	}
-	return connect.NewResponse(&v1pb.SearchQueryHistoriesResponse{
-		QueryHistories: histories,
-		NextPageToken:  nextPageToken,
-	}), nil
+	return s.queryHistoryService.SearchQueryHistories(ctx, req)
 }
 
-// paginatedQueryHistories applies pagination to find, fetches one extra row to
-// detect whether a next page exists, and converts the results to the v1 shape.
-func (s *SQLService) paginatedQueryHistories(ctx context.Context, find *store.FindQueryHistoryMessage, pageToken string, requestedPageSize int32) ([]*v1pb.QueryHistory, string, error) {
-	offset, err := parseLimitAndOffset(&pageSize{
-		token:   pageToken,
-		limit:   int(requestedPageSize),
-		maximum: 1000,
-	})
-	if err != nil {
-		return nil, "", err
-	}
-	limitPlusOne := offset.limit + 1
-	find.Limit = &limitPlusOne
-	find.Offset = &offset.offset
-
-	historyList, err := s.store.ListQueryHistories(ctx, find)
-	if err != nil {
-		return nil, "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to list history: %v", err.Error()))
-	}
-
-	nextPageToken := ""
-	if len(historyList) == limitPlusOne {
-		historyList = historyList[:offset.limit]
-		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, "", connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
-		}
-	}
-
-	var histories []*v1pb.QueryHistory
-	for _, history := range historyList {
-		queryHistory, err := s.convertToV1QueryHistory(ctx, history)
-		if err != nil {
-			return nil, "", connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert log entity"))
-		}
-		if queryHistory == nil {
-			continue
-		}
-		histories = append(histories, queryHistory)
-	}
-	return histories, nextPageToken, nil
-}
-
-// ListQueryHistories lists query histories of all users in a project. The IAM
-// interceptor checks bb.queryHistories.list on the parent project, or on the
-// workspace when the parent is the AIP-159 wildcard "projects/-".
+// ListQueryHistories is a deprecated delegating alias for
+// QueryHistoryService.ListQueryHistories, kept so gRPC/Connect callers of
+// the old method name keep working during upgrade. It will be removed in a
+// future release.
 func (s *SQLService) ListQueryHistories(ctx context.Context, req *connect.Request[v1pb.ListQueryHistoriesRequest]) (*connect.Response[v1pb.ListQueryHistoriesResponse], error) {
-	request := req.Msg
-	find := &store.FindQueryHistoryMessage{}
-	if err := s.resolveQueryHistoryParent(ctx, request.Parent, find, true); err != nil {
-		return nil, err
-	}
-
-	creator, err := store.GetListQueryHistoriesCreatorFilter(request.Filter)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	find.Creator = creator
-
-	histories, nextPageToken, err := s.paginatedQueryHistories(ctx, find, request.PageToken, request.PageSize)
-	if err != nil {
-		return nil, err
-	}
-	return connect.NewResponse(&v1pb.ListQueryHistoriesResponse{
-		QueryHistories: histories,
-		NextPageToken:  nextPageToken,
-	}), nil
+	return s.queryHistoryService.ListQueryHistories(ctx, req)
 }
 
-// resolveQueryHistoryParent applies the parent scope to find: a concrete
-// "projects/{id}" parent must exist in the caller's workspace and scopes by
-// project. When allowWildcard is set, the AIP-159 wildcard "projects/-"
-// scopes by workspace instead, which is mandatory because query_history rows
-// are workspace-scoped only through their project.
-func (s *SQLService) resolveQueryHistoryParent(ctx context.Context, parent string, find *store.FindQueryHistoryMessage, allowWildcard bool) error {
-	projectID, err := common.GetProjectID(parent)
-	if err != nil {
-		return connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	if projectID == "-" {
-		if !allowWildcard {
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`the wildcard parent "projects/-" is not supported; specify a concrete project`))
-		}
-		workspaceID := common.GetWorkspaceIDFromContext(ctx)
-		if workspaceID == "" {
-			return connect.NewError(connect.CodeInternal, errors.Errorf("workspace not found in context"))
-		}
-		find.Workspace = workspaceID
-		return nil
-	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
-	}
-	if project == nil {
-		return connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", parent))
-	}
-	find.Project = &projectID
-	return nil
-}
-
-// GetQueryHistory gets a single query history. Query histories are private to
-// their creator, so only the creator may retrieve one.
+// GetQueryHistory is a deprecated delegating alias for
+// QueryHistoryService.GetQueryHistory, kept so gRPC/Connect callers of the
+// old method name keep working during upgrade. It will be removed in a
+// future release.
 func (s *SQLService) GetQueryHistory(ctx context.Context, req *connect.Request[v1pb.GetQueryHistoryRequest]) (*connect.Response[v1pb.QueryHistory], error) {
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-
-	projectID, historyID, err := common.GetProjectIDQueryHistoryID(req.Msg.Name)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
-	history, err := s.store.GetQueryHistory(ctx, historyID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get query history: %v", err.Error()))
-	}
-	// Hide existence from non-creators and project mismatches by returning the
-	// same not-found error for all three cases.
-	if history == nil || history.Project != projectID || history.Creator != user.Email {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("query history %q not found", req.Msg.Name))
-	}
-
-	queryHistory, err := s.convertToV1QueryHistory(ctx, history)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert query history"))
-	}
-	return connect.NewResponse(queryHistory), nil
+	return s.queryHistoryService.GetQueryHistory(ctx, req)
 }
 
 // The Build*Func parser-context helpers moved to
