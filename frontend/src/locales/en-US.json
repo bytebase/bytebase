@@ -1372,7 +1372,7 @@
     "batch-transition": {
       "close": "Close",
       "closed": "closed",
-      "not-allowed-tips": "Some of selected issues cannot be {{}}",
+      "not-allowed-tips": "Some of the selected issues cannot be {{operation}}",
       "reopen": "Reopen",
       "reopened": "reopened"
     },

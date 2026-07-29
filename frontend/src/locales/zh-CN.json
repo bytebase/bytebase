@@ -1372,7 +1372,7 @@
     "batch-transition": {
       "close": "关闭",
       "closed": "关闭",
-      "not-allowed-tips": "部分选中的工单无法被{{}}",
+      "not-allowed-tips": "部分选中的工单无法被{{operation}}",
       "reopen": "重开",
       "reopened": "重开"
     },
