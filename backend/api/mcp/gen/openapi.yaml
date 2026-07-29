@@ -13988,6 +13988,9 @@ components:
           description: |-
             The parent project whose query histories are listed.
              Format: projects/{project}
+             Use "projects/-" to list query histories across all projects
+             (https://google.aip.dev/159); this requires the bb.queryHistories.list
+             permission on the workspace.
         pageSize:
           type: integer
           title: page_size
@@ -17759,6 +17762,14 @@ components:
     bytebase.v1.SearchQueryHistoriesRequest:
       type: object
       properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent project to search query histories in.
+             Format: projects/{project}
+             Use "projects/-" to search across all projects
+             (https://google.aip.dev/159).
         pageSize:
           type: integer
           title: page_size

@@ -1405,7 +1405,8 @@ func (s *SQLService) createQueryHistory(database *store.DatabaseMessage, queryTy
 	}
 }
 
-// SearchQueryHistories lists query histories.
+// SearchQueryHistories lists the caller's own query histories in the parent
+// project, or across all projects for the AIP-159 wildcard "projects/-".
 func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Request[v1pb.SearchQueryHistoriesRequest]) (*connect.Response[v1pb.SearchQueryHistoriesResponse], error) {
 	request := req.Msg
 	user, ok := GetUserFromContext(ctx)
@@ -1413,15 +1414,18 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
+	find := &store.FindQueryHistoryMessage{Creator: &user.Email}
+	if err := s.resolveQueryHistoryParent(ctx, request.Parent, find); err != nil {
+		return nil, err
+	}
+
 	filterQ, err := store.GetListQueryHistoryFilter(request.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	find.FilterQ = filterQ
 
-	histories, nextPageToken, err := s.paginatedQueryHistories(ctx, &store.FindQueryHistoryMessage{
-		Creator: &user.Email,
-		FilterQ: filterQ,
-	}, request.PageToken, request.PageSize)
+	histories, nextPageToken, err := s.paginatedQueryHistories(ctx, find, request.PageToken, request.PageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -1474,33 +1478,22 @@ func (s *SQLService) paginatedQueryHistories(ctx context.Context, find *store.Fi
 }
 
 // ListQueryHistories lists query histories of all users in a project. The IAM
-// interceptor checks bb.queryHistories.list on the parent project.
+// interceptor checks bb.queryHistories.list on the parent project, or on the
+// workspace when the parent is the AIP-159 wildcard "projects/-".
 func (s *SQLService) ListQueryHistories(ctx context.Context, req *connect.Request[v1pb.ListQueryHistoriesRequest]) (*connect.Response[v1pb.ListQueryHistoriesResponse], error) {
 	request := req.Msg
-	projectID, err := common.GetProjectID(request.Parent)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
-	}
-	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", request.Parent))
+	find := &store.FindQueryHistoryMessage{}
+	if err := s.resolveQueryHistoryParent(ctx, request.Parent, find); err != nil {
+		return nil, err
 	}
 
 	creator, err := store.GetListQueryHistoriesCreatorFilter(request.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	find.Creator = creator
 
-	histories, nextPageToken, err := s.paginatedQueryHistories(ctx, &store.FindQueryHistoryMessage{
-		Project: &projectID,
-		Creator: creator,
-	}, request.PageToken, request.PageSize)
+	histories, nextPageToken, err := s.paginatedQueryHistories(ctx, find, request.PageToken, request.PageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -1508,6 +1501,38 @@ func (s *SQLService) ListQueryHistories(ctx context.Context, req *connect.Reques
 		QueryHistories: histories,
 		NextPageToken:  nextPageToken,
 	}), nil
+}
+
+// resolveQueryHistoryParent applies the parent scope to find: a concrete
+// "projects/{id}" parent must exist in the caller's workspace and scopes by
+// project; the AIP-159 wildcard "projects/-" scopes by workspace, which is
+// mandatory because query_history rows are workspace-scoped only through
+// their project.
+func (s *SQLService) resolveQueryHistoryParent(ctx context.Context, parent string, find *store.FindQueryHistoryMessage) error {
+	projectID, err := common.GetProjectID(parent)
+	if err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if projectID == "-" {
+		workspaceID := common.GetWorkspaceIDFromContext(ctx)
+		if workspaceID == "" {
+			return connect.NewError(connect.CodeInternal, errors.Errorf("workspace not found in context"))
+		}
+		find.Workspace = workspaceID
+		return nil
+	}
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
+	}
+	if project == nil {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", parent))
+	}
+	find.Project = &projectID
+	return nil
 }
 
 // GetQueryHistory gets a single query history. Query histories are private to

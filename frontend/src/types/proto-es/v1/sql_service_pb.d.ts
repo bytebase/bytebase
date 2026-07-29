@@ -1153,6 +1153,16 @@ export declare const DiffMetadataResponseSchema: GenMessage<DiffMetadataResponse
  */
 export declare type SearchQueryHistoriesRequest = Message<"bytebase.v1.SearchQueryHistoriesRequest"> & {
   /**
+   * The parent project to search query histories in.
+   * Format: projects/{project}
+   * Use "projects/-" to search across all projects
+   * (https://google.aip.dev/159).
+   *
+   * @generated from field: string parent = 4;
+   */
+  parent: string;
+
+  /**
    * The maximum number of histories to return.
    * The service may return fewer than this value.
    * If unspecified, at most 10 history entries will be returned.
@@ -1208,6 +1218,9 @@ export declare type ListQueryHistoriesRequest = Message<"bytebase.v1.ListQueryHi
   /**
    * The parent project whose query histories are listed.
    * Format: projects/{project}
+   * Use "projects/-" to list query histories across all projects
+   * (https://google.aip.dev/159); this requires the bb.queryHistories.list
+   * permission on the workspace.
    *
    * @generated from field: string parent = 1;
    */

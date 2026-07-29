@@ -190,6 +190,7 @@ export function WorkspaceSetupGuide() {
           const queryHistoryResult =
             await sqlServiceClientConnect.searchQueryHistories(
               create(SearchQueryHistoriesRequestSchema, {
+                parent: "projects/-",
                 pageSize: 1,
                 filter: 'type == "QUERY"',
               })

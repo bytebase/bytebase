@@ -18,11 +18,15 @@ import type {
 
 const EMPTY_ENTRY: QueryHistoryEntry = { queryHistories: [] };
 
+// Project scoping travels in `parent` (AIP-159; "projects/-" means all
+// projects), so the CEL filter only carries the non-project dimensions.
+const getSearchParent = (filter: QueryHistoryFilter) =>
+  isValidProjectName(filter.project)
+    ? (filter.project as string)
+    : "projects/-";
+
 const getListQueryHistoryFilter = (filter: QueryHistoryFilter) => {
   const params = [`type == "QUERY"`];
-  if (isValidProjectName(filter.project)) {
-    params.push(`project == "${filter.project}"`);
-  }
   if (isValidDatabaseName(filter.database)) {
     params.push(`database == "${filter.database}"`);
   }
@@ -56,6 +60,7 @@ export const createQueryHistorySlice: SQLEditorSliceCreator<
     const pageToken = existing.nextPageToken;
 
     const request = create(SearchQueryHistoriesRequestSchema, {
+      parent: getSearchParent(filter),
       pageSize: 5,
       pageToken,
       filter: getListQueryHistoryFilter(filter),
@@ -112,6 +117,7 @@ export const createQueryHistorySlice: SQLEditorSliceCreator<
     const key = getQueryHistoryCacheKey(filter);
     const resp = await sqlServiceClientConnect.searchQueryHistories(
       create(SearchQueryHistoriesRequestSchema, {
+        parent: getSearchParent(filter),
         pageSize: 5,
         filter: getListQueryHistoryFilter(filter),
       })

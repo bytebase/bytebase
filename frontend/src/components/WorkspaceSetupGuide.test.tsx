@@ -710,6 +710,30 @@ describe("WorkspaceSetupGuide", () => {
     expect(container.querySelector("[data-testid='active-action']")).toBeNull();
   });
 
+  it("passes the wildcard parent to the query history check", async () => {
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/project-a" }],
+      nextPageToken: "",
+    });
+    mocks.fetchDatabases.mockImplementation(async ({ parent } = {}) => ({
+      databases:
+        parent === "projects/project-a"
+          ? [{ name: "instances/instance-a/databases/db-a" }]
+          : [],
+      nextPageToken: "",
+    }));
+    mocks.searchQueryHistories.mockResolvedValue({
+      queryHistories: [{ name: "projects/project-a/queryHistories/h1" }],
+      nextPageToken: "",
+    });
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(mocks.searchQueryHistories).toHaveBeenCalledWith(
+      expect.objectContaining({ parent: "projects/-" })
+    );
+  });
+
   it("asks users to create a database when the connected instance has no databases", async () => {
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],

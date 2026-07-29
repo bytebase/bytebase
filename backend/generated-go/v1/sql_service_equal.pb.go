@@ -558,6 +558,9 @@ func (x *SearchQueryHistoriesRequest) Equal(y *SearchQueryHistoriesRequest) bool
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
+	if x.Parent != y.Parent {
+		return false
+	}
 	if x.PageSize != y.PageSize {
 		return false
 	}

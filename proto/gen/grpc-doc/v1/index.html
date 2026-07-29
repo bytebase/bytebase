@@ -13971,7 +13971,10 @@ Format: projects/{project}/queryHistories/{id} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent project whose query histories are listed.
-Format: projects/{project} </p></td>
+Format: projects/{project}
+Use &#34;projects/-&#34; to list query histories across all projects
+(https://google.aip.dev/159); this requires the bb.queryHistories.list
+permission on the workspace. </p></td>
                 </tr>
               
                 <tr>
@@ -14884,6 +14887,16 @@ time.Time.Zone() </p></td>
             <tbody>
               
                 <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent project to search query histories in.
+Format: projects/{project}
+Use &#34;projects/-&#34; to search across all projects
+(https://google.aip.dev/159). </p></td>
+                </tr>
+
+                <tr>
                   <td>page_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
@@ -15327,7 +15340,7 @@ Permissions required: None (authenticated users only, requires AI to be enabled)
               <tr>
                 <td>SearchQueryHistories</td>
                 <td>POST</td>
-                <td>/v1/queryHistories:search</td>
+                <td>/v1/{parent=projects/*}/queryHistories:search</td>
                 <td>*</td>
               </tr>
               

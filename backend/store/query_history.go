@@ -50,6 +50,11 @@ type FindQueryHistoryMessage struct {
 	ResourceID *string
 	Creator    *string
 	Project    *string
+	// Workspace scopes the result to projects of the given workspace. It is
+	// required for cross-project listing: query_history has no workspace
+	// column, so without a Project filter the rows must be scoped through the
+	// owning project to keep multi-workspace deployments isolated.
+	Workspace string
 	// Instance is the instance resource name like instances/{instance}.
 	Instance *string
 	// Database is database resource name like instances/{instance}/databases/{database}.
@@ -132,6 +137,9 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 	}
 	if v := find.Project; v != nil {
 		q.And("query_history.project = ?", *v)
+	}
+	if v := find.Workspace; v != "" {
+		q.And("EXISTS (SELECT 1 FROM project WHERE project.resource_id = query_history.project AND project.workspace = ?)", v)
 	}
 	if v := find.Instance; v != nil {
 		q.And("query_history.database LIKE ?", *v)
