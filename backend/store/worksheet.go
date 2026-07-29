@@ -372,6 +372,14 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOr
 }
 
 func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter string) (*qb.Query, error) {
+	return buildWorksheetFilter(ctx, s, caller, filter, true /* allowStarred */)
+}
+
+func GetListWorksheetFilter(ctx context.Context, s *Store, caller string, filter string) (*qb.Query, error) {
+	return buildWorksheetFilter(ctx, s, caller, filter, false /* allowStarred */)
+}
+
+func buildWorksheetFilter(ctx context.Context, s *Store, caller string, filter string, allowStarred bool) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
 	}
@@ -411,6 +419,9 @@ func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter str
 			}
 			return qb.Q().Space("worksheet.creator = ?", userID), nil
 		case "starred":
+			if !allowStarred {
+				return nil, errors.Errorf("unsupported variable %q", variable)
+			}
 			if starred, ok := value.(bool); ok {
 				return qb.Q().Space("worksheet.resource_id IN (SELECT worksheet FROM worksheet_organizer WHERE principal = ? AND (payload->>'starred')::boolean = ?)", caller, starred), nil
 			}

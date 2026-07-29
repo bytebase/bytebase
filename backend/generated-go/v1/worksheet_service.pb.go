@@ -78,7 +78,7 @@ func (x Worksheet_Visibility) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Worksheet_Visibility.Descriptor instead.
 func (Worksheet_Visibility) EnumDescriptor() ([]byte, []int) {
-	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{10, 0}
+	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{12, 0}
 }
 
 type CreateWorksheetRequest struct {
@@ -182,6 +182,118 @@ func (x *GetWorksheetRequest) GetName() string {
 	return ""
 }
 
+type ListWorksheetsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The parent resource of the worksheets.
+	// Format: projects/{project}
+	// Use "projects/-" to list worksheets across all projects.
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// To filter the list result.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
+	// Supported filter:
+	// - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+	// - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
+	//
+	// For example:
+	// creator == "users/{email}"
+	// creator != "users/{email}"
+	// visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
+	// visibility == "PRIVATE"
+	Filter        string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListWorksheetsRequest) Reset() {
+	*x = ListWorksheetsRequest{}
+	mi := &file_v1_worksheet_service_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListWorksheetsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListWorksheetsRequest) ProtoMessage() {}
+
+func (x *ListWorksheetsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_worksheet_service_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListWorksheetsRequest.ProtoReflect.Descriptor instead.
+func (*ListWorksheetsRequest) Descriptor() ([]byte, []int) {
+	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ListWorksheetsRequest) GetParent() string {
+	if x != nil {
+		return x.Parent
+	}
+	return ""
+}
+
+func (x *ListWorksheetsRequest) GetFilter() string {
+	if x != nil {
+		return x.Filter
+	}
+	return ""
+}
+
+type ListWorksheetsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The worksheets from the specified parent.
+	Worksheets    []*Worksheet `protobuf:"bytes,1,rep,name=worksheets,proto3" json:"worksheets,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListWorksheetsResponse) Reset() {
+	*x = ListWorksheetsResponse{}
+	mi := &file_v1_worksheet_service_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListWorksheetsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListWorksheetsResponse) ProtoMessage() {}
+
+func (x *ListWorksheetsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_worksheet_service_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListWorksheetsResponse.ProtoReflect.Descriptor instead.
+func (*ListWorksheetsResponse) Descriptor() ([]byte, []int) {
+	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ListWorksheetsResponse) GetWorksheets() []*Worksheet {
+	if x != nil {
+		return x.Worksheets
+	}
+	return nil
+}
+
 type UpdateWorksheetRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The worksheet to update.
@@ -204,7 +316,7 @@ type UpdateWorksheetRequest struct {
 
 func (x *UpdateWorksheetRequest) Reset() {
 	*x = UpdateWorksheetRequest{}
-	mi := &file_v1_worksheet_service_proto_msgTypes[2]
+	mi := &file_v1_worksheet_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -216,7 +328,7 @@ func (x *UpdateWorksheetRequest) String() string {
 func (*UpdateWorksheetRequest) ProtoMessage() {}
 
 func (x *UpdateWorksheetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_worksheet_service_proto_msgTypes[2]
+	mi := &file_v1_worksheet_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -229,7 +341,7 @@ func (x *UpdateWorksheetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateWorksheetRequest.ProtoReflect.Descriptor instead.
 func (*UpdateWorksheetRequest) Descriptor() ([]byte, []int) {
-	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{2}
+	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *UpdateWorksheetRequest) GetWorksheet() *Worksheet {
@@ -255,7 +367,7 @@ type BatchUpdateWorksheetOrganizerRequest struct {
 
 func (x *BatchUpdateWorksheetOrganizerRequest) Reset() {
 	*x = BatchUpdateWorksheetOrganizerRequest{}
-	mi := &file_v1_worksheet_service_proto_msgTypes[3]
+	mi := &file_v1_worksheet_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -267,7 +379,7 @@ func (x *BatchUpdateWorksheetOrganizerRequest) String() string {
 func (*BatchUpdateWorksheetOrganizerRequest) ProtoMessage() {}
 
 func (x *BatchUpdateWorksheetOrganizerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_worksheet_service_proto_msgTypes[3]
+	mi := &file_v1_worksheet_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -280,7 +392,7 @@ func (x *BatchUpdateWorksheetOrganizerRequest) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use BatchUpdateWorksheetOrganizerRequest.ProtoReflect.Descriptor instead.
 func (*BatchUpdateWorksheetOrganizerRequest) Descriptor() ([]byte, []int) {
-	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{3}
+	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *BatchUpdateWorksheetOrganizerRequest) GetRequests() []*UpdateWorksheetOrganizerRequest {
@@ -299,7 +411,7 @@ type BatchUpdateWorksheetOrganizerResponse struct {
 
 func (x *BatchUpdateWorksheetOrganizerResponse) Reset() {
 	*x = BatchUpdateWorksheetOrganizerResponse{}
-	mi := &file_v1_worksheet_service_proto_msgTypes[4]
+	mi := &file_v1_worksheet_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -311,7 +423,7 @@ func (x *BatchUpdateWorksheetOrganizerResponse) String() string {
 func (*BatchUpdateWorksheetOrganizerResponse) ProtoMessage() {}
 
 func (x *BatchUpdateWorksheetOrganizerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_worksheet_service_proto_msgTypes[4]
+	mi := &file_v1_worksheet_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -324,7 +436,7 @@ func (x *BatchUpdateWorksheetOrganizerResponse) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use BatchUpdateWorksheetOrganizerResponse.ProtoReflect.Descriptor instead.
 func (*BatchUpdateWorksheetOrganizerResponse) Descriptor() ([]byte, []int) {
-	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{4}
+	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *BatchUpdateWorksheetOrganizerResponse) GetWorksheetOrganizers() []*WorksheetOrganizer {
@@ -355,7 +467,7 @@ type UpdateWorksheetOrganizerRequest struct {
 
 func (x *UpdateWorksheetOrganizerRequest) Reset() {
 	*x = UpdateWorksheetOrganizerRequest{}
-	mi := &file_v1_worksheet_service_proto_msgTypes[5]
+	mi := &file_v1_worksheet_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -367,7 +479,7 @@ func (x *UpdateWorksheetOrganizerRequest) String() string {
 func (*UpdateWorksheetOrganizerRequest) ProtoMessage() {}
 
 func (x *UpdateWorksheetOrganizerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_worksheet_service_proto_msgTypes[5]
+	mi := &file_v1_worksheet_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -380,7 +492,7 @@ func (x *UpdateWorksheetOrganizerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateWorksheetOrganizerRequest.ProtoReflect.Descriptor instead.
 func (*UpdateWorksheetOrganizerRequest) Descriptor() ([]byte, []int) {
-	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UpdateWorksheetOrganizerRequest) GetOrganizer() *WorksheetOrganizer {
@@ -418,7 +530,7 @@ type WorksheetOrganizer struct {
 
 func (x *WorksheetOrganizer) Reset() {
 	*x = WorksheetOrganizer{}
-	mi := &file_v1_worksheet_service_proto_msgTypes[6]
+	mi := &file_v1_worksheet_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -430,7 +542,7 @@ func (x *WorksheetOrganizer) String() string {
 func (*WorksheetOrganizer) ProtoMessage() {}
 
 func (x *WorksheetOrganizer) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_worksheet_service_proto_msgTypes[6]
+	mi := &file_v1_worksheet_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -443,7 +555,7 @@ func (x *WorksheetOrganizer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorksheetOrganizer.ProtoReflect.Descriptor instead.
 func (*WorksheetOrganizer) Descriptor() ([]byte, []int) {
-	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{6}
+	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *WorksheetOrganizer) GetWorksheet() string {
@@ -478,7 +590,7 @@ type DeleteWorksheetRequest struct {
 
 func (x *DeleteWorksheetRequest) Reset() {
 	*x = DeleteWorksheetRequest{}
-	mi := &file_v1_worksheet_service_proto_msgTypes[7]
+	mi := &file_v1_worksheet_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -490,7 +602,7 @@ func (x *DeleteWorksheetRequest) String() string {
 func (*DeleteWorksheetRequest) ProtoMessage() {}
 
 func (x *DeleteWorksheetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_worksheet_service_proto_msgTypes[7]
+	mi := &file_v1_worksheet_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -503,7 +615,7 @@ func (x *DeleteWorksheetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteWorksheetRequest.ProtoReflect.Descriptor instead.
 func (*DeleteWorksheetRequest) Descriptor() ([]byte, []int) {
-	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DeleteWorksheetRequest) GetName() string {
@@ -540,7 +652,7 @@ type SearchWorksheetsRequest struct {
 
 func (x *SearchWorksheetsRequest) Reset() {
 	*x = SearchWorksheetsRequest{}
-	mi := &file_v1_worksheet_service_proto_msgTypes[8]
+	mi := &file_v1_worksheet_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -552,7 +664,7 @@ func (x *SearchWorksheetsRequest) String() string {
 func (*SearchWorksheetsRequest) ProtoMessage() {}
 
 func (x *SearchWorksheetsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_worksheet_service_proto_msgTypes[8]
+	mi := &file_v1_worksheet_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -565,7 +677,7 @@ func (x *SearchWorksheetsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchWorksheetsRequest.ProtoReflect.Descriptor instead.
 func (*SearchWorksheetsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{8}
+	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SearchWorksheetsRequest) GetParent() string {
@@ -592,7 +704,7 @@ type SearchWorksheetsResponse struct {
 
 func (x *SearchWorksheetsResponse) Reset() {
 	*x = SearchWorksheetsResponse{}
-	mi := &file_v1_worksheet_service_proto_msgTypes[9]
+	mi := &file_v1_worksheet_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -604,7 +716,7 @@ func (x *SearchWorksheetsResponse) String() string {
 func (*SearchWorksheetsResponse) ProtoMessage() {}
 
 func (x *SearchWorksheetsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_worksheet_service_proto_msgTypes[9]
+	mi := &file_v1_worksheet_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -617,7 +729,7 @@ func (x *SearchWorksheetsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchWorksheetsResponse.ProtoReflect.Descriptor instead.
 func (*SearchWorksheetsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{9}
+	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *SearchWorksheetsResponse) GetWorksheets() []*Worksheet {
@@ -665,7 +777,7 @@ type Worksheet struct {
 
 func (x *Worksheet) Reset() {
 	*x = Worksheet{}
-	mi := &file_v1_worksheet_service_proto_msgTypes[10]
+	mi := &file_v1_worksheet_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -677,7 +789,7 @@ func (x *Worksheet) String() string {
 func (*Worksheet) ProtoMessage() {}
 
 func (x *Worksheet) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_worksheet_service_proto_msgTypes[10]
+	mi := &file_v1_worksheet_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -690,7 +802,7 @@ func (x *Worksheet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Worksheet.ProtoReflect.Descriptor instead.
 func (*Worksheet) Descriptor() ([]byte, []int) {
-	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{10}
+	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Worksheet) GetName() string {
@@ -786,7 +898,14 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x129\n" +
 	"\tworksheet\x18\x02 \x01(\v2\x16.bytebase.v1.WorksheetB\x03\xe0A\x02R\tworksheet\".\n" +
 	"\x13GetWorksheetRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"\x90\x01\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"L\n" +
+	"\x15ListWorksheetsRequest\x12\x1b\n" +
+	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x16\n" +
+	"\x06filter\x18\x02 \x01(\tR\x06filter\"P\n" +
+	"\x16ListWorksheetsResponse\x126\n" +
+	"\n" +
+	"worksheets\x18\x01 \x03(\v2\x16.bytebase.v1.WorksheetR\n" +
+	"worksheets\"\x90\x01\n" +
 	"\x16UpdateWorksheetRequest\x129\n" +
 	"\tworksheet\x18\x01 \x01(\v2\x16.bytebase.v1.WorksheetB\x03\xe0A\x02R\tworksheet\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
@@ -836,10 +955,12 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\x16VISIBILITY_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fPROJECT_READ\x10\x01\x12\x11\n" +
 	"\rPROJECT_WRITE\x10\x02\x12\v\n" +
-	"\aPRIVATE\x10\x032\xa3\t\n" +
+	"\aPRIVATE\x10\x032\xb8\n" +
+	"\n" +
 	"\x10WorksheetService\x12\x9c\x01\n" +
 	"\x0fCreateWorksheet\x12#.bytebase.v1.CreateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"L\xdaA\x10parent,worksheet\x90\xea0\x02\x82\xd3\xe4\x93\x02/:\tworksheet\"\"/v1/{parent=projects/*}/worksheets\x12\x7f\n" +
-	"\fGetWorksheet\x12 .bytebase.v1.GetWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"5\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02$\x12\"/v1/{name=projects/*/worksheets/*}\x12\xa2\x01\n" +
+	"\fGetWorksheet\x12 .bytebase.v1.GetWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"5\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02$\x12\"/v1/{name=projects/*/worksheets/*}\x12\x92\x01\n" +
+	"\x0eListWorksheets\x12\".bytebase.v1.ListWorksheetsRequest\x1a#.bytebase.v1.ListWorksheetsResponse\"7\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x02$\x12\"/v1/{parent=projects/*}/worksheets\x12\xa2\x01\n" +
 	"\x10SearchWorksheets\x12$.bytebase.v1.SearchWorksheetsRequest\x1a%.bytebase.v1.SearchWorksheetsResponse\"A\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x02.:\x01*\")/v1/{parent=projects/*}/worksheets:search\x12\xab\x01\n" +
 	"\x0fUpdateWorksheet\x12#.bytebase.v1.UpdateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"[\xdaA\x15worksheet,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x029:\tworksheet2,/v1/{worksheet.name=projects/*/worksheets/*}\x12\xd5\x01\n" +
 	"\x18UpdateWorksheetOrganizer\x12,.bytebase.v1.UpdateWorksheetOrganizerRequest\x1a\x1f.bytebase.v1.WorksheetOrganizer\"j\xdaA\x15organizer,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02H:\torganizer2;/v1/{organizer.worksheet=projects/*/worksheets/*}/organizer\x12\xbb\x01\n" +
@@ -860,55 +981,60 @@ func file_v1_worksheet_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_worksheet_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_worksheet_service_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_v1_worksheet_service_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_v1_worksheet_service_proto_goTypes = []any{
 	(Worksheet_Visibility)(0),                     // 0: bytebase.v1.Worksheet.Visibility
 	(*CreateWorksheetRequest)(nil),                // 1: bytebase.v1.CreateWorksheetRequest
 	(*GetWorksheetRequest)(nil),                   // 2: bytebase.v1.GetWorksheetRequest
-	(*UpdateWorksheetRequest)(nil),                // 3: bytebase.v1.UpdateWorksheetRequest
-	(*BatchUpdateWorksheetOrganizerRequest)(nil),  // 4: bytebase.v1.BatchUpdateWorksheetOrganizerRequest
-	(*BatchUpdateWorksheetOrganizerResponse)(nil), // 5: bytebase.v1.BatchUpdateWorksheetOrganizerResponse
-	(*UpdateWorksheetOrganizerRequest)(nil),       // 6: bytebase.v1.UpdateWorksheetOrganizerRequest
-	(*WorksheetOrganizer)(nil),                    // 7: bytebase.v1.WorksheetOrganizer
-	(*DeleteWorksheetRequest)(nil),                // 8: bytebase.v1.DeleteWorksheetRequest
-	(*SearchWorksheetsRequest)(nil),               // 9: bytebase.v1.SearchWorksheetsRequest
-	(*SearchWorksheetsResponse)(nil),              // 10: bytebase.v1.SearchWorksheetsResponse
-	(*Worksheet)(nil),                             // 11: bytebase.v1.Worksheet
-	(*fieldmaskpb.FieldMask)(nil),                 // 12: google.protobuf.FieldMask
-	(*timestamppb.Timestamp)(nil),                 // 13: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),                         // 14: google.protobuf.Empty
+	(*ListWorksheetsRequest)(nil),                 // 3: bytebase.v1.ListWorksheetsRequest
+	(*ListWorksheetsResponse)(nil),                // 4: bytebase.v1.ListWorksheetsResponse
+	(*UpdateWorksheetRequest)(nil),                // 5: bytebase.v1.UpdateWorksheetRequest
+	(*BatchUpdateWorksheetOrganizerRequest)(nil),  // 6: bytebase.v1.BatchUpdateWorksheetOrganizerRequest
+	(*BatchUpdateWorksheetOrganizerResponse)(nil), // 7: bytebase.v1.BatchUpdateWorksheetOrganizerResponse
+	(*UpdateWorksheetOrganizerRequest)(nil),       // 8: bytebase.v1.UpdateWorksheetOrganizerRequest
+	(*WorksheetOrganizer)(nil),                    // 9: bytebase.v1.WorksheetOrganizer
+	(*DeleteWorksheetRequest)(nil),                // 10: bytebase.v1.DeleteWorksheetRequest
+	(*SearchWorksheetsRequest)(nil),               // 11: bytebase.v1.SearchWorksheetsRequest
+	(*SearchWorksheetsResponse)(nil),              // 12: bytebase.v1.SearchWorksheetsResponse
+	(*Worksheet)(nil),                             // 13: bytebase.v1.Worksheet
+	(*fieldmaskpb.FieldMask)(nil),                 // 14: google.protobuf.FieldMask
+	(*timestamppb.Timestamp)(nil),                 // 15: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                         // 16: google.protobuf.Empty
 }
 var file_v1_worksheet_service_proto_depIdxs = []int32{
-	11, // 0: bytebase.v1.CreateWorksheetRequest.worksheet:type_name -> bytebase.v1.Worksheet
-	11, // 1: bytebase.v1.UpdateWorksheetRequest.worksheet:type_name -> bytebase.v1.Worksheet
-	12, // 2: bytebase.v1.UpdateWorksheetRequest.update_mask:type_name -> google.protobuf.FieldMask
-	6,  // 3: bytebase.v1.BatchUpdateWorksheetOrganizerRequest.requests:type_name -> bytebase.v1.UpdateWorksheetOrganizerRequest
-	7,  // 4: bytebase.v1.BatchUpdateWorksheetOrganizerResponse.worksheet_organizers:type_name -> bytebase.v1.WorksheetOrganizer
-	7,  // 5: bytebase.v1.UpdateWorksheetOrganizerRequest.organizer:type_name -> bytebase.v1.WorksheetOrganizer
-	12, // 6: bytebase.v1.UpdateWorksheetOrganizerRequest.update_mask:type_name -> google.protobuf.FieldMask
-	11, // 7: bytebase.v1.SearchWorksheetsResponse.worksheets:type_name -> bytebase.v1.Worksheet
-	13, // 8: bytebase.v1.Worksheet.create_time:type_name -> google.protobuf.Timestamp
-	13, // 9: bytebase.v1.Worksheet.update_time:type_name -> google.protobuf.Timestamp
-	0,  // 10: bytebase.v1.Worksheet.visibility:type_name -> bytebase.v1.Worksheet.Visibility
-	1,  // 11: bytebase.v1.WorksheetService.CreateWorksheet:input_type -> bytebase.v1.CreateWorksheetRequest
-	2,  // 12: bytebase.v1.WorksheetService.GetWorksheet:input_type -> bytebase.v1.GetWorksheetRequest
-	9,  // 13: bytebase.v1.WorksheetService.SearchWorksheets:input_type -> bytebase.v1.SearchWorksheetsRequest
-	3,  // 14: bytebase.v1.WorksheetService.UpdateWorksheet:input_type -> bytebase.v1.UpdateWorksheetRequest
-	6,  // 15: bytebase.v1.WorksheetService.UpdateWorksheetOrganizer:input_type -> bytebase.v1.UpdateWorksheetOrganizerRequest
-	4,  // 16: bytebase.v1.WorksheetService.BatchUpdateWorksheetOrganizer:input_type -> bytebase.v1.BatchUpdateWorksheetOrganizerRequest
-	8,  // 17: bytebase.v1.WorksheetService.DeleteWorksheet:input_type -> bytebase.v1.DeleteWorksheetRequest
-	11, // 18: bytebase.v1.WorksheetService.CreateWorksheet:output_type -> bytebase.v1.Worksheet
-	11, // 19: bytebase.v1.WorksheetService.GetWorksheet:output_type -> bytebase.v1.Worksheet
-	10, // 20: bytebase.v1.WorksheetService.SearchWorksheets:output_type -> bytebase.v1.SearchWorksheetsResponse
-	11, // 21: bytebase.v1.WorksheetService.UpdateWorksheet:output_type -> bytebase.v1.Worksheet
-	7,  // 22: bytebase.v1.WorksheetService.UpdateWorksheetOrganizer:output_type -> bytebase.v1.WorksheetOrganizer
-	5,  // 23: bytebase.v1.WorksheetService.BatchUpdateWorksheetOrganizer:output_type -> bytebase.v1.BatchUpdateWorksheetOrganizerResponse
-	14, // 24: bytebase.v1.WorksheetService.DeleteWorksheet:output_type -> google.protobuf.Empty
-	18, // [18:25] is the sub-list for method output_type
-	11, // [11:18] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	13, // 0: bytebase.v1.CreateWorksheetRequest.worksheet:type_name -> bytebase.v1.Worksheet
+	13, // 1: bytebase.v1.ListWorksheetsResponse.worksheets:type_name -> bytebase.v1.Worksheet
+	13, // 2: bytebase.v1.UpdateWorksheetRequest.worksheet:type_name -> bytebase.v1.Worksheet
+	14, // 3: bytebase.v1.UpdateWorksheetRequest.update_mask:type_name -> google.protobuf.FieldMask
+	8,  // 4: bytebase.v1.BatchUpdateWorksheetOrganizerRequest.requests:type_name -> bytebase.v1.UpdateWorksheetOrganizerRequest
+	9,  // 5: bytebase.v1.BatchUpdateWorksheetOrganizerResponse.worksheet_organizers:type_name -> bytebase.v1.WorksheetOrganizer
+	9,  // 6: bytebase.v1.UpdateWorksheetOrganizerRequest.organizer:type_name -> bytebase.v1.WorksheetOrganizer
+	14, // 7: bytebase.v1.UpdateWorksheetOrganizerRequest.update_mask:type_name -> google.protobuf.FieldMask
+	13, // 8: bytebase.v1.SearchWorksheetsResponse.worksheets:type_name -> bytebase.v1.Worksheet
+	15, // 9: bytebase.v1.Worksheet.create_time:type_name -> google.protobuf.Timestamp
+	15, // 10: bytebase.v1.Worksheet.update_time:type_name -> google.protobuf.Timestamp
+	0,  // 11: bytebase.v1.Worksheet.visibility:type_name -> bytebase.v1.Worksheet.Visibility
+	1,  // 12: bytebase.v1.WorksheetService.CreateWorksheet:input_type -> bytebase.v1.CreateWorksheetRequest
+	2,  // 13: bytebase.v1.WorksheetService.GetWorksheet:input_type -> bytebase.v1.GetWorksheetRequest
+	3,  // 14: bytebase.v1.WorksheetService.ListWorksheets:input_type -> bytebase.v1.ListWorksheetsRequest
+	11, // 15: bytebase.v1.WorksheetService.SearchWorksheets:input_type -> bytebase.v1.SearchWorksheetsRequest
+	5,  // 16: bytebase.v1.WorksheetService.UpdateWorksheet:input_type -> bytebase.v1.UpdateWorksheetRequest
+	8,  // 17: bytebase.v1.WorksheetService.UpdateWorksheetOrganizer:input_type -> bytebase.v1.UpdateWorksheetOrganizerRequest
+	6,  // 18: bytebase.v1.WorksheetService.BatchUpdateWorksheetOrganizer:input_type -> bytebase.v1.BatchUpdateWorksheetOrganizerRequest
+	10, // 19: bytebase.v1.WorksheetService.DeleteWorksheet:input_type -> bytebase.v1.DeleteWorksheetRequest
+	13, // 20: bytebase.v1.WorksheetService.CreateWorksheet:output_type -> bytebase.v1.Worksheet
+	13, // 21: bytebase.v1.WorksheetService.GetWorksheet:output_type -> bytebase.v1.Worksheet
+	4,  // 22: bytebase.v1.WorksheetService.ListWorksheets:output_type -> bytebase.v1.ListWorksheetsResponse
+	12, // 23: bytebase.v1.WorksheetService.SearchWorksheets:output_type -> bytebase.v1.SearchWorksheetsResponse
+	13, // 24: bytebase.v1.WorksheetService.UpdateWorksheet:output_type -> bytebase.v1.Worksheet
+	9,  // 25: bytebase.v1.WorksheetService.UpdateWorksheetOrganizer:output_type -> bytebase.v1.WorksheetOrganizer
+	7,  // 26: bytebase.v1.WorksheetService.BatchUpdateWorksheetOrganizer:output_type -> bytebase.v1.BatchUpdateWorksheetOrganizerResponse
+	16, // 27: bytebase.v1.WorksheetService.DeleteWorksheet:output_type -> google.protobuf.Empty
+	20, // [20:28] is the sub-list for method output_type
+	12, // [12:20] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_v1_worksheet_service_proto_init() }
@@ -923,7 +1049,7 @@ func file_v1_worksheet_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_worksheet_service_proto_rawDesc), len(file_v1_worksheet_service_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -37,6 +37,40 @@ func (x *GetWorksheetRequest) Equal(y *GetWorksheetRequest) bool {
 	return true
 }
 
+func (x *ListWorksheetsRequest) Equal(y *ListWorksheetsRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Parent != y.Parent {
+		return false
+	}
+	if x.Filter != y.Filter {
+		return false
+	}
+	return true
+}
+
+func (x *ListWorksheetsResponse) Equal(y *ListWorksheetsResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Worksheets) != len(y.Worksheets) {
+		return false
+	}
+	for i := 0; i < len(x.Worksheets); i++ {
+		if !x.Worksheets[i].Equal(y.Worksheets[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func (x *UpdateWorksheetRequest) Equal(y *UpdateWorksheetRequest) bool {
 	if x == y {
 		return true

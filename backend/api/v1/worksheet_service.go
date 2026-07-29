@@ -127,6 +127,72 @@ func (s *WorksheetService) GetWorksheet(
 	return connect.NewResponse(v1pbWorksheet), nil
 }
 
+// ListWorksheets returns a list of worksheets.
+func (s *WorksheetService) ListWorksheets(
+	ctx context.Context,
+	req *connect.Request[v1pb.ListWorksheetsRequest],
+) (*connect.Response[v1pb.ListWorksheetsResponse], error) {
+	request := req.Msg
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	projectIDs := []string{projectID}
+	if projectID == "-" {
+		projects, err := s.store.ListProjects(ctx, &store.FindProjectMessage{
+			Workspace: common.GetWorkspaceIDFromContext(ctx),
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list projects"))
+		}
+		projectIDs = make([]string, 0, len(projects))
+		for _, project := range projects {
+			projectIDs = append(projectIDs, project.ResourceID)
+		}
+		if len(projectIDs) == 0 {
+			return connect.NewResponse(&v1pb.ListWorksheetsResponse{}), nil
+		}
+	}
+
+	worksheetFind := &store.FindWorkSheetMessage{
+		ProjectIDs:     projectIDs,
+		PrincipalEmail: user.Email,
+	}
+
+	filterQ, err := store.GetListWorksheetFilter(ctx, s.store, user.Email, request.Filter)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	worksheetFind.FilterQ = filterQ
+
+	worksheetList, err := s.store.ListWorkSheets(ctx, worksheetFind)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list worksheets: %v", err))
+	}
+
+	var v1pbWorksheets []*v1pb.Worksheet
+	for _, worksheet := range worksheetList {
+		ok, err := s.canReadWorksheet(ctx, worksheet)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access with error: %v", err))
+		}
+		if !ok {
+			slog.Warn("cannot access worksheet", slog.String("name", worksheet.Title))
+			continue
+		}
+		v1pbWorksheets = append(v1pbWorksheets, convertToAPIWorksheetMessage(worksheet))
+	}
+	return connect.NewResponse(&v1pb.ListWorksheetsResponse{
+		Worksheets: v1pbWorksheets,
+	}), nil
+}
+
 // SearchWorksheets returns a list of worksheets based on the search filters.
 func (s *WorksheetService) SearchWorksheets(
 	ctx context.Context,

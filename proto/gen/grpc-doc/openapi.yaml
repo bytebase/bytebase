@@ -11303,6 +11303,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
   /v1/projects/{project}/worksheets:
+    get:
+      tags:
+        - WorksheetService
+      summary: ListWorksheets
+      description: |-
+        List worksheets.
+         This is used for listing worksheets in a project, or across all projects by using `projects/-`.
+         The sheet accessibility is the same as GetWorksheet().
+         Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+      operationId: WorksheetService_ListWorksheets
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: filter
+          in: query
+          description: |-
+            To filter the list result.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+             - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
+
+             For example:
+             creator == "users/{email}"
+             creator != "users/{email}"
+             visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
+             visibility == "PRIVATE"
+          schema:
+            type: string
+            title: filter
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListWorksheetsResponse'
     post:
       tags:
         - WorksheetService
@@ -22762,6 +22804,47 @@ components:
       title: ListWorkloadIdentitiesResponse
       additionalProperties: false
       description: Response message for listing workload identities.
+    bytebase.v1.ListWorksheetsRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource of the worksheets.
+             Format: projects/{project}
+             Use "projects/-" to list worksheets across all projects.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            To filter the list result.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+             - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
+
+             For example:
+             creator == "users/{email}"
+             creator != "users/{email}"
+             visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
+             visibility == "PRIVATE"
+      title: ListWorksheetsRequest
+      required:
+        - parent
+      additionalProperties: false
+    bytebase.v1.ListWorksheetsResponse:
+      type: object
+      properties:
+        worksheets:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.Worksheet'
+          title: worksheets
+          description: The worksheets from the specified parent.
+      title: ListWorksheetsResponse
+      additionalProperties: false
     bytebase.v1.ListWorkspacesRequest:
       type: object
       title: ListWorkspacesRequest

@@ -57,6 +57,62 @@ export declare type GetWorksheetRequest = Message<"bytebase.v1.GetWorksheetReque
 export declare const GetWorksheetRequestSchema: GenMessage<GetWorksheetRequest>;
 
 /**
+ * @generated from message bytebase.v1.ListWorksheetsRequest
+ */
+export declare type ListWorksheetsRequest = Message<"bytebase.v1.ListWorksheetsRequest"> & {
+  /**
+   * The parent resource of the worksheets.
+   * Format: projects/{project}
+   * Use "projects/-" to list worksheets across all projects.
+   *
+   * @generated from field: string parent = 1;
+   */
+  parent: string;
+
+  /**
+   * To filter the list result.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Supported filter:
+   * - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+   * - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
+   *
+   * For example:
+   * creator == "users/{email}"
+   * creator != "users/{email}"
+   * visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
+   * visibility == "PRIVATE"
+   *
+   * @generated from field: string filter = 2;
+   */
+  filter: string;
+};
+
+/**
+ * Describes the message bytebase.v1.ListWorksheetsRequest.
+ * Use `create(ListWorksheetsRequestSchema)` to create a new message.
+ */
+export declare const ListWorksheetsRequestSchema: GenMessage<ListWorksheetsRequest>;
+
+/**
+ * @generated from message bytebase.v1.ListWorksheetsResponse
+ */
+export declare type ListWorksheetsResponse = Message<"bytebase.v1.ListWorksheetsResponse"> & {
+  /**
+   * The worksheets from the specified parent.
+   *
+   * @generated from field: repeated bytebase.v1.Worksheet worksheets = 1;
+   */
+  worksheets: Worksheet[];
+};
+
+/**
+ * Describes the message bytebase.v1.ListWorksheetsResponse.
+ * Use `create(ListWorksheetsResponseSchema)` to create a new message.
+ */
+export declare const ListWorksheetsResponseSchema: GenMessage<ListWorksheetsResponse>;
+
+/**
  * @generated from message bytebase.v1.UpdateWorksheetRequest
  */
 export declare type UpdateWorksheetRequest = Message<"bytebase.v1.UpdateWorksheetRequest"> & {
@@ -436,6 +492,19 @@ export declare const WorksheetService: GenService<{
     methodKind: "unary";
     input: typeof GetWorksheetRequestSchema;
     output: typeof WorksheetSchema;
+  },
+  /**
+   * List worksheets.
+   * This is used for listing worksheets in a project, or across all projects by using `projects/-`.
+   * The sheet accessibility is the same as GetWorksheet().
+   * Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+   *
+   * @generated from rpc bytebase.v1.WorksheetService.ListWorksheets
+   */
+  listWorksheets: {
+    methodKind: "unary";
+    input: typeof ListWorksheetsRequestSchema;
+    output: typeof ListWorksheetsResponseSchema;
   },
   /**
    * Search for worksheets.

@@ -38,6 +38,16 @@ service WorksheetService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // List worksheets.
+  // This is used for listing worksheets in a project, or across all projects by using `projects/-`.
+  // The sheet accessibility is the same as GetWorksheet().
+  // Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+  rpc ListWorksheets(ListWorksheetsRequest) returns (ListWorksheetsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/worksheets"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.v1.auth_method) = CUSTOM;
+  }
+
   // Search for worksheets.
   // This is used for finding my worksheets or worksheets shared by other people.
   // The sheet accessibility is the same as GetWorksheet().
@@ -112,6 +122,32 @@ message GetWorksheetRequest {
   // The name of the worksheet to retrieve.
   // Format: projects/{project}/worksheets/{worksheet}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListWorksheetsRequest {
+  // The parent resource of the worksheets.
+  // Format: projects/{project}
+  // Use "projects/-" to list worksheets across all projects.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // To filter the list result.
+  // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+  //
+  // Supported filter:
+  // - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+  // - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
+  //
+  // For example:
+  // creator == "users/{email}"
+  // creator != "users/{email}"
+  // visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
+  // visibility == "PRIVATE"
+  string filter = 2;
+}
+
+message ListWorksheetsResponse {
+  // The worksheets from the specified parent.
+  repeated Worksheet worksheets = 1;
 }
 
 message UpdateWorksheetRequest {
