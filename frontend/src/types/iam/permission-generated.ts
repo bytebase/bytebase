@@ -134,6 +134,7 @@ export type Permission =
   | "bb.users.update"
   | "bb.users.updateEmail"
   | "bb.worksheets.get"
+  | "bb.worksheets.list"
   | "bb.worksheets.manage"
   | "bb.workloadIdentities.create"
   | "bb.workloadIdentities.delete"

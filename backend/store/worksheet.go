@@ -66,6 +66,9 @@ type FindWorkSheetMessage struct {
 	LoadFull bool
 
 	FilterQ *qb.Query
+
+	Limit  *int
+	Offset *int
 }
 
 // PatchWorkSheetMessage is the message to patch a sheet.
@@ -135,6 +138,14 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage) 
 
 	if v := find.ResourceID; v != nil {
 		q.And("worksheet.resource_id = ?", *v)
+	}
+
+	q.Space("ORDER BY worksheet.updated_at DESC, worksheet.resource_id DESC")
+	if v := find.Limit; v != nil {
+		q.Space("LIMIT ?", *v)
+	}
+	if v := find.Offset; v != nil {
+		q.Space("OFFSET ?", *v)
 	}
 
 	query, args, err := q.ToSQL()
@@ -482,6 +493,90 @@ func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter str
 			}
 		default:
 			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	q, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+	return qb.Q().Space("(?)", q), nil
+}
+
+func GetListWorksheetFilter(ctx context.Context, s *Store, filter string) (*qb.Query, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, errors.New("failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	getUserEmail := func(name string) (string, error) {
+		creatorEmail := strings.TrimPrefix(name, "users/")
+		if creatorEmail == "" {
+			return "", errors.New("invalid empty creator identifier")
+		}
+		user, err := s.GetUserByEmail(ctx, creatorEmail)
+		if err != nil {
+			return "", errors.Errorf("failed to get user: %v", err)
+		}
+		if user == nil {
+			return "", errors.Errorf("user with email %s not found", creatorEmail)
+		}
+		return user.Email, nil
+	}
+
+	var getFilter func(expr celast.Expr) (*qb.Query, error)
+	getFilter = func(expr celast.Expr) (*qb.Query, error) {
+		if expr.Kind() != celast.CallKind {
+			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+		q := qb.Q()
+		functionName := expr.AsCall().FunctionName()
+		switch functionName {
+		case celoperators.LogicalOr:
+			for _, arg := range expr.AsCall().Args() {
+				qq, err := getFilter(arg)
+				if err != nil {
+					return nil, err
+				}
+				q.Or("?", qq)
+			}
+			return qb.Q().Space("(?)", q), nil
+		case celoperators.LogicalAnd:
+			for _, arg := range expr.AsCall().Args() {
+				qq, err := getFilter(arg)
+				if err != nil {
+					return nil, err
+				}
+				q.And("?", qq)
+			}
+			return qb.Q().Space("(?)", q), nil
+		case celoperators.Equals, celoperators.NotEquals:
+			variable, value := getVariableAndValueFromExpr(expr)
+			if variable != "creator" {
+				return nil, errors.Errorf("unsupported variable %q", variable)
+			}
+			creator, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("invalid creator value %q", value)
+			}
+			creatorEmail, err := getUserEmail(creator)
+			if err != nil {
+				return nil, err
+			}
+			if functionName == celoperators.Equals {
+				return qb.Q().Space("worksheet.creator = ?", creatorEmail), nil
+			}
+			return qb.Q().Space("worksheet.creator != ?", creatorEmail), nil
+		default:
+			return nil, errors.Errorf("unexpected function %v", functionName)
 		}
 	}
 

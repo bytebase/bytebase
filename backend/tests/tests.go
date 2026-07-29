@@ -112,6 +112,7 @@ type controller struct {
 	serviceAccountServiceClient   v1connect.ServiceAccountServiceClient
 	workloadIdentityServiceClient v1connect.WorkloadIdentityServiceClient
 	accessGrantServiceClient      v1connect.AccessGrantServiceClient
+	worksheetServiceClient        v1connect.WorksheetServiceClient
 
 	project *v1pb.Project
 
@@ -303,6 +304,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.serviceAccountServiceClient = v1connect.NewServiceAccountServiceClient(ctl.client, baseURL, interceptors)
 	ctl.workloadIdentityServiceClient = v1connect.NewWorkloadIdentityServiceClient(ctl.client, baseURL, interceptors)
 	ctl.accessGrantServiceClient = v1connect.NewAccessGrantServiceClient(ctl.client, baseURL, interceptors)
+	ctl.worksheetServiceClient = v1connect.NewWorksheetServiceClient(ctl.client, baseURL, interceptors)
 
 	if err := ctl.waitForHealthz(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to wait for healthz")

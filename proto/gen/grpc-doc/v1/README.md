@@ -744,6 +744,8 @@
     - [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest)
     - [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest)
     - [GetWorksheetRequest](#bytebase-v1-GetWorksheetRequest)
+    - [ListWorksheetsRequest](#bytebase-v1-ListWorksheetsRequest)
+    - [ListWorksheetsResponse](#bytebase-v1-ListWorksheetsResponse)
     - [SearchWorksheetsRequest](#bytebase-v1-SearchWorksheetsRequest)
     - [SearchWorksheetsResponse](#bytebase-v1-SearchWorksheetsResponse)
     - [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest)
@@ -12093,6 +12095,46 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 
 
 
+<a name="bytebase-v1-ListWorksheetsRequest"></a>
+
+### ListWorksheetsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource of the worksheets. Format: projects/{project} Use &#34;projects/-&#34; to list worksheets across all projects. |
+| filter | [string](#string) |  | To filter the list result. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
+
+For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; |
+| page_size | [int32](#int32) |  | The maximum number of worksheets to return. The service may return fewer than this value. If unspecified, at most 10 worksheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListWorksheets` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListWorksheets` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListWorksheetsResponse"></a>
+
+### ListWorksheetsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| worksheets | [Worksheet](#bytebase-v1-Worksheet) | repeated | The worksheets from the specified parent. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of worksheets. Pass this value in the page_token field in the subsequent call to `ListWorksheets` method to retrieve the next page of worksheets. |
+
+
+
+
+
+
 <a name="bytebase-v1-SearchWorksheetsRequest"></a>
 
 ### SearchWorksheetsRequest
@@ -12237,6 +12279,7 @@ WorksheetService manages SQL worksheets for query development.
 | ----------- | ------------ | ------------- | ------------|
 | CreateWorksheet | [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Creates a personal worksheet used in SQL Editor. Any authenticated user can create their own worksheets. Permissions required: None (authenticated users only) |
 | GetWorksheet | [GetWorksheetRequest](#bytebase-v1-GetWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Get a worksheet by name. The users can access this method if, - they are the creator of the worksheet; - they have bb.worksheets.get permission on the workspace; - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project. Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets) |
+| ListWorksheets | [ListWorksheetsRequest](#bytebase-v1-ListWorksheetsRequest) | [ListWorksheetsResponse](#bytebase-v1-ListWorksheetsResponse) | List worksheets. This is used for listing worksheets in a project, or across all projects by using `projects/-`. Permissions required: bb.worksheets.list |
 | SearchWorksheets | [SearchWorksheetsRequest](#bytebase-v1-SearchWorksheetsRequest) | [SearchWorksheetsResponse](#bytebase-v1-SearchWorksheetsResponse) | Search for worksheets. This is used for finding my worksheets or worksheets shared by other people. The sheet accessibility is the same as GetWorksheet(). Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets) |
 | UpdateWorksheet | [UpdateWorksheetRequest](#bytebase-v1-UpdateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Update a worksheet. The users can access this method if, - they are the creator of the worksheet; - they have bb.worksheets.manage permission on the workspace; - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project. Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets) |
 | UpdateWorksheetOrganizer | [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest) | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) | Update the organizer of a worksheet. The access is the same as UpdateWorksheet method. Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets) |

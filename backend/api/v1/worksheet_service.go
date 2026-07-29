@@ -127,6 +127,86 @@ func (s *WorksheetService) GetWorksheet(
 	return connect.NewResponse(v1pbWorksheet), nil
 }
 
+// ListWorksheets returns a list of worksheets.
+func (s *WorksheetService) ListWorksheets(
+	ctx context.Context,
+	req *connect.Request[v1pb.ListWorksheetsRequest],
+) (*connect.Response[v1pb.ListWorksheetsResponse], error) {
+	request := req.Msg
+	if request.PageSize < 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("page size must be non-negative: %d", request.PageSize))
+	}
+
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	projectIDs := []string{projectID}
+	if projectID == "-" {
+		projects, err := s.store.ListProjects(ctx, &store.FindProjectMessage{
+			Workspace: common.GetWorkspaceIDFromContext(ctx),
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list projects: %v", err))
+		}
+		projectIDs = make([]string, 0, len(projects))
+		for _, project := range projects {
+			projectIDs = append(projectIDs, project.ResourceID)
+		}
+		if len(projectIDs) == 0 {
+			return connect.NewResponse(&v1pb.ListWorksheetsResponse{}), nil
+		}
+	}
+
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
+
+	filterQ, err := store.GetListWorksheetFilter(ctx, s.store, request.Filter)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	worksheetList, err := s.store.ListWorkSheets(ctx, &store.FindWorkSheetMessage{
+		ProjectIDs:     projectIDs,
+		PrincipalEmail: user.Email,
+		FilterQ:        filterQ,
+		Limit:          &limitPlusOne,
+		Offset:         &offset.offset,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list worksheets: %v", err))
+	}
+
+	var nextPageToken string
+	if len(worksheetList) == limitPlusOne {
+		worksheetList = worksheetList[:offset.limit]
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token"))
+		}
+	}
+
+	v1pbWorksheets := make([]*v1pb.Worksheet, 0, len(worksheetList))
+	for _, worksheet := range worksheetList {
+		v1pbWorksheets = append(v1pbWorksheets, convertToAPIWorksheetMessage(worksheet))
+	}
+	return connect.NewResponse(&v1pb.ListWorksheetsResponse{
+		Worksheets:    v1pbWorksheets,
+		NextPageToken: nextPageToken,
+	}), nil
+}
+
 // SearchWorksheets returns a list of worksheets based on the search filters.
 func (s *WorksheetService) SearchWorksheets(
 	ctx context.Context,
