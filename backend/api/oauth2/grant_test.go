@@ -193,8 +193,8 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		stored, err := st.GetOAuth2RefreshToken(ctx, testClientID, auth.HashToken(first.RefreshToken))
 		require.NoError(t, err)
 		require.NotNil(t, stored)
-		require.Equal(t, testResource, stored.Resource)
-		require.Equal(t, "mcp:read-write", stored.Scope)
+		require.Equal(t, testResource, stored.Config.GetResource())
+		require.Equal(t, "mcp:read-write", stored.Config.GetScope())
 
 		// A refresh that names a wider scope is refused, and refusal happens
 		// before consumption so the client can retry correctly.
@@ -228,8 +228,8 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		rotated, err := st.GetOAuth2RefreshToken(ctx, testClientID, auth.HashToken(second.RefreshToken))
 		require.NoError(t, err)
 		require.NotNil(t, rotated)
-		require.Equal(t, testResource, rotated.Resource)
-		require.Equal(t, "mcp:read-write", rotated.Scope)
+		require.Equal(t, testResource, rotated.Config.GetResource())
+		require.Equal(t, "mcp:read-write", rotated.Config.GetScope())
 	})
 
 	t.Run("a bare-origin grant refreshes as the canonical resource, named either way", func(t *testing.T) {
@@ -250,7 +250,7 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		stored, err := st.GetOAuth2RefreshToken(ctx, testClientID, auth.HashToken(first.RefreshToken))
 		require.NoError(t, err)
 		require.NotNil(t, stored)
-		require.Equal(t, testResource, stored.Resource)
+		require.Equal(t, testResource, stored.Config.GetResource())
 
 		second := tokenOK(t, configured, url.Values{
 			"grant_type":    {"refresh_token"},
@@ -261,7 +261,7 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		rotated, err := st.GetOAuth2RefreshToken(ctx, testClientID, auth.HashToken(second.RefreshToken))
 		require.NoError(t, err)
 		require.NotNil(t, rotated)
-		require.Equal(t, testResource, rotated.Resource,
+		require.Equal(t, testResource, rotated.Config.GetResource(),
 			"the canonical form must survive rotation, not drift back to what the client sent")
 	})
 
@@ -289,8 +289,8 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		stored, err := st.GetOAuth2RefreshToken(ctx, testClientID, auth.HashToken(first.RefreshToken))
 		require.NoError(t, err)
 		require.NotNil(t, stored)
-		require.Empty(t, stored.Resource, "the requested resource must be ignored, never bound to a grant that never consented to one")
-		require.Empty(t, stored.Scope)
+		require.Empty(t, stored.Config.GetResource(), "the requested resource must be ignored, never bound to a grant that never consented to one")
+		require.Empty(t, stored.Config.GetScope())
 
 		// And the same on refresh, so a legacy session keeps working indefinitely
 		// until PR 3 retires it deliberately.
@@ -303,7 +303,7 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		rotated, err := st.GetOAuth2RefreshToken(ctx, testClientID, auth.HashToken(second.RefreshToken))
 		require.NoError(t, err)
 		require.NotNil(t, rotated)
-		require.Empty(t, rotated.Resource)
+		require.Empty(t, rotated.Config.GetResource())
 	})
 
 	t.Run("consent rejects two scope tiers in one parameter", func(t *testing.T) {

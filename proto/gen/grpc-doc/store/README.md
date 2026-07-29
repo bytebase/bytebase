@@ -173,6 +173,7 @@
 - [store/oauth2.proto](#store_oauth2-proto)
     - [OAuth2AuthorizationCodeConfig](#bytebase-store-OAuth2AuthorizationCodeConfig)
     - [OAuth2ClientConfig](#bytebase-store-OAuth2ClientConfig)
+    - [OAuth2RefreshTokenConfig](#bytebase-store-OAuth2RefreshTokenConfig)
   
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
     - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
@@ -3090,6 +3091,25 @@ ReviewSubmission records that an issue entered review.
 | redirect_uris | [string](#string) | repeated |  |
 | grant_types | [string](#string) | repeated |  |
 | token_endpoint_auth_method | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-OAuth2RefreshTokenConfig"></a>
+
+### OAuth2RefreshTokenConfig
+OAuth2RefreshTokenConfig is the consented grant state carried from the
+authorization code onto every refresh token issued from it, and re-issued
+unchanged by each refresh. Kept as a message rather than flat columns so the
+grant can gain fields without a schema migration.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| resource | [string](#string) |  | The canonical resource URI (RFC 8707) this grant is bound to, validated at consent time against the configured external URL. Empty for clients that omit the resource parameter. |
+| scope | [string](#string) |  | The scope string consented to, stored verbatim. Empty means no scope was requested. |
 
 
 
