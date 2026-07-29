@@ -326,6 +326,72 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 	return settingMessages, nil
 }
 
+// UpdateSettingAtomic performs a row-locking read-modify-write of a setting:
+// the current value is read under SELECT ... FOR UPDATE, apply transforms it,
+// and the result is written back in the same transaction — so a concurrent
+// write can never be silently reverted by a merge based on a stale read (the
+// lost-update hazard of read-then-UpsertSetting). apply receives the value
+// freshly unmarshaled from the locked row and may mutate it in place; an error
+// from apply aborts the transaction with no write and is returned unwrapped so
+// callers keep typed errors. On success the setting cache is refreshed with
+// the committed value.
+func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, apply func(current proto.Message) (proto.Message, error)) (*SettingMessage, error) {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	q := qb.Q().Space(`
+		SELECT value FROM setting WHERE workspace = ? AND name = ? FOR UPDATE
+	`, workspace, name.String())
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	var valueString string
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&valueString); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Errorf("setting %s not found", name)
+		}
+		return nil, errors.Wrapf(err, "failed to lock setting %s", name)
+	}
+	current, err := getSettingMessage(name)
+	if err != nil {
+		return nil, err
+	}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), current); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal setting %s", name)
+	}
+
+	next, err := apply(current)
+	if err != nil {
+		return nil, err
+	}
+
+	nextBytes, err := protojson.Marshal(next)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal setting value")
+	}
+	q = qb.Q().Space(`
+		UPDATE setting SET value = ? WHERE workspace = ? AND name = ?
+	`, string(nextBytes), workspace, name.String())
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return nil, errors.Wrapf(err, "failed to update setting %s", name)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+
+	settingMessage := &SettingMessage{Name: name, Workspace: workspace, Value: next}
+	s.settingCache.Add(getSettingCacheKey(workspace, name), settingMessage)
+	return settingMessage, nil
+}
+
 // UpsertSetting upserts the setting by name.
 func (s *Store) UpsertSetting(ctx context.Context, update *SettingMessage) (*SettingMessage, error) {
 	valueBytes, err := protojson.Marshal(update.Value)

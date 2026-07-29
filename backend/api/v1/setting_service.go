@@ -185,232 +185,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 
 	var storeSettingValue proto.Message
-	var resetAuditLogStdout bool
 	var resetClassification bool
 
 	switch storeSettingName {
 	case storepb.SettingName_WORKSPACE_PROFILE:
-		if request.Msg.UpdateMask == nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
-		}
-		payload := convertWorkspaceProfileSetting(request.Msg.Setting.Value.GetWorkspaceProfile())
-		// Merge onto the profile as stored in the database, not the setting
-		// cache: the whole profile is written back below, so a stale cached base
-		// would silently revert fields changed out-of-band (e.g. an emergency
-		// SQL flip of the MCP kill switch) when an admin saves an unrelated
-		// field.
-		freshSetting, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", storeSettingName, err))
-		}
-		if freshSetting == nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("cannot find setting %v", storeSettingName))
-		}
-		profileValue, ok := freshSetting.Value.(*storepb.WorkspaceProfileSetting)
-		if !ok {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storeSettingName))
-		}
-		// The uncached read still lands in the setting cache (ListSettings
-		// caches what it returns), so mutate a clone: a validate-only request
-		// must never alter the served in-memory state.
-		oldSetting := proto.CloneOf(profileValue)
-
-		for _, path := range request.Msg.UpdateMask.Paths {
-			switch path {
-			case "value.workspace_profile.enable_debug":
-				oldSetting.EnableDebug = payload.EnableDebug
-				level := slog.LevelInfo
-				if payload.EnableDebug {
-					level = slog.LevelDebug
-				}
-				log.LogLevel.Set(level)
-			case "value.workspace_profile.disallow_signup":
-				if s.profile.SaaS {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the disallow_signup cannot be changed in SaaS mode"))
-				}
-				if payload.DisallowSignup {
-					if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err != nil {
-						return nil, connect.NewError(connect.CodePermissionDenied, err)
-					}
-				}
-				oldSetting.DisallowSignup = payload.DisallowSignup
-			case "value.workspace_profile.external_url":
-				if s.profile.SaaS {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the external_url cannot be changed in SaaS mode"))
-				}
-				// Prevent changing external URL via UI when it's set via command-line flag
-				if s.profile.ExternalURL != "" {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("external URL is managed via --external-url command-line flag and cannot be changed through the UI"))
-				}
-				if payload.ExternalUrl != "" {
-					externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
-					if err != nil {
-						return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid external url: %v", err))
-					}
-					payload.ExternalUrl = externalURL
-				}
-				oldSetting.ExternalUrl = payload.ExternalUrl
-			case "value.workspace_profile.require_mfa":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TWO_FA); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				oldSetting.Require_2Fa = payload.Require_2Fa
-			case "value.workspace_profile.access_token_duration":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				if payload.AccessTokenDuration != nil && payload.AccessTokenDuration.Seconds > 0 && payload.AccessTokenDuration.AsDuration() < time.Minute {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("access token duration should be at least one minute"))
-				}
-				oldSetting.AccessTokenDuration = payload.AccessTokenDuration
-			case "value.workspace_profile.refresh_token_duration":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				if payload.RefreshTokenDuration != nil && payload.RefreshTokenDuration.Seconds > 0 && payload.RefreshTokenDuration.AsDuration() < time.Hour {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("refresh token duration should be at least one hour"))
-				}
-				oldSetting.RefreshTokenDuration = payload.RefreshTokenDuration
-			case "value.workspace_profile.inactive_session_timeout":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				oldSetting.InactiveSessionTimeout = payload.InactiveSessionTimeout
-			case "value.workspace_profile.announcement":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				if payload.Announcement != nil {
-					if err := validateAnnouncementTheme(payload.Announcement.Theme); err != nil {
-						return nil, err
-					}
-				}
-				oldSetting.Announcement = payload.Announcement
-			case "value.workspace_profile.maximum_request_expiration":
-				if payload.MaximumRequestExpiration != nil {
-					// If the value is less than or equal to 0, we will remove the setting. AKA no limit.
-					if payload.MaximumRequestExpiration.Seconds <= 0 {
-						payload.MaximumRequestExpiration = nil
-					}
-				}
-				oldSetting.MaximumRequestExpiration = payload.MaximumRequestExpiration
-			case "value.workspace_profile.maximum_role_expiration":
-				if payload.MaximumRoleExpiration != nil {
-					// If the value is less than or equal to 0, we will remove the setting. AKA no limit.
-					if payload.MaximumRoleExpiration.Seconds <= 0 {
-						payload.MaximumRoleExpiration = nil
-					}
-				}
-				oldSetting.MaximumRoleExpiration = payload.MaximumRoleExpiration
-			case "value.workspace_profile.domains":
-				if err := validateDomains(payload.Domains); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid domains, error %v", err))
-				}
-				oldSetting.Domains = payload.Domains
-			case "value.workspace_profile.enforce_identity_domain":
-				if payload.EnforceIdentityDomain {
-					if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION); err != nil {
-						return nil, connect.NewError(connect.CodePermissionDenied, err)
-					}
-				}
-				oldSetting.EnforceIdentityDomain = payload.EnforceIdentityDomain
-			case "value.workspace_profile.database_change_mode":
-				oldSetting.DatabaseChangeMode = payload.DatabaseChangeMode
-			case "value.workspace_profile.mcp_capability":
-				if err := validateMCPCapability(payload.McpCapability); err != nil {
-					return nil, err
-				}
-				oldSetting.McpCapability = payload.McpCapability
-			case "value.workspace_profile.allow_email_code_signin":
-				if s.profile.SaaS {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("allow_email_code_signin cannot be changed in SaaS mode"))
-				}
-				if payload.AllowEmailCodeSignin {
-					emailSetting, err := s.store.GetSetting(ctx, workspaceID, storepb.SettingName_EMAIL)
-					if err != nil {
-						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to load email setting"))
-					}
-					if emailSetting == nil {
-						return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot enable email code signin without an EMAIL setting"))
-					}
-				}
-				oldSetting.AllowEmailCodeSignin = payload.AllowEmailCodeSignin
-			case "value.workspace_profile.disallow_password_signin":
-				if s.profile.SaaS {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the disallow_password_signin cannot be changed in SaaS mode"))
-				}
-				if payload.DisallowPasswordSignin {
-					// We should still allow users to turn it off.
-					if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err != nil {
-						return nil, connect.NewError(connect.CodePermissionDenied, err)
-					}
-
-					settingWsID := common.GetWorkspaceIDFromContext(ctx)
-					identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: &settingWsID})
-					if err != nil {
-						return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list identity providers: %v", err))
-					}
-					if len(identityProviders) == 0 {
-						return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot disallow password signin when no identity provider is set"))
-					}
-				}
-				oldSetting.DisallowPasswordSignin = payload.DisallowPasswordSignin
-			case "value.workspace_profile.enable_metric_collection":
-				oldSetting.EnableMetricCollection = payload.EnableMetricCollection
-			case "value.workspace_profile.enable_audit_log_stdout":
-				if payload.EnableAuditLogStdout {
-					// Require TEAM or ENTERPRISE license
-					if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
-						return nil, connect.NewError(connect.CodePermissionDenied, err)
-					}
-				}
-				resetAuditLogStdout = true
-				oldSetting.EnableAuditLogStdout = payload.EnableAuditLogStdout
-			case "value.workspace_profile.watermark":
-				if payload.Watermark {
-					if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_WATERMARK); err != nil {
-						return nil, connect.NewError(connect.CodePermissionDenied, err)
-					}
-				}
-				oldSetting.Watermark = payload.Watermark
-			case "value.workspace_profile.directory_sync_token":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DIRECTORY_SYNC); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				// Generate a new token if the payload is empty.
-				// This handles both initial setup and token reset (when user explicitly sends empty string).
-				if payload.DirectorySyncToken == "" {
-					payload.DirectorySyncToken = uuid.New().String()
-				}
-				oldSetting.DirectorySyncToken = payload.DirectorySyncToken
-			case "value.workspace_profile.password_restriction":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				if payload.PasswordRestriction != nil && payload.PasswordRestriction.MinLength < 8 {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid password minimum length, should no less than 8"))
-				}
-				oldSetting.PasswordRestriction = payload.PasswordRestriction
-			case "value.workspace_profile.sql_result_size":
-				oldSetting.SqlResultSize = payload.SqlResultSize
-			case "value.workspace_profile.query_timeout":
-				oldSetting.QueryTimeout = payload.QueryTimeout
-			case "value.workspace_profile.sql_editor_theme_id":
-				oldSetting.SqlEditorThemeId = payload.SqlEditorThemeId
-			case "value.workspace_profile.sql_editor_custom_theme":
-				if err := validateSQLEditorCustomTheme(payload.SqlEditorCustomTheme); err != nil {
-					return nil, err
-				}
-				oldSetting.SqlEditorCustomTheme = payload.SqlEditorCustomTheme
-			default:
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
-			}
-		}
-
-		if len(oldSetting.Domains) == 0 && oldSetting.EnforceIdentityDomain {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("identity domain can be enforced only when workspace domains are set"))
-		}
-		storeSettingValue = oldSetting
+		return s.updateWorkspaceProfileSetting(ctx, request, workspaceID)
 	case storepb.SettingName_WORKSPACE_APPROVAL:
 		if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
@@ -736,15 +515,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
 	}
 
-	// Dynamically update audit logger runtime flag if enable_audit_log_stdout was changed
-	if resetAuditLogStdout {
-		workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get workspace setting message: %v", err))
-		}
-		s.profile.RuntimeEnableAuditLogStdout.Store(workspaceProfile.EnableAuditLogStdout)
-	}
-
 	// It's a temporary solution to map the classification to all projects before we support it in the UX.
 	if resetClassification {
 		classification, err := s.store.GetDataClassificationSetting(ctx, workspaceID)
@@ -782,6 +552,277 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 
 	return connect.NewResponse(settingMessage), nil
+}
+
+// updateWorkspaceProfileSetting handles the WORKSPACE_PROFILE branch of
+// UpdateSetting through the store's row-locking read-modify-write primitive:
+// the update-mask merge and its validations run inside the transaction against
+// the value of the locked row, so validation sees the true final state and a
+// concurrent write (another admin, emergency SQL) can never be silently
+// reverted by a merge based on a stale read. Validate-only requests run the
+// same merge and validations against an uncached snapshot and write nothing.
+func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string) (*connect.Response[v1pb.Setting], error) {
+	if request.Msg.UpdateMask == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
+	}
+	payload := convertWorkspaceProfileSetting(request.Msg.Setting.Value.GetWorkspaceProfile())
+	var resetAuditLogStdout bool
+	var mergedProfile *storepb.WorkspaceProfileSetting
+	apply := func(current proto.Message) (proto.Message, error) {
+		oldSetting, ok := current.(*storepb.WorkspaceProfileSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_WORKSPACE_PROFILE))
+		}
+		if err := s.mergeWorkspaceProfilePaths(ctx, workspaceID, request, payload, oldSetting, &resetAuditLogStdout); err != nil {
+			return nil, err
+		}
+		if len(oldSetting.Domains) == 0 && oldSetting.EnforceIdentityDomain {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("identity domain can be enforced only when workspace domains are set"))
+		}
+		mergedProfile = oldSetting
+		return oldSetting, nil
+	}
+
+	if request.Msg.ValidateOnly {
+		freshSetting, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", storepb.SettingName_WORKSPACE_PROFILE, err))
+		}
+		if freshSetting == nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("cannot find setting %v", storepb.SettingName_WORKSPACE_PROFILE))
+		}
+		profileValue, ok := freshSetting.Value.(*storepb.WorkspaceProfileSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_WORKSPACE_PROFILE))
+		}
+		// The uncached read still lands in the setting cache (ListSettings
+		// caches what it returns), so validate against a clone: a
+		// validate-only request must never alter the served in-memory state.
+		if _, err := apply(proto.CloneOf(profileValue)); err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(&v1pb.Setting{
+			Name:  request.Msg.Setting.Name,
+			Value: request.Msg.Setting.Value,
+		}), nil
+	}
+
+	setting, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE, apply)
+	if err != nil {
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			return nil, err
+		}
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
+	}
+
+	// Dynamically update audit logger runtime flag if enable_audit_log_stdout was changed.
+	if resetAuditLogStdout && mergedProfile != nil {
+		s.profile.RuntimeEnableAuditLogStdout.Store(mergedProfile.EnableAuditLogStdout)
+	}
+
+	settingMessage, err := convertToSettingMessage(setting)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
+	}
+	return connect.NewResponse(settingMessage), nil
+}
+
+// mergeWorkspaceProfilePaths applies the request's update-mask paths onto
+// oldSetting, validating each field exactly as before the atomic migration.
+func (s *SettingService) mergeWorkspaceProfilePaths(ctx context.Context, workspaceID string, request *connect.Request[v1pb.UpdateSettingRequest], payload *storepb.WorkspaceProfileSetting, oldSetting *storepb.WorkspaceProfileSetting, resetAuditLogStdout *bool) error {
+	for _, path := range request.Msg.UpdateMask.Paths {
+		switch path {
+		case "value.workspace_profile.enable_debug":
+			oldSetting.EnableDebug = payload.EnableDebug
+			level := slog.LevelInfo
+			if payload.EnableDebug {
+				level = slog.LevelDebug
+			}
+			log.LogLevel.Set(level)
+		case "value.workspace_profile.disallow_signup":
+			if s.profile.SaaS {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the disallow_signup cannot be changed in SaaS mode"))
+			}
+			if payload.DisallowSignup {
+				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err != nil {
+					return connect.NewError(connect.CodePermissionDenied, err)
+				}
+			}
+			oldSetting.DisallowSignup = payload.DisallowSignup
+		case "value.workspace_profile.external_url":
+			if s.profile.SaaS {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the external_url cannot be changed in SaaS mode"))
+			}
+			// Prevent changing external URL via UI when it's set via command-line flag
+			if s.profile.ExternalURL != "" {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("external URL is managed via --external-url command-line flag and cannot be changed through the UI"))
+			}
+			if payload.ExternalUrl != "" {
+				externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
+				if err != nil {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid external url: %v", err))
+				}
+				payload.ExternalUrl = externalURL
+			}
+			oldSetting.ExternalUrl = payload.ExternalUrl
+		case "value.workspace_profile.require_mfa":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TWO_FA); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
+			oldSetting.Require_2Fa = payload.Require_2Fa
+		case "value.workspace_profile.access_token_duration":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
+			if payload.AccessTokenDuration != nil && payload.AccessTokenDuration.Seconds > 0 && payload.AccessTokenDuration.AsDuration() < time.Minute {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("access token duration should be at least one minute"))
+			}
+			oldSetting.AccessTokenDuration = payload.AccessTokenDuration
+		case "value.workspace_profile.refresh_token_duration":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
+			if payload.RefreshTokenDuration != nil && payload.RefreshTokenDuration.Seconds > 0 && payload.RefreshTokenDuration.AsDuration() < time.Hour {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("refresh token duration should be at least one hour"))
+			}
+			oldSetting.RefreshTokenDuration = payload.RefreshTokenDuration
+		case "value.workspace_profile.inactive_session_timeout":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
+			oldSetting.InactiveSessionTimeout = payload.InactiveSessionTimeout
+		case "value.workspace_profile.announcement":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
+			if payload.Announcement != nil {
+				if err := validateAnnouncementTheme(payload.Announcement.Theme); err != nil {
+					return err
+				}
+			}
+			oldSetting.Announcement = payload.Announcement
+		case "value.workspace_profile.maximum_request_expiration":
+			if payload.MaximumRequestExpiration != nil {
+				// If the value is less than or equal to 0, we will remove the setting. AKA no limit.
+				if payload.MaximumRequestExpiration.Seconds <= 0 {
+					payload.MaximumRequestExpiration = nil
+				}
+			}
+			oldSetting.MaximumRequestExpiration = payload.MaximumRequestExpiration
+		case "value.workspace_profile.maximum_role_expiration":
+			if payload.MaximumRoleExpiration != nil {
+				// If the value is less than or equal to 0, we will remove the setting. AKA no limit.
+				if payload.MaximumRoleExpiration.Seconds <= 0 {
+					payload.MaximumRoleExpiration = nil
+				}
+			}
+			oldSetting.MaximumRoleExpiration = payload.MaximumRoleExpiration
+		case "value.workspace_profile.domains":
+			if err := validateDomains(payload.Domains); err != nil {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid domains, error %v", err))
+			}
+			oldSetting.Domains = payload.Domains
+		case "value.workspace_profile.enforce_identity_domain":
+			if payload.EnforceIdentityDomain {
+				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION); err != nil {
+					return connect.NewError(connect.CodePermissionDenied, err)
+				}
+			}
+			oldSetting.EnforceIdentityDomain = payload.EnforceIdentityDomain
+		case "value.workspace_profile.database_change_mode":
+			oldSetting.DatabaseChangeMode = payload.DatabaseChangeMode
+		case "value.workspace_profile.mcp_capability":
+			if err := validateMCPCapability(payload.McpCapability); err != nil {
+				return err
+			}
+			oldSetting.McpCapability = payload.McpCapability
+		case "value.workspace_profile.allow_email_code_signin":
+			if s.profile.SaaS {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("allow_email_code_signin cannot be changed in SaaS mode"))
+			}
+			if payload.AllowEmailCodeSignin {
+				emailSetting, err := s.store.GetSetting(ctx, workspaceID, storepb.SettingName_EMAIL)
+				if err != nil {
+					return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to load email setting"))
+				}
+				if emailSetting == nil {
+					return connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot enable email code signin without an EMAIL setting"))
+				}
+			}
+			oldSetting.AllowEmailCodeSignin = payload.AllowEmailCodeSignin
+		case "value.workspace_profile.disallow_password_signin":
+			if s.profile.SaaS {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the disallow_password_signin cannot be changed in SaaS mode"))
+			}
+			if payload.DisallowPasswordSignin {
+				// We should still allow users to turn it off.
+				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err != nil {
+					return connect.NewError(connect.CodePermissionDenied, err)
+				}
+
+				settingWsID := common.GetWorkspaceIDFromContext(ctx)
+				identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: &settingWsID})
+				if err != nil {
+					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to list identity providers: %v", err))
+				}
+				if len(identityProviders) == 0 {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot disallow password signin when no identity provider is set"))
+				}
+			}
+			oldSetting.DisallowPasswordSignin = payload.DisallowPasswordSignin
+		case "value.workspace_profile.enable_metric_collection":
+			oldSetting.EnableMetricCollection = payload.EnableMetricCollection
+		case "value.workspace_profile.enable_audit_log_stdout":
+			if payload.EnableAuditLogStdout {
+				// Require TEAM or ENTERPRISE license
+				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
+					return connect.NewError(connect.CodePermissionDenied, err)
+				}
+			}
+			*resetAuditLogStdout = true
+			oldSetting.EnableAuditLogStdout = payload.EnableAuditLogStdout
+		case "value.workspace_profile.watermark":
+			if payload.Watermark {
+				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_WATERMARK); err != nil {
+					return connect.NewError(connect.CodePermissionDenied, err)
+				}
+			}
+			oldSetting.Watermark = payload.Watermark
+		case "value.workspace_profile.directory_sync_token":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DIRECTORY_SYNC); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
+			// Generate a new token if the payload is empty.
+			// This handles both initial setup and token reset (when user explicitly sends empty string).
+			if payload.DirectorySyncToken == "" {
+				payload.DirectorySyncToken = uuid.New().String()
+			}
+			oldSetting.DirectorySyncToken = payload.DirectorySyncToken
+		case "value.workspace_profile.password_restriction":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
+			if payload.PasswordRestriction != nil && payload.PasswordRestriction.MinLength < 8 {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid password minimum length, should no less than 8"))
+			}
+			oldSetting.PasswordRestriction = payload.PasswordRestriction
+		case "value.workspace_profile.sql_result_size":
+			oldSetting.SqlResultSize = payload.SqlResultSize
+		case "value.workspace_profile.query_timeout":
+			oldSetting.QueryTimeout = payload.QueryTimeout
+		case "value.workspace_profile.sql_editor_theme_id":
+			oldSetting.SqlEditorThemeId = payload.SqlEditorThemeId
+		case "value.workspace_profile.sql_editor_custom_theme":
+			if err := validateSQLEditorCustomTheme(payload.SqlEditorCustomTheme); err != nil {
+				return err
+			}
+			oldSetting.SqlEditorCustomTheme = payload.SqlEditorCustomTheme
+		default:
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
+		}
+	}
+	return nil
 }
 
 // TestEmailSetting sends a test email using the provided config.
