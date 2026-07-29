@@ -1372,7 +1372,7 @@
     "batch-transition": {
       "close": "Đóng",
       "closed": "đã đóng",
-      "not-allowed-tips": "Một số vấn đề đã chọn không thể {{}}",
+      "not-allowed-tips": "Một số vấn đề đã chọn không thể {{operation}}",
       "reopen": "Mở lại",
       "reopened": "đã mở lại"
     },

@@ -1372,7 +1372,7 @@
     "batch-transition": {
       "close": "閉じる",
       "closed": "閉まっている",
-      "not-allowed-tips": "選択したイシューの一部を {{}} にすることはできません",
+      "not-allowed-tips": "選択したイシューの一部を {{operation}} にすることはできません",
       "reopen": "再開",
       "reopened": "再開"
     },
