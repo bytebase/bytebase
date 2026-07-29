@@ -1,7 +1,9 @@
 package mongodb
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -164,4 +166,47 @@ func TestIsSystemCollection(t *testing.T) {
 			require.Equal(t, tt.want, isSystemCollection(tt.name))
 		})
 	}
+}
+
+// TestExecuteLogsParseFailure pins BYT-9950: when the statement fails to
+// split/parse, Execute must still emit a COMMAND_EXECUTE / COMMAND_RESPONSE
+// pair carrying the parse error so the failure is visible in task run logs,
+// and must report failure.
+func TestExecuteLogsParseFailure(t *testing.T) {
+	const statement = "db.users.find();\nthis is not mongosh"
+
+	run := func(t *testing.T, logStatement bool) []*storepb.TaskRunLog {
+		var logs []*storepb.TaskRunLog
+		opts := db.ExecuteOptions{
+			CreateTaskRunLog: func(_ time.Time, l *storepb.TaskRunLog) error {
+				logs = append(logs, l)
+				return nil
+			},
+			LogCommandStatement: logStatement,
+		}
+
+		d := &Driver{}
+		_, err := d.Execute(context.Background(), statement, opts)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "syntax error")
+
+		require.Len(t, logs, 2)
+		require.Equal(t, storepb.TaskRunLog_COMMAND_EXECUTE, logs[0].Type)
+		require.Equal(t, storepb.TaskRunLog_COMMAND_RESPONSE, logs[1].Type)
+		require.Contains(t, logs[1].CommandResponse.Error, "syntax error")
+		return logs
+	}
+
+	t.Run("range logging", func(t *testing.T) {
+		logs := run(t, false)
+		require.Empty(t, logs[0].CommandExecute.Statement)
+		require.Equal(t, int32(0), logs[0].CommandExecute.Range.GetStart())
+		require.Equal(t, int32(len(statement)), logs[0].CommandExecute.Range.GetEnd())
+	})
+
+	t.Run("statement logging", func(t *testing.T) {
+		logs := run(t, true)
+		require.Nil(t, logs[0].CommandExecute.Range)
+		require.Equal(t, statement, logs[0].CommandExecute.GetStatement())
+	})
 }
