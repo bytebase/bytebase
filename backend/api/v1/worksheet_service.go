@@ -142,20 +142,9 @@ func (s *WorksheetService) ListWorksheets(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	projectIDs := []string{projectID}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	if projectID == "-" {
-		projects, err := s.store.ListProjects(ctx, &store.FindProjectMessage{
-			Workspace: common.GetWorkspaceIDFromContext(ctx),
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list projects: %v", err))
-		}
-		projectIDs = make([]string, 0, len(projects))
-		for _, project := range projects {
-			projectIDs = append(projectIDs, project.ResourceID)
-		}
-		if len(projectIDs) == 0 {
-			return connect.NewResponse(&v1pb.ListWorksheetsResponse{}), nil
-		}
+		projectIDs = nil
 	}
 
 	user, ok := GetUserFromContext(ctx)
@@ -173,13 +162,14 @@ func (s *WorksheetService) ListWorksheets(
 	}
 	limitPlusOne := offset.limit + 1
 
-	filterQ, err := store.GetListWorksheetFilter(ctx, s.store, request.Filter)
+	filterQ, err := store.GetListWorksheetFilter(request.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	worksheetList, err := s.store.ListWorkSheets(ctx, &store.FindWorkSheetMessage{
 		ProjectIDs:     projectIDs,
+		Workspace:      workspaceID,
 		PrincipalEmail: user.Email,
 		FilterQ:        filterQ,
 		Limit:          &limitPlusOne,

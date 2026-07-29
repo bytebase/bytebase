@@ -56,8 +56,10 @@ type WorkSheetMessage struct {
 
 // FindWorkSheetMessage is the API message for finding sheets.
 type FindWorkSheetMessage struct {
-	// Required field
-	ProjectIDs     []string
+	// Either ProjectIDs or Workspace is required.
+	ProjectIDs []string
+	Workspace  string
+
 	PrincipalEmail string
 
 	ResourceID *string
@@ -100,7 +102,7 @@ func (s *Store) GetWorkSheet(ctx context.Context, find *FindWorkSheetMessage) (*
 
 // ListWorkSheets returns a list of sheets.
 func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage) ([]*WorkSheetMessage, error) {
-	if len(find.ProjectIDs) == 0 {
+	if len(find.ProjectIDs) == 0 && find.Workspace == "" {
 		return nil, errors.Errorf("empty project filter")
 	}
 	statementField := fmt.Sprintf("LEFT(worksheet.statement, %d)", common.MaxSheetSize)
@@ -123,12 +125,15 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage) 
 			OCTET_LENGTH(worksheet.statement),
 			COALESCE(worksheet_organizer.payload, '{}')
 		FROM worksheet
-		LEFT JOIN worksheet_organizer ON worksheet_organizer.worksheet = worksheet.resource_id AND worksheet_organizer.principal = '%s'
-		WHERE TRUE`, statementField, find.PrincipalEmail))
+		LEFT JOIN worksheet_organizer ON worksheet_organizer.worksheet = worksheet.resource_id AND worksheet_organizer.principal = ?
+		WHERE TRUE`, statementField), find.PrincipalEmail)
 
+	if find.Workspace != "" {
+		q.And("EXISTS (SELECT 1 FROM project WHERE project.resource_id = worksheet.project AND project.workspace = ? AND project.deleted = FALSE)", find.Workspace)
+	}
 	if len(find.ProjectIDs) == 1 {
 		q.And("worksheet.project = ?", find.ProjectIDs[0])
-	} else {
+	} else if len(find.ProjectIDs) > 1 {
 		q.And("worksheet.project = ANY(?)", find.ProjectIDs)
 	}
 
@@ -503,7 +508,7 @@ func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter str
 	return qb.Q().Space("(?)", q), nil
 }
 
-func GetListWorksheetFilter(ctx context.Context, s *Store, filter string) (*qb.Query, error) {
+func GetListWorksheetFilter(filter string) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
 	}
@@ -515,21 +520,6 @@ func GetListWorksheetFilter(ctx context.Context, s *Store, filter string) (*qb.Q
 	ast, iss := e.Parse(filter)
 	if iss != nil {
 		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
-	}
-
-	getUserEmail := func(name string) (string, error) {
-		creatorEmail := strings.TrimPrefix(name, "users/")
-		if creatorEmail == "" {
-			return "", errors.New("invalid empty creator identifier")
-		}
-		user, err := s.GetUserByEmail(ctx, creatorEmail)
-		if err != nil {
-			return "", errors.Errorf("failed to get user: %v", err)
-		}
-		if user == nil {
-			return "", errors.Errorf("user with email %s not found", creatorEmail)
-		}
-		return user.Email, nil
 	}
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
@@ -567,9 +557,9 @@ func GetListWorksheetFilter(ctx context.Context, s *Store, filter string) (*qb.Q
 			if !ok {
 				return nil, errors.Errorf("invalid creator value %q", value)
 			}
-			creatorEmail, err := getUserEmail(creator)
-			if err != nil {
-				return nil, err
+			creatorEmail := strings.TrimPrefix(creator, "users/")
+			if creatorEmail == "" {
+				return nil, errors.New("invalid empty creator identifier")
 			}
 			if functionName == celoperators.Equals {
 				return qb.Q().Space("worksheet.creator = ?", creatorEmail), nil
