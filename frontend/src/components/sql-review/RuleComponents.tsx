@@ -196,7 +196,7 @@ export function RuleConfig({
     <FormFieldGroup>
       {rule.componentList.map((config, index) => (
         <FormField
-          key={index}
+          key={config.key}
           title={
             config.payload.type !== "BOOLEAN" ? (
               <div className="flex items-center gap-x-1">

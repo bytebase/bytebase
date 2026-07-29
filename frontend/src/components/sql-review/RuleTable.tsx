@@ -514,7 +514,9 @@ function RuleTableRow({
         <TableCell className="align-top">
           <div className="flex flex-col gap-y-1">
             <div className="flex items-center gap-x-2">
-              <span className="font-semibold text-base text-main">{loc.title}</span>
+              <span className="font-semibold text-base text-main">
+                {loc.title}
+              </span>
               <a
                 href={`https://docs.bytebase.com/sql-review/review-rules#${rule.type}`}
                 target="_blank"

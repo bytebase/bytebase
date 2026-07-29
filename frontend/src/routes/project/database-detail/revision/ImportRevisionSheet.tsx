@@ -491,8 +491,8 @@ function ImportRevisionStepIndicator({
   source,
   currentStep,
 }: {
-  source: "release" | "local";
-  currentStep: Step;
+  readonly source: "release" | "local";
+  readonly currentStep: Step;
 }) {
   const { t } = useTranslation();
   const steps: StepIndicatorStep[] =

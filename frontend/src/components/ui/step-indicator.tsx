@@ -13,10 +13,10 @@ export function StepIndicator({
   currentKey,
   className,
 }: {
-  steps: StepIndicatorStep[];
-  currentIndex?: number;
-  currentKey?: string | number;
-  className?: string;
+  readonly steps: StepIndicatorStep[];
+  readonly currentIndex?: number;
+  readonly currentKey?: string | number;
+  readonly className?: string;
 }) {
   const activeIndex =
     currentIndex ??

@@ -294,14 +294,16 @@ describe("RuleTable", () => {
     const title = container.querySelector(
       'tbody tr[data-sql-review-rule-view="desktop"] td:nth-child(2) span'
     );
-    expect(title?.className).toContain("font-medium");
+    expect(title?.className).toContain("font-semibold");
+    expect(title?.className).toContain("text-base");
     expect(title?.className).toContain("text-main");
 
     const description = container.querySelector(
       'tbody tr[data-sql-review-rule-view="desktop"] td:nth-child(2) p'
     );
     expect(description).toBeTruthy();
-    expect(description?.className).toContain("text-xs");
+    expect(description?.className).toContain("text-sm");
+    expect(description?.className).toContain("leading-5");
     expect(description?.className).toContain("text-control-light");
 
     const expandButton = container.querySelector<HTMLButtonElement>(
