@@ -315,6 +315,37 @@ describe("convertRuleMapToPolicyRuleList", () => {
     });
   });
 
+  test("allows zero number payloads for naming rules", () => {
+    const rule: RuleTemplateV2 = {
+      type: SQLReviewRule_Type.NAMING_TABLE,
+      category: "NAMING",
+      engine: Engine.MYSQL,
+      level: SQLReviewRule_Level.ERROR,
+      componentList: [
+        {
+          key: "format",
+          payload: {
+            type: "STRING",
+            default: "^[a-z]+(_[a-z]+)*$",
+          },
+        },
+        {
+          key: "max-length",
+          payload: {
+            type: "NUMBER",
+            default: 0,
+            value: 0,
+          },
+        },
+      ],
+    };
+    const ruleMap = new Map([
+      [Engine.MYSQL, new Map([[SQLReviewRule_Type.NAMING_TABLE, rule]])],
+    ]);
+
+    expect(validateRuleMapByEngine(ruleMap)).toBeUndefined();
+  });
+
   test("keeps configured table DDL and DML deny-list rules valid", () => {
     const ruleMap = new Map([
       [

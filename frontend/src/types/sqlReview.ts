@@ -789,7 +789,10 @@ export const validateRuleMapByEngine = (
       if (hasEmptyRequiredStringArray(rule)) {
         return { type: "EMPTY_STRING_ARRAY", rule };
       }
-      if (hasInvalidNumber(rule)) {
+      if (
+        rule.type === SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE &&
+        hasInvalidNumber(rule)
+      ) {
         return { type: "INVALID_NUMBER", rule };
       }
     }

@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { StepIndicator } from "@/components/ui/step-indicator";
+import { useAppFeature } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { isValidProjectName } from "@/types";
@@ -101,6 +102,15 @@ function SetupWizard() {
 
   const resourceFieldRef = useRef<ResourceIdFieldRef>(null);
   const [resourceValid, setResourceValid] = useState(false);
+
+  const enableOnboarding = useAppStore((s) => s.enableOnboarding());
+  const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
+
+  useEffect(() => {
+    if (!enableOnboarding) {
+      router.push(homePath(databaseChangeMode));
+    }
+  }, [enableOnboarding, databaseChangeMode]);
 
   const steps = [
     t("setup.basic-info"),
