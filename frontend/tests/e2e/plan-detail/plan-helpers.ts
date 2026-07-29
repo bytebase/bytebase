@@ -52,6 +52,43 @@ export async function seedReviewPlan(
   };
 }
 
+// Seed the same database-change shape as seedReviewPlan, but keep its linked
+// Issue in the draft lifecycle state. Ready-for-review E2E tests use this as
+// setup so the browser owns the actual submission transition.
+export async function seedDraftPlan(
+  api: BytebaseApiClient,
+  project: string,
+  database: string,
+  opts: {
+    prefix: string;
+    sql: string;
+    labels?: string[];
+    runChecks?: boolean;
+  },
+): Promise<{ planId: string; planName: string; issueName: string }> {
+  const ts = `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+  const title = `${opts.prefix} ${ts}`;
+  const sheet = await api.createSheet(project, opts.sql);
+  const plan = await api.createPlan(project, title, [
+    { id: `spec-${ts}`, targets: [database], sheet },
+  ]);
+  const issue = await api.createDraftIssue(
+    project,
+    title,
+    plan.name,
+    opts.labels,
+  );
+  if (opts.runChecks) {
+    await api.runPlanChecks(plan.name);
+    await waitForPlanChecksDone(api, plan.name);
+  }
+  return {
+    planId: plan.name.split("/").pop()!,
+    planName: plan.name,
+    issueName: issue.name,
+  };
+}
+
 // Poll the latest planCheckRun on `planName` until status === "DONE" or the
 // timeout elapses. The check run is created asynchronously after
 // runPlanChecks(), so getPlanCheckRun may briefly 404 — we swallow and

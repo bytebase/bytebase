@@ -108,7 +108,7 @@ frontend/tests/e2e/
 ├── sql-editor/            — SQL Editor suite (connection, result, tabs, worksheet,
 │                            schema, admin-mode, history, jit, permissions,
 │                            workspace-gates, batch, misc) + sql-editor.page.ts
-├── plan-detail/           — plan detail suite (checks, rollout, sections, tasks)
+├── plan-detail/           — plan detail suite (lifecycle, checks, rollout, sections, tasks)
 │                            + plan-detail.page.ts, plan-helpers.ts
 ├── workspace/             — workspace-level suite (external-URL banner)
 └── masking-exemption/     — masking exemption suite

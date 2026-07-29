@@ -242,6 +242,27 @@ export class BytebaseApiClient {
     });
   }
 
+  // Custom roles
+  async createRole(
+    roleId: string,
+    title: string,
+    permissions: string[],
+  ): Promise<{ name: string }> {
+    return this.request<{ name: string }>(
+      "POST",
+      `/v1/roles?roleId=${roleId}`,
+      { title, permissions },
+    );
+  }
+
+  async deleteRole(name: string): Promise<void> {
+    try {
+      await this.request<unknown>("DELETE", `/v1/${name}`);
+    } catch {
+      // Best-effort teardown for disposable E2E workspaces.
+    }
+  }
+
   // Discovery
   async listInstances() {
     return this.request<{ instances: { name: string; engine: string; title: string }[] }>("GET", "/v1/instances?pageSize=100&showDeleted=false");
@@ -536,7 +557,12 @@ export class BytebaseApiClient {
     });
   }
 
-  async getPlan(planName: string): Promise<{ name: string; hasRollout: boolean; state: string }> {
+  async getPlan(planName: string): Promise<{
+    name: string;
+    hasRollout: boolean;
+    issue: string;
+    state: string;
+  }> {
     return this.request("GET", `/v1/${planName}`);
   }
 
@@ -572,6 +598,30 @@ export class BytebaseApiClient {
     });
   }
 
+  // Draft review Issues are the UI-authored Plan lifecycle boundary. They stay
+  // hidden from active review until the Plan Detail "Ready for Review" action
+  // flips only the draft field.
+  async createDraftIssue(
+    project: string,
+    title: string,
+    plan: string,
+    labels: string[] = [],
+  ): Promise<{
+    name: string;
+    status: string;
+    approvalStatus: string;
+    draft: boolean;
+    labels: string[];
+  }> {
+    return this.request("POST", `/v1/${project}/issues`, {
+      title,
+      type: "DATABASE_CHANGE",
+      plan,
+      draft: true,
+      labels,
+    });
+  }
+
   // Post a comment to an issue. CreateIssueComment binds `body: "issue_comment"`,
   // so the HTTP body is the IssueComment payload directly. Used by the
   // markdown-link spec (BYT-9664) to seed a comment with links via the API
@@ -582,7 +632,14 @@ export class BytebaseApiClient {
     });
   }
 
-  async getIssue(issueName: string): Promise<{ name: string; status: string; approvalStatus: string; approvalTemplate: unknown }> {
+  async getIssue(issueName: string): Promise<{
+    name: string;
+    status: string;
+    approvalStatus: string;
+    approvalTemplate: unknown;
+    draft?: boolean;
+    labels?: string[];
+  }> {
     return this.request("GET", `/v1/${issueName}`);
   }
 
@@ -617,6 +674,13 @@ export class BytebaseApiClient {
     settings: {
       requireIssueApproval?: boolean;
       requirePlanCheckNoError?: boolean;
+      enforceSqlReview?: boolean;
+      forceIssueLabels?: boolean;
+      issueLabels?: Array<{
+        value: string;
+        color?: Record<string, unknown>;
+        group?: string;
+      }>;
       allowJustInTimeAccess?: boolean;
       allowRequestRole?: boolean;
       // When license is installed, project.allow_self_approval defaults
@@ -640,6 +704,18 @@ export class BytebaseApiClient {
     if (settings.requirePlanCheckNoError !== undefined) {
       fields.push("require_plan_check_no_error");
       body.requirePlanCheckNoError = settings.requirePlanCheckNoError;
+    }
+    if (settings.enforceSqlReview !== undefined) {
+      fields.push("enforce_sql_review");
+      body.enforceSqlReview = settings.enforceSqlReview;
+    }
+    if (settings.forceIssueLabels !== undefined) {
+      fields.push("force_issue_labels");
+      body.forceIssueLabels = settings.forceIssueLabels;
+    }
+    if (settings.issueLabels !== undefined) {
+      fields.push("issue_labels");
+      body.issueLabels = settings.issueLabels;
     }
     if (settings.allowJustInTimeAccess !== undefined) {
       fields.push("allow_just_in_time_access");

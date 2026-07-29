@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   creationIssueLabels: [] as string[],
   createIssue: vi.fn(),
   createPlan: vi.fn(),
+  invalidateProjectPlansPagedDataCache: vi.fn(),
   lifecycle: { kind: "none" } as { kind: string },
   page: undefined as unknown as PlanDetailPageState,
   patchState: vi.fn(),
@@ -110,6 +111,11 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
     ) : (
       <>{children}</>
     ),
+}));
+
+vi.mock("@/lib/projectPagedDataCache", () => ({
+  invalidateProjectPlansPagedDataCache:
+    mocks.invalidateProjectPlansPagedDataCache,
 }));
 
 vi.mock("@/lib/utils", () => ({
@@ -829,6 +835,9 @@ describe("PlanDetailHeader submitted issue behavior", () => {
     await waitFor(() => expect(mocks.updateIssue).toHaveBeenCalledTimes(2));
     await waitFor(() =>
       expect(mocks.batchUpdateIssuesStatus).toHaveBeenCalledOnce()
+    );
+    expect(mocks.invalidateProjectPlansPagedDataCache).toHaveBeenCalledWith(
+      "p1"
     );
     expect(
       mocks.updateIssue.mock.calls.map(([request]) => request.updateMask)
