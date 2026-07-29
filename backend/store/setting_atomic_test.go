@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -189,4 +190,89 @@ func TestUpdateSettingAtomicMissingRow(t *testing.T) {
 		})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "not found")
+}
+
+// TestUpdateSettingAtomicPublishOrder pins that the setting cache is published
+// in commit order: while one update is paused between its commit and its cache
+// publish (test hook), a later update must not be able to commit and publish —
+// otherwise the paused update's older value would overwrite the newer one in
+// the cache, serving reverted state until the next refresh. Red against an
+// implementation whose commit releases the row lock before an unordered cache
+// write.
+func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
+	ctx, _, s := newSettingAtomicFixture(t)
+
+	pauseFirst := make(chan struct{})
+	resumeFirst := make(chan struct{})
+	// Only the first update pauses; later publishes pass through WITHOUT
+	// blocking (sync.Once.Do would serialize concurrent callers and mask the
+	// very ordering bug this test pins).
+	var first atomic.Bool
+	s.SetSettingPublishHookForTest(func() {
+		if first.CompareAndSwap(false, true) {
+			close(pauseFirst)
+			<-resumeFirst
+		}
+	})
+
+	firstResult := make(chan error, 1)
+	go func() {
+		_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
+			func(current proto.Message) (proto.Message, error) {
+				profile, ok := current.(*storepb.WorkspaceProfileSetting)
+				if !ok {
+					return nil, errors.Errorf("unexpected type %T", current)
+				}
+				profile.EnableMetricCollection = true
+				return profile, nil
+			})
+		firstResult <- err
+	}()
+	// The first update has committed and is paused before publishing.
+	select {
+	case <-pauseFirst:
+	case <-time.After(15 * time.Second):
+		t.Fatal("first update never reached the publish window")
+	}
+
+	secondResult := make(chan error, 1)
+	go func() {
+		_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
+			func(current proto.Message) (proto.Message, error) {
+				profile, ok := current.(*storepb.WorkspaceProfileSetting)
+				if !ok {
+					return nil, errors.Errorf("unexpected type %T", current)
+				}
+				profile.McpCapability = storepb.WorkspaceProfileSetting_DISABLED
+				return profile, nil
+			})
+		secondResult <- err
+	}()
+
+	// The second update must not complete while the first sits between commit
+	// and publish — completing here is exactly the out-of-order publish.
+	select {
+	case err := <-secondResult:
+		t.Fatalf("second update published while the first held the publish window: %v", err)
+	case <-time.After(500 * time.Millisecond):
+	}
+
+	close(resumeFirst)
+	for _, result := range []chan error{firstResult, secondResult} {
+		select {
+		case err := <-result:
+			require.NoError(t, err)
+		case <-time.After(15 * time.Second):
+			t.Fatal("update did not complete; possible deadlock")
+		}
+	}
+
+	// The served cache must hold the final committed state: the second update
+	// ran after the first's commit, so its merge carries BOTH fields.
+	cached, err := s.GetSetting(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
+	require.NoError(t, err)
+	cachedProfile := mustProfile(t, cached)
+	require.True(t, cachedProfile.EnableMetricCollection, "cache must not serve pre-first-update state")
+	require.Equal(t, storepb.WorkspaceProfileSetting_DISABLED, cachedProfile.McpCapability,
+		"cache must not be overwritten by the earlier committer's stale publish")
 }

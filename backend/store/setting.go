@@ -334,7 +334,8 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 // freshly unmarshaled from the locked row and may mutate it in place; an error
 // from apply aborts the transaction with no write and is returned unwrapped so
 // callers keep typed errors. On success the setting cache is refreshed with
-// the committed value.
+// the committed value, and cache publication is serialized in commit order
+// across concurrent atomic updates.
 func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, apply func(current proto.Message) (proto.Message, error)) (*SettingMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -383,8 +384,19 @@ func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name 
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return nil, errors.Wrapf(err, "failed to update setting %s", name)
 	}
+	// Serialize [commit -> cache publish]: commit releases the row lock, so
+	// without this ordering a slower committer could publish its older value
+	// to the cache after a later committer already published a newer one,
+	// pinning stale served state. Acquired while still holding the row lock —
+	// consistent row-lock -> publish-lock order across atomic updaters, so no
+	// deadlock.
+	s.settingPublishMu.Lock()
+	defer s.settingPublishMu.Unlock()
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+	if s.settingPublishHookForTest != nil {
+		s.settingPublishHookForTest()
 	}
 
 	settingMessage := &SettingMessage{Name: name, Workspace: workspace, Value: next}

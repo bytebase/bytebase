@@ -2,6 +2,8 @@
 package store
 
 import (
+	"sync"
+
 	"context"
 	"database/sql"
 	"fmt"
@@ -20,19 +22,32 @@ type Store struct {
 	enableCache   bool
 
 	// Cache.
-	Secret            string
-	userEmailCache    *lru.Cache[string, *UserMessage]
-	instanceCache     *lru.Cache[string, *InstanceMessage]
-	databaseCache     *lru.Cache[string, *DatabaseMessage]
-	projectCache      *lru.Cache[string, *ProjectMessage]
-	policyCache       *lru.Cache[string, *PolicyMessage]
-	settingCache      *lru.Cache[string, *SettingMessage]
-	rolesCache        *expirable.LRU[string, *RoleMessage]
-	groupCache        *expirable.LRU[string, *GroupMessage]
-	groupMembersCache *expirable.LRU[string, map[string]bool]
-	memberGroupsCache *expirable.LRU[string, []string]
-	dbSchemaCache     *expirable.LRU[string, *model.DatabaseMetadata]
-	iamPolicyCache    *expirable.LRU[string, *IamPolicyMessage]
+	Secret         string
+	userEmailCache *lru.Cache[string, *UserMessage]
+	instanceCache  *lru.Cache[string, *InstanceMessage]
+	databaseCache  *lru.Cache[string, *DatabaseMessage]
+	projectCache   *lru.Cache[string, *ProjectMessage]
+	policyCache    *lru.Cache[string, *PolicyMessage]
+	settingCache   *lru.Cache[string, *SettingMessage]
+
+	// settingPublishMu orders the [commit -> cache publish] window of
+	// UpdateSettingAtomic: the row lock releases at commit, so without this a
+	// slower committer could publish its older value to the setting cache
+	// after a later committer already published a newer one, pinning stale
+	// served state. Always acquired AFTER the row lock (inside the
+	// transaction, just before commit) — never wrap a whole statement that
+	// itself waits on the row lock (e.g. UpsertSetting), or the lock order
+	// inverts and deadlocks.
+	settingPublishMu sync.Mutex
+	// settingPublishHookForTest, when set, runs between commit and cache
+	// publish so tests can deterministically expose the ordering window.
+	settingPublishHookForTest func()
+	rolesCache                *expirable.LRU[string, *RoleMessage]
+	groupCache                *expirable.LRU[string, *GroupMessage]
+	groupMembersCache         *expirable.LRU[string, map[string]bool]
+	memberGroupsCache         *expirable.LRU[string, []string]
+	dbSchemaCache             *expirable.LRU[string, *model.DatabaseMetadata]
+	iamPolicyCache            *expirable.LRU[string, *IamPolicyMessage]
 
 	// Large objects.
 	sheetFullCache *lru.Cache[string, *SheetMessage]
