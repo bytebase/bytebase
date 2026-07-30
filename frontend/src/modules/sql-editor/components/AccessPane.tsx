@@ -351,7 +351,7 @@ export function AccessPane() {
                   className="mr-1"
                 />
               )}
-              {t("sql-editor.request-access")}
+              {t("sql-editor.request-access-grant")}
             </Button>
           )}
         </PermissionGuard>
@@ -392,7 +392,7 @@ export function AccessPane() {
           </div>
         ) : (
           <div className="w-full flex items-center justify-center py-8 textinfolabel">
-            {t("sql-editor.no-access-requests")}
+            {t("sql-editor.no-access-grants")}
           </div>
         ))}
 

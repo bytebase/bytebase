@@ -201,11 +201,9 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	}
 	if maximumRequestExpiration := workspaceProfileSetting.GetMaximumRequestExpiration(); maximumRequestExpiration != nil {
 		maxExpireTime := time.Now().Add(maximumRequestExpiration.AsDuration())
-		switch {
-		case expireTime != nil && expireTime.After(maxExpireTime):
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expiration exceeds maximum request expiration %s", maximumRequestExpiration.AsDuration()))
-		case requestedDuration != nil && requestedDuration.AsDuration() > maximumRequestExpiration.AsDuration():
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expiration exceeds maximum request expiration %s", maximumRequestExpiration.AsDuration()))
+		if (expireTime != nil && expireTime.After(maxExpireTime)) ||
+			(requestedDuration != nil && requestedDuration.AsDuration() > maximumRequestExpiration.AsDuration()) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expiration exceeds maximum access grant expiration %s", maximumRequestExpiration.AsDuration()))
 		}
 	}
 
@@ -232,7 +230,7 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	issue, err := s.store.CreateIssue(ctx, &store.IssueMessage{
 		ProjectID:    projectID,
 		CreatorEmail: creatorEmail,
-		Title:        fmt.Sprintf("JIT access request by %s", creatorEmail),
+		Title:        fmt.Sprintf("Access grant request by %s", creatorEmail),
 		Type:         storepb.Issue_ACCESS_GRANT,
 		Description:  ag.Reason,
 		Payload: &storepb.Issue{

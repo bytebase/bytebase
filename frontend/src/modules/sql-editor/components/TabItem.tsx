@@ -33,7 +33,7 @@ export function TabItem({ tab, onClick }: TabItemProps) {
     WORKSHEET: t("worksheet.self"),
     SCHEMA: t("common.schema"),
     HISTORY: t("common.history"),
-    ACCESS: t("sql-editor.jit"),
+    ACCESS: t("sql-editor.access-grants"),
   } as const;
   const label = labelByTab[tab];
 

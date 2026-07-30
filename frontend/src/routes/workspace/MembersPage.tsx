@@ -1277,7 +1277,7 @@ function ProjectRoleBindingForm({
         }
         description={
           maximumRoleExpirationDays !== undefined
-            ? t("project.members.request-role.max-expiration-hint", {
+            ? t("common.expiration-max-hint", {
                 days: maximumRoleExpirationDays,
               })
             : undefined
@@ -1323,13 +1323,11 @@ function ProjectRoleBindingForm({
           />
         )}
         {expirationIsInPast && (
-          <FormError>
-            {t("project.members.request-role.expiration-must-be-future")}
-          </FormError>
+          <FormError>{t("common.expiration-must-be-future")}</FormError>
         )}
         {expirationExceedsMax && (
           <FormError>
-            {t("project.members.request-role.expiration-exceeds-max", {
+            {t("common.expiration-exceeds-max", {
               days: maximumRoleExpirationDays,
             })}
           </FormError>

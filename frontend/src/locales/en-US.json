@@ -305,6 +305,9 @@
     "environments": "Environments",
     "error": "Error",
     "expiration": "Expiration",
+    "expiration-exceeds-max": "Expiration cannot exceed the workspace limit of {{days}} day(s).",
+    "expiration-max-hint": "Maximum allowed by workspace policy: {{days}} day(s).",
+    "expiration-must-be-future": "Expiration must be in the future.",
     "expired": "Expired",
     "export": "Export",
     "failed": "Failed",
@@ -562,7 +565,7 @@
           "change_database": "Change Database",
           "create_database": "Create Database",
           "data_export": "Export Data",
-          "request-access": "Request Just-In-Time Access",
+          "request-access": "Request Access Grant",
           "request-role": "Request Role"
         },
         "risk-level": {
@@ -1290,7 +1293,7 @@
           }
         }
       },
-      "details": "Access Grant Details",
+      "details": "Access grant details",
       "duration-after-approval": "{{duration}} after issue approved",
       "expired-at": "Expired at",
       "export-results-to-file": "Export results to a file",
@@ -1424,7 +1427,7 @@
     "role-grant": {
       "all-databases": "All databases",
       "all-databases-tip": "All current and future databases in this project.",
-      "details": "Role Grant Details",
+      "details": "Role grant details",
       "expired-at": "Expired at",
       "manually-select": "Manually select",
       "use-cel": "Use CEL Expression"
@@ -1443,7 +1446,7 @@
         "reopen": "Reopen issue?"
       }
     },
-    "subtitle": "Issues cover database changes, data exports, and access requests. Review and approve before execution.",
+    "subtitle": "Issues cover database changes, data exports, and access grants. Review and approve before execution.",
     "table": {
       "approval-progress": "{{approved}}/{{total}} Approvals",
       "approved": "Approved",
@@ -1851,14 +1854,11 @@
           "allow-request-role-disabled": "Allow request role is disabled for this project.",
           "feature-unavailable": "Request role workflow is unavailable on the current plan."
         },
-        "expiration-exceeds-max": "Expiration cannot exceed the workspace limit of {{days}} day(s).",
-        "expiration-must-be-future": "Expiration must be in the future.",
         "failed-to-build-expression": "Failed to build CEL expression. Please try again.",
         "labels-misconfigured": {
           "description": "This project requires issue labels, but no labels have been configured. Please contact the project owner to add labels before requesting a role.",
           "title": "Issue labels required but not configured"
-        },
-        "max-expiration-hint": "Maximum allowed by workspace policy: {{days}} day(s)."
+        }
       },
       "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?"
     },
@@ -1870,9 +1870,9 @@
       "confirm-archive-project": "Archiving \"{{name}}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
       "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
       "issue-related": {
-        "allow-jit": {
-          "description": "Allow project members to request just-in-time (JIT) access.",
-          "self": "Just-In-Time access"
+        "allow-access-grants": {
+          "description": "Allow project members to request time-boxed access grants for specific read-only statements.",
+          "self": "Allow access grants"
         },
         "allow-request-role": {
           "description": "Allow project members to request roles.",
@@ -2404,11 +2404,11 @@
           "never-expires": "Never expires"
         },
         "maximum-request-expiration": {
-          "description": "Maximum request expiration is the maximum period a data access request can remain valid.",
-          "self": "Maximum request expiration"
+          "description": "Maximum access grant expiration is the longest an access grant can remain valid.",
+          "self": "Maximum access grant expiration"
         },
         "maximum-role-expiration": {
-          "description": "Maximum role expiration applies only to request role. <highlight>This legacy setting will be deprecated in the future; use the just-in-time access flow for temporary access.</highlight>",
+          "description": "Maximum role expiration applies only to request role. <highlight>This legacy setting will be deprecated in the future; use access grants for temporary access.</highlight>",
           "self": "Maximum role expiration"
         },
         "maximum-sql-result": {
@@ -2971,14 +2971,13 @@
       }
     },
     "invalid-database": "Invalid database {{database}}",
-    "jit": "Just-In-Time Access",
     "last-synced": "Last synced: <time></time>",
     "link-access": "Link access",
     "loading-data": "Loading Data...",
     "loading-databases": "Loading Databases...",
     "manage-connections": "Manage connections",
     "next-row": "Next Row",
-    "no-access-requests": "No access requests",
+    "no-access-grants": "No access grants",
     "no-data-available": "No data available",
     "no-database-selected": "No database selected",
     "no-history-found": "No history found",
@@ -3010,11 +3009,7 @@
       "single-node": "Single node"
     },
     "request-aborted": "User aborted the request",
-    "request-access": "Request Access",
-    "request-data-access": "Request Data Access",
-    "request-export": "Request export",
-    "request-jit": "Request just-in-time access",
-    "request-query": "Request query",
+    "request-access-grant": "Request access grant",
     "result-detail": {
       "next-match": "Next match",
       "previous-match": "Previous match",
@@ -3070,7 +3065,7 @@
     "vertical-display": "Vertical display",
     "view-database-detail": "View database detail",
     "view-detail": "View detail",
-    "view-issue": "View Issue",
+    "view-issue": "View issue",
     "view-schema-text": "View schema text",
     "visualize-explain": "Visualize Explain",
     "web-socket": {

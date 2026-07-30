@@ -294,7 +294,7 @@ function AccessGrantRequestDrawerInner({
   return (
     <SQLEditorThemeScope theme={active} asContents>
       <SheetHeader>
-        <SheetTitle>{t("sql-editor.request-data-access")}</SheetTitle>
+        <SheetTitle>{t("sql-editor.request-access-grant")}</SheetTitle>
       </SheetHeader>
       <SheetBody>
         <div className="flex flex-col gap-y-6">
@@ -382,7 +382,7 @@ function AccessGrantRequestDrawerInner({
             }
             description={
               maximumExpirationDays !== undefined
-                ? t("project.members.request-role.max-expiration-hint", {
+                ? t("common.expiration-max-hint", {
                     days: maximumExpirationDays,
                   })
                 : undefined
@@ -403,13 +403,11 @@ function AccessGrantRequestDrawerInner({
               />
             )}
             {expirationIsInPast && (
-              <FormError>
-                {t("project.members.request-role.expiration-must-be-future")}
-              </FormError>
+              <FormError>{t("common.expiration-must-be-future")}</FormError>
             )}
             {expirationExceedsMax && maximumExpirationDays !== undefined && (
               <FormError>
-                {t("project.members.request-role.expiration-exceeds-max", {
+                {t("common.expiration-exceeds-max", {
                   days: maximumExpirationDays,
                 })}
               </FormError>

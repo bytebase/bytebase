@@ -243,7 +243,7 @@ describe("MaskingReasonPopover", () => {
     unmount();
   });
 
-  test("does not show request-jit button when JIT not available", () => {
+  test("does not show the request-access-grant button when JIT not available", () => {
     setupDefaultMocks(false);
     const { container, render, unmount } = renderIntoContainer(
       <MaskingReasonPopover reason={makeReason()} statement="SELECT * FROM t" />
@@ -252,13 +252,13 @@ describe("MaskingReasonPopover", () => {
 
     const buttons = container.querySelectorAll("[data-testid='jit-button']");
     const jitBtn = Array.from(buttons).find((b) =>
-      b.textContent?.includes("sql-editor.request-jit")
+      b.textContent?.includes("sql-editor.request-access-grant")
     );
     expect(jitBtn).toBeUndefined();
     unmount();
   });
 
-  test("shows request-jit button and opens drawer when JIT available and statement provided", async () => {
+  test("shows the request-access-grant button and opens drawer when JIT available and statement provided", async () => {
     setupDefaultMocks(true);
     const { container, render, unmount } = renderIntoContainer(
       <MaskingReasonPopover
@@ -277,7 +277,7 @@ describe("MaskingReasonPopover", () => {
       "[data-testid='jit-button']"
     ) as HTMLButtonElement;
     expect(jitBtn).not.toBeNull();
-    expect(jitBtn.textContent).toContain("sql-editor.request-jit");
+    expect(jitBtn.textContent).toContain("sql-editor.request-access-grant");
 
     await act(async () => {
       jitBtn.click();

@@ -91,7 +91,7 @@ describe("TabItem", () => {
       <TabItem tab="ACCESS" onClick={() => {}} />
     );
     render();
-    expect(container.textContent).toContain("sql-editor.jit");
+    expect(container.textContent).toContain("sql-editor.access-grants");
     unmount();
   });
 

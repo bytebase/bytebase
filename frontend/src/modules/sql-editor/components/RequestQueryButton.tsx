@@ -181,8 +181,8 @@ export function RequestQueryButton({
               <FeatureBadge clickable={false} feature={requiredFeature} />
             )}
             {useJIT
-              ? t("sql-editor.request-jit")
-              : t("sql-editor.request-query")}
+              ? t("sql-editor.request-access-grant")
+              : t("issue.title.request-role")}
           </Button>
         )}
       </PermissionGuard>
