@@ -143,9 +143,10 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
         ]),
       }
     );
-    const getRedirectQuery = () =>
-      new URLSearchParams(window.location.search).get("redirect");
-    let nextPage = redirectUrl ?? (getRedirectQuery() || "/");
+    const redirectQuery = new URLSearchParams(window.location.search).get(
+      "redirect"
+    );
+    let nextPage = redirectUrl ?? (redirectQuery || "/");
     if (resp.mfaTempToken) {
       set({ unauthenticatedOccurred: false });
       navigateByName(AUTH_MFA_MODULE, {
@@ -169,8 +170,10 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     set({ authSessionKey: uniqueId() });
 
     if (
+      redirectUrl === undefined &&
+      !redirectQuery &&
       get().appFeatures["bb.feature.database-change-mode"] ===
-      DatabaseChangeMode.EDITOR
+        DatabaseChangeMode.EDITOR
     ) {
       nextPage = resolvePath(SQL_EDITOR_HOME_MODULE);
     }
@@ -235,15 +238,15 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
       // nothing
     } finally {
       set({ unauthenticatedOccurred: false });
-      const pathname = location.pathname;
+      const fullPath = `${location.pathname}${location.search}${location.hash}`;
       const getRedirectQuery = () =>
         new URLSearchParams(window.location.search).get("redirect");
       // Replace and reload the page to clear frontend state directly.
-      window.location.href = resolvePath(AUTH_SIGNIN_MODULE, {
+      location.href = resolvePath(AUTH_SIGNIN_MODULE, {
         query: {
           redirect:
             getRedirectQuery() ||
-            (pathname.startsWith("/auth") ? undefined : pathname),
+            (location.pathname.startsWith("/auth") ? undefined : fullPath),
         },
       });
     }

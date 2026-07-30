@@ -20,7 +20,7 @@ import { isDev } from "@/utils";
 
 // Session-validity poll interval (1 min dev, 5 min prod), mirroring the legacy
 // AuthContext.vue.
-const CHECK_AUTHORIZATION_INTERVAL = isDev() ? 60 * 1000 : 60 * 1000 * 5;
+const CHECK_AUTHORIZATION_INTERVAL = isDev() ? 5 * 1000 : 60 * 1000 * 5;
 
 // Replaces AuthContext.vue: gates the app render on the authenticated session
 // (loading workspace-scoped data first), polls session validity, redirects on a
@@ -67,7 +67,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   // Load workspace-scoped data once authenticated, then reveal the app.
   useEffect(() => {
     const store = useAppStore.getState();
-    if (!isLoggedIn || !currentUserName) {
+    if (!isLoggedIn || !currentUserName || isPublicRoute) {
       setReady(true);
       return;
     }
@@ -75,9 +75,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
     setReady(false);
     void Promise.all([
       store.loadSubscription(),
-      store.fetchWorkspaceIamPolicy(),
+      store.fetchWorkspaceIamPolicy(true),
       store.loadWorkspaceList(),
-      store.listRoles(),
+      store.listRoles(true),
       store.batchGetOrFetchGroups(
         currentUserGroupsKey ? currentUserGroupsKey.split("\0") : []
       ),
@@ -87,27 +87,33 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [currentUserGroupsKey, currentUserName, currentUserWorkspace, isLoggedIn]);
+  }, [
+    currentUserGroupsKey,
+    currentUserName,
+    currentUserWorkspace,
+    isLoggedIn,
+    isPublicRoute,
+  ]);
 
   // Periodically revalidate the session (skip when logged out / on auth routes).
   useEffect(() => {
     const id = setInterval(() => {
       const store = useAppStore.getState();
       if (!store.isLoggedIn() || store.unauthenticatedOccurred) return;
-      if (isAuthRoute) return;
+      if (isAuthRoute || isPublicRoute) return;
       void (async () => {
         const user = await store.fetchCurrentUser();
         if (!user || !store.isLoggedIn() || store.unauthenticatedOccurred) {
           return;
         }
         await Promise.allSettled([
-          store.fetchWorkspaceIamPolicy(),
-          store.listRoles(),
+          store.fetchWorkspaceIamPolicy(true),
+          store.listRoles(true),
         ]);
       })();
     }, CHECK_AUTHORIZATION_INTERVAL);
     return () => clearInterval(id);
-  }, [isAuthRoute]);
+  }, [isAuthRoute, isPublicRoute]);
 
   // Cross-tab user switch: when the signed-in user changes, redirect to the
   // workspace root with a notification (unless it's a self email update).
