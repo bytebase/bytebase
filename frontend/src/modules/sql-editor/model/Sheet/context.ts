@@ -178,6 +178,10 @@ interface SheetContextState {
     fetching: boolean
   ) => void;
   setViewFolderFetched: (view: SheetViewMode, folderKey: string) => void;
+  invalidateViewPageState: (
+    view: SheetViewMode,
+    folderKeys: Iterable<string>
+  ) => void;
   moveViewFolderPageState: (
     view: SheetViewMode,
     fromPath: string,
@@ -320,6 +324,23 @@ const useSheetContextStore: UseBoundStore<StoreApi<SheetContextState>> =
       setViewFolderFetched(view, folderKey) {
         set((s) => {
           s.viewStates[view].fetchedFolderKeys.add(folderKey);
+        });
+      },
+      invalidateViewPageState(view, folderKeys) {
+        set((s) => {
+          const viewState = s.viewStates[view];
+          const rootPath = rootPathFor(view);
+          const folderContext = getFolderContext(view);
+          for (const folderKey of folderKeys) {
+            const key = folderContext.ensureFolderPath(folderKey);
+            if (key === rootPath) {
+              viewState.nextPageToken = "";
+              continue;
+            }
+            viewState.folderNextPageTokens.delete(key);
+            viewState.fetchingFolderKeys.delete(key);
+            viewState.fetchedFolderKeys.delete(key);
+          }
         });
       },
       moveViewFolderPageState(view, fromPath, toPath, merge) {
@@ -1255,11 +1276,25 @@ const addNewWorksheetsToViewMembership = (
 const batchUpdateWorksheetFolders = async (
   worksheets: { name: string; folders: string[] }[]
 ): Promise<void> => {
+  const affectedFolderKeysByView = new Map<SheetViewMode, Set<string>>();
+  const addAffectedFolderKey = (view: SheetViewMode, folderKey: string) => {
+    const keys = affectedFolderKeysByView.get(view) ?? new Set<string>();
+    keys.add(folderKey);
+    affectedFolderKeysByView.set(view, keys);
+  };
+
   const requestByKey = new Map<
     string,
     { parent: string; folders: string[]; names: string[] }
   >();
   for (const worksheet of worksheets) {
+    const current = useAppStore.getState().getWorksheetByName(worksheet.name);
+    const view = current ? viewForWorksheet(current) : undefined;
+    if (current && (view === "my" || view === "shared")) {
+      addAffectedFolderKey(view, getPwdForWorksheet(view, current));
+      addAffectedFolderKey(view, getPwdForWorksheet(view, worksheet));
+    }
+
     const index = worksheet.name.lastIndexOf("/worksheets/");
     if (index < 0) {
       continue;
@@ -1291,6 +1326,10 @@ const batchUpdateWorksheetFolders = async (
       updateMask: ["folders"],
     }))
   );
+  for (const [view, folderKeys] of affectedFolderKeysByView) {
+    useSheetContextStore.getState().invalidateViewPageState(view, folderKeys);
+    rebuildTreeImpl(view);
+  }
 };
 
 const batchUpdateWorksheetFolderPaths = async (

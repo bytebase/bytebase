@@ -648,6 +648,59 @@ describe("sheet context", () => {
     expect(viewContext!.hasMoreForFolder("/my/alpha")).toBe(false);
   });
 
+  test("invalidates affected page tokens after moving worksheets", async () => {
+    const { provideSheetContext, useSheetContext, useSheetContextByView } =
+      await import("./context");
+    let sheetContext: ReturnType<typeof useSheetContext> | undefined;
+    let viewContext: ReturnType<typeof useSheetContextByView> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      sheetContext = useSheetContext();
+      viewContext = useSheetContextByView("my");
+      return null;
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+    await act(async () => {
+      await viewContext!.fetchSheetList();
+    });
+
+    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => {
+      const worksheet = create(WorksheetSchema, {
+        name: "projects/proj1/worksheets/3",
+        project: "projects/proj1",
+        creator: "users/creator@example.com",
+        title: "Folder worksheet",
+        folders: ["alpha"],
+        visibility: Worksheet_Visibility.PRIVATE,
+      });
+      mocks.addWorksheets([worksheet]);
+      return {
+        worksheets: [worksheet],
+        nextPageToken: "folder-next",
+      };
+    });
+    await act(async () => {
+      await viewContext!.fetchWorksheetsByFolder("/my/alpha");
+    });
+
+    expect(viewContext!.hasMore).toBe(true);
+    expect(viewContext!.hasMoreForFolder("/my/alpha")).toBe(true);
+
+    await act(async () => {
+      await sheetContext!.batchUpdateWorksheetFolders([
+        { name: "projects/proj1/worksheets/1", folders: ["alpha"] },
+      ]);
+    });
+
+    expect(viewContext!.hasMore).toBe(false);
+    expect(viewContext!.hasMoreForFolder("/my/alpha")).toBe(false);
+  });
+
   test("batch updates worksheet folders with one name filter per target folder", async () => {
     const { provideSheetContext, useSheetContext } = await import("./context");
     let sheetContext: ReturnType<typeof useSheetContext> | undefined;

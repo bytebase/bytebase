@@ -966,10 +966,12 @@ describe("SheetTree", () => {
     expect(loadMoreWrapper?.classList.contains("text-left")).toBe(true);
     expect(loadMoreButton?.classList.contains("tree-label")).toBe(true);
     expect(loadMoreButton?.classList.contains("flex-1")).toBe(false);
-    expect(loadMoreButton?.classList.contains("text-control")).toBe(true);
+    expect(loadMoreButton?.classList.contains("text-accent")).toBe(true);
+    expect(loadMoreButton?.classList.contains("text-control")).toBe(false);
     expect(loadMoreButton?.classList.contains("text-control-light")).toBe(false);
     expect(loadMoreButton?.classList.contains("text-xs")).toBe(true);
     expect(loadMoreButton?.classList.contains("cursor-pointer")).toBe(true);
+    expect(loadMoreButton?.textContent).toBe("···common.load-more");
 
     await act(async () => {
       loadMoreWrapper?.dispatchEvent(
@@ -1028,10 +1030,12 @@ describe("SheetTree", () => {
     expect(loadMoreWrapper?.classList.contains("text-left")).toBe(true);
     expect(loadMoreButton?.classList.contains("tree-label")).toBe(true);
     expect(loadMoreButton?.classList.contains("flex-1")).toBe(false);
-    expect(loadMoreButton?.classList.contains("text-control")).toBe(true);
+    expect(loadMoreButton?.classList.contains("text-accent")).toBe(true);
+    expect(loadMoreButton?.classList.contains("text-control")).toBe(false);
     expect(loadMoreButton?.classList.contains("text-control-light")).toBe(false);
     expect(loadMoreButton?.classList.contains("text-xs")).toBe(true);
     expect(loadMoreButton?.classList.contains("cursor-pointer")).toBe(true);
+    expect(loadMoreButton?.textContent).toBe("···common.load-more");
 
     await act(async () => {
       loadMoreWrapper?.dispatchEvent(
