@@ -306,6 +306,35 @@ func (x *DiffSchemaResponse) Equal(y *DiffSchemaResponse) bool {
 	return true
 }
 
+func (x *DiffMetadataRequest) Equal(y *DiffMetadataRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if !x.TargetMetadata.Equal(y.TargetMetadata) {
+		return false
+	}
+	return true
+}
+
+func (x *DiffMetadataResponse) Equal(y *DiffMetadataResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Diff != y.Diff {
+		return false
+	}
+	return true
+}
+
 func (x *Database) Equal(y *Database) bool {
 	if x == y {
 		return true

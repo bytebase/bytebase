@@ -519,38 +519,6 @@ func (x *ExportResponse) Equal(y *ExportResponse) bool {
 	return true
 }
 
-func (x *DiffMetadataRequest) Equal(y *DiffMetadataRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if !x.SourceMetadata.Equal(y.SourceMetadata) {
-		return false
-	}
-	if !x.TargetMetadata.Equal(y.TargetMetadata) {
-		return false
-	}
-	if x.Engine != y.Engine {
-		return false
-	}
-	return true
-}
-
-func (x *DiffMetadataResponse) Equal(y *DiffMetadataResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Diff != y.Diff {
-		return false
-	}
-	return true
-}
-
 func (x *AICompletionRequest_Message) Equal(y *AICompletionRequest_Message) bool {
 	if x == y {
 		return true

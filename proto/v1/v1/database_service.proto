@@ -139,6 +139,18 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Generates migration statements from the database's current schema to the
+  // given target metadata.
+  // Permissions required: bb.databases.diffMetadata
+  rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=instances/*/databases/*}:diffMetadata"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.databases.diffMetadata";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   // Generates schema DDL for a database object.
   // Permissions required: bb.databases.getSchema
   rpc GetSchemaString(GetSchemaStringRequest) returns (GetSchemaStringResponse) {
@@ -401,6 +413,27 @@ message DiffSchemaRequest {
 }
 
 message DiffSchemaResponse {
+  string diff = 1;
+}
+
+message DiffMetadataRequest {
+  // The database whose current schema is the diff source.
+  // Format: instances/{instance}/databases/{database}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  // The metadata of the target schema. The source metadata and the engine are
+  // read from the database, so only the target travels in the request.
+  // Must describe the COMPLETE target schema: the diff runs against the full
+  // stored source, so any object omitted from the target (for example by a
+  // truncated metadata fetch) is treated as dropped.
+  DatabaseMetadata target_metadata = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message DiffMetadataResponse {
+  // The generated migration statements.
   string diff = 1;
 }
 

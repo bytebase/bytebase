@@ -729,6 +729,61 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 	return connect.NewResponse(&v1pb.DiffSchemaResponse{Diff: migrationSQL}), nil
 }
 
+// DiffMetadata generates migration statements from the database's current
+// schema (read from the store) to the given target metadata. The engine and
+// object case sensitivity come from the database's instance.
+func (s *DatabaseService) DiffMetadata(ctx context.Context, req *connect.Request[v1pb.DiffMetadataRequest]) (*connect.Response[v1pb.DiffMetadataResponse], error) {
+	request := req.Msg
+	if request.TargetMetadata == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("target_metadata is required"))
+	}
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance"))
+	}
+	if instance == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
+	}
+	engine := instance.Metadata.GetEngine()
+	switch engine {
+	case storepb.Engine_MYSQL, storepb.Engine_POSTGRES, storepb.Engine_TIDB, storepb.Engine_ORACLE, storepb.Engine_MSSQL:
+	default:
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported engine: %v", engine))
+	}
+
+	sourceDBSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
+		InstanceID:   instanceID,
+		DatabaseName: databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database schema"))
+	}
+	if sourceDBSchema == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("schema not found for database %q; sync the database first", request.Name))
+	}
+
+	storeTargetMetadata := convertV1DatabaseMetadata(request.TargetMetadata)
+	targetDBSchema := model.NewDatabaseMetadata(storeTargetMetadata, nil, nil, engine, store.IsObjectCaseSensitive(instance))
+
+	migrationSQL, err := schema.DiffMigration(engine, sourceDBSchema, targetDBSchema)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to compute diff between source and target schemas"))
+	}
+
+	return connect.NewResponse(&v1pb.DiffMetadataResponse{
+		Diff: migrationSQL,
+	}), nil
+}
+
 // shouldDiffSchemaViaSDL reports whether a raw-schema-text DiffSchema target should take the
 // omni SDL diff path. engine MUST be the instance's real engine (not the parser-aliased one):
 // the SDL path is gated on common.EngineSupportSDLExport — the same gate GetDatabaseSDLSchema

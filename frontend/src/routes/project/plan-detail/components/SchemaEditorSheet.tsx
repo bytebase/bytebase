@@ -145,11 +145,13 @@ function SchemaEditorSheetBody({
       setIsPreparingMetadata(true);
       setTargets([]);
       try {
+        // Fetch the complete metadata (no table limit): DiffMetadata diffs the
+        // edited target against the full schema stored server-side, so any
+        // table missing from a truncated baseline would read as a DROP.
         const [metadata, database] = await Promise.all([
           getOrFetchDatabaseMetadata({
             database: databaseName,
             skipCache: true,
-            limit: 200,
           }),
           useAppStore.getState().getOrFetchDatabaseByName(databaseName),
         ]);

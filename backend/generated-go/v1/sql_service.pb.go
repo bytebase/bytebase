@@ -1590,114 +1590,6 @@ func (x *ExportResponse) GetAppliedAccessGrant() string {
 	return ""
 }
 
-type DiffMetadataRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The metadata of the source schema.
-	SourceMetadata *DatabaseMetadata `protobuf:"bytes,1,opt,name=source_metadata,json=sourceMetadata,proto3" json:"source_metadata,omitempty"`
-	// The metadata of the target schema.
-	TargetMetadata *DatabaseMetadata `protobuf:"bytes,2,opt,name=target_metadata,json=targetMetadata,proto3" json:"target_metadata,omitempty"`
-	// The database engine of the schema.
-	Engine        Engine `protobuf:"varint,3,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DiffMetadataRequest) Reset() {
-	*x = DiffMetadataRequest{}
-	mi := &file_v1_sql_service_proto_msgTypes[12]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DiffMetadataRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DiffMetadataRequest) ProtoMessage() {}
-
-func (x *DiffMetadataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sql_service_proto_msgTypes[12]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DiffMetadataRequest.ProtoReflect.Descriptor instead.
-func (*DiffMetadataRequest) Descriptor() ([]byte, []int) {
-	return file_v1_sql_service_proto_rawDescGZIP(), []int{12}
-}
-
-func (x *DiffMetadataRequest) GetSourceMetadata() *DatabaseMetadata {
-	if x != nil {
-		return x.SourceMetadata
-	}
-	return nil
-}
-
-func (x *DiffMetadataRequest) GetTargetMetadata() *DatabaseMetadata {
-	if x != nil {
-		return x.TargetMetadata
-	}
-	return nil
-}
-
-func (x *DiffMetadataRequest) GetEngine() Engine {
-	if x != nil {
-		return x.Engine
-	}
-	return Engine_ENGINE_UNSPECIFIED
-}
-
-type DiffMetadataResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The diff of the metadata.
-	Diff          string `protobuf:"bytes,1,opt,name=diff,proto3" json:"diff,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DiffMetadataResponse) Reset() {
-	*x = DiffMetadataResponse{}
-	mi := &file_v1_sql_service_proto_msgTypes[13]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DiffMetadataResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DiffMetadataResponse) ProtoMessage() {}
-
-func (x *DiffMetadataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sql_service_proto_msgTypes[13]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DiffMetadataResponse.ProtoReflect.Descriptor instead.
-func (*DiffMetadataResponse) Descriptor() ([]byte, []int) {
-	return file_v1_sql_service_proto_rawDescGZIP(), []int{13}
-}
-
-func (x *DiffMetadataResponse) GetDiff() string {
-	if x != nil {
-		return x.Diff
-	}
-	return ""
-}
-
 type AICompletionRequest struct {
 	state         protoimpl.MessageState         `protogen:"open.v1"`
 	Messages      []*AICompletionRequest_Message `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
@@ -1707,7 +1599,7 @@ type AICompletionRequest struct {
 
 func (x *AICompletionRequest) Reset() {
 	*x = AICompletionRequest{}
-	mi := &file_v1_sql_service_proto_msgTypes[14]
+	mi := &file_v1_sql_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1719,7 +1611,7 @@ func (x *AICompletionRequest) String() string {
 func (*AICompletionRequest) ProtoMessage() {}
 
 func (x *AICompletionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sql_service_proto_msgTypes[14]
+	mi := &file_v1_sql_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1732,7 +1624,7 @@ func (x *AICompletionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AICompletionRequest.ProtoReflect.Descriptor instead.
 func (*AICompletionRequest) Descriptor() ([]byte, []int) {
-	return file_v1_sql_service_proto_rawDescGZIP(), []int{14}
+	return file_v1_sql_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *AICompletionRequest) GetMessages() []*AICompletionRequest_Message {
@@ -1753,7 +1645,7 @@ type AICompletionResponse struct {
 
 func (x *AICompletionResponse) Reset() {
 	*x = AICompletionResponse{}
-	mi := &file_v1_sql_service_proto_msgTypes[15]
+	mi := &file_v1_sql_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1765,7 +1657,7 @@ func (x *AICompletionResponse) String() string {
 func (*AICompletionResponse) ProtoMessage() {}
 
 func (x *AICompletionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sql_service_proto_msgTypes[15]
+	mi := &file_v1_sql_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1778,7 +1670,7 @@ func (x *AICompletionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AICompletionResponse.ProtoReflect.Descriptor instead.
 func (*AICompletionResponse) Descriptor() ([]byte, []int) {
-	return file_v1_sql_service_proto_rawDescGZIP(), []int{15}
+	return file_v1_sql_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *AICompletionResponse) GetCandidates() []*AICompletionResponse_Candidate {
@@ -1815,7 +1707,7 @@ type QueryResult_PostgresError struct {
 
 func (x *QueryResult_PostgresError) Reset() {
 	*x = QueryResult_PostgresError{}
-	mi := &file_v1_sql_service_proto_msgTypes[16]
+	mi := &file_v1_sql_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1827,7 +1719,7 @@ func (x *QueryResult_PostgresError) String() string {
 func (*QueryResult_PostgresError) ProtoMessage() {}
 
 func (x *QueryResult_PostgresError) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sql_service_proto_msgTypes[16]
+	mi := &file_v1_sql_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1973,7 +1865,7 @@ type QueryResult_SyntaxError struct {
 
 func (x *QueryResult_SyntaxError) Reset() {
 	*x = QueryResult_SyntaxError{}
-	mi := &file_v1_sql_service_proto_msgTypes[17]
+	mi := &file_v1_sql_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1985,7 +1877,7 @@ func (x *QueryResult_SyntaxError) String() string {
 func (*QueryResult_SyntaxError) ProtoMessage() {}
 
 func (x *QueryResult_SyntaxError) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sql_service_proto_msgTypes[17]
+	mi := &file_v1_sql_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2020,7 +1912,7 @@ type QueryResult_CommandError struct {
 
 func (x *QueryResult_CommandError) Reset() {
 	*x = QueryResult_CommandError{}
-	mi := &file_v1_sql_service_proto_msgTypes[18]
+	mi := &file_v1_sql_service_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2032,7 +1924,7 @@ func (x *QueryResult_CommandError) String() string {
 func (*QueryResult_CommandError) ProtoMessage() {}
 
 func (x *QueryResult_CommandError) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sql_service_proto_msgTypes[18]
+	mi := &file_v1_sql_service_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2065,7 +1957,7 @@ type QueryResult_Message struct {
 
 func (x *QueryResult_Message) Reset() {
 	*x = QueryResult_Message{}
-	mi := &file_v1_sql_service_proto_msgTypes[19]
+	mi := &file_v1_sql_service_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2077,7 +1969,7 @@ func (x *QueryResult_Message) String() string {
 func (*QueryResult_Message) ProtoMessage() {}
 
 func (x *QueryResult_Message) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sql_service_proto_msgTypes[19]
+	mi := &file_v1_sql_service_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2118,7 +2010,7 @@ type RowValue_Timestamp struct {
 
 func (x *RowValue_Timestamp) Reset() {
 	*x = RowValue_Timestamp{}
-	mi := &file_v1_sql_service_proto_msgTypes[20]
+	mi := &file_v1_sql_service_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2130,7 +2022,7 @@ func (x *RowValue_Timestamp) String() string {
 func (*RowValue_Timestamp) ProtoMessage() {}
 
 func (x *RowValue_Timestamp) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sql_service_proto_msgTypes[20]
+	mi := &file_v1_sql_service_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2179,7 +2071,7 @@ type RowValue_TimestampTZ struct {
 
 func (x *RowValue_TimestampTZ) Reset() {
 	*x = RowValue_TimestampTZ{}
-	mi := &file_v1_sql_service_proto_msgTypes[21]
+	mi := &file_v1_sql_service_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2191,7 +2083,7 @@ func (x *RowValue_TimestampTZ) String() string {
 func (*RowValue_TimestampTZ) ProtoMessage() {}
 
 func (x *RowValue_TimestampTZ) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sql_service_proto_msgTypes[21]
+	mi := &file_v1_sql_service_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2245,7 +2137,7 @@ type AICompletionRequest_Message struct {
 
 func (x *AICompletionRequest_Message) Reset() {
 	*x = AICompletionRequest_Message{}
-	mi := &file_v1_sql_service_proto_msgTypes[22]
+	mi := &file_v1_sql_service_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2257,7 +2149,7 @@ func (x *AICompletionRequest_Message) String() string {
 func (*AICompletionRequest_Message) ProtoMessage() {}
 
 func (x *AICompletionRequest_Message) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sql_service_proto_msgTypes[22]
+	mi := &file_v1_sql_service_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2270,7 +2162,7 @@ func (x *AICompletionRequest_Message) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AICompletionRequest_Message.ProtoReflect.Descriptor instead.
 func (*AICompletionRequest_Message) Descriptor() ([]byte, []int) {
-	return file_v1_sql_service_proto_rawDescGZIP(), []int{14, 0}
+	return file_v1_sql_service_proto_rawDescGZIP(), []int{12, 0}
 }
 
 func (x *AICompletionRequest_Message) GetRole() string {
@@ -2296,7 +2188,7 @@ type AICompletionResponse_Candidate struct {
 
 func (x *AICompletionResponse_Candidate) Reset() {
 	*x = AICompletionResponse_Candidate{}
-	mi := &file_v1_sql_service_proto_msgTypes[23]
+	mi := &file_v1_sql_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2308,7 +2200,7 @@ func (x *AICompletionResponse_Candidate) String() string {
 func (*AICompletionResponse_Candidate) ProtoMessage() {}
 
 func (x *AICompletionResponse_Candidate) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sql_service_proto_msgTypes[23]
+	mi := &file_v1_sql_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2321,7 +2213,7 @@ func (x *AICompletionResponse_Candidate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AICompletionResponse_Candidate.ProtoReflect.Descriptor instead.
 func (*AICompletionResponse_Candidate) Descriptor() ([]byte, []int) {
-	return file_v1_sql_service_proto_rawDescGZIP(), []int{15, 0}
+	return file_v1_sql_service_proto_rawDescGZIP(), []int{13, 0}
 }
 
 func (x *AICompletionResponse_Candidate) GetContent() *AICompletionResponse_Candidate_Content {
@@ -2341,7 +2233,7 @@ type AICompletionResponse_Candidate_Content struct {
 
 func (x *AICompletionResponse_Candidate_Content) Reset() {
 	*x = AICompletionResponse_Candidate_Content{}
-	mi := &file_v1_sql_service_proto_msgTypes[24]
+	mi := &file_v1_sql_service_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2353,7 +2245,7 @@ func (x *AICompletionResponse_Candidate_Content) String() string {
 func (*AICompletionResponse_Candidate_Content) ProtoMessage() {}
 
 func (x *AICompletionResponse_Candidate_Content) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sql_service_proto_msgTypes[24]
+	mi := &file_v1_sql_service_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2366,7 +2258,7 @@ func (x *AICompletionResponse_Candidate_Content) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use AICompletionResponse_Candidate_Content.ProtoReflect.Descriptor instead.
 func (*AICompletionResponse_Candidate_Content) Descriptor() ([]byte, []int) {
-	return file_v1_sql_service_proto_rawDescGZIP(), []int{15, 0, 0}
+	return file_v1_sql_service_proto_rawDescGZIP(), []int{13, 0, 0}
 }
 
 func (x *AICompletionResponse_Candidate_Content) GetParts() []*AICompletionResponse_Candidate_Content_Part {
@@ -2385,7 +2277,7 @@ type AICompletionResponse_Candidate_Content_Part struct {
 
 func (x *AICompletionResponse_Candidate_Content_Part) Reset() {
 	*x = AICompletionResponse_Candidate_Content_Part{}
-	mi := &file_v1_sql_service_proto_msgTypes[25]
+	mi := &file_v1_sql_service_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2397,7 +2289,7 @@ func (x *AICompletionResponse_Candidate_Content_Part) String() string {
 func (*AICompletionResponse_Candidate_Content_Part) ProtoMessage() {}
 
 func (x *AICompletionResponse_Candidate_Content_Part) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sql_service_proto_msgTypes[25]
+	mi := &file_v1_sql_service_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2410,7 +2302,7 @@ func (x *AICompletionResponse_Candidate_Content_Part) ProtoReflect() protoreflec
 
 // Deprecated: Use AICompletionResponse_Candidate_Content_Part.ProtoReflect.Descriptor instead.
 func (*AICompletionResponse_Candidate_Content_Part) Descriptor() ([]byte, []int) {
-	return file_v1_sql_service_proto_rawDescGZIP(), []int{15, 0, 0, 0}
+	return file_v1_sql_service_proto_rawDescGZIP(), []int{13, 0, 0, 0}
 }
 
 func (x *AICompletionResponse_Candidate_Content_Part) GetText() string {
@@ -2424,7 +2316,7 @@ var File_v1_sql_service_proto protoreflect.FileDescriptor
 
 const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
-	"\x14v1/sql_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x19v1/database_service.proto\x1a\x1ev1/query_history_service.proto\"\xd5\x01\n" +
+	"\x14v1/sql_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x1ev1/query_history_service.proto\"\xd5\x01\n" +
 	"\x13AdminExecuteRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
@@ -2596,13 +2488,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\a_schema\"\\\n" +
 	"\x0eExportResponse\x12\x18\n" +
 	"\acontent\x18\x01 \x01(\fR\acontent\x120\n" +
-	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant\"\xdc\x01\n" +
-	"\x13DiffMetadataRequest\x12K\n" +
-	"\x0fsource_metadata\x18\x01 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0esourceMetadata\x12K\n" +
-	"\x0ftarget_metadata\x18\x02 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0etargetMetadata\x12+\n" +
-	"\x06engine\x18\x03 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\"*\n" +
-	"\x14DiffMetadataResponse\x12\x12\n" +
-	"\x04diff\x18\x01 \x01(\tR\x04diff\"\x94\x01\n" +
+	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant\"\x94\x01\n" +
 	"\x13AICompletionRequest\x12D\n" +
 	"\bmessages\x18\x01 \x03(\v2(.bytebase.v1.AICompletionRequest.MessageR\bmessages\x1a7\n" +
 	"\aMessage\x12\x12\n" +
@@ -2617,7 +2503,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\aContent\x12N\n" +
 	"\x05parts\x18\x01 \x03(\v28.bytebase.v1.AICompletionResponse.Candidate.Content.PartR\x05parts\x1a\x1a\n" +
 	"\x04Part\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text2\x8c\t\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text2\x88\b\n" +
 	"\n" +
 	"SQLService\x12\x8f\x01\n" +
 	"\x05Query\x12\x19.bytebase.v1.QueryRequest\x1a\x1a.bytebase.v1.QueryResponse\"O\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02-:\x01*\"(/v1/{name=instances/*/databases/*}:query\x12\x89\x01\n" +
@@ -2625,8 +2511,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x14SearchQueryHistories\x12(.bytebase.v1.SearchQueryHistoriesRequest\x1a).bytebase.v1.SearchQueryHistoriesResponse\"\a\x90\xea0\x02\x88\x02\x01\x12\x88\x01\n" +
 	"\x12ListQueryHistories\x12&.bytebase.v1.ListQueryHistoriesRequest\x1a'.bytebase.v1.ListQueryHistoriesResponse\"!\x8a\xea0\x16bb.queryHistories.list\x90\xea0\x01\x88\x02\x01\x12Z\n" +
 	"\x0fGetQueryHistory\x12#.bytebase.v1.GetQueryHistoryRequest\x1a\x19.bytebase.v1.QueryHistory\"\a\x90\xea0\x02\x88\x02\x01\x12\x84\x02\n" +
-	"\x06Export\x12\x1a.bytebase.v1.ExportRequest\x1a\x1b.bytebase.v1.ExportResponse\"\xc0\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x9d\x01:\x01*Z1:\x01*\",/v1/{name=projects/*/plans/*/rollout}:exportZ::\x01*\"5/v1/{name=projects/*/plans/*/rollout/stages/*}:export\")/v1/{name=instances/*/databases/*}:export\x12\x81\x01\n" +
-	"\fDiffMetadata\x12 .bytebase.v1.DiffMetadataRequest\x1a!.bytebase.v1.DiffMetadataResponse\",\x80\xea0\x01\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/schemaDesign:diffMetadata\x12x\n" +
+	"\x06Export\x12\x1a.bytebase.v1.ExportRequest\x1a\x1b.bytebase.v1.ExportResponse\"\xc0\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x9d\x01:\x01*Z1:\x01*\",/v1/{name=projects/*/plans/*/rollout}:exportZ::\x01*\"5/v1/{name=projects/*/plans/*/rollout/stages/*}:export\")/v1/{name=instances/*/databases/*}:export\x12x\n" +
 	"\fAICompletion\x12 .bytebase.v1.AICompletionRequest\x1a!.bytebase.v1.AICompletionResponse\"#\x90\xea0\x02\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/sql/aiCompletionB\xa5\x01\n" +
 	"\x0fcom.bytebase.v1B\x0fSqlServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
@@ -2643,7 +2528,7 @@ func file_v1_sql_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_sql_service_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_v1_sql_service_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
+var file_v1_sql_service_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_v1_sql_service_proto_goTypes = []any{
 	(QueryOption_RedisRunCommandsOn)(0),                 // 0: bytebase.v1.QueryOption.RedisRunCommandsOn
 	(QueryOption_MSSQLExplainFormat)(0),                 // 1: bytebase.v1.QueryOption.MSSQLExplainFormat
@@ -2663,35 +2548,31 @@ var file_v1_sql_service_proto_goTypes = []any{
 	(*Advice)(nil),                                      // 15: bytebase.v1.Advice
 	(*ExportRequest)(nil),                               // 16: bytebase.v1.ExportRequest
 	(*ExportResponse)(nil),                              // 17: bytebase.v1.ExportResponse
-	(*DiffMetadataRequest)(nil),                         // 18: bytebase.v1.DiffMetadataRequest
-	(*DiffMetadataResponse)(nil),                        // 19: bytebase.v1.DiffMetadataResponse
-	(*AICompletionRequest)(nil),                         // 20: bytebase.v1.AICompletionRequest
-	(*AICompletionResponse)(nil),                        // 21: bytebase.v1.AICompletionResponse
-	(*QueryResult_PostgresError)(nil),                   // 22: bytebase.v1.QueryResult.PostgresError
-	(*QueryResult_SyntaxError)(nil),                     // 23: bytebase.v1.QueryResult.SyntaxError
-	(*QueryResult_CommandError)(nil),                    // 24: bytebase.v1.QueryResult.CommandError
-	(*QueryResult_Message)(nil),                         // 25: bytebase.v1.QueryResult.Message
-	(*RowValue_Timestamp)(nil),                          // 26: bytebase.v1.RowValue.Timestamp
-	(*RowValue_TimestampTZ)(nil),                        // 27: bytebase.v1.RowValue.TimestampTZ
-	(*AICompletionRequest_Message)(nil),                 // 28: bytebase.v1.AICompletionRequest.Message
-	(*AICompletionResponse_Candidate)(nil),              // 29: bytebase.v1.AICompletionResponse.Candidate
-	(*AICompletionResponse_Candidate_Content)(nil),      // 30: bytebase.v1.AICompletionResponse.Candidate.Content
-	(*AICompletionResponse_Candidate_Content_Part)(nil), // 31: bytebase.v1.AICompletionResponse.Candidate.Content.Part
-	(*durationpb.Duration)(nil),                         // 32: google.protobuf.Duration
-	(*PermissionDeniedDetail)(nil),                      // 33: bytebase.v1.PermissionDeniedDetail
-	(structpb.NullValue)(0),                             // 34: google.protobuf.NullValue
-	(*structpb.Value)(nil),                              // 35: google.protobuf.Value
-	(*Position)(nil),                                    // 36: bytebase.v1.Position
-	(ExportFormat)(0),                                   // 37: bytebase.v1.ExportFormat
-	(*DatabaseMetadata)(nil),                            // 38: bytebase.v1.DatabaseMetadata
-	(Engine)(0),                                         // 39: bytebase.v1.Engine
-	(*timestamppb.Timestamp)(nil),                       // 40: google.protobuf.Timestamp
-	(*SearchQueryHistoriesRequest)(nil),                 // 41: bytebase.v1.SearchQueryHistoriesRequest
-	(*ListQueryHistoriesRequest)(nil),                   // 42: bytebase.v1.ListQueryHistoriesRequest
-	(*GetQueryHistoryRequest)(nil),                      // 43: bytebase.v1.GetQueryHistoryRequest
-	(*SearchQueryHistoriesResponse)(nil),                // 44: bytebase.v1.SearchQueryHistoriesResponse
-	(*ListQueryHistoriesResponse)(nil),                  // 45: bytebase.v1.ListQueryHistoriesResponse
-	(*QueryHistory)(nil),                                // 46: bytebase.v1.QueryHistory
+	(*AICompletionRequest)(nil),                         // 18: bytebase.v1.AICompletionRequest
+	(*AICompletionResponse)(nil),                        // 19: bytebase.v1.AICompletionResponse
+	(*QueryResult_PostgresError)(nil),                   // 20: bytebase.v1.QueryResult.PostgresError
+	(*QueryResult_SyntaxError)(nil),                     // 21: bytebase.v1.QueryResult.SyntaxError
+	(*QueryResult_CommandError)(nil),                    // 22: bytebase.v1.QueryResult.CommandError
+	(*QueryResult_Message)(nil),                         // 23: bytebase.v1.QueryResult.Message
+	(*RowValue_Timestamp)(nil),                          // 24: bytebase.v1.RowValue.Timestamp
+	(*RowValue_TimestampTZ)(nil),                        // 25: bytebase.v1.RowValue.TimestampTZ
+	(*AICompletionRequest_Message)(nil),                 // 26: bytebase.v1.AICompletionRequest.Message
+	(*AICompletionResponse_Candidate)(nil),              // 27: bytebase.v1.AICompletionResponse.Candidate
+	(*AICompletionResponse_Candidate_Content)(nil),      // 28: bytebase.v1.AICompletionResponse.Candidate.Content
+	(*AICompletionResponse_Candidate_Content_Part)(nil), // 29: bytebase.v1.AICompletionResponse.Candidate.Content.Part
+	(*durationpb.Duration)(nil),                         // 30: google.protobuf.Duration
+	(*PermissionDeniedDetail)(nil),                      // 31: bytebase.v1.PermissionDeniedDetail
+	(structpb.NullValue)(0),                             // 32: google.protobuf.NullValue
+	(*structpb.Value)(nil),                              // 33: google.protobuf.Value
+	(*Position)(nil),                                    // 34: bytebase.v1.Position
+	(ExportFormat)(0),                                   // 35: bytebase.v1.ExportFormat
+	(*timestamppb.Timestamp)(nil),                       // 36: google.protobuf.Timestamp
+	(*SearchQueryHistoriesRequest)(nil),                 // 37: bytebase.v1.SearchQueryHistoriesRequest
+	(*ListQueryHistoriesRequest)(nil),                   // 38: bytebase.v1.ListQueryHistoriesRequest
+	(*GetQueryHistoryRequest)(nil),                      // 39: bytebase.v1.GetQueryHistoryRequest
+	(*SearchQueryHistoriesResponse)(nil),                // 40: bytebase.v1.SearchQueryHistoriesResponse
+	(*ListQueryHistoriesResponse)(nil),                  // 41: bytebase.v1.ListQueryHistoriesResponse
+	(*QueryHistory)(nil),                                // 42: bytebase.v1.QueryHistory
 }
 var file_v1_sql_service_proto_depIdxs = []int32{
 	11, // 0: bytebase.v1.AdminExecuteResponse.results:type_name -> bytebase.v1.QueryResult
@@ -2700,56 +2581,51 @@ var file_v1_sql_service_proto_depIdxs = []int32{
 	0,  // 3: bytebase.v1.QueryOption.redis_run_commands_on:type_name -> bytebase.v1.QueryOption.RedisRunCommandsOn
 	1,  // 4: bytebase.v1.QueryOption.mssql_explain_format:type_name -> bytebase.v1.QueryOption.MSSQLExplainFormat
 	13, // 5: bytebase.v1.QueryResult.rows:type_name -> bytebase.v1.QueryRow
-	32, // 6: bytebase.v1.QueryResult.latency:type_name -> google.protobuf.Duration
-	22, // 7: bytebase.v1.QueryResult.postgres_error:type_name -> bytebase.v1.QueryResult.PostgresError
-	23, // 8: bytebase.v1.QueryResult.syntax_error:type_name -> bytebase.v1.QueryResult.SyntaxError
-	33, // 9: bytebase.v1.QueryResult.permission_denied:type_name -> bytebase.v1.PermissionDeniedDetail
-	24, // 10: bytebase.v1.QueryResult.command_error:type_name -> bytebase.v1.QueryResult.CommandError
-	25, // 11: bytebase.v1.QueryResult.messages:type_name -> bytebase.v1.QueryResult.Message
+	30, // 6: bytebase.v1.QueryResult.latency:type_name -> google.protobuf.Duration
+	20, // 7: bytebase.v1.QueryResult.postgres_error:type_name -> bytebase.v1.QueryResult.PostgresError
+	21, // 8: bytebase.v1.QueryResult.syntax_error:type_name -> bytebase.v1.QueryResult.SyntaxError
+	31, // 9: bytebase.v1.QueryResult.permission_denied:type_name -> bytebase.v1.PermissionDeniedDetail
+	22, // 10: bytebase.v1.QueryResult.command_error:type_name -> bytebase.v1.QueryResult.CommandError
+	23, // 11: bytebase.v1.QueryResult.messages:type_name -> bytebase.v1.QueryResult.Message
 	12, // 12: bytebase.v1.QueryResult.masked:type_name -> bytebase.v1.MaskingReason
 	14, // 13: bytebase.v1.QueryRow.values:type_name -> bytebase.v1.RowValue
-	34, // 14: bytebase.v1.RowValue.null_value:type_name -> google.protobuf.NullValue
-	35, // 15: bytebase.v1.RowValue.value_value:type_name -> google.protobuf.Value
-	26, // 16: bytebase.v1.RowValue.timestamp_value:type_name -> bytebase.v1.RowValue.Timestamp
-	27, // 17: bytebase.v1.RowValue.timestamp_tz_value:type_name -> bytebase.v1.RowValue.TimestampTZ
+	32, // 14: bytebase.v1.RowValue.null_value:type_name -> google.protobuf.NullValue
+	33, // 15: bytebase.v1.RowValue.value_value:type_name -> google.protobuf.Value
+	24, // 16: bytebase.v1.RowValue.timestamp_value:type_name -> bytebase.v1.RowValue.Timestamp
+	25, // 17: bytebase.v1.RowValue.timestamp_tz_value:type_name -> bytebase.v1.RowValue.TimestampTZ
 	4,  // 18: bytebase.v1.Advice.status:type_name -> bytebase.v1.Advice.Level
-	36, // 19: bytebase.v1.Advice.start_position:type_name -> bytebase.v1.Position
-	36, // 20: bytebase.v1.Advice.end_position:type_name -> bytebase.v1.Position
+	34, // 19: bytebase.v1.Advice.start_position:type_name -> bytebase.v1.Position
+	34, // 20: bytebase.v1.Advice.end_position:type_name -> bytebase.v1.Position
 	5,  // 21: bytebase.v1.Advice.rule_type:type_name -> bytebase.v1.Advice.RuleType
-	37, // 22: bytebase.v1.ExportRequest.format:type_name -> bytebase.v1.ExportFormat
-	38, // 23: bytebase.v1.DiffMetadataRequest.source_metadata:type_name -> bytebase.v1.DatabaseMetadata
-	38, // 24: bytebase.v1.DiffMetadataRequest.target_metadata:type_name -> bytebase.v1.DatabaseMetadata
-	39, // 25: bytebase.v1.DiffMetadataRequest.engine:type_name -> bytebase.v1.Engine
-	28, // 26: bytebase.v1.AICompletionRequest.messages:type_name -> bytebase.v1.AICompletionRequest.Message
-	29, // 27: bytebase.v1.AICompletionResponse.candidates:type_name -> bytebase.v1.AICompletionResponse.Candidate
-	36, // 28: bytebase.v1.QueryResult.SyntaxError.start_position:type_name -> bytebase.v1.Position
-	2,  // 29: bytebase.v1.QueryResult.CommandError.command_type:type_name -> bytebase.v1.QueryResult.CommandError.Type
-	3,  // 30: bytebase.v1.QueryResult.Message.level:type_name -> bytebase.v1.QueryResult.Message.Level
-	40, // 31: bytebase.v1.RowValue.Timestamp.google_timestamp:type_name -> google.protobuf.Timestamp
-	40, // 32: bytebase.v1.RowValue.TimestampTZ.google_timestamp:type_name -> google.protobuf.Timestamp
-	30, // 33: bytebase.v1.AICompletionResponse.Candidate.content:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content
-	31, // 34: bytebase.v1.AICompletionResponse.Candidate.Content.parts:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content.Part
-	8,  // 35: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
-	6,  // 36: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
-	41, // 37: bytebase.v1.SQLService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
-	42, // 38: bytebase.v1.SQLService.ListQueryHistories:input_type -> bytebase.v1.ListQueryHistoriesRequest
-	43, // 39: bytebase.v1.SQLService.GetQueryHistory:input_type -> bytebase.v1.GetQueryHistoryRequest
-	16, // 40: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
-	18, // 41: bytebase.v1.SQLService.DiffMetadata:input_type -> bytebase.v1.DiffMetadataRequest
-	20, // 42: bytebase.v1.SQLService.AICompletion:input_type -> bytebase.v1.AICompletionRequest
-	9,  // 43: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
-	7,  // 44: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
-	44, // 45: bytebase.v1.SQLService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
-	45, // 46: bytebase.v1.SQLService.ListQueryHistories:output_type -> bytebase.v1.ListQueryHistoriesResponse
-	46, // 47: bytebase.v1.SQLService.GetQueryHistory:output_type -> bytebase.v1.QueryHistory
-	17, // 48: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
-	19, // 49: bytebase.v1.SQLService.DiffMetadata:output_type -> bytebase.v1.DiffMetadataResponse
-	21, // 50: bytebase.v1.SQLService.AICompletion:output_type -> bytebase.v1.AICompletionResponse
-	43, // [43:51] is the sub-list for method output_type
-	35, // [35:43] is the sub-list for method input_type
-	35, // [35:35] is the sub-list for extension type_name
-	35, // [35:35] is the sub-list for extension extendee
-	0,  // [0:35] is the sub-list for field type_name
+	35, // 22: bytebase.v1.ExportRequest.format:type_name -> bytebase.v1.ExportFormat
+	26, // 23: bytebase.v1.AICompletionRequest.messages:type_name -> bytebase.v1.AICompletionRequest.Message
+	27, // 24: bytebase.v1.AICompletionResponse.candidates:type_name -> bytebase.v1.AICompletionResponse.Candidate
+	34, // 25: bytebase.v1.QueryResult.SyntaxError.start_position:type_name -> bytebase.v1.Position
+	2,  // 26: bytebase.v1.QueryResult.CommandError.command_type:type_name -> bytebase.v1.QueryResult.CommandError.Type
+	3,  // 27: bytebase.v1.QueryResult.Message.level:type_name -> bytebase.v1.QueryResult.Message.Level
+	36, // 28: bytebase.v1.RowValue.Timestamp.google_timestamp:type_name -> google.protobuf.Timestamp
+	36, // 29: bytebase.v1.RowValue.TimestampTZ.google_timestamp:type_name -> google.protobuf.Timestamp
+	28, // 30: bytebase.v1.AICompletionResponse.Candidate.content:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content
+	29, // 31: bytebase.v1.AICompletionResponse.Candidate.Content.parts:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content.Part
+	8,  // 32: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
+	6,  // 33: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
+	37, // 34: bytebase.v1.SQLService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
+	38, // 35: bytebase.v1.SQLService.ListQueryHistories:input_type -> bytebase.v1.ListQueryHistoriesRequest
+	39, // 36: bytebase.v1.SQLService.GetQueryHistory:input_type -> bytebase.v1.GetQueryHistoryRequest
+	16, // 37: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
+	18, // 38: bytebase.v1.SQLService.AICompletion:input_type -> bytebase.v1.AICompletionRequest
+	9,  // 39: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
+	7,  // 40: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
+	40, // 41: bytebase.v1.SQLService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
+	41, // 42: bytebase.v1.SQLService.ListQueryHistories:output_type -> bytebase.v1.ListQueryHistoriesResponse
+	42, // 43: bytebase.v1.SQLService.GetQueryHistory:output_type -> bytebase.v1.QueryHistory
+	17, // 44: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
+	19, // 45: bytebase.v1.SQLService.AICompletion:output_type -> bytebase.v1.AICompletionResponse
+	39, // [39:46] is the sub-list for method output_type
+	32, // [32:39] is the sub-list for method input_type
+	32, // [32:32] is the sub-list for extension type_name
+	32, // [32:32] is the sub-list for extension extendee
+	0,  // [0:32] is the sub-list for field type_name
 }
 
 func init() { file_v1_sql_service_proto_init() }
@@ -2759,7 +2635,6 @@ func file_v1_sql_service_proto_init() {
 	}
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
-	file_v1_database_service_proto_init()
 	file_v1_query_history_service_proto_init()
 	file_v1_sql_service_proto_msgTypes[0].OneofWrappers = []any{}
 	file_v1_sql_service_proto_msgTypes[2].OneofWrappers = []any{}
@@ -2791,7 +2666,7 @@ func file_v1_sql_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_sql_service_proto_rawDesc), len(file_v1_sql_service_proto_rawDesc)),
 			NumEnums:      6,
-			NumMessages:   26,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

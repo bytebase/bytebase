@@ -4902,6 +4902,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.DatabaseSDLSchema'
+  /v1/instances/{instance}/databases/{database}:diffMetadata:
+    post:
+      tags:
+        - DatabaseService
+      summary: DiffMetadata
+      description: |-
+        Generates migration statements from the database's current schema to the
+         given target metadata.
+         Permissions required: bb.databases.diffMetadata
+      operationId: DatabaseService_DiffMetadata
+      parameters:
+        - name: instance
+          in: path
+          description: The instance id.
+          required: true
+          schema:
+            type: string
+        - name: database
+          in: path
+          description: The database id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                targetMetadata:
+                  title: target_metadata
+                  description: |-
+                    The metadata of the target schema. The source metadata and the engine are
+                     read from the database, so only the target travels in the request.
+                     Must describe the COMPLETE target schema: the diff runs against the full
+                     stored source, so any object omitted from the target (for example by a
+                     truncated metadata fetch) is treated as dropped.
+                  $ref: '#/components/schemas/bytebase.v1.DatabaseMetadata'
+              title: DiffMetadataRequest
+              required:
+                - targetMetadata
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.DiffMetadataResponse'
   /v1/instances/{instance}/databases/{database}:diffSchema:
     post:
       tags:
@@ -13050,28 +13100,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Role'
-  /v1/schemaDesign:diffMetadata:
-    post:
-      tags:
-        - SQLService
-      summary: DiffMetadata
-      description: |-
-        Computes schema differences between two database metadata.
-         Permissions required: None
-      operationId: SQLService_DiffMetadata
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.DiffMetadataRequest'
-        required: true
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.DiffMetadataResponse'
   /v1/serviceAccounts/{serviceAccount}:
     get:
       tags:
@@ -19425,21 +19453,24 @@ components:
     bytebase.v1.DiffMetadataRequest:
       type: object
       properties:
-        sourceMetadata:
-          title: source_metadata
-          description: The metadata of the source schema.
-          $ref: '#/components/schemas/bytebase.v1.DatabaseMetadata'
+        name:
+          type: string
+          title: name
+          description: |-
+            The database whose current schema is the diff source.
+             Format: instances/{instance}/databases/{database}
         targetMetadata:
           title: target_metadata
-          description: The metadata of the target schema.
+          description: |-
+            The metadata of the target schema. The source metadata and the engine are
+             read from the database, so only the target travels in the request.
+             Must describe the COMPLETE target schema: the diff runs against the full
+             stored source, so any object omitted from the target (for example by a
+             truncated metadata fetch) is treated as dropped.
           $ref: '#/components/schemas/bytebase.v1.DatabaseMetadata'
-        engine:
-          title: engine
-          description: The database engine of the schema.
-          $ref: '#/components/schemas/bytebase.v1.Engine'
       title: DiffMetadataRequest
       required:
-        - sourceMetadata
+        - name
         - targetMetadata
       additionalProperties: false
     bytebase.v1.DiffMetadataResponse:
@@ -19448,7 +19479,7 @@ components:
         diff:
           type: string
           title: diff
-          description: The diff of the metadata.
+          description: The generated migration statements.
       title: DiffMetadataResponse
       additionalProperties: false
     bytebase.v1.DiffSchemaRequest:
@@ -31110,12 +31141,6 @@ tags:
     description: AccessGrantService manages temporary access grants within projects.
   - name: RolloutService
     description: RolloutService manages the execution of deployment plans.
-  - name: InstanceRoleService
-    description: InstanceRoleService manages database roles within instances.
-  - name: InstanceService
-    description: InstanceService manages database instances and their connections.
-  - name: DatabaseService
-    description: DatabaseService manages databases and their schemas.
   - name: QueryHistoryService
     description: QueryHistoryService manages query history records of SQL Editor queries and exports.
   - name: SQLService
@@ -31144,6 +31169,12 @@ tags:
     description: DatabaseCatalogService manages database schema metadata and classification.
   - name: DatabaseGroupService
     description: DatabaseGroupService manages database groups for organizing databases by criteria.
+  - name: InstanceRoleService
+    description: InstanceRoleService manages database roles within instances.
+  - name: InstanceService
+    description: InstanceService manages database instances and their connections.
+  - name: DatabaseService
+    description: DatabaseService manages databases and their schemas.
   - name: GroupService
     description: GroupService manages user groups for organizing users and permissions.
   - name: IdentityProviderService

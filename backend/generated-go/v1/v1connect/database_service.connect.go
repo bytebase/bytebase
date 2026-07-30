@@ -66,6 +66,9 @@ const (
 	// DatabaseServiceDiffSchemaProcedure is the fully-qualified name of the DatabaseService's
 	// DiffSchema RPC.
 	DatabaseServiceDiffSchemaProcedure = "/bytebase.v1.DatabaseService/DiffSchema"
+	// DatabaseServiceDiffMetadataProcedure is the fully-qualified name of the DatabaseService's
+	// DiffMetadata RPC.
+	DatabaseServiceDiffMetadataProcedure = "/bytebase.v1.DatabaseService/DiffMetadata"
 	// DatabaseServiceGetSchemaStringProcedure is the fully-qualified name of the DatabaseService's
 	// GetSchemaString RPC.
 	DatabaseServiceGetSchemaStringProcedure = "/bytebase.v1.DatabaseService/GetSchemaString"
@@ -106,6 +109,10 @@ type DatabaseServiceClient interface {
 	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error)
+	// Generates migration statements from the database's current schema to the
+	// given target metadata.
+	// Permissions required: bb.databases.diffMetadata
+	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
 	// Generates schema DDL for a database object.
 	// Permissions required: bb.databases.getSchema
 	GetSchemaString(context.Context, *connect.Request[v1.GetSchemaStringRequest]) (*connect.Response[v1.GetSchemaStringResponse], error)
@@ -188,6 +195,12 @@ func NewDatabaseServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(databaseServiceMethods.ByName("DiffSchema")),
 			connect.WithClientOptions(opts...),
 		),
+		diffMetadata: connect.NewClient[v1.DiffMetadataRequest, v1.DiffMetadataResponse](
+			httpClient,
+			baseURL+DatabaseServiceDiffMetadataProcedure,
+			connect.WithSchema(databaseServiceMethods.ByName("DiffMetadata")),
+			connect.WithClientOptions(opts...),
+		),
 		getSchemaString: connect.NewClient[v1.GetSchemaStringRequest, v1.GetSchemaStringResponse](
 			httpClient,
 			baseURL+DatabaseServiceGetSchemaStringProcedure,
@@ -210,6 +223,7 @@ type databaseServiceClient struct {
 	getDatabaseSchema    *connect.Client[v1.GetDatabaseSchemaRequest, v1.DatabaseSchema]
 	getDatabaseSDLSchema *connect.Client[v1.GetDatabaseSDLSchemaRequest, v1.DatabaseSDLSchema]
 	diffSchema           *connect.Client[v1.DiffSchemaRequest, v1.DiffSchemaResponse]
+	diffMetadata         *connect.Client[v1.DiffMetadataRequest, v1.DiffMetadataResponse]
 	getSchemaString      *connect.Client[v1.GetSchemaStringRequest, v1.GetSchemaStringResponse]
 }
 
@@ -268,6 +282,11 @@ func (c *databaseServiceClient) DiffSchema(ctx context.Context, req *connect.Req
 	return c.diffSchema.CallUnary(ctx, req)
 }
 
+// DiffMetadata calls bytebase.v1.DatabaseService.DiffMetadata.
+func (c *databaseServiceClient) DiffMetadata(ctx context.Context, req *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error) {
+	return c.diffMetadata.CallUnary(ctx, req)
+}
+
 // GetSchemaString calls bytebase.v1.DatabaseService.GetSchemaString.
 func (c *databaseServiceClient) GetSchemaString(ctx context.Context, req *connect.Request[v1.GetSchemaStringRequest]) (*connect.Response[v1.GetSchemaStringResponse], error) {
 	return c.getSchemaString.CallUnary(ctx, req)
@@ -308,6 +327,10 @@ type DatabaseServiceHandler interface {
 	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error)
+	// Generates migration statements from the database's current schema to the
+	// given target metadata.
+	// Permissions required: bb.databases.diffMetadata
+	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
 	// Generates schema DDL for a database object.
 	// Permissions required: bb.databases.getSchema
 	GetSchemaString(context.Context, *connect.Request[v1.GetSchemaStringRequest]) (*connect.Response[v1.GetSchemaStringResponse], error)
@@ -386,6 +409,12 @@ func NewDatabaseServiceHandler(svc DatabaseServiceHandler, opts ...connect.Handl
 		connect.WithSchema(databaseServiceMethods.ByName("DiffSchema")),
 		connect.WithHandlerOptions(opts...),
 	)
+	databaseServiceDiffMetadataHandler := connect.NewUnaryHandler(
+		DatabaseServiceDiffMetadataProcedure,
+		svc.DiffMetadata,
+		connect.WithSchema(databaseServiceMethods.ByName("DiffMetadata")),
+		connect.WithHandlerOptions(opts...),
+	)
 	databaseServiceGetSchemaStringHandler := connect.NewUnaryHandler(
 		DatabaseServiceGetSchemaStringProcedure,
 		svc.GetSchemaString,
@@ -416,6 +445,8 @@ func NewDatabaseServiceHandler(svc DatabaseServiceHandler, opts ...connect.Handl
 			databaseServiceGetDatabaseSDLSchemaHandler.ServeHTTP(w, r)
 		case DatabaseServiceDiffSchemaProcedure:
 			databaseServiceDiffSchemaHandler.ServeHTTP(w, r)
+		case DatabaseServiceDiffMetadataProcedure:
+			databaseServiceDiffMetadataHandler.ServeHTTP(w, r)
 		case DatabaseServiceGetSchemaStringProcedure:
 			databaseServiceGetSchemaStringHandler.ServeHTTP(w, r)
 		default:
@@ -469,6 +500,10 @@ func (UnimplementedDatabaseServiceHandler) GetDatabaseSDLSchema(context.Context,
 
 func (UnimplementedDatabaseServiceHandler) DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseService.DiffSchema is not implemented"))
+}
+
+func (UnimplementedDatabaseServiceHandler) DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseService.DiffMetadata is not implemented"))
 }
 
 func (UnimplementedDatabaseServiceHandler) GetSchemaString(context.Context, *connect.Request[v1.GetSchemaStringRequest]) (*connect.Response[v1.GetSchemaStringResponse], error) {
