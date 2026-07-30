@@ -572,6 +572,7 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 		return nil, err
 	}
 	var resetAuditLogStdout bool
+	var resetDebug bool
 	var lockedBefore *storepb.WorkspaceProfileSetting
 	apply := func(current proto.Message) (proto.Message, error) {
 		oldSetting, ok := current.(*storepb.WorkspaceProfileSetting)
@@ -581,7 +582,7 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 		// The audit before-image is the row this merge actually ran against,
 		// not the possibly stale pre-lock snapshot captured by UpdateSetting.
 		lockedBefore = proto.CloneOf(oldSetting)
-		if err := mergeWorkspaceProfilePaths(request, payload, oldSetting, &resetAuditLogStdout); err != nil {
+		if err := mergeWorkspaceProfilePaths(request, payload, oldSetting, &resetAuditLogStdout, &resetDebug); err != nil {
 			return nil, err
 		}
 		if len(oldSetting.Domains) == 0 && oldSetting.EnforceIdentityDomain {
@@ -619,11 +620,20 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 	// window, derived from the freshly re-read value — so it converges on the
 	// last committed state no matter which updater publishes last.
 	postCommit := func(current *store.SettingMessage) {
-		if !resetAuditLogStdout {
+		profile, ok := current.Value.(*storepb.WorkspaceProfileSetting)
+		if !ok {
 			return
 		}
-		if profile, ok := current.Value.(*storepb.WorkspaceProfileSetting); ok {
+		if resetAuditLogStdout {
 			s.profile.RuntimeEnableAuditLogStdout.Store(profile.EnableAuditLogStdout)
+		}
+		if resetDebug {
+			level := slog.LevelInfo
+			if profile.EnableDebug {
+				level = slog.LevelDebug
+			}
+			log.LogLevel.Set(level)
+			s.profile.RuntimeDebug.Store(profile.EnableDebug)
 		}
 	}
 	setting, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE, apply, postCommit)
@@ -800,16 +810,14 @@ func (s *SettingService) preflightWorkspaceProfilePaths(ctx context.Context, wor
 // preflightWorkspaceProfilePaths — because it executes inside the row-locking
 // transaction. Only validations that are payload-local or need the merged
 // state live here.
-func mergeWorkspaceProfilePaths(request *connect.Request[v1pb.UpdateSettingRequest], payload *storepb.WorkspaceProfileSetting, oldSetting *storepb.WorkspaceProfileSetting, resetAuditLogStdout *bool) error {
+func mergeWorkspaceProfilePaths(request *connect.Request[v1pb.UpdateSettingRequest], payload *storepb.WorkspaceProfileSetting, oldSetting *storepb.WorkspaceProfileSetting, resetAuditLogStdout *bool, resetDebug *bool) error {
 	for _, path := range request.Msg.UpdateMask.Paths {
 		switch path {
 		case "value.workspace_profile.enable_debug":
+			// Runtime log level and pprof exposure change in postCommit, from
+			// committed state — never from a validate-only or rolled-back merge.
 			oldSetting.EnableDebug = payload.EnableDebug
-			level := slog.LevelInfo
-			if payload.EnableDebug {
-				level = slog.LevelDebug
-			}
-			log.LogLevel.Set(level)
+			*resetDebug = true
 		case "value.workspace_profile.disallow_signup":
 			oldSetting.DisallowSignup = payload.DisallowSignup
 		case "value.workspace_profile.external_url":

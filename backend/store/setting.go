@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"math"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -438,7 +439,14 @@ func (s *Store) publishSetting(ctx context.Context, workspace string, name store
 	if s.settingPublishHookForTest != nil {
 		s.settingPublishHookForTest()
 	}
-	fresh, err := s.GetSettingUncached(ctx, workspace, name)
+	// The write is already committed, so publication must not depend on the
+	// caller still listening: re-read on a bounded context detached from
+	// request cancellation. If the read still fails (database unreachable),
+	// evict and skip postCommit — the next successful write or cache fill
+	// reconciles.
+	publishCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+	fresh, err := s.GetSettingUncached(publishCtx, workspace, name)
 	if err != nil || fresh == nil {
 		s.settingCache.Remove(getSettingCacheKey(workspace, name))
 		return

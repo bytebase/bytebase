@@ -30,14 +30,12 @@ type Store struct {
 	policyCache    *lru.Cache[string, *PolicyMessage]
 	settingCache   *lru.Cache[string, *SettingMessage]
 
-	// settingPublishMu orders the [commit -> cache publish] window of
-	// UpdateSettingAtomic: the row lock releases at commit, so without this a
-	// slower committer could publish its older value to the setting cache
-	// after a later committer already published a newer one, pinning stale
-	// served state. Always acquired AFTER the row lock (inside the
-	// transaction, just before commit) — never wrap a whole statement that
-	// itself waits on the row lock (e.g. UpsertSetting), or the lock order
-	// inverts and deadlocks.
+	// settingPublishMu serializes all setting cache publications (writer
+	// republishes, cache-miss fills, invalidations). Publishers re-read the
+	// row under the mutex, so whichever publishes last publishes current
+	// truth. It must be acquired with no transaction, row lock, or pooled
+	// connection held — writers commit first, then publish — so the
+	// mutex/pool wait graph stays acyclic against the bounded metadata pool.
 	settingPublishMu sync.Mutex
 	// settingPublishHookForTest, when set, runs between commit and cache
 	// publish so tests can deterministically expose the ordering window.

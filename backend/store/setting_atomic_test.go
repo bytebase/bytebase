@@ -407,3 +407,47 @@ func TestGetSettingCacheDisabledNotSerialized(t *testing.T) {
 		t.Fatal("writer did not complete")
 	}
 }
+
+// TestUpdateSettingAtomicPublishSurvivesCancellation pins that publication
+// completes even when the request context dies right after commit: the write
+// is already durable, so the cache refresh and postCommit must not depend on
+// the caller still listening. Red against a publish path that re-reads on the
+// request context — the canceled read was swallowed and postCommit silently
+// skipped, leaving derived runtime state diverged from the database forever.
+func TestUpdateSettingAtomicPublishSurvivesCancellation(t *testing.T) {
+	ctx, _, s := newSettingAtomicFixture(t)
+
+	updateCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	var once atomic.Bool
+	s.SetSettingPublishHookForTest(func() {
+		// Fires after commit, before the publish re-read.
+		if once.CompareAndSwap(false, true) {
+			cancel()
+		}
+	})
+
+	var observed *storepb.WorkspaceProfileSetting
+	_, err := s.UpdateSettingAtomic(updateCtx, "default", storepb.SettingName_WORKSPACE_PROFILE,
+		func(current proto.Message) (proto.Message, error) {
+			profile, ok := current.(*storepb.WorkspaceProfileSetting)
+			if !ok {
+				return nil, errors.Errorf("unexpected type %T", current)
+			}
+			profile.EnableMetricCollection = true
+			return profile, nil
+		}, func(current *store.SettingMessage) {
+			if profile, ok := current.Value.(*storepb.WorkspaceProfileSetting); ok {
+				observed = profile
+			}
+		})
+	require.NoError(t, err)
+
+	require.NotNil(t, observed, "postCommit must run despite request cancellation after commit")
+	require.True(t, observed.EnableMetricCollection, "postCommit must observe the committed state")
+
+	cached, err := s.GetSetting(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
+	require.NoError(t, err)
+	require.True(t, mustProfile(t, cached).EnableMetricCollection,
+		"the served cache must reflect the committed write despite request cancellation")
+}
