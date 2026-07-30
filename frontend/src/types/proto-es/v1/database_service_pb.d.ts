@@ -557,6 +557,9 @@ export declare type DiffMetadataRequest = Message<"bytebase.v1.DiffMetadataReque
   /**
    * The metadata of the target schema. The source metadata and the engine are
    * read from the database, so only the target travels in the request.
+   * Must describe the COMPLETE target schema: the diff runs against the full
+   * stored source, so any object omitted from the target (for example by a
+   * truncated metadata fetch) is treated as dropped.
    *
    * @generated from field: bytebase.v1.DatabaseMetadata target_metadata = 2;
    */

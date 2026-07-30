@@ -7729,7 +7729,7 @@ DependencyColumn is the metadata for dependency columns.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The database whose current schema is the diff source. Format: instances/{instance}/databases/{database} |
-| target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. The source metadata and the engine are read from the database, so only the target travels in the request. |
+| target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. The source metadata and the engine are read from the database, so only the target travels in the request. Must describe the COMPLETE target schema: the diff runs against the full stored source, so any object omitted from the target (for example by a truncated metadata fetch) is treated as dropped. |
 
 
 

@@ -21687,7 +21687,10 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
                   <td></td>
                   <td><p>The metadata of the target schema. The source metadata and the engine are
-read from the database, so only the target travels in the request. </p></td>
+read from the database, so only the target travels in the request.
+Must describe the COMPLETE target schema: the diff runs against the full
+stored source, so any object omitted from the target (for example by a
+truncated metadata fetch) is treated as dropped. </p></td>
                 </tr>
               
             </tbody>

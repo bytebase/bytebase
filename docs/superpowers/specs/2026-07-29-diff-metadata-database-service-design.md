@@ -99,6 +99,14 @@ drops its `plugin/schema` import with it.
 only the wire call changes to
 `databaseServiceClientConnect.diffMetadata({ name, targetMetadata })`.
 
+The target must be complete: `SchemaEditorSheet` previously fetched its
+baseline with `limit: 200` (a windowed-editor perf guard from #17514), which
+was safe when both diff sides shared the truncation but would read as DROPs
+for every omitted table against the full server-side source (caught in review,
+PR #21068). The sheet now fetches unlimited metadata — matching every other
+metadata consumer, which already defaults to no limit — and the request proto
+documents the completeness requirement.
+
 ## Compatibility (3.21)
 
 | Surface | Impact |
