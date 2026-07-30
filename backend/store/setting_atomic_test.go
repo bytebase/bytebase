@@ -272,22 +272,29 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 		secondResult <- err
 	}()
 
-	// The second update must not complete while the first sits between commit
-	// and publish — completing here is exactly the out-of-order publish.
+	// Deterministic barrier: wait until the second update's write is visible
+	// in the database. A writer must never retain its transaction (a
+	// bounded-pool connection and the row lock) while waiting for the publish
+	// mutex — that is the connection-pool deadlock cycle — so the commit must
+	// land while the first still holds the publish window.
+	require.Eventually(t, func() bool {
+		committed, err := s.GetSettingUncached(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
+		if err != nil {
+			return false
+		}
+		profile, ok := committed.Value.(*storepb.WorkspaceProfileSetting)
+		return ok && profile.McpCapability == storepb.WorkspaceProfileSetting_DISABLED
+	}, 10*time.Second, 10*time.Millisecond,
+		"second update must commit while its publish waits on the mutex")
+
+	// Having committed, it must still not have completed: its publication is
+	// blocked behind the first's paused window — completing here would be
+	// exactly the out-of-order publish.
 	select {
 	case err := <-secondResult:
 		t.Fatalf("second update published while the first held the publish window: %v", err)
-	case <-time.After(500 * time.Millisecond):
+	default:
 	}
-
-	// The second update must already have COMMITTED even though its publish is
-	// blocked: a writer must never retain its transaction (a bounded-pool
-	// connection and the row lock) while waiting for the publish mutex —
-	// that is the connection-pool deadlock cycle.
-	committed, err := s.GetSettingUncached(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
-	require.NoError(t, err)
-	require.Equal(t, storepb.WorkspaceProfileSetting_DISABLED, mustProfile(t, committed).McpCapability,
-		"second update must commit before waiting on the publish mutex")
 
 	close(resumeFirst)
 	for _, result := range []chan error{firstResult, secondResult} {

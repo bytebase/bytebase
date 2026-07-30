@@ -622,6 +622,13 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 	// SaaS, where workspace-scoped stored values must not drive process-global
 	// state on a shared replica (the corresponding mask paths are also
 	// rejected in preflight).
+	//
+	// The audit-log entitlement is computed here, outside the publish mutex:
+	// runtime audit stdout requires the stored flag AND a valid license, same
+	// as startup — and postCommit must not call IsFeatureEnabled itself,
+	// because it runs under settingPublishMu and a setting cache miss there
+	// would re-acquire that mutex.
+	auditLogFeatureEnabled := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AUDIT_LOG) == nil
 	postCommit := func(current *store.SettingMessage) {
 		if s.profile.SaaS {
 			return
@@ -630,7 +637,7 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 		if !ok {
 			return
 		}
-		s.profile.RuntimeEnableAuditLogStdout.Store(profile.EnableAuditLogStdout)
+		s.profile.RuntimeEnableAuditLogStdout.Store(profile.EnableAuditLogStdout && auditLogFeatureEnabled)
 		s.profile.RuntimeDebug.Store(profile.EnableDebug)
 		level := slog.LevelInfo
 		if profile.EnableDebug {
@@ -818,8 +825,8 @@ func (s *SettingService) preflightWorkspaceProfilePaths(ctx context.Context, wor
 }
 
 // mergeWorkspaceProfilePaths applies the request's update-mask paths onto
-// oldSetting. It is pure apart from process-local side effects (log level,
-// token generation): it performs no database or license reads — those ran in
+// oldSetting. It is pure apart from directory-sync token generation: it
+// performs no database or license reads — those ran in
 // preflightWorkspaceProfilePaths — because it executes inside the row-locking
 // transaction. Only validations that are payload-local or need the merged
 // state live here.
