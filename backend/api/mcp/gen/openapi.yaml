@@ -870,6 +870,82 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchParseResponse'
+  /bytebase.v1.ChangelogService/GetChangelog:
+    post:
+      tags:
+        - bytebase.v1.ChangelogService
+      summary: GetChangelog
+      description: |-
+        Retrieves a specific changelog entry.
+         Permissions required: bb.changelogs.get
+      operationId: bytebase.v1.ChangelogService.GetChangelog
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetChangelogRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.Changelog'
+  /bytebase.v1.ChangelogService/ListChangelogs:
+    post:
+      tags:
+        - bytebase.v1.ChangelogService
+      summary: ListChangelogs
+      description: |-
+        Lists migration history for a database.
+         Permissions required: bb.changelogs.list
+      operationId: bytebase.v1.ChangelogService.ListChangelogs
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListChangelogsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListChangelogsResponse'
   /bytebase.v1.DatabaseCatalogService/GetDatabaseCatalog:
     post:
       tags:
@@ -1251,6 +1327,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchUpdateDatabasesResponse'
+  /bytebase.v1.DatabaseService/DiffMetadata:
+    post:
+      tags:
+        - bytebase.v1.DatabaseService
+      summary: DiffMetadata
+      description: |-
+        Generates migration statements from the database's current schema to the
+         given target metadata.
+         Permissions required: bb.databases.diffMetadata
+      operationId: bytebase.v1.DatabaseService.DiffMetadata
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.DiffMetadataRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.DiffMetadataResponse'
   /bytebase.v1.DatabaseService/DiffSchema:
     post:
       tags:
@@ -1289,44 +1404,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.DiffSchemaResponse'
-  /bytebase.v1.DatabaseService/GetChangelog:
-    post:
-      tags:
-        - bytebase.v1.DatabaseService
-      summary: GetChangelog
-      description: |-
-        Retrieves a specific changelog entry.
-         Permissions required: bb.changelogs.get
-      operationId: bytebase.v1.DatabaseService.GetChangelog
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.GetChangelogRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.Changelog'
   /bytebase.v1.DatabaseService/GetDatabase:
     post:
       tags:
@@ -1517,44 +1594,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.GetSchemaStringResponse'
-  /bytebase.v1.DatabaseService/ListChangelogs:
-    post:
-      tags:
-        - bytebase.v1.DatabaseService
-      summary: ListChangelogs
-      description: |-
-        Lists migration history for a database.
-         Permissions required: bb.changelogs.list
-      operationId: bytebase.v1.DatabaseService.ListChangelogs
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.ListChangelogsRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.ListChangelogsResponse'
   /bytebase.v1.DatabaseService/ListDatabases:
     post:
       tags:
@@ -4190,6 +4229,120 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Project'
+  /bytebase.v1.QueryHistoryService/GetQueryHistory:
+    post:
+      tags:
+        - bytebase.v1.QueryHistoryService
+      summary: GetQueryHistory
+      description: |-
+        GetQueryHistory gets a single query history for the caller.
+         Permissions required: None (only returns the caller's own query history)
+      operationId: bytebase.v1.QueryHistoryService.GetQueryHistory
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetQueryHistoryRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.QueryHistory'
+  /bytebase.v1.QueryHistoryService/ListQueryHistories:
+    post:
+      tags:
+        - bytebase.v1.QueryHistoryService
+      summary: ListQueryHistories
+      description: |-
+        ListQueryHistories lists query histories of all users in a project.
+         Permissions required: bb.queryHistories.list
+      operationId: bytebase.v1.QueryHistoryService.ListQueryHistories
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListQueryHistoriesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListQueryHistoriesResponse'
+  /bytebase.v1.QueryHistoryService/SearchQueryHistories:
+    post:
+      tags:
+        - bytebase.v1.QueryHistoryService
+      summary: SearchQueryHistories
+      description: |-
+        SearchQueryHistories searches query histories for the caller.
+         Permissions required: None (only returns caller's own query histories)
+      operationId: bytebase.v1.QueryHistoryService.SearchQueryHistories
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.SearchQueryHistoriesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SearchQueryHistoriesResponse'
   /bytebase.v1.ReleaseService/CheckRelease:
     post:
       tags:
@@ -5450,83 +5603,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.PreviewTaskRunRollbackResponse'
-  /bytebase.v1.SQLService/AICompletion:
-    post:
-      tags:
-        - bytebase.v1.SQLService
-      summary: AICompletion
-      description: |-
-        Provides AI-powered SQL completion and generation.
-         Permissions required: None (authenticated users only, requires AI to be enabled)
-      operationId: bytebase.v1.SQLService.AICompletion
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.AICompletionRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.AICompletionResponse'
   /bytebase.v1.SQLService/AdminExecute: {}
-  /bytebase.v1.SQLService/DiffMetadata:
-    post:
-      tags:
-        - bytebase.v1.SQLService
-      summary: DiffMetadata
-      description: |-
-        Computes schema differences between two database metadata.
-         Permissions required: None
-      operationId: bytebase.v1.SQLService.DiffMetadata
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.DiffMetadataRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.DiffMetadataResponse'
   /bytebase.v1.SQLService/Export:
     post:
       tags:
@@ -5571,7 +5648,9 @@ paths:
         - bytebase.v1.SQLService
       summary: GetQueryHistory
       description: |-
-        GetQueryHistory gets a single query history for the caller.
+        Deprecated: use QueryHistoryService.GetQueryHistory instead.
+         Delegating alias kept for upgrade transition; will be removed in a future release.
+         No HTTP binding: the REST route is served by QueryHistoryService.
          Permissions required: None (only returns the caller's own query history)
       operationId: bytebase.v1.SQLService.GetQueryHistory
       parameters:
@@ -5603,13 +5682,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.QueryHistory'
+      deprecated: true
   /bytebase.v1.SQLService/ListQueryHistories:
     post:
       tags:
         - bytebase.v1.SQLService
       summary: ListQueryHistories
       description: |-
-        ListQueryHistories lists query histories of all users in a project.
+        Deprecated: use QueryHistoryService.ListQueryHistories instead.
+         Delegating alias kept for upgrade transition; will be removed in a future release.
+         No HTTP binding: the REST route is served by QueryHistoryService.
          Permissions required: bb.queryHistories.list
       operationId: bytebase.v1.SQLService.ListQueryHistories
       parameters:
@@ -5641,6 +5723,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListQueryHistoriesResponse'
+      deprecated: true
   /bytebase.v1.SQLService/Query:
     post:
       tags:
@@ -5685,7 +5768,9 @@ paths:
         - bytebase.v1.SQLService
       summary: SearchQueryHistories
       description: |-
-        SearchQueryHistories searches query histories for the caller.
+        Deprecated: use QueryHistoryService.SearchQueryHistories instead.
+         Delegating alias kept for upgrade transition; will be removed in a future release.
+         No HTTP binding: the REST route is served by QueryHistoryService.
          Permissions required: None (only returns caller's own query histories)
       operationId: bytebase.v1.SQLService.SearchQueryHistories
       parameters:
@@ -5717,6 +5802,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.SearchQueryHistoriesResponse'
+      deprecated: true
   /bytebase.v1.ServiceAccountService/CreateServiceAccount:
     post:
       tags:
@@ -7881,67 +7967,6 @@ components:
       title: AIChatUsage
       additionalProperties: false
       description: Token usage for a single AI provider call.
-    bytebase.v1.AICompletionRequest:
-      type: object
-      properties:
-        messages:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.AICompletionRequest.Message'
-          title: messages
-      title: AICompletionRequest
-      additionalProperties: false
-    bytebase.v1.AICompletionRequest.Message:
-      type: object
-      properties:
-        role:
-          type: string
-          title: role
-        content:
-          type: string
-          title: content
-      title: Message
-      additionalProperties: false
-    bytebase.v1.AICompletionResponse:
-      type: object
-      properties:
-        candidates:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.AICompletionResponse.Candidate'
-          title: candidates
-          description: |-
-            candidates is used for results with multiple choices and candidates. Used
-             for OpenAI and Gemini.
-      title: AICompletionResponse
-      additionalProperties: false
-    bytebase.v1.AICompletionResponse.Candidate:
-      type: object
-      properties:
-        content:
-          title: content
-          $ref: '#/components/schemas/bytebase.v1.AICompletionResponse.Candidate.Content'
-      title: Candidate
-      additionalProperties: false
-    bytebase.v1.AICompletionResponse.Candidate.Content:
-      type: object
-      properties:
-        parts:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.AICompletionResponse.Candidate.Content.Part'
-          title: parts
-          description: parts is used for a result content with multiple parts.
-      title: Content
-      additionalProperties: false
-    bytebase.v1.AICompletionResponse.Candidate.Content.Part:
-      type: object
-      properties:
-        text:
-          type: string
-          title: text
-      title: Part
-      additionalProperties: false
     bytebase.v1.AISetting:
       type: object
       properties:
@@ -11217,18 +11242,21 @@ components:
     bytebase.v1.DiffMetadataRequest:
       type: object
       properties:
-        sourceMetadata:
-          title: source_metadata
-          description: The metadata of the source schema.
-          $ref: '#/components/schemas/bytebase.v1.DatabaseMetadata'
+        name:
+          type: string
+          title: name
+          description: |-
+            The database whose current schema is the diff source.
+             Format: instances/{instance}/databases/{database}
         targetMetadata:
           title: target_metadata
-          description: The metadata of the target schema.
+          description: |-
+            The metadata of the target schema. The source metadata and the engine are
+             read from the database, so only the target travels in the request.
+             Must describe the COMPLETE target schema: the diff runs against the full
+             stored source, so any object omitted from the target (for example by a
+             truncated metadata fetch) is treated as dropped.
           $ref: '#/components/schemas/bytebase.v1.DatabaseMetadata'
-        engine:
-          title: engine
-          description: The database engine of the schema.
-          $ref: '#/components/schemas/bytebase.v1.Engine'
       title: DiffMetadataRequest
       additionalProperties: false
     bytebase.v1.DiffMetadataResponse:
@@ -11237,7 +11265,7 @@ components:
         diff:
           type: string
           title: diff
-          description: The diff of the metadata.
+          description: The generated migration statements.
       title: DiffMetadataResponse
       additionalProperties: false
     bytebase.v1.DiffSchemaRequest:
@@ -17959,8 +17987,8 @@ components:
           description: |-
             The parent project to search query histories in.
              Format: projects/{project}
-             Use "projects/-" to search across all projects
-             (https://google.aip.dev/159).
+             The AIP-159 wildcard "projects/-" is not supported; use
+             ListQueryHistories for cross-project reads.
         pageSize:
           type: integer
           title: page_size
@@ -22637,12 +22665,8 @@ tags:
     description: AccessGrantService manages temporary access grants within projects.
   - name: bytebase.v1.RolloutService
     description: RolloutService manages the execution of deployment plans.
-  - name: bytebase.v1.InstanceRoleService
-    description: InstanceRoleService manages database roles within instances.
-  - name: bytebase.v1.InstanceService
-    description: InstanceService manages database instances and their connections.
-  - name: bytebase.v1.DatabaseService
-    description: DatabaseService manages databases and their schemas.
+  - name: bytebase.v1.QueryHistoryService
+    description: QueryHistoryService manages query history records of SQL Editor queries and exports.
   - name: bytebase.v1.SQLService
     description: SQLService executes SQL queries and manages query operations.
   - name: bytebase.v1.PlanService
@@ -22663,10 +22687,18 @@ tags:
     description: AuthService handles user authentication operations.
   - name: bytebase.v1.CelService
     description: CelService manages CEL (Common Expression Language) parsing and formatting operations.
+  - name: bytebase.v1.ChangelogService
+    description: ChangelogService manages database migration history.
   - name: bytebase.v1.DatabaseCatalogService
     description: DatabaseCatalogService manages database schema metadata and classification.
   - name: bytebase.v1.DatabaseGroupService
     description: DatabaseGroupService manages database groups for organizing databases by criteria.
+  - name: bytebase.v1.InstanceRoleService
+    description: InstanceRoleService manages database roles within instances.
+  - name: bytebase.v1.InstanceService
+    description: InstanceService manages database instances and their connections.
+  - name: bytebase.v1.DatabaseService
+    description: DatabaseService manages databases and their schemas.
   - name: bytebase.v1.GroupService
     description: GroupService manages user groups for organizing users and permissions.
   - name: bytebase.v1.IdentityProviderService

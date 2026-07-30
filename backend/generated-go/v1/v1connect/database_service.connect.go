@@ -66,12 +66,9 @@ const (
 	// DatabaseServiceDiffSchemaProcedure is the fully-qualified name of the DatabaseService's
 	// DiffSchema RPC.
 	DatabaseServiceDiffSchemaProcedure = "/bytebase.v1.DatabaseService/DiffSchema"
-	// DatabaseServiceListChangelogsProcedure is the fully-qualified name of the DatabaseService's
-	// ListChangelogs RPC.
-	DatabaseServiceListChangelogsProcedure = "/bytebase.v1.DatabaseService/ListChangelogs"
-	// DatabaseServiceGetChangelogProcedure is the fully-qualified name of the DatabaseService's
-	// GetChangelog RPC.
-	DatabaseServiceGetChangelogProcedure = "/bytebase.v1.DatabaseService/GetChangelog"
+	// DatabaseServiceDiffMetadataProcedure is the fully-qualified name of the DatabaseService's
+	// DiffMetadata RPC.
+	DatabaseServiceDiffMetadataProcedure = "/bytebase.v1.DatabaseService/DiffMetadata"
 	// DatabaseServiceGetSchemaStringProcedure is the fully-qualified name of the DatabaseService's
 	// GetSchemaString RPC.
 	DatabaseServiceGetSchemaStringProcedure = "/bytebase.v1.DatabaseService/GetSchemaString"
@@ -112,12 +109,10 @@ type DatabaseServiceClient interface {
 	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error)
-	// Lists migration history for a database.
-	// Permissions required: bb.changelogs.list
-	ListChangelogs(context.Context, *connect.Request[v1.ListChangelogsRequest]) (*connect.Response[v1.ListChangelogsResponse], error)
-	// Retrieves a specific changelog entry.
-	// Permissions required: bb.changelogs.get
-	GetChangelog(context.Context, *connect.Request[v1.GetChangelogRequest]) (*connect.Response[v1.Changelog], error)
+	// Generates migration statements from the database's current schema to the
+	// given target metadata.
+	// Permissions required: bb.databases.diffMetadata
+	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
 	// Generates schema DDL for a database object.
 	// Permissions required: bb.databases.getSchema
 	GetSchemaString(context.Context, *connect.Request[v1.GetSchemaStringRequest]) (*connect.Response[v1.GetSchemaStringResponse], error)
@@ -200,16 +195,10 @@ func NewDatabaseServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(databaseServiceMethods.ByName("DiffSchema")),
 			connect.WithClientOptions(opts...),
 		),
-		listChangelogs: connect.NewClient[v1.ListChangelogsRequest, v1.ListChangelogsResponse](
+		diffMetadata: connect.NewClient[v1.DiffMetadataRequest, v1.DiffMetadataResponse](
 			httpClient,
-			baseURL+DatabaseServiceListChangelogsProcedure,
-			connect.WithSchema(databaseServiceMethods.ByName("ListChangelogs")),
-			connect.WithClientOptions(opts...),
-		),
-		getChangelog: connect.NewClient[v1.GetChangelogRequest, v1.Changelog](
-			httpClient,
-			baseURL+DatabaseServiceGetChangelogProcedure,
-			connect.WithSchema(databaseServiceMethods.ByName("GetChangelog")),
+			baseURL+DatabaseServiceDiffMetadataProcedure,
+			connect.WithSchema(databaseServiceMethods.ByName("DiffMetadata")),
 			connect.WithClientOptions(opts...),
 		),
 		getSchemaString: connect.NewClient[v1.GetSchemaStringRequest, v1.GetSchemaStringResponse](
@@ -234,8 +223,7 @@ type databaseServiceClient struct {
 	getDatabaseSchema    *connect.Client[v1.GetDatabaseSchemaRequest, v1.DatabaseSchema]
 	getDatabaseSDLSchema *connect.Client[v1.GetDatabaseSDLSchemaRequest, v1.DatabaseSDLSchema]
 	diffSchema           *connect.Client[v1.DiffSchemaRequest, v1.DiffSchemaResponse]
-	listChangelogs       *connect.Client[v1.ListChangelogsRequest, v1.ListChangelogsResponse]
-	getChangelog         *connect.Client[v1.GetChangelogRequest, v1.Changelog]
+	diffMetadata         *connect.Client[v1.DiffMetadataRequest, v1.DiffMetadataResponse]
 	getSchemaString      *connect.Client[v1.GetSchemaStringRequest, v1.GetSchemaStringResponse]
 }
 
@@ -294,14 +282,9 @@ func (c *databaseServiceClient) DiffSchema(ctx context.Context, req *connect.Req
 	return c.diffSchema.CallUnary(ctx, req)
 }
 
-// ListChangelogs calls bytebase.v1.DatabaseService.ListChangelogs.
-func (c *databaseServiceClient) ListChangelogs(ctx context.Context, req *connect.Request[v1.ListChangelogsRequest]) (*connect.Response[v1.ListChangelogsResponse], error) {
-	return c.listChangelogs.CallUnary(ctx, req)
-}
-
-// GetChangelog calls bytebase.v1.DatabaseService.GetChangelog.
-func (c *databaseServiceClient) GetChangelog(ctx context.Context, req *connect.Request[v1.GetChangelogRequest]) (*connect.Response[v1.Changelog], error) {
-	return c.getChangelog.CallUnary(ctx, req)
+// DiffMetadata calls bytebase.v1.DatabaseService.DiffMetadata.
+func (c *databaseServiceClient) DiffMetadata(ctx context.Context, req *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error) {
+	return c.diffMetadata.CallUnary(ctx, req)
 }
 
 // GetSchemaString calls bytebase.v1.DatabaseService.GetSchemaString.
@@ -344,12 +327,10 @@ type DatabaseServiceHandler interface {
 	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error)
-	// Lists migration history for a database.
-	// Permissions required: bb.changelogs.list
-	ListChangelogs(context.Context, *connect.Request[v1.ListChangelogsRequest]) (*connect.Response[v1.ListChangelogsResponse], error)
-	// Retrieves a specific changelog entry.
-	// Permissions required: bb.changelogs.get
-	GetChangelog(context.Context, *connect.Request[v1.GetChangelogRequest]) (*connect.Response[v1.Changelog], error)
+	// Generates migration statements from the database's current schema to the
+	// given target metadata.
+	// Permissions required: bb.databases.diffMetadata
+	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
 	// Generates schema DDL for a database object.
 	// Permissions required: bb.databases.getSchema
 	GetSchemaString(context.Context, *connect.Request[v1.GetSchemaStringRequest]) (*connect.Response[v1.GetSchemaStringResponse], error)
@@ -428,16 +409,10 @@ func NewDatabaseServiceHandler(svc DatabaseServiceHandler, opts ...connect.Handl
 		connect.WithSchema(databaseServiceMethods.ByName("DiffSchema")),
 		connect.WithHandlerOptions(opts...),
 	)
-	databaseServiceListChangelogsHandler := connect.NewUnaryHandler(
-		DatabaseServiceListChangelogsProcedure,
-		svc.ListChangelogs,
-		connect.WithSchema(databaseServiceMethods.ByName("ListChangelogs")),
-		connect.WithHandlerOptions(opts...),
-	)
-	databaseServiceGetChangelogHandler := connect.NewUnaryHandler(
-		DatabaseServiceGetChangelogProcedure,
-		svc.GetChangelog,
-		connect.WithSchema(databaseServiceMethods.ByName("GetChangelog")),
+	databaseServiceDiffMetadataHandler := connect.NewUnaryHandler(
+		DatabaseServiceDiffMetadataProcedure,
+		svc.DiffMetadata,
+		connect.WithSchema(databaseServiceMethods.ByName("DiffMetadata")),
 		connect.WithHandlerOptions(opts...),
 	)
 	databaseServiceGetSchemaStringHandler := connect.NewUnaryHandler(
@@ -470,10 +445,8 @@ func NewDatabaseServiceHandler(svc DatabaseServiceHandler, opts ...connect.Handl
 			databaseServiceGetDatabaseSDLSchemaHandler.ServeHTTP(w, r)
 		case DatabaseServiceDiffSchemaProcedure:
 			databaseServiceDiffSchemaHandler.ServeHTTP(w, r)
-		case DatabaseServiceListChangelogsProcedure:
-			databaseServiceListChangelogsHandler.ServeHTTP(w, r)
-		case DatabaseServiceGetChangelogProcedure:
-			databaseServiceGetChangelogHandler.ServeHTTP(w, r)
+		case DatabaseServiceDiffMetadataProcedure:
+			databaseServiceDiffMetadataHandler.ServeHTTP(w, r)
 		case DatabaseServiceGetSchemaStringProcedure:
 			databaseServiceGetSchemaStringHandler.ServeHTTP(w, r)
 		default:
@@ -529,12 +502,8 @@ func (UnimplementedDatabaseServiceHandler) DiffSchema(context.Context, *connect.
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseService.DiffSchema is not implemented"))
 }
 
-func (UnimplementedDatabaseServiceHandler) ListChangelogs(context.Context, *connect.Request[v1.ListChangelogsRequest]) (*connect.Response[v1.ListChangelogsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseService.ListChangelogs is not implemented"))
-}
-
-func (UnimplementedDatabaseServiceHandler) GetChangelog(context.Context, *connect.Request[v1.GetChangelogRequest]) (*connect.Response[v1.Changelog], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseService.GetChangelog is not implemented"))
+func (UnimplementedDatabaseServiceHandler) DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseService.DiffMetadata is not implemented"))
 }
 
 func (UnimplementedDatabaseServiceHandler) GetSchemaString(context.Context, *connect.Request[v1.GetSchemaStringRequest]) (*connect.Response[v1.GetSchemaStringResponse], error) {

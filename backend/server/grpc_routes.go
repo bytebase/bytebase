@@ -96,6 +96,7 @@ func configureGrpcRouters(
 	auditLogService := apiv1.NewAuditLogService(stores, licenseService)
 	authService := apiv1.NewAuthService(stores, secret, licenseService, profile, iamManager)
 	celService := apiv1.NewCelService()
+	changelogService := apiv1.NewChangelogService(stores)
 	databaseCatalogService := apiv1.NewDatabaseCatalogService(stores)
 	databaseGroupService := apiv1.NewDatabaseGroupService(stores, licenseService)
 	databaseService := apiv1.NewDatabaseService(stores, schemaSyncer, profile, iamManager, licenseService)
@@ -107,6 +108,7 @@ func configureGrpcRouters(
 	orgPolicyService := apiv1.NewOrgPolicyService(stores, licenseService, iamManager)
 	planService := apiv1.NewPlanService(stores, bus, iamManager, webhookManager, licenseService)
 	projectService := apiv1.NewProjectService(stores, profile, iamManager)
+	queryHistoryService := apiv1.NewQueryHistoryService(stores)
 	releaseService := apiv1.NewReleaseService(stores, sheetManager, dbFactory, licenseService)
 	reviewConfigService := apiv1.NewReviewConfigService(stores)
 	revisionService := apiv1.NewRevisionService(stores)
@@ -114,7 +116,7 @@ func configureGrpcRouters(
 	rolloutService := apiv1.NewRolloutService(stores, dbFactory, bus, webhookManager, iamManager)
 	settingService := apiv1.NewSettingService(stores, profile, licenseService, iamManager)
 	sheetService := apiv1.NewSheetService(stores)
-	sqlService := apiv1.NewSQLService(stores, schemaSyncer, dbFactory, licenseService, iamManager)
+	sqlService := apiv1.NewSQLService(stores, schemaSyncer, dbFactory, licenseService, iamManager, queryHistoryService)
 	subscriptionService := apiv1.NewSubscriptionService(profile, stores, licenseService)
 	userService := apiv1.NewUserService(stores, licenseService, profile, iamManager)
 	serviceAccountService := apiv1.NewServiceAccountService(stores, profile, iamManager)
@@ -162,6 +164,9 @@ func configureGrpcRouters(
 	celPath, celHandler := v1connect.NewCelServiceHandler(celService, handlerOpts)
 	connectHandlers[celPath] = celHandler
 
+	changelogPath, changelogHandler := v1connect.NewChangelogServiceHandler(changelogService, handlerOpts)
+	connectHandlers[changelogPath] = changelogHandler
+
 	databaseCatalogPath, databaseCatalogHandler := v1connect.NewDatabaseCatalogServiceHandler(databaseCatalogService, handlerOpts)
 	connectHandlers[databaseCatalogPath] = databaseCatalogHandler
 
@@ -194,6 +199,9 @@ func configureGrpcRouters(
 
 	projectPath, projectHandler := v1connect.NewProjectServiceHandler(projectService, handlerOpts)
 	connectHandlers[projectPath] = projectHandler
+
+	queryHistoryPath, queryHistoryHandler := v1connect.NewQueryHistoryServiceHandler(queryHistoryService, handlerOpts)
+	connectHandlers[queryHistoryPath] = queryHistoryHandler
 
 	releasePath, releaseHandler := v1connect.NewReleaseServiceHandler(releaseService, handlerOpts)
 	connectHandlers[releasePath] = releaseHandler
@@ -245,6 +253,7 @@ func configureGrpcRouters(
 		v1connect.AuditLogServiceName,
 		v1connect.AuthServiceName,
 		v1connect.CelServiceName,
+		v1connect.ChangelogServiceName,
 		v1connect.DatabaseCatalogServiceName,
 		v1connect.DatabaseGroupServiceName,
 		v1connect.DatabaseServiceName,
@@ -256,6 +265,7 @@ func configureGrpcRouters(
 		v1connect.OrgPolicyServiceName,
 		v1connect.PlanServiceName,
 		v1connect.ProjectServiceName,
+		v1connect.QueryHistoryServiceName,
 		v1connect.ReleaseServiceName,
 		v1connect.ReviewConfigServiceName,
 		v1connect.RevisionServiceName,
@@ -308,6 +318,9 @@ func configureGrpcRouters(
 	if err := v1pb.RegisterCelServiceHandler(ctx, mux, grpcConn); err != nil {
 		return err
 	}
+	if err := v1pb.RegisterChangelogServiceHandler(ctx, mux, grpcConn); err != nil {
+		return err
+	}
 	if err := v1pb.RegisterDatabaseCatalogServiceHandler(ctx, mux, grpcConn); err != nil {
 		return err
 	}
@@ -339,6 +352,9 @@ func configureGrpcRouters(
 		return err
 	}
 	if err := v1pb.RegisterProjectServiceHandler(ctx, mux, grpcConn); err != nil {
+		return err
+	}
+	if err := v1pb.RegisterQueryHistoryServiceHandler(ctx, mux, grpcConn); err != nil {
 		return err
 	}
 	if err := v1pb.RegisterReleaseServiceHandler(ctx, mux, grpcConn); err != nil {

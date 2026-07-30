@@ -543,6 +543,54 @@ export declare type DiffSchemaResponse = Message<"bytebase.v1.DiffSchemaResponse
 export declare const DiffSchemaResponseSchema: GenMessage<DiffSchemaResponse>;
 
 /**
+ * @generated from message bytebase.v1.DiffMetadataRequest
+ */
+export declare type DiffMetadataRequest = Message<"bytebase.v1.DiffMetadataRequest"> & {
+  /**
+   * The database whose current schema is the diff source.
+   * Format: instances/{instance}/databases/{database}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The metadata of the target schema. The source metadata and the engine are
+   * read from the database, so only the target travels in the request.
+   * Must describe the COMPLETE target schema: the diff runs against the full
+   * stored source, so any object omitted from the target (for example by a
+   * truncated metadata fetch) is treated as dropped.
+   *
+   * @generated from field: bytebase.v1.DatabaseMetadata target_metadata = 2;
+   */
+  targetMetadata?: DatabaseMetadata | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.DiffMetadataRequest.
+ * Use `create(DiffMetadataRequestSchema)` to create a new message.
+ */
+export declare const DiffMetadataRequestSchema: GenMessage<DiffMetadataRequest>;
+
+/**
+ * @generated from message bytebase.v1.DiffMetadataResponse
+ */
+export declare type DiffMetadataResponse = Message<"bytebase.v1.DiffMetadataResponse"> & {
+  /**
+   * The generated migration statements.
+   *
+   * @generated from field: string diff = 1;
+   */
+  diff: string;
+};
+
+/**
+ * Describes the message bytebase.v1.DiffMetadataResponse.
+ * Use `create(DiffMetadataResponseSchema)` to create a new message.
+ */
+export declare const DiffMetadataResponseSchema: GenMessage<DiffMetadataResponse>;
+
+/**
  * @generated from message bytebase.v1.Database
  */
 export declare type Database = Message<"bytebase.v1.Database"> & {
@@ -3015,200 +3063,6 @@ export declare type DatabaseSDLSchema = Message<"bytebase.v1.DatabaseSDLSchema">
 export declare const DatabaseSDLSchemaSchema: GenMessage<DatabaseSDLSchema>;
 
 /**
- * @generated from message bytebase.v1.ListChangelogsRequest
- */
-export declare type ListChangelogsRequest = Message<"bytebase.v1.ListChangelogsRequest"> & {
-  /**
-   * The parent of the changelogs.
-   * Format: instances/{instance}/databases/{database}
-   *
-   * @generated from field: string parent = 1;
-   */
-  parent: string;
-
-  /**
-   * The maximum number of changelogs to return. The service may return fewer
-   * than this value. If unspecified, at most 10 changelogs will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   *
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize: number;
-
-  /**
-   * A page token, received from the previous call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided must match
-   * the call that provided the page token.
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken: string;
-
-  /**
-   * @generated from field: bytebase.v1.ChangelogView view = 4;
-   */
-  view: ChangelogView;
-
-  /**
-   * Filter is used to filter changelogs returned in the list.
-   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-   *
-   * Supported filter:
-   * - status: the changelog status, support "==" operation. check Changelog.Status for available values.
-   * - create_time: the changelog create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
-   *
-   * Example:
-   * status == "DONE"
-   * status == "FAILED" && type == "SDL"
-   * create_time >= "2024-01-01T00:00:00Z" && create_time <= "2024-01-02T00:00:00Z"
-   *
-   * @generated from field: string filter = 5;
-   */
-  filter: string;
-};
-
-/**
- * Describes the message bytebase.v1.ListChangelogsRequest.
- * Use `create(ListChangelogsRequestSchema)` to create a new message.
- */
-export declare const ListChangelogsRequestSchema: GenMessage<ListChangelogsRequest>;
-
-/**
- * @generated from message bytebase.v1.ListChangelogsResponse
- */
-export declare type ListChangelogsResponse = Message<"bytebase.v1.ListChangelogsResponse"> & {
-  /**
-   * The list of changelogs.
-   *
-   * @generated from field: repeated bytebase.v1.Changelog changelogs = 1;
-   */
-  changelogs: Changelog[];
-
-  /**
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
-};
-
-/**
- * Describes the message bytebase.v1.ListChangelogsResponse.
- * Use `create(ListChangelogsResponseSchema)` to create a new message.
- */
-export declare const ListChangelogsResponseSchema: GenMessage<ListChangelogsResponse>;
-
-/**
- * @generated from message bytebase.v1.GetChangelogRequest
- */
-export declare type GetChangelogRequest = Message<"bytebase.v1.GetChangelogRequest"> & {
-  /**
-   * The name of the changelog to retrieve.
-   * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-   *
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * @generated from field: bytebase.v1.ChangelogView view = 2;
-   */
-  view: ChangelogView;
-};
-
-/**
- * Describes the message bytebase.v1.GetChangelogRequest.
- * Use `create(GetChangelogRequestSchema)` to create a new message.
- */
-export declare const GetChangelogRequestSchema: GenMessage<GetChangelogRequest>;
-
-/**
- * @generated from message bytebase.v1.Changelog
- */
-export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
-  /**
-   * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-   *
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp create_time = 2;
-   */
-  createTime?: Timestamp | undefined;
-
-  /**
-   * @generated from field: bytebase.v1.Changelog.Status status = 3;
-   */
-  status: Changelog_Status;
-
-  /**
-   * @generated from field: string schema = 7;
-   */
-  schema: string;
-
-  /**
-   * @generated from field: int64 schema_size = 8;
-   */
-  schemaSize: bigint;
-
-  /**
-   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-   *
-   * @generated from field: string task_run = 11;
-   */
-  taskRun: string;
-
-  /**
-   * The title of the plan associated with this changelog's task run.
-   * This field is populated by deriving the plan from task_run for display purposes.
-   *
-   * @generated from field: string plan_title = 15;
-   */
-  planTitle: string;
-};
-
-/**
- * Describes the message bytebase.v1.Changelog.
- * Use `create(ChangelogSchema)` to create a new message.
- */
-export declare const ChangelogSchema: GenMessage<Changelog>;
-
-/**
- * @generated from enum bytebase.v1.Changelog.Status
- */
-export enum Changelog_Status {
-  /**
-   * @generated from enum value: STATUS_UNSPECIFIED = 0;
-   */
-  STATUS_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: PENDING = 1;
-   */
-  PENDING = 1,
-
-  /**
-   * @generated from enum value: DONE = 2;
-   */
-  DONE = 2,
-
-  /**
-   * @generated from enum value: FAILED = 3;
-   */
-  FAILED = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.Changelog.Status.
- */
-export declare const Changelog_StatusSchema: GenEnum<Changelog_Status>;
-
-/**
  * @generated from message bytebase.v1.GetSchemaStringRequest
  */
 export declare type GetSchemaStringRequest = Message<"bytebase.v1.GetSchemaStringRequest"> & {
@@ -3357,34 +3211,6 @@ export enum SyncStatus {
 export declare const SyncStatusSchema: GenEnum<SyncStatus>;
 
 /**
- * @generated from enum bytebase.v1.ChangelogView
- */
-export enum ChangelogView {
-  /**
-   * The default / unset value.
-   * The API will default to the BASIC view.
-   *
-   * @generated from enum value: CHANGELOG_VIEW_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: CHANGELOG_VIEW_BASIC = 1;
-   */
-  BASIC = 1,
-
-  /**
-   * @generated from enum value: CHANGELOG_VIEW_FULL = 2;
-   */
-  FULL = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.ChangelogView.
- */
-export declare const ChangelogViewSchema: GenEnum<ChangelogView>;
-
-/**
  * DatabaseService manages databases and their schemas.
  *
  * @generated from service bytebase.v1.DatabaseService
@@ -3512,26 +3338,16 @@ export declare const DatabaseService: GenService<{
     output: typeof DiffSchemaResponseSchema;
   },
   /**
-   * Lists migration history for a database.
-   * Permissions required: bb.changelogs.list
+   * Generates migration statements from the database's current schema to the
+   * given target metadata.
+   * Permissions required: bb.databases.diffMetadata
    *
-   * @generated from rpc bytebase.v1.DatabaseService.ListChangelogs
+   * @generated from rpc bytebase.v1.DatabaseService.DiffMetadata
    */
-  listChangelogs: {
+  diffMetadata: {
     methodKind: "unary";
-    input: typeof ListChangelogsRequestSchema;
-    output: typeof ListChangelogsResponseSchema;
-  },
-  /**
-   * Retrieves a specific changelog entry.
-   * Permissions required: bb.changelogs.get
-   *
-   * @generated from rpc bytebase.v1.DatabaseService.GetChangelog
-   */
-  getChangelog: {
-    methodKind: "unary";
-    input: typeof GetChangelogRequestSchema;
-    output: typeof ChangelogSchema;
+    input: typeof DiffMetadataRequestSchema;
+    output: typeof DiffMetadataResponseSchema;
   },
   /**
    * Generates schema DDL for a database object.

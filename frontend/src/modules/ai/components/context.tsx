@@ -59,7 +59,7 @@ export type ReactAIContext = {
   /**
    * One-shot trigger written by the `send-chat` event handler — the
    * downstream `ChatPanel` effect reads this and dispatches the actual
-   * AICompletion request, then clears it via `setPendingSendChat(undefined)`.
+   * AI chat request, then clears it via `setPendingSendChat(undefined)`.
    * Same pattern as the Vue `pendingSendChat` ref.
    */
   pendingSendChat: { content: string } | undefined;

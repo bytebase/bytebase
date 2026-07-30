@@ -199,17 +199,33 @@ const creating = (overrides: Record<string, unknown> = {}) => {
   } as unknown as PlanDetailPageState;
 };
 
-test("marks the labels control required while the project forces one and none is set", () => {
+test("does not mark labels required during Plan creation", () => {
   mocks.page = creating();
+
+  render(<PlanDetailMeta />);
+
+  expect(labelsTrigger()).not.toHaveTextContent("*");
+});
+
+test("marks labels required on a persisted draft when none is set", () => {
+  const page = makePage();
+  mocks.page = {
+    ...page,
+    issue: { ...page.issue!, labels: [] },
+    project: { ...page.project, forceIssueLabels: true },
+  };
 
   render(<PlanDetailMeta />);
 
   expect(labelsTrigger()).toHaveTextContent("*");
 });
 
-test("drops the required marker once a label satisfies it", () => {
-  mocks.creationIssueLabels = ["alpha"];
-  mocks.page = creating();
+test("drops the required marker once a draft label satisfies it", () => {
+  const page = makePage();
+  mocks.page = {
+    ...page,
+    project: { ...page.project, forceIssueLabels: true },
+  };
 
   render(<PlanDetailMeta />);
 
@@ -220,9 +236,8 @@ test("does not mark the control required when the project does not force labels"
   const page = makePage();
   mocks.page = {
     ...page,
-    isCreating: true,
-    issue: undefined,
-  } as unknown as PlanDetailPageState;
+    issue: { ...page.issue!, labels: [] },
+  };
 
   render(<PlanDetailMeta />);
 

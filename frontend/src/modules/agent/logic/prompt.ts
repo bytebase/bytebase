@@ -1,12 +1,13 @@
 const serviceDirectory = `API Directory — use search_api(service="...") to browse endpoints, search_api(operationId="...") for schemas.
 
 Database Management:
-- DatabaseService: CRUD databases, list schemas/tables/columns, metadata, secrets, changelogs, slow queries, backups
+- DatabaseService: CRUD databases, list schemas/tables/columns, metadata, schema diff, secrets, slow queries, backups
 - DatabaseCatalogService: semantic types, column masking config, data classification
 - DatabaseGroupService: database groups, matching databases by expression
 
 SQL & Queries:
-- SQLService: execute SQL queries, export query results, SQL check/lint, parse SQL, differencing
+- SQLService: execute SQL queries, export query results, SQL check/lint, parse SQL
+- QueryHistoryService: query/export history records of SQL Editor sessions
 - SheetService: internal saved SQL sheets (system use)
 - WorksheetService: user-facing saved SQL worksheets
 
@@ -14,6 +15,7 @@ Change Management:
 - PlanService: create/update database change plans, plan checks, spec management
 - IssueService: change tickets (issues), approval flow, issue status, comments, subscribers
 - RolloutService: rollout stages, tasks, task runs, batch rollout execution
+- ChangelogService: database migration history (changelogs)
 - RevisionService: schema revision snapshots
 - ReleaseService: release bundles grouping multiple changes
 

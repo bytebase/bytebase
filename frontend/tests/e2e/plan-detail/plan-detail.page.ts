@@ -7,7 +7,7 @@ export class PlanDetailPage {
   readonly changesSection: Locator;
   readonly deploySection: Locator;
   readonly manualCreateRolloutButton: Locator;
-  readonly retryButton: Locator;
+  readonly taskRerunButton: Locator;
   // The plan/issue title input rendered in PlanDetailHeader. It is an
   // <input> bound to the plan or issue title — first textbox on the page.
   readonly headerTitle: Locator;
@@ -37,6 +37,8 @@ export class PlanDetailPage {
   // "Rerun · <stage>" (distinct from the deploy-section per-task exact "Run").
   readonly headerRunStage: Locator;
   readonly headerRerunStage: Locator;
+  readonly headerCreateButton: Locator;
+  readonly headerReadyForReviewButton: Locator;
   // The your-turn Review action in the header slot (opens the approve/reject
   // composer). Scoped so it never resolves to a phase-section control.
   readonly headerReviewButton: Locator;
@@ -51,7 +53,10 @@ export class PlanDetailPage {
     this.changesSection = page.getByText("Changes").first();
     this.deploySection = page.getByText("Deploy").first();
     this.manualCreateRolloutButton = page.getByRole("button", { name: "Manually create rollout" });
-    this.retryButton = page.getByRole("button", { name: "Retry" });
+    this.taskRerunButton = page.getByRole("button", {
+      name: "Rerun",
+      exact: true,
+    });
     this.headerTitle = page.getByRole("textbox").first();
 
     this.reviewButton = page.getByRole("button", { name: "Review", exact: true });
@@ -76,6 +81,14 @@ export class PlanDetailPage {
     // starts with "Re", so /^Run/ and /^Rerun/ never cross-match.
     this.headerRunStage = this.headerRow.getByRole("button", { name: /^Run/ });
     this.headerRerunStage = this.headerRow.getByRole("button", { name: /^Rerun/ });
+    this.headerCreateButton = this.headerRow.getByRole("button", {
+      name: "Create",
+      exact: true,
+    });
+    this.headerReadyForReviewButton = this.headerRow.getByRole("button", {
+      name: "Ready for Review",
+      exact: true,
+    });
     this.headerReviewButton = this.headerRow.getByRole("button", {
       name: "Review",
       exact: true,
@@ -123,7 +136,7 @@ export class PlanDetailPage {
   // because the header lifecycle slot (BYT-9722, #20720) now renders the SAME
   // status text as a pill — an unscoped getByText would match both and throw a
   // strict-mode violation (the header pill is asserted separately, scoped to the
-  // header row, in plan-detail-header.spec.ts).
+  // header row, in plan-detail-lifecycle.spec.ts).
   reviewBadge(text: string): Locator {
     return this.page
       .locator("#plan-phase-review")
@@ -147,6 +160,31 @@ export class PlanDetailPage {
   async goto(projectId: string, planId: string) {
     await this.page.goto(`${this.baseURL}/projects/${projectId}/plans/${planId}`);
     await this.page.waitForLoadState("networkidle");
+  }
+
+  async gotoCreate(
+    projectId: string,
+    query: Record<string, string> = {},
+  ): Promise<void> {
+    const search = new URLSearchParams(query).toString();
+    await this.page.goto(
+      `${this.baseURL}/projects/${projectId}/plans/create${search ? `?${search}` : ""}`,
+    );
+    await this.page.waitForLoadState("networkidle");
+  }
+
+  lifecycleAlert(heading: string): Locator {
+    return this.page.getByRole("alert").filter({ hasText: heading });
+  }
+
+  async fillPlanStatement(sql: string): Promise<void> {
+    const editor = this.page.getByRole("code").first();
+    await expect(editor).toBeVisible();
+    await editor.click();
+    await this.page.keyboard.press("ControlOrMeta+a");
+    await this.page.keyboard.press("Delete");
+    await this.page.keyboard.insertText(sql);
+    await expect(editor.locator(".view-lines")).toContainText(sql);
   }
 
   async dismissModals() {
@@ -210,18 +248,17 @@ export class PlanDetailPage {
     }
   }
 
-  // Spec tabs render as `<button>N. <Kind></button>` (e.g.
-  // "1. Database Change") inside the CHANGES section. The "1." and
-  // "Database Change" pieces live in separate child spans — so plain
-  // textContent has no separator. Matching the BUTTON's accessible name
-  // (which inserts the space) via getByRole sidesteps that.
+  // Change tabs expose the complete target-derived identity as
+  // "Change N: <target>" even when the visual number is omitted because the
+  // target is already unique. Match that stable accessible prefix rather than
+  // the removed generic "N. Database Change" text.
   //
   // Caller must expandSection("Changes") first if a rollout exists,
   // since the section auto-collapses in that state and the tab won't be
   // in the visible DOM.
   specTab(n: number): Locator {
     return this.page
-      .getByRole("button", { name: new RegExp(`^${n}\\.\\s+\\w`) })
+      .getByRole("button", { name: new RegExp(`^Change ${n}:`) })
       .first();
   }
 

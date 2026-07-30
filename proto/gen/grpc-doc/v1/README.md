@@ -96,153 +96,25 @@
   
     - [RolloutService](#bytebase-v1-RolloutService)
   
-- [v1/instance_role_service.proto](#v1_instance_role_service-proto)
-    - [InstanceRole](#bytebase-v1-InstanceRole)
-    - [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest)
-    - [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse)
-  
-    - [InstanceRoleService](#bytebase-v1-InstanceRoleService)
-  
-- [v1/instance_service.proto](#v1_instance_service-proto)
-    - [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest)
-    - [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest)
-    - [BatchSyncInstancesResponse](#bytebase-v1-BatchSyncInstancesResponse)
-    - [BatchUpdateInstancesRequest](#bytebase-v1-BatchUpdateInstancesRequest)
-    - [BatchUpdateInstancesResponse](#bytebase-v1-BatchUpdateInstancesResponse)
-    - [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest)
-    - [DataSource](#bytebase-v1-DataSource)
-    - [DataSource.AWSCredential](#bytebase-v1-DataSource-AWSCredential)
-    - [DataSource.Address](#bytebase-v1-DataSource-Address)
-    - [DataSource.AzureCredential](#bytebase-v1-DataSource-AzureCredential)
-    - [DataSource.ExtraConnectionParametersEntry](#bytebase-v1-DataSource-ExtraConnectionParametersEntry)
-    - [DataSource.GCPCredential](#bytebase-v1-DataSource-GCPCredential)
-    - [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret)
-    - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption)
-    - [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest)
-    - [GetInstanceRequest](#bytebase-v1-GetInstanceRequest)
-    - [Instance](#bytebase-v1-Instance)
-    - [Instance.LabelsEntry](#bytebase-v1-Instance-LabelsEntry)
-    - [InstanceResource](#bytebase-v1-InstanceResource)
-    - [KerberosConfig](#bytebase-v1-KerberosConfig)
-    - [ListInstanceDatabaseRequest](#bytebase-v1-ListInstanceDatabaseRequest)
-    - [ListInstanceDatabaseResponse](#bytebase-v1-ListInstanceDatabaseResponse)
-    - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
-    - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
-    - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
-    - [SASLConfig](#bytebase-v1-SASLConfig)
-    - [SyncDatabases](#bytebase-v1-SyncDatabases)
-    - [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest)
-    - [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse)
-    - [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest)
-    - [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest)
-    - [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest)
-  
-    - [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType)
-    - [DataSource.CloudSQLIPType](#bytebase-v1-DataSource-CloudSQLIPType)
-    - [DataSource.RedisType](#bytebase-v1-DataSource-RedisType)
-    - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
-    - [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType)
-    - [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType)
-    - [DataSourceExternalSecret.TokenType](#bytebase-v1-DataSourceExternalSecret-TokenType)
-    - [DataSourceType](#bytebase-v1-DataSourceType)
-  
-    - [InstanceService](#bytebase-v1-InstanceService)
-  
-- [v1/database_service.proto](#v1_database_service-proto)
-    - [BatchGetDatabasesRequest](#bytebase-v1-BatchGetDatabasesRequest)
-    - [BatchGetDatabasesResponse](#bytebase-v1-BatchGetDatabasesResponse)
-    - [BatchSyncDatabasesRequest](#bytebase-v1-BatchSyncDatabasesRequest)
-    - [BatchSyncDatabasesResponse](#bytebase-v1-BatchSyncDatabasesResponse)
-    - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
-    - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
-    - [BoundingBox](#bytebase-v1-BoundingBox)
-    - [Changelog](#bytebase-v1-Changelog)
-    - [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata)
-    - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
-    - [CompositeTypeAttribute](#bytebase-v1-CompositeTypeAttribute)
-    - [CompositeTypeMetadata](#bytebase-v1-CompositeTypeMetadata)
-    - [Database](#bytebase-v1-Database)
-    - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
-    - [DatabaseMetadata](#bytebase-v1-DatabaseMetadata)
-    - [DatabaseSDLSchema](#bytebase-v1-DatabaseSDLSchema)
-    - [DatabaseSchema](#bytebase-v1-DatabaseSchema)
-    - [DependencyColumn](#bytebase-v1-DependencyColumn)
-    - [DependencyTable](#bytebase-v1-DependencyTable)
-    - [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest)
-    - [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse)
-    - [DimensionConstraint](#bytebase-v1-DimensionConstraint)
-    - [DimensionalConfig](#bytebase-v1-DimensionalConfig)
-    - [EnumTypeMetadata](#bytebase-v1-EnumTypeMetadata)
-    - [EventMetadata](#bytebase-v1-EventMetadata)
-    - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
-    - [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata)
-    - [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata)
-    - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
-    - [GenerationMetadata](#bytebase-v1-GenerationMetadata)
-    - [GetChangelogRequest](#bytebase-v1-GetChangelogRequest)
-    - [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest)
-    - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
-    - [GetDatabaseSDLSchemaRequest](#bytebase-v1-GetDatabaseSDLSchemaRequest)
-    - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
-    - [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest)
-    - [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse)
-    - [GridLevel](#bytebase-v1-GridLevel)
-    - [IndexMetadata](#bytebase-v1-IndexMetadata)
-    - [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest)
-    - [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse)
-    - [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest)
-    - [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse)
-    - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
-    - [PackageMetadata](#bytebase-v1-PackageMetadata)
-    - [ProcedureMetadata](#bytebase-v1-ProcedureMetadata)
-    - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
-    - [SequenceMetadata](#bytebase-v1-SequenceMetadata)
-    - [SpatialIndexConfig](#bytebase-v1-SpatialIndexConfig)
-    - [StorageConfig](#bytebase-v1-StorageConfig)
-    - [StreamMetadata](#bytebase-v1-StreamMetadata)
-    - [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest)
-    - [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse)
-    - [TableMetadata](#bytebase-v1-TableMetadata)
-    - [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata)
-    - [TaskMetadata](#bytebase-v1-TaskMetadata)
-    - [TessellationConfig](#bytebase-v1-TessellationConfig)
-    - [TriggerMetadata](#bytebase-v1-TriggerMetadata)
-    - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
-    - [ViewMetadata](#bytebase-v1-ViewMetadata)
-  
-    - [Changelog.Status](#bytebase-v1-Changelog-Status)
-    - [ChangelogView](#bytebase-v1-ChangelogView)
-    - [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration)
-    - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
-    - [GetDatabaseSDLSchemaRequest.SDLFormat](#bytebase-v1-GetDatabaseSDLSchemaRequest-SDLFormat)
-    - [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType)
-    - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
-    - [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type)
-    - [SyncStatus](#bytebase-v1-SyncStatus)
-    - [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type)
-    - [TaskMetadata.State](#bytebase-v1-TaskMetadata-State)
-  
-    - [DatabaseService](#bytebase-v1-DatabaseService)
-  
-- [v1/sql_service.proto](#v1_sql_service-proto)
-    - [AICompletionRequest](#bytebase-v1-AICompletionRequest)
-    - [AICompletionRequest.Message](#bytebase-v1-AICompletionRequest-Message)
-    - [AICompletionResponse](#bytebase-v1-AICompletionResponse)
-    - [AICompletionResponse.Candidate](#bytebase-v1-AICompletionResponse-Candidate)
-    - [AICompletionResponse.Candidate.Content](#bytebase-v1-AICompletionResponse-Candidate-Content)
-    - [AICompletionResponse.Candidate.Content.Part](#bytebase-v1-AICompletionResponse-Candidate-Content-Part)
-    - [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest)
-    - [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse)
-    - [Advice](#bytebase-v1-Advice)
-    - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
-    - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
-    - [ExportRequest](#bytebase-v1-ExportRequest)
-    - [ExportResponse](#bytebase-v1-ExportResponse)
+- [v1/query_history_service.proto](#v1_query_history_service-proto)
     - [GetQueryHistoryRequest](#bytebase-v1-GetQueryHistoryRequest)
     - [ListQueryHistoriesRequest](#bytebase-v1-ListQueryHistoriesRequest)
     - [ListQueryHistoriesResponse](#bytebase-v1-ListQueryHistoriesResponse)
-    - [MaskingReason](#bytebase-v1-MaskingReason)
     - [QueryHistory](#bytebase-v1-QueryHistory)
+    - [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest)
+    - [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse)
+  
+    - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
+  
+    - [QueryHistoryService](#bytebase-v1-QueryHistoryService)
+  
+- [v1/sql_service.proto](#v1_sql_service-proto)
+    - [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest)
+    - [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse)
+    - [Advice](#bytebase-v1-Advice)
+    - [ExportRequest](#bytebase-v1-ExportRequest)
+    - [ExportResponse](#bytebase-v1-ExportResponse)
+    - [MaskingReason](#bytebase-v1-MaskingReason)
     - [QueryOption](#bytebase-v1-QueryOption)
     - [QueryRequest](#bytebase-v1-QueryRequest)
     - [QueryResponse](#bytebase-v1-QueryResponse)
@@ -255,12 +127,9 @@
     - [RowValue](#bytebase-v1-RowValue)
     - [RowValue.Timestamp](#bytebase-v1-RowValue-Timestamp)
     - [RowValue.TimestampTZ](#bytebase-v1-RowValue-TimestampTZ)
-    - [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest)
-    - [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse)
   
     - [Advice.Level](#bytebase-v1-Advice-Level)
     - [Advice.RuleType](#bytebase-v1-Advice-RuleType)
-    - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
     - [QueryOption.MSSQLExplainFormat](#bytebase-v1-QueryOption-MSSQLExplainFormat)
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
     - [QueryResult.CommandError.Type](#bytebase-v1-QueryResult-CommandError-Type)
@@ -477,6 +346,17 @@
   
     - [CelService](#bytebase-v1-CelService)
   
+- [v1/changelog_service.proto](#v1_changelog_service-proto)
+    - [Changelog](#bytebase-v1-Changelog)
+    - [GetChangelogRequest](#bytebase-v1-GetChangelogRequest)
+    - [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest)
+    - [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse)
+  
+    - [Changelog.Status](#bytebase-v1-Changelog-Status)
+    - [ChangelogView](#bytebase-v1-ChangelogView)
+  
+    - [ChangelogService](#bytebase-v1-ChangelogService)
+  
 - [v1/database_catalog_service.proto](#v1_database_catalog_service-proto)
     - [ColumnCatalog](#bytebase-v1-ColumnCatalog)
     - [ColumnCatalog.LabelsEntry](#bytebase-v1-ColumnCatalog-LabelsEntry)
@@ -508,6 +388,130 @@
     - [DatabaseGroupView](#bytebase-v1-DatabaseGroupView)
   
     - [DatabaseGroupService](#bytebase-v1-DatabaseGroupService)
+  
+- [v1/instance_role_service.proto](#v1_instance_role_service-proto)
+    - [InstanceRole](#bytebase-v1-InstanceRole)
+    - [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest)
+    - [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse)
+  
+    - [InstanceRoleService](#bytebase-v1-InstanceRoleService)
+  
+- [v1/instance_service.proto](#v1_instance_service-proto)
+    - [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest)
+    - [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest)
+    - [BatchSyncInstancesResponse](#bytebase-v1-BatchSyncInstancesResponse)
+    - [BatchUpdateInstancesRequest](#bytebase-v1-BatchUpdateInstancesRequest)
+    - [BatchUpdateInstancesResponse](#bytebase-v1-BatchUpdateInstancesResponse)
+    - [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest)
+    - [DataSource](#bytebase-v1-DataSource)
+    - [DataSource.AWSCredential](#bytebase-v1-DataSource-AWSCredential)
+    - [DataSource.Address](#bytebase-v1-DataSource-Address)
+    - [DataSource.AzureCredential](#bytebase-v1-DataSource-AzureCredential)
+    - [DataSource.ExtraConnectionParametersEntry](#bytebase-v1-DataSource-ExtraConnectionParametersEntry)
+    - [DataSource.GCPCredential](#bytebase-v1-DataSource-GCPCredential)
+    - [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret)
+    - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption)
+    - [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest)
+    - [GetInstanceRequest](#bytebase-v1-GetInstanceRequest)
+    - [Instance](#bytebase-v1-Instance)
+    - [Instance.LabelsEntry](#bytebase-v1-Instance-LabelsEntry)
+    - [InstanceResource](#bytebase-v1-InstanceResource)
+    - [KerberosConfig](#bytebase-v1-KerberosConfig)
+    - [ListInstanceDatabaseRequest](#bytebase-v1-ListInstanceDatabaseRequest)
+    - [ListInstanceDatabaseResponse](#bytebase-v1-ListInstanceDatabaseResponse)
+    - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
+    - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
+    - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
+    - [SASLConfig](#bytebase-v1-SASLConfig)
+    - [SyncDatabases](#bytebase-v1-SyncDatabases)
+    - [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest)
+    - [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse)
+    - [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest)
+    - [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest)
+    - [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest)
+  
+    - [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType)
+    - [DataSource.CloudSQLIPType](#bytebase-v1-DataSource-CloudSQLIPType)
+    - [DataSource.RedisType](#bytebase-v1-DataSource-RedisType)
+    - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
+    - [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType)
+    - [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType)
+    - [DataSourceExternalSecret.TokenType](#bytebase-v1-DataSourceExternalSecret-TokenType)
+    - [DataSourceType](#bytebase-v1-DataSourceType)
+  
+    - [InstanceService](#bytebase-v1-InstanceService)
+  
+- [v1/database_service.proto](#v1_database_service-proto)
+    - [BatchGetDatabasesRequest](#bytebase-v1-BatchGetDatabasesRequest)
+    - [BatchGetDatabasesResponse](#bytebase-v1-BatchGetDatabasesResponse)
+    - [BatchSyncDatabasesRequest](#bytebase-v1-BatchSyncDatabasesRequest)
+    - [BatchSyncDatabasesResponse](#bytebase-v1-BatchSyncDatabasesResponse)
+    - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
+    - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
+    - [BoundingBox](#bytebase-v1-BoundingBox)
+    - [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata)
+    - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
+    - [CompositeTypeAttribute](#bytebase-v1-CompositeTypeAttribute)
+    - [CompositeTypeMetadata](#bytebase-v1-CompositeTypeMetadata)
+    - [Database](#bytebase-v1-Database)
+    - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
+    - [DatabaseMetadata](#bytebase-v1-DatabaseMetadata)
+    - [DatabaseSDLSchema](#bytebase-v1-DatabaseSDLSchema)
+    - [DatabaseSchema](#bytebase-v1-DatabaseSchema)
+    - [DependencyColumn](#bytebase-v1-DependencyColumn)
+    - [DependencyTable](#bytebase-v1-DependencyTable)
+    - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
+    - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
+    - [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest)
+    - [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse)
+    - [DimensionConstraint](#bytebase-v1-DimensionConstraint)
+    - [DimensionalConfig](#bytebase-v1-DimensionalConfig)
+    - [EnumTypeMetadata](#bytebase-v1-EnumTypeMetadata)
+    - [EventMetadata](#bytebase-v1-EventMetadata)
+    - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
+    - [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata)
+    - [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata)
+    - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
+    - [GenerationMetadata](#bytebase-v1-GenerationMetadata)
+    - [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest)
+    - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
+    - [GetDatabaseSDLSchemaRequest](#bytebase-v1-GetDatabaseSDLSchemaRequest)
+    - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
+    - [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest)
+    - [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse)
+    - [GridLevel](#bytebase-v1-GridLevel)
+    - [IndexMetadata](#bytebase-v1-IndexMetadata)
+    - [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest)
+    - [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse)
+    - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
+    - [PackageMetadata](#bytebase-v1-PackageMetadata)
+    - [ProcedureMetadata](#bytebase-v1-ProcedureMetadata)
+    - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
+    - [SequenceMetadata](#bytebase-v1-SequenceMetadata)
+    - [SpatialIndexConfig](#bytebase-v1-SpatialIndexConfig)
+    - [StorageConfig](#bytebase-v1-StorageConfig)
+    - [StreamMetadata](#bytebase-v1-StreamMetadata)
+    - [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest)
+    - [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse)
+    - [TableMetadata](#bytebase-v1-TableMetadata)
+    - [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata)
+    - [TaskMetadata](#bytebase-v1-TaskMetadata)
+    - [TessellationConfig](#bytebase-v1-TessellationConfig)
+    - [TriggerMetadata](#bytebase-v1-TriggerMetadata)
+    - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
+    - [ViewMetadata](#bytebase-v1-ViewMetadata)
+  
+    - [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration)
+    - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
+    - [GetDatabaseSDLSchemaRequest.SDLFormat](#bytebase-v1-GetDatabaseSDLSchemaRequest-SDLFormat)
+    - [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType)
+    - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
+    - [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type)
+    - [SyncStatus](#bytebase-v1-SyncStatus)
+    - [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type)
+    - [TaskMetadata.State](#bytebase-v1-TaskMetadata-State)
+  
+    - [DatabaseService](#bytebase-v1-DatabaseService)
   
 - [v1/group_service.proto](#v1_group_service-proto)
     - [BatchGetGroupsRequest](#bytebase-v1-BatchGetGroupsRequest)
@@ -2177,2020 +2181,120 @@ RolloutService manages the execution of deployment plans.
 
 
 
-<a name="v1_instance_role_service-proto"></a>
+<a name="v1_query_history_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/instance_role_service.proto
+## v1/query_history_service.proto
 
 
 
-<a name="bytebase-v1-InstanceRole"></a>
+<a name="bytebase-v1-GetQueryHistoryRequest"></a>
 
-### InstanceRole
-InstanceRole is the API message for instance role.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the role. Format: instances/{instance}/roles/{role} The role name is the unique name for the role. |
-| role_name | [string](#string) |  | The role name. It&#39;s unique within the instance. |
-| password | [string](#string) | optional | The role password. |
-| connection_limit | [int32](#int32) | optional | The connection count limit for this role. |
-| valid_until | [string](#string) | optional | The expiration for the role&#39;s password. |
-| attribute | [string](#string) | optional | The role attribute. For PostgreSQL, it contains super_user, no_inherit, create_role, create_db, can_login, replication, and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html |
-
-
-
-
-
-
-<a name="bytebase-v1-ListInstanceRolesRequest"></a>
-
-### ListInstanceRolesRequest
+### GetQueryHistoryRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of roles. Format: instances/{instance} |
-| page_size | [int32](#int32) |  | Not used. The maximum number of roles to return. The service may return fewer than this value. If unspecified, at most 10 roles will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListInstanceRoles` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListInstanceRoles` must match the call that provided the page token. |
-| refresh | [bool](#bool) |  | Refresh will refresh and return the latest data. |
+| name | [string](#string) |  | The name of the query history to retrieve. Format: projects/{project}/queryHistories/{id} |
 
 
 
 
 
 
-<a name="bytebase-v1-ListInstanceRolesResponse"></a>
+<a name="bytebase-v1-ListQueryHistoriesRequest"></a>
 
-### ListInstanceRolesResponse
+### ListQueryHistoriesRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| roles | [InstanceRole](#bytebase-v1-InstanceRole) | repeated | The roles from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+| parent | [string](#string) |  | The parent project whose query histories are listed. Format: projects/{project} Use &#34;projects/-&#34; to list query histories across all projects (https://google.aip.dev/159); this requires the bb.queryHistories.list permission on the workspace. |
+| page_size | [int32](#int32) |  | The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 10 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListQueryHistories` call. Provide this to retrieve the subsequent page. |
+| filter | [string](#string) |  | Filter is the filter to apply on the list query histories. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - creator: the user full name in &#34;users/{email}&#34; format, support &#34;==&#34; operator.
+
+For example: creator == &#34;users/{email}&#34; |
 
 
 
 
 
- 
 
- 
+<a name="bytebase-v1-ListQueryHistoriesResponse"></a>
 
- 
-
-
-<a name="bytebase-v1-InstanceRoleService"></a>
-
-### InstanceRoleService
-InstanceRoleService manages database roles within instances.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| ListInstanceRoles | [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest) | [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse) | Lists all database roles in an instance. Permissions required: bb.instanceRoles.list |
-
- 
-
-
-
-<a name="v1_instance_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/instance_service.proto
-
-
-
-<a name="bytebase-v1-AddDataSourceRequest"></a>
-
-### AddDataSourceRequest
+### ListQueryHistoriesResponse
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to add a data source to. Format: instances/{instance} |
-| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be added. |
-| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
+| query_histories | [QueryHistory](#bytebase-v1-QueryHistory) | repeated | The list of query histories. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of history. Pass this value in the page_token field in the subsequent call to `ListQueryHistories` method to retrieve the next page of history. |
 
 
 
 
 
 
-<a name="bytebase-v1-BatchSyncInstancesRequest"></a>
+<a name="bytebase-v1-QueryHistory"></a>
 
-### BatchSyncInstancesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| requests | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | repeated | The request message specifying the instances to sync. A maximum of 1000 instances can be synced in a batch. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchSyncInstancesResponse"></a>
-
-### BatchSyncInstancesResponse
-
-
-
-
-
-
-
-<a name="bytebase-v1-BatchUpdateInstancesRequest"></a>
-
-### BatchUpdateInstancesRequest
+### QueryHistory
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| requests | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | repeated | The request message specifying the resources to update. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchUpdateInstancesResponse"></a>
-
-### BatchUpdateInstancesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instances | [Instance](#bytebase-v1-Instance) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-CreateInstanceRequest"></a>
-
-### CreateInstanceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instance | [Instance](#bytebase-v1-Instance) |  | The instance to create. |
-| instance_id | [string](#string) |  | The ID to use for the instance, which will become the final component of the instance&#39;s resource name.
-
-This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
-| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
-| initial_database_project | [string](#string) |  | The project to assign newly discovered databases to during initial sync. Format: projects/{project} |
-
-
-
-
-
-
-<a name="bytebase-v1-DataSource"></a>
-
-### DataSource
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | The unique identifier for this data source. |
-| type | [DataSourceType](#bytebase-v1-DataSourceType) |  | The type of data source (ADMIN or READ_ONLY). |
-| username | [string](#string) |  | The username for database authentication. |
-| password | [string](#string) |  | The password for database authentication. |
-| use_ssl | [bool](#bool) |  | Use SSL to connect to the data source. By default, we use system default SSL configuration. |
-| ssl_ca | [string](#string) |  | The SSL certificate authority certificate. |
-| ssl_cert | [string](#string) |  | The SSL client certificate. |
-| ssl_key | [string](#string) |  | The SSL client private key. |
-| ssl_ca_path | [string](#string) |  | The local filesystem path to the SSL certificate authority certificate. |
-| ssl_cert_path | [string](#string) |  | The local filesystem path to the SSL client certificate. |
-| ssl_key_path | [string](#string) |  | The local filesystem path to the SSL client private key. |
-| ssl_ca_set | [bool](#bool) |  | Whether an SSL certificate authority certificate has been configured. |
-| ssl_cert_set | [bool](#bool) |  | Whether an SSL client certificate has been configured. |
-| ssl_key_set | [bool](#bool) |  | Whether an SSL client private key has been configured. |
-| ssl_ca_path_set | [bool](#bool) |  | Whether an SSL certificate authority path has been configured. |
-| ssl_cert_path_set | [bool](#bool) |  | Whether an SSL client certificate path has been configured. |
-| ssl_key_path_set | [bool](#bool) |  | Whether an SSL client private key path has been configured. |
-| verify_tls_certificate | [bool](#bool) |  | verify_tls_certificate enables TLS certificate verification for SSL connections. Default is false (no verification) for backward compatibility. Set to true for secure connections (recommended for production). Only set to false for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). |
-| host | [string](#string) |  | The hostname or IP address of the database server. |
-| port | [string](#string) |  | The port number of the database server. |
-| database | [string](#string) |  | The name of the database to connect to. |
-| srv | [bool](#bool) |  | srv, authentication_database and replica_set are used for MongoDB. srv is a boolean flag that indicates whether the host is a DNS SRV record. |
-| authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
-| replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
-| sid | [string](#string) |  | sid and service_name are used for Oracle. |
-| service_name | [string](#string) |  |  |
-| ssh_host | [string](#string) |  | Connection over SSH. The hostname of the SSH server agent. Required. |
-| ssh_port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. Required. |
-| ssh_user | [string](#string) |  | The user to login the server. Required. |
-| ssh_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
-| ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
-| authentication_private_key | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
-| authentication_private_key_passphrase | [string](#string) |  | Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted. |
-| external_secret | [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret) |  |  |
-| authentication_type | [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType) |  |  |
-| cloud_sql_ip_type | [DataSource.CloudSQLIPType](#bytebase-v1-DataSource-CloudSQLIPType) |  | cloud_sql_ip_type selects the Cloud SQL IP type for Google Cloud SQL IAM connections. CLOUD_SQL_IP_TYPE_UNSPECIFIED is treated as PUBLIC for backward compatibility. |
-| azure_credential | [DataSource.AzureCredential](#bytebase-v1-DataSource-AzureCredential) |  |  |
-| aws_credential | [DataSource.AWSCredential](#bytebase-v1-DataSource-AWSCredential) |  |  |
-| gcp_credential | [DataSource.GCPCredential](#bytebase-v1-DataSource-GCPCredential) |  |  |
-| sasl_config | [SASLConfig](#bytebase-v1-SASLConfig) |  |  |
-| additional_addresses | [DataSource.Address](#bytebase-v1-DataSource-Address) | repeated | additional_addresses is used for MongoDB replica set. |
-| direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
-| region | [string](#string) |  | region is the location of where the DB is, works for AWS RDS. For example, us-east-1. |
-| warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
-| master_name | [string](#string) |  | master_name is the master name used by connecting redis-master via redis sentinel. |
-| master_username | [string](#string) |  | master_username and master_password are master credentials used by redis sentinel mode. |
-| master_password | [string](#string) |  |  |
-| redis_type | [DataSource.RedisType](#bytebase-v1-DataSource-RedisType) |  |  |
-| cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
-| extra_connection_parameters | [DataSource.ExtraConnectionParametersEntry](#bytebase-v1-DataSource-ExtraConnectionParametersEntry) | repeated | Extra connection parameters for the database connection. For PostgreSQL HA, this can be used to set target_session_attrs=read-write |
-| project_id | [string](#string) |  | project_id and instance_id are the GCP resource identifiers. project_id is used by Spanner and BigQuery; instance_id is used by Spanner. For these engines, host and port optionally override the default Google API endpoint (e.g. a Private Service Connect endpoint like spanner-nonprod.p.googleapis.com). |
-| instance_id | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DataSource-AWSCredential"></a>
-
-### DataSource.AWSCredential
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| access_key_id | [string](#string) |  |  |
-| secret_access_key | [string](#string) |  |  |
-| session_token | [string](#string) |  |  |
-| role_arn | [string](#string) |  | ARN of IAM role to assume for cross-account access. See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html |
-| external_id | [string](#string) |  | Optional external ID for additional security when assuming role. See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html |
-
-
-
-
-
-
-<a name="bytebase-v1-DataSource-Address"></a>
-
-### DataSource.Address
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| host | [string](#string) |  |  |
-| port | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DataSource-AzureCredential"></a>
-
-### DataSource.AzureCredential
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| tenant_id | [string](#string) |  |  |
-| client_id | [string](#string) |  |  |
-| client_secret | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DataSource-ExtraConnectionParametersEntry"></a>
-
-### DataSource.ExtraConnectionParametersEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DataSource-GCPCredential"></a>
-
-### DataSource.GCPCredential
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| content | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DataSourceExternalSecret"></a>
-
-### DataSourceExternalSecret
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| secret_type | [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType) |  | The type of external secret store. |
-| url | [string](#string) |  | The URL of the external secret store. |
-| auth_type | [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType) |  | The authentication method for accessing the secret store. |
-| app_role | [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption) |  | AppRole authentication configuration. |
-| token | [string](#string) |  | Token for direct authentication. Interpreted according to token_type: the literal token (PLAIN), an environment variable name (ENVIRONMENT), or a file path (FILE). |
-| token_type | [DataSourceExternalSecret.TokenType](#bytebase-v1-DataSourceExternalSecret-TokenType) |  | How to interpret the token field when auth_type is TOKEN. |
-| engine_name | [string](#string) |  | engine name is the name for secret engine. |
-| secret_name | [string](#string) |  | the secret name in the engine to store the password. |
-| password_key_name | [string](#string) |  | the key name for the password. |
-| skip_vault_tls_verification | [bool](#bool) |  | TLS configuration for connecting to Vault server. These fields are separate from the database TLS configuration in DataSource. skip_vault_tls_verification disables TLS certificate verification for Vault connections. Default is false (verification enabled) for security. Only set to true for development or when certificates cannot be properly validated. |
-| vault_ssl_ca | [string](#string) |  | CA certificate for Vault server verification. |
-| vault_ssl_cert | [string](#string) |  | Client certificate for mutual TLS authentication with Vault. |
-| vault_ssl_key | [string](#string) |  | Client private key for mutual TLS authentication with Vault. |
-
-
-
-
-
-
-<a name="bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption"></a>
-
-### DataSourceExternalSecret.AppRoleAuthOption
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role_id | [string](#string) |  | The role ID for Vault AppRole authentication. |
-| secret_id | [string](#string) |  | the secret id for the role without ttl. |
-| type | [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType) |  | The type of secret for AppRole authentication. |
-| mount_path | [string](#string) |  | The path where the approle auth method is mounted. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteInstanceRequest"></a>
-
-### DeleteInstanceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to delete. Format: instances/{instance} |
-| force | [bool](#bool) |  | If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. |
-| purge | [bool](#bool) |  | If set to true, permanently purge the soft-deleted instance and all related resources. This operation is irreversible. Following AIP-165, this should only be used for administrative cleanup of old soft-deleted instances. The instance must already be soft-deleted for this to work. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetInstanceRequest"></a>
-
-### GetInstanceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to retrieve. Format: instances/{instance} |
-
-
-
-
-
-
-<a name="bytebase-v1-Instance"></a>
-
-### Instance
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
-| state | [State](#bytebase-v1-State) |  | The lifecycle state of the instance. |
-| title | [string](#string) |  | The display title of the instance. |
-| engine | [Engine](#bytebase-v1-Engine) |  | The database engine type. |
-| engine_version | [string](#string) |  | The version of the database engine. |
-| external_link | [string](#string) |  | External URL to the database instance console. |
-| data_sources | [DataSource](#bytebase-v1-DataSource) | repeated | Data source configurations for connecting to the instance. |
-| environment | [string](#string) | optional | The environment resource. Format: environments/prod where prod is the environment resource ID. |
-| activation | [bool](#bool) |  | Whether the instance is activated for use. |
-| roles | [InstanceRole](#bytebase-v1-InstanceRole) | repeated | Database roles available in this instance. |
-| sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
-| sync_databases | [SyncDatabases](#bytebase-v1-SyncDatabases) |  | Enable sync for following databases. Not set means sync all schemas &amp; databases. |
-| last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time the instance was synced. |
-| labels | [Instance.LabelsEntry](#bytebase-v1-Instance-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the instance. For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } |
-
-
-
-
-
-
-<a name="bytebase-v1-Instance-LabelsEntry"></a>
-
-### Instance.LabelsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-InstanceResource"></a>
-
-### InstanceResource
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  | The display title of the instance. |
-| engine | [Engine](#bytebase-v1-Engine) |  | The database engine type. |
-| engine_version | [string](#string) |  | The version of the database engine. |
-| data_sources | [DataSource](#bytebase-v1-DataSource) | repeated | Data source configurations for the instance. |
-| activation | [bool](#bool) |  | Whether the instance is activated. |
-| name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
-| environment | [string](#string) | optional | The environment resource. Format: environments/prod where prod is the environment resource ID. |
-
-
-
-
-
-
-<a name="bytebase-v1-KerberosConfig"></a>
-
-### KerberosConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| primary | [string](#string) |  | The primary component of the Kerberos principal. |
-| instance | [string](#string) |  | The instance component of the Kerberos principal. |
-| realm | [string](#string) |  | The Kerberos realm. |
-| keytab | [bytes](#bytes) |  | The keytab file contents for authentication. |
-| kdc_host | [string](#string) |  | The hostname of the Key Distribution Center (KDC). |
-| kdc_port | [string](#string) |  | The port of the Key Distribution Center (KDC). |
-| kdc_transport_protocol | [string](#string) |  | The transport protocol for KDC communication (tcp or udp). |
-
-
-
-
-
-
-<a name="bytebase-v1-ListInstanceDatabaseRequest"></a>
-
-### ListInstanceDatabaseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
-| instance | [Instance](#bytebase-v1-Instance) | optional | The target instance. We need to set this field if the target instance is not created yet. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListInstanceDatabaseResponse"></a>
-
-### ListInstanceDatabaseResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| databases | [string](#string) | repeated | All database name list in the instance. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListInstancesRequest"></a>
-
-### ListInstancesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of instances to return. The service may return fewer than this value. If unspecified, at most 10 instances will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListInstances` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListInstances` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted instances if specified. |
-| filter | [string](#string) |  | Filter the instance. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filters: - name: the instance name, support &#34;==&#34; and &#34;.contains()&#34; operator. - resource_id: the instance id, support &#34;==&#34; and &#34;.contains()&#34; operator. - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - state: the instance state, check State enum for values, support &#34;==&#34; operator. - engine: the instance engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - host: the instance host, support &#34;==&#34; and &#34;.contains()&#34; operator. - port: the instance port, support &#34;==&#34; and &#34;.contains()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - labels.{key}: the instance label, support &#34;==&#34; and &#34;in&#34; operators.
-
-For example: name == &#34;sample instance&#34; name.contains(&#34;sample&#34;) resource_id == &#34;sample-instance&#34; resource_id.contains(&#34;sample&#34;) state == &#34;DELETED&#34; environment == &#34;environments/test&#34; environment == &#34;&#34; (find instances which environment is not set) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) host == &#34;127.0.0.1&#34; host.contains(&#34;127.0&#34;) port == &#34;54321&#34; port.contains(&#34;543&#34;) labels.org_group == &#34;infrastructure&#34; labels.environment in [&#34;prod&#34;, &#34;production&#34;] project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.contains(&#34;sample&#34;) &amp;&amp; environment == &#34;environments/test&#34; host == &#34;127.0.0.1&#34; &amp;&amp; port == &#34;54321&#34; |
-| order_by | [string](#string) |  | The order by of instances. Support title, environment. The default sorting order is ascending. For example: - order_by = &#34;title&#34; - order_by = &#34;title desc&#34; - order_by = &#34;title desc, environment asc&#34; |
-
-
-
-
-
-
-<a name="bytebase-v1-ListInstancesResponse"></a>
-
-### ListInstancesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instances | [Instance](#bytebase-v1-Instance) | repeated | The instances from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-RemoveDataSourceRequest"></a>
-
-### RemoveDataSourceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to remove a data source from. Format: instances/{instance} |
-| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be removed. |
-
-
-
-
-
-
-<a name="bytebase-v1-SASLConfig"></a>
-
-### SASLConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| krb_config | [KerberosConfig](#bytebase-v1-KerberosConfig) |  | Kerberos authentication configuration. |
-
-
-
-
-
-
-<a name="bytebase-v1-SyncDatabases"></a>
-
-### SyncDatabases
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| databases | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SyncInstanceRequest"></a>
-
-### SyncInstanceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of instance. Format: instances/{instance} |
-| enable_full_sync | [bool](#bool) |  | When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only the instance metadata (such as the database list) and any newly discovered databases will be synced. |
-
-
-
-
-
-
-<a name="bytebase-v1-SyncInstanceResponse"></a>
-
-### SyncInstanceResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| databases | [string](#string) | repeated | All database name list in the instance. |
-
-
-
-
-
-
-<a name="bytebase-v1-UndeleteInstanceRequest"></a>
-
-### UndeleteInstanceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the deleted instance. Format: instances/{instance} |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateDataSourceRequest"></a>
-
-### UpdateDataSourceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to update a data source. Format: instances/{instance} |
-| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
-| allow_missing | [bool](#bool) |  | If set to true, and the data source is not found, a new data source will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateInstanceRequest"></a>
-
-### UpdateInstanceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instance | [Instance](#bytebase-v1-Instance) |  | The instance to update.
-
-The instance&#39;s `name` field is used to identify the instance to update. Format: instances/{instance} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the instance is not found, a new instance will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-DataSource-AuthenticationType"></a>
-
-### DataSource.AuthenticationType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| AUTHENTICATION_UNSPECIFIED | 0 |  |
-| PASSWORD | 1 |  |
-| GOOGLE_CLOUD_SQL_IAM | 2 |  |
-| AWS_RDS_IAM | 3 |  |
-| AZURE_IAM | 4 |  |
-
-
-
-<a name="bytebase-v1-DataSource-CloudSQLIPType"></a>
-
-### DataSource.CloudSQLIPType
-CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM connections.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CLOUD_SQL_IP_TYPE_UNSPECIFIED | 0 |  |
-| PUBLIC | 1 |  |
-| PRIVATE | 2 |  |
-| PSC | 3 |  |
-
-
-
-<a name="bytebase-v1-DataSource-RedisType"></a>
-
-### DataSource.RedisType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| REDIS_TYPE_UNSPECIFIED | 0 |  |
-| STANDALONE | 1 |  |
-| SENTINEL | 2 |  |
-| CLUSTER | 3 |  |
-
-
-
-<a name="bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType"></a>
-
-### DataSourceExternalSecret.AppRoleAuthOption.SecretType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SECRET_TYPE_UNSPECIFIED | 0 | Unspecified secret type. |
-| PLAIN | 1 | Plain text secret. |
-| ENVIRONMENT | 2 | Secret from environment variable. |
-
-
-
-<a name="bytebase-v1-DataSourceExternalSecret-AuthType"></a>
-
-### DataSourceExternalSecret.AuthType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| AUTH_TYPE_UNSPECIFIED | 0 | Unspecified authentication type. |
-| TOKEN | 1 | ref: https://developer.hashicorp.com/vault/docs/auth/token |
-| VAULT_APP_ROLE | 2 | ref: https://developer.hashicorp.com/vault/docs/auth/approle |
-
-
-
-<a name="bytebase-v1-DataSourceExternalSecret-SecretType"></a>
-
-### DataSourceExternalSecret.SecretType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SECRET_TYPE_UNSPECIFIED | 0 | Unspecified secret type. |
-| VAULT_KV_V2 | 1 | ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 |
-| AWS_SECRETS_MANAGER | 2 | ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html |
-| GCP_SECRET_MANAGER | 3 | ref: https://cloud.google.com/secret-manager/docs |
-| AZURE_KEY_VAULT | 4 | ref: https://learn.microsoft.com/en-us/azure/key-vault/secrets/about-secrets |
-
-
-
-<a name="bytebase-v1-DataSourceExternalSecret-TokenType"></a>
-
-### DataSourceExternalSecret.TokenType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TOKEN_TYPE_UNSPECIFIED | 0 | Unspecified token type, treated as PLAIN for backward compatibility. |
-| PLAIN | 1 | The token field holds the literal token value. |
-| ENVIRONMENT | 2 | The token field holds the name of an environment variable on the Bytebase server that holds the token value. |
-| FILE | 3 | The token field holds a path to a file on the Bytebase server that holds the token value. |
-
-
-
-<a name="bytebase-v1-DataSourceType"></a>
-
-### DataSourceType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DATA_SOURCE_UNSPECIFIED | 0 | Unspecified data source type. |
-| ADMIN | 1 | Admin data source with write permissions. |
-| READ_ONLY | 2 | Read-only data source for query operations. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-InstanceService"></a>
-
-### InstanceService
-InstanceService manages database instances and their connections.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetInstance | [GetInstanceRequest](#bytebase-v1-GetInstanceRequest) | [Instance](#bytebase-v1-Instance) | Gets a database instance by name. Permissions required: bb.instances.get |
-| ListInstances | [ListInstancesRequest](#bytebase-v1-ListInstancesRequest) | [ListInstancesResponse](#bytebase-v1-ListInstancesResponse) | Lists all database instances. Permissions required: bb.instances.list |
-| CreateInstance | [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest) | [Instance](#bytebase-v1-Instance) | Creates a new database instance. Permissions required: bb.instances.create |
-| UpdateInstance | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | [Instance](#bytebase-v1-Instance) | Updates a database instance. Permissions required: bb.instances.update |
-| DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes or soft-deletes a database instance. Permissions required: bb.instances.delete |
-| UndeleteInstance | [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest) | [Instance](#bytebase-v1-Instance) | Restores a soft-deleted database instance. Permissions required: bb.instances.undelete |
-| SyncInstance | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse) | Syncs database schemas and metadata from an instance. Permissions required: bb.instances.sync |
-| ListInstanceDatabase | [ListInstanceDatabaseRequest](#bytebase-v1-ListInstanceDatabaseRequest) | [ListInstanceDatabaseResponse](#bytebase-v1-ListInstanceDatabaseResponse) | Lists all databases within an instance without creating them. Permissions required: bb.instances.get |
-| BatchSyncInstances | [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest) | [BatchSyncInstancesResponse](#bytebase-v1-BatchSyncInstancesResponse) | Syncs multiple instances in a single request. Permissions required: bb.instances.sync |
-| BatchUpdateInstances | [BatchUpdateInstancesRequest](#bytebase-v1-BatchUpdateInstancesRequest) | [BatchUpdateInstancesResponse](#bytebase-v1-BatchUpdateInstancesResponse) | Updates multiple instances in a single request. Permissions required: bb.instances.update |
-| AddDataSource | [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest) | [Instance](#bytebase-v1-Instance) | Adds a read-only data source to an instance. Permissions required: bb.instances.update |
-| RemoveDataSource | [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest) | [Instance](#bytebase-v1-Instance) | Removes a read-only data source from an instance. Permissions required: bb.instances.update |
-| UpdateDataSource | [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest) | [Instance](#bytebase-v1-Instance) | Updates a data source configuration. Permissions required: bb.instances.update |
-
- 
-
-
-
-<a name="v1_database_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/database_service.proto
-
-
-
-<a name="bytebase-v1-BatchGetDatabasesRequest"></a>
-
-### BatchGetDatabasesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource shared by all databases being retrieved. - projects/{project}: batch get databases in a project; - instances/{instances}: batch get databases in a instance; Use &#34;-&#34; as wildcard to batch get databases across parent. |
-| names | [string](#string) | repeated | The list of database names to retrieve. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchGetDatabasesResponse"></a>
-
-### BatchGetDatabasesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| databases | [Database](#bytebase-v1-Database) | repeated | The databases from the specified request. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchSyncDatabasesRequest"></a>
-
-### BatchSyncDatabasesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource shared by all databases being updated. Format: instances/{instance} If the operation spans parents, a dash (-) may be accepted as a wildcard. |
-| names | [string](#string) | repeated | The list of database names to sync. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchSyncDatabasesResponse"></a>
-
-### BatchSyncDatabasesResponse
-
-
-
-
-
-
-
-<a name="bytebase-v1-BatchUpdateDatabasesRequest"></a>
-
-### BatchUpdateDatabasesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource shared by all databases being updated. Format: instances/{instance} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the project of databases for now. |
-| requests | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | repeated | The request message specifying the resources to update. A maximum of 1000 databases can be modified in a batch. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchUpdateDatabasesResponse"></a>
-
-### BatchUpdateDatabasesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| databases | [Database](#bytebase-v1-Database) | repeated | Databases updated. |
-
-
-
-
-
-
-<a name="bytebase-v1-BoundingBox"></a>
-
-### BoundingBox
-BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| xmin | [double](#double) |  | Minimum X coordinate |
-| ymin | [double](#double) |  | Minimum Y coordinate |
-| xmax | [double](#double) |  | Maximum X coordinate |
-| ymax | [double](#double) |  | Maximum Y coordinate |
-
-
-
-
-
-
-<a name="bytebase-v1-Changelog"></a>
-
-### Changelog
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
+| name | [string](#string) |  | The name for the query history. Format: projects/{project}/queryHistories/{id} |
+| database | [string](#string) |  | The database name to execute the query. Format: instances/{instance}/databases/{databaseName} |
+| creator | [string](#string) |  |  |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| status | [Changelog.Status](#bytebase-v1-Changelog-Status) |  |  |
-| schema | [string](#string) |  |  |
-| schema_size | [int64](#int64) |  |  |
-| task_run | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
-| plan_title | [string](#string) |  | The title of the plan associated with this changelog&#39;s task run. This field is populated by deriving the plan from task_run for display purposes. |
+| statement | [string](#string) |  |  |
+| error | [string](#string) | optional |  |
+| duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+| type | [QueryHistory.Type](#bytebase-v1-QueryHistory-Type) |  |  |
 
 
 
 
 
 
-<a name="bytebase-v1-CheckConstraintMetadata"></a>
+<a name="bytebase-v1-SearchQueryHistoriesRequest"></a>
 
-### CheckConstraintMetadata
-CheckConstraintMetadata is the metadata for check constraints.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a check constraint. |
-| expression | [string](#string) |  | The expression is the expression of a check constraint. |
-
-
-
-
-
-
-<a name="bytebase-v1-ColumnMetadata"></a>
-
-### ColumnMetadata
-ColumnMetadata is the metadata for columns.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a column. |
-| position | [int32](#int32) |  | The position is the position in columns. |
-| has_default | [bool](#bool) |  |  |
-| default | [string](#string) |  | The default value of column. |
-| default_on_null | [bool](#bool) |  | Oracle specific metadata. The default_on_null is the default on null of a column. |
-| on_update | [string](#string) |  | The on_update is the on update action of a column. For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value. |
-| nullable | [bool](#bool) |  | The nullable is the nullable of a column. |
-| type | [string](#string) |  | The type is the type of a column. |
-| character_set | [string](#string) |  | The character_set is the character_set of a column. |
-| collation | [string](#string) |  | The collation is the collation of a column. |
-| comment | [string](#string) |  | The comment is the comment of a column. |
-| generation | [GenerationMetadata](#bytebase-v1-GenerationMetadata) |  | The generation is the generation of a column. |
-| is_identity | [bool](#bool) |  |  |
-| identity_generation | [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration) |  | The identity_generation is for identity columns, PG only. |
-| identity_seed | [int64](#int64) |  | The identity_seed is for identity columns, MSSQL only. |
-| identity_increment | [int64](#int64) |  | The identity_increment is for identity columns, MSSQL only. |
-| default_constraint_name | [string](#string) |  | The default_constraint_name is the name of the default constraint, MSSQL only. In MSSQL, default values are implemented as named constraints. When modifying or dropping a column&#39;s default value, you must reference the constraint by name. This field stores the actual constraint name from the database.
-
-Example: A column definition like: CREATE TABLE employees ( status NVARCHAR(20) DEFAULT &#39;active&#39; )
-
-Will create a constraint with an auto-generated name like &#39;DF__employees__statu__3B75D760&#39; or a user-defined name if specified: ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT &#39;active&#39; FOR status
-
-To modify the default, you must first drop the existing constraint by name: ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760 ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT &#39;inactive&#39; FOR status
-
-This field is populated when syncing from the database. When empty (e.g., when parsing from SQL files), the system cannot automatically drop the constraint. |
-| srid | [uint32](#uint32) | optional | The spatial reference system identifier of a spatial column, MySQL 8.0 only. Unset means the column declares no SRID; presence carries the explicit SRID, including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed int32). |
-| is_invisible | [bool](#bool) |  | Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23&#43; only. |
-
-
-
-
-
-
-<a name="bytebase-v1-CompositeTypeAttribute"></a>
-
-### CompositeTypeAttribute
+### SearchQueryHistoriesRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the attribute. |
-| type | [string](#string) |  | The attribute type. User-defined types are always schema-qualified. |
-| collation | [string](#string) |  | The non-default collation of the attribute as an emit-ready SQL identifier reference (quoted as needed, schema-qualified when outside pg_catalog), empty otherwise. e.g. `&#34;C&#34;` or `locale.en_us`. |
-| comment | [string](#string) |  | The comment describing the attribute. |
+| parent | [string](#string) |  | The parent project to search query histories in. Format: projects/{project} The AIP-159 wildcard &#34;projects/-&#34; is not supported; use ListQueryHistories for cross-project reads. |
+| page_size | [int32](#int32) |  | The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 10 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListQueryHistory` call. Provide this to retrieve the subsequent page. |
+| filter | [string](#string) |  | Filter is the filter to apply on the search query history The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - database: the database full name in &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - type: the type, should be &#34;QUERY&#34; or &#34;EXPORT&#34;, support &#34;==&#34; operator. - statement: the SQL statement, support &#34;.contains()&#34; operator.
+
+For example: project == &#34;projects/{project}&#34; database == &#34;instances/{instance}/databases/{database}&#34; instance == &#34;instances/{instance}&#34; type == &#34;QUERY&#34; type == &#34;EXPORT&#34; statement.contains(&#34;select&#34;) type == &#34;QUERY&#34; &amp;&amp; statement.contains(&#34;select&#34;) |
 
 
 
 
 
 
-<a name="bytebase-v1-CompositeTypeMetadata"></a>
+<a name="bytebase-v1-SearchQueryHistoriesResponse"></a>
 
-### CompositeTypeMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the composite type. |
-| attributes | [CompositeTypeAttribute](#bytebase-v1-CompositeTypeAttribute) | repeated | The ordered attributes of the composite type. |
-| comment | [string](#string) |  | The comment describing the composite type. |
-
-
-
-
-
-
-<a name="bytebase-v1-Database"></a>
-
-### Database
+### SearchQueryHistoriesResponse
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database. Format: instances/{instance}/databases/{database} {database} is the database name in the instance. |
-| state | [State](#bytebase-v1-State) |  | The existence of a database. |
-| successful_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest synchronization time. |
-| project | [string](#string) |  | The project for a database. Format: projects/{project} |
-| release | [string](#string) |  | The release that was last applied to this database. Format: projects/{project}/releases/{release_id} Example: projects/my-project/releases/release_20260115-RC00 |
-| environment | [string](#string) | optional | The environment resource. Format: environments/prod where prod is the environment resource ID. |
-| effective_environment | [string](#string) | optional | The effective environment based on environment tag above and environment tag on the instance. Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview. |
-| labels | [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry) | repeated | Labels will be used for deployment and policy control. |
-| instance_resource | [InstanceResource](#bytebase-v1-InstanceResource) |  | The instance resource. |
-| backup_available | [bool](#bool) |  | The database is available for DML prior backup. |
-| sync_status | [SyncStatus](#bytebase-v1-SyncStatus) |  | The sync status of the database. |
-| sync_error | [string](#string) |  | The error message if sync failed. |
-
-
-
-
-
-
-<a name="bytebase-v1-Database-LabelsEntry"></a>
-
-### Database.LabelsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DatabaseMetadata"></a>
-
-### DatabaseMetadata
-DatabaseMetadata is the metadata for databases.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The database metadata name.
-
-Format: instances/{instance}/databases/{database}/metadata |
-| schemas | [SchemaMetadata](#bytebase-v1-SchemaMetadata) | repeated | The schemas is the list of schemas in a database. |
-| character_set | [string](#string) |  | The character_set is the character set of a database. |
-| collation | [string](#string) |  | The collation is the collation of a database. |
-| extensions | [ExtensionMetadata](#bytebase-v1-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
-| owner | [string](#string) |  | The owner of the database. |
-| search_path | [string](#string) |  | The search_path is the search path of a PostgreSQL database. |
-
-
-
-
-
-
-<a name="bytebase-v1-DatabaseSDLSchema"></a>
-
-### DatabaseSDLSchema
-DatabaseSDLSchema contains the schema in SDL format.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [bytes](#bytes) |  | The SDL schema content. - For SINGLE_FILE format: contains the complete SDL schema as a text string. - For MULTI_FILE format: contains the ZIP archive as binary data. |
-| content_type | [string](#string) |  | The MIME type of the schema content. Indicates how the client should interpret the schema field. Examples: - &#34;text/plain; charset=utf-8&#34; for SINGLE_FILE format - &#34;application/zip&#34; for MULTI_FILE format |
-
-
-
-
-
-
-<a name="bytebase-v1-DatabaseSchema"></a>
-
-### DatabaseSchema
-DatabaseSchema is the metadata for databases.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  | The schema dump from database. |
-
-
-
-
-
-
-<a name="bytebase-v1-DependencyColumn"></a>
-
-### DependencyColumn
-DependencyColumn is the metadata for dependency columns.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  | The schema is the schema of a reference column. |
-| table | [string](#string) |  | The table is the table of a reference column. |
-| column | [string](#string) |  | The column is the name of a reference column. |
-
-
-
-
-
-
-<a name="bytebase-v1-DependencyTable"></a>
-
-### DependencyTable
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  | The schema is the schema of a reference table. |
-| table | [string](#string) |  | The table is the name of a reference table. |
-
-
-
-
-
-
-<a name="bytebase-v1-DiffSchemaRequest"></a>
-
-### DiffSchemaRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database or changelog. Format: database: instances/{instance}/databases/{database} changelog: instances/{instance}/databases/{database}/changelogs/{changelog} |
-| schema | [string](#string) |  | The target schema. |
-| changelog | [string](#string) |  | The resource name of the changelog Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
-
-
-
-
-
-
-<a name="bytebase-v1-DiffSchemaResponse"></a>
-
-### DiffSchemaResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| diff | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DimensionConstraint"></a>
-
-### DimensionConstraint
-DimensionConstraint defines constraints for a spatial dimension.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| dimension | [string](#string) |  | Dimension name/type (X, Y, Z, M, etc.) |
-| min_value | [double](#double) |  | Minimum value for this dimension |
-| max_value | [double](#double) |  | Maximum value for this dimension |
-| tolerance | [double](#double) |  | Tolerance for this dimension |
-
-
-
-
-
-
-<a name="bytebase-v1-DimensionalConfig"></a>
-
-### DimensionalConfig
-DimensionalConfig defines dimensional and constraint parameters for spatial indexes.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| dimensions | [int32](#int32) |  | Number of dimensions (2-4, default 2) |
-| data_type | [string](#string) |  | Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.) |
-| srid | [int32](#int32) |  | Spatial reference system identifier (SRID) |
-| constraints | [DimensionConstraint](#bytebase-v1-DimensionConstraint) | repeated | Coordinate system constraints |
-
-
-
-
-
-
-<a name="bytebase-v1-EnumTypeMetadata"></a>
-
-### EnumTypeMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of a type. |
-| values | [string](#string) | repeated | The enum values of a type. |
-| comment | [string](#string) |  | The comment describing the enum type. |
-| skip_dump | [bool](#bool) |  | Whether to skip this enum type during schema dump operations. |
-
-
-
-
-
-
-<a name="bytebase-v1-EventMetadata"></a>
-
-### EventMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the event. |
-| definition | [string](#string) |  | The schedule of the event. |
-| time_zone | [string](#string) |  | The time zone of the event. |
-| sql_mode | [string](#string) |  | The SQL mode setting for the event. |
-| character_set_client | [string](#string) |  | The character set used by the client creating the event. |
-| collation_connection | [string](#string) |  | The collation used for the connection when creating the event. |
-| comment | [string](#string) |  | The comment is the comment of an event. |
-
-
-
-
-
-
-<a name="bytebase-v1-ExtensionMetadata"></a>
-
-### ExtensionMetadata
-ExtensionMetadata is the metadata for extensions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of an extension. |
-| schema | [string](#string) |  | The schema is the extension that is installed to. But the extension usage is not limited to the schema. |
-| version | [string](#string) |  | The version is the version of an extension. |
-| description | [string](#string) |  | The description is the description of an extension. |
-
-
-
-
-
-
-<a name="bytebase-v1-ExternalTableMetadata"></a>
-
-### ExternalTableMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a external table. |
-| external_server_name | [string](#string) |  | The external_server_name is the name of the external server. |
-| external_database_name | [string](#string) |  | The external_database_name is the name of the external database. |
-| columns | [ColumnMetadata](#bytebase-v1-ColumnMetadata) | repeated | The columns is the ordered list of columns in a foreign table. |
-
-
-
-
-
-
-<a name="bytebase-v1-ForeignKeyMetadata"></a>
-
-### ForeignKeyMetadata
-ForeignKeyMetadata is the metadata for foreign keys.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a foreign key. |
-| columns | [string](#string) | repeated | The columns are the ordered referencing columns of a foreign key. |
-| referenced_schema | [string](#string) |  | The referenced_schema is the referenced schema name of a foreign key. It is an empty string for databases without such concept such as MySQL. |
-| referenced_table | [string](#string) |  | The referenced_table is the referenced table name of a foreign key. |
-| referenced_columns | [string](#string) | repeated | The referenced_columns are the ordered referenced columns of a foreign key. |
-| on_delete | [string](#string) |  | The on_delete is the on delete action of a foreign key. |
-| on_update | [string](#string) |  | The on_update is the on update action of a foreign key. |
-| match_type | [string](#string) |  | The match_type is the match type of a foreign key. The match_type is the PostgreSQL specific field. It&#39;s empty string for other databases. |
-
-
-
-
-
-
-<a name="bytebase-v1-FunctionMetadata"></a>
-
-### FunctionMetadata
-FunctionMetadata is the metadata for functions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a function. |
-| definition | [string](#string) |  | The definition is the definition of a function. |
-| signature | [string](#string) |  | The signature is the name with the number and type of input arguments the function takes. |
-| character_set_client | [string](#string) |  | MySQL specific metadata. |
-| collation_connection | [string](#string) |  |  |
-| database_collation | [string](#string) |  |  |
-| sql_mode | [string](#string) |  |  |
-| comment | [string](#string) |  |  |
-| dependency_tables | [DependencyTable](#bytebase-v1-DependencyTable) | repeated | The dependency_tables is the list of dependency tables of a function. For PostgreSQL, it&#39;s the list of tables that the function depends on the return type definition. |
-| skip_dump | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-GenerationMetadata"></a>
-
-### GenerationMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type) |  |  |
-| expression | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-GetChangelogRequest"></a>
-
-### GetChangelogRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the changelog to retrieve. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
-| view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-GetDatabaseMetadataRequest"></a>
-
-### GetDatabaseMetadataRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/metadata |
-| filter | [string](#string) |  | Filter is used to filter databases returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter: - schema: the schema name, support &#34;==&#34; operator. - table: the table name, support &#34;==&#34; and &#34;.contains()&#34; operator.
-
-For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; table.contains(&#34;table-a&#34;) schema == &#34;schema-a&#34; &amp;&amp; table.contains(&#34;sample&#34;) The filter is used to search for tables containing &#34;sample&#34; in the schema &#34;schemas/schema-a&#34;. The column masking level will only be returned when a table filter is used. |
-| limit | [int32](#int32) |  | Limit the response size of returned table metadata per schema. For example, if the database has 3 schemas, and each schema has 100 tables, if limit is 20, then only 20 tables will be returned for each schema, total 60 tables. Default 0, means no limit. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetDatabaseRequest"></a>
-
-### GetDatabaseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve. Format: instances/{instance}/databases/{database} |
-
-
-
-
-
-
-<a name="bytebase-v1-GetDatabaseSDLSchemaRequest"></a>
-
-### GetDatabaseSDLSchemaRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve SDL schema. Format: instances/{instance}/databases/{database}/sdlSchema |
-| format | [GetDatabaseSDLSchemaRequest.SDLFormat](#bytebase-v1-GetDatabaseSDLSchemaRequest-SDLFormat) |  | The format of the SDL schema output. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetDatabaseSchemaRequest"></a>
-
-### GetDatabaseSchemaRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve schema. Format: instances/{instance}/databases/{database}/schema |
-
-
-
-
-
-
-<a name="bytebase-v1-GetSchemaStringRequest"></a>
-
-### GetSchemaStringRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database. Format: instances/{instance}/databases/{database} |
-| type | [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType) |  |  |
-| schema | [string](#string) |  | It&#39;s empty for DATABASE. |
-| object | [string](#string) |  | It&#39;s empty for DATABASE and SCHEMA. |
-| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | If use the metadata to generate the schema string, the type is OBJECT_TYPE_UNSPECIFIED. Also the schema and object are empty. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetSchemaStringResponse"></a>
-
-### GetSchemaStringResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema_string | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-GridLevel"></a>
-
-### GridLevel
-GridLevel defines a tessellation grid level with its density.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| level | [int32](#int32) |  | Grid level number (1-4 for SQL Server) |
-| density | [string](#string) |  | Grid density (LOW, MEDIUM, HIGH) |
-
-
-
-
-
-
-<a name="bytebase-v1-IndexMetadata"></a>
-
-### IndexMetadata
-IndexMetadata is the metadata for indexes.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of an index. |
-| expressions | [string](#string) | repeated | The expressions are the ordered columns or expressions of an index. This could refer to a column or an expression. |
-| key_length | [int64](#int64) | repeated | The key_lengths are the ordered key lengths of an index. If the key length is not specified, it&#39;s -1. |
-| descending | [bool](#bool) | repeated | The descending is the ordered descending of an index. |
-| type | [string](#string) |  | The type is the type of an index. |
-| unique | [bool](#bool) |  | The unique is whether the index is unique. |
-| primary | [bool](#bool) |  | The primary is whether the index is a primary key index. |
-| visible | [bool](#bool) |  | The visible is whether the index is visible. |
-| comment | [string](#string) |  | The comment is the comment of an index. |
-| definition | [string](#string) |  | The definition of an index. |
-| parent_index_schema | [string](#string) |  | The schema name of the parent index. |
-| parent_index_name | [string](#string) |  | The index name of the parent index. |
-| granularity | [int64](#int64) |  | The number of granules in the block. It&#39;s a ClickHouse specific field. |
-| is_constraint | [bool](#bool) |  | It&#39;s a PostgreSQL specific field. The unique constraint and unique index are not the same thing in PostgreSQL. |
-| spatial_config | [SpatialIndexConfig](#bytebase-v1-SpatialIndexConfig) |  | Spatial index configuration for spatial databases like SQL Server, PostgreSQL with PostGIS, etc. |
-| opclass_names | [string](#string) | repeated | https://www.postgresql.org/docs/current/catalog-pg-opclass.html Name of the operator class for each column. (PostgreSQL specific). |
-| opclass_defaults | [bool](#bool) | repeated | True if the operator class is the default. (PostgreSQL specific). |
-
-
-
-
-
-
-<a name="bytebase-v1-ListChangelogsRequest"></a>
-
-### ListChangelogsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent of the changelogs. Format: instances/{instance}/databases/{database} |
-| page_size | [int32](#int32) |  | The maximum number of changelogs to return. The service may return fewer than this value. If unspecified, at most 10 changelogs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from the previous call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided must match the call that provided the page token. |
-| view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
-| filter | [string](#string) |  | Filter is used to filter changelogs returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter: - status: the changelog status, support &#34;==&#34; operation. check Changelog.Status for available values. - create_time: the changelog create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
-
-Example: status == &#34;DONE&#34; status == &#34;FAILED&#34; &amp;&amp; type == &#34;SDL&#34; create_time &gt;= &#34;2024-01-01T00:00:00Z&#34; &amp;&amp; create_time &lt;= &#34;2024-01-02T00:00:00Z&#34; |
-
-
-
-
-
-
-<a name="bytebase-v1-ListChangelogsResponse"></a>
-
-### ListChangelogsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| changelogs | [Changelog](#bytebase-v1-Changelog) | repeated | The list of changelogs. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListDatabasesRequest"></a>
-
-### ListDatabasesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | - projects/{project}: list databases in a project, require &#34;bb.projects.get&#34; permission. - workspaces/{id}: list databases in the workspace, require &#34;bb.databases.list&#34; permission. - instances/{instances}: list databases in a instance, require &#34;bb.instances.get&#34; permission |
-| page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 10 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
-| filter | [string](#string) |  | Filter is used to filter databases returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter: - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - name: the database name, support &#34;.contains()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - engine: the database engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - exclude_unassigned: should be &#34;true&#34; or &#34;false&#34;, will not show unassigned databases if it&#39;s true, support &#34;==&#34; operator. - table: filter by the database table, support &#34;==&#34; and &#34;.contains()&#34; operator. - labels.{key}: the database label, support &#34;==&#34; and &#34;in&#34; operators.
-
-For example: environment == &#34;environments/{environment resource id}&#34; environment == &#34;&#34; (find databases which environment is not set) project == &#34;projects/{project resource id}&#34; instance == &#34;instances/{instance resource id}&#34; name.contains(&#34;database name&#34;) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) exclude_unassigned == true table == &#34;sample&#34; table.contains(&#34;sam&#34;) labels.environment == &#34;production&#34; labels.region == &#34;asia&#34; labels.region in [&#34;asia&#34;, &#34;europe&#34;]
-
-You can combine filter conditions like: environment == &#34;environments/prod&#34; &amp;&amp; name.contains(&#34;employee&#34;) |
-| show_deleted | [bool](#bool) |  | Show deleted database if specified. |
-| order_by | [string](#string) |  | The order by of databases. Support name, project, instance. The default sorting order is ascending. For example: - order_by = &#34;name&#34; - order by name ascending - order_by = &#34;name desc&#34; - order_by = &#34;name desc, project asc&#34; |
-
-
-
-
-
-
-<a name="bytebase-v1-ListDatabasesResponse"></a>
-
-### ListDatabasesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| databases | [Database](#bytebase-v1-Database) | repeated | The databases from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-MaterializedViewMetadata"></a>
-
-### MaterializedViewMetadata
-MaterializedViewMetadata is the metadata for materialized views.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a materialized view. |
-| definition | [string](#string) |  | The definition is the definition of a materialized view. |
-| comment | [string](#string) |  | The comment is the comment of a materialized view. |
-| dependency_columns | [DependencyColumn](#bytebase-v1-DependencyColumn) | repeated | The dependency_columns is the list of dependency columns of a materialized view. |
-| triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The columns is the ordered list of columns in a table. |
-| indexes | [IndexMetadata](#bytebase-v1-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
-| skip_dump | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PackageMetadata"></a>
-
-### PackageMetadata
-PackageMetadata is the metadata for packages.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a package. |
-| definition | [string](#string) |  | The definition is the definition of a package. |
-
-
-
-
-
-
-<a name="bytebase-v1-ProcedureMetadata"></a>
-
-### ProcedureMetadata
-ProcedureMetadata is the metadata for procedures.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a procedure. |
-| definition | [string](#string) |  | The definition is the definition of a procedure. |
-| signature | [string](#string) |  | The signature is the name with the number and type of input arguments the procedure takes. |
-| character_set_client | [string](#string) |  | MySQL specific metadata. |
-| collation_connection | [string](#string) |  |  |
-| database_collation | [string](#string) |  |  |
-| sql_mode | [string](#string) |  |  |
-| comment | [string](#string) |  | The comment is the comment of a procedure. |
-| skip_dump | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SchemaMetadata"></a>
-
-### SchemaMetadata
-SchemaMetadata is the metadata for schemas.
-This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
-| tables | [TableMetadata](#bytebase-v1-TableMetadata) | repeated | The tables is the list of tables in a schema. |
-| external_tables | [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata) | repeated | The external_tables is the list of external tables in a schema. |
-| views | [ViewMetadata](#bytebase-v1-ViewMetadata) | repeated | The views is the list of views in a schema. |
-| functions | [FunctionMetadata](#bytebase-v1-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
-| procedures | [ProcedureMetadata](#bytebase-v1-ProcedureMetadata) | repeated | The procedures is the list of procedures in a schema. |
-| streams | [StreamMetadata](#bytebase-v1-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
-| tasks | [TaskMetadata](#bytebase-v1-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
-| materialized_views | [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
-| packages | [PackageMetadata](#bytebase-v1-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
-| owner | [string](#string) |  | The owner of the schema. |
-| sequences | [SequenceMetadata](#bytebase-v1-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema, sorted by name. |
-| events | [EventMetadata](#bytebase-v1-EventMetadata) | repeated | The events is the list of scheduled events in a schema. |
-| enum_types | [EnumTypeMetadata](#bytebase-v1-EnumTypeMetadata) | repeated | The enum_types is the list of user-defined enum types in a schema. |
-| skip_dump | [bool](#bool) |  | Whether to skip this schema during schema dump operations. |
-| comment | [string](#string) |  | The comment is the comment of a schema. |
-| composite_types | [CompositeTypeMetadata](#bytebase-v1-CompositeTypeMetadata) | repeated | The composite_types is the list of user-defined composite types in a schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row types and derived types. |
-
-
-
-
-
-
-<a name="bytebase-v1-SequenceMetadata"></a>
-
-### SequenceMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of a sequence. |
-| data_type | [string](#string) |  | The data type of a sequence. |
-| start | [string](#string) |  | The start value of a sequence. |
-| min_value | [string](#string) |  | The minimum value of a sequence. |
-| max_value | [string](#string) |  | The maximum value of a sequence. |
-| increment | [string](#string) |  | Increment value of a sequence. |
-| cycle | [bool](#bool) |  | Cycle is whether the sequence cycles. |
-| cache_size | [string](#string) |  | Cache size of a sequence. |
-| last_value | [string](#string) |  | Last value of a sequence. |
-| owner_table | [string](#string) |  | The owner table of the sequence. |
-| owner_column | [string](#string) |  | The owner column of the sequence. |
-| comment | [string](#string) |  | The comment describing the sequence. |
-| skip_dump | [bool](#bool) |  | Whether to skip this sequence during schema dump operations. |
-
-
-
-
-
-
-<a name="bytebase-v1-SpatialIndexConfig"></a>
-
-### SpatialIndexConfig
-SpatialIndexConfig defines the spatial index configuration for spatial databases.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| method | [string](#string) |  | Spatial indexing method (e.g., &#34;SPATIAL&#34;, &#34;R-TREE&#34;, &#34;GIST&#34;) |
-| tessellation | [TessellationConfig](#bytebase-v1-TessellationConfig) |  | Tessellation configuration for grid-based spatial indexes |
-| storage | [StorageConfig](#bytebase-v1-StorageConfig) |  | Storage and performance configuration |
-| dimensional | [DimensionalConfig](#bytebase-v1-DimensionalConfig) |  | Dimensional configuration |
-
-
-
-
-
-
-<a name="bytebase-v1-StorageConfig"></a>
-
-### StorageConfig
-StorageConfig defines storage and performance parameters for spatial indexes.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| fillfactor | [int32](#int32) |  | Fill factor percentage (1-100) |
-| buffering | [string](#string) |  | Buffering mode for PostgreSQL (auto, on, off) |
-| tablespace | [string](#string) |  | Tablespace configuration for Oracle |
-| work_tablespace | [string](#string) |  |  |
-| sdo_level | [int32](#int32) |  |  |
-| commit_interval | [int32](#int32) |  |  |
-| pad_index | [bool](#bool) |  | SQL Server specific parameters |
-| sort_in_tempdb | [string](#string) |  | ON, OFF |
-| drop_existing | [bool](#bool) |  |  |
-| online | [bool](#bool) |  |  |
-| allow_row_locks | [bool](#bool) |  |  |
-| allow_page_locks | [bool](#bool) |  |  |
-| maxdop | [int32](#int32) |  |  |
-| data_compression | [string](#string) |  | NONE, ROW, PAGE |
-
-
-
-
-
-
-<a name="bytebase-v1-StreamMetadata"></a>
-
-### StreamMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a stream. |
-| table_name | [string](#string) |  | The table_name is the name of the table/view that the stream is created on. |
-| owner | [string](#string) |  | The owner of the stream. |
-| comment | [string](#string) |  | The comment of the stream. |
-| type | [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type) |  | The type of the stream. |
-| stale | [bool](#bool) |  | Indicates whether the stream was last read before the `stale_after` time. |
-| mode | [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode) |  | The mode of the stream. |
-| definition | [string](#string) |  | The definition of the stream. |
-
-
-
-
-
-
-<a name="bytebase-v1-SyncDatabaseRequest"></a>
-
-### SyncDatabaseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to sync. Format: instances/{instance}/databases/{database} |
-
-
-
-
-
-
-<a name="bytebase-v1-SyncDatabaseResponse"></a>
-
-### SyncDatabaseResponse
-
-
-
-
-
-
-
-<a name="bytebase-v1-TableMetadata"></a>
-
-### TableMetadata
-TableMetadata is the metadata for tables.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a table. |
-| columns | [ColumnMetadata](#bytebase-v1-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
-| indexes | [IndexMetadata](#bytebase-v1-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
-| engine | [string](#string) |  | The engine is the engine of a table. |
-| collation | [string](#string) |  | The collation is the collation of a table. |
-| charset | [string](#string) |  | The character set of table. |
-| row_count | [int64](#int64) |  | The row_count is the estimated number of rows of a table. |
-| data_size | [int64](#int64) |  | The data_size is the estimated data size of a table. |
-| index_size | [int64](#int64) |  | The index_size is the estimated index size of a table. |
-| data_free | [int64](#int64) |  | The data_free is the estimated free data size of a table. |
-| create_options | [string](#string) |  | The create_options is the create option of a table. |
-| comment | [string](#string) |  | The comment is the comment of a table. |
-| foreign_keys | [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
-| partitions | [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
-| check_constraints | [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata) | repeated | The check_constraints is the list of check constraints in a table. |
-| owner | [string](#string) |  | The owner of the table. |
-| sorting_keys | [string](#string) | repeated | The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field. Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by |
-| triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The triggers is the list of triggers associated with the table. |
-| skip_dump | [bool](#bool) |  | Whether to skip this table during schema dump operations. |
-| sharding_info | [string](#string) |  | https://docs.pingcap.com/tidb/stable/information-schema-tables/ |
-| primary_key_type | [string](#string) |  | https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes CLUSTERED or NONCLUSTERED. |
-
-
-
-
-
-
-<a name="bytebase-v1-TablePartitionMetadata"></a>
-
-### TablePartitionMetadata
-TablePartitionMetadata is the metadata for table partitions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a table partition. |
-| type | [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type) |  | The type of a table partition. |
-| expression | [string](#string) |  | The expression is the expression of a table partition. For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL, the expression is the `expr` or `column_list` of the following syntax. PARTITION BY { [LINEAR] HASH(expr) | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list) | RANGE{(expr) | COLUMNS(column_list)} | LIST{(expr) | COLUMNS(column_list)} }. |
-| value | [string](#string) |  | The value is the value of a table partition. For MySQL, the value is for RANGE and LIST partition types, - For a RANGE partition, it contains the value set in the partition&#39;s VALUES LESS THAN clause, which can be either an integer or MAXVALUE. - For a LIST partition, this column contains the values defined in the partition&#39;s VALUES IN clause, which is a list of comma-separated integer values. - For others, it&#39;s an empty string. |
-| use_default | [string](#string) |  | The use_default is whether the users use the default partition, it stores the different value for different database engines. For MySQL, it&#39;s [INT] type, 0 means not use default partition, otherwise, it&#39;s equals to number in syntax [SUB]PARTITION {number}. |
-| subpartitions | [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata) | repeated | The subpartitions is the list of subpartitions in a table partition. |
-| indexes | [IndexMetadata](#bytebase-v1-IndexMetadata) | repeated |  |
-| check_constraints | [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskMetadata"></a>
-
-### TaskMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a task. |
-| id | [string](#string) |  | The id is the snowflake-generated id of a task. Example: 01ad32a0-1bb6-5e93-0000-000000000001 |
-| owner | [string](#string) |  | The owner of the task. |
-| comment | [string](#string) |  | The comment of the task. |
-| warehouse | [string](#string) |  | The warehouse of the task. |
-| schedule | [string](#string) |  | The schedule interval of the task. |
-| predecessors | [string](#string) | repeated | The predecessor tasks of the task. |
-| state | [TaskMetadata.State](#bytebase-v1-TaskMetadata-State) |  | The state of the task. |
-| condition | [string](#string) |  | The condition of the task. |
-| definition | [string](#string) |  | The definition of the task. |
-
-
-
-
-
-
-<a name="bytebase-v1-TessellationConfig"></a>
-
-### TessellationConfig
-TessellationConfig defines tessellation parameters for spatial indexes.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| scheme | [string](#string) |  | Tessellation scheme (e.g., &#34;GEOMETRY_GRID&#34;, &#34;GEOGRAPHY_GRID&#34;, &#34;GEOMETRY_AUTO_GRID&#34;) |
-| grid_levels | [GridLevel](#bytebase-v1-GridLevel) | repeated | Grid levels and densities for multi-level tessellation |
-| cells_per_object | [int32](#int32) |  | Number of cells per object (1-8192 for SQL Server) |
-| bounding_box | [BoundingBox](#bytebase-v1-BoundingBox) |  | Bounding box for GEOMETRY tessellation (not used for GEOGRAPHY) |
-
-
-
-
-
-
-<a name="bytebase-v1-TriggerMetadata"></a>
-
-### TriggerMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of the trigger. |
-| event | [string](#string) |  | The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. |
-| timing | [string](#string) |  | The timing is the timing of the trigger, such as BEFORE, AFTER. |
-| body | [string](#string) |  | The body is the body of the trigger. |
-| sql_mode | [string](#string) |  | The SQL mode setting for the trigger. |
-| character_set_client | [string](#string) |  | The character set used by the client creating the trigger. |
-| collation_connection | [string](#string) |  | The collation used for the connection when creating the trigger. |
-| comment | [string](#string) |  | The comment describing the trigger. |
-| skip_dump | [bool](#bool) |  | Whether to skip this trigger during schema dump operations. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateDatabaseRequest"></a>
-
-### UpdateDatabaseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database | [Database](#bytebase-v1-Database) |  | The database to update.
-
-The database&#39;s `name` field is used to identify the database to update. Format: instances/{instance}/databases/{database} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the database is not found, a new database will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
-
-<a name="bytebase-v1-ViewMetadata"></a>
-
-### ViewMetadata
-ViewMetadata is the metadata for views.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a view. |
-| definition | [string](#string) |  | The definition is the definition of a view. |
-| comment | [string](#string) |  | The comment is the comment of a view. |
-| dependency_columns | [DependencyColumn](#bytebase-v1-DependencyColumn) | repeated | The dependency_columns is the list of dependency columns of a view. |
-| columns | [ColumnMetadata](#bytebase-v1-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
-| triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The triggers is the list of triggers in a view. |
-| skip_dump | [bool](#bool) |  |  |
+| query_histories | [QueryHistory](#bytebase-v1-QueryHistory) | repeated | The list of history. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of history. Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method to retrieve the next page of history. |
 
 
 
@@ -4199,165 +2303,16 @@ ViewMetadata is the metadata for views.
  
 
 
-<a name="bytebase-v1-Changelog-Status"></a>
+<a name="bytebase-v1-QueryHistory-Type"></a>
 
-### Changelog.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| DONE | 2 |  |
-| FAILED | 3 |  |
-
-
-
-<a name="bytebase-v1-ChangelogView"></a>
-
-### ChangelogView
+### QueryHistory.Type
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| CHANGELOG_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
-| CHANGELOG_VIEW_BASIC | 1 |  |
-| CHANGELOG_VIEW_FULL | 2 |  |
-
-
-
-<a name="bytebase-v1-ColumnMetadata-IdentityGeneration"></a>
-
-### ColumnMetadata.IdentityGeneration
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| IDENTITY_GENERATION_UNSPECIFIED | 0 |  |
-| ALWAYS | 1 |  |
-| BY_DEFAULT | 2 |  |
-
-
-
-<a name="bytebase-v1-GenerationMetadata-Type"></a>
-
-### GenerationMetadata.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| VIRTUAL | 1 |  |
-| STORED | 2 |  |
-
-
-
-<a name="bytebase-v1-GetDatabaseSDLSchemaRequest-SDLFormat"></a>
-
-### GetDatabaseSDLSchemaRequest.SDLFormat
-SDLFormat specifies the output format for SDL schema.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SDL_FORMAT_UNSPECIFIED | 0 | Unspecified format. Defaults to SINGLE_FILE. |
-| SINGLE_FILE | 1 | Single file format: returns the complete SDL schema as a single file. |
-| MULTI_FILE | 2 | Multi-file format: returns the SDL schema as a ZIP archive containing multiple files organized by schema objects (tables, views, functions, etc.). |
-
-
-
-<a name="bytebase-v1-GetSchemaStringRequest-ObjectType"></a>
-
-### GetSchemaStringRequest.ObjectType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| OBJECT_TYPE_UNSPECIFIED | 0 |  |
-| DATABASE | 1 |  |
-| SCHEMA | 2 |  |
-| TABLE | 3 |  |
-| VIEW | 4 |  |
-| MATERIALIZED_VIEW | 5 |  |
-| FUNCTION | 6 |  |
-| PROCEDURE | 7 |  |
-| SEQUENCE | 8 |  |
-
-
-
-<a name="bytebase-v1-StreamMetadata-Mode"></a>
-
-### StreamMetadata.Mode
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MODE_UNSPECIFIED | 0 |  |
-| DEFAULT | 1 |  |
-| APPEND_ONLY | 2 |  |
-| INSERT_ONLY | 3 |  |
-
-
-
-<a name="bytebase-v1-StreamMetadata-Type"></a>
-
-### StreamMetadata.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| DELTA | 1 |  |
-
-
-
-<a name="bytebase-v1-SyncStatus"></a>
-
-### SyncStatus
-SyncStatus is the status of the database sync operation.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SYNC_STATUS_UNSPECIFIED | 0 |  |
-| OK | 1 | The database was synced successfully. |
-| FAILED | 2 | The database sync failed. |
-
-
-
-<a name="bytebase-v1-TablePartitionMetadata-Type"></a>
-
-### TablePartitionMetadata.Type
-Type is the type of a table partition, some database engines may not
-support all types. Only avilable for the following database engines now:
-MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,
-LINEAR_KEY
-(https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:
-RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,
-LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| RANGE | 1 |  |
-| RANGE_COLUMNS | 2 |  |
-| LIST | 3 |  |
-| LIST_COLUMNS | 4 |  |
-| HASH | 5 |  |
-| LINEAR_HASH | 6 |  |
-| KEY | 7 |  |
-| LINEAR_KEY | 8 |  |
-
-
-
-<a name="bytebase-v1-TaskMetadata-State"></a>
-
-### TaskMetadata.State
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATE_UNSPECIFIED | 0 |  |
-| STARTED | 1 |  |
-| SUSPENDED | 2 |  |
+| TYPE_UNSPECIFIED | 0 | Unspecified query history type. |
+| QUERY | 1 | Query execution for data retrieval. |
+| EXPORT | 2 | Data export operation to file. |
 
 
  
@@ -4365,27 +2320,16 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
  
 
 
-<a name="bytebase-v1-DatabaseService"></a>
+<a name="bytebase-v1-QueryHistoryService"></a>
 
-### DatabaseService
-DatabaseService manages databases and their schemas.
+### QueryHistoryService
+QueryHistoryService manages query history records of SQL Editor queries and exports.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetDatabase | [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest) | [Database](#bytebase-v1-Database) | Retrieves a database by name. Permissions required: bb.databases.get |
-| BatchGetDatabases | [BatchGetDatabasesRequest](#bytebase-v1-BatchGetDatabasesRequest) | [BatchGetDatabasesResponse](#bytebase-v1-BatchGetDatabasesResponse) | Retrieves multiple databases by their names. Permissions required: bb.databases.get |
-| ListDatabases | [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest) | [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse) | Lists databases in a project, instance, or workspace. Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent) |
-| UpdateDatabase | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | [Database](#bytebase-v1-Database) | Updates database properties such as labels and project assignment. Permissions required: bb.databases.update |
-| BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) | Updates multiple databases in a single batch operation. Permissions required: bb.databases.update |
-| SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) | Synchronizes database schema from the instance. Permissions required: bb.databases.sync |
-| BatchSyncDatabases | [BatchSyncDatabasesRequest](#bytebase-v1-BatchSyncDatabasesRequest) | [BatchSyncDatabasesResponse](#bytebase-v1-BatchSyncDatabasesResponse) | Synchronizes multiple databases in a single batch operation. Permissions required: bb.databases.sync |
-| GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) | Retrieves database metadata including tables, columns, and indexes. Permissions required: bb.databases.getSchema |
-| GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) | Retrieves database schema as DDL statements. Permissions required: bb.databases.getSchema |
-| GetDatabaseSDLSchema | [GetDatabaseSDLSchemaRequest](#bytebase-v1-GetDatabaseSDLSchemaRequest) | [DatabaseSDLSchema](#bytebase-v1-DatabaseSDLSchema) | Retrieves database schema in SDL (Schema Definition Language) format. Permissions required: bb.databases.getSchema |
-| DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) | Compares and generates migration statements between two schemas. Permissions required: bb.databases.get |
-| ListChangelogs | [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest) | [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse) | Lists migration history for a database. Permissions required: bb.changelogs.list |
-| GetChangelog | [GetChangelogRequest](#bytebase-v1-GetChangelogRequest) | [Changelog](#bytebase-v1-Changelog) | Retrieves a specific changelog entry. Permissions required: bb.changelogs.get |
-| GetSchemaString | [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest) | [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse) | Generates schema DDL for a database object. Permissions required: bb.databases.getSchema |
+| SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | SearchQueryHistories searches query histories for the caller. Permissions required: None (only returns caller&#39;s own query histories) |
+| ListQueryHistories | [ListQueryHistoriesRequest](#bytebase-v1-ListQueryHistoriesRequest) | [ListQueryHistoriesResponse](#bytebase-v1-ListQueryHistoriesResponse) | ListQueryHistories lists query histories of all users in a project. Permissions required: bb.queryHistories.list |
+| GetQueryHistory | [GetQueryHistoryRequest](#bytebase-v1-GetQueryHistoryRequest) | [QueryHistory](#bytebase-v1-QueryHistory) | GetQueryHistory gets a single query history for the caller. Permissions required: None (only returns the caller&#39;s own query history) |
 
  
 
@@ -4395,97 +2339,6 @@ DatabaseService manages databases and their schemas.
 <p align="right"><a href="#top">Top</a></p>
 
 ## v1/sql_service.proto
-
-
-
-<a name="bytebase-v1-AICompletionRequest"></a>
-
-### AICompletionRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| messages | [AICompletionRequest.Message](#bytebase-v1-AICompletionRequest-Message) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-AICompletionRequest-Message"></a>
-
-### AICompletionRequest.Message
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  |  |
-| content | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-AICompletionResponse"></a>
-
-### AICompletionResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| candidates | [AICompletionResponse.Candidate](#bytebase-v1-AICompletionResponse-Candidate) | repeated | candidates is used for results with multiple choices and candidates. Used for OpenAI and Gemini. |
-
-
-
-
-
-
-<a name="bytebase-v1-AICompletionResponse-Candidate"></a>
-
-### AICompletionResponse.Candidate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| content | [AICompletionResponse.Candidate.Content](#bytebase-v1-AICompletionResponse-Candidate-Content) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-AICompletionResponse-Candidate-Content"></a>
-
-### AICompletionResponse.Candidate.Content
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parts | [AICompletionResponse.Candidate.Content.Part](#bytebase-v1-AICompletionResponse-Candidate-Content-Part) | repeated | parts is used for a result content with multiple parts. |
-
-
-
-
-
-
-<a name="bytebase-v1-AICompletionResponse-Candidate-Content-Part"></a>
-
-### AICompletionResponse.Candidate.Content.Part
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| text | [string](#string) |  |  |
-
-
-
 
 
 
@@ -4544,38 +2397,6 @@ DatabaseService manages databases and their schemas.
 
 
 
-<a name="bytebase-v1-DiffMetadataRequest"></a>
-
-### DiffMetadataRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| source_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the source schema. |
-| target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. |
-| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema. |
-
-
-
-
-
-
-<a name="bytebase-v1-DiffMetadataResponse"></a>
-
-### DiffMetadataResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| diff | [string](#string) |  | The diff of the metadata. |
-
-
-
-
-
-
 <a name="bytebase-v1-ExportRequest"></a>
 
 ### ExportRequest
@@ -4614,59 +2435,6 @@ DatabaseService manages databases and their schemas.
 
 
 
-<a name="bytebase-v1-GetQueryHistoryRequest"></a>
-
-### GetQueryHistoryRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the query history to retrieve. Format: projects/{project}/queryHistories/{id} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListQueryHistoriesRequest"></a>
-
-### ListQueryHistoriesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent project whose query histories are listed. Format: projects/{project} Use &#34;projects/-&#34; to list query histories across all projects (https://google.aip.dev/159); this requires the bb.queryHistories.list permission on the workspace. |
-| page_size | [int32](#int32) |  | The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 10 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListQueryHistories` call. Provide this to retrieve the subsequent page. |
-| filter | [string](#string) |  | Filter is the filter to apply on the list query histories. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter: - creator: the user full name in &#34;users/{email}&#34; format, support &#34;==&#34; operator.
-
-For example: creator == &#34;users/{email}&#34; |
-
-
-
-
-
-
-<a name="bytebase-v1-ListQueryHistoriesResponse"></a>
-
-### ListQueryHistoriesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| query_histories | [QueryHistory](#bytebase-v1-QueryHistory) | repeated | The list of query histories. |
-| next_page_token | [string](#string) |  | A token to retrieve next page of history. Pass this value in the page_token field in the subsequent call to `ListQueryHistories` method to retrieve the next page of history. |
-
-
-
-
-
-
 <a name="bytebase-v1-MaskingReason"></a>
 
 ### MaskingReason
@@ -4682,28 +2450,6 @@ For example: creator == &#34;users/{email}&#34; |
 | context | [string](#string) |  | Additional context (e.g., &#34;Matched global rule: PII Protection&#34;). |
 | classification_level | [int32](#int32) |  | The classification level that triggered masking. |
 | semantic_type_icon | [string](#string) |  | Icon associated with the semantic type (if any). |
-
-
-
-
-
-
-<a name="bytebase-v1-QueryHistory"></a>
-
-### QueryHistory
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name for the query history. Format: projects/{project}/queryHistories/{id} |
-| database | [string](#string) |  | The database name to execute the query. Format: instances/{instance}/databases/{databaseName} |
-| creator | [string](#string) |  |  |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| statement | [string](#string) |  |  |
-| error | [string](#string) | optional |  |
-| duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
-| type | [QueryHistory.Type](#bytebase-v1-QueryHistory-Type) |  |  |
 
 
 
@@ -4945,44 +2691,6 @@ Syntax error with position information for editor highlighting
 
 
 
-
-<a name="bytebase-v1-SearchQueryHistoriesRequest"></a>
-
-### SearchQueryHistoriesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent project to search query histories in. Format: projects/{project} Use &#34;projects/-&#34; to search across all projects (https://google.aip.dev/159). |
-| page_size | [int32](#int32) |  | The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 10 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListQueryHistory` call. Provide this to retrieve the subsequent page. |
-| filter | [string](#string) |  | Filter is the filter to apply on the search query history The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter: - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - database: the database full name in &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - type: the type, should be &#34;QUERY&#34; or &#34;EXPORT&#34;, support &#34;==&#34; operator. - statement: the SQL statement, support &#34;.contains()&#34; operator.
-
-For example: project == &#34;projects/{project}&#34; database == &#34;instances/{instance}/databases/{database}&#34; instance == &#34;instances/{instance}&#34; type == &#34;QUERY&#34; type == &#34;EXPORT&#34; statement.contains(&#34;select&#34;) type == &#34;QUERY&#34; &amp;&amp; statement.contains(&#34;select&#34;) |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchQueryHistoriesResponse"></a>
-
-### SearchQueryHistoriesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| query_histories | [QueryHistory](#bytebase-v1-QueryHistory) | repeated | The list of history. |
-| next_page_token | [string](#string) |  | A token to retrieve next page of history. Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method to retrieve the next page of history. |
-
-
-
-
-
  
 
 
@@ -5010,19 +2718,6 @@ RuleType indicates the source of the linting rule.
 | RULE_TYPE_UNSPECIFIED | 0 | Unspecified rule type. |
 | PARSER_BASED | 1 | Parser-based rule enforced by the built-in SQL parser. These are non-configurable, mandatory checks for schema health. |
 | AI_POWERED | 2 | AI-powered rule defined by user in natural language. These are custom, flexible checks powered by AI models. |
-
-
-
-<a name="bytebase-v1-QueryHistory-Type"></a>
-
-### QueryHistory.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 | Unspecified query history type. |
-| QUERY | 1 | Query execution for data retrieval. |
-| EXPORT | 2 | Data export operation to file. |
 
 
 
@@ -5096,12 +2791,10 @@ SQLService executes SQL queries and manages query operations.
 | ----------- | ------------ | ------------- | ------------|
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) | Executes a read-only SQL query against a database. Permissions required: bb.databases.get |
 | AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream | Executes SQL with admin privileges via streaming connection. Permissions required: bb.sql.admin |
-| SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | SearchQueryHistories searches query histories for the caller. Permissions required: None (only returns caller&#39;s own query histories) |
-| ListQueryHistories | [ListQueryHistoriesRequest](#bytebase-v1-ListQueryHistoriesRequest) | [ListQueryHistoriesResponse](#bytebase-v1-ListQueryHistoriesResponse) | ListQueryHistories lists query histories of all users in a project. Permissions required: bb.queryHistories.list |
-| GetQueryHistory | [GetQueryHistoryRequest](#bytebase-v1-GetQueryHistoryRequest) | [QueryHistory](#bytebase-v1-QueryHistory) | GetQueryHistory gets a single query history for the caller. Permissions required: None (only returns the caller&#39;s own query history) |
+| SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | Deprecated: use QueryHistoryService.SearchQueryHistories instead. Delegating alias kept for upgrade transition; will be removed in a future release. No HTTP binding: the REST route is served by QueryHistoryService. Permissions required: None (only returns caller&#39;s own query histories) |
+| ListQueryHistories | [ListQueryHistoriesRequest](#bytebase-v1-ListQueryHistoriesRequest) | [ListQueryHistoriesResponse](#bytebase-v1-ListQueryHistoriesResponse) | Deprecated: use QueryHistoryService.ListQueryHistories instead. Delegating alias kept for upgrade transition; will be removed in a future release. No HTTP binding: the REST route is served by QueryHistoryService. Permissions required: bb.queryHistories.list |
+| GetQueryHistory | [GetQueryHistoryRequest](#bytebase-v1-GetQueryHistoryRequest) | [QueryHistory](#bytebase-v1-QueryHistory) | Deprecated: use QueryHistoryService.GetQueryHistory instead. Delegating alias kept for upgrade transition; will be removed in a future release. No HTTP binding: the REST route is served by QueryHistoryService. Permissions required: None (only returns the caller&#39;s own query history) |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) | Exports query results to a file format. Permissions required: bb.databases.get |
-| DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) | Computes schema differences between two database metadata. Permissions required: None |
-| AICompletion | [AICompletionRequest](#bytebase-v1-AICompletionRequest) | [AICompletionResponse](#bytebase-v1-AICompletionResponse) | Provides AI-powered SQL completion and generation. Permissions required: None (authenticated users only, requires AI to be enabled) |
 
  
 
@@ -8209,6 +5902,138 @@ CelService manages CEL (Common Expression Language) parsing and formatting opera
 
 
 
+<a name="v1_changelog_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/changelog_service.proto
+
+
+
+<a name="bytebase-v1-Changelog"></a>
+
+### Changelog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| status | [Changelog.Status](#bytebase-v1-Changelog-Status) |  |  |
+| schema | [string](#string) |  |  |
+| schema_size | [int64](#int64) |  |  |
+| task_run | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+| plan_title | [string](#string) |  | The title of the plan associated with this changelog&#39;s task run. This field is populated by deriving the plan from task_run for display purposes. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetChangelogRequest"></a>
+
+### GetChangelogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the changelog to retrieve. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
+| view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ListChangelogsRequest"></a>
+
+### ListChangelogsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent of the changelogs. Format: instances/{instance}/databases/{database} |
+| page_size | [int32](#int32) |  | The maximum number of changelogs to return. The service may return fewer than this value. If unspecified, at most 10 changelogs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from the previous call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided must match the call that provided the page token. |
+| view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
+| filter | [string](#string) |  | Filter is used to filter changelogs returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - status: the changelog status, support &#34;==&#34; operation. check Changelog.Status for available values. - create_time: the changelog create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
+
+Example: status == &#34;DONE&#34; status == &#34;FAILED&#34; &amp;&amp; type == &#34;SDL&#34; create_time &gt;= &#34;2024-01-01T00:00:00Z&#34; &amp;&amp; create_time &lt;= &#34;2024-01-02T00:00:00Z&#34; |
+
+
+
+
+
+
+<a name="bytebase-v1-ListChangelogsResponse"></a>
+
+### ListChangelogsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| changelogs | [Changelog](#bytebase-v1-Changelog) | repeated | The list of changelogs. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-Changelog-Status"></a>
+
+### Changelog.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| DONE | 2 |  |
+| FAILED | 3 |  |
+
+
+
+<a name="bytebase-v1-ChangelogView"></a>
+
+### ChangelogView
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGELOG_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
+| CHANGELOG_VIEW_BASIC | 1 |  |
+| CHANGELOG_VIEW_FULL | 2 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-ChangelogService"></a>
+
+### ChangelogService
+ChangelogService manages database migration history.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListChangelogs | [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest) | [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse) | Lists migration history for a database. Permissions required: bb.changelogs.list |
+| GetChangelog | [GetChangelogRequest](#bytebase-v1-GetChangelogRequest) | [Changelog](#bytebase-v1-Changelog) | Retrieves a specific changelog entry. Permissions required: bb.changelogs.get |
+
+ 
+
+
+
 <a name="v1_database_catalog_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -8625,6 +6450,2145 @@ DatabaseGroupService manages database groups for organizing databases by criteri
 | CreateDatabaseGroup | [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Creates a new database group. Permissions required: bb.databaseGroups.create |
 | UpdateDatabaseGroup | [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Updates a database group. Permissions required: bb.databaseGroups.update When allow_missing=true, also requires: bb.databaseGroups.create |
 | DeleteDatabaseGroup | [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a database group. Permissions required: bb.databaseGroups.delete |
+
+ 
+
+
+
+<a name="v1_instance_role_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/instance_role_service.proto
+
+
+
+<a name="bytebase-v1-InstanceRole"></a>
+
+### InstanceRole
+InstanceRole is the API message for instance role.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the role. Format: instances/{instance}/roles/{role} The role name is the unique name for the role. |
+| role_name | [string](#string) |  | The role name. It&#39;s unique within the instance. |
+| password | [string](#string) | optional | The role password. |
+| connection_limit | [int32](#int32) | optional | The connection count limit for this role. |
+| valid_until | [string](#string) | optional | The expiration for the role&#39;s password. |
+| attribute | [string](#string) | optional | The role attribute. For PostgreSQL, it contains super_user, no_inherit, create_role, create_db, can_login, replication, and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html |
+
+
+
+
+
+
+<a name="bytebase-v1-ListInstanceRolesRequest"></a>
+
+### ListInstanceRolesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of roles. Format: instances/{instance} |
+| page_size | [int32](#int32) |  | Not used. The maximum number of roles to return. The service may return fewer than this value. If unspecified, at most 10 roles will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListInstanceRoles` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListInstanceRoles` must match the call that provided the page token. |
+| refresh | [bool](#bool) |  | Refresh will refresh and return the latest data. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListInstanceRolesResponse"></a>
+
+### ListInstanceRolesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| roles | [InstanceRole](#bytebase-v1-InstanceRole) | repeated | The roles from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-InstanceRoleService"></a>
+
+### InstanceRoleService
+InstanceRoleService manages database roles within instances.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListInstanceRoles | [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest) | [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse) | Lists all database roles in an instance. Permissions required: bb.instanceRoles.list |
+
+ 
+
+
+
+<a name="v1_instance_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/instance_service.proto
+
+
+
+<a name="bytebase-v1-AddDataSourceRequest"></a>
+
+### AddDataSourceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the instance to add a data source to. Format: instances/{instance} |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be added. |
+| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchSyncInstancesRequest"></a>
+
+### BatchSyncInstancesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| requests | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | repeated | The request message specifying the instances to sync. A maximum of 1000 instances can be synced in a batch. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchSyncInstancesResponse"></a>
+
+### BatchSyncInstancesResponse
+
+
+
+
+
+
+
+<a name="bytebase-v1-BatchUpdateInstancesRequest"></a>
+
+### BatchUpdateInstancesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| requests | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | repeated | The request message specifying the resources to update. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchUpdateInstancesResponse"></a>
+
+### BatchUpdateInstancesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instances | [Instance](#bytebase-v1-Instance) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateInstanceRequest"></a>
+
+### CreateInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance | [Instance](#bytebase-v1-Instance) |  | The instance to create. |
+| instance_id | [string](#string) |  | The ID to use for the instance, which will become the final component of the instance&#39;s resource name.
+
+This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
+| initial_database_project | [string](#string) |  | The project to assign newly discovered databases to during initial sync. Format: projects/{project} |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSource"></a>
+
+### DataSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The unique identifier for this data source. |
+| type | [DataSourceType](#bytebase-v1-DataSourceType) |  | The type of data source (ADMIN or READ_ONLY). |
+| username | [string](#string) |  | The username for database authentication. |
+| password | [string](#string) |  | The password for database authentication. |
+| use_ssl | [bool](#bool) |  | Use SSL to connect to the data source. By default, we use system default SSL configuration. |
+| ssl_ca | [string](#string) |  | The SSL certificate authority certificate. |
+| ssl_cert | [string](#string) |  | The SSL client certificate. |
+| ssl_key | [string](#string) |  | The SSL client private key. |
+| ssl_ca_path | [string](#string) |  | The local filesystem path to the SSL certificate authority certificate. |
+| ssl_cert_path | [string](#string) |  | The local filesystem path to the SSL client certificate. |
+| ssl_key_path | [string](#string) |  | The local filesystem path to the SSL client private key. |
+| ssl_ca_set | [bool](#bool) |  | Whether an SSL certificate authority certificate has been configured. |
+| ssl_cert_set | [bool](#bool) |  | Whether an SSL client certificate has been configured. |
+| ssl_key_set | [bool](#bool) |  | Whether an SSL client private key has been configured. |
+| ssl_ca_path_set | [bool](#bool) |  | Whether an SSL certificate authority path has been configured. |
+| ssl_cert_path_set | [bool](#bool) |  | Whether an SSL client certificate path has been configured. |
+| ssl_key_path_set | [bool](#bool) |  | Whether an SSL client private key path has been configured. |
+| verify_tls_certificate | [bool](#bool) |  | verify_tls_certificate enables TLS certificate verification for SSL connections. Default is false (no verification) for backward compatibility. Set to true for secure connections (recommended for production). Only set to false for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). |
+| host | [string](#string) |  | The hostname or IP address of the database server. |
+| port | [string](#string) |  | The port number of the database server. |
+| database | [string](#string) |  | The name of the database to connect to. |
+| srv | [bool](#bool) |  | srv, authentication_database and replica_set are used for MongoDB. srv is a boolean flag that indicates whether the host is a DNS SRV record. |
+| authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
+| replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
+| sid | [string](#string) |  | sid and service_name are used for Oracle. |
+| service_name | [string](#string) |  |  |
+| ssh_host | [string](#string) |  | Connection over SSH. The hostname of the SSH server agent. Required. |
+| ssh_port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. Required. |
+| ssh_user | [string](#string) |  | The user to login the server. Required. |
+| ssh_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
+| ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
+| authentication_private_key | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
+| authentication_private_key_passphrase | [string](#string) |  | Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted. |
+| external_secret | [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret) |  |  |
+| authentication_type | [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType) |  |  |
+| cloud_sql_ip_type | [DataSource.CloudSQLIPType](#bytebase-v1-DataSource-CloudSQLIPType) |  | cloud_sql_ip_type selects the Cloud SQL IP type for Google Cloud SQL IAM connections. CLOUD_SQL_IP_TYPE_UNSPECIFIED is treated as PUBLIC for backward compatibility. |
+| azure_credential | [DataSource.AzureCredential](#bytebase-v1-DataSource-AzureCredential) |  |  |
+| aws_credential | [DataSource.AWSCredential](#bytebase-v1-DataSource-AWSCredential) |  |  |
+| gcp_credential | [DataSource.GCPCredential](#bytebase-v1-DataSource-GCPCredential) |  |  |
+| sasl_config | [SASLConfig](#bytebase-v1-SASLConfig) |  |  |
+| additional_addresses | [DataSource.Address](#bytebase-v1-DataSource-Address) | repeated | additional_addresses is used for MongoDB replica set. |
+| direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
+| region | [string](#string) |  | region is the location of where the DB is, works for AWS RDS. For example, us-east-1. |
+| warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
+| master_name | [string](#string) |  | master_name is the master name used by connecting redis-master via redis sentinel. |
+| master_username | [string](#string) |  | master_username and master_password are master credentials used by redis sentinel mode. |
+| master_password | [string](#string) |  |  |
+| redis_type | [DataSource.RedisType](#bytebase-v1-DataSource-RedisType) |  |  |
+| cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
+| extra_connection_parameters | [DataSource.ExtraConnectionParametersEntry](#bytebase-v1-DataSource-ExtraConnectionParametersEntry) | repeated | Extra connection parameters for the database connection. For PostgreSQL HA, this can be used to set target_session_attrs=read-write |
+| project_id | [string](#string) |  | project_id and instance_id are the GCP resource identifiers. project_id is used by Spanner and BigQuery; instance_id is used by Spanner. For these engines, host and port optionally override the default Google API endpoint (e.g. a Private Service Connect endpoint like spanner-nonprod.p.googleapis.com). |
+| instance_id | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSource-AWSCredential"></a>
+
+### DataSource.AWSCredential
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| access_key_id | [string](#string) |  |  |
+| secret_access_key | [string](#string) |  |  |
+| session_token | [string](#string) |  |  |
+| role_arn | [string](#string) |  | ARN of IAM role to assume for cross-account access. See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html |
+| external_id | [string](#string) |  | Optional external ID for additional security when assuming role. See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSource-Address"></a>
+
+### DataSource.Address
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  |  |
+| port | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSource-AzureCredential"></a>
+
+### DataSource.AzureCredential
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tenant_id | [string](#string) |  |  |
+| client_id | [string](#string) |  |  |
+| client_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSource-ExtraConnectionParametersEntry"></a>
+
+### DataSource.ExtraConnectionParametersEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSource-GCPCredential"></a>
+
+### DataSource.GCPCredential
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSourceExternalSecret"></a>
+
+### DataSourceExternalSecret
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| secret_type | [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType) |  | The type of external secret store. |
+| url | [string](#string) |  | The URL of the external secret store. |
+| auth_type | [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType) |  | The authentication method for accessing the secret store. |
+| app_role | [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption) |  | AppRole authentication configuration. |
+| token | [string](#string) |  | Token for direct authentication. Interpreted according to token_type: the literal token (PLAIN), an environment variable name (ENVIRONMENT), or a file path (FILE). |
+| token_type | [DataSourceExternalSecret.TokenType](#bytebase-v1-DataSourceExternalSecret-TokenType) |  | How to interpret the token field when auth_type is TOKEN. |
+| engine_name | [string](#string) |  | engine name is the name for secret engine. |
+| secret_name | [string](#string) |  | the secret name in the engine to store the password. |
+| password_key_name | [string](#string) |  | the key name for the password. |
+| skip_vault_tls_verification | [bool](#bool) |  | TLS configuration for connecting to Vault server. These fields are separate from the database TLS configuration in DataSource. skip_vault_tls_verification disables TLS certificate verification for Vault connections. Default is false (verification enabled) for security. Only set to true for development or when certificates cannot be properly validated. |
+| vault_ssl_ca | [string](#string) |  | CA certificate for Vault server verification. |
+| vault_ssl_cert | [string](#string) |  | Client certificate for mutual TLS authentication with Vault. |
+| vault_ssl_key | [string](#string) |  | Client private key for mutual TLS authentication with Vault. |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption"></a>
+
+### DataSourceExternalSecret.AppRoleAuthOption
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role_id | [string](#string) |  | The role ID for Vault AppRole authentication. |
+| secret_id | [string](#string) |  | the secret id for the role without ttl. |
+| type | [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType) |  | The type of secret for AppRole authentication. |
+| mount_path | [string](#string) |  | The path where the approle auth method is mounted. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteInstanceRequest"></a>
+
+### DeleteInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the instance to delete. Format: instances/{instance} |
+| force | [bool](#bool) |  | If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. |
+| purge | [bool](#bool) |  | If set to true, permanently purge the soft-deleted instance and all related resources. This operation is irreversible. Following AIP-165, this should only be used for administrative cleanup of old soft-deleted instances. The instance must already be soft-deleted for this to work. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetInstanceRequest"></a>
+
+### GetInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the instance to retrieve. Format: instances/{instance} |
+
+
+
+
+
+
+<a name="bytebase-v1-Instance"></a>
+
+### Instance
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
+| state | [State](#bytebase-v1-State) |  | The lifecycle state of the instance. |
+| title | [string](#string) |  | The display title of the instance. |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine type. |
+| engine_version | [string](#string) |  | The version of the database engine. |
+| external_link | [string](#string) |  | External URL to the database instance console. |
+| data_sources | [DataSource](#bytebase-v1-DataSource) | repeated | Data source configurations for connecting to the instance. |
+| environment | [string](#string) | optional | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| activation | [bool](#bool) |  | Whether the instance is activated for use. |
+| roles | [InstanceRole](#bytebase-v1-InstanceRole) | repeated | Database roles available in this instance. |
+| sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
+| sync_databases | [SyncDatabases](#bytebase-v1-SyncDatabases) |  | Enable sync for following databases. Not set means sync all schemas &amp; databases. |
+| last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time the instance was synced. |
+| labels | [Instance.LabelsEntry](#bytebase-v1-Instance-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the instance. For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } |
+
+
+
+
+
+
+<a name="bytebase-v1-Instance-LabelsEntry"></a>
+
+### Instance.LabelsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-InstanceResource"></a>
+
+### InstanceResource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  | The display title of the instance. |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine type. |
+| engine_version | [string](#string) |  | The version of the database engine. |
+| data_sources | [DataSource](#bytebase-v1-DataSource) | repeated | Data source configurations for the instance. |
+| activation | [bool](#bool) |  | Whether the instance is activated. |
+| name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
+| environment | [string](#string) | optional | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+
+
+
+
+
+
+<a name="bytebase-v1-KerberosConfig"></a>
+
+### KerberosConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| primary | [string](#string) |  | The primary component of the Kerberos principal. |
+| instance | [string](#string) |  | The instance component of the Kerberos principal. |
+| realm | [string](#string) |  | The Kerberos realm. |
+| keytab | [bytes](#bytes) |  | The keytab file contents for authentication. |
+| kdc_host | [string](#string) |  | The hostname of the Key Distribution Center (KDC). |
+| kdc_port | [string](#string) |  | The port of the Key Distribution Center (KDC). |
+| kdc_transport_protocol | [string](#string) |  | The transport protocol for KDC communication (tcp or udp). |
+
+
+
+
+
+
+<a name="bytebase-v1-ListInstanceDatabaseRequest"></a>
+
+### ListInstanceDatabaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
+| instance | [Instance](#bytebase-v1-Instance) | optional | The target instance. We need to set this field if the target instance is not created yet. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListInstanceDatabaseResponse"></a>
+
+### ListInstanceDatabaseResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [string](#string) | repeated | All database name list in the instance. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListInstancesRequest"></a>
+
+### ListInstancesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | The maximum number of instances to return. The service may return fewer than this value. If unspecified, at most 10 instances will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListInstances` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListInstances` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted instances if specified. |
+| filter | [string](#string) |  | Filter the instance. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters: - name: the instance name, support &#34;==&#34; and &#34;.contains()&#34; operator. - resource_id: the instance id, support &#34;==&#34; and &#34;.contains()&#34; operator. - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - state: the instance state, check State enum for values, support &#34;==&#34; operator. - engine: the instance engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - host: the instance host, support &#34;==&#34; and &#34;.contains()&#34; operator. - port: the instance port, support &#34;==&#34; and &#34;.contains()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - labels.{key}: the instance label, support &#34;==&#34; and &#34;in&#34; operators.
+
+For example: name == &#34;sample instance&#34; name.contains(&#34;sample&#34;) resource_id == &#34;sample-instance&#34; resource_id.contains(&#34;sample&#34;) state == &#34;DELETED&#34; environment == &#34;environments/test&#34; environment == &#34;&#34; (find instances which environment is not set) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) host == &#34;127.0.0.1&#34; host.contains(&#34;127.0&#34;) port == &#34;54321&#34; port.contains(&#34;543&#34;) labels.org_group == &#34;infrastructure&#34; labels.environment in [&#34;prod&#34;, &#34;production&#34;] project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.contains(&#34;sample&#34;) &amp;&amp; environment == &#34;environments/test&#34; host == &#34;127.0.0.1&#34; &amp;&amp; port == &#34;54321&#34; |
+| order_by | [string](#string) |  | The order by of instances. Support title, environment. The default sorting order is ascending. For example: - order_by = &#34;title&#34; - order_by = &#34;title desc&#34; - order_by = &#34;title desc, environment asc&#34; |
+
+
+
+
+
+
+<a name="bytebase-v1-ListInstancesResponse"></a>
+
+### ListInstancesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instances | [Instance](#bytebase-v1-Instance) | repeated | The instances from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-RemoveDataSourceRequest"></a>
+
+### RemoveDataSourceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the instance to remove a data source from. Format: instances/{instance} |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be removed. |
+
+
+
+
+
+
+<a name="bytebase-v1-SASLConfig"></a>
+
+### SASLConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| krb_config | [KerberosConfig](#bytebase-v1-KerberosConfig) |  | Kerberos authentication configuration. |
+
+
+
+
+
+
+<a name="bytebase-v1-SyncDatabases"></a>
+
+### SyncDatabases
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SyncInstanceRequest"></a>
+
+### SyncInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of instance. Format: instances/{instance} |
+| enable_full_sync | [bool](#bool) |  | When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only the instance metadata (such as the database list) and any newly discovered databases will be synced. |
+
+
+
+
+
+
+<a name="bytebase-v1-SyncInstanceResponse"></a>
+
+### SyncInstanceResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [string](#string) | repeated | All database name list in the instance. |
+
+
+
+
+
+
+<a name="bytebase-v1-UndeleteInstanceRequest"></a>
+
+### UndeleteInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the deleted instance. Format: instances/{instance} |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateDataSourceRequest"></a>
+
+### UpdateDataSourceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the instance to update a data source. Format: instances/{instance} |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
+| allow_missing | [bool](#bool) |  | If set to true, and the data source is not found, a new data source will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateInstanceRequest"></a>
+
+### UpdateInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance | [Instance](#bytebase-v1-Instance) |  | The instance to update.
+
+The instance&#39;s `name` field is used to identify the instance to update. Format: instances/{instance} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the instance is not found, a new instance will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-DataSource-AuthenticationType"></a>
+
+### DataSource.AuthenticationType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUTHENTICATION_UNSPECIFIED | 0 |  |
+| PASSWORD | 1 |  |
+| GOOGLE_CLOUD_SQL_IAM | 2 |  |
+| AWS_RDS_IAM | 3 |  |
+| AZURE_IAM | 4 |  |
+
+
+
+<a name="bytebase-v1-DataSource-CloudSQLIPType"></a>
+
+### DataSource.CloudSQLIPType
+CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM connections.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CLOUD_SQL_IP_TYPE_UNSPECIFIED | 0 |  |
+| PUBLIC | 1 |  |
+| PRIVATE | 2 |  |
+| PSC | 3 |  |
+
+
+
+<a name="bytebase-v1-DataSource-RedisType"></a>
+
+### DataSource.RedisType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| REDIS_TYPE_UNSPECIFIED | 0 |  |
+| STANDALONE | 1 |  |
+| SENTINEL | 2 |  |
+| CLUSTER | 3 |  |
+
+
+
+<a name="bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType"></a>
+
+### DataSourceExternalSecret.AppRoleAuthOption.SecretType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SECRET_TYPE_UNSPECIFIED | 0 | Unspecified secret type. |
+| PLAIN | 1 | Plain text secret. |
+| ENVIRONMENT | 2 | Secret from environment variable. |
+
+
+
+<a name="bytebase-v1-DataSourceExternalSecret-AuthType"></a>
+
+### DataSourceExternalSecret.AuthType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUTH_TYPE_UNSPECIFIED | 0 | Unspecified authentication type. |
+| TOKEN | 1 | ref: https://developer.hashicorp.com/vault/docs/auth/token |
+| VAULT_APP_ROLE | 2 | ref: https://developer.hashicorp.com/vault/docs/auth/approle |
+
+
+
+<a name="bytebase-v1-DataSourceExternalSecret-SecretType"></a>
+
+### DataSourceExternalSecret.SecretType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SECRET_TYPE_UNSPECIFIED | 0 | Unspecified secret type. |
+| VAULT_KV_V2 | 1 | ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 |
+| AWS_SECRETS_MANAGER | 2 | ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html |
+| GCP_SECRET_MANAGER | 3 | ref: https://cloud.google.com/secret-manager/docs |
+| AZURE_KEY_VAULT | 4 | ref: https://learn.microsoft.com/en-us/azure/key-vault/secrets/about-secrets |
+
+
+
+<a name="bytebase-v1-DataSourceExternalSecret-TokenType"></a>
+
+### DataSourceExternalSecret.TokenType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TOKEN_TYPE_UNSPECIFIED | 0 | Unspecified token type, treated as PLAIN for backward compatibility. |
+| PLAIN | 1 | The token field holds the literal token value. |
+| ENVIRONMENT | 2 | The token field holds the name of an environment variable on the Bytebase server that holds the token value. |
+| FILE | 3 | The token field holds a path to a file on the Bytebase server that holds the token value. |
+
+
+
+<a name="bytebase-v1-DataSourceType"></a>
+
+### DataSourceType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DATA_SOURCE_UNSPECIFIED | 0 | Unspecified data source type. |
+| ADMIN | 1 | Admin data source with write permissions. |
+| READ_ONLY | 2 | Read-only data source for query operations. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-InstanceService"></a>
+
+### InstanceService
+InstanceService manages database instances and their connections.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetInstance | [GetInstanceRequest](#bytebase-v1-GetInstanceRequest) | [Instance](#bytebase-v1-Instance) | Gets a database instance by name. Permissions required: bb.instances.get |
+| ListInstances | [ListInstancesRequest](#bytebase-v1-ListInstancesRequest) | [ListInstancesResponse](#bytebase-v1-ListInstancesResponse) | Lists all database instances. Permissions required: bb.instances.list |
+| CreateInstance | [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest) | [Instance](#bytebase-v1-Instance) | Creates a new database instance. Permissions required: bb.instances.create |
+| UpdateInstance | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | [Instance](#bytebase-v1-Instance) | Updates a database instance. Permissions required: bb.instances.update |
+| DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes or soft-deletes a database instance. Permissions required: bb.instances.delete |
+| UndeleteInstance | [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest) | [Instance](#bytebase-v1-Instance) | Restores a soft-deleted database instance. Permissions required: bb.instances.undelete |
+| SyncInstance | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse) | Syncs database schemas and metadata from an instance. Permissions required: bb.instances.sync |
+| ListInstanceDatabase | [ListInstanceDatabaseRequest](#bytebase-v1-ListInstanceDatabaseRequest) | [ListInstanceDatabaseResponse](#bytebase-v1-ListInstanceDatabaseResponse) | Lists all databases within an instance without creating them. Permissions required: bb.instances.get |
+| BatchSyncInstances | [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest) | [BatchSyncInstancesResponse](#bytebase-v1-BatchSyncInstancesResponse) | Syncs multiple instances in a single request. Permissions required: bb.instances.sync |
+| BatchUpdateInstances | [BatchUpdateInstancesRequest](#bytebase-v1-BatchUpdateInstancesRequest) | [BatchUpdateInstancesResponse](#bytebase-v1-BatchUpdateInstancesResponse) | Updates multiple instances in a single request. Permissions required: bb.instances.update |
+| AddDataSource | [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest) | [Instance](#bytebase-v1-Instance) | Adds a read-only data source to an instance. Permissions required: bb.instances.update |
+| RemoveDataSource | [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest) | [Instance](#bytebase-v1-Instance) | Removes a read-only data source from an instance. Permissions required: bb.instances.update |
+| UpdateDataSource | [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest) | [Instance](#bytebase-v1-Instance) | Updates a data source configuration. Permissions required: bb.instances.update |
+
+ 
+
+
+
+<a name="v1_database_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/database_service.proto
+
+
+
+<a name="bytebase-v1-BatchGetDatabasesRequest"></a>
+
+### BatchGetDatabasesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource shared by all databases being retrieved. - projects/{project}: batch get databases in a project; - instances/{instances}: batch get databases in a instance; Use &#34;-&#34; as wildcard to batch get databases across parent. |
+| names | [string](#string) | repeated | The list of database names to retrieve. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchGetDatabasesResponse"></a>
+
+### BatchGetDatabasesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [Database](#bytebase-v1-Database) | repeated | The databases from the specified request. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchSyncDatabasesRequest"></a>
+
+### BatchSyncDatabasesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource shared by all databases being updated. Format: instances/{instance} If the operation spans parents, a dash (-) may be accepted as a wildcard. |
+| names | [string](#string) | repeated | The list of database names to sync. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchSyncDatabasesResponse"></a>
+
+### BatchSyncDatabasesResponse
+
+
+
+
+
+
+
+<a name="bytebase-v1-BatchUpdateDatabasesRequest"></a>
+
+### BatchUpdateDatabasesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource shared by all databases being updated. Format: instances/{instance} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the project of databases for now. |
+| requests | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | repeated | The request message specifying the resources to update. A maximum of 1000 databases can be modified in a batch. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchUpdateDatabasesResponse"></a>
+
+### BatchUpdateDatabasesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [Database](#bytebase-v1-Database) | repeated | Databases updated. |
+
+
+
+
+
+
+<a name="bytebase-v1-BoundingBox"></a>
+
+### BoundingBox
+BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| xmin | [double](#double) |  | Minimum X coordinate |
+| ymin | [double](#double) |  | Minimum Y coordinate |
+| xmax | [double](#double) |  | Maximum X coordinate |
+| ymax | [double](#double) |  | Maximum Y coordinate |
+
+
+
+
+
+
+<a name="bytebase-v1-CheckConstraintMetadata"></a>
+
+### CheckConstraintMetadata
+CheckConstraintMetadata is the metadata for check constraints.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a check constraint. |
+| expression | [string](#string) |  | The expression is the expression of a check constraint. |
+
+
+
+
+
+
+<a name="bytebase-v1-ColumnMetadata"></a>
+
+### ColumnMetadata
+ColumnMetadata is the metadata for columns.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a column. |
+| position | [int32](#int32) |  | The position is the position in columns. |
+| has_default | [bool](#bool) |  |  |
+| default | [string](#string) |  | The default value of column. |
+| default_on_null | [bool](#bool) |  | Oracle specific metadata. The default_on_null is the default on null of a column. |
+| on_update | [string](#string) |  | The on_update is the on update action of a column. For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value. |
+| nullable | [bool](#bool) |  | The nullable is the nullable of a column. |
+| type | [string](#string) |  | The type is the type of a column. |
+| character_set | [string](#string) |  | The character_set is the character_set of a column. |
+| collation | [string](#string) |  | The collation is the collation of a column. |
+| comment | [string](#string) |  | The comment is the comment of a column. |
+| generation | [GenerationMetadata](#bytebase-v1-GenerationMetadata) |  | The generation is the generation of a column. |
+| is_identity | [bool](#bool) |  |  |
+| identity_generation | [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration) |  | The identity_generation is for identity columns, PG only. |
+| identity_seed | [int64](#int64) |  | The identity_seed is for identity columns, MSSQL only. |
+| identity_increment | [int64](#int64) |  | The identity_increment is for identity columns, MSSQL only. |
+| default_constraint_name | [string](#string) |  | The default_constraint_name is the name of the default constraint, MSSQL only. In MSSQL, default values are implemented as named constraints. When modifying or dropping a column&#39;s default value, you must reference the constraint by name. This field stores the actual constraint name from the database.
+
+Example: A column definition like: CREATE TABLE employees ( status NVARCHAR(20) DEFAULT &#39;active&#39; )
+
+Will create a constraint with an auto-generated name like &#39;DF__employees__statu__3B75D760&#39; or a user-defined name if specified: ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT &#39;active&#39; FOR status
+
+To modify the default, you must first drop the existing constraint by name: ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760 ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT &#39;inactive&#39; FOR status
+
+This field is populated when syncing from the database. When empty (e.g., when parsing from SQL files), the system cannot automatically drop the constraint. |
+| srid | [uint32](#uint32) | optional | The spatial reference system identifier of a spatial column, MySQL 8.0 only. Unset means the column declares no SRID; presence carries the explicit SRID, including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed int32). |
+| is_invisible | [bool](#bool) |  | Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23&#43; only. |
+
+
+
+
+
+
+<a name="bytebase-v1-CompositeTypeAttribute"></a>
+
+### CompositeTypeAttribute
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the attribute. |
+| type | [string](#string) |  | The attribute type. User-defined types are always schema-qualified. |
+| collation | [string](#string) |  | The non-default collation of the attribute as an emit-ready SQL identifier reference (quoted as needed, schema-qualified when outside pg_catalog), empty otherwise. e.g. `&#34;C&#34;` or `locale.en_us`. |
+| comment | [string](#string) |  | The comment describing the attribute. |
+
+
+
+
+
+
+<a name="bytebase-v1-CompositeTypeMetadata"></a>
+
+### CompositeTypeMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the composite type. |
+| attributes | [CompositeTypeAttribute](#bytebase-v1-CompositeTypeAttribute) | repeated | The ordered attributes of the composite type. |
+| comment | [string](#string) |  | The comment describing the composite type. |
+
+
+
+
+
+
+<a name="bytebase-v1-Database"></a>
+
+### Database
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database. Format: instances/{instance}/databases/{database} {database} is the database name in the instance. |
+| state | [State](#bytebase-v1-State) |  | The existence of a database. |
+| successful_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest synchronization time. |
+| project | [string](#string) |  | The project for a database. Format: projects/{project} |
+| release | [string](#string) |  | The release that was last applied to this database. Format: projects/{project}/releases/{release_id} Example: projects/my-project/releases/release_20260115-RC00 |
+| environment | [string](#string) | optional | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| effective_environment | [string](#string) | optional | The effective environment based on environment tag above and environment tag on the instance. Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview. |
+| labels | [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry) | repeated | Labels will be used for deployment and policy control. |
+| instance_resource | [InstanceResource](#bytebase-v1-InstanceResource) |  | The instance resource. |
+| backup_available | [bool](#bool) |  | The database is available for DML prior backup. |
+| sync_status | [SyncStatus](#bytebase-v1-SyncStatus) |  | The sync status of the database. |
+| sync_error | [string](#string) |  | The error message if sync failed. |
+
+
+
+
+
+
+<a name="bytebase-v1-Database-LabelsEntry"></a>
+
+### Database.LabelsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DatabaseMetadata"></a>
+
+### DatabaseMetadata
+DatabaseMetadata is the metadata for databases.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The database metadata name.
+
+Format: instances/{instance}/databases/{database}/metadata |
+| schemas | [SchemaMetadata](#bytebase-v1-SchemaMetadata) | repeated | The schemas is the list of schemas in a database. |
+| character_set | [string](#string) |  | The character_set is the character set of a database. |
+| collation | [string](#string) |  | The collation is the collation of a database. |
+| extensions | [ExtensionMetadata](#bytebase-v1-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
+| owner | [string](#string) |  | The owner of the database. |
+| search_path | [string](#string) |  | The search_path is the search path of a PostgreSQL database. |
+
+
+
+
+
+
+<a name="bytebase-v1-DatabaseSDLSchema"></a>
+
+### DatabaseSDLSchema
+DatabaseSDLSchema contains the schema in SDL format.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [bytes](#bytes) |  | The SDL schema content. - For SINGLE_FILE format: contains the complete SDL schema as a text string. - For MULTI_FILE format: contains the ZIP archive as binary data. |
+| content_type | [string](#string) |  | The MIME type of the schema content. Indicates how the client should interpret the schema field. Examples: - &#34;text/plain; charset=utf-8&#34; for SINGLE_FILE format - &#34;application/zip&#34; for MULTI_FILE format |
+
+
+
+
+
+
+<a name="bytebase-v1-DatabaseSchema"></a>
+
+### DatabaseSchema
+DatabaseSchema is the metadata for databases.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  | The schema dump from database. |
+
+
+
+
+
+
+<a name="bytebase-v1-DependencyColumn"></a>
+
+### DependencyColumn
+DependencyColumn is the metadata for dependency columns.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  | The schema is the schema of a reference column. |
+| table | [string](#string) |  | The table is the table of a reference column. |
+| column | [string](#string) |  | The column is the name of a reference column. |
+
+
+
+
+
+
+<a name="bytebase-v1-DependencyTable"></a>
+
+### DependencyTable
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  | The schema is the schema of a reference table. |
+| table | [string](#string) |  | The table is the name of a reference table. |
+
+
+
+
+
+
+<a name="bytebase-v1-DiffMetadataRequest"></a>
+
+### DiffMetadataRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The database whose current schema is the diff source. Format: instances/{instance}/databases/{database} |
+| target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. The source metadata and the engine are read from the database, so only the target travels in the request. Must describe the COMPLETE target schema: the diff runs against the full stored source, so any object omitted from the target (for example by a truncated metadata fetch) is treated as dropped. |
+
+
+
+
+
+
+<a name="bytebase-v1-DiffMetadataResponse"></a>
+
+### DiffMetadataResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| diff | [string](#string) |  | The generated migration statements. |
+
+
+
+
+
+
+<a name="bytebase-v1-DiffSchemaRequest"></a>
+
+### DiffSchemaRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database or changelog. Format: database: instances/{instance}/databases/{database} changelog: instances/{instance}/databases/{database}/changelogs/{changelog} |
+| schema | [string](#string) |  | The target schema. |
+| changelog | [string](#string) |  | The resource name of the changelog Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
+
+
+
+
+
+
+<a name="bytebase-v1-DiffSchemaResponse"></a>
+
+### DiffSchemaResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| diff | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DimensionConstraint"></a>
+
+### DimensionConstraint
+DimensionConstraint defines constraints for a spatial dimension.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| dimension | [string](#string) |  | Dimension name/type (X, Y, Z, M, etc.) |
+| min_value | [double](#double) |  | Minimum value for this dimension |
+| max_value | [double](#double) |  | Maximum value for this dimension |
+| tolerance | [double](#double) |  | Tolerance for this dimension |
+
+
+
+
+
+
+<a name="bytebase-v1-DimensionalConfig"></a>
+
+### DimensionalConfig
+DimensionalConfig defines dimensional and constraint parameters for spatial indexes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| dimensions | [int32](#int32) |  | Number of dimensions (2-4, default 2) |
+| data_type | [string](#string) |  | Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.) |
+| srid | [int32](#int32) |  | Spatial reference system identifier (SRID) |
+| constraints | [DimensionConstraint](#bytebase-v1-DimensionConstraint) | repeated | Coordinate system constraints |
+
+
+
+
+
+
+<a name="bytebase-v1-EnumTypeMetadata"></a>
+
+### EnumTypeMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of a type. |
+| values | [string](#string) | repeated | The enum values of a type. |
+| comment | [string](#string) |  | The comment describing the enum type. |
+| skip_dump | [bool](#bool) |  | Whether to skip this enum type during schema dump operations. |
+
+
+
+
+
+
+<a name="bytebase-v1-EventMetadata"></a>
+
+### EventMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the event. |
+| definition | [string](#string) |  | The schedule of the event. |
+| time_zone | [string](#string) |  | The time zone of the event. |
+| sql_mode | [string](#string) |  | The SQL mode setting for the event. |
+| character_set_client | [string](#string) |  | The character set used by the client creating the event. |
+| collation_connection | [string](#string) |  | The collation used for the connection when creating the event. |
+| comment | [string](#string) |  | The comment is the comment of an event. |
+
+
+
+
+
+
+<a name="bytebase-v1-ExtensionMetadata"></a>
+
+### ExtensionMetadata
+ExtensionMetadata is the metadata for extensions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of an extension. |
+| schema | [string](#string) |  | The schema is the extension that is installed to. But the extension usage is not limited to the schema. |
+| version | [string](#string) |  | The version is the version of an extension. |
+| description | [string](#string) |  | The description is the description of an extension. |
+
+
+
+
+
+
+<a name="bytebase-v1-ExternalTableMetadata"></a>
+
+### ExternalTableMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a external table. |
+| external_server_name | [string](#string) |  | The external_server_name is the name of the external server. |
+| external_database_name | [string](#string) |  | The external_database_name is the name of the external database. |
+| columns | [ColumnMetadata](#bytebase-v1-ColumnMetadata) | repeated | The columns is the ordered list of columns in a foreign table. |
+
+
+
+
+
+
+<a name="bytebase-v1-ForeignKeyMetadata"></a>
+
+### ForeignKeyMetadata
+ForeignKeyMetadata is the metadata for foreign keys.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a foreign key. |
+| columns | [string](#string) | repeated | The columns are the ordered referencing columns of a foreign key. |
+| referenced_schema | [string](#string) |  | The referenced_schema is the referenced schema name of a foreign key. It is an empty string for databases without such concept such as MySQL. |
+| referenced_table | [string](#string) |  | The referenced_table is the referenced table name of a foreign key. |
+| referenced_columns | [string](#string) | repeated | The referenced_columns are the ordered referenced columns of a foreign key. |
+| on_delete | [string](#string) |  | The on_delete is the on delete action of a foreign key. |
+| on_update | [string](#string) |  | The on_update is the on update action of a foreign key. |
+| match_type | [string](#string) |  | The match_type is the match type of a foreign key. The match_type is the PostgreSQL specific field. It&#39;s empty string for other databases. |
+
+
+
+
+
+
+<a name="bytebase-v1-FunctionMetadata"></a>
+
+### FunctionMetadata
+FunctionMetadata is the metadata for functions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a function. |
+| definition | [string](#string) |  | The definition is the definition of a function. |
+| signature | [string](#string) |  | The signature is the name with the number and type of input arguments the function takes. |
+| character_set_client | [string](#string) |  | MySQL specific metadata. |
+| collation_connection | [string](#string) |  |  |
+| database_collation | [string](#string) |  |  |
+| sql_mode | [string](#string) |  |  |
+| comment | [string](#string) |  |  |
+| dependency_tables | [DependencyTable](#bytebase-v1-DependencyTable) | repeated | The dependency_tables is the list of dependency tables of a function. For PostgreSQL, it&#39;s the list of tables that the function depends on the return type definition. |
+| skip_dump | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-GenerationMetadata"></a>
+
+### GenerationMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type) |  |  |
+| expression | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-GetDatabaseMetadataRequest"></a>
+
+### GetDatabaseMetadataRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/metadata |
+| filter | [string](#string) |  | Filter is used to filter databases returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - schema: the schema name, support &#34;==&#34; operator. - table: the table name, support &#34;==&#34; and &#34;.contains()&#34; operator.
+
+For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; table.contains(&#34;table-a&#34;) schema == &#34;schema-a&#34; &amp;&amp; table.contains(&#34;sample&#34;) The filter is used to search for tables containing &#34;sample&#34; in the schema &#34;schemas/schema-a&#34;. The column masking level will only be returned when a table filter is used. |
+| limit | [int32](#int32) |  | Limit the response size of returned table metadata per schema. For example, if the database has 3 schemas, and each schema has 100 tables, if limit is 20, then only 20 tables will be returned for each schema, total 60 tables. Default 0, means no limit. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetDatabaseRequest"></a>
+
+### GetDatabaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database to retrieve. Format: instances/{instance}/databases/{database} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetDatabaseSDLSchemaRequest"></a>
+
+### GetDatabaseSDLSchemaRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database to retrieve SDL schema. Format: instances/{instance}/databases/{database}/sdlSchema |
+| format | [GetDatabaseSDLSchemaRequest.SDLFormat](#bytebase-v1-GetDatabaseSDLSchemaRequest-SDLFormat) |  | The format of the SDL schema output. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetDatabaseSchemaRequest"></a>
+
+### GetDatabaseSchemaRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database to retrieve schema. Format: instances/{instance}/databases/{database}/schema |
+
+
+
+
+
+
+<a name="bytebase-v1-GetSchemaStringRequest"></a>
+
+### GetSchemaStringRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database. Format: instances/{instance}/databases/{database} |
+| type | [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType) |  |  |
+| schema | [string](#string) |  | It&#39;s empty for DATABASE. |
+| object | [string](#string) |  | It&#39;s empty for DATABASE and SCHEMA. |
+| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | If use the metadata to generate the schema string, the type is OBJECT_TYPE_UNSPECIFIED. Also the schema and object are empty. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetSchemaStringResponse"></a>
+
+### GetSchemaStringResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_string | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-GridLevel"></a>
+
+### GridLevel
+GridLevel defines a tessellation grid level with its density.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| level | [int32](#int32) |  | Grid level number (1-4 for SQL Server) |
+| density | [string](#string) |  | Grid density (LOW, MEDIUM, HIGH) |
+
+
+
+
+
+
+<a name="bytebase-v1-IndexMetadata"></a>
+
+### IndexMetadata
+IndexMetadata is the metadata for indexes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of an index. |
+| expressions | [string](#string) | repeated | The expressions are the ordered columns or expressions of an index. This could refer to a column or an expression. |
+| key_length | [int64](#int64) | repeated | The key_lengths are the ordered key lengths of an index. If the key length is not specified, it&#39;s -1. |
+| descending | [bool](#bool) | repeated | The descending is the ordered descending of an index. |
+| type | [string](#string) |  | The type is the type of an index. |
+| unique | [bool](#bool) |  | The unique is whether the index is unique. |
+| primary | [bool](#bool) |  | The primary is whether the index is a primary key index. |
+| visible | [bool](#bool) |  | The visible is whether the index is visible. |
+| comment | [string](#string) |  | The comment is the comment of an index. |
+| definition | [string](#string) |  | The definition of an index. |
+| parent_index_schema | [string](#string) |  | The schema name of the parent index. |
+| parent_index_name | [string](#string) |  | The index name of the parent index. |
+| granularity | [int64](#int64) |  | The number of granules in the block. It&#39;s a ClickHouse specific field. |
+| is_constraint | [bool](#bool) |  | It&#39;s a PostgreSQL specific field. The unique constraint and unique index are not the same thing in PostgreSQL. |
+| spatial_config | [SpatialIndexConfig](#bytebase-v1-SpatialIndexConfig) |  | Spatial index configuration for spatial databases like SQL Server, PostgreSQL with PostGIS, etc. |
+| opclass_names | [string](#string) | repeated | https://www.postgresql.org/docs/current/catalog-pg-opclass.html Name of the operator class for each column. (PostgreSQL specific). |
+| opclass_defaults | [bool](#bool) | repeated | True if the operator class is the default. (PostgreSQL specific). |
+
+
+
+
+
+
+<a name="bytebase-v1-ListDatabasesRequest"></a>
+
+### ListDatabasesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | - projects/{project}: list databases in a project, require &#34;bb.projects.get&#34; permission. - workspaces/{id}: list databases in the workspace, require &#34;bb.databases.list&#34; permission. - instances/{instances}: list databases in a instance, require &#34;bb.instances.get&#34; permission |
+| page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 10 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
+| filter | [string](#string) |  | Filter is used to filter databases returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - name: the database name, support &#34;.contains()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - engine: the database engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - exclude_unassigned: should be &#34;true&#34; or &#34;false&#34;, will not show unassigned databases if it&#39;s true, support &#34;==&#34; operator. - table: filter by the database table, support &#34;==&#34; and &#34;.contains()&#34; operator. - labels.{key}: the database label, support &#34;==&#34; and &#34;in&#34; operators.
+
+For example: environment == &#34;environments/{environment resource id}&#34; environment == &#34;&#34; (find databases which environment is not set) project == &#34;projects/{project resource id}&#34; instance == &#34;instances/{instance resource id}&#34; name.contains(&#34;database name&#34;) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) exclude_unassigned == true table == &#34;sample&#34; table.contains(&#34;sam&#34;) labels.environment == &#34;production&#34; labels.region == &#34;asia&#34; labels.region in [&#34;asia&#34;, &#34;europe&#34;]
+
+You can combine filter conditions like: environment == &#34;environments/prod&#34; &amp;&amp; name.contains(&#34;employee&#34;) |
+| show_deleted | [bool](#bool) |  | Show deleted database if specified. |
+| order_by | [string](#string) |  | The order by of databases. Support name, project, instance. The default sorting order is ascending. For example: - order_by = &#34;name&#34; - order by name ascending - order_by = &#34;name desc&#34; - order_by = &#34;name desc, project asc&#34; |
+
+
+
+
+
+
+<a name="bytebase-v1-ListDatabasesResponse"></a>
+
+### ListDatabasesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [Database](#bytebase-v1-Database) | repeated | The databases from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-MaterializedViewMetadata"></a>
+
+### MaterializedViewMetadata
+MaterializedViewMetadata is the metadata for materialized views.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a materialized view. |
+| definition | [string](#string) |  | The definition is the definition of a materialized view. |
+| comment | [string](#string) |  | The comment is the comment of a materialized view. |
+| dependency_columns | [DependencyColumn](#bytebase-v1-DependencyColumn) | repeated | The dependency_columns is the list of dependency columns of a materialized view. |
+| triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The columns is the ordered list of columns in a table. |
+| indexes | [IndexMetadata](#bytebase-v1-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
+| skip_dump | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PackageMetadata"></a>
+
+### PackageMetadata
+PackageMetadata is the metadata for packages.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a package. |
+| definition | [string](#string) |  | The definition is the definition of a package. |
+
+
+
+
+
+
+<a name="bytebase-v1-ProcedureMetadata"></a>
+
+### ProcedureMetadata
+ProcedureMetadata is the metadata for procedures.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a procedure. |
+| definition | [string](#string) |  | The definition is the definition of a procedure. |
+| signature | [string](#string) |  | The signature is the name with the number and type of input arguments the procedure takes. |
+| character_set_client | [string](#string) |  | MySQL specific metadata. |
+| collation_connection | [string](#string) |  |  |
+| database_collation | [string](#string) |  |  |
+| sql_mode | [string](#string) |  |  |
+| comment | [string](#string) |  | The comment is the comment of a procedure. |
+| skip_dump | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SchemaMetadata"></a>
+
+### SchemaMetadata
+SchemaMetadata is the metadata for schemas.
+This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
+| tables | [TableMetadata](#bytebase-v1-TableMetadata) | repeated | The tables is the list of tables in a schema. |
+| external_tables | [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata) | repeated | The external_tables is the list of external tables in a schema. |
+| views | [ViewMetadata](#bytebase-v1-ViewMetadata) | repeated | The views is the list of views in a schema. |
+| functions | [FunctionMetadata](#bytebase-v1-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
+| procedures | [ProcedureMetadata](#bytebase-v1-ProcedureMetadata) | repeated | The procedures is the list of procedures in a schema. |
+| streams | [StreamMetadata](#bytebase-v1-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
+| tasks | [TaskMetadata](#bytebase-v1-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
+| materialized_views | [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
+| packages | [PackageMetadata](#bytebase-v1-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
+| owner | [string](#string) |  | The owner of the schema. |
+| sequences | [SequenceMetadata](#bytebase-v1-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema, sorted by name. |
+| events | [EventMetadata](#bytebase-v1-EventMetadata) | repeated | The events is the list of scheduled events in a schema. |
+| enum_types | [EnumTypeMetadata](#bytebase-v1-EnumTypeMetadata) | repeated | The enum_types is the list of user-defined enum types in a schema. |
+| skip_dump | [bool](#bool) |  | Whether to skip this schema during schema dump operations. |
+| comment | [string](#string) |  | The comment is the comment of a schema. |
+| composite_types | [CompositeTypeMetadata](#bytebase-v1-CompositeTypeMetadata) | repeated | The composite_types is the list of user-defined composite types in a schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row types and derived types. |
+
+
+
+
+
+
+<a name="bytebase-v1-SequenceMetadata"></a>
+
+### SequenceMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of a sequence. |
+| data_type | [string](#string) |  | The data type of a sequence. |
+| start | [string](#string) |  | The start value of a sequence. |
+| min_value | [string](#string) |  | The minimum value of a sequence. |
+| max_value | [string](#string) |  | The maximum value of a sequence. |
+| increment | [string](#string) |  | Increment value of a sequence. |
+| cycle | [bool](#bool) |  | Cycle is whether the sequence cycles. |
+| cache_size | [string](#string) |  | Cache size of a sequence. |
+| last_value | [string](#string) |  | Last value of a sequence. |
+| owner_table | [string](#string) |  | The owner table of the sequence. |
+| owner_column | [string](#string) |  | The owner column of the sequence. |
+| comment | [string](#string) |  | The comment describing the sequence. |
+| skip_dump | [bool](#bool) |  | Whether to skip this sequence during schema dump operations. |
+
+
+
+
+
+
+<a name="bytebase-v1-SpatialIndexConfig"></a>
+
+### SpatialIndexConfig
+SpatialIndexConfig defines the spatial index configuration for spatial databases.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| method | [string](#string) |  | Spatial indexing method (e.g., &#34;SPATIAL&#34;, &#34;R-TREE&#34;, &#34;GIST&#34;) |
+| tessellation | [TessellationConfig](#bytebase-v1-TessellationConfig) |  | Tessellation configuration for grid-based spatial indexes |
+| storage | [StorageConfig](#bytebase-v1-StorageConfig) |  | Storage and performance configuration |
+| dimensional | [DimensionalConfig](#bytebase-v1-DimensionalConfig) |  | Dimensional configuration |
+
+
+
+
+
+
+<a name="bytebase-v1-StorageConfig"></a>
+
+### StorageConfig
+StorageConfig defines storage and performance parameters for spatial indexes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| fillfactor | [int32](#int32) |  | Fill factor percentage (1-100) |
+| buffering | [string](#string) |  | Buffering mode for PostgreSQL (auto, on, off) |
+| tablespace | [string](#string) |  | Tablespace configuration for Oracle |
+| work_tablespace | [string](#string) |  |  |
+| sdo_level | [int32](#int32) |  |  |
+| commit_interval | [int32](#int32) |  |  |
+| pad_index | [bool](#bool) |  | SQL Server specific parameters |
+| sort_in_tempdb | [string](#string) |  | ON, OFF |
+| drop_existing | [bool](#bool) |  |  |
+| online | [bool](#bool) |  |  |
+| allow_row_locks | [bool](#bool) |  |  |
+| allow_page_locks | [bool](#bool) |  |  |
+| maxdop | [int32](#int32) |  |  |
+| data_compression | [string](#string) |  | NONE, ROW, PAGE |
+
+
+
+
+
+
+<a name="bytebase-v1-StreamMetadata"></a>
+
+### StreamMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a stream. |
+| table_name | [string](#string) |  | The table_name is the name of the table/view that the stream is created on. |
+| owner | [string](#string) |  | The owner of the stream. |
+| comment | [string](#string) |  | The comment of the stream. |
+| type | [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type) |  | The type of the stream. |
+| stale | [bool](#bool) |  | Indicates whether the stream was last read before the `stale_after` time. |
+| mode | [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode) |  | The mode of the stream. |
+| definition | [string](#string) |  | The definition of the stream. |
+
+
+
+
+
+
+<a name="bytebase-v1-SyncDatabaseRequest"></a>
+
+### SyncDatabaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database to sync. Format: instances/{instance}/databases/{database} |
+
+
+
+
+
+
+<a name="bytebase-v1-SyncDatabaseResponse"></a>
+
+### SyncDatabaseResponse
+
+
+
+
+
+
+
+<a name="bytebase-v1-TableMetadata"></a>
+
+### TableMetadata
+TableMetadata is the metadata for tables.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a table. |
+| columns | [ColumnMetadata](#bytebase-v1-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
+| indexes | [IndexMetadata](#bytebase-v1-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
+| engine | [string](#string) |  | The engine is the engine of a table. |
+| collation | [string](#string) |  | The collation is the collation of a table. |
+| charset | [string](#string) |  | The character set of table. |
+| row_count | [int64](#int64) |  | The row_count is the estimated number of rows of a table. |
+| data_size | [int64](#int64) |  | The data_size is the estimated data size of a table. |
+| index_size | [int64](#int64) |  | The index_size is the estimated index size of a table. |
+| data_free | [int64](#int64) |  | The data_free is the estimated free data size of a table. |
+| create_options | [string](#string) |  | The create_options is the create option of a table. |
+| comment | [string](#string) |  | The comment is the comment of a table. |
+| foreign_keys | [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
+| partitions | [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
+| check_constraints | [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata) | repeated | The check_constraints is the list of check constraints in a table. |
+| owner | [string](#string) |  | The owner of the table. |
+| sorting_keys | [string](#string) | repeated | The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field. Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by |
+| triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The triggers is the list of triggers associated with the table. |
+| skip_dump | [bool](#bool) |  | Whether to skip this table during schema dump operations. |
+| sharding_info | [string](#string) |  | https://docs.pingcap.com/tidb/stable/information-schema-tables/ |
+| primary_key_type | [string](#string) |  | https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes CLUSTERED or NONCLUSTERED. |
+
+
+
+
+
+
+<a name="bytebase-v1-TablePartitionMetadata"></a>
+
+### TablePartitionMetadata
+TablePartitionMetadata is the metadata for table partitions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a table partition. |
+| type | [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type) |  | The type of a table partition. |
+| expression | [string](#string) |  | The expression is the expression of a table partition. For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL, the expression is the `expr` or `column_list` of the following syntax. PARTITION BY { [LINEAR] HASH(expr) | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list) | RANGE{(expr) | COLUMNS(column_list)} | LIST{(expr) | COLUMNS(column_list)} }. |
+| value | [string](#string) |  | The value is the value of a table partition. For MySQL, the value is for RANGE and LIST partition types, - For a RANGE partition, it contains the value set in the partition&#39;s VALUES LESS THAN clause, which can be either an integer or MAXVALUE. - For a LIST partition, this column contains the values defined in the partition&#39;s VALUES IN clause, which is a list of comma-separated integer values. - For others, it&#39;s an empty string. |
+| use_default | [string](#string) |  | The use_default is whether the users use the default partition, it stores the different value for different database engines. For MySQL, it&#39;s [INT] type, 0 means not use default partition, otherwise, it&#39;s equals to number in syntax [SUB]PARTITION {number}. |
+| subpartitions | [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata) | repeated | The subpartitions is the list of subpartitions in a table partition. |
+| indexes | [IndexMetadata](#bytebase-v1-IndexMetadata) | repeated |  |
+| check_constraints | [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskMetadata"></a>
+
+### TaskMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a task. |
+| id | [string](#string) |  | The id is the snowflake-generated id of a task. Example: 01ad32a0-1bb6-5e93-0000-000000000001 |
+| owner | [string](#string) |  | The owner of the task. |
+| comment | [string](#string) |  | The comment of the task. |
+| warehouse | [string](#string) |  | The warehouse of the task. |
+| schedule | [string](#string) |  | The schedule interval of the task. |
+| predecessors | [string](#string) | repeated | The predecessor tasks of the task. |
+| state | [TaskMetadata.State](#bytebase-v1-TaskMetadata-State) |  | The state of the task. |
+| condition | [string](#string) |  | The condition of the task. |
+| definition | [string](#string) |  | The definition of the task. |
+
+
+
+
+
+
+<a name="bytebase-v1-TessellationConfig"></a>
+
+### TessellationConfig
+TessellationConfig defines tessellation parameters for spatial indexes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| scheme | [string](#string) |  | Tessellation scheme (e.g., &#34;GEOMETRY_GRID&#34;, &#34;GEOGRAPHY_GRID&#34;, &#34;GEOMETRY_AUTO_GRID&#34;) |
+| grid_levels | [GridLevel](#bytebase-v1-GridLevel) | repeated | Grid levels and densities for multi-level tessellation |
+| cells_per_object | [int32](#int32) |  | Number of cells per object (1-8192 for SQL Server) |
+| bounding_box | [BoundingBox](#bytebase-v1-BoundingBox) |  | Bounding box for GEOMETRY tessellation (not used for GEOGRAPHY) |
+
+
+
+
+
+
+<a name="bytebase-v1-TriggerMetadata"></a>
+
+### TriggerMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of the trigger. |
+| event | [string](#string) |  | The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. |
+| timing | [string](#string) |  | The timing is the timing of the trigger, such as BEFORE, AFTER. |
+| body | [string](#string) |  | The body is the body of the trigger. |
+| sql_mode | [string](#string) |  | The SQL mode setting for the trigger. |
+| character_set_client | [string](#string) |  | The character set used by the client creating the trigger. |
+| collation_connection | [string](#string) |  | The collation used for the connection when creating the trigger. |
+| comment | [string](#string) |  | The comment describing the trigger. |
+| skip_dump | [bool](#bool) |  | Whether to skip this trigger during schema dump operations. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateDatabaseRequest"></a>
+
+### UpdateDatabaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [Database](#bytebase-v1-Database) |  | The database to update.
+
+The database&#39;s `name` field is used to identify the database to update. Format: instances/{instance}/databases/{database} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the database is not found, a new database will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+
+<a name="bytebase-v1-ViewMetadata"></a>
+
+### ViewMetadata
+ViewMetadata is the metadata for views.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a view. |
+| definition | [string](#string) |  | The definition is the definition of a view. |
+| comment | [string](#string) |  | The comment is the comment of a view. |
+| dependency_columns | [DependencyColumn](#bytebase-v1-DependencyColumn) | repeated | The dependency_columns is the list of dependency columns of a view. |
+| columns | [ColumnMetadata](#bytebase-v1-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
+| triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The triggers is the list of triggers in a view. |
+| skip_dump | [bool](#bool) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-ColumnMetadata-IdentityGeneration"></a>
+
+### ColumnMetadata.IdentityGeneration
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| IDENTITY_GENERATION_UNSPECIFIED | 0 |  |
+| ALWAYS | 1 |  |
+| BY_DEFAULT | 2 |  |
+
+
+
+<a name="bytebase-v1-GenerationMetadata-Type"></a>
+
+### GenerationMetadata.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| VIRTUAL | 1 |  |
+| STORED | 2 |  |
+
+
+
+<a name="bytebase-v1-GetDatabaseSDLSchemaRequest-SDLFormat"></a>
+
+### GetDatabaseSDLSchemaRequest.SDLFormat
+SDLFormat specifies the output format for SDL schema.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SDL_FORMAT_UNSPECIFIED | 0 | Unspecified format. Defaults to SINGLE_FILE. |
+| SINGLE_FILE | 1 | Single file format: returns the complete SDL schema as a single file. |
+| MULTI_FILE | 2 | Multi-file format: returns the SDL schema as a ZIP archive containing multiple files organized by schema objects (tables, views, functions, etc.). |
+
+
+
+<a name="bytebase-v1-GetSchemaStringRequest-ObjectType"></a>
+
+### GetSchemaStringRequest.ObjectType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| OBJECT_TYPE_UNSPECIFIED | 0 |  |
+| DATABASE | 1 |  |
+| SCHEMA | 2 |  |
+| TABLE | 3 |  |
+| VIEW | 4 |  |
+| MATERIALIZED_VIEW | 5 |  |
+| FUNCTION | 6 |  |
+| PROCEDURE | 7 |  |
+| SEQUENCE | 8 |  |
+
+
+
+<a name="bytebase-v1-StreamMetadata-Mode"></a>
+
+### StreamMetadata.Mode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MODE_UNSPECIFIED | 0 |  |
+| DEFAULT | 1 |  |
+| APPEND_ONLY | 2 |  |
+| INSERT_ONLY | 3 |  |
+
+
+
+<a name="bytebase-v1-StreamMetadata-Type"></a>
+
+### StreamMetadata.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| DELTA | 1 |  |
+
+
+
+<a name="bytebase-v1-SyncStatus"></a>
+
+### SyncStatus
+SyncStatus is the status of the database sync operation.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SYNC_STATUS_UNSPECIFIED | 0 |  |
+| OK | 1 | The database was synced successfully. |
+| FAILED | 2 | The database sync failed. |
+
+
+
+<a name="bytebase-v1-TablePartitionMetadata-Type"></a>
+
+### TablePartitionMetadata.Type
+Type is the type of a table partition, some database engines may not
+support all types. Only avilable for the following database engines now:
+MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,
+LINEAR_KEY
+(https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:
+RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,
+LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| RANGE | 1 |  |
+| RANGE_COLUMNS | 2 |  |
+| LIST | 3 |  |
+| LIST_COLUMNS | 4 |  |
+| HASH | 5 |  |
+| LINEAR_HASH | 6 |  |
+| KEY | 7 |  |
+| LINEAR_KEY | 8 |  |
+
+
+
+<a name="bytebase-v1-TaskMetadata-State"></a>
+
+### TaskMetadata.State
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATE_UNSPECIFIED | 0 |  |
+| STARTED | 1 |  |
+| SUSPENDED | 2 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-DatabaseService"></a>
+
+### DatabaseService
+DatabaseService manages databases and their schemas.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetDatabase | [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest) | [Database](#bytebase-v1-Database) | Retrieves a database by name. Permissions required: bb.databases.get |
+| BatchGetDatabases | [BatchGetDatabasesRequest](#bytebase-v1-BatchGetDatabasesRequest) | [BatchGetDatabasesResponse](#bytebase-v1-BatchGetDatabasesResponse) | Retrieves multiple databases by their names. Permissions required: bb.databases.get |
+| ListDatabases | [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest) | [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse) | Lists databases in a project, instance, or workspace. Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent) |
+| UpdateDatabase | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | [Database](#bytebase-v1-Database) | Updates database properties such as labels and project assignment. Permissions required: bb.databases.update |
+| BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) | Updates multiple databases in a single batch operation. Permissions required: bb.databases.update |
+| SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) | Synchronizes database schema from the instance. Permissions required: bb.databases.sync |
+| BatchSyncDatabases | [BatchSyncDatabasesRequest](#bytebase-v1-BatchSyncDatabasesRequest) | [BatchSyncDatabasesResponse](#bytebase-v1-BatchSyncDatabasesResponse) | Synchronizes multiple databases in a single batch operation. Permissions required: bb.databases.sync |
+| GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) | Retrieves database metadata including tables, columns, and indexes. Permissions required: bb.databases.getSchema |
+| GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) | Retrieves database schema as DDL statements. Permissions required: bb.databases.getSchema |
+| GetDatabaseSDLSchema | [GetDatabaseSDLSchemaRequest](#bytebase-v1-GetDatabaseSDLSchemaRequest) | [DatabaseSDLSchema](#bytebase-v1-DatabaseSDLSchema) | Retrieves database schema in SDL (Schema Definition Language) format. Permissions required: bb.databases.getSchema |
+| DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) | Compares and generates migration statements between two schemas. Permissions required: bb.databases.get |
+| DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) | Generates migration statements from the database&#39;s current schema to the given target metadata. Permissions required: bb.databases.diffMetadata |
+| GetSchemaString | [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest) | [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse) | Generates schema DDL for a database object. Permissions required: bb.databases.getSchema |
 
  
 

@@ -91,6 +91,11 @@ func (*Driver) GetDB() *sql.DB {
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	stmts, err := mongodbparser.SplitSQL(statement)
 	if err != nil {
+		// Log the unparseable input as a failed command so the parse error is
+		// visible in the task run log instead of the statement silently
+		// disappearing from it (BYT-9950).
+		opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
+		opts.LogCommandResponse(0, nil, err.Error())
 		return 0, errors.Wrap(err, "failed to split MongoDB statement")
 	}
 

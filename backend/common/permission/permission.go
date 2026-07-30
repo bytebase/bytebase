@@ -29,6 +29,7 @@ const (
 	DatabaseGroupsList                   Permission = "bb.databaseGroups.list"
 	DatabaseGroupsUpdate                 Permission = "bb.databaseGroups.update"
 	DatabasesCheck                       Permission = "bb.databases.check"
+	DatabasesDiffMetadata                Permission = "bb.databases.diffMetadata"
 	DatabasesGet                         Permission = "bb.databases.get"
 	DatabasesGetSchema                   Permission = "bb.databases.getSchema"
 	DatabasesList                        Permission = "bb.databases.list"

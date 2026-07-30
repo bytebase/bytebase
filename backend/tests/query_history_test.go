@@ -15,6 +15,8 @@ import (
 // TestListQueryHistories covers BYT-9892: ListQueryHistories exposes a
 // project's query histories across users, gated by bb.queryHistories.list on the
 // project, while SearchQueryHistories and GetQueryHistory stay caller-scoped.
+// It also pins the deprecated SQLService aliases delegating to
+// QueryHistoryService with identical results and auth until their removal.
 func TestListQueryHistories(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -102,7 +104,7 @@ func TestListQueryHistories(t *testing.T) {
 	a.Len(otherQueryResp.Msg.Results, 1)
 
 	// Grab one history name for the GetQueryHistory checks below.
-	searchResp, err := ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+	searchResp, err := ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
 		Parent: ctl.project.Name,
 	}))
 	a.NoError(err)
@@ -133,13 +135,13 @@ func TestListQueryHistories(t *testing.T) {
 	// 4. Without bb.queryHistories.list: List is denied, Get hides existence.
 	ctl.authInterceptor.token = auditorToken
 
-	_, err = ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+	_, err = ctl.queryHistoryServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
 		Parent: ctl.project.Name,
 	}))
 	a.Error(err)
 	a.Equal(connect.CodePermissionDenied, connect.CodeOf(err))
 
-	_, err = ctl.sqlServiceClient.GetQueryHistory(ctx, connect.NewRequest(&v1pb.GetQueryHistoryRequest{
+	_, err = ctl.queryHistoryServiceClient.GetQueryHistory(ctx, connect.NewRequest(&v1pb.GetQueryHistoryRequest{
 		Name: historyName,
 	}))
 	a.Error(err)
@@ -174,7 +176,7 @@ func TestListQueryHistories(t *testing.T) {
 	// 6. With the grant: the auditor lists other users' histories.
 	ctl.authInterceptor.token = auditorToken
 
-	listResp, err := ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+	listResp, err := ctl.queryHistoryServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
 		Parent: ctl.project.Name,
 	}))
 	a.NoError(err)
@@ -192,7 +194,7 @@ func TestListQueryHistories(t *testing.T) {
 	}
 
 	// The grant is on ctl.project only, so listing the other project is denied.
-	_, err = ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+	_, err = ctl.queryHistoryServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
 		Parent: otherProject.Name,
 	}))
 	a.Error(err)
@@ -201,7 +203,7 @@ func TestListQueryHistories(t *testing.T) {
 	// The owner (workspace admin) listing the other project sees only that
 	// project's single history.
 	ctl.authInterceptor.token = ownerToken
-	otherListResp, err := ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+	otherListResp, err := ctl.queryHistoryServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
 		Parent: otherProject.Name,
 	}))
 	a.NoError(err)
@@ -211,7 +213,7 @@ func TestListQueryHistories(t *testing.T) {
 	ctl.authInterceptor.token = auditorToken
 
 	// Creator filter pins to the given user.
-	listResp, err = ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+	listResp, err = ctl.queryHistoryServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
 		Parent: ctl.project.Name,
 		Filter: fmt.Sprintf("creator == \"users/%s\"", ownerEmail),
 	}))
@@ -219,7 +221,7 @@ func TestListQueryHistories(t *testing.T) {
 	a.GreaterOrEqual(len(listResp.Msg.QueryHistories), 2)
 
 	// Filtering by a creator with no histories returns empty.
-	listResp, err = ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+	listResp, err = ctl.queryHistoryServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
 		Parent: ctl.project.Name,
 		Filter: fmt.Sprintf("creator == \"users/%s\"", auditorEmail),
 	}))
@@ -227,7 +229,7 @@ func TestListQueryHistories(t *testing.T) {
 	a.Empty(listResp.Msg.QueryHistories)
 
 	// Only the creator filter is supported.
-	_, err = ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+	_, err = ctl.queryHistoryServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
 		Parent: ctl.project.Name,
 		Filter: `type == "QUERY"`,
 	}))
@@ -236,14 +238,14 @@ func TestListQueryHistories(t *testing.T) {
 
 	// GetQueryHistory stays creator-only: even with the grant, the
 	// non-creator cannot resolve an individual history.
-	_, err = ctl.sqlServiceClient.GetQueryHistory(ctx, connect.NewRequest(&v1pb.GetQueryHistoryRequest{
+	_, err = ctl.queryHistoryServiceClient.GetQueryHistory(ctx, connect.NewRequest(&v1pb.GetQueryHistoryRequest{
 		Name: historyName,
 	}))
 	a.Error(err)
 	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 
 	// SearchQueryHistories stays caller-scoped: the auditor sees nothing.
-	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+	searchResp, err = ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
 		Parent: ctl.project.Name,
 	}))
 	a.NoError(err)
@@ -251,7 +253,7 @@ func TestListQueryHistories(t *testing.T) {
 
 	// 7. Cross-project listing via the AIP-159 wildcard parent "projects/-"
 	// requires a workspace-level grant, so the project-scoped auditor is denied.
-	_, err = ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+	_, err = ctl.queryHistoryServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
 		Parent: "projects/-",
 	}))
 	a.Error(err)
@@ -260,7 +262,7 @@ func TestListQueryHistories(t *testing.T) {
 	// The owner (workspace admin) lists across all projects and sees rows from
 	// both projects, each named under its own project.
 	ctl.authInterceptor.token = ownerToken
-	wildcardResp, err := ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+	wildcardResp, err := ctl.queryHistoryServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
 		Parent: "projects/-",
 	}))
 	a.NoError(err)
@@ -281,16 +283,17 @@ func TestListQueryHistories(t *testing.T) {
 	a.Equal(1, otherProjectCount)
 
 	// The creator filter composes with the wildcard parent.
-	wildcardResp, err = ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
+	wildcardResp, err = ctl.queryHistoryServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
 		Parent: "projects/-",
 		Filter: fmt.Sprintf("creator == \"users/%s\"", auditorEmail),
 	}))
 	a.NoError(err)
 	a.Empty(wildcardResp.Msg.QueryHistories)
 
-	// 8. SearchQueryHistories takes the same parent semantics as
-	// ListQueryHistories while staying caller-scoped.
-	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+	// 8. SearchQueryHistories requires a concrete parent project and stays
+	// caller-scoped; cross-project reads are reserved for the IAM-gated
+	// ListQueryHistories.
+	searchResp, err = ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
 		Parent: ctl.project.Name,
 	}))
 	a.NoError(err)
@@ -300,40 +303,77 @@ func TestListQueryHistories(t *testing.T) {
 		a.NotEqual(otherStatement, history.Statement)
 	}
 
-	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+	searchResp, err = ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
 		Parent: otherProject.Name,
 	}))
 	a.NoError(err)
 	a.Len(searchResp.Msg.QueryHistories, 1)
 	a.Equal(otherStatement, searchResp.Msg.QueryHistories[0].Statement)
 
-	// The wildcard parent searches across all projects.
-	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+	// The AIP-159 wildcard parent is rejected.
+	_, err = ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
 		Parent: "projects/-",
 	}))
-	a.NoError(err)
-	a.GreaterOrEqual(len(searchResp.Msg.QueryHistories), 3)
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 
 	// The parent is required.
-	_, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{}))
+	_, err = ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{}))
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 
 	// A nonexistent parent project is rejected, consistent with
 	// ListQueryHistories.
-	_, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+	_, err = ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
 		Parent: "projects/no-such-project",
 	}))
 	a.Error(err)
 	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 
-	// Search stays caller-scoped even with the wildcard parent: the auditor
-	// has run no queries and sees nothing.
-	ctl.authInterceptor.token = auditorToken
-	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
-		Parent: "projects/-",
+	// 9. The deprecated SQLService method names keep working as delegating
+	// aliases of QueryHistoryService until they are removed.
+	aliasSearchResp, err := ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{ //nolint:staticcheck // Pinning the deprecated alias until removal.
+		Parent: ctl.project.Name,
 	}))
 	a.NoError(err)
-	a.Empty(searchResp.Msg.QueryHistories)
-	ctl.authInterceptor.token = ownerToken
+	newSearchResp, err := ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+	}))
+	a.NoError(err)
+	a.Equal(len(newSearchResp.Msg.QueryHistories), len(aliasSearchResp.Msg.QueryHistories))
+	for i, history := range aliasSearchResp.Msg.QueryHistories {
+		a.Equal(newSearchResp.Msg.QueryHistories[i].Name, history.Name)
+	}
+
+	aliasListResp, err := ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{ //nolint:staticcheck // Pinning the deprecated alias until removal.
+		Parent: otherProject.Name,
+	}))
+	a.NoError(err)
+	a.Len(aliasListResp.Msg.QueryHistories, 1)
+	a.Equal(otherStatement, aliasListResp.Msg.QueryHistories[0].Statement)
+
+	// Both method names resolve the same individual history for its creator.
+	getResp, err := ctl.queryHistoryServiceClient.GetQueryHistory(ctx, connect.NewRequest(&v1pb.GetQueryHistoryRequest{
+		Name: historyName,
+	}))
+	a.NoError(err)
+	a.Equal(historyName, getResp.Msg.Name)
+	aliasGetResp, err := ctl.sqlServiceClient.GetQueryHistory(ctx, connect.NewRequest(&v1pb.GetQueryHistoryRequest{ //nolint:staticcheck // Pinning the deprecated alias until removal.
+		Name: historyName,
+	}))
+	a.NoError(err)
+	a.Equal(historyName, aliasGetResp.Msg.Name)
+
+	// The aliases enforce the same IAM and caller scoping.
+	ctl.authInterceptor.token = auditorToken
+	_, err = ctl.sqlServiceClient.GetQueryHistory(ctx, connect.NewRequest(&v1pb.GetQueryHistoryRequest{ //nolint:staticcheck // Pinning the deprecated alias until removal.
+		Name: historyName,
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+	_, err = ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{ //nolint:staticcheck // Pinning the deprecated alias until removal.
+		Parent: otherProject.Name,
+	}))
+	a.Error(err)
+	a.Equal(connect.CodePermissionDenied, connect.CodeOf(err))
 }

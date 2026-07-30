@@ -14,8 +14,22 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+// ChangelogService implements the changelog service.
+type ChangelogService struct {
+	v1connect.UnimplementedChangelogServiceHandler
+	store *store.Store
+}
+
+// NewChangelogService creates a new ChangelogService.
+func NewChangelogService(store *store.Store) *ChangelogService {
+	return &ChangelogService{
+		store: store,
+	}
+}
 
 func parseChangelogFilter(filter string, find *store.FindChangelogMessage) error {
 	if filter == "" {
@@ -88,7 +102,7 @@ func parseChangelogFilter(filter string, find *store.FindChangelogMessage) error
 	return parseFilter(ast.NativeRep().Expr())
 }
 
-func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Request[v1pb.ListChangelogsRequest]) (*connect.Response[v1pb.ListChangelogsResponse], error) {
+func (s *ChangelogService) ListChangelogs(ctx context.Context, req *connect.Request[v1pb.ListChangelogsRequest]) (*connect.Response[v1pb.ListChangelogsResponse], error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(req.Msg.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", req.Msg.Parent))
@@ -143,14 +157,14 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 	}
 
 	// no subsequent pages
-	converted := s.convertToChangelogs(ctx, database, changelogs)
+	converted := convertToChangelogs(database, changelogs)
 	return connect.NewResponse(&v1pb.ListChangelogsResponse{
 		Changelogs:    converted,
 		NextPageToken: nextPageToken,
 	}), nil
 }
 
-func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request[v1pb.GetChangelogRequest]) (*connect.Response[v1pb.Changelog], error) {
+func (s *ChangelogService) GetChangelog(ctx context.Context, req *connect.Request[v1pb.GetChangelogRequest]) (*connect.Response[v1pb.Changelog], error) {
 	instanceID, databaseName, changelogID, err := common.GetInstanceDatabaseChangelogID(req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -185,20 +199,20 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseName))
 	}
 
-	converted := s.convertToChangelog(database, changelog)
+	converted := convertToChangelog(database, changelog)
 	return connect.NewResponse(converted), nil
 }
 
-func (s *DatabaseService) convertToChangelogs(_ context.Context, d *store.DatabaseMessage, cs []*store.ChangelogMessage) []*v1pb.Changelog {
+func convertToChangelogs(d *store.DatabaseMessage, cs []*store.ChangelogMessage) []*v1pb.Changelog {
 	var changelogs []*v1pb.Changelog
 	for _, c := range cs {
-		changelog := s.convertToChangelog(d, c)
+		changelog := convertToChangelog(d, c)
 		changelogs = append(changelogs, changelog)
 	}
 	return changelogs
 }
 
-func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.ChangelogMessage) *v1pb.Changelog {
+func convertToChangelog(d *store.DatabaseMessage, c *store.ChangelogMessage) *v1pb.Changelog {
 	cl := &v1pb.Changelog{
 		Name:       common.FormatChangelog(d.InstanceID, d.DatabaseName, c.ResourceID),
 		CreateTime: timestamppb.New(c.CreatedAt),

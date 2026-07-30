@@ -25,8 +25,6 @@ const (
 	SQLService_ListQueryHistories_FullMethodName   = "/bytebase.v1.SQLService/ListQueryHistories"
 	SQLService_GetQueryHistory_FullMethodName      = "/bytebase.v1.SQLService/GetQueryHistory"
 	SQLService_Export_FullMethodName               = "/bytebase.v1.SQLService/Export"
-	SQLService_DiffMetadata_FullMethodName         = "/bytebase.v1.SQLService/DiffMetadata"
-	SQLService_AICompletion_FullMethodName         = "/bytebase.v1.SQLService/AICompletion"
 )
 
 // SQLServiceClient is the client API for SQLService service.
@@ -41,24 +39,27 @@ type SQLServiceClient interface {
 	// Executes SQL with admin privileges via streaming connection.
 	// Permissions required: bb.sql.admin
 	AdminExecute(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AdminExecuteRequest, AdminExecuteResponse], error)
-	// SearchQueryHistories searches query histories for the caller.
+	// Deprecated: Do not use.
+	// Deprecated: use QueryHistoryService.SearchQueryHistories instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error)
-	// ListQueryHistories lists query histories of all users in a project.
+	// Deprecated: Do not use.
+	// Deprecated: use QueryHistoryService.ListQueryHistories instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: bb.queryHistories.list
 	ListQueryHistories(ctx context.Context, in *ListQueryHistoriesRequest, opts ...grpc.CallOption) (*ListQueryHistoriesResponse, error)
-	// GetQueryHistory gets a single query history for the caller.
+	// Deprecated: Do not use.
+	// Deprecated: use QueryHistoryService.GetQueryHistory instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: None (only returns the caller's own query history)
 	GetQueryHistory(ctx context.Context, in *GetQueryHistoryRequest, opts ...grpc.CallOption) (*QueryHistory, error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
-	// Computes schema differences between two database metadata.
-	// Permissions required: None
-	DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error)
-	// Provides AI-powered SQL completion and generation.
-	// Permissions required: None (authenticated users only, requires AI to be enabled)
-	AICompletion(ctx context.Context, in *AICompletionRequest, opts ...grpc.CallOption) (*AICompletionResponse, error)
 }
 
 type sQLServiceClient struct {
@@ -92,6 +93,7 @@ func (c *sQLServiceClient) AdminExecute(ctx context.Context, opts ...grpc.CallOp
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SQLService_AdminExecuteClient = grpc.BidiStreamingClient[AdminExecuteRequest, AdminExecuteResponse]
 
+// Deprecated: Do not use.
 func (c *sQLServiceClient) SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SearchQueryHistoriesResponse)
@@ -102,6 +104,7 @@ func (c *sQLServiceClient) SearchQueryHistories(ctx context.Context, in *SearchQ
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *sQLServiceClient) ListQueryHistories(ctx context.Context, in *ListQueryHistoriesRequest, opts ...grpc.CallOption) (*ListQueryHistoriesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListQueryHistoriesResponse)
@@ -112,6 +115,7 @@ func (c *sQLServiceClient) ListQueryHistories(ctx context.Context, in *ListQuery
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *sQLServiceClient) GetQueryHistory(ctx context.Context, in *GetQueryHistoryRequest, opts ...grpc.CallOption) (*QueryHistory, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(QueryHistory)
@@ -132,26 +136,6 @@ func (c *sQLServiceClient) Export(ctx context.Context, in *ExportRequest, opts .
 	return out, nil
 }
 
-func (c *sQLServiceClient) DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DiffMetadataResponse)
-	err := c.cc.Invoke(ctx, SQLService_DiffMetadata_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *sQLServiceClient) AICompletion(ctx context.Context, in *AICompletionRequest, opts ...grpc.CallOption) (*AICompletionResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AICompletionResponse)
-	err := c.cc.Invoke(ctx, SQLService_AICompletion_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // SQLServiceServer is the server API for SQLService service.
 // All implementations must embed UnimplementedSQLServiceServer
 // for forward compatibility.
@@ -164,24 +148,27 @@ type SQLServiceServer interface {
 	// Executes SQL with admin privileges via streaming connection.
 	// Permissions required: bb.sql.admin
 	AdminExecute(grpc.BidiStreamingServer[AdminExecuteRequest, AdminExecuteResponse]) error
-	// SearchQueryHistories searches query histories for the caller.
+	// Deprecated: Do not use.
+	// Deprecated: use QueryHistoryService.SearchQueryHistories instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error)
-	// ListQueryHistories lists query histories of all users in a project.
+	// Deprecated: Do not use.
+	// Deprecated: use QueryHistoryService.ListQueryHistories instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: bb.queryHistories.list
 	ListQueryHistories(context.Context, *ListQueryHistoriesRequest) (*ListQueryHistoriesResponse, error)
-	// GetQueryHistory gets a single query history for the caller.
+	// Deprecated: Do not use.
+	// Deprecated: use QueryHistoryService.GetQueryHistory instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: None (only returns the caller's own query history)
 	GetQueryHistory(context.Context, *GetQueryHistoryRequest) (*QueryHistory, error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
-	// Computes schema differences between two database metadata.
-	// Permissions required: None
-	DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error)
-	// Provides AI-powered SQL completion and generation.
-	// Permissions required: None (authenticated users only, requires AI to be enabled)
-	AICompletion(context.Context, *AICompletionRequest) (*AICompletionResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }
 
@@ -209,12 +196,6 @@ func (UnimplementedSQLServiceServer) GetQueryHistory(context.Context, *GetQueryH
 }
 func (UnimplementedSQLServiceServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Export not implemented")
-}
-func (UnimplementedSQLServiceServer) DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method DiffMetadata not implemented")
-}
-func (UnimplementedSQLServiceServer) AICompletion(context.Context, *AICompletionRequest) (*AICompletionResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method AICompletion not implemented")
 }
 func (UnimplementedSQLServiceServer) mustEmbedUnimplementedSQLServiceServer() {}
 func (UnimplementedSQLServiceServer) testEmbeddedByValue()                    {}
@@ -334,42 +315,6 @@ func _SQLService_Export_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SQLService_DiffMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DiffMetadataRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SQLServiceServer).DiffMetadata(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SQLService_DiffMetadata_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SQLServiceServer).DiffMetadata(ctx, req.(*DiffMetadataRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SQLService_AICompletion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AICompletionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SQLServiceServer).AICompletion(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SQLService_AICompletion_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SQLServiceServer).AICompletion(ctx, req.(*AICompletionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // SQLService_ServiceDesc is the grpc.ServiceDesc for SQLService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -396,14 +341,6 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Export",
 			Handler:    _SQLService_Export_Handler,
-		},
-		{
-			MethodName: "DiffMetadata",
-			Handler:    _SQLService_DiffMetadata_Handler,
-		},
-		{
-			MethodName: "AICompletion",
-			Handler:    _SQLService_AICompletion_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

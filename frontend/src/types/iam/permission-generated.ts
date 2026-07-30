@@ -19,6 +19,7 @@ export type Permission =
   | "bb.databaseGroups.list"
   | "bb.databaseGroups.update"
   | "bb.databases.check"
+  | "bb.databases.diffMetadata"
   | "bb.databases.get"
   | "bb.databases.getSchema"
   | "bb.databases.list"

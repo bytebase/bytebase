@@ -8,6 +8,7 @@ import { AuthService } from "@/types/proto-es/v1/auth_service_pb";
 import { CelService } from "@/types/proto-es/v1/cel_service_pb";
 import { DatabaseCatalogService } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { DatabaseGroupService } from "@/types/proto-es/v1/database_group_service_pb";
+import { ChangelogService } from "@/types/proto-es/v1/changelog_service_pb";
 import { DatabaseService } from "@/types/proto-es/v1/database_service_pb";
 import { GroupService } from "@/types/proto-es/v1/group_service_pb";
 import { IdentityProviderService } from "@/types/proto-es/v1/idp_service_pb";
@@ -17,6 +18,7 @@ import { IssueService } from "@/types/proto-es/v1/issue_service_pb";
 import { OrgPolicyService } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanService } from "@/types/proto-es/v1/plan_service_pb";
 import { ProjectService } from "@/types/proto-es/v1/project_service_pb";
+import { QueryHistoryService } from "@/types/proto-es/v1/query_history_service_pb";
 import { ReleaseService } from "@/types/proto-es/v1/release_service_pb";
 import { ReviewConfigService } from "@/types/proto-es/v1/review_config_service_pb";
 import { RevisionService } from "@/types/proto-es/v1/revision_service_pb";
@@ -164,6 +166,11 @@ export const worksheetServiceClientConnect = createClient(
 
 export const sqlServiceClientConnect = createClient(SQLService, transport);
 
+export const queryHistoryServiceClientConnect = createClient(
+  QueryHistoryService,
+  transport
+);
+
 export const planServiceClientConnect = createClient(PlanService, transport);
 
 export const projectServiceClientConnect = createClient(
@@ -178,5 +185,10 @@ export const rolloutServiceClientConnect = createClient(
 
 export const databaseServiceClientConnect = createClient(
   DatabaseService,
+  transport
+);
+
+export const changelogServiceClientConnect = createClient(
+  ChangelogService,
   transport
 );

@@ -159,7 +159,7 @@ func TestChatGeminiGeneratesUniqueToolCallIDs(t *testing.T) {
 	}))
 	defer server.Close()
 
-	resp, err := (&AIService{}).chatGemini(
+	resp, err := chatGemini(
 		context.Background(),
 		&storepb.AISetting{
 			Endpoint: server.URL,
@@ -169,6 +169,6 @@ func TestChatGeminiGeneratesUniqueToolCallIDs(t *testing.T) {
 		&v1pb.AIChatRequest{},
 	)
 	require.NoError(t, err)
-	require.Len(t, resp.Msg.ToolCalls, 2)
-	require.NotEqual(t, resp.Msg.ToolCalls[0].Id, resp.Msg.ToolCalls[1].Id)
+	require.Len(t, resp.ToolCalls, 2)
+	require.NotEqual(t, resp.ToolCalls[0].Id, resp.ToolCalls[1].Id)
 }

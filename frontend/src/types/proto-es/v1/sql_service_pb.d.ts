@@ -5,8 +5,8 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, NullValue, Timestamp, Value } from "@bufbuild/protobuf/wkt";
-import type { Engine, ExportFormat, PermissionDeniedDetail, Position } from "./common_pb";
-import type { DatabaseMetadata } from "./database_service_pb";
+import type { ExportFormat, PermissionDeniedDetail, Position } from "./common_pb";
+import type { GetQueryHistoryRequestSchema, ListQueryHistoriesRequestSchema, ListQueryHistoriesResponseSchema, QueryHistorySchema, SearchQueryHistoriesRequestSchema, SearchQueryHistoriesResponseSchema } from "./query_history_service_pb";
 
 /**
  * Describes the file v1/sql_service.proto.
@@ -1099,440 +1099,6 @@ export declare type ExportResponse = Message<"bytebase.v1.ExportResponse"> & {
 export declare const ExportResponseSchema: GenMessage<ExportResponse>;
 
 /**
- * @generated from message bytebase.v1.DiffMetadataRequest
- */
-export declare type DiffMetadataRequest = Message<"bytebase.v1.DiffMetadataRequest"> & {
-  /**
-   * The metadata of the source schema.
-   *
-   * @generated from field: bytebase.v1.DatabaseMetadata source_metadata = 1;
-   */
-  sourceMetadata?: DatabaseMetadata | undefined;
-
-  /**
-   * The metadata of the target schema.
-   *
-   * @generated from field: bytebase.v1.DatabaseMetadata target_metadata = 2;
-   */
-  targetMetadata?: DatabaseMetadata | undefined;
-
-  /**
-   * The database engine of the schema.
-   *
-   * @generated from field: bytebase.v1.Engine engine = 3;
-   */
-  engine: Engine;
-};
-
-/**
- * Describes the message bytebase.v1.DiffMetadataRequest.
- * Use `create(DiffMetadataRequestSchema)` to create a new message.
- */
-export declare const DiffMetadataRequestSchema: GenMessage<DiffMetadataRequest>;
-
-/**
- * @generated from message bytebase.v1.DiffMetadataResponse
- */
-export declare type DiffMetadataResponse = Message<"bytebase.v1.DiffMetadataResponse"> & {
-  /**
-   * The diff of the metadata.
-   *
-   * @generated from field: string diff = 1;
-   */
-  diff: string;
-};
-
-/**
- * Describes the message bytebase.v1.DiffMetadataResponse.
- * Use `create(DiffMetadataResponseSchema)` to create a new message.
- */
-export declare const DiffMetadataResponseSchema: GenMessage<DiffMetadataResponse>;
-
-/**
- * @generated from message bytebase.v1.SearchQueryHistoriesRequest
- */
-export declare type SearchQueryHistoriesRequest = Message<"bytebase.v1.SearchQueryHistoriesRequest"> & {
-  /**
-   * The parent project to search query histories in.
-   * Format: projects/{project}
-   * Use "projects/-" to search across all projects
-   * (https://google.aip.dev/159).
-   *
-   * @generated from field: string parent = 4;
-   */
-  parent: string;
-
-  /**
-   * The maximum number of histories to return.
-   * The service may return fewer than this value.
-   * If unspecified, at most 10 history entries will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   *
-   * @generated from field: int32 page_size = 1;
-   */
-  pageSize: number;
-
-  /**
-   * A page token, received from a previous `ListQueryHistory` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * @generated from field: string page_token = 2;
-   */
-  pageToken: string;
-
-  /**
-   * Filter is the filter to apply on the search query history
-   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-   *
-   * Supported filter:
-   * - project: the project full name in "projects/{id}" format, support "==" operator.
-   * - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
-   * - instance: the instance full name in "instances/{id}" format, support "==" operator.
-   * - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
-   * - statement: the SQL statement, support ".contains()" operator.
-   *
-   * For example:
-   * project == "projects/{project}"
-   * database == "instances/{instance}/databases/{database}"
-   * instance == "instances/{instance}"
-   * type == "QUERY"
-   * type == "EXPORT"
-   * statement.contains("select")
-   * type == "QUERY" && statement.contains("select")
-   *
-   * @generated from field: string filter = 3;
-   */
-  filter: string;
-};
-
-/**
- * Describes the message bytebase.v1.SearchQueryHistoriesRequest.
- * Use `create(SearchQueryHistoriesRequestSchema)` to create a new message.
- */
-export declare const SearchQueryHistoriesRequestSchema: GenMessage<SearchQueryHistoriesRequest>;
-
-/**
- * @generated from message bytebase.v1.ListQueryHistoriesRequest
- */
-export declare type ListQueryHistoriesRequest = Message<"bytebase.v1.ListQueryHistoriesRequest"> & {
-  /**
-   * The parent project whose query histories are listed.
-   * Format: projects/{project}
-   * Use "projects/-" to list query histories across all projects
-   * (https://google.aip.dev/159); this requires the bb.queryHistories.list
-   * permission on the workspace.
-   *
-   * @generated from field: string parent = 1;
-   */
-  parent: string;
-
-  /**
-   * The maximum number of histories to return.
-   * The service may return fewer than this value.
-   * If unspecified, at most 10 history entries will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   *
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize: number;
-
-  /**
-   * A page token, received from a previous `ListQueryHistories` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken: string;
-
-  /**
-   * Filter is the filter to apply on the list query histories.
-   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-   *
-   * Supported filter:
-   * - creator: the user full name in "users/{email}" format, support "==" operator.
-   *
-   * For example:
-   * creator == "users/{email}"
-   *
-   * @generated from field: string filter = 4;
-   */
-  filter: string;
-};
-
-/**
- * Describes the message bytebase.v1.ListQueryHistoriesRequest.
- * Use `create(ListQueryHistoriesRequestSchema)` to create a new message.
- */
-export declare const ListQueryHistoriesRequestSchema: GenMessage<ListQueryHistoriesRequest>;
-
-/**
- * @generated from message bytebase.v1.ListQueryHistoriesResponse
- */
-export declare type ListQueryHistoriesResponse = Message<"bytebase.v1.ListQueryHistoriesResponse"> & {
-  /**
-   * The list of query histories.
-   *
-   * @generated from field: repeated bytebase.v1.QueryHistory query_histories = 1;
-   */
-  queryHistories: QueryHistory[];
-
-  /**
-   * A token to retrieve next page of history.
-   * Pass this value in the page_token field in the subsequent call to
-   * `ListQueryHistories` method to retrieve the next page of history.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
-};
-
-/**
- * Describes the message bytebase.v1.ListQueryHistoriesResponse.
- * Use `create(ListQueryHistoriesResponseSchema)` to create a new message.
- */
-export declare const ListQueryHistoriesResponseSchema: GenMessage<ListQueryHistoriesResponse>;
-
-/**
- * @generated from message bytebase.v1.GetQueryHistoryRequest
- */
-export declare type GetQueryHistoryRequest = Message<"bytebase.v1.GetQueryHistoryRequest"> & {
-  /**
-   * The name of the query history to retrieve.
-   * Format: projects/{project}/queryHistories/{id}
-   *
-   * @generated from field: string name = 1;
-   */
-  name: string;
-};
-
-/**
- * Describes the message bytebase.v1.GetQueryHistoryRequest.
- * Use `create(GetQueryHistoryRequestSchema)` to create a new message.
- */
-export declare const GetQueryHistoryRequestSchema: GenMessage<GetQueryHistoryRequest>;
-
-/**
- * @generated from message bytebase.v1.SearchQueryHistoriesResponse
- */
-export declare type SearchQueryHistoriesResponse = Message<"bytebase.v1.SearchQueryHistoriesResponse"> & {
-  /**
-   * The list of history.
-   *
-   * @generated from field: repeated bytebase.v1.QueryHistory query_histories = 1;
-   */
-  queryHistories: QueryHistory[];
-
-  /**
-   * A token to retrieve next page of history.
-   * Pass this value in the page_token field in the subsequent call to
-   * `ListQueryHistory` method to retrieve the next page of history.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
-};
-
-/**
- * Describes the message bytebase.v1.SearchQueryHistoriesResponse.
- * Use `create(SearchQueryHistoriesResponseSchema)` to create a new message.
- */
-export declare const SearchQueryHistoriesResponseSchema: GenMessage<SearchQueryHistoriesResponse>;
-
-/**
- * @generated from message bytebase.v1.QueryHistory
- */
-export declare type QueryHistory = Message<"bytebase.v1.QueryHistory"> & {
-  /**
-   * The name for the query history.
-   * Format: projects/{project}/queryHistories/{id}
-   *
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * The database name to execute the query.
-   * Format: instances/{instance}/databases/{databaseName}
-   *
-   * @generated from field: string database = 2;
-   */
-  database: string;
-
-  /**
-   * @generated from field: string creator = 3;
-   */
-  creator: string;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp create_time = 4;
-   */
-  createTime?: Timestamp | undefined;
-
-  /**
-   * @generated from field: string statement = 5;
-   */
-  statement: string;
-
-  /**
-   * @generated from field: optional string error = 6;
-   */
-  error?: string | undefined;
-
-  /**
-   * @generated from field: google.protobuf.Duration duration = 7;
-   */
-  duration?: Duration | undefined;
-
-  /**
-   * @generated from field: bytebase.v1.QueryHistory.Type type = 8;
-   */
-  type: QueryHistory_Type;
-};
-
-/**
- * Describes the message bytebase.v1.QueryHistory.
- * Use `create(QueryHistorySchema)` to create a new message.
- */
-export declare const QueryHistorySchema: GenMessage<QueryHistory>;
-
-/**
- * @generated from enum bytebase.v1.QueryHistory.Type
- */
-export enum QueryHistory_Type {
-  /**
-   * Unspecified query history type.
-   *
-   * @generated from enum value: TYPE_UNSPECIFIED = 0;
-   */
-  TYPE_UNSPECIFIED = 0,
-
-  /**
-   * Query execution for data retrieval.
-   *
-   * @generated from enum value: QUERY = 1;
-   */
-  QUERY = 1,
-
-  /**
-   * Data export operation to file.
-   *
-   * @generated from enum value: EXPORT = 2;
-   */
-  EXPORT = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.QueryHistory.Type.
- */
-export declare const QueryHistory_TypeSchema: GenEnum<QueryHistory_Type>;
-
-/**
- * @generated from message bytebase.v1.AICompletionRequest
- */
-export declare type AICompletionRequest = Message<"bytebase.v1.AICompletionRequest"> & {
-  /**
-   * @generated from field: repeated bytebase.v1.AICompletionRequest.Message messages = 1;
-   */
-  messages: AICompletionRequest_Message[];
-};
-
-/**
- * Describes the message bytebase.v1.AICompletionRequest.
- * Use `create(AICompletionRequestSchema)` to create a new message.
- */
-export declare const AICompletionRequestSchema: GenMessage<AICompletionRequest>;
-
-/**
- * @generated from message bytebase.v1.AICompletionRequest.Message
- */
-export declare type AICompletionRequest_Message = Message<"bytebase.v1.AICompletionRequest.Message"> & {
-  /**
-   * @generated from field: string role = 1;
-   */
-  role: string;
-
-  /**
-   * @generated from field: string content = 2;
-   */
-  content: string;
-};
-
-/**
- * Describes the message bytebase.v1.AICompletionRequest.Message.
- * Use `create(AICompletionRequest_MessageSchema)` to create a new message.
- */
-export declare const AICompletionRequest_MessageSchema: GenMessage<AICompletionRequest_Message>;
-
-/**
- * @generated from message bytebase.v1.AICompletionResponse
- */
-export declare type AICompletionResponse = Message<"bytebase.v1.AICompletionResponse"> & {
-  /**
-   * candidates is used for results with multiple choices and candidates. Used
-   * for OpenAI and Gemini.
-   *
-   * @generated from field: repeated bytebase.v1.AICompletionResponse.Candidate candidates = 1;
-   */
-  candidates: AICompletionResponse_Candidate[];
-};
-
-/**
- * Describes the message bytebase.v1.AICompletionResponse.
- * Use `create(AICompletionResponseSchema)` to create a new message.
- */
-export declare const AICompletionResponseSchema: GenMessage<AICompletionResponse>;
-
-/**
- * @generated from message bytebase.v1.AICompletionResponse.Candidate
- */
-export declare type AICompletionResponse_Candidate = Message<"bytebase.v1.AICompletionResponse.Candidate"> & {
-  /**
-   * @generated from field: bytebase.v1.AICompletionResponse.Candidate.Content content = 1;
-   */
-  content?: AICompletionResponse_Candidate_Content | undefined;
-};
-
-/**
- * Describes the message bytebase.v1.AICompletionResponse.Candidate.
- * Use `create(AICompletionResponse_CandidateSchema)` to create a new message.
- */
-export declare const AICompletionResponse_CandidateSchema: GenMessage<AICompletionResponse_Candidate>;
-
-/**
- * @generated from message bytebase.v1.AICompletionResponse.Candidate.Content
- */
-export declare type AICompletionResponse_Candidate_Content = Message<"bytebase.v1.AICompletionResponse.Candidate.Content"> & {
-  /**
-   * parts is used for a result content with multiple parts.
-   *
-   * @generated from field: repeated bytebase.v1.AICompletionResponse.Candidate.Content.Part parts = 1;
-   */
-  parts: AICompletionResponse_Candidate_Content_Part[];
-};
-
-/**
- * Describes the message bytebase.v1.AICompletionResponse.Candidate.Content.
- * Use `create(AICompletionResponse_Candidate_ContentSchema)` to create a new message.
- */
-export declare const AICompletionResponse_Candidate_ContentSchema: GenMessage<AICompletionResponse_Candidate_Content>;
-
-/**
- * @generated from message bytebase.v1.AICompletionResponse.Candidate.Content.Part
- */
-export declare type AICompletionResponse_Candidate_Content_Part = Message<"bytebase.v1.AICompletionResponse.Candidate.Content.Part"> & {
-  /**
-   * @generated from field: string text = 1;
-   */
-  text: string;
-};
-
-/**
- * Describes the message bytebase.v1.AICompletionResponse.Candidate.Content.Part.
- * Use `create(AICompletionResponse_Candidate_Content_PartSchema)` to create a new message.
- */
-export declare const AICompletionResponse_Candidate_Content_PartSchema: GenMessage<AICompletionResponse_Candidate_Content_Part>;
-
-/**
  * SQLService executes SQL queries and manages query operations.
  *
  * @generated from service bytebase.v1.SQLService
@@ -1561,10 +1127,13 @@ export declare const SQLService: GenService<{
     output: typeof AdminExecuteResponseSchema;
   },
   /**
-   * SearchQueryHistories searches query histories for the caller.
+   * Deprecated: use QueryHistoryService.SearchQueryHistories instead.
+   * Delegating alias kept for upgrade transition; will be removed in a future release.
+   * No HTTP binding: the REST route is served by QueryHistoryService.
    * Permissions required: None (only returns caller's own query histories)
    *
    * @generated from rpc bytebase.v1.SQLService.SearchQueryHistories
+   * @deprecated
    */
   searchQueryHistories: {
     methodKind: "unary";
@@ -1572,10 +1141,13 @@ export declare const SQLService: GenService<{
     output: typeof SearchQueryHistoriesResponseSchema;
   },
   /**
-   * ListQueryHistories lists query histories of all users in a project.
+   * Deprecated: use QueryHistoryService.ListQueryHistories instead.
+   * Delegating alias kept for upgrade transition; will be removed in a future release.
+   * No HTTP binding: the REST route is served by QueryHistoryService.
    * Permissions required: bb.queryHistories.list
    *
    * @generated from rpc bytebase.v1.SQLService.ListQueryHistories
+   * @deprecated
    */
   listQueryHistories: {
     methodKind: "unary";
@@ -1583,10 +1155,13 @@ export declare const SQLService: GenService<{
     output: typeof ListQueryHistoriesResponseSchema;
   },
   /**
-   * GetQueryHistory gets a single query history for the caller.
+   * Deprecated: use QueryHistoryService.GetQueryHistory instead.
+   * Delegating alias kept for upgrade transition; will be removed in a future release.
+   * No HTTP binding: the REST route is served by QueryHistoryService.
    * Permissions required: None (only returns the caller's own query history)
    *
    * @generated from rpc bytebase.v1.SQLService.GetQueryHistory
+   * @deprecated
    */
   getQueryHistory: {
     methodKind: "unary";
@@ -1603,28 +1178,6 @@ export declare const SQLService: GenService<{
     methodKind: "unary";
     input: typeof ExportRequestSchema;
     output: typeof ExportResponseSchema;
-  },
-  /**
-   * Computes schema differences between two database metadata.
-   * Permissions required: None
-   *
-   * @generated from rpc bytebase.v1.SQLService.DiffMetadata
-   */
-  diffMetadata: {
-    methodKind: "unary";
-    input: typeof DiffMetadataRequestSchema;
-    output: typeof DiffMetadataResponseSchema;
-  },
-  /**
-   * Provides AI-powered SQL completion and generation.
-   * Permissions required: None (authenticated users only, requires AI to be enabled)
-   *
-   * @generated from rpc bytebase.v1.SQLService.AICompletion
-   */
-  aICompletion: {
-    methodKind: "unary";
-    input: typeof AICompletionRequestSchema;
-    output: typeof AICompletionResponseSchema;
   },
 }>;
 

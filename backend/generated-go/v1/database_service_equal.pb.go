@@ -306,6 +306,35 @@ func (x *DiffSchemaResponse) Equal(y *DiffSchemaResponse) bool {
 	return true
 }
 
+func (x *DiffMetadataRequest) Equal(y *DiffMetadataRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if !x.TargetMetadata.Equal(y.TargetMetadata) {
+		return false
+	}
+	return true
+}
+
+func (x *DiffMetadataResponse) Equal(y *DiffMetadataResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Diff != y.Diff {
+		return false
+	}
+	return true
+}
+
 func (x *Database) Equal(y *Database) bool {
 	if x == y {
 		return true
@@ -1669,99 +1698,6 @@ func (x *DatabaseSDLSchema) Equal(y *DatabaseSDLSchema) bool {
 		return false
 	}
 	if x.ContentType != y.ContentType {
-		return false
-	}
-	return true
-}
-
-func (x *ListChangelogsRequest) Equal(y *ListChangelogsRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Parent != y.Parent {
-		return false
-	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
-	if x.View != y.View {
-		return false
-	}
-	if x.Filter != y.Filter {
-		return false
-	}
-	return true
-}
-
-func (x *ListChangelogsResponse) Equal(y *ListChangelogsResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Changelogs) != len(y.Changelogs) {
-		return false
-	}
-	for i := 0; i < len(x.Changelogs); i++ {
-		if !x.Changelogs[i].Equal(y.Changelogs[i]) {
-			return false
-		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
-	}
-	return true
-}
-
-func (x *GetChangelogRequest) Equal(y *GetChangelogRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Name != y.Name {
-		return false
-	}
-	if x.View != y.View {
-		return false
-	}
-	return true
-}
-
-func (x *Changelog) Equal(y *Changelog) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Name != y.Name {
-		return false
-	}
-	if p, q := x.CreateTime, y.CreateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
-		return false
-	}
-	if x.Status != y.Status {
-		return false
-	}
-	if x.Schema != y.Schema {
-		return false
-	}
-	if x.SchemaSize != y.SchemaSize {
-		return false
-	}
-	if x.TaskRun != y.TaskRun {
-		return false
-	}
-	if x.PlanTitle != y.PlanTitle {
 		return false
 	}
 	return true

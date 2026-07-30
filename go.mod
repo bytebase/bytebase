@@ -32,9 +32,9 @@ require (
 	github.com/beltran/gohive/v2 v2.1.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.10.0
-	github.com/bytebase/gomongo v0.0.0-20260510192859-8526a440b352
+	github.com/bytebase/gomongo v0.0.0-20260730033313-67ba6e249735
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/omni v0.0.0-20260728103305-d2f82de1b468
+	github.com/bytebase/omni v0.0.0-20260730024920-8e82223f7635
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/cenkalti/backoff/v7 v7.0.0
 	github.com/cockroachdb/cockroachdb-parser v0.25.2

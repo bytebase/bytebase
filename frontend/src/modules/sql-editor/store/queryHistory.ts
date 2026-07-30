@@ -1,10 +1,11 @@
 import { create } from "@bufbuild/protobuf";
-import { sqlServiceClientConnect } from "@/api";
-import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
+import { queryHistoryServiceClientConnect } from "@/api";
+import type { QueryHistory } from "@/types/proto-es/v1/query_history_service_pb";
 import {
   GetQueryHistoryRequestSchema,
   SearchQueryHistoriesRequestSchema,
-} from "@/types/proto-es/v1/sql_service_pb";
+  SearchQueryHistoriesResponseSchema,
+} from "@/types/proto-es/v1/query_history_service_pb";
 import { isValidDatabaseName } from "@/types/v1/database";
 import { isValidProjectName } from "@/types/v1/project";
 import { escapeCELStringLiteral } from "@/utils/v1/cel";
@@ -18,12 +19,11 @@ import type {
 
 const EMPTY_ENTRY: QueryHistoryEntry = { queryHistories: [] };
 
-// Project scoping travels in `parent` (AIP-159; "projects/-" means all
-// projects), so the CEL filter only carries the non-project dimensions.
-const getSearchParent = (filter: QueryHistoryFilter) =>
-  isValidProjectName(filter.project)
-    ? (filter.project as string)
-    : "projects/-";
+// Project scoping travels in `parent`, so the CEL filter only carries the
+// non-project dimensions. SearchQueryHistories requires a concrete parent
+// project — there is no cross-project wildcard — so both fetch paths no-op
+// until the editor's project context resolves.
+const EMPTY_RESPONSE = create(SearchQueryHistoriesResponseSchema, {});
 
 const getListQueryHistoryFilter = (filter: QueryHistoryFilter) => {
   const params = [`type == "QUERY"`];
@@ -55,17 +55,21 @@ export const createQueryHistorySlice: SQLEditorSliceCreator<
   queryHistoryByKey: {},
 
   fetchQueryHistoryList: async (filter) => {
+    if (!isValidProjectName(filter.project)) {
+      return EMPTY_RESPONSE;
+    }
     const key = getQueryHistoryCacheKey(filter);
     const existing = get().queryHistoryByKey[key] ?? EMPTY_ENTRY;
     const pageToken = existing.nextPageToken;
 
     const request = create(SearchQueryHistoriesRequestSchema, {
-      parent: getSearchParent(filter),
+      parent: filter.project,
       pageSize: 5,
       pageToken,
       filter: getListQueryHistoryFilter(filter),
     });
-    const resp = await sqlServiceClientConnect.searchQueryHistories(request);
+    const resp =
+      await queryHistoryServiceClientConnect.searchQueryHistories(request);
 
     set((s) => {
       const prev = s.queryHistoryByKey[key] ?? EMPTY_ENTRY;
@@ -114,10 +118,13 @@ export const createQueryHistorySlice: SQLEditorSliceCreator<
    * the list.
    */
   mergeLatest: async (filter) => {
+    if (!isValidProjectName(filter.project)) {
+      return EMPTY_RESPONSE;
+    }
     const key = getQueryHistoryCacheKey(filter);
-    const resp = await sqlServiceClientConnect.searchQueryHistories(
+    const resp = await queryHistoryServiceClientConnect.searchQueryHistories(
       create(SearchQueryHistoriesRequestSchema, {
-        parent: getSearchParent(filter),
+        parent: filter.project,
         pageSize: 5,
         filter: getListQueryHistoryFilter(filter),
       })
@@ -144,7 +151,7 @@ export const createQueryHistorySlice: SQLEditorSliceCreator<
   },
 
   fetchQueryHistory: async (name) => {
-    return await sqlServiceClientConnect.getQueryHistory(
+    return await queryHistoryServiceClientConnect.getQueryHistory(
       create(GetQueryHistoryRequestSchema, { name })
     );
   },
