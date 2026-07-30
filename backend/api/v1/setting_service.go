@@ -571,8 +571,6 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 	if err := s.preflightWorkspaceProfilePaths(ctx, workspaceID, request, payload); err != nil {
 		return nil, err
 	}
-	var resetAuditLogStdout bool
-	var resetDebug bool
 	var lockedBefore *storepb.WorkspaceProfileSetting
 	apply := func(current proto.Message) (proto.Message, error) {
 		oldSetting, ok := current.(*storepb.WorkspaceProfileSetting)
@@ -582,7 +580,7 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 		// The audit before-image is the row this merge actually ran against,
 		// not the possibly stale pre-lock snapshot captured by UpdateSetting.
 		lockedBefore = proto.CloneOf(oldSetting)
-		if err := mergeWorkspaceProfilePaths(request, payload, oldSetting, &resetAuditLogStdout, &resetDebug); err != nil {
+		if err := mergeWorkspaceProfilePaths(request, payload, oldSetting); err != nil {
 			return nil, err
 		}
 		if len(oldSetting.Domains) == 0 && oldSetting.EnforceIdentityDomain {
@@ -616,25 +614,29 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 		}), nil
 	}
 
-	// The audit-log runtime flag publishes inside the primitive's ordered
-	// window, derived from the freshly re-read value — so it converges on the
-	// last committed state no matter which updater publishes last.
+	// Runtime derivatives (audit stdout flag, debug log level, pprof gate)
+	// reconcile from the freshly re-read committed state on EVERY successful
+	// profile publication — not only when this request touched those fields —
+	// so a publication skipped by an earlier failure is repaired by the next
+	// profile write, mirroring startup derivation (server.go). Skipped in
+	// SaaS, where workspace-scoped stored values must not drive process-global
+	// state on a shared replica (the corresponding mask paths are also
+	// rejected in preflight).
 	postCommit := func(current *store.SettingMessage) {
+		if s.profile.SaaS {
+			return
+		}
 		profile, ok := current.Value.(*storepb.WorkspaceProfileSetting)
 		if !ok {
 			return
 		}
-		if resetAuditLogStdout {
-			s.profile.RuntimeEnableAuditLogStdout.Store(profile.EnableAuditLogStdout)
+		s.profile.RuntimeEnableAuditLogStdout.Store(profile.EnableAuditLogStdout)
+		s.profile.RuntimeDebug.Store(profile.EnableDebug)
+		level := slog.LevelInfo
+		if profile.EnableDebug {
+			level = slog.LevelDebug
 		}
-		if resetDebug {
-			level := slog.LevelInfo
-			if profile.EnableDebug {
-				level = slog.LevelDebug
-			}
-			log.LogLevel.Set(level)
-			s.profile.RuntimeDebug.Store(profile.EnableDebug)
-		}
+		log.LogLevel.Set(level)
 	}
 	setting, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE, apply, postCommit)
 	if err != nil {
@@ -680,6 +682,12 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 func (s *SettingService) preflightWorkspaceProfilePaths(ctx context.Context, workspaceID string, request *connect.Request[v1pb.UpdateSettingRequest], payload *storepb.WorkspaceProfileSetting) error {
 	for _, path := range request.Msg.UpdateMask.Paths {
 		switch path {
+		case "value.workspace_profile.enable_debug":
+			// Debug flips the process-global log level and pprof exposure; on
+			// a shared SaaS replica that would affect other workspaces.
+			if s.profile.SaaS {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the enable_debug cannot be changed in SaaS mode"))
+			}
 		case "value.workspace_profile.disallow_signup":
 			if s.profile.SaaS {
 				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the disallow_signup cannot be changed in SaaS mode"))
@@ -774,6 +782,11 @@ func (s *SettingService) preflightWorkspaceProfilePaths(ctx context.Context, wor
 				}
 			}
 		case "value.workspace_profile.enable_audit_log_stdout":
+			// Audit stdout output is process-global; on a shared SaaS replica
+			// it would affect other workspaces.
+			if s.profile.SaaS {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the enable_audit_log_stdout cannot be changed in SaaS mode"))
+			}
 			if payload.EnableAuditLogStdout {
 				// Require TEAM or ENTERPRISE license
 				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
@@ -810,14 +823,11 @@ func (s *SettingService) preflightWorkspaceProfilePaths(ctx context.Context, wor
 // preflightWorkspaceProfilePaths — because it executes inside the row-locking
 // transaction. Only validations that are payload-local or need the merged
 // state live here.
-func mergeWorkspaceProfilePaths(request *connect.Request[v1pb.UpdateSettingRequest], payload *storepb.WorkspaceProfileSetting, oldSetting *storepb.WorkspaceProfileSetting, resetAuditLogStdout *bool, resetDebug *bool) error {
+func mergeWorkspaceProfilePaths(request *connect.Request[v1pb.UpdateSettingRequest], payload *storepb.WorkspaceProfileSetting, oldSetting *storepb.WorkspaceProfileSetting) error {
 	for _, path := range request.Msg.UpdateMask.Paths {
 		switch path {
 		case "value.workspace_profile.enable_debug":
-			// Runtime log level and pprof exposure change in postCommit, from
-			// committed state — never from a validate-only or rolled-back merge.
 			oldSetting.EnableDebug = payload.EnableDebug
-			*resetDebug = true
 		case "value.workspace_profile.disallow_signup":
 			oldSetting.DisallowSignup = payload.DisallowSignup
 		case "value.workspace_profile.external_url":
@@ -869,7 +879,6 @@ func mergeWorkspaceProfilePaths(request *connect.Request[v1pb.UpdateSettingReque
 		case "value.workspace_profile.enable_metric_collection":
 			oldSetting.EnableMetricCollection = payload.EnableMetricCollection
 		case "value.workspace_profile.enable_audit_log_stdout":
-			*resetAuditLogStdout = true
 			oldSetting.EnableAuditLogStdout = payload.EnableAuditLogStdout
 		case "value.workspace_profile.watermark":
 			oldSetting.Watermark = payload.Watermark

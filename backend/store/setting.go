@@ -442,8 +442,10 @@ func (s *Store) publishSetting(ctx context.Context, workspace string, name store
 	// The write is already committed, so publication must not depend on the
 	// caller still listening: re-read on a bounded context detached from
 	// request cancellation. If the read still fails (database unreachable),
-	// evict and skip postCommit — the next successful write or cache fill
-	// reconciles.
+	// evict and skip postCommit — the cache heals on the next fill, and
+	// derived runtime state heals on the next successful publication of this
+	// setting (postCommit callbacks must therefore reconcile from the fresh
+	// value unconditionally, not only for fields their request touched).
 	publishCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 	defer cancel()
 	fresh, err := s.GetSettingUncached(publishCtx, workspace, name)
