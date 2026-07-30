@@ -10,7 +10,7 @@ import type {
 import type {
   QueryHistory,
   SearchQueryHistoriesResponse,
-} from "@/types/proto-es/v1/sql_service_pb";
+} from "@/types/proto-es/v1/query_history_service_pb";
 
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY" | "ACCESS";
 

@@ -62,14 +62,26 @@ type SQLServiceClient interface {
 	// Executes SQL with admin privileges via streaming connection.
 	// Permissions required: bb.sql.admin
 	AdminExecute(context.Context) *connect.BidiStreamForClient[v1.AdminExecuteRequest, v1.AdminExecuteResponse]
-	// SearchQueryHistories searches query histories for the caller.
+	// Deprecated: use QueryHistoryService.SearchQueryHistories instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: None (only returns caller's own query histories)
+	//
+	// Deprecated: do not use.
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
-	// ListQueryHistories lists query histories of all users in a project.
+	// Deprecated: use QueryHistoryService.ListQueryHistories instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: bb.queryHistories.list
+	//
+	// Deprecated: do not use.
 	ListQueryHistories(context.Context, *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error)
-	// GetQueryHistory gets a single query history for the caller.
+	// Deprecated: use QueryHistoryService.GetQueryHistory instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: None (only returns the caller's own query history)
+	//
+	// Deprecated: do not use.
 	GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
@@ -167,16 +179,22 @@ func (c *sQLServiceClient) AdminExecute(ctx context.Context) *connect.BidiStream
 }
 
 // SearchQueryHistories calls bytebase.v1.SQLService.SearchQueryHistories.
+//
+// Deprecated: do not use.
 func (c *sQLServiceClient) SearchQueryHistories(ctx context.Context, req *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error) {
 	return c.searchQueryHistories.CallUnary(ctx, req)
 }
 
 // ListQueryHistories calls bytebase.v1.SQLService.ListQueryHistories.
+//
+// Deprecated: do not use.
 func (c *sQLServiceClient) ListQueryHistories(ctx context.Context, req *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error) {
 	return c.listQueryHistories.CallUnary(ctx, req)
 }
 
 // GetQueryHistory calls bytebase.v1.SQLService.GetQueryHistory.
+//
+// Deprecated: do not use.
 func (c *sQLServiceClient) GetQueryHistory(ctx context.Context, req *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error) {
 	return c.getQueryHistory.CallUnary(ctx, req)
 }
@@ -204,14 +222,26 @@ type SQLServiceHandler interface {
 	// Executes SQL with admin privileges via streaming connection.
 	// Permissions required: bb.sql.admin
 	AdminExecute(context.Context, *connect.BidiStream[v1.AdminExecuteRequest, v1.AdminExecuteResponse]) error
-	// SearchQueryHistories searches query histories for the caller.
+	// Deprecated: use QueryHistoryService.SearchQueryHistories instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: None (only returns caller's own query histories)
+	//
+	// Deprecated: do not use.
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
-	// ListQueryHistories lists query histories of all users in a project.
+	// Deprecated: use QueryHistoryService.ListQueryHistories instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: bb.queryHistories.list
+	//
+	// Deprecated: do not use.
 	ListQueryHistories(context.Context, *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error)
-	// GetQueryHistory gets a single query history for the caller.
+	// Deprecated: use QueryHistoryService.GetQueryHistory instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: None (only returns the caller's own query history)
+	//
+	// Deprecated: do not use.
 	GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get

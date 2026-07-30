@@ -108,6 +108,7 @@ func configureGrpcRouters(
 	orgPolicyService := apiv1.NewOrgPolicyService(stores, licenseService, iamManager)
 	planService := apiv1.NewPlanService(stores, bus, iamManager, webhookManager, licenseService)
 	projectService := apiv1.NewProjectService(stores, profile, iamManager)
+	queryHistoryService := apiv1.NewQueryHistoryService(stores)
 	releaseService := apiv1.NewReleaseService(stores, sheetManager, dbFactory, licenseService)
 	reviewConfigService := apiv1.NewReviewConfigService(stores)
 	revisionService := apiv1.NewRevisionService(stores)
@@ -115,7 +116,7 @@ func configureGrpcRouters(
 	rolloutService := apiv1.NewRolloutService(stores, dbFactory, bus, webhookManager, iamManager)
 	settingService := apiv1.NewSettingService(stores, profile, licenseService, iamManager)
 	sheetService := apiv1.NewSheetService(stores)
-	sqlService := apiv1.NewSQLService(stores, schemaSyncer, dbFactory, licenseService, iamManager)
+	sqlService := apiv1.NewSQLService(stores, schemaSyncer, dbFactory, licenseService, iamManager, queryHistoryService)
 	subscriptionService := apiv1.NewSubscriptionService(profile, stores, licenseService)
 	userService := apiv1.NewUserService(stores, licenseService, profile, iamManager)
 	serviceAccountService := apiv1.NewServiceAccountService(stores, profile, iamManager)
@@ -199,6 +200,9 @@ func configureGrpcRouters(
 	projectPath, projectHandler := v1connect.NewProjectServiceHandler(projectService, handlerOpts)
 	connectHandlers[projectPath] = projectHandler
 
+	queryHistoryPath, queryHistoryHandler := v1connect.NewQueryHistoryServiceHandler(queryHistoryService, handlerOpts)
+	connectHandlers[queryHistoryPath] = queryHistoryHandler
+
 	releasePath, releaseHandler := v1connect.NewReleaseServiceHandler(releaseService, handlerOpts)
 	connectHandlers[releasePath] = releaseHandler
 
@@ -261,6 +265,7 @@ func configureGrpcRouters(
 		v1connect.OrgPolicyServiceName,
 		v1connect.PlanServiceName,
 		v1connect.ProjectServiceName,
+		v1connect.QueryHistoryServiceName,
 		v1connect.ReleaseServiceName,
 		v1connect.ReviewConfigServiceName,
 		v1connect.RevisionServiceName,
@@ -347,6 +352,9 @@ func configureGrpcRouters(
 		return err
 	}
 	if err := v1pb.RegisterProjectServiceHandler(ctx, mux, grpcConn); err != nil {
+		return err
+	}
+	if err := v1pb.RegisterQueryHistoryServiceHandler(ctx, mux, grpcConn); err != nil {
 		return err
 	}
 	if err := v1pb.RegisterReleaseServiceHandler(ctx, mux, grpcConn); err != nil {

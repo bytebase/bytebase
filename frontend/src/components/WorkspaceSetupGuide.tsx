@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { CheckCircle, Circle, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { sqlServiceClientConnect } from "@/api";
+import { queryHistoryServiceClientConnect } from "@/api";
 import { createBehaviorMetric } from "@/app/analytics/behavior";
 import { behaviorAnalytics } from "@/app/analytics/provider";
 import { type RouteTarget, router, useCurrentRoute } from "@/app/router";
@@ -29,7 +29,7 @@ import {
 } from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
-import { SearchQueryHistoriesRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
+import { SearchQueryHistoriesRequestSchema } from "@/types/proto-es/v1/query_history_service_pb";
 import {
   extractDatabaseResourceName,
   extractProjectResourceName,
@@ -191,7 +191,7 @@ export function WorkspaceSetupGuide() {
         // requires (it has no cross-project wildcard).
         try {
           const queryHistoryResult =
-            await sqlServiceClientConnect.searchQueryHistories(
+            await queryHistoryServiceClientConnect.searchQueryHistories(
               create(SearchQueryHistoriesRequestSchema, {
                 parent: projectName,
                 pageSize: 1,

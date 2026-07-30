@@ -1,11 +1,11 @@
 import { create } from "@bufbuild/protobuf";
-import { sqlServiceClientConnect } from "@/api";
-import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
+import { queryHistoryServiceClientConnect } from "@/api";
+import type { QueryHistory } from "@/types/proto-es/v1/query_history_service_pb";
 import {
   GetQueryHistoryRequestSchema,
   SearchQueryHistoriesRequestSchema,
   SearchQueryHistoriesResponseSchema,
-} from "@/types/proto-es/v1/sql_service_pb";
+} from "@/types/proto-es/v1/query_history_service_pb";
 import { isValidDatabaseName } from "@/types/v1/database";
 import { isValidProjectName } from "@/types/v1/project";
 import { escapeCELStringLiteral } from "@/utils/v1/cel";
@@ -68,7 +68,8 @@ export const createQueryHistorySlice: SQLEditorSliceCreator<
       pageToken,
       filter: getListQueryHistoryFilter(filter),
     });
-    const resp = await sqlServiceClientConnect.searchQueryHistories(request);
+    const resp =
+      await queryHistoryServiceClientConnect.searchQueryHistories(request);
 
     set((s) => {
       const prev = s.queryHistoryByKey[key] ?? EMPTY_ENTRY;
@@ -121,7 +122,7 @@ export const createQueryHistorySlice: SQLEditorSliceCreator<
       return EMPTY_RESPONSE;
     }
     const key = getQueryHistoryCacheKey(filter);
-    const resp = await sqlServiceClientConnect.searchQueryHistories(
+    const resp = await queryHistoryServiceClientConnect.searchQueryHistories(
       create(SearchQueryHistoriesRequestSchema, {
         parent: filter.project,
         pageSize: 5,
@@ -150,7 +151,7 @@ export const createQueryHistorySlice: SQLEditorSliceCreator<
   },
 
   fetchQueryHistory: async (name) => {
-    return await sqlServiceClientConnect.getQueryHistory(
+    return await queryHistoryServiceClientConnect.getQueryHistory(
       create(GetQueryHistoryRequestSchema, { name })
     );
   },

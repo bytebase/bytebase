@@ -18,6 +18,7 @@ import { IssueService } from "@/types/proto-es/v1/issue_service_pb";
 import { OrgPolicyService } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanService } from "@/types/proto-es/v1/plan_service_pb";
 import { ProjectService } from "@/types/proto-es/v1/project_service_pb";
+import { QueryHistoryService } from "@/types/proto-es/v1/query_history_service_pb";
 import { ReleaseService } from "@/types/proto-es/v1/release_service_pb";
 import { ReviewConfigService } from "@/types/proto-es/v1/review_config_service_pb";
 import { RevisionService } from "@/types/proto-es/v1/revision_service_pb";
@@ -164,6 +165,11 @@ export const worksheetServiceClientConnect = createClient(
 );
 
 export const sqlServiceClientConnect = createClient(SQLService, transport);
+
+export const queryHistoryServiceClientConnect = createClient(
+  QueryHistoryService,
+  transport
+);
 
 export const planServiceClientConnect = createClient(PlanService, transport);
 

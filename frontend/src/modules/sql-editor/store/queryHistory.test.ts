@@ -19,7 +19,7 @@ const searchQueryHistoriesMock = vi.fn();
 // Stub the connect client so the slice's `mergeLatest` /
 // `fetchQueryHistoryList` calls hit a deterministic in-memory fake.
 vi.mock("@/api", () => ({
-  sqlServiceClientConnect: {
+  queryHistoryServiceClientConnect: {
     searchQueryHistories: (...args: unknown[]) =>
       searchQueryHistoriesMock(...args),
   },
