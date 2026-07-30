@@ -4,7 +4,7 @@
 // via permissive project settings):
 //   - Running a successful task transitions to Done.
 //   - Running a failing task (nonexistent target) transitions to Failed
-//     and surfaces a Retry button.
+//     and surfaces a Rerun button.
 
 import {
   test,
@@ -100,8 +100,8 @@ test.describe("Successful task transitions to Done", () => {
   });
 });
 
-test.describe("Failing task transitions to Failed and shows Retry", () => {
-  test("Run → Failed + Retry button visible", async () => {
+test.describe("Failing task transitions to Failed and shows Rerun", () => {
+  test("Run → Failed + Rerun button visible", async () => {
     const missingTable = `nonexistent_table_e2e_${Date.now()}`;
     await createPlanAndNavigate(
       "E2E Task Failure",
@@ -117,7 +117,7 @@ test.describe("Failing task transitions to Failed and shows Retry", () => {
       timeout: 30_000,
     });
 
-    await expect(planPage.retryButton).toBeVisible({ timeout: 5_000 });
+    await expect(planPage.taskRerunButton).toBeVisible({ timeout: 5_000 });
   });
 });
 

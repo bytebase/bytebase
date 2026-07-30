@@ -17,6 +17,7 @@ import {
   DraftReviewIssueCreationError,
   submitDraftReview,
 } from "@/lib/plan/workflow";
+import { invalidateProjectPlansPagedDataCache } from "@/lib/projectPagedDataCache";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -288,6 +289,10 @@ export function PlanDetailHeader() {
           status,
         })
       );
+      // This mutation changes the Plan List's Issue-derived review badge but
+      // not the Plan resource. Invalidate immediately instead of relying on a
+      // subsequent detail refresh observing an Issue update-time change.
+      invalidateProjectPlansPagedDataCache(page.projectId);
       if (pageKeyRef.current !== actionPageKey) return;
       // Closing / reopening records a system comment — refresh page state and the
       // issue comments so the review timeline reflects it (like issue detail).

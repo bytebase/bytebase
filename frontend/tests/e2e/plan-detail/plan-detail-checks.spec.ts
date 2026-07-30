@@ -316,26 +316,31 @@ test.describe("Per-spec check counts render plan-wide (BYT-9160)", () => {
 // fix landed; it now runs as a normal passing guard so a re-regression fails
 // loudly.
 test.describe(
-  "Spec tab switch shows only the selected spec's statement (BYT-9794)",
+  "Spec identity and resource routing stay synchronized (BYT-9794/BYT-9805/BYT-9913)",
   () => {
     test(
-      "only the selected spec's statement is shown in CHANGES after switching tabs",
+      "target-derived tabs, URLs, history, and the selected statement move together",
       async () => {
         const ts = Date.now();
         const colA = `e2e_stale_a_${ts}`;
         const colB = `e2e_stale_b_${ts}`;
-        await createPlanAndWaitForChecks("E2E Stale Spec Editor", [
-          {
-            id: `spec-a-${ts}`,
-            targets: [env.database],
-            sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colA} TEXT;`,
-          },
-          {
-            id: `spec-b-${ts}`,
-            targets: [env.database],
-            sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colB} TEXT;`,
-          },
-        ]);
+        const specA = `spec-a-${ts}`;
+        const specB = `spec-b-${ts}`;
+        const planId = await createPlanAndWaitForChecks(
+          "E2E Stale Spec Editor",
+          [
+            {
+              id: specA,
+              targets: [env.database],
+              sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colA} TEXT;`,
+            },
+            {
+              id: specB,
+              targets: [env.database],
+              sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colB} TEXT;`,
+            },
+          ],
+        );
 
         await planPage.expandSection("Changes");
 
@@ -368,12 +373,26 @@ test.describe(
               .join("\n");
           });
 
-        await planPage.specTab(1).click();
+        const tab1 = planPage.specTab(1);
+        const tab2 = planPage.specTab(2);
+        await expect(tab1).toHaveAccessibleName(
+          `Change 1: ${env.databaseId}`,
+        );
+        await expect(tab2).toHaveAccessibleName(
+          `Change 2: ${env.databaseId}`,
+        );
+        await expect(
+          page.getByRole("button", { name: /Database Change/ }),
+        ).toHaveCount(0);
+
         await expect
           .poll(readChangesStatements, { timeout: 15_000 })
           .toContain(colA);
 
-        await planPage.specTab(2).click();
+        await tab2.click();
+        await expect(page).toHaveURL(
+          new RegExp(`/plans/${planId}/specs/${specB}$`),
+        );
         await expect
           .poll(readChangesStatements, { timeout: 15_000 })
           .toContain(colB);
@@ -382,6 +401,25 @@ test.describe(
         // spec #2's statement remains. (Pre-fix, duplicate keys left spec #1's
         // editor stacked and this assertion failed.)
         expect(await readChangesStatements()).not.toContain(colA);
+
+        await tab1.click();
+        await expect(page).toHaveURL(
+          new RegExp(`/plans/${planId}/specs/${specA}$`),
+        );
+        await expect
+          .poll(readChangesStatements, { timeout: 15_000 })
+          .toContain(colA);
+
+        // Same-plan Back restores resource selection without remounting the
+        // shell or collapsing Changes (BYT-9913 resource-routing contract).
+        await page.goBack();
+        await expect(page).toHaveURL(
+          new RegExp(`/plans/${planId}/specs/${specB}$`),
+        );
+        await expect(tab2).toBeVisible();
+        await expect
+          .poll(readChangesStatements, { timeout: 15_000 })
+          .toContain(colB);
       },
     );
   },

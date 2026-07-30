@@ -61,7 +61,7 @@ export function PlanDetailMeta() {
           issueLabels={project?.issueLabels ?? []}
           labels={page.creationIssueLabels}
           onUpdate={page.setCreationIssueLabels}
-          required={project?.forceIssueLabels ?? false}
+          required={false}
         />
       </div>
     );
