@@ -20,7 +20,7 @@ import { isDev } from "@/utils";
 
 // Session-validity poll interval (1 min dev, 5 min prod), mirroring the legacy
 // AuthContext.vue.
-const CHECK_AUTHORIZATION_INTERVAL = isDev() ? 5 * 1000 : 60 * 1000 * 5;
+const CHECK_AUTHORIZATION_INTERVAL = isDev() ? 60 * 1000 : 60 * 1000 * 5;
 
 // Replaces AuthContext.vue: gates the app render on the authenticated session
 // (loading workspace-scoped data first), polls session validity, redirects on a
