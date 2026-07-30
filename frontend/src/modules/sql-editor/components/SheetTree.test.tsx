@@ -488,6 +488,20 @@ const setupDefaultMocks = () => {
   };
 };
 
+test("keeps the initialized tree visible while refetching", () => {
+  const { viewContext } = setupDefaultMocks();
+  viewContext.isLoading = true;
+
+  const { container, render, unmount } = renderIntoContainer(
+    <SheetTree view="my" />
+  );
+  render();
+
+  expect(container.textContent).toContain("folder1");
+  expect(container.textContent).toContain("ws2");
+  unmount();
+});
+
 const renderIntoContainer = (element: ReactElement) => {
   const container = document.createElement("div");
   const root = createRoot(container);

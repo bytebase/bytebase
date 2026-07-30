@@ -1217,7 +1217,7 @@ export function SheetTree({
   );
 
   // ---- Loading spinner -----------------------------------------------------
-  if (isLoading) {
+  if (isLoading && !isInitialized) {
     return (
       <div className="flex items-center justify-center p-4">
         <Loader2 className="size-4 animate-spin text-control-light" />
