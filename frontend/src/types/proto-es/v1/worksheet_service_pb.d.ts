@@ -441,6 +441,7 @@ export declare type SearchWorksheetsRequest = Message<"bytebase.v1.SearchWorkshe
    *
    * Supported filter:
    * - name: the worksheet name in "projects/{project}/worksheets/{worksheet}" format, support "==" and "in [xx]" operator.
+   * - title: the worksheet title, support "contains" operator.
    * - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
    * - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
    * - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
@@ -448,6 +449,7 @@ export declare type SearchWorksheetsRequest = Message<"bytebase.v1.SearchWorkshe
    *
    * For example:
    * creator == "users/{email}"
+   * title.contains("worksheet title")
    * creator != "users/{email}"
    * starred == true
    * starred == false

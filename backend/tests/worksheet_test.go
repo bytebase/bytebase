@@ -238,6 +238,46 @@ func TestSearchWorksheetsFilterByFolder(t *testing.T) {
 	a.Equal([]string{pageSecondWorksheet.Name}, worksheetNames(secondPageResp.Msg.Worksheets))
 }
 
+func TestSearchWorksheetsFilterByTitle(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	createWorksheet := func(title string) *v1pb.Worksheet {
+		resp, err := ctl.worksheetServiceClient.CreateWorksheet(ctx, connect.NewRequest(&v1pb.CreateWorksheetRequest{
+			Parent: ctl.project.Name,
+			Worksheet: &v1pb.Worksheet{
+				Title:      title,
+				Content:    []byte("SELECT 1;"),
+				Visibility: v1pb.Worksheet_PRIVATE,
+			},
+		}))
+		a.NoError(err)
+		return resp.Msg
+	}
+
+	matchedWorksheet := createWorksheet("Production Payroll Report")
+	unmatchedWorksheet := createWorksheet("Development Scratchpad")
+
+	resp, err := ctl.worksheetServiceClient.SearchWorksheets(ctx, connect.NewRequest(&v1pb.SearchWorksheetsRequest{
+		Parent: ctl.project.Name,
+		Filter: `title.contains("payroll")`,
+	}))
+	a.NoError(err)
+	a.Equal([]string{matchedWorksheet.Name}, worksheetNames(resp.Msg.Worksheets))
+	a.NotContains(worksheetNames(resp.Msg.Worksheets), unmatchedWorksheet.Name)
+
+	_, err = ctl.worksheetServiceClient.SearchWorksheets(ctx, connect.NewRequest(&v1pb.SearchWorksheetsRequest{
+		Parent: ctl.project.Name,
+		Filter: `content.contains("SELECT")`,
+	}))
+	a.Error(err)
+}
+
 func TestBatchUpdateWorksheetOrganizerFilterByFolder(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)

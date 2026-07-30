@@ -11,6 +11,7 @@ import (
 	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -569,7 +570,7 @@ func (s *Store) BatchUpdateWorksheetOrganizer(ctx context.Context, patch *BatchU
 	return worksheetOrganizers, nil
 }
 
-func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter string) (*qb.Query, error) {
+func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter string, allowTitleContains bool) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
 	}
@@ -684,6 +685,30 @@ func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter str
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				return parseToSQL(variable, value)
+			case celoverloads.Contains:
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return nil, errors.Errorf(`invalid args for %q`, variable)
+				}
+				value := args[0].AsLiteral().Value()
+				strValue, ok := value.(string)
+				if !ok {
+					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
+				}
+				if strValue == "" {
+					return nil, errors.Errorf(`empty value for %q`, variable)
+				}
+
+				switch variable {
+				case "title":
+					if !allowTitleContains {
+						return nil, errors.Errorf("unsupport variable %q", variable)
+					}
+					return qb.Q().Space("LOWER(worksheet.name) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+				default:
+					return nil, errors.Errorf("unsupport variable %q", variable)
+				}
 			case celoperators.NotEquals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				if variable != "creator" {

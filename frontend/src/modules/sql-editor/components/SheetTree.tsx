@@ -170,10 +170,10 @@ function generateNewFolderName(children: WorksheetFolderNode[]): string {
 function WorksheetTreeLoadMoreButton({
   label,
   onClick,
-}: {
+}: Readonly<{
   label: string;
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
-}) {
+}>) {
   return (
     <button
       type="button"

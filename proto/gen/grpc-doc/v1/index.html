@@ -34371,6 +34371,7 @@ The syntax and semantics of CEL are documented at https://github.com/google/cel-
 
 Supported filter:
 - name: the worksheet name in &#34;projects/{project}/worksheets/{worksheet}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator.
+- title: the worksheet title, support &#34;contains&#34; operator.
 - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
 - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator.
 - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
@@ -34378,6 +34379,7 @@ Supported filter:
 
 For example:
 creator == &#34;users/{email}&#34;
+title.contains(&#34;worksheet title&#34;)
 creator != &#34;users/{email}&#34;
 starred == true
 starred == false

@@ -305,7 +305,7 @@ func (s *WorksheetService) SearchWorksheets(
 		Offset:         &offset.offset,
 	}
 
-	filterQ, err := store.GetListSheetFilter(ctx, s.store, user.Email, request.Filter)
+	filterQ, err := store.GetListSheetFilter(ctx, s.store, user.Email, request.Filter, true /* allowTitleContains */)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -559,7 +559,7 @@ func (s *WorksheetService) BatchUpdateWorksheetOrganizer(
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	filterQ, err := store.GetListSheetFilter(ctx, s.store, user.Email, request.Filter)
+	filterQ, err := store.GetListSheetFilter(ctx, s.store, user.Email, request.Filter, false /* allowTitleContains */)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}

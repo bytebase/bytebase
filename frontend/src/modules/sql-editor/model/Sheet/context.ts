@@ -29,6 +29,7 @@ import {
   getSheetStatement,
   isWorksheetReadableV1,
   storageKeySqlEditorWorksheetFilter,
+  storageKeySqlEditorWorksheetFolder,
   storageKeySqlEditorWorksheetTree,
   workspaceCacheScope,
 } from "@/utils";
@@ -441,6 +442,12 @@ const reloadFromStorage = () => {
     shared: emptyViewState("shared"),
     draft: emptyViewState("draft"),
   };
+  for (const view of SheetViewModeList) {
+    viewStates[view].folders = sortBy([
+      rootPathFor(view),
+      ...readPersistedFolders(view),
+    ]);
+  }
 
   useSheetContextStore.getState().hydrate({
     filter,
@@ -471,6 +478,76 @@ const persistExpandedKeys = (keys: Set<string>) => {
     storageKeySqlEditorWorksheetTree(scope.wsScope, scope.project, scope.email),
     [...keys]
   );
+};
+
+const persistedFolderStorageKey = (view: SheetViewMode): string | undefined => {
+  const scope = currentScope();
+  if (!scope) return undefined;
+  return storageKeySqlEditorWorksheetFolder(
+    scope.wsScope,
+    scope.project,
+    view,
+    scope.email
+  );
+};
+
+const readPersistedFolders = (view: SheetViewMode): Set<string> => {
+  const key = persistedFolderStorageKey(view);
+  if (!key) return new Set();
+  const folders = safeReadJSON<string[]>(key, (v) =>
+    Array.isArray(v) && v.every((entry) => typeof entry === "string")
+      ? (v as string[])
+      : undefined
+  );
+  return new Set(
+    (folders ?? []).map((folder) => ensureFolderPath(view, folder))
+  );
+};
+
+const writePersistedFolders = (view: SheetViewMode, folders: Set<string>) => {
+  const key = persistedFolderStorageKey(view);
+  if (!key) return;
+  const root = rootPathFor(view);
+  safeWriteJSON(key, sortBy([...folders].filter((folder) => folder !== root)));
+};
+
+const addPersistedFolder = (view: SheetViewMode, path: string) => {
+  const folders = readPersistedFolders(view);
+  folders.add(ensureFolderPath(view, path));
+  writePersistedFolders(view, folders);
+};
+
+const removePersistedFolder = (view: SheetViewMode, path: string) => {
+  const folderContext = getFolderContext(view);
+  const target = folderContext.ensureFolderPath(path);
+  const folders = readPersistedFolders(view);
+  const next = new Set(
+    [...folders].filter(
+      (folder) =>
+        folder !== target &&
+        !folderContext.isSubFolder({ parent: target, path: folder, dig: true })
+    )
+  );
+  writePersistedFolders(view, next);
+};
+
+const movePersistedFolder = (view: SheetViewMode, from: string, to: string) => {
+  const folderContext = getFolderContext(view);
+  const fromPath = folderContext.ensureFolderPath(from);
+  const toPath = folderContext.ensureFolderPath(to);
+  const folders = readPersistedFolders(view);
+  const next = new Set(
+    [...folders].map((folder) => {
+      if (folder === fromPath) return toPath;
+      if (
+        folderContext.isSubFolder({ parent: fromPath, path: folder, dig: true })
+      ) {
+        return folder.replace(fromPath, toPath);
+      }
+      return folder;
+    })
+  );
+  writePersistedFolders(view, next);
 };
 
 // ---- per-view helpers + folder context -------------------------------------
@@ -545,6 +622,7 @@ const buildFolderContext = (view: SheetViewMode): FolderContext => {
       set.add(newPath);
       const next = sortBy([...set]);
       useSheetContextStore.getState().setViewFolders(view, next);
+      addPersistedFolder(view, newPath);
       return newPath;
     },
     removeFolder(path) {
@@ -557,6 +635,7 @@ const buildFolderContext = (view: SheetViewMode): FolderContext => {
           )
       );
       useSheetContextStore.getState().setViewFolders(view, next);
+      removePersistedFolder(view, path);
     },
     moveFolder(from, to) {
       const fromPath = ensureFolderPath(view, from);
@@ -574,6 +653,7 @@ const buildFolderContext = (view: SheetViewMode): FolderContext => {
       useSheetContextStore
         .getState()
         .moveViewFolderPageState(view, fromPath, toPath);
+      movePersistedFolder(view, fromPath, toPath);
     },
     mergeFolders(paths) {
       const current = useSheetContextStore.getState().viewStates[view].folders;
@@ -827,9 +907,12 @@ const fetchSheetListFor = async (view: SheetViewMode) => {
   try {
     state.resetViewFolderPageState(view);
     await fetchWorksheetFoldersForView(view);
-    const { worksheets, nextPageToken } = await fetchWorksheetsPage(view, "", [
-      `folder == ""`,
-    ]);
+    const rootFilters = hasWorksheetServerFilter() ? [] : [`folder == ""`];
+    const { worksheets, nextPageToken } = await fetchWorksheetsPage(
+      view,
+      "",
+      rootFilters
+    );
     state.setViewWorksheetNames(
       view,
       worksheets.map((worksheet) => worksheet.name)
@@ -840,6 +923,17 @@ const fetchSheetListFor = async (view: SheetViewMode) => {
   } finally {
     state.setViewIsLoading(view, false);
   }
+};
+
+const fetchSheetListDebounced: Partial<Record<SheetViewMode, () => void>> = {};
+const getFetchSheetListFn = (view: SheetViewMode): (() => void) => {
+  const existed = fetchSheetListDebounced[view];
+  if (existed) return existed;
+  const debounced = debounce(() => {
+    void fetchSheetListFor(view);
+  }, DEBOUNCE_SEARCH_DELAY);
+  fetchSheetListDebounced[view] = debounced;
+  return debounced;
 };
 
 const fetchNextSheetPageFor = async (
@@ -870,7 +964,9 @@ const fetchNextSheetPageFor = async (
     const { worksheets, nextPageToken } = await fetchWorksheetsPage(
       view,
       pageToken,
-      [folderFilterForKey(view, key)]
+      key === folderContext.rootPath && hasWorksheetServerFilter()
+        ? []
+        : [folderFilterForKey(view, key)]
     );
     const names = new Set(
       useSheetContextStore.getState().viewStates[view].worksheetNames
@@ -900,6 +996,22 @@ const folderFilterForKey = (view: SheetViewMode, folderKey: string): string => {
   return `folder == "${escapeCELStringLiteral(folder)}"`;
 };
 
+const worksheetSearchFilters = (): string[] => {
+  const filter = useSheetContextStore.getState().filter;
+  const filters: string[] = [];
+  const keyword = filter.keyword.trim().toLowerCase();
+  if (keyword) {
+    filters.push(`title.contains("${escapeCELStringLiteral(keyword)}")`);
+  }
+  if (filter.onlyShowStarred) {
+    filters.push("starred == true");
+  }
+  return filters;
+};
+
+const hasWorksheetServerFilter = (): boolean =>
+  worksheetSearchFilters().length > 0;
+
 const sheetFilterForView = (
   view: SheetViewMode,
   extraFilters: string[] = []
@@ -912,7 +1024,9 @@ const sheetFilterForView = (
           `creator != "users/${escapeCELStringLiteral(email)}"`,
           `visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`,
         ];
-  return [...baseFilters, ...extraFilters].join(" && ");
+  return [...baseFilters, ...extraFilters, ...worksheetSearchFilters()].join(
+    " && "
+  );
 };
 
 const fetchWorksheetsPage = async (
@@ -946,6 +1060,9 @@ const fetchWorksheetFoldersForView = async (view: SheetViewMode) => {
     for (const path of getPathesForWorksheet(view, { folders })) {
       folderPaths.add(path);
     }
+  }
+  for (const path of readPersistedFolders(view)) {
+    folderPaths.add(path);
   }
   getFolderContext(view).replaceFolders(folderPaths);
 };
@@ -1131,7 +1248,9 @@ const batchUpdateWorksheetFolders = async (
   await useAppStore.getState().batchUpdateWorksheetOrganizers(
     requests.map((request) => ({
       parent: request.parent,
-      filter: `name in [${request.names.map((name) => `"${escapeCELStringLiteral(name)}"`).join(",")}]`,
+      filter: `name in [${request.names
+        .map((name) => '"' + escapeCELStringLiteral(name) + '"')
+        .join(",")}]`,
       organizer: {
         folders: request.folders,
       },
@@ -1208,15 +1327,15 @@ const bindWatchers = () => {
     if (state.expandedKeys !== prev.expandedKeys)
       persistExpandedKeys(state.expandedKeys);
 
-    // Rebuild the worksheet-backed trees when `onlyShowStarred` toggles
-    // — it changes both the worksheet list (`worksheetsForView` filters
-    // to starred) and the `hideEmpty` pass inside `buildTree`. Mirrors
-    // the Vue `watch(filter, rebuildTree)`. Keyword filtering is applied
-    // component-side (SheetTree's `nodeMatches`), so it doesn't need a
-    // rebuild here.
-    if (state.filter.onlyShowStarred !== prev.filter.onlyShowStarred) {
-      getRebuildTreeFn("my")();
-      getRebuildTreeFn("shared")();
+    if (
+      state.filter.keyword !== prev.filter.keyword ||
+      state.filter.onlyShowStarred !== prev.filter.onlyShowStarred
+    ) {
+      for (const view of ["my", "shared"] as const) {
+        if (state.viewStates[view].isInitialized) {
+          getFetchSheetListFn(view)();
+        }
+      }
     }
 
     // Rebuild a view's tree when its folder set changes (add / remove /

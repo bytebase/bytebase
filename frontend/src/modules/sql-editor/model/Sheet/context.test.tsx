@@ -227,7 +227,7 @@ describe("sheet context", () => {
     expect(container.textContent).not.toContain("shared");
   });
 
-  test("ignores persisted folders because backend folders are the source of truth", async () => {
+  test("merges persisted empty folders with backend folders", async () => {
     window.localStorage.setItem(
       storageKeySqlEditorWorksheetFolder(
         "",
@@ -268,8 +268,83 @@ describe("sheet context", () => {
       await viewContext!.fetchSheetList();
     });
 
-    expect(container.textContent).not.toContain("alpha");
-    expect(container.textContent).not.toContain("local-empty");
+    expect(container.textContent).toContain("alpha");
+    expect(container.textContent).toContain("local-empty");
+  });
+
+  test("persists locally created empty folders", async () => {
+    const { provideSheetContext, useSheetContextByView } = await import(
+      "./context"
+    );
+    let viewContext: ReturnType<typeof useSheetContextByView> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      viewContext = useSheetContextByView("my");
+      return null;
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+
+    act(() => {
+      viewContext!.folderContext.addFolder("/my/local-empty");
+    });
+
+    expect(
+      JSON.parse(
+        window.localStorage.getItem(
+          storageKeySqlEditorWorksheetFolder(
+            "",
+            "projects/proj1",
+            "my",
+            "creator@example.com"
+          )
+        ) ?? "[]"
+      )
+    ).toEqual(["/my/local-empty"]);
+  });
+
+  test("uses server-side keyword and starred filters when fetching worksheets", async () => {
+    const { provideSheetContext, useSheetContext, useSheetContextByView } =
+      await import("./context");
+    let sheetContext: ReturnType<typeof useSheetContext> | undefined;
+    let viewContext: ReturnType<typeof useSheetContextByView> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      sheetContext = useSheetContext();
+      viewContext = useSheetContextByView("my");
+      return null;
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+    await act(async () => {
+      await viewContext!.fetchSheetList();
+    });
+    mocks.getAppState().fetchWorksheetList.mockClear();
+
+    act(() => {
+      sheetContext!.setFilter({
+        ...sheetContext!.filter,
+        keyword: "Payroll",
+        onlyShowStarred: true,
+      });
+    });
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    expect(mocks.getAppState().fetchWorksheetList).toHaveBeenLastCalledWith(
+      "projects/proj1",
+      'creator == "users/creator@example.com" && title.contains("payroll") && starred == true',
+      expect.objectContaining({ pageToken: "" })
+    );
   });
 
   test("fetches worksheet descendants for a folder without replacing the paged view", async () => {
