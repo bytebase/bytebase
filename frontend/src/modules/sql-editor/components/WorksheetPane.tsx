@@ -110,8 +110,8 @@ export function WorksheetPane() {
   const hasAnyView = filter.showMine || views.length > 0;
 
   return (
-    <div className="h-full flex flex-col gap-1 overflow-hidden py-1 text-sm">
-      <div className="flex items-center gap-x-1 px-1">
+    <div className="flex h-full min-w-0 max-w-full flex-col gap-1 overflow-hidden py-1 text-sm">
+      <div className="flex min-w-0 items-center gap-x-1 px-1">
         <SearchInput
           size="sm"
           value={filter.keyword}
@@ -153,7 +153,7 @@ export function WorksheetPane() {
         </DropdownMenu>
       </div>
 
-      <div className="relative flex-1 flex flex-col gap-y-2 overflow-y-auto worksheet-scroll">
+      <div className="relative flex min-w-0 max-w-full flex-1 flex-col gap-y-2 overflow-y-auto overflow-x-hidden worksheet-scroll">
         {showMultiSelectToolbar && (
           <div className="sticky top-0 z-10 flex flex-wrap items-center justify-start gap-y-1 gap-x-1 bg-control-bg py-2 px-1">
             <Button

@@ -94,6 +94,22 @@ describe("TreeNodePrefix", () => {
     unmount();
   });
 
+  test("renders the regular folder icon for empty folders", () => {
+    const node = makeNode({ empty: true });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <TreeNodePrefix node={node} isOpen={false} rootPath="/my" view="my" />
+    );
+    render();
+
+    const svg = container.querySelector("svg");
+    expect(svg).not.toBeNull();
+    expect(svg?.classList.contains("lucide-folder-code")).toBe(true);
+    expect(svg?.classList.contains("lucide-folder-minus")).toBe(false);
+
+    unmount();
+  });
+
   test("renders view-specific root icon when node.key === rootPath", () => {
     const rootPath = "/my";
     const node = makeNode({ key: rootPath });

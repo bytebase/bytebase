@@ -16,7 +16,7 @@
  */
 
 import { Loader2 } from "lucide-react";
-import type { Ref } from "react";
+import type { CSSProperties, Ref } from "react";
 import {
   useCallback,
   useEffect,
@@ -63,6 +63,7 @@ import {
   useSheetContext,
   useSheetContextByView,
   type WorksheetFolderNode,
+  type WorksheetFolderPathUpdate,
 } from "@/modules/sql-editor/model/Sheet";
 import { useSQLEditorStore as useSQLEditorReactStore } from "@/modules/sql-editor/store";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
@@ -149,7 +150,7 @@ function generateNewFolderName(children: WorksheetFolderNode[]): string {
   let maxNumber = 0;
   for (let i = children.length - 1; i >= 0; i--) {
     const child = children[i];
-    if (child.worksheet) {
+    if (child.worksheet || child.loadMore) {
       continue;
     }
     const match = child.label.match(regex);
@@ -164,6 +165,43 @@ function generateNewFolderName(children: WorksheetFolderNode[]): string {
     }
   }
   return maxNumber === 0 ? baseName : `${baseName}${maxNumber + 1}`;
+}
+
+function selectableNodes(node: WorksheetFolderNode[]): WorksheetFolderNode[];
+function selectableNodes(node: WorksheetFolderNode): WorksheetFolderNode[];
+function selectableNodes(
+  node: WorksheetFolderNode | WorksheetFolderNode[]
+): WorksheetFolderNode[] {
+  if (Array.isArray(node)) {
+    return node.filter((n) => !n.loadMore);
+  }
+  return revealNodes(node, (n) => (n.loadMore ? undefined : n));
+}
+
+function WorksheetTreeLoadMoreButton({
+  label,
+  onClick,
+}: Readonly<{
+  label: string;
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+}>) {
+  return (
+    <span
+      data-testid="load-more-wrapper"
+      className="min-w-0 flex-1 truncate text-left"
+    >
+      <Button
+        type="button"
+        appearance="secondary"
+        size="xs"
+        className="tree-label cursor-pointer text-xs font-medium text-accent hover:text-accent-hover"
+        onClick={onClick}
+      >
+        <span aria-hidden="true">···</span>
+        <span>{label}</span>
+      </Button>
+    </span>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -190,6 +228,7 @@ export function SheetTree({
     expandedKeys,
     editingNode,
     batchUpdateWorksheetFolders,
+    batchUpdateWorksheetFolderPaths,
     setExpandedKeys,
     setEditingNode,
   } = useSheetContext();
@@ -198,8 +237,11 @@ export function SheetTree({
     isLoading,
     sheetTree,
     fetchSheetList,
+    fetchNextPage,
+    fetchWorksheetsByFolder,
     folderContext,
     getFoldersForWorksheet,
+    rebuildTree,
     events,
   } = useSheetContextByView(view);
 
@@ -356,9 +398,42 @@ export function SheetTree({
     [sheetTree, expandedKeysArray, worksheetFilter.keyword, nodeMatches]
   );
 
+  useEffect(() => {
+    if (view === "draft" || !isInitialized || isLoading) return;
+    const expandedKeySet = new Set(expandedKeysArray);
+    for (const node of revealNodes(sheetTree, (node) => node)) {
+      if (
+        node.worksheet ||
+        node.loadMore ||
+        node.key === folderContext.rootPath ||
+        !expandedKeySet.has(node.key)
+      ) {
+        continue;
+      }
+      void fetchWorksheetsByFolder(node.key);
+    }
+  }, [
+    expandedKeysArray,
+    fetchWorksheetsByFolder,
+    folderContext.rootPath,
+    isInitialized,
+    isLoading,
+    sheetTree,
+    view,
+  ]);
+
   // ---- Expand/collapse toggle -----------------------------------------------
   const handleToggleExpand = useCallback(
     (node: WorksheetFolderNode) => {
+      const isOpening = !expandedKeysArray.includes(node.key);
+      if (
+        isOpening &&
+        !node.worksheet &&
+        !node.loadMore &&
+        node.key !== folderContext.rootPath
+      ) {
+        void fetchWorksheetsByFolder(node.key);
+      }
       setExpandedKeys((prev) => {
         const next = new Set(prev);
         if (next.has(node.key)) {
@@ -369,7 +444,12 @@ export function SheetTree({
         return next;
       });
     },
-    [setExpandedKeys]
+    [
+      expandedKeysArray,
+      fetchWorksheetsByFolder,
+      folderContext.rootPath,
+      setExpandedKeys,
+    ]
   );
 
   // ---- Helpers: folder/tree operations ------------------------------------
@@ -431,6 +511,38 @@ export function SheetTree({
       await batchUpdateWorksheetFolders(worksheets);
     },
     [batchUpdateWorksheetFolders, getFoldersForWorksheet]
+  );
+
+  const collectFolderKeys = useCallback(
+    (folderKey: string): string[] => [
+      folderKey,
+      ...folderContext
+        .listSubFolders(folderKey)
+        .flatMap((child) => collectFolderKeys(child)),
+    ],
+    [folderContext]
+  );
+
+  const updateFolderFolders = useCallback(
+    async (oldKey: string, newKey: string) => {
+      const updates = collectFolderKeys(oldKey).map<WorksheetFolderPathUpdate>(
+        (sourceKey) => ({
+          sourceFolder: getFoldersForWorksheet(sourceKey),
+          targetFolder: getFoldersForWorksheet(
+            sourceKey === oldKey
+              ? newKey
+              : sourceKey.replace(`${oldKey}/`, `${newKey}/`)
+          ),
+        })
+      );
+      await batchUpdateWorksheetFolderPaths(view, updates);
+    },
+    [
+      batchUpdateWorksheetFolderPaths,
+      collectFolderKeys,
+      getFoldersForWorksheet,
+      view,
+    ]
   );
 
   // ---- Delete helpers -------------------------------------------------------
@@ -522,13 +634,10 @@ export function SheetTree({
             resolve: (merge) => {
               if (merge) {
                 void (async () => {
-                  await updateWorksheetFolders(
-                    editing.node,
-                    editing.node.key,
-                    newKey
-                  );
+                  await updateFolderFolders(editing.node.key, newKey);
                   replaceExpandedKeys({ oldKey: editing.node.key, newKey });
                   folderContext.moveFolder(editing.node.key, newKey);
+                  rebuildTree();
                   cleanup();
                 })();
               } else {
@@ -541,9 +650,10 @@ export function SheetTree({
           });
         });
       } else {
-        await updateWorksheetFolders(editing.node, editing.node.key, newKey);
+        await updateFolderFolders(editing.node.key, newKey);
         replaceExpandedKeys({ oldKey: editing.node.key, newKey });
         folderContext.moveFolder(editing.node.key, newKey);
+        rebuildTree();
         cleanup();
       }
     }
@@ -552,9 +662,10 @@ export function SheetTree({
     setEditingNode,
     findParentNode,
     sheetTree,
-    updateWorksheetFolders,
+    updateFolderFolders,
     replaceExpandedKeys,
     folderContext,
+    rebuildTree,
   ]);
 
   const handleRenameNode = useCallback(() => {
@@ -566,10 +677,32 @@ export function SheetTree({
     }, 0);
   }, [execRenameNode]);
 
+  const restoreRenameInputSelection = useCallback(
+    (selectionStart: number | null, selectionEnd: number | null) => {
+      if (selectionStart === null || selectionEnd === null) {
+        return;
+      }
+      window.setTimeout(() => {
+        const input = inputRef.current;
+        if (!input || document.activeElement !== input) {
+          return;
+        }
+        const start = Math.min(selectionStart, input.value.length);
+        const end = Math.min(selectionEnd, input.value.length);
+        input.setSelectionRange(start, end);
+      }, 0);
+    },
+    []
+  );
+
   // ---- Click handler -------------------------------------------------------
   const handleNodeClick = useCallback(
     (e: React.MouseEvent, node: WorksheetFolderNode) => {
       if (editingNode) return;
+      if (node.loadMore) {
+        void fetchNextPage(node.loadMoreFolderKey);
+        return;
+      }
       if (node.worksheet) {
         if (node.worksheet.type === "worksheet") {
           void openWorksheetByName({
@@ -584,7 +717,7 @@ export function SheetTree({
         handleToggleExpand(node);
       }
     },
-    [editingNode, handleToggleExpand]
+    [editingNode, fetchNextPage, handleToggleExpand]
   );
 
   // ---- Duplicate sheet -------------------------------------------------------
@@ -637,6 +770,9 @@ export function SheetTree({
       const folders: string[] = [];
       const worksheets: string[] = [];
       for (const node of nodes) {
+        if (node.loadMore) {
+          continue;
+        }
         if (node.worksheet) {
           worksheets.push(node.worksheet.name);
           continue;
@@ -750,7 +886,7 @@ export function SheetTree({
           // Guarded — the menu item is only surfaced when the callbacks exist
           // (the "my" tree); the optional-chaining is a belt-and-braces safety.
           onMultiSelectModeChange?.(true);
-          onCheckedNodesChange?.(revealNodes(contextMenuNode, (n) => n));
+          onCheckedNodesChange?.(selectableNodes(contextMenuNode));
           break;
         default:
           break;
@@ -834,7 +970,7 @@ export function SheetTree({
             parentFolderNode = candidate;
           }
         }
-        if (!parentFolderNode) return;
+        if (!parentFolderNode || parentFolderNode.loadMore) return;
 
         // Only handle single drag (matches Vue behaviour)
         const draggedTreeNode = dragNodes[0] as
@@ -843,6 +979,7 @@ export function SheetTree({
         if (!draggedTreeNode) return;
 
         const draggedNode = draggedTreeNode.data.data;
+        if (draggedNode.loadMore) return;
         const oldParentNode = findParentNode(sheetTree, draggedNode.key);
         if (!oldParentNode) return;
 
@@ -864,14 +1001,17 @@ export function SheetTree({
         const shouldCloseOldParent =
           !draggedNode.worksheet && oldParentNode.children.length === 1;
 
-        await updateWorksheetFolders(
-          draggedNode,
-          oldParentNode.key,
-          parentFolderNode.key
-        );
-        if (!draggedNode.worksheet) {
+        if (draggedNode.worksheet) {
+          await updateWorksheetFolders(
+            draggedNode,
+            oldParentNode.key,
+            parentFolderNode.key
+          );
+        } else {
+          await updateFolderFolders(draggedNode.key, newKey);
           // Folder move — update folderContext too
           folderContext.moveFolder(draggedNode.key, newKey);
+          rebuildTree();
         }
 
         // Update expanded keys (nextTick equivalent: defer to next microtask)
@@ -893,6 +1033,8 @@ export function SheetTree({
         folderContext,
         handleDuplicateFolderNameDrop,
         updateWorksheetFolders,
+        updateFolderFolders,
+        rebuildTree,
         replaceExpandedKeys,
         setExpandedKeys,
       ]
@@ -937,19 +1079,23 @@ export function SheetTree({
       const ROW_GUTTER_X = 8;
       const indentPadding =
         typeof style.paddingLeft === "number" ? style.paddingLeft : 0;
-      const rowStyle = {
+      const rowStyle: CSSProperties = {
         ...style,
         paddingLeft: indentPadding + ROW_GUTTER_X,
         paddingRight: ROW_GUTTER_X,
+        width: "100%",
+        maxWidth: "100%",
+        boxSizing: "border-box",
       };
       return (
         <div
           key={folderNode.key}
-          ref={dragHandle}
+          ref={folderNode.loadMore ? undefined : dragHandle}
           style={rowStyle}
           data-item-key={folderNode.key}
           className={cn(
-            "flex items-center gap-x-1 w-full py-0.5 text-sm cursor-pointer select-none",
+            "flex min-w-0 max-w-full items-center gap-x-1 text-sm cursor-pointer select-none",
+            isEditing ? "overflow-visible py-0" : "overflow-hidden py-0.5",
             // Align with the connection-panel database tree: subtle neutral
             // hover, accent-tinted selection (was a too-light gray fill).
             "hover:bg-control-bg/70 rounded-xs",
@@ -966,11 +1112,12 @@ export function SheetTree({
           onContextMenu={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (folderNode.loadMore) return;
             openMenuAtPoint(e.clientX, e.clientY, folderNode);
           }}
         >
           {/* Multi-select checkbox */}
-          {multiSelectMode && (
+          {multiSelectMode && !folderNode.loadMore && (
             <Checkbox
               checked={isChecked}
               className="shrink-0 cursor-pointer"
@@ -980,7 +1127,7 @@ export function SheetTree({
                 // users don't have to tick each child individually.
                 const affected = folderNode.worksheet
                   ? [folderNode]
-                  : revealNodes(folderNode, (n) => n);
+                  : selectableNodes(folderNode);
                 if (checked) {
                   const existing = new Set(checkedNodes.map((n) => n.key));
                   onCheckedNodesChange?.([
@@ -998,69 +1145,87 @@ export function SheetTree({
           )}
 
           {/* Prefix icon */}
-          <span className="tree-prefix shrink-0">
-            <TreeNodePrefix
-              node={folderNode}
-              isOpen={isOpen}
-              rootPath={folderContext.rootPath}
-              view={view}
-            />
-          </span>
+          {!folderNode.loadMore && (
+            <span className="tree-prefix shrink-0">
+              <TreeNodePrefix
+                node={folderNode}
+                isOpen={isOpen}
+                rootPath={folderContext.rootPath}
+                view={view}
+              />
+            </span>
+          )}
 
-          {/* Label / rename input */}
-          <span className="tree-label flex-1 min-w-0">
-            {isEditing ? (
-              <Input
-                ref={inputRef}
-                id={`sheet-input-${folderNode.key}`}
-                size="sm"
-                // Bind to the editable `rawLabel`, NOT `node.label`. The
-                // editingNode lives in the immer-backed sheet-context
-                // store and is frozen — mutating `node.label` silently
-                // no-ops, which froze the input (could not type).
-                value={editingNode.rawLabel}
-                className="h-5 py-0 text-xs px-1!"
-                autoFocus
-                onBlur={() => handleRenameNode()}
-                onKeyDown={(e) => {
-                  // react-arborist's container intercepts Space (toggles node)
-                  // and other keys for tree navigation; stop propagation so
-                  // typing inside the rename input is unaffected.
-                  e.stopPropagation();
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleRenameNode();
-                  }
-                }}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (!editingNode) return;
-                  if (!editingNode.node.worksheet) {
-                    // folder names cannot contain "/" or "."
-                    if (val.includes("/") || val.includes(".")) return;
-                  }
-                  setEditingNode({ ...editingNode, rawLabel: val });
-                }}
-                onClick={(e) => e.stopPropagation()}
-              />
-            ) : folderNode.worksheet && !folderNode.label ? (
-              // Untitled worksheet — render a placeholder. We don't pipe this
-              // through HighlightLabelText since there's nothing to highlight
-              // and the muted italic styling signals "empty title".
-              <span className="truncate block text-control-placeholder italic">
-                {t("common.untitled")}
-              </span>
-            ) : (
-              <HighlightLabelText
-                text={folderNode.label}
-                keyword={worksheetFilter.keyword}
-                className="truncate block"
-              />
-            )}
-          </span>
+          {folderNode.loadMore ? (
+            <WorksheetTreeLoadMoreButton
+              label={folderNode.label}
+              onClick={(e) => {
+                e.stopPropagation();
+                void fetchNextPage(folderNode.loadMoreFolderKey);
+              }}
+            />
+          ) : (
+            <span
+              className={cn(
+                "tree-label min-w-0 flex-1",
+                isEditing ? "overflow-visible" : "overflow-hidden"
+              )}
+            >
+              {isEditing ? (
+                <Input
+                  ref={inputRef}
+                  id={`sheet-input-${folderNode.key}`}
+                  size="sm"
+                  // Bind to the editable `rawLabel`, NOT `node.label`. The
+                  // editingNode lives in the immer-backed sheet-context
+                  // store and is frozen — mutating `node.label` silently
+                  // no-ops, which froze the input (could not type).
+                  value={editingNode.rawLabel}
+                  className="h-6 w-full min-w-0 py-0 text-sm px-1!"
+                  autoFocus
+                  onBlur={() => handleRenameNode()}
+                  onKeyDown={(e) => {
+                    // react-arborist's container intercepts Space (toggles node)
+                    // and other keys for tree navigation; stop propagation so
+                    // typing inside the rename input is unaffected.
+                    e.stopPropagation();
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleRenameNode();
+                    }
+                  }}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const { selectionStart, selectionEnd } = e.currentTarget;
+                    if (!editingNode) return;
+                    if (!editingNode.node.worksheet) {
+                      // folder names cannot contain "/" or "."
+                      if (val.includes("/") || val.includes(".")) return;
+                    }
+                    setEditingNode({ ...editingNode, rawLabel: val });
+                    restoreRenameInputSelection(selectionStart, selectionEnd);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : folderNode.worksheet && !folderNode.label ? (
+                // Untitled worksheet — render a placeholder. We don't pipe this
+                // through HighlightLabelText since there's nothing to highlight
+                // and the muted italic styling signals "empty title".
+                <span className="truncate block text-control-placeholder italic">
+                  {t("common.untitled")}
+                </span>
+              ) : (
+                <HighlightLabelText
+                  text={folderNode.label}
+                  keyword={worksheetFilter.keyword}
+                  className="truncate block"
+                />
+              )}
+            </span>
+          )}
 
           {/* Suffix (star, visibility badge, more) */}
-          {!isEditing && (
+          {!isEditing && !folderNode.loadMore && (
             <TreeNodeSuffix
               node={folderNode}
               view={view}
@@ -1086,6 +1251,7 @@ export function SheetTree({
       folderContext,
       handleNodeClick,
       handleRenameNode,
+      restoreRenameInputSelection,
       handleWorksheetToggleStar,
       openMenuAtPoint,
       openMenuAtElement,
@@ -1096,7 +1262,7 @@ export function SheetTree({
   );
 
   // ---- Loading spinner -----------------------------------------------------
-  if (isLoading) {
+  if (isLoading && !isInitialized) {
     return (
       <div className="flex items-center justify-center p-4">
         <Loader2 className="size-4 animate-spin text-control-light" />
@@ -1370,7 +1536,7 @@ export function SheetTree({
 
   // ---- Main render ---------------------------------------------------------
   return (
-    <div className="flex flex-col items-stretch gap-y-1 relative worksheet-tree">
+    <div className="relative flex min-w-0 max-w-full flex-col items-stretch gap-y-1 overflow-x-hidden worksheet-tree">
       <Tree<WorksheetFolderNode>
         data={treeData}
         renderNode={renderNode}
@@ -1381,13 +1547,25 @@ export function SheetTree({
         height={treeHeight}
         rowHeight={ROW_HEIGHT}
         indent={12}
-        className="text-sm"
+        className={cn(
+          "min-w-0 max-w-full overflow-x-hidden text-sm [&_[role=treeitem]]:!min-w-0 [&_[role=treeitem]]:!max-w-full",
+          editingNode
+            ? "[&_[role=treeitem]]:overflow-visible"
+            : "[&_[role=treeitem]]:overflow-hidden"
+        )}
         onMove={handleMove}
-        disableDrag={view === "draft" || !!editingNode || multiSelectMode}
+        disableDrag={
+          view === "draft" || !!editingNode || multiSelectMode
+            ? true
+            : ({ data }) => !!data.loadMore
+        }
         disableDrop={
           view === "draft" || !!editingNode || multiSelectMode
             ? true
-            : ({ parentNode: p }) => !!p?.data.data.worksheet
+            : ({ parentNode: p, dragNodes }) =>
+                !!p?.data.data.worksheet ||
+                !!p?.data.data.loadMore ||
+                dragNodes.some((node) => !!node.data.data.loadMore)
         }
       />
 

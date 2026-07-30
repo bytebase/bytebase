@@ -1,6 +1,6 @@
 import Emittery from "emittery";
 import { enableMapSet } from "immer";
-import { debounce, isEqual, orderBy, sortBy } from "lodash-es";
+import { debounce, isEqual, sortBy } from "lodash-es";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
@@ -25,6 +25,7 @@ import {
   Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
+  getDefaultPagination,
   getSheetStatement,
   isWorksheetReadableV1,
   storageKeySqlEditorWorksheetFilter,
@@ -32,6 +33,7 @@ import {
   storageKeySqlEditorWorksheetTree,
   workspaceCacheScope,
 } from "@/utils";
+import { escapeCELStringLiteral } from "@/utils/v1/cel";
 import { isSubFolder } from "./folder";
 import { type SheetViewMode, SheetViewModeList } from "./types";
 
@@ -54,6 +56,8 @@ export interface WorksheetFolderNode {
   editable: boolean;
   isLeaf?: boolean;
   empty?: boolean;
+  loadMore?: boolean;
+  loadMoreFolderKey?: string;
   worksheet?: WorksheetLikeItem;
   children: WorksheetFolderNode[];
   [key: string]: unknown;
@@ -76,6 +80,7 @@ export interface FolderContext {
   removeFolder: (path: string) => void;
   moveFolder: (from: string, to: string) => void;
   mergeFolders: (paths: Set<string>) => void;
+  replaceFolders: (paths: Set<string>) => void;
   isSubFolder: (args: {
     parent: string;
     path: string;
@@ -95,12 +100,22 @@ export interface ViewContext {
   folderContext: FolderContext;
   events: SheetTreeEvents;
   fetchSheetList: () => Promise<void>;
+  fetchNextPage: (folderKey?: string) => Promise<void>;
+  fetchWorksheetsByFolder: (folderKey: string) => Promise<void>;
+  hasMore: boolean;
+  hasMoreForFolder: (folderKey: string) => boolean;
+  isFetchingNextPage: boolean;
   rebuildTree: () => void;
   getKeyForWorksheet: (worksheet: WorksheetLikeItem) => string;
   getFoldersForWorksheet: (path: string) => string[];
   getPathesForWorksheet: (worksheet: { folders: string[] }) => string[];
   getPwdForWorksheet: (worksheet: { folders: string[] }) => string;
 }
+
+export type WorksheetFolderPathUpdate = {
+  sourceFolder: string[];
+  targetFolder: string[];
+};
 
 // ---- internal Zustand store ------------------------------------------------
 
@@ -114,9 +129,15 @@ const INITIAL_FILTER: WorksheetFilter = {
 
 interface ViewState {
   isLoading: boolean;
+  isFetchingNextPage: boolean;
   isInitialized: boolean;
   sheetTree: WorksheetFolderNode;
   folders: string[];
+  worksheetNames: string[];
+  nextPageToken: string;
+  folderNextPageTokens: Map<string, string>;
+  fetchingFolderKeys: Set<string>;
+  fetchedFolderKeys: Set<string>;
 }
 
 interface SheetContextState {
@@ -139,9 +160,34 @@ interface SheetContextState {
     next: { node: WorksheetFolderNode; rawLabel: string } | undefined
   ) => void;
   setViewIsLoading: (view: SheetViewMode, loading: boolean) => void;
+  setViewIsFetchingNextPage: (view: SheetViewMode, loading: boolean) => void;
   setViewIsInitialized: (view: SheetViewMode, initialized: boolean) => void;
   setViewSheetTree: (view: SheetViewMode, tree: WorksheetFolderNode) => void;
   setViewFolders: (view: SheetViewMode, folders: string[]) => void;
+  setViewWorksheetNames: (view: SheetViewMode, names: string[]) => void;
+  setViewNextPageToken: (view: SheetViewMode, token: string) => void;
+  setViewFolderNextPageToken: (
+    view: SheetViewMode,
+    folderKey: string,
+    token: string
+  ) => void;
+  resetViewFolderPageState: (view: SheetViewMode) => void;
+  setViewFolderFetching: (
+    view: SheetViewMode,
+    folderKey: string,
+    fetching: boolean
+  ) => void;
+  setViewFolderFetched: (view: SheetViewMode, folderKey: string) => void;
+  invalidateViewPageState: (
+    view: SheetViewMode,
+    folderKeys: Iterable<string>
+  ) => void;
+  moveViewFolderPageState: (
+    view: SheetViewMode,
+    fromPath: string,
+    toPath: string,
+    merge: boolean
+  ) => void;
   /** Replace the entire state (used by project / user-scope reload). */
   hydrate: (next: Partial<SheetContextState>) => void;
 }
@@ -158,9 +204,15 @@ const emptyRootNode = (view: SheetViewMode): WorksheetFolderNode => ({
 
 const emptyViewState = (view: SheetViewMode): ViewState => ({
   isLoading: false,
+  isFetchingNextPage: false,
   isInitialized: false,
   sheetTree: emptyRootNode(view),
   folders: [rootPathFor(view)],
+  worksheetNames: [],
+  nextPageToken: "",
+  folderNextPageTokens: new Map<string, string>(),
+  fetchingFolderKeys: new Set<string>(),
+  fetchedFolderKeys: new Set<string>(),
 });
 
 const initialViewStates: Record<SheetViewMode, ViewState> = {
@@ -214,6 +266,11 @@ const useSheetContextStore: UseBoundStore<StoreApi<SheetContextState>> =
           s.viewStates[view].isLoading = loading;
         });
       },
+      setViewIsFetchingNextPage(view, loading) {
+        set((s) => {
+          s.viewStates[view].isFetchingNextPage = loading;
+        });
+      },
       setViewIsInitialized(view, initialized) {
         set((s) => {
           s.viewStates[view].isInitialized = initialized;
@@ -227,6 +284,109 @@ const useSheetContextStore: UseBoundStore<StoreApi<SheetContextState>> =
       setViewFolders(view, folders) {
         set((s) => {
           s.viewStates[view].folders = folders;
+        });
+      },
+      setViewWorksheetNames(view, names) {
+        set((s) => {
+          s.viewStates[view].worksheetNames = names;
+        });
+      },
+      setViewNextPageToken(view, token) {
+        set((s) => {
+          s.viewStates[view].nextPageToken = token;
+        });
+      },
+      setViewFolderNextPageToken(view, folderKey, token) {
+        set((s) => {
+          if (token) {
+            s.viewStates[view].folderNextPageTokens.set(folderKey, token);
+          } else {
+            s.viewStates[view].folderNextPageTokens.delete(folderKey);
+          }
+        });
+      },
+      resetViewFolderPageState(view) {
+        set((s) => {
+          s.viewStates[view].folderNextPageTokens.clear();
+          s.viewStates[view].fetchingFolderKeys.clear();
+          s.viewStates[view].fetchedFolderKeys.clear();
+        });
+      },
+      setViewFolderFetching(view, folderKey, fetching) {
+        set((s) => {
+          if (fetching) {
+            s.viewStates[view].fetchingFolderKeys.add(folderKey);
+          } else {
+            s.viewStates[view].fetchingFolderKeys.delete(folderKey);
+          }
+        });
+      },
+      setViewFolderFetched(view, folderKey) {
+        set((s) => {
+          s.viewStates[view].fetchedFolderKeys.add(folderKey);
+        });
+      },
+      invalidateViewPageState(view, folderKeys) {
+        set((s) => {
+          const viewState = s.viewStates[view];
+          const rootPath = rootPathFor(view);
+          const folderContext = getFolderContext(view);
+          for (const folderKey of folderKeys) {
+            const key = folderContext.ensureFolderPath(folderKey);
+            if (key === rootPath) {
+              viewState.nextPageToken = "";
+              continue;
+            }
+            viewState.folderNextPageTokens.delete(key);
+            viewState.fetchingFolderKeys.delete(key);
+            viewState.fetchedFolderKeys.delete(key);
+          }
+        });
+      },
+      moveViewFolderPageState(view, fromPath, toPath, merge) {
+        const moveKey = (key: string) => {
+          if (key === fromPath) return toPath;
+          if (isSubFolder({ parent: fromPath, path: key, dig: true })) {
+            return key.replace(fromPath, toPath);
+          }
+          return key;
+        };
+        set((s) => {
+          const viewState = s.viewStates[view];
+          if (merge) {
+            const shouldInvalidate = (key: string) =>
+              key === fromPath ||
+              key === toPath ||
+              isSubFolder({ parent: fromPath, path: key, dig: true }) ||
+              isSubFolder({ parent: toPath, path: key, dig: true });
+            viewState.folderNextPageTokens = new Map(
+              [...viewState.folderNextPageTokens.entries()].filter(
+                ([key]) => !shouldInvalidate(key)
+              )
+            );
+            viewState.fetchingFolderKeys = new Set(
+              [...viewState.fetchingFolderKeys].filter(
+                (key) => !shouldInvalidate(key)
+              )
+            );
+            viewState.fetchedFolderKeys = new Set(
+              [...viewState.fetchedFolderKeys].filter(
+                (key) => !shouldInvalidate(key)
+              )
+            );
+            return;
+          }
+          viewState.folderNextPageTokens = new Map(
+            [...viewState.folderNextPageTokens.entries()].map(
+              ([key, token]) => [moveKey(key), token]
+            )
+          );
+          viewState.fetchingFolderKeys = new Set(
+            [...viewState.fetchingFolderKeys].map(moveKey)
+          );
+          viewState.fetchedFolderKeys = new Set(
+            [...viewState.fetchedFolderKeys].map(moveKey)
+          );
         });
       },
       hydrate(next) {
@@ -327,23 +487,11 @@ const reloadFromStorage = () => {
     shared: emptyViewState("shared"),
     draft: emptyViewState("draft"),
   };
-
-  for (const view of ["my", "shared", "draft"] as const) {
-    const folders = safeReadJSON<string[]>(
-      storageKeySqlEditorWorksheetFolder(
-        scope.wsScope,
-        scope.project,
-        view,
-        scope.email
-      ),
-      (v) =>
-        Array.isArray(v) && v.every((entry) => typeof entry === "string")
-          ? (v as string[])
-          : undefined
-    );
-    const set = new Set(folders ?? []);
-    set.add(rootPathFor(view));
-    viewStates[view].folders = sortBy([...set]);
+  for (const view of SheetViewModeList) {
+    viewStates[view].folders = sortBy([
+      rootPathFor(view),
+      ...readPersistedFolders(view),
+    ]);
   }
 
   useSheetContextStore.getState().hydrate({
@@ -377,18 +525,74 @@ const persistExpandedKeys = (keys: Set<string>) => {
   );
 };
 
-const persistViewFolders = (view: SheetViewMode, folders: string[]) => {
+const persistedFolderStorageKey = (view: SheetViewMode): string | undefined => {
   const scope = currentScope();
-  if (!scope) return;
-  safeWriteJSON(
-    storageKeySqlEditorWorksheetFolder(
-      scope.wsScope,
-      scope.project,
-      view,
-      scope.email
-    ),
-    folders
+  if (!scope) return undefined;
+  return storageKeySqlEditorWorksheetFolder(
+    scope.wsScope,
+    scope.project,
+    view,
+    scope.email
   );
+};
+
+const readPersistedFolders = (view: SheetViewMode): Set<string> => {
+  const key = persistedFolderStorageKey(view);
+  if (!key) return new Set();
+  const folders = safeReadJSON<string[]>(key, (v) =>
+    Array.isArray(v) && v.every((entry) => typeof entry === "string")
+      ? (v as string[])
+      : undefined
+  );
+  return new Set(
+    (folders ?? []).map((folder) => ensureFolderPath(view, folder))
+  );
+};
+
+const writePersistedFolders = (view: SheetViewMode, folders: Set<string>) => {
+  const key = persistedFolderStorageKey(view);
+  if (!key) return;
+  const root = rootPathFor(view);
+  safeWriteJSON(key, sortBy([...folders].filter((folder) => folder !== root)));
+};
+
+const addPersistedFolder = (view: SheetViewMode, path: string) => {
+  const folders = readPersistedFolders(view);
+  folders.add(ensureFolderPath(view, path));
+  writePersistedFolders(view, folders);
+};
+
+const removePersistedFolder = (view: SheetViewMode, path: string) => {
+  const folderContext = getFolderContext(view);
+  const target = folderContext.ensureFolderPath(path);
+  const folders = readPersistedFolders(view);
+  const next = new Set(
+    [...folders].filter(
+      (folder) =>
+        folder !== target &&
+        !folderContext.isSubFolder({ parent: target, path: folder, dig: true })
+    )
+  );
+  writePersistedFolders(view, next);
+};
+
+const movePersistedFolder = (view: SheetViewMode, from: string, to: string) => {
+  const folderContext = getFolderContext(view);
+  const fromPath = folderContext.ensureFolderPath(from);
+  const toPath = folderContext.ensureFolderPath(to);
+  const folders = readPersistedFolders(view);
+  const next = new Set(
+    [...folders].map((folder) => {
+      if (folder === fromPath) return toPath;
+      if (
+        folderContext.isSubFolder({ parent: fromPath, path: folder, dig: true })
+      ) {
+        return folder.replace(fromPath, toPath);
+      }
+      return folder;
+    })
+  );
+  writePersistedFolders(view, next);
 };
 
 // ---- per-view helpers + folder context -------------------------------------
@@ -463,7 +667,7 @@ const buildFolderContext = (view: SheetViewMode): FolderContext => {
       set.add(newPath);
       const next = sortBy([...set]);
       useSheetContextStore.getState().setViewFolders(view, next);
-      persistViewFolders(view, next);
+      addPersistedFolder(view, newPath);
       return newPath;
     },
     removeFolder(path) {
@@ -476,12 +680,13 @@ const buildFolderContext = (view: SheetViewMode): FolderContext => {
           )
       );
       useSheetContextStore.getState().setViewFolders(view, next);
-      persistViewFolders(view, next);
+      removePersistedFolder(view, path);
     },
     moveFolder(from, to) {
       const fromPath = ensureFolderPath(view, from);
       const toPath = ensureFolderPath(view, to);
       const current = useSheetContextStore.getState().viewStates[view].folders;
+      const merge = current.includes(toPath);
       const next = current.map((path) => {
         if (path === fromPath) return toPath;
         if (isSubFolder({ parent: fromPath, path, dig: true })) {
@@ -491,7 +696,10 @@ const buildFolderContext = (view: SheetViewMode): FolderContext => {
       });
       const deduped = sortBy([...new Set(next)]);
       useSheetContextStore.getState().setViewFolders(view, deduped);
-      persistViewFolders(view, deduped);
+      useSheetContextStore
+        .getState()
+        .moveViewFolderPageState(view, fromPath, toPath, merge);
+      movePersistedFolder(view, fromPath, toPath);
     },
     mergeFolders(paths) {
       const current = useSheetContextStore.getState().viewStates[view].folders;
@@ -505,7 +713,20 @@ const buildFolderContext = (view: SheetViewMode): FolderContext => {
         !next.every((p, i) => current[i] === p)
       ) {
         useSheetContextStore.getState().setViewFolders(view, next);
-        persistViewFolders(view, next);
+      }
+    },
+    replaceFolders(paths) {
+      const current = useSheetContextStore.getState().viewStates[view].folders;
+      const set = new Set<string>([rootPath]);
+      for (const folder of paths.values()) {
+        set.add(ensureFolderPath(view, folder));
+      }
+      const next = sortBy([...set]);
+      if (
+        next.length !== current.length ||
+        !next.every((p, i) => current[i] === p)
+      ) {
+        useSheetContextStore.getState().setViewFolders(view, next);
       }
     },
     isSubFolder,
@@ -573,7 +794,8 @@ const buildTree = (
   view: SheetViewMode,
   parent: WorksheetFolderNode,
   worksheetsByFolder: Map<string, WorksheetLikeItem[]>,
-  hideEmpty: boolean
+  hideEmpty: boolean,
+  includeLoadMore = true
 ): WorksheetFolderNode => {
   const folderContext = getFolderContext(view);
   const subfolders: WorksheetFolderNode[] = folderContext
@@ -588,7 +810,13 @@ const buildTree = (
 
   let empty = true;
   for (const childNode of subfolders) {
-    const subtree = buildTree(view, childNode, worksheetsByFolder, hideEmpty);
+    const subtree = buildTree(
+      view,
+      childNode,
+      worksheetsByFolder,
+      hideEmpty,
+      includeLoadMore
+    );
     if (!subtree.empty || !hideEmpty) {
       parent.children.push(subtree);
     }
@@ -597,9 +825,8 @@ const buildTree = (
     }
   }
 
-  const sheets = orderBy(
-    worksheetsByFolder.get(parent.key) ?? [],
-    (item) => item.title
+  const sheets = (
+    worksheetsByFolder.get(parent.key) ?? []
   ).map<WorksheetFolderNode>((worksheet) => ({
     isLeaf: true,
     key: getKeyForWorksheet(view, worksheet),
@@ -610,6 +837,25 @@ const buildTree = (
   }));
 
   parent.children.push(...sheets);
+  const viewState = useSheetContextStore.getState().viewStates[view];
+  const isRoot = parent.key === folderContext.rootPath;
+  const hasMore = isRoot
+    ? !!viewState.nextPageToken
+    : viewState.folderNextPageTokens.has(parent.key);
+  if (includeLoadMore && hasMore) {
+    const loadMoreNode: WorksheetFolderNode = {
+      key: `${parent.key}/__load-more`,
+      label: i18n.t("common.load-more"),
+      editable: false,
+      isLeaf: true,
+      loadMore: true,
+      children: [],
+    };
+    if (!isRoot) {
+      loadMoreNode.loadMoreFolderKey = parent.key;
+    }
+    parent.children.push(loadMoreNode);
+  }
   parent.empty = sheets.length === 0 && empty;
   if (parent.key !== folderContext.rootPath) {
     parent.isLeaf = parent.children.length === 0;
@@ -628,10 +874,14 @@ const worksheetsForView = (view: SheetViewMode): Worksheet[] => {
   // the previous Pinia path had.
   const email = useAppStore.getState().currentUser?.email ?? "";
   const creator = `users/${email}`;
-  let list = useAppStore
+  const appState = useAppStore.getState();
+  let list = useSheetContextStore
     .getState()
-    .worksheetList()
-    .filter((sheet) => {
+    .viewStates[view].worksheetNames.map((name) =>
+      appState.getWorksheetByName(name)
+    )
+    .filter((sheet): sheet is Worksheet => {
+      if (!sheet) return false;
       if (sheet.project !== project) return false;
       const mine = sheet.creator === creator;
       return view === "my" ? mine : !mine;
@@ -707,32 +957,217 @@ const fetchSheetListFor = async (view: SheetViewMode) => {
   const state = useSheetContextStore.getState();
   state.setViewIsLoading(view, true);
   try {
-    const sheetStore = useAppStore.getState();
-    const email = sheetStore.currentUser?.email ?? "";
-    const project = getSQLEditorEditorState().project;
-    switch (view) {
-      case "my":
-        await sheetStore.fetchWorksheetList(
-          project,
-          `creator == "users/${email}"`
-        );
-        break;
-      case "shared":
-        await sheetStore.fetchWorksheetList(
-          project,
-          [
-            `creator != "users/${email}"`,
-            `visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`,
-          ].join(" && ")
-        );
-        break;
-      default:
-        break;
-    }
+    state.resetViewFolderPageState(view);
+    await fetchWorksheetFoldersForView(view);
+    const rootFilters = hasWorksheetServerFilter() ? [] : [`folder == ""`];
+    const { worksheets, nextPageToken } = await fetchWorksheetsPage(
+      view,
+      "",
+      rootFilters
+    );
+    state.setViewWorksheetNames(
+      view,
+      worksheets.map((worksheet) => worksheet.name)
+    );
+    state.setViewNextPageToken(view, nextPageToken);
     rebuildTreeImpl(view);
     state.setViewIsInitialized(view, true);
   } finally {
     state.setViewIsLoading(view, false);
+  }
+};
+
+const fetchSheetListDebounced: Partial<Record<SheetViewMode, () => void>> = {};
+const getFetchSheetListFn = (view: SheetViewMode): (() => void) => {
+  const existed = fetchSheetListDebounced[view];
+  if (existed) return existed;
+  const debounced = debounce(() => {
+    void fetchSheetListFor(view);
+  }, DEBOUNCE_SEARCH_DELAY);
+  fetchSheetListDebounced[view] = debounced;
+  return debounced;
+};
+
+const fetchNextSheetPageFor = async (
+  view: SheetViewMode,
+  folderKey?: string
+) => {
+  const state = useSheetContextStore.getState();
+  const viewState = state.viewStates[view];
+  const folderContext = getFolderContext(view);
+  const key = folderKey
+    ? folderContext.ensureFolderPath(folderKey)
+    : rootPathFor(view);
+  const pageToken =
+    key === folderContext.rootPath
+      ? viewState.nextPageToken
+      : viewState.folderNextPageTokens.get(key) || "";
+  if (
+    (view !== "my" && view !== "shared") ||
+    !pageToken ||
+    viewState.isFetchingNextPage ||
+    viewState.isLoading
+  ) {
+    return;
+  }
+
+  state.setViewIsFetchingNextPage(view, true);
+  try {
+    const { worksheets, nextPageToken } = await fetchWorksheetsPage(
+      view,
+      pageToken,
+      key === folderContext.rootPath && hasWorksheetServerFilter()
+        ? []
+        : [folderFilterForKey(view, key)]
+    );
+    const names = new Set(
+      useSheetContextStore.getState().viewStates[view].worksheetNames
+    );
+    for (const worksheet of worksheets) {
+      names.add(worksheet.name);
+    }
+    state.setViewWorksheetNames(view, [...names]);
+    if (key === folderContext.rootPath) {
+      state.setViewNextPageToken(view, nextPageToken);
+    } else {
+      state.setViewFolderNextPageToken(view, key, nextPageToken);
+    }
+    rebuildTreeImpl(view);
+  } finally {
+    state.setViewIsFetchingNextPage(view, false);
+  }
+};
+
+const folderFilterForKey = (view: SheetViewMode, folderKey: string): string => {
+  const folderContext = getFolderContext(view);
+  const key = folderContext.ensureFolderPath(folderKey);
+  if (key === folderContext.rootPath) {
+    return `folder == ""`;
+  }
+  const folder = getFoldersForWorksheet(view, key).join("/");
+  return `folder == "${escapeCELStringLiteral(folder)}"`;
+};
+
+const worksheetSearchFilters = (): string[] => {
+  const filter = useSheetContextStore.getState().filter;
+  const filters: string[] = [];
+  const keyword = filter.keyword.trim().toLowerCase();
+  if (keyword) {
+    filters.push(`title.contains("${escapeCELStringLiteral(keyword)}")`);
+  }
+  if (filter.onlyShowStarred) {
+    filters.push("starred == true");
+  }
+  return filters;
+};
+
+const hasWorksheetServerFilter = (): boolean =>
+  worksheetSearchFilters().length > 0;
+
+const sheetFilterForView = (
+  view: SheetViewMode,
+  extraFilters: string[] = [],
+  includeDisplayFilters = true
+): string => {
+  const email = useAppStore.getState().currentUser?.email ?? "";
+  const baseFilters =
+    view === "my"
+      ? [`creator == "users/${escapeCELStringLiteral(email)}"`]
+      : [
+          `creator != "users/${escapeCELStringLiteral(email)}"`,
+          `visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`,
+        ];
+  return [
+    ...baseFilters,
+    ...extraFilters,
+    ...(includeDisplayFilters ? worksheetSearchFilters() : []),
+  ].join(" && ");
+};
+
+const fetchWorksheetsPage = async (
+  view: SheetViewMode,
+  pageToken: string,
+  extraFilters: string[] = []
+): Promise<{ worksheets: Worksheet[]; nextPageToken: string }> => {
+  if (view !== "my" && view !== "shared") {
+    return { worksheets: [], nextPageToken: "" };
+  }
+  const sheetStore = useAppStore.getState();
+  const project = getSQLEditorEditorState().project;
+  const filter = sheetFilterForView(view, extraFilters);
+  return sheetStore.fetchWorksheetList(project, filter, {
+    pageSize: getDefaultPagination(),
+    pageToken,
+  });
+};
+
+const fetchWorksheetFoldersForView = async (view: SheetViewMode) => {
+  if (view !== "my" && view !== "shared") {
+    return;
+  }
+  const project = getSQLEditorEditorState().project;
+  const paths = await useAppStore.getState().listWorksheetFolders(project);
+  const folderPaths = new Set<string>();
+  for (const { folders, category } of paths) {
+    if (category !== view) {
+      continue;
+    }
+    for (const path of getPathesForWorksheet(view, { folders })) {
+      folderPaths.add(path);
+    }
+  }
+  for (const path of readPersistedFolders(view)) {
+    folderPaths.add(path);
+  }
+  getFolderContext(view).replaceFolders(folderPaths);
+};
+
+const fetchWorksheetsByFolder = async (
+  view: SheetViewMode,
+  folderKey: string
+) => {
+  if (view !== "my" && view !== "shared") {
+    return;
+  }
+  const folderContext = getFolderContext(view);
+  const key = folderContext.ensureFolderPath(folderKey);
+  if (key === folderContext.rootPath) {
+    return;
+  }
+
+  const state = useSheetContextStore.getState();
+  const viewState = state.viewStates[view];
+  if (
+    viewState.fetchingFolderKeys.has(key) ||
+    viewState.fetchedFolderKeys.has(key)
+  ) {
+    return;
+  }
+
+  const folder = getFoldersForWorksheet(view, key).join("/");
+  if (!folder) {
+    return;
+  }
+
+  state.setViewFolderFetching(view, key, true);
+  try {
+    const { worksheets, nextPageToken } = await fetchWorksheetsPage(view, "", [
+      `folder == "${escapeCELStringLiteral(folder)}"`,
+    ]);
+    const names = new Set(
+      useSheetContextStore.getState().viewStates[view].worksheetNames
+    );
+    for (const worksheet of worksheets) {
+      names.add(worksheet.name);
+    }
+    useSheetContextStore.getState().setViewWorksheetNames(view, [...names]);
+    useSheetContextStore
+      .getState()
+      .setViewFolderNextPageToken(view, key, nextPageToken);
+    useSheetContextStore.getState().setViewFolderFetched(view, key);
+    rebuildTreeImpl(view);
+  } finally {
+    useSheetContextStore.getState().setViewFolderFetching(view, key, false);
   }
 };
 
@@ -741,6 +1176,19 @@ const buildViewContext = (view: SheetViewMode): ViewContext => {
   return {
     get isLoading() {
       return useSheetContextStore.getState().viewStates[view].isLoading;
+    },
+    get isFetchingNextPage() {
+      return useSheetContextStore.getState().viewStates[view]
+        .isFetchingNextPage;
+    },
+    get hasMore() {
+      return !!useSheetContextStore.getState().viewStates[view].nextPageToken;
+    },
+    hasMoreForFolder(folderKey) {
+      const key = folderContext.ensureFolderPath(folderKey);
+      return !!useSheetContextStore
+        .getState()
+        .viewStates[view].folderNextPageTokens.get(key);
     },
     get isInitialized() {
       return useSheetContextStore.getState().viewStates[view].isInitialized;
@@ -753,11 +1201,14 @@ const buildViewContext = (view: SheetViewMode): ViewContext => {
         ...rootTreeNodeFor(view),
         key: folderContext.rootPath,
       };
-      return buildTree(view, root, new Map(), false);
+      return buildTree(view, root, new Map(), false, false);
     },
     folderContext,
     events: getEvents(view),
     fetchSheetList: () => fetchSheetListFor(view),
+    fetchNextPage: (folderKey) => fetchNextSheetPageFor(view, folderKey),
+    fetchWorksheetsByFolder: (folderKey) =>
+      fetchWorksheetsByFolder(view, folderKey),
     rebuildTree: () => getRebuildTreeFn(view)(),
     getKeyForWorksheet: (ws) => getKeyForWorksheet(view, ws),
     getFoldersForWorksheet: (path) => getFoldersForWorksheet(view, path),
@@ -783,15 +1234,126 @@ const isWorksheetCreator = (worksheet: { creator: string }) => {
   return worksheet.creator === `users/${email}`;
 };
 
+const viewForWorksheet = (worksheet: Worksheet): SheetViewMode | undefined => {
+  const project = getSQLEditorEditorState().project;
+  if (worksheet.project !== project) return undefined;
+  if (isWorksheetCreator(worksheet)) return "my";
+  if (
+    worksheet.visibility === Worksheet_Visibility.PROJECT_READ ||
+    worksheet.visibility === Worksheet_Visibility.PROJECT_WRITE
+  ) {
+    return "shared";
+  }
+  return undefined;
+};
+
+const addNewWorksheetsToViewMembership = (
+  worksheetsByKey: Record<string, Worksheet>,
+  prevWorksheetsByKey: Record<string, Worksheet>
+) => {
+  const prevNames = new Set(
+    Object.values(prevWorksheetsByKey).map((worksheet) => worksheet.name)
+  );
+  for (const worksheet of Object.values(worksheetsByKey)) {
+    if (prevNames.has(worksheet.name)) continue;
+    const view = viewForWorksheet(worksheet);
+    if (!view) continue;
+    const state = useSheetContextStore.getState();
+    const viewState = state.viewStates[view];
+    if (
+      !viewState.isInitialized ||
+      viewState.worksheetNames.includes(worksheet.name)
+    ) {
+      continue;
+    }
+    state.setViewWorksheetNames(view, [
+      ...viewState.worksheetNames,
+      worksheet.name,
+    ]);
+  }
+};
+
 const batchUpdateWorksheetFolders = async (
   worksheets: { name: string; folders: string[] }[]
 ): Promise<void> => {
-  if (worksheets.length === 0) return;
-  await useAppStore.getState().batchUpsertWorksheetOrganizers(
-    worksheets.map((worksheet) => ({
-      organizer: {
-        worksheet: worksheet.name,
+  const affectedFolderKeysByView = new Map<SheetViewMode, Set<string>>();
+  const addAffectedFolderKey = (view: SheetViewMode, folderKey: string) => {
+    const keys = affectedFolderKeysByView.get(view) ?? new Set<string>();
+    keys.add(folderKey);
+    affectedFolderKeysByView.set(view, keys);
+  };
+
+  const requestByKey = new Map<
+    string,
+    { parent: string; folders: string[]; names: string[] }
+  >();
+  for (const worksheet of worksheets) {
+    const current = useAppStore.getState().getWorksheetByName(worksheet.name);
+    const view = current ? viewForWorksheet(current) : undefined;
+    if (current && (view === "my" || view === "shared")) {
+      addAffectedFolderKey(view, getPwdForWorksheet(view, current));
+      addAffectedFolderKey(view, getPwdForWorksheet(view, worksheet));
+    }
+
+    const index = worksheet.name.lastIndexOf("/worksheets/");
+    if (index < 0) {
+      continue;
+    }
+    const parent = worksheet.name.slice(0, index);
+    const key = JSON.stringify([parent, worksheet.folders]);
+    const request = requestByKey.get(key);
+    if (request) {
+      request.names.push(worksheet.name);
+    } else {
+      requestByKey.set(key, {
+        parent,
         folders: worksheet.folders,
+        names: [worksheet.name],
+      });
+    }
+  }
+  const requests = [...requestByKey.values()];
+  if (requests.length === 0) return;
+  await useAppStore.getState().batchUpdateWorksheetOrganizers(
+    requests.map((request) => ({
+      parent: request.parent,
+      filter: `name in [${request.names
+        .map((name) => '"' + escapeCELStringLiteral(name) + '"')
+        .join(",")}]`,
+      organizer: {
+        folders: request.folders,
+      },
+      updateMask: ["folders"],
+    }))
+  );
+  for (const [view, folderKeys] of affectedFolderKeysByView) {
+    useSheetContextStore.getState().invalidateViewPageState(view, folderKeys);
+    rebuildTreeImpl(view);
+  }
+};
+
+const batchUpdateWorksheetFolderPaths = async (
+  view: SheetViewMode,
+  updates: WorksheetFolderPathUpdate[]
+): Promise<void> => {
+  if (view !== "my" && view !== "shared") return;
+  if (updates.length === 0) return;
+  const project = getSQLEditorEditorState().project;
+  const sortedUpdates = [...updates].sort(
+    (a, b) => b.sourceFolder.length - a.sourceFolder.length
+  );
+  await useAppStore.getState().batchUpdateWorksheetOrganizers(
+    sortedUpdates.map((update) => ({
+      parent: project,
+      filter: sheetFilterForView(
+        view,
+        [
+          `folder == "${escapeCELStringLiteral(update.sourceFolder.join("/"))}"`,
+        ],
+        false
+      ),
+      organizer: {
+        folders: update.targetFolder,
       },
       updateMask: ["folders"],
     }))
@@ -842,15 +1404,15 @@ const bindWatchers = () => {
     if (state.expandedKeys !== prev.expandedKeys)
       persistExpandedKeys(state.expandedKeys);
 
-    // Rebuild the worksheet-backed trees when `onlyShowStarred` toggles
-    // — it changes both the worksheet list (`worksheetsForView` filters
-    // to starred) and the `hideEmpty` pass inside `buildTree`. Mirrors
-    // the Vue `watch(filter, rebuildTree)`. Keyword filtering is applied
-    // component-side (SheetTree's `nodeMatches`), so it doesn't need a
-    // rebuild here.
-    if (state.filter.onlyShowStarred !== prev.filter.onlyShowStarred) {
-      getRebuildTreeFn("my")();
-      getRebuildTreeFn("shared")();
+    if (
+      state.filter.keyword !== prev.filter.keyword ||
+      state.filter.onlyShowStarred !== prev.filter.onlyShowStarred
+    ) {
+      for (const view of ["my", "shared"] as const) {
+        if (state.viewStates[view].isInitialized) {
+          getFetchSheetListFn(view)();
+        }
+      }
     }
 
     // Rebuild a view's tree when its folder set changes (add / remove /
@@ -896,6 +1458,10 @@ const bindWatchers = () => {
   // burst of cache writes a single fetch produces.
   useAppStore.subscribe((state, prev) => {
     if (state.worksheetsByKey === prev.worksheetsByKey) return;
+    addNewWorksheetsToViewMembership(
+      state.worksheetsByKey,
+      prev.worksheetsByKey
+    );
     getRebuildTreeFn("my")();
     getRebuildTreeFn("shared")();
   });
@@ -978,6 +1544,10 @@ export interface SheetContext {
   batchUpdateWorksheetFolders: (
     worksheets: { name: string; folders: string[] }[]
   ) => Promise<void>;
+  batchUpdateWorksheetFolderPaths: (
+    view: SheetViewMode,
+    updates: WorksheetFolderPathUpdate[]
+  ) => Promise<void>;
   getContextByView: (view: SheetViewMode) => ViewContext;
   setFilter: SheetContextState["setFilter"];
   setView: SheetContextState["setView"];
@@ -1040,6 +1610,7 @@ export function useSheetContext(): SheetContext {
     viewContexts: VIEW_CONTEXTS_LAZY,
     isWorksheetCreator,
     batchUpdateWorksheetFolders,
+    batchUpdateWorksheetFolderPaths,
     getContextByView: getViewContext,
     setFilter: setFilterAction,
     setView: setViewAction,

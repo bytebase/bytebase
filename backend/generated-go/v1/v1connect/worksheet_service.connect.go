@@ -43,6 +43,9 @@ const (
 	// WorksheetServiceListWorksheetsProcedure is the fully-qualified name of the WorksheetService's
 	// ListWorksheets RPC.
 	WorksheetServiceListWorksheetsProcedure = "/bytebase.v1.WorksheetService/ListWorksheets"
+	// WorksheetServiceListWorksheetFoldersProcedure is the fully-qualified name of the
+	// WorksheetService's ListWorksheetFolders RPC.
+	WorksheetServiceListWorksheetFoldersProcedure = "/bytebase.v1.WorksheetService/ListWorksheetFolders"
 	// WorksheetServiceSearchWorksheetsProcedure is the fully-qualified name of the WorksheetService's
 	// SearchWorksheets RPC.
 	WorksheetServiceSearchWorksheetsProcedure = "/bytebase.v1.WorksheetService/SearchWorksheets"
@@ -76,6 +79,9 @@ type WorksheetServiceClient interface {
 	// This is used for listing worksheets in a project, or across all projects by using `projects/-`.
 	// Permissions required: bb.worksheets.list
 	ListWorksheets(context.Context, *connect.Request[v1.ListWorksheetsRequest]) (*connect.Response[v1.ListWorksheetsResponse], error)
+	// List the caller's worksheet folders.
+	// Only folders stored in the caller's worksheet organizer are returned.
+	ListWorksheetFolders(context.Context, *connect.Request[v1.ListWorksheetFoldersRequest]) (*connect.Response[v1.ListWorksheetFoldersResponse], error)
 	// Search for worksheets.
 	// This is used for finding my worksheets or worksheets shared by other people.
 	// The sheet accessibility is the same as GetWorksheet().
@@ -131,6 +137,12 @@ func NewWorksheetServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(worksheetServiceMethods.ByName("ListWorksheets")),
 			connect.WithClientOptions(opts...),
 		),
+		listWorksheetFolders: connect.NewClient[v1.ListWorksheetFoldersRequest, v1.ListWorksheetFoldersResponse](
+			httpClient,
+			baseURL+WorksheetServiceListWorksheetFoldersProcedure,
+			connect.WithSchema(worksheetServiceMethods.ByName("ListWorksheetFolders")),
+			connect.WithClientOptions(opts...),
+		),
 		searchWorksheets: connect.NewClient[v1.SearchWorksheetsRequest, v1.SearchWorksheetsResponse](
 			httpClient,
 			baseURL+WorksheetServiceSearchWorksheetsProcedure,
@@ -169,6 +181,7 @@ type worksheetServiceClient struct {
 	createWorksheet               *connect.Client[v1.CreateWorksheetRequest, v1.Worksheet]
 	getWorksheet                  *connect.Client[v1.GetWorksheetRequest, v1.Worksheet]
 	listWorksheets                *connect.Client[v1.ListWorksheetsRequest, v1.ListWorksheetsResponse]
+	listWorksheetFolders          *connect.Client[v1.ListWorksheetFoldersRequest, v1.ListWorksheetFoldersResponse]
 	searchWorksheets              *connect.Client[v1.SearchWorksheetsRequest, v1.SearchWorksheetsResponse]
 	updateWorksheet               *connect.Client[v1.UpdateWorksheetRequest, v1.Worksheet]
 	updateWorksheetOrganizer      *connect.Client[v1.UpdateWorksheetOrganizerRequest, v1.WorksheetOrganizer]
@@ -189,6 +202,11 @@ func (c *worksheetServiceClient) GetWorksheet(ctx context.Context, req *connect.
 // ListWorksheets calls bytebase.v1.WorksheetService.ListWorksheets.
 func (c *worksheetServiceClient) ListWorksheets(ctx context.Context, req *connect.Request[v1.ListWorksheetsRequest]) (*connect.Response[v1.ListWorksheetsResponse], error) {
 	return c.listWorksheets.CallUnary(ctx, req)
+}
+
+// ListWorksheetFolders calls bytebase.v1.WorksheetService.ListWorksheetFolders.
+func (c *worksheetServiceClient) ListWorksheetFolders(ctx context.Context, req *connect.Request[v1.ListWorksheetFoldersRequest]) (*connect.Response[v1.ListWorksheetFoldersResponse], error) {
+	return c.listWorksheetFolders.CallUnary(ctx, req)
 }
 
 // SearchWorksheets calls bytebase.v1.WorksheetService.SearchWorksheets.
@@ -232,6 +250,9 @@ type WorksheetServiceHandler interface {
 	// This is used for listing worksheets in a project, or across all projects by using `projects/-`.
 	// Permissions required: bb.worksheets.list
 	ListWorksheets(context.Context, *connect.Request[v1.ListWorksheetsRequest]) (*connect.Response[v1.ListWorksheetsResponse], error)
+	// List the caller's worksheet folders.
+	// Only folders stored in the caller's worksheet organizer are returned.
+	ListWorksheetFolders(context.Context, *connect.Request[v1.ListWorksheetFoldersRequest]) (*connect.Response[v1.ListWorksheetFoldersResponse], error)
 	// Search for worksheets.
 	// This is used for finding my worksheets or worksheets shared by other people.
 	// The sheet accessibility is the same as GetWorksheet().
@@ -283,6 +304,12 @@ func NewWorksheetServiceHandler(svc WorksheetServiceHandler, opts ...connect.Han
 		connect.WithSchema(worksheetServiceMethods.ByName("ListWorksheets")),
 		connect.WithHandlerOptions(opts...),
 	)
+	worksheetServiceListWorksheetFoldersHandler := connect.NewUnaryHandler(
+		WorksheetServiceListWorksheetFoldersProcedure,
+		svc.ListWorksheetFolders,
+		connect.WithSchema(worksheetServiceMethods.ByName("ListWorksheetFolders")),
+		connect.WithHandlerOptions(opts...),
+	)
 	worksheetServiceSearchWorksheetsHandler := connect.NewUnaryHandler(
 		WorksheetServiceSearchWorksheetsProcedure,
 		svc.SearchWorksheets,
@@ -321,6 +348,8 @@ func NewWorksheetServiceHandler(svc WorksheetServiceHandler, opts ...connect.Han
 			worksheetServiceGetWorksheetHandler.ServeHTTP(w, r)
 		case WorksheetServiceListWorksheetsProcedure:
 			worksheetServiceListWorksheetsHandler.ServeHTTP(w, r)
+		case WorksheetServiceListWorksheetFoldersProcedure:
+			worksheetServiceListWorksheetFoldersHandler.ServeHTTP(w, r)
 		case WorksheetServiceSearchWorksheetsProcedure:
 			worksheetServiceSearchWorksheetsHandler.ServeHTTP(w, r)
 		case WorksheetServiceUpdateWorksheetProcedure:
@@ -350,6 +379,10 @@ func (UnimplementedWorksheetServiceHandler) GetWorksheet(context.Context, *conne
 
 func (UnimplementedWorksheetServiceHandler) ListWorksheets(context.Context, *connect.Request[v1.ListWorksheetsRequest]) (*connect.Response[v1.ListWorksheetsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.ListWorksheets is not implemented"))
+}
+
+func (UnimplementedWorksheetServiceHandler) ListWorksheetFolders(context.Context, *connect.Request[v1.ListWorksheetFoldersRequest]) (*connect.Response[v1.ListWorksheetFoldersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.ListWorksheetFolders is not implemented"))
 }
 
 func (UnimplementedWorksheetServiceHandler) SearchWorksheets(context.Context, *connect.Request[v1.SearchWorksheetsRequest]) (*connect.Response[v1.SearchWorksheetsResponse], error) {

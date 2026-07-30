@@ -102,6 +102,7 @@ type controller struct {
 	databaseServiceClient         v1connect.DatabaseServiceClient
 	databaseCatalogServiceClient  v1connect.DatabaseCatalogServiceClient
 	sheetServiceClient            v1connect.SheetServiceClient
+	worksheetServiceClient        v1connect.WorksheetServiceClient
 	sqlServiceClient              v1connect.SQLServiceClient
 	queryHistoryServiceClient     v1connect.QueryHistoryServiceClient
 	subscriptionServiceClient     v1connect.SubscriptionServiceClient
@@ -114,7 +115,6 @@ type controller struct {
 	serviceAccountServiceClient   v1connect.ServiceAccountServiceClient
 	workloadIdentityServiceClient v1connect.WorkloadIdentityServiceClient
 	accessGrantServiceClient      v1connect.AccessGrantServiceClient
-	worksheetServiceClient        v1connect.WorksheetServiceClient
 
 	project *v1pb.Project
 
@@ -296,6 +296,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.databaseServiceClient = v1connect.NewDatabaseServiceClient(ctl.client, baseURL, interceptors)
 	ctl.databaseCatalogServiceClient = v1connect.NewDatabaseCatalogServiceClient(ctl.client, baseURL, interceptors)
 	ctl.sheetServiceClient = v1connect.NewSheetServiceClient(ctl.client, baseURL, interceptors)
+	ctl.worksheetServiceClient = v1connect.NewWorksheetServiceClient(ctl.client, baseURL, interceptors)
 	ctl.sqlServiceClient = v1connect.NewSQLServiceClient(ctl.client, baseURL, interceptors)
 	ctl.queryHistoryServiceClient = v1connect.NewQueryHistoryServiceClient(ctl.client, baseURL, interceptors)
 	ctl.subscriptionServiceClient = v1connect.NewSubscriptionServiceClient(ctl.client, baseURL, interceptors)
@@ -308,7 +309,6 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.serviceAccountServiceClient = v1connect.NewServiceAccountServiceClient(ctl.client, baseURL, interceptors)
 	ctl.workloadIdentityServiceClient = v1connect.NewWorkloadIdentityServiceClient(ctl.client, baseURL, interceptors)
 	ctl.accessGrantServiceClient = v1connect.NewAccessGrantServiceClient(ctl.client, baseURL, interceptors)
-	ctl.worksheetServiceClient = v1connect.NewWorksheetServiceClient(ctl.client, baseURL, interceptors)
 
 	if err := ctl.waitForHealthz(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to wait for healthz")

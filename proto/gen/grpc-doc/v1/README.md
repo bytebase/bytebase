@@ -748,6 +748,8 @@
     - [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest)
     - [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest)
     - [GetWorksheetRequest](#bytebase-v1-GetWorksheetRequest)
+    - [ListWorksheetFoldersRequest](#bytebase-v1-ListWorksheetFoldersRequest)
+    - [ListWorksheetFoldersResponse](#bytebase-v1-ListWorksheetFoldersResponse)
     - [ListWorksheetsRequest](#bytebase-v1-ListWorksheetsRequest)
     - [ListWorksheetsResponse](#bytebase-v1-ListWorksheetsResponse)
     - [SearchWorksheetsRequest](#bytebase-v1-SearchWorksheetsRequest)
@@ -755,9 +757,11 @@
     - [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest)
     - [UpdateWorksheetRequest](#bytebase-v1-UpdateWorksheetRequest)
     - [Worksheet](#bytebase-v1-Worksheet)
+    - [WorksheetFolder](#bytebase-v1-WorksheetFolder)
     - [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer)
   
     - [Worksheet.Visibility](#bytebase-v1-Worksheet-Visibility)
+    - [WorksheetFolder.Category](#bytebase-v1-WorksheetFolder-Category)
   
     - [WorksheetService](#bytebase-v1-WorksheetService)
   
@@ -11991,7 +11995,12 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| requests | [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest) | repeated |  |
+| parent | [string](#string) |  | The parent resource whose worksheets&#39; organizers are updated. Format: projects/{project} |
+| filter | [string](#string) |  | To filter the batch update target. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - name: the worksheet name in &#34;projects/{project}/worksheets/{worksheet}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator. - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator. - folder: the worksheet organizer folder path, support exact &#34;==&#34; operator. |
+| organizer | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) |  | The organizer fields to update. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet organizer. Only support update the following fields for now: - `starred` - `folders` |
 
 
 
@@ -12007,6 +12016,7 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | worksheet_organizers | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) | repeated |  |
+| updated_count | [int32](#int32) |  |  |
 
 
 
@@ -12053,6 +12063,36 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the worksheet to retrieve. Format: projects/{project}/worksheets/{worksheet} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListWorksheetFoldersRequest"></a>
+
+### ListWorksheetFoldersRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource of the worksheet folders. Format: projects/{project} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListWorksheetFoldersResponse"></a>
+
+### ListWorksheetFoldersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| folders | [WorksheetFolder](#bytebase-v1-WorksheetFolder) | repeated | The caller&#39;s worksheet folders. |
 
 
 
@@ -12110,9 +12150,11 @@ When paginating, all other parameters provided to `ListWorksheets` must match th
 | parent | [string](#string) |  | The parent resource of the worksheets. Format: projects/{project} |
 | filter | [string](#string) |  | To filter the search result. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
+Supported filter: - name: the worksheet name in &#34;projects/{project}/worksheets/{worksheet}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator. - title: the worksheet title, support &#34;contains&#34; operator. - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator. - folder: the worksheet organizer folder path, support &#34;==&#34; operator.
 
-For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;] visibility == &#34;PRIVATE&#34; |
+For example: creator == &#34;users/{email}&#34; title.contains(&#34;worksheet title&#34;) creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;] visibility == &#34;PRIVATE&#34; folder == &#34;foo/bar&#34; |
+| page_size | [int32](#int32) |  | The maximum number of worksheets to return. The service may return fewer than this value. If unspecified, at most 10 worksheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchWorksheets` call. Provide this to retrieve the subsequent page. |
 
 
 
@@ -12128,6 +12170,7 @@ For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#3
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | worksheets | [Worksheet](#bytebase-v1-Worksheet) | repeated | The worksheets that matched the search criteria. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of worksheets. Pass this value in the page_token field in the subsequent call to `SearchWorksheets` method to retrieve the next page of worksheets. |
 
 
 
@@ -12197,6 +12240,22 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 
 
 
+<a name="bytebase-v1-WorksheetFolder"></a>
+
+### WorksheetFolder
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| folders | [string](#string) | repeated | The folder path segments. |
+| category | [WorksheetFolder.Category](#bytebase-v1-WorksheetFolder-Category) |  | The folder category. |
+
+
+
+
+
+
 <a name="bytebase-v1-WorksheetOrganizer"></a>
 
 ### WorksheetOrganizer
@@ -12229,6 +12288,19 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | PRIVATE | 3 | Private, only worksheet OWNER can read/write. |
 
 
+
+<a name="bytebase-v1-WorksheetFolder-Category"></a>
+
+### WorksheetFolder.Category
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CATEGORY_UNSPECIFIED | 0 |  |
+| MINE | 1 |  |
+| SHARED | 2 |  |
+
+
  
 
  
@@ -12244,6 +12316,7 @@ WorksheetService manages SQL worksheets for query development.
 | CreateWorksheet | [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Creates a personal worksheet used in SQL Editor. Any authenticated user can create their own worksheets. Permissions required: None (authenticated users only) |
 | GetWorksheet | [GetWorksheetRequest](#bytebase-v1-GetWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Get a worksheet by name. The users can access this method if, - they are the creator of the worksheet; - they have bb.worksheets.get permission on the workspace; - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project. Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets) |
 | ListWorksheets | [ListWorksheetsRequest](#bytebase-v1-ListWorksheetsRequest) | [ListWorksheetsResponse](#bytebase-v1-ListWorksheetsResponse) | List worksheets. This is used for listing worksheets in a project, or across all projects by using `projects/-`. Permissions required: bb.worksheets.list |
+| ListWorksheetFolders | [ListWorksheetFoldersRequest](#bytebase-v1-ListWorksheetFoldersRequest) | [ListWorksheetFoldersResponse](#bytebase-v1-ListWorksheetFoldersResponse) | List the caller&#39;s worksheet folders. Only folders stored in the caller&#39;s worksheet organizer are returned. |
 | SearchWorksheets | [SearchWorksheetsRequest](#bytebase-v1-SearchWorksheetsRequest) | [SearchWorksheetsResponse](#bytebase-v1-SearchWorksheetsResponse) | Search for worksheets. This is used for finding my worksheets or worksheets shared by other people. The sheet accessibility is the same as GetWorksheet(). Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets) |
 | UpdateWorksheet | [UpdateWorksheetRequest](#bytebase-v1-UpdateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Update a worksheet. The users can access this method if, - they are the creator of the worksheet; - they have bb.worksheets.manage permission on the workspace; - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project. Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets) |
 | UpdateWorksheetOrganizer | [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest) | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) | Update the organizer of a worksheet. The access is the same as UpdateWorksheet method. Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets) |

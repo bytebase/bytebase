@@ -158,6 +158,15 @@ const makeFolderNode = (
   empty: children.length === 0,
 });
 
+const makeLoadMoreNode = (key: string): WorksheetFolderNode => ({
+  key,
+  label: "Load more",
+  editable: false,
+  isLeaf: true,
+  loadMore: true,
+  children: [],
+});
+
 const setupDefaultMocks = () => {
   mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
   mocks.useClickOutside.mockImplementation(() => undefined);
@@ -270,6 +279,36 @@ describe("FolderForm", () => {
 
     // Tree now rendered via portal to overlay layer
     expect(document.body.querySelector("[data-testid='tree']")).not.toBeNull();
+
+    unmount();
+  });
+
+  test("does not show load-more nodes in the folder picker", () => {
+    const rootNode = makeFolderNode("/my", [
+      makeFolderNode("/my/foo"),
+      makeLoadMoreNode("/my/__load-more"),
+    ]);
+    mocks.useSheetContextByView.mockReturnValue({
+      folderTree: rootNode,
+      folderContext: {
+        rootPath: "/my",
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <FolderForm folder="/my" onFolderChange={vi.fn()} />
+    );
+    render();
+
+    const input = container.querySelector(
+      "[data-testid='folder-input']"
+    ) as HTMLInputElement;
+    act(() => {
+      input.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    });
+
+    expect(document.body.textContent).toContain("foo");
+    expect(document.body.textContent).not.toContain("Load more");
 
     unmount();
   });

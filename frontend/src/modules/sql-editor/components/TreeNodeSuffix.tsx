@@ -152,7 +152,7 @@ export function TreeNodeSuffix({
     worksheetLite.visibility === Worksheet_Visibility.PROJECT_WRITE;
 
   return (
-    <div className="inline-flex gap-x-1 items-center">
+    <div className="inline-flex shrink-0 items-center gap-x-1">
       {showVisibilityBadge && (
         <Tooltip
           content={

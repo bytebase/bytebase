@@ -627,7 +627,17 @@ export type WorksheetSlice = {
     name: string,
     silent?: boolean
   ) => Promise<Worksheet | undefined>;
-  fetchWorksheetList: (parent: string, filter: string) => Promise<Worksheet[]>;
+  fetchWorksheetList: (
+    parent: string,
+    filter: string,
+    params?: {
+      pageSize?: number;
+      pageToken?: string;
+    }
+  ) => Promise<{ worksheets: Worksheet[]; nextPageToken: string }>;
+  listWorksheetFolders: (
+    parent: string
+  ) => Promise<{ folders: string[]; category: "my" | "shared" }[]>;
   createWorksheet: (worksheet: Worksheet) => Promise<Worksheet>;
   patchWorksheet: (
     worksheet: Worksheet,
@@ -639,8 +649,13 @@ export type WorksheetSlice = {
     organizer: Partial<WorksheetOrganizer>,
     updateMask: string[]
   ) => Promise<void>;
-  batchUpsertWorksheetOrganizers: (
-    requests: { organizer: Partial<WorksheetOrganizer>; updateMask: string[] }[]
+  batchUpdateWorksheetOrganizers: (
+    requests: {
+      parent: string;
+      filter: string;
+      organizer: Partial<WorksheetOrganizer>;
+      updateMask: string[];
+    }[]
   ) => Promise<void>;
   worksheetList: () => Worksheet[];
 };

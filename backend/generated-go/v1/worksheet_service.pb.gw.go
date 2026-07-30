@@ -172,6 +172,45 @@ func local_request_WorksheetService_ListWorksheets_0(ctx context.Context, marsha
 	return msg, metadata, err
 }
 
+func request_WorksheetService_ListWorksheetFolders_0(ctx context.Context, marshaler runtime.Marshaler, client WorksheetServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq ListWorksheetFoldersRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
+	}
+	msg, err := client.ListWorksheetFolders(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_WorksheetService_ListWorksheetFolders_0(ctx context.Context, marshaler runtime.Marshaler, server WorksheetServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq ListWorksheetFoldersRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
+	}
+	msg, err := server.ListWorksheetFolders(ctx, &protoReq)
+	return msg, metadata, err
+}
+
 func request_WorksheetService_SearchWorksheets_0(ctx context.Context, marshaler runtime.Marshaler, client WorksheetServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq SearchWorksheetsRequest
@@ -383,12 +422,21 @@ func request_WorksheetService_BatchUpdateWorksheetOrganizer_0(ctx context.Contex
 	var (
 		protoReq BatchUpdateWorksheetOrganizerRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 	msg, err := client.BatchUpdateWorksheetOrganizer(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -398,9 +446,18 @@ func local_request_WorksheetService_BatchUpdateWorksheetOrganizer_0(ctx context.
 	var (
 		protoReq BatchUpdateWorksheetOrganizerRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 	msg, err := server.BatchUpdateWorksheetOrganizer(ctx, &protoReq)
 	return msg, metadata, err
@@ -511,6 +568,26 @@ func RegisterWorksheetServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		}
 		forward_WorksheetService_ListWorksheets_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodGet, pattern_WorksheetService_ListWorksheetFolders_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.WorksheetService/ListWorksheetFolders", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/worksheetFolders"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_WorksheetService_ListWorksheetFolders_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_WorksheetService_ListWorksheetFolders_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	mux.Handle(http.MethodPost, pattern_WorksheetService_SearchWorksheets_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -571,13 +648,13 @@ func RegisterWorksheetServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		}
 		forward_WorksheetService_UpdateWorksheetOrganizer_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPatch, pattern_WorksheetService_BatchUpdateWorksheetOrganizer_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_WorksheetService_BatchUpdateWorksheetOrganizer_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.WorksheetService/BatchUpdateWorksheetOrganizer", runtime.WithHTTPPathPattern("/v1/worksheets/organizer:batchUpdate"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.WorksheetService/BatchUpdateWorksheetOrganizer", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/worksheets/organizers:batchUpdate"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -702,6 +779,23 @@ func RegisterWorksheetServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		}
 		forward_WorksheetService_ListWorksheets_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodGet, pattern_WorksheetService_ListWorksheetFolders_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.WorksheetService/ListWorksheetFolders", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/worksheetFolders"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_WorksheetService_ListWorksheetFolders_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_WorksheetService_ListWorksheetFolders_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	mux.Handle(http.MethodPost, pattern_WorksheetService_SearchWorksheets_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -753,11 +847,11 @@ func RegisterWorksheetServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		}
 		forward_WorksheetService_UpdateWorksheetOrganizer_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPatch, pattern_WorksheetService_BatchUpdateWorksheetOrganizer_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_WorksheetService_BatchUpdateWorksheetOrganizer_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.WorksheetService/BatchUpdateWorksheetOrganizer", runtime.WithHTTPPathPattern("/v1/worksheets/organizer:batchUpdate"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.WorksheetService/BatchUpdateWorksheetOrganizer", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/worksheets/organizers:batchUpdate"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -794,10 +888,11 @@ var (
 	pattern_WorksheetService_CreateWorksheet_0               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "worksheets"}, ""))
 	pattern_WorksheetService_GetWorksheet_0                  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "worksheets", "name"}, ""))
 	pattern_WorksheetService_ListWorksheets_0                = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "worksheets"}, ""))
+	pattern_WorksheetService_ListWorksheetFolders_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "worksheetFolders"}, ""))
 	pattern_WorksheetService_SearchWorksheets_0              = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "worksheets"}, "search"))
 	pattern_WorksheetService_UpdateWorksheet_0               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "worksheets", "worksheet.name"}, ""))
 	pattern_WorksheetService_UpdateWorksheetOrganizer_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "projects", "worksheets", "organizer.worksheet", "organizer"}, ""))
-	pattern_WorksheetService_BatchUpdateWorksheetOrganizer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "worksheets", "organizer"}, "batchUpdate"))
+	pattern_WorksheetService_BatchUpdateWorksheetOrganizer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3, 2, 4}, []string{"v1", "projects", "parent", "worksheets", "organizers"}, "batchUpdate"))
 	pattern_WorksheetService_DeleteWorksheet_0               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "worksheets", "name"}, ""))
 )
 
@@ -805,6 +900,7 @@ var (
 	forward_WorksheetService_CreateWorksheet_0               = runtime.ForwardResponseMessage
 	forward_WorksheetService_GetWorksheet_0                  = runtime.ForwardResponseMessage
 	forward_WorksheetService_ListWorksheets_0                = runtime.ForwardResponseMessage
+	forward_WorksheetService_ListWorksheetFolders_0          = runtime.ForwardResponseMessage
 	forward_WorksheetService_SearchWorksheets_0              = runtime.ForwardResponseMessage
 	forward_WorksheetService_UpdateWorksheet_0               = runtime.ForwardResponseMessage
 	forward_WorksheetService_UpdateWorksheetOrganizer_0      = runtime.ForwardResponseMessage

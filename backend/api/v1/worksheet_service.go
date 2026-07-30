@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
+	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -197,6 +199,73 @@ func (s *WorksheetService) ListWorksheets(
 	}), nil
 }
 
+// ListWorksheetFolders returns the caller's worksheet folders.
+func (s *WorksheetService) ListWorksheetFolders(
+	ctx context.Context,
+	req *connect.Request[v1pb.ListWorksheetFoldersRequest],
+) (*connect.Response[v1pb.ListWorksheetFoldersResponse], error) {
+	request := req.Msg
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if projectID == "-" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(`ListWorksheetFolders does not support parent "projects/-"`))
+	}
+
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
+	find := &store.FindWorkSheetMessage{
+		ProjectIDs:     []string{projectID},
+		PrincipalEmail: user.Email,
+	}
+	organizerList, err := s.store.ListWorksheetOrganizers(ctx, find)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list worksheet folders: %v", err))
+	}
+
+	type worksheetFolder struct {
+		folders  []string
+		category v1pb.WorksheetFolder_Category
+	}
+	folderByKey := make(map[string]worksheetFolder)
+	for _, organizer := range organizerList {
+		var category v1pb.WorksheetFolder_Category
+		if organizer.WorksheetCreator == user.Email {
+			category = v1pb.WorksheetFolder_MINE
+		} else {
+			category = v1pb.WorksheetFolder_SHARED
+		}
+		for i := range organizer.Payload.Folders {
+			folders := append([]string(nil), organizer.Payload.Folders[:i+1]...)
+			key := fmt.Sprintf("%d\x00%s", category, strings.Join(folders, "\x00"))
+			folderByKey[key] = worksheetFolder{
+				folders:  folders,
+				category: category,
+			}
+		}
+	}
+
+	keys := make([]string, 0, len(folderByKey))
+	for key := range folderByKey {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+	response := &v1pb.ListWorksheetFoldersResponse{
+		Folders: make([]*v1pb.WorksheetFolder, 0, len(keys)),
+	}
+	for _, key := range keys {
+		response.Folders = append(response.Folders, &v1pb.WorksheetFolder{
+			Folders:  folderByKey[key].folders,
+			Category: folderByKey[key].category,
+		})
+	}
+	return connect.NewResponse(response), nil
+}
+
 // SearchWorksheets returns a list of worksheets based on the search filters.
 func (s *WorksheetService) SearchWorksheets(
 	ctx context.Context,
@@ -212,13 +281,31 @@ func (s *WorksheetService) SearchWorksheets(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if projectID == "-" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(`SearchWorksheets does not support parent "projects/-"`))
+	}
+	if request.PageSize < 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("page size cannot be negative"))
+	}
+
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
 
 	worksheetFind := &store.FindWorkSheetMessage{
 		ProjectIDs:     []string{projectID},
 		PrincipalEmail: user.Email,
+		Limit:          &limitPlusOne,
+		Offset:         &offset.offset,
 	}
 
-	filterQ, err := store.GetListSheetFilter(ctx, s.store, user.Email, request.Filter)
+	filterQ, err := store.GetListSheetFilter(ctx, s.store, user.Email, request.Filter, true /* allowTitleContains */)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -227,6 +314,13 @@ func (s *WorksheetService) SearchWorksheets(
 	worksheetList, err := s.store.ListWorkSheets(ctx, worksheetFind)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list worksheets: %v", err))
+	}
+	nextPageToken := ""
+	if len(worksheetList) == limitPlusOne {
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate next page token: %v", err))
+		}
+		worksheetList = worksheetList[:offset.limit]
 	}
 
 	var v1pbWorksheets []*v1pb.Worksheet
@@ -243,7 +337,8 @@ func (s *WorksheetService) SearchWorksheets(
 		v1pbWorksheets = append(v1pbWorksheets, v1pbWorksheet)
 	}
 	return connect.NewResponse(&v1pb.SearchWorksheetsResponse{
-		Worksheets: v1pbWorksheets,
+		Worksheets:    v1pbWorksheets,
+		NextPageToken: nextPageToken,
 	}), nil
 }
 
@@ -440,13 +535,86 @@ func (s *WorksheetService) BatchUpdateWorksheetOrganizer(
 	ctx context.Context,
 	req *connect.Request[v1pb.BatchUpdateWorksheetOrganizerRequest],
 ) (*connect.Response[v1pb.BatchUpdateWorksheetOrganizerResponse], error) {
-	response := &v1pb.BatchUpdateWorksheetOrganizerResponse{}
-	for _, updateReq := range req.Msg.GetRequests() {
-		updated, err := s.UpdateWorksheetOrganizer(ctx, connect.NewRequest(updateReq))
+	request := req.Msg
+	if request.Organizer == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("organizer cannot be empty"))
+	}
+	if request.UpdateMask == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask cannot be empty"))
+	}
+	if len(request.UpdateMask.Paths) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask paths cannot be empty"))
+	}
+
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if projectID == "-" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("projects/- is not supported for batch update worksheet organizers"))
+	}
+
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
+	filterQ, err := store.GetListSheetFilter(ctx, s.store, user.Email, request.Filter, false /* allowTitleContains */)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	worksheetList, err := s.store.ListWorkSheets(ctx, &store.FindWorkSheetMessage{
+		ProjectIDs:     []string{projectID},
+		PrincipalEmail: user.Email,
+		FilterQ:        filterQ,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list worksheets: %v", err))
+	}
+
+	var worksheetIDs []string
+	for _, worksheet := range worksheetList {
+		ok, err := s.canReadWorksheet(ctx, worksheet)
 		if err != nil {
-			return nil, err
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access with error: %v", err))
 		}
-		response.WorksheetOrganizers = append(response.WorksheetOrganizers, updated.Msg)
+		if !ok {
+			slog.Warn("cannot access worksheet", slog.String("name", worksheet.Title))
+			continue
+		}
+		worksheetIDs = append(worksheetIDs, worksheet.ResourceID)
+	}
+
+	patch := &store.BatchUpdateWorksheetOrganizerPatch{
+		WorksheetResourceIDs: worksheetIDs,
+		Principal:            user.Email,
+	}
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "starred":
+			starred := request.Organizer.Starred
+			patch.Starred = &starred
+		case "folders":
+			folders := request.Organizer.Folders
+			patch.Folders = &folders
+		default:
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
+		}
+	}
+
+	organizers, err := s.store.BatchUpdateWorksheetOrganizer(ctx, patch)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to batch update worksheet organizers: %v", err))
+	}
+	response := &v1pb.BatchUpdateWorksheetOrganizerResponse{
+		UpdatedCount: int32(len(organizers)),
+	}
+	for _, organizer := range organizers {
+		response.WorksheetOrganizers = append(response.WorksheetOrganizers, &v1pb.WorksheetOrganizer{
+			Worksheet: fmt.Sprintf("%s/worksheets/%s", request.Parent, organizer.WorksheetResourceID),
+			Starred:   organizer.Payload.Starred,
+			Folders:   organizer.Payload.Folders,
+		})
 	}
 	return connect.NewResponse(response), nil
 }

@@ -3025,6 +3025,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ListWorksheetFoldersRequest"><span class="badge">M</span>ListWorksheetFoldersRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListWorksheetFoldersResponse"><span class="badge">M</span>ListWorksheetFoldersResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ListWorksheetsRequest"><span class="badge">M</span>ListWorksheetsRequest</a>
                 </li>
               
@@ -3053,12 +3061,20 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.WorksheetFolder"><span class="badge">M</span>WorksheetFolder</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.WorksheetOrganizer"><span class="badge">M</span>WorksheetOrganizer</a>
                 </li>
               
               
                 <li>
                   <a href="#bytebase.v1.Worksheet.Visibility"><span class="badge">E</span>Worksheet.Visibility</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.WorksheetFolder.Category"><span class="badge">E</span>WorksheetFolder.Category</a>
                 </li>
               
               
@@ -34024,10 +34040,44 @@ Permissions required: bb.workloadIdentities.undelete</p></td>
             <tbody>
               
                 <tr>
-                  <td>requests</td>
-                  <td><a href="#bytebase.v1.UpdateWorksheetOrganizerRequest">UpdateWorksheetOrganizerRequest</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource whose worksheets&#39; organizers are updated.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>To filter the batch update target.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter:
+- name: the worksheet name in &#34;projects/{project}/worksheets/{worksheet}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator.
+- creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
+- starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator.
+- visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
+- folder: the worksheet organizer folder path, support exact &#34;==&#34; operator. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>organizer</td>
+                  <td><a href="#bytebase.v1.WorksheetOrganizer">WorksheetOrganizer</a></td>
+                  <td></td>
+                  <td><p>The organizer fields to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p>The list of fields to be updated.
+Fields are specified relative to the worksheet organizer.
+Only support update the following fields for now:
+- `starred`
+- `folders` </p></td>
                 </tr>
               
             </tbody>
@@ -34051,6 +34101,13 @@ Permissions required: bb.workloadIdentities.undelete</p></td>
                   <td>worksheet_organizers</td>
                   <td><a href="#bytebase.v1.WorksheetOrganizer">WorksheetOrganizer</a></td>
                   <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updated_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
                   <td><p> </p></td>
                 </tr>
               
@@ -34134,6 +34191,55 @@ Format: projects/{project}/worksheets/{worksheet} </p></td>
                   <td></td>
                   <td><p>The name of the worksheet to retrieve.
 Format: projects/{project}/worksheets/{worksheet} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListWorksheetFoldersRequest">ListWorksheetFoldersRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource of the worksheet folders.
+Format: projects/{project} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListWorksheetFoldersResponse">ListWorksheetFoldersResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>folders</td>
+                  <td><a href="#bytebase.v1.WorksheetFolder">WorksheetFolder</a></td>
+                  <td>repeated</td>
+                  <td><p>The caller&#39;s worksheet folders. </p></td>
                 </tr>
               
             </tbody>
@@ -34264,17 +34370,40 @@ Format: projects/{project} </p></td>
 The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
 Supported filter:
+- name: the worksheet name in &#34;projects/{project}/worksheets/{worksheet}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator.
+- title: the worksheet title, support &#34;contains&#34; operator.
 - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
 - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator.
 - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
+- folder: the worksheet organizer folder path, support &#34;==&#34; operator.
 
 For example:
 creator == &#34;users/{email}&#34;
+title.contains(&#34;worksheet title&#34;)
 creator != &#34;users/{email}&#34;
 starred == true
 starred == false
 visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;]
-visibility == &#34;PRIVATE&#34; </p></td>
+visibility == &#34;PRIVATE&#34;
+folder == &#34;foo/bar&#34; </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of worksheets to return. The service may return fewer than
+this value.
+If unspecified, at most 10 worksheets will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `SearchWorksheets` call.
+Provide this to retrieve the subsequent page. </p></td>
                 </tr>
               
             </tbody>
@@ -34299,6 +34428,15 @@ visibility == &#34;PRIVATE&#34; </p></td>
                   <td><a href="#bytebase.v1.Worksheet">Worksheet</a></td>
                   <td>repeated</td>
                   <td><p>The worksheets that matched the search criteria. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token to retrieve next page of worksheets.
+Pass this value in the page_token field in the subsequent call to
+`SearchWorksheets` method to retrieve the next page of worksheets. </p></td>
                 </tr>
               
             </tbody>
@@ -34503,6 +34641,37 @@ use GetWorksheet() request to retrieve the full content. </p></td>
 
         
       
+        <h3 id="bytebase.v1.WorksheetFolder">WorksheetFolder</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>folders</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The folder path segments. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>category</td>
+                  <td><a href="#bytebase.v1.WorksheetFolder.Category">WorksheetFolder.Category</a></td>
+                  <td></td>
+                  <td><p>The folder category. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.WorksheetOrganizer">WorksheetOrganizer</h3>
         <p></p>
 
@@ -34579,6 +34748,35 @@ Format: projects/{project}/worksheets/{worksheet} </p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.WorksheetFolder.Category">WorksheetFolder.Category</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CATEGORY_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MINE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SHARED</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
 
@@ -34618,6 +34816,14 @@ Permissions required: bb.worksheets.get (or creator, or project member for share
                 <td><p>List worksheets.
 This is used for listing worksheets in a project, or across all projects by using `projects/-`.
 Permissions required: bb.worksheets.list</p></td>
+              </tr>
+            
+              <tr>
+                <td>ListWorksheetFolders</td>
+                <td><a href="#bytebase.v1.ListWorksheetFoldersRequest">ListWorksheetFoldersRequest</a></td>
+                <td><a href="#bytebase.v1.ListWorksheetFoldersResponse">ListWorksheetFoldersResponse</a></td>
+                <td><p>List the caller&#39;s worksheet folders.
+Only folders stored in the caller&#39;s worksheet organizer are returned.</p></td>
               </tr>
             
               <tr>
@@ -34720,6 +34926,16 @@ Permissions required: bb.worksheets.manage (or creator, or project member for PR
               
               
               <tr>
+                <td>ListWorksheetFolders</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/worksheetFolders</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
                 <td>SearchWorksheets</td>
                 <td>POST</td>
                 <td>/v1/{parent=projects/*}/worksheets:search</td>
@@ -34751,8 +34967,8 @@ Permissions required: bb.worksheets.manage (or creator, or project member for PR
               
               <tr>
                 <td>BatchUpdateWorksheetOrganizer</td>
-                <td>PATCH</td>
-                <td>/v1/worksheets/organizer:batchUpdate</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/worksheets/organizers:batchUpdate</td>
                 <td>*</td>
               </tr>
               
