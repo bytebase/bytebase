@@ -108,7 +108,7 @@ export function SignupPage() {
       <div className="h-full flex flex-col justify-center gap-y-4 mx-auto w-full max-w-sm">
         <div>
           <BytebaseLogo className="mx-auto" />
-          <h2 className="text-2xl leading-9 font-medium text-main mt-4">
+          <h2 className="text-2xl leading-9 font-medium text-main text-center mt-4">
             {needAdminSetup ? (
               <Trans
                 i18nKey="auth.sign-up.admin-title"
