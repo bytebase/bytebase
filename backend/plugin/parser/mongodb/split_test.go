@@ -87,14 +87,15 @@ func TestSplitSQL(t *testing.T) {
 			wantTexts:   []string{`db["my-collection"].find({})`},
 		},
 		{
-			// BYT-9950: constant arithmetic in createIndex options must split
-			// as a single statement instead of failing to parse.
-			description: "createIndex with arithmetic TTL expression",
+			// BYT-9950: arithmetic expressions are not supported; the parse
+			// error must fail the split instead of the statement being
+			// silently dropped.
+			description: "createIndex with arithmetic TTL expression fails",
 			statement: `db.cs_customer_frequency.createIndex(
   { trans_date: 1 },
   { expireAfterSeconds: 90 * 24 * 60 * 60, name: "cs_customer_frequency_idx2" }
 );`,
-			wantCount: 1,
+			wantError: true,
 		},
 		{
 			// Splitting is strict: an unparseable statement fails the whole
