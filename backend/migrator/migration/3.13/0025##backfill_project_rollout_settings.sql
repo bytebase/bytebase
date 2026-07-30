@@ -6,7 +6,7 @@ SET setting = setting || '{"requireIssueApproval": true}'::jsonb
 WHERE EXISTS (
     SELECT 1 FROM policy
     WHERE type = 'ROLLOUT'
-    AND (payload::jsonb -> 'checkers' -> 'requiredIssueApproval') IS NOT NULL
+    AND (payload::jsonb -> 'checkers' -> 'requiredIssueApproval') = 'true'::jsonb
 );
 
 -- 2. Enable requirePlanCheckNoError for ALL projects if ANY rollout policy has planCheckEnforcement configured.
