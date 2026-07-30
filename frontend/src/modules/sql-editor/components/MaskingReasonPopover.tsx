@@ -155,7 +155,7 @@ export function MaskingReasonPopover({
                 className="self-start"
                 onClick={() => setShowDrawer(true)}
               >
-                {t("sql-editor.request-jit")}
+                {t("sql-editor.request-access-grant")}
               </Button>
             )}
           </div>

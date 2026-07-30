@@ -6,6 +6,9 @@
 //   3. Consistency       — all locale files must have the exact same key set
 //   4. Placeholder syntax — react-i18next uses {{name}}; flag stray Vue-style
 //                           {name} placeholders left over from migration
+//   5. Banned wording     — retired user-facing terms must not reappear in
+//                           locale values (keys and code identifiers are
+//                           exempt — only rendered strings are checked)
 //
 // Usage: node frontend/scripts/check-react-i18n.mjs
 
@@ -329,25 +332,24 @@ function findSingleBracePlaceholders(obj, path = "") {
   return issues;
 }
 
+// Parse a locale's four section files as [pathPrefix, parsedJson] pairs.
+// Single source of truth for the locale file layout — used by checks 4 and 5.
+function localeSections(locale) {
+  return [
+    ["", `${locale}.json`],
+    ["dynamic", `dynamic/${locale}.json`],
+    ["sql-review", `sql-review/${locale}.json`],
+    ["subscription", `subscription/${locale}.json`],
+  ].map(([prefix, rel]) => [
+    prefix,
+    JSON.parse(readFileSync(resolve(LOCALES_DIR, rel), "utf-8")),
+  ]);
+}
+
 for (const locale of LOCALES) {
-  const main = JSON.parse(
-    readFileSync(resolve(LOCALES_DIR, `${locale}.json`), "utf-8")
+  const issues = localeSections(locale).flatMap(([prefix, data]) =>
+    findSingleBracePlaceholders(data, prefix)
   );
-  const dynamic = JSON.parse(
-    readFileSync(resolve(LOCALES_DIR, `dynamic/${locale}.json`), "utf-8")
-  );
-  const sqlReview = JSON.parse(
-    readFileSync(resolve(LOCALES_DIR, `sql-review/${locale}.json`), "utf-8")
-  );
-  const subscription = JSON.parse(
-    readFileSync(resolve(LOCALES_DIR, `subscription/${locale}.json`), "utf-8")
-  );
-  const issues = [
-    ...findSingleBracePlaceholders(main),
-    ...findSingleBracePlaceholders(dynamic, "dynamic"),
-    ...findSingleBracePlaceholders(sqlReview, "sql-review"),
-    ...findSingleBracePlaceholders(subscription, "subscription"),
-  ];
   if (issues.length > 0) {
     console.error(
       `${locale}: ${issues.length} string(s) with Vue-style {name} placeholders — react-i18next needs {{name}}:\n`
@@ -360,10 +362,57 @@ for (const locale of LOCALES) {
 }
 
 // ---------------------------------------------------------------------------
+// Check 5: banned wording in locale values
+//
+// BYT-9840 retired "just-in-time"/"JIT" as a product-UI term — the object
+// users see is an "access grant"; the workflow term lives in the docs only.
+// Code identifiers (FEATURE_JIT, allowJustInTimeAccess) intentionally keep
+// the name, so this check walks locale VALUES only, never keys.
+// ---------------------------------------------------------------------------
+const BANNED_WORDING = [
+  { re: /just[- ]?in[- ]?time/i, label: "just-in-time" },
+  { re: /\bJIT\b/i, label: "JIT" },
+  // Each locale's retired native-script rendering of the term. Do not widen
+  // 即时 beyond the full retired phrase — 即时通讯 (IM) is a legitimate use.
+  { re: /ジャストインタイム/, label: "ジャストインタイム" },
+  { re: /即时访问/, label: "即时访问" },
+  { re: /truy cập tức thời/i, label: "truy cập tức thời" },
+];
+
+function findBannedWording(obj, path = "") {
+  const hits = [];
+  if (obj && typeof obj === "object") {
+    for (const [k, v] of Object.entries(obj)) {
+      hits.push(...findBannedWording(v, path ? `${path}.${k}` : k));
+    }
+  } else if (typeof obj === "string") {
+    for (const { re, label } of BANNED_WORDING) {
+      if (re.test(obj)) hits.push({ key: path, value: obj, label });
+    }
+  }
+  return hits;
+}
+
+for (const locale of LOCALES) {
+  const hits = localeSections(locale).flatMap(([prefix, data]) =>
+    findBannedWording(data, prefix)
+  );
+  if (hits.length > 0) {
+    console.error(
+      `${locale}: ${hits.length} string(s) contain retired wording (use "access grant" terms instead — see BYT-9840):\n`
+    );
+    for (const { key, value, label } of hits) {
+      error(`  - ${key} → ${JSON.stringify(value)} (banned: ${label})`);
+    }
+    console.error();
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Result
 // ---------------------------------------------------------------------------
 if (errors > 0) {
   process.exit(1);
 } else {
-  console.log("React i18n: all checks passed (missing keys, unused keys, cross-locale consistency, placeholder syntax).");
+  console.log("React i18n: all checks passed (missing keys, unused keys, cross-locale consistency, placeholder syntax, banned wording).");
 }

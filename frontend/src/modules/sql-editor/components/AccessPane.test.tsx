@@ -285,7 +285,7 @@ afterEach(() => {
 });
 
 describe("AccessPane", () => {
-  test("empty state — shows no-access-requests text when no grants and not loading", async () => {
+  test("empty state — shows no-access-grants text when no grants and not loading", async () => {
     const { container, render, unmount } = renderIntoContainer(<AccessPane />);
     render();
 
@@ -294,7 +294,7 @@ describe("AccessPane", () => {
       await new Promise((r) => setTimeout(r, 0));
     });
 
-    expect(container.textContent).toContain("sql-editor.no-access-requests");
+    expect(container.textContent).toContain("sql-editor.no-access-grants");
     unmount();
   });
 
@@ -385,7 +385,7 @@ describe("AccessPane", () => {
     unmount();
   });
 
-  test("click Request Access → drawer opens", async () => {
+  test("click Request access grant → drawer opens", async () => {
     const { container, render, unmount } = renderIntoContainer(<AccessPane />);
     render();
 
@@ -398,11 +398,11 @@ describe("AccessPane", () => {
       container.querySelector("[data-testid='access-grant-request-drawer']")
     ).toBeNull();
 
-    // Find and click the "request access" button
+    // Find and click the "Request access grant" button
     const buttons = container.querySelectorAll("button");
     let requestBtn: HTMLButtonElement | null = null;
     for (const btn of Array.from(buttons)) {
-      if (btn.textContent?.includes("sql-editor.request-access")) {
+      if (btn.textContent?.includes("sql-editor.request-access-grant")) {
         requestBtn = btn;
         break;
       }

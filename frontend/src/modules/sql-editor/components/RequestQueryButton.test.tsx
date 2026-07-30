@@ -249,7 +249,7 @@ describe("RequestQueryButton", () => {
     unmount();
   });
 
-  test("renders request-query button in non-JIT mode", () => {
+  test("renders the Request role label in non-JIT mode", () => {
     setupDefaultMocks(false, true);
     const { container, render, unmount } = renderIntoContainer(
       <RequestQueryButton
@@ -260,11 +260,11 @@ describe("RequestQueryButton", () => {
       />
     );
     render();
-    expect(container.textContent).toContain("sql-editor.request-query");
+    expect(container.textContent).toContain("issue.title.request-role");
     unmount();
   });
 
-  test("renders request-jit button in JIT mode", () => {
+  test("renders the Request access grant label in JIT mode", () => {
     setupDefaultMocks(true, true);
     const { container, render, unmount } = renderIntoContainer(
       <RequestQueryButton
@@ -275,7 +275,7 @@ describe("RequestQueryButton", () => {
       />
     );
     render();
-    expect(container.textContent).toContain("sql-editor.request-jit");
+    expect(container.textContent).toContain("sql-editor.request-access-grant");
     unmount();
   });
 

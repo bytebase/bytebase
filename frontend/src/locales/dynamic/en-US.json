@@ -190,8 +190,8 @@
         "title": "SSL connection"
       },
       "FEATURE_JIT": {
-        "desc": "Allow users to request temporary database access with approval.",
-        "title": "Just-In-Time access"
+        "desc": "Allow users to request time-boxed access grants with approval.",
+        "title": "Access grants"
       },
       "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
         "desc": "Apply the same change to multiple databases across different tenants or partitions.",

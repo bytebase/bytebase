@@ -20,9 +20,9 @@ interface Props {
 
 /**
  * Shown in the result panel when the query-data policy disables export but
- * the project allows just-in-time access. Clicking it opens the access-grant
- * drawer pre-filled with the current database, statement, and both the unmask
- * and export capabilities checked.
+ * the project allows access grants. Clicking it opens the access-grant
+ * drawer pre-filled with the current database, statement, and the export
+ * capability checked (unmask is left unchecked — see #20516).
  */
 export function RequestExportButton({
   size = "sm",
@@ -89,7 +89,7 @@ export function RequestExportButton({
                 feature={PlanFeature.FEATURE_JIT}
               />
             )}
-            {t("sql-editor.request-export")}
+            {t("sql-editor.request-access-grant")}
           </Button>
         )}
       </PermissionGuard>

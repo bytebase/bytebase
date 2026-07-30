@@ -427,7 +427,7 @@ describe("MembersPage project role grant drawer", () => {
     await flush();
 
     expect(container.textContent).not.toContain(
-      "project.members.request-role.max-expiration-hint"
+      "common.expiration-max-hint"
     );
 
     maximumRoleExpirationSeconds.value = 7 * 24 * 60 * 60;
@@ -452,7 +452,7 @@ describe("MembersPage project role grant drawer", () => {
     await flush();
 
     expect(container.textContent).toContain(
-      "project.members.request-role.max-expiration-hint"
+      "common.expiration-max-hint"
     );
   });
 

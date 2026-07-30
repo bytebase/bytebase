@@ -2,9 +2,9 @@
 //
 // Covers:
 //   - I1  admin wrench absent for projectDeveloper
-//   - I4  RequestQueryButton ("Request query") on a non-JIT project
+//   - I4  RequestQueryButton ("Request role") on a non-JIT project
 //         where the user lacks bb.sql.select
-//   - I9  Sidebar surfaces the same Request-query affordance when the
+//   - I9  Sidebar surfaces the same Request-role affordance when the
 //         user lands on a database they have no access to
 //   - I10 admin wrench absent for sqlEditorUser
 //   - I11 INSERT denied (no "EditorHint" modal, just an inline error
@@ -228,13 +228,16 @@ test.describe("INSERT is denied with an inline error for sqlEditorReadUser", () 
 
     // The error pane renders the permission detail somewhere in the
     // result region. We accept any of the common shapes: an explicit
-    // "permission" mention, the role name, or the request-query CTA.
+    // "permission" mention, the role name, or the request-role /
+    // request-access-grant CTA.
     // The strong assertion is that the row-count footer DID NOT appear
     // (Run reached an error state) AND a request affordance is offered.
     const permissionMention = rc.page.getByText(
       /(permission denied|no.*permission|bb\.sql\.(update|delete|create|admin|insert)|missing.*permission)/i,
     );
-    const requestCTA = rc.page.getByRole("button", { name: /Request query|Request just-in-time/i });
+    const requestCTA = rc.sqlEditor.requestRoleButton.or(
+      rc.sqlEditor.requestAccessGrantButton,
+    );
     const anySignal = permissionMention.or(requestCTA).first();
     await expect(anySignal).toBeVisible({ timeout: 10_000 });
 
@@ -248,18 +251,19 @@ test.describe("INSERT is denied with an inline error for sqlEditorReadUser", () 
 //     Request button at all, regardless of permission state).
 //   - `project.allowRequestRole === true` AND user lacks bb.sql.select →
 //     the button renders. Label switches on `useJIT` (non-JIT label is
-//     "Request query" — covered here; JIT label is in sql-editor-jit.spec.ts).
+//     "Request role" — covered here; the access-grant label is in
+//     sql-editor-access-grants.spec.ts).
 //
 // The new bootstrap creates `project-sample` with `allowRequestRole=false`
 // by default (sampleinstance/manager.go:171 uses an empty Setting). We
 // exercise BOTH halves of the gate so a future regression on either side
 // is caught:
 //   D1 ("…off → no button"): projectViewer + allowRequestRole=false →
-//     no Request query button (the negative case the framework relies on).
+//     no Request role button (the negative case the framework relies on).
 //   D2 ("…on → button"): flip allowRequestRole=true via API, re-navigate,
 //     verify the button now renders. afterEach flips it back.
 
-test.describe("Request-query CTA respects project.allowRequestRole", () => {
+test.describe("Request-role CTA respects project.allowRequestRole", () => {
   test.afterEach(async () => {
     // Always restore to the default-off state so other tests in this
     // file (and downstream specs that share env.project) inherit a
@@ -269,7 +273,7 @@ test.describe("Request-query CTA respects project.allowRequestRole", () => {
       .catch(() => {});
   });
 
-  test("with allowRequestRole=false, projectViewer running a forbidden SELECT sees NO Request query button", async () => {
+  test("with allowRequestRole=false, projectViewer running a forbidden SELECT sees NO Request role button", async () => {
     // Confirm the seeded state (sample project is created with
     // allowRequestRole=false). RequestQueryButton's `if (!available)
     // return null` then suppresses both the non-JIT and JIT variants.
@@ -282,15 +286,11 @@ test.describe("Request-query CTA respects project.allowRequestRole", () => {
     await rc.page.waitForTimeout(800);
 
     // Neither label should appear — the component returned null.
-    await expect(
-      rc.page.getByRole("button", { name: "Request query", exact: true }),
-    ).toHaveCount(0);
-    await expect(
-      rc.page.getByRole("button", { name: /Request just-in-time/i }),
-    ).toHaveCount(0);
+    await expect(rc.sqlEditor.requestRoleButton).toHaveCount(0);
+    await expect(rc.sqlEditor.requestAccessGrantButton).toHaveCount(0);
   });
 
-  test("with allowRequestRole=true, projectViewer running a forbidden SELECT sees the 'Request query' button", async () => {
+  test("with allowRequestRole=true, projectViewer running a forbidden SELECT sees the 'Request role' button", async () => {
     // Flip the project's allowRequestRole on. Once the editor re-reads
     // the project (we force a fresh navigation), the button renders.
     await env.api.updateProjectSettings(env.project, { allowRequestRole: true });
@@ -301,16 +301,14 @@ test.describe("Request-query CTA respects project.allowRequestRole", () => {
     await rc.sqlEditor.runPreparedQuery("SELECT 1;");
     await rc.page.waitForTimeout(800);
 
-    // Non-JIT label — `sql-editor.request-query` → "Request query".
-    await expect(
-      rc.page.getByRole("button", { name: "Request query", exact: true }).first(),
-    ).toBeVisible({ timeout: 10_000 });
+    // Non-JIT label — `issue.title.request-role` → "Request role".
+    await expect(rc.sqlEditor.requestRoleButton.first()).toBeVisible({
+      timeout: 10_000,
+    });
 
-    // JIT variant must NOT show — this project has
+    // Access-grant variant must NOT show — this project has
     // allowJustInTimeAccess=false (its default), so `useJIT` resolves
     // to false and the label switch picks the non-JIT side.
-    await expect(
-      rc.page.getByRole("button", { name: /Request just-in-time/i }),
-    ).toHaveCount(0);
+    await expect(rc.sqlEditor.requestAccessGrantButton).toHaveCount(0);
   });
 });

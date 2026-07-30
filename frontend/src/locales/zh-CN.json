@@ -305,6 +305,9 @@
     "environments": "环境",
     "error": "错误",
     "expiration": "过期时间",
+    "expiration-exceeds-max": "过期时间不能超过工作空间上限 {{days}} 天。",
+    "expiration-max-hint": "工作空间策略允许的最大值：{{days}} 天。",
+    "expiration-must-be-future": "过期时间必须是将来的时间。",
     "expired": "已过期",
     "export": "导出",
     "failed": "失败",
@@ -562,8 +565,8 @@
           "change_database": "变更数据库",
           "create_database": "创建数据库",
           "data_export": "导出数据",
-          "request-access": "请求即时访问",
-          "request-role": "请求角色"
+          "request-access": "申请访问授权",
+          "request-role": "申请角色"
         },
         "risk-level": {
           "default": "默认",
@@ -1443,7 +1446,7 @@
         "reopen": "重开工单？"
       }
     },
-    "subtitle": "工单涵盖数据库变更、数据导出和权限申请。执行前需审查和审批。",
+    "subtitle": "工单涵盖数据库变更、数据导出和访问授权。执行前需审查和审批。",
     "table": {
       "approval-progress": "{{approved}}/{{total}} 已审批",
       "approved": "已审批",
@@ -1851,14 +1854,11 @@
           "allow-request-role-disabled": "此项目未启用申请角色。",
           "feature-unavailable": "当前套餐不支持申请角色工作流。"
         },
-        "expiration-exceeds-max": "过期时间不能超过工作空间上限 {{days}} 天。",
-        "expiration-must-be-future": "过期时间必须是将来的时间。",
         "failed-to-build-expression": "构建 CEL 表达式失败，请重试。",
         "labels-misconfigured": {
           "description": "此项目要求选择工单标签，但尚未配置任何标签。请联系项目所有者添加标签后再申请角色。",
           "title": "项目要求工单标签但未配置"
-        },
-        "max-expiration-hint": "工作空间策略允许的最大值：{{days}} 天。"
+        }
       },
       "revoke-role-from-member": "从 '{{member}}' 撤销 '{{role}}' 角色？"
     },
@@ -1870,9 +1870,9 @@
       "confirm-archive-project": "归档「{{name}}」将使其变为只读并从活跃项目列表中隐藏。所有工单、数据库和设置将被保留。您可以稍后从已归档项目列表中恢复。",
       "confirm-delete-project": "删除「{{name}}」将永久移除该项目及所有关联数据，包括工单、配置和历史记录。该项目中的所有数据库将被移至默认项目。此操作无法撤销。",
       "issue-related": {
-        "allow-jit": {
-          "description": "启用后，用户可以在 SQL 编辑器中请求并使用即时数据访问权限。",
-          "self": "允许即时访问"
+        "allow-access-grants": {
+          "description": "允许项目成员为特定只读语句申请限时访问授权。",
+          "self": "允许访问授权"
         },
         "allow-request-role": {
           "description": "非项目所有者可以自行申请项目级角色",
@@ -2404,11 +2404,11 @@
           "never-expires": "永不过期"
         },
         "maximum-request-expiration": {
-          "description": "最大申请有效期是数据访问申请可保持有效的最长时间。",
-          "self": "最大申请有效期"
+          "description": "最大访问授权有效期是访问授权可保持有效的最长时间。",
+          "self": "最大访问授权有效期"
         },
         "maximum-role-expiration": {
-          "description": "最大角色有效期仅适用于申请角色。<highlight>此旧设置未来会被废弃；建议使用即时访问流程授予临时访问。</highlight>",
+          "description": "最大角色有效期仅适用于申请角色。<highlight>此旧设置未来会被废弃；建议使用访问授权来获得临时访问权限。</highlight>",
           "self": "最大角色有效期"
         },
         "maximum-sql-result": {
@@ -2971,14 +2971,13 @@
       }
     },
     "invalid-database": "数据库 {{database}} 无效",
-    "jit": "即时访问",
     "last-synced": "上次同步时间：<time></time>",
     "link-access": "链接访问权限",
     "loading-data": "加载数据中...",
     "loading-databases": "加载数据库信息...",
     "manage-connections": "管理连接",
     "next-row": "下一行",
-    "no-access-requests": "暂无访问请求",
+    "no-access-grants": "暂无访问授权",
     "no-data-available": "暂无数据",
     "no-database-selected": "未选择数据库",
     "no-history-found": "暂无历史记录",
@@ -3010,11 +3009,7 @@
       "single-node": "单节点"
     },
     "request-aborted": "用户中止了请求",
-    "request-access": "申请访问",
-    "request-data-access": "申请数据访问",
-    "request-export": "申请导出",
-    "request-jit": "申请即时访问",
-    "request-query": "请求查询",
+    "request-access-grant": "申请访问授权",
     "result-detail": {
       "next-match": "下一个匹配项",
       "previous-match": "上一个匹配项",
