@@ -25,7 +25,7 @@ var (
 	// allowedResourceTypes includes allowed resource types for each policy type.
 	allowedResourceTypes = map[storepb.Policy_Type][]storepb.Policy_Resource{
 		storepb.Policy_ROLLOUT:           {storepb.Policy_ENVIRONMENT},
-		storepb.Policy_TAG:               {storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
+		storepb.Policy_TAG:               {storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT, storepb.Policy_INSTANCE, storepb.Policy_DATABASE},
 		storepb.Policy_QUERY_DATA:        {storepb.Policy_WORKSPACE, storepb.Policy_PROJECT},
 		storepb.Policy_MASKING_RULE:      {storepb.Policy_WORKSPACE},
 		storepb.Policy_MASKING_EXEMPTION: {storepb.Policy_PROJECT},
@@ -620,6 +620,10 @@ func convertToPolicy(policyMessage *store.PolicyMessage) (*v1pb.Policy, error) {
 		resourceType = v1pb.PolicyResourceType_ENVIRONMENT
 	case storepb.Policy_PROJECT:
 		resourceType = v1pb.PolicyResourceType_PROJECT
+	case storepb.Policy_INSTANCE:
+		resourceType = v1pb.PolicyResourceType_INSTANCE
+	case storepb.Policy_DATABASE:
+		resourceType = v1pb.PolicyResourceType_DATABASE
 	default:
 	}
 	policy := &v1pb.Policy{

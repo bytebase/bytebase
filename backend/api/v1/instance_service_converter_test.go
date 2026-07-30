@@ -7,7 +7,26 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/store"
 )
+
+func TestConvertToV1InstanceUsesOwningProjectName(t *testing.T) {
+	projectID := "project-a"
+	instance := &store.InstanceMessage{
+		ResourceID: "instance-a",
+		ProjectID:  &projectID,
+		Metadata: &storepb.Instance{
+			Roles: []*storepb.InstanceRole{{Name: "role-a"}},
+		},
+	}
+
+	got := convertToV1Instance(instance, false)
+	require.Equal(t, "projects/project-a/instances/instance-a", got.Name)
+	require.Equal(t, "projects/project-a/instances/instance-a/roles/role-a", got.Roles[0].Name)
+
+	resource := convertToV1InstanceResource(instance, false)
+	require.Equal(t, "projects/project-a/instances/instance-a", resource.Name)
+}
 
 func TestConvertDataSourceCloudSQLIPType(t *testing.T) {
 	tests := []struct {

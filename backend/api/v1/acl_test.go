@@ -145,6 +145,14 @@ func TestGetResourceFromRequest(t *testing.T) {
 			want:   []string{""},
 		},
 		{
+			request: &v1pb.ListInstanceDatabaseRequest{
+				Name:     "projects/project-a/instances/hello",
+				Instance: &v1pb.Instance{},
+			},
+			method: "/bytebase.v1.InstanceService/ListInstanceDatabase",
+			want:   []string{"projects/project-a"},
+		},
+		{
 			request: &v1pb.BatchSyncInstancesRequest{
 				Requests: []*v1pb.SyncInstanceRequest{
 					{Name: "instances/hello"},
@@ -153,6 +161,16 @@ func TestGetResourceFromRequest(t *testing.T) {
 			},
 			method: "/bytebase.v1.InstanceService/BatchSyncInstances",
 			want:   []string{"instances/hello", "instances/world"},
+		},
+		{
+			request: &v1pb.BatchSyncInstancesRequest{
+				Parent: new("projects/project-a"),
+				Requests: []*v1pb.SyncInstanceRequest{
+					{Name: "projects/project-a/instances/hello"},
+				},
+			},
+			method: "/bytebase.v1.InstanceService/BatchSyncInstances",
+			want:   []string{"projects/project-a", "projects/project-a/instances/hello"},
 		},
 		{
 			request: &v1pb.CancelPlanCheckRunRequest{

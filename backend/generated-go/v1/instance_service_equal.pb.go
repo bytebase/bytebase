@@ -28,6 +28,9 @@ func (x *ListInstancesRequest) Equal(y *ListInstancesRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
+	if p, q := x.Parent, y.Parent; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
 	if x.PageSize != y.PageSize {
 		return false
 	}
@@ -73,6 +76,9 @@ func (x *CreateInstanceRequest) Equal(y *CreateInstanceRequest) bool {
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
+	}
+	if p, q := x.Parent, y.Parent; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
 	}
 	if !x.Instance.Equal(y.Instance) {
 		return false
@@ -219,6 +225,9 @@ func (x *BatchSyncInstancesRequest) Equal(y *BatchSyncInstancesRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
+	if p, q := x.Parent, y.Parent; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
 	if len(x.Requests) != len(y.Requests) {
 		return false
 	}
@@ -246,6 +255,9 @@ func (x *BatchUpdateInstancesRequest) Equal(y *BatchUpdateInstancesRequest) bool
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
+	}
+	if p, q := x.Parent, y.Parent; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
 	}
 	if len(x.Requests) != len(y.Requests) {
 		return false

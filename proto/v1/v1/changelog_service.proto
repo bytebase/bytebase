@@ -16,7 +16,10 @@ service ChangelogService {
   // Lists migration history for a database.
   // Permissions required: bb.changelogs.list
   rpc ListChangelogs(ListChangelogsRequest) returns (ListChangelogsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/changelogs"};
+    option (google.api.http) = {
+      get: "/v1/{parent=instances/*/databases/*}/changelogs"
+      additional_bindings: {get: "/v1/{parent=projects/*/instances/*/databases/*}/changelogs"}
+    };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.changelogs.list";
     option (bytebase.v1.auth_method) = IAM;
@@ -25,7 +28,10 @@ service ChangelogService {
   // Retrieves a specific changelog entry.
   // Permissions required: bb.changelogs.get
   rpc GetChangelog(GetChangelogRequest) returns (Changelog) {
-    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changelogs/*}"};
+    option (google.api.http) = {
+      get: "/v1/{name=instances/*/databases/*/changelogs/*}"
+      additional_bindings: {get: "/v1/{name=projects/*/instances/*/databases/*/changelogs/*}"}
+    };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.changelogs.get";
     option (bytebase.v1.auth_method) = IAM;
@@ -42,7 +48,7 @@ enum ChangelogView {
 
 message ListChangelogsRequest {
   // The parent of the changelogs.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -87,7 +93,7 @@ message ListChangelogsResponse {
 
 message GetChangelogRequest {
   // The name of the changelog to retrieve.
-  // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+  // Format: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/DatabaseChangelog"}
@@ -100,9 +106,10 @@ message Changelog {
   option (google.api.resource) = {
     type: "bytebase.com/DatabaseChangelog"
     pattern: "instances/{instance}/databases/{database}/changelogs/{changelog}"
+    pattern: "projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}"
   };
 
-  // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+  // Format: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}
   string name = 1;
 
   google.protobuf.Timestamp create_time = 2;

@@ -90,6 +90,44 @@ func TestMigration3_21_2_MigrateInstanceSyncDatabases(t *testing.T) {
 	require.JSONEq(t, `{"engine":"POSTGRES"}`, getMetadata("instance-without-sync-databases"))
 }
 
+func TestMigration3_21_5_AddInstanceProject(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	db := container.GetDB()
+	_, err := db.ExecContext(ctx, `
+		CREATE TABLE project (
+			resource_id TEXT PRIMARY KEY
+		);
+		CREATE TABLE instance (
+			resource_id TEXT PRIMARY KEY,
+			metadata JSONB NOT NULL DEFAULT '{}'
+		);
+		INSERT INTO instance (resource_id) VALUES ('legacy-workspace-instance');
+	`)
+	require.NoError(t, err)
+
+	statement, err := migrationFS.ReadFile("migration/3.21/0005##add_instance_project.sql")
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, string(statement))
+	require.NoError(t, err)
+
+	var projectID *string
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT project FROM instance WHERE resource_id = 'legacy-workspace-instance'
+	`).Scan(&projectID))
+	require.Nil(t, projectID)
+
+	var indexDefinition string
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT indexdef
+		FROM pg_indexes
+		WHERE schemaname = 'public' AND indexname = 'idx_instance_project'
+	`).Scan(&indexDefinition))
+	require.Contains(t, indexDefinition, "WHERE (project IS NOT NULL)")
+}
+
 func TestMigration3_21_3_MigrateGCPDataSourceFields(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)

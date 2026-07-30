@@ -23,6 +23,92 @@ func TestValidateExtraConnectionParametersRejectsTiDBAllowAllFiles(t *testing.T)
 	require.Contains(t, err.Error(), "allowAllFiles")
 }
 
+func TestGetInstanceNameScope(t *testing.T) {
+	tests := []struct {
+		name       string
+		instanceID string
+		projectID  *string
+		wantErr    bool
+	}{
+		{name: "workspace instance", instanceID: "instance-a", projectID: new("")},
+		{name: "project instance", instanceID: "instance-a", projectID: new("project-a")},
+		{name: "malformed instance", wantErr: true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			name := "instances/instance-a"
+			if test.projectID != nil && *test.projectID != "" {
+				name = "projects/project-a/instances/instance-a"
+			}
+			if test.wantErr {
+				name = "projects/project-a/instances"
+			}
+			instanceID, projectID, err := getInstanceNameScope(name)
+			if test.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, test.instanceID, instanceID)
+			require.Equal(t, *test.projectID, *projectID)
+			parent := instanceCollectionParent(projectID)
+			if *projectID == "" {
+				require.Nil(t, parent)
+			} else {
+				require.Equal(t, "projects/"+*projectID, *parent)
+			}
+		})
+	}
+}
+
+func TestGetInlineInstanceCandidateScope(t *testing.T) {
+	tests := []struct {
+		name      string
+		instance  string
+		projectID *string
+	}{
+		{name: "workspace candidate", instance: "instances/instance-a"},
+		{name: "project candidate", instance: "projects/project-a/instances/instance-a", projectID: new("project-a")},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			instanceID, projectID, err := getInlineInstanceCandidateScope(test.instance)
+			require.NoError(t, err)
+			require.Equal(t, "instance-a", instanceID)
+			require.Equal(t, test.projectID, projectID)
+		})
+	}
+}
+
+func TestValidateProjectInstanceListFilter(t *testing.T) {
+	projectID := "project-a"
+	tests := []struct {
+		name    string
+		parent  *string
+		filter  string
+		wantErr bool
+	}{
+		{name: "project parent accepts omitted filter", parent: &projectID},
+		{name: "project parent accepts matching project filter", parent: &projectID, filter: `project == "projects/project-a"`},
+		{name: "project parent accepts matching project filter in conjunction", parent: &projectID, filter: `project == "projects/project-a" && engine == "POSTGRES"`},
+		{name: "project parent rejects another project filter", parent: &projectID, filter: `project == "projects/project-b"`, wantErr: true},
+		{name: "project parent rejects reversed another project filter", parent: &projectID, filter: `"projects/project-b" == project`, wantErr: true},
+		{name: "project parent rejects another project in disjunction", parent: &projectID, filter: `project == "projects/project-a" || project == "projects/project-b"`, wantErr: true},
+		{name: "project parent rejects another project under negation", parent: &projectID, filter: `!(project == "projects/project-b")`, wantErr: true},
+		{name: "workspace parent retains project filter behavior", filter: `project == "projects/project-b"`},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := validateProjectInstanceListFilter(test.parent, test.filter)
+			if test.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestClassifyConnectionFailure(t *testing.T) {
 	connectErr := connect.NewError(connect.CodeInvalidArgument, errors.New("generic connect error"))
 	connectErr.Meta().Set(connectionCategoryHeader, connectionCategoryAuthFailed)

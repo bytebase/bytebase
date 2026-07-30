@@ -338,10 +338,14 @@ func (s *Syncer) SyncInstanceWithOptions(ctx context.Context, instance *store.In
 	var filteredDatabaseMetadatas []*storepb.DatabaseSchemaMetadata
 	databaseProjectID := options.InitialProjectID
 	if databaseProjectID == "" {
-		var err error
-		databaseProjectID, err = s.store.GetDefaultProjectID(ctx, instance.Workspace)
-		if err != nil {
-			return nil, nil, nil, errors.Wrapf(err, "failed to get default project ID for instance %q", instance.ResourceID)
+		if instance.ProjectID != nil {
+			databaseProjectID = *instance.ProjectID
+		} else {
+			var err error
+			databaseProjectID, err = s.store.GetDefaultProjectID(ctx, instance.Workspace)
+			if err != nil {
+				return nil, nil, nil, errors.Wrapf(err, "failed to get default project ID for instance %q", instance.ResourceID)
+			}
 		}
 	}
 

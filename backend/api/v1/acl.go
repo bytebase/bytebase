@@ -303,6 +303,8 @@ var workspaceRegex = regexp.MustCompile(`^workspaces/[^/]+`)
 var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
 var databaseRegex = regexp.MustCompile(`^instances/[^/]+/databases/[^/]+`)
 var instanceRegex = regexp.MustCompile(`^instances/[^/]+`)
+var projectDatabaseRegex = regexp.MustCompile(`^projects/[^/]+/instances/[^/]+/databases/[^/]+`)
+var projectInstanceRegex = regexp.MustCompile(`^projects/[^/]+/instances/[^/]+`)
 
 // populateRawResources extracts resources from the request and validates workspace ownership.
 //
@@ -324,6 +326,50 @@ func populateRawResources(ctx context.Context, stores *store.Store, request any,
 	var resources []*common.Resource
 	for _, name := range rawNames {
 		switch {
+		// Project-nested database resources use the instance owner's project as
+		// their authorization scope. Resolve the instance first so a nested name
+		// can never alias an instance in another collection.
+		case strings.HasPrefix(name, "projects/") && strings.Contains(name, "/instances/") && strings.Contains(name, "/databases/"):
+			match := projectDatabaseRegex.FindString(name)
+			if match == "" {
+				return nil, errors.Errorf("invalid project database resource %q", name)
+			}
+			projectID, instanceID, databaseName, err := common.GetProjectIDInstanceDatabaseID(match)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to parse %q", match)
+			}
+			instance, err := getProjectScopedInstance(ctx, stores, projectID, instanceID)
+			if err != nil {
+				return nil, err
+			}
+			database, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{
+				Workspace:    common.GetWorkspaceIDFromContext(ctx),
+				InstanceID:   &instance.ResourceID,
+				DatabaseName: &databaseName,
+				ShowDeleted:  true,
+			})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get database")
+			}
+			if database == nil {
+				return nil, errors.Errorf("database %q not found", match)
+			}
+			resources = append(resources, &common.Resource{Type: common.ResourceTypeProject, ID: projectID})
+		// Project-nested instance resources (including role descendants) resolve
+		// to the stored instance owner, not merely the project prefix in the URL.
+		case strings.HasPrefix(name, "projects/") && strings.Contains(name, "/instances/"):
+			match := projectInstanceRegex.FindString(name)
+			if match == "" {
+				return nil, errors.Errorf("invalid project instance resource %q", name)
+			}
+			projectID, instanceID, err := common.GetProjectIDInstanceID(match)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to parse %q", match)
+			}
+			if _, err := getProjectScopedInstance(ctx, stores, projectID, instanceID); err != nil {
+				return nil, err
+			}
+			resources = append(resources, &common.Resource{Type: common.ResourceTypeProject, ID: projectID})
 		case strings.HasPrefix(name, "workspaces/"):
 			match := workspaceRegex.FindString(name)
 			if match == "" {
@@ -360,6 +406,18 @@ func populateRawResources(ctx context.Context, stores *store.Store, request any,
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to parse %q", match)
 				}
+				workspaceInstanceID := ""
+				instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
+					Workspace:  common.GetWorkspaceIDFromContext(ctx),
+					ProjectID:  &workspaceInstanceID,
+					ResourceID: &instanceID,
+				})
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get instance")
+				}
+				if instance == nil {
+					return nil, errors.Errorf("instance %q not found", instanceID)
+				}
 				database, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{
 					Workspace:    common.GetWorkspaceIDFromContext(ctx),
 					InstanceID:   &instanceID,
@@ -388,8 +446,10 @@ func populateRawResources(ctx context.Context, stores *store.Store, request any,
 					return nil, errors.Wrapf(err, "failed to parse %q", match)
 				}
 				workspaceID := common.GetWorkspaceIDFromContext(ctx)
+				workspaceInstanceID := ""
 				instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
 					Workspace:  workspaceID,
+					ProjectID:  &workspaceInstanceID,
 					ResourceID: &instanceID,
 				})
 				if err != nil {
@@ -415,6 +475,21 @@ func populateRawResources(ctx context.Context, stores *store.Store, request any,
 	return resources, nil
 }
 
+func getProjectScopedInstance(ctx context.Context, stores *store.Store, projectID, instanceID string) (*store.InstanceMessage, error) {
+	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ProjectID:  &projectID,
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance")
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", common.FormatProjectInstance(projectID, instanceID))
+	}
+	return instance, nil
+}
+
 func getResourceFromRequest(ctx context.Context, request any, method string) ([]string, error) {
 	pm, ok := request.(proto.Message)
 	if !ok {
@@ -428,17 +503,18 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 	}
 	shortMethod := methodTokens[2]
 
-	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
-		return []string{""}, nil
-	}
-
 	var resources []string
 
 	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
 		// During instance creation, the request carries an inline instance so
 		// the handler can preview remote databases before the instance exists.
-		// Use the workspace resource instead of validating the future instance name.
-		resources = append(resources, "")
+		// Use the nested parent project when present; a top-level candidate is
+		// still authorized at workspace scope.
+		if projectID, _, err := common.GetProjectIDInstanceID(r.GetName()); err == nil {
+			resources = append(resources, common.FormatProject(projectID))
+		} else {
+			resources = append(resources, "")
+		}
 		return resources, nil
 	}
 
@@ -472,6 +548,10 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 	}
 
 	if strings.HasPrefix(shortMethod, "Batch") {
+		parentDesc := mr.Descriptor().Fields().ByName("parent")
+		if parentDesc != nil && proto.HasExtension(parentDesc.Options(), annotationsproto.E_ResourceReference) && mr.Has(parentDesc) {
+			resources = append(resources, mr.Get(parentDesc).String())
+		}
 		// Handle batch get requests.
 		if strings.HasPrefix(shortMethod, "BatchGet") {
 			namesDesc := mr.Descriptor().Fields().ByName("names")

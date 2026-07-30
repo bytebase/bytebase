@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -28,28 +27,47 @@ func NewDatabaseCatalogService(store *store.Store) *DatabaseCatalogService {
 	}
 }
 
-// GetDatabaseCatalog gets a database catalog.
-func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, req *connect.Request[v1pb.GetDatabaseCatalogRequest]) (*connect.Response[v1pb.DatabaseCatalog], error) {
-	databaseResourceName, err := common.TrimSuffix(req.Msg.Name, common.CatalogSuffix)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(databaseResourceName)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", databaseResourceName))
-	}
+func (s *DatabaseCatalogService) findDatabaseForResource(ctx context.Context, resource *databaseResourceName, showDeleted bool) (*store.DatabaseMessage, *store.InstanceMessage, error) {
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		Workspace:    common.GetWorkspaceIDFromContext(ctx),
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
-		ShowDeleted:  true,
+		InstanceID:   &resource.instanceID,
+		DatabaseName: &resource.databaseID,
+		ShowDeleted:  showDeleted,
 	})
+	if err != nil || database == nil {
+		return database, nil, err
+	}
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: &resource.instanceID,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if instance == nil {
+		return nil, nil, errors.Errorf("instance %q not found", resource.instanceID)
+	}
+	if resource.projectID == nil && instance.ProjectID != nil {
+		return nil, nil, errors.Errorf("instance %q must be addressed through its project", resource.instanceID)
+	}
+	if resource.projectID != nil && (instance.ProjectID == nil || *resource.projectID != *instance.ProjectID) {
+		return nil, nil, errors.Errorf("project in database resource name does not own instance %q", resource.instanceID)
+	}
+	return database, instance, nil
+}
+
+// GetDatabaseCatalog gets a database catalog.
+func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, req *connect.Request[v1pb.GetDatabaseCatalogRequest]) (*connect.Response[v1pb.DatabaseCatalog], error) {
+	resource, err := parseDatabaseResourceNameWithSuffix(req.Msg.Name, common.CatalogSuffix)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", req.Msg.Name))
+	}
+	database, instance, err := s.findDatabaseForResource(ctx, resource, true)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
 	}
 	if database == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseResourceName))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", req.Msg.Name))
 	}
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		Workspace:    common.GetWorkspaceIDFromContext(ctx),
@@ -61,34 +79,25 @@ func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, req *co
 	}
 	if dbMetadata == nil {
 		return connect.NewResponse(&v1pb.DatabaseCatalog{
-			Name: fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.CatalogSuffix),
+			Name: formatDatabaseResourceName(instance, database) + common.CatalogSuffix,
 		}), nil
 	}
 
-	return connect.NewResponse(convertDatabaseConfig(database, dbMetadata.GetConfig())), nil
+	return connect.NewResponse(convertDatabaseConfig(instance, database, dbMetadata.GetConfig())), nil
 }
 
 // UpdateDatabaseCatalog updates a database catalog.
 func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req *connect.Request[v1pb.UpdateDatabaseCatalogRequest]) (*connect.Response[v1pb.DatabaseCatalog], error) {
-	databaseResourceName, err := common.TrimSuffix(req.Msg.GetCatalog().GetName(), common.CatalogSuffix)
+	resource, err := parseDatabaseResourceNameWithSuffix(req.Msg.GetCatalog().GetName(), common.CatalogSuffix)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", req.Msg.GetCatalog().GetName()))
 	}
-
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(databaseResourceName)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", databaseResourceName))
-	}
-	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-		Workspace:    common.GetWorkspaceIDFromContext(ctx),
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
-	})
+	database, instance, err := s.findDatabaseForResource(ctx, resource, false)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
 	}
 	if database == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseResourceName))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", req.Msg.GetCatalog().GetName()))
 	}
 
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
@@ -121,12 +130,12 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req 
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	return connect.NewResponse(convertDatabaseConfig(database, databaseConfig)), nil
+	return connect.NewResponse(convertDatabaseConfig(instance, database, databaseConfig)), nil
 }
 
-func convertDatabaseConfig(database *store.DatabaseMessage, config *storepb.DatabaseConfig) *v1pb.DatabaseCatalog {
+func convertDatabaseConfig(instance *store.InstanceMessage, database *store.DatabaseMessage, config *storepb.DatabaseConfig) *v1pb.DatabaseCatalog {
 	c := &v1pb.DatabaseCatalog{
-		Name: fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.CatalogSuffix),
+		Name: formatDatabaseResourceName(instance, database) + common.CatalogSuffix,
 	}
 	for _, sc := range config.Schemas {
 		s := &v1pb.SchemaCatalog{Name: sc.Name}

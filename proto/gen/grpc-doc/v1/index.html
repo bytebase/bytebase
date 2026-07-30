@@ -16714,7 +16714,7 @@ Permissions required: None</p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
+                  <td><p>Format: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
                 </tr>
               
                 <tr>
@@ -16782,7 +16782,7 @@ This field is populated by deriving the plan from task_run for display purposes.
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the changelog to retrieve.
-Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
+Format: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
                 </tr>
               
                 <tr>
@@ -16814,7 +16814,7 @@ Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></t
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent of the changelogs.
-Format: instances/{instance}/databases/{database} </p></td>
+Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
@@ -17022,6 +17022,13 @@ Permissions required: bb.changelogs.get</p></td>
                 <td></td>
               </tr>
               
+              <tr>
+                <td>ListChangelogs</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*/instances/*/databases/*}/changelogs</td>
+                <td></td>
+              </tr>
+              
             
               
               
@@ -17029,6 +17036,13 @@ Permissions required: bb.changelogs.get</p></td>
                 <td>GetChangelog</td>
                 <td>GET</td>
                 <td>/v1/{name=instances/*/databases/*/changelogs/*}</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>GetChangelog</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*/changelogs/*}</td>
                 <td></td>
               </tr>
               
@@ -17143,7 +17157,7 @@ Permissions required: bb.changelogs.get</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the database catalog.
-Format: instances/{instance}/databases/{database}/catalog </p></td>
+Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog </p></td>
                 </tr>
               
                 <tr>
@@ -17175,7 +17189,7 @@ Format: instances/{instance}/databases/{database}/catalog </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the database catalog to retrieve.
-Format: instances/{instance}/databases/{database}/catalog </p></td>
+Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog </p></td>
                 </tr>
               
             </tbody>
@@ -17426,7 +17440,7 @@ Format: instances/{instance}/databases/{database}/catalog </p></td>
                   <td><p>The database catalog to update.
 
 The catalog&#39;s `name` field is used to identify the database catalog to update.
-Format: instances/{instance}/databases/{database}/catalog </p></td>
+Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog </p></td>
                 </tr>
               
                 <tr>
@@ -17548,6 +17562,13 @@ Permissions required: bb.databaseCatalogs.update</p></td>
                 <td></td>
               </tr>
               
+              <tr>
+                <td>GetDatabaseCatalog</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*/catalog}</td>
+                <td></td>
+              </tr>
+              
             
               
               
@@ -17555,6 +17576,13 @@ Permissions required: bb.databaseCatalogs.update</p></td>
                 <td>UpdateDatabaseCatalog</td>
                 <td>PATCH</td>
                 <td>/v1/{catalog.name=instances/*/databases/*/catalog}</td>
+                <td>catalog</td>
+              </tr>
+              
+              <tr>
+                <td>UpdateDatabaseCatalog</td>
+                <td>PATCH</td>
+                <td>/v1/{catalog.name=projects/*/instances/*/databases/*/catalog}</td>
                 <td>catalog</td>
               </tr>
               
@@ -18039,7 +18067,7 @@ Permissions required: bb.databaseGroups.delete</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the role.
-Format: instances/{instance}/roles/{role}
+Format: instances/{instance}/roles/{role} or projects/{project}/instances/{instance}/roles/{role}
 The role name is the unique name for the role. </p></td>
                 </tr>
               
@@ -18102,7 +18130,7 @@ For MySQL, it&#39;s the global privileges as GRANT statements, which means it on
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent, which owns this collection of roles.
-Format: instances/{instance} </p></td>
+Format: instances/{instance} or projects/{project}/instances/{instance} </p></td>
                 </tr>
               
                 <tr>
@@ -18223,6 +18251,13 @@ Permissions required: bb.instanceRoles.list</p></td>
                 <td></td>
               </tr>
               
+              <tr>
+                <td>ListInstanceRoles</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*/instances/*}/roles</td>
+                <td></td>
+              </tr>
+              
             
             </tbody>
           </table>
@@ -18251,7 +18286,7 @@ Permissions required: bb.instanceRoles.list</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to add a data source to.
-Format: instances/{instance} </p></td>
+Format: instances/{instance} or projects/{project}/instances/{instance} </p></td>
                 </tr>
               
                 <tr>
@@ -18287,6 +18322,15 @@ Only READ_ONLY data source can be added. </p></td>
             <tbody>
               
                 <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The parent, which owns this collection of instances.
+Format: projects/{project}. If omitted, all targets must be workspace
+instances; otherwise, every target must belong to this project collection. </p></td>
+                </tr>
+              
+                <tr>
                   <td>requests</td>
                   <td><a href="#bytebase.v1.SyncInstanceRequest">SyncInstanceRequest</a></td>
                   <td>repeated</td>
@@ -18317,6 +18361,15 @@ A maximum of 1000 instances can be synced in a batch. </p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The parent, which owns this collection of instances.
+Format: projects/{project}. If omitted, all targets must be workspace
+instances; otherwise, every target must belong to this project collection. </p></td>
+                </tr>
               
                 <tr>
                   <td>requests</td>
@@ -18367,6 +18420,15 @@ A maximum of 1000 instances can be synced in a batch. </p></td>
             <tbody>
               
                 <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The parent, which owns this collection of instances.
+Format: projects/{project}. If omitted, the instance is created in the
+workspace collection. </p></td>
+                </tr>
+              
+                <tr>
                   <td>instance</td>
                   <td><a href="#bytebase.v1.Instance">Instance</a></td>
                   <td></td>
@@ -18396,7 +18458,7 @@ are /[a-z][0-9]-/. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The project to assign newly discovered databases to during initial sync.
-Format: projects/{project} </p></td>
+Format: projects/{project}. This must be unset when `parent` is set. </p></td>
                 </tr>
               
             </tbody>
@@ -19155,14 +19217,16 @@ Only set to true for development or when certificates cannot be properly validat
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to delete.
-Format: instances/{instance} </p></td>
+Format: instances/{instance} or projects/{project}/instances/{instance} </p></td>
                 </tr>
               
                 <tr>
                   <td>force</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. </p></td>
+                  <td><p>If set to true, a workspace instance&#39;s databases are moved to the default
+project before the instance is soft-deleted. Project instances reject this
+option because their databases must remain in the owning project. </p></td>
                 </tr>
               
                 <tr>
@@ -19197,7 +19261,7 @@ The instance must already be soft-deleted for this to work. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to retrieve.
-Format: instances/{instance} </p></td>
+Format: instances/{instance} or projects/{project}/instances/{instance} </p></td>
                 </tr>
               
             </tbody>
@@ -19222,7 +19286,7 @@ Format: instances/{instance} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance.
-Format: instances/{instance} </p></td>
+Format: instances/{instance} or projects/{project}/instances/{instance} </p></td>
                 </tr>
               
                 <tr>
@@ -19407,7 +19471,7 @@ For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance.
-Format: instances/{instance} </p></td>
+Format: instances/{instance} or projects/{project}/instances/{instance} </p></td>
                 </tr>
               
                 <tr>
@@ -19506,7 +19570,7 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance.
-Format: instances/{instance} </p></td>
+Format: instances/{instance} or projects/{project}/instances/{instance} </p></td>
                 </tr>
               
                 <tr>
@@ -19556,6 +19620,16 @@ Format: instances/{instance} </p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The parent, which owns this collection of instances.
+Format: projects/{project}. If omitted, only workspace instances are
+returned. Wildcard project parents are not supported. When set, the
+`project` filter must be omitted or match this parent. </p></td>
+                </tr>
               
                 <tr>
                   <td>page_size</td>
@@ -19692,7 +19766,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to remove a data source from.
-Format: instances/{instance} </p></td>
+Format: instances/{instance} or projects/{project}/instances/{instance} </p></td>
                 </tr>
               
                 <tr>
@@ -19773,7 +19847,7 @@ Only READ_ONLY data source can be removed. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of instance.
-Format: instances/{instance} </p></td>
+Format: instances/{instance} or projects/{project}/instances/{instance} </p></td>
                 </tr>
               
                 <tr>
@@ -19830,7 +19904,7 @@ the instance metadata (such as the database list) and any newly discovered datab
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the deleted instance.
-Format: instances/{instance} </p></td>
+Format: instances/{instance} or projects/{project}/instances/{instance} </p></td>
                 </tr>
               
             </tbody>
@@ -19855,7 +19929,7 @@ Format: instances/{instance} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the instance to update a data source.
-Format: instances/{instance} </p></td>
+Format: instances/{instance} or projects/{project}/instances/{instance} </p></td>
                 </tr>
               
                 <tr>
@@ -19911,7 +19985,7 @@ In this situation, `update_mask` is ignored. </p></td>
                   <td><p>The instance to update.
 
 The instance&#39;s `name` field is used to identify the instance to update.
-Format: instances/{instance} </p></td>
+Format: instances/{instance} or projects/{project}/instances/{instance} </p></td>
                 </tr>
               
                 <tr>
@@ -19926,7 +20000,9 @@ Format: instances/{instance} </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>If set to true, and the instance is not found, a new instance will be created.
-In this situation, `update_mask` is ignored. </p></td>
+In this situation, `update_mask` is ignored. A project-nested name creates
+the instance only under its encoded active, non-default project; it never
+falls back to a workspace instance. </p></td>
                 </tr>
               
             </tbody>
@@ -20238,7 +20314,7 @@ Permissions required: bb.instances.get</p></td>
                 <td>ListInstances</td>
                 <td><a href="#bytebase.v1.ListInstancesRequest">ListInstancesRequest</a></td>
                 <td><a href="#bytebase.v1.ListInstancesResponse">ListInstancesResponse</a></td>
-                <td><p>Lists all database instances.
+                <td><p>Lists database instances, optionally within a project.
 Permissions required: bb.instances.list</p></td>
               </tr>
             
@@ -20357,6 +20433,13 @@ Permissions required: bb.instances.update</p></td>
                 <td></td>
               </tr>
               
+              <tr>
+                <td>GetInstance</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/instances/*}</td>
+                <td></td>
+              </tr>
+              
             
               
               
@@ -20364,6 +20447,13 @@ Permissions required: bb.instances.update</p></td>
                 <td>ListInstances</td>
                 <td>GET</td>
                 <td>/v1/instances</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>ListInstances</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/instances</td>
                 <td></td>
               </tr>
               
@@ -20377,6 +20467,13 @@ Permissions required: bb.instances.update</p></td>
                 <td>instance</td>
               </tr>
               
+              <tr>
+                <td>CreateInstance</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/instances</td>
+                <td>instance</td>
+              </tr>
+              
             
               
               
@@ -20384,6 +20481,13 @@ Permissions required: bb.instances.update</p></td>
                 <td>UpdateInstance</td>
                 <td>PATCH</td>
                 <td>/v1/{instance.name=instances/*}</td>
+                <td>instance</td>
+              </tr>
+              
+              <tr>
+                <td>UpdateInstance</td>
+                <td>PATCH</td>
+                <td>/v1/{instance.name=projects/*/instances/*}</td>
                 <td>instance</td>
               </tr>
               
@@ -20397,6 +20501,13 @@ Permissions required: bb.instances.update</p></td>
                 <td></td>
               </tr>
               
+              <tr>
+                <td>DeleteInstance</td>
+                <td>DELETE</td>
+                <td>/v1/{name=projects/*/instances/*}</td>
+                <td></td>
+              </tr>
+              
             
               
               
@@ -20404,6 +20515,13 @@ Permissions required: bb.instances.update</p></td>
                 <td>UndeleteInstance</td>
                 <td>POST</td>
                 <td>/v1/{name=instances/*}:undelete</td>
+                <td>*</td>
+              </tr>
+              
+              <tr>
+                <td>UndeleteInstance</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/instances/*}:undelete</td>
                 <td>*</td>
               </tr>
               
@@ -20417,6 +20535,13 @@ Permissions required: bb.instances.update</p></td>
                 <td>*</td>
               </tr>
               
+              <tr>
+                <td>SyncInstance</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/instances/*}:sync</td>
+                <td>*</td>
+              </tr>
+              
             
               
               
@@ -20424,6 +20549,13 @@ Permissions required: bb.instances.update</p></td>
                 <td>ListInstanceDatabase</td>
                 <td>POST</td>
                 <td>/v1/{name=instances/*}:databases</td>
+                <td>*</td>
+              </tr>
+              
+              <tr>
+                <td>ListInstanceDatabase</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/instances/*}:databases</td>
                 <td>*</td>
               </tr>
               
@@ -20437,6 +20569,13 @@ Permissions required: bb.instances.update</p></td>
                 <td>*</td>
               </tr>
               
+              <tr>
+                <td>BatchSyncInstances</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/instances:batchSync</td>
+                <td>*</td>
+              </tr>
+              
             
               
               
@@ -20444,6 +20583,13 @@ Permissions required: bb.instances.update</p></td>
                 <td>BatchUpdateInstances</td>
                 <td>POST</td>
                 <td>/v1/instances:batchUpdate</td>
+                <td>*</td>
+              </tr>
+              
+              <tr>
+                <td>BatchUpdateInstances</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/instances:batchUpdate</td>
                 <td>*</td>
               </tr>
               
@@ -20457,6 +20603,13 @@ Permissions required: bb.instances.update</p></td>
                 <td>*</td>
               </tr>
               
+              <tr>
+                <td>AddDataSource</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/instances/*}:addDataSource</td>
+                <td>*</td>
+              </tr>
+              
             
               
               
@@ -20467,6 +20620,13 @@ Permissions required: bb.instances.update</p></td>
                 <td>*</td>
               </tr>
               
+              <tr>
+                <td>RemoveDataSource</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/instances/*}:removeDataSource</td>
+                <td>*</td>
+              </tr>
+              
             
               
               
@@ -20474,6 +20634,13 @@ Permissions required: bb.instances.update</p></td>
                 <td>UpdateDataSource</td>
                 <td>PATCH</td>
                 <td>/v1/{name=instances/*}:updateDataSource</td>
+                <td>data_source</td>
+              </tr>
+              
+              <tr>
+                <td>UpdateDataSource</td>
+                <td>PATCH</td>
+                <td>/v1/{name=projects/*/instances/*}:updateDataSource</td>
                 <td>data_source</td>
               </tr>
               
@@ -20506,7 +20673,8 @@ Permissions required: bb.instances.update</p></td>
                   <td></td>
                   <td><p>The parent resource shared by all databases being retrieved.
 - projects/{project}: batch get databases in a project;
-- instances/{instances}: batch get databases in a instance;
+- instances/{instance}: batch get databases in an instance;
+- projects/{project}/instances/{instance}: batch get databases in a project instance;
 Use &#34;-&#34; as wildcard to batch get databases across parent. </p></td>
                 </tr>
               
@@ -20563,7 +20731,7 @@ Use &#34;-&#34; as wildcard to batch get databases across parent. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent resource shared by all databases being updated.
-Format: instances/{instance}
+Format: instances/{instance} or projects/{project}/instances/{instance}
 If the operation spans parents, a dash (-) may be accepted as a wildcard. </p></td>
                 </tr>
               
@@ -20603,7 +20771,7 @@ If the operation spans parents, a dash (-) may be accepted as a wildcard. </p></
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent resource shared by all databases being updated.
-Format: instances/{instance}
+Format: instances/{instance} or projects/{project}/instances/{instance}
 If the operation spans parents, a dash (-) may be accepted as a wildcard.
 We only support updating the project of databases for now. </p></td>
                 </tr>
@@ -20998,7 +21166,7 @@ pg_catalog), empty otherwise. e.g. `&#34;C&#34;` or `locale.en_us`. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the database.
-Format: instances/{instance}/databases/{database}
+Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 {database} is the database name in the instance. </p></td>
                 </tr>
               
@@ -21139,7 +21307,7 @@ https://cloud.google.com/resource-manager/docs/tags/tags-overview. </p></td>
                   <td></td>
                   <td><p>The database metadata name.
 
-Format: instances/{instance}/databases/{database}/metadata </p></td>
+Format: instances/{instance}/databases/{database}/metadata or projects/{project}/instances/{instance}/databases/{database}/metadata </p></td>
                 </tr>
               
                 <tr>
@@ -21336,7 +21504,7 @@ Examples:
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The database whose current schema is the diff source.
-Format: instances/{instance}/databases/{database} </p></td>
+Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
@@ -21397,8 +21565,8 @@ truncated metadata fetch) is treated as dropped. </p></td>
                   <td></td>
                   <td><p>The name of the database or changelog.
 Format:
-database: instances/{instance}/databases/{database}
-changelog: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
+database: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
+changelog: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
                 </tr>
               
                 <tr>
@@ -21414,7 +21582,7 @@ changelog: instances/{instance}/databases/{database}/changelogs/{changelog} </p>
                   <td></td>
                   <td><p>The resource name of the changelog
 Format:
-instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
+instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
                 </tr>
               
             </tbody>
@@ -21951,7 +22119,7 @@ For PostgreSQL, it&#39;s the list of tables that the function depends on the ret
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the database to retrieve metadata.
-Format: instances/{instance}/databases/{database}/metadata </p></td>
+Format: instances/{instance}/databases/{database}/metadata or projects/{project}/instances/{instance}/databases/{database}/metadata </p></td>
                 </tr>
               
                 <tr>
@@ -22006,7 +22174,7 @@ Default 0, means no limit. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the database to retrieve.
-Format: instances/{instance}/databases/{database} </p></td>
+Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} </p></td>
                 </tr>
               
             </tbody>
@@ -22031,7 +22199,7 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the database to retrieve SDL schema.
-Format: instances/{instance}/databases/{database}/sdlSchema </p></td>
+Format: instances/{instance}/databases/{database}/sdlSchema or projects/{project}/instances/{instance}/databases/{database}/sdlSchema </p></td>
                 </tr>
               
                 <tr>
@@ -22063,7 +22231,7 @@ Format: instances/{instance}/databases/{database}/sdlSchema </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the database to retrieve schema.
-Format: instances/{instance}/databases/{database}/schema </p></td>
+Format: instances/{instance}/databases/{database}/schema or projects/{project}/instances/{instance}/databases/{database}/schema </p></td>
                 </tr>
               
             </tbody>
@@ -22088,7 +22256,7 @@ Format: instances/{instance}/databases/{database}/schema </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the database.
-Format: instances/{instance}/databases/{database} </p></td>
+Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
@@ -22338,7 +22506,8 @@ Name of the operator class for each column. (PostgreSQL specific). </p></td>
                   <td></td>
                   <td><p>- projects/{project}: list databases in a project, require &#34;bb.projects.get&#34; permission.
 - workspaces/{id}: list databases in the workspace, require &#34;bb.databases.list&#34; permission.
-- instances/{instances}: list databases in a instance, require &#34;bb.instances.get&#34; permission </p></td>
+- instances/{instance}: list databases in an instance, require &#34;bb.instances.get&#34; permission.
+- projects/{project}/instances/{instance}: list databases in a project instance, require &#34;bb.instances.get&#34; permission. </p></td>
                 </tr>
               
                 <tr>
@@ -23133,7 +23302,7 @@ types and derived types. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the database to sync.
-Format: instances/{instance}/databases/{database} </p></td>
+Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} </p></td>
                 </tr>
               
             </tbody>
@@ -23639,7 +23808,7 @@ TRUNCATE. </p></td>
                   <td><p>The database to update.
 
 The database&#39;s `name` field is used to identify the database to update.
-Format: instances/{instance}/databases/{database} </p></td>
+Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
@@ -24210,6 +24379,13 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td></td>
               </tr>
               
+              <tr>
+                <td>GetDatabase</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*}</td>
+                <td></td>
+              </tr>
+              
             
               
               
@@ -24224,6 +24400,13 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td>BatchGetDatabases</td>
                 <td>GET</td>
                 <td>/v1/{parent=instances/*}/databases:batchGet</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>BatchGetDatabases</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*/instances/*}/databases:batchGet</td>
                 <td></td>
               </tr>
               
@@ -24251,6 +24434,13 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td></td>
               </tr>
               
+              <tr>
+                <td>ListDatabases</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*/instances/*}/databases</td>
+                <td></td>
+              </tr>
+              
             
               
               
@@ -24258,6 +24448,13 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td>UpdateDatabase</td>
                 <td>PATCH</td>
                 <td>/v1/{database.name=instances/*/databases/*}</td>
+                <td>database</td>
+              </tr>
+              
+              <tr>
+                <td>UpdateDatabase</td>
+                <td>PATCH</td>
+                <td>/v1/{database.name=projects/*/instances/*/databases/*}</td>
                 <td>database</td>
               </tr>
               
@@ -24271,6 +24468,13 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td>*</td>
               </tr>
               
+              <tr>
+                <td>BatchUpdateDatabases</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*/instances/*}/databases:batchUpdate</td>
+                <td>*</td>
+              </tr>
+              
             
               
               
@@ -24278,6 +24482,13 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td>SyncDatabase</td>
                 <td>POST</td>
                 <td>/v1/{name=instances/*/databases/*}:sync</td>
+                <td>*</td>
+              </tr>
+              
+              <tr>
+                <td>SyncDatabase</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*}:sync</td>
                 <td>*</td>
               </tr>
               
@@ -24291,6 +24502,13 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td>*</td>
               </tr>
               
+              <tr>
+                <td>BatchSyncDatabases</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*/instances/*}/databases:batchSync</td>
+                <td>*</td>
+              </tr>
+              
             
               
               
@@ -24298,6 +24516,13 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td>GetDatabaseMetadata</td>
                 <td>GET</td>
                 <td>/v1/{name=instances/*/databases/*/metadata}</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>GetDatabaseMetadata</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*/metadata}</td>
                 <td></td>
               </tr>
               
@@ -24311,6 +24536,13 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td></td>
               </tr>
               
+              <tr>
+                <td>GetDatabaseSchema</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*/schema}</td>
+                <td></td>
+              </tr>
+              
             
               
               
@@ -24318,6 +24550,13 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td>GetDatabaseSDLSchema</td>
                 <td>GET</td>
                 <td>/v1/{name=instances/*/databases/*/sdlSchema}</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>GetDatabaseSDLSchema</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*/sdlSchema}</td>
                 <td></td>
               </tr>
               
@@ -24334,7 +24573,21 @@ Permissions required: bb.databases.getSchema</p></td>
               <tr>
                 <td>DiffSchema</td>
                 <td>POST</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*}:diffSchema</td>
+                <td>*</td>
+              </tr>
+              
+              <tr>
+                <td>DiffSchema</td>
+                <td>POST</td>
                 <td>/v1/{name=instances/*/databases/*/changelogs/*}:diffSchema</td>
+                <td>*</td>
+              </tr>
+              
+              <tr>
+                <td>DiffSchema</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*/changelogs/*}:diffSchema</td>
                 <td>*</td>
               </tr>
               
@@ -24348,6 +24601,13 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td>*</td>
               </tr>
               
+              <tr>
+                <td>DiffMetadata</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*}:diffMetadata</td>
+                <td>*</td>
+              </tr>
+              
             
               
               
@@ -24355,6 +24615,13 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td>GetSchemaString</td>
                 <td>GET</td>
                 <td>/v1/{name=instances/*/databases/*/schemaString}</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>GetSchemaString</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*/schemaString}</td>
                 <td></td>
               </tr>
               
@@ -25927,7 +26194,9 @@ Permissions required: bb.identityProviders.update</p></td>
 Workspace resource name: workspaces/{workspace-id}.
 Environment resource name: environments/environment-id.
 Instance resource name: instances/instance-id.
-Database resource name: instances/instance-id/databases/database-name. </p></td>
+Database resource name: instances/instance-id/databases/database-name.
+Project instance resource name: projects/project-id/instances/instance-id.
+Project database resource name: projects/project-id/instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
@@ -25970,7 +26239,9 @@ Format: {resource name}/policies/{policy type}
 Workspace resource name: workspaces/{workspace-id}.
 Environment resource name: environments/environment-id.
 Instance resource name: instances/instance-id.
-Database resource name: instances/instance-id/databases/database-name. </p></td>
+Database resource name: instances/instance-id/databases/database-name.
+Project instance resource name: projects/project-id/instances/instance-id.
+Project database resource name: projects/project-id/instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
             </tbody>
@@ -26246,7 +26517,9 @@ Format: {resource name}/policies/{policy type}
 Workspace resource name: workspaces/{workspace-id}.
 Environment resource name: environments/environment-id.
 Instance resource name: instances/instance-id.
-Database resource name: instances/instance-id/databases/database-name. </p></td>
+Database resource name: instances/instance-id/databases/database-name.
+Project instance resource name: projects/project-id/instances/instance-id.
+Project database resource name: projects/project-id/instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
@@ -26481,7 +26754,9 @@ Format: {resource name}/policies/{policy type}
 Workspace resource name: workspaces/{workspace-id}.
 Environment resource name: environments/environment-id.
 Instance resource name: instances/instance-id.
-Database resource name: instances/instance-id/databases/database-name. </p></td>
+Database resource name: instances/instance-id/databases/database-name.
+Project instance resource name: projects/project-id/instances/instance-id.
+Project database resource name: projects/project-id/instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
@@ -26538,6 +26813,18 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>PROJECT</td>
                 <td>3</td>
                 <td><p>Project-level policy.</p></td>
+              </tr>
+            
+              <tr>
+                <td>INSTANCE</td>
+                <td>4</td>
+                <td><p>Instance-level policy.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE</td>
+                <td>5</td>
+                <td><p>Database-level policy.</p></td>
               </tr>
             
           </tbody>
@@ -26697,6 +26984,20 @@ Permissions required: bb.policies.delete</p></td>
                 <td></td>
               </tr>
               
+              <tr>
+                <td>GetPolicy</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/instances/*/policies/*}</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>GetPolicy</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*/policies/*}</td>
+                <td></td>
+              </tr>
+              
             
               
               
@@ -26735,6 +27036,20 @@ Permissions required: bb.policies.delete</p></td>
                 <td></td>
               </tr>
               
+              <tr>
+                <td>ListPolicies</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*/instances/*}/policies</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>ListPolicies</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*/instances/*/databases/*}/policies</td>
+                <td></td>
+              </tr>
+              
             
               
               
@@ -26770,6 +27085,20 @@ Permissions required: bb.policies.delete</p></td>
                 <td>CreatePolicy</td>
                 <td>POST</td>
                 <td>/v1/{parent=instances/*/databases/*}/policies</td>
+                <td>policy</td>
+              </tr>
+              
+              <tr>
+                <td>CreatePolicy</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*/instances/*}/policies</td>
+                <td>policy</td>
+              </tr>
+              
+              <tr>
+                <td>CreatePolicy</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*/instances/*/databases/*}/policies</td>
                 <td>policy</td>
               </tr>
               
@@ -26811,6 +27140,20 @@ Permissions required: bb.policies.delete</p></td>
                 <td>policy</td>
               </tr>
               
+              <tr>
+                <td>UpdatePolicy</td>
+                <td>PATCH</td>
+                <td>/v1/{policy.name=projects/*/instances/*/policies/*}</td>
+                <td>policy</td>
+              </tr>
+              
+              <tr>
+                <td>UpdatePolicy</td>
+                <td>PATCH</td>
+                <td>/v1/{policy.name=projects/*/instances/*/databases/*/policies/*}</td>
+                <td>policy</td>
+              </tr>
+              
             
               
               
@@ -26846,6 +27189,20 @@ Permissions required: bb.policies.delete</p></td>
                 <td>DeletePolicy</td>
                 <td>DELETE</td>
                 <td>/v1/{name=instances/*/databases/*/policies/*}</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>DeletePolicy</td>
+                <td>DELETE</td>
+                <td>/v1/{name=projects/*/instances/*/policies/*}</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>DeletePolicy</td>
+                <td>DELETE</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*/policies/*}</td>
                 <td></td>
               </tr>
               
@@ -30313,7 +30670,7 @@ Permissions required: bb.reviewConfigs.delete</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent resource shared by all revisions being created.
-Format: instances/{instance}/databases/{database} </p></td>
+Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
@@ -30369,7 +30726,7 @@ A maximum of 100 revisions can be created in a batch. </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
+                  <td><p>Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
@@ -30401,7 +30758,7 @@ A maximum of 100 revisions can be created in a batch. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the revision to delete.
-Format: instances/{instance}/databases/{database}/revisions/{revision} </p></td>
+Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision} </p></td>
                 </tr>
               
             </tbody>
@@ -30426,7 +30783,7 @@ Format: instances/{instance}/databases/{database}/revisions/{revision} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the revision.
-Format: instances/{instance}/databases/{database}/revisions/{revision} </p></td>
+Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision} </p></td>
                 </tr>
               
             </tbody>
@@ -30451,7 +30808,7 @@ Format: instances/{instance}/databases/{database}/revisions/{revision} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent of the revisions.
-Format: instances/{instance}/databases/{database} </p></td>
+Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
@@ -30534,7 +30891,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database}/revisions/{revision} </p></td>
+                  <td><p>Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision} </p></td>
                 </tr>
               
                 <tr>
@@ -30723,6 +31080,13 @@ Permissions required: bb.revisions.delete</p></td>
                 <td></td>
               </tr>
               
+              <tr>
+                <td>ListRevisions</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*/instances/*/databases/*}/revisions</td>
+                <td></td>
+              </tr>
+              
             
               
               
@@ -30730,6 +31094,13 @@ Permissions required: bb.revisions.delete</p></td>
                 <td>GetRevision</td>
                 <td>GET</td>
                 <td>/v1/{name=instances/*/databases/*/revisions/*}</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>GetRevision</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*/revisions/*}</td>
                 <td></td>
               </tr>
               
@@ -30743,6 +31114,13 @@ Permissions required: bb.revisions.delete</p></td>
                 <td>*</td>
               </tr>
               
+              <tr>
+                <td>BatchCreateRevisions</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*/instances/*/databases/*}/revisions:batchCreate</td>
+                <td>*</td>
+              </tr>
+              
             
               
               
@@ -30750,6 +31128,13 @@ Permissions required: bb.revisions.delete</p></td>
                 <td>DeleteRevision</td>
                 <td>DELETE</td>
                 <td>/v1/{name=instances/*/databases/*/revisions/*}</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>DeleteRevision</td>
+                <td>DELETE</td>
+                <td>/v1/{name=projects/*/instances/*/databases/*/revisions/*}</td>
                 <td></td>
               </tr>
               

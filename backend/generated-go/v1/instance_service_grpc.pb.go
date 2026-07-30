@@ -44,7 +44,7 @@ type InstanceServiceClient interface {
 	// Gets a database instance by name.
 	// Permissions required: bb.instances.get
 	GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
-	// Lists all database instances.
+	// Lists database instances, optionally within a project.
 	// Permissions required: bb.instances.list
 	ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error)
 	// Creates a new database instance.
@@ -229,7 +229,7 @@ type InstanceServiceServer interface {
 	// Gets a database instance by name.
 	// Permissions required: bb.instances.get
 	GetInstance(context.Context, *GetInstanceRequest) (*Instance, error)
-	// Lists all database instances.
+	// Lists database instances, optionally within a project.
 	// Permissions required: bb.instances.list
 	ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error)
 	// Creates a new database instance.

@@ -288,6 +288,32 @@ func (s *Store) GetReviewConfigForDatabase(ctx context.Context, workspaceID stri
 			resource:     common.FormatEnvironment(*database.EffectiveEnvironmentID),
 		})
 	}
+
+	var instanceProjectID sql.NullString
+	if err := s.GetDB().QueryRowContext(ctx, `
+		SELECT project
+		FROM instance
+		WHERE workspace = $1 AND resource_id = $2
+	`, workspaceID, database.InstanceID).Scan(&instanceProjectID); err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %s", database.InstanceID)
+	}
+
+	instanceResource := common.FormatInstance(database.InstanceID)
+	databaseResource := common.FormatDatabase(database.InstanceID, database.DatabaseName)
+	if instanceProjectID.Valid {
+		instanceResource = common.FormatProjectInstance(instanceProjectID.String, database.InstanceID)
+		databaseResource = common.FormatProjectDatabase(instanceProjectID.String, database.InstanceID, database.DatabaseName)
+	}
+	resources = append(resources,
+		&reviewConfigResource{
+			resourceType: storepb.Policy_DATABASE,
+			resource:     databaseResource,
+		},
+		&reviewConfigResource{
+			resourceType: storepb.Policy_INSTANCE,
+			resource:     instanceResource,
+		},
+	)
 	resources = append(resources, &reviewConfigResource{
 		resourceType: storepb.Policy_PROJECT,
 		resource:     common.FormatProject(database.ProjectID),
