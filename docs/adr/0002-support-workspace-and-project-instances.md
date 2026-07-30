@@ -134,8 +134,12 @@ databases, roles, catalogs, policies, and changelogs. Existing workspace-level
 Admin and DBA authority continues across both scopes.
 
 Among built-in project roles, only Project Owner receives instance permissions:
-read, create, update, sync, delete, and undelete. Custom project roles may grant
-a narrower subset of the existing `bb.instances.*` permissions.
+`bb.instances.list`, `bb.instances.get`, `bb.instances.create`,
+`bb.instances.update`, `bb.instances.sync`, `bb.instances.delete`, and
+`bb.instances.undelete`. The list permission is evaluated against the exact
+project parent, so it does not expose workspace instances or another project's
+instances. Custom project roles may grant a narrower subset of the existing
+`bb.instances.*` permissions.
 
 For policy types that support parent inheritance, project-instance resources
 follow `project → instance → database`. Existing workspace-wide and environment
