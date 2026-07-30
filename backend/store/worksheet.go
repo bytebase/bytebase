@@ -705,7 +705,7 @@ func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter str
 					if !allowTitleContains {
 						return nil, errors.Errorf("unsupport variable %q", variable)
 					}
-					return qb.Q().Space("LOWER(worksheet.name) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+					return qb.Q().Space("LOWER(worksheet.name) LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(strings.ToLower(strValue))+"%"), nil
 				default:
 					return nil, errors.Errorf("unsupport variable %q", variable)
 				}
@@ -769,6 +769,14 @@ func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter str
 		return nil, err
 	}
 	return qb.Q().Space("(?)", q), nil
+}
+
+func escapeLikePattern(pattern string) string {
+	return strings.NewReplacer(
+		`\`, `\\`,
+		`%`, `\%`,
+		`_`, `\_`,
+	).Replace(pattern)
 }
 
 func GetListWorksheetFilter(filter string) (*qb.Query, error) {

@@ -262,6 +262,8 @@ func TestSearchWorksheetsFilterByTitle(t *testing.T) {
 
 	matchedWorksheet := createWorksheet("Production Payroll Report")
 	unmatchedWorksheet := createWorksheet("Development Scratchpad")
+	percentWorksheet := createWorksheet("Literal 100% match")
+	underscoreWorksheet := createWorksheet("Literal under_score match")
 
 	resp, err := ctl.worksheetServiceClient.SearchWorksheets(ctx, connect.NewRequest(&v1pb.SearchWorksheetsRequest{
 		Parent: ctl.project.Name,
@@ -270,6 +272,20 @@ func TestSearchWorksheetsFilterByTitle(t *testing.T) {
 	a.NoError(err)
 	a.Equal([]string{matchedWorksheet.Name}, worksheetNames(resp.Msg.Worksheets))
 	a.NotContains(worksheetNames(resp.Msg.Worksheets), unmatchedWorksheet.Name)
+
+	percentResp, err := ctl.worksheetServiceClient.SearchWorksheets(ctx, connect.NewRequest(&v1pb.SearchWorksheetsRequest{
+		Parent: ctl.project.Name,
+		Filter: `title.contains("%")`,
+	}))
+	a.NoError(err)
+	a.Equal([]string{percentWorksheet.Name}, worksheetNames(percentResp.Msg.Worksheets))
+
+	underscoreResp, err := ctl.worksheetServiceClient.SearchWorksheets(ctx, connect.NewRequest(&v1pb.SearchWorksheetsRequest{
+		Parent: ctl.project.Name,
+		Filter: `title.contains("_")`,
+	}))
+	a.NoError(err)
+	a.Equal([]string{underscoreWorksheet.Name}, worksheetNames(underscoreResp.Msg.Worksheets))
 
 	_, err = ctl.worksheetServiceClient.SearchWorksheets(ctx, connect.NewRequest(&v1pb.SearchWorksheetsRequest{
 		Parent: ctl.project.Name,
