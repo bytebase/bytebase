@@ -378,6 +378,15 @@ const makeWorksheetNode = (
   },
 });
 
+const makeLoadMoreNode = (key: string): WorksheetFolderNode => ({
+  key,
+  label: "common.load-more",
+  editable: false,
+  isLeaf: true,
+  loadMore: true,
+  children: [],
+});
+
 // The migrated `useSheetContext()` exposes `expandedKeys` / `selectedKeys`
 // as plain values plus setters. We model the live state behind a `value`
 // holder (so the existing per-test assertions like
@@ -707,6 +716,48 @@ describe("SheetTree", () => {
     unmount();
   });
 
+  test("4b. Multi-select folder selection skips load-more nodes", () => {
+    const defaultMocks = setupDefaultMocks();
+    const wsNode = makeWorksheetNode("/my/folder1/ws1");
+    const loadMoreNode = makeLoadMoreNode("/my/folder1/__load-more");
+    const folderNode = makeFolderNode(
+      "/my/folder1",
+      [wsNode, loadMoreNode],
+      true
+    );
+    defaultMocks.viewContext._sheetTree.value = makeFolderNode("/my", [
+      folderNode,
+    ]);
+
+    const onCheckedNodesChange = vi.fn();
+
+    const { container, render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        multiSelectMode={true}
+        checkedNodes={[]}
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={onCheckedNodesChange}
+      />
+    );
+    render();
+
+    const row = container.querySelector(
+      `[data-item-key="/my/folder1"]`
+    ) as HTMLElement | null;
+    const checkbox = row?.querySelector("input[type='checkbox']");
+
+    act(() => {
+      checkbox?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(onCheckedNodesChange).toHaveBeenCalledWith(
+      expect.not.arrayContaining([loadMoreNode])
+    );
+
+    unmount();
+  });
+
   test("5. Right-click → opens context menu with items", () => {
     const defaultMocks = setupDefaultMocks();
     const wsNode = makeWorksheetNode("/my/ws2");
@@ -944,14 +995,7 @@ describe("SheetTree", () => {
 
   test("7c. Load more rows are inert for tree actions", () => {
     const defaultMocks = setupDefaultMocks();
-    const loadMoreNode: WorksheetFolderNode = {
-      key: "/my/__load-more",
-      label: "common.load-more",
-      editable: false,
-      isLeaf: true,
-      loadMore: true,
-      children: [],
-    };
+    const loadMoreNode = makeLoadMoreNode("/my/__load-more");
     const folderNode = makeFolderNode("/my/folder", [], true);
     defaultMocks.viewContext._sheetTree.value = makeFolderNode("/my", [
       folderNode,
@@ -1014,6 +1058,56 @@ describe("SheetTree", () => {
         dragNodes: [{ data: { data: loadMoreNode } }],
       })
     ).toBe(true);
+
+    unmount();
+  });
+
+  test("7d. Add folder ignores load-more nodes when generating a name", async () => {
+    const defaultMocks = setupDefaultMocks();
+    const existingFolder = makeFolderNode("/my/new folder", [], true);
+    const loadMoreNode = makeLoadMoreNode("/my/__load-more");
+    const rootNode = makeFolderNode(
+      "/my",
+      [existingFolder, loadMoreNode],
+      true
+    );
+    defaultMocks.viewContext._sheetTree.value = rootNode;
+
+    mocks.useDropdown.mockReturnValue({
+      currentNode: rootNode,
+      options: [{ type: "item", key: "add-folder", label: "Add folder" }],
+      worksheetEntity: undefined,
+      showSharePanel: false,
+      handleContextMenu: vi.fn(),
+      handleSharePanelShow: vi.fn(),
+      handleClickOutside: vi.fn(),
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={vi.fn()}
+      />
+    );
+    render();
+
+    const addFolderItem = container.querySelector(
+      "[data-testid='dropdown-menu-item']"
+    ) as HTMLElement | null;
+
+    await act(async () => {
+      addFolderItem?.click();
+    });
+
+    expect(defaultMocks.viewContext.folderContext.addFolder).toHaveBeenCalledWith(
+      "/my/new folder2"
+    );
+    expect(defaultMocks.sheetContext.setEditingNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rawLabel: "new folder2",
+      })
+    );
 
     unmount();
   });

@@ -150,7 +150,7 @@ function generateNewFolderName(children: WorksheetFolderNode[]): string {
   let maxNumber = 0;
   for (let i = children.length - 1; i >= 0; i--) {
     const child = children[i];
-    if (child.worksheet) {
+    if (child.worksheet || child.loadMore) {
       continue;
     }
     const match = child.label.match(regex);
@@ -165,6 +165,17 @@ function generateNewFolderName(children: WorksheetFolderNode[]): string {
     }
   }
   return maxNumber === 0 ? baseName : `${baseName}${maxNumber + 1}`;
+}
+
+function selectableNodes(node: WorksheetFolderNode[]): WorksheetFolderNode[];
+function selectableNodes(node: WorksheetFolderNode): WorksheetFolderNode[];
+function selectableNodes(
+  node: WorksheetFolderNode | WorksheetFolderNode[]
+): WorksheetFolderNode[] {
+  if (Array.isArray(node)) {
+    return node.filter((n) => !n.loadMore);
+  }
+  return revealNodes(node, (n) => (n.loadMore ? undefined : n));
 }
 
 function WorksheetTreeLoadMoreButton({
@@ -758,6 +769,9 @@ export function SheetTree({
       const folders: string[] = [];
       const worksheets: string[] = [];
       for (const node of nodes) {
+        if (node.loadMore) {
+          continue;
+        }
         if (node.worksheet) {
           worksheets.push(node.worksheet.name);
           continue;
@@ -871,7 +885,7 @@ export function SheetTree({
           // Guarded — the menu item is only surfaced when the callbacks exist
           // (the "my" tree); the optional-chaining is a belt-and-braces safety.
           onMultiSelectModeChange?.(true);
-          onCheckedNodesChange?.(revealNodes(contextMenuNode, (n) => n));
+          onCheckedNodesChange?.(selectableNodes(contextMenuNode));
           break;
         default:
           break;
@@ -1112,7 +1126,7 @@ export function SheetTree({
                 // users don't have to tick each child individually.
                 const affected = folderNode.worksheet
                   ? [folderNode]
-                  : revealNodes(folderNode, (n) => n);
+                  : selectableNodes(folderNode);
                 if (checked) {
                   const existing = new Set(checkedNodes.map((n) => n.key));
                   onCheckedNodesChange?.([

@@ -773,7 +773,8 @@ const buildTree = (
   view: SheetViewMode,
   parent: WorksheetFolderNode,
   worksheetsByFolder: Map<string, WorksheetLikeItem[]>,
-  hideEmpty: boolean
+  hideEmpty: boolean,
+  includeLoadMore = true
 ): WorksheetFolderNode => {
   const folderContext = getFolderContext(view);
   const subfolders: WorksheetFolderNode[] = folderContext
@@ -788,7 +789,13 @@ const buildTree = (
 
   let empty = true;
   for (const childNode of subfolders) {
-    const subtree = buildTree(view, childNode, worksheetsByFolder, hideEmpty);
+    const subtree = buildTree(
+      view,
+      childNode,
+      worksheetsByFolder,
+      hideEmpty,
+      includeLoadMore
+    );
     if (!subtree.empty || !hideEmpty) {
       parent.children.push(subtree);
     }
@@ -814,7 +821,7 @@ const buildTree = (
   const hasMore = isRoot
     ? !!viewState.nextPageToken
     : viewState.folderNextPageTokens.has(parent.key);
-  if (hasMore) {
+  if (includeLoadMore && hasMore) {
     const loadMoreNode: WorksheetFolderNode = {
       key: `${parent.key}/__load-more`,
       label: i18n.t("common.load-more"),
@@ -1173,7 +1180,7 @@ const buildViewContext = (view: SheetViewMode): ViewContext => {
         ...rootTreeNodeFor(view),
         key: folderContext.rootPath,
       };
-      return buildTree(view, root, new Map(), false);
+      return buildTree(view, root, new Map(), false, false);
     },
     folderContext,
     events: getEvents(view),

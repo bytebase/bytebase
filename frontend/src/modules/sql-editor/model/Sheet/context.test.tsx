@@ -162,6 +162,9 @@ describe("sheet context", () => {
     expect(viewContext!.sheetTree.children.map((child) => child.label)).toContain(
       "common.load-more"
     );
+    expect(viewContext!.folderTree.children.map((child) => child.label)).not.toContain(
+      "common.load-more"
+    );
 
     mocks.addWorksheets([
       create(WorksheetSchema, {
