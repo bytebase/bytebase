@@ -1,17 +1,16 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { head } from "lodash-es";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { sqlServiceClientConnect } from "@/api";
+import { aiServiceClientConnect } from "@/api";
 import {
   getCurrentSQLEditorTab,
   useCurrentSQLEditorTab,
 } from "@/modules/sql-editor/store/tab";
 import {
-  type AICompletionRequest_Message,
-  AICompletionRequest_MessageSchema,
-  AICompletionRequestSchema,
-} from "@/types/proto-es/v1/sql_service_pb";
+  type AIChatMessage,
+  AIChatMessageRole,
+  AIChatMessageSchema,
+} from "@/types/proto-es/v1/ai_service_pb";
 import { nextAnimationFrame } from "@/utils";
 import * as promptUtils from "../logic/prompt";
 import { useConversationStore } from "../store";
@@ -34,7 +33,7 @@ import { PromptInput } from "./PromptInput";
  *      prepend the schema declaration so the model has context. Subsequent
  *      messages use the bare query.
  *   2. Push an AI message in `LOADING` state.
- *   3. Call `sqlServiceClientConnect.aICompletion` with the full history.
+ *   3. Call `aiServiceClientConnect.chat` with the full history.
  *   4. Update the AI message with the response (DONE) or error (FAILED).
  *   5. On FAILED, emit `error` on `aiContextEvents` for the host to
  *      surface (e.g. toast).
@@ -124,20 +123,20 @@ export function ChatPanel() {
         conversation_id: conversation.id,
         status: "LOADING",
       });
-      const messages: AICompletionRequest_Message[] =
-        conversation.messageList.map((message) =>
-          createProto(AICompletionRequest_MessageSchema, {
-            role: message.author === "USER" ? "user" : "assistant",
+      const messages: AIChatMessage[] = conversation.messageList.map(
+        (message) =>
+          createProto(AIChatMessageSchema, {
+            role:
+              message.author === "USER"
+                ? AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_USER
+                : AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_ASSISTANT,
             content: message.prompt,
           })
-        );
+      );
       setLoading(true);
       try {
-        const request = createProto(AICompletionRequestSchema, { messages });
-        const response = await sqlServiceClientConnect.aICompletion(request);
-        const text = head(
-          head(response.candidates)?.content?.parts
-        )?.text?.trim();
+        const response = await aiServiceClientConnect.chat({ messages });
+        const text = response.content?.trim();
         console.debug("[AI Assistant] answer:", text);
         if (text) {
           answer.content = text;

@@ -25,7 +25,6 @@ const (
 	SQLService_ListQueryHistories_FullMethodName   = "/bytebase.v1.SQLService/ListQueryHistories"
 	SQLService_GetQueryHistory_FullMethodName      = "/bytebase.v1.SQLService/GetQueryHistory"
 	SQLService_Export_FullMethodName               = "/bytebase.v1.SQLService/Export"
-	SQLService_AICompletion_FullMethodName         = "/bytebase.v1.SQLService/AICompletion"
 )
 
 // SQLServiceClient is the client API for SQLService service.
@@ -61,9 +60,6 @@ type SQLServiceClient interface {
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
-	// Provides AI-powered SQL completion and generation.
-	// Permissions required: None (authenticated users only, requires AI to be enabled)
-	AICompletion(ctx context.Context, in *AICompletionRequest, opts ...grpc.CallOption) (*AICompletionResponse, error)
 }
 
 type sQLServiceClient struct {
@@ -140,16 +136,6 @@ func (c *sQLServiceClient) Export(ctx context.Context, in *ExportRequest, opts .
 	return out, nil
 }
 
-func (c *sQLServiceClient) AICompletion(ctx context.Context, in *AICompletionRequest, opts ...grpc.CallOption) (*AICompletionResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AICompletionResponse)
-	err := c.cc.Invoke(ctx, SQLService_AICompletion_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // SQLServiceServer is the server API for SQLService service.
 // All implementations must embed UnimplementedSQLServiceServer
 // for forward compatibility.
@@ -183,9 +169,6 @@ type SQLServiceServer interface {
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
-	// Provides AI-powered SQL completion and generation.
-	// Permissions required: None (authenticated users only, requires AI to be enabled)
-	AICompletion(context.Context, *AICompletionRequest) (*AICompletionResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }
 
@@ -213,9 +196,6 @@ func (UnimplementedSQLServiceServer) GetQueryHistory(context.Context, *GetQueryH
 }
 func (UnimplementedSQLServiceServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Export not implemented")
-}
-func (UnimplementedSQLServiceServer) AICompletion(context.Context, *AICompletionRequest) (*AICompletionResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method AICompletion not implemented")
 }
 func (UnimplementedSQLServiceServer) mustEmbedUnimplementedSQLServiceServer() {}
 func (UnimplementedSQLServiceServer) testEmbeddedByValue()                    {}
@@ -335,24 +315,6 @@ func _SQLService_Export_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SQLService_AICompletion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AICompletionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SQLServiceServer).AICompletion(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SQLService_AICompletion_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SQLServiceServer).AICompletion(ctx, req.(*AICompletionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // SQLService_ServiceDesc is the grpc.ServiceDesc for SQLService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -379,10 +341,6 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Export",
 			Handler:    _SQLService_Export_Handler,
-		},
-		{
-			MethodName: "AICompletion",
-			Handler:    _SQLService_AICompletion_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -43,13 +43,23 @@ func (s *AIService) Chat(ctx context.Context, req *connect.Request[v1pb.AIChatRe
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("AI is not enabled"))
 	}
 
+	resp, err := chatWithProvider(ctx, aiSetting, req.Msg)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(resp), nil
+}
+
+// chatWithProvider dispatches a chat request to the configured AI provider.
+// It is shared by the Chat RPC and backend-internal callers such as AI-powered release linting.
+func chatWithProvider(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	switch aiSetting.Provider {
 	case storepb.AISetting_OPEN_AI, storepb.AISetting_AZURE_OPENAI:
-		return s.chatOpenAI(ctx, aiSetting, req.Msg)
+		return chatOpenAI(ctx, aiSetting, request)
 	case storepb.AISetting_GEMINI:
-		return s.chatGemini(ctx, aiSetting, req.Msg)
+		return chatGemini(ctx, aiSetting, request)
 	case storepb.AISetting_CLAUDE:
-		return s.chatClaude(ctx, aiSetting, req.Msg)
+		return chatClaude(ctx, aiSetting, request)
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported AI provider %s", aiSetting.Provider))
 	}
@@ -201,7 +211,7 @@ func extractGeminiThoughtSignatureFromOpenAIToolCall(raw json.RawMessage) string
 	return providerFields.ExtraContent.Google.ThoughtSignature
 }
 
-func (*AIService) chatOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*connect.Response[v1pb.AIChatResponse], error) {
+func chatOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	payload := chatOpenAIRequest{
 		Model: aiSetting.Model,
 	}
@@ -307,7 +317,7 @@ func (*AIService) chatOpenAI(ctx context.Context, aiSetting *storepb.AISetting, 
 			result.ToolCalls = append(result.ToolCalls, toolCall)
 		}
 	}
-	return connect.NewResponse(result), nil
+	return result, nil
 }
 
 // Claude chat types with tool-calling support.
@@ -351,7 +361,7 @@ type chatClaudeResponse struct {
 	Usage   *chatClaudeUsage         `json:"usage,omitempty"`
 }
 
-func (*AIService) chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*connect.Response[v1pb.AIChatResponse], error) {
+func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	payload := chatClaudeRequest{
 		Model:     aiSetting.Model,
 		MaxTokens: 4096,
@@ -472,7 +482,7 @@ func (*AIService) chatClaude(ctx context.Context, aiSetting *storepb.AISetting, 
 	if textContent != "" {
 		result.Content = &textContent
 	}
-	return connect.NewResponse(result), nil
+	return result, nil
 }
 
 // Gemini chat types with tool-calling support.
@@ -537,7 +547,7 @@ func newGeminiToolCallID(name string) string {
 	return fmt.Sprintf("call_%s_%s", name, uuid.NewString())
 }
 
-func (*AIService) chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*connect.Response[v1pb.AIChatResponse], error) {
+func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	payload := chatGeminiRequest{}
 
 	for _, m := range request.Messages {
@@ -677,7 +687,7 @@ func (*AIService) chatGemini(ctx context.Context, aiSetting *storepb.AISetting, 
 			result.Content = &textContent
 		}
 	}
-	return connect.NewResponse(result), nil
+	return result, nil
 }
 
 func newAIChatUsage(totalTokens int32) *v1pb.AIChatUsage {

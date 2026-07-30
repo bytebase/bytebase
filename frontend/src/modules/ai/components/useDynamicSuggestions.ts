@@ -2,15 +2,15 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { head, uniq, values } from "lodash-es";
 import { useMemo, useSyncExternalStore } from "react";
-import { sqlServiceClientConnect } from "@/api";
+import { aiServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
+import {
+  type AIChatMessage,
+  AIChatMessageRole,
+  AIChatMessageSchema,
+} from "@/types/proto-es/v1/ai_service_pb";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
-import {
-  type AICompletionRequest_Message,
-  AICompletionRequest_MessageSchema,
-  AICompletionRequestSchema,
-} from "@/types/proto-es/v1/sql_service_pb";
 import { storageKeyAiSuggestions } from "@/utils";
 import { hashCode } from "@/utils/string";
 import * as promptUtils from "../logic/prompt";
@@ -91,16 +91,32 @@ function patchEntry(metadata: string, patch: Partial<Entry>) {
   emit();
 }
 
-async function requestAI(messages: AICompletionRequest_Message[]) {
+// The model may wrap its JSON reply in a Markdown code fence; strip it before
+// parsing.
+function stripCodeFence(text: string): string {
+  let result = text.trim();
+  if (result.startsWith("```")) {
+    const firstNewline = result.indexOf("\n");
+    result =
+      firstNewline === -1 ? result.slice(3) : result.slice(firstNewline + 1);
+  }
+  if (result.endsWith("```")) {
+    result = result.slice(0, -3);
+  }
+  return result.trim();
+}
+
+async function requestAI(messages: AIChatMessage[]) {
   await new Promise((resolve) => setTimeout(resolve, 1000));
   try {
-    const request = createProto(AICompletionRequestSchema, { messages });
-    // Silent mode avoids error notifications for AI completion failures.
-    const response = await sqlServiceClientConnect.aICompletion(request, {
-      contextValues: createContextValues().set(silentContextKey, true),
-    });
-    const text =
-      head(head(response.candidates)?.content?.parts)?.text?.trim() ?? "";
+    // Silent mode avoids error notifications for AI chat failures.
+    const response = await aiServiceClientConnect.chat(
+      { messages },
+      {
+        contextValues: createContextValues().set(silentContextKey, true),
+      }
+    );
+    const text = stripCodeFence(response.content ?? "");
     const card = JSON.parse(text) as Record<string, string>;
     return values(card ?? {});
   } catch {
@@ -116,13 +132,13 @@ async function fetchSuggestions(metadata: string): Promise<string[]> {
     metadata,
     new Set([...entry.used.values(), ...entry.suggestions])
   );
-  const messages: AICompletionRequest_Message[] = [
-    createProto(AICompletionRequest_MessageSchema, {
-      role: "system",
+  const messages: AIChatMessage[] = [
+    createProto(AIChatMessageSchema, {
+      role: AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_SYSTEM,
       content: command,
     }),
-    createProto(AICompletionRequest_MessageSchema, {
-      role: "user",
+    createProto(AIChatMessageSchema, {
+      role: AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_USER,
       content: prompt,
     }),
   ];

@@ -1099,112 +1099,6 @@ export declare type ExportResponse = Message<"bytebase.v1.ExportResponse"> & {
 export declare const ExportResponseSchema: GenMessage<ExportResponse>;
 
 /**
- * @generated from message bytebase.v1.AICompletionRequest
- */
-export declare type AICompletionRequest = Message<"bytebase.v1.AICompletionRequest"> & {
-  /**
-   * @generated from field: repeated bytebase.v1.AICompletionRequest.Message messages = 1;
-   */
-  messages: AICompletionRequest_Message[];
-};
-
-/**
- * Describes the message bytebase.v1.AICompletionRequest.
- * Use `create(AICompletionRequestSchema)` to create a new message.
- */
-export declare const AICompletionRequestSchema: GenMessage<AICompletionRequest>;
-
-/**
- * @generated from message bytebase.v1.AICompletionRequest.Message
- */
-export declare type AICompletionRequest_Message = Message<"bytebase.v1.AICompletionRequest.Message"> & {
-  /**
-   * @generated from field: string role = 1;
-   */
-  role: string;
-
-  /**
-   * @generated from field: string content = 2;
-   */
-  content: string;
-};
-
-/**
- * Describes the message bytebase.v1.AICompletionRequest.Message.
- * Use `create(AICompletionRequest_MessageSchema)` to create a new message.
- */
-export declare const AICompletionRequest_MessageSchema: GenMessage<AICompletionRequest_Message>;
-
-/**
- * @generated from message bytebase.v1.AICompletionResponse
- */
-export declare type AICompletionResponse = Message<"bytebase.v1.AICompletionResponse"> & {
-  /**
-   * candidates is used for results with multiple choices and candidates. Used
-   * for OpenAI and Gemini.
-   *
-   * @generated from field: repeated bytebase.v1.AICompletionResponse.Candidate candidates = 1;
-   */
-  candidates: AICompletionResponse_Candidate[];
-};
-
-/**
- * Describes the message bytebase.v1.AICompletionResponse.
- * Use `create(AICompletionResponseSchema)` to create a new message.
- */
-export declare const AICompletionResponseSchema: GenMessage<AICompletionResponse>;
-
-/**
- * @generated from message bytebase.v1.AICompletionResponse.Candidate
- */
-export declare type AICompletionResponse_Candidate = Message<"bytebase.v1.AICompletionResponse.Candidate"> & {
-  /**
-   * @generated from field: bytebase.v1.AICompletionResponse.Candidate.Content content = 1;
-   */
-  content?: AICompletionResponse_Candidate_Content | undefined;
-};
-
-/**
- * Describes the message bytebase.v1.AICompletionResponse.Candidate.
- * Use `create(AICompletionResponse_CandidateSchema)` to create a new message.
- */
-export declare const AICompletionResponse_CandidateSchema: GenMessage<AICompletionResponse_Candidate>;
-
-/**
- * @generated from message bytebase.v1.AICompletionResponse.Candidate.Content
- */
-export declare type AICompletionResponse_Candidate_Content = Message<"bytebase.v1.AICompletionResponse.Candidate.Content"> & {
-  /**
-   * parts is used for a result content with multiple parts.
-   *
-   * @generated from field: repeated bytebase.v1.AICompletionResponse.Candidate.Content.Part parts = 1;
-   */
-  parts: AICompletionResponse_Candidate_Content_Part[];
-};
-
-/**
- * Describes the message bytebase.v1.AICompletionResponse.Candidate.Content.
- * Use `create(AICompletionResponse_Candidate_ContentSchema)` to create a new message.
- */
-export declare const AICompletionResponse_Candidate_ContentSchema: GenMessage<AICompletionResponse_Candidate_Content>;
-
-/**
- * @generated from message bytebase.v1.AICompletionResponse.Candidate.Content.Part
- */
-export declare type AICompletionResponse_Candidate_Content_Part = Message<"bytebase.v1.AICompletionResponse.Candidate.Content.Part"> & {
-  /**
-   * @generated from field: string text = 1;
-   */
-  text: string;
-};
-
-/**
- * Describes the message bytebase.v1.AICompletionResponse.Candidate.Content.Part.
- * Use `create(AICompletionResponse_Candidate_Content_PartSchema)` to create a new message.
- */
-export declare const AICompletionResponse_Candidate_Content_PartSchema: GenMessage<AICompletionResponse_Candidate_Content_Part>;
-
-/**
  * SQLService executes SQL queries and manages query operations.
  *
  * @generated from service bytebase.v1.SQLService
@@ -1284,17 +1178,6 @@ export declare const SQLService: GenService<{
     methodKind: "unary";
     input: typeof ExportRequestSchema;
     output: typeof ExportResponseSchema;
-  },
-  /**
-   * Provides AI-powered SQL completion and generation.
-   * Permissions required: None (authenticated users only, requires AI to be enabled)
-   *
-   * @generated from rpc bytebase.v1.SQLService.AICompletion
-   */
-  aICompletion: {
-    methodKind: "unary";
-    input: typeof AICompletionRequestSchema;
-    output: typeof AICompletionResponseSchema;
   },
 }>;
 

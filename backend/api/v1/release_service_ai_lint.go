@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -53,58 +53,23 @@ func (s *ReleaseService) runAIPoweredLintBatch(ctx context.Context, files []file
 	prompt := buildBatchLintPrompt(files, customRules)
 	slog.Debug("AI batch prompt built", "promptLength", len(prompt))
 
-	// Call AI using the existing AICompletion infrastructure
-	request := &v1pb.AICompletionRequest{
-		Messages: []*v1pb.AICompletionRequest_Message{
+	// Call AI through the shared chat provider dispatch.
+	request := &v1pb.AIChatRequest{
+		Messages: []*v1pb.AIChatMessage{
 			{
-				Role:    "user",
-				Content: prompt,
+				Role:    v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER,
+				Content: &prompt,
 			},
 		},
 	}
 
-	var responseText string
-	switch aiSetting.Provider {
-	case storepb.AISetting_OPEN_AI, storepb.AISetting_AZURE_OPENAI:
-		slog.Info("Calling OpenAI for batch schema linting", "endpoint", aiSetting.Endpoint, "filesCount", len(files))
-		resp, err := callOpenAI(ctx, aiSetting, request)
-		if err != nil {
-			slog.Error("OpenAI call failed", "error", err)
-			return nil, errors.Wrap(err, "OpenAI API call failed")
-		}
-		slog.Info("OpenAI call successful", "candidatesCount", len(resp.Msg.Candidates))
-		if len(resp.Msg.Candidates) > 0 && len(resp.Msg.Candidates[0].Content.Parts) > 0 {
-			responseText = resp.Msg.Candidates[0].Content.Parts[0].Text
-			slog.Debug("OpenAI response received", "responseLength", len(responseText))
-		}
-	case storepb.AISetting_GEMINI:
-		slog.Info("Calling Gemini for batch schema linting", "endpoint", aiSetting.Endpoint, "filesCount", len(files))
-		resp, err := callGemini(ctx, aiSetting, request)
-		if err != nil {
-			slog.Error("Gemini call failed", "error", err)
-			return nil, errors.Wrap(err, "Gemini API call failed")
-		}
-		slog.Info("Gemini call successful", "candidatesCount", len(resp.Msg.Candidates))
-		if len(resp.Msg.Candidates) > 0 && len(resp.Msg.Candidates[0].Content.Parts) > 0 {
-			responseText = resp.Msg.Candidates[0].Content.Parts[0].Text
-			slog.Debug("Gemini response received", "responseLength", len(responseText))
-		}
-	case storepb.AISetting_CLAUDE:
-		slog.Info("Calling Claude for batch schema linting", "endpoint", aiSetting.Endpoint, "filesCount", len(files))
-		resp, err := callClaude(ctx, aiSetting, request)
-		if err != nil {
-			slog.Error("Claude call failed", "error", err)
-			return nil, errors.Wrap(err, "Claude API call failed")
-		}
-		slog.Info("Claude call successful", "candidatesCount", len(resp.Msg.Candidates))
-		if len(resp.Msg.Candidates) > 0 && len(resp.Msg.Candidates[0].Content.Parts) > 0 {
-			responseText = resp.Msg.Candidates[0].Content.Parts[0].Text
-			slog.Debug("Claude response received", "responseLength", len(responseText))
-		}
-	default:
-		slog.Error("Unsupported AI provider", "provider", aiSetting.Provider)
-		return nil, errors.Errorf("unsupported AI provider %s", aiSetting.Provider)
+	slog.Info("Calling AI provider for batch schema linting", "provider", aiSetting.Provider, "endpoint", aiSetting.Endpoint, "filesCount", len(files))
+	resp, err := chatWithProvider(ctx, aiSetting, request)
+	if err != nil {
+		slog.Error("AI call failed", "provider", aiSetting.Provider, "error", err)
+		return nil, errors.Wrapf(err, "%s API call failed", aiSetting.Provider)
 	}
+	responseText := resp.GetContent()
 
 	if responseText == "" {
 		slog.Warn("AI returned empty response")
@@ -162,10 +127,24 @@ Only return the JSON array, no other text.`
 	return prompt
 }
 
+// stripCodeFence removes a wrapping Markdown code fence (```lang ... ```) if present.
+func stripCodeFence(text string) string {
+	text = strings.TrimSpace(text)
+	if strings.HasPrefix(text, "```") {
+		if idx := strings.Index(text, "\n"); idx != -1 {
+			text = text[idx+1:]
+		} else {
+			text = strings.TrimPrefix(text, "```")
+		}
+	}
+	text = strings.TrimSuffix(strings.TrimSpace(text), "```")
+	return strings.TrimSpace(text)
+}
+
 // parseBatchAILintResponse parses the batch AI response text into a map of file -> Advice messages.
 func parseBatchAILintResponse(responseText string, files []fileSchema) (map[string][]*v1pb.Advice, error) {
 	var results []aiLintResult
-	if err := json.Unmarshal([]byte(responseText), &results); err != nil {
+	if err := json.Unmarshal([]byte(stripCodeFence(responseText)), &results); err != nil {
 		return nil, errors.Wrap(err, "failed to parse AI lint response")
 	}
 

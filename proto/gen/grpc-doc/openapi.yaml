@@ -13696,28 +13696,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Setting'
-  /v1/sql/aiCompletion:
-    post:
-      tags:
-        - SQLService
-      summary: AICompletion
-      description: |-
-        Provides AI-powered SQL completion and generation.
-         Permissions required: None (authenticated users only, requires AI to be enabled)
-      operationId: SQLService_AICompletion
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.AICompletionRequest'
-        required: true
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.AICompletionResponse'
   /v1/subscription:
     get:
       tags:
@@ -15923,67 +15901,6 @@ components:
       title: AIChatUsage
       additionalProperties: false
       description: Token usage for a single AI provider call.
-    bytebase.v1.AICompletionRequest:
-      type: object
-      properties:
-        messages:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.AICompletionRequest.Message'
-          title: messages
-      title: AICompletionRequest
-      additionalProperties: false
-    bytebase.v1.AICompletionRequest.Message:
-      type: object
-      properties:
-        role:
-          type: string
-          title: role
-        content:
-          type: string
-          title: content
-      title: Message
-      additionalProperties: false
-    bytebase.v1.AICompletionResponse:
-      type: object
-      properties:
-        candidates:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.AICompletionResponse.Candidate'
-          title: candidates
-          description: |-
-            candidates is used for results with multiple choices and candidates. Used
-             for OpenAI and Gemini.
-      title: AICompletionResponse
-      additionalProperties: false
-    bytebase.v1.AICompletionResponse.Candidate:
-      type: object
-      properties:
-        content:
-          title: content
-          $ref: '#/components/schemas/bytebase.v1.AICompletionResponse.Candidate.Content'
-      title: Candidate
-      additionalProperties: false
-    bytebase.v1.AICompletionResponse.Candidate.Content:
-      type: object
-      properties:
-        parts:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.AICompletionResponse.Candidate.Content.Part'
-          title: parts
-          description: parts is used for a result content with multiple parts.
-      title: Content
-      additionalProperties: false
-    bytebase.v1.AICompletionResponse.Candidate.Content.Part:
-      type: object
-      properties:
-        text:
-          type: string
-          title: text
-      title: Part
-      additionalProperties: false
     bytebase.v1.AISetting:
       type: object
       properties:
