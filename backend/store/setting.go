@@ -237,7 +237,13 @@ type FindSettingMessage struct {
 
 // GetSetting returns the setting by name.
 func (s *Store) GetSetting(ctx context.Context, workspace string, name storepb.SettingName) (*SettingMessage, error) {
-	if v, ok := s.settingCache.Get(getSettingCacheKey(workspace, name)); ok && s.enableCache {
+	// With caching disabled (HA), every read goes straight to the database:
+	// there is no cache to fill, and taking the publish mutex here would
+	// serialize all setting reads in the process behind a single lock.
+	if !s.enableCache {
+		return s.GetSettingUncached(ctx, workspace, name)
+	}
+	if v, ok := s.settingCache.Get(getSettingCacheKey(workspace, name)); ok {
 		return v, nil
 	}
 	// Fill the cache under the publish mutex so the fill's content is current
@@ -470,6 +476,9 @@ func (s *Store) UpsertSetting(ctx context.Context, update *SettingMessage) (*Set
 	}
 	setting.Value = msg
 
+	if !s.enableCache {
+		return &setting, nil
+	}
 	// Publish under the ordering mutex with content re-read from the
 	// database: this statement committed on its own, so by the time the mutex
 	// is acquired a later update may already have committed and published —
@@ -498,6 +507,11 @@ func (s *Store) DeleteSetting(ctx context.Context, workspace string, name storep
 		return err
 	}
 
+	// Invalidate under the ordering mutex: a cache-miss fill reads and
+	// publishes atomically under the same mutex, so once serialized against
+	// it, a fill can no longer resurrect the deleted row.
+	s.settingPublishMu.Lock()
+	defer s.settingPublishMu.Unlock()
 	s.settingCache.Remove(getSettingCacheKey(workspace, name))
 	return nil
 }

@@ -25,6 +25,11 @@ import (
 // pin that the cache reflects committed state.
 func newSettingAtomicFixture(t *testing.T) (context.Context, *sql.DB, *store.Store) {
 	t.Helper()
+	return newSettingAtomicFixtureWithCache(t, true)
+}
+
+func newSettingAtomicFixtureWithCache(t *testing.T, enableCache bool) (context.Context, *sql.DB, *store.Store) {
+	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	t.Cleanup(cancel)
 	container := testcontainer.GetTestPgContainer(ctx, t)
@@ -39,7 +44,7 @@ func newSettingAtomicFixture(t *testing.T) (context.Context, *sql.DB, *store.Sto
 		"host=%s port=%s user=postgres password=root-password database=postgres",
 		container.GetHost(), container.GetPort(),
 	)
-	s, err := store.New(ctx, pgURL, true /* enableCache */)
+	s, err := store.New(ctx, pgURL, enableCache)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, s.Close()) })
 
@@ -320,4 +325,67 @@ func TestSettingCacheNoFillFromUncachedReads(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, mustProfile(t, cached).EnableMetricCollection,
 		"GetSetting must not serve a snapshot cached by an uncached read")
+}
+
+// TestGetSettingCacheDisabledNotSerialized pins the HA read path: with the
+// cache disabled (store.New(..., !profile.HA)), GetSetting must go straight to
+// the database and never touch the publish-ordering mutex — otherwise every
+// setting read in an HA process serializes behind a single lock, including
+// while a writer sits in its commit-to-publish window.
+func TestGetSettingCacheDisabledNotSerialized(t *testing.T) {
+	ctx, _, s := newSettingAtomicFixtureWithCache(t, false)
+
+	pause := make(chan struct{})
+	resume := make(chan struct{})
+	var first atomic.Bool
+	s.SetSettingPublishHookForTest(func() {
+		if first.CompareAndSwap(false, true) {
+			close(pause)
+			<-resume
+		}
+	})
+
+	writerResult := make(chan error, 1)
+	go func() {
+		_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
+			func(current proto.Message) (proto.Message, error) {
+				profile, ok := current.(*storepb.WorkspaceProfileSetting)
+				if !ok {
+					return nil, errors.Errorf("unexpected type %T", current)
+				}
+				profile.EnableMetricCollection = true
+				return profile, nil
+			}, nil)
+		writerResult <- err
+	}()
+	select {
+	case <-pause:
+	case <-time.After(15 * time.Second):
+		t.Fatal("writer never reached the publish window")
+	}
+
+	// The writer holds the publish mutex; a cache-disabled read must still
+	// complete (it reads committed state and consults no cache).
+	readResult := make(chan error, 1)
+	go func() {
+		setting, err := s.GetSetting(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
+		if err == nil && !mustProfile(t, setting).EnableMetricCollection {
+			err = errors.New("read did not observe the committed value")
+		}
+		readResult <- err
+	}()
+	select {
+	case err := <-readResult:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("cache-disabled GetSetting blocked behind the publish mutex")
+	}
+
+	close(resume)
+	select {
+	case err := <-writerResult:
+		require.NoError(t, err)
+	case <-time.After(15 * time.Second):
+		t.Fatal("writer did not complete")
+	}
 }

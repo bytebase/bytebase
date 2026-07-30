@@ -131,7 +131,11 @@ func (s *Store) GetDB() *sql.DB {
 
 // DeleteCache deletes the cache.
 func (s *Store) DeleteCache() {
+	// The setting cache purge participates in the publish-ordering invariant
+	// so an in-flight fill cannot republish a just-purged snapshot.
+	s.settingPublishMu.Lock()
 	s.settingCache.Purge()
+	s.settingPublishMu.Unlock()
 	s.policyCache.Purge()
 	s.userEmailCache.Purge()
 }

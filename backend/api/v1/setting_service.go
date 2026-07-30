@@ -599,9 +599,10 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_WORKSPACE_PROFILE))
 		}
-		// The uncached read still lands in the setting cache (ListSettings
-		// caches what it returns), so validate against a clone: a
-		// validate-only request must never alter the served in-memory state.
+		// GetSettingUncached returns a fresh object today (uncached reads no
+		// longer populate the cache), but validate against a clone anyway so
+		// a validate-only request can never mutate shared state should the
+		// read path change.
 		if _, err := apply(proto.CloneOf(profileValue)); err != nil {
 			return nil, err
 		}
