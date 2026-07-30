@@ -307,11 +307,11 @@ func parseVersion(version string) (string, string, error) {
 	return "", "", errors.Errorf("failed to parse version %q", version)
 }
 
+// buildExecuteCommands splits the statement into single commands.
+// Commands are never merged back into one: a merged sheet is sent as a single
+// COM_QUERY whose size equals the sheet size, tripping max_allowed_packet on
+// large DML, and it collapses per-statement execution logging.
 func buildExecuteCommands(statement string) ([]base.Statement, error) {
-	if len(statement) > common.MaxSheetCheckSize {
-		return []base.Statement{{Text: statement}}, nil
-	}
-
 	commands, err := mysqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split sql")
@@ -319,9 +319,6 @@ func buildExecuteCommands(statement string) ([]base.Statement, error) {
 	commands = base.FilterEmptyStatements(commands)
 	if len(commands) == 0 {
 		return nil, nil
-	}
-	if len(commands) > common.MaximumCommands {
-		return []base.Statement{{Text: statement}}, nil
 	}
 
 	return commands, nil

@@ -1,6 +1,7 @@
 package tidb
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -109,7 +110,7 @@ func TestBuildExecuteCommandsNormalizesDelimiter(t *testing.T) {
 	require.Contains(t, commands[0].Text, "CREATE PROCEDURE p()\nBEGIN\n  SELECT 1;\nEND")
 }
 
-func TestBuildExecuteCommandsDoesNotNormalizeDelimiterForTooManyCommands(t *testing.T) {
+func TestBuildExecuteCommandsNormalizesDelimiterForManyCommands(t *testing.T) {
 	var statement strings.Builder
 	statement.WriteString("DELIMITER //\n")
 	statement.WriteString("CREATE PROCEDURE p()\nBEGIN\n  SELECT 1;\nEND//\n")
@@ -121,16 +122,39 @@ func TestBuildExecuteCommandsDoesNotNormalizeDelimiterForTooManyCommands(t *test
 
 	commands, err := buildExecuteCommands(statement.String())
 	require.NoError(t, err)
-	require.Len(t, commands, 1)
-	require.Equal(t, statement.String(), commands[0].Text)
+	require.Greater(t, len(commands), common.MaximumCommands)
+	require.Contains(t, commands[0].Text, "CREATE PROCEDURE p()\nBEGIN\n  SELECT 1;\nEND")
+	for _, command := range commands {
+		require.NotContains(t, command.Text, "DELIMITER")
+	}
 }
 
-func TestBuildExecuteCommandsDoesNotNormalizeDelimiterForLargeSheet(t *testing.T) {
+func TestBuildExecuteCommandsNormalizesDelimiterForLargeSheet(t *testing.T) {
 	statement := "DELIMITER //\nCREATE PROCEDURE p()\nBEGIN\n  SELECT 1;\nEND//\nDELIMITER ;\n" +
 		strings.Repeat(" ", common.MaxSheetCheckSize)
 
 	commands, err := buildExecuteCommands(statement)
 	require.NoError(t, err)
 	require.Len(t, commands, 1)
-	require.Equal(t, statement, commands[0].Text)
+	require.NotContains(t, commands[0].Text, "DELIMITER")
+	require.Contains(t, commands[0].Text, "CREATE PROCEDURE p()\nBEGIN\n  SELECT 1;\nEND")
+}
+
+// A sheet over MaxSheetCheckSize used to be sent as one multi-statement packet,
+// which trips the max_allowed_packet limit with error 1153 on large DML backfills.
+func TestBuildExecuteCommandsSplitsOversizedSheet(t *testing.T) {
+	const statementCount = 1800
+	var statement strings.Builder
+	payload := strings.Repeat("x", 5000)
+	for i := 0; i < statementCount; i++ {
+		fmt.Fprintf(&statement, "INSERT INTO t (id, v) VALUES (%d, '%s');\n", i, payload)
+	}
+	require.Greater(t, statement.Len(), common.MaxSheetCheckSize)
+
+	commands, err := buildExecuteCommands(statement.String())
+	require.NoError(t, err)
+	require.Len(t, commands, statementCount)
+	for _, command := range commands {
+		require.Less(t, len(command.Text), common.MaxSheetCheckSize)
+	}
 }
