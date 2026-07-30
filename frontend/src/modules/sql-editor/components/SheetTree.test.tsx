@@ -39,6 +39,11 @@ const mocks = vi.hoisted(() => ({
   useDropdown: vi.fn(),
   openWorksheetByName: vi.fn(),
   pushNotification: vi.fn(),
+  treeProps: {} as {
+    disableDrag?: unknown;
+    disableDrop?: unknown;
+    onMove?: unknown;
+  },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -131,11 +136,18 @@ vi.mock("@/components/ui/tree", () => ({
     data,
     renderNode,
     className,
+    disableDrag,
+    disableDrop,
+    onMove,
   }: {
     data: MockTreeItem[];
     renderNode: (args: MockRenderArgs) => React.ReactNode;
     className?: string;
+    disableDrag?: unknown;
+    disableDrop?: unknown;
+    onMove?: unknown;
   }) => {
+    mocks.treeProps = { disableDrag, disableDrop, onMove };
     const renderAll = (items: MockTreeItem[]): React.ReactNode[] =>
       items.flatMap((item) => [
         renderNode({
@@ -892,6 +904,82 @@ describe("SheetTree", () => {
     expect(defaultMocks.viewContext.fetchNextPage).toHaveBeenCalledWith(
       "/my/alpha"
     );
+
+    unmount();
+  });
+
+  test("7c. Load more rows are inert for tree actions", () => {
+    const defaultMocks = setupDefaultMocks();
+    const loadMoreNode: WorksheetFolderNode = {
+      key: "/my/__load-more",
+      label: "common.load-more",
+      editable: false,
+      isLeaf: true,
+      loadMore: true,
+      children: [],
+    };
+    const folderNode = makeFolderNode("/my/folder", [], true);
+    defaultMocks.viewContext._sheetTree.value = makeFolderNode("/my", [
+      folderNode,
+      loadMoreNode,
+    ]);
+
+    const handleContextMenu = vi.fn();
+    mocks.useDropdown.mockReturnValue({
+      currentNode: undefined,
+      options: [],
+      worksheetEntity: undefined,
+      showSharePanel: false,
+      handleContextMenu,
+      handleSharePanelShow: vi.fn(),
+      handleClickOutside: vi.fn(),
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={vi.fn()}
+      />
+    );
+    render();
+
+    const loadMoreRow = container.querySelector(
+      `[data-item-key="/my/__load-more"]`
+    ) as HTMLElement | null;
+    expect(loadMoreRow).not.toBeNull();
+
+    act(() => {
+      loadMoreRow?.dispatchEvent(
+        new MouseEvent("contextmenu", { bubbles: true })
+      );
+    });
+    expect(handleContextMenu).not.toHaveBeenCalled();
+
+    const disableDrag = mocks.treeProps.disableDrag as
+      | ((data: { data: WorksheetFolderNode }) => boolean)
+      | undefined;
+    expect(disableDrag?.({ data: loadMoreNode })).toBe(true);
+    expect(disableDrag?.({ data: folderNode })).toBe(false);
+
+    const disableDrop = mocks.treeProps.disableDrop as
+      | ((args: {
+          parentNode?: { data: { data: WorksheetFolderNode } } | null;
+          dragNodes: { data: { data: WorksheetFolderNode } }[];
+        }) => boolean)
+      | undefined;
+    expect(
+      disableDrop?.({
+        parentNode: { data: { data: loadMoreNode } },
+        dragNodes: [{ data: { data: folderNode } }],
+      })
+    ).toBe(true);
+    expect(
+      disableDrop?.({
+        parentNode: { data: { data: folderNode } },
+        dragNodes: [{ data: { data: loadMoreNode } }],
+      })
+    ).toBe(true);
 
     unmount();
   });

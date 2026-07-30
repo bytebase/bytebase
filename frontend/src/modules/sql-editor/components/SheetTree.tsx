@@ -930,7 +930,7 @@ export function SheetTree({
             parentFolderNode = candidate;
           }
         }
-        if (!parentFolderNode) return;
+        if (!parentFolderNode || parentFolderNode.loadMore) return;
 
         // Only handle single drag (matches Vue behaviour)
         const draggedTreeNode = dragNodes[0] as
@@ -939,6 +939,7 @@ export function SheetTree({
         if (!draggedTreeNode) return;
 
         const draggedNode = draggedTreeNode.data.data;
+        if (draggedNode.loadMore) return;
         const oldParentNode = findParentNode(sheetTree, draggedNode.key);
         if (!oldParentNode) return;
 
@@ -1049,7 +1050,7 @@ export function SheetTree({
       return (
         <div
           key={folderNode.key}
-          ref={dragHandle}
+          ref={folderNode.loadMore ? undefined : dragHandle}
           style={rowStyle}
           data-item-key={folderNode.key}
           className={cn(
@@ -1071,6 +1072,7 @@ export function SheetTree({
           onContextMenu={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (folderNode.loadMore) return;
             openMenuAtPoint(e.clientX, e.clientY, folderNode);
           }}
         >
@@ -1509,11 +1511,18 @@ export function SheetTree({
             : "[&_[role=treeitem]]:overflow-hidden"
         )}
         onMove={handleMove}
-        disableDrag={view === "draft" || !!editingNode || multiSelectMode}
+        disableDrag={
+          view === "draft" || !!editingNode || multiSelectMode
+            ? true
+            : ({ data }) => !!data.loadMore
+        }
         disableDrop={
           view === "draft" || !!editingNode || multiSelectMode
             ? true
-            : ({ parentNode: p }) => !!p?.data.data.worksheet
+            : ({ parentNode: p, dragNodes }) =>
+                !!p?.data.data.worksheet ||
+                !!p?.data.data.loadMore ||
+                dragNodes.some((node) => !!node.data.data.loadMore)
         }
       />
 
