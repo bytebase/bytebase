@@ -110,23 +110,24 @@ test.describe("Gutter tab switching (H4)", () => {
   });
 });
 
-test.describe("Gutter logo opens in a new tab (H5)", () => {
-  test("logo anchor has target=_blank and rel=noopener noreferrer", async () => {
+test.describe("Header logo links to the workspace landing (H5)", () => {
+  test("logo is an in-app link to the landing page, not a new-tab external anchor", async () => {
     const projectId = env.project.split("/").pop()!;
     await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
 
-    // The gutter logo is the only <img alt="Bytebase"> on the page;
-    // walk up to its anchor parent.
+    // The route-ownership refactor moved the logo into the shared SQL Editor
+    // header (SQLEditorHeader → BytebaseLogo) and made it an in-app RouterLink
+    // to the workspace landing route — no longer an external new-tab anchor.
+    // It's the only <img alt="Bytebase"> on the page; walk up to its <a>.
     const logoAnchor = page
       .locator("a")
       .filter({ has: page.locator('img[alt="Bytebase"]') })
       .first();
     await expect(logoAnchor).toBeVisible({ timeout: 10_000 });
-    await expect(logoAnchor).toHaveAttribute("target", "_blank");
-    await expect(logoAnchor).toHaveAttribute(
-      "rel",
-      /noopener.*noreferrer|noreferrer.*noopener/,
-    );
+    // Internal SPA navigation: a relative href to the landing route, and NOT a
+    // new-tab link.
+    await expect(logoAnchor).toHaveAttribute("href", /\/landing/);
+    await expect(logoAnchor).not.toHaveAttribute("target", "_blank");
   });
 });
 
