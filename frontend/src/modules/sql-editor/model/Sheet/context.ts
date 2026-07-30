@@ -181,7 +181,8 @@ interface SheetContextState {
   moveViewFolderPageState: (
     view: SheetViewMode,
     fromPath: string,
-    toPath: string
+    toPath: string,
+    merge: boolean
   ) => void;
   /** Replace the entire state (used by project / user-scope reload). */
   hydrate: (next: Partial<SheetContextState>) => void;
@@ -321,7 +322,7 @@ const useSheetContextStore: UseBoundStore<StoreApi<SheetContextState>> =
           s.viewStates[view].fetchedFolderKeys.add(folderKey);
         });
       },
-      moveViewFolderPageState(view, fromPath, toPath) {
+      moveViewFolderPageState(view, fromPath, toPath, merge) {
         const moveKey = (key: string) => {
           if (key === fromPath) return toPath;
           if (isSubFolder({ parent: fromPath, path: key, dig: true })) {
@@ -331,6 +332,29 @@ const useSheetContextStore: UseBoundStore<StoreApi<SheetContextState>> =
         };
         set((s) => {
           const viewState = s.viewStates[view];
+          if (merge) {
+            const shouldInvalidate = (key: string) =>
+              key === fromPath ||
+              key === toPath ||
+              isSubFolder({ parent: fromPath, path: key, dig: true }) ||
+              isSubFolder({ parent: toPath, path: key, dig: true });
+            viewState.folderNextPageTokens = new Map(
+              [...viewState.folderNextPageTokens.entries()].filter(
+                ([key]) => !shouldInvalidate(key)
+              )
+            );
+            viewState.fetchingFolderKeys = new Set(
+              [...viewState.fetchingFolderKeys].filter(
+                (key) => !shouldInvalidate(key)
+              )
+            );
+            viewState.fetchedFolderKeys = new Set(
+              [...viewState.fetchedFolderKeys].filter(
+                (key) => !shouldInvalidate(key)
+              )
+            );
+            return;
+          }
           viewState.folderNextPageTokens = new Map(
             [...viewState.folderNextPageTokens.entries()].map(
               ([key, token]) => [moveKey(key), token]
@@ -641,6 +665,7 @@ const buildFolderContext = (view: SheetViewMode): FolderContext => {
       const fromPath = ensureFolderPath(view, from);
       const toPath = ensureFolderPath(view, to);
       const current = useSheetContextStore.getState().viewStates[view].folders;
+      const merge = current.includes(toPath);
       const next = current.map((path) => {
         if (path === fromPath) return toPath;
         if (isSubFolder({ parent: fromPath, path, dig: true })) {
@@ -652,7 +677,7 @@ const buildFolderContext = (view: SheetViewMode): FolderContext => {
       useSheetContextStore.getState().setViewFolders(view, deduped);
       useSheetContextStore
         .getState()
-        .moveViewFolderPageState(view, fromPath, toPath);
+        .moveViewFolderPageState(view, fromPath, toPath, merge);
       movePersistedFolder(view, fromPath, toPath);
     },
     mergeFolders(paths) {

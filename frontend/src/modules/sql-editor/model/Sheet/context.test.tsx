@@ -533,6 +533,58 @@ describe("sheet context", () => {
     expect(viewContext!.hasMoreForFolder("/my/alpha/child")).toBe(false);
   });
 
+  test("invalidates folder pagination state when merging folders", async () => {
+    const { provideSheetContext, useSheetContextByView } = await import(
+      "./context"
+    );
+    let viewContext: ReturnType<typeof useSheetContextByView> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      viewContext = useSheetContextByView("my");
+      return null;
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+    await act(async () => {
+      await viewContext!.fetchSheetList();
+    });
+
+    viewContext!.folderContext.addFolder("/my/beta");
+
+    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => {
+      const worksheet = create(WorksheetSchema, {
+        name: "projects/proj1/worksheets/3",
+        project: "projects/proj1",
+        creator: "users/creator@example.com",
+        title: "Alpha worksheet",
+        folders: ["alpha"],
+        visibility: Worksheet_Visibility.PRIVATE,
+      });
+      mocks.addWorksheets([worksheet]);
+      return {
+        worksheets: [worksheet],
+        nextPageToken: "alpha-next",
+      };
+    });
+    await act(async () => {
+      await viewContext!.fetchWorksheetsByFolder("/my/alpha");
+    });
+
+    expect(viewContext!.hasMoreForFolder("/my/alpha")).toBe(true);
+
+    act(() => {
+      viewContext!.folderContext.moveFolder("/my/alpha", "/my/beta");
+      viewContext!.rebuildTree();
+    });
+
+    expect(viewContext!.hasMoreForFolder("/my/beta")).toBe(false);
+    expect(viewContext!.hasMoreForFolder("/my/alpha")).toBe(false);
+  });
+
   test("batch updates worksheet folders with one name filter per target folder", async () => {
     const { provideSheetContext, useSheetContext } = await import("./context");
     let sheetContext: ReturnType<typeof useSheetContext> | undefined;
