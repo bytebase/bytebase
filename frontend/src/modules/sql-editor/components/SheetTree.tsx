@@ -63,6 +63,7 @@ import {
   useSheetContext,
   useSheetContextByView,
   type WorksheetFolderNode,
+  type WorksheetFolderPathUpdate,
 } from "@/modules/sql-editor/model/Sheet";
 import { useSQLEditorStore as useSQLEditorReactStore } from "@/modules/sql-editor/store";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
@@ -166,6 +167,24 @@ function generateNewFolderName(children: WorksheetFolderNode[]): string {
   return maxNumber === 0 ? baseName : `${baseName}${maxNumber + 1}`;
 }
 
+function WorksheetTreeLoadMoreButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="tree-label min-w-0 flex-1 cursor-pointer truncate text-left text-xs font-medium text-control"
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -190,17 +209,17 @@ export function SheetTree({
     expandedKeys,
     editingNode,
     batchUpdateWorksheetFolders,
+    batchUpdateWorksheetFolderPaths,
     setExpandedKeys,
     setEditingNode,
   } = useSheetContext();
   const {
     isInitialized,
     isLoading,
-    hasMore,
-    isFetchingNextPage,
     sheetTree,
     fetchSheetList,
     fetchNextPage,
+    fetchWorksheetsByFolder,
     folderContext,
     getFoldersForWorksheet,
     events,
@@ -359,9 +378,42 @@ export function SheetTree({
     [sheetTree, expandedKeysArray, worksheetFilter.keyword, nodeMatches]
   );
 
+  useEffect(() => {
+    if (view === "draft" || !isInitialized || isLoading) return;
+    const expandedKeySet = new Set(expandedKeysArray);
+    for (const node of revealNodes(sheetTree, (node) => node)) {
+      if (
+        node.worksheet ||
+        !node.empty ||
+        node.key === folderContext.rootPath ||
+        !expandedKeySet.has(node.key)
+      ) {
+        continue;
+      }
+      void fetchWorksheetsByFolder(node.key);
+    }
+  }, [
+    expandedKeysArray,
+    fetchWorksheetsByFolder,
+    folderContext.rootPath,
+    isInitialized,
+    isLoading,
+    sheetTree,
+    view,
+  ]);
+
   // ---- Expand/collapse toggle -----------------------------------------------
   const handleToggleExpand = useCallback(
     (node: WorksheetFolderNode) => {
+      const isOpening = !expandedKeysArray.includes(node.key);
+      if (
+        isOpening &&
+        !node.worksheet &&
+        node.empty &&
+        node.key !== folderContext.rootPath
+      ) {
+        void fetchWorksheetsByFolder(node.key);
+      }
       setExpandedKeys((prev) => {
         const next = new Set(prev);
         if (next.has(node.key)) {
@@ -372,7 +424,12 @@ export function SheetTree({
         return next;
       });
     },
-    [setExpandedKeys]
+    [
+      expandedKeysArray,
+      fetchWorksheetsByFolder,
+      folderContext.rootPath,
+      setExpandedKeys,
+    ]
   );
 
   // ---- Helpers: folder/tree operations ------------------------------------
@@ -434,6 +491,38 @@ export function SheetTree({
       await batchUpdateWorksheetFolders(worksheets);
     },
     [batchUpdateWorksheetFolders, getFoldersForWorksheet]
+  );
+
+  const collectFolderKeys = useCallback(
+    (folderKey: string): string[] => [
+      folderKey,
+      ...folderContext
+        .listSubFolders(folderKey)
+        .flatMap((child) => collectFolderKeys(child)),
+    ],
+    [folderContext]
+  );
+
+  const updateFolderFolders = useCallback(
+    async (oldKey: string, newKey: string) => {
+      const updates = collectFolderKeys(oldKey).map<WorksheetFolderPathUpdate>(
+        (sourceKey) => ({
+          sourceFolder: getFoldersForWorksheet(sourceKey),
+          targetFolder: getFoldersForWorksheet(
+            sourceKey === oldKey
+              ? newKey
+              : sourceKey.replace(`${oldKey}/`, `${newKey}/`)
+          ),
+        })
+      );
+      await batchUpdateWorksheetFolderPaths(view, updates);
+    },
+    [
+      batchUpdateWorksheetFolderPaths,
+      collectFolderKeys,
+      getFoldersForWorksheet,
+      view,
+    ]
   );
 
   // ---- Delete helpers -------------------------------------------------------
@@ -525,11 +614,7 @@ export function SheetTree({
             resolve: (merge) => {
               if (merge) {
                 void (async () => {
-                  await updateWorksheetFolders(
-                    editing.node,
-                    editing.node.key,
-                    newKey
-                  );
+                  await updateFolderFolders(editing.node.key, newKey);
                   replaceExpandedKeys({ oldKey: editing.node.key, newKey });
                   folderContext.moveFolder(editing.node.key, newKey);
                   cleanup();
@@ -544,7 +629,7 @@ export function SheetTree({
           });
         });
       } else {
-        await updateWorksheetFolders(editing.node, editing.node.key, newKey);
+        await updateFolderFolders(editing.node.key, newKey);
         replaceExpandedKeys({ oldKey: editing.node.key, newKey });
         folderContext.moveFolder(editing.node.key, newKey);
         cleanup();
@@ -555,7 +640,7 @@ export function SheetTree({
     setEditingNode,
     findParentNode,
     sheetTree,
-    updateWorksheetFolders,
+    updateFolderFolders,
     replaceExpandedKeys,
     folderContext,
   ]);
@@ -573,6 +658,10 @@ export function SheetTree({
   const handleNodeClick = useCallback(
     (e: React.MouseEvent, node: WorksheetFolderNode) => {
       if (editingNode) return;
+      if (node.loadMore) {
+        void fetchNextPage(node.loadMoreFolderKey);
+        return;
+      }
       if (node.worksheet) {
         if (node.worksheet.type === "worksheet") {
           void openWorksheetByName({
@@ -587,7 +676,7 @@ export function SheetTree({
         handleToggleExpand(node);
       }
     },
-    [editingNode, handleToggleExpand]
+    [editingNode, fetchNextPage, handleToggleExpand]
   );
 
   // ---- Duplicate sheet -------------------------------------------------------
@@ -867,12 +956,14 @@ export function SheetTree({
         const shouldCloseOldParent =
           !draggedNode.worksheet && oldParentNode.children.length === 1;
 
-        await updateWorksheetFolders(
-          draggedNode,
-          oldParentNode.key,
-          parentFolderNode.key
-        );
-        if (!draggedNode.worksheet) {
+        if (draggedNode.worksheet) {
+          await updateWorksheetFolders(
+            draggedNode,
+            oldParentNode.key,
+            parentFolderNode.key
+          );
+        } else {
+          await updateFolderFolders(draggedNode.key, newKey);
           // Folder move — update folderContext too
           folderContext.moveFolder(draggedNode.key, newKey);
         }
@@ -896,6 +987,7 @@ export function SheetTree({
         folderContext,
         handleDuplicateFolderNameDrop,
         updateWorksheetFolders,
+        updateFolderFolders,
         replaceExpandedKeys,
         setExpandedKeys,
       ]
@@ -977,7 +1069,7 @@ export function SheetTree({
           }}
         >
           {/* Multi-select checkbox */}
-          {multiSelectMode && (
+          {multiSelectMode && !folderNode.loadMore && (
             <Checkbox
               checked={isChecked}
               className="shrink-0 cursor-pointer"
@@ -1005,74 +1097,85 @@ export function SheetTree({
           )}
 
           {/* Prefix icon */}
-          <span className="tree-prefix shrink-0">
-            <TreeNodePrefix
-              node={folderNode}
-              isOpen={isOpen}
-              rootPath={folderContext.rootPath}
-              view={view}
-            />
-          </span>
+          {!folderNode.loadMore && (
+            <span className="tree-prefix shrink-0">
+              <TreeNodePrefix
+                node={folderNode}
+                isOpen={isOpen}
+                rootPath={folderContext.rootPath}
+                view={view}
+              />
+            </span>
+          )}
 
-          {/* Label / rename input */}
-          <span
-            className={cn(
-              "tree-label min-w-0 flex-1",
-              isEditing ? "overflow-visible" : "overflow-hidden"
-            )}
-          >
-            {isEditing ? (
-              <Input
-                ref={inputRef}
-                id={`sheet-input-${folderNode.key}`}
-                size="sm"
-                // Bind to the editable `rawLabel`, NOT `node.label`. The
-                // editingNode lives in the immer-backed sheet-context
-                // store and is frozen — mutating `node.label` silently
-                // no-ops, which froze the input (could not type).
-                value={editingNode.rawLabel}
-                className="h-6 w-full min-w-0 py-0 text-sm px-1!"
-                autoFocus
-                onBlur={() => handleRenameNode()}
-                onKeyDown={(e) => {
-                  // react-arborist's container intercepts Space (toggles node)
-                  // and other keys for tree navigation; stop propagation so
-                  // typing inside the rename input is unaffected.
-                  e.stopPropagation();
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleRenameNode();
-                  }
-                }}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (!editingNode) return;
-                  if (!editingNode.node.worksheet) {
-                    // folder names cannot contain "/" or "."
-                    if (val.includes("/") || val.includes(".")) return;
-                  }
-                  setEditingNode({ ...editingNode, rawLabel: val });
-                }}
-                onClick={(e) => e.stopPropagation()}
-              />
-            ) : folderNode.worksheet && !folderNode.label ? (
-              // Untitled worksheet — render a placeholder. We don't pipe this
-              // through HighlightLabelText since there's nothing to highlight
-              // and the muted italic styling signals "empty title".
-              <span className="truncate block text-control-placeholder italic">
-                {t("common.untitled")}
-              </span>
-            ) : (
-              <HighlightLabelText
-                text={folderNode.label}
-                keyword={worksheetFilter.keyword}
-                className="truncate block"
-              />
-            )}
-          </span>
+          {folderNode.loadMore ? (
+            <WorksheetTreeLoadMoreButton
+              label={folderNode.label}
+              onClick={(e) => {
+                e.stopPropagation();
+                void fetchNextPage(folderNode.loadMoreFolderKey);
+              }}
+            />
+          ) : (
+            <span
+              className={cn(
+                "tree-label min-w-0 flex-1",
+                isEditing ? "overflow-visible" : "overflow-hidden"
+              )}
+            >
+              {isEditing ? (
+                <Input
+                  ref={inputRef}
+                  id={`sheet-input-${folderNode.key}`}
+                  size="sm"
+                  // Bind to the editable `rawLabel`, NOT `node.label`. The
+                  // editingNode lives in the immer-backed sheet-context
+                  // store and is frozen — mutating `node.label` silently
+                  // no-ops, which froze the input (could not type).
+                  value={editingNode.rawLabel}
+                  className="h-6 w-full min-w-0 py-0 text-sm px-1!"
+                  autoFocus
+                  onBlur={() => handleRenameNode()}
+                  onKeyDown={(e) => {
+                    // react-arborist's container intercepts Space (toggles node)
+                    // and other keys for tree navigation; stop propagation so
+                    // typing inside the rename input is unaffected.
+                    e.stopPropagation();
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleRenameNode();
+                    }
+                  }}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (!editingNode) return;
+                    if (!editingNode.node.worksheet) {
+                      // folder names cannot contain "/" or "."
+                      if (val.includes("/") || val.includes(".")) return;
+                    }
+                    setEditingNode({ ...editingNode, rawLabel: val });
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : folderNode.worksheet && !folderNode.label ? (
+                // Untitled worksheet — render a placeholder. We don't pipe this
+                // through HighlightLabelText since there's nothing to highlight
+                // and the muted italic styling signals "empty title".
+                <span className="truncate block text-control-placeholder italic">
+                  {t("common.untitled")}
+                </span>
+              ) : (
+                <HighlightLabelText
+                  text={folderNode.label}
+                  keyword={worksheetFilter.keyword}
+                  className="truncate block"
+                />
+              )}
+            </span>
+          )}
 
           {/* Suffix (star, visibility badge, more) */}
-          {!isEditing && (
+          {!isEditing && !folderNode.loadMore && (
             <TreeNodeSuffix
               node={folderNode}
               view={view}
@@ -1407,21 +1510,6 @@ export function SheetTree({
             : ({ parentNode: p }) => !!p?.data.data.worksheet
         }
       />
-
-      {hasMore && (
-        <Button
-          appearance="secondary"
-          size="xs"
-          className="mx-1 justify-center"
-          disabled={isFetchingNextPage || isLoading}
-          onClick={() => {
-            void fetchNextPage();
-          }}
-        >
-          {isFetchingNextPage && <Loader2 className="size-3 animate-spin" />}
-          {isFetchingNextPage ? t("common.loading") : t("common.load-more")}
-        </Button>
-      )}
 
       {/* Share popover — anchored at the same coordinates as the context
           menu (the row's More button or the cursor). Opens when the user

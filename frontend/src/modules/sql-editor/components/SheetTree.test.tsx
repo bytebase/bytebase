@@ -389,6 +389,7 @@ const setupDefaultMocks = () => {
 
   const folderContext = {
     rootPath: "/my",
+    listSubFolders: vi.fn((_parent: string): string[] => []),
     isSubFolder: vi.fn(() => false),
     moveFolder: vi.fn(),
     removeFolder: vi.fn(),
@@ -408,6 +409,7 @@ const setupDefaultMocks = () => {
       return editingNode.value;
     },
     batchUpdateWorksheetFolders: vi.fn(),
+    batchUpdateWorksheetFolderPaths: vi.fn(),
     setExpandedKeys: vi.fn(
       (next: Set<string> | ((prev: Set<string>) => Set<string>)) => {
         expandedKeys.value =
@@ -427,12 +429,14 @@ const setupDefaultMocks = () => {
     isLoading: false,
     isFetchingNextPage: false,
     hasMore: false,
+    hasMoreForFolder: vi.fn((_folderKey: string) => false),
     get sheetTree() {
       return viewContext._sheetTree.value;
     },
     _sheetTree: { value: rootNode } as { value: WorksheetFolderNode },
     fetchSheetList: vi.fn(),
     fetchNextPage: vi.fn(),
+    fetchWorksheetsByFolder: vi.fn(),
     folderContext,
     getFoldersForWorksheet: vi.fn((path: string) => [path]),
     events: {
@@ -789,7 +793,16 @@ describe("SheetTree", () => {
 
   test("7. Load more button fetches the next page", async () => {
     const defaultMocks = setupDefaultMocks();
-    defaultMocks.viewContext.hasMore = true;
+    defaultMocks.viewContext._sheetTree.value = makeFolderNode("/my", [
+      {
+        key: "/my/__load-more",
+        label: "common.load-more",
+        editable: false,
+        isLeaf: true,
+        loadMore: true,
+        children: [],
+      },
+    ]);
 
     const { container, render, unmount } = renderIntoContainer(
       <SheetTree
@@ -800,18 +813,70 @@ describe("SheetTree", () => {
     );
     render();
 
-    const loadMoreButton = Array.from(
-      container.querySelectorAll("[data-testid='button']")
-    ).find((button) => button.textContent?.includes("common.load-more")) as
-      | HTMLButtonElement
-      | undefined;
-    expect(loadMoreButton).not.toBeUndefined();
+    const loadMoreRow = container.querySelector(
+      `[data-item-key="/my/__load-more"]`
+    ) as HTMLElement | null;
+    expect(loadMoreRow).not.toBeNull();
+    const loadMoreLabel = loadMoreRow?.querySelector(".tree-label");
+    expect(loadMoreLabel?.classList.contains("text-control")).toBe(true);
+    expect(loadMoreLabel?.classList.contains("text-control-light")).toBe(false);
+    expect(loadMoreLabel?.classList.contains("text-xs")).toBe(true);
+    expect(loadMoreLabel?.classList.contains("cursor-pointer")).toBe(true);
 
     await act(async () => {
-      loadMoreButton?.click();
+      loadMoreLabel?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(defaultMocks.viewContext.fetchNextPage).toHaveBeenCalled();
+    expect(defaultMocks.viewContext.fetchNextPage).toHaveBeenCalledWith(
+      undefined
+    );
+
+    unmount();
+  });
+
+  test("7b. Folder load more button fetches that folder's next page", async () => {
+    const defaultMocks = setupDefaultMocks();
+    const folder = makeFolderNode("/my/alpha", [
+      makeWorksheetNode("/my/alpha/ws1"),
+      {
+        key: "/my/alpha/__load-more",
+        label: "common.load-more",
+        editable: false,
+        isLeaf: true,
+        loadMore: true,
+        loadMoreFolderKey: "/my/alpha",
+        children: [],
+      },
+    ]);
+    defaultMocks.viewContext._sheetTree.value = makeFolderNode("/my", [folder]);
+    defaultMocks.expandedKeys.value = new Set(["/my", "/my/alpha"]);
+
+    const { container, render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={vi.fn()}
+      />
+    );
+    render();
+
+    const loadMoreRow = container.querySelector(
+      `[data-item-key="/my/alpha/__load-more"]`
+    ) as HTMLElement | null;
+    expect(loadMoreRow).not.toBeNull();
+    const loadMoreLabel = loadMoreRow?.querySelector(".tree-label");
+    expect(loadMoreLabel?.classList.contains("text-control")).toBe(true);
+    expect(loadMoreLabel?.classList.contains("text-control-light")).toBe(false);
+    expect(loadMoreLabel?.classList.contains("text-xs")).toBe(true);
+    expect(loadMoreLabel?.classList.contains("cursor-pointer")).toBe(true);
+
+    await act(async () => {
+      loadMoreLabel?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(defaultMocks.viewContext.fetchNextPage).toHaveBeenCalledWith(
+      "/my/alpha"
+    );
 
     unmount();
   });
@@ -853,6 +918,116 @@ describe("SheetTree", () => {
     expect(tree?.className).toContain(
       "[&_[role=treeitem]]:overflow-visible"
     );
+
+    unmount();
+  });
+
+  test("9. Folder rename updates known folder paths with exact batch filters", async () => {
+    const defaultMocks = setupDefaultMocks();
+    const childFolder = makeFolderNode("/my/old/child");
+    const oldFolder = makeFolderNode("/my/old", [childFolder]);
+    const rootNode = makeFolderNode("/my", [oldFolder]);
+    defaultMocks.viewContext._sheetTree.value = rootNode;
+    defaultMocks.editingNode.value = {
+      node: oldFolder,
+      rawLabel: "new",
+    };
+    defaultMocks.viewContext.getFoldersForWorksheet.mockImplementation(
+      (path: string) =>
+        path
+          .replace("/my", "")
+          .split("/")
+          .map((part) => part.trim())
+          .filter(Boolean)
+    );
+    defaultMocks.folderContext.listSubFolders.mockImplementation(
+      (parent: string) => (parent === "/my/old" ? ["/my/old/child"] : [])
+    );
+
+    const { container, render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={vi.fn()}
+      />
+    );
+    render();
+
+    const input = container.querySelector(
+      "[data-testid='rename-input']"
+    ) as HTMLInputElement | null;
+    expect(input).not.toBeNull();
+
+    await act(async () => {
+      input?.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+
+    expect(
+      defaultMocks.sheetContext.batchUpdateWorksheetFolderPaths
+    ).toHaveBeenCalledWith("my", [
+      { sourceFolder: ["old"], targetFolder: ["new"] },
+      { sourceFolder: ["old", "child"], targetFolder: ["new", "child"] },
+    ]);
+
+    unmount();
+  });
+
+  test("10. Opening an empty folder fetches that folder's worksheets", async () => {
+    const defaultMocks = setupDefaultMocks();
+    const folder = makeFolderNode("/my/empty", []);
+    const rootNode = makeFolderNode("/my", [folder]);
+    defaultMocks.viewContext._sheetTree.value = rootNode;
+    defaultMocks.expandedKeys.value = new Set(["/my"]);
+
+    const { container, render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={vi.fn()}
+      />
+    );
+    render();
+
+    const row = container.querySelector(
+      `[data-item-key="/my/empty"]`
+    ) as HTMLElement | null;
+    expect(row).not.toBeNull();
+    const prefix = row?.querySelector("[data-testid='tree-node-prefix']");
+
+    await act(async () => {
+      prefix?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(
+      defaultMocks.viewContext.fetchWorksheetsByFolder
+    ).toHaveBeenCalledWith("/my/empty");
+
+    unmount();
+  });
+
+  test("11. Already-expanded empty folder fetches after render", async () => {
+    const defaultMocks = setupDefaultMocks();
+    const folder = makeFolderNode("/my/empty", []);
+    const rootNode = makeFolderNode("/my", [folder]);
+    defaultMocks.viewContext._sheetTree.value = rootNode;
+    defaultMocks.expandedKeys.value = new Set(["/my", "/my/empty"]);
+
+    const { render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={vi.fn()}
+      />
+    );
+
+    await act(async () => {
+      render();
+    });
+
+    expect(
+      defaultMocks.viewContext.fetchWorksheetsByFolder
+    ).toHaveBeenCalledWith("/my/empty");
 
     unmount();
   });

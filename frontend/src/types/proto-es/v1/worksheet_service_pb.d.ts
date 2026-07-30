@@ -140,6 +140,93 @@ export declare type ListWorksheetsResponse = Message<"bytebase.v1.ListWorksheets
 export declare const ListWorksheetsResponseSchema: GenMessage<ListWorksheetsResponse>;
 
 /**
+ * @generated from message bytebase.v1.ListWorksheetFoldersRequest
+ */
+export declare type ListWorksheetFoldersRequest = Message<"bytebase.v1.ListWorksheetFoldersRequest"> & {
+  /**
+   * The parent resource of the worksheet folders.
+   * Format: projects/{project}
+   *
+   * @generated from field: string parent = 1;
+   */
+  parent: string;
+};
+
+/**
+ * Describes the message bytebase.v1.ListWorksheetFoldersRequest.
+ * Use `create(ListWorksheetFoldersRequestSchema)` to create a new message.
+ */
+export declare const ListWorksheetFoldersRequestSchema: GenMessage<ListWorksheetFoldersRequest>;
+
+/**
+ * @generated from message bytebase.v1.ListWorksheetFoldersResponse
+ */
+export declare type ListWorksheetFoldersResponse = Message<"bytebase.v1.ListWorksheetFoldersResponse"> & {
+  /**
+   * The caller's worksheet folders.
+   *
+   * @generated from field: repeated bytebase.v1.WorksheetFolder folders = 1;
+   */
+  folders: WorksheetFolder[];
+};
+
+/**
+ * Describes the message bytebase.v1.ListWorksheetFoldersResponse.
+ * Use `create(ListWorksheetFoldersResponseSchema)` to create a new message.
+ */
+export declare const ListWorksheetFoldersResponseSchema: GenMessage<ListWorksheetFoldersResponse>;
+
+/**
+ * @generated from message bytebase.v1.WorksheetFolder
+ */
+export declare type WorksheetFolder = Message<"bytebase.v1.WorksheetFolder"> & {
+  /**
+   * The folder path segments.
+   *
+   * @generated from field: repeated string folders = 1;
+   */
+  folders: string[];
+
+  /**
+   * The folder category.
+   *
+   * @generated from field: bytebase.v1.WorksheetFolder.Category category = 2;
+   */
+  category: WorksheetFolder_Category;
+};
+
+/**
+ * Describes the message bytebase.v1.WorksheetFolder.
+ * Use `create(WorksheetFolderSchema)` to create a new message.
+ */
+export declare const WorksheetFolderSchema: GenMessage<WorksheetFolder>;
+
+/**
+ * @generated from enum bytebase.v1.WorksheetFolder.Category
+ */
+export enum WorksheetFolder_Category {
+  /**
+   * @generated from enum value: CATEGORY_UNSPECIFIED = 0;
+   */
+  CATEGORY_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: MINE = 1;
+   */
+  MINE = 1,
+
+  /**
+   * @generated from enum value: SHARED = 2;
+   */
+  SHARED = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.WorksheetFolder.Category.
+ */
+export declare const WorksheetFolder_CategorySchema: GenEnum<WorksheetFolder_Category>;
+
+/**
  * @generated from message bytebase.v1.UpdateWorksheetRequest
  */
 export declare type UpdateWorksheetRequest = Message<"bytebase.v1.UpdateWorksheetRequest"> & {
@@ -179,9 +266,45 @@ export declare const UpdateWorksheetRequestSchema: GenMessage<UpdateWorksheetReq
  */
 export declare type BatchUpdateWorksheetOrganizerRequest = Message<"bytebase.v1.BatchUpdateWorksheetOrganizerRequest"> & {
   /**
-   * @generated from field: repeated bytebase.v1.UpdateWorksheetOrganizerRequest requests = 1;
+   * The parent resource whose worksheets' organizers are updated.
+   * Format: projects/{project}
+   *
+   * @generated from field: string parent = 1;
    */
-  requests: UpdateWorksheetOrganizerRequest[];
+  parent: string;
+
+  /**
+   * To filter the batch update target.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Supported filter:
+   * - name: the worksheet name in "projects/{project}/worksheets/{worksheet}" format, support "==" and "in [xx]" operator.
+   * - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+   * - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
+   * - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
+   * - folder: the worksheet organizer folder path, support exact "==" operator.
+   *
+   * @generated from field: string filter = 2;
+   */
+  filter: string;
+
+  /**
+   * The organizer fields to update.
+   *
+   * @generated from field: bytebase.v1.WorksheetOrganizer organizer = 3;
+   */
+  organizer?: WorksheetOrganizer | undefined;
+
+  /**
+   * The list of fields to be updated.
+   * Fields are specified relative to the worksheet organizer.
+   * Only support update the following fields for now:
+   * - `starred`
+   * - `folders`
+   *
+   * @generated from field: google.protobuf.FieldMask update_mask = 4;
+   */
+  updateMask?: FieldMask | undefined;
 };
 
 /**
@@ -198,6 +321,11 @@ export declare type BatchUpdateWorksheetOrganizerResponse = Message<"bytebase.v1
    * @generated from field: repeated bytebase.v1.WorksheetOrganizer worksheet_organizers = 1;
    */
   worksheetOrganizers: WorksheetOrganizer[];
+
+  /**
+   * @generated from field: int32 updated_count = 2;
+   */
+  updatedCount: number;
 };
 
 /**
@@ -312,6 +440,7 @@ export declare type SearchWorksheetsRequest = Message<"bytebase.v1.SearchWorkshe
    * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
    *
    * Supported filter:
+   * - name: the worksheet name in "projects/{project}/worksheets/{worksheet}" format, support "==" and "in [xx]" operator.
    * - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
    * - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
    * - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
@@ -560,6 +689,17 @@ export declare const WorksheetService: GenService<{
     methodKind: "unary";
     input: typeof ListWorksheetsRequestSchema;
     output: typeof ListWorksheetsResponseSchema;
+  },
+  /**
+   * List the caller's worksheet folders.
+   * Only folders stored in the caller's worksheet organizer are returned.
+   *
+   * @generated from rpc bytebase.v1.WorksheetService.ListWorksheetFolders
+   */
+  listWorksheetFolders: {
+    methodKind: "unary";
+    input: typeof ListWorksheetFoldersRequestSchema;
+    output: typeof ListWorksheetFoldersResponseSchema;
   },
   /**
    * Search for worksheets.

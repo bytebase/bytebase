@@ -80,6 +80,58 @@ func (x *ListWorksheetsResponse) Equal(y *ListWorksheetsResponse) bool {
 	return true
 }
 
+func (x *ListWorksheetFoldersRequest) Equal(y *ListWorksheetFoldersRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Parent != y.Parent {
+		return false
+	}
+	return true
+}
+
+func (x *ListWorksheetFoldersResponse) Equal(y *ListWorksheetFoldersResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Folders) != len(y.Folders) {
+		return false
+	}
+	for i := 0; i < len(x.Folders); i++ {
+		if !x.Folders[i].Equal(y.Folders[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *WorksheetFolder) Equal(y *WorksheetFolder) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Folders) != len(y.Folders) {
+		return false
+	}
+	for i := 0; i < len(x.Folders); i++ {
+		if x.Folders[i] != y.Folders[i] {
+			return false
+		}
+	}
+	if x.Category != y.Category {
+		return false
+	}
+	return true
+}
+
 func (x *UpdateWorksheetRequest) Equal(y *UpdateWorksheetRequest) bool {
 	if x == y {
 		return true
@@ -107,13 +159,21 @@ func (x *BatchUpdateWorksheetOrganizerRequest) Equal(y *BatchUpdateWorksheetOrga
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if len(x.Requests) != len(y.Requests) {
+	if x.Parent != y.Parent {
 		return false
 	}
-	for i := 0; i < len(x.Requests); i++ {
-		if !x.Requests[i].Equal(y.Requests[i]) {
-			return false
-		}
+	if x.Filter != y.Filter {
+		return false
+	}
+	if !x.Organizer.Equal(y.Organizer) {
+		return false
+	}
+	if equal, ok := interface{}(x.UpdateMask).(interface {
+		Equal(*fieldmaskpb.FieldMask) bool
+	}); !ok || !equal.Equal(y.UpdateMask) {
+		return false
+	} else if !proto.Equal(x.UpdateMask, y.UpdateMask) {
+		return false
 	}
 	return true
 }
@@ -132,6 +192,9 @@ func (x *BatchUpdateWorksheetOrganizerResponse) Equal(y *BatchUpdateWorksheetOrg
 		if !x.WorksheetOrganizers[i].Equal(y.WorksheetOrganizers[i]) {
 			return false
 		}
+	}
+	if x.UpdatedCount != y.UpdatedCount {
+		return false
 	}
 	return true
 }

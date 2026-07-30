@@ -11302,6 +11302,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
+  /v1/projects/{project}/worksheetFolders:
+    get:
+      tags:
+        - WorksheetService
+      summary: ListWorksheetFolders
+      description: |-
+        List the caller's worksheet folders.
+         Only folders stored in the caller's worksheet organizer are returned.
+      operationId: WorksheetService_ListWorksheetFolders
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListWorksheetFoldersResponse'
   /v1/projects/{project}/worksheets:
     get:
       tags:
@@ -11393,6 +11416,68 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Worksheet'
+  /v1/projects/{project}/worksheets/organizers:batchUpdate:
+    post:
+      tags:
+        - WorksheetService
+      summary: BatchUpdateWorksheetOrganizer
+      description: |-
+        Batch update the organizers of worksheets.
+         The access is the same as UpdateWorksheet method.
+         Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
+      operationId: WorksheetService_BatchUpdateWorksheetOrganizer
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filter:
+                  type: string
+                  title: filter
+                  description: |-
+                    To filter the batch update target.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+                     Supported filter:
+                     - name: the worksheet name in "projects/{project}/worksheets/{worksheet}" format, support "==" and "in [xx]" operator.
+                     - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+                     - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
+                     - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
+                     - folder: the worksheet organizer folder path, support exact "==" operator.
+                organizer:
+                  title: organizer
+                  description: The organizer fields to update.
+                  $ref: '#/components/schemas/bytebase.v1.WorksheetOrganizer'
+                updateMask:
+                  title: update_mask
+                  description: |-
+                    The list of fields to be updated.
+                     Fields are specified relative to the worksheet organizer.
+                     Only support update the following fields for now:
+                     - `starred`
+                     - `folders`
+                  $ref: '#/components/schemas/google.protobuf.FieldMask'
+              title: BatchUpdateWorksheetOrganizerRequest
+              required:
+                - organizer
+                - updateMask
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.BatchUpdateWorksheetOrganizerResponse'
   /v1/projects/{project}/worksheets/{worksheet}:
     get:
       tags:
@@ -11997,6 +12082,7 @@ paths:
                      The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
                      Supported filter:
+                     - name: the worksheet name in "projects/{project}/worksheets/{worksheet}" format, support "==" and "in [xx]" operator.
                      - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
                      - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
                      - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
@@ -14576,29 +14662,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
-  /v1/worksheets/organizer:batchUpdate:
-    patch:
-      tags:
-        - WorksheetService
-      summary: BatchUpdateWorksheetOrganizer
-      description: |-
-        Batch update the organizers of worksheets.
-         The access is the same as UpdateWorksheet method.
-         Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
-      operationId: WorksheetService_BatchUpdateWorksheetOrganizer
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.BatchUpdateWorksheetOrganizerRequest'
-        required: true
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.BatchUpdateWorksheetOrganizerResponse'
   /v1/workspaces:
     get:
       tags:
@@ -17222,14 +17285,43 @@ components:
     bytebase.v1.BatchUpdateWorksheetOrganizerRequest:
       type: object
       properties:
-        requests:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.UpdateWorksheetOrganizerRequest'
-          title: requests
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource whose worksheets' organizers are updated.
+             Format: projects/{project}
+        filter:
+          type: string
+          title: filter
+          description: |-
+            To filter the batch update target.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - name: the worksheet name in "projects/{project}/worksheets/{worksheet}" format, support "==" and "in [xx]" operator.
+             - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+             - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
+             - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
+             - folder: the worksheet organizer folder path, support exact "==" operator.
+        organizer:
+          title: organizer
+          description: The organizer fields to update.
+          $ref: '#/components/schemas/bytebase.v1.WorksheetOrganizer'
+        updateMask:
+          title: update_mask
+          description: |-
+            The list of fields to be updated.
+             Fields are specified relative to the worksheet organizer.
+             Only support update the following fields for now:
+             - `starred`
+             - `folders`
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
       title: BatchUpdateWorksheetOrganizerRequest
       required:
-        - requests
+        - parent
+        - organizer
+        - updateMask
       additionalProperties: false
     bytebase.v1.BatchUpdateWorksheetOrganizerResponse:
       type: object
@@ -17239,6 +17331,10 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.WorksheetOrganizer'
           title: worksheet_organizers
+        updatedCount:
+          type: integer
+          title: updated_count
+          format: int32
       title: BatchUpdateWorksheetOrganizerResponse
       additionalProperties: false
     bytebase.v1.BillingInterval:
@@ -22839,6 +22935,30 @@ components:
       title: ListWorkloadIdentitiesResponse
       additionalProperties: false
       description: Response message for listing workload identities.
+    bytebase.v1.ListWorksheetFoldersRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource of the worksheet folders.
+             Format: projects/{project}
+      title: ListWorksheetFoldersRequest
+      required:
+        - parent
+      additionalProperties: false
+    bytebase.v1.ListWorksheetFoldersResponse:
+      type: object
+      properties:
+        folders:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.WorksheetFolder'
+          title: folders
+          description: The caller's worksheet folders.
+      title: ListWorksheetFoldersResponse
+      additionalProperties: false
     bytebase.v1.ListWorksheetsRequest:
       type: object
       properties:
@@ -26314,6 +26434,7 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filter:
+             - name: the worksheet name in "projects/{project}/worksheets/{worksheet}" format, support "==" and "in [xx]" operator.
              - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
              - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
              - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
@@ -29402,6 +29523,28 @@ components:
         - PROJECT_READ
         - PROJECT_WRITE
         - PRIVATE
+    bytebase.v1.WorksheetFolder:
+      type: object
+      properties:
+        folders:
+          type: array
+          items:
+            type: string
+          title: folders
+          description: The folder path segments.
+        category:
+          title: category
+          description: The folder category.
+          $ref: '#/components/schemas/bytebase.v1.WorksheetFolder.Category'
+      title: WorksheetFolder
+      additionalProperties: false
+    bytebase.v1.WorksheetFolder.Category:
+      type: string
+      title: Category
+      enum:
+        - CATEGORY_UNSPECIFIED
+        - MINE
+        - SHARED
     bytebase.v1.WorksheetOrganizer:
       type: object
       properties:

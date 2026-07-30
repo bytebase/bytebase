@@ -49,6 +49,14 @@ service WorksheetService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // List the caller's worksheet folders.
+  // Only folders stored in the caller's worksheet organizer are returned.
+  rpc ListWorksheetFolders(ListWorksheetFoldersRequest) returns (ListWorksheetFoldersResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/worksheetFolders"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.v1.auth_method) = CUSTOM;
+  }
+
   // Search for worksheets.
   // This is used for finding my worksheets or worksheets shared by other people.
   // The sheet accessibility is the same as GetWorksheet().
@@ -94,9 +102,10 @@ service WorksheetService {
   // Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
   rpc BatchUpdateWorksheetOrganizer(BatchUpdateWorksheetOrganizerRequest) returns (BatchUpdateWorksheetOrganizerResponse) {
     option (google.api.http) = {
-      patch: "/v1/worksheets/organizer:batchUpdate"
+      post: "/v1/{parent=projects/*}/worksheets/organizers:batchUpdate"
       body: "*"
     };
+    option (google.api.method_signature) = "parent,organizer,update_mask";
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
@@ -169,6 +178,31 @@ message ListWorksheetsResponse {
   string next_page_token = 2;
 }
 
+message ListWorksheetFoldersRequest {
+  // The parent resource of the worksheet folders.
+  // Format: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListWorksheetFoldersResponse {
+  // The caller's worksheet folders.
+  repeated WorksheetFolder folders = 1;
+}
+
+message WorksheetFolder {
+  enum Category {
+    CATEGORY_UNSPECIFIED = 0;
+    MINE = 1;
+    SHARED = 2;
+  }
+
+  // The folder path segments.
+  repeated string folders = 1;
+
+  // The folder category.
+  Category category = 2;
+}
+
 message UpdateWorksheetRequest {
   // The worksheet to update.
   //
@@ -188,11 +222,36 @@ message UpdateWorksheetRequest {
 }
 
 message BatchUpdateWorksheetOrganizerRequest {
-  repeated UpdateWorksheetOrganizerRequest requests = 1 [(google.api.field_behavior) = REQUIRED];
+  // The parent resource whose worksheets' organizers are updated.
+  // Format: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // To filter the batch update target.
+  // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+  //
+  // Supported filter:
+  // - name: the worksheet name in "projects/{project}/worksheets/{worksheet}" format, support "==" and "in [xx]" operator.
+  // - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
+  // - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
+  // - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
+  // - folder: the worksheet organizer folder path, support exact "==" operator.
+  string filter = 2;
+
+  // The organizer fields to update.
+  WorksheetOrganizer organizer = 3 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to be updated.
+  // Fields are specified relative to the worksheet organizer.
+  // Only support update the following fields for now:
+  // - `starred`
+  // - `folders`
+  google.protobuf.FieldMask update_mask = 4 [(google.api.field_behavior) = REQUIRED];
 }
 
 message BatchUpdateWorksheetOrganizerResponse {
   repeated WorksheetOrganizer worksheet_organizers = 1;
+
+  int32 updated_count = 2;
 }
 
 message UpdateWorksheetOrganizerRequest {
@@ -239,6 +298,7 @@ message SearchWorksheetsRequest {
   // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
   //
   // Supported filter:
+  // - name: the worksheet name in "projects/{project}/worksheets/{worksheet}" format, support "==" and "in [xx]" operator.
   // - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
   // - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
   // - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.

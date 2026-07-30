@@ -13,9 +13,11 @@ import {
   CreateWorksheetRequestSchema,
   DeleteWorksheetRequestSchema,
   GetWorksheetRequestSchema,
+  ListWorksheetFoldersRequestSchema,
   SearchWorksheetsRequestSchema,
   UpdateWorksheetOrganizerRequestSchema,
   UpdateWorksheetRequestSchema,
+  WorksheetFolder_Category,
   WorksheetOrganizerSchema,
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
@@ -154,6 +156,26 @@ export const createWorksheetSlice: AppSliceCreator<WorksheetSlice> = (
       };
     },
 
+    listWorksheetFolders: async (parent) => {
+      const response = await worksheetServiceClientConnect.listWorksheetFolders(
+        createProto(ListWorksheetFoldersRequestSchema, {
+          parent,
+        })
+      );
+      const folders: { folders: string[]; category: "my" | "shared" }[] = [];
+      for (const folder of response.folders) {
+        switch (folder.category) {
+          case WorksheetFolder_Category.MINE:
+            folders.push({ folders: folder.folders, category: "my" });
+            break;
+          case WorksheetFolder_Category.SHARED:
+            folders.push({ folders: folder.folders, category: "shared" });
+            break;
+        }
+      }
+      return folders;
+    },
+
     createWorksheet: async (worksheet) => {
       const fullWorksheet = worksheet.name
         ? worksheet
@@ -209,21 +231,24 @@ export const createWorksheetSlice: AppSliceCreator<WorksheetSlice> = (
       updateCacheWithOrganizer(response);
     },
 
-    batchUpsertWorksheetOrganizers: async (requests) => {
-      const response =
-        await worksheetServiceClientConnect.batchUpdateWorksheetOrganizer(
-          createProto(BatchUpdateWorksheetOrganizerRequestSchema, {
-            requests: requests.map((request) =>
-              createProto(UpdateWorksheetOrganizerRequestSchema, {
-                organizer: createProto(WorksheetOrganizerSchema, {
-                  ...request.organizer,
-                } as WorksheetOrganizer),
-                updateMask: { paths: request.updateMask },
-              })
-            ),
-          })
-        );
-      response.worksheetOrganizers.map(updateCacheWithOrganizer);
+    batchUpdateWorksheetOrganizers: async (requests) => {
+      const responses = await Promise.all(
+        requests.map((request) =>
+          worksheetServiceClientConnect.batchUpdateWorksheetOrganizer(
+            createProto(BatchUpdateWorksheetOrganizerRequestSchema, {
+              parent: request.parent,
+              filter: request.filter,
+              organizer: createProto(WorksheetOrganizerSchema, {
+                ...request.organizer,
+              } as WorksheetOrganizer),
+              updateMask: { paths: request.updateMask },
+            })
+          )
+        )
+      );
+      for (const response of responses) {
+        response.worksheetOrganizers.map(updateCacheWithOrganizer);
+      }
     },
 
     // The deduped full list. Callers split into "my" / "shared" using

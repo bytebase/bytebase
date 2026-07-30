@@ -1,7 +1,6 @@
 import {
   FileCode,
   FolderCode,
-  FolderMinus,
   FolderOpen,
   FolderPen,
   FolderSync,
@@ -33,9 +32,6 @@ export function TreeNodePrefix({ node, isOpen, rootPath, view }: Props) {
       return <FolderSync className={cls} />;
     }
     return <FolderCode className={cls} />;
-  }
-  if (node.empty) {
-    return <FolderMinus className={cls} />;
   }
   return <FolderCode className={cls} />;
 }

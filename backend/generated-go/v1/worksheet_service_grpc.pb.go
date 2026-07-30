@@ -23,6 +23,7 @@ const (
 	WorksheetService_CreateWorksheet_FullMethodName               = "/bytebase.v1.WorksheetService/CreateWorksheet"
 	WorksheetService_GetWorksheet_FullMethodName                  = "/bytebase.v1.WorksheetService/GetWorksheet"
 	WorksheetService_ListWorksheets_FullMethodName                = "/bytebase.v1.WorksheetService/ListWorksheets"
+	WorksheetService_ListWorksheetFolders_FullMethodName          = "/bytebase.v1.WorksheetService/ListWorksheetFolders"
 	WorksheetService_SearchWorksheets_FullMethodName              = "/bytebase.v1.WorksheetService/SearchWorksheets"
 	WorksheetService_UpdateWorksheet_FullMethodName               = "/bytebase.v1.WorksheetService/UpdateWorksheet"
 	WorksheetService_UpdateWorksheetOrganizer_FullMethodName      = "/bytebase.v1.WorksheetService/UpdateWorksheetOrganizer"
@@ -50,6 +51,9 @@ type WorksheetServiceClient interface {
 	// This is used for listing worksheets in a project, or across all projects by using `projects/-`.
 	// Permissions required: bb.worksheets.list
 	ListWorksheets(ctx context.Context, in *ListWorksheetsRequest, opts ...grpc.CallOption) (*ListWorksheetsResponse, error)
+	// List the caller's worksheet folders.
+	// Only folders stored in the caller's worksheet organizer are returned.
+	ListWorksheetFolders(ctx context.Context, in *ListWorksheetFoldersRequest, opts ...grpc.CallOption) (*ListWorksheetFoldersResponse, error)
 	// Search for worksheets.
 	// This is used for finding my worksheets or worksheets shared by other people.
 	// The sheet accessibility is the same as GetWorksheet().
@@ -108,6 +112,16 @@ func (c *worksheetServiceClient) ListWorksheets(ctx context.Context, in *ListWor
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListWorksheetsResponse)
 	err := c.cc.Invoke(ctx, WorksheetService_ListWorksheets_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *worksheetServiceClient) ListWorksheetFolders(ctx context.Context, in *ListWorksheetFoldersRequest, opts ...grpc.CallOption) (*ListWorksheetFoldersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListWorksheetFoldersResponse)
+	err := c.cc.Invoke(ctx, WorksheetService_ListWorksheetFolders_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -184,6 +198,9 @@ type WorksheetServiceServer interface {
 	// This is used for listing worksheets in a project, or across all projects by using `projects/-`.
 	// Permissions required: bb.worksheets.list
 	ListWorksheets(context.Context, *ListWorksheetsRequest) (*ListWorksheetsResponse, error)
+	// List the caller's worksheet folders.
+	// Only folders stored in the caller's worksheet organizer are returned.
+	ListWorksheetFolders(context.Context, *ListWorksheetFoldersRequest) (*ListWorksheetFoldersResponse, error)
 	// Search for worksheets.
 	// This is used for finding my worksheets or worksheets shared by other people.
 	// The sheet accessibility is the same as GetWorksheet().
@@ -226,6 +243,9 @@ func (UnimplementedWorksheetServiceServer) GetWorksheet(context.Context, *GetWor
 }
 func (UnimplementedWorksheetServiceServer) ListWorksheets(context.Context, *ListWorksheetsRequest) (*ListWorksheetsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListWorksheets not implemented")
+}
+func (UnimplementedWorksheetServiceServer) ListWorksheetFolders(context.Context, *ListWorksheetFoldersRequest) (*ListWorksheetFoldersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListWorksheetFolders not implemented")
 }
 func (UnimplementedWorksheetServiceServer) SearchWorksheets(context.Context, *SearchWorksheetsRequest) (*SearchWorksheetsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SearchWorksheets not implemented")
@@ -313,6 +333,24 @@ func _WorksheetService_ListWorksheets_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(WorksheetServiceServer).ListWorksheets(ctx, req.(*ListWorksheetsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WorksheetService_ListWorksheetFolders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListWorksheetFoldersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorksheetServiceServer).ListWorksheetFolders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorksheetService_ListWorksheetFolders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorksheetServiceServer).ListWorksheetFolders(ctx, req.(*ListWorksheetFoldersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -425,6 +463,10 @@ var WorksheetService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListWorksheets",
 			Handler:    _WorksheetService_ListWorksheets_Handler,
+		},
+		{
+			MethodName: "ListWorksheetFolders",
+			Handler:    _WorksheetService_ListWorksheetFolders_Handler,
 		},
 		{
 			MethodName: "SearchWorksheets",
