@@ -240,7 +240,18 @@ func (s *Store) GetSetting(ctx context.Context, workspace string, name storepb.S
 	if v, ok := s.settingCache.Get(getSettingCacheKey(workspace, name)); ok && s.enableCache {
 		return v, nil
 	}
-	return s.GetSettingUncached(ctx, workspace, name)
+	// Fill the cache under the publish mutex so the fill's content is current
+	// at publish time: an unordered fill could read a pre-commit snapshot and
+	// cache it after a concurrent writer already published a newer value. No
+	// row lock is held here, so the row-lock -> publish-lock order is kept.
+	s.settingPublishMu.Lock()
+	defer s.settingPublishMu.Unlock()
+	setting, err := s.GetSettingUncached(ctx, workspace, name)
+	if err != nil || setting == nil {
+		return setting, err
+	}
+	s.settingCache.Add(getSettingCacheKey(workspace, name), setting)
+	return setting, nil
 }
 
 // GetSettingUncached reads the setting directly from the database, bypassing
@@ -320,9 +331,11 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 		return nil, err
 	}
 
-	for _, setting := range settingMessages {
-		s.settingCache.Add(getSettingCacheKey(setting.Workspace, setting.Name), setting)
-	}
+	// Deliberately no cache publication: this path runs outside the publish
+	// mutex (GetSettingUncached callers hit it on every read), and an
+	// unordered fill could pin a pre-commit snapshot over a newer published
+	// value. Publication happens only in GetSetting's fill, UpsertSetting,
+	// and UpdateSettingAtomic — all ordered by settingPublishMu.
 	return settingMessages, nil
 }
 
@@ -335,8 +348,9 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 // from apply aborts the transaction with no write and is returned unwrapped so
 // callers keep typed errors. On success the setting cache is refreshed with
 // the committed value, and cache publication is serialized in commit order
-// across concurrent atomic updates.
-func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, apply func(current proto.Message) (proto.Message, error)) (*SettingMessage, error) {
+// across concurrent atomic updates; postCommit (optional) runs inside that
+// same ordered window for derived state.
+func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, apply func(current proto.Message) (proto.Message, error), postCommit func()) (*SettingMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
@@ -401,6 +415,11 @@ func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name 
 
 	settingMessage := &SettingMessage{Name: name, Workspace: workspace, Value: next}
 	s.settingCache.Add(getSettingCacheKey(workspace, name), settingMessage)
+	// Derived state (e.g. runtime flags) publishes inside the same ordered
+	// window, so an older committer can never overwrite a newer one's value.
+	if postCommit != nil {
+		postCommit()
+	}
 	return settingMessage, nil
 }
 
@@ -451,7 +470,19 @@ func (s *Store) UpsertSetting(ctx context.Context, update *SettingMessage) (*Set
 	}
 	setting.Value = msg
 
-	s.settingCache.Add(getSettingCacheKey(setting.Workspace, setting.Name), &setting)
+	// Publish under the ordering mutex with content re-read from the
+	// database: this statement committed on its own, so by the time the mutex
+	// is acquired a later update may already have committed and published —
+	// republishing this write's own value could revert the cache. On a failed
+	// re-read, evict instead of publishing (the write itself succeeded).
+	s.settingPublishMu.Lock()
+	defer s.settingPublishMu.Unlock()
+	fresh, err := s.GetSettingUncached(ctx, setting.Workspace, setting.Name)
+	if err != nil || fresh == nil {
+		s.settingCache.Remove(getSettingCacheKey(setting.Workspace, setting.Name))
+		return &setting, nil
+	}
+	s.settingCache.Add(getSettingCacheKey(fresh.Workspace, fresh.Name), fresh)
 	return &setting, nil
 }
 

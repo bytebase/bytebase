@@ -568,11 +568,15 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 	payload := convertWorkspaceProfileSetting(request.Msg.Setting.Value.GetWorkspaceProfile())
 	var resetAuditLogStdout bool
 	var mergedProfile *storepb.WorkspaceProfileSetting
+	var lockedBefore *storepb.WorkspaceProfileSetting
 	apply := func(current proto.Message) (proto.Message, error) {
 		oldSetting, ok := current.(*storepb.WorkspaceProfileSetting)
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_WORKSPACE_PROFILE))
 		}
+		// The audit before-image is the row this merge actually ran against,
+		// not the possibly stale pre-lock snapshot captured by UpdateSetting.
+		lockedBefore = proto.CloneOf(oldSetting)
 		if err := s.mergeWorkspaceProfilePaths(ctx, workspaceID, request, payload, oldSetting, &resetAuditLogStdout); err != nil {
 			return nil, err
 		}
@@ -607,7 +611,15 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 		}), nil
 	}
 
-	setting, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE, apply)
+	// The audit-log runtime flag publishes inside the primitive's ordered
+	// post-commit window, so an older committer cannot overwrite a newer
+	// committer's flag.
+	postCommit := func() {
+		if resetAuditLogStdout && mergedProfile != nil {
+			s.profile.RuntimeEnableAuditLogStdout.Store(mergedProfile.EnableAuditLogStdout)
+		}
+	}
+	setting, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE, apply, postCommit)
 	if err != nil {
 		var connectErr *connect.Error
 		if errors.As(err, &connectErr) {
@@ -616,9 +628,22 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
 	}
 
-	// Dynamically update audit logger runtime flag if enable_audit_log_stdout was changed.
-	if resetAuditLogStdout && mergedProfile != nil {
-		s.profile.RuntimeEnableAuditLogStdout.Store(mergedProfile.EnableAuditLogStdout)
+	// Re-capture the audit before-image from the locked row the merge ran
+	// against, overwriting UpdateSetting's earlier pre-lock snapshot.
+	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
+		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
+			Name:      storepb.SettingName_WORKSPACE_PROFILE,
+			Workspace: workspaceID,
+			Value:     lockedBefore,
+		})
+		if err != nil {
+			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
+		}
+		p, err := anypb.New(v1pbSetting)
+		if err != nil {
+			slog.Warn("audit: failed to convert to anypb.Any", log.BBError(err))
+		}
+		setServiceData(p)
 	}
 
 	settingMessage, err := convertToSettingMessage(setting)

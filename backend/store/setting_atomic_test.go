@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -81,7 +82,7 @@ func TestUpdateSettingAtomicInterleaving(t *testing.T) {
 				close(entered)
 				<-release
 				return profile, nil
-			})
+			}, nil)
 		firstResult <- err
 	}()
 	// The first update is now inside apply and holds the row lock.
@@ -101,7 +102,7 @@ func TestUpdateSettingAtomicInterleaving(t *testing.T) {
 				}
 				profile.McpCapability = storepb.WorkspaceProfileSetting_DISABLED
 				return profile, nil
-			})
+			}, nil)
 		secondResult <- err
 	}()
 
@@ -168,7 +169,7 @@ func TestUpdateSettingAtomicApplyAbort(t *testing.T) {
 			// or the served cache.
 			profile.EnableMetricCollection = true
 			return nil, sentinel
-		})
+		}, nil)
 	require.ErrorIs(t, err, sentinel)
 
 	fresh, err := s.GetSettingUncached(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
@@ -187,7 +188,7 @@ func TestUpdateSettingAtomicMissingRow(t *testing.T) {
 	_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_AI,
 		func(current proto.Message) (proto.Message, error) {
 			return current, nil
-		})
+		}, nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "not found")
 }
@@ -215,6 +216,19 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 		}
 	})
 
+	// postCommit callbacks run inside the same ordered window, so their
+	// observed order must match commit order (derived runtime state relies
+	// on this).
+	var postCommitMu sync.Mutex
+	var postCommitOrder []string
+	recordPostCommit := func(id string) func() {
+		return func() {
+			postCommitMu.Lock()
+			defer postCommitMu.Unlock()
+			postCommitOrder = append(postCommitOrder, id)
+		}
+	}
+
 	firstResult := make(chan error, 1)
 	go func() {
 		_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
@@ -225,7 +239,7 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 				}
 				profile.EnableMetricCollection = true
 				return profile, nil
-			})
+			}, recordPostCommit("first"))
 		firstResult <- err
 	}()
 	// The first update has committed and is paused before publishing.
@@ -245,7 +259,7 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 				}
 				profile.McpCapability = storepb.WorkspaceProfileSetting_DISABLED
 				return profile, nil
-			})
+			}, recordPostCommit("second"))
 		secondResult <- err
 	}()
 
@@ -275,4 +289,35 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 	require.True(t, cachedProfile.EnableMetricCollection, "cache must not serve pre-first-update state")
 	require.Equal(t, storepb.WorkspaceProfileSetting_DISABLED, cachedProfile.McpCapability,
 		"cache must not be overwritten by the earlier committer's stale publish")
+	postCommitMu.Lock()
+	defer postCommitMu.Unlock()
+	require.Equal(t, []string{"first", "second"}, postCommitOrder,
+		"postCommit callbacks must run in commit order")
+}
+
+// TestSettingCacheNoFillFromUncachedReads pins that uncached reads do not
+// populate the setting cache: GetSettingUncached (and ListSettings under it)
+// runs outside the publish-ordering mutex, so a fill from that path could
+// cache a pre-commit snapshot after a newer value was already published.
+// Uncached readers must leave publication to the ordered paths.
+func TestSettingCacheNoFillFromUncachedReads(t *testing.T) {
+	ctx, db, s := newSettingAtomicFixture(t)
+	// Drop the seed's cache entry so the next cached read must fill.
+	s.DeleteCache()
+
+	// An uncached read must not leave a cache entry behind ...
+	_, err := s.GetSettingUncached(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
+	require.NoError(t, err)
+
+	// ... so after an out-of-band change, a cached read serves the new value.
+	_, err = db.ExecContext(ctx, `
+		UPDATE setting SET value = jsonb_set(value, '{enableMetricCollection}', 'true')
+		WHERE workspace = 'default' AND name = 'WORKSPACE_PROFILE';
+	`)
+	require.NoError(t, err)
+
+	cached, err := s.GetSetting(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
+	require.NoError(t, err)
+	require.True(t, mustProfile(t, cached).EnableMetricCollection,
+		"GetSetting must not serve a snapshot cached by an uncached read")
 }
