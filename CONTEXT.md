@@ -21,7 +21,7 @@ An instance governed directly by the workspace. Its databases may belong to diff
 _Avoid_: Project instance, unassigned instance
 
 **Project Instance**:
-An instance governed by exactly one project. Every database it contains belongs to that same project.
+An instance owned by exactly one project. Every database it contains belongs to that same project.
 _Avoid_: Workspace instance, shared instance
 
 **Database**:
