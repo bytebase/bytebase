@@ -32,7 +32,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -2127,34 +2126,6 @@ func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("the user has been deactivated"))
 	}
 	return user, nil
-}
-
-func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.DiffMetadataRequest]) (*connect.Response[v1pb.DiffMetadataResponse], error) {
-	request := req.Msg
-	switch request.Engine {
-	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE, v1pb.Engine_MSSQL:
-	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported engine: %v", request.Engine))
-	}
-	if request.SourceMetadata == nil || request.TargetMetadata == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("source_metadata and target_metadata are required"))
-	}
-	storeSourceMetadata := convertV1DatabaseMetadata(request.SourceMetadata)
-	storeTargetMetadata := convertV1DatabaseMetadata(request.TargetMetadata)
-
-	// Convert metadata to model.DatabaseMetadata for diffing
-	isObjectCaseSensitive := true
-	sourceDBSchema := model.NewDatabaseMetadata(storeSourceMetadata, nil, nil, storepb.Engine(request.Engine), isObjectCaseSensitive)
-	targetDBSchema := model.NewDatabaseMetadata(storeTargetMetadata, nil, nil, storepb.Engine(request.Engine), isObjectCaseSensitive)
-
-	migrationSQL, err := schema.DiffMigration(storepb.Engine(request.Engine), sourceDBSchema, targetDBSchema)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to compute diff between source and target schemas"))
-	}
-
-	return connect.NewResponse(&v1pb.DiffMetadataResponse{
-		Diff: migrationSQL,
-	}), nil
 }
 
 func resolveDataSourceID(ctx context.Context, instance *store.InstanceMessage, dataSourceID string, statement string, allowAdminDataSource bool) (string, error) {

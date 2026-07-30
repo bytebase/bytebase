@@ -1,14 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { isEqual } from "lodash-es";
-import { sqlServiceClientConnect } from "@/api";
+import { databaseServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import type {
   Database,
   DatabaseMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import { DiffMetadataRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
-import { getDatabaseEngine } from "@/utils";
+import { DiffMetadataRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { extractGrpcErrorMessage } from "@/utils/connect";
 import { validateDatabaseMetadata } from "./metadata";
 
@@ -42,12 +41,13 @@ export const generateDiffDDL = async ({
     return finish("", ["Invalid schema", ...validationMessages]);
   }
   try {
+    // The server reads the current (source) schema and engine from the
+    // database resource; only the target metadata travels in the request.
     const newRequest = create(DiffMetadataRequestSchema, {
-      sourceMetadata: sourceMetadata,
+      name: database.name,
       targetMetadata: targetMetadata,
-      engine: getDatabaseEngine(database),
     });
-    const diffResponse = await sqlServiceClientConnect.diffMetadata(
+    const diffResponse = await databaseServiceClientConnect.diffMetadata(
       newRequest,
       {
         contextValues: createContextValues().set(silentContextKey, true),

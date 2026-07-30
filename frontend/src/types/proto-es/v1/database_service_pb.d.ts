@@ -543,6 +543,51 @@ export declare type DiffSchemaResponse = Message<"bytebase.v1.DiffSchemaResponse
 export declare const DiffSchemaResponseSchema: GenMessage<DiffSchemaResponse>;
 
 /**
+ * @generated from message bytebase.v1.DiffMetadataRequest
+ */
+export declare type DiffMetadataRequest = Message<"bytebase.v1.DiffMetadataRequest"> & {
+  /**
+   * The database whose current schema is the diff source.
+   * Format: instances/{instance}/databases/{database}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The metadata of the target schema. The source metadata and the engine are
+   * read from the database, so only the target travels in the request.
+   *
+   * @generated from field: bytebase.v1.DatabaseMetadata target_metadata = 2;
+   */
+  targetMetadata?: DatabaseMetadata | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.DiffMetadataRequest.
+ * Use `create(DiffMetadataRequestSchema)` to create a new message.
+ */
+export declare const DiffMetadataRequestSchema: GenMessage<DiffMetadataRequest>;
+
+/**
+ * @generated from message bytebase.v1.DiffMetadataResponse
+ */
+export declare type DiffMetadataResponse = Message<"bytebase.v1.DiffMetadataResponse"> & {
+  /**
+   * The generated migration statements.
+   *
+   * @generated from field: string diff = 1;
+   */
+  diff: string;
+};
+
+/**
+ * Describes the message bytebase.v1.DiffMetadataResponse.
+ * Use `create(DiffMetadataResponseSchema)` to create a new message.
+ */
+export declare const DiffMetadataResponseSchema: GenMessage<DiffMetadataResponse>;
+
+/**
  * @generated from message bytebase.v1.Database
  */
 export declare type Database = Message<"bytebase.v1.Database"> & {
@@ -3288,6 +3333,18 @@ export declare const DatabaseService: GenService<{
     methodKind: "unary";
     input: typeof DiffSchemaRequestSchema;
     output: typeof DiffSchemaResponseSchema;
+  },
+  /**
+   * Generates migration statements from the database's current schema to the
+   * given target metadata.
+   * Permissions required: bb.databases.diffMetadata
+   *
+   * @generated from rpc bytebase.v1.DatabaseService.DiffMetadata
+   */
+  diffMetadata: {
+    methodKind: "unary";
+    input: typeof DiffMetadataRequestSchema;
+    output: typeof DiffMetadataResponseSchema;
   },
   /**
    * Generates schema DDL for a database object.

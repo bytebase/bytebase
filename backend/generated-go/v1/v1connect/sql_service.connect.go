@@ -48,8 +48,6 @@ const (
 	SQLServiceGetQueryHistoryProcedure = "/bytebase.v1.SQLService/GetQueryHistory"
 	// SQLServiceExportProcedure is the fully-qualified name of the SQLService's Export RPC.
 	SQLServiceExportProcedure = "/bytebase.v1.SQLService/Export"
-	// SQLServiceDiffMetadataProcedure is the fully-qualified name of the SQLService's DiffMetadata RPC.
-	SQLServiceDiffMetadataProcedure = "/bytebase.v1.SQLService/DiffMetadata"
 	// SQLServiceAICompletionProcedure is the fully-qualified name of the SQLService's AICompletion RPC.
 	SQLServiceAICompletionProcedure = "/bytebase.v1.SQLService/AICompletion"
 )
@@ -86,9 +84,6 @@ type SQLServiceClient interface {
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
-	// Computes schema differences between two database metadata.
-	// Permissions required: None
-	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
 	// Provides AI-powered SQL completion and generation.
 	// Permissions required: None (authenticated users only, requires AI to be enabled)
 	AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error)
@@ -141,12 +136,6 @@ func NewSQLServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(sQLServiceMethods.ByName("Export")),
 			connect.WithClientOptions(opts...),
 		),
-		diffMetadata: connect.NewClient[v1.DiffMetadataRequest, v1.DiffMetadataResponse](
-			httpClient,
-			baseURL+SQLServiceDiffMetadataProcedure,
-			connect.WithSchema(sQLServiceMethods.ByName("DiffMetadata")),
-			connect.WithClientOptions(opts...),
-		),
 		aICompletion: connect.NewClient[v1.AICompletionRequest, v1.AICompletionResponse](
 			httpClient,
 			baseURL+SQLServiceAICompletionProcedure,
@@ -164,7 +153,6 @@ type sQLServiceClient struct {
 	listQueryHistories   *connect.Client[v1.ListQueryHistoriesRequest, v1.ListQueryHistoriesResponse]
 	getQueryHistory      *connect.Client[v1.GetQueryHistoryRequest, v1.QueryHistory]
 	export               *connect.Client[v1.ExportRequest, v1.ExportResponse]
-	diffMetadata         *connect.Client[v1.DiffMetadataRequest, v1.DiffMetadataResponse]
 	aICompletion         *connect.Client[v1.AICompletionRequest, v1.AICompletionResponse]
 }
 
@@ -204,11 +192,6 @@ func (c *sQLServiceClient) Export(ctx context.Context, req *connect.Request[v1.E
 	return c.export.CallUnary(ctx, req)
 }
 
-// DiffMetadata calls bytebase.v1.SQLService.DiffMetadata.
-func (c *sQLServiceClient) DiffMetadata(ctx context.Context, req *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error) {
-	return c.diffMetadata.CallUnary(ctx, req)
-}
-
 // AICompletion calls bytebase.v1.SQLService.AICompletion.
 func (c *sQLServiceClient) AICompletion(ctx context.Context, req *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error) {
 	return c.aICompletion.CallUnary(ctx, req)
@@ -246,9 +229,6 @@ type SQLServiceHandler interface {
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
-	// Computes schema differences between two database metadata.
-	// Permissions required: None
-	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
 	// Provides AI-powered SQL completion and generation.
 	// Permissions required: None (authenticated users only, requires AI to be enabled)
 	AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error)
@@ -297,12 +277,6 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sQLServiceMethods.ByName("Export")),
 		connect.WithHandlerOptions(opts...),
 	)
-	sQLServiceDiffMetadataHandler := connect.NewUnaryHandler(
-		SQLServiceDiffMetadataProcedure,
-		svc.DiffMetadata,
-		connect.WithSchema(sQLServiceMethods.ByName("DiffMetadata")),
-		connect.WithHandlerOptions(opts...),
-	)
 	sQLServiceAICompletionHandler := connect.NewUnaryHandler(
 		SQLServiceAICompletionProcedure,
 		svc.AICompletion,
@@ -323,8 +297,6 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 			sQLServiceGetQueryHistoryHandler.ServeHTTP(w, r)
 		case SQLServiceExportProcedure:
 			sQLServiceExportHandler.ServeHTTP(w, r)
-		case SQLServiceDiffMetadataProcedure:
-			sQLServiceDiffMetadataHandler.ServeHTTP(w, r)
 		case SQLServiceAICompletionProcedure:
 			sQLServiceAICompletionHandler.ServeHTTP(w, r)
 		default:
@@ -358,10 +330,6 @@ func (UnimplementedSQLServiceHandler) GetQueryHistory(context.Context, *connect.
 
 func (UnimplementedSQLServiceHandler) Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Export is not implemented"))
-}
-
-func (UnimplementedSQLServiceHandler) DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.DiffMetadata is not implemented"))
 }
 
 func (UnimplementedSQLServiceHandler) AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error) {

@@ -1327,6 +1327,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchUpdateDatabasesResponse'
+  /bytebase.v1.DatabaseService/DiffMetadata:
+    post:
+      tags:
+        - bytebase.v1.DatabaseService
+      summary: DiffMetadata
+      description: |-
+        Generates migration statements from the database's current schema to the
+         given target metadata.
+         Permissions required: bb.databases.diffMetadata
+      operationId: bytebase.v1.DatabaseService.DiffMetadata
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.DiffMetadataRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.DiffMetadataResponse'
   /bytebase.v1.DatabaseService/DiffSchema:
     post:
       tags:
@@ -5603,44 +5642,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.AICompletionResponse'
   /bytebase.v1.SQLService/AdminExecute: {}
-  /bytebase.v1.SQLService/DiffMetadata:
-    post:
-      tags:
-        - bytebase.v1.SQLService
-      summary: DiffMetadata
-      description: |-
-        Computes schema differences between two database metadata.
-         Permissions required: None
-      operationId: bytebase.v1.SQLService.DiffMetadata
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.DiffMetadataRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.DiffMetadataResponse'
   /bytebase.v1.SQLService/Export:
     post:
       tags:
@@ -11271,18 +11272,18 @@ components:
     bytebase.v1.DiffMetadataRequest:
       type: object
       properties:
-        sourceMetadata:
-          title: source_metadata
-          description: The metadata of the source schema.
-          $ref: '#/components/schemas/bytebase.v1.DatabaseMetadata'
+        name:
+          type: string
+          title: name
+          description: |-
+            The database whose current schema is the diff source.
+             Format: instances/{instance}/databases/{database}
         targetMetadata:
           title: target_metadata
-          description: The metadata of the target schema.
+          description: |-
+            The metadata of the target schema. The source metadata and the engine are
+             read from the database, so only the target travels in the request.
           $ref: '#/components/schemas/bytebase.v1.DatabaseMetadata'
-        engine:
-          title: engine
-          description: The database engine of the schema.
-          $ref: '#/components/schemas/bytebase.v1.Engine'
       title: DiffMetadataRequest
       additionalProperties: false
     bytebase.v1.DiffMetadataResponse:
@@ -11291,7 +11292,7 @@ components:
         diff:
           type: string
           title: diff
-          description: The diff of the metadata.
+          description: The generated migration statements.
       title: DiffMetadataResponse
       additionalProperties: false
     bytebase.v1.DiffSchemaRequest:
@@ -22622,12 +22623,6 @@ tags:
     description: AccessGrantService manages temporary access grants within projects.
   - name: bytebase.v1.RolloutService
     description: RolloutService manages the execution of deployment plans.
-  - name: bytebase.v1.InstanceRoleService
-    description: InstanceRoleService manages database roles within instances.
-  - name: bytebase.v1.InstanceService
-    description: InstanceService manages database instances and their connections.
-  - name: bytebase.v1.DatabaseService
-    description: DatabaseService manages databases and their schemas.
   - name: bytebase.v1.QueryHistoryService
     description: QueryHistoryService manages query history records of SQL Editor queries and exports.
   - name: bytebase.v1.SQLService
@@ -22656,6 +22651,12 @@ tags:
     description: DatabaseCatalogService manages database schema metadata and classification.
   - name: bytebase.v1.DatabaseGroupService
     description: DatabaseGroupService manages database groups for organizing databases by criteria.
+  - name: bytebase.v1.InstanceRoleService
+    description: InstanceRoleService manages database roles within instances.
+  - name: bytebase.v1.InstanceService
+    description: InstanceService manages database instances and their connections.
+  - name: bytebase.v1.DatabaseService
+    description: DatabaseService manages databases and their schemas.
   - name: bytebase.v1.GroupService
     description: GroupService manages user groups for organizing users and permissions.
   - name: bytebase.v1.IdentityProviderService

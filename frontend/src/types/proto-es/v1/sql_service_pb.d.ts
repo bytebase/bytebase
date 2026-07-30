@@ -5,8 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, NullValue, Timestamp, Value } from "@bufbuild/protobuf/wkt";
-import type { Engine, ExportFormat, PermissionDeniedDetail, Position } from "./common_pb";
-import type { DatabaseMetadata } from "./database_service_pb";
+import type { ExportFormat, PermissionDeniedDetail, Position } from "./common_pb";
 import type { GetQueryHistoryRequestSchema, ListQueryHistoriesRequestSchema, ListQueryHistoriesResponseSchema, QueryHistorySchema, SearchQueryHistoriesRequestSchema, SearchQueryHistoriesResponseSchema } from "./query_history_service_pb";
 
 /**
@@ -1100,56 +1099,6 @@ export declare type ExportResponse = Message<"bytebase.v1.ExportResponse"> & {
 export declare const ExportResponseSchema: GenMessage<ExportResponse>;
 
 /**
- * @generated from message bytebase.v1.DiffMetadataRequest
- */
-export declare type DiffMetadataRequest = Message<"bytebase.v1.DiffMetadataRequest"> & {
-  /**
-   * The metadata of the source schema.
-   *
-   * @generated from field: bytebase.v1.DatabaseMetadata source_metadata = 1;
-   */
-  sourceMetadata?: DatabaseMetadata | undefined;
-
-  /**
-   * The metadata of the target schema.
-   *
-   * @generated from field: bytebase.v1.DatabaseMetadata target_metadata = 2;
-   */
-  targetMetadata?: DatabaseMetadata | undefined;
-
-  /**
-   * The database engine of the schema.
-   *
-   * @generated from field: bytebase.v1.Engine engine = 3;
-   */
-  engine: Engine;
-};
-
-/**
- * Describes the message bytebase.v1.DiffMetadataRequest.
- * Use `create(DiffMetadataRequestSchema)` to create a new message.
- */
-export declare const DiffMetadataRequestSchema: GenMessage<DiffMetadataRequest>;
-
-/**
- * @generated from message bytebase.v1.DiffMetadataResponse
- */
-export declare type DiffMetadataResponse = Message<"bytebase.v1.DiffMetadataResponse"> & {
-  /**
-   * The diff of the metadata.
-   *
-   * @generated from field: string diff = 1;
-   */
-  diff: string;
-};
-
-/**
- * Describes the message bytebase.v1.DiffMetadataResponse.
- * Use `create(DiffMetadataResponseSchema)` to create a new message.
- */
-export declare const DiffMetadataResponseSchema: GenMessage<DiffMetadataResponse>;
-
-/**
  * @generated from message bytebase.v1.AICompletionRequest
  */
 export declare type AICompletionRequest = Message<"bytebase.v1.AICompletionRequest"> & {
@@ -1335,17 +1284,6 @@ export declare const SQLService: GenService<{
     methodKind: "unary";
     input: typeof ExportRequestSchema;
     output: typeof ExportResponseSchema;
-  },
-  /**
-   * Computes schema differences between two database metadata.
-   * Permissions required: None
-   *
-   * @generated from rpc bytebase.v1.SQLService.DiffMetadata
-   */
-  diffMetadata: {
-    methodKind: "unary";
-    input: typeof DiffMetadataRequestSchema;
-    output: typeof DiffMetadataResponseSchema;
   },
   /**
    * Provides AI-powered SQL completion and generation.

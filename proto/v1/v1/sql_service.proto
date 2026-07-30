@@ -10,7 +10,6 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
-import "v1/database_service.proto";
 import "v1/query_history_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
@@ -86,17 +85,6 @@ service SQLService {
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-  }
-
-  // Computes schema differences between two database metadata.
-  // Permissions required: None
-  rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
-    option (google.api.http) = {
-      post: "/v1/schemaDesign:diffMetadata"
-      body: "*"
-    };
-    option (bytebase.v1.allow_without_credential) = true;
-    // This is a util method requiring no authentication thus no authorization.
   }
 
   // Provides AI-powered SQL completion and generation.
@@ -470,22 +458,6 @@ message ExportResponse {
   // Format: projects/{project}/accessGrants/{accessGrant}.
   // Empty when the user was authorized through normal ACL rather than a grant.
   string applied_access_grant = 2;
-}
-
-message DiffMetadataRequest {
-  // The metadata of the source schema.
-  DatabaseMetadata source_metadata = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The metadata of the target schema.
-  DatabaseMetadata target_metadata = 2 [(google.api.field_behavior) = REQUIRED];
-
-  // The database engine of the schema.
-  Engine engine = 3;
-}
-
-message DiffMetadataResponse {
-  // The diff of the metadata.
-  string diff = 1;
 }
 
 message AICompletionRequest {
