@@ -403,7 +403,7 @@ export function SheetTree({
     for (const node of revealNodes(sheetTree, (node) => node)) {
       if (
         node.worksheet ||
-        !node.empty ||
+        node.loadMore ||
         node.key === folderContext.rootPath ||
         !expandedKeySet.has(node.key)
       ) {
@@ -428,7 +428,7 @@ export function SheetTree({
       if (
         isOpening &&
         !node.worksheet &&
-        node.empty &&
+        !node.loadMore &&
         node.key !== folderContext.rootPath
       ) {
         void fetchWorksheetsByFolder(node.key);

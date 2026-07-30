@@ -674,6 +674,64 @@ describe("SheetTree", () => {
     unmount();
   });
 
+  test("3b. Opening a locally nonempty folder still fetches its server members", () => {
+    const defaultMocks = setupDefaultMocks();
+    const folder = makeFolderNode("/my/folder1", [
+      makeWorksheetNode("/my/folder1/new-local-ws"),
+    ]);
+    const rootNode = makeFolderNode("/my", [folder]);
+    defaultMocks.viewContext._sheetTree.value = rootNode;
+    defaultMocks.expandedKeys.value = new Set(["/my"]);
+
+    const { container, render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={vi.fn()}
+      />
+    );
+    render();
+
+    const row = container.querySelector(
+      `[data-item-key="/my/folder1"]`
+    ) as HTMLElement | null;
+    const prefix = row?.querySelector("[data-testid='tree-node-prefix']");
+    act(() => {
+      prefix?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(defaultMocks.viewContext.fetchWorksheetsByFolder).toHaveBeenCalledWith(
+      "/my/folder1"
+    );
+
+    unmount();
+  });
+
+  test("3c. Already expanded locally nonempty folders are fetched", () => {
+    const defaultMocks = setupDefaultMocks();
+    const folder = makeFolderNode("/my/folder1", [
+      makeWorksheetNode("/my/folder1/new-local-ws"),
+    ]);
+    const rootNode = makeFolderNode("/my", [folder]);
+    defaultMocks.viewContext._sheetTree.value = rootNode;
+    defaultMocks.expandedKeys.value = new Set(["/my", "/my/folder1"]);
+
+    const { render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={vi.fn()}
+      />
+    );
+    render();
+
+    expect(defaultMocks.viewContext.fetchWorksheetsByFolder).toHaveBeenCalledWith(
+      "/my/folder1"
+    );
+
+    unmount();
+  });
+
   test("4. Multi-select mode renders checkboxes; toggle fires onCheckedNodesChange", () => {
     const defaultMocks = setupDefaultMocks();
     const wsNode = makeWorksheetNode("/my/ws2");
