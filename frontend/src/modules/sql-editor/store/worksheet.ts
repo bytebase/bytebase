@@ -75,6 +75,13 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
     const worksheetStore = useAppStore.getState();
 
     const connection = await extractWorksheetConnection({ database });
+    const currentTab = tabStore.tabsById.get(tabId);
+    const nextConnection =
+      currentTab &&
+      currentTab.connection.instance === connection.instance &&
+      currentTab.connection.database === connection.database
+        ? { ...currentTab.connection, ...connection }
+        : connection;
 
     // `title === undefined` means "don't change the title" — preserves
     // the current title on auto-save calls that never pass one.
@@ -115,7 +122,7 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
 
     return tabStore.updateTab(tabId, {
       status: "CLEAN",
-      connection,
+      connection: nextConnection,
       title: worksheetTitle,
       worksheet,
     });

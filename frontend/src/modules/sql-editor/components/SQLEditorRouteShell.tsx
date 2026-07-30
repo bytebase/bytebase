@@ -221,6 +221,15 @@ export function SQLEditorRouteShell() {
       return false;
     }
     const connection = await extractWorksheetConnection(sheet);
+    const schema = route.query.schema;
+    const table = route.query.table;
+    if (typeof schema === "string" && schema) {
+      connection.schema = schema;
+    }
+    if (typeof table === "string" && table) {
+      connection.table = table;
+      connection.schema ??= "";
+    }
     tabsState.addTab({
       id: openedSheetTab?.id,
       connection,
@@ -449,6 +458,11 @@ export function SQLEditorRouteShell() {
     if (vals.sheetName) {
       const sheet = useAppStore.getState().getWorksheetByName(vals.sheetName);
       if (sheet) {
+        if (vals.schema) query.schema = vals.schema;
+        if (vals.table) {
+          query.table = vals.table;
+          query.schema = vals.schema ?? "";
+        }
         await navigate.replace({
           name: SQL_EDITOR_WORKSHEET_MODULE,
           params: {

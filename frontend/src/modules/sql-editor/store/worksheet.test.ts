@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { create, type StoreApi } from "zustand";
 import { getSQLEditorEditorState } from "./editor";
+import { getSQLEditorTabsState } from "./tab";
 import type {
   QueryHistorySlice,
   SQLEditorStoreState,
@@ -113,18 +114,14 @@ vi.mock("@/modules/sql-editor/model/Sheet", () => ({
   openWorksheetByName: vi.fn(),
 }));
 
-vi.mock("@/utils", async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>;
-  return {
-    ...actual,
-    extractWorksheetConnection: vi.fn(
-      async ({ database }: { database: string }) => ({
-        database,
-        instance: "",
-      })
-    ),
-  };
-});
+vi.mock("@/lib/sqlEditorConnection", () => ({
+  extractWorksheetConnection: vi.fn(
+    async ({ database }: { database: string }) => ({
+      instance: database ? "instances/cosmos" : "",
+      database,
+    })
+  ),
+}));
 
 const makeStore = (): StoreApi<SQLEditorStoreState> =>
   create<SQLEditorStoreState>()((...args) => ({
@@ -146,6 +143,7 @@ beforeEach(() => {
   piniaMocks.editorStore.project = "projects/default";
   piniaMocks.editorStore.projectContextReady = true;
   getSQLEditorEditorState().setProject("");
+  getSQLEditorTabsState().reset();
 });
 
 describe("worksheet save slice — autoSaveController", () => {
@@ -175,6 +173,43 @@ describe("worksheet save slice — autoSaveController", () => {
     store.getState().abortAutoSave();
     expect(abortSpy).toHaveBeenCalledTimes(1);
     expect(store.getState().autoSaveController).toBeNull();
+  });
+});
+
+describe("worksheet save slice — maybeUpdateWorksheet", () => {
+  test("preserves the selected Cosmos DB container when saving the worksheet", async () => {
+    const store = makeStore();
+    const tab = getSQLEditorTabsState().addTab({
+      worksheet: "projects/default/worksheets/cosmos-sheet",
+      connection: {
+        instance: "instances/cosmos",
+        database: "instances/cosmos/databases/grs",
+        table: "SUPPORDERS_VIS.items",
+      },
+      statement: "select * from SUPPORDERS_VIS.items",
+      status: "DIRTY",
+    });
+    piniaMocks.worksheetStore.getWorksheetByName.mockReturnValue({
+      name: tab.worksheet,
+      title: "Cosmos worksheet",
+      database: tab.connection.database,
+    });
+    piniaMocks.worksheetStore.patchWorksheet.mockResolvedValue({
+      name: tab.worksheet,
+    });
+
+    await store.getState().maybeUpdateWorksheet({
+      tabId: tab.id,
+      worksheet: tab.worksheet,
+      database: tab.connection.database,
+      statement: tab.statement,
+    });
+
+    expect(getSQLEditorTabsState().tabsById.get(tab.id)?.connection).toEqual({
+      instance: "instances/cosmos",
+      database: "instances/cosmos/databases/grs",
+      table: "SUPPORDERS_VIS.items",
+    });
   });
 });
 
