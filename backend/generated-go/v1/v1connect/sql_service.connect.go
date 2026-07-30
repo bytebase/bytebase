@@ -48,8 +48,6 @@ const (
 	SQLServiceGetQueryHistoryProcedure = "/bytebase.v1.SQLService/GetQueryHistory"
 	// SQLServiceExportProcedure is the fully-qualified name of the SQLService's Export RPC.
 	SQLServiceExportProcedure = "/bytebase.v1.SQLService/Export"
-	// SQLServiceAICompletionProcedure is the fully-qualified name of the SQLService's AICompletion RPC.
-	SQLServiceAICompletionProcedure = "/bytebase.v1.SQLService/AICompletion"
 )
 
 // SQLServiceClient is a client for the bytebase.v1.SQLService service.
@@ -84,9 +82,6 @@ type SQLServiceClient interface {
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
-	// Provides AI-powered SQL completion and generation.
-	// Permissions required: None (authenticated users only, requires AI to be enabled)
-	AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error)
 }
 
 // NewSQLServiceClient constructs a client for the bytebase.v1.SQLService service. By default, it
@@ -136,12 +131,6 @@ func NewSQLServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(sQLServiceMethods.ByName("Export")),
 			connect.WithClientOptions(opts...),
 		),
-		aICompletion: connect.NewClient[v1.AICompletionRequest, v1.AICompletionResponse](
-			httpClient,
-			baseURL+SQLServiceAICompletionProcedure,
-			connect.WithSchema(sQLServiceMethods.ByName("AICompletion")),
-			connect.WithClientOptions(opts...),
-		),
 	}
 }
 
@@ -153,7 +142,6 @@ type sQLServiceClient struct {
 	listQueryHistories   *connect.Client[v1.ListQueryHistoriesRequest, v1.ListQueryHistoriesResponse]
 	getQueryHistory      *connect.Client[v1.GetQueryHistoryRequest, v1.QueryHistory]
 	export               *connect.Client[v1.ExportRequest, v1.ExportResponse]
-	aICompletion         *connect.Client[v1.AICompletionRequest, v1.AICompletionResponse]
 }
 
 // Query calls bytebase.v1.SQLService.Query.
@@ -192,11 +180,6 @@ func (c *sQLServiceClient) Export(ctx context.Context, req *connect.Request[v1.E
 	return c.export.CallUnary(ctx, req)
 }
 
-// AICompletion calls bytebase.v1.SQLService.AICompletion.
-func (c *sQLServiceClient) AICompletion(ctx context.Context, req *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error) {
-	return c.aICompletion.CallUnary(ctx, req)
-}
-
 // SQLServiceHandler is an implementation of the bytebase.v1.SQLService service.
 type SQLServiceHandler interface {
 	// Executes a read-only SQL query against a database.
@@ -229,9 +212,6 @@ type SQLServiceHandler interface {
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
-	// Provides AI-powered SQL completion and generation.
-	// Permissions required: None (authenticated users only, requires AI to be enabled)
-	AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error)
 }
 
 // NewSQLServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -277,12 +257,6 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sQLServiceMethods.ByName("Export")),
 		connect.WithHandlerOptions(opts...),
 	)
-	sQLServiceAICompletionHandler := connect.NewUnaryHandler(
-		SQLServiceAICompletionProcedure,
-		svc.AICompletion,
-		connect.WithSchema(sQLServiceMethods.ByName("AICompletion")),
-		connect.WithHandlerOptions(opts...),
-	)
 	return "/bytebase.v1.SQLService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SQLServiceQueryProcedure:
@@ -297,8 +271,6 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 			sQLServiceGetQueryHistoryHandler.ServeHTTP(w, r)
 		case SQLServiceExportProcedure:
 			sQLServiceExportHandler.ServeHTTP(w, r)
-		case SQLServiceAICompletionProcedure:
-			sQLServiceAICompletionHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -330,8 +302,4 @@ func (UnimplementedSQLServiceHandler) GetQueryHistory(context.Context, *connect.
 
 func (UnimplementedSQLServiceHandler) Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Export is not implemented"))
-}
-
-func (UnimplementedSQLServiceHandler) AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.AICompletion is not implemented"))
 }
