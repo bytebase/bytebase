@@ -19,7 +19,7 @@ An instance is registered as either:
 
 - a **workspace instance**, governed by the workspace, whose databases may
   belong to different projects; or
-- a **project instance**, governed by exactly one non-default project, whose
+- a **project instance**, owned by exactly one non-default project, whose
   databases all belong to that project.
 
 The scope is chosen at creation and is immutable in v1. Existing instances
@@ -54,7 +54,11 @@ APIs neither accept nor emit shortened aliases for project resources.
 Every API field, filter, target, audit log, activity record, and historical
 reference that identifies one of these resources accepts or retains its full
 canonical name. Project-scoped references must match the owning project.
-Historical references retain the full name after archival or purge.
+Archival does not rewrite historical references. Permanently purging the owning
+project deletes its operational records, including changelogs, query history,
+plans, and task runs. Audit logs are the only references that may outlive that
+purge, according to the workspace retention policy, and retain the full
+canonical name as text.
 
 The canonical `Instance.name` is the only public scope indicator. `Instance`
 does not add either `project` or `scope`, avoiding duplicate representations
@@ -71,6 +75,11 @@ Methods acting on a specific existing resource derive scope from `name` and do
 not add a separate parent. This includes `ListInstanceDatabase`, including its
 inline candidate-instance case.
 
+`UpdateInstance` with `allow_missing` is the creation exception. When its
+canonical name is `projects/{project}/instances/{instance}`, it creates the
+missing project instance under the active, non-default project encoded in that
+name. It never falls back to creating a workspace instance.
+
 Parentless `ListInstances` returns only workspace instances.
 `ListInstances(parent="projects/P")` returns only P's project instances. Its
 existing `project` filter may be omitted or equal P; a different project is
@@ -79,11 +88,18 @@ collections such as `projects/-/instances`.
 
 Batch sync and update use the same optional collection parent. Every target must
 belong to that exact collection; cross-project and cross-scope batches are
-rejected in v1.
+rejected in v1. The service validates every target's collection membership and
+authorization before performing any operation, so an invalid batch has no side
+effects. Runtime failures retain the existing non-transactional batch behavior.
 
 For project-scoped creation, `parent` is the sole database-assignment source and
 `initial_database_project` must be unset. Parentless workspace creation keeps
 the existing optional `initial_database_project` behavior.
+
+Validation-only project-instance creation requires the same active parent and
+`bb.instances.create` authorization as persistent creation. It tests the
+connection without persisting the instance or consuming instance and activation
+limits.
 
 `Database.project` remains public:
 
@@ -115,6 +131,9 @@ change.
 Instance resource IDs remain unique across the workspace even though project
 instance names are nested. Reusing an ID in another project returns
 `ALREADY_EXISTS`; this design does not introduce composite instance identity.
+After permanent instance purge, the ID may be reused, matching existing
+workspace-instance behavior. Canonical names identify the current resource, not
+a permanent resource generation.
 
 Every newly discovered database in a project instance inherits the instance's
 project. Moving such a database to another project is rejected. Store write
@@ -139,7 +158,9 @@ Among built-in project roles, only Project Owner receives instance permissions:
 `bb.instances.undelete`. The list permission is evaluated against the exact
 project parent, so it does not expose workspace instances or another project's
 instances. Custom project roles may grant a narrower subset of the existing
-`bb.instances.*` permissions.
+`bb.instances.*` permissions. `bb.instances.delete` authorizes both archival and
+the subsequent permanent purge; Project Owner may complete that two-step
+lifecycle without a workspace-only purge permission.
 
 For policy types that support parent inheritance, project-instance resources
 follow `project → instance → database`. Existing workspace-wide and environment
@@ -150,16 +171,37 @@ workspace guardrails.
 
 Archiving a project makes its project instances unavailable and suspends their
 scheduled activity without changing individual instance states. Restoring the
-project reveals the prior states and resumes scheduling.
+project reveals the prior states and resumes scheduling. This availability gate
+blocks data and workflow operations for every caller, including workspace Admins
+and DBAs; workspace-level authority does not override an archived parent's
+lifecycle state. Explicit project restore and purge operations remain available.
+
+Creating a project instance requires its owning project to remain active through
+commit. Once the instance exists, in-flight writers beneath it may finish after
+the project is archived; their results remain unavailable until the project is
+restored. This deliberately avoids making project archival a transaction fence
+for descendant metadata.
 
 Permanently purging a project permanently deletes its project instances,
 databases, and related Bytebase metadata. They are not converted to workspace
-instances or moved to the default project.
+instances or moved to the default project. Purge serializes against descendant
+writers so that no writer can commit after the owning project is removed.
 
 Directly archiving a project instance leaves its databases assigned to the
-owning project. Restoring it reveals them again. Purging it deletes the
-databases and related Bytebase metadata. The workspace-instance `force`
-behavior that transfers databases to the default project does not apply.
+owning project, but they are unavailable to data and workflow operations until
+the instance is restored. Instance restore and purge operations remain
+available. Archival does not stop or delete the physical databases and does not
+fence already-started descendant writers; their committed results remain
+unavailable until restoration. Purging serializes against those writers, then
+deletes the databases, their metadata and history, and instance-targeting tasks
+and task runs. Project-level issues, plans, and releases remain, retaining
+canonical target names that may later identify a replacement resource if the
+purged instance ID is reused; audit logs also remain under the workspace
+retention policy. This matches the workspace-instance purge boundary, except
+that the workspace-instance `force` behavior that transfers databases to the
+default project does not apply. `DeleteInstance` rejects `force=true` with
+`INVALID_ARGUMENT` for a project instance; ordinary archival needs no force
+because its databases remain owned by the project.
 
 ### Availability and limits
 
