@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { act } from "react";
+import { act, forwardRef } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { WorksheetFolderNode } from "@/modules/sql-editor/model/Sheet";
@@ -230,12 +230,19 @@ vi.mock("@/components/ui/button", () => ({
     children,
     onClick,
     disabled,
+    className,
   }: {
     children: React.ReactNode;
     onClick?: () => void;
     disabled?: boolean;
+    className?: string;
   }) => (
-    <button data-testid="button" disabled={disabled} onClick={onClick}>
+    <button
+      data-testid="button"
+      className={className}
+      disabled={disabled}
+      onClick={onClick}
+    >
       {children}
     </button>
   ),
@@ -243,22 +250,19 @@ vi.mock("@/components/ui/button", () => ({
 
 // Mock Input
 vi.mock("@/components/ui/input", () => ({
-  Input: ({
-    value,
-    onChange,
-    onBlur,
-    onKeyDown,
-    id,
-    className,
-  }: {
-    value?: string;
-    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    onBlur?: () => void;
-    onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-    id?: string;
-    className?: string;
-  }) => (
+  Input: forwardRef<
+    HTMLInputElement,
+    {
+      value?: string;
+      onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+      onBlur?: () => void;
+      onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+      id?: string;
+      className?: string;
+    }
+  >(({ value, onChange, onBlur, onKeyDown, id, className }, ref) => (
     <input
+      ref={ref}
       data-testid="rename-input"
       id={id}
       className={className}
@@ -268,7 +272,7 @@ vi.mock("@/components/ui/input", () => ({
       onKeyDown={onKeyDown}
       readOnly={!onChange}
     />
-  ),
+  )),
 }));
 
 // Mock HighlightLabelText
@@ -844,14 +848,29 @@ describe("SheetTree", () => {
       `[data-item-key="/my/__load-more"]`
     ) as HTMLElement | null;
     expect(loadMoreRow).not.toBeNull();
-    const loadMoreLabel = loadMoreRow?.querySelector(".tree-label");
-    expect(loadMoreLabel?.classList.contains("text-control")).toBe(true);
-    expect(loadMoreLabel?.classList.contains("text-control-light")).toBe(false);
-    expect(loadMoreLabel?.classList.contains("text-xs")).toBe(true);
-    expect(loadMoreLabel?.classList.contains("cursor-pointer")).toBe(true);
+    const loadMoreWrapper = loadMoreRow?.querySelector(
+      "[data-testid='load-more-wrapper']"
+    );
+    const loadMoreButton = loadMoreRow?.querySelector("[data-testid='button']");
+    expect(loadMoreButton).not.toBeNull();
+    expect(loadMoreWrapper?.classList.contains("flex-1")).toBe(true);
+    expect(loadMoreWrapper?.classList.contains("text-left")).toBe(true);
+    expect(loadMoreButton?.classList.contains("tree-label")).toBe(true);
+    expect(loadMoreButton?.classList.contains("flex-1")).toBe(false);
+    expect(loadMoreButton?.classList.contains("text-control")).toBe(true);
+    expect(loadMoreButton?.classList.contains("text-control-light")).toBe(false);
+    expect(loadMoreButton?.classList.contains("text-xs")).toBe(true);
+    expect(loadMoreButton?.classList.contains("cursor-pointer")).toBe(true);
 
     await act(async () => {
-      loadMoreLabel?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      loadMoreWrapper?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      );
+    });
+    expect(defaultMocks.viewContext.fetchNextPage).not.toHaveBeenCalled();
+
+    await act(async () => {
+      loadMoreButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
     expect(defaultMocks.viewContext.fetchNextPage).toHaveBeenCalledWith(
@@ -891,14 +910,29 @@ describe("SheetTree", () => {
       `[data-item-key="/my/alpha/__load-more"]`
     ) as HTMLElement | null;
     expect(loadMoreRow).not.toBeNull();
-    const loadMoreLabel = loadMoreRow?.querySelector(".tree-label");
-    expect(loadMoreLabel?.classList.contains("text-control")).toBe(true);
-    expect(loadMoreLabel?.classList.contains("text-control-light")).toBe(false);
-    expect(loadMoreLabel?.classList.contains("text-xs")).toBe(true);
-    expect(loadMoreLabel?.classList.contains("cursor-pointer")).toBe(true);
+    const loadMoreWrapper = loadMoreRow?.querySelector(
+      "[data-testid='load-more-wrapper']"
+    );
+    const loadMoreButton = loadMoreRow?.querySelector("[data-testid='button']");
+    expect(loadMoreButton).not.toBeNull();
+    expect(loadMoreWrapper?.classList.contains("flex-1")).toBe(true);
+    expect(loadMoreWrapper?.classList.contains("text-left")).toBe(true);
+    expect(loadMoreButton?.classList.contains("tree-label")).toBe(true);
+    expect(loadMoreButton?.classList.contains("flex-1")).toBe(false);
+    expect(loadMoreButton?.classList.contains("text-control")).toBe(true);
+    expect(loadMoreButton?.classList.contains("text-control-light")).toBe(false);
+    expect(loadMoreButton?.classList.contains("text-xs")).toBe(true);
+    expect(loadMoreButton?.classList.contains("cursor-pointer")).toBe(true);
 
     await act(async () => {
-      loadMoreLabel?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      loadMoreWrapper?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      );
+    });
+    expect(defaultMocks.viewContext.fetchNextPage).not.toHaveBeenCalled();
+
+    await act(async () => {
+      loadMoreButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
     expect(defaultMocks.viewContext.fetchNextPage).toHaveBeenCalledWith(
@@ -1021,6 +1055,54 @@ describe("SheetTree", () => {
     expect(tree?.className).toContain(
       "[&_[role=treeitem]]:overflow-visible"
     );
+
+    unmount();
+  });
+
+  test("8b. Rename input preserves cursor position while typing", async () => {
+    const defaultMocks = setupDefaultMocks();
+    const folderNode = makeFolderNode("/my/folder1", [], true);
+    defaultMocks.viewContext._sheetTree.value = makeFolderNode("/my", [
+      folderNode,
+    ]);
+    defaultMocks.editingNode.value = {
+      node: folderNode,
+      rawLabel: "abcdef",
+    };
+
+    const { container, render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={vi.fn()}
+      />
+    );
+    render();
+
+    const input = container.querySelector(
+      "[data-testid='rename-input']"
+    ) as HTMLInputElement | null;
+    expect(input).not.toBeNull();
+    input?.setSelectionRange(3, 3);
+
+    await act(async () => {
+      if (!input) return;
+      const valueSetter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value"
+      )?.set;
+      valueSetter?.call(input, "abcXdef");
+      input.setSelectionRange(4, 4);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.setSelectionRange(7, 7);
+    });
+    render();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(input?.selectionStart).toBe(4);
+    expect(input?.selectionEnd).toBe(4);
 
     unmount();
   });

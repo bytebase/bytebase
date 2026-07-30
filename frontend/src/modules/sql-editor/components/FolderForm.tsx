@@ -24,7 +24,7 @@ function toTreeData(
   return {
     id: node.key,
     data: node,
-    children: node.children.map(toTreeData),
+    children: node.children.filter((child) => !child.loadMore).map(toTreeData),
   };
 }
 
@@ -97,7 +97,9 @@ export function FolderForm({ folder, onFolderChange }: Props) {
     queueMicrotask(() => setShowPopover(false));
   };
 
-  const treeData = folderTree.children.map(toTreeData);
+  const treeData = folderTree.children
+    .filter((child) => !child.loadMore)
+    .map(toTreeData);
 
   const searchMatch = (node: TreeDataNode<WorksheetFolderNode>) => {
     if (!folderPath) return true;

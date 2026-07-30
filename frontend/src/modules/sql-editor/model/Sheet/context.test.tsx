@@ -461,6 +461,66 @@ describe("sheet context", () => {
     );
   });
 
+  test("appends newly fetched worksheet pages without frontend reordering", async () => {
+    const firstWorksheet = create(WorksheetSchema, {
+      name: "projects/proj1/worksheets/first",
+      project: "projects/proj1",
+      creator: "users/creator@example.com",
+      title: "Zeta worksheet",
+      visibility: Worksheet_Visibility.PRIVATE,
+    });
+    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => {
+      mocks.addWorksheets([firstWorksheet]);
+      return {
+        worksheets: [firstWorksheet],
+        nextPageToken: "next-page",
+      };
+    });
+
+    const { provideSheetContext, useSheetContextByView } = await import(
+      "./context"
+    );
+    let viewContext: ReturnType<typeof useSheetContextByView> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      viewContext = useSheetContextByView("my");
+      return null;
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+    await act(async () => {
+      await viewContext!.fetchSheetList();
+    });
+
+    const secondWorksheet = create(WorksheetSchema, {
+      name: "projects/proj1/worksheets/second",
+      project: "projects/proj1",
+      creator: "users/creator@example.com",
+      title: "Alpha worksheet",
+      visibility: Worksheet_Visibility.PRIVATE,
+    });
+    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => {
+      mocks.addWorksheets([secondWorksheet]);
+      return {
+        worksheets: [secondWorksheet],
+        nextPageToken: "",
+      };
+    });
+    await act(async () => {
+      await viewContext!.fetchNextPage();
+    });
+
+    expect(
+      viewContext!.sheetTree.children
+        .filter((child) => child.worksheet)
+        .map((child) => child.label)
+    ).toEqual(["Zeta worksheet", "Alpha worksheet"]);
+  });
+
   test("keeps folder and descendant load-more state after renaming a folder", async () => {
     const { provideSheetContext, useSheetContextByView } = await import(
       "./context"
@@ -621,7 +681,7 @@ describe("sheet context", () => {
     ]);
   });
 
-  test("batch updates worksheet folder paths with exact folder filters", async () => {
+  test("batch updates worksheet folder paths without display filters", async () => {
     const { provideSheetContext, useSheetContext } = await import("./context");
     let sheetContext: ReturnType<typeof useSheetContext> | undefined;
 
@@ -634,6 +694,13 @@ describe("sheet context", () => {
     root = createRoot(container);
     await act(async () => {
       root.render(<Probe />);
+    });
+    act(() => {
+      sheetContext!.setFilter({
+        ...sheetContext!.filter,
+        keyword: "Payroll",
+        onlyShowStarred: true,
+      });
     });
 
     await act(async () => {

@@ -1,6 +1,6 @@
 import Emittery from "emittery";
 import { enableMapSet } from "immer";
-import { debounce, isEqual, orderBy, sortBy } from "lodash-es";
+import { debounce, isEqual, sortBy } from "lodash-es";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
@@ -797,9 +797,8 @@ const buildTree = (
     }
   }
 
-  const sheets = orderBy(
-    worksheetsByFolder.get(parent.key) ?? [],
-    (item) => item.title
+  const sheets = (
+    worksheetsByFolder.get(parent.key) ?? []
   ).map<WorksheetFolderNode>((worksheet) => ({
     isLeaf: true,
     key: getKeyForWorksheet(view, worksheet),
@@ -1039,7 +1038,8 @@ const hasWorksheetServerFilter = (): boolean =>
 
 const sheetFilterForView = (
   view: SheetViewMode,
-  extraFilters: string[] = []
+  extraFilters: string[] = [],
+  includeDisplayFilters = true
 ): string => {
   const email = useAppStore.getState().currentUser?.email ?? "";
   const baseFilters =
@@ -1049,9 +1049,11 @@ const sheetFilterForView = (
           `creator != "users/${escapeCELStringLiteral(email)}"`,
           `visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`,
         ];
-  return [...baseFilters, ...extraFilters, ...worksheetSearchFilters()].join(
-    " && "
-  );
+  return [
+    ...baseFilters,
+    ...extraFilters,
+    ...(includeDisplayFilters ? worksheetSearchFilters() : []),
+  ].join(" && ");
 };
 
 const fetchWorksheetsPage = async (
@@ -1297,9 +1299,13 @@ const batchUpdateWorksheetFolderPaths = async (
   await useAppStore.getState().batchUpdateWorksheetOrganizers(
     sortedUpdates.map((update) => ({
       parent: project,
-      filter: sheetFilterForView(view, [
-        `folder == "${escapeCELStringLiteral(update.sourceFolder.join("/"))}"`,
-      ]),
+      filter: sheetFilterForView(
+        view,
+        [
+          `folder == "${escapeCELStringLiteral(update.sourceFolder.join("/"))}"`,
+        ],
+        false
+      ),
       organizer: {
         folders: update.targetFolder,
       },

@@ -175,13 +175,20 @@ function WorksheetTreeLoadMoreButton({
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }>) {
   return (
-    <button
-      type="button"
-      className="tree-label min-w-0 flex-1 cursor-pointer truncate text-left text-xs font-medium text-control"
-      onClick={onClick}
+    <span
+      data-testid="load-more-wrapper"
+      className="min-w-0 flex-1 truncate text-left"
     >
-      {label}
-    </button>
+      <Button
+        type="button"
+        appearance="secondary"
+        size="xs"
+        className="tree-label cursor-pointer text-xs font-medium text-control"
+        onClick={onClick}
+      >
+        {label}
+      </Button>
+    </span>
   );
 }
 
@@ -657,6 +664,24 @@ export function SheetTree({
       void execRenameNode();
     }, 0);
   }, [execRenameNode]);
+
+  const restoreRenameInputSelection = useCallback(
+    (selectionStart: number | null, selectionEnd: number | null) => {
+      if (selectionStart === null || selectionEnd === null) {
+        return;
+      }
+      window.setTimeout(() => {
+        const input = inputRef.current;
+        if (!input || document.activeElement !== input) {
+          return;
+        }
+        const start = Math.min(selectionStart, input.value.length);
+        const end = Math.min(selectionEnd, input.value.length);
+        input.setSelectionRange(start, end);
+      }, 0);
+    },
+    []
+  );
 
   // ---- Click handler -------------------------------------------------------
   const handleNodeClick = useCallback(
@@ -1156,12 +1181,14 @@ export function SheetTree({
                   }}
                   onChange={(e) => {
                     const val = e.target.value;
+                    const { selectionStart, selectionEnd } = e.currentTarget;
                     if (!editingNode) return;
                     if (!editingNode.node.worksheet) {
                       // folder names cannot contain "/" or "."
                       if (val.includes("/") || val.includes(".")) return;
                     }
                     setEditingNode({ ...editingNode, rawLabel: val });
+                    restoreRenameInputSelection(selectionStart, selectionEnd);
                   }}
                   onClick={(e) => e.stopPropagation()}
                 />
@@ -1209,6 +1236,7 @@ export function SheetTree({
       folderContext,
       handleNodeClick,
       handleRenameNode,
+      restoreRenameInputSelection,
       handleWorksheetToggleStar,
       openMenuAtPoint,
       openMenuAtElement,
