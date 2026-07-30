@@ -2,6 +2,8 @@
 package store
 
 import (
+	"sync"
+
 	"context"
 	"database/sql"
 	"fmt"
@@ -20,19 +22,30 @@ type Store struct {
 	enableCache   bool
 
 	// Cache.
-	Secret            string
-	userEmailCache    *lru.Cache[string, *UserMessage]
-	instanceCache     *lru.Cache[string, *InstanceMessage]
-	databaseCache     *lru.Cache[string, *DatabaseMessage]
-	projectCache      *lru.Cache[string, *ProjectMessage]
-	policyCache       *lru.Cache[string, *PolicyMessage]
-	settingCache      *lru.Cache[string, *SettingMessage]
-	rolesCache        *expirable.LRU[string, *RoleMessage]
-	groupCache        *expirable.LRU[string, *GroupMessage]
-	groupMembersCache *expirable.LRU[string, map[string]bool]
-	memberGroupsCache *expirable.LRU[string, []string]
-	dbSchemaCache     *expirable.LRU[string, *model.DatabaseMetadata]
-	iamPolicyCache    *expirable.LRU[string, *IamPolicyMessage]
+	Secret         string
+	userEmailCache *lru.Cache[string, *UserMessage]
+	instanceCache  *lru.Cache[string, *InstanceMessage]
+	databaseCache  *lru.Cache[string, *DatabaseMessage]
+	projectCache   *lru.Cache[string, *ProjectMessage]
+	policyCache    *lru.Cache[string, *PolicyMessage]
+	settingCache   *lru.Cache[string, *SettingMessage]
+
+	// settingPublishMu serializes all setting cache publications (writer
+	// republishes, cache-miss fills, invalidations). Publishers re-read the
+	// row under the mutex, so whichever publishes last publishes current
+	// truth. It must be acquired with no transaction, row lock, or pooled
+	// connection held — writers commit first, then publish — so the
+	// mutex/pool wait graph stays acyclic against the bounded metadata pool.
+	settingPublishMu sync.Mutex
+	// settingPublishHookForTest, when set, runs between commit and cache
+	// publish so tests can deterministically expose the ordering window.
+	settingPublishHookForTest func()
+	rolesCache                *expirable.LRU[string, *RoleMessage]
+	groupCache                *expirable.LRU[string, *GroupMessage]
+	groupMembersCache         *expirable.LRU[string, map[string]bool]
+	memberGroupsCache         *expirable.LRU[string, []string]
+	dbSchemaCache             *expirable.LRU[string, *model.DatabaseMetadata]
+	iamPolicyCache            *expirable.LRU[string, *IamPolicyMessage]
 
 	// Large objects.
 	sheetFullCache *lru.Cache[string, *SheetMessage]
@@ -116,7 +129,11 @@ func (s *Store) GetDB() *sql.DB {
 
 // DeleteCache deletes the cache.
 func (s *Store) DeleteCache() {
+	// The setting cache purge participates in the publish-ordering invariant
+	// so an in-flight fill cannot republish a just-purged snapshot.
+	s.settingPublishMu.Lock()
 	s.settingCache.Purge()
+	s.settingPublishMu.Unlock()
 	s.policyCache.Purge()
 	s.userEmailCache.Purge()
 }

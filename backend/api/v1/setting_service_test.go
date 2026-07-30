@@ -4,10 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	colorpb "google.golang.org/genproto/googleapis/type/color"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -250,5 +253,32 @@ func TestValidateEnvironmentsColor(t *testing.T) {
 				require.NoError(t, err)
 			}
 		})
+	}
+}
+
+// TestPreflightWorkspaceProfileSaaSRestrictedPaths pins that the update-mask
+// paths controlling process-global runtime behavior (debug/pprof, audit-log
+// stdout) are rejected in SaaS mode: on a shared replica they would let one
+// workspace admin change process-wide behavior affecting other workspaces.
+func TestPreflightWorkspaceProfileSaaSRestrictedPaths(t *testing.T) {
+	newRequest := func(path string) *connect.Request[v1pb.UpdateSettingRequest] {
+		return connect.NewRequest(&v1pb.UpdateSettingRequest{
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{path}},
+		})
+	}
+	saas := &SettingService{profile: &config.Profile{SaaS: true}}
+	selfHosted := &SettingService{profile: &config.Profile{}}
+
+	for _, path := range []string{
+		"value.workspace_profile.enable_debug",
+		"value.workspace_profile.enable_audit_log_stdout",
+	} {
+		err := saas.preflightWorkspaceProfilePaths(context.Background(), "ws", newRequest(path), &storepb.WorkspaceProfileSetting{})
+		require.Error(t, err, path)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err), path)
+
+		// Self-hosted keeps accepting them (payload zero-values skip license checks).
+		err = selfHosted.preflightWorkspaceProfilePaths(context.Background(), "ws", newRequest(path), &storepb.WorkspaceProfileSetting{})
+		require.NoError(t, err, path)
 	}
 }

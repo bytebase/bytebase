@@ -1,5 +1,7 @@
 import { create as createProto } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { roleServiceClientConnect } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import {
   DeleteRoleRequestSchema,
   ListRolesRequestSchema,
@@ -10,9 +12,10 @@ import type { AppSliceCreator, RoleSlice } from "./types";
 export const createRoleSlice: AppSliceCreator<RoleSlice> = (set, get) => ({
   roleList: [],
 
-  listRoles: async () => {
+  listRoles: async (silent = false) => {
     const response = await roleServiceClientConnect.listRoles(
-      createProto(ListRolesRequestSchema, {})
+      createProto(ListRolesRequestSchema, {}),
+      { contextValues: createContextValues().set(silentContextKey, silent) }
     );
     set({ roleList: response.roles });
     return response.roles;

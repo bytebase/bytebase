@@ -1,10 +1,12 @@
 import { create as createProto } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { cloneDeep } from "lodash-es";
 import {
   projectServiceClientConnect,
   roleServiceClientConnect,
   workspaceServiceClientConnect,
 } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import { userNamePrefix, workspaceNamePrefix } from "@/lib/resourceName";
 import { PRESET_WORKSPACE_ROLES } from "@/types/iam/role";
 import {
@@ -66,7 +68,9 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
     const rolesRequest =
       get().rolesRequest ??
       roleServiceClientConnect
-        .listRoles(createProto(ListRolesRequestSchema, {}))
+        .listRoles(createProto(ListRolesRequestSchema, {}), {
+          contextValues: createContextValues().set(silentContextKey, true),
+        })
         .then((response) => {
           set({
             roles: response.roles,
@@ -90,7 +94,8 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
       get().workspacePolicyRequest ??
       workspaceServiceClientConnect
         .getIamPolicy(
-          createProto(GetIamPolicyRequestSchema, { resource: policyResource })
+          createProto(GetIamPolicyRequestSchema, { resource: policyResource }),
+          { contextValues: createContextValues().set(silentContextKey, true) }
         )
         .then(async (workspacePolicy) => {
           set({ workspacePolicy, workspacePolicyRequest: undefined });
@@ -240,14 +245,15 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
     return updated;
   },
 
-  fetchWorkspaceIamPolicy: async () => {
+  fetchWorkspaceIamPolicy: async (silent = false) => {
     const resource =
       get().serverInfo?.workspace ||
       get().workspace?.name ||
       get().currentUser?.workspace ||
       `${workspaceNamePrefix}-`;
     const policy = await workspaceServiceClientConnect.getIamPolicy(
-      createProto(GetIamPolicyRequestSchema, { resource })
+      createProto(GetIamPolicyRequestSchema, { resource }),
+      { contextValues: createContextValues().set(silentContextKey, silent) }
     );
     // Prefetch groups referenced by the policy so the derived role/user maps
     // can expand group members from the same app-store cache.

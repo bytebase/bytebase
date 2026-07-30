@@ -78,7 +78,29 @@ const mocks = vi.hoisted(() => ({
     return localStorage;
   })(),
   getCurrentUser: vi.fn(),
+  login: vi.fn(),
   logout: vi.fn(),
+  navigateByName: vi.fn(),
+  navigateToPath: vi.fn(),
+  resolvePath: vi.fn(
+    (
+      name: string,
+      options?: { query?: Record<string, string | undefined> }
+    ) => {
+      const base =
+        name === "auth.signin"
+          ? "/auth"
+          : name === "sql-editor.home"
+            ? "/sql-editor"
+            : "/";
+      const query = new URLSearchParams();
+      for (const [key, value] of Object.entries(options?.query ?? {})) {
+        if (value) query.set(key, value);
+      }
+      const serialized = query.toString();
+      return serialized ? `${base}?${serialized}` : base;
+    }
+  ),
   getActuatorInfo: vi.fn(),
   getWorkspace: vi.fn(),
   updateWorkspace: vi.fn(),
@@ -166,6 +188,7 @@ vi.mock("@/api", () => ({
     getActuatorInfo: mocks.getActuatorInfo,
   },
   authServiceClientConnect: {
+    login: mocks.login,
     logout: mocks.logout,
   },
   projectServiceClientConnect: {
@@ -288,6 +311,12 @@ vi.mock("@/api", () => ({
     createIssueComment: mocks.createIssueComment,
     updateIssueComment: mocks.updateIssueComment,
   },
+}));
+
+vi.mock("@/app/router/navigation", () => ({
+  navigateByName: mocks.navigateByName,
+  navigateToPath: mocks.navigateToPath,
+  resolvePath: mocks.resolvePath,
 }));
 
 const user = createProto(UserSchema, {
@@ -459,6 +488,55 @@ describe("useAppStore", () => {
     expect(store.getState().currentUser).toBe(user);
     expect(store.getState().currentUserName).toBe(user.name);
     expect(store.getState().isLoggedIn()).toBe(true);
+  });
+
+  test("auto logout preserves the full current path for signin redirect", async () => {
+    const fakeLocation = {
+      pathname: "/sql-editor/projects/prod/instances/pg/databases/app",
+      search: "?schema=public",
+      hash: "#result",
+      href: "",
+    };
+    vi.stubGlobal("location", fakeLocation);
+    mocks.logout.mockResolvedValue({});
+    const store = createAppStore();
+
+    await store.getState().logout();
+
+    expect(mocks.resolvePath).toHaveBeenCalledWith("auth.signin", {
+      query: {
+        redirect:
+          "/sql-editor/projects/prod/instances/pg/databases/app?schema=public#result",
+      },
+    });
+    expect(fakeLocation.href).toBe(
+      "/auth?redirect=%2Fsql-editor%2Fprojects%2Fprod%2Finstances%2Fpg%2Fdatabases%2Fapp%3Fschema%3Dpublic%23result"
+    );
+  });
+
+  test("login keeps an explicit redirect URL in SQL Editor mode", async () => {
+    const redirectUrl =
+      "/sql-editor/projects/prod/instances/pg/databases/app?schema=public#result";
+    mocks.login.mockResolvedValue({ requireResetPassword: false });
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({ workspace: user.workspace });
+    mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    const store = createAppStore();
+    store.setState({
+      appFeatures: {
+        ...store.getState().appFeatures,
+        "bb.feature.database-change-mode": DatabaseChangeMode.EDITOR,
+      },
+    });
+
+    await store.getState().login({
+      request: { email: user.email, password: "secret" } as never,
+      redirectUrl,
+    });
+
+    expect(mocks.navigateToPath).toHaveBeenCalledWith(redirectUrl, {
+      replace: true,
+    });
   });
 
   test("lists groups and populates the group cache", async () => {
@@ -859,6 +937,17 @@ describe("useAppStore", () => {
     );
   });
 
+  test("lists roles silently when requested", async () => {
+    mocks.listRoles.mockResolvedValue({ roles: [roleA] });
+    const store = createAppStore();
+
+    await store.getState().listRoles(true);
+
+    expect(
+      mocks.listRoles.mock.calls[0][1]?.contextValues.get(silentContextKey)
+    ).toBe(true);
+  });
+
   test("loads workspace permission roles into the role display cache", async () => {
     mocks.getCurrentUser.mockResolvedValue(user);
     mocks.getActuatorInfo.mockResolvedValue({
@@ -873,6 +962,28 @@ describe("useAppStore", () => {
 
     expect(store.getState().roles).toEqual([roleA, roleB]);
     expect(store.getState().roleList).toEqual([roleA, roleB]);
+    expect(
+      mocks.listRoles.mock.calls[0][1]?.contextValues.get(silentContextKey)
+    ).toBe(true);
+    expect(
+      mocks.getIamPolicy.mock.calls[0][1]?.contextValues.get(silentContextKey)
+    ).toBe(true);
+  });
+
+  test("fetches workspace IAM policy silently when requested", async () => {
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: "workspaces/default",
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: "workspaces/default" });
+    mocks.getIamPolicy.mockResolvedValue(createProto(IamPolicySchema, {}));
+    const store = createAppStore();
+    store.setState({ currentUser: user });
+
+    await store.getState().fetchWorkspaceIamPolicy(true);
+
+    expect(
+      mocks.getIamPolicy.mock.calls[0][1]?.contextValues.get(silentContextKey)
+    ).toBe(true);
   });
 
   test("prefetches user members referenced by the workspace policy", async () => {

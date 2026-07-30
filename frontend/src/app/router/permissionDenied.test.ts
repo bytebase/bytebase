@@ -37,4 +37,22 @@ describe("permission denied route query", () => {
       resources: "instances/prod",
     });
   });
+
+  test("does not record the 403 route as its own source", () => {
+    expect(
+      buildPermissionDeniedRouteQuery({
+        route: {
+          fullPath:
+            "/403?from=%2Fsql-editor%2Fprojects%2Fprod%3Fschema%3Dpublic&api=/bytebase.v1.UserService/GetCurrentUser",
+          requiredPermissions: [],
+        },
+        api: "/bytebase.v1.RoleService/ListRoles",
+      })
+    ).toEqual({
+      from: "/sql-editor/projects/prod?schema=public",
+      api: "/bytebase.v1.RoleService/ListRoles",
+      permissions: "",
+      resources: "",
+    });
+  });
 });

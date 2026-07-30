@@ -49,6 +49,8 @@ const mocks = vi.hoisted(() => {
       name,
       project: "projects/proj1",
     })),
+    getWorksheetByName: vi.fn(),
+    getOrFetchWorksheetByName: vi.fn(),
     searchProjects: vi.fn(),
     beforeEach: vi.fn(() => vi.fn()),
     navigateReplace: vi.fn(),
@@ -138,6 +140,8 @@ vi.mock("@/stores/app", () => ({
   useAppStore: {
     getState: () => ({
       getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
+      getWorksheetByName: mocks.getWorksheetByName,
+      getOrFetchWorksheetByName: mocks.getOrFetchWorksheetByName,
       searchProjects: mocks.searchProjects,
       serverInfo: {
         defaultProject: "projects/proj1",
@@ -161,6 +165,11 @@ vi.mock("@/modules/sql-editor/store", () => ({
       }),
     }
   ),
+}));
+
+vi.mock("@/utils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils")>()),
+  isWorksheetReadableV1: vi.fn(() => true),
 }));
 
 vi.mock("@/modules/sql-editor/store/editor", () => ({
@@ -224,6 +233,17 @@ beforeEach(() => {
   mocks.getOrFetchDatabaseByName.mockImplementation(async (name: string) => ({
     name,
     project: "projects/proj1",
+  }));
+  mocks.getWorksheetByName.mockImplementation((name: string) => ({
+    name,
+    project: "projects/proj1",
+  }));
+  mocks.getOrFetchWorksheetByName.mockImplementation(async (name: string) => ({
+    name,
+    project: "projects/proj1",
+    database: "instances/inst1/databases/db1",
+    content: new TextEncoder().encode("select 1"),
+    contentSize: BigInt(new TextEncoder().encode("select 1").length),
   }));
   mocks.editorState.project = "projects/proj1";
   mocks.tabsState.tabsById = new Map();
@@ -499,6 +519,113 @@ describe("SQLEditorRouteShell", () => {
         project: "proj1",
       },
       query: {},
+    });
+
+    unmount();
+  });
+
+  test("seeds worksheet route tabs with schema and table from the URL", async () => {
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.worksheet",
+      params: {
+        project: "proj1",
+        sheet: "sheet1",
+      },
+      query: {
+        schema: "public",
+        table: "SUPPORDERS_VIS.items",
+      },
+      requiredPermissions: [],
+    };
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor.worksheet",
+      params: {
+        project: "proj1",
+        sheet: "sheet1",
+      },
+      query: {
+        schema: "public",
+        table: "SUPPORDERS_VIS.items",
+      },
+      requiredPermissions: [],
+    };
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      id: undefined,
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "SUPPORDERS_VIS.items",
+      },
+      worksheet: "projects/proj1/worksheets/sheet1",
+      title: undefined,
+      statement: "select 1",
+      status: "CLEAN",
+    });
+
+    unmount();
+  });
+
+  test("keeps schema and table query parameters when syncing worksheet tabs", async () => {
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.project",
+      params: {
+        project: "proj1",
+      },
+      query: {},
+      requiredPermissions: [],
+    };
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor.project",
+      params: {
+        project: "proj1",
+      },
+      query: {},
+      requiredPermissions: [],
+    };
+    mocks.tabsState.tabsById.set("tab-worksheet", {
+      id: "tab-worksheet",
+      worksheet: "projects/proj1/worksheets/sheet1",
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "SUPPORDERS_VIS.items",
+      },
+    } as SQLEditorTab);
+    mocks.tabsState.currentTabId = "tab-worksheet";
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.navigateReplace).toHaveBeenCalledWith({
+      name: "sql-editor.worksheet",
+      params: {
+        project: "proj1",
+        sheet: "sheet1",
+      },
+      query: {
+        table: "SUPPORDERS_VIS.items",
+        schema: "public",
+      },
     });
 
     unmount();

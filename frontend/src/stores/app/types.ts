@@ -363,7 +363,7 @@ export type IamSlice = {
     project: string,
     policy: IamPolicy
   ) => Promise<IamPolicy>;
-  fetchWorkspaceIamPolicy: () => Promise<IamPolicy>;
+  fetchWorkspaceIamPolicy: (silent?: boolean) => Promise<IamPolicy>;
   patchWorkspaceIamPolicy: (
     batchPatch: { member: string; roles: string[] }[]
   ) => Promise<void>;
@@ -799,7 +799,7 @@ export type UserSlice = {
 
 export type RoleSlice = {
   roleList: Role[];
-  listRoles: () => Promise<Role[]>;
+  listRoles: (silent?: boolean) => Promise<Role[]>;
   getRoleByName: (name: string) => Role | undefined;
   upsertRole: (role: Role) => Promise<Role>;
   deleteRole: (role: Role) => Promise<void>;

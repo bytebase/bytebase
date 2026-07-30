@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   },
   loadServerInfo: vi.fn(),
   replace: vi.fn(),
+  resolve: vi.fn(() => ({ href: "/signin" })),
   signup: vi.fn(),
 }));
 
@@ -22,6 +23,7 @@ vi.mock("@/app/router", async (importOriginal) => ({
   router: {
     currentRoute: mocks.currentRoute,
     replace: mocks.replace,
+    resolve: mocks.resolve,
   },
 }));
 
@@ -93,7 +95,20 @@ beforeEach(async () => {
 });
 
 describe("SignupPage", () => {
-  test("renders the admin setup title with the normal left-aligned heading layout", () => {
+  test("centers the regular sign-up title", () => {
+    mocks.activeUserCount = 1;
+
+    const { container, render, unmount } = renderIntoContainer(<SignupPage />);
+    render();
+
+    const heading = container.querySelector("h2");
+    expect(heading?.textContent).toBe("auth.sign-up.title");
+    expect(heading?.className).toContain("text-center");
+
+    unmount();
+  });
+
+  test("centers the admin setup title", () => {
     const { container, render, unmount } = renderIntoContainer(<SignupPage />);
     render();
 
@@ -101,7 +116,7 @@ describe("SignupPage", () => {
     expect(heading?.textContent).toBe("auth.sign-up.admin-title");
     expect(heading?.className).toContain("text-main");
     expect(heading?.querySelector("p")).toBeNull();
-    expect(heading?.querySelector(".text-center")).toBeNull();
+    expect(heading?.className).toContain("text-center");
 
     unmount();
   });
