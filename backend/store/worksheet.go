@@ -146,7 +146,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage) 
 		q.And("worksheet.resource_id = ?", *v)
 	}
 
-	q.Space("ORDER BY worksheet.updated_at DESC, worksheet.resource_id DESC")
+	q.Space("ORDER BY worksheet.name, worksheet.resource_id")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

@@ -213,6 +213,29 @@ func TestSearchWorksheetsFilterByFolder(t *testing.T) {
 	}))
 	a.NoError(err)
 	a.ElementsMatch([]string{rootWorksheet.Name}, worksheetNames(rootResp.Msg.Worksheets))
+
+	pageFirstWorksheet := createWorksheet("aaa-page")
+	setFolders(pageFirstWorksheet, []string{"paging"})
+	pageSecondWorksheet := createWorksheet("zzz-page")
+	setFolders(pageSecondWorksheet, []string{"paging"})
+
+	firstPageResp, err := ctl.worksheetServiceClient.SearchWorksheets(ctx, connect.NewRequest(&v1pb.SearchWorksheetsRequest{
+		Parent:   ctl.project.Name,
+		Filter:   `folder == "paging"`,
+		PageSize: 1,
+	}))
+	a.NoError(err)
+	a.Equal([]string{pageFirstWorksheet.Name}, worksheetNames(firstPageResp.Msg.Worksheets))
+	a.NotEmpty(firstPageResp.Msg.NextPageToken)
+
+	secondPageResp, err := ctl.worksheetServiceClient.SearchWorksheets(ctx, connect.NewRequest(&v1pb.SearchWorksheetsRequest{
+		Parent:    ctl.project.Name,
+		Filter:    `folder == "paging"`,
+		PageSize:  1,
+		PageToken: firstPageResp.Msg.NextPageToken,
+	}))
+	a.NoError(err)
+	a.Equal([]string{pageSecondWorksheet.Name}, worksheetNames(secondPageResp.Msg.Worksheets))
 }
 
 func TestBatchUpdateWorksheetOrganizerFilterByFolder(t *testing.T) {

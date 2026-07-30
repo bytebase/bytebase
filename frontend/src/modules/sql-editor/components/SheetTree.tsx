@@ -222,6 +222,7 @@ export function SheetTree({
     fetchWorksheetsByFolder,
     folderContext,
     getFoldersForWorksheet,
+    rebuildTree,
     events,
   } = useSheetContextByView(view);
 
@@ -617,6 +618,7 @@ export function SheetTree({
                   await updateFolderFolders(editing.node.key, newKey);
                   replaceExpandedKeys({ oldKey: editing.node.key, newKey });
                   folderContext.moveFolder(editing.node.key, newKey);
+                  rebuildTree();
                   cleanup();
                 })();
               } else {
@@ -632,6 +634,7 @@ export function SheetTree({
         await updateFolderFolders(editing.node.key, newKey);
         replaceExpandedKeys({ oldKey: editing.node.key, newKey });
         folderContext.moveFolder(editing.node.key, newKey);
+        rebuildTree();
         cleanup();
       }
     }
@@ -643,6 +646,7 @@ export function SheetTree({
     updateFolderFolders,
     replaceExpandedKeys,
     folderContext,
+    rebuildTree,
   ]);
 
   const handleRenameNode = useCallback(() => {
@@ -966,6 +970,7 @@ export function SheetTree({
           await updateFolderFolders(draggedNode.key, newKey);
           // Folder move — update folderContext too
           folderContext.moveFolder(draggedNode.key, newKey);
+          rebuildTree();
         }
 
         // Update expanded keys (nextTick equivalent: defer to next microtask)
@@ -988,6 +993,7 @@ export function SheetTree({
         handleDuplicateFolderNameDrop,
         updateWorksheetFolders,
         updateFolderFolders,
+        rebuildTree,
         replaceExpandedKeys,
         setExpandedKeys,
       ]

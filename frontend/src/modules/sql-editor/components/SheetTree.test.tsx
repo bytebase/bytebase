@@ -437,6 +437,7 @@ const setupDefaultMocks = () => {
     fetchSheetList: vi.fn(),
     fetchNextPage: vi.fn(),
     fetchWorksheetsByFolder: vi.fn(),
+    rebuildTree: vi.fn(),
     folderContext,
     getFoldersForWorksheet: vi.fn((path: string) => [path]),
     events: {
@@ -969,6 +970,7 @@ describe("SheetTree", () => {
       { sourceFolder: ["old"], targetFolder: ["new"] },
       { sourceFolder: ["old", "child"], targetFolder: ["new", "child"] },
     ]);
+    expect(defaultMocks.viewContext.rebuildTree).toHaveBeenCalled();
 
     unmount();
   });
