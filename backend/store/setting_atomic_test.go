@@ -221,16 +221,20 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 		}
 	})
 
-	// postCommit callbacks run inside the same ordered window, so their
-	// observed order must match commit order (derived runtime state relies
-	// on this).
+	// postCommit callbacks run inside the ordered publish window and receive
+	// the freshly re-read value, so derived state converges on committed
+	// truth regardless of which updater reaches the mutex first.
 	var postCommitMu sync.Mutex
-	var postCommitOrder []string
-	recordPostCommit := func(id string) func() {
-		return func() {
+	var postCommitSeen []*storepb.WorkspaceProfileSetting
+	recordPostCommit := func() func(current *store.SettingMessage) {
+		return func(current *store.SettingMessage) {
+			profile, ok := current.Value.(*storepb.WorkspaceProfileSetting)
+			if !ok {
+				return
+			}
 			postCommitMu.Lock()
 			defer postCommitMu.Unlock()
-			postCommitOrder = append(postCommitOrder, id)
+			postCommitSeen = append(postCommitSeen, profile)
 		}
 	}
 
@@ -244,7 +248,7 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 				}
 				profile.EnableMetricCollection = true
 				return profile, nil
-			}, recordPostCommit("first"))
+			}, recordPostCommit())
 		firstResult <- err
 	}()
 	// The first update has committed and is paused before publishing.
@@ -264,7 +268,7 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 				}
 				profile.McpCapability = storepb.WorkspaceProfileSetting_DISABLED
 				return profile, nil
-			}, recordPostCommit("second"))
+			}, recordPostCommit())
 		secondResult <- err
 	}()
 
@@ -275,6 +279,15 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 		t.Fatalf("second update published while the first held the publish window: %v", err)
 	case <-time.After(500 * time.Millisecond):
 	}
+
+	// The second update must already have COMMITTED even though its publish is
+	// blocked: a writer must never retain its transaction (a bounded-pool
+	// connection and the row lock) while waiting for the publish mutex —
+	// that is the connection-pool deadlock cycle.
+	committed, err := s.GetSettingUncached(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
+	require.NoError(t, err)
+	require.Equal(t, storepb.WorkspaceProfileSetting_DISABLED, mustProfile(t, committed).McpCapability,
+		"second update must commit before waiting on the publish mutex")
 
 	close(resumeFirst)
 	for _, result := range []chan error{firstResult, secondResult} {
@@ -296,8 +309,13 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 		"cache must not be overwritten by the earlier committer's stale publish")
 	postCommitMu.Lock()
 	defer postCommitMu.Unlock()
-	require.Equal(t, []string{"first", "second"}, postCommitOrder,
-		"postCommit callbacks must run in commit order")
+	require.Len(t, postCommitSeen, 2, "both postCommit callbacks must run")
+	for _, seen := range postCommitSeen {
+		require.True(t, seen.EnableMetricCollection,
+			"postCommit must observe committed truth, not the caller's own write")
+		require.Equal(t, storepb.WorkspaceProfileSetting_DISABLED, seen.McpCapability,
+			"postCommit must observe committed truth, not the caller's own write")
+	}
 }
 
 // TestSettingCacheNoFillFromUncachedReads pins that uncached reads do not
@@ -355,7 +373,7 @@ func TestGetSettingCacheDisabledNotSerialized(t *testing.T) {
 				}
 				profile.EnableMetricCollection = true
 				return profile, nil
-			}, nil)
+			}, func(*store.SettingMessage) {})
 		writerResult <- err
 	}()
 	select {
