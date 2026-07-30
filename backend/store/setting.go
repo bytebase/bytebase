@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"math"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -237,10 +238,27 @@ type FindSettingMessage struct {
 
 // GetSetting returns the setting by name.
 func (s *Store) GetSetting(ctx context.Context, workspace string, name storepb.SettingName) (*SettingMessage, error) {
-	if v, ok := s.settingCache.Get(getSettingCacheKey(workspace, name)); ok && s.enableCache {
+	// With caching disabled (HA), every read goes straight to the database:
+	// there is no cache to fill, and taking the publish mutex here would
+	// serialize all setting reads in the process behind a single lock.
+	if !s.enableCache {
+		return s.GetSettingUncached(ctx, workspace, name)
+	}
+	if v, ok := s.settingCache.Get(getSettingCacheKey(workspace, name)); ok {
 		return v, nil
 	}
-	return s.GetSettingUncached(ctx, workspace, name)
+	// Fill the cache under the publish mutex so the fill's content is current
+	// at publish time: an unordered fill could read a pre-commit snapshot and
+	// cache it after a concurrent writer already published a newer value. No
+	// row lock is held here, so the row-lock -> publish-lock order is kept.
+	s.settingPublishMu.Lock()
+	defer s.settingPublishMu.Unlock()
+	setting, err := s.GetSettingUncached(ctx, workspace, name)
+	if err != nil || setting == nil {
+		return setting, err
+	}
+	s.settingCache.Add(getSettingCacheKey(workspace, name), setting)
+	return setting, nil
 }
 
 // GetSettingUncached reads the setting directly from the database, bypassing
@@ -320,10 +338,127 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 		return nil, err
 	}
 
-	for _, setting := range settingMessages {
-		s.settingCache.Add(getSettingCacheKey(setting.Workspace, setting.Name), setting)
-	}
+	// Deliberately no cache publication: this path runs outside the publish
+	// mutex (GetSettingUncached callers hit it on every read), and an
+	// unordered fill could pin a pre-commit snapshot over a newer published
+	// value. Publication happens only in GetSetting's fill, UpsertSetting,
+	// and UpdateSettingAtomic — all ordered by settingPublishMu.
 	return settingMessages, nil
+}
+
+// UpdateSettingAtomic performs a row-locking read-modify-write of a setting:
+// the current value is read under SELECT ... FOR UPDATE, apply transforms it,
+// and the result is written back in the same transaction — so a concurrent
+// write can never be silently reverted by a merge based on a stale read (the
+// lost-update hazard of read-then-UpsertSetting). apply receives the value
+// freshly unmarshaled from the locked row and may mutate it in place; an error
+// from apply aborts the transaction with no write and is returned unwrapped so
+// callers keep typed errors. After commit, the served state is refreshed via
+// publishSetting: the row is re-read under the publish mutex and the fresh
+// value goes to the cache and to postCommit (optional, for derived state) —
+// so publications always carry current truth regardless of the order in
+// which updaters reach the mutex. apply must stay free of database reads:
+// it runs while holding the transaction's pooled connection and the row
+// lock, and a nested read wanting a second connection is the bounded-pool
+// starvation cycle.
+func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, apply func(current proto.Message) (proto.Message, error), postCommit func(current *SettingMessage)) (*SettingMessage, error) {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	q := qb.Q().Space(`
+		SELECT value FROM setting WHERE workspace = ? AND name = ? FOR UPDATE
+	`, workspace, name.String())
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	var valueString string
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&valueString); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Errorf("setting %s not found", name)
+		}
+		return nil, errors.Wrapf(err, "failed to lock setting %s", name)
+	}
+	current, err := getSettingMessage(name)
+	if err != nil {
+		return nil, err
+	}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), current); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal setting %s", name)
+	}
+
+	next, err := apply(current)
+	if err != nil {
+		return nil, err
+	}
+
+	nextBytes, err := protojson.Marshal(next)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal setting value")
+	}
+	q = qb.Q().Space(`
+		UPDATE setting SET value = ? WHERE workspace = ? AND name = ?
+	`, string(nextBytes), workspace, name.String())
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return nil, errors.Wrapf(err, "failed to update setting %s", name)
+	}
+	// Commit BEFORE acquiring the publish mutex: commit returns the pooled
+	// connection and releases the row lock, so waiting for the mutex never
+	// holds pool resources (connection-holders never wait for the mutex, so
+	// the mutex/pool wait graph stays acyclic). Ordering is preserved because
+	// publishSetting re-reads the row under the mutex — whichever updater
+	// publishes last still publishes current truth.
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+	s.publishSetting(ctx, workspace, name, postCommit)
+	return &SettingMessage{Name: name, Workspace: workspace, Value: next}, nil
+}
+
+// publishSetting refreshes the served state for a setting after a committed
+// write: under settingPublishMu it re-reads the row and publishes the fresh
+// value to the cache (when enabled) and to postCommit for derived state. It
+// must be called with no transaction, row lock, or pooled connection held —
+// the mutex-then-connection order here is what keeps the publish protocol
+// deadlock-free against the bounded metadata pool. If the re-read fails, the
+// cache entry is evicted rather than risk publishing stale state, and
+// postCommit is skipped (derived state converges on the next write).
+func (s *Store) publishSetting(ctx context.Context, workspace string, name storepb.SettingName, postCommit func(current *SettingMessage)) {
+	if !s.enableCache && postCommit == nil {
+		return
+	}
+	s.settingPublishMu.Lock()
+	defer s.settingPublishMu.Unlock()
+	if s.settingPublishHookForTest != nil {
+		s.settingPublishHookForTest()
+	}
+	// The write is already committed, so publication must not depend on the
+	// caller still listening: re-read on a bounded context detached from
+	// request cancellation. If the read still fails (database unreachable),
+	// evict and skip postCommit — the cache heals on the next fill, and
+	// derived runtime state heals on the next successful publication of this
+	// setting (postCommit callbacks must therefore reconcile from the fresh
+	// value unconditionally, not only for fields their request touched).
+	publishCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+	fresh, err := s.GetSettingUncached(publishCtx, workspace, name)
+	if err != nil || fresh == nil {
+		s.settingCache.Remove(getSettingCacheKey(workspace, name))
+		return
+	}
+	if s.enableCache {
+		s.settingCache.Add(getSettingCacheKey(workspace, name), fresh)
+	}
+	if postCommit != nil {
+		postCommit(fresh)
+	}
 }
 
 // UpsertSetting upserts the setting by name.
@@ -373,7 +508,7 @@ func (s *Store) UpsertSetting(ctx context.Context, update *SettingMessage) (*Set
 	}
 	setting.Value = msg
 
-	s.settingCache.Add(getSettingCacheKey(setting.Workspace, setting.Name), &setting)
+	s.publishSetting(ctx, setting.Workspace, setting.Name, nil)
 	return &setting, nil
 }
 
@@ -389,6 +524,11 @@ func (s *Store) DeleteSetting(ctx context.Context, workspace string, name storep
 		return err
 	}
 
+	// Invalidate under the ordering mutex: a cache-miss fill reads and
+	// publishes atomically under the same mutex, so once serialized against
+	// it, a fill can no longer resurrect the deleted row.
+	s.settingPublishMu.Lock()
+	defer s.settingPublishMu.Unlock()
 	s.settingCache.Remove(getSettingCacheKey(workspace, name))
 	return nil
 }
