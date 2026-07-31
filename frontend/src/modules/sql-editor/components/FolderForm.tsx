@@ -143,6 +143,7 @@ export function FolderForm({
             <Tree<WorksheetFolderNode>
               data={treeData}
               selectedIds={folderPath ? [folderPath] : []}
+              expandedIds={includeRoot ? [rootPath] : undefined}
               searchTerm={folderPath || undefined}
               searchMatch={searchMatch}
               height={240}

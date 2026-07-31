@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   useSheetContextByView: vi.fn(),
   useClickOutside: vi.fn(),
   onSelectCallback: vi.fn(),
+  treeProps: undefined as { expandedIds?: string[] } | undefined,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -47,8 +48,10 @@ vi.mock("@/components/ui/tree", () => ({
   Tree: ({
     data,
     renderNode,
+    expandedIds,
   }: {
     data: TreeDataNodeLike[];
+    expandedIds?: string[];
     renderNode: (args: {
       node: {
         id: string;
@@ -58,20 +61,23 @@ vi.mock("@/components/ui/tree", () => ({
       style: React.CSSProperties;
     }) => React.ReactNode;
     onSelect?: (ids: string[]) => void;
-  }) => (
-    <div data-testid="tree">
-      {data.map((item) =>
-        renderNode({
-          node: {
-            id: item.id,
-            data: item,
-            isSelected: false,
-          },
-          style: {},
-        })
-      )}
-    </div>
-  ),
+  }) => {
+    mocks.treeProps = { expandedIds };
+    return (
+      <div data-testid="tree">
+        {data.map((item) =>
+          renderNode({
+            node: {
+              id: item.id,
+              data: item,
+              isSelected: false,
+            },
+            style: {},
+          })
+        )}
+      </div>
+    );
+  },
 }));
 
 // Mock Popover — render children inline, track open state
@@ -332,6 +338,7 @@ describe("FolderForm", () => {
     );
     expect(treeNodes.length).toBeGreaterThan(0);
     expect(document.body.textContent).toContain("my");
+    expect(mocks.treeProps?.expandedIds).toEqual(["/my"]);
 
     await act(async () => {
       (treeNodes[0] as HTMLElement).click();
