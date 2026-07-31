@@ -26,10 +26,10 @@ const mcpResourcePath = "/mcp"
 const externalURLSetupError = "MCP OAuth requires a configured external URL. Start the server with --external-url https://<your-bytebase-host>, or set Settings > General > External URL " +
 	"(https://docs.bytebase.com/get-started/self-host/external-url), then reconnect. The request Host header is deliberately not trusted for resource binding."
 
-// errExternalURLNotConfigured signals that resource validation could not run
-// because no trusted external URL is configured. Mapped to the actionable
-// configuration error at the call site; every other validation failure is a
-// client error.
+// errExternalURLNotConfigured is returned by trustedExternalURL when no trusted
+// external URL is available, so resource validation is never handed an empty base
+// to interpret. Mapped to the actionable configuration error above at the call
+// site; every other validation failure is a client error.
 var errExternalURLNotConfigured = errors.New("no configured external URL to validate the resource against")
 
 // knownScopes is the P1a scope vocabulary: one scope per predefined permission
@@ -57,34 +57,45 @@ type oauth2Failure struct {
 
 // trustedExternalURL returns the canonical external URL configured for this
 // deployment: the --external-url flag, else the workspace setting. It returns
-// "" when neither is configured.
+// errExternalURLNotConfigured when neither is available, so callers never have to
+// interpret an empty string.
 //
 // Unlike getBaseURL this deliberately has no request-derived tier. Host and
 // X-Forwarded-Proto are client-controlled, so a header-derived value would let a
 // caller choose the audience its own token is bound to — which is the entire
 // property the resource binding exists to establish.
-func (s *Service) trustedExternalURL(ctx context.Context) string {
+func (s *Service) trustedExternalURL(ctx context.Context) (string, error) {
 	if s.profile.ExternalURL != "" {
-		return strings.TrimSuffix(s.profile.ExternalURL, "/")
+		return strings.TrimSuffix(s.profile.ExternalURL, "/"), nil
 	}
-	// On self-hosted, resolve the singleton workspace so the DB-backed
-	// workspace_profile.external_url setting can be found. On SaaS there is no
-	// singleton — the CLI flag is required.
+	// The workspace ID is only resolved on self-hosted, and that is a correctness
+	// requirement rather than an assumption that SaaS passes the flag:
+	//
+	//   - GetWorkspaceID is a singleton lookup (`... WHERE deleted = FALSE LIMIT 1`),
+	//     so on SaaS it returns an arbitrary workspace. Feeding that to
+	//     GetEffectiveExternalURL would validate this grant's resource against an
+	//     unrelated tenant's setting.
+	//   - On SaaS the setting cannot hold a value anyway: writes to
+	//     workspace_profile.external_url are rejected outright in SaaS mode
+	//     (setting_service.go), so the flag is the only source that can exist.
+	//
+	// Same tier order as getBaseURL and mcp's buildResourceMetadataURL, minus
+	// their request-derived tail. Unifying the three is BOT-32.
 	workspaceID := ""
 	if !s.profile.SaaS {
 		if ws, err := s.store.GetWorkspaceID(ctx); err == nil {
 			workspaceID = ws
 		}
 	}
+	// GetEffectiveExternalURL reports "not configured" as an error, never as an
+	// empty string. A lookup failure is treated identically — fail closed, never
+	// fall back to the request — with the cause logged rather than returned.
 	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
 	if err != nil {
-		// Not configured is the common case here and is reported to the caller
-		// as the actionable setup error; a lookup failure is logged and treated
-		// the same way (fail closed, never fall back to the request).
 		slog.Warn("failed to resolve trusted external URL for OAuth2 resource binding", log.BBError(err))
-		return ""
+		return "", errExternalURLNotConfigured
 	}
-	return strings.TrimSuffix(externalURL, "/")
+	return strings.TrimSuffix(externalURL, "/"), nil
 }
 
 // parseGrantParams extracts and validates the `resource` (RFC 8707) and `scope`
@@ -107,12 +118,13 @@ func (s *Service) parseGrantParams(ctx context.Context, values url.Values) (gran
 		return grantParams{scope: scope}, nil
 	}
 
-	canonical, err := validateResource(resource, s.trustedExternalURL(ctx))
-	if errors.Is(err, errExternalURLNotConfigured) {
+	trustedBaseURL, err := s.trustedExternalURL(ctx)
+	if err != nil {
 		slog.Error("rejected an MCP OAuth resource binding because no external URL is configured",
 			slog.String("resource", resource))
 		return grantParams{}, &oauth2Failure{code: "server_error", description: externalURLSetupError}
 	}
+	canonical, err := validateResource(resource, trustedBaseURL)
 	if err != nil {
 		return grantParams{}, &oauth2Failure{code: "invalid_target", description: err.Error()}
 	}
@@ -205,9 +217,9 @@ func singleValue(values url.Values, name string) (string, error) {
 }
 
 // validateResource checks that a client-supplied resource indicator names this
-// server and returns the form to consent to. trustedBaseURL must come from the
-// configured external URL; an empty one means we cannot prove anything about the
-// value and yields errExternalURLNotConfigured.
+// server and returns the form to consent to. trustedBaseURL comes from
+// trustedExternalURL, which reports an unconfigured deployment as an error, so it
+// is always a real URL here.
 //
 // Accepted inputs: the canonical MCP resource URI (<base>/mcp) and the bare
 // origin (<base>) — the two values our own RFC 9728 metadata documents publish,
@@ -218,9 +230,6 @@ func singleValue(values url.Values, name string) (string, error) {
 // resource would mean two audiences to accept at /mcp — forever, since grants are
 // long-lived. Normalizing at the door keeps the audience single-valued.
 func validateResource(resource, trustedBaseURL string) (string, error) {
-	if trustedBaseURL == "" {
-		return "", errExternalURLNotConfigured
-	}
 	base, err := canonicalizeResourceURI(trustedBaseURL)
 	if err != nil {
 		return "", errors.Wrapf(err, "configured external URL %q is not a usable absolute URL", trustedBaseURL)

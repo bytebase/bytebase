@@ -16,12 +16,6 @@ const testTrustedBase = "https://bb.example.com"
 // check is that the answer comes from the *configured* external URL, so the
 // unconfigured case is a first-class outcome here rather than an edge case.
 func TestValidateResource(t *testing.T) {
-	t.Run("no configured external URL is a configuration failure, not a client error", func(t *testing.T) {
-		_, err := validateResource("https://bb.example.com/mcp", "")
-		require.ErrorIs(t, err, errExternalURLNotConfigured,
-			"callers key on this sentinel to return the actionable setup error instead of a generic OAuth failure")
-	})
-
 	// Every accepted input resolves to the same stored form. PR 3 binds the token
 	// audience to what is stored, so a second accepted spelling would become a
 	// second audience to honor at /mcp for the life of every grant.
@@ -74,8 +68,6 @@ func TestValidateResource(t *testing.T) {
 		t.Run("rejected: "+tc.name, func(t *testing.T) {
 			_, err := validateResource(tc.in, testTrustedBase)
 			require.Error(t, err)
-			require.NotErrorIs(t, err, errExternalURLNotConfigured,
-				"a client-supplied bad value must not be reported as a server misconfiguration")
 		})
 	}
 
@@ -245,6 +237,8 @@ func TestCheckConsentedScope(t *testing.T) {
 // there is nothing to fall back to.
 func TestTrustedExternalURLUsesTheFlagOnly(t *testing.T) {
 	s := &Service{profile: &config.Profile{ExternalURL: "https://bb.example.com/"}}
-	require.Equal(t, "https://bb.example.com", s.trustedExternalURL(t.Context()),
+	got, err := s.trustedExternalURL(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "https://bb.example.com", got,
 		"the flag is the trusted tier and its trailing slash is normalized away")
 }
