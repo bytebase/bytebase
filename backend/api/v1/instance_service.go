@@ -227,17 +227,14 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, err
 	}
-	projectID := parentProjectID
-	if projectID == nil {
-		projectID = new("")
-	}
 
 	find := &store.FindInstanceMessage{
-		Workspace:   common.GetWorkspaceIDFromContext(ctx),
-		ProjectID:   projectID,
-		ShowDeleted: req.Msg.ShowDeleted,
-		Limit:       &limitPlusOne,
-		Offset:      &offset.offset,
+		Workspace:     common.GetWorkspaceIDFromContext(ctx),
+		ProjectID:     parentProjectID,
+		WorkspaceOnly: parentProjectID == nil,
+		ShowDeleted:   req.Msg.ShowDeleted,
+		Limit:         &limitPlusOne,
+		Offset:        &offset.offset,
 	}
 	filterQ, err := store.GetListInstanceFilter(req.Msg.Filter)
 	if err != nil {
@@ -337,7 +334,7 @@ func (s *InstanceService) ListInstanceDatabase(ctx context.Context, req *connect
 	var instanceMessage *store.InstanceMessage
 
 	if req.Msg.Instance != nil {
-		instanceID, projectID, err := getInlineInstanceCandidateScope(req.Msg.Name)
+		instanceID, projectID, err := getInstanceNameScope(req.Msg.Name)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
@@ -1414,9 +1411,10 @@ func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (
 	}
 
 	find := &store.FindInstanceMessage{
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
-		ResourceID: &instanceID,
-		ProjectID:  projectID,
+		Workspace:     common.GetWorkspaceIDFromContext(ctx),
+		ResourceID:    &instanceID,
+		ProjectID:     projectID,
+		WorkspaceOnly: projectID == nil,
 	}
 	instance, err := stores.GetInstance(ctx, find)
 	if err != nil {
@@ -1430,32 +1428,18 @@ func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (
 }
 
 // getInstanceNameScope returns the instance ID and its exact collection scope.
-// An empty project ID selects the workspace collection.
 func getInstanceNameScope(name string) (string, *string, error) {
 	if projectID, instanceID, err := common.GetProjectIDInstanceID(name); err == nil {
 		return instanceID, &projectID, nil
 	}
 	if instanceID, err := common.GetInstanceID(name); err == nil {
-		return instanceID, new(""), nil
+		return instanceID, nil, nil
 	}
 	return "", nil, errors.Errorf("invalid instance name %q", name)
 }
 
-// getInlineInstanceCandidateScope returns a nil project for a workspace
-// candidate and a project ID for a project-nested candidate.
-func getInlineInstanceCandidateScope(name string) (string, *string, error) {
-	instanceID, projectID, err := getInstanceNameScope(name)
-	if err != nil {
-		return "", nil, err
-	}
-	if *projectID == "" {
-		return instanceID, nil, nil
-	}
-	return instanceID, projectID, nil
-}
-
 func instanceCollectionParent(projectID *string) *string {
-	if projectID == nil || *projectID == "" {
+	if projectID == nil {
 		return nil
 	}
 	return new(common.FormatProject(*projectID))

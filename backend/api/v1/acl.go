@@ -409,11 +409,10 @@ func populateRawResources(ctx context.Context, stores *store.Store, request any,
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to parse %q", match)
 				}
-				workspaceInstanceID := ""
 				instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
-					Workspace:  common.GetWorkspaceIDFromContext(ctx),
-					ProjectID:  &workspaceInstanceID,
-					ResourceID: &instanceID,
+					Workspace:     common.GetWorkspaceIDFromContext(ctx),
+					WorkspaceOnly: true,
+					ResourceID:    &instanceID,
 				})
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to get instance")
@@ -449,11 +448,10 @@ func populateRawResources(ctx context.Context, stores *store.Store, request any,
 					return nil, errors.Wrapf(err, "failed to parse %q", match)
 				}
 				workspaceID := common.GetWorkspaceIDFromContext(ctx)
-				workspaceInstanceID := ""
 				instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
-					Workspace:  workspaceID,
-					ProjectID:  &workspaceInstanceID,
-					ResourceID: &instanceID,
+					Workspace:     workspaceID,
+					WorkspaceOnly: true,
+					ResourceID:    &instanceID,
 				})
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to get instance")

@@ -45,25 +45,30 @@ type UpdateInstanceMessage struct {
 // FindInstanceMessage is the message for finding instances.
 type FindInstanceMessage struct {
 	Workspace string
-	// ProjectID nil does not filter by scope. An empty value selects workspace
-	// instances; a non-empty value selects that project's instances.
-	ProjectID   *string
-	ResourceID  *string
-	ResourceIDs *[]string
-	ShowDeleted bool
-	Limit       *int
-	Offset      *int
-	FilterQ     *qb.Query
-	OrderByKeys []*OrderByKey
+	// ProjectID filters instances to this exact project.
+	ProjectID *string
+	// WorkspaceOnly filters workspace-level instances.
+	WorkspaceOnly bool
+	ResourceID    *string
+	ResourceIDs   *[]string
+	ShowDeleted   bool
+	Limit         *int
+	Offset        *int
+	FilterQ       *qb.Query
+	OrderByKeys   []*OrderByKey
 }
 
 // GetInstance gets an instance by the resource_id.
 func (s *Store) GetInstance(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
+	if find.ProjectID != nil && find.WorkspaceOnly {
+		return nil, errors.New("project ID and workspace-only scope cannot both be set")
+	}
+
 	if find.ResourceID != nil {
 		if v, ok := s.instanceCache.Get(getInstanceCacheKey(*find.ResourceID)); ok && s.enableCache {
-			if find.ProjectID == nil ||
-				(*find.ProjectID == "" && v.ProjectID == nil) ||
-				(*find.ProjectID != "" && v.ProjectID != nil && *find.ProjectID == *v.ProjectID) {
+			if (find.ProjectID == nil && !find.WorkspaceOnly) ||
+				(find.WorkspaceOnly && v.ProjectID == nil) ||
+				(find.ProjectID != nil && v.ProjectID != nil && *find.ProjectID == *v.ProjectID) {
 				return v, nil
 			}
 		}
@@ -90,13 +95,16 @@ func (s *Store) GetInstance(ctx context.Context, find *FindInstanceMessage) (*In
 
 // ListInstances lists all instance.
 func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([]*InstanceMessage, error) {
+	if find.ProjectID != nil && find.WorkspaceOnly {
+		return nil, errors.New("project ID and workspace-only scope cannot both be set")
+	}
+
 	where := qb.Q().Space("instance.workspace = ?", find.Workspace)
 	if v := find.ProjectID; v != nil {
-		if *v == "" {
-			where.And("instance.project IS NULL")
-		} else {
-			where.And("instance.project = ?", *v)
-		}
+		where.And("instance.project = ?", *v)
+	}
+	if find.WorkspaceOnly {
+		where.And("instance.project IS NULL")
 	}
 	if filterQ := find.FilterQ; filterQ != nil {
 		where.And("?", filterQ)
@@ -341,7 +349,7 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 		if project.Valid {
 			find.ProjectID = &project.String
 		} else {
-			find.ProjectID = new(string)
+			find.WorkspaceOnly = true
 		}
 		return s.GetInstance(ctx, find)
 	}
@@ -614,10 +622,10 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 // HasSampleInstances checks if there are sample instances in the database.
 func (s *Store) HasSampleInstances(ctx context.Context, workspaceID string) (bool, error) {
 	instances, err := s.ListInstances(ctx, &FindInstanceMessage{
-		Workspace:   workspaceID,
-		ProjectID:   new(string),
-		ResourceIDs: &[]string{"test-sample-instance", "prod-sample-instance"},
-		ShowDeleted: false,
+		Workspace:     workspaceID,
+		WorkspaceOnly: true,
+		ResourceIDs:   &[]string{"test-sample-instance", "prod-sample-instance"},
+		ShowDeleted:   false,
 	})
 	if err != nil {
 		return false, err

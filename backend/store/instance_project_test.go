@@ -90,9 +90,9 @@ func TestCreateAndListProjectInstance(t *testing.T) {
 	require.Len(t, projectInstances, 1)
 	require.Equal(t, "project-instance", projectInstances[0].ResourceID)
 	wrongScope, err := s.GetInstance(ctx, &store.FindInstanceMessage{
-		Workspace:  "default",
-		ProjectID:  new(string),
-		ResourceID: &instanceID,
+		Workspace:     "default",
+		WorkspaceOnly: true,
+		ResourceID:    &instanceID,
 	})
 	require.NoError(t, err)
 	require.Nil(t, wrongScope)
@@ -102,12 +102,27 @@ func TestCreateAndListProjectInstance(t *testing.T) {
 	require.Len(t, unfilteredInstances, 2)
 
 	workspaceInstances, err := s.ListInstances(ctx, &store.FindInstanceMessage{
-		Workspace: "default",
-		ProjectID: new(string),
+		Workspace:     "default",
+		WorkspaceOnly: true,
 	})
 	require.NoError(t, err)
 	require.Len(t, workspaceInstances, 1)
 	require.Equal(t, "workspace-instance", workspaceInstances[0].ResourceID)
+
+	_, err = s.ListInstances(ctx, &store.FindInstanceMessage{
+		Workspace:     "default",
+		ProjectID:     &projectID,
+		WorkspaceOnly: true,
+	})
+	require.Error(t, err)
+
+	_, err = s.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:     "default",
+		ProjectID:     &projectID,
+		WorkspaceOnly: true,
+		ResourceID:    &instanceID,
+	})
+	require.Error(t, err)
 
 	instanceByResourceID, err := s.GetInstanceByResourceID(ctx, "project-instance")
 	require.NoError(t, err)

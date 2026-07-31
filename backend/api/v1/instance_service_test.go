@@ -30,14 +30,14 @@ func TestGetInstanceNameScope(t *testing.T) {
 		projectID  *string
 		wantErr    bool
 	}{
-		{name: "workspace instance", instanceID: "instance-a", projectID: new("")},
+		{name: "workspace instance", instanceID: "instance-a"},
 		{name: "project instance", instanceID: "instance-a", projectID: new("project-a")},
 		{name: "malformed instance", wantErr: true},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			name := "instances/instance-a"
-			if test.projectID != nil && *test.projectID != "" {
+			if test.projectID != nil {
 				name = "projects/project-a/instances/instance-a"
 			}
 			if test.wantErr {
@@ -50,32 +50,13 @@ func TestGetInstanceNameScope(t *testing.T) {
 			}
 			require.NoError(t, err)
 			require.Equal(t, test.instanceID, instanceID)
-			require.Equal(t, *test.projectID, *projectID)
+			require.Equal(t, test.projectID, projectID)
 			parent := instanceCollectionParent(projectID)
-			if *projectID == "" {
+			if projectID == nil {
 				require.Nil(t, parent)
 			} else {
 				require.Equal(t, "projects/"+*projectID, *parent)
 			}
-		})
-	}
-}
-
-func TestGetInlineInstanceCandidateScope(t *testing.T) {
-	tests := []struct {
-		name      string
-		instance  string
-		projectID *string
-	}{
-		{name: "workspace candidate", instance: "instances/instance-a"},
-		{name: "project candidate", instance: "projects/project-a/instances/instance-a", projectID: new("project-a")},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			instanceID, projectID, err := getInlineInstanceCandidateScope(test.instance)
-			require.NoError(t, err)
-			require.Equal(t, "instance-a", instanceID)
-			require.Equal(t, test.projectID, projectID)
 		})
 	}
 }
