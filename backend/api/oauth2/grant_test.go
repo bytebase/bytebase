@@ -266,7 +266,7 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 	})
 
 	t.Run("a grant with no consented resource survives a resource-bearing exchange", func(t *testing.T) {
-		// This is the upgrade path. A code or refresh token issued before 3.21.5
+		// This is the upgrade path. A code or refresh token issued before 3.22.1
 		// has no stored resource, and RFC 8707 clients keep sending `resource` on
 		// every exchange and refresh — so rejecting the parameter here would fail
 		// in-flight codes and every live session at its next refresh. The
@@ -306,12 +306,34 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		require.Empty(t, rotated.Config.GetResource())
 	})
 
-	t.Run("consent rejects two scope tiers in one parameter", func(t *testing.T) {
+	t.Run("a requested scope set is consented as its maximum", func(t *testing.T) {
 		// Distinct from the repeated-parameter case above: one `scope` value
-		// carrying both tiers. A grant binds to a single predefined set, so a
-		// combination names nothing resolvable.
-		redirect := consent(t, configured, url.Values{"scope": {"mcp:read-only mcp:read-write"}})
-		require.Equal(t, "invalid_scope", redirect.Query().Get("error"))
+		// naming both tiers, which is what the v1 bootstrap produces — the 401
+		// challenge advertises every mode pre-authentication, so clients ask for
+		// all of them. The set resolves to one stored mode; a multi-mode string
+		// must never reach the grant record.
+		code := consentOK(t, configured, url.Values{"scope": {"mcp:read-only mcp:read-write"}})
+
+		got, err := st.GetOAuth2AuthorizationCode(ctx, testClientID, code)
+		require.NoError(t, err)
+		require.Equal(t, "mcp:read-write", got.Config.Scope)
+
+		// And the client can keep sending the set it asked for: it normalizes to
+		// the same mode, so the exchange matches instead of failing.
+		first := tokenOK(t, configured, url.Values{
+			"grant_type":    {"authorization_code"},
+			"code":          {code},
+			"redirect_uri":  {testRedirectURI},
+			"code_verifier": {testCodeVerifier},
+			"client_id":     {testClientID},
+			"scope":         {"mcp:read-only mcp:read-write"},
+		})
+		require.Equal(t, "mcp:read-write", first.Scope)
+
+		stored, err := st.GetOAuth2RefreshToken(ctx, testClientID, auth.HashToken(first.RefreshToken))
+		require.NoError(t, err)
+		require.NotNil(t, stored)
+		require.Equal(t, "mcp:read-write", stored.Config.GetScope())
 	})
 }
 

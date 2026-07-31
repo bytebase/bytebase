@@ -99,8 +99,8 @@ type OAuth2RefreshTokenConfig struct {
 	// consent time against the configured external URL. Empty for clients that
 	// omit the resource parameter.
 	Resource string `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
-	// The scope string consented to, stored verbatim. Empty means no scope was
-	// requested.
+	// The single mode consented to, normalized from the client's requested scope
+	// set to its maximum. Empty means no scope was requested.
 	Scope         string `protobuf:"bytes,2,opt,name=scope,proto3" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -159,8 +159,8 @@ type OAuth2AuthorizationCodeConfig struct {
 	// consent time against the configured external URL. Empty for clients that
 	// omit the resource parameter.
 	Resource string `protobuf:"bytes,4,opt,name=resource,proto3" json:"resource,omitempty"`
-	// The scope string consented to, stored verbatim. Empty means no scope was
-	// requested.
+	// The single mode consented to, normalized from the client's requested scope
+	// set to its maximum. Empty means no scope was requested.
 	Scope         string `protobuf:"bytes,5,opt,name=scope,proto3" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

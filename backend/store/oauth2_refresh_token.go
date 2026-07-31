@@ -24,7 +24,7 @@ type OAuth2RefreshTokenMessage struct {
 	Workspace string
 	// Config is the consented grant state (resource, scope) inherited from the
 	// authorization code. Carried forward unchanged by every refresh — a refresh
-	// never widens a grant. Empty for tokens created before the 3.21.5 migration.
+	// never widens a grant. Empty for tokens created before the 3.22.1 migration.
 	Config    *storepb.OAuth2RefreshTokenConfig
 	ExpiresAt time.Time
 }

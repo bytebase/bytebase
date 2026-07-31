@@ -104,6 +104,17 @@ func TestMCPAuthMiddleware(t *testing.T) {
 			// RFC 9728 §3.3 strict clients receive metadata whose `resource`
 			// field matches the URL they were accessing.
 			require.Contains(t, wwwAuth, "https://bb.example.com/.well-known/oauth-protected-resource/mcp")
+			// Containment for the MCP scope vocabulary: the challenge must not
+			// advertise scopes while P1a persists and echoes a consented mode
+			// that nothing enforces yet (the access token is still a generic
+			// bearer the whole API accepts). Advertising here is what would make
+			// clients request a mode and treat the echoed `scope` as a guarantee.
+			// The v1 bootstrap does call for listing the full mode set in this
+			// challenge — but only in the change that lands P1b enforcement.
+			require.NotContains(t, wwwAuth, "scope=",
+				"the challenge may advertise scopes only alongside P1b enforcement")
+			require.NotContains(t, wwwAuth, "mcp:read",
+				"no scope token may leak into the challenge")
 		})
 	}
 }
