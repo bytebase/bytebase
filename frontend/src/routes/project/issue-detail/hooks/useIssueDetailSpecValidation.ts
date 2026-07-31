@@ -6,10 +6,7 @@ import { extractSheetUID, getSheetStatement } from "@/utils/v1/sheet";
 import { getLocalSheetByName } from "../utils/localSheet";
 
 const checkSpecStatement = async (spec: Plan_Spec): Promise<boolean> => {
-  if (
-    spec.config?.case !== "changeDatabaseConfig" &&
-    spec.config?.case !== "exportDataConfig"
-  ) {
+  if (spec.config?.case !== "changeDatabaseConfig") {
     return false;
   }
 

@@ -370,7 +370,6 @@
     "no-license": "无证书",
     "not-started": "未开始",
     "ok": "确定",
-    "only-creator-allowed-export": "只有创建者可以导出",
     "open": "打开",
     "open-mobile-sidebar": "打开移动端侧边栏",
     "operation": "操作",
@@ -409,7 +408,6 @@
     "resources": "资源",
     "restore": "恢复",
     "restored": "已恢复",
-    "retry": "重试",
     "revert": "恢复",
     "revoke": "撤销",
     "revoked": "已撤销",
@@ -1347,7 +1345,6 @@
           "value": {
             "access-grant": "访问授权",
             "database-change": "数据库变更",
-            "database-export": "数据导出",
             "role-grant": "角色授权"
           }
         },
@@ -1395,14 +1392,6 @@
         "link": "插入链接"
       },
       "write": "编辑"
-    },
-    "data-export": {
-      "creation-not-supported": "不再支持创建数据导出工单。",
-      "download-tooltip": "24 小时可用",
-      "file-expired": "文件已过期",
-      "format": "导出格式",
-      "limits": "限制",
-      "options": "配置项"
     },
     "issue-name": "工单名称",
     "labels": "工单标签",
@@ -1465,7 +1454,6 @@
       "change-database": "变更数据库",
       "change-from-sql-editor": "从 SQL 编辑器变更",
       "edit-schema": "编辑 Schema",
-      "export-data": "导出数据",
       "request-role": "申请角色",
       "request-specific-role": "申请 \"{{role}}\" 角色"
     },
@@ -3234,7 +3222,6 @@
       }
     },
     "created": "创建时间",
-    "data-export-creator-only": "只有工单创建者可以执行数据导出任务",
     "error": {
       "scheduled-time-must-be-in-the-future": "计划时间必须是将来的时间"
     },

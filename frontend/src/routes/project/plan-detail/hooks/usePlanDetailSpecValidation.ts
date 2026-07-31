@@ -17,10 +17,7 @@ const sameStringSet = (a: Set<string>, b: Set<string>): boolean => {
 };
 
 const checkSpecStatement = async (spec: Plan_Spec): Promise<boolean> => {
-  if (
-    spec.config?.case !== "changeDatabaseConfig" &&
-    spec.config?.case !== "exportDataConfig"
-  ) {
+  if (spec.config?.case !== "changeDatabaseConfig") {
     return false;
   }
 

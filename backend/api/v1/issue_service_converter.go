@@ -180,8 +180,6 @@ func convertToIssueType(t storepb.Issue_Type) v1pb.Issue_Type {
 		return v1pb.Issue_DATABASE_CHANGE
 	case storepb.Issue_ROLE_GRANT:
 		return v1pb.Issue_ROLE_GRANT
-	case storepb.Issue_DATABASE_EXPORT:
-		return v1pb.Issue_DATABASE_EXPORT
 	case storepb.Issue_ACCESS_GRANT:
 		return v1pb.Issue_ACCESS_GRANT
 	default:
@@ -195,8 +193,6 @@ func convertToAPIIssueType(t v1pb.Issue_Type) (storepb.Issue_Type, error) {
 		return storepb.Issue_DATABASE_CHANGE, nil
 	case v1pb.Issue_ROLE_GRANT:
 		return storepb.Issue_ROLE_GRANT, nil
-	case v1pb.Issue_DATABASE_EXPORT:
-		return storepb.Issue_DATABASE_EXPORT, nil
 	case v1pb.Issue_ACCESS_GRANT:
 		return storepb.Issue_ACCESS_GRANT, nil
 	default:

@@ -98,11 +98,6 @@ export const getSubmitReviewAdvance = ({
   if (emptySpecCount > 0) {
     blockers.push(fix("statement", t("plan.navigator.statement-empty")));
   }
-  if (plan.specs.some((spec) => spec.config?.case === "exportDataConfig")) {
-    blockers.push(
-      fix("data-export", t("issue.data-export.creation-not-supported"))
-    );
-  }
   if (checks.running > 0 || queued > 0) {
     blockers.push({
       id: "checks-running",

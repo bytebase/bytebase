@@ -453,8 +453,6 @@ export function PlanDetailHeader() {
       let config = null;
       if (spec.config?.case === "changeDatabaseConfig")
         config = spec.config.value;
-      else if (spec.config?.case === "exportDataConfig")
-        config = spec.config.value;
       if (!config) continue;
       const uid = extractSheetUID(config.sheet);
       if (uid.startsWith("-")) {

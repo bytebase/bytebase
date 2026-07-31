@@ -136,7 +136,7 @@ message ListPlansRequest {
   // - create_time: the plan create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
   // - has_rollout: whether the plan has rollout, support "==" operator, the value should be "true" or "false".
   // - title: the plan title, support "==" operator for exact match and ".contains()" operator for case-insensitive substring match.
-  // - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
+  // - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config" or "change_database_config".
   // - state: the plan state, support "==" operator, the value should be "ACTIVE" or "DELETED".
   //
   // For example:
@@ -218,8 +218,10 @@ message Plan {
     oneof config {
       CreateDatabaseConfig create_database_config = 2;
       ChangeDatabaseConfig change_database_config = 3;
-      ExportDataConfig export_data_config = 4;
     }
+
+    reserved 4;
+    reserved "export_data_config";
   }
 
   // Format: users/hello@world.com
@@ -289,21 +291,6 @@ message Plan {
 
     // If set, a backup of the modified data will be created automatically before any changes are applied.
     bool enable_prior_backup = 6;
-  }
-
-  message ExportDataConfig {
-    // The list of targets.
-    // Multi-database format: [instances/{instance-id}/databases/{database-name}].
-    // Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
-    repeated string targets = 1;
-    // The resource name of the sheet.
-    // Format: projects/{project}/sheets/{sheet}
-    string sheet = 2;
-    // The format of the exported file.
-    ExportFormat format = 3;
-    // The zip password provide by users.
-    // Leave it empty if no needs to encrypt the zip file.
-    optional string password = 4;
   }
 
   message RolloutStageSummary {

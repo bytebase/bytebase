@@ -534,17 +534,6 @@ export function useIssueSearchScopeOptions(
             ),
           },
           {
-            value: Issue_Type[Issue_Type.DATABASE_EXPORT],
-            keywords: ["database", "export"],
-            render: () => (
-              <span>
-                {t(
-                  "issue.advanced-search.scope.issue-type.value.database-export"
-                )}
-              </span>
-            ),
-          },
-          {
             value: Issue_Type[Issue_Type.ACCESS_GRANT],
             keywords: ["access", "grant"],
             render: () => (

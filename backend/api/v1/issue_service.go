@@ -525,9 +525,6 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 
 	// Type-specific validation and preparation
 	switch request.Issue.Type {
-	case v1pb.Issue_DATABASE_EXPORT:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data export issue creation is no longer supported"))
-
 	case v1pb.Issue_ROLE_GRANT:
 		// Title is required for role grant requests.
 		if strings.TrimSpace(request.Issue.Title) == "" {
@@ -613,13 +610,6 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		}
 		if plan == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
-		}
-		if !request.Issue.GetDraft() {
-			for _, spec := range plan.Config.GetSpecs() {
-				if spec.GetExportDataConfig() != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data export issue creation is no longer supported"))
-				}
-			}
 		}
 		planUID = &plan.UID
 
@@ -782,7 +772,6 @@ func (s *IssueService) RetryIssueApproval(ctx context.Context, req *connect.Requ
 				s.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: refreshed.ProjectID, PlanID: *refreshed.PlanUID}
 			}
 		default:
-			// DATABASE_EXPORT auto-approve has no follow-up step.
 		}
 	}
 

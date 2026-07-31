@@ -32,8 +32,6 @@ const (
 	Issue_DATABASE_CHANGE Issue_Type = 1
 	// Role grant request.
 	Issue_ROLE_GRANT Issue_Type = 2
-	// Issue for exporting data from databases.
-	Issue_DATABASE_EXPORT Issue_Type = 3
 	// Temporary access grant request.
 	Issue_ACCESS_GRANT Issue_Type = 4
 )
@@ -44,14 +42,12 @@ var (
 		0: "ISSUE_TYPE_UNSPECIFIED",
 		1: "DATABASE_CHANGE",
 		2: "ROLE_GRANT",
-		3: "DATABASE_EXPORT",
 		4: "ACCESS_GRANT",
 	}
 	Issue_Type_value = map[string]int32{
 		"ISSUE_TYPE_UNSPECIFIED": 0,
 		"DATABASE_CHANGE":        1,
 		"ROLE_GRANT":             2,
-		"DATABASE_EXPORT":        3,
 		"ACCESS_GRANT":           4,
 	}
 )
@@ -310,7 +306,7 @@ var File_store_issue_proto protoreflect.FileDescriptor
 
 const file_store_issue_proto_rawDesc = "" +
 	"\n" +
-	"\x11store/issue.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"\xcd\x03\n" +
+	"\x11store/issue.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"\xcf\x03\n" +
 	"\x05Issue\x12@\n" +
 	"\bapproval\x18\x01 \x01(\v2$.bytebase.store.IssuePayloadApprovalR\bapproval\x128\n" +
 	"\n" +
@@ -319,14 +315,13 @@ const file_store_issue_proto_rawDesc = "" +
 	"\n" +
 	"risk_level\x18\x04 \x01(\x0e2\x19.bytebase.store.RiskLevelR\triskLevel\x12&\n" +
 	"\x0faccess_grant_id\x18\x05 \x01(\tR\raccessGrantId\x12\x14\n" +
-	"\x05draft\x18\x06 \x01(\bR\x05draft\"n\n" +
+	"\x05draft\x18\x06 \x01(\bR\x05draft\"p\n" +
 	"\x04Type\x12\x1a\n" +
 	"\x16ISSUE_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CHANGE\x10\x01\x12\x0e\n" +
 	"\n" +
-	"ROLE_GRANT\x10\x02\x12\x13\n" +
-	"\x0fDATABASE_EXPORT\x10\x03\x12\x10\n" +
-	"\fACCESS_GRANT\x10\x04\"H\n" +
+	"ROLE_GRANT\x10\x02\x12\x10\n" +
+	"\fACCESS_GRANT\x10\x04\"\x04\b\x03\x10\x03*\x0fDATABASE_EXPORT\"H\n" +
 	"\x06Status\x12\x1c\n" +
 	"\x18ISSUE_STATUS_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04OPEN\x10\x01\x12\b\n" +

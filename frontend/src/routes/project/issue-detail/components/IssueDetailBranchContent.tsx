@@ -2,23 +2,14 @@ import { useIssueDetailContext } from "../context/IssueDetailContext";
 import { IssueDetailAccessGrantView } from "./IssueDetailAccessGrantView";
 import { IssueDetailDatabaseChangeView } from "./IssueDetailDatabaseChangeView";
 import { IssueDetailDatabaseCreateView } from "./IssueDetailDatabaseCreateView";
-import { IssueDetailDatabaseExportView } from "./IssueDetailDatabaseExportView";
 import { IssueDetailRoleGrantView } from "./IssueDetailRoleGrantView";
 
 export function IssueDetailBranchContent({
   databaseChangeSelectedSpecId,
-  databaseExportExecutionHistoryExpanded,
-  databaseExportTasksExpanded,
   onDatabaseChangeSelectedSpecIdChange,
-  onDatabaseExportExecutionHistoryExpandedChange,
-  onDatabaseExportTasksExpandedChange,
 }: {
   databaseChangeSelectedSpecId: string;
-  databaseExportExecutionHistoryExpanded: boolean;
-  databaseExportTasksExpanded: boolean;
   onDatabaseChangeSelectedSpecIdChange: (specId: string) => void;
-  onDatabaseExportExecutionHistoryExpandedChange: (expanded: boolean) => void;
-  onDatabaseExportTasksExpandedChange: (expanded: boolean) => void;
 }) {
   const page = useIssueDetailContext();
 
@@ -32,19 +23,6 @@ export function IssueDetailBranchContent({
 
   if (page.issueType === "CREATE_DATABASE") {
     return <IssueDetailDatabaseCreateView />;
-  }
-
-  if (page.issueType === "EXPORT_DATA") {
-    return (
-      <IssueDetailDatabaseExportView
-        executionHistoryExpanded={databaseExportExecutionHistoryExpanded}
-        onExecutionHistoryExpandedChange={
-          onDatabaseExportExecutionHistoryExpandedChange
-        }
-        onTasksExpandedChange={onDatabaseExportTasksExpandedChange}
-        tasksExpanded={databaseExportTasksExpanded}
-      />
-    );
   }
 
   if (page.issueType === "DATABASE_CHANGE") {

@@ -12,10 +12,7 @@ export const shouldRedirectToIssueDetail = (plan: Plan, issue?: Issue) => {
     return false;
   }
   return plan.specs.every((spec) => {
-    return (
-      spec.config?.case === "createDatabaseConfig" ||
-      spec.config?.case === "exportDataConfig"
-    );
+    return spec.config?.case === "createDatabaseConfig";
   });
 };
 

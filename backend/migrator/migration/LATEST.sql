@@ -173,16 +173,6 @@ CREATE INDEX idx_audit_log_payload_method ON audit_log((payload->>'method'));
 CREATE INDEX idx_audit_log_payload_resource ON audit_log((payload->>'resource'));
 CREATE INDEX idx_audit_log_payload_user ON audit_log((payload->>'user'));
 
-CREATE TABLE export_archive (
-    -- golbal unique
-    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    workspace text NOT NULL REFERENCES workspace(resource_id),
-    created_at timestamptz NOT NULL DEFAULT now(),
-    bytes bytea,
-    -- Stored as ExportArchivePayload (proto/store/store/export_archive.proto)
-    payload jsonb NOT NULL DEFAULT '{}'
-);
-
 -----------------------
 -- Project and project-scoped tables
 -----------------------
@@ -310,7 +300,7 @@ CREATE TABLE issue (
     plan_id bigint,
     name text NOT NULL,
     status text NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
-    -- type: DATABASE_CHANGE, ROLE_GRANT, DATABASE_EXPORT, ACCESS_GRANT
+    -- type: DATABASE_CHANGE, ROLE_GRANT, ACCESS_GRANT
     -- Enum: Issue.Type (proto/store/store/issue.proto)
     type text NOT NULL,
     description text NOT NULL DEFAULT '',

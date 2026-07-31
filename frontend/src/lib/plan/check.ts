@@ -80,9 +80,6 @@ const targetsForSpec = (spec: Plan_Spec): string[] => {
   if (spec.config.case === "changeDatabaseConfig") {
     return spec.config.value.targets ?? [];
   }
-  if (spec.config.case === "exportDataConfig") {
-    return spec.config.value.targets ?? [];
-  }
   return [];
 };
 

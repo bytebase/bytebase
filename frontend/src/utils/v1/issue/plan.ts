@@ -5,17 +5,11 @@ export const sheetNameOfSpec = (spec: Plan_Spec): string => {
   if (spec.config?.case === "changeDatabaseConfig") {
     return spec.config.value.sheet ?? "";
   }
-  if (spec.config?.case === "exportDataConfig") {
-    return spec.config.value.sheet ?? "";
-  }
   return "";
 };
 
 export const targetsOfSpec = (spec: Plan_Spec): string[] => {
   if (spec.config?.case === "changeDatabaseConfig") {
-    return spec.config.value.targets ?? [];
-  }
-  if (spec.config?.case === "exportDataConfig") {
     return spec.config.value.targets ?? [];
   }
   return [];

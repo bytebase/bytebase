@@ -370,7 +370,6 @@
     "no-license": "No license",
     "not-started": "Not started",
     "ok": "OK",
-    "only-creator-allowed-export": "Only the creator is allowed to export",
     "open": "Open",
     "open-mobile-sidebar": "Open mobile sidebar",
     "operation": "Operation",
@@ -409,7 +408,6 @@
     "resources": "Resources",
     "restore": "Restore",
     "restored": "Restored",
-    "retry": "Retry",
     "revert": "Revert",
     "revoke": "Revoke",
     "revoked": "Revoked",
@@ -1347,7 +1345,6 @@
           "value": {
             "access-grant": "Access Grant",
             "database-change": "Database Change",
-            "database-export": "Database Export",
             "role-grant": "Role Grant"
           }
         },
@@ -1395,14 +1392,6 @@
         "link": "Insert a link"
       },
       "write": "Write"
-    },
-    "data-export": {
-      "creation-not-supported": "Data export issue creation is no longer supported.",
-      "download-tooltip": "Available for 24 hours",
-      "file-expired": "File Expired",
-      "format": "Format",
-      "limits": "Limits",
-      "options": "Options"
     },
     "issue-name": "Issue name",
     "labels": "Issue Labels",
@@ -1465,7 +1454,6 @@
       "change-database": "Change database",
       "change-from-sql-editor": "Change from SQL Editor",
       "edit-schema": "Edit schema",
-      "export-data": "Export data",
       "request-role": "Request role",
       "request-specific-role": "Request \"{{role}}\" role"
     },
@@ -3234,7 +3222,6 @@
       }
     },
     "created": "Created",
-    "data-export-creator-only": "Only the issue creator can execute data export tasks",
     "error": {
       "scheduled-time-must-be-in-the-future": "Scheduled time must be in the future"
     },

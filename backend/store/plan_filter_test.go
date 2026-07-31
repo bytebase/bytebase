@@ -79,11 +79,10 @@ func TestGetListPlanFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "spec_type filter - export_data_config",
-			filter:   `spec_type == "export_data_config"`,
-			wantSQL:  "(EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->>'exportDataConfig' IS NOT NULL))",
-			wantArgs: []any{},
-			wantErr:  false,
+			name:        "spec_type filter - retired export_data_config",
+			filter:      `spec_type == "export_data_config"`,
+			wantErr:     true,
+			errContains: "invalid spec_type value",
 		},
 		{
 			name:     "state filter - ACTIVE",

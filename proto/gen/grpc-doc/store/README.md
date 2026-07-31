@@ -107,9 +107,6 @@
     - [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type)
     - [TaskMetadata.State](#bytebase-store-TaskMetadata-State)
   
-- [store/export_archive.proto](#store_export_archive-proto)
-    - [ExportArchivePayload](#bytebase-store-ExportArchivePayload)
-  
 - [store/group.proto](#store_group-proto)
     - [GroupMember](#bytebase-store-GroupMember)
     - [GroupPayload](#bytebase-store-GroupPayload)
@@ -164,7 +161,6 @@
     - [PlanConfig](#bytebase-store-PlanConfig)
     - [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig)
     - [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig)
-    - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
   
 - [store/issue_comment.proto](#store_issue_comment-proto)
@@ -2095,37 +2091,6 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 
 
 
-<a name="store_export_archive-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/export_archive.proto
-
-
-
-<a name="bytebase-store-ExportArchivePayload"></a>
-
-### ExportArchivePayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| file_format | [ExportFormat](#bytebase-store-ExportFormat) |  | The exported file format. e.g. JSON, CSV, SQL |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
 <a name="store_group-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2885,7 +2850,6 @@ Type represents the category of issue.
 | ISSUE_TYPE_UNSPECIFIED | 0 |  |
 | DATABASE_CHANGE | 1 | Issue for database schema or data changes. |
 | ROLE_GRANT | 2 | Role grant request. |
-| DATABASE_EXPORT | 3 | Issue for exporting data from databases. |
 | ACCESS_GRANT | 4 | Temporary access grant request. |
 
 
@@ -2961,24 +2925,6 @@ Type represents the category of issue.
 
 
 
-<a name="bytebase-store-PlanConfig-ExportDataConfig"></a>
-
-### PlanConfig.ExportDataConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| targets | [string](#string) | repeated | The list of targets. Multi-database format: [instances/{instance-id}/databases/{database-name}]. Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. |
-| sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
-| format | [ExportFormat](#bytebase-store-ExportFormat) |  | The format of the exported file. |
-| password | [string](#string) | optional | The zip password provided by users. Leave it empty if there is no need to encrypt the zip file. |
-
-
-
-
-
-
 <a name="bytebase-store-PlanConfig-Spec"></a>
 
 ### PlanConfig.Spec
@@ -2990,7 +2936,6 @@ Type represents the category of issue.
 | id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
 | create_database_config | [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig) |  |  |
 | change_database_config | [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig) |  |  |
-| export_data_config | [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig) |  |  |
 
 
 
@@ -5124,7 +5069,6 @@ Type represents the type of database operation to perform.
 | TASK_TYPE_UNSPECIFIED | 0 |  |
 | DATABASE_CREATE | 1 | Create a new database. |
 | DATABASE_MIGRATE | 2 | Apply schema/data migrations to an existing database. Execution strategy is determined by release type (VERSIONED/DECLARATIVE) or sheet content for non-release tasks. |
-| DATABASE_EXPORT | 3 | Export data from a database. |
 
 
  
@@ -5211,7 +5155,6 @@ TaskRunResult contains the outcome and metadata from a task run execution.
 | ----- | ---- | ----- | ----------- |
 | detail | [string](#string) |  | Error message for failed task runs. Empty for successful or canceled runs. |
 | has_prior_backup | [bool](#bool) |  | Indicates whether a prior backup was created for this task run. When true, the task run can be rolled back using the backup tables. Backup details are available in the task run logs (PRIOR_BACKUP log entries). |
-| export_archive_id | [string](#string) |  | Resource ID of the export archive generated for export tasks. |
 
 
 

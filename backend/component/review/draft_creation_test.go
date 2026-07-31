@@ -32,8 +32,10 @@ func TestCreateDraftIssueRevalidatesPlanAfterProposal(t *testing.T) {
 			name: "Plan kind changed",
 			mutate: func(ctx context.Context, t *testing.T, stores *store.Store, plan *store.PlanMessage) {
 				specs := []*storepb.PlanConfig_Spec{{
-					Config: &storepb.PlanConfig_Spec_ExportDataConfig{
-						ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{},
+					Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+							Release: "projects/project-a/releases/1",
+						},
 					},
 				}}
 				_, err := NewWorkflow(stores).UpdatePlan(ctx, UpdatePlanInput{

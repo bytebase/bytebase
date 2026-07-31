@@ -28,10 +28,16 @@ func TestGetListRolloutFilter(t *testing.T) {
 		},
 		{
 			name:     "task_type in filter",
-			filter:   `task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]`,
+			filter:   `task_type in ["DATABASE_MIGRATE", "DATABASE_CREATE"]`,
 			wantSQL:  "(EXISTS (SELECT 1 FROM task WHERE task.project = plan.project AND task.plan_id = plan.id AND task.type = ANY($1)))",
-			wantArgs: []any{[]string{"DATABASE_MIGRATE", "DATABASE_EXPORT"}},
+			wantArgs: []any{[]string{"DATABASE_MIGRATE", "DATABASE_CREATE"}},
 			wantErr:  false,
+		},
+		{
+			name:        "task_type in filter - retired DATABASE_EXPORT",
+			filter:      `task_type in ["DATABASE_EXPORT"]`,
+			wantErr:     true,
+			errContains: "invalid task_type value",
 		},
 		{
 			name:    "update_time greater than or equal",

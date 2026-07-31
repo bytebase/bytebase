@@ -1,4 +1,4 @@
-import { DatabaseIcon, Download, FolderTree } from "lucide-react";
+import { DatabaseIcon, FolderTree } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -224,9 +224,6 @@ export function PlanChangeReferenceTooltip({
 function ChangeTypeIcon({ icon }: { icon: PlanChangeReferenceIcon }) {
   if (icon === "database-group") {
     return <FolderTree className="size-3.5" />;
-  }
-  if (icon === "export") {
-    return <Download className="size-3.5" />;
   }
   return <DatabaseIcon className="size-3.5" />;
 }
