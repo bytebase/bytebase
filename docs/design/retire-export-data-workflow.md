@@ -130,7 +130,12 @@ reference.
 - `api/v1/sql_service.go`: remove `doExportFromIssue` and the rollout-name
   branch of `Export` (RPC then accepts only database targets); remove the zip
   re-encrypt helpers if unused elsewhere (`doEncrypt` is shared with the
-  synchronous path — verify before removing)
+  synchronous path — verify before removing). In the same step, change
+  `prepareRelatedMessage` to wrap `GetInstanceDatabaseID` parse failures as
+  `CodeInvalidArgument` instead of `CodeInternal` (`sql_service.go:2014`):
+  once the rollout branch is gone, retired-route names fall through to the
+  database path, and a malformed name must surface as `InvalidArgument`, not
+  a 500 — this is also what the rejection test below asserts
 - `api/v1/rollout_service_task.go`: remove `getTaskCreatesFromExportDataConfig`
   + its spec-switch case
 - `api/v1/plan_service.go`: `CreatePlan`/`UpdatePlan` reject
