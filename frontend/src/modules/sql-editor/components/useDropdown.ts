@@ -108,16 +108,16 @@ export function useDropdown(
       }
       const canWriteSheet = isWorksheetWritableV1(worksheetEntity);
       if (canWriteSheet) {
-        items.push(
-          {
-            key: "rename",
-            label: t("sql-editor.tab.context-menu.actions.rename"),
-          },
-          {
+        items.push({
+          key: "rename",
+          label: t("sql-editor.tab.context-menu.actions.rename"),
+        });
+        if (viewMode === "my") {
+          items.push({
             key: "delete",
             label: t("common.delete"),
-          }
-        );
+          });
+        }
       }
       if (canMultiSelect) {
         items.push({
