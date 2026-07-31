@@ -16,6 +16,7 @@ import { TreeNodePrefix } from "./TreeNodePrefix";
 type Props = {
   readonly folder: string;
   readonly onFolderChange: (folder: string) => void;
+  readonly includeRoot?: boolean;
 };
 
 function toTreeData(
@@ -28,7 +29,11 @@ function toTreeData(
   };
 }
 
-export function FolderForm({ folder, onFolderChange }: Props) {
+export function FolderForm({
+  folder,
+  onFolderChange,
+  includeRoot = false,
+}: Props) {
   const { t } = useTranslation();
 
   const { folderTree, folderContext } = useSheetContextByView("my");
@@ -97,9 +102,9 @@ export function FolderForm({ folder, onFolderChange }: Props) {
     queueMicrotask(() => setShowPopover(false));
   };
 
-  const treeData = folderTree.children
-    .filter((child) => !child.loadMore)
-    .map(toTreeData);
+  const treeData = includeRoot
+    ? [toTreeData(folderTree)]
+    : folderTree.children.filter((child) => !child.loadMore).map(toTreeData);
 
   const searchMatch = (node: TreeDataNode<WorksheetFolderNode>) => {
     if (!folderPath) return true;

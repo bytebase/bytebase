@@ -7,7 +7,10 @@ import {
   Worksheet_Visibility,
   type Worksheet,
 } from "@/types/proto-es/v1/worksheet_service_pb";
-import { storageKeySqlEditorWorksheetFolder } from "@/utils";
+import {
+  storageKeySqlEditorWorksheetFilter,
+  storageKeySqlEditorWorksheetFolder,
+} from "@/utils";
 
 type AppState = {
   currentUser: { email: string; workspace: string };
@@ -182,6 +185,109 @@ describe("sheet context", () => {
     expect(container.textContent).toContain("Created worksheet");
   });
 
+  test("does not restore worksheet search keyword from localStorage", async () => {
+    window.localStorage.setItem(
+      storageKeySqlEditorWorksheetFilter(
+        "",
+        "projects/proj1",
+        "creator@example.com"
+      ),
+      JSON.stringify({
+        keyword: "payroll",
+        showMine: true,
+        showShared: false,
+        showDraft: true,
+        onlyShowStarred: true,
+      })
+    );
+
+    const { provideSheetContext, useSheetContext } = await import("./context");
+    let sheetContext: ReturnType<typeof useSheetContext> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      sheetContext = useSheetContext();
+      return null;
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+
+    expect(sheetContext!.filter.keyword).toBe("");
+    expect(sheetContext!.filter.onlyShowStarred).toBe(true);
+    expect(sheetContext!.filter.showShared).toBe(false);
+  });
+
+  test("persists worksheet filter without deprecated keyword", async () => {
+    const key = storageKeySqlEditorWorksheetFilter(
+      "",
+      "projects/proj1",
+      "creator@example.com"
+    );
+
+    const { provideSheetContext, useSheetContext } = await import("./context");
+    let sheetContext: ReturnType<typeof useSheetContext> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      sheetContext = useSheetContext();
+      return null;
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+
+    act(() => {
+      sheetContext!.setFilter({
+        ...sheetContext!.filter,
+        keyword: "payroll",
+        onlyShowStarred: true,
+      });
+    });
+
+    const stored = JSON.parse(window.localStorage.getItem(key)!);
+    expect(stored).toEqual({
+      showMine: true,
+      showShared: true,
+      showDraft: true,
+      onlyShowStarred: true,
+    });
+  });
+
+  test("uses a collision-free key for load-more rows", async () => {
+    mocks.getAppState().listWorksheetFolders.mockResolvedValueOnce([
+      { folders: ["__load-more"], category: "my" },
+    ]);
+
+    const { provideSheetContext, useSheetContextByView } = await import(
+      "./context"
+    );
+    let viewContext: ReturnType<typeof useSheetContextByView> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      viewContext = useSheetContextByView("my");
+      return null;
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+
+    await act(async () => {
+      await viewContext!.fetchSheetList();
+    });
+
+    const keys = viewContext!.sheetTree.children.map((child) => child.key);
+    expect(keys).toContain("/my/__load-more");
+    expect(keys).toContain("__worksheet_load_more__:/my");
+  });
+
   test("loads caller worksheet folders before the root worksheet page", async () => {
     mocks
       .getAppState()
@@ -345,8 +451,19 @@ describe("sheet context", () => {
 
     expect(mocks.getAppState().fetchWorksheetList).toHaveBeenLastCalledWith(
       "projects/proj1",
-      'creator == "users/creator@example.com" && title.contains("payroll") && starred == true',
+      'creator == "users/creator@example.com" && folder == "" && title.contains("payroll") && starred == true',
       expect.objectContaining({ pageToken: "" })
+    );
+
+    mocks.getAppState().fetchWorksheetList.mockClear();
+    await act(async () => {
+      await viewContext!.fetchNextPage();
+    });
+
+    expect(mocks.getAppState().fetchWorksheetList).toHaveBeenLastCalledWith(
+      "projects/proj1",
+      'creator == "users/creator@example.com" && folder == "" && title.contains("payroll") && starred == true',
+      expect.objectContaining({ pageToken: "next-page" })
     );
   });
 

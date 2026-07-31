@@ -686,9 +686,12 @@ func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter str
 				variable, value := getVariableAndValueFromExpr(expr)
 				return parseToSQL(variable, value)
 			case celoverloads.Contains:
+				if expr.AsCall().Target().Kind() != celast.IdentKind {
+					return nil, errors.Errorf(`invalid args for %q`, celoverloads.Contains)
+				}
 				variable := expr.AsCall().Target().AsIdent()
 				args := expr.AsCall().Args()
-				if len(args) != 1 {
+				if len(args) != 1 || args[0].Kind() != celast.LiteralKind {
 					return nil, errors.Errorf(`invalid args for %q`, variable)
 				}
 				value := args[0].AsLiteral().Value()

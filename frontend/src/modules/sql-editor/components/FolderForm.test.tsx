@@ -313,6 +313,36 @@ describe("FolderForm", () => {
     unmount();
   });
 
+  test("can include the root folder in the picker", async () => {
+    const onFolderChange = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <FolderForm folder="/my/foo" onFolderChange={onFolderChange} includeRoot />
+    );
+    render();
+
+    const input = container.querySelector(
+      "[data-testid='folder-input']"
+    ) as HTMLInputElement;
+    act(() => {
+      input.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    });
+
+    const treeNodes = document.body.querySelectorAll(
+      "[data-testid='tree'] > div"
+    );
+    expect(treeNodes.length).toBeGreaterThan(0);
+    expect(document.body.textContent).toContain("my");
+
+    await act(async () => {
+      (treeNodes[0] as HTMLElement).click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(onFolderChange).toHaveBeenCalledWith("/my");
+
+    unmount();
+  });
+
   test("typing in input normalizes path and calls onFolderChange", () => {
     const onFolderChange = vi.fn();
     const { container, render, unmount } = renderIntoContainer(

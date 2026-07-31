@@ -292,6 +292,18 @@ func TestSearchWorksheetsFilterByTitle(t *testing.T) {
 		Filter: `content.contains("SELECT")`,
 	}))
 	a.Error(err)
+
+	_, err = ctl.worksheetServiceClient.SearchWorksheets(ctx, connect.NewRequest(&v1pb.SearchWorksheetsRequest{
+		Parent: ctl.project.Name,
+		Filter: `"literal".contains("x")`,
+	}))
+	a.Error(err)
+
+	_, err = ctl.worksheetServiceClient.SearchWorksheets(ctx, connect.NewRequest(&v1pb.SearchWorksheetsRequest{
+		Parent: ctl.project.Name,
+		Filter: `title.contains(name)`,
+	}))
+	a.Error(err)
 }
 
 func TestBatchUpdateWorksheetOrganizerFilterByFolder(t *testing.T) {

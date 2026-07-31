@@ -43,6 +43,7 @@ const mocks = vi.hoisted(() => ({
     disableDrag?: unknown;
     disableDrop?: unknown;
     onMove?: unknown;
+    renderCursor?: unknown;
   },
 }));
 
@@ -127,6 +128,7 @@ type MockRenderArgs = {
     data: MockTreeItem;
     isSelected: boolean;
     isOpen?: boolean;
+    willReceiveDrop?: boolean;
   };
   style: React.CSSProperties;
 };
@@ -139,6 +141,7 @@ vi.mock("@/components/ui/tree", () => ({
     disableDrag,
     disableDrop,
     onMove,
+    renderCursor,
   }: {
     data: MockTreeItem[];
     renderNode: (args: MockRenderArgs) => React.ReactNode;
@@ -146,8 +149,9 @@ vi.mock("@/components/ui/tree", () => ({
     disableDrag?: unknown;
     disableDrop?: unknown;
     onMove?: unknown;
+    renderCursor?: unknown;
   }) => {
-    mocks.treeProps = { disableDrag, disableDrop, onMove };
+    mocks.treeProps = { disableDrag, disableDrop, onMove, renderCursor };
     const renderAll = (items: MockTreeItem[]): React.ReactNode[] =>
       items.flatMap((item) => [
         renderNode({
@@ -582,6 +586,8 @@ describe("SheetTree", () => {
     const tree = document.body.querySelector("[data-testid='tree']");
     expect(tree).not.toBeNull();
     expect(tree?.className).toContain("[&_[role=treeitem]]:!min-w-0");
+    expect(tree?.className).toContain("!overflow-y-visible");
+    expect(typeof mocks.treeProps.renderCursor).toBe("function");
 
     // HighlightLabelText nodes are rendered (root node + children)
     const labels = container.querySelectorAll(
@@ -777,7 +783,9 @@ describe("SheetTree", () => {
   test("4b. Multi-select folder selection skips load-more nodes", () => {
     const defaultMocks = setupDefaultMocks();
     const wsNode = makeWorksheetNode("/my/folder1/ws1");
-    const loadMoreNode = makeLoadMoreNode("/my/folder1/__load-more");
+    const loadMoreNode = makeLoadMoreNode(
+      "__worksheet_load_more__:/my/folder1"
+    );
     const folderNode = makeFolderNode(
       "/my/folder1",
       [wsNode, loadMoreNode],
@@ -931,15 +939,156 @@ describe("SheetTree", () => {
     unmount();
   });
 
+  test("6b. Delete folder moves all folder paths to root via batch folder update", async () => {
+    const defaultMocks = setupDefaultMocks();
+    const loadedWorksheet = makeWorksheetNode(
+      "/my/old/loaded",
+      "worksheets/loaded"
+    );
+    const oldFolder = makeFolderNode("/my/old", [loadedWorksheet]);
+    const rootNode = makeFolderNode("/my", [oldFolder]);
+    defaultMocks.viewContext._sheetTree.value = rootNode;
+    defaultMocks.viewContext.getFoldersForWorksheet.mockImplementation(
+      (path: string) =>
+        path
+          .replace("/my", "")
+          .split("/")
+          .map((part) => part.trim())
+          .filter(Boolean)
+    );
+    defaultMocks.folderContext.listSubFolders.mockImplementation(
+      (parent: string) =>
+        parent === "/my/old" ? ["/my/old/child", "/my/old/child/grand"] : []
+    );
+
+    mocks.useDropdown.mockReturnValue({
+      currentNode: oldFolder,
+      options: [{ type: "item", key: "delete", label: "Delete" }],
+      worksheetEntity: undefined,
+      showSharePanel: false,
+      handleContextMenu: vi.fn(),
+      handleSharePanelShow: vi.fn(),
+      handleClickOutside: vi.fn(),
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={vi.fn()}
+      />
+    );
+    render();
+
+    const deleteItem = Array.from(
+      container.querySelectorAll("[data-testid='dropdown-menu-item']")
+    ).find((el) => el.textContent === "Delete") as HTMLElement | undefined;
+    expect(deleteItem).not.toBeUndefined();
+
+    await act(async () => {
+      deleteItem?.click();
+    });
+
+    const moveToRootButton = Array.from(
+      document.body.querySelectorAll(
+        "[data-testid='alert-dialog-content'] [data-testid='button']"
+      )
+    ).find(
+      (button) => button.textContent === "sheet.hint-tips.move-to-root-folder"
+    ) as HTMLElement | undefined;
+    expect(moveToRootButton).not.toBeUndefined();
+
+    await act(async () => {
+      moveToRootButton?.click();
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
+    expect(
+      defaultMocks.sheetContext.batchUpdateWorksheetFolderPaths
+    ).toHaveBeenCalledWith("my", [
+      { sourceFolder: ["old"], targetFolder: [] },
+      { sourceFolder: ["old", "child"], targetFolder: [] },
+      { sourceFolder: ["old", "child", "grand"], targetFolder: [] },
+    ]);
+    expect(
+      defaultMocks.sheetContext.batchUpdateWorksheetFolders
+    ).not.toHaveBeenCalled();
+    expect(defaultMocks.folderContext.removeFolder).toHaveBeenCalledWith(
+      "/my/old"
+    );
+
+    unmount();
+  });
+
+  test("6c. Delete locally empty folder still moves backend-known folders to root", async () => {
+    const defaultMocks = setupDefaultMocks();
+    const oldFolder = makeFolderNode("/my/old");
+    const rootNode = makeFolderNode("/my", [oldFolder]);
+    defaultMocks.viewContext._sheetTree.value = rootNode;
+    defaultMocks.viewContext.getFoldersForWorksheet.mockImplementation(
+      (path: string) =>
+        path
+          .replace("/my", "")
+          .split("/")
+          .map((part) => part.trim())
+          .filter(Boolean)
+    );
+    defaultMocks.folderContext.listSubFolders.mockImplementation(
+      (parent: string) => (parent === "/my/old" ? ["/my/old/child"] : [])
+    );
+
+    mocks.useDropdown.mockReturnValue({
+      currentNode: oldFolder,
+      options: [{ type: "item", key: "delete", label: "Delete" }],
+      worksheetEntity: undefined,
+      showSharePanel: false,
+      handleContextMenu: vi.fn(),
+      handleSharePanelShow: vi.fn(),
+      handleClickOutside: vi.fn(),
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <SheetTree
+        view="my"
+        onMultiSelectModeChange={vi.fn()}
+        onCheckedNodesChange={vi.fn()}
+      />
+    );
+    render();
+
+    const deleteItem = Array.from(
+      container.querySelectorAll("[data-testid='dropdown-menu-item']")
+    ).find((el) => el.textContent === "Delete") as HTMLElement | undefined;
+    expect(deleteItem).not.toBeUndefined();
+
+    await act(async () => {
+      deleteItem?.click();
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
+    expect(
+      defaultMocks.sheetContext.batchUpdateWorksheetFolderPaths
+    ).toHaveBeenCalledWith("my", [
+      { sourceFolder: ["old"], targetFolder: [] },
+      { sourceFolder: ["old", "child"], targetFolder: [] },
+    ]);
+    expect(defaultMocks.folderContext.removeFolder).toHaveBeenCalledWith(
+      "/my/old"
+    );
+
+    unmount();
+  });
+
   test("7. Load more button fetches the next page", async () => {
     const defaultMocks = setupDefaultMocks();
     defaultMocks.viewContext._sheetTree.value = makeFolderNode("/my", [
       {
-        key: "/my/__load-more",
+        key: "__worksheet_load_more__:/my",
         label: "common.load-more",
         editable: false,
         isLeaf: true,
         loadMore: true,
+        loadMoreFolderKey: "/my",
         children: [],
       },
     ]);
@@ -954,7 +1103,7 @@ describe("SheetTree", () => {
     render();
 
     const loadMoreRow = container.querySelector(
-      `[data-item-key="/my/__load-more"]`
+      `[data-item-key="__worksheet_load_more__:/my"]`
     ) as HTMLElement | null;
     expect(loadMoreRow).not.toBeNull();
     const loadMoreWrapper = loadMoreRow?.querySelector(
@@ -984,9 +1133,7 @@ describe("SheetTree", () => {
       loadMoreButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(defaultMocks.viewContext.fetchNextPage).toHaveBeenCalledWith(
-      undefined
-    );
+    expect(defaultMocks.viewContext.fetchNextPage).toHaveBeenCalledWith("/my");
 
     unmount();
   });
@@ -996,7 +1143,7 @@ describe("SheetTree", () => {
     const folder = makeFolderNode("/my/alpha", [
       makeWorksheetNode("/my/alpha/ws1"),
       {
-        key: "/my/alpha/__load-more",
+        key: "__worksheet_load_more__:/my/alpha",
         label: "common.load-more",
         editable: false,
         isLeaf: true,
@@ -1018,7 +1165,7 @@ describe("SheetTree", () => {
     render();
 
     const loadMoreRow = container.querySelector(
-      `[data-item-key="/my/alpha/__load-more"]`
+      `[data-item-key="__worksheet_load_more__:/my/alpha"]`
     ) as HTMLElement | null;
     expect(loadMoreRow).not.toBeNull();
     const loadMoreWrapper = loadMoreRow?.querySelector(
@@ -1057,7 +1204,7 @@ describe("SheetTree", () => {
 
   test("7c. Load more rows are inert for tree actions", () => {
     const defaultMocks = setupDefaultMocks();
-    const loadMoreNode = makeLoadMoreNode("/my/__load-more");
+    const loadMoreNode = makeLoadMoreNode("__worksheet_load_more__:/my");
     const folderNode = makeFolderNode("/my/folder", [], true);
     defaultMocks.viewContext._sheetTree.value = makeFolderNode("/my", [
       folderNode,
@@ -1085,7 +1232,7 @@ describe("SheetTree", () => {
     render();
 
     const loadMoreRow = container.querySelector(
-      `[data-item-key="/my/__load-more"]`
+      `[data-item-key="__worksheet_load_more__:/my"]`
     ) as HTMLElement | null;
     expect(loadMoreRow).not.toBeNull();
 
@@ -1127,7 +1274,7 @@ describe("SheetTree", () => {
   test("7d. Add folder ignores load-more nodes when generating a name", async () => {
     const defaultMocks = setupDefaultMocks();
     const existingFolder = makeFolderNode("/my/new folder", [], true);
-    const loadMoreNode = makeLoadMoreNode("/my/__load-more");
+    const loadMoreNode = makeLoadMoreNode("__worksheet_load_more__:/my");
     const rootNode = makeFolderNode(
       "/my",
       [existingFolder, loadMoreNode],

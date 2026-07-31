@@ -14,6 +14,16 @@ globalThis.ResizeObserver = class ResizeObserver {
   unobserve() {}
   disconnect() {}
 };
+window.matchMedia = ((query: string) => ({
+  matches: true,
+  media: query,
+  onchange: null,
+  addEventListener: () => {},
+  removeEventListener: () => {},
+  addListener: () => {},
+  removeListener: () => {},
+  dispatchEvent: () => true,
+})) as unknown as typeof window.matchMedia;
 
 // ---- hoisted mocks ----------------------------------------------------------
 
@@ -92,17 +102,36 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
   DropdownMenuTrigger: ({
     children,
     className,
+    render,
   }: {
-    children: React.ReactNode;
+    children?: React.ReactNode;
     className?: string;
+    render?: React.ReactNode;
     "aria-label"?: string;
   }) => (
     <button data-testid="dropdown-menu-trigger" className={className}>
-      {children}
+      {render ?? children}
     </button>
   ),
   DropdownMenuContent: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="dropdown-menu-content">{children}</div>
+  ),
+  DropdownMenuItem: ({
+    children,
+    onClick,
+    disabled,
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    disabled?: boolean;
+  }) => (
+    <button
+      data-testid="dropdown-menu-item"
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {children}
+    </button>
   ),
 }));
 
@@ -157,11 +186,25 @@ vi.mock("./FolderForm", () => ({
   FolderForm: ({
     folder,
     onFolderChange,
+    includeRoot,
   }: {
     folder: string;
     onFolderChange: (f: string) => void;
+    includeRoot?: boolean;
   }) => (
-    <div data-testid="folder-form" data-folder={folder}>
+    <div
+      data-testid="folder-form"
+      data-folder={folder}
+      data-include-root={String(!!includeRoot)}
+    >
+      {includeRoot && (
+        <button
+          data-testid="folder-form-set-root"
+          onClick={() => onFolderChange("/my")}
+        >
+          set-root
+        </button>
+      )}
       <button
         data-testid="folder-form-set-target"
         onClick={() => onFolderChange("/some/folder")}
@@ -269,8 +312,28 @@ const setupDefaultMocks = (overrides: Partial<Filter> = {}) => {
 
   const batchUpdateWorksheetFolders = vi.fn().mockResolvedValue(undefined);
   const getFoldersForWorksheet = vi.fn((path: string): string[] =>
-    path ? [path] : []
+    !path || path === "/my" ? [] : [path]
   );
+  const sheetTree = {
+    key: "/my",
+    label: "Mine",
+    editable: false,
+    children: [
+      {
+        key: "/my/ws1",
+        label: "ws1",
+        editable: false,
+        children: [],
+        empty: true,
+        worksheet: {
+          name: "worksheets/ws1",
+          title: "ws1",
+          folders: [],
+          type: "worksheet",
+        },
+      } as WorksheetFolderNode,
+    ],
+  } as WorksheetFolderNode;
 
   mocks.useSheetContext.mockReturnValue({
     get filter() {
@@ -286,6 +349,7 @@ const setupDefaultMocks = (overrides: Partial<Filter> = {}) => {
 
   mocks.useSheetContextByView.mockReturnValue({
     getFoldersForWorksheet,
+    sheetTree,
   });
 
   return { filterRef, batchUpdateWorksheetFolders, getFoldersForWorksheet };
@@ -408,17 +472,20 @@ describe("WorksheetPane", () => {
     );
     expect(myTree?.getAttribute("data-multi-select-mode")).toBe("true");
 
-    // Toolbar buttons rendered — filter by button labels
+    // Toolbar buttons rendered — Move + Cancel stay inline; destructive
+    // Delete is tucked into the More menu for the narrow worksheet pane.
     const toolbarButtons = Array.from(
       container.querySelectorAll("[data-testid='button']")
     ).map((el) => el.textContent?.trim());
     expect(toolbarButtons).toEqual(
-      expect.arrayContaining([
-        "common.delete",
-        "sheet.move-worksheets",
-        "common.cancel",
-      ])
+      expect.arrayContaining(["sheet.move-worksheets", "common.cancel"])
     );
+    expect(toolbarButtons).not.toContain("common.delete");
+    const menuItems = Array.from(
+      container.querySelectorAll("[data-testid='dropdown-menu-item']")
+    ).map((el) => el.textContent?.trim());
+    expect(menuItems).toContain("common.delete");
+    expect(toolbarButtons).not.toContain("common.n-selected");
 
     unmount();
   });
@@ -478,6 +545,63 @@ describe("WorksheetPane", () => {
     expect(getFoldersForWorksheet).toHaveBeenCalledWith("/some/folder");
     expect(batchUpdateWorksheetFolders).toHaveBeenCalledWith([
       { name: "worksheets/ws1", folders: ["/some/folder"] },
+    ]);
+
+    unmount();
+  });
+
+  test("5b. Move modal can move worksheets to the root folder", async () => {
+    const { batchUpdateWorksheetFolders, getFoldersForWorksheet } =
+      setupDefaultMocks();
+    const { container, render, unmount } = renderIntoContainer(
+      <WorksheetPane />
+    );
+    render();
+
+    act(() => {
+      container
+        .querySelector("[data-testid='sheet-tree-my-enter-multi-select']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    act(() => {
+      container
+        .querySelector("[data-testid='sheet-tree-my-check-ws']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const moveButton = Array.from(
+      container.querySelectorAll("[data-testid='button']")
+    ).find((el) => el.textContent?.trim() === "sheet.move-worksheets");
+    act(() => {
+      moveButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    act(() => {
+      container
+        .querySelector("[data-testid='folder-form-set-target']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const folderForm = container.querySelector("[data-testid='folder-form']");
+    expect(folderForm?.getAttribute("data-include-root")).toBe("true");
+
+    act(() => {
+      container
+        .querySelector("[data-testid='folder-form-set-root']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const saveButton = Array.from(
+      container.querySelectorAll("[data-testid='button']")
+    ).find((el) => el.textContent?.trim() === "common.save");
+
+    await act(async () => {
+      saveButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(getFoldersForWorksheet).toHaveBeenCalledWith("/my");
+    expect(batchUpdateWorksheetFolders).toHaveBeenCalledWith([
+      { name: "worksheets/ws1", folders: [] },
     ]);
 
     unmount();
