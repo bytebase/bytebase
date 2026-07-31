@@ -71,6 +71,10 @@ export interface WorksheetFilter {
   showDraft: boolean;
 }
 
+type PersistedWorksheetFilter = Omit<WorksheetFilter, "keyword"> & {
+  keyword?: string;
+};
+
 export interface FolderContext {
   rootPath: string;
   folders: string[];
@@ -442,14 +446,15 @@ const currentScope = (): {
   }
 };
 
-const isWorksheetFilter = (v: unknown): v is WorksheetFilter =>
+const isPersistedWorksheetFilter = (
+  v: unknown
+): v is PersistedWorksheetFilter =>
   typeof v === "object" &&
   v !== null &&
-  "keyword" in v &&
-  "onlyShowStarred" in v &&
-  "showMine" in v &&
-  "showShared" in v &&
-  "showDraft" in v;
+  typeof (v as PersistedWorksheetFilter).onlyShowStarred === "boolean" &&
+  typeof (v as PersistedWorksheetFilter).showMine === "boolean" &&
+  typeof (v as PersistedWorksheetFilter).showShared === "boolean" &&
+  typeof (v as PersistedWorksheetFilter).showDraft === "boolean";
 
 const reloadFromStorage = () => {
   const scope = currentScope();
@@ -461,8 +466,11 @@ const reloadFromStorage = () => {
       scope.project,
       scope.email
     ),
-    (v) => (isWorksheetFilter(v) ? v : undefined)
-  ) ?? { ...INITIAL_FILTER };
+    (v) => (isPersistedWorksheetFilter(v) ? v : undefined)
+  );
+  const hydratedFilter = filter
+    ? { ...INITIAL_FILTER, ...filter, keyword: INITIAL_FILTER.keyword }
+    : { ...INITIAL_FILTER };
 
   const expandedArray = safeReadJSON<string[]>(
     storageKeySqlEditorWorksheetTree(scope.wsScope, scope.project, scope.email),
@@ -495,7 +503,7 @@ const reloadFromStorage = () => {
   }
 
   useSheetContextStore.getState().hydrate({
-    filter,
+    filter: hydratedFilter,
     expandedKeys,
     selectedKeys: [],
     editingNode: undefined,
@@ -512,7 +520,12 @@ const persistFilter = (filter: WorksheetFilter) => {
       scope.project,
       scope.email
     ),
-    filter
+    {
+      onlyShowStarred: filter.onlyShowStarred,
+      showMine: filter.showMine,
+      showShared: filter.showShared,
+      showDraft: filter.showDraft,
+    }
   );
 };
 
@@ -626,6 +639,9 @@ const rootTreeNodeFor = (view: SheetViewMode): WorksheetFolderNode => ({
   label: rootLabelFor(view),
   editable: false,
 });
+
+const getLoadMoreNodeKey = (folderKey: string) =>
+  `__worksheet_load_more__:${folderKey}`;
 
 const ensureFolderPath = (view: SheetViewMode, path: string): string => {
   const root = rootPathFor(view);
@@ -844,16 +860,14 @@ const buildTree = (
     : viewState.folderNextPageTokens.has(parent.key);
   if (includeLoadMore && hasMore) {
     const loadMoreNode: WorksheetFolderNode = {
-      key: `${parent.key}/__load-more`,
+      key: getLoadMoreNodeKey(parent.key),
       label: i18n.t("common.load-more"),
       editable: false,
       isLeaf: true,
       loadMore: true,
+      loadMoreFolderKey: parent.key,
       children: [],
     };
-    if (!isRoot) {
-      loadMoreNode.loadMoreFolderKey = parent.key;
-    }
     parent.children.push(loadMoreNode);
   }
   parent.empty = sheets.length === 0 && empty;
@@ -909,7 +923,6 @@ const sheetLikeItemsForView = (view: SheetViewMode): WorksheetLikeItem[] => {
 };
 
 const rebuildTreeImpl = (view: SheetViewMode) => {
-  const filter = useSheetContextStore.getState().filter;
   const folderContext = getFolderContext(view);
 
   const folderPaths = new Set<string>();
@@ -931,12 +944,7 @@ const rebuildTreeImpl = (view: SheetViewMode) => {
     label: rootLabelFor(view),
     key: folderContext.rootPath,
   };
-  const tree = buildTree(
-    view,
-    root,
-    worksheetsByFolder,
-    filter.onlyShowStarred
-  );
+  const tree = buildTree(view, root, worksheetsByFolder, false);
   useSheetContextStore.getState().setViewSheetTree(view, tree);
   getEvents(view).emit("on-built", { viewMode: view });
 };
@@ -959,12 +967,9 @@ const fetchSheetListFor = async (view: SheetViewMode) => {
   try {
     state.resetViewFolderPageState(view);
     await fetchWorksheetFoldersForView(view);
-    const rootFilters = hasWorksheetServerFilter() ? [] : [`folder == ""`];
-    const { worksheets, nextPageToken } = await fetchWorksheetsPage(
-      view,
-      "",
-      rootFilters
-    );
+    const { worksheets, nextPageToken } = await fetchWorksheetsPage(view, "", [
+      `folder == ""`,
+    ]);
     state.setViewWorksheetNames(
       view,
       worksheets.map((worksheet) => worksheet.name)
@@ -1016,9 +1021,7 @@ const fetchNextSheetPageFor = async (
     const { worksheets, nextPageToken } = await fetchWorksheetsPage(
       view,
       pageToken,
-      key === folderContext.rootPath && hasWorksheetServerFilter()
-        ? []
-        : [folderFilterForKey(view, key)]
+      [folderFilterForKey(view, key)]
     );
     const names = new Set(
       useSheetContextStore.getState().viewStates[view].worksheetNames
@@ -1060,9 +1063,6 @@ const worksheetSearchFilters = (): string[] => {
   }
   return filters;
 };
-
-const hasWorksheetServerFilter = (): boolean =>
-  worksheetSearchFilters().length > 0;
 
 const sheetFilterForView = (
   view: SheetViewMode,

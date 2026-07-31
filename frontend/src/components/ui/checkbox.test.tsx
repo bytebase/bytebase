@@ -157,6 +157,14 @@ describe("Checkbox", () => {
     unmount();
   });
 
+  test("enabled checkbox uses pointer cursor", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(Checkbox, { checked: false, "aria-label": "cb" })
+    );
+    expect(getCheckbox(container).className).toContain("cursor-pointer");
+    unmount();
+  });
+
   test("onClick prop is forwarded", () => {
     const onClick = vi.fn();
     const { container, unmount } = renderIntoContainer(
