@@ -157,6 +157,7 @@ service DatabaseService {
   rpc DiffSchema(DiffSchemaRequest) returns (DiffSchemaResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:diffSchema"
+
       body: "*"
       additional_bindings: {
         post: "/v1/{name=projects/*/instances/*/databases/*}:diffSchema"
