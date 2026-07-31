@@ -3337,7 +3337,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x02id\x18\x02 \x01(\tB\x03\xe0A\x03R\x02id\x12 \n" +
 	"\venvironment\x18\x03 \x01(\tR\venvironment\x12'\n" +
 	"\x05tasks\x18\x04 \x03(\v2\x11.bytebase.v1.TaskR\x05tasks:O\xeaAL\n" +
-	"\x12bytebase.com/Stage\x126projects/{project}/plans/{plan}/rollout/stages/{stage}\"\xf6\a\n" +
+	"\x12bytebase.com/Stage\x126projects/{project}/plans/{plan}/rollout/stages/{stage}\"\xc3\a\n" +
 	"\x04Task\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x17\n" +
 	"\aspec_id\x18\x02 \x01(\tR\x06specId\x120\n" +
@@ -3366,17 +3366,16 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06FAILED\x10\x05\x12\f\n" +
 	"\bCANCELED\x10\x06\x12\v\n" +
-	"\aSKIPPED\x10\a\"k\n" +
+	"\aSKIPPED\x10\a\"T\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aGENERAL\x10\x01\x12\x13\n" +
 	"\x0fDATABASE_CREATE\x10\x02\x12\x14\n" +
-	"\x10DATABASE_MIGRATE\x10\x03\"\x04\b\x04\x10\x04*\x0fDATABASE_EXPORT:[\xeaAX\n" +
+	"\x10DATABASE_MIGRATE\x10\x03:[\xeaAX\n" +
 	"\x11bytebase.com/Task\x12Cprojects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}B\t\n" +
 	"\apayloadB\x0e\n" +
 	"\f_update_timeB\v\n" +
-	"\t_run_timeJ\x04\b\t\x10\n" +
-	"R\x14database_data_export\"\x81\b\n" +
+	"\t_run_time\"\xe4\a\n" +
 	"\aTaskRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\acreator\x18\x02 \x01(\tR\acreator\x12@\n" +
@@ -3408,8 +3407,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\bCANCELED\x10\x05\x12\r\n" +
 	"\tAVAILABLE\x10\x06:q\xeaAn\n" +
 	"\x14bytebase.com/TaskRun\x12Vprojects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}B\v\n" +
-	"\t_run_timeJ\x04\b\n" +
-	"\x10\vR\x15export_archive_status\"\xd2\x01\n" +
+	"\t_run_time\"\xd2\x01\n" +
 	"\n" +
 	"TaskRunLog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x126\n" +

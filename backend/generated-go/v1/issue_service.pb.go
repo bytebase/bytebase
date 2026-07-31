@@ -2192,7 +2192,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\acomment\x18\x02 \x01(\tR\acomment\"K\n" +
 	"\x19RetryIssueApprovalRequest\x12.\n" +
 	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
-	"\x12bytebase.com/IssueR\x04name\"\x8f\t\n" +
+	"\x12bytebase.com/IssueR\x04name\"\xf8\b\n" +
 	"\x05Issue\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
@@ -2224,13 +2224,13 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\f\n" +
 	"\bAPPROVED\x10\x02\x12\f\n" +
-	"\bREJECTED\x10\x03\"j\n" +
+	"\bREJECTED\x10\x03\"S\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CHANGE\x10\x01\x12\x0e\n" +
 	"\n" +
 	"ROLE_GRANT\x10\x02\x12\x10\n" +
-	"\fACCESS_GRANT\x10\x04\"\x04\b\x03\x10\x03*\x0fDATABASE_EXPORT::\xeaA7\n" +
+	"\fACCESS_GRANT\x10\x04::\xeaA7\n" +
 	"\x12bytebase.com/Issue\x12!projects/{project}/issues/{issue}\"\x9f\x01\n" +
 	"\tRoleGrant\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x12\n" +

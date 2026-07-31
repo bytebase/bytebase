@@ -204,7 +204,7 @@ var File_store_task_proto protoreflect.FileDescriptor
 
 const file_store_task_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/task.proto\x12\x0ebytebase.store\"\xc0\x02\n" +
+	"\x10store/task.proto\x12\x0ebytebase.store\"\xa9\x02\n" +
 	"\x04Task\x12\x18\n" +
 	"\askipped\x18\x01 \x01(\bR\askipped\x12%\n" +
 	"\x0eskipped_reason\x18\x02 \x01(\tR\rskippedReason\x12\x17\n" +
@@ -212,11 +212,11 @@ const file_store_task_proto_rawDesc = "" +
 	"\fsheet_sha256\x18\n" +
 	" \x01(\tH\x00R\vsheetSha256\x12\x1a\n" +
 	"\arelease\x18\r \x01(\tH\x00R\arelease\x12.\n" +
-	"\x13enable_prior_backup\x18\v \x01(\bR\x11enablePriorBackup\"c\n" +
+	"\x13enable_prior_backup\x18\v \x01(\bR\x11enablePriorBackup\"L\n" +
 	"\x04Type\x12\x19\n" +
 	"\x15TASK_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CREATE\x10\x01\x12\x14\n" +
-	"\x10DATABASE_MIGRATE\x10\x02\"\x04\b\x03\x10\x03*\x0fDATABASE_EXPORTB\b\n" +
+	"\x10DATABASE_MIGRATE\x10\x02B\b\n" +
 	"\x06sourceB\x8c\x01\n" +
 	"\x12com.bytebase.storeB\tTaskProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 

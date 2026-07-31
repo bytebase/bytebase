@@ -24,9 +24,6 @@ message PlanConfig {
       CreateDatabaseConfig create_database_config = 1;
       ChangeDatabaseConfig change_database_config = 2;
     }
-
-    reserved 7;
-    reserved "export_data_config";
   }
 
   message CreateDatabaseConfig {

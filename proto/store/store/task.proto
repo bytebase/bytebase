@@ -15,9 +15,6 @@ message Task {
     // Execution strategy is determined by release type (VERSIONED/DECLARATIVE)
     // or sheet content for non-release tasks.
     DATABASE_MIGRATE = 2;
-
-    reserved 3;
-    reserved "DATABASE_EXPORT";
   }
 
   // Whether the task was skipped during execution.

@@ -388,11 +388,10 @@ const file_store_task_run_proto_rawDesc = "" +
 	"\bCANCELED\x10\x05\x12\x0f\n" +
 	"\vNOT_STARTED\x10\x06\x12\v\n" +
 	"\aSKIPPED\x10\a\x12\r\n" +
-	"\tAVAILABLE\x10\b\"p\n" +
+	"\tAVAILABLE\x10\b\"W\n" +
 	"\rTaskRunResult\x12\x16\n" +
 	"\x06detail\x18\x01 \x01(\tR\x06detail\x12(\n" +
-	"\x10has_prior_backup\x18\x06 \x01(\bR\x0ehasPriorBackupJ\x04\b\x05\x10\x06J\x04\b\t\x10\n" +
-	"R\x11export_archive_id\"\xea\x01\n" +
+	"\x10has_prior_backup\x18\x06 \x01(\bR\x0ehasPriorBackupJ\x04\b\x05\x10\x06\"\xea\x01\n" +
 	"\rSchedulerInfo\x12;\n" +
 	"\vreport_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"reportTime\x12O\n" +

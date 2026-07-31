@@ -376,9 +376,6 @@ message Task {
     // Database migration task that applies versioned schema changes.
     // Use payload DatabaseUpdate.
     DATABASE_MIGRATE = 3;
-
-    reserved 4;
-    reserved "DATABASE_EXPORT";
   }
   Type type = 5;
 
@@ -390,9 +387,6 @@ message Task {
     DatabaseCreate database_create = 7;
     DatabaseUpdate database_update = 8;
   }
-
-  reserved 9;
-  reserved "database_data_export";
 
   // The update_time is the update time of latest task run.
   // If there are no task runs, it will be empty.
@@ -459,9 +453,6 @@ message TaskRun {
 
   // The time when the task run started execution.
   google.protobuf.Timestamp start_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  reserved 10;
-  reserved "export_archive_status";
 
   // Indicates whether a prior backup was created for this task run.
   // When true, rollback SQL can be generated via PreviewTaskRunRollback.
