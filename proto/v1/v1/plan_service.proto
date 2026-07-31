@@ -219,9 +219,6 @@ message Plan {
       CreateDatabaseConfig create_database_config = 2;
       ChangeDatabaseConfig change_database_config = 3;
     }
-
-    reserved 4;
-    reserved "export_data_config";
   }
 
   // Format: users/hello@world.com

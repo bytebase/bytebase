@@ -1574,7 +1574,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x03\xe0A\x02R\x04plan\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xaf\x0e\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x95\x0e\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
@@ -1593,12 +1593,12 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"hasRollout\x12I\n" +
 	"\x0fapproval_status\x18\r \x01(\x0e2\x1b.bytebase.v1.ApprovalStatusB\x03\xe0A\x03R\x0eapprovalStatus\x12b\n" +
 	"\x17rollout_stage_summaries\x18\x0e \x03(\v2%.bytebase.v1.Plan.RolloutStageSummaryB\x03\xe0A\x03R\x15rolloutStageSummaries\x12@\n" +
-	"\fissue_status\x18\x0f \x01(\x0e2\x18.bytebase.v1.IssueStatusB\x03\xe0A\x03R\vissueStatus\x1a\xfa\x01\n" +
+	"\fissue_status\x18\x0f \x01(\x0e2\x18.bytebase.v1.IssueStatusB\x03\xe0A\x03R\vissueStatus\x1a\xe0\x01\n" +
 	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12^\n" +
 	"\x16create_database_config\x18\x02 \x01(\v2&.bytebase.v1.Plan.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12^\n" +
 	"\x16change_database_config\x18\x03 \x01(\v2&.bytebase.v1.Plan.ChangeDatabaseConfigH\x00R\x14changeDatabaseConfigB\b\n" +
-	"\x06configJ\x04\b\x04\x10\x05R\x12export_data_config\x1aJ\n" +
+	"\x06config\x1aJ\n" +
 	"\x1cPlanCheckRunStatusCountEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\x1a\x9d\x02\n" +

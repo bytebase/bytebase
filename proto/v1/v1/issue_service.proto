@@ -418,9 +418,6 @@ message Issue {
     ROLE_GRANT = 2;
     // Temporary access grant request.
     ACCESS_GRANT = 4;
-
-    reserved 3;
-    reserved "DATABASE_EXPORT";
   }
   Type type = 4;
 

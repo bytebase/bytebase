@@ -20,9 +20,6 @@ message Issue {
     ROLE_GRANT = 2;
     // Temporary access grant request.
     ACCESS_GRANT = 4;
-
-    reserved 3;
-    reserved "DATABASE_EXPORT";
   }
 
   // Status represents the current state of the issue.
