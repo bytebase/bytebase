@@ -128,6 +128,9 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	}
 	resources, err := populateRawResources(ctx, in.store, request, fullMethod)
 	if err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			return connect.NewError(connect.CodeNotFound, err)
+		}
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to populate raw resources %s", err))
 	}
 	authContext.Resources = resources
@@ -456,7 +459,7 @@ func populateRawResources(ctx context.Context, stores *store.Store, request any,
 					return nil, errors.Wrapf(err, "failed to get instance")
 				}
 				if instance == nil {
-					return nil, errors.Errorf("instance %q not found", match)
+					return nil, common.Errorf(common.NotFound, "instance %q not found", match)
 				}
 				resources = append(resources, &common.Resource{
 					Type: common.ResourceTypeWorkspace,
@@ -485,7 +488,7 @@ func getProjectScopedInstance(ctx context.Context, stores *store.Store, projectI
 		return nil, errors.Wrapf(err, "failed to get instance")
 	}
 	if instance == nil {
-		return nil, errors.Errorf("instance %q not found", common.FormatProjectInstance(projectID, instanceID))
+		return nil, common.Errorf(common.NotFound, "instance %q not found", common.FormatProjectInstance(projectID, instanceID))
 	}
 	return instance, nil
 }
@@ -504,6 +507,25 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 	shortMethod := methodTokens[2]
 
 	var resources []string
+
+	if r, ok := request.(*v1pb.CreateInstanceRequest); ok && r.Parent != nil {
+		projectID, err := common.GetProjectID(*r.Parent)
+		if err == nil && common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), projectID) {
+			// Default projects cannot own instances. Authorize at workspace scope so
+			// InstanceService can return its canonical invalid-argument response.
+			return []string{""}, nil
+		}
+	}
+	if r, ok := request.(*v1pb.UpdateInstanceRequest); ok && r.AllowMissing && r.Instance != nil {
+		if projectID, _, err := common.GetProjectIDInstanceID(r.Instance.Name); err == nil {
+			// The instance does not exist yet, so authorize the implicit creation
+			// against its project collection instead of resolving the instance.
+			return []string{common.FormatProject(projectID)}, nil
+		}
+		if _, err := common.GetInstanceID(r.Instance.Name); err == nil {
+			return []string{""}, nil
+		}
+	}
 
 	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
 		// During instance creation, the request carries an inline instance so

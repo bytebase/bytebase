@@ -23,10 +23,6 @@ service OrgPolicyService {
 
       additional_bindings: {get: "/v1/{name=projects/*/policies/*}"}
       additional_bindings: {get: "/v1/{name=environments/*/policies/*}"}
-      additional_bindings: {get: "/v1/{name=instances/*/policies/*}"}
-      additional_bindings: {get: "/v1/{name=instances/*/databases/*/policies/*}"}
-      additional_bindings: {get: "/v1/{name=projects/*/instances/*/policies/*}"}
-      additional_bindings: {get: "/v1/{name=projects/*/instances/*/databases/*/policies/*}"}
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.policies.get";
@@ -41,10 +37,6 @@ service OrgPolicyService {
 
       additional_bindings: {get: "/v1/{parent=projects/*}/policies"}
       additional_bindings: {get: "/v1/{parent=environments/*}/policies"}
-      additional_bindings: {get: "/v1/{parent=instances/*}/policies"}
-      additional_bindings: {get: "/v1/{parent=instances/*/databases/*}/policies"}
-      additional_bindings: {get: "/v1/{parent=projects/*/instances/*}/policies"}
-      additional_bindings: {get: "/v1/{parent=projects/*/instances/*/databases/*}/policies"}
     };
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.policies.list";
@@ -64,22 +56,6 @@ service OrgPolicyService {
       }
       additional_bindings: {
         post: "/v1/{parent=environments/*}/policies"
-        body: "policy"
-      }
-      additional_bindings: {
-        post: "/v1/{parent=instances/*}/policies"
-        body: "policy"
-      }
-      additional_bindings: {
-        post: "/v1/{parent=instances/*/databases/*}/policies"
-        body: "policy"
-      }
-      additional_bindings: {
-        post: "/v1/{parent=projects/*/instances/*}/policies"
-        body: "policy"
-      }
-      additional_bindings: {
-        post: "/v1/{parent=projects/*/instances/*/databases/*}/policies"
         body: "policy"
       }
     };
@@ -104,22 +80,6 @@ service OrgPolicyService {
         patch: "/v1/{policy.name=environments/*/policies/*}"
         body: "policy"
       }
-      additional_bindings: {
-        patch: "/v1/{policy.name=instances/*/policies/*}"
-        body: "policy"
-      }
-      additional_bindings: {
-        patch: "/v1/{policy.name=instances/*/databases/*/policies/*}"
-        body: "policy"
-      }
-      additional_bindings: {
-        patch: "/v1/{policy.name=projects/*/instances/*/policies/*}"
-        body: "policy"
-      }
-      additional_bindings: {
-        patch: "/v1/{policy.name=projects/*/instances/*/databases/*/policies/*}"
-        body: "policy"
-      }
     };
     option (google.api.method_signature) = "policy,update_mask";
     option (bytebase.v1.permission) = "bb.policies.update";
@@ -135,10 +95,6 @@ service OrgPolicyService {
 
       additional_bindings: {delete: "/v1/{name=projects/*/policies/*}"}
       additional_bindings: {delete: "/v1/{name=environments/*/policies/*}"}
-      additional_bindings: {delete: "/v1/{name=instances/*/policies/*}"}
-      additional_bindings: {delete: "/v1/{name=instances/*/databases/*/policies/*}"}
-      additional_bindings: {delete: "/v1/{name=projects/*/instances/*/policies/*}"}
-      additional_bindings: {delete: "/v1/{name=projects/*/instances/*/databases/*/policies/*}"}
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.policies.delete";
@@ -151,10 +107,6 @@ message CreatePolicyRequest {
   // The parent resource where this instance will be created.
   // Workspace resource name: workspaces/{workspace-id}.
   // Environment resource name: environments/environment-id.
-  // Instance resource name: instances/instance-id.
-  // Database resource name: instances/instance-id/databases/database-name.
-  // Project instance resource name: projects/project-id/instances/instance-id.
-  // Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {child_type: "bytebase.com/Policy"}
@@ -174,10 +126,6 @@ message UpdatePolicyRequest {
   // Format: {resource name}/policies/{policy type}
   // Workspace resource name: workspaces/{workspace-id}.
   // Environment resource name: environments/environment-id.
-  // Instance resource name: instances/instance-id.
-  // Database resource name: instances/instance-id/databases/database-name.
-  // Project instance resource name: projects/project-id/instances/instance-id.
-  // Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
   Policy policy = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
@@ -193,10 +141,6 @@ message DeletePolicyRequest {
   // Format: {resource name}/policies/{policy type}
   // Workspace resource name: workspaces/{workspace-id}.
   // Environment resource name: environments/environment-id.
-  // Instance resource name: instances/instance-id.
-  // Database resource name: instances/instance-id/databases/database-name.
-  // Project instance resource name: projects/project-id/instances/instance-id.
-  // Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Policy"}
@@ -238,20 +182,12 @@ message Policy {
     pattern: "workspaces/{workspace}/policies/{policy}"
     pattern: "projects/{project}/policies/{policy}"
     pattern: "environments/{environment}/policies/{policy}"
-    pattern: "instances/{instance}/policies/{policy}"
-    pattern: "instances/{instance}/databases/{database}/policies/{policy}"
-    pattern: "projects/{project}/instances/{instance}/policies/{policy}"
-    pattern: "projects/{project}/instances/{instance}/databases/{database}/policies/{policy}"
   };
 
   // The name of the policy.
   // Format: {resource name}/policies/{policy type}
   // Workspace resource name: workspaces/{workspace-id}.
   // Environment resource name: environments/environment-id.
-  // Instance resource name: instances/instance-id.
-  // Database resource name: instances/instance-id/databases/database-name.
-  // Project instance resource name: projects/project-id/instances/instance-id.
-  // Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
   string name = 1;
 
   // Whether this policy inherits from its parent resource.
@@ -302,10 +238,6 @@ enum PolicyResourceType {
   ENVIRONMENT = 2;
   // Project-level policy.
   PROJECT = 3;
-  // Instance-level policy.
-  INSTANCE = 4;
-  // Database-level policy.
-  DATABASE = 5;
 }
 
 // Rollout policy configuration.

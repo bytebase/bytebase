@@ -77,6 +77,7 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	}))
 	a.Error(err)
 	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+	a.Equal(fmt.Sprintf("not_found: instance %q not found", "instances/"+projectID), err.Error())
 
 	// Instance IDs are workspace-global even though project instances have a
 	// project-nested resource name.
@@ -214,6 +215,7 @@ func TestProjectInstanceValidation(t *testing.T) {
 			require.Error(t, err)
 			if parent == "projects/default" {
 				require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+				require.Equal(t, `invalid_argument: default project "projects/default" cannot own instances`, err.Error())
 			} else {
 				require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 			}

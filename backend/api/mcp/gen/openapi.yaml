@@ -10014,10 +10014,6 @@ components:
             The parent resource where this instance will be created.
              Workspace resource name: workspaces/{workspace-id}.
              Environment resource name: environments/environment-id.
-             Instance resource name: instances/instance-id.
-             Database resource name: instances/instance-id/databases/database-name.
-             Project instance resource name: projects/project-id/instances/instance-id.
-             Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
         policy:
           title: policy
           description: The policy to create.
@@ -11117,10 +11113,6 @@ components:
              Format: {resource name}/policies/{policy type}
              Workspace resource name: workspaces/{workspace-id}.
              Environment resource name: environments/environment-id.
-             Instance resource name: instances/instance-id.
-             Database resource name: instances/instance-id/databases/database-name.
-             Project instance resource name: projects/project-id/instances/instance-id.
-             Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
       title: DeletePolicyRequest
       additionalProperties: false
     bytebase.v1.DeleteProjectRequest:
@@ -15812,10 +15804,6 @@ components:
                  Format: {resource name}/policies/{policy type}
                  Workspace resource name: workspaces/{workspace-id}.
                  Environment resource name: environments/environment-id.
-                 Instance resource name: instances/instance-id.
-                 Database resource name: instances/instance-id/databases/database-name.
-                 Project instance resource name: projects/project-id/instances/instance-id.
-                 Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
             inheritFromParent:
               type: boolean
               title: inherit_from_parent
@@ -15895,8 +15883,6 @@ components:
         - WORKSPACE
         - ENVIRONMENT
         - PROJECT
-        - INSTANCE
-        - DATABASE
       description: The resource type that a policy can be attached to.
     bytebase.v1.PolicyType:
       type: string
@@ -20315,10 +20301,6 @@ components:
              Format: {resource name}/policies/{policy type}
              Workspace resource name: workspaces/{workspace-id}.
              Environment resource name: environments/environment-id.
-             Instance resource name: instances/instance-id.
-             Database resource name: instances/instance-id/databases/database-name.
-             Project instance resource name: projects/project-id/instances/instance-id.
-             Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
           $ref: '#/components/schemas/bytebase.v1.Policy'
         updateMask:
           title: update_mask

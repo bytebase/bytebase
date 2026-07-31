@@ -9163,7 +9163,7 @@ IdentityProviderService manages external identity providers for SSO authenticati
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this instance will be created. Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. Project instance resource name: projects/project-id/instances/instance-id. Project database resource name: projects/project-id/instances/instance-id/databases/database-name. |
+| parent | [string](#string) |  | The parent resource where this instance will be created. Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. |
 | policy | [Policy](#bytebase-v1-Policy) |  | The policy to create. |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  | The type of policy to create. |
 
@@ -9180,7 +9180,7 @@ IdentityProviderService manages external identity providers for SSO authenticati
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. Project instance resource name: projects/project-id/instances/instance-id. Project database resource name: projects/project-id/instances/instance-id/databases/database-name. |
+| name | [string](#string) |  | The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. |
 
 
 
@@ -9315,7 +9315,7 @@ For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.proje
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the policy. Format: {resource name}/policies/{policy type} Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. Project instance resource name: projects/project-id/instances/instance-id. Project database resource name: projects/project-id/instances/instance-id/databases/database-name. |
+| name | [string](#string) |  | The name of the policy. Format: {resource name}/policies/{policy type} Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. |
 | inherit_from_parent | [bool](#bool) |  | Whether this policy inherits from its parent resource. |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  | The type of policy. |
 | rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
@@ -9406,7 +9406,7 @@ Policy for tagging resources with metadata.
 | ----- | ---- | ----- | ----------- |
 | policy | [Policy](#bytebase-v1-Policy) |  | The policy to update.
 
-The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. Project instance resource name: projects/project-id/instances/instance-id. Project database resource name: projects/project-id/instances/instance-id/databases/database-name. |
+The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | allow_missing | [bool](#bool) |  | If set to true, and the policy is not found, a new policy will be created. In this situation, `update_mask` is ignored. |
 
@@ -9428,8 +9428,6 @@ The resource type that a policy can be attached to.
 | WORKSPACE | 1 | Workspace-level policy. |
 | ENVIRONMENT | 2 | Environment-level policy. |
 | PROJECT | 3 | Project-level policy. |
-| INSTANCE | 4 | Instance-level policy. |
-| DATABASE | 5 | Database-level policy. |
 
 
 

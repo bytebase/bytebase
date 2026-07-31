@@ -90,8 +90,6 @@ const (
 	Policy_WORKSPACE            Policy_Resource = 1
 	Policy_ENVIRONMENT          Policy_Resource = 2
 	Policy_PROJECT              Policy_Resource = 3
-	Policy_INSTANCE             Policy_Resource = 4
-	Policy_DATABASE             Policy_Resource = 5
 )
 
 // Enum value maps for Policy_Resource.
@@ -101,16 +99,12 @@ var (
 		1: "WORKSPACE",
 		2: "ENVIRONMENT",
 		3: "PROJECT",
-		4: "INSTANCE",
-		5: "DATABASE",
 	}
 	Policy_Resource_value = map[string]int32{
 		"RESOURCE_UNSPECIFIED": 0,
 		"WORKSPACE":            1,
 		"ENVIRONMENT":          2,
 		"PROJECT":              3,
-		"INSTANCE":             4,
-		"DATABASE":             5,
 	}
 )
 
@@ -712,7 +706,7 @@ var File_store_policy_proto protoreflect.FileDescriptor
 
 const file_store_policy_proto_rawDesc = "" +
 	"\n" +
-	"\x12store/policy.proto\x12\x0ebytebase.store\x1a\x16google/type/expr.proto\"\xed\x01\n" +
+	"\x12store/policy.proto\x12\x0ebytebase.store\x1a\x16google/type/expr.proto\"\xd1\x01\n" +
 	"\x06Policy\"t\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
@@ -722,14 +716,12 @@ const file_store_policy_proto_rawDesc = "" +
 	"QUERY_DATA\x10\x03\x12\x10\n" +
 	"\fMASKING_RULE\x10\x04\x12\a\n" +
 	"\x03IAM\x10\x05\x12\a\n" +
-	"\x03TAG\x10\x06\"m\n" +
+	"\x03TAG\x10\x06\"Q\n" +
 	"\bResource\x12\x18\n" +
 	"\x14RESOURCE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tWORKSPACE\x10\x01\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x02\x12\v\n" +
-	"\aPROJECT\x10\x03\x12\f\n" +
-	"\bINSTANCE\x10\x04\x12\f\n" +
-	"\bDATABASE\x10\x05\"C\n" +
+	"\aPROJECT\x10\x03\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
 	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xc2\x01\n" +

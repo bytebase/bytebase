@@ -637,8 +637,8 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 	}
 	defer tx.Rollback()
 
-	// Delete query history and policies before locking database-scoped rows to
-	// preserve the canonical sibling-branch order.
+	// Delete query history before locking database-scoped rows to preserve the
+	// canonical sibling-branch order.
 	q := qb.Q().Space(`
 		DELETE FROM query_history
 		WHERE database LIKE 'instances/' || ? || '/databases/%'
@@ -650,59 +650,6 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 	}
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete query history for instance %s", resourceID)
-	}
-
-	q = qb.Q().Space(`
-		DELETE FROM policy
-		WHERE workspace = ?
-		  AND (
-			(resource_type = ? AND (
-				resource = 'instances/' || ?
-				OR resource LIKE 'projects/%/instances/' || ?
-			))
-			OR (resource_type = ? AND (
-				resource LIKE 'instances/' || ? || '/databases/%'
-				OR resource LIKE 'projects/%/instances/' || ? || '/databases/%'
-			))
-		  )
-	`, workspace,
-		storepb.Policy_INSTANCE.String(), resourceID, resourceID,
-		storepb.Policy_DATABASE.String(), resourceID, resourceID)
-	query, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build instance policy delete query")
-	}
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete policies for instance %s", resourceID)
-	}
-
-	if err := lockInstancePurgeRows(ctx, tx, "instance = $1", resourceID); err != nil {
-		return err
-	}
-
-	var projectID sql.NullString
-	var deleted bool
-	if err := tx.QueryRowContext(ctx, `
-		SELECT project, deleted
-		FROM instance
-		WHERE resource_id = $1 AND workspace = $2
-		FOR UPDATE
-	`, resourceID, workspace).Scan(&projectID, &deleted); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return errors.Errorf("instance %s not found or not marked as deleted", resourceID)
-		}
-		return errors.Wrapf(err, "failed to lock instance %s", resourceID)
-	}
-	if !deleted {
-		return errors.Errorf("instance %s not found or not marked as deleted", resourceID)
-	}
-	if projectID.Valid {
-		var lockedProjectID string
-		if err := tx.QueryRowContext(ctx, `
-			SELECT resource_id FROM project WHERE resource_id = $1 FOR UPDATE
-		`, projectID.String).Scan(&lockedProjectID); err != nil {
-			return errors.Wrapf(err, "failed to lock owning project %s", projectID.String)
-		}
 	}
 
 	// Update worksheets to nullify instance and db_name references
@@ -751,6 +698,36 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 	}
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete task_run for instance %s", resourceID)
+	}
+
+	// Lock tasks in full primary-key order before deleting them.
+	q = qb.Q().Space(`
+		SELECT project, id
+		FROM task
+		WHERE instance = ?
+		ORDER BY project, id
+		FOR UPDATE
+	`, resourceID)
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrap(err, "failed to build instance task lock query")
+	}
+	if err := func() error {
+		rows, err := tx.QueryContext(ctx, query, args...)
+		if err != nil {
+			return errors.Wrapf(err, "failed to lock tasks for instance %s", resourceID)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var projectID string
+			var taskID int64
+			if err := rows.Scan(&projectID, &taskID); err != nil {
+				return errors.Wrap(err, "failed to scan locked task")
+			}
+		}
+		return rows.Err()
+	}(); err != nil {
+		return err
 	}
 
 	// Delete tasks associated with this instance
@@ -825,7 +802,34 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 		return errors.Wrapf(err, "failed to delete databases for instance %s", resourceID)
 	}
 
-	// Finally, delete the instance itself (only if it's marked as deleted)
+	// Lock the instance only after all descendant branches. A project owner is
+	// locked after its instance, matching the canonical child-to-parent order.
+	var projectID sql.NullString
+	var deleted bool
+	if err := tx.QueryRowContext(ctx, `
+		SELECT project, deleted
+		FROM instance
+		WHERE resource_id = $1 AND workspace = $2
+		FOR UPDATE
+	`, resourceID, workspace).Scan(&projectID, &deleted); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errors.Errorf("instance %s not found or not marked as deleted", resourceID)
+		}
+		return errors.Wrapf(err, "failed to lock instance %s", resourceID)
+	}
+	if !deleted {
+		return errors.Errorf("instance %s not found or not marked as deleted", resourceID)
+	}
+	if projectID.Valid {
+		var lockedProjectID string
+		if err := tx.QueryRowContext(ctx, `
+			SELECT resource_id FROM project WHERE resource_id = $1 FOR UPDATE
+		`, projectID.String).Scan(&lockedProjectID); err != nil {
+			return errors.Wrapf(err, "failed to lock owning project %s", projectID.String)
+		}
+	}
+
+	// Delete the soft-deleted instance after locking its owning project.
 	q = qb.Q().Space(`
 		DELETE FROM instance
 		WHERE resource_id = ? AND deleted = TRUE AND workspace = ?
@@ -854,44 +858,6 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 	// Clear the instance from cache
 	s.instanceCache.Remove(getInstanceCacheKey(resourceID))
 
-	return nil
-}
-
-// lockInstancePurgeRows locks database-scoped rows in their canonical order
-// before the instance and its owning project are locked by a purge caller.
-func lockInstancePurgeRows(ctx context.Context, tx *sql.Tx, predicate string, args ...any) error {
-	for _, statement := range []struct {
-		name    string
-		table   string
-		orderBy string
-	}{
-		{"changelog", "changelog", "resource_id"},
-		{"sync history", "sync_history", "resource_id"},
-		{"revision", "revision", "resource_id"},
-		{"database schema", "db_schema", "instance, db_name"},
-		{"database", "db", "instance, name"},
-	} {
-		if err := func() error {
-			query := fmt.Sprintf("SELECT 1 FROM %s WHERE %s ORDER BY %s FOR UPDATE", statement.table, predicate, statement.orderBy)
-			rows, err := tx.QueryContext(ctx, query, args...)
-			if err != nil {
-				return errors.Wrapf(err, "failed to lock %s for instance purge", statement.name)
-			}
-			defer rows.Close()
-			for rows.Next() {
-				var ignored int
-				if err := rows.Scan(&ignored); err != nil {
-					return errors.Wrapf(err, "failed to scan locked %s", statement.name)
-				}
-			}
-			if err := rows.Err(); err != nil {
-				return errors.Wrapf(err, "failed to read locked %s", statement.name)
-			}
-			return nil
-		}(); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

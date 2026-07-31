@@ -3489,8 +3489,6 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | WORKSPACE | 1 |  |
 | ENVIRONMENT | 2 |  |
 | PROJECT | 3 |  |
-| INSTANCE | 4 |  |
-| DATABASE | 5 |  |
 
 
 

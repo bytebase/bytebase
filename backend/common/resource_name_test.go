@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestGetInstanceDatabaseID(t *testing.T) {
@@ -126,42 +124,12 @@ func TestInstanceResourceNamesRejectWrongScopeAndMalformedNames(t *testing.T) {
 	}
 }
 
-func TestGetPolicyResourceTypeAndResourceForInstanceAndDatabase(t *testing.T) {
-	for _, test := range []struct {
-		name         string
-		resourceType storepb.Policy_Resource
-	}{
-		{
-			name:         "instances/instance-1",
-			resourceType: storepb.Policy_INSTANCE,
-		},
-		{
-			name:         "instances/instance-1/databases/database-1",
-			resourceType: storepb.Policy_DATABASE,
-		},
-		{
-			name:         "projects/project-1/instances/instance-1",
-			resourceType: storepb.Policy_INSTANCE,
-		},
-		{
-			name:         "projects/project-1/instances/instance-1/databases/database-1",
-			resourceType: storepb.Policy_DATABASE,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			resourceType, resource, err := GetPolicyResourceTypeAndResource(test.name)
-			require.NoError(t, err)
-			require.Equal(t, test.resourceType, resourceType)
-			require.Equal(t, test.name, *resource)
-		})
-	}
-
+func TestGetPolicyResourceTypeAndResourceRejectsInstanceAndDatabase(t *testing.T) {
 	for _, name := range []string{
-		"instances/instance-1/databases",
-		"instances//databases/database-1",
-		"projects/project-1/instances/instance-1/databases",
-		"projects/project-1/instances//databases/database-1",
-		"projects/project-1/instances/instance-1/databases/database-1/revisions/revision-1",
+		"instances/instance-1",
+		"instances/instance-1/databases/database-1",
+		"projects/project-1/instances/instance-1",
+		"projects/project-1/instances/instance-1/databases/database-1",
 	} {
 		_, _, err := GetPolicyResourceTypeAndResource(name)
 		require.Error(t, err, name)

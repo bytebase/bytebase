@@ -102,10 +102,6 @@ const (
 	PolicyResourceType_ENVIRONMENT PolicyResourceType = 2
 	// Project-level policy.
 	PolicyResourceType_PROJECT PolicyResourceType = 3
-	// Instance-level policy.
-	PolicyResourceType_INSTANCE PolicyResourceType = 4
-	// Database-level policy.
-	PolicyResourceType_DATABASE PolicyResourceType = 5
 )
 
 // Enum value maps for PolicyResourceType.
@@ -115,16 +111,12 @@ var (
 		1: "WORKSPACE",
 		2: "ENVIRONMENT",
 		3: "PROJECT",
-		4: "INSTANCE",
-		5: "DATABASE",
 	}
 	PolicyResourceType_value = map[string]int32{
 		"RESOURCE_TYPE_UNSPECIFIED": 0,
 		"WORKSPACE":                 1,
 		"ENVIRONMENT":               2,
 		"PROJECT":                   3,
-		"INSTANCE":                  4,
-		"DATABASE":                  5,
 	}
 )
 
@@ -160,10 +152,6 @@ type CreatePolicyRequest struct {
 	// The parent resource where this instance will be created.
 	// Workspace resource name: workspaces/{workspace-id}.
 	// Environment resource name: environments/environment-id.
-	// Instance resource name: instances/instance-id.
-	// Database resource name: instances/instance-id/databases/database-name.
-	// Project instance resource name: projects/project-id/instances/instance-id.
-	// Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The policy to create.
 	Policy *Policy `protobuf:"bytes,2,opt,name=policy,proto3" json:"policy,omitempty"`
@@ -232,10 +220,6 @@ type UpdatePolicyRequest struct {
 	// Format: {resource name}/policies/{policy type}
 	// Workspace resource name: workspaces/{workspace-id}.
 	// Environment resource name: environments/environment-id.
-	// Instance resource name: instances/instance-id.
-	// Database resource name: instances/instance-id/databases/database-name.
-	// Project instance resource name: projects/project-id/instances/instance-id.
-	// Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
 	Policy *Policy `protobuf:"bytes,1,opt,name=policy,proto3" json:"policy,omitempty"`
 	// The list of fields to update.
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
@@ -303,10 +287,6 @@ type DeletePolicyRequest struct {
 	// Format: {resource name}/policies/{policy type}
 	// Workspace resource name: workspaces/{workspace-id}.
 	// Environment resource name: environments/environment-id.
-	// Instance resource name: instances/instance-id.
-	// Database resource name: instances/instance-id/databases/database-name.
-	// Project instance resource name: projects/project-id/instances/instance-id.
-	// Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -510,10 +490,6 @@ type Policy struct {
 	// Format: {resource name}/policies/{policy type}
 	// Workspace resource name: workspaces/{workspace-id}.
 	// Environment resource name: environments/environment-id.
-	// Instance resource name: instances/instance-id.
-	// Database resource name: instances/instance-id/databases/database-name.
-	// Project instance resource name: projects/project-id/instances/instance-id.
-	// Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Whether this policy inherits from its parent resource.
 	InheritFromParent bool `protobuf:"varint,2,opt,name=inherit_from_parent,json=inheritFromParent,proto3" json:"inherit_from_parent,omitempty"`
@@ -1150,7 +1126,7 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\fshow_deleted\x18\x03 \x01(\bR\vshowDeletedB\x0e\n" +
 	"\f_policy_type\"G\n" +
 	"\x14ListPoliciesResponse\x12/\n" +
-	"\bpolicies\x18\x01 \x03(\v2\x13.bytebase.v1.PolicyR\bpolicies\"\xef\a\n" +
+	"\bpolicies\x18\x01 \x03(\v2\x13.bytebase.v1.PolicyR\bpolicies\"\xff\x05\n" +
 	"\x06Policy\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12.\n" +
 	"\x13inherit_from_parent\x18\x02 \x01(\bR\x11inheritFromParent\x12+\n" +
@@ -1163,8 +1139,8 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x11query_data_policy\x18\t \x01(\v2\x1c.bytebase.v1.QueryDataPolicyH\x00R\x0fqueryDataPolicy\x12\x18\n" +
 	"\aenforce\x18\n" +
 	" \x01(\bR\aenforce\x12I\n" +
-	"\rresource_type\x18\v \x01(\x0e2\x1f.bytebase.v1.PolicyResourceTypeB\x03\xe0A\x03R\fresourceType:\x87\x03\xeaA\x83\x03\n" +
-	"\x13bytebase.com/Policy\x12(workspaces/{workspace}/policies/{policy}\x12$projects/{project}/policies/{policy}\x12,environments/{environment}/policies/{policy}\x12&instances/{instance}/policies/{policy}\x12;instances/{instance}/databases/{database}/policies/{policy}\x129projects/{project}/instances/{instance}/policies/{policy}\x12Nprojects/{project}/instances/{instance}/databases/{database}/policies/{policy}B\b\n" +
+	"\rresource_type\x18\v \x01(\x0e2\x1f.bytebase.v1.PolicyResourceTypeB\x03\xe0A\x03R\fresourceType:\x97\x01\xeaA\x93\x01\n" +
+	"\x13bytebase.com/Policy\x12(workspaces/{workspace}/policies/{policy}\x12$projects/{project}/policies/{policy}\x12,environments/{environment}/policies/{policy}B\b\n" +
 	"\x06policy\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
@@ -1200,20 +1176,18 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x0eROLLOUT_POLICY\x10\x03\x12\a\n" +
 	"\x03TAG\x10\x04\x12\x0e\n" +
 	"\n" +
-	"DATA_QUERY\x10\x06*|\n" +
+	"DATA_QUERY\x10\x06*`\n" +
 	"\x12PolicyResourceType\x12\x1d\n" +
 	"\x19RESOURCE_TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tWORKSPACE\x10\x01\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x02\x12\v\n" +
-	"\aPROJECT\x10\x03\x12\f\n" +
-	"\bINSTANCE\x10\x04\x12\f\n" +
-	"\bDATABASE\x10\x052\x91\x12\n" +
-	"\x10OrgPolicyService\x12\x99\x03\n" +
-	"\tGetPolicy\x12\x1d.bytebase.v1.GetPolicyRequest\x1a\x13.bytebase.v1.Policy\"\xd7\x02\xdaA\x04name\x8a\xea0\x0fbb.policies.get\x90\xea0\x02\x82\xd3\xe4\x93\x02\xb2\x02Z\"\x12 /v1/{name=projects/*/policies/*}Z&\x12$/v1/{name=environments/*/policies/*}Z#\x12!/v1/{name=instances/*/policies/*}Z/\x12-/v1/{name=instances/*/databases/*/policies/*}Z.\x12,/v1/{name=projects/*/instances/*/policies/*}Z:\x128/v1/{name=projects/*/instances/*/databases/*/policies/*}\x12\"/v1/{name=workspaces/*/policies/*}\x12\xaa\x03\n" +
-	"\fListPolicies\x12 .bytebase.v1.ListPoliciesRequest\x1a!.bytebase.v1.ListPoliciesResponse\"\xd4\x02\xdaA\x00\x8a\xea0\x10bb.policies.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\xb2\x02Z\"\x12 /v1/{parent=projects/*}/policiesZ&\x12$/v1/{parent=environments/*}/policiesZ#\x12!/v1/{parent=instances/*}/policiesZ/\x12-/v1/{parent=instances/*/databases/*}/policiesZ.\x12,/v1/{parent=projects/*/instances/*}/policiesZ:\x128/v1/{parent=projects/*/instances/*/databases/*}/policies\x12\"/v1/{parent=workspaces/*}/policies\x12\xe7\x03\n" +
-	"\fCreatePolicy\x12 .bytebase.v1.CreatePolicyRequest\x1a\x13.bytebase.v1.Policy\"\x9f\x03\xdaA\rparent,policy\x8a\xea0\x12bb.policies.create\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\xea\x02:\x06policyZ*:\x06policy\" /v1/{parent=projects/*}/policiesZ.:\x06policy\"$/v1/{parent=environments/*}/policiesZ+:\x06policy\"!/v1/{parent=instances/*}/policiesZ7:\x06policy\"-/v1/{parent=instances/*/databases/*}/policiesZ6:\x06policy\",/v1/{parent=projects/*/instances/*}/policiesZB:\x06policy\"8/v1/{parent=projects/*/instances/*/databases/*}/policies\"\"/v1/{parent=workspaces/*}/policies\x12\x9d\x04\n" +
-	"\fUpdatePolicy\x12 .bytebase.v1.UpdatePolicyRequest\x1a\x13.bytebase.v1.Policy\"\xd5\x03\xdaA\x12policy,update_mask\x8a\xea0\x12bb.policies.update\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x9b\x03:\x06policyZ1:\x06policy2'/v1/{policy.name=projects/*/policies/*}Z5:\x06policy2+/v1/{policy.name=environments/*/policies/*}Z2:\x06policy2(/v1/{policy.name=instances/*/policies/*}Z>:\x06policy24/v1/{policy.name=instances/*/databases/*/policies/*}Z=:\x06policy23/v1/{policy.name=projects/*/instances/*/policies/*}ZI:\x06policy2?/v1/{policy.name=projects/*/instances/*/databases/*/policies/*}2)/v1/{policy.name=workspaces/*/policies/*}\x12\xa9\x03\n" +
-	"\fDeletePolicy\x12 .bytebase.v1.DeletePolicyRequest\x1a\x16.google.protobuf.Empty\"\xde\x02\xdaA\x04name\x8a\xea0\x12bb.policies.delete\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\xb2\x02Z\"* /v1/{name=projects/*/policies/*}Z&*$/v1/{name=environments/*/policies/*}Z#*!/v1/{name=instances/*/policies/*}Z/*-/v1/{name=instances/*/databases/*/policies/*}Z.*,/v1/{name=projects/*/instances/*/policies/*}Z:*8/v1/{name=projects/*/instances/*/databases/*/policies/*}*\"/v1/{name=workspaces/*/policies/*}B\xab\x01\n" +
+	"\aPROJECT\x10\x032\xe8\t\n" +
+	"\x10OrgPolicyService\x12\xd6\x01\n" +
+	"\tGetPolicy\x12\x1d.bytebase.v1.GetPolicyRequest\x1a\x13.bytebase.v1.Policy\"\x94\x01\xdaA\x04name\x8a\xea0\x0fbb.policies.get\x90\xea0\x02\x82\xd3\xe4\x93\x02pZ\"\x12 /v1/{name=projects/*/policies/*}Z&\x12$/v1/{name=environments/*/policies/*}\x12\"/v1/{name=workspaces/*/policies/*}\x12\xe7\x01\n" +
+	"\fListPolicies\x12 .bytebase.v1.ListPoliciesRequest\x1a!.bytebase.v1.ListPoliciesResponse\"\x91\x01\xdaA\x00\x8a\xea0\x10bb.policies.list\x90\xea0\x01\x82\xd3\xe4\x93\x02pZ\"\x12 /v1/{parent=projects/*}/policiesZ&\x12$/v1/{parent=environments/*}/policies\x12\"/v1/{parent=workspaces/*}/policies\x12\x85\x02\n" +
+	"\fCreatePolicy\x12 .bytebase.v1.CreatePolicyRequest\x1a\x13.bytebase.v1.Policy\"\xbd\x01\xdaA\rparent,policy\x8a\xea0\x12bb.policies.create\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x88\x01:\x06policyZ*:\x06policy\" /v1/{parent=projects/*}/policiesZ.:\x06policy\"$/v1/{parent=environments/*}/policies\"\"/v1/{parent=workspaces/*}/policies\x12\x9f\x02\n" +
+	"\fUpdatePolicy\x12 .bytebase.v1.UpdatePolicyRequest\x1a\x13.bytebase.v1.Policy\"\xd7\x01\xdaA\x12policy,update_mask\x8a\xea0\x12bb.policies.update\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x9d\x01:\x06policyZ1:\x06policy2'/v1/{policy.name=projects/*/policies/*}Z5:\x06policy2+/v1/{policy.name=environments/*/policies/*}2)/v1/{policy.name=workspaces/*/policies/*}\x12\xe6\x01\n" +
+	"\fDeletePolicy\x12 .bytebase.v1.DeletePolicyRequest\x1a\x16.google.protobuf.Empty\"\x9b\x01\xdaA\x04name\x8a\xea0\x12bb.policies.delete\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02pZ\"* /v1/{name=projects/*/policies/*}Z&*$/v1/{name=environments/*/policies/*}*\"/v1/{name=workspaces/*/policies/*}B\xab\x01\n" +
 	"\x0fcom.bytebase.v1B\x15OrgPolicyServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

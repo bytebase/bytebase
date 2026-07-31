@@ -25,9 +25,9 @@ func newInstanceProjectFixture(t *testing.T) (context.Context, *sql.DB, *store.S
 	require.NoError(t, migrator.MigrateSchema(ctx, db))
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
-		INSERT INTO project (resource_id, workspace, name) VALUES
-			('default', 'default', 'Default'),
-			('project-a', 'default', 'Project A'),
+		INSERT INTO project (resource_id, workspace, name, deleted) VALUES
+			('default', 'default', 'Default', FALSE),
+			('project-a', 'default', 'Project A', FALSE),
 			('deleted-project', 'default', 'Deleted Project', TRUE);
 	`)
 	require.NoError(t, err)
@@ -144,10 +144,6 @@ func TestDeleteProjectDeletesProjectInstancesAndKeepsWorkspaceInstanceDatabases(
 		INSERT INTO db (instance, name, project) VALUES
 			('project-instance', 'project-db', 'project-a'),
 			('workspace-instance', 'workspace-db', 'project-a');
-		INSERT INTO policy (workspace, resource_type, resource, type) VALUES
-			('default', 'INSTANCE', 'projects/project-a/instances/project-instance', 'IAM'),
-			('default', 'DATABASE', 'projects/project-a/instances/project-instance/databases/project-db', 'IAM'),
-			('default', 'DATABASE', 'instances/workspace-instance/databases/workspace-db', 'IAM');
 	`)
 	require.NoError(t, err)
 
@@ -168,28 +164,15 @@ func TestDeleteProjectDeletesProjectInstancesAndKeepsWorkspaceInstanceDatabases(
 		SELECT project FROM db WHERE instance = 'workspace-instance' AND name = 'workspace-db'
 	`).Scan(&workspaceDatabaseProject))
 	require.Equal(t, "default", workspaceDatabaseProject)
-
-	var projectInstancePolicyCount, workspaceInstancePolicyCount int
-	require.NoError(t, db.QueryRowContext(ctx, `
-		SELECT COUNT(*) FROM policy WHERE resource LIKE 'projects/project-a/instances/%'
-	`).Scan(&projectInstancePolicyCount))
-	require.NoError(t, db.QueryRowContext(ctx, `
-		SELECT COUNT(*) FROM policy WHERE resource = 'instances/workspace-instance/databases/workspace-db'
-	`).Scan(&workspaceInstancePolicyCount))
-	require.Zero(t, projectInstancePolicyCount)
-	require.Equal(t, 1, workspaceInstancePolicyCount)
 }
 
-func TestDeleteProjectInstancePurgesScopedPoliciesAndHistory(t *testing.T) {
+func TestDeleteProjectInstancePurgesHistory(t *testing.T) {
 	ctx, db, s := newInstanceProjectFixture(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO instance (resource_id, workspace, project, deleted) VALUES
 			('project-instance', 'default', 'project-a', TRUE);
 		INSERT INTO db (instance, name, project) VALUES
 			('project-instance', 'project-db', 'project-a');
-		INSERT INTO policy (workspace, resource_type, resource, type) VALUES
-			('default', 'INSTANCE', 'projects/project-a/instances/project-instance', 'IAM'),
-			('default', 'DATABASE', 'projects/project-a/instances/project-instance/databases/project-db', 'IAM');
 		INSERT INTO query_history (resource_id, creator, project, database, statement, type) VALUES
 			('history-a', 'user@example.com', 'project-a',
 			 'projects/project-a/instances/project-instance/databases/project-db', '', 'QUERY');
@@ -198,7 +181,7 @@ func TestDeleteProjectInstancePurgesScopedPoliciesAndHistory(t *testing.T) {
 
 	require.NoError(t, s.DeleteInstance(ctx, "default", "project-instance"))
 
-	for _, table := range []string{"instance", "db", "policy", "query_history"} {
+	for _, table := range []string{"instance", "db", "query_history"} {
 		var count int
 		require.NoError(t, db.QueryRowContext(ctx, "SELECT COUNT(*) FROM "+table).Scan(&count))
 		require.Zero(t, count, "%s should be removed", table)

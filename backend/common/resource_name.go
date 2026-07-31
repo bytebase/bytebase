@@ -725,22 +725,6 @@ func GetPolicyResourceTypeAndResource(requestName string) (storepb.Policy_Resour
 		return storepb.Policy_WORKSPACE, &requestName, nil
 	}
 
-	if _, _, _, err := GetProjectIDInstanceDatabaseID(requestName); err == nil {
-		return storepb.Policy_DATABASE, &requestName, nil
-	}
-
-	if _, _, err := GetProjectIDInstanceID(requestName); err == nil {
-		return storepb.Policy_INSTANCE, &requestName, nil
-	}
-
-	if _, _, err := GetInstanceDatabaseID(requestName); err == nil {
-		return storepb.Policy_DATABASE, &requestName, nil
-	}
-
-	if _, err := GetInstanceID(requestName); err == nil {
-		return storepb.Policy_INSTANCE, &requestName, nil
-	}
-
 	if strings.HasPrefix(requestName, ProjectNamePrefix) {
 		projectID, err := GetProjectID(requestName)
 		if err != nil {

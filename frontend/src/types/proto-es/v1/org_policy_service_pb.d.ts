@@ -20,10 +20,6 @@ export declare type CreatePolicyRequest = Message<"bytebase.v1.CreatePolicyReque
    * The parent resource where this instance will be created.
    * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
-   * Instance resource name: instances/instance-id.
-   * Database resource name: instances/instance-id/databases/database-name.
-   * Project instance resource name: projects/project-id/instances/instance-id.
-   * Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
    *
    * @generated from field: string parent = 1;
    */
@@ -61,10 +57,6 @@ export declare type UpdatePolicyRequest = Message<"bytebase.v1.UpdatePolicyReque
    * Format: {resource name}/policies/{policy type}
    * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
-   * Instance resource name: instances/instance-id.
-   * Database resource name: instances/instance-id/databases/database-name.
-   * Project instance resource name: projects/project-id/instances/instance-id.
-   * Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
    *
    * @generated from field: bytebase.v1.Policy policy = 1;
    */
@@ -101,10 +93,6 @@ export declare type DeletePolicyRequest = Message<"bytebase.v1.DeletePolicyReque
    * Format: {resource name}/policies/{policy type}
    * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
-   * Instance resource name: instances/instance-id.
-   * Database resource name: instances/instance-id/databases/database-name.
-   * Project instance resource name: projects/project-id/instances/instance-id.
-   * Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
    *
    * @generated from field: string name = 1;
    */
@@ -196,10 +184,6 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
    * Format: {resource name}/policies/{policy type}
    * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
-   * Instance resource name: instances/instance-id.
-   * Database resource name: instances/instance-id/databases/database-name.
-   * Project instance resource name: projects/project-id/instances/instance-id.
-   * Project database resource name: projects/project-id/instances/instance-id/databases/database-name.
    *
    * @generated from field: string name = 1;
    */
@@ -601,20 +585,6 @@ export enum PolicyResourceType {
    * @generated from enum value: PROJECT = 3;
    */
   PROJECT = 3,
-
-  /**
-   * Instance-level policy.
-   *
-   * @generated from enum value: INSTANCE = 4;
-   */
-  INSTANCE = 4,
-
-  /**
-   * Database-level policy.
-   *
-   * @generated from enum value: DATABASE = 5;
-   */
-  DATABASE = 5,
 }
 
 /**

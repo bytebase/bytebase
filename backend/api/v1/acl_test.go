@@ -64,6 +64,28 @@ func TestGetResourceFromRequest(t *testing.T) {
 			want:   []string{"instances/hello"},
 		},
 		{
+			request: &v1pb.CreateInstanceRequest{
+				Parent: new("projects/default"),
+			},
+			method: "/bytebase.v1.InstanceService/CreateInstance",
+			want:   []string{""},
+		},
+		{
+			request: &v1pb.CreateInstanceRequest{
+				Parent: new("projects/hello"),
+			},
+			method: "/bytebase.v1.InstanceService/CreateInstance",
+			want:   []string{"projects/hello"},
+		},
+		{
+			request: &v1pb.UpdateInstanceRequest{
+				Instance:     &v1pb.Instance{Name: "projects/hello/instances/new-instance"},
+				AllowMissing: true,
+			},
+			method: "/bytebase.v1.InstanceService/UpdateInstance",
+			want:   []string{"projects/hello"},
+		},
+		{
 			request: &v1pb.UploadLicenseRequest{
 				License: "123",
 			},

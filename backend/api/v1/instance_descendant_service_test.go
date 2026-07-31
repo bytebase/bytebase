@@ -133,9 +133,14 @@ func setupInstanceDescendantServiceTest(t *testing.T, instanceProjectID *string)
 		ResourceID: instanceID,
 		Workspace:  "default",
 		ProjectID:  instanceProjectID,
-		Metadata: &storepb.Instance{Roles: []*storepb.InstanceRole{{
-			Name: "role-a",
-		}},
+		Metadata: &storepb.Instance{
+			DataSources: []*storepb.DataSource{{
+				Id:   "admin",
+				Type: storepb.DataSourceType_ADMIN,
+			}},
+			Roles: []*storepb.InstanceRole{{
+				Name: "role-a",
+			}},
 		},
 	})
 	require.NoError(t, err)
