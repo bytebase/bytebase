@@ -37,9 +37,14 @@ the durable audit trail lives in `audit_log` — issue/plan rows are redundant
 with it for compliance purposes.
 
 What is irreversibly lost: the issue-level records of past export requests
-(title, approval chain rendering, statement sheet linkage). What remains:
-`audit_log` rows for the create/approve/export RPCs, and `query_history` rows
-for performed exports.
+(title, approval chain rendering, statement sheet linkage). Note that the
+legacy executor wrote no `query_history` rows — the only
+`QueryHistoryTypeExport` writer is the synchronous database-target
+`SQLService.Export` path (`sql_service.go:1022`) — so workflow exports have
+no per-query history row to fall back on; this purge accepts that. What
+remains: `audit_log` rows for the create/approve RPCs and for archive
+downloads (`SQLService.Export` is audited), plus `query_history` rows for
+synchronous SQL Editor / JIT exports, which are unaffected.
 
 ## Migration (`backend/migrator/migration/3.22/xxxx##retire_export_data.sql`)
 
