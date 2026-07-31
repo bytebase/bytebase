@@ -467,6 +467,60 @@ describe("sheet context", () => {
     );
   });
 
+  test("keeps backend-known folders visible when starred filter is active", async () => {
+    mocks
+      .getAppState()
+      .listWorksheetFolders.mockResolvedValue([
+        { folders: ["alpha"], category: "my" },
+      ]);
+    mocks.getAppState().fetchWorksheetList.mockResolvedValue({
+      worksheets: [],
+      nextPageToken: "",
+    });
+
+    const { provideSheetContext, useSheetContext, useSheetContextByView } =
+      await import("./context");
+    let sheetContext: ReturnType<typeof useSheetContext> | undefined;
+    let viewContext: ReturnType<typeof useSheetContextByView> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      sheetContext = useSheetContext();
+      viewContext = useSheetContextByView("my");
+      return (
+        <div>
+          {viewContext.sheetTree.children.map((child) => child.label).join(",")}
+        </div>
+      );
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+    await act(async () => {
+      await viewContext!.fetchSheetList();
+    });
+    mocks.getAppState().fetchWorksheetList.mockClear();
+
+    act(() => {
+      sheetContext!.setFilter({
+        ...sheetContext!.filter,
+        onlyShowStarred: true,
+      });
+    });
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    expect(mocks.getAppState().fetchWorksheetList).toHaveBeenLastCalledWith(
+      "projects/proj1",
+      'creator == "users/creator@example.com" && folder == "" && starred == true',
+      expect.objectContaining({ pageToken: "" })
+    );
+    expect(container.textContent).toContain("alpha");
+  });
+
   test("fetches worksheet descendants for a folder without replacing the paged view", async () => {
     const { provideSheetContext, useSheetContextByView } = await import(
       "./context"

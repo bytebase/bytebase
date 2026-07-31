@@ -923,7 +923,6 @@ const sheetLikeItemsForView = (view: SheetViewMode): WorksheetLikeItem[] => {
 };
 
 const rebuildTreeImpl = (view: SheetViewMode) => {
-  const filter = useSheetContextStore.getState().filter;
   const folderContext = getFolderContext(view);
 
   const folderPaths = new Set<string>();
@@ -945,12 +944,7 @@ const rebuildTreeImpl = (view: SheetViewMode) => {
     label: rootLabelFor(view),
     key: folderContext.rootPath,
   };
-  const tree = buildTree(
-    view,
-    root,
-    worksheetsByFolder,
-    filter.onlyShowStarred
-  );
+  const tree = buildTree(view, root, worksheetsByFolder, false);
   useSheetContextStore.getState().setViewSheetTree(view, tree);
   getEvents(view).emit("on-built", { viewMode: view });
 };
