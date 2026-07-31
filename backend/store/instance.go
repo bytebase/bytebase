@@ -328,30 +328,33 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 	q := qb.Q().Space("UPDATE instance SET ?", set).
 		Space("WHERE ?", where)
 
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
-		return nil, err
-	}
-
 	if v := patch.ResourceID; v != nil {
-		s.instanceCache.Remove(getInstanceCacheKey(*v))
+		q.Space("RETURNING workspace, project")
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to build sql")
+		}
+		var workspace string
 		var project sql.NullString
-		if err := s.GetDB().QueryRowContext(ctx,
-			"SELECT project FROM instance WHERE resource_id = $1 AND workspace = $2", *v, patch.Workspace,
-		).Scan(&project); err != nil {
+		if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&workspace, &project); err != nil {
 			return nil, err
 		}
-		find := &FindInstanceMessage{Workspace: patch.Workspace, ResourceID: v}
+		s.instanceCache.Remove(getInstanceCacheKey(*v))
+		find := &FindInstanceMessage{Workspace: workspace, ResourceID: v}
 		if project.Valid {
 			find.ProjectID = &project.String
 		} else {
 			find.WorkspaceOnly = true
 		}
 		return s.GetInstance(ctx, find)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+		return nil, err
 	}
 
 	return nil, nil

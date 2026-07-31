@@ -134,6 +134,24 @@ func TestCreateAndListProjectInstance(t *testing.T) {
 	require.Equal(t, &projectID, allInstances[0].ProjectID)
 }
 
+func TestUpdateInstanceWithoutWorkspace(t *testing.T) {
+	ctx, _, s := newInstanceProjectFixture(t)
+	instance, err := s.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "workspace-instance",
+		Workspace:  "default",
+		Metadata:   testInstanceMetadata(),
+	})
+	require.NoError(t, err)
+
+	updated, err := s.UpdateInstance(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &instance.ResourceID,
+		Metadata:   testInstanceMetadata(),
+	})
+	require.NoError(t, err)
+	require.Equal(t, "default", updated.Workspace)
+	require.Nil(t, updated.ProjectID)
+}
+
 func TestCreateProjectInstanceRejectsDefaultDeletedAndMissingProject(t *testing.T) {
 	ctx, _, s := newInstanceProjectFixture(t)
 	for _, projectID := range []string{"default", "deleted-project", "missing-project"} {
