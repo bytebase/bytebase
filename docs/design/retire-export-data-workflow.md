@@ -66,10 +66,20 @@ DELETE FROM task_run r USING task t
 -- 3. task
 DELETE FROM task WHERE type = 'DATABASE_EXPORT';
 -- 4-8. with export_plan AS (<set above>):
---   plan_check_run, issue_comment (via export issues), issue,
---   plan_webhook_delivery, plan
+--   plan_check_run, issue_comment, issue, plan_webhook_delivery, plan.
+--   issue_comment and issue are deleted for every issue attached to an
+--   export plan — (project, plan_id) IN export_plan OR type =
+--   'DATABASE_EXPORT' — NOT only for issues typed DATABASE_EXPORT.
 -- 9. DROP TABLE export_archive;
 ```
+
+The issue predicate matters: `CreateIssue` only rejects export specs for
+non-draft issues (`backend/api/v1/issue_service.go:617`), so a draft
+`DATABASE_CHANGE` issue can legally point at an export plan. Deleting issues
+by type alone would leave such a row behind and the subsequent plan delete
+would abort the upgrade on the `issue(project, plan_id) → plan(project, id)`
+FK. (The 3.21.1 draft backfill excluded `exportDataConfig` plans, so it did
+not mass-create these; the API path still can.)
 
 Also: update `LATEST.sql` (drop the `export_archive` table, update the
 `issue.type` comment), and bump `TestLatestVersion` in `migrator_test.go`.
@@ -95,6 +105,7 @@ Notes:
 | `v1/issue_service.proto` | remove `Issue.Type.DATABASE_EXPORT = 3` |
 | `v1/plan_service.proto` | remove `Spec.export_data_config = 4` + `ExportDataConfig` message; fix spec_type filter doc (`:139`) |
 | `v1/rollout_service.proto` | remove `Task.Type.DATABASE_EXPORT = 4`, `database_data_export = 9` + `DatabaseDataExport` message, `ExportArchiveStatus` enum + field 10; fix task_type filter doc (`:229`) |
+| `v1/sql_service.proto` | remove the `Export` rollout REST bindings — `additional_bindings` for `/v1/{name=projects/*/plans/*/rollout}:export` and `.../rollout/stages/*}:export` (`:76-83`) — and the two rollout formats from the `ExportRequest.name` doc (`:408-409`), so generated OpenAPI/clients stop advertising the retired route |
 
 Then `buf format -w proto && buf lint proto && cd proto && buf generate`
 (regenerates backend `generated-go` and frontend `types/proto-es`). If CI runs
