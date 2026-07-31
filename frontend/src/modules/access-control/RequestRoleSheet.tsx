@@ -84,7 +84,7 @@ export interface RequestRoleSheetProps {
   /**
    * Pre-fill the role select. Useful when the sheet is opened from a
    * surface that already knows which role the user needs (e.g. the SQL
-   * Editor's "Request query" button hard-codes
+   * Editor's RequestQueryButton hard-codes
    * `PresetRoleType.SQL_EDITOR_USER`). The user can still change the
    * role from the picker — pass `requiredPermissions` to constrain the
    * available roles instead of hard-locking the selection.
@@ -609,7 +609,7 @@ function RequestRoleForm({
             }
             description={
               maximumRoleExpirationDays !== undefined
-                ? t("project.members.request-role.max-expiration-hint", {
+                ? t("common.expiration-max-hint", {
                     days: maximumRoleExpirationDays,
                   })
                 : undefined
@@ -622,13 +622,11 @@ function RequestRoleForm({
               maxDate={maxDatetime}
             />
             {expirationIsInPast && (
-              <FormError>
-                {t("project.members.request-role.expiration-must-be-future")}
-              </FormError>
+              <FormError>{t("common.expiration-must-be-future")}</FormError>
             )}
             {expirationExceedsMax && (
               <FormError>
-                {t("project.members.request-role.expiration-exceeds-max", {
+                {t("common.expiration-exceeds-max", {
                   days: maximumRoleExpirationDays,
                 })}
               </FormError>

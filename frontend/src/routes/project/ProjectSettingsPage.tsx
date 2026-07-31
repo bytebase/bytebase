@@ -843,14 +843,16 @@ export function ProjectSettingsPage() {
               }
             />
 
-            {/* Allow JIT Access */}
+            {/* Allow access grants */}
             <ToggleRow
               checked={allowJustInTimeAccess}
               onCheckedChange={setAllowJustInTimeAccess}
               disabled={!canUpdateProject}
-              label={t("project.settings.issue-related.allow-jit.self")}
+              label={t(
+                "project.settings.issue-related.allow-access-grants.self"
+              )}
               description={t(
-                "project.settings.issue-related.allow-jit.description"
+                "project.settings.issue-related.allow-access-grants.description"
               )}
               trailing={
                 <ApprovalFlowIndicator

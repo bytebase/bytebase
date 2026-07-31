@@ -305,6 +305,9 @@
     "environments": "環境",
     "error": "間違い",
     "expiration": "有効期限",
+    "expiration-exceeds-max": "有効期限はワークスペースの上限 {{days}} 日を超えることはできません。",
+    "expiration-max-hint": "ワークスペースポリシーで許可される最大値：{{days}} 日。",
+    "expiration-must-be-future": "有効期限は将来の時刻を指定してください。",
     "expired": "期限切れ",
     "export": "エクスポート",
     "failed": "失敗",
@@ -562,7 +565,7 @@
           "change_database": "データベースの変更",
           "create_database": "データベースの作成",
           "data_export": "データのエクスポート",
-          "request-access": "ジャストインタイムアクセスのリクエスト",
+          "request-access": "アクセス付与のリクエスト",
           "request-role": "ロールのリクエスト"
         },
         "risk-level": {
@@ -1283,7 +1286,7 @@
             "description": "付与がクエリ結果のエクスポートを許可するかどうかでフィルター"
           },
           "status": {
-            "description": "アクセス権限のステータスでフィルター"
+            "description": "アクセス付与のステータスでフィルター"
           },
           "unmask": {
             "description": "付与が機密データのマスク解除を許可するかどうかでフィルター"
@@ -1294,7 +1297,7 @@
       "duration-after-approval": "Issue 承認後 {{duration}}",
       "expired-at": "有効期限",
       "export-results-to-file": "結果をファイルにエクスポート",
-      "this-grant-allows": "このアクセス権限で許可される操作",
+      "this-grant-allows": "このアクセス付与で許可される操作",
       "unmask-data-in-results": "結果内の機密データのマスクを解除"
     },
     "advanced-search": {
@@ -1443,7 +1446,7 @@
         "reopen": "イシューを再開しますか?"
       }
     },
-    "subtitle": "イシューには、データベースの変更、データのエクスポート、アクセス要求が含まれます。実行前に確認と承認が必要です。",
+    "subtitle": "イシューには、データベースの変更、データのエクスポート、アクセス付与が含まれます。実行前に確認と承認が必要です。",
     "table": {
       "approval-progress": "{{approved}}/{{total}} 件承認",
       "approved": "承認済み",
@@ -1851,14 +1854,11 @@
           "allow-request-role-disabled": "このプロジェクトではロール申請が無効になっています。",
           "feature-unavailable": "現在のプランではロール申請ワークフローを利用できません。"
         },
-        "expiration-exceeds-max": "有効期限はワークスペースの上限 {{days}} 日を超えることはできません。",
-        "expiration-must-be-future": "有効期限は将来の時刻を指定してください。",
         "failed-to-build-expression": "CEL 式の構築に失敗しました。もう一度お試しください。",
         "labels-misconfigured": {
           "description": "このプロジェクトはイシューラベルを必須にしていますが、ラベルが設定されていません。ロールをリクエストする前に、プロジェクトのオーナーに連絡してラベルを追加してください。",
           "title": "イシューラベルが必須ですが設定されていません"
-        },
-        "max-expiration-hint": "ワークスペースポリシーで許可される最大値：{{days}} 日。"
+        }
       },
       "revoke-role-from-member": "'{{member}}' から '{{role}}' を取り消しますか？"
     },
@@ -1870,9 +1870,9 @@
       "confirm-archive-project": "\"{{name}}\" をアーカイブすると、読み取り専用になり、アクティブなプロジェクト一覧から非表示になります。すべての Issue、データベース、設定は保持されます。後でアーカイブ済みプロジェクト一覧から復元できます。",
       "confirm-delete-project": "\"{{name}}\" を削除すると、Issue、設定、履歴を含むプロジェクトとそれに関連するすべてのデータが完全に削除されます。このプロジェクト内のすべてのデータベースはデフォルトプロジェクトに移動されます。この操作は元に戻せません。",
       "issue-related": {
-        "allow-jit": {
-          "description": "有効にすると、ユーザーは SQL エディタでジャストインタイムアクセスをリクエストして使用できます。",
-          "self": "ジャストインタイムアクセスを許可"
+        "allow-access-grants": {
+          "description": "プロジェクトメンバーが特定の読み取り専用ステートメントに対して期限付きのアクセス付与をリクエストできるようにします。",
+          "self": "アクセス付与を許可"
         },
         "allow-request-role": {
           "description": "プロジェクト所有者以外のユーザーがプロジェクトレベルのロールを自分でリクエストできます",
@@ -2404,11 +2404,11 @@
           "never-expires": "期限切れなし"
         },
         "maximum-request-expiration": {
-          "description": "最大リクエスト有効期限は、データアクセスリクエストが有効であり続けられる最大期間です。",
-          "self": "最大リクエスト有効期限"
+          "description": "最大アクセス付与有効期限は、アクセス付与が有効であり続けられる最大期間です。",
+          "self": "最大アクセス付与有効期限"
         },
         "maximum-role-expiration": {
-          "description": "最大ロール有効期限はリクエストロールにのみ適用されます。<highlight>この従来の設定は将来廃止予定です。一時的なアクセスにはジャストインタイムアクセスフローを使用してください。</highlight>",
+          "description": "最大ロール有効期限はリクエストロールにのみ適用されます。<highlight>この従来の設定は将来廃止予定です。一時的なアクセスにはアクセス付与を使用してください。</highlight>",
           "self": "最大ロール有効期限"
         },
         "maximum-sql-result": {
@@ -2884,7 +2884,7 @@
           "description": "付与がクエリ結果のエクスポートを許可するかどうかでフィルター"
         },
         "status": {
-          "description": "アクセス許可のステータスで検索"
+          "description": "アクセス付与のステータスで検索"
         },
         "unmask": {
           "description": "付与が機密データのマスク解除を許可するかどうかでフィルター"
@@ -2901,8 +2901,8 @@
       "self": "管理者モード"
     },
     "allow-admin-mode-only": "インスタンス <instance></instance> には管理者モードでのみアクセスできます。",
-    "and-more-grant": "他 {{count}} 件のアクセス権限",
-    "and-more-grants": "他 {{count}} 件のアクセス権限",
+    "and-more-grant": "他 {{count}} 件のアクセス付与",
+    "and-more-grants": "他 {{count}} 件のアクセス付与",
     "and-n-more-databases": "他 {{n}} 件のデータベース",
     "batch-export": {
       "failed-for-db": "{{db}} のデータのエクスポートに失敗しました",
@@ -2955,8 +2955,8 @@
     "expire-in": "{{time}} 後に期限切れ",
     "expired": "期限切れ",
     "export-available-via-issue": "Issue「{{title}}」によりエクスポート可能",
-    "export-available-via-n-grants": "{{count}} 件のアクセス権限によりエクスポート可能:",
-    "export-enabled-by-grant": "アクセス権限により有効になっています",
+    "export-available-via-n-grants": "{{count}} 件のアクセス付与によりエクスポート可能:",
+    "export-enabled-by-grant": "アクセス付与により有効になっています",
     "format": "フォーマット",
     "format-default": "デフォルト",
     "format-sql": "SQL を整形",
@@ -2971,14 +2971,13 @@
       }
     },
     "invalid-database": "無効なデータベース {{database}}",
-    "jit": "ジャストインタイムアクセス",
     "last-synced": "最終同期時間: <time></time>",
     "link-access": "リンクアクセス",
     "loading-data": "データのロード...",
     "loading-databases": "データベース情報をロードしています...",
     "manage-connections": "接続を管理する",
     "next-row": "次の行",
-    "no-access-requests": "アクセスリクエストはありません",
+    "no-access-grants": "アクセス付与はありません",
     "no-data-available": "データがありません",
     "no-database-selected": "データベースが選択されていません",
     "no-history-found": "まだ履歴がありません",
@@ -3010,11 +3009,7 @@
       "single-node": "単一ノード"
     },
     "request-aborted": "ユーザーがリクエストを中止しました",
-    "request-access": "アクセスをリクエスト",
-    "request-data-access": "データアクセスをリクエスト",
-    "request-export": "エクスポートをリクエスト",
-    "request-jit": "ジャストインタイムアクセスをリクエスト",
-    "request-query": "リクエストクエリ",
+    "request-access-grant": "アクセス付与をリクエスト",
     "result-detail": {
       "next-match": "次の一致",
       "previous-match": "前の一致",

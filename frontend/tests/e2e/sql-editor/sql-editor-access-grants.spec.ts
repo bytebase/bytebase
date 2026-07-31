@@ -1,10 +1,10 @@
-// SQL Editor — JIT access flow (Batch 8, L-series + H1 CUJs).
+// SQL Editor — access-grant flow (Batch 8, L-series + H1 CUJs).
 //
 // Covers:
-//   - L1 / L2 RequestQueryButton label switches to "Request just-in-time
-//     access" when project.allowJustInTimeAccess is on AND the missing
-//     permission is exactly bb.sql.select (the JIT path).
-//   - L4 ACCESS pane shows the "Request access" CTA when JIT is enabled.
+//   - L1 / L2 RequestQueryButton label switches to "Request access grant"
+//     when project.allowJustInTimeAccess is on AND the missing
+//     permission is exactly bb.sql.select (the access-grant path).
+//   - L4 ACCESS pane shows the "Request access grant" CTA when JIT is enabled.
 //   - L5 AccessGrantRequestDrawer renders Databases / Statement / Unmask /
 //     Export / Expiration / Reason fields when opened from the pane
 //     (Unmask + Export capability sections added by PRs #20491/#20487).
@@ -171,39 +171,33 @@ test.describe("ACCESS gutter tab follows the project's allowJustInTimeAccess fla
 // L1 / L2 — RequestQueryButton's `useJIT` is true when
 // project.allowJustInTimeAccess is on AND the missing permissions are
 // exactly bb.sql.select. The visible label switches from
-// "Request query" to "Request just-in-time access" accordingly.
+// "Request role" to "Request access grant" accordingly.
 test.describe("RequestQueryButton label tracks the project's JIT flag", () => {
-  test("with JIT off, running a forbidden SELECT shows the non-JIT 'Request query' CTA", async () => {
+  test("with access grants off, running a forbidden SELECT shows the 'Request role' CTA", async () => {
     await setJIT(false);
     await viewerEditor.runPreparedQuery("SELECT 1;");
     await viewerPage.waitForTimeout(800);
 
-    await expect(
-      viewerPage.getByRole("button", { name: "Request query", exact: true }).first(),
-    ).toBeVisible({ timeout: 10_000 });
-    await expect(
-      viewerPage.getByRole("button", { name: /Request just-in-time/i }),
-    ).toHaveCount(0);
+    await expect(viewerEditor.requestRoleButton.first()).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(viewerEditor.requestAccessGrantButton).toHaveCount(0);
   });
 
-  test("with JIT on, running a forbidden SELECT shows the JIT 'Request just-in-time access' CTA", async () => {
+  test("with access grants on, running a forbidden SELECT shows the 'Request access grant' CTA", async () => {
     await setJIT(true);
     await viewerEditor.runPreparedQuery("SELECT 1;");
     await viewerPage.waitForTimeout(800);
 
-    await expect(
-      viewerPage
-        .getByRole("button", { name: /Request just-in-time access/i })
-        .first(),
-    ).toBeVisible({ timeout: 10_000 });
-    await expect(
-      viewerPage.getByRole("button", { name: "Request query", exact: true }),
-    ).toHaveCount(0);
+    await expect(viewerEditor.requestAccessGrantButton.first()).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(viewerEditor.requestRoleButton).toHaveCount(0);
   });
 });
 
 // L4 + L5 — the ACCESS pane (visible only when JIT is on) renders a
-// "Request access" button at its top-right. Clicking it opens the
+// "Request access grant" button at its top-right. Clicking it opens the
 // AccessGrantRequestDrawer with the four expected sections.
 //
 // REQUIRES ENTERPRISE LICENSE: the button is gated by
@@ -212,8 +206,8 @@ test.describe("RequestQueryButton label tracks the project's JIT flag", () => {
 // (Playwright's `force: true` bypasses actionability checks but does NOT
 // override the HTML `disabled` attribute, so onClick never fires and the
 // drawer never opens). The license is installed at bootstrap, so the feature is available here.
-test.describe("ACCESS pane Request-access button opens the grant drawer", () => {
-  test("opening the ACCESS tab and clicking Request access opens a drawer with Databases / Statement / Expiration / Reason", async () => {
+test.describe("ACCESS pane Request-access-grant button opens the grant drawer", () => {
+  test("opening the ACCESS tab and clicking Request access grant opens a drawer with Databases / Statement / Expiration / Reason", async () => {
     await setJIT(true);
 
     // Click the ACCESS gutter tab to mount the pane.
@@ -221,25 +215,19 @@ test.describe("ACCESS pane Request-access button opens the grant drawer", () => 
     await viewerPage.waitForTimeout(500);
 
     // The pane's primary action — label from
-    // `sql-editor.request-access` ("Request Access" in en-US).
-    const requestAccessBtn = viewerPage
-      .getByRole("button", { name: /Request Access/i })
-      .first();
+    // `sql-editor.request-access-grant` ("Request access grant" in en-US).
+    const requestAccessBtn = viewerEditor.requestAccessGrantButton.first();
     await expect(requestAccessBtn).toBeVisible({ timeout: 10_000 });
-    // PermissionGuard renders the button as disabled when JIT feature
-    // is unlicensed. The demo build ships the feature on (sample data
-    // includes JIT grants), so we expect enabled — but assert via a
-    // try/catch fallback so a future license change doesn't bury the
-    // structural CUJ. The CUJ here is "the button is present and
-    // wired", which already shows that the pane is on the right
-    // surface.
+    // PermissionGuard renders the button disabled when the JIT feature is
+    // unlicensed; the bootstrap-installed license makes it enabled here.
     await requestAccessBtn.click({ force: true });
     await viewerPage.waitForTimeout(500);
 
-    // Drawer header — i18n key `sql-editor.request-data-access`.
-    await expect(
-      viewerPage.getByText("Request Data Access", { exact: true }).first(),
-    ).toBeVisible({ timeout: 10_000 });
+    // Drawer open — matched by the dialog's accessible name; see
+    // SqlEditorPage.accessGrantDrawer for the button/title collision note.
+    await expect(viewerEditor.accessGrantDrawer).toBeVisible({
+      timeout: 10_000,
+    });
 
     // L5: the labelled regions inside the drawer. Each is a headline
     // above its input — we match the label as a substring because the
@@ -261,21 +249,21 @@ test.describe("ACCESS pane Request-access button opens the grant drawer", () => 
     ]) {
       const re = new RegExp(`^${label}(\\s*\\*)?\\s*$`);
       await expect(
-        viewerPage.getByText(re).first(),
+        viewerEditor.accessGrantDrawer.getByText(re).first(),
         `drawer must contain a "${label}" section`,
       ).toBeVisible({ timeout: 5000 });
     }
 
     // The two capability checkboxes are present AND default UNCHECKED when the
-    // drawer is opened from the generic "Request access" CTA (no pendingCreate).
+    // drawer is opened from the generic ACCESS-pane CTA (no pendingCreate).
     // Asserting unchecked — not just visible — catches a regression that
-    // pre-checks either capability for a plain request. (The "Request export"
-    // entry point pre-checks ONLY Export, not Unmask, after BYT-9654/#20516 —
-    // covered in sql-editor-export.spec.ts.)
-    const unmaskCheckbox = viewerPage.getByRole("checkbox", {
+    // pre-checks either capability for a plain request. (The export-blocked
+    // entry point (RequestExportButton) pre-checks ONLY Export, not Unmask,
+    // after BYT-9654/#20516 — covered in sql-editor-export.spec.ts.)
+    const unmaskCheckbox = viewerEditor.accessGrantDrawer.getByRole("checkbox", {
       name: "See unmasked sensitive data",
     });
-    const exportCheckbox = viewerPage.getByRole("checkbox", {
+    const exportCheckbox = viewerEditor.accessGrantDrawer.getByRole("checkbox", {
       name: "Export the query result",
     });
     await expect(
@@ -285,11 +273,11 @@ test.describe("ACCESS pane Request-access button opens the grant drawer", () => 
     await expect(exportCheckbox).toBeVisible();
     await expect(
       unmaskCheckbox,
-      "Unmask must default unchecked from the generic Request-access CTA",
+      "Unmask must default unchecked from the generic Request-access-grant CTA",
     ).not.toBeChecked();
     await expect(
       exportCheckbox,
-      "Export must default unchecked from the generic Request-access CTA",
+      "Export must default unchecked from the generic Request-access-grant CTA",
     ).not.toBeChecked();
 
     // Close the drawer so any follow-up test doesn't inherit it.
@@ -300,9 +288,9 @@ test.describe("ACCESS pane Request-access button opens the grant drawer", () => 
   });
 });
 
-// BYT-9801 — the Request Data Access picker used to fetch a single flat page of
+// BYT-9801 — the access-grant drawer's database picker used to fetch a single flat page of
 // 100 databases with no server-side search, so any database past that page was
-// invisible AND unsearchable in the JIT drawer (even though the SQL Editor tree
+// invisible AND unsearchable in the drawer (even though the SQL Editor tree
 // found it via per-environment pagination + server search). The fix routes the
 // picker through the shared DatabaseSelect, which re-queries the server on every
 // keystroke (onSearch). This test seeds > one picker page of databases (the
@@ -316,7 +304,7 @@ test.describe("ACCESS pane Request-access button opens the grant drawer", () => 
 // drops onSearch while keeping the 50-row page, the target stays absent AND never
 // appears on search — failing the "found via search" assertion. Either way the
 // server-side-search fix is required for this test to pass.
-test.describe("Request Data Access picker finds a database beyond the first page (BYT-9801)", () => {
+test.describe("access-grant drawer picker finds a database beyond the first page (BYT-9801)", () => {
   const DB_COUNT = 60; // > the picker's first page (50) with comfortable margin
   const dbShortNames = Array.from(
     { length: DB_COUNT },
@@ -415,21 +403,20 @@ test.describe("Request Data Access picker finds a database beyond the first page
   test("a database past the first page is absent initially but found via search", async () => {
     test.setTimeout(120_000);
 
-    // Open the ACCESS pane → Request Access → drawer.
+    // Open the ACCESS pane → Request access grant → drawer.
     await viewerEditor.gutterAccessTab.click();
     await viewerPage.waitForTimeout(500);
-    await viewerPage
-      .getByRole("button", { name: /Request Access/i })
-      .first()
-      .click({ force: true });
-    await expect(
-      viewerPage.getByText("Request Data Access", { exact: true }).first(),
-    ).toBeVisible({ timeout: 10_000 });
+    await viewerEditor.requestAccessGrantButton.first().click({ force: true });
+    await expect(viewerEditor.accessGrantDrawer).toBeVisible({
+      timeout: 10_000,
+    });
 
     // Locate the "Databases" section (label headline + picker) and open the
     // picker's dropdown.
-    const dbSection = viewerPage
-      .locator("div.flex.flex-col.gap-y-2")
+    const dbSection = viewerEditor.accessGrantDrawer
+      // FormField renders StyleX atomic classes since #20942 — target the
+      // stable data-slot attribute, not utility class names.
+      .locator('div[data-slot="form-field"]')
       .filter({ has: viewerPage.getByText(/^Databases\s*\*?$/) })
       .first();
     await dbSection.locator("div.cursor-pointer").first().click();
@@ -458,10 +445,7 @@ test.describe("Request Data Access picker finds a database beyond the first page
     // the combobox) so the option row disappears. The target text remaining
     // proves a selected CHIP was rendered — not merely the still-open row.
     await dbSection.getByText(targetShort, { exact: true }).first().click();
-    await viewerPage
-      .getByText("Request Data Access", { exact: true })
-      .first()
-      .click();
+    await viewerEditor.accessGrantDrawerTitle.click();
     await viewerPage.waitForTimeout(300);
     await expect(
       dbSection.getByText(targetShort, { exact: true }).first(),

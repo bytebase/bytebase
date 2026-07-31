@@ -14,6 +14,10 @@ export class SqlEditorPage {
   readonly gutterSchemaTab: Locator;
   readonly gutterHistoryTab: Locator;
   readonly gutterAccessTab: Locator;
+  readonly requestAccessGrantButton: Locator;
+  readonly requestRoleButton: Locator;
+  readonly accessGrantDrawer: Locator;
+  readonly accessGrantDrawerTitle: Locator;
 
   constructor(page: Page, baseURL = "") {
     this.page = page;
@@ -49,11 +53,36 @@ export class SqlEditorPage {
     this.gutterHistoryTab = page.getByRole("button", { name: "History", exact: true });
     // ACCESS gutter tab only renders when project.allowJustInTimeAccess=true.
     // The button's screen-reader name comes from i18n key
-    // `sql-editor.jit` → "Just-In-Time Access" (not the shorter "Access"
-    // — that's the label of an entirely different "Data Access" sidebar
-    // entry in the workspace nav).
+    // `sql-editor.access-grants` → "Access Grants" (shared with the project
+    // sidebar's Access Grants page — both list the same objects).
     this.gutterAccessTab = page.getByRole("button", {
-      name: "Just-In-Time Access",
+      name: "Access Grants",
+      exact: true,
+    });
+    // "Request access grant" is ONE shared label (i18n key
+    // `sql-editor.request-access-grant`) used by every entry point that opens
+    // the grant drawer — ACCESS pane CTA, permission-denied result button,
+    // masked-cell popover, export-blocked toolbar button — AND by the drawer's
+    // own SheetTitle. Button and drawer title are therefore textually
+    // identical: match buttons by role=button, and match the drawer by its
+    // accessible name (SheetTitle wraps BaseDialog.Title, which labels the
+    // dialog), so the two never collide.
+    this.requestAccessGrantButton = page.getByRole("button", {
+      name: "Request access grant",
+      exact: true,
+    });
+    // Non-JIT permission-denied CTA (opens RequestRoleSheet); label comes from
+    // i18n key `issue.title.request-role`, shared with the Members page.
+    this.requestRoleButton = page.getByRole("button", {
+      name: "Request role",
+      exact: true,
+    });
+    this.accessGrantDrawer = page.getByRole("dialog", {
+      name: "Request access grant",
+      exact: true,
+    });
+    this.accessGrantDrawerTitle = this.accessGrantDrawer.getByRole("heading", {
+      name: "Request access grant",
       exact: true,
     });
   }

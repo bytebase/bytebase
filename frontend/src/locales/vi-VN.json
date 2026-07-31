@@ -305,6 +305,9 @@
     "environments": "Môi trường",
     "error": "Lỗi",
     "expiration": "Hết hạn",
+    "expiration-exceeds-max": "Thời gian hết hạn không được vượt quá giới hạn {{days}} ngày của không gian làm việc.",
+    "expiration-max-hint": "Tối đa được phép theo chính sách không gian làm việc: {{days}} ngày.",
+    "expiration-must-be-future": "Thời gian hết hạn phải ở tương lai.",
     "expired": "Đã hết hạn",
     "export": "Xuất",
     "failed": "Thất bại",
@@ -562,7 +565,7 @@
           "change_database": "Thay đổi cơ sở dữ liệu",
           "create_database": "Tạo cơ sở dữ liệu",
           "data_export": "Xuất dữ liệu",
-          "request-access": "Yêu cầu quyền truy cập Just-In-Time",
+          "request-access": "Yêu cầu cấp quyền truy cập",
           "request-role": "Yêu cầu vai trò"
         },
         "risk-level": {
@@ -1443,7 +1446,7 @@
         "reopen": "Mở lại vấn đề?"
       }
     },
-    "subtitle": "Các vấn đề bao gồm thay đổi cơ sở dữ liệu, xuất dữ liệu và yêu cầu truy cập. Cần xem xét và phê duyệt trước khi thực hiện.",
+    "subtitle": "Các vấn đề bao gồm thay đổi cơ sở dữ liệu, xuất dữ liệu và cấp quyền truy cập. Cần xem xét và phê duyệt trước khi thực hiện.",
     "table": {
       "approval-progress": "{{approved}}/{{total}} phê duyệt",
       "approved": "Đã phê duyệt",
@@ -1851,14 +1854,11 @@
           "allow-request-role-disabled": "Dự án này đã tắt tính năng yêu cầu vai trò.",
           "feature-unavailable": "Quy trình yêu cầu vai trò không khả dụng trong gói hiện tại."
         },
-        "expiration-exceeds-max": "Thời gian hết hạn không được vượt quá giới hạn {{days}} ngày của không gian làm việc.",
-        "expiration-must-be-future": "Thời gian hết hạn phải ở tương lai.",
         "failed-to-build-expression": "Không thể xây dựng biểu thức CEL. Vui lòng thử lại.",
         "labels-misconfigured": {
           "description": "Dự án này yêu cầu nhãn vấn đề, nhưng chưa có nhãn nào được cấu hình. Vui lòng liên hệ chủ sở hữu dự án để thêm nhãn trước khi yêu cầu vai trò.",
           "title": "Dự án yêu cầu nhãn vấn đề nhưng chưa cấu hình"
-        },
-        "max-expiration-hint": "Tối đa được phép theo chính sách không gian làm việc: {{days}} ngày."
+        }
       },
       "revoke-role-from-member": "Thu hồi '{{role}}' từ '{{member}}'?"
     },
@@ -1870,9 +1870,9 @@
       "confirm-archive-project": "Việc lưu trữ \"{{name}}\" sẽ khiến nó trở thành chỉ đọc và ẩn khỏi danh sách dự án đang hoạt động. Tất cả issue, cơ sở dữ liệu và cài đặt sẽ được giữ lại. Bạn có thể khôi phục lại sau từ danh sách dự án đã lưu trữ.",
       "confirm-delete-project": "Việc xóa \"{{name}}\" sẽ xóa vĩnh viễn dự án và tất cả dữ liệu liên quan bao gồm issue, cấu hình và lịch sử. Tất cả cơ sở dữ liệu trong dự án này sẽ được chuyển sang dự án mặc định. Hành động này không thể hoàn tác.",
       "issue-related": {
-        "allow-jit": {
-          "description": "Khi được bật, người dùng có thể yêu cầu và sử dụng quyền truy cập tức thời trong Trình soạn thảo SQL.",
-          "self": "Cho phép truy cập tức thời"
+        "allow-access-grants": {
+          "description": "Cho phép thành viên dự án yêu cầu cấp quyền truy cập có thời hạn cho các câu lệnh chỉ đọc cụ thể.",
+          "self": "Cho phép cấp quyền truy cập"
         },
         "allow-request-role": {
           "description": "Người dùng không phải chủ sở hữu dự án có thể tự yêu cầu vai trò cấp dự án",
@@ -2404,11 +2404,11 @@
           "never-expires": "Không bao giờ hết hạn"
         },
         "maximum-request-expiration": {
-          "description": "Thời hạn yêu cầu tối đa là khoảng thời gian tối đa mà yêu cầu truy cập dữ liệu có thể còn hiệu lực.",
-          "self": "Thời hạn yêu cầu tối đa"
+          "description": "Thời hạn cấp quyền truy cập tối đa là khoảng thời gian tối đa mà cấp quyền truy cập có thể còn hiệu lực.",
+          "self": "Thời hạn cấp quyền truy cập tối đa"
         },
         "maximum-role-expiration": {
-          "description": "Thời hạn vai trò tối đa chỉ áp dụng cho yêu cầu vai trò. <highlight>Cấu hình cũ này sẽ bị ngừng sử dụng trong tương lai; hãy dùng luồng truy cập đúng lúc cho quyền truy cập tạm thời.</highlight>",
+          "description": "Thời hạn vai trò tối đa chỉ áp dụng cho yêu cầu vai trò. <highlight>Cấu hình cũ này sẽ bị ngừng sử dụng trong tương lai; hãy dùng cấp quyền truy cập khi cần truy cập tạm thời.</highlight>",
           "self": "Thời hạn vai trò tối đa"
         },
         "maximum-sql-result": {
@@ -2971,14 +2971,13 @@
       }
     },
     "invalid-database": "Cơ sở dữ liệu không hợp lệ {{database}}",
-    "jit": "Truy cập Just-In-Time",
     "last-synced": "Đã đồng bộ lần cuối: <time></time>",
     "link-access": "Truy cập liên kết",
     "loading-data": "Đang tải Dữ liệu...",
     "loading-databases": "Đang tải Cơ sở dữ liệu...",
     "manage-connections": "Quản lý kết nối",
     "next-row": "Dòng tiếp theo",
-    "no-access-requests": "Không có yêu cầu truy cập",
+    "no-access-grants": "Chưa có quyền truy cập nào được cấp",
     "no-data-available": "Không có dữ liệu",
     "no-database-selected": "Chưa chọn cơ sở dữ liệu",
     "no-history-found": "Không tìm thấy lịch sử",
@@ -3010,11 +3009,7 @@
       "single-node": "Nút đơn"
     },
     "request-aborted": "Người dùng đã hủy yêu cầu",
-    "request-access": "Yêu cầu truy cập",
-    "request-data-access": "Yêu cầu truy cập dữ liệu",
-    "request-export": "Yêu cầu xuất dữ liệu",
-    "request-jit": "Yêu cầu truy cập just-in-time",
-    "request-query": "Yêu cầu truy vấn",
+    "request-access-grant": "Yêu cầu cấp quyền truy cập",
     "result-detail": {
       "next-match": "Kết quả tiếp theo",
       "previous-match": "Kết quả trước",

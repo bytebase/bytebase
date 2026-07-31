@@ -305,6 +305,9 @@
     "environments": "Entornos",
     "error": "Error",
     "expiration": "Expiración",
+    "expiration-exceeds-max": "La expiración no puede exceder el límite del espacio de trabajo de {{days}} día(s).",
+    "expiration-max-hint": "Máximo permitido por la política del espacio de trabajo: {{days}} día(s).",
+    "expiration-must-be-future": "La expiración debe ser una fecha futura.",
     "expired": "Expirado",
     "export": "Exportar",
     "failed": "Error",
@@ -562,8 +565,8 @@
           "change_database": "Cambiar base de datos",
           "create_database": "Crear base de datos",
           "data_export": "Exportar datos",
-          "request-access": "Solicitar acceso Just-In-Time",
-          "request-role": "Rol de solicitud"
+          "request-access": "Solicitar concesión de acceso",
+          "request-role": "Solicitar rol"
         },
         "risk-level": {
           "default": "Por defecto",
@@ -1443,7 +1446,7 @@
         "reopen": "¿Reabrir incidencia?"
       }
     },
-    "subtitle": "Los problemas abarcan cambios en la base de datos, exportaciones de datos y solicitudes de acceso. Revisar y aprobar antes de la ejecución.",
+    "subtitle": "Los problemas abarcan cambios en la base de datos, exportaciones de datos y concesiones de acceso. Revisar y aprobar antes de la ejecución.",
     "table": {
       "approval-progress": "{{approved}}/{{total}} aprobaciones",
       "approved": "Aprobado",
@@ -1851,14 +1854,11 @@
           "allow-request-role-disabled": "La solicitud de roles está deshabilitada para este proyecto.",
           "feature-unavailable": "El flujo de solicitud de roles no está disponible en el plan actual."
         },
-        "expiration-exceeds-max": "La expiración no puede exceder el límite del espacio de trabajo de {{days}} día(s).",
-        "expiration-must-be-future": "La expiración debe ser una fecha futura.",
         "failed-to-build-expression": "Error al construir la expresión CEL. Inténtalo de nuevo.",
         "labels-misconfigured": {
           "description": "Este proyecto requiere etiquetas de incidencia, pero no se ha configurado ninguna etiqueta. Contacte con el propietario del proyecto para añadir etiquetas antes de solicitar un rol.",
           "title": "Se requieren etiquetas de incidencia pero no están configuradas"
-        },
-        "max-expiration-hint": "Máximo permitido por la política del espacio de trabajo: {{days}} día(s)."
+        }
       },
       "revoke-role-from-member": "¿Revocar '{{role}}' de '{{member}}'?"
     },
@@ -1870,9 +1870,9 @@
       "confirm-archive-project": "Archivar \"{{name}}\" lo hará de solo lectura y lo ocultará de las listas de proyectos activos. Se conservarán todos los issues, bases de datos y configuraciones. Puede restaurarlo más tarde desde la lista de proyectos archivados.",
       "confirm-delete-project": "Eliminar \"{{name}}\" eliminará permanentemente el proyecto y todos los datos asociados, incluidos issues, configuraciones e historial. Todas las bases de datos de este proyecto se moverán al proyecto predeterminado. Esta acción no se puede deshacer.",
       "issue-related": {
-        "allow-jit": {
-          "description": "Una vez habilitado, los usuarios pueden solicitar y usar el acceso justo a tiempo en el Editor SQL.",
-          "self": "Permitir acceso justo a tiempo"
+        "allow-access-grants": {
+          "description": "Permite a los miembros del proyecto solicitar concesiones de acceso con límite de tiempo para sentencias específicas de solo lectura.",
+          "self": "Permitir concesiones de acceso"
         },
         "allow-request-role": {
           "description": "Los usuarios que no son propietarios del proyecto pueden solicitar roles a nivel de proyecto por sí mismos",
@@ -2404,11 +2404,11 @@
           "never-expires": "Nunca expira"
         },
         "maximum-request-expiration": {
-          "description": "La caducidad máxima de la solicitud es el período máximo durante el cual una solicitud de acceso a datos puede permanecer válida.",
-          "self": "Caducidad máxima de la solicitud"
+          "description": "La caducidad máxima de la concesión de acceso es el período máximo durante el cual una concesión de acceso puede permanecer válida.",
+          "self": "Caducidad máxima de la concesión de acceso"
         },
         "maximum-role-expiration": {
-          "description": "La caducidad máxima del rol solo se aplica a la solicitud de rol. <highlight>Esta configuración heredada se dejará de usar en el futuro; usa el flujo de acceso justo a tiempo para acceso temporal.</highlight>",
+          "description": "La caducidad máxima del rol solo se aplica a la solicitud de rol. <highlight>Esta configuración heredada se dejará de usar en el futuro; usa concesiones de acceso para el acceso temporal.</highlight>",
           "self": "Caducidad máxima del rol"
         },
         "maximum-sql-result": {
@@ -2971,14 +2971,13 @@
       }
     },
     "invalid-database": "Base de datos no válida {{database}}",
-    "jit": "Acceso Just-In-Time",
     "last-synced": "Última sincronización: <time></time>",
     "link-access": "Acceso al enlace",
     "loading-data": "Cargando datos...",
     "loading-databases": "Cargando bases de datos...",
     "manage-connections": "Gestionar las conexiones",
     "next-row": "Siguiente fila",
-    "no-access-requests": "No hay solicitudes de acceso",
+    "no-access-grants": "No hay concesiones de acceso",
     "no-data-available": "No hay datos disponibles",
     "no-database-selected": "No se ha seleccionado una base de datos",
     "no-history-found": "No se encontró historial",
@@ -3010,11 +3009,7 @@
       "single-node": "Nodo único"
     },
     "request-aborted": "El usuario abortó la solicitud",
-    "request-access": "Solicitar acceso",
-    "request-data-access": "Solicitar acceso a datos",
-    "request-export": "Solicitar exportación",
-    "request-jit": "Solicitar acceso just-in-time",
-    "request-query": "Solicitar consulta",
+    "request-access-grant": "Solicitar concesión de acceso",
     "result-detail": {
       "next-match": "Siguiente coincidencia",
       "previous-match": "Coincidencia anterior",

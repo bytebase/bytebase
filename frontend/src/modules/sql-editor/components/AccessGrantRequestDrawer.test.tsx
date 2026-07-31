@@ -409,9 +409,7 @@ describe("AccessGrantRequestDrawer", () => {
     );
     render();
 
-    expect(container.textContent).toContain(
-      "project.members.request-role.max-expiration-hint"
-    );
+    expect(container.textContent).toContain("common.expiration-max-hint");
 
     unmount();
   });
@@ -618,7 +616,7 @@ describe("AccessGrantRequestDrawer", () => {
     unmount();
   });
 
-  test("typing in the Request Data Access database picker re-queries the server (BYT-9801)", async () => {
+  test("typing in the access-grant drawer database picker re-queries the server (BYT-9801)", async () => {
     const onClose = vi.fn();
     const { render: renderFn, unmount } = renderIntoContainer(
       <AccessGrantRequestDrawer

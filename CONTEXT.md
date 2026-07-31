@@ -9,15 +9,23 @@ The top-level collaboration boundary that contains projects, database connection
 _Avoid_: Project, organization
 
 **Project**:
-A governance boundary for an application or team's databases. It owns issue workflow, approvals, labels, rollout limits, and database membership.
+A governance boundary for an application or team's databases. It can own project instances and owns database membership, issue workflow, approvals, labels, and rollout limits.
 _Avoid_: Workspace, repository, environment
 
 **Instance**:
-A registered database server, cluster, or service connection that Bytebase syncs and operates against. An instance can contain many databases.
+A registered database server, cluster, or service connection that Bytebase syncs and operates against. An instance is registered as either a workspace instance or a project instance, and its scope does not change.
 _Avoid_: Database, environment
 
+**Workspace Instance**:
+An instance governed directly by the workspace. Its databases may belong to different projects.
+_Avoid_: Project instance, unassigned instance
+
+**Project Instance**:
+An instance owned by exactly one project. Every database it contains belongs to that same project.
+_Avoid_: Workspace instance, shared instance
+
 **Database**:
-A named database inside an instance that Bytebase tracks and assigns to a project. It is the usual target of schema, data, export, and access work.
+A named database inside an instance that Bytebase tracks and assigns to a project. In a project instance, it belongs to the instance's project; in a workspace instance, it may be assigned independently.
 _Avoid_: Instance, schema
 
 **Environment**:

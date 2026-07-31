@@ -354,7 +354,7 @@ describe("RequestRoleSheet — enforceIssueTitle (BYT-9310)", () => {
     await renderSheet(false);
 
     expect(container.textContent).toContain(
-      "project.members.request-role.max-expiration-hint"
+      "common.expiration-max-hint"
     );
   });
 
@@ -364,7 +364,7 @@ describe("RequestRoleSheet — enforceIssueTitle (BYT-9310)", () => {
     await renderSheet(false);
 
     expect(container.textContent).not.toContain(
-      "project.members.request-role.max-expiration-hint"
+      "common.expiration-max-hint"
     );
   });
 

@@ -190,8 +190,8 @@
         "title": "SSL接続"
       },
       "FEATURE_JIT": {
-        "desc": "ユーザーが承認付きで一時的なデータベースアクセスをリクエストできます。",
-        "title": "Just-In-Timeアクセス"
+        "desc": "ユーザーが承認付きで期限付きのアクセス付与をリクエストできます。",
+        "title": "アクセス付与"
       },
       "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
         "desc": "異なるテナントやパーティション間で複数のデータベースに同じ変更を適用します。",

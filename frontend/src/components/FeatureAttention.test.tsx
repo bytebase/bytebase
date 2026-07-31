@@ -139,9 +139,9 @@ describe("FeatureAttention", () => {
 
     render();
 
-    expect(container.textContent).toContain("Just-In-Time access");
+    expect(container.textContent).toContain("Access grants");
     expect(container.textContent).toContain(
-      "Allow users to request temporary database access with approval."
+      "Allow users to request time-boxed access grants with approval."
     );
     expect(container.textContent).not.toContain(
       "dynamic.subscription.features.FEATURE_JIT"
