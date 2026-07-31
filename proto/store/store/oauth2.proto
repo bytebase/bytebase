@@ -20,8 +20,8 @@ message OAuth2RefreshTokenConfig {
   // consent time against the configured external URL. Empty for clients that
   // omit the resource parameter.
   string resource = 1;
-  // The scope string consented to, stored verbatim. Empty means no scope was
-  // requested.
+  // The single mode consented to, normalized from the client's requested scope
+  // set to its maximum. Empty means no scope was requested.
   string scope = 2;
 }
 
@@ -33,7 +33,7 @@ message OAuth2AuthorizationCodeConfig {
   // consent time against the configured external URL. Empty for clients that
   // omit the resource parameter.
   string resource = 4;
-  // The scope string consented to, stored verbatim. Empty means no scope was
-  // requested.
+  // The single mode consented to, normalized from the client's requested scope
+  // set to its maximum. Empty means no scope was requested.
   string scope = 5;
 }

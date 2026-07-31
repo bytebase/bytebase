@@ -2,6 +2,7 @@ package oauth2
 
 import (
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -100,35 +101,51 @@ func TestValidateResource(t *testing.T) {
 	})
 }
 
-func TestValidateScope(t *testing.T) {
-	t.Run("empty scope is allowed", func(t *testing.T) {
-		// The consent-time picker is P1b; until it exists every real client
-		// sends no scope at all, and rejecting that would break MCP entirely.
-		require.NoError(t, validateScope(""))
-	})
-	for _, scope := range knownScopes {
-		t.Run("known scope "+scope, func(t *testing.T) {
-			require.NoError(t, validateScope(scope))
-		})
+func TestCanonicalizeScope(t *testing.T) {
+	// The v1 bootstrap has the 401 challenge advertise every mode, so clients
+	// request the whole set by design. A set is normal input: it resolves to its
+	// highest rung, which is the one mode the grant is bound to.
+	accepted := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"empty is allowed", "", ""},
+		{"whitespace only is empty", " \t\n ", ""},
+		{"read-only alone", "mcp:read-only", "mcp:read-only"},
+		{"read-write alone", "mcp:read-write", "mcp:read-write"},
+		{"both modes, narrow first", "mcp:read-only mcp:read-write", "mcp:read-write"},
+		{"both modes, wide first", "mcp:read-write mcp:read-only", "mcp:read-write"},
+		{"repeated token", "mcp:read-only mcp:read-only", "mcp:read-only"},
+		// Whatever whitespace a client uses, the stored value is one bare token —
+		// the grant record must never hold a padded or multi-token string.
+		{"padded and tab-separated", "  mcp:read-only\tmcp:read-write  ", "mcp:read-write"},
 	}
-	for _, scope := range []string{"mcp:admin", "openid", "mcp:read-only extra", "MCP:READ-ONLY", "mcp:readonly"} {
-		t.Run("unknown scope "+scope, func(t *testing.T) {
-			require.Error(t, validateScope(scope),
-				"an unrecognized scope must be refused, not silently dropped — a client would otherwise believe it holds something we never granted")
+	for _, tc := range accepted {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := canonicalizeScope(tc.in)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
+			require.Equal(t, strings.TrimSpace(got), got, "a stored scope must never carry whitespace")
+			require.NotContains(t, got, " ", "a stored scope must name exactly one mode")
 		})
 	}
 
-	// A grant is bound to ONE predefined set (proposal v2 §4). The scopes are a
-	// ladder, not additive permissions, so a combination names no resolvable set
-	// — and persisting one would hand P1b a scope string it cannot map.
+	// Unknown tokens are rejected rather than dropped, including when mixed in
+	// with recognized ones — otherwise a client would believe the unrecognized
+	// part of its request was granted.
 	for _, scope := range []string{
-		"mcp:read-only mcp:read-write",
-		"mcp:read-write mcp:read-only",
-		"mcp:read-only mcp:read-only",
+		"mcp:admin",
+		"openid",
+		"MCP:READ-ONLY",
+		"mcp:readonly",
+		"mcp:read-only extra",
+		"mcp:read-only mcp:admin",
+		"mcp:admin mcp:read-write",
 	} {
-		t.Run("combined tiers rejected: "+scope, func(t *testing.T) {
-			require.Error(t, validateScope(scope),
-				"two known tokens are still not a set we can resolve; the tier choice is single-valued")
+		t.Run("unknown scope rejected: "+scope, func(t *testing.T) {
+			_, err := canonicalizeScope(scope)
+			require.Error(t, err)
 		})
 	}
 }
@@ -211,10 +228,20 @@ func TestCheckConsentedScope(t *testing.T) {
 		{"exact match", url.Values{"scope": {"mcp:read-only"}}, "mcp:read-only", ""},
 		{"widening is rejected", url.Values{"scope": {"mcp:read-write"}}, "mcp:read-only", "invalid_scope"},
 		{"narrowing is rejected too (the grant record is the authority)", url.Values{"scope": {"mcp:read-only"}}, "mcp:read-write", "invalid_scope"},
+		// The client keeps sending the set it originally requested; it has to
+		// normalize to the same mode consent stored, or every refresh would fail.
+		{"the original requested set matches the maximum it resolved to", url.Values{"scope": {"mcp:read-only mcp:read-write"}}, "mcp:read-write", ""},
+		{"a set whose maximum exceeds the grant is rejected", url.Values{"scope": {"mcp:read-only mcp:read-write"}}, "mcp:read-only", "invalid_scope"},
+		{"a set containing an unknown token is rejected", url.Values{"scope": {"mcp:read-write mcp:admin"}}, "mcp:read-write", "invalid_scope"},
 		// Same upgrade path as the resource: RFC 6749 §6 permits `scope` on a
 		// refresh, so a grant issued before the column must not start failing.
 		// Ignored, not adopted — the grant keeps its empty scope.
 		{"scope on a grant that consented none is accepted, not adopted", url.Values{"scope": {"mcp:read-only"}}, "", ""},
+		// A legacy client may be sending a scope we never recognized; before this
+		// change it was ignored, and it must stay ignored rather than become a
+		// rejection. This is why the empty-grant case returns before the
+		// vocabulary check.
+		{"an unrecognized scope on an unbound grant stays ignored", url.Values{"scope": {"openid profile"}}, "", ""},
 		{"repeated value", url.Values{"scope": {"mcp:read-only", "mcp:read-write"}}, "mcp:read-only", "invalid_scope"},
 	}
 	for _, tc := range cases {

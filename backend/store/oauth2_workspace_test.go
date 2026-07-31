@@ -127,7 +127,7 @@ func TestOAuth2WorkspaceBinding(t *testing.T) {
 		require.Empty(t, got.Workspace)
 	})
 
-	// The refresh token's config payload (3.21.5) is the durable half of the token
+	// The refresh token's config payload (3.22.1) is the durable half of the token
 	// boundary: a refresh reads it back to re-issue the same grant, so a dropped
 	// value would silently widen or unbind the session.
 	t.Run("refresh token config round-trips resource and scope", func(t *testing.T) {
@@ -152,7 +152,7 @@ func TestOAuth2WorkspaceBinding(t *testing.T) {
 	})
 
 	t.Run("refresh token with no config stays empty", func(t *testing.T) {
-		// Both parameters are optional, and rows written before 3.21.5 default to
+		// Both parameters are optional, and rows written before 3.22.1 default to
 		// '{}' — either way the handler must see "" and carry "" forward.
 		_, err := s.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
 			TokenHash: "rt-hash-4",

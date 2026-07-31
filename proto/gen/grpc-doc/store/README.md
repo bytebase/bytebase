@@ -3072,7 +3072,7 @@ ReviewSubmission records that an issue entered review.
 | code_challenge | [string](#string) |  |  |
 | code_challenge_method | [string](#string) |  |  |
 | resource | [string](#string) |  | The canonical resource URI (RFC 8707) this grant is bound to, validated at consent time against the configured external URL. Empty for clients that omit the resource parameter. |
-| scope | [string](#string) |  | The scope string consented to, stored verbatim. Empty means no scope was requested. |
+| scope | [string](#string) |  | The single mode consented to, normalized from the client&#39;s requested scope set to its maximum. Empty means no scope was requested. |
 
 
 
@@ -3109,7 +3109,7 @@ grant can gain fields without a schema migration.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | resource | [string](#string) |  | The canonical resource URI (RFC 8707) this grant is bound to, validated at consent time against the configured external URL. Empty for clients that omit the resource parameter. |
-| scope | [string](#string) |  | The scope string consented to, stored verbatim. Empty means no scope was requested. |
+| scope | [string](#string) |  | The single mode consented to, normalized from the client&#39;s requested scope set to its maximum. Empty means no scope was requested. |
 
 
 

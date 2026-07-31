@@ -72,3 +72,34 @@ func TestProtectedResourceMetadataMatchesRequestedResource(t *testing.T) {
 		})
 	}
 }
+
+// TestDiscoveryOmitsScopesSupported is a containment test, not a feature test.
+//
+// P1a persists and echoes the consented scope but nothing enforces it yet: the
+// access token is still a generic bearer the whole API accepts. Advertising
+// `scopes_supported` would invite clients to request a mode and then rely on the
+// echoed `scope` as a guarantee the server does not yet keep — the same
+// "read-only is a label, not a boundary" failure this project exists to remove.
+//
+// So the vocabulary stays undiscoverable until P1b enforces it. Both this
+// document and the /mcp WWW-Authenticate challenge (see the MCP server's own
+// test) must stay silent about scopes, and either may start advertising them
+// only in the change that lands enforcement.
+func TestDiscoveryOmitsScopesSupported(t *testing.T) {
+	s := &Service{profile: &config.Profile{ExternalURL: "https://bb.example.com"}}
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/.well-known/oauth-authorization-server", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	require.NoError(t, s.handleDiscovery(c))
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	var raw map[string]any
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &raw))
+	require.NotContains(t, raw, "scopes_supported",
+		"advertising the scope vocabulary before P1b enforces it would let a client rely on a mode the server does not honor; add this only alongside enforcement")
+	require.NotContains(t, rec.Body.String(), "mcp:read",
+		"no scope token may leak into discovery through any other field")
+}

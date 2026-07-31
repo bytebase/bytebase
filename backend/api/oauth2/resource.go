@@ -32,18 +32,21 @@ const externalURLSetupError = "MCP OAuth requires a configured external URL. Sta
 // site; every other validation failure is a client error.
 var errExternalURLNotConfigured = errors.New("no configured external URL to validate the resource against")
 
-// knownScopes is the P1a scope vocabulary: one scope per predefined permission
-// set. P1a persists and echoes the consented scope; enforcement is P1b, and the
-// consent-time picker that lets a user choose between them lands with it. Until
-// then an unknown scope is rejected rather than silently dropped, so a client
-// never believes it holds something we did not grant.
-var knownScopes = []string{"mcp:read-only", "mcp:read-write"}
+// scopeLadder is the P1a scope vocabulary — one scope per predefined permission
+// set — ordered narrowest to widest. Vocabulary per proposal v2 §4; the
+// Metadata-only tier is deferred, so there are two rungs.
+//
+// The scopes are tiers rather than additive permissions, which is why a request
+// naming several of them reduces to the highest one instead of their union. P1a
+// persists and echoes the selected mode; enforcement is P1b, and the consent-time
+// picker that lets a user choose below the requested maximum lands with it.
+var scopeLadder = []string{"mcp:read-only", "mcp:read-write"}
 
 // grantParams is the validated resource/scope pair consented for one grant.
 type grantParams struct {
 	// resource is canonical (see canonicalizeResourceURI) or empty.
 	resource string
-	// scope is the client's scope string, stored verbatim, or empty.
+	// scope is the single mode the requested scope set resolved to, or empty.
 	scope string
 }
 
@@ -107,11 +110,12 @@ func (s *Service) parseGrantParams(ctx context.Context, values url.Values) (gran
 	if err != nil {
 		return grantParams{}, &oauth2Failure{code: "invalid_target", description: err.Error()}
 	}
-	scope, err := singleValue(values, "scope")
+	requestedScope, err := singleValue(values, "scope")
 	if err != nil {
 		return grantParams{}, &oauth2Failure{code: "invalid_scope", description: err.Error()}
 	}
-	if err := validateScope(scope); err != nil {
+	scope, err := canonicalizeScope(requestedScope)
+	if err != nil {
 		return grantParams{}, &oauth2Failure{code: "invalid_scope", description: err.Error()}
 	}
 	if resource == "" {
@@ -156,7 +160,7 @@ func checkConsentedResource(values url.Values, consented string) *oauth2Failure 
 	if err != nil {
 		return &oauth2Failure{code: "invalid_target", description: err.Error()}
 	}
-	// Codes and refresh tokens issued before 3.21.5 read back with no resource,
+	// Codes and refresh tokens issued before 3.22.1 read back with no resource,
 	// and RFC 8707 clients send `resource` on every exchange *and* every refresh.
 	// Rejecting it would fail each in-flight code and every live session at its
 	// next refresh, for up to a refresh-token lifetime after upgrade. Accept it
@@ -182,23 +186,35 @@ func checkConsentedResource(values url.Values, consented string) *oauth2Failure 
 // authority, and changing what a session may do happens on the grant page, never
 // by asking for a different scope at the token endpoint.
 //
+// The requested value is normalized the same way consent normalized it, so a
+// client that keeps sending its full requested set matches the single mode that
+// set resolved to.
+//
 // A grant with no stored scope is treated the same way as one with no stored
 // resource, and for the same upgrade reason: RFC 6749 §6 lets a client send
-// `scope` on a refresh, so a pre-3.21.5 grant would start failing its refreshes.
-// The requested value is ignored rather than adopted, so the grant keeps the
-// (empty) scope it was issued with.
+// `scope` on a refresh, so a pre-3.22.1 grant would start failing its refreshes.
+// That case returns before normalization on purpose — a legacy client may be
+// sending a custom scope that was simply ignored before this change, and running
+// it through the vocabulary check would turn "ignored" into "rejected".
 func checkConsentedScope(values url.Values, consented string) *oauth2Failure {
 	requested, err := singleValue(values, "scope")
 	if err != nil {
 		return &oauth2Failure{code: "invalid_scope", description: err.Error()}
 	}
-	if requested == "" || requested == consented || consented == "" {
+	if requested == "" || consented == "" {
 		return nil
 	}
-	return &oauth2Failure{
-		code:        "invalid_scope",
-		description: "scope cannot be changed when exchanging or refreshing a token; reconnect to authorize a different scope",
+	canonical, err := canonicalizeScope(requested)
+	if err != nil {
+		return &oauth2Failure{code: "invalid_scope", description: err.Error()}
 	}
+	if canonical != consented {
+		return &oauth2Failure{
+			code:        "invalid_scope",
+			description: "scope cannot be changed when exchanging or refreshing a token; reconnect to authorize a different scope",
+		}
+	}
+	return nil
 }
 
 // singleValue returns the sole value of name, "" when absent, and an error when
@@ -278,25 +294,30 @@ func canonicalizeResourceURI(resource string) (string, error) {
 	return scheme + "://" + strings.ToLower(u.Host) + strings.TrimSuffix(u.EscapedPath(), "/"), nil
 }
 
-// validateScope accepts an empty scope (the common case today — no client asks
-// for one) and otherwise requires exactly one token from the known vocabulary.
+// canonicalizeScope reduces a requested scope set to the one mode a grant can be
+// bound to: the requested maximum, the highest rung named. Returns "" for an
+// empty or whitespace-only request.
 //
-// Exactly one, not a set of them: a grant is bound to a single predefined
-// permission set (proposal v2 §4 — "consent binds the grant to a predefined
-// set", stored as one set reference). The scopes are a ladder, not additive
-// permissions, so `mcp:read-only mcp:read-write` names no set that can be
-// resolved. Accepting it would persist and echo a scope string with no
-// representation in the model P1b enforces against.
-func validateScope(scope string) error {
-	tokens := strings.Fields(scope)
-	if len(tokens) == 0 {
-		return nil
+// A set is normal input, not a malformed request. The v1 bootstrap has the 401
+// challenge advertise every mode — it is pre-authentication, so it cannot be
+// capped by a workspace ceiling — and clients therefore ask for everything; the
+// consent picker then selects a mode at or below that maximum (research doc §5.4,
+// "Scope normalization"). Two values are tracked separately: the client's
+// requested maximum, which this produces, and the durable consented grant, which
+// is always exactly one mode.
+//
+// Unknown tokens are rejected rather than dropped, so a client never believes it
+// holds something we did not grant.
+func canonicalizeScope(scope string) (string, error) {
+	canonical, highest := "", -1
+	for token := range strings.FieldsSeq(scope) {
+		rung := slices.Index(scopeLadder, token)
+		if rung < 0 {
+			return "", errors.Errorf("unknown scope %q; supported scopes are %s", token, strings.Join(scopeLadder, " "))
+		}
+		if rung > highest {
+			canonical, highest = token, rung
+		}
 	}
-	if len(tokens) > 1 {
-		return errors.Errorf("scope must name exactly one permission set, got %d tokens; supported scopes are %s", len(tokens), strings.Join(knownScopes, " "))
-	}
-	if !slices.Contains(knownScopes, tokens[0]) {
-		return errors.Errorf("unknown scope %q; supported scopes are %s", tokens[0], strings.Join(knownScopes, " "))
-	}
-	return nil
+	return canonical, nil
 }
