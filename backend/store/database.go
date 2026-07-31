@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/google/cel-go/cel"
@@ -258,12 +257,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 
 // CreateDatabaseDefault creates a database discovered by schema sync.
 func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-	ownership, err := lockDatabaseOwnership(ctx, tx, create.InstanceID, create.DatabaseName, create.ProjectID, true)
+	ownership, err := s.getDatabaseOwnership(ctx, create.InstanceID, create.DatabaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -279,11 +273,8 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build sql")
 	}
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 	s.removeDatabaseCache(ctx, create.InstanceID, create.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
@@ -295,12 +286,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	if err != nil {
 		return nil, err
 	}
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-	ownership, err := lockDatabaseOwnership(ctx, tx, create.InstanceID, create.DatabaseName, create.ProjectID, true)
+	ownership, err := s.getDatabaseOwnership(ctx, create.InstanceID, create.DatabaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -322,11 +308,8 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build sql")
 	}
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 	s.removeDatabaseCache(ctx, create.InstanceID, create.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
@@ -334,16 +317,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 
 // UpdateDatabase updates a database.
 func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage) (*DatabaseMessage, error) {
-	requestedProjectID := ""
-	if patch.ProjectID != nil {
-		requestedProjectID = *patch.ProjectID
-	}
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-	ownership, err := lockDatabaseOwnership(ctx, tx, patch.InstanceID, patch.DatabaseName, requestedProjectID, false)
+	ownership, err := s.getDatabaseOwnership(ctx, patch.InstanceID, patch.DatabaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -390,11 +364,8 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build sql")
 	}
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 	s.removeDatabaseCache(ctx, patch.InstanceID, patch.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &patch.InstanceID, DatabaseName: &patch.DatabaseName, ShowDeleted: true})
@@ -421,7 +392,7 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 	}
 	where := qb.Q()
 	if v := update.FindByEnvironmentID; v != nil {
-		where.Or("environment = ?", *v)
+		where.Or("db.environment = ?", *v)
 	}
 	if len(databases) > 0 {
 		instances, names := make([]string, 0, len(databases)), make([]string, 0, len(databases))
@@ -436,44 +407,72 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 	if update.Workspace != "" {
 		where.And("db.instance IN (SELECT resource_id FROM instance WHERE workspace = ?)", update.Workspace)
 	}
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(err, "failed to begin transaction")
+
+	validOwnership := qb.Q().Space("TRUE")
+	if update.ProjectID != nil {
+		validOwnership = qb.Q().Space(`
+			NOT EXISTS (
+				SELECT 1 FROM targets
+				WHERE instance_project IS NOT NULL
+				  AND (project <> instance_project OR instance_project <> ?)
+			)
+		`, *update.ProjectID)
 	}
-	defer tx.Rollback()
-	locked, err := lockDatabasesForBatchUpdate(ctx, tx, where)
-	if err != nil {
-		return err
-	}
-	if len(locked) == 0 {
-		return tx.Commit()
-	}
-	batchOwnership, err := lockBatchDatabaseOwnership(ctx, tx, locked, update.ProjectID)
-	if err != nil {
-		return err
-	}
-	for _, database := range locked {
-		instanceProject := batchOwnership.instanceProjects[database.InstanceID]
-		if instanceProject != nil && (database.ProjectID != *instanceProject || update.ProjectID != nil && *update.ProjectID != *instanceProject) {
-			return common.Errorf(common.Invalid, "database %s on project instance %s must belong to project %s", common.FormatDatabase(database.InstanceID, database.DatabaseName), database.InstanceID, *instanceProject)
-		}
-	}
-	instances, names := make([]string, 0, len(locked)), make([]string, 0, len(locked))
-	for _, database := range locked {
-		instances, names = append(instances, database.InstanceID), append(names, database.DatabaseName)
-	}
-	q := qb.Q().Space("UPDATE db SET ? WHERE (instance, name) IN (SELECT * FROM unnest(?::TEXT[], ?::TEXT[]))", set, instances, names)
+
+	q := qb.Q().Space(`
+		WITH targets AS MATERIALIZED (
+			SELECT db.instance, db.name, db.project, instance.project AS instance_project
+			FROM db
+			JOIN instance ON instance.resource_id = db.instance
+			WHERE ?
+		),
+		validation AS (
+			SELECT ? AS valid
+		),
+		updated AS (
+			UPDATE db
+			SET ?
+			FROM targets, validation
+			WHERE validation.valid
+			  AND db.instance = targets.instance
+			  AND db.name = targets.name
+			RETURNING db.instance, db.name
+		)
+		SELECT validation.valid, updated.instance, updated.name
+		FROM validation
+		LEFT JOIN updated ON TRUE
+	`, where, validOwnership, set)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build sql")
 	}
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return err
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	if err != nil {
+		return errors.Wrap(err, "failed to update databases")
 	}
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "failed to commit transaction")
+	defer rows.Close()
+
+	var updated []*DatabaseMessage
+	for rows.Next() {
+		var valid bool
+		var instanceID, databaseName sql.NullString
+		if err := rows.Scan(&valid, &instanceID, &databaseName); err != nil {
+			return errors.Wrap(err, "failed to scan updated database")
+		}
+		if !valid {
+			return common.Errorf(common.Invalid, "cannot move a project instance database to another project")
+		}
+		if instanceID.Valid && databaseName.Valid {
+			updated = append(updated, &DatabaseMessage{
+				InstanceID:   instanceID.String,
+				DatabaseName: databaseName.String,
+			})
+		}
 	}
-	for _, database := range locked {
+	if err := rows.Err(); err != nil {
+		return errors.Wrap(err, "failed to update databases")
+	}
+	for _, database := range updated {
 		s.removeDatabaseCache(ctx, database.InstanceID, database.DatabaseName)
 	}
 	return nil
@@ -486,100 +485,30 @@ type databaseOwnership struct {
 	instanceProject *string
 }
 
-func lockDatabaseOwnership(ctx context.Context, tx *sql.Tx, instanceID, databaseName, requestedProjectID string, inheritInstanceProject bool) (*databaseOwnership, error) {
+func (s *Store) getDatabaseOwnership(ctx context.Context, instanceID, databaseName string) (*databaseOwnership, error) {
 	ownership := &databaseOwnership{}
-	if err := tx.QueryRowContext(ctx, `
-		SELECT project, metadata FROM db
-		WHERE instance = $1 AND name = $2
-		FOR UPDATE`, instanceID, databaseName).Scan(&ownership.projectID, &ownership.metadata); err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.Wrapf(err, "failed to lock database %s", common.FormatDatabase(instanceID, databaseName))
-		}
-	} else {
-		ownership.exists = true
-	}
-
+	var databaseProject sql.NullString
 	var instanceProject sql.NullString
-	var instanceDeleted bool
-	if err := tx.QueryRowContext(ctx, `
-		SELECT project, deleted FROM instance
-		WHERE resource_id = $1
-		FOR UPDATE`, instanceID).Scan(&instanceProject, &instanceDeleted); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, `
+		SELECT db.project, db.metadata, instance.project
+		FROM instance
+		LEFT JOIN db ON db.instance = instance.resource_id AND db.name = $2
+		WHERE instance.resource_id = $1
+	`, instanceID, databaseName).Scan(&databaseProject, &ownership.metadata, &instanceProject); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, common.Errorf(common.NotFound, "instance %s not found", instanceID)
 		}
-		return nil, errors.Wrapf(err, "failed to lock instance %s", instanceID)
+		return nil, errors.Wrapf(err, "failed to get database ownership for instance %s", instanceID)
 	}
-	if instanceDeleted {
-		return nil, common.Errorf(common.NotFound, "instance %s is deleted", instanceID)
+	if databaseProject.Valid {
+		ownership.exists = true
+		ownership.projectID = databaseProject.String
 	}
 	if instanceProject.Valid {
 		projectID := instanceProject.String
 		ownership.instanceProject = &projectID
-		if inheritInstanceProject {
-			requestedProjectID = instanceProject.String
-		}
-	}
-
-	projectIDs := []string{requestedProjectID}
-	if ownership.exists {
-		projectIDs = append(projectIDs, ownership.projectID)
-	}
-	if ownership.instanceProject != nil {
-		projectIDs = append(projectIDs, *ownership.instanceProject)
-	}
-	if err := lockDatabaseProjects(ctx, tx, projectIDs); err != nil {
-		return nil, err
 	}
 	return ownership, nil
-}
-
-func lockDatabaseProjects(ctx context.Context, tx *sql.Tx, projectIDs []string) error {
-	projectSet := make(map[string]struct{})
-	for _, projectID := range projectIDs {
-		if projectID != "" {
-			projectSet[projectID] = struct{}{}
-		}
-	}
-	if len(projectSet) == 0 {
-		return common.Errorf(common.Invalid, "database project cannot be empty")
-	}
-	projectIDs = make([]string, 0, len(projectSet))
-	for projectID := range projectSet {
-		projectIDs = append(projectIDs, projectID)
-	}
-	slices.Sort(projectIDs)
-	rows, err := tx.QueryContext(ctx, `
-		SELECT resource_id, deleted FROM project
-		WHERE resource_id = ANY($1)
-		ORDER BY resource_id
-		FOR UPDATE`, projectIDs)
-	if err != nil {
-		return errors.Wrap(err, "failed to lock database projects")
-	}
-	defer rows.Close()
-	projectDeleted := make(map[string]bool, len(projectIDs))
-	for rows.Next() {
-		var projectID string
-		var deleted bool
-		if err := rows.Scan(&projectID, &deleted); err != nil {
-			return errors.Wrap(err, "failed to scan database project")
-		}
-		projectDeleted[projectID] = deleted
-	}
-	if err := rows.Err(); err != nil {
-		return errors.Wrap(err, "failed to lock database projects")
-	}
-	for _, projectID := range projectIDs {
-		deleted, ok := projectDeleted[projectID]
-		if !ok {
-			return common.Errorf(common.NotFound, "project %s not found", projectID)
-		}
-		if deleted {
-			return common.Errorf(common.NotFound, "project %s is deleted", projectID)
-		}
-	}
-	return nil
 }
 
 func (ownership *databaseOwnership) projectForDefaultCreate(requestedProjectID string) (string, error) {
@@ -620,95 +549,6 @@ func (ownership *databaseOwnership) projectForUpdate(requestedProjectID *string)
 		return "", common.Errorf(common.Invalid, "database on project instance must belong to project %s", *ownership.instanceProject)
 	}
 	return projectID, nil
-}
-
-func lockDatabasesForBatchUpdate(ctx context.Context, tx *sql.Tx, where *qb.Query) ([]*DatabaseMessage, error) {
-	q := qb.Q().Space("SELECT db.instance, db.name, db.project FROM db WHERE ? ORDER BY db.instance, db.name FOR UPDATE", where)
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to build database lock query")
-	}
-	rows, err := tx.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to lock databases")
-	}
-	defer rows.Close()
-	var databases []*DatabaseMessage
-	for rows.Next() {
-		database := &DatabaseMessage{}
-		if err := rows.Scan(&database.InstanceID, &database.DatabaseName, &database.ProjectID); err != nil {
-			return nil, errors.Wrap(err, "failed to scan locked database")
-		}
-		databases = append(databases, database)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "failed to lock databases")
-	}
-	return databases, nil
-}
-
-type batchDatabaseOwnership struct {
-	instanceProjects map[string]*string
-}
-
-func lockBatchDatabaseOwnership(ctx context.Context, tx *sql.Tx, databases []*DatabaseMessage, requestedProjectID *string) (*batchDatabaseOwnership, error) {
-	instanceSet := make(map[string]struct{})
-	for _, database := range databases {
-		instanceSet[database.InstanceID] = struct{}{}
-	}
-	instanceIDs := make([]string, 0, len(instanceSet))
-	for instanceID := range instanceSet {
-		instanceIDs = append(instanceIDs, instanceID)
-	}
-	slices.Sort(instanceIDs)
-	rows, err := tx.QueryContext(ctx, `
-		SELECT resource_id, project, deleted FROM instance
-		WHERE resource_id = ANY($1)
-		ORDER BY resource_id
-		FOR UPDATE`, instanceIDs)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to lock database instances")
-	}
-	defer rows.Close()
-	instanceProjects := make(map[string]*string, len(instanceIDs))
-	projectIDs := make([]string, 0, len(databases)*2+1)
-	for _, database := range databases {
-		projectIDs = append(projectIDs, database.ProjectID)
-	}
-	if requestedProjectID != nil {
-		projectIDs = append(projectIDs, *requestedProjectID)
-	}
-	for rows.Next() {
-		var instanceID string
-		var projectID sql.NullString
-		var deleted bool
-		if err := rows.Scan(&instanceID, &projectID, &deleted); err != nil {
-			return nil, errors.Wrap(err, "failed to scan locked database instance")
-		}
-		if deleted {
-			return nil, common.Errorf(common.NotFound, "instance %s is deleted", instanceID)
-		}
-		if projectID.Valid {
-			instanceProjectID := projectID.String
-			instanceProjects[instanceID] = &instanceProjectID
-			projectIDs = append(projectIDs, projectID.String)
-		} else {
-			instanceProjects[instanceID] = nil
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "failed to lock database instances")
-	}
-	if err := rows.Close(); err != nil {
-		return nil, errors.Wrap(err, "failed to close database instance locks")
-	}
-	if len(instanceProjects) != len(instanceIDs) {
-		return nil, common.Errorf(common.NotFound, "database instance not found")
-	}
-	if err := lockDatabaseProjects(ctx, tx, projectIDs); err != nil {
-		return nil, err
-	}
-	return &batchDatabaseOwnership{instanceProjects: instanceProjects}, nil
 }
 
 func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {

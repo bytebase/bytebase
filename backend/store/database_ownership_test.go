@@ -128,7 +128,7 @@ func getDatabaseProject(ctx context.Context, t *testing.T, s *store.Store, insta
 	return database.ProjectID
 }
 
-func TestProjectInstanceDatabaseUpsertRequiresActiveOwnerForNewDatabase(t *testing.T) {
+func TestProjectInstanceDatabaseUpsertAllowsArchivedOwner(t *testing.T) {
 	fixture := newProjectDeletionLockOrderFixture(t, `
 		ALTER TABLE instance ADD COLUMN IF NOT EXISTS project TEXT REFERENCES project(resource_id);
 		INSERT INTO project (resource_id, workspace, name, deleted)
@@ -137,16 +137,17 @@ func TestProjectInstanceDatabaseUpsertRequiresActiveOwnerForNewDatabase(t *testi
 			VALUES ('project-instance', 'default', 'project-b');
 	`)
 
-	_, err := fixture.store.UpsertDatabase(fixture.ctx, &store.DatabaseMessage{
+	database, err := fixture.store.UpsertDatabase(fixture.ctx, &store.DatabaseMessage{
 		InstanceID:   "project-instance",
 		DatabaseName: "new-database",
 		ProjectID:    "project-b",
 		Metadata:     &storepb.DatabaseMetadata{},
 	})
-	require.Error(t, err)
+	require.NoError(t, err)
+	require.Equal(t, "project-b", database.ProjectID)
 }
 
-func TestProjectInstanceDatabaseUpdateRejectsArchivedProject(t *testing.T) {
+func TestProjectInstanceDatabaseUpdateAllowsArchivedOwner(t *testing.T) {
 	fixture := newProjectDeletionLockOrderFixture(t, `
 		ALTER TABLE instance ADD COLUMN IF NOT EXISTS project TEXT REFERENCES project(resource_id);
 		INSERT INTO project (resource_id, workspace, name, deleted)
@@ -158,11 +159,11 @@ func TestProjectInstanceDatabaseUpdateRejectsArchivedProject(t *testing.T) {
 	`)
 
 	deleted := true
-	_, err := fixture.store.UpdateDatabase(fixture.ctx, &store.UpdateDatabaseMessage{
+	database, err := fixture.store.UpdateDatabase(fixture.ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   "project-instance",
 		DatabaseName: "existing-database",
 		Deleted:      &deleted,
 	})
-	require.Error(t, err)
-	require.Equal(t, "project-b", getDatabaseProject(fixture.ctx, t, fixture.store, "project-instance", "existing-database"))
+	require.NoError(t, err)
+	require.True(t, database.Deleted)
 }
