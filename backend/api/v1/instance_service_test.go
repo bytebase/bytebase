@@ -23,44 +23,6 @@ func TestValidateExtraConnectionParametersRejectsTiDBAllowAllFiles(t *testing.T)
 	require.Contains(t, err.Error(), "allowAllFiles")
 }
 
-func TestGetInstanceNameScope(t *testing.T) {
-	tests := []struct {
-		name       string
-		instanceID string
-		projectID  *string
-		wantErr    bool
-	}{
-		{name: "workspace instance", instanceID: "instance-a"},
-		{name: "project instance", instanceID: "instance-a", projectID: new("project-a")},
-		{name: "malformed instance", wantErr: true},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			name := "instances/instance-a"
-			if test.projectID != nil {
-				name = "projects/project-a/instances/instance-a"
-			}
-			if test.wantErr {
-				name = "projects/project-a/instances"
-			}
-			instanceID, projectID, err := getInstanceNameScope(name)
-			if test.wantErr {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-			require.Equal(t, test.instanceID, instanceID)
-			require.Equal(t, test.projectID, projectID)
-			parent := instanceCollectionParent(projectID)
-			if projectID == nil {
-				require.Nil(t, parent)
-			} else {
-				require.Equal(t, "projects/"+*projectID, *parent)
-			}
-		})
-	}
-}
-
 func TestValidateProjectInstanceListFilter(t *testing.T) {
 	projectID := "project-a"
 	tests := []struct {

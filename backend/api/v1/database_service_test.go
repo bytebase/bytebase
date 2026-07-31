@@ -98,55 +98,6 @@ func TestShouldDiffSchemaViaSDL(t *testing.T) {
 	}
 }
 
-func TestParseDatabaseResourceName(t *testing.T) {
-	tests := []struct {
-		name       string
-		resource   string
-		projectID  *string
-		instanceID string
-		databaseID string
-		wantErr    bool
-	}{
-		{
-			name:       "workspace instance database",
-			resource:   "instances/workspace-instance/databases/app",
-			instanceID: "workspace-instance",
-			databaseID: "app",
-		},
-		{
-			name:       "project instance database",
-			resource:   "projects/project-a/instances/project-instance/databases/app",
-			projectID:  ptrValue("project-a"),
-			instanceID: "project-instance",
-			databaseID: "app",
-		},
-		{
-			name:     "partial project hierarchy is rejected",
-			resource: "projects/project-a/instances/project-instance",
-			wantErr:  true,
-		},
-		{
-			name:     "extra suffix is rejected",
-			resource: "projects/project-a/instances/project-instance/databases/app/metadata",
-			wantErr:  true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := parseDatabaseResourceName(test.resource)
-			if test.wantErr {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-			require.Equal(t, test.projectID, got.projectID)
-			require.Equal(t, test.instanceID, got.instanceID)
-			require.Equal(t, test.databaseID, got.databaseID)
-		})
-	}
-}
-
 func TestFormatDatabaseResourceName(t *testing.T) {
 	database := &store.DatabaseMessage{InstanceID: "instance-a", DatabaseName: "app"}
 	require.Equal(t, "instances/instance-a/databases/app", formatDatabaseResourceName(&store.InstanceMessage{ResourceID: "instance-a"}, database))

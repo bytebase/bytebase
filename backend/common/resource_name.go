@@ -136,6 +136,50 @@ func GetEnvironmentID(name string) (string, error) {
 	return tokens[0], nil
 }
 
+// GetInstanceResourceName gets the IDs from a workspace- or project-scoped instance resource name.
+func GetInstanceResourceName(name string) (*string, string, error) {
+	if projectID, instanceID, err := GetProjectIDInstanceID(name); err == nil {
+		return &projectID, instanceID, nil
+	}
+	if instanceID, err := GetInstanceID(name); err == nil {
+		return nil, instanceID, nil
+	}
+	return nil, "", errors.Errorf("invalid instance name %q", name)
+}
+
+// GetDatabaseResourceName gets the IDs from a workspace- or project-scoped database resource name.
+func GetDatabaseResourceName(name string) (*string, string, string, error) {
+	if instanceID, databaseID, err := GetInstanceDatabaseID(name); err == nil {
+		return nil, instanceID, databaseID, nil
+	}
+	projectID, instanceID, databaseID, err := GetProjectIDInstanceDatabaseID(name)
+	if err != nil {
+		return nil, "", "", err
+	}
+	return &projectID, instanceID, databaseID, nil
+}
+
+// GetDatabaseResourceNameWithSuffix gets the IDs from a database resource name with the given suffix.
+func GetDatabaseResourceNameWithSuffix(name, suffix string) (*string, string, string, error) {
+	databaseName, err := TrimSuffix(name, suffix)
+	if err != nil {
+		return nil, "", "", err
+	}
+	return GetDatabaseResourceName(databaseName)
+}
+
+// GetDatabaseChangelogResourceName gets the IDs from a workspace- or project-scoped changelog resource name.
+func GetDatabaseChangelogResourceName(name string) (*string, string, string, string, error) {
+	if instanceID, databaseID, changelogID, err := GetInstanceDatabaseChangelogID(name); err == nil {
+		return nil, instanceID, databaseID, changelogID, nil
+	}
+	projectID, instanceID, databaseID, changelogID, err := GetProjectIDInstanceDatabaseChangelogID(name)
+	if err != nil {
+		return nil, "", "", "", err
+	}
+	return &projectID, instanceID, databaseID, changelogID, nil
+}
+
 // GetInstanceID returns the instance ID from a resource name.
 func GetInstanceID(name string) (string, error) {
 	// the instance request should be instances/{instance-id}

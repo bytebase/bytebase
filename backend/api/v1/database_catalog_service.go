@@ -27,11 +27,17 @@ func NewDatabaseCatalogService(store *store.Store) *DatabaseCatalogService {
 	}
 }
 
-func (s *DatabaseCatalogService) findDatabaseForResource(ctx context.Context, resource *databaseResourceName, showDeleted bool) (*store.DatabaseMessage, *store.InstanceMessage, error) {
+func (s *DatabaseCatalogService) findDatabaseForResource(
+	ctx context.Context,
+	projectID *string,
+	instanceID,
+	databaseID string,
+	showDeleted bool,
+) (*store.DatabaseMessage, *store.InstanceMessage, error) {
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		Workspace:    common.GetWorkspaceIDFromContext(ctx),
-		InstanceID:   &resource.instanceID,
-		DatabaseName: &resource.databaseID,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseID,
 		ShowDeleted:  showDeleted,
 	})
 	if err != nil || database == nil {
@@ -39,30 +45,30 @@ func (s *DatabaseCatalogService) findDatabaseForResource(ctx context.Context, re
 	}
 	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
-		ResourceID: &resource.instanceID,
+		ResourceID: &instanceID,
 	})
 	if err != nil {
 		return nil, nil, err
 	}
 	if instance == nil {
-		return nil, nil, errors.Errorf("instance %q not found", resource.instanceID)
+		return nil, nil, errors.Errorf("instance %q not found", instanceID)
 	}
-	if resource.projectID == nil && instance.ProjectID != nil {
-		return nil, nil, errors.Errorf("instance %q must be addressed through its project", resource.instanceID)
+	if projectID == nil && instance.ProjectID != nil {
+		return nil, nil, errors.Errorf("instance %q must be addressed through its project", instanceID)
 	}
-	if resource.projectID != nil && (instance.ProjectID == nil || *resource.projectID != *instance.ProjectID) {
-		return nil, nil, errors.Errorf("project in database resource name does not own instance %q", resource.instanceID)
+	if projectID != nil && (instance.ProjectID == nil || *projectID != *instance.ProjectID) {
+		return nil, nil, errors.Errorf("project in database resource name does not own instance %q", instanceID)
 	}
 	return database, instance, nil
 }
 
 // GetDatabaseCatalog gets a database catalog.
 func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, req *connect.Request[v1pb.GetDatabaseCatalogRequest]) (*connect.Response[v1pb.DatabaseCatalog], error) {
-	resource, err := parseDatabaseResourceNameWithSuffix(req.Msg.Name, common.CatalogSuffix)
+	projectID, instanceID, databaseID, err := common.GetDatabaseResourceNameWithSuffix(req.Msg.Name, common.CatalogSuffix)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", req.Msg.Name))
 	}
-	database, instance, err := s.findDatabaseForResource(ctx, resource, true)
+	database, instance, err := s.findDatabaseForResource(ctx, projectID, instanceID, databaseID, true)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
 	}
@@ -88,11 +94,11 @@ func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, req *co
 
 // UpdateDatabaseCatalog updates a database catalog.
 func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req *connect.Request[v1pb.UpdateDatabaseCatalogRequest]) (*connect.Response[v1pb.DatabaseCatalog], error) {
-	resource, err := parseDatabaseResourceNameWithSuffix(req.Msg.GetCatalog().GetName(), common.CatalogSuffix)
+	projectID, instanceID, databaseID, err := common.GetDatabaseResourceNameWithSuffix(req.Msg.GetCatalog().GetName(), common.CatalogSuffix)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", req.Msg.GetCatalog().GetName()))
 	}
-	database, instance, err := s.findDatabaseForResource(ctx, resource, false)
+	database, instance, err := s.findDatabaseForResource(ctx, projectID, instanceID, databaseID, false)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
 	}

@@ -16,6 +16,146 @@ func TestGetInstanceDatabaseID(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestGetInstanceResourceName(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		wantProjectID  *string
+		wantInstanceID string
+		wantErr        bool
+	}{
+		{
+			name:           "instances/instance-1",
+			wantInstanceID: "instance-1",
+		},
+		{
+			name:           "projects/project-1/instances/instance-1",
+			wantProjectID:  new("project-1"),
+			wantInstanceID: "instance-1",
+		},
+		{
+			name:    "projects/project-1/instances",
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			projectID, instanceID, err := GetInstanceResourceName(test.name)
+			if test.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, test.wantProjectID, projectID)
+			require.Equal(t, test.wantInstanceID, instanceID)
+		})
+	}
+}
+
+func TestGetDatabaseResourceName(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		wantProjectID  *string
+		wantInstanceID string
+		wantDatabaseID string
+		wantErr        bool
+	}{
+		{
+			name:           "instances/instance-1/databases/database-1",
+			wantInstanceID: "instance-1",
+			wantDatabaseID: "database-1",
+		},
+		{
+			name:           "projects/project-1/instances/instance-1/databases/database-1",
+			wantProjectID:  new("project-1"),
+			wantInstanceID: "instance-1",
+			wantDatabaseID: "database-1",
+		},
+		{
+			name:    "projects/project-1/instances/instance-1",
+			wantErr: true,
+		},
+		{
+			name:    "projects/project-1/instances/instance-1/databases/database-1/metadata",
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			projectID, instanceID, databaseID, err := GetDatabaseResourceName(test.name)
+			if test.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, test.wantProjectID, projectID)
+			require.Equal(t, test.wantInstanceID, instanceID)
+			require.Equal(t, test.wantDatabaseID, databaseID)
+		})
+	}
+}
+
+func TestGetDatabaseResourceNameWithSuffix(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		suffix         string
+		wantProjectID  *string
+		wantInstanceID string
+		wantDatabaseID string
+		wantErr        bool
+	}{
+		{
+			name:           "instances/instance-1/databases/database-1/metadata",
+			suffix:         MetadataSuffix,
+			wantInstanceID: "instance-1",
+			wantDatabaseID: "database-1",
+		},
+		{
+			name:           "projects/project-1/instances/instance-1/databases/database-1/metadata",
+			suffix:         MetadataSuffix,
+			wantProjectID:  new("project-1"),
+			wantInstanceID: "instance-1",
+			wantDatabaseID: "database-1",
+		},
+		{
+			name:    "instances/instance-1/databases/database-1/metadata",
+			suffix:  "/schema",
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name+test.suffix, func(t *testing.T) {
+			projectID, instanceID, databaseID, err := GetDatabaseResourceNameWithSuffix(test.name, test.suffix)
+			if test.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, test.wantProjectID, projectID)
+			require.Equal(t, test.wantInstanceID, instanceID)
+			require.Equal(t, test.wantDatabaseID, databaseID)
+		})
+	}
+}
+
+func TestGetDatabaseChangelogResourceName(t *testing.T) {
+	projectID, instanceID, databaseID, changelogID, err := GetDatabaseChangelogResourceName(
+		"instances/instance-1/databases/database-1/changelogs/changelog-1")
+	require.NoError(t, err)
+	require.Nil(t, projectID)
+	require.Equal(t, "instance-1", instanceID)
+	require.Equal(t, "database-1", databaseID)
+	require.Equal(t, "changelog-1", changelogID)
+
+	projectID, instanceID, databaseID, changelogID, err = GetDatabaseChangelogResourceName(
+		"projects/project-1/instances/instance-1/databases/database-1/changelogs/changelog-1")
+	require.NoError(t, err)
+	require.Equal(t, new("project-1"), projectID)
+	require.Equal(t, "instance-1", instanceID)
+	require.Equal(t, "database-1", databaseID)
+	require.Equal(t, "changelog-1", changelogID)
+
+	_, _, _, _, err = GetDatabaseChangelogResourceName(
+		"projects/project-1/instances/instance-1/databases/database-1/changelogs")
+	require.Error(t, err)
+}
+
 func TestWorkspaceInstanceResourceNames(t *testing.T) {
 	instance := FormatInstance("instance-1")
 	require.Equal(t, "instances/instance-1", instance)

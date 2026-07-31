@@ -334,7 +334,7 @@ func (s *InstanceService) ListInstanceDatabase(ctx context.Context, req *connect
 	var instanceMessage *store.InstanceMessage
 
 	if req.Msg.Instance != nil {
-		instanceID, projectID, err := getInstanceNameScope(req.Msg.Name)
+		projectID, instanceID, err := common.GetInstanceResourceName(req.Msg.Name)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
@@ -785,7 +785,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") && req.Msg.AllowMissing {
 			// When allow_missing is true and instance doesn't exist, create a new one
-			instanceID, projectID, ierr := getInstanceNameScope(req.Msg.Instance.Name)
+			projectID, instanceID, ierr := common.GetInstanceResourceName(req.Msg.Instance.Name)
 			if ierr != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, ierr)
 			}
@@ -1405,7 +1405,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 }
 
 func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (*store.InstanceMessage, error) {
-	instanceID, projectID, err := getInstanceNameScope(name)
+	projectID, instanceID, err := common.GetInstanceResourceName(name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -1425,17 +1425,6 @@ func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (
 	}
 
 	return instance, nil
-}
-
-// getInstanceNameScope returns the instance ID and its exact collection scope.
-func getInstanceNameScope(name string) (string, *string, error) {
-	if projectID, instanceID, err := common.GetProjectIDInstanceID(name); err == nil {
-		return instanceID, &projectID, nil
-	}
-	if instanceID, err := common.GetInstanceID(name); err == nil {
-		return instanceID, nil, nil
-	}
-	return "", nil, errors.Errorf("invalid instance name %q", name)
 }
 
 func instanceCollectionParent(projectID *string) *string {
