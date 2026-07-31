@@ -12,13 +12,12 @@ import (
 )
 
 const (
-	cleanupInterval              = 1 * time.Hour
-	staleDetectionInterval       = 30 * time.Second
-	stalenessThreshold           = 1 * time.Minute
-	planCheckRunTimeout          = 10 * time.Minute
-	heartbeatRetentionPeriod     = 1 * time.Hour
-	exportArchiveRetentionPeriod = 24 * time.Hour
-	oauth2ClientRetentionPeriod  = 30 * 24 * time.Hour // 30 days of inactivity
+	cleanupInterval             = 1 * time.Hour
+	staleDetectionInterval      = 30 * time.Second
+	stalenessThreshold          = 1 * time.Minute
+	planCheckRunTimeout         = 10 * time.Minute
+	heartbeatRetentionPeriod    = 1 * time.Hour
+	oauth2ClientRetentionPeriod = 30 * 24 * time.Hour // 30 days of inactivity
 )
 
 // DataCleaner periodically cleans up expired data from the database.
@@ -76,7 +75,6 @@ func (c *DataCleaner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (c *DataCleaner) cleanup(ctx context.Context) {
-	c.cleanupExportArchives(ctx)
 	c.cleanupOAuth2Data(ctx)
 	c.cleanupWebRefreshTokens(ctx)
 	c.cleanupEmailVerificationCodes(ctx)
@@ -114,17 +112,6 @@ func (c *DataCleaner) cleanupStaleHeartbeats(ctx context.Context) {
 	}
 	if rowsAffected > 0 {
 		slog.Info("Cleaned up stale replica heartbeats", slog.Int64("count", rowsAffected))
-	}
-}
-
-func (c *DataCleaner) cleanupExportArchives(ctx context.Context) {
-	rowsAffected, err := c.store.DeleteExpiredExportArchivesAll(ctx, exportArchiveRetentionPeriod)
-	if err != nil {
-		slog.Error("Failed to clean up expired export archives", log.BBError(err))
-		return
-	}
-	if rowsAffected > 0 {
-		slog.Info("Cleaned up expired export archives", slog.Int64("count", rowsAffected))
 	}
 }
 

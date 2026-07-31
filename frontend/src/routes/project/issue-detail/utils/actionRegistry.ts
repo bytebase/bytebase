@@ -1,5 +1,4 @@
 import type { TFunction } from "i18next";
-import { first, orderBy } from "lodash-es";
 import { extractUserEmail } from "@/stores";
 import {
   ApprovalStatus,
@@ -7,24 +6,14 @@ import {
   State,
 } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  Issue_Approver_Status,
-  Issue_Type,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  Task_Status,
-  Task_Type,
-  TaskRun_ExportArchiveStatus,
-  TaskRun_Status,
-} from "@/types/proto-es/v1/rollout_service_pb";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
-  extractTaskRunUID,
-  extractTaskUID,
   hasProjectPermissionV2,
   isUserIncludedInList,
   isValidIssueName,
@@ -40,8 +29,7 @@ export type IssueAction =
   | IssueStatusAction
   | "ISSUE_CREATE";
 export type RolloutAction = "ROLLOUT_START" | "ROLLOUT_CANCEL";
-export type ExportAction = "EXPORT_DOWNLOAD";
-export type UnifiedAction = IssueAction | RolloutAction | ExportAction;
+export type UnifiedAction = IssueAction | RolloutAction;
 export type ExecuteType =
   | "immediate"
   | "popover:labels"
@@ -75,14 +63,10 @@ export interface ActionContext {
   approvalStatus: ApprovalStatus | undefined;
   isCreating: boolean;
   isIssueOnly: boolean;
-  isExportPlan: boolean;
   isReleasePlan: boolean;
   hasDeferredRollout: boolean;
-  isCreator: boolean;
   issueApproved: boolean;
-  exportArchiveReady: boolean;
   allTasksFinished: boolean;
-  hasDatabaseCreateOrExportTasks: boolean;
   hasStartableTasks: boolean;
   hasRunningTasks: boolean;
   permissions: ActionPermissions;
@@ -107,7 +91,6 @@ export interface ContextBuilderInput {
   rollout: Rollout | undefined;
   project: Project;
   currentUser: User;
-  taskRuns: TaskRun[];
   isCreating: boolean;
   planCheckStatus: Advice_Level;
   hasRunningPlanChecks: boolean;
@@ -151,65 +134,6 @@ const computeIsApprovalCandidate = (
   return true;
 };
 
-const computeExportArchiveReady = (
-  rollout: Rollout | undefined,
-  taskRuns: TaskRun[],
-  issue: Issue | undefined,
-  currentUserEmail: string
-): boolean => {
-  if (!issue) return false;
-  if (![IssueStatus.OPEN, IssueStatus.DONE].includes(issue.status))
-    return false;
-  if (currentUserEmail !== extractUserEmail(issue.creator)) return false;
-
-  const exportTasks =
-    rollout?.stages
-      .flatMap((stage) => stage.tasks)
-      .filter((task) => task.type === Task_Type.DATABASE_EXPORT) ?? [];
-  if (exportTasks.length === 0) return false;
-  if (
-    !exportTasks.every((task) =>
-      [Task_Status.DONE, Task_Status.SKIPPED].includes(task.status)
-    )
-  ) {
-    return false;
-  }
-
-  const doneTasks = exportTasks.filter(
-    (task) => task.status === Task_Status.DONE
-  );
-  if (doneTasks.length === 0) return false;
-
-  const exportTaskRuns = doneTasks
-    .map((task) => {
-      const taskRunsForTask = taskRuns.filter(
-        (taskRun) => extractTaskUID(taskRun.name) === extractTaskUID(task.name)
-      );
-      return first(
-        orderBy(
-          taskRunsForTask,
-          (taskRun) => Number(extractTaskRunUID(taskRun.name)),
-          "desc"
-        )
-      );
-    })
-    .filter(Boolean) as TaskRun[];
-
-  if (
-    exportTaskRuns.length === 0 ||
-    exportTaskRuns.some(
-      (taskRun) =>
-        taskRun.status !== TaskRun_Status.DONE ||
-        taskRun.exportArchiveStatus ===
-          TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED
-    )
-  ) {
-    return false;
-  }
-
-  return true;
-};
-
 export const buildIssueDetailActionContext = (
   input: ContextBuilderInput
 ): ActionContext => {
@@ -223,29 +147,19 @@ export const buildIssueDetailActionContext = (
     planCheckStatus,
     project,
     rollout,
-    taskRuns,
   } = input;
 
   const currentUserEmail = currentUser.email;
   const isIssueOnly =
     !isValidPlanName(plan.name) && Boolean(isValidIssueName(issue?.name));
-  const isExportPlan = plan.specs.some(
-    (spec) => spec.config?.case === "exportDataConfig"
-  );
   const isReleasePlan = plan.specs.some(
     (spec) =>
       spec.config?.case === "changeDatabaseConfig" &&
       Boolean(spec.config.value.release)
   );
   const hasDeferredRollout = plan.specs.some(
-    (spec) =>
-      spec.config?.case === "exportDataConfig" ||
-      spec.config?.case === "createDatabaseConfig"
+    (spec) => spec.config?.case === "createDatabaseConfig"
   );
-  const isCreator =
-    currentUserEmail === extractUserEmail(plan.creator || "") ||
-    (issue ? currentUserEmail === extractUserEmail(issue.creator) : false);
-
   const permissions: ActionPermissions = {
     updatePlan:
       currentUserEmail === extractUserEmail(plan.creator || "") ||
@@ -253,10 +167,7 @@ export const buildIssueDetailActionContext = (
     createIssue: hasProjectPermissionV2(project, "bb.issues.create"),
     updateIssue: hasProjectPermissionV2(project, "bb.issues.update"),
     createRollout: hasProjectPermissionV2(project, "bb.rollouts.create"),
-    runTasks:
-      issue?.type === Issue_Type.DATABASE_EXPORT
-        ? currentUserEmail === extractUserEmail(issue.creator)
-        : hasProjectPermissionV2(project, "bb.taskRuns.create"),
+    runTasks: hasProjectPermissionV2(project, "bb.taskRuns.create"),
     isApprovalCandidate: computeIsApprovalCandidate(
       issue,
       currentUser,
@@ -273,11 +184,6 @@ export const buildIssueDetailActionContext = (
   const allTasks = rollout?.stages.flatMap((stage) => stage.tasks) ?? [];
   const allTasksFinished = allTasks.every((task) =>
     [Task_Status.DONE, Task_Status.SKIPPED].includes(task.status)
-  );
-  const hasDatabaseCreateOrExportTasks = allTasks.some(
-    (task) =>
-      task.type === Task_Type.DATABASE_CREATE ||
-      task.type === Task_Type.DATABASE_EXPORT
   );
   const hasStartableTasks = allTasks.some((task) =>
     [
@@ -300,19 +206,10 @@ export const buildIssueDetailActionContext = (
     approvalStatus: issue?.approvalStatus,
     isCreating,
     isIssueOnly,
-    isExportPlan,
     isReleasePlan,
     hasDeferredRollout,
-    isCreator,
     issueApproved: isApprovalCompleted(issue),
-    exportArchiveReady: computeExportArchiveReady(
-      rollout,
-      taskRuns,
-      issue,
-      currentUserEmail
-    ),
     allTasksFinished,
-    hasDatabaseCreateOrExportTasks,
     hasStartableTasks,
     hasRunningTasks,
     permissions,
@@ -419,8 +316,7 @@ export const createIssueDetailActions = (t: TFunction): ActionDefinition[] => {
   const rolloutActions: ActionDefinition[] = [
     {
       id: "ROLLOUT_START",
-      label: (ctx) =>
-        ctx.isExportPlan ? t("common.export") : t("common.rollout"),
+      label: () => t("common.rollout"),
       buttonType: "primary",
       category: "primary",
       priority: 60,
@@ -433,9 +329,6 @@ export const createIssueDetailActions = (t: TFunction): ActionDefinition[] => {
       isDisabled: (ctx) => !ctx.permissions.runTasks,
       disabledReason: (ctx) => {
         if (!ctx.permissions.runTasks) {
-          if (ctx.isExportPlan) {
-            return t("common.only-creator-allowed-export");
-          }
           return t("common.missing-required-permission", {
             permissions: "bb.taskRuns.create",
           });
@@ -467,18 +360,6 @@ export const createIssueDetailActions = (t: TFunction): ActionDefinition[] => {
         return undefined;
       },
       executeType: "panel:rollout",
-    },
-    {
-      id: "EXPORT_DOWNLOAD",
-      label: () => t("common.download"),
-      buttonType: "primary",
-      category: "primary",
-      priority: 0,
-      isVisible: (ctx) =>
-        ctx.isExportPlan && ctx.exportArchiveReady && ctx.isCreator,
-      isDisabled: () => false,
-      disabledReason: () => undefined,
-      executeType: "immediate",
     },
   ];
 

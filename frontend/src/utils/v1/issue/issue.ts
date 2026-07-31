@@ -53,10 +53,6 @@ export const isAccessGrantIssue = (issue: Issue): boolean => {
   return issue.type === Issue_Type.ACCESS_GRANT;
 };
 
-export const isDatabaseDataExportIssue = (issue: Issue): boolean => {
-  return issue.type === Issue_Type.DATABASE_EXPORT;
-};
-
 /**
  * Formats an issue title with optional database prefix and timestamp suffix.
  * This is the base formatting function used by both plans and other issue types.

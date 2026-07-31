@@ -101,7 +101,7 @@ describe("issueDetailRedirectLoader", () => {
 
   test("redirects a Draft Review Issue URL to its Plan", async () => {
     mocks.getIssue.mockResolvedValue(
-      makeIssue(Issue_Type.DATABASE_EXPORT, PLAN_NAME, true)
+      makeIssue(Issue_Type.DATABASE_CHANGE, PLAN_NAME, true)
     );
 
     const res = await run({ projectId: "p1", issueId: "123" });
@@ -165,15 +165,6 @@ describe("issueDetailRedirectLoader", () => {
     mocks.getPlan.mockResolvedValue(makePlan(["createDatabaseConfig"]));
 
     expect(await run({ projectId: "p1", issueId: "123" })).toBeNull();
-  });
-
-  test("keeps an export issue on Issue Detail without fetching the plan", async () => {
-    mocks.getIssue.mockResolvedValue(
-      makeIssue(Issue_Type.DATABASE_EXPORT, PLAN_NAME)
-    );
-
-    expect(await run({ projectId: "p1", issueId: "123" })).toBeNull();
-    expect(mocks.getPlan).not.toHaveBeenCalled();
   });
 
   test("keeps a role-grant issue on Issue Detail", async () => {

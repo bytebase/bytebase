@@ -53,16 +53,6 @@ func TestHasDatabaseGroupTarget(t *testing.T) {
 			}},
 			want: true,
 		},
-		{
-			name: "export data group target does not require plan check group expansion",
-			specs: []*storepb.PlanConfig_Spec{{
-				Config: &storepb.PlanConfig_Spec_ExportDataConfig{
-					ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{
-						Targets: []string{"projects/project-a/databaseGroups/group"},
-					},
-				},
-			}},
-		},
 	}
 
 	for _, tt := range tests {

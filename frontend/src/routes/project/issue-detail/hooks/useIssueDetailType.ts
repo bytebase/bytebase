@@ -5,7 +5,6 @@ import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 export type IssueDetailType =
   | "DATABASE_CHANGE"
   | "CREATE_DATABASE"
-  | "EXPORT_DATA"
   | "ROLE_GRANT"
   | "ACCESS_GRANT";
 
@@ -31,9 +30,6 @@ export const resolveIssueDetailType = (
 
   if (specs.every((spec) => spec.config.case === "createDatabaseConfig")) {
     return "CREATE_DATABASE";
-  }
-  if (specs.every((spec) => spec.config.case === "exportDataConfig")) {
-    return "EXPORT_DATA";
   }
   if (specs.some((spec) => spec.config.case === "changeDatabaseConfig")) {
     return "DATABASE_CHANGE";

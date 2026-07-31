@@ -5192,7 +5192,7 @@ paths:
          PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive
          a best-effort cancellation request and may continue running if the request is missed or the
          executor does not stop. The response does not report which task runs were actually canceled.
-         Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+         Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
       operationId: bytebase.v1.RolloutService.BatchCancelTaskRuns
       parameters:
         - name: Connect-Protocol-Version
@@ -5230,7 +5230,7 @@ paths:
       summary: BatchRunTasks
       description: |-
         Executes multiple tasks in a rollout stage.
-         Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+         Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
       operationId: bytebase.v1.RolloutService.BatchRunTasks
       parameters:
         - name: Connect-Protocol-Version
@@ -5268,7 +5268,7 @@ paths:
       summary: BatchSkipTasks
       description: |-
         Skips multiple tasks in a rollout stage.
-         Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+         Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
       operationId: bytebase.v1.RolloutService.BatchSkipTasks
       parameters:
         - name: Connect-Protocol-Version
@@ -5306,7 +5306,7 @@ paths:
       summary: CreateRollout
       description: |-
         Creates a new rollout for a plan.
-         Permissions required: bb.rollouts.create (or issue creator for data export issues)
+         Permissions required: bb.rollouts.create
       operationId: bytebase.v1.RolloutService.CreateRollout
       parameters:
         - name: Connect-Protocol-Version
@@ -11678,8 +11678,6 @@ components:
             The name is the resource name to execute the export against.
              Format: instances/{instance}/databases/{database}
              Format: instances/{instance}
-             Format: projects/{project}/plans/{plan}/rollout
-             Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
         statement:
           type: string
           title: statement
@@ -13000,7 +12998,6 @@ components:
         - TYPE_UNSPECIFIED
         - DATABASE_CHANGE
         - ROLE_GRANT
-        - DATABASE_EXPORT
         - ACCESS_GRANT
       description: The type of issue.
     bytebase.v1.IssueComment:
@@ -13980,7 +13977,7 @@ components:
              - create_time: the plan create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
              - has_rollout: whether the plan has rollout, support "==" operator, the value should be "true" or "false".
              - title: the plan title, support "==" operator for exact match and ".contains()" operator for case-insensitive substring match.
-             - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
+             - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config" or "change_database_config".
              - state: the plan state, support "==" operator, the value should be "ACTIVE" or "DELETED".
 
              For example:
@@ -14373,7 +14370,7 @@ components:
 
              For example:
              update_time >= "2025-01-02T15:04:05Z07:00"
-             task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]
+             task_type in ["DATABASE_MIGRATE", "DATABASE_CREATE"]
       title: ListRolloutsRequest
       additionalProperties: false
     bytebase.v1.ListRolloutsResponse:
@@ -15449,38 +15446,6 @@ components:
              Format: environments/prod where prod is the environment resource ID.
       title: CreateDatabaseConfig
       additionalProperties: false
-    bytebase.v1.Plan.ExportDataConfig:
-      type: object
-      properties:
-        targets:
-          type: array
-          items:
-            type: string
-          title: targets
-          description: |-
-            The list of targets.
-             Multi-database format: [instances/{instance-id}/databases/{database-name}].
-             Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
-        sheet:
-          type: string
-          title: sheet
-          description: |-
-            The resource name of the sheet.
-             Format: projects/{project}/sheets/{sheet}
-        format:
-          title: format
-          description: The format of the exported file.
-          $ref: '#/components/schemas/bytebase.v1.ExportFormat'
-        password:
-          type:
-            - string
-            - "null"
-          title: password
-          description: |-
-            The zip password provide by users.
-             Leave it empty if no needs to encrypt the zip file.
-      title: ExportDataConfig
-      additionalProperties: false
     bytebase.v1.Plan.PlanCheckRunStatusCountEntry:
       type: object
       properties:
@@ -15535,14 +15500,6 @@ components:
               title: create_database_config
               required:
                 - createDatabaseConfig
-            - type: object
-              properties:
-                exportDataConfig:
-                  title: export_data_config
-                  $ref: '#/components/schemas/bytebase.v1.Plan.ExportDataConfig'
-              title: export_data_config
-              required:
-                - exportDataConfig
       title: Spec
       additionalProperties: false
     bytebase.v1.Plan.TaskStatusCount:
@@ -19108,14 +19065,6 @@ components:
                 - databaseCreate
             - type: object
               properties:
-                databaseDataExport:
-                  title: database_data_export
-                  $ref: '#/components/schemas/bytebase.v1.Task.DatabaseDataExport'
-              title: database_data_export
-              required:
-                - databaseDataExport
-            - type: object
-              properties:
                 databaseUpdate:
                   title: database_update
                   $ref: '#/components/schemas/bytebase.v1.Task.DatabaseUpdate'
@@ -19134,18 +19083,6 @@ components:
       title: DatabaseCreate
       additionalProperties: false
       description: Payload for creating a new database.
-    bytebase.v1.Task.DatabaseDataExport:
-      type: object
-      properties:
-        sheet:
-          type: string
-          title: sheet
-          description: |-
-            The resource name of the sheet.
-             Format: projects/{project}/sheets/{sheet}
-      title: DatabaseDataExport
-      additionalProperties: false
-      description: Payload for exporting database data.
     bytebase.v1.Task.DatabaseUpdate:
       type: object
       oneOf:
@@ -19190,7 +19127,6 @@ components:
         - GENERAL
         - DATABASE_CREATE
         - DATABASE_MIGRATE
-        - DATABASE_EXPORT
     bytebase.v1.TaskMetadata:
       type: object
       properties:
@@ -19278,10 +19214,6 @@ components:
           title: start_time
           description: The time when the task run started execution.
           $ref: '#/components/schemas/google.protobuf.Timestamp'
-        exportArchiveStatus:
-          title: export_archive_status
-          description: The export archive status for data export tasks.
-          $ref: '#/components/schemas/bytebase.v1.TaskRun.ExportArchiveStatus'
         hasPriorBackup:
           type: boolean
           title: has_prior_backup
@@ -19303,13 +19235,6 @@ components:
              This can only be set when creating the task run calling BatchRunTasks.
       title: TaskRun
       additionalProperties: false
-    bytebase.v1.TaskRun.ExportArchiveStatus:
-      type: string
-      title: ExportArchiveStatus
-      enum:
-        - EXPORT_ARCHIVE_STATUS_UNSPECIFIED
-        - READY
-        - EXPORTED
     bytebase.v1.TaskRun.SchedulerInfo:
       type: object
       properties:

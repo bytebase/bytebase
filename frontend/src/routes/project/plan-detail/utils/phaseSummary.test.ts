@@ -241,7 +241,7 @@ describe("isRolloutExpected", () => {
     expect(isRolloutExpected({ issue: approvedIssue, plan })).toBe(expected);
   });
 
-  test.each(["createDatabaseConfig", "exportDataConfig"])(
+  test.each(["createDatabaseConfig"])(
     "does not expect automatic rollout for %s",
     (configCase) => {
       expect(
@@ -258,7 +258,7 @@ describe("isRolloutExpected", () => {
       ...planWithSpec("changeDatabaseConfig"),
       specs: [
         { config: { case: "changeDatabaseConfig", value: {} } },
-        { config: { case: "exportDataConfig", value: {} } },
+        { config: { case: "createDatabaseConfig", value: {} } },
       ],
     } as unknown as Plan;
 
@@ -300,14 +300,14 @@ describe("isRolloutExpected", () => {
     expect(
       isRolloutExpected({
         issue: doneIssue,
-        plan: planWithSpec("exportDataConfig"),
+        plan: planWithSpec("createDatabaseConfig"),
       })
     ).toBe(false);
   });
 
   test("keeps polling after rollout commitment regardless of eligibility", () => {
     const plan = {
-      ...planWithSpec("exportDataConfig"),
+      ...planWithSpec("createDatabaseConfig"),
       hasRollout: true,
       state: State.DELETED,
     } as unknown as Plan;

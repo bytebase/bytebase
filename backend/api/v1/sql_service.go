@@ -965,15 +965,6 @@ func executeWithTimeout(
 // Export exports the SQL query result.
 func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.ExportRequest]) (*connect.Response[v1pb.ExportResponse], error) {
 	request := req.Msg
-	// Prehandle export from issue.
-	if strings.HasPrefix(request.Name, common.ProjectNamePrefix) {
-		response, err := s.doExportFromIssue(ctx, request.Name)
-		if err != nil {
-			return nil, err
-		}
-		return connect.NewResponse(response), nil
-	}
-
 	// Prepare related message.
 	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
 	if err != nil {
@@ -1035,121 +1026,8 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	return connect.NewResponse(exportResponse), nil
 }
 
-func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) (*v1pb.ExportResponse, error) {
-	// Try to parse as rollout name first (more specific), then fallback to stage name
-	var planID int64
-	var projectID string
-	var err error
-	projectID, planID, err = common.GetProjectIDPlanIDFromRolloutName(requestName)
-	if err != nil {
-		// If rollout parsing fails, try parsing as stage name
-		projectID, planID, _, err = common.GetProjectIDPlanIDMaybeStageID(requestName)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse request name as rollout or stage: %v", err))
-		}
-	}
-
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		Workspace: common.GetWorkspaceIDFromContext(ctx),
-		ProjectID: projectID,
-		UID:       &planID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout: %v", err))
-	}
-	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", planID, projectID))
-	}
-
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectID: projectID, PlanID: &plan.UID})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get tasks: %v", err))
-	}
-	if len(tasks) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %d has no task", plan.UID))
-	}
-
-	// Get password from the plan spec
-	// For export data plans, there is always exactly one spec
-	var passwordStr string
-	if len(plan.Config.Specs) > 0 {
-		if exportConfig := plan.Config.Specs[0].GetExportDataConfig(); exportConfig != nil && exportConfig.Password != nil {
-			passwordStr = *exportConfig.Password
-		}
-	}
-
-	pendingEncrypts := []*encryptContent{}
-
-	for _, task := range tasks {
-		// Skip tasks that are marked as skipped (they don't have archives)
-		if task.Payload.GetSkipped() {
-			continue
-		}
-
-		taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
-			Workspace: common.GetWorkspaceIDFromContext(ctx),
-			ProjectID: projectID,
-			TaskUID:   &task.ID,
-			Status:    &[]storepb.TaskRun_Status{storepb.TaskRun_DONE},
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task run: %v", err))
-		}
-		if len(taskRuns) == 0 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %v has no task run", requestName))
-		}
-		taskRun := taskRuns[0]
-		exportArchiveID := taskRun.ResultProto.ExportArchiveId
-		if exportArchiveID == "" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue %v has no export archive", requestName))
-		}
-		exportArchive, err := s.store.GetExportArchive(ctx, common.GetWorkspaceIDFromContext(ctx), exportArchiveID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get export archive: %v", err))
-		}
-		if exportArchive == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("export not found or expired, please request a new export"))
-		}
-
-		// The exportArchive.Bytes should be a zip without password. We will read it and append all files into the pendingEncrypts,
-		// then create a new file zip for them.
-		zipReader, err := zip.NewReader(bytes.NewReader(exportArchive.Bytes), int64(len(exportArchive.Bytes)))
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to read export archive: %v", err))
-		}
-
-		for _, file := range zipReader.File {
-			rc, err := file.Open()
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to open file %s in archive: %v", file.Name, err))
-			}
-
-			content, err := io.ReadAll(rc)
-			rc.Close()
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to read file %s: %v", file.Name, err))
-			}
-
-			pendingEncrypts = append(pendingEncrypts, &encryptContent{
-				Content: content,
-				Name:    file.Name,
-			})
-		}
-	}
-
-	encryptedBytes, err := doEncrypt(pendingEncrypts, passwordStr)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to encrypt data: %v", err))
-	}
-
-	return &v1pb.ExportResponse{
-		Content: encryptedBytes,
-	}, nil
-}
-
 // doExport performs SQL Editor exports with masking applied.
 // This is used for ad-hoc exports where users have the EXPORTER role.
-// For approved DATABASE_EXPORT tasks, see data_export_executor.go which exports without masking.
 func doExport(
 	ctx context.Context,
 	stores *store.Store,
@@ -1348,31 +1226,6 @@ func exportSQLWithContext(
 		return err
 	}
 	return export.SQLToWriter(w, instance.Metadata.GetEngine(), statementPrefix, result)
-}
-
-type encryptContent struct {
-	Name    string
-	Content []byte
-}
-
-func doEncrypt(exports []*encryptContent, password string) ([]byte, error) {
-	var b bytes.Buffer
-	fzip := io.Writer(&b)
-
-	zipw := zip.NewWriter(fzip)
-	defer zipw.Close()
-
-	for _, exportContent := range exports {
-		if err := export.WriteZipEntry(zipw, exportContent.Name, exportContent.Content, password); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := zipw.Close(); err != nil {
-		return nil, errors.Wrap(err, "failed to close zip writer")
-	}
-
-	return b.Bytes(), nil
 }
 
 func (s *SQLService) createQueryHistory(database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userEmail string, duration time.Duration, queryErr error) {
@@ -2011,7 +1864,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(requestName)
 	if err != nil {
-		return nil, nil, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to parse %q", requestName))
+		return nil, nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", requestName))
 	}
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		Workspace:    common.GetWorkspaceIDFromContext(ctx),

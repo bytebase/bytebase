@@ -380,17 +380,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	}
 
 	if updatedIssue := updateResult.Issue; updateResult.ApprovalReset && updatedIssue != nil {
-		if updatedIssue.Type == storepb.Issue_DATABASE_EXPORT {
-			approvalResult, err := review.FindAndApplyApprovalTemplate(ctx, s.store, s.licenseService, updatedIssue)
-			if err != nil {
-				slog.Error("failed to find approval template after plan update",
-					slog.String("project", updatedIssue.ProjectID), slog.Int64("issue_uid", updatedIssue.UID),
-					slog.String("issue_title", updatedIssue.Title),
-					log.BBError(err))
-			} else {
-				review.DispatchApprovalEvents(ctx, s.store, s.webhookManager, approvalResult)
-			}
-		} else if updatedIssue.Type == storepb.Issue_DATABASE_CHANGE && planCheckRunsTrigger && !planCheckRunCreated {
+		if updatedIssue.Type == storepb.Issue_DATABASE_CHANGE && planCheckRunsTrigger && !planCheckRunCreated {
 			s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: updatedIssue.ProjectID, UID: updatedIssue.UID}
 		}
 	}
@@ -644,25 +634,6 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 			if config.ChangeDatabaseConfig.Sheet != "" {
 				sheetCount++
 				if _, sha, err := common.GetProjectResourceIDSheetSha256(config.ChangeDatabaseConfig.Sheet); err == nil {
-					sheetSha256s = append(sheetSha256s, sha)
-				}
-			}
-		case *v1pb.Plan_Spec_ExportDataConfig:
-			configTypeCount["export_data"]++
-			for _, target := range config.ExportDataConfig.Targets {
-				if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
-					databaseNames = append(databaseNames, target)
-				} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
-					if !seenDatabaseGroups[target] {
-						databaseGroups = append(databaseGroups, target)
-						seenDatabaseGroups[target] = true
-					}
-				} else {
-					return nil, errors.Errorf("invalid target %v", target)
-				}
-			}
-			if config.ExportDataConfig.Sheet != "" {
-				if _, sha, err := common.GetProjectResourceIDSheetSha256(config.ExportDataConfig.Sheet); err == nil {
 					sheetSha256s = append(sheetSha256s, sha)
 				}
 			}
@@ -1076,8 +1047,6 @@ func convertToPlanSpec(projectID string, spec *storepb.PlanConfig_Spec) *v1pb.Pl
 		v1Spec.Config = convertToPlanSpecCreateDatabaseConfig(v)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		v1Spec.Config = convertToPlanSpecChangeDatabaseConfig(projectID, v)
-	case *storepb.PlanConfig_Spec_ExportDataConfig:
-		v1Spec.Config = convertToPlanSpecExportDataConfig(projectID, v)
 	default:
 	}
 
@@ -1119,18 +1088,6 @@ func convertToPlanSpecChangeDatabaseConfig(projectID string, config *storepb.Pla
 	}
 }
 
-func convertToPlanSpecExportDataConfig(projectID string, config *storepb.PlanConfig_Spec_ExportDataConfig) *v1pb.Plan_Spec_ExportDataConfig {
-	c := config.ExportDataConfig
-	return &v1pb.Plan_Spec_ExportDataConfig{
-		ExportDataConfig: &v1pb.Plan_ExportDataConfig{
-			Targets:  c.Targets,
-			Sheet:    common.FormatSheet(projectID, c.SheetSha256),
-			Format:   convertExportFormat(c.Format),
-			Password: c.Password,
-		},
-	}
-}
-
 func convertPlanSpecs(specs []*v1pb.Plan_Spec) []*storepb.PlanConfig_Spec {
 	storeSpecs := make([]*storepb.PlanConfig_Spec, len(specs))
 	for i := range specs {
@@ -1149,8 +1106,6 @@ func convertPlanSpec(spec *v1pb.Plan_Spec) *storepb.PlanConfig_Spec {
 		storeSpec.Config = convertPlanSpecCreateDatabaseConfig(v)
 	case *v1pb.Plan_Spec_ChangeDatabaseConfig:
 		storeSpec.Config = convertPlanSpecChangeDatabaseConfig(v)
-	case *v1pb.Plan_Spec_ExportDataConfig:
-		storeSpec.Config = convertPlanSpecExportDataConfig(v)
 	default:
 	}
 	return storeSpec
@@ -1195,27 +1150,6 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 			SheetSha256:       sheetSha256,
 			Release:           c.Release,
 			EnablePriorBackup: c.EnablePriorBackup,
-		},
-	}
-}
-
-func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *storepb.PlanConfig_Spec_ExportDataConfig {
-	c := config.ExportDataConfig
-	// Sheet can be empty if not yet attached to the export data config.
-	var sheetSha256 string
-	if c.Sheet != "" {
-		_, sha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
-		if err != nil {
-			return nil
-		}
-		sheetSha256 = sha256
-	}
-	return &storepb.PlanConfig_Spec_ExportDataConfig{
-		ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{
-			Targets:     c.Targets,
-			SheetSha256: sheetSha256,
-			Format:      convertToExportFormat(c.Format),
-			Password:    c.Password,
 		},
 	}
 }

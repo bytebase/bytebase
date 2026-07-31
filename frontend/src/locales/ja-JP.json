@@ -370,7 +370,6 @@
     "no-license": "ライセンスがありません",
     "not-started": "未開始",
     "ok": "わかりました",
-    "only-creator-allowed-export": "エクスポートできるのは作成者のみです",
     "open": "開く",
     "open-mobile-sidebar": "モバイルサイドバーを開く",
     "operation": "操作",
@@ -409,7 +408,6 @@
     "resources": "リソース",
     "restore": "復元する",
     "restored": "復元済み",
-    "retry": "再試行",
     "revert": "元に戻す",
     "revoke": "キャンセル",
     "revoked": "取り消し済み",
@@ -1347,7 +1345,6 @@
           "value": {
             "access-grant": "アクセス付与",
             "database-change": "データベース変更",
-            "database-export": "データベースエクスポート",
             "role-grant": "ロール付与"
           }
         },
@@ -1395,14 +1392,6 @@
         "link": "リンクを挿入"
       },
       "write": "作成"
-    },
-    "data-export": {
-      "creation-not-supported": "データエクスポートイシューの作成はサポートされなくなりました。",
-      "download-tooltip": "24 時間利用可能",
-      "file-expired": "ファイルの有効期限が切れました",
-      "format": "エクスポート形式",
-      "limits": "制限",
-      "options": "設定項目"
     },
     "issue-name": "イシュー名",
     "labels": "イシューラベル",
@@ -1465,7 +1454,6 @@
       "change-database": "データベースの変更",
       "change-from-sql-editor": "SQL エディタからの変更",
       "edit-schema": "スキーマを編集",
-      "export-data": "データをエクスポート",
       "request-role": "ロールをリクエスト",
       "request-specific-role": "「{{role}}」ロールをリクエスト"
     },
@@ -3234,7 +3222,6 @@
       }
     },
     "created": "作成日時",
-    "data-export-creator-only": "イシュー作成者のみがデータエクスポートタスクを実行できます",
     "error": {
       "scheduled-time-must-be-in-the-future": "スケジュール時間は将来の時間である必要があります"
     },

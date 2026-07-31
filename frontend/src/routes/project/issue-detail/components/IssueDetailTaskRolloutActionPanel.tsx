@@ -27,7 +27,6 @@ import {
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import {
   BatchCancelTaskRunsRequestSchema,
   BatchRunTasksRequestSchema,
@@ -107,24 +106,18 @@ export function IssueDetailTaskRolloutActionPanel({
     ) {
       return "DATABASE_CREATE";
     }
-    if (
-      allRolloutTasks.every((task) => task.type === Task_Type.DATABASE_EXPORT)
-    ) {
-      return "DATABASE_EXPORT";
-    }
     return "DATABASE_CHANGE";
   }, [allRolloutTasks]);
-  const isDatabaseCreateOrExport =
-    rolloutType === "DATABASE_CREATE" || rolloutType === "DATABASE_EXPORT";
+  const isDatabaseCreate = rolloutType === "DATABASE_CREATE";
   const baseTasks = useMemo(() => {
     if (target.tasks) {
       return target.tasks;
     }
-    if (isDatabaseCreateOrExport) {
+    if (isDatabaseCreate) {
       return allRolloutTasks;
     }
     return target.stage?.tasks ?? [];
-  }, [allRolloutTasks, isDatabaseCreateOrExport, target.stage, target.tasks]);
+  }, [allRolloutTasks, isDatabaseCreate, target.stage, target.tasks]);
   const eligibleTasks = useMemo(() => {
     if (action === "RUN" || action === "SKIP") {
       return baseTasks.filter((task) =>
@@ -147,7 +140,7 @@ export function IssueDetailTaskRolloutActionPanel({
       );
     });
   }, [eligibleTasks, page.plan?.specs]);
-  const showStageInfo = !isDatabaseCreateOrExport;
+  const showStageInfo = !isDatabaseCreate;
   const showTaskInfo = rolloutType !== "DATABASE_CREATE";
   const taskCountSuffix = useMemo(() => {
     if (
@@ -234,11 +227,7 @@ export function IssueDetailTaskRolloutActionPanel({
       errors.push(t("common.no-data"));
     }
     if (!canRun) {
-      errors.push(
-        page.issue?.type === Issue_Type.DATABASE_EXPORT
-          ? t("task.data-export-creator-only")
-          : t("task.no-permission")
-      );
+      errors.push(t("task.no-permission"));
     }
     if (
       action === "RUN" &&

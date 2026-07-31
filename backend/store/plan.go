@@ -294,10 +294,8 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 						return qb.Q().Space("EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->>'createDatabaseConfig' IS NOT NULL)"), nil
 					case "change_database_config":
 						return qb.Q().Space("EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->>'changeDatabaseConfig' IS NOT NULL)"), nil
-					case "export_data_config":
-						return qb.Q().Space("EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->>'exportDataConfig' IS NOT NULL)"), nil
 					default:
-						return nil, errors.Errorf("invalid spec_type value: %s, must be one of: create_database_config, change_database_config, export_data_config", specType)
+						return nil, errors.Errorf("invalid spec_type value: %s, must be one of: create_database_config, change_database_config", specType)
 					}
 				case "state":
 					stateStr, ok := value.(string)

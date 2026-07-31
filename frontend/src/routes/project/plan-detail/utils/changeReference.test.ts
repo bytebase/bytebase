@@ -141,7 +141,7 @@ describe("derivePlanChangeReference", () => {
     });
   });
 
-  it("supports create-database and export specs", () => {
+  it("supports create-database specs", () => {
     const createSpec = {
       id: "spec-create",
       config: {
@@ -150,13 +150,6 @@ describe("derivePlanChangeReference", () => {
           database: "reporting",
           target: "instances/prod",
         },
-      },
-    } as Plan_Spec;
-    const exportSpec = {
-      id: "spec-export",
-      config: {
-        case: "exportDataConfig",
-        value: { targets: [DB_ORDERS] },
       },
     } as Plan_Spec;
 
@@ -171,18 +164,6 @@ describe("derivePlanChangeReference", () => {
     ).toMatchObject({
       icon: "create-database",
       label: "reporting",
-    });
-    expect(
-      derivePlanChangeReference({
-        index: 0,
-        resources: resources(),
-        siblings: [exportSpec],
-        spec: exportSpec,
-        t,
-      })
-    ).toMatchObject({
-      icon: "export",
-      label: "orders",
     });
   });
 
@@ -420,11 +401,14 @@ describe("derivePlanChangeReference", () => {
 
   it("does not show indexes when icons distinguish equal titles", () => {
     const change = changeSpec("spec-change", [DB_ORDERS]);
-    const dataExport = {
-      id: "spec-export",
+    const createDb = {
+      id: "spec-create",
       config: {
-        case: "exportDataConfig",
-        value: { targets: [DB_ORDERS] },
+        case: "createDatabaseConfig",
+        value: {
+          database: "orders",
+          target: "instances/prod",
+        },
       },
     } as Plan_Spec;
 
@@ -432,7 +416,7 @@ describe("derivePlanChangeReference", () => {
       derivePlanChangeReference({
         index: 0,
         resources: resources(),
-        siblings: [change, dataExport],
+        siblings: [change, createDb],
         spec: change,
         t,
       }).showIndex
@@ -441,8 +425,8 @@ describe("derivePlanChangeReference", () => {
       derivePlanChangeReference({
         index: 1,
         resources: resources(),
-        siblings: [change, dataExport],
-        spec: dataExport,
+        siblings: [change, createDb],
+        spec: createDb,
         t,
       }).showIndex
     ).toBe(false);

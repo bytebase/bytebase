@@ -1,8 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import dayjs from "dayjs";
-import { first, orderBy } from "lodash-es";
 import {
-  CalendarX,
   Check,
   ChevronDown,
   EllipsisVertical,
@@ -67,19 +64,9 @@ import {
 import {
   BatchRunTasksRequestSchema,
   CreateRolloutRequestSchema,
-  type Rollout,
-  TaskRun_ExportArchiveStatus,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  Advice_Level,
-  ExportRequestSchema,
-} from "@/types/proto-es/v1/sql_service_pb";
-import {
-  extractPlanUID,
-  extractProjectResourceName,
-  extractTaskRunUID,
-  extractTaskUID,
-} from "@/utils";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
+import { extractPlanUID, extractProjectResourceName } from "@/utils";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 import { useIssueDetailSpecValidation } from "../hooks/useIssueDetailSpecValidation";
 import {
@@ -129,7 +116,6 @@ export function IssueDetailActionBar() {
       rollout: page.rollout,
       project,
       currentUser,
-      taskRuns: page.taskRuns,
       isCreating: page.isCreating,
       planCheckStatus,
       hasRunningPlanChecks: (statusCount.RUNNING ?? 0) > 0,
@@ -141,7 +127,6 @@ export function IssueDetailActionBar() {
     page.issue,
     page.plan,
     page.rollout,
-    page.taskRuns,
     project,
     isSpecEmpty,
   ]);
@@ -246,45 +231,6 @@ export function IssueDetailActionBar() {
     await refreshIssueDetailState(page);
   }, [page]);
 
-  const handleExportDownload = useCallback(async () => {
-    if (!page.rollout) {
-      return;
-    }
-    try {
-      setIsSubmitting(true);
-      const content = await useAppStore.getState().exportData(
-        create(ExportRequestSchema, {
-          name: `${page.rollout.name}/stages/-`,
-        })
-      );
-      const buffer = content.buffer.slice(
-        content.byteOffset,
-        content.byteOffset + content.byteLength
-      ) as ArrayBuffer;
-      const blob = new Blob([buffer], {
-        type: "application/zip",
-      });
-      const url = window.URL.createObjectURL(blob);
-      const filename = `export-data-${dayjs(new Date()).format(
-        "YYYY-MM-DDTHH-mm-ss"
-      )}.zip`;
-      const link = document.createElement("a");
-      link.download = filename;
-      link.href = url;
-      link.click();
-      await handleRefreshIssueDetailState();
-    } catch (error) {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("common.failed"),
-        description: String(error),
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [handleRefreshIssueDetailState, page.rollout, t]);
-
   const handleCreateRollout = useCallback(
     async (options?: { runAllTasks?: boolean }) => {
       if (!page.plan) {
@@ -351,17 +297,10 @@ export function IssueDetailActionBar() {
         ? t("issue.status-transition.modal.reopen")
         : ""
     : "";
-  const exportExpired =
-    primaryAction?.id === "EXPORT_DOWNLOAD" &&
-    isExportExpired(page.rollout, page.taskRuns);
 
   const executeAction = useCallback(
     async (action: UnifiedAction) => {
       if (!context) {
-        return;
-      }
-      if (action === "EXPORT_DOWNLOAD") {
-        await handleExportDownload();
         return;
       }
       if (action === "ISSUE_REVIEW") {
@@ -397,14 +336,7 @@ export function IssueDetailActionBar() {
         setPendingRolloutAction("ROLLOUT_CANCEL");
       }
     },
-    [
-      context,
-      handleCreateRollout,
-      handleExportDownload,
-      page.rollout,
-      t,
-      visibleActions,
-    ]
+    [context, handleCreateRollout, page.rollout, t, visibleActions]
   );
 
   const confirmAction = useCallback(async () => {
@@ -478,8 +410,6 @@ export function IssueDetailActionBar() {
               context={context}
               disabled={isSubmitting || isActionDisabled(primaryAction)}
               disabledReason={getDisabledReason(primaryAction)}
-              exportExpired={exportExpired}
-              loading={isSubmitting && primaryAction.id === "EXPORT_DOWNLOAD"}
               onExecute={executeAction}
             />
           ))}
@@ -610,31 +540,14 @@ function IssueDetailActionButton({
   context,
   disabled,
   disabledReason,
-  exportExpired = false,
-  loading = false,
   onExecute,
 }: {
   action: ActionDefinition;
   context: ActionContext;
   disabled: boolean;
   disabledReason?: string;
-  exportExpired?: boolean;
-  loading?: boolean;
   onExecute: (action: UnifiedAction) => Promise<void>;
 }) {
-  const { t } = useTranslation();
-
-  if (exportExpired) {
-    return (
-      <Tooltip content={t("issue.data-export.download-tooltip")}>
-        <div className="flex items-center gap-2 text-sm textlabel leading-8">
-          <CalendarX className="h-5 w-5" />
-          {t("issue.data-export.file-expired")}
-        </div>
-      </Tooltip>
-    );
-  }
-
   const button = (
     <Button
       className={cn(
@@ -648,7 +561,6 @@ function IssueDetailActionButton({
       }}
       appearance={action.buttonType === "default" ? "outline" : "solid"}
     >
-      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
       <span>{action.label(context)}</span>
       {action.id === "ISSUE_REVIEW" && <ChevronDown className="h-4 w-4" />}
     </Button>
@@ -777,9 +689,7 @@ function IssueDetailReviewPopover({
         selectedAction === "APPROVE" &&
         page.plan &&
         !page.plan.specs.some(
-          (spec) =>
-            spec.config.case === "createDatabaseConfig" ||
-            spec.config.case === "exportDataConfig"
+          (spec) => spec.config.case === "createDatabaseConfig"
         ) &&
         page.plan.hasRollout
       ) {
@@ -945,40 +855,5 @@ function IssueDetailReviewOption({
         )}
       </span>
     </RadioGroupItem>
-  );
-}
-
-function isExportExpired(
-  rollout: Rollout | undefined,
-  taskRuns: {
-    name: string;
-    exportArchiveStatus: TaskRun_ExportArchiveStatus;
-  }[]
-) {
-  if (!rollout) {
-    return false;
-  }
-  const exportTaskRuns =
-    rollout.stages
-      .flatMap((stage) => stage.tasks)
-      .map((task) => {
-        const taskRunsForTask = taskRuns.filter(
-          (taskRun) =>
-            extractTaskUID(taskRun.name) === extractTaskUID(task.name)
-        );
-        return first(
-          orderBy(
-            taskRunsForTask,
-            (taskRun) => Number(extractTaskRunUID(taskRun.name)),
-            "desc"
-          )
-        );
-      })
-      .filter(Boolean) ?? [];
-
-  return exportTaskRuns.every(
-    (taskRun) =>
-      !!taskRun &&
-      taskRun.exportArchiveStatus === TaskRun_ExportArchiveStatus.EXPORTED
   );
 }

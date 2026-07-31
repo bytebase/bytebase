@@ -65,10 +65,7 @@ export const usePlanChangeReferenceData = (
 const collectTargets = (specs: Plan_Spec[]): string[] => {
   const targets = new Set<string>();
   for (const spec of specs) {
-    if (
-      spec.config.case !== "changeDatabaseConfig" &&
-      spec.config.case !== "exportDataConfig"
-    ) {
+    if (spec.config.case !== "changeDatabaseConfig") {
       continue;
     }
     for (const target of spec.config.value.targets ?? []) {

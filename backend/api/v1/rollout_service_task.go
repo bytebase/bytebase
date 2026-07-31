@@ -67,8 +67,6 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, spec *storepb.P
 		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, spec, config.CreateDatabaseConfig)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig)
-	case *storepb.PlanConfig_Spec_ExportDataConfig:
-		return getTaskCreatesFromExportDataConfig(ctx, s, spec, config.ExportDataConfig)
 	}
 
 	return nil, errors.Errorf("invalid spec config type %T", spec.Config)
@@ -295,41 +293,6 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 		}
 	}
 	return databases, nil
-}
-
-func getTaskCreatesFromExportDataConfig(
-	ctx context.Context,
-	s *store.Store,
-	spec *storepb.PlanConfig_Spec,
-	c *storepb.PlanConfig_ExportDataConfig,
-) ([]*store.TaskMessage, error) {
-	databases, err := getDatabaseMessagesByTargets(ctx, s, c.Targets)
-	if err != nil {
-		return nil, err
-	}
-
-	payload := &storepb.Task{
-		SpecId: spec.Id,
-		Source: &storepb.Task_SheetSha256{
-			SheetSha256: c.SheetSha256,
-		},
-	}
-
-	tasks := []*store.TaskMessage{}
-	for _, database := range databases {
-		env := ""
-		if database.EffectiveEnvironmentID != nil {
-			env = *database.EffectiveEnvironmentID
-		}
-		tasks = append(tasks, &store.TaskMessage{
-			InstanceID:   database.InstanceID,
-			DatabaseName: &database.DatabaseName,
-			Environment:  env,
-			Type:         storepb.Task_DATABASE_EXPORT,
-			Payload:      payload,
-		})
-	}
-	return tasks, nil
 }
 
 // checkCharacterSetCollationOwner checks if the character set, collation and owner are legal according to the dbType.

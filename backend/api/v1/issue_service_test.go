@@ -1252,20 +1252,9 @@ func TestCreateDraftIssueRejectsUnsupportedWorkflows(t *testing.T) {
 			},
 		}
 	}
-	exportSpec := func() *storepb.PlanConfig_Spec {
-		return &storepb.PlanConfig_Spec{
-			Config: &storepb.PlanConfig_Spec_ExportDataConfig{
-				ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{
-					SheetSha256: "sheet",
-				},
-			},
-		}
-	}
-
 	validPlan := createPlan("valid", changeSpec(""))
 	gitOpsPlan := createPlan("gitops", changeSpec("projects/project-a/releases/release"))
 	mixedPlan := createPlan("mixed", createSpec(), changeSpec(""))
-	exportPlan := createPlan("export", exportSpec())
 
 	tests := []struct {
 		name  string
@@ -1295,14 +1284,6 @@ func TestCreateDraftIssueRejectsUnsupportedWorkflows(t *testing.T) {
 			},
 		},
 		{
-			name: "export plan",
-			issue: &v1pb.Issue{
-				Type:  v1pb.Issue_DATABASE_CHANGE,
-				Plan:  common.FormatPlan("project-a", exportPlan.UID),
-				Draft: true,
-			},
-		},
-		{
 			name: "non-database issue",
 			issue: &v1pb.Issue{
 				Title: "role request",
@@ -1322,6 +1303,23 @@ func TestCreateDraftIssueRejectsUnsupportedWorkflows(t *testing.T) {
 			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 		})
 	}
+}
+
+// TestCreateIssueRejectsRetiredExportType pins the retired DATABASE_EXPORT
+// issue type: legacy clients still sending wire value 3 get InvalidArgument.
+func TestCreateIssueRejectsRetiredExportType(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+
+	_, err := service.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+		Parent: "projects/project-a",
+		Issue: &v1pb.Issue{
+			Title: "legacy export issue",
+			Type:  v1pb.Issue_Type(3),
+		},
+	}))
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 }
 
 func TestIssueListsHideDraftIssues(t *testing.T) {

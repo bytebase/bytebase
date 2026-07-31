@@ -119,9 +119,6 @@ func (x *Plan_Spec) Equal(y *Plan_Spec) bool {
 	if !x.GetChangeDatabaseConfig().Equal(y.GetChangeDatabaseConfig()) {
 		return false
 	}
-	if !x.GetExportDataConfig().Equal(y.GetExportDataConfig()) {
-		return false
-	}
 	return true
 }
 
@@ -181,33 +178,6 @@ func (x *Plan_ChangeDatabaseConfig) Equal(y *Plan_ChangeDatabaseConfig) bool {
 		return false
 	}
 	if x.EnablePriorBackup != y.EnablePriorBackup {
-		return false
-	}
-	return true
-}
-
-func (x *Plan_ExportDataConfig) Equal(y *Plan_ExportDataConfig) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Targets) != len(y.Targets) {
-		return false
-	}
-	for i := 0; i < len(x.Targets); i++ {
-		if x.Targets[i] != y.Targets[i] {
-			return false
-		}
-	}
-	if x.Sheet != y.Sheet {
-		return false
-	}
-	if x.Format != y.Format {
-		return false
-	}
-	if p, q := x.Password, y.Password; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}
 	return true

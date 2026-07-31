@@ -77,7 +77,7 @@ type RolloutServiceClient interface {
 	// Permissions required: bb.rollouts.list
 	ListRollouts(context.Context, *connect.Request[v1.ListRolloutsRequest]) (*connect.Response[v1.ListRolloutsResponse], error)
 	// Creates a new rollout for a plan.
-	// Permissions required: bb.rollouts.create (or issue creator for data export issues)
+	// Permissions required: bb.rollouts.create
 	CreateRollout(context.Context, *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error)
 	// Lists task run executions for a task.
 	// Permissions required: bb.taskRuns.list
@@ -92,16 +92,16 @@ type RolloutServiceClient interface {
 	// Permissions required: bb.taskRuns.list
 	GetTaskRunSession(context.Context, *connect.Request[v1.GetTaskRunSessionRequest]) (*connect.Response[v1.TaskRunSession], error)
 	// Executes multiple tasks in a rollout stage.
-	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+	// Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
 	BatchRunTasks(context.Context, *connect.Request[v1.BatchRunTasksRequest]) (*connect.Response[v1.BatchRunTasksResponse], error)
 	// Skips multiple tasks in a rollout stage.
-	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+	// Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
 	BatchSkipTasks(context.Context, *connect.Request[v1.BatchSkipTasksRequest]) (*connect.Response[v1.BatchSkipTasksResponse], error)
 	// Cancels multiple task runs.
 	// PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive
 	// a best-effort cancellation request and may continue running if the request is missed or the
 	// executor does not stop. The response does not report which task runs were actually canceled.
-	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+	// Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
 	BatchCancelTaskRuns(context.Context, *connect.Request[v1.BatchCancelTaskRunsRequest]) (*connect.Response[v1.BatchCancelTaskRunsResponse], error)
 	// Generates rollback SQL for a completed task run.
 	// Permissions required: bb.taskRuns.list
@@ -267,7 +267,7 @@ type RolloutServiceHandler interface {
 	// Permissions required: bb.rollouts.list
 	ListRollouts(context.Context, *connect.Request[v1.ListRolloutsRequest]) (*connect.Response[v1.ListRolloutsResponse], error)
 	// Creates a new rollout for a plan.
-	// Permissions required: bb.rollouts.create (or issue creator for data export issues)
+	// Permissions required: bb.rollouts.create
 	CreateRollout(context.Context, *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error)
 	// Lists task run executions for a task.
 	// Permissions required: bb.taskRuns.list
@@ -282,16 +282,16 @@ type RolloutServiceHandler interface {
 	// Permissions required: bb.taskRuns.list
 	GetTaskRunSession(context.Context, *connect.Request[v1.GetTaskRunSessionRequest]) (*connect.Response[v1.TaskRunSession], error)
 	// Executes multiple tasks in a rollout stage.
-	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+	// Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
 	BatchRunTasks(context.Context, *connect.Request[v1.BatchRunTasksRequest]) (*connect.Response[v1.BatchRunTasksResponse], error)
 	// Skips multiple tasks in a rollout stage.
-	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+	// Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
 	BatchSkipTasks(context.Context, *connect.Request[v1.BatchSkipTasksRequest]) (*connect.Response[v1.BatchSkipTasksResponse], error)
 	// Cancels multiple task runs.
 	// PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive
 	// a best-effort cancellation request and may continue running if the request is missed or the
 	// executor does not stop. The response does not report which task runs were actually canceled.
-	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+	// Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
 	BatchCancelTaskRuns(context.Context, *connect.Request[v1.BatchCancelTaskRunsRequest]) (*connect.Response[v1.BatchCancelTaskRunsResponse], error)
 	// Generates rollback SQL for a completed task run.
 	// Permissions required: bb.taskRuns.list

@@ -9,7 +9,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -180,20 +179,4 @@ func (s *Store) ListAllInstances(ctx context.Context, showDeleted bool) ([]*Inst
 		s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
 	}
 	return instances, nil
-}
-
-// DeleteExpiredExportArchivesAll deletes expired export archives across all workspaces.
-// For use by the cleaner runner.
-func (s *Store) DeleteExpiredExportArchivesAll(ctx context.Context, retentionPeriod time.Duration) (int64, error) {
-	cutoffTime := time.Now().Add(-retentionPeriod)
-	q := qb.Q().Space("DELETE FROM export_archive WHERE created_at < ?", cutoffTime)
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to build sql")
-	}
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected()
 }

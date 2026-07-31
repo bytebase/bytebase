@@ -408,10 +408,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Task.DatabaseDataExport"><span class="badge">M</span>Task.DatabaseDataExport</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Task.DatabaseUpdate"><span class="badge">M</span>Task.DatabaseUpdate</a>
                 </li>
               
@@ -506,10 +502,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Task.Type"><span class="badge">E</span>Task.Type</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.TaskRun.ExportArchiveStatus"><span class="badge">E</span>TaskRun.ExportArchiveStatus</a>
                 </li>
               
                 <li>
@@ -730,10 +722,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Plan.CreateDatabaseConfig"><span class="badge">M</span>Plan.CreateDatabaseConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.ExportDataConfig"><span class="badge">M</span>Plan.ExportDataConfig</a>
                 </li>
               
                 <li>
@@ -4993,7 +4981,7 @@ Supported filters:
 
 For example:
 update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34;
-task_type in [&#34;DATABASE_MIGRATE&#34;, &#34;DATABASE_EXPORT&#34;] </p></td>
+task_type in [&#34;DATABASE_MIGRATE&#34;, &#34;DATABASE_CREATE&#34;] </p></td>
                 </tr>
               
             </tbody>
@@ -5304,13 +5292,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
-                  <td>database_data_export</td>
-                  <td><a href="#bytebase.v1.Task.DatabaseDataExport">Task.DatabaseDataExport</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>update_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td>optional</td>
@@ -5348,31 +5329,6 @@ If there are no task runs or the task run is not scheduled, it will be empty. </
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Task.DatabaseDataExport">Task.DatabaseDataExport</h3>
-        <p>Payload for exporting database data.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the sheet.
-Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
             </tbody>
@@ -5471,13 +5427,6 @@ Detailed information about the task run result. </p></td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
                   <td><p>The time when the task run started execution. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>export_archive_status</td>
-                  <td><a href="#bytebase.v1.TaskRun.ExportArchiveStatus">TaskRun.ExportArchiveStatus</a></td>
-                  <td></td>
-                  <td><p>The export archive status for data export tasks. </p></td>
                 </tr>
               
                 <tr>
@@ -6475,42 +6424,6 @@ Use payload DatabaseCreate.</p></td>
 Use payload DatabaseUpdate.</p></td>
               </tr>
             
-              <tr>
-                <td>DATABASE_EXPORT</td>
-                <td>4</td>
-                <td><p>Database export task that exports query results or table data.
-Use payload DatabaseDataExport.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.TaskRun.ExportArchiveStatus">TaskRun.ExportArchiveStatus</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>EXPORT_ARCHIVE_STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>Unspecified export archive status.</p></td>
-              </tr>
-            
-              <tr>
-                <td>READY</td>
-                <td>1</td>
-                <td><p>Export archive is ready for download.</p></td>
-              </tr>
-            
-              <tr>
-                <td>EXPORTED</td>
-                <td>2</td>
-                <td><p>Export archive has been downloaded by the user.</p></td>
-              </tr>
-            
           </tbody>
         </table>
       
@@ -6706,7 +6619,7 @@ Permissions required: bb.rollouts.list</p></td>
                 <td><a href="#bytebase.v1.CreateRolloutRequest">CreateRolloutRequest</a></td>
                 <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
                 <td><p>Creates a new rollout for a plan.
-Permissions required: bb.rollouts.create (or issue creator for data export issues)</p></td>
+Permissions required: bb.rollouts.create</p></td>
               </tr>
             
               <tr>
@@ -6746,7 +6659,7 @@ Permissions required: bb.taskRuns.list</p></td>
                 <td><a href="#bytebase.v1.BatchRunTasksRequest">BatchRunTasksRequest</a></td>
                 <td><a href="#bytebase.v1.BatchRunTasksResponse">BatchRunTasksResponse</a></td>
                 <td><p>Executes multiple tasks in a rollout stage.
-Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)</p></td>
+Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)</p></td>
               </tr>
             
               <tr>
@@ -6754,7 +6667,7 @@ Permissions required: bb.taskRuns.create (or issue creator for data export issue
                 <td><a href="#bytebase.v1.BatchSkipTasksRequest">BatchSkipTasksRequest</a></td>
                 <td><a href="#bytebase.v1.BatchSkipTasksResponse">BatchSkipTasksResponse</a></td>
                 <td><p>Skips multiple tasks in a rollout stage.
-Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)</p></td>
+Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)</p></td>
               </tr>
             
               <tr>
@@ -6765,7 +6678,7 @@ Permissions required: bb.taskRuns.create (or issue creator for data export issue
 PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive
 a best-effort cancellation request and may continue running if the request is missed or the
 executor does not stop. The response does not report which task runs were actually canceled.
-Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)</p></td>
+Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)</p></td>
               </tr>
             
               <tr>
@@ -7500,9 +7413,7 @@ TODO: use range instead </p></td>
                   <td></td>
                   <td><p>The name is the resource name to execute the export against.
 Format: instances/{instance}/databases/{database}
-Format: instances/{instance}
-Format: projects/{project}/plans/{plan}/rollout
-Format: projects/{project}/plans/{plan}/rollout/stages/{stage} </p></td>
+Format: instances/{instance} </p></td>
                 </tr>
               
                 <tr>
@@ -8710,20 +8621,6 @@ Permissions required: bb.databases.get</p></td>
                 <td>*</td>
               </tr>
               
-              <tr>
-                <td>Export</td>
-                <td>POST</td>
-                <td>/v1/{name=projects/*/plans/*/rollout}:export</td>
-                <td>*</td>
-              </tr>
-              
-              <tr>
-                <td>Export</td>
-                <td>POST</td>
-                <td>/v1/{name=projects/*/plans/*/rollout/stages/*}:export</td>
-                <td>*</td>
-              </tr>
-              
             
             </tbody>
           </table>
@@ -8903,7 +8800,7 @@ Supported filters:
 - create_time: the plan create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
 - has_rollout: whether the plan has rollout, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
 - title: the plan title, support &#34;==&#34; operator for exact match and &#34;.contains()&#34; operator for case-insensitive substring match.
-- spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34;, &#34;change_database_config&#34;, or &#34;export_data_config&#34;.
+- spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34; or &#34;change_database_config&#34;.
 - state: the plan state, support &#34;==&#34; operator, the value should be &#34;ACTIVE&#34; or &#34;DELETED&#34;.
 
 For example:
@@ -9205,55 +9102,6 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
 
         
       
-        <h3 id="bytebase.v1.Plan.ExportDataConfig">Plan.ExportDataConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>targets</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of targets.
-Multi-database format: [instances/{instance-id}/databases/{database-name}].
-Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the sheet.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>format</td>
-                  <td><a href="#bytebase.v1.ExportFormat">ExportFormat</a></td>
-                  <td></td>
-                  <td><p>The format of the exported file. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>password</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>The zip password provide by users.
-Leave it empty if no needs to encrypt the zip file. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.Plan.PlanCheckRunStatusCountEntry">Plan.PlanCheckRunStatusCountEntry</h3>
         <p></p>
 
@@ -9344,13 +9192,6 @@ Format: projects/{project}/plans/{plan}/rollout/stages/{stage} </p></td>
                 <tr>
                   <td>change_database_config</td>
                   <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig">Plan.ChangeDatabaseConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>export_data_config</td>
-                  <td><a href="#bytebase.v1.Plan.ExportDataConfig">Plan.ExportDataConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -11145,12 +10986,6 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>ROLE_GRANT</td>
                 <td>2</td>
                 <td><p>Role grant request.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_EXPORT</td>
-                <td>3</td>
-                <td><p>Database data export request.</p></td>
               </tr>
             
               <tr>

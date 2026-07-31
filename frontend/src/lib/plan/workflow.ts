@@ -97,8 +97,6 @@ export const shouldStayOnPlanDetailPage = (plan: Plan): boolean => {
   }
 
   return !plan.specs.every(
-    (spec) =>
-      spec.config?.case === "createDatabaseConfig" ||
-      spec.config?.case === "exportDataConfig"
+    (spec) => spec.config?.case === "createDatabaseConfig"
   );
 };

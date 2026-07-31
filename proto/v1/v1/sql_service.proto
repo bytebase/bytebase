@@ -72,15 +72,6 @@ service SQLService {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:export"
       body: "*"
-
-      additional_bindings: {
-        post: "/v1/{name=projects/*/plans/*/rollout}:export"
-        body: "*"
-      }
-      additional_bindings: {
-        post: "/v1/{name=projects/*/plans/*/rollout/stages/*}:export"
-        body: "*"
-      }
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
@@ -405,8 +396,6 @@ message ExportRequest {
   // The name is the resource name to execute the export against.
   // Format: instances/{instance}/databases/{database}
   // Format: instances/{instance}
-  // Format: projects/{project}/plans/{plan}/rollout
-  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}

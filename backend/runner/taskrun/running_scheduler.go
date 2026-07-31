@@ -292,8 +292,7 @@ func isSequentialTask(task *store.TaskMessage) bool {
 	switch task.Type {
 	case storepb.Task_DATABASE_MIGRATE:
 		return task.Payload.GetRelease() != ""
-	case storepb.Task_DATABASE_CREATE,
-		storepb.Task_DATABASE_EXPORT:
+	case storepb.Task_DATABASE_CREATE:
 		return false
 	case storepb.Task_TASK_TYPE_UNSPECIFIED:
 		return false

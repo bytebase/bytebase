@@ -18,10 +18,11 @@ message Issue {
     DATABASE_CHANGE = 1;
     // Role grant request.
     ROLE_GRANT = 2;
-    // Issue for exporting data from databases.
-    DATABASE_EXPORT = 3;
     // Temporary access grant request.
     ACCESS_GRANT = 4;
+
+    reserved 3;
+    reserved "DATABASE_EXPORT";
   }
 
   // Status represents the current state of the issue.

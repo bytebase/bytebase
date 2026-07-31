@@ -124,9 +124,6 @@ export const sheetNameOfTaskV1 = (task: Task): string => {
     }
     return "";
   }
-  if (task.payload?.case === "databaseDataExport") {
-    return task.payload.value.sheet ?? "";
-  }
   return "";
 };
 
@@ -261,7 +258,6 @@ export const databaseForTask = (project: Project, task: Task, plan?: Plan) => {
       // extract database info from the task's and payload's properties.
       return extractCoreDatabaseInfoFromDatabaseCreateTask(project, task, plan);
     case Task_Type.DATABASE_MIGRATE:
-    case Task_Type.DATABASE_EXPORT:
       const db = getDatabaseByName(task.target);
       if (!isValidDatabaseName(db.name)) {
         return mockDatabase(project, task.target);

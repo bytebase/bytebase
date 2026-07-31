@@ -42,8 +42,8 @@ message TaskRunResult {
   // Backup details are available in the task run logs (PRIOR_BACKUP log entries).
   bool has_prior_backup = 6;
 
-  // Resource ID of the export archive generated for export tasks.
-  string export_archive_id = 9;
+  reserved 9;
+  reserved "export_archive_id";
 }
 
 // SchedulerInfo contains information about task scheduling and execution delays.

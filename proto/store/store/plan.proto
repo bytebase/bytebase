@@ -3,7 +3,6 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/api/field_behavior.proto";
-import "store/common.proto";
 
 option go_package = "generated-go/store";
 
@@ -24,8 +23,10 @@ message PlanConfig {
     oneof config {
       CreateDatabaseConfig create_database_config = 1;
       ChangeDatabaseConfig change_database_config = 2;
-      ExportDataConfig export_data_config = 7;
     }
+
+    reserved 7;
+    reserved "export_data_config";
   }
 
   message CreateDatabaseConfig {
@@ -63,19 +64,5 @@ message PlanConfig {
 
     // If set, a backup of the modified data will be created automatically before any changes are applied.
     bool enable_prior_backup = 8;
-  }
-
-  message ExportDataConfig {
-    // The list of targets.
-    // Multi-database format: [instances/{instance-id}/databases/{database-name}].
-    // Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
-    repeated string targets = 5;
-    // The SHA256 hash of the sheet content (hex-encoded).
-    string sheet_sha256 = 2;
-    // The format of the exported file.
-    ExportFormat format = 3;
-    // The zip password provided by users.
-    // Leave it empty if there is no need to encrypt the zip file.
-    optional string password = 4;
   }
 }
