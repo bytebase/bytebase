@@ -1,5 +1,5 @@
 import { Code, ConnectError } from "@connectrpc/connect";
-import type { MutableRefObject } from "react";
+import type { RefObject } from "react";
 import { useEffect } from "react";
 import { router } from "@/app/router";
 import { WORKSPACE_ROUTE_403, WORKSPACE_ROUTE_404 } from "@/app/router/handles";
@@ -12,7 +12,7 @@ import type { PlanDetailPageSnapshot } from "./types";
 export interface UseInitialFetchParams {
   projectId: string;
   planId: string;
-  routeQueryRef: MutableRefObject<Record<string, unknown>>;
+  routeQueryRef: RefObject<Record<string, unknown>>;
   storeApi: PlanDetailStoreApi;
   patchState: (patch: Partial<PlanDetailPageSnapshot>) => void;
 }
