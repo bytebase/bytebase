@@ -142,7 +142,7 @@ export function RuleLevelBadge({ level, suffix }: RuleLevelBadgeProps) {
 interface RuleConfigProps {
   rule: RuleTemplateV2;
   disabled: boolean;
-  payloadRef?: React.MutableRefObject<PayloadValueType[]>;
+  payloadRef?: React.RefObject<PayloadValueType[]>;
   onPayloadChange?: (payload: PayloadValueType[]) => void;
 }
 
