@@ -17,8 +17,8 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.22.1"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.22/0001##oauth2_refresh_token_config.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.22.2"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.22/0002##add_instance_project.sql", files[len(files)-1].path)
 }
 
 func TestVersionUnique(t *testing.T) {
@@ -90,7 +90,7 @@ func TestMigration3_21_2_MigrateInstanceSyncDatabases(t *testing.T) {
 	require.JSONEq(t, `{"engine":"POSTGRES"}`, getMetadata("instance-without-sync-databases"))
 }
 
-func TestMigration3_21_5_AddInstanceProject(t *testing.T) {
+func TestMigration3_22_2_AddInstanceProject(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })
@@ -108,7 +108,7 @@ func TestMigration3_21_5_AddInstanceProject(t *testing.T) {
 	`)
 	require.NoError(t, err)
 
-	statement, err := migrationFS.ReadFile("migration/3.21/0005##add_instance_project.sql")
+	statement, err := migrationFS.ReadFile("migration/3.22/0002##add_instance_project.sql")
 	require.NoError(t, err)
 	_, err = db.ExecContext(ctx, string(statement))
 	require.NoError(t, err)
