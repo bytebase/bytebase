@@ -591,21 +591,6 @@
         
           
           <li>
-            <a href="#store%2fexport_archive.proto">store/export_archive.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.ExportArchivePayload"><span class="badge">M</span>ExportArchivePayload</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#store%2fgroup.proto">store/group.proto</a>
             <ul>
               
@@ -818,10 +803,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PlanConfig.ExportDataConfig"><span class="badge">M</span>PlanConfig.ExportDataConfig</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.PlanConfig.Spec"><span class="badge">M</span>PlanConfig.Spec</a>
                 </li>
               
@@ -873,6 +854,10 @@
               
                 <li>
                   <a href="#bytebase.store.OAuth2ClientConfig"><span class="badge">M</span>OAuth2ClientConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.OAuth2RefreshTokenConfig"><span class="badge">M</span>OAuth2RefreshTokenConfig</a>
                 </li>
               
               
@@ -6470,44 +6455,6 @@ Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
     
       
       <div class="file-heading">
-        <h2 id="store/export_archive.proto">store/export_archive.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.ExportArchivePayload">ExportArchivePayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>file_format</td>
-                  <td><a href="#bytebase.store.ExportFormat">ExportFormat</a></td>
-                  <td></td>
-                  <td><p>The exported file format. e.g. JSON, CSV, SQL </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
         <h2 id="store/group.proto">store/group.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -8682,12 +8629,6 @@ Format: users/{email}. </p></td>
               </tr>
             
               <tr>
-                <td>DATABASE_EXPORT</td>
-                <td>3</td>
-                <td><p>Issue for exporting data from databases.</p></td>
-              </tr>
-            
-              <tr>
                 <td>ACCESS_GRANT</td>
                 <td>4</td>
                 <td><p>Temporary access grant request.</p></td>
@@ -8871,54 +8812,6 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
 
         
       
-        <h3 id="bytebase.store.PlanConfig.ExportDataConfig">PlanConfig.ExportDataConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>targets</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of targets.
-Multi-database format: [instances/{instance-id}/databases/{database-name}].
-Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet_sha256</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The SHA256 hash of the sheet content (hex-encoded). </p></td>
-                </tr>
-              
-                <tr>
-                  <td>format</td>
-                  <td><a href="#bytebase.store.ExportFormat">ExportFormat</a></td>
-                  <td></td>
-                  <td><p>The format of the exported file. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>password</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>The zip password provided by users.
-Leave it empty if there is no need to encrypt the zip file. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.PlanConfig.Spec">PlanConfig.Spec</h3>
         <p></p>
 
@@ -8946,13 +8839,6 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
                 <tr>
                   <td>change_database_config</td>
                   <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig">PlanConfig.ChangeDatabaseConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>export_data_config</td>
-                  <td><a href="#bytebase.store.PlanConfig.ExportDataConfig">PlanConfig.ExportDataConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -9210,6 +9096,23 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The canonical resource URI (RFC 8707) this grant is bound to, validated at
+consent time against the configured external URL. Empty for clients that
+omit the resource parameter. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scope</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The single mode consented to, normalized from the client&#39;s requested scope
+set to its maximum. Empty means no scope was requested. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -9253,6 +9156,40 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.OAuth2RefreshTokenConfig">OAuth2RefreshTokenConfig</h3>
+        <p>OAuth2RefreshTokenConfig is the consented grant state carried from the</p><p>authorization code onto every refresh token issued from it, and re-issued</p><p>unchanged by each refresh. Kept as a message rather than flat columns so the</p><p>grant can gain fields without a schema migration.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The canonical resource URI (RFC 8707) this grant is bound to, validated at
+consent time against the configured external URL. Empty for clients that
+omit the resource parameter. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scope</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The single mode consented to, normalized from the client&#39;s requested scope
+set to its maximum. Empty means no scope was requested. </p></td>
                 </tr>
               
             </tbody>
@@ -13966,12 +13903,6 @@ Execution strategy is determined by release type (VERSIONED/DECLARATIVE)
 or sheet content for non-release tasks.</p></td>
               </tr>
             
-              <tr>
-                <td>DATABASE_EXPORT</td>
-                <td>3</td>
-                <td><p>Export data from a database.</p></td>
-              </tr>
-            
           </tbody>
         </table>
       
@@ -14104,13 +14035,6 @@ or sheet content for non-release tasks.</p></td>
                   <td><p>Indicates whether a prior backup was created for this task run.
 When true, the task run can be rolled back using the backup tables.
 Backup details are available in the task run logs (PRIOR_BACKUP log entries). </p></td>
-                </tr>
-              
-                <tr>
-                  <td>export_archive_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Resource ID of the export archive generated for export tasks. </p></td>
                 </tr>
               
             </tbody>

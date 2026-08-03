@@ -144,10 +144,8 @@ type TaskRunResult struct {
 	// When true, the task run can be rolled back using the backup tables.
 	// Backup details are available in the task run logs (PRIOR_BACKUP log entries).
 	HasPriorBackup bool `protobuf:"varint,6,opt,name=has_prior_backup,json=hasPriorBackup,proto3" json:"has_prior_backup,omitempty"`
-	// Resource ID of the export archive generated for export tasks.
-	ExportArchiveId string `protobuf:"bytes,9,opt,name=export_archive_id,json=exportArchiveId,proto3" json:"export_archive_id,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *TaskRunResult) Reset() {
@@ -192,13 +190,6 @@ func (x *TaskRunResult) GetHasPriorBackup() bool {
 		return x.HasPriorBackup
 	}
 	return false
-}
-
-func (x *TaskRunResult) GetExportArchiveId() string {
-	if x != nil {
-		return x.ExportArchiveId
-	}
-	return ""
 }
 
 // SchedulerInfo contains information about task scheduling and execution delays.
@@ -397,11 +388,10 @@ const file_store_task_run_proto_rawDesc = "" +
 	"\bCANCELED\x10\x05\x12\x0f\n" +
 	"\vNOT_STARTED\x10\x06\x12\v\n" +
 	"\aSKIPPED\x10\a\x12\r\n" +
-	"\tAVAILABLE\x10\b\"\x83\x01\n" +
+	"\tAVAILABLE\x10\b\"W\n" +
 	"\rTaskRunResult\x12\x16\n" +
 	"\x06detail\x18\x01 \x01(\tR\x06detail\x12(\n" +
-	"\x10has_prior_backup\x18\x06 \x01(\bR\x0ehasPriorBackup\x12*\n" +
-	"\x11export_archive_id\x18\t \x01(\tR\x0fexportArchiveIdJ\x04\b\x05\x10\x06\"\xea\x01\n" +
+	"\x10has_prior_backup\x18\x06 \x01(\bR\x0ehasPriorBackupJ\x04\b\x05\x10\x06\"\xea\x01\n" +
 	"\rSchedulerInfo\x12;\n" +
 	"\vreport_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"reportTime\x12O\n" +

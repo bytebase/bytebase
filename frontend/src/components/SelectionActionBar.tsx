@@ -66,6 +66,14 @@ export interface SelectionActionBarProps {
    * More menu — set this to a high number like 99.
    */
   maxVisibleActions?: number;
+  /** Renders the bar even when `count` is 0. */
+  forceVisible?: boolean;
+  /** `viewport` centers over the main content; `container` anchors to parent. */
+  placement?: "viewport" | "container";
+  /** Hide the selected-count label for narrow containers. */
+  hideLabel?: boolean;
+  /** Compact spacing for constrained surfaces. */
+  density?: "default" | "compact";
 }
 
 const MQ_SM = "(min-width: 640px)";
@@ -147,57 +155,92 @@ export function SelectionActionBar({
   onToggleSelectAll,
   actions,
   maxVisibleActions,
+  forceVisible = false,
+  placement = "viewport",
+  hideLabel = false,
+  density = "default",
 }: SelectionActionBarProps) {
   const { t } = useTranslation();
   const defaultMaxVisible = useSelectionMaxVisible();
   const maxVisible = maxVisibleActions ?? defaultMaxVisible;
-  const fixedStyle = useFixedPositionStyle(count > 0);
+  const visible = count > 0 || forceVisible;
+  const fixedStyle = useFixedPositionStyle(visible && placement === "viewport");
 
-  if (count <= 0) return null;
+  if (!visible) return null;
 
   const visibleActions = (actions ?? []).filter((a) => !a.hidden);
   const inlineActions = visibleActions.slice(0, maxVisible);
   const overflowActions = visibleActions.slice(maxVisible);
+  const compact = density === "compact";
+  let checkboxState: boolean | "indeterminate" = false;
+  if (count > 0) {
+    checkboxState = allSelected ? true : "indeterminate";
+  }
+  const showLabel = !hideLabel;
+  const showSeparator =
+    showLabel && (inlineActions.length > 0 || overflowActions.length > 0);
+  const checkbox = (
+    <Checkbox
+      aria-label={hideLabel ? label : undefined}
+      checked={checkboxState}
+      onCheckedChange={() => onToggleSelectAll()}
+    />
+  );
 
   return (
     <div
       className={cn(
-        "fixed bottom-6 w-fit max-w-full -translate-x-1/2",
-        "flex items-center gap-x-3 rounded-full bg-background border border-control-border shadow-lg",
-        "px-4 py-2",
+        placement === "viewport"
+          ? "fixed bottom-6 w-fit max-w-full -translate-x-1/2"
+          : "absolute right-2 bottom-3 left-2 max-w-none",
+        "flex items-center justify-center rounded-full bg-background border border-control-border shadow-lg",
+        placement === "container" ? "flex-wrap" : "flex-nowrap",
+        compact ? "gap-x-1.5 gap-y-1 px-2 py-1.5" : "gap-x-3 px-4 py-2",
         LAYER_SURFACE_CLASS
       )}
       style={fixedStyle}
     >
       {/* Leading cluster — never shrinks; stays visible on narrow viewports
           even when the actions group has to scroll horizontally. */}
-      <Checkbox
-        checked={allSelected ? true : "indeterminate"}
-        onCheckedChange={() => onToggleSelectAll()}
-      />
-      <span className="shrink-0 text-sm font-medium text-control whitespace-nowrap">
-        {label}
-      </span>
-      {(inlineActions.length > 0 || overflowActions.length > 0) && (
+      {hideLabel ? <Tooltip content={label}>{checkbox}</Tooltip> : checkbox}
+      {showLabel && (
+        <span className="shrink-0 text-sm font-medium text-control whitespace-nowrap">
+          {label}
+        </span>
+      )}
+      {showSeparator && (
         <Separator orientation="vertical" className="h-5 shrink-0" />
       )}
       {/* Actions cluster — inline buttons + optional trailing More dropdown. */}
-      <div className="flex items-center gap-x-3 shrink-0">
+      <div
+        className={cn(
+          "flex min-w-0 items-center",
+          placement === "container"
+            ? "max-w-full flex-wrap justify-center"
+            : "shrink-0",
+          compact ? "gap-x-1.5 gap-y-1" : "gap-x-3"
+        )}
+      >
         {inlineActions.map((action) => {
           const Icon = action.icon;
           const button = (
             <Button
               appearance="outline"
-              size="sm"
+              size={compact ? "xs" : "sm"}
               disabled={action.disabled}
               onClick={action.onClick}
               className={cn(
-                "rounded-full",
+                "min-w-0 max-w-full rounded-full",
                 action.tone === "destructive" && DESTRUCTIVE_TONE_CLASS
               )}
             >
-              {Icon && <Icon className="size-4" aria-hidden />}
-              {action.label}
+              {Icon && (
+                <Icon
+                  className={cn(compact ? "size-3.5" : "size-4")}
+                  aria-hidden
+                />
+              )}
+              <span className="truncate">{action.label}</span>
             </Button>
           );
           if (action.disabled && action.disabledReason) {
@@ -207,7 +250,11 @@ export function SelectionActionBar({
               </Tooltip>
             );
           }
-          return <div key={action.key}>{button}</div>;
+          return (
+            <div key={action.key} className="min-w-0 max-w-full">
+              {button}
+            </div>
+          );
         })}
         {overflowActions.length > 0 && (
           <DropdownMenu>
@@ -215,11 +262,14 @@ export function SelectionActionBar({
               render={
                 <Button
                   appearance="outline"
-                  size="sm"
+                  size={compact ? "xs" : "sm"}
                   className="rounded-full"
                   aria-label={t("common.more")}
                 >
-                  <MoreHorizontal className="size-4" aria-hidden />
+                  <MoreHorizontal
+                    className={cn(compact ? "size-3.5" : "size-4")}
+                    aria-hidden
+                  />
                 </Button>
               }
             />

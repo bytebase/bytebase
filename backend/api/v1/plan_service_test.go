@@ -60,12 +60,6 @@ func TestPlanServiceListPlansHidesMalformedUIPlans(t *testing.T) {
 		WHERE project = $1 AND id = $2`, oldMalformed.ProjectID, oldMalformed.UID)
 	require.NoError(t, err)
 	gitOps := createPlan("GitOps", changeConfig("gitops", "projects/project-a/releases/release-a"))
-	export := createPlan("export", &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
-		Id: "export",
-		Config: &storepb.PlanConfig_Spec_ExportDataConfig{
-			ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{},
-		},
-	}}})
 	deleted := createPlan("deleted", changeConfig("deleted", ""))
 	_, err = stores.GetDB().ExecContext(ctx, `
 		UPDATE plan SET deleted = TRUE
@@ -87,7 +81,7 @@ func TestPlanServiceListPlansHidesMalformedUIPlans(t *testing.T) {
 	for _, plan := range response.Msg.Plans {
 		got = append(got, plan.Title)
 	}
-	require.ElementsMatch(t, []string{gitOps.Name, export.Name, deleted.Name, linked.Name}, got)
+	require.ElementsMatch(t, []string{gitOps.Name, deleted.Name, linked.Name}, got)
 
 	gotMalformed, err := service.GetPlan(ctx, connect.NewRequest(&v1pb.GetPlanRequest{
 		Name: fmt.Sprintf("projects/project-a/plans/%d", oldMalformed.UID),
@@ -251,6 +245,26 @@ func TestPlanServiceCreatePlanRejectsMixedDatabaseSpecs(t *testing.T) {
 	}))
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 	require.ErrorContains(t, err, "each plan must contain only one type")
+}
+
+// TestCreatePlanRejectsSpecsWithoutConfig pins the retired export_data_config
+// spec: a legacy client sending the removed field decodes to a spec with no
+// config, which creation must reject.
+func TestCreatePlanRejectsSpecsWithoutConfig(t *testing.T) {
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, "default")
+	ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{Email: "creator@example.com", Name: "creator"})
+	stores := setupPlanServiceTestStore(ctx, t)
+	service := NewPlanService(stores, nil, nil, nil, nil)
+
+	_, err := service.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: "projects/project-a",
+		Plan: &v1pb.Plan{
+			Title: "legacy export plan",
+			Specs: []*v1pb.Plan_Spec{{Id: "spec-1"}},
+		},
+	}))
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 }
 
 func setupPlanServiceTestStore(ctx context.Context, t *testing.T) *store.Store {

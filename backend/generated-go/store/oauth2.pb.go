@@ -89,18 +89,86 @@ func (x *OAuth2ClientConfig) GetTokenEndpointAuthMethod() string {
 	return ""
 }
 
+// OAuth2RefreshTokenConfig is the consented grant state carried from the
+// authorization code onto every refresh token issued from it, and re-issued
+// unchanged by each refresh. Kept as a message rather than flat columns so the
+// grant can gain fields without a schema migration.
+type OAuth2RefreshTokenConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The canonical resource URI (RFC 8707) this grant is bound to, validated at
+	// consent time against the configured external URL. Empty for clients that
+	// omit the resource parameter.
+	Resource string `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	// The single mode consented to, normalized from the client's requested scope
+	// set to its maximum. Empty means no scope was requested.
+	Scope         string `protobuf:"bytes,2,opt,name=scope,proto3" json:"scope,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OAuth2RefreshTokenConfig) Reset() {
+	*x = OAuth2RefreshTokenConfig{}
+	mi := &file_store_oauth2_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OAuth2RefreshTokenConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OAuth2RefreshTokenConfig) ProtoMessage() {}
+
+func (x *OAuth2RefreshTokenConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_store_oauth2_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OAuth2RefreshTokenConfig.ProtoReflect.Descriptor instead.
+func (*OAuth2RefreshTokenConfig) Descriptor() ([]byte, []int) {
+	return file_store_oauth2_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *OAuth2RefreshTokenConfig) GetResource() string {
+	if x != nil {
+		return x.Resource
+	}
+	return ""
+}
+
+func (x *OAuth2RefreshTokenConfig) GetScope() string {
+	if x != nil {
+		return x.Scope
+	}
+	return ""
+}
+
 type OAuth2AuthorizationCodeConfig struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	RedirectUri         string                 `protobuf:"bytes,1,opt,name=redirect_uri,json=redirectUri,proto3" json:"redirect_uri,omitempty"`
 	CodeChallenge       string                 `protobuf:"bytes,2,opt,name=code_challenge,json=codeChallenge,proto3" json:"code_challenge,omitempty"`
 	CodeChallengeMethod string                 `protobuf:"bytes,3,opt,name=code_challenge_method,json=codeChallengeMethod,proto3" json:"code_challenge_method,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// The canonical resource URI (RFC 8707) this grant is bound to, validated at
+	// consent time against the configured external URL. Empty for clients that
+	// omit the resource parameter.
+	Resource string `protobuf:"bytes,4,opt,name=resource,proto3" json:"resource,omitempty"`
+	// The single mode consented to, normalized from the client's requested scope
+	// set to its maximum. Empty means no scope was requested.
+	Scope         string `protobuf:"bytes,5,opt,name=scope,proto3" json:"scope,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OAuth2AuthorizationCodeConfig) Reset() {
 	*x = OAuth2AuthorizationCodeConfig{}
-	mi := &file_store_oauth2_proto_msgTypes[1]
+	mi := &file_store_oauth2_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -112,7 +180,7 @@ func (x *OAuth2AuthorizationCodeConfig) String() string {
 func (*OAuth2AuthorizationCodeConfig) ProtoMessage() {}
 
 func (x *OAuth2AuthorizationCodeConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_store_oauth2_proto_msgTypes[1]
+	mi := &file_store_oauth2_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -125,7 +193,7 @@ func (x *OAuth2AuthorizationCodeConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OAuth2AuthorizationCodeConfig.ProtoReflect.Descriptor instead.
 func (*OAuth2AuthorizationCodeConfig) Descriptor() ([]byte, []int) {
-	return file_store_oauth2_proto_rawDescGZIP(), []int{1}
+	return file_store_oauth2_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *OAuth2AuthorizationCodeConfig) GetRedirectUri() string {
@@ -149,6 +217,20 @@ func (x *OAuth2AuthorizationCodeConfig) GetCodeChallengeMethod() string {
 	return ""
 }
 
+func (x *OAuth2AuthorizationCodeConfig) GetResource() string {
+	if x != nil {
+		return x.Resource
+	}
+	return ""
+}
+
+func (x *OAuth2AuthorizationCodeConfig) GetScope() string {
+	if x != nil {
+		return x.Scope
+	}
+	return ""
+}
+
 var File_store_oauth2_proto protoreflect.FileDescriptor
 
 const file_store_oauth2_proto_rawDesc = "" +
@@ -160,11 +242,16 @@ const file_store_oauth2_proto_rawDesc = "" +
 	"\rredirect_uris\x18\x02 \x03(\tR\fredirectUris\x12\x1f\n" +
 	"\vgrant_types\x18\x03 \x03(\tR\n" +
 	"grantTypes\x12;\n" +
-	"\x1atoken_endpoint_auth_method\x18\x04 \x01(\tR\x17tokenEndpointAuthMethod\"\x9d\x01\n" +
+	"\x1atoken_endpoint_auth_method\x18\x04 \x01(\tR\x17tokenEndpointAuthMethod\"L\n" +
+	"\x18OAuth2RefreshTokenConfig\x12\x1a\n" +
+	"\bresource\x18\x01 \x01(\tR\bresource\x12\x14\n" +
+	"\x05scope\x18\x02 \x01(\tR\x05scope\"\xcf\x01\n" +
 	"\x1dOAuth2AuthorizationCodeConfig\x12!\n" +
 	"\fredirect_uri\x18\x01 \x01(\tR\vredirectUri\x12%\n" +
 	"\x0ecode_challenge\x18\x02 \x01(\tR\rcodeChallenge\x122\n" +
-	"\x15code_challenge_method\x18\x03 \x01(\tR\x13codeChallengeMethodB\x8e\x01\n" +
+	"\x15code_challenge_method\x18\x03 \x01(\tR\x13codeChallengeMethod\x12\x1a\n" +
+	"\bresource\x18\x04 \x01(\tR\bresource\x12\x14\n" +
+	"\x05scope\x18\x05 \x01(\tR\x05scopeB\x8e\x01\n" +
 	"\x12com.bytebase.storeB\vOauth2ProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -179,10 +266,11 @@ func file_store_oauth2_proto_rawDescGZIP() []byte {
 	return file_store_oauth2_proto_rawDescData
 }
 
-var file_store_oauth2_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_store_oauth2_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_oauth2_proto_goTypes = []any{
 	(*OAuth2ClientConfig)(nil),            // 0: bytebase.store.OAuth2ClientConfig
-	(*OAuth2AuthorizationCodeConfig)(nil), // 1: bytebase.store.OAuth2AuthorizationCodeConfig
+	(*OAuth2RefreshTokenConfig)(nil),      // 1: bytebase.store.OAuth2RefreshTokenConfig
+	(*OAuth2AuthorizationCodeConfig)(nil), // 2: bytebase.store.OAuth2AuthorizationCodeConfig
 }
 var file_store_oauth2_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -203,7 +291,7 @@ func file_store_oauth2_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_oauth2_proto_rawDesc), len(file_store_oauth2_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

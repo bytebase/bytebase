@@ -416,8 +416,6 @@ message Issue {
     DATABASE_CHANGE = 1;
     // Role grant request.
     ROLE_GRANT = 2;
-    // Database data export request.
-    DATABASE_EXPORT = 3;
     // Temporary access grant request.
     ACCESS_GRANT = 4;
   }

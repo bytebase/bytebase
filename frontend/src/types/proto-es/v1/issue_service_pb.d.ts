@@ -683,13 +683,6 @@ export enum Issue_Type {
   ROLE_GRANT = 2,
 
   /**
-   * Database data export request.
-   *
-   * @generated from enum value: DATABASE_EXPORT = 3;
-   */
-  DATABASE_EXPORT = 3,
-
-  /**
    * Temporary access grant request.
    *
    * @generated from enum value: ACCESS_GRANT = 4;

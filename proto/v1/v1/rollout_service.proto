@@ -34,7 +34,7 @@ service RolloutService {
   }
 
   // Creates a new rollout for a plan.
-  // Permissions required: bb.rollouts.create (or issue creator for data export issues)
+  // Permissions required: bb.rollouts.create
   rpc CreateRollout(CreateRolloutRequest) returns (Rollout) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/plans/*}/rollout"
@@ -82,7 +82,7 @@ service RolloutService {
   }
 
   // Executes multiple tasks in a rollout stage.
-  // Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+  // Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
   rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/plans/*/rollout/stages/*}/tasks:batchRun"
@@ -94,7 +94,7 @@ service RolloutService {
   }
 
   // Skips multiple tasks in a rollout stage.
-  // Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+  // Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
   rpc BatchSkipTasks(BatchSkipTasksRequest) returns (BatchSkipTasksResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/plans/*/rollout/stages/*}/tasks:batchSkip"
@@ -109,7 +109,7 @@ service RolloutService {
   // PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive
   // a best-effort cancellation request and may continue running if the request is missed or the
   // executor does not stop. The response does not report which task runs were actually canceled.
-  // Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+  // Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
   rpc BatchCancelTaskRuns(BatchCancelTaskRunsRequest) returns (BatchCancelTaskRunsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*}/taskRuns:batchCancel"
@@ -226,7 +226,7 @@ message ListRolloutsRequest {
   //
   // For example:
   // update_time >= "2025-01-02T15:04:05Z07:00"
-  // task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]
+  // task_type in ["DATABASE_MIGRATE", "DATABASE_CREATE"]
   string filter = 4;
 }
 
@@ -376,9 +376,6 @@ message Task {
     // Database migration task that applies versioned schema changes.
     // Use payload DatabaseUpdate.
     DATABASE_MIGRATE = 3;
-    // Database export task that exports query results or table data.
-    // Use payload DatabaseDataExport.
-    DATABASE_EXPORT = 4;
   }
   Type type = 5;
 
@@ -389,7 +386,6 @@ message Task {
   oneof payload {
     DatabaseCreate database_create = 7;
     DatabaseUpdate database_update = 8;
-    DatabaseDataExport database_data_export = 9;
   }
 
   // The update_time is the update time of latest task run.
@@ -415,13 +411,6 @@ message Task {
       // Format: projects/{project}/releases/{release}
       string release = 4;
     }
-  }
-
-  // Payload for exporting database data.
-  message DatabaseDataExport {
-    // The resource name of the sheet.
-    // Format: projects/{project}/sheets/{sheet}
-    string sheet = 2;
   }
 }
 
@@ -464,17 +453,6 @@ message TaskRun {
 
   // The time when the task run started execution.
   google.protobuf.Timestamp start_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  enum ExportArchiveStatus {
-    // Unspecified export archive status.
-    EXPORT_ARCHIVE_STATUS_UNSPECIFIED = 0;
-    // Export archive is ready for download.
-    READY = 1;
-    // Export archive has been downloaded by the user.
-    EXPORTED = 2;
-  }
-  // The export archive status for data export tasks.
-  ExportArchiveStatus export_archive_status = 10;
 
   // Indicates whether a prior backup was created for this task run.
   // When true, rollback SQL can be generated via PreviewTaskRunRollback.

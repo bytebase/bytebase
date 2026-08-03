@@ -59,10 +59,7 @@ export const allowGhostForDatabase = (database: Database) => {
 
 export const isDatabaseChangeSpec = (spec?: Plan_Spec) => {
   if (!spec) return false;
-  if (
-    spec.config?.case === "changeDatabaseConfig" ||
-    spec.config?.case === "exportDataConfig"
-  ) {
+  if (spec.config?.case === "changeDatabaseConfig") {
     return (spec.config.value.targets ?? []).every(isValidDatabaseName);
   }
   return false;

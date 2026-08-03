@@ -8,6 +8,10 @@
 import { FolderInputIcon, FunnelIcon, TrashIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  type SelectionAction,
+  SelectionActionBar,
+} from "@/components/SelectionActionBar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -29,6 +33,16 @@ import { FilterMenuItem } from "./FilterMenuItem";
 import { FolderForm } from "./FolderForm";
 import { SheetTree, type SheetTreeHandle } from "./SheetTree";
 
+function collectSelectableNodes(
+  node: WorksheetFolderNode | undefined
+): WorksheetFolderNode[] {
+  if (!node || node.loadMore) return [];
+  return [
+    node,
+    ...node.children.flatMap((child) => collectSelectableNodes(child)),
+  ];
+}
+
 export function WorksheetPane() {
   const { t } = useTranslation();
 
@@ -36,7 +50,8 @@ export function WorksheetPane() {
   const { filter, filterChanged, batchUpdateWorksheetFolders, setFilter } =
     sheetContext;
 
-  const { getFoldersForWorksheet } = useSheetContextByView("my");
+  const myViewContext = useSheetContextByView("my");
+  const { getFoldersForWorksheet } = myViewContext;
 
   const mineSheetTreeRef = useRef<SheetTreeHandle>(null);
 
@@ -68,6 +83,17 @@ export function WorksheetPane() {
         .map((node) => node.worksheet!.name),
     [checkedNodes]
   );
+  const selectableNodes = useMemo(
+    () => collectSelectableNodes(myViewContext.sheetTree),
+    [myViewContext.sheetTree]
+  );
+  const checkedKeySet = useMemo(
+    () => new Set(checkedNodes.map((node) => node.key)),
+    [checkedNodes]
+  );
+  const allSelected =
+    selectableNodes.length > 0 &&
+    selectableNodes.every((node) => checkedKeySet.has(node.key));
 
   const updateFilter = (patch: Partial<typeof filter>) => {
     setFilter((prev) => ({ ...prev, ...patch }));
@@ -106,11 +132,39 @@ export function WorksheetPane() {
     setPendingMoveFolder("");
   };
 
+  const batchActions: SelectionAction[] = [
+    {
+      key: "move",
+      label: t("sheet.move-worksheets"),
+      icon: FolderInputIcon,
+      onClick: () => {
+        setPendingMoveFolder("");
+        setShowReorgModal(true);
+      },
+      disabled: checkedWorksheets.length === 0 || loading,
+    },
+    {
+      key: "cancel",
+      label: t("common.cancel"),
+      icon: XIcon,
+      onClick: () => setMultiSelectMode(false),
+      disabled: loading,
+    },
+    {
+      key: "delete",
+      label: t("common.delete"),
+      icon: TrashIcon,
+      onClick: handleMultiDelete,
+      disabled: checkedNodes.length === 0 || loading,
+      tone: "destructive",
+    },
+  ];
+
   const showMultiSelectToolbar = multiSelectMode && filter.showMine;
   const hasAnyView = filter.showMine || views.length > 0;
 
   return (
-    <div className="flex h-full min-w-0 max-w-full flex-col gap-1 overflow-hidden py-1 text-sm">
+    <div className="relative flex h-full min-w-0 max-w-full flex-col gap-1 overflow-hidden py-1 text-sm">
       <div className="flex min-w-0 items-center gap-x-1 px-1">
         <SearchInput
           size="sm"
@@ -153,43 +207,12 @@ export function WorksheetPane() {
         </DropdownMenu>
       </div>
 
-      <div className="relative flex min-w-0 max-w-full flex-1 flex-col gap-y-2 overflow-y-auto overflow-x-hidden worksheet-scroll">
-        {showMultiSelectToolbar && (
-          <div className="sticky top-0 z-10 flex flex-wrap items-center justify-start gap-y-1 gap-x-1 bg-control-bg py-2 px-1">
-            <Button
-              appearance="secondary"
-              size="xs"
-              className="text-error hover:text-error"
-              disabled={checkedNodes.length === 0 || loading}
-              onClick={handleMultiDelete}
-            >
-              <TrashIcon className="size-3.5" />
-              {t("common.delete")}
-            </Button>
-            <Button
-              appearance="secondary"
-              size="xs"
-              disabled={checkedWorksheets.length === 0 || loading}
-              onClick={() => {
-                setPendingMoveFolder("");
-                setShowReorgModal(true);
-              }}
-            >
-              <FolderInputIcon className="size-3.5" />
-              {t("sheet.move-worksheets")}
-            </Button>
-            <Button
-              appearance="secondary"
-              size="xs"
-              disabled={loading}
-              onClick={() => setMultiSelectMode(false)}
-            >
-              <XIcon className="size-3.5" />
-              {t("common.cancel")}
-            </Button>
-          </div>
+      <div
+        className={cn(
+          "relative flex min-w-0 max-w-full flex-1 flex-col gap-y-2 overflow-y-auto overflow-x-hidden worksheet-scroll",
+          showMultiSelectToolbar && "pb-16"
         )}
-
+      >
         {filter.showMine && (
           <SheetTree
             key="my"
@@ -215,6 +238,23 @@ export function WorksheetPane() {
         )}
       </div>
 
+      {showMultiSelectToolbar && (
+        <SelectionActionBar
+          count={checkedNodes.length}
+          label={t("common.n-selected", { n: checkedNodes.length })}
+          allSelected={allSelected}
+          onToggleSelectAll={() => {
+            setCheckedNodes(allSelected ? [] : selectableNodes);
+          }}
+          actions={batchActions}
+          maxVisibleActions={2}
+          forceVisible
+          placement="container"
+          hideLabel
+          density="compact"
+        />
+      )}
+
       <Dialog
         open={showReorgModal}
         onOpenChange={(open) => !open && closeReorgModal()}
@@ -225,6 +265,7 @@ export function WorksheetPane() {
             <FolderForm
               folder={pendingMoveFolder}
               onFolderChange={setPendingMoveFolder}
+              includeRoot
             />
             <div className="flex justify-end gap-x-2 mt-4">
               <Button appearance="outline" onClick={closeReorgModal}>

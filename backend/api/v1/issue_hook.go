@@ -39,8 +39,7 @@ func startIssueWorkflow(
 	switch issue.Type {
 	case
 		storepb.Issue_ACCESS_GRANT,
-		storepb.Issue_ROLE_GRANT,
-		storepb.Issue_DATABASE_EXPORT:
+		storepb.Issue_ROLE_GRANT:
 
 		result, err := review.FindAndApplyApprovalTemplate(ctx, stores, licenseService, issue)
 		if err != nil {
@@ -57,10 +56,6 @@ func startIssueWorkflow(
 		issue, err = stores.GetIssue(ctx, &store.FindIssueMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectIDs: []string{issue.ProjectID}, UID: &uid})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to refresh issue")
-		}
-
-		if issue.Type == storepb.Issue_DATABASE_EXPORT {
-			return issue, nil
 		}
 
 		// For ACCESS_GRANT/ROLE_GRANT that is auto-approved (no approval template), complete it.

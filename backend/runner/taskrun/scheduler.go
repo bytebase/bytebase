@@ -192,7 +192,7 @@ func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
 
 // checkPlanCompletion checks if all tasks in a plan are complete and successful.
 // If so, sends PIPELINE_COMPLETED webhook and auto-resolves issues for deferred rollout plans.
-// Deferred rollout plans (exportDataConfig, createDatabaseConfig) auto-resolve when tasks complete.
+// Deferred rollout plans (createDatabaseConfig) auto-resolve when tasks complete.
 // Called when tasks are marked DONE/SKIPPED, or when tasks are skipped/canceled via API.
 func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 	planID := ref.PlanID
@@ -257,7 +257,7 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 	})
 
 	// Auto-resolve issue for deferred rollout plans.
-	// Deferred rollout plans are those with only exportDataConfig or createDatabaseConfig specs.
+	// Deferred rollout plans are those with only createDatabaseConfig specs.
 	// These are simple single-phase operations that don't require manual resolution.
 	if isDeferredRolloutPlan(plan) {
 		s.autoResolveIssue(ctx, ref.ProjectID, planID)
@@ -265,14 +265,14 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 }
 
 // isDeferredRolloutPlan returns true if the plan contains only deferred rollout specs
-// (exportDataConfig or createDatabaseConfig).
+// (createDatabaseConfig).
 func isDeferredRolloutPlan(plan *store.PlanMessage) bool {
 	specs := plan.Config.GetSpecs()
 	if len(specs) == 0 {
 		return false
 	}
 	for _, spec := range specs {
-		if spec.GetExportDataConfig() == nil && spec.GetCreateDatabaseConfig() == nil {
+		if spec.GetCreateDatabaseConfig() == nil {
 			return false
 		}
 	}

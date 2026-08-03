@@ -4,11 +4,29 @@ import (
 	"context"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+// TestExportRejectsRetiredRolloutNames pins the retired export-data routes:
+// rollout/stage names must fail name parsing with InvalidArgument, not fall
+// through as 500s.
+func TestExportRejectsRetiredRolloutNames(t *testing.T) {
+	ctx := context.WithValue(context.Background(), common.UserContextKey, &store.UserMessage{Email: "u@example.com"})
+	s := &SQLService{}
+	for _, name := range []string{
+		"projects/p/plans/1/rollout",
+		"projects/p/plans/1/rollout/stages/dev",
+	} {
+		_, err := s.Export(ctx, connect.NewRequest(&v1pb.ExportRequest{Name: name, Statement: "SELECT 1"}))
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err), "name %q", name)
+	}
+}
 
 // TestSelectBestAccessGrantPrefersUnmask covers the Unmask-only ranking:
 // Export plays no role (Export callers already filtered the pool via the

@@ -20,8 +20,6 @@ func DeriveCheckTargets(ctx context.Context, s *store.Store, project *store.Proj
 		switch config := spec.Config.(type) {
 		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
 			// No checks for create database.
-		case *storepb.PlanConfig_Spec_ExportDataConfig:
-			// No checks for export data.
 		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 			// Skip plan checks for releases.
 			if config.ChangeDatabaseConfig.Release != "" {

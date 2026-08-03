@@ -1,6 +1,11 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, ElementType, ReactNode } from "react";
 import { useLayoutEffect, useRef } from "react";
-import type { MoveHandler, NodeApi, TreeApi } from "react-arborist";
+import type {
+  CursorProps,
+  MoveHandler,
+  NodeApi,
+  TreeApi,
+} from "react-arborist";
 import { Tree as ArboristTree } from "react-arborist";
 import { useTranslation } from "react-i18next";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
@@ -32,6 +37,7 @@ export interface TreeProps<T> {
   readonly height?: number;
   readonly rowHeight?: number;
   readonly indent?: number;
+  readonly renderCursor?: ElementType<CursorProps>;
 
   // Drag-and-drop. Defaults are disabled — opt in by passing `onMove` AND
   // setting `disableDrag` / `disableDrop` to false (or a per-node predicate).
@@ -61,6 +67,7 @@ export function Tree<T>({
   height = 300,
   rowHeight = 28,
   indent = 16,
+  renderCursor,
   onMove,
   disableDrag = true,
   disableDrop = true,
@@ -205,6 +212,7 @@ export function Tree<T>({
           rowHeight={rowHeight}
           indent={indent}
           width="100%"
+          renderCursor={renderCursor}
         >
           {({ node, style, dragHandle }) =>
             renderNode({ node, style, dragHandle })

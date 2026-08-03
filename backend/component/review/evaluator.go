@@ -332,9 +332,6 @@ func buildCELVariablesForIssue(ctx context.Context, stores *store.Store, issue *
 		return celVarsList, 0, done, err
 	case storepb.Issue_DATABASE_CHANGE:
 		return buildCELVariablesForDatabaseChange(ctx, stores, issue)
-	case storepb.Issue_DATABASE_EXPORT:
-		celVarsList, done, err := buildCELVariablesForDataExport(ctx, stores, issue)
-		return celVarsList, 0, done, err
 	case storepb.Issue_ACCESS_GRANT:
 		celVarsList, done, err := buildCELVariablesForAccessGrant(ctx, stores, issue)
 		return celVarsList, 0, done, err
@@ -490,11 +487,6 @@ func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storep
 
 		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 			if err := appendTargets(config.ChangeDatabaseConfig.Targets, config.ChangeDatabaseConfig.SheetSha256); err != nil {
-				return nil, err
-			}
-
-		case *storepb.PlanConfig_Spec_ExportDataConfig:
-			if err := appendTargets(config.ExportDataConfig.Targets, config.ExportDataConfig.SheetSha256); err != nil {
 				return nil, err
 			}
 		default:
@@ -736,49 +728,6 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 	return celVarsList, approvalInputVersion, true, nil
 }
 
-// buildCELVariablesForDataExport builds CEL variables for DATABASE_EXPORT issues.
-func buildCELVariablesForDataExport(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
-	if issue.PlanUID == nil {
-		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
-	}
-	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
-	if err != nil {
-		return nil, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
-	}
-	if plan == nil {
-		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
-	}
-
-	// Unfold database groups and get all targets (only EXPORT_DATA targets)
-	targets, err := unfoldSpecTargets(ctx, stores, plan.Config.GetSpecs(), issue.ProjectID, nil, nil)
-	if err != nil {
-		return nil, false, errors.Wrap(err, "failed to unfold spec targets")
-	}
-
-	var celVarsList []map[string]any
-	for _, target := range targets {
-		envID := ""
-		if target.database.EffectiveEnvironmentID != nil {
-			envID = *target.database.EffectiveEnvironmentID
-		}
-
-		celVars := map[string]any{
-			common.CELAttributeResourceEnvironmentID: envID,
-			common.CELAttributeResourceProjectID:     issue.ProjectID,
-			common.CELAttributeResourceInstanceID:    target.database.InstanceID,
-			common.CELAttributeResourceDatabaseName:  target.database.DatabaseName,
-			common.CELAttributeResourceDBEngine:      target.database.Engine.String(),
-		}
-		celVarsList = append(celVarsList, celVars)
-	}
-
-	if len(celVarsList) == 0 {
-		celVarsList = append(celVarsList, map[string]any{})
-	}
-
-	return celVarsList, true, nil
-}
-
 // buildCELVariablesForRoleGrant builds CEL variables for ROLE_GRANT issues.
 func buildCELVariablesForRoleGrant(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	payload := issue.Payload
@@ -855,13 +804,9 @@ func buildCELVariablesForRoleGrant(ctx context.Context, stores *store.Store, iss
 // buildCELVariablesForAccessGrant builds CEL variables for ACCESS_GRANT issues.
 //
 // Emits one CEL variable map per (target database, schema, table) referenced
-// by the grant's query — mirroring how EXPORT_DATA expands its rule
-// evaluation across the per-statement schema/table set. This lets
-// REQUEST_ACCESS rules use the same `resource.db_engine /
-// resource.database_name / resource.schema_name / resource.table_name`
-// attributes EXPORT_DATA rules already use, so a workspace's export
-// approval policy applies identically whether the export goes through
-// the direct DATABASE_EXPORT issue path or the JIT access-grant path.
+// by the grant's query, so REQUEST_ACCESS rules can key on
+// `resource.db_engine / resource.database_name / resource.schema_name /
+// resource.table_name` attributes.
 //
 // Statement parsing failures fall back to per-target vars without
 // schema/table info — rules keyed on db_engine / database_name / env
@@ -1026,8 +971,6 @@ func getApprovalSourceFromPlan(config *storepb.PlanConfig) storepb.WorkspaceAppr
 			return storepb.WorkspaceApprovalSetting_Rule_CREATE_DATABASE
 		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 			return storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE
-		case *storepb.PlanConfig_Spec_ExportDataConfig:
-			return storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA //nolint:staticcheck // Existing export plans still need runtime approval compatibility.
 		}
 	}
 	return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED
@@ -1050,8 +993,6 @@ func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue 
 			return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Errorf("plan %v not found", *issue.PlanUID)
 		}
 		return getApprovalSourceFromPlan(plan.Config), nil
-	case storepb.Issue_DATABASE_EXPORT:
-		return storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA, nil //nolint:staticcheck // Existing export issues still need runtime approval compatibility.
 	case storepb.Issue_ACCESS_GRANT:
 		return storepb.WorkspaceApprovalSetting_Rule_REQUEST_ACCESS, nil
 	default:

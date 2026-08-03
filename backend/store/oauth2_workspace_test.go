@@ -126,4 +126,69 @@ func TestOAuth2WorkspaceBinding(t *testing.T) {
 		require.NotNil(t, got)
 		require.Empty(t, got.Workspace)
 	})
+
+	// The refresh token's config payload (3.22.1) is the durable half of the token
+	// boundary: a refresh reads it back to re-issue the same grant, so a dropped
+	// value would silently widen or unbind the session.
+	t.Run("refresh token config round-trips resource and scope", func(t *testing.T) {
+		_, err := s.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
+			TokenHash: "rt-hash-3",
+			ClientID:  "client-A",
+			UserEmail: "demo@example.com",
+			Workspace: "ws-test",
+			Config: &storepb.OAuth2RefreshTokenConfig{
+				Resource: "https://bb.example.com/mcp",
+				Scope:    "mcp:read-only",
+			},
+			ExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+		})
+		require.NoError(t, err)
+
+		got, err := s.GetOAuth2RefreshToken(ctx, "client-A", "rt-hash-3")
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		require.Equal(t, "https://bb.example.com/mcp", got.Config.GetResource())
+		require.Equal(t, "mcp:read-only", got.Config.GetScope())
+	})
+
+	t.Run("refresh token with no config stays empty", func(t *testing.T) {
+		// Both parameters are optional, and rows written before 3.22.1 default to
+		// '{}' — either way the handler must see "" and carry "" forward.
+		_, err := s.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
+			TokenHash: "rt-hash-4",
+			ClientID:  "client-A",
+			UserEmail: "demo@example.com",
+			Workspace: "ws-test",
+			ExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+		})
+		require.NoError(t, err)
+
+		got, err := s.GetOAuth2RefreshToken(ctx, "client-A", "rt-hash-4")
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		require.Empty(t, got.Config.GetResource())
+		require.Empty(t, got.Config.GetScope())
+	})
+
+	t.Run("auth code config round-trips resource and scope", func(t *testing.T) {
+		_, err := s.CreateOAuth2AuthorizationCode(ctx, &store.OAuth2AuthorizationCodeMessage{
+			Code:      "code-with-resource",
+			ClientID:  "client-A",
+			UserEmail: "demo@example.com",
+			Workspace: "ws-test",
+			Config: &storepb.OAuth2AuthorizationCodeConfig{
+				RedirectUri: "http://localhost/cb",
+				Resource:    "https://bb.example.com/mcp",
+				Scope:       "mcp:read-write",
+			},
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		})
+		require.NoError(t, err)
+
+		got, err := s.GetOAuth2AuthorizationCode(ctx, "client-A", "code-with-resource")
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		require.Equal(t, "https://bb.example.com/mcp", got.Config.Resource)
+		require.Equal(t, "mcp:read-write", got.Config.Scope)
+	})
 }

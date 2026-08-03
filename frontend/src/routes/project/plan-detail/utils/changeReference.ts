@@ -10,8 +10,7 @@ import { extractDatabaseGroupName } from "@/utils/v1/databaseGroup";
 export type PlanChangeReferenceIcon =
   | "create-database"
   | "database"
-  | "database-group"
-  | "export";
+  | "database-group";
 
 export interface PlanChangeReferenceResources {
   databasesByName: Record<string, Database | undefined>;
@@ -173,10 +172,7 @@ const deriveBaseReference = (
     };
   }
 
-  if (
-    spec.config.case !== "changeDatabaseConfig" &&
-    spec.config.case !== "exportDataConfig"
-  ) {
+  if (spec.config.case !== "changeDatabaseConfig") {
     return {
       environmentSummary: "",
       icon: "database",
@@ -189,12 +185,9 @@ const deriveBaseReference = (
 
   const targets = spec.config.value.targets ?? [];
   const groupTarget = targets.find(isValidDatabaseGroupName);
-  const icon: PlanChangeReferenceIcon =
-    spec.config.case === "exportDataConfig"
-      ? "export"
-      : groupTarget
-        ? "database-group"
-        : "database";
+  const icon: PlanChangeReferenceIcon = groupTarget
+    ? "database-group"
+    : "database";
 
   if (groupTarget) {
     const databaseNames =

@@ -95,7 +95,7 @@ export function GrantAccessDialog({
             (resource.columns ?? []).join(","),
           ].join("|")
         )
-        .sort()
+        .sort((a, b) => a.localeCompare(b))
         .join("||"),
     [initialDatabaseResources]
   );

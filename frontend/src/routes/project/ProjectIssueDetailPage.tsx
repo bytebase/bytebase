@@ -20,12 +20,6 @@ import type { ProjectIssueDetailPageProps } from "./issue-detail/types";
 
 export function ProjectIssueDetailPage(props: ProjectIssueDetailPageProps) {
   const { t } = useTranslation();
-  const [
-    databaseExportExecutionHistoryExpanded,
-    setDatabaseExportExecutionHistoryExpanded,
-  ] = useState(false);
-  const [databaseExportTasksExpanded, setDatabaseExportTasksExpanded] =
-    useState(false);
   const [pageHost, setPageHost] = useState<HTMLDivElement | null>(null);
   // Selected spec id is mirrored to the URL as ?spec=<id> so that links
   // (e.g. from audit rows in the comment list) can deep-link a spec without
@@ -64,18 +58,8 @@ export function ProjectIssueDetailPage(props: ProjectIssueDetailPageProps) {
             <div className="flex flex-1 shrink flex-col gap-y-4 overflow-x-auto p-4">
               <IssueDetailBranchContent
                 databaseChangeSelectedSpecId={databaseChangeSelectedSpecId}
-                databaseExportExecutionHistoryExpanded={
-                  databaseExportExecutionHistoryExpanded
-                }
-                databaseExportTasksExpanded={databaseExportTasksExpanded}
-                onDatabaseExportExecutionHistoryExpandedChange={
-                  setDatabaseExportExecutionHistoryExpanded
-                }
                 onDatabaseChangeSelectedSpecIdChange={
                   setDatabaseChangeSelectedSpecId
-                }
-                onDatabaseExportTasksExpandedChange={
-                  setDatabaseExportTasksExpanded
                 }
               />
               <IssueDetailActivity />

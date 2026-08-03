@@ -17,8 +17,8 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.21.4"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.21/0004##add_query_history_created_at_index.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.22.1"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.22/0001##oauth2_refresh_token_config.sql", files[len(files)-1].path)
 }
 
 func TestVersionUnique(t *testing.T) {

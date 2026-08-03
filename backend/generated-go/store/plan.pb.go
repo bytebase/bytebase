@@ -93,7 +93,6 @@ type PlanConfig_Spec struct {
 	//
 	//	*PlanConfig_Spec_CreateDatabaseConfig
 	//	*PlanConfig_Spec_ChangeDatabaseConfig
-	//	*PlanConfig_Spec_ExportDataConfig
 	Config        isPlanConfig_Spec_Config `protobuf_oneof:"config"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -161,15 +160,6 @@ func (x *PlanConfig_Spec) GetChangeDatabaseConfig() *PlanConfig_ChangeDatabaseCo
 	return nil
 }
 
-func (x *PlanConfig_Spec) GetExportDataConfig() *PlanConfig_ExportDataConfig {
-	if x != nil {
-		if x, ok := x.Config.(*PlanConfig_Spec_ExportDataConfig); ok {
-			return x.ExportDataConfig
-		}
-	}
-	return nil
-}
-
 type isPlanConfig_Spec_Config interface {
 	isPlanConfig_Spec_Config()
 }
@@ -182,15 +172,9 @@ type PlanConfig_Spec_ChangeDatabaseConfig struct {
 	ChangeDatabaseConfig *PlanConfig_ChangeDatabaseConfig `protobuf:"bytes,2,opt,name=change_database_config,json=changeDatabaseConfig,proto3,oneof"`
 }
 
-type PlanConfig_Spec_ExportDataConfig struct {
-	ExportDataConfig *PlanConfig_ExportDataConfig `protobuf:"bytes,7,opt,name=export_data_config,json=exportDataConfig,proto3,oneof"`
-}
-
 func (*PlanConfig_Spec_CreateDatabaseConfig) isPlanConfig_Spec_Config() {}
 
 func (*PlanConfig_Spec_ChangeDatabaseConfig) isPlanConfig_Spec_Config() {}
-
-func (*PlanConfig_Spec_ExportDataConfig) isPlanConfig_Spec_Config() {}
 
 type PlanConfig_CreateDatabaseConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -378,97 +362,21 @@ func (x *PlanConfig_ChangeDatabaseConfig) GetEnablePriorBackup() bool {
 	return false
 }
 
-type PlanConfig_ExportDataConfig struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The list of targets.
-	// Multi-database format: [instances/{instance-id}/databases/{database-name}].
-	// Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
-	Targets []string `protobuf:"bytes,5,rep,name=targets,proto3" json:"targets,omitempty"`
-	// The SHA256 hash of the sheet content (hex-encoded).
-	SheetSha256 string `protobuf:"bytes,2,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
-	// The format of the exported file.
-	Format ExportFormat `protobuf:"varint,3,opt,name=format,proto3,enum=bytebase.store.ExportFormat" json:"format,omitempty"`
-	// The zip password provided by users.
-	// Leave it empty if there is no need to encrypt the zip file.
-	Password      *string `protobuf:"bytes,4,opt,name=password,proto3,oneof" json:"password,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PlanConfig_ExportDataConfig) Reset() {
-	*x = PlanConfig_ExportDataConfig{}
-	mi := &file_store_plan_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PlanConfig_ExportDataConfig) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PlanConfig_ExportDataConfig) ProtoMessage() {}
-
-func (x *PlanConfig_ExportDataConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PlanConfig_ExportDataConfig.ProtoReflect.Descriptor instead.
-func (*PlanConfig_ExportDataConfig) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 3}
-}
-
-func (x *PlanConfig_ExportDataConfig) GetTargets() []string {
-	if x != nil {
-		return x.Targets
-	}
-	return nil
-}
-
-func (x *PlanConfig_ExportDataConfig) GetSheetSha256() string {
-	if x != nil {
-		return x.SheetSha256
-	}
-	return ""
-}
-
-func (x *PlanConfig_ExportDataConfig) GetFormat() ExportFormat {
-	if x != nil {
-		return x.Format
-	}
-	return ExportFormat_FORMAT_UNSPECIFIED
-}
-
-func (x *PlanConfig_ExportDataConfig) GetPassword() string {
-	if x != nil && x.Password != nil {
-		return *x.Password
-	}
-	return ""
-}
-
 var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\xe2\b\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\"\xcf\x06\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
 	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12\x1f\n" +
 	"\vhas_rollout\x18\x02 \x01(\bR\n" +
 	"hasRollout\x124\n" +
-	"\x16approval_input_version\x18\x03 \x01(\x03R\x14approvalInputVersion\x1a\xcf\x02\n" +
+	"\x16approval_input_version\x18\x03 \x01(\x03R\x14approvalInputVersion\x1a\xf2\x01\n" +
 	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x05 \x01(\tR\x02id\x12g\n" +
 	"\x16create_database_config\x18\x01 \x01(\v2/.bytebase.store.PlanConfig.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12g\n" +
-	"\x16change_database_config\x18\x02 \x01(\v2/.bytebase.store.PlanConfig.ChangeDatabaseConfigH\x00R\x14changeDatabaseConfig\x12[\n" +
-	"\x12export_data_config\x18\a \x01(\v2+.bytebase.store.PlanConfig.ExportDataConfigH\x00R\x10exportDataConfigB\b\n" +
+	"\x16change_database_config\x18\x02 \x01(\v2/.bytebase.store.PlanConfig.ChangeDatabaseConfigH\x00R\x14changeDatabaseConfigB\b\n" +
 	"\x06config\x1a\x9d\x02\n" +
 	"\x14CreateDatabaseConfig\x12\x1b\n" +
 	"\x06target\x18\x01 \x01(\tB\x03\xe0A\x02R\x06target\x12\x1f\n" +
@@ -484,13 +392,7 @@ const file_store_plan_proto_rawDesc = "" +
 	" \x03(\tR\atargets\x12!\n" +
 	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12\x18\n" +
 	"\arelease\x18\t \x01(\tR\arelease\x12.\n" +
-	"\x13enable_prior_backup\x18\b \x01(\bR\x11enablePriorBackup\x1a\xb3\x01\n" +
-	"\x10ExportDataConfig\x12\x18\n" +
-	"\atargets\x18\x05 \x03(\tR\atargets\x12!\n" +
-	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x124\n" +
-	"\x06format\x18\x03 \x01(\x0e2\x1c.bytebase.store.ExportFormatR\x06format\x12\x1f\n" +
-	"\bpassword\x18\x04 \x01(\tH\x00R\bpassword\x88\x01\x01B\v\n" +
-	"\t_passwordB\x8c\x01\n" +
+	"\x13enable_prior_backup\x18\b \x01(\bR\x11enablePriorBackupB\x8c\x01\n" +
 	"\x12com.bytebase.storeB\tPlanProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -505,26 +407,22 @@ func file_store_plan_proto_rawDescGZIP() []byte {
 	return file_store_plan_proto_rawDescData
 }
 
-var file_store_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_store_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_store_plan_proto_goTypes = []any{
 	(*PlanConfig)(nil),                      // 0: bytebase.store.PlanConfig
 	(*PlanConfig_Spec)(nil),                 // 1: bytebase.store.PlanConfig.Spec
 	(*PlanConfig_CreateDatabaseConfig)(nil), // 2: bytebase.store.PlanConfig.CreateDatabaseConfig
 	(*PlanConfig_ChangeDatabaseConfig)(nil), // 3: bytebase.store.PlanConfig.ChangeDatabaseConfig
-	(*PlanConfig_ExportDataConfig)(nil),     // 4: bytebase.store.PlanConfig.ExportDataConfig
-	(ExportFormat)(0),                       // 5: bytebase.store.ExportFormat
 }
 var file_store_plan_proto_depIdxs = []int32{
 	1, // 0: bytebase.store.PlanConfig.specs:type_name -> bytebase.store.PlanConfig.Spec
 	2, // 1: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
 	3, // 2: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
-	4, // 3: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
-	5, // 4: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_store_plan_proto_init() }
@@ -532,20 +430,17 @@ func file_store_plan_proto_init() {
 	if File_store_plan_proto != nil {
 		return
 	}
-	file_store_common_proto_init()
 	file_store_plan_proto_msgTypes[1].OneofWrappers = []any{
 		(*PlanConfig_Spec_CreateDatabaseConfig)(nil),
 		(*PlanConfig_Spec_ChangeDatabaseConfig)(nil),
-		(*PlanConfig_Spec_ExportDataConfig)(nil),
 	}
-	file_store_plan_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_plan_proto_rawDesc), len(file_store_plan_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

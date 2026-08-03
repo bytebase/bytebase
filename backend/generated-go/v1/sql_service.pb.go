@@ -1421,8 +1421,6 @@ type ExportRequest struct {
 	// The name is the resource name to execute the export against.
 	// Format: instances/{instance}/databases/{database}
 	// Format: instances/{instance}
-	// Format: projects/{project}/plans/{plan}/rollout
-	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The SQL statement to execute.
 	Statement string `protobuf:"bytes,2,opt,name=statement,proto3" json:"statement,omitempty"`
@@ -2213,15 +2211,15 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\a_schema\"\\\n" +
 	"\x0eExportResponse\x12\x18\n" +
 	"\acontent\x18\x01 \x01(\fR\acontent\x120\n" +
-	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant2\x8e\a\n" +
+	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant2\x9d\x06\n" +
 	"\n" +
 	"SQLService\x12\x8f\x01\n" +
 	"\x05Query\x12\x19.bytebase.v1.QueryRequest\x1a\x1a.bytebase.v1.QueryResponse\"O\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02-:\x01*\"(/v1/{name=instances/*/databases/*}:query\x12\x89\x01\n" +
 	"\fAdminExecute\x12 .bytebase.v1.AdminExecuteRequest\x1a!.bytebase.v1.AdminExecuteResponse\"0\x8a\xea0\fbb.sql.admin\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1:adminExecute(\x010\x01\x12t\n" +
 	"\x14SearchQueryHistories\x12(.bytebase.v1.SearchQueryHistoriesRequest\x1a).bytebase.v1.SearchQueryHistoriesResponse\"\a\x90\xea0\x02\x88\x02\x01\x12\x88\x01\n" +
 	"\x12ListQueryHistories\x12&.bytebase.v1.ListQueryHistoriesRequest\x1a'.bytebase.v1.ListQueryHistoriesResponse\"!\x8a\xea0\x16bb.queryHistories.list\x90\xea0\x01\x88\x02\x01\x12Z\n" +
-	"\x0fGetQueryHistory\x12#.bytebase.v1.GetQueryHistoryRequest\x1a\x19.bytebase.v1.QueryHistory\"\a\x90\xea0\x02\x88\x02\x01\x12\x84\x02\n" +
-	"\x06Export\x12\x1a.bytebase.v1.ExportRequest\x1a\x1b.bytebase.v1.ExportResponse\"\xc0\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x9d\x01:\x01*Z1:\x01*\",/v1/{name=projects/*/plans/*/rollout}:exportZ::\x01*\"5/v1/{name=projects/*/plans/*/rollout/stages/*}:export\")/v1/{name=instances/*/databases/*}:exportB\xa5\x01\n" +
+	"\x0fGetQueryHistory\x12#.bytebase.v1.GetQueryHistoryRequest\x1a\x19.bytebase.v1.QueryHistory\"\a\x90\xea0\x02\x88\x02\x01\x12\x93\x01\n" +
+	"\x06Export\x12\x1a.bytebase.v1.ExportRequest\x1a\x1b.bytebase.v1.ExportResponse\"P\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02.:\x01*\")/v1/{name=instances/*/databases/*}:exportB\xa5\x01\n" +
 	"\x0fcom.bytebase.v1B\x0fSqlServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

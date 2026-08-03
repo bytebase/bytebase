@@ -42,9 +42,6 @@ function normalizeForOtherDiff(spec: Plan_Spec): Plan_Spec {
     c.config.value.sheet = "";
     c.config.value.targets = [];
     c.config.value.enablePriorBackup = false;
-  } else if (c.config?.case === "exportDataConfig") {
-    c.config.value.sheet = "";
-    c.config.value.targets = [];
   }
   return c;
 }

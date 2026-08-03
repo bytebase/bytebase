@@ -370,7 +370,6 @@
     "no-license": "Sin licencia",
     "not-started": "No iniciado",
     "ok": "OK",
-    "only-creator-allowed-export": "Solo el creador puede exportar",
     "open": "Abrir",
     "open-mobile-sidebar": "Abrir barra lateral móvil",
     "operation": "Operación",
@@ -409,7 +408,6 @@
     "resources": "Recursos",
     "restore": "Restaurar",
     "restored": "Restaurado",
-    "retry": "Reintentar",
     "revert": "Revertir",
     "revoke": "Revocar",
     "revoked": "Revocado",
@@ -1347,7 +1345,6 @@
           "value": {
             "access-grant": "Concesión de acceso",
             "database-change": "Cambio de base de datos",
-            "database-export": "Exportación de base de datos",
             "role-grant": "Concesión de rol"
           }
         },
@@ -1395,14 +1392,6 @@
         "link": "Insertar un enlace"
       },
       "write": "Escribir"
-    },
-    "data-export": {
-      "creation-not-supported": "La creación de incidencias de exportación de datos ya no es compatible.",
-      "download-tooltip": "Disponible por 24 horas",
-      "file-expired": "Archivo expirado",
-      "format": "Formato",
-      "limits": "Límites",
-      "options": "Opciones de exportación"
     },
     "issue-name": "Nombre de la incidencia",
     "labels": "Etiquetas de problema",
@@ -1465,7 +1454,6 @@
       "change-database": "Modificar base de datos",
       "change-from-sql-editor": "Modificar desde el editor SQL",
       "edit-schema": "Editar esquema",
-      "export-data": "Exportar datos",
       "request-role": "Solicitar rol",
       "request-specific-role": "Solicitar rol \"{{role}}\""
     },
@@ -3234,7 +3222,6 @@
       }
     },
     "created": "Creado",
-    "data-export-creator-only": "Sólo el creador del problema puede ejecutar tareas de exportación de datos",
     "error": {
       "scheduled-time-must-be-in-the-future": "La hora programada debe ser en el futuro"
     },

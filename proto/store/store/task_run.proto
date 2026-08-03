@@ -41,9 +41,6 @@ message TaskRunResult {
   // When true, the task run can be rolled back using the backup tables.
   // Backup details are available in the task run logs (PRIOR_BACKUP log entries).
   bool has_prior_backup = 6;
-
-  // Resource ID of the export archive generated for export tasks.
-  string export_archive_id = 9;
 }
 
 // SchedulerInfo contains information about task scheduling and execution delays.

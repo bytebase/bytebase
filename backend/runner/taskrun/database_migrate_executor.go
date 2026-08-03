@@ -1037,9 +1037,7 @@ func computeNeedDump(taskType storepb.Task_Type, engine storepb.Engine, statemen
 		return !parserbase.IsAllDML(engine, statement)
 	case storepb.Task_DATABASE_CREATE:
 		return true
-	case
-		storepb.Task_TASK_TYPE_UNSPECIFIED,
-		storepb.Task_DATABASE_EXPORT:
+	case storepb.Task_TASK_TYPE_UNSPECIFIED:
 		return false
 	default:
 		return false

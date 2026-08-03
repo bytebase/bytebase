@@ -204,6 +204,10 @@ function WorksheetTreeLoadMoreButton({
   );
 }
 
+function HiddenDropCursor() {
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -545,6 +549,29 @@ export function SheetTree({
     ]
   );
 
+  const moveFoldersToRoot = useCallback(
+    async (folders: string[]) => {
+      const folderKeys = new Set<string>();
+      for (const folder of folders) {
+        for (const key of collectFolderKeys(folder)) {
+          folderKeys.add(key);
+        }
+      }
+      const updates = [...folderKeys].map<WorksheetFolderPathUpdate>((key) => ({
+        sourceFolder: getFoldersForWorksheet(key),
+        targetFolder: [],
+      }));
+      if (updates.length === 0) return;
+      await batchUpdateWorksheetFolderPaths(view, updates);
+    },
+    [
+      batchUpdateWorksheetFolderPaths,
+      collectFolderKeys,
+      getFoldersForWorksheet,
+      view,
+    ]
+  );
+
   // ---- Delete helpers -------------------------------------------------------
 
   const doDeleteWorksheets = useCallback(async (worksheets: string[]) => {
@@ -737,8 +764,11 @@ export function SheetTree({
         };
 
         if (worksheets.length === 0) {
-          cleanFolders();
-          resolve(true);
+          void (async () => {
+            await moveFoldersToRoot(folders);
+            cleanFolders();
+            resolve(true);
+          })();
           return;
         }
 
@@ -754,7 +784,7 @@ export function SheetTree({
         deleteFoldersResolveRef.current = { resolve, cleanFolders, worksheets };
       });
     },
-    [folderContext]
+    [folderContext, moveFoldersToRoot]
   );
 
   // Ref to hold the pending promise resolve for delete-folders dialog
@@ -1061,6 +1091,7 @@ export function SheetTree({
         data: TreeDataNode<WorksheetFolderNode>;
         isSelected: boolean;
         isOpen?: boolean;
+        willReceiveDrop?: boolean;
       };
       style: React.CSSProperties;
       dragHandle?: (el: HTMLDivElement | null) => void;
@@ -1072,6 +1103,8 @@ export function SheetTree({
       const isEditing =
         !!editingNode && editingNode.node.key === folderNode.key;
       const isChecked = checkedNodes.some((n) => n.key === folderNode.key);
+      const isDropTargetFolder =
+        !folderNode.worksheet && !folderNode.loadMore && !!node.willReceiveDrop;
 
       // react-arborist injects `paddingLeft: level * indent` via `style`,
       // which overrides `className`'s `px-2` padding-left. Merge indent with
@@ -1099,7 +1132,8 @@ export function SheetTree({
             // Align with the connection-panel database tree: subtle neutral
             // hover, accent-tinted selection (was a too-light gray fill).
             "hover:bg-control-bg/70 rounded-xs",
-            isSelected && "bg-accent/10"
+            isSelected && "bg-accent/10",
+            isDropTargetFolder && "bg-accent/15 ring-1 ring-accent/40"
           )}
           onClick={(e) => {
             // Only handle clicks on text/prefix area, not suffix
@@ -1387,20 +1421,16 @@ export function SheetTree({
               size="sm"
               onClick={async () => {
                 if (deleteDialogState.type !== "delete-folders") return;
-                const { folders, worksheets } = deleteDialogState;
+                const { folders } = deleteDialogState;
                 setDeleteDialogState({ type: "none" });
                 const pending = deleteFoldersResolveRef.current;
                 if (pending) {
-                  await batchUpdateWorksheetFolders(
-                    worksheets.map((ws) => ({ name: ws, folders: [] }))
-                  );
+                  await moveFoldersToRoot(folders);
                   pending.cleanFolders();
                   pending.resolve(true);
                   deleteFoldersResolveRef.current = null;
                 } else {
-                  await batchUpdateWorksheetFolders(
-                    folders.map(() => ({ name: "", folders: [] }))
-                  );
+                  await moveFoldersToRoot(folders);
                   for (const folder of folders) {
                     folderContext.removeFolder(folder);
                   }
@@ -1418,6 +1448,9 @@ export function SheetTree({
                 setDeleteDialogState({ type: "none" });
                 const pending = deleteFoldersResolveRef.current;
                 if (pending) {
+                  // TODO: This only deletes files already loaded into the tree.
+                  // Add a batch delete-by-folder API before treating this as
+                  // "delete all files" for paginated folders.
                   await doDeleteWorksheets(worksheets);
                   pending.cleanFolders();
                   pending.resolve(true);
@@ -1536,7 +1569,7 @@ export function SheetTree({
 
   // ---- Main render ---------------------------------------------------------
   return (
-    <div className="relative flex min-w-0 max-w-full flex-col items-stretch gap-y-1 overflow-x-hidden worksheet-tree">
+    <div className="relative flex min-w-0 max-w-full flex-col items-stretch gap-y-1 overflow-x-clip worksheet-tree">
       <Tree<WorksheetFolderNode>
         data={treeData}
         renderNode={renderNode}
@@ -1547,8 +1580,9 @@ export function SheetTree({
         height={treeHeight}
         rowHeight={ROW_HEIGHT}
         indent={12}
+        renderCursor={HiddenDropCursor}
         className={cn(
-          "min-w-0 max-w-full overflow-x-hidden text-sm [&_[role=treeitem]]:!min-w-0 [&_[role=treeitem]]:!max-w-full",
+          "min-w-0 max-w-full !overflow-x-clip !overflow-y-visible text-sm [&_[role=treeitem]]:!min-w-0 [&_[role=treeitem]]:!max-w-full",
           editingNode
             ? "[&_[role=treeitem]]:overflow-visible"
             : "[&_[role=treeitem]]:overflow-hidden"

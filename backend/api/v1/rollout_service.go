@@ -285,10 +285,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	}
 
 	if !hasPermission {
-		// Allow data export issue creators to create rollout for their own issues
-		if issue == nil || issue.Type != storepb.Issue_DATABASE_EXPORT || issue.CreatorEmail != user.Email {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.New("permission denied to create rollout"))
-		}
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("permission denied to create rollout"))
 	}
 
 	if project.Setting.RequireIssueApproval && issue != nil {
@@ -383,12 +380,8 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list task runs"))
 	}
 
-	taskRunsV1, err := convertToTaskRuns(ctx, s.store, taskRuns)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to task runs"))
-	}
 	return connect.NewResponse(&v1pb.ListTaskRunsResponse{
-		TaskRuns: taskRunsV1,
+		TaskRuns: convertToTaskRuns(taskRuns),
 	}), nil
 }
 
@@ -555,11 +548,7 @@ func (s *RolloutService) GetTaskRun(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %d not found in rollout %d", taskRunUID, planID))
 	}
 
-	taskRunV1, err := convertToTaskRun(ctx, s.store, taskRun)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to task run"))
-	}
-	return connect.NewResponse(taskRunV1), nil
+	return connect.NewResponse(convertToTaskRun(taskRun)), nil
 }
 
 func (s *RolloutService) GetTaskRunLog(ctx context.Context, req *connect.Request[v1pb.GetTaskRunLogRequest]) (*connect.Response[v1pb.TaskRunLog], error) {
@@ -1325,12 +1314,7 @@ func GetValidRolloutPolicyForEnvironment(ctx context.Context, stores *store.Stor
 }
 
 // canUserRunEnvironmentTasks returns if a user can run the tasks in an environment.
-func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, _ string) (bool, error) {
-	// For data export issues, only the creator can run tasks.
-	if issue != nil && issue.Type == storepb.Issue_DATABASE_EXPORT {
-		return issue.CreatorEmail == user.Email, nil
-	}
-
+func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, _ *store.IssueMessage, environment string, _ string) (bool, error) {
 	// Users with bb.taskRuns.create can always create task runs.
 	ok, err := s.iamManager.CheckPermission(ctx, permission.TaskRunsCreate, user, common.GetWorkspaceIDFromContext(ctx), project.ResourceID)
 	if err != nil {

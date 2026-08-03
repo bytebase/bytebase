@@ -370,7 +370,6 @@
     "no-license": "Không có giấy phép",
     "not-started": "Chưa bắt đầu",
     "ok": "OK",
-    "only-creator-allowed-export": "Chỉ người tạo mới được phép xuất",
     "open": "Mở",
     "open-mobile-sidebar": "Mở thanh bên di động",
     "operation": "Thao tác",
@@ -409,7 +408,6 @@
     "resources": "Tài nguyên",
     "restore": "Khôi phục",
     "restored": "Đã khôi phục",
-    "retry": "Thử lại",
     "revert": "Hoàn tác",
     "revoke": "Thu hồi",
     "revoked": "Đã thu hồi",
@@ -1347,7 +1345,6 @@
           "value": {
             "access-grant": "Cấp quyền truy cập",
             "database-change": "Thay đổi cơ sở dữ liệu",
-            "database-export": "Xuất cơ sở dữ liệu",
             "role-grant": "Cấp vai trò"
           }
         },
@@ -1395,14 +1392,6 @@
         "link": "Chèn một liên kết"
       },
       "write": "Viết"
-    },
-    "data-export": {
-      "creation-not-supported": "Không còn hỗ trợ tạo vấn đề xuất dữ liệu.",
-      "download-tooltip": "Có sẵn trong 24 giờ",
-      "file-expired": "Tệp đã hết hạn",
-      "format": "Định dạng",
-      "limits": "Giới hạn",
-      "options": "Tùy chọn"
     },
     "issue-name": "Tên vấn đề",
     "labels": "Nhãn vấn đề",
@@ -1465,7 +1454,6 @@
       "change-database": "Thay đổi cơ sở dữ liệu",
       "change-from-sql-editor": "Thay đổi từ SQL Editor",
       "edit-schema": "Chỉnh sửa schema",
-      "export-data": "Xuất dữ liệu",
       "request-role": "Yêu cầu vai trò",
       "request-specific-role": "Yêu cầu vai trò \"{{role}}\""
     },
@@ -3234,7 +3222,6 @@
       }
     },
     "created": "Đã tạo",
-    "data-export-creator-only": "Chỉ người tạo sự cố mới có thể thực hiện tác vụ xuất dữ liệu",
     "error": {
       "scheduled-time-must-be-in-the-future": "Thời gian dự kiến phải ở trong tương lai"
     },

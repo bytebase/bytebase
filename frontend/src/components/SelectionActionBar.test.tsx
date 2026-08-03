@@ -60,6 +60,29 @@ describe("SelectionActionBar", () => {
     expect(container.querySelector("[role='toolbar']")).toBeNull();
   });
 
+  test("can render at 0 selected when forced visible", async () => {
+    await act(async () => {
+      root.render(
+        <SelectionActionBar
+          count={0}
+          label="0 selected"
+          allSelected={false}
+          onToggleSelectAll={() => {}}
+          forceVisible
+          actions={[{ key: "cancel", label: "Cancel", onClick: () => {} }]}
+        />
+      );
+    });
+    expect(container.textContent).toContain("0 selected");
+    expect(container.textContent).toContain("Cancel");
+    const checkbox = container.querySelector<HTMLButtonElement>(
+      '[role="checkbox"]'
+    );
+    expect(checkbox).not.toBeNull();
+    expect(checkbox?.hasAttribute("data-checked")).toBe(false);
+    expect(checkbox?.hasAttribute("data-indeterminate")).toBe(false);
+  });
+
   test("renders label and visible actions when count > 0", async () => {
     await act(async () => {
       root.render(
@@ -107,6 +130,51 @@ describe("SelectionActionBar", () => {
     const bar = container.firstElementChild;
     expect(bar).toHaveClass("fixed", "bottom-6", "-translate-x-1/2");
   });
+
+  test("can anchor inside a container", async () => {
+    await act(async () => {
+      root.render(
+        <SelectionActionBar
+          count={1}
+          label="1 selected"
+          allSelected={true}
+          onToggleSelectAll={() => {}}
+          placement="container"
+          actions={[]}
+        />
+      );
+    });
+
+    const bar = container.firstElementChild;
+    expect(bar).toHaveClass("absolute", "right-2", "bottom-3", "left-2");
+    expect(bar).not.toHaveClass("fixed");
+  });
+
+  test("can hide the label and use compact wrapping for narrow containers", async () => {
+    await act(async () => {
+      root.render(
+        <SelectionActionBar
+          count={1}
+          label="1 selected"
+          allSelected={true}
+          onToggleSelectAll={() => {}}
+          placement="container"
+          hideLabel
+          density="compact"
+          actions={[{ key: "delete", label: "Delete", onClick: () => {} }]}
+        />
+      );
+    });
+
+	    const bar = container.firstElementChild;
+	    const checkbox = container.querySelector<HTMLButtonElement>(
+	      '[role="checkbox"]'
+	    );
+	    expect(container.textContent).not.toContain("1 selected");
+	    expect(container.textContent).toContain("Delete");
+	    expect(checkbox?.getAttribute("aria-label")).toBe("1 selected");
+	    expect(bar).toHaveClass("flex-wrap", "px-2", "py-1.5");
+	  });
 
   test("omits hidden actions and disables disabled actions", async () => {
     await act(async () => {

@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip } from "@/components/ui/tooltip";
-import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   CANCELABLE_TASK_STATUSES,
@@ -89,13 +88,6 @@ export function DeployTaskToolbar({
       return "";
     }
     if (!canPerformTaskActions) {
-      if (
-        page.issue &&
-        page.issue.type === Issue_Type.DATABASE_EXPORT &&
-        page.issue.creator !== currentUser.name
-      ) {
-        return t("task.data-export-creator-only");
-      }
       return t("task.no-permission");
     }
     return "";

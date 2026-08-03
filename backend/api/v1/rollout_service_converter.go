@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"context"
 	"fmt"
 	"slices"
 
@@ -23,19 +22,15 @@ func formatEnvironmentFromStageID(stageID string) string {
 	return stageID
 }
 
-func convertToTaskRuns(ctx context.Context, s *store.Store, taskRuns []*store.TaskRunMessage) ([]*v1pb.TaskRun, error) {
+func convertToTaskRuns(taskRuns []*store.TaskRunMessage) []*v1pb.TaskRun {
 	var taskRunsV1 []*v1pb.TaskRun
 	for _, taskRun := range taskRuns {
-		taskRunV1, err := convertToTaskRun(ctx, s, taskRun)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert task run")
-		}
-		taskRunsV1 = append(taskRunsV1, taskRunV1)
+		taskRunsV1 = append(taskRunsV1, convertToTaskRun(taskRun))
 	}
-	return taskRunsV1, nil
+	return taskRunsV1
 }
 
-func convertToTaskRun(ctx context.Context, s *store.Store, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
+func convertToTaskRun(taskRun *store.TaskRunMessage) *v1pb.TaskRun {
 	stageID := common.FormatStageID(taskRun.Environment)
 	t := &v1pb.TaskRun{
 		Name:       common.FormatTaskRun(taskRun.ProjectID, taskRun.PlanUID, stageID, taskRun.TaskUID, taskRun.ID),
@@ -56,21 +51,9 @@ func convertToTaskRun(ctx context.Context, s *store.Store, taskRun *store.TaskRu
 		t.SchedulerInfo = convertToSchedulerInfo(taskRun.PayloadProto.SchedulerInfo)
 	}
 
-	if taskRun.ResultProto.ExportArchiveId != "" {
-		t.ExportArchiveStatus = v1pb.TaskRun_EXPORTED
-		exportArchiveID := taskRun.ResultProto.ExportArchiveId
-		exportArchive, err := s.GetExportArchive(ctx, common.GetWorkspaceIDFromContext(ctx), exportArchiveID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get export archive")
-		}
-		if exportArchive != nil {
-			t.ExportArchiveStatus = v1pb.TaskRun_READY
-		}
-	}
-
 	t.HasPriorBackup = taskRun.ResultProto.HasPriorBackup
 
-	return t, nil
+	return t
 }
 
 func convertToSchedulerInfo(si *storepb.SchedulerInfo) *v1pb.TaskRun_SchedulerInfo {
@@ -233,8 +216,6 @@ func convertToTask(project *store.ProjectMessage, task *store.TaskMessage) (*v1p
 	case storepb.Task_DATABASE_MIGRATE:
 		// All DATABASE_MIGRATE tasks are treated as schema updates (DDL or GHOST)
 		return convertToTaskFromSchemaUpdate(project, task)
-	case storepb.Task_DATABASE_EXPORT:
-		return convertToTaskFromDatabaseDataExport(project, task)
 	case storepb.Task_TASK_TYPE_UNSPECIFIED:
 		return nil, errors.Errorf("task type %v is not supported", task.Type)
 	default:
@@ -307,36 +288,6 @@ func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.Ta
 	return v1pbTask, nil
 }
 
-func convertToTaskFromDatabaseDataExport(project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseName == nil {
-		return nil, errors.Errorf("data export task database is nil")
-	}
-
-	targetDatabaseName := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, task.InstanceID, common.DatabaseIDPrefix, *(task.DatabaseName))
-	sheet := common.FormatSheet(project.ResourceID, task.Payload.GetSheetSha256())
-	stageID := common.FormatStageID(task.Environment)
-	v1pbTask := &v1pb.Task{
-		Name:          common.FormatTask(project.ResourceID, task.PlanID, stageID, task.ID),
-		SpecId:        task.Payload.GetSpecId(),
-		Type:          convertToTaskType(task),
-		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
-		SkippedReason: task.Payload.GetSkippedReason(),
-		Target:        targetDatabaseName,
-		Payload: &v1pb.Task_DatabaseDataExport_{
-			DatabaseDataExport: &v1pb.Task_DatabaseDataExport{
-				Sheet: sheet,
-			},
-		},
-	}
-	if task.UpdatedAt != nil {
-		v1pbTask.UpdateTime = timestamppb.New(*task.UpdatedAt)
-	}
-	if task.RunAt != nil {
-		v1pbTask.RunTime = timestamppb.New(*task.RunAt)
-	}
-	return v1pbTask, nil
-}
-
 func convertToTaskStatus(latestTaskRunStatus storepb.TaskRun_Status, skipped bool) v1pb.Task_Status {
 	if skipped {
 		return v1pb.Task_SKIPPED
@@ -368,8 +319,6 @@ func convertToTaskType(task *store.TaskMessage) v1pb.Task_Type {
 		return v1pb.Task_DATABASE_CREATE
 	case storepb.Task_DATABASE_MIGRATE:
 		return v1pb.Task_DATABASE_MIGRATE
-	case storepb.Task_DATABASE_EXPORT:
-		return v1pb.Task_DATABASE_EXPORT
 	case storepb.Task_TASK_TYPE_UNSPECIFIED:
 		return v1pb.Task_TYPE_UNSPECIFIED
 	default:

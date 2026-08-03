@@ -1,7 +1,6 @@
 import { useAppStore } from "@/stores/app";
 import { roleNamePrefix } from "@/stores/modules/v1/common";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -46,10 +45,6 @@ export const canRolloutTasks = ({
 }): boolean => {
   if (tasks.length === 0) {
     return false;
-  }
-
-  if (issue && issue.type === Issue_Type.DATABASE_EXPORT) {
-    return issue.creator === currentUser.name;
   }
 
   const hasCreatePermission =

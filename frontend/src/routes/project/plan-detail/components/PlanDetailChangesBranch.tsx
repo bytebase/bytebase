@@ -405,10 +405,7 @@ export function PlanDetailChangesBranch({
     // Pending draft is local only — update in place without hitting the API.
     if (pendingNewSpec && selectedSpec.id === pendingNewSpec.id) {
       const patched = clone(Plan_SpecSchema, pendingNewSpec);
-      if (
-        patched.config.case === "changeDatabaseConfig" ||
-        patched.config.case === "exportDataConfig"
-      ) {
+      if (patched.config.case === "changeDatabaseConfig") {
         patched.config.value.targets = targets;
       }
       setPendingNewSpec(patched);
@@ -418,10 +415,7 @@ export function PlanDetailChangesBranch({
     const nextSpecs = page.plan.specs.map((spec) => {
       if (spec.id !== selectedSpec.id) return spec;
       const patched = clone(Plan_SpecSchema, spec);
-      if (
-        patched.config.case === "changeDatabaseConfig" ||
-        patched.config.case === "exportDataConfig"
-      ) {
+      if (patched.config.case === "changeDatabaseConfig") {
         patched.config.value.targets = targets;
       }
       return patched;
@@ -564,9 +558,7 @@ export function PlanDetailChangesBranch({
   const currentTargets =
     selectedSpec.config.case === "changeDatabaseConfig"
       ? (selectedSpec.config.value.targets ?? [])
-      : selectedSpec.config.case === "exportDataConfig"
-        ? (selectedSpec.config.value.targets ?? [])
-        : [];
+      : [];
 
   return (
     <div className="flex w-full flex-1 flex-col">

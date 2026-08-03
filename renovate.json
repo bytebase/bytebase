@@ -10,6 +10,16 @@
       "matchStrings": ["pnpm@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
       "depNameTemplate": "pnpm",
       "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "Bump the $schema URL in frontend/biome.json together with @biomejs/biome so the schema version always matches the CLI version",
+      "managerFilePatterns": ["/^frontend/biome\\.json$/"],
+      "matchStrings": [
+        "https://biomejs\\.dev/schemas/(?<currentValue>\\d+\\.\\d+\\.\\d+)/schema\\.json"
+      ],
+      "depNameTemplate": "@biomejs/biome",
+      "datasourceTemplate": "npm"
     }
   ],
   "packageRules": [
@@ -22,14 +32,6 @@
       "groupName": "pnpm",
       "description": "Bump pnpm together across package.json, workflows, and the Dockerfile",
       "matchPackageNames": ["pnpm"]
-    },
-    {
-      "matchManagers": ["npm"],
-      "postUpgradeTasks": {
-        "commands": ["pnpm install --no-frozen-lockfile"],
-        "fileFilters": ["frontend/pnpm-lock.yaml"],
-        "executionMode": "update"
-      }
     },
     {
       "groupName": "codingame",

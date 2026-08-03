@@ -44,18 +44,12 @@ const targetsForSpec = (spec: Plan_Spec): string[] => {
   if (spec.config.case === "changeDatabaseConfig") {
     return spec.config.value.targets ?? [];
   }
-  if (spec.config.case === "exportDataConfig") {
-    return spec.config.value.targets ?? [];
-  }
   return [];
 };
 
 const maybeSetInitialSQLForSpec = (spec: Plan_Spec, initialSQL: InitialSQL) => {
   const sheet =
-    spec.config.case === "changeDatabaseConfig" ||
-    spec.config.case === "exportDataConfig"
-      ? spec.config.value.sheet
-      : "";
+    spec.config.case === "changeDatabaseConfig" ? spec.config.value.sheet : "";
   if (!sheet || !extractSheetUID(sheet).startsWith("-")) {
     return;
   }

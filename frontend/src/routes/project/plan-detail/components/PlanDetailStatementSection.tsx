@@ -96,10 +96,7 @@ export function PlanDetailStatementSection({
 
   const editingScope = useMemo(() => `statement:${spec.id}`, [spec.id]);
   const targetDatabaseName = useMemo(() => {
-    if (
-      spec.config?.case !== "changeDatabaseConfig" &&
-      spec.config?.case !== "exportDataConfig"
-    ) {
+    if (spec.config?.case !== "changeDatabaseConfig") {
       return "";
     }
     return (spec.config.value.targets ?? []).find(isValidDatabaseName) ?? "";
@@ -333,27 +330,18 @@ export function PlanDetailStatementSection({
       // Pending new spec — append it on the first save so the spec and
       // its sheet are committed together. This avoids creating an
       // empty-statement spec on the backend.
-      if (
-        spec.config?.case !== "changeDatabaseConfig" &&
-        spec.config?.case !== "exportDataConfig"
-      ) {
+      if (spec.config?.case !== "changeDatabaseConfig") {
         return undefined;
       }
       const newSpec = clone(Plan_SpecSchema, spec);
-      if (
-        newSpec.config.case === "changeDatabaseConfig" ||
-        newSpec.config.case === "exportDataConfig"
-      ) {
+      if (newSpec.config.case === "changeDatabaseConfig") {
         newSpec.config.value.sheet = nextSheetName;
       }
       planPatch.specs = [...planPatch.specs, newSpec];
       return planPatch;
     }
     const specToPatch = planPatch.specs[existingIdx];
-    if (
-      specToPatch.config?.case !== "changeDatabaseConfig" &&
-      specToPatch.config?.case !== "exportDataConfig"
-    ) {
+    if (specToPatch.config?.case !== "changeDatabaseConfig") {
       return undefined;
     }
     specToPatch.config.value.sheet = nextSheetName;

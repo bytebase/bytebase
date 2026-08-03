@@ -111,19 +111,6 @@ describe("getSubmitReviewAdvance", () => {
     ).toEqual(["statement"]);
   });
 
-  test("blocks data export submission", () => {
-    expect(
-      getSubmitReviewAdvance(
-        submitArgs({ plan: makePlan(["exportDataConfig"]) })
-      ).blockers
-    ).toContainEqual(
-      expect.objectContaining({
-        id: "data-export",
-        message: "issue.data-export.creation-not-supported",
-      })
-    );
-  });
-
   test("marks queued and running checks as a wait, not a chore", () => {
     for (const statusCount of [{ AVAILABLE: 1 }, { RUNNING: 1 }]) {
       expect(
@@ -242,7 +229,7 @@ describe("getSubmitReviewAdvance", () => {
             emptySpecCount: 1,
             isEditing: true,
             permissionReason: "plan.draft-update-permission-required",
-            plan: makePlan(["exportDataConfig"], { RUNNING: 1, ERROR: 1 }),
+            plan: makePlan(["changeDatabaseConfig"], { RUNNING: 1, ERROR: 1 }),
             project: project({
               enforceSqlReview: true,
               forceIssueLabels: true,
@@ -253,7 +240,6 @@ describe("getSubmitReviewAdvance", () => {
       )
     ).toEqual([
       "statement",
-      "data-export",
       "checks-running",
       "checks-failed",
       "labels",
@@ -299,7 +285,7 @@ describe("getSubmitReviewAdvance override", () => {
   test("offers nothing for a plan that is not purely a database change", () => {
     expect(
       decisionFor({
-        plan: makePlan(["changeDatabaseConfig", "exportDataConfig"], {
+        plan: makePlan(["changeDatabaseConfig", "createDatabaseConfig"], {
           ERROR: 1,
         }),
       })
