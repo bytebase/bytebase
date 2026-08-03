@@ -11,6 +11,7 @@ import (
 	"github.com/go-ldap/ldap/v3"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -220,11 +221,20 @@ func (p *IdentityProvider) mappedAttributes() []string {
 }
 
 func (p *IdentityProvider) userInfoFromEntry(entry *ldap.Entry) *storepb.IdentityProviderUserInfo {
-	return &storepb.IdentityProviderUserInfo{
+	userInfo := &storepb.IdentityProviderUserInfo{
 		Identifier:  entry.GetAttributeValue(p.config.FieldMapping.Identifier),
 		DisplayName: entry.GetAttributeValue(p.config.FieldMapping.DisplayName),
-		Phone:       entry.GetAttributeValue(p.config.FieldMapping.Phone),
 	}
+	// Only set phone if it's valid, matching the OAuth2/OIDC providers. This value
+	// is persisted as principal.phone on first sign-in, and the user APIs reject
+	// non-E.164 phones, so a raw directory value (local number, extension) must not
+	// leak through.
+	if phone := entry.GetAttributeValue(p.config.FieldMapping.Phone); phone != "" {
+		if err := common.ValidatePhone(phone); err == nil {
+			userInfo.Phone = phone
+		}
+	}
+	return userInfo
 }
 
 // entryAttributes flattens an LDAP entry into a display map: multi-valued
