@@ -23,9 +23,10 @@ func (s *Server) registerReauthorizeTool() {
 }
 
 func (s *Server) handleReauthorize(ctx context.Context, _ *mcp.CallToolRequest, _ ReauthorizeInput) (*mcp.CallToolResult, any, error) {
+	accessToken := getAccessToken(ctx)
 	userEmail := getUserEmail(ctx)
 	clientID := getOAuth2ClientID(ctx)
-	if userEmail == "" || clientID == "" {
+	if accessToken == "" || userEmail == "" || clientID == "" {
 		return formatToolError(&toolError{
 			Code:    "NOT_OAUTH_SESSION",
 			Message: "reauthorize requires an MCP OAuth access token",
@@ -38,6 +39,7 @@ func (s *Server) handleReauthorize(ctx context.Context, _ *mcp.CallToolRequest, 
 	if err := s.store.DeleteOAuth2RefreshTokensByUserAndClient(ctx, userEmail, clientID); err != nil {
 		return formatToolError(errors.Wrap(err, "failed to revoke OAuth refresh tokens")), nil, nil
 	}
+	s.revokedAccessTokens.Store(accessToken, struct{}{})
 
 	workspaceID := getWorkspaceID(ctx)
 	message := "OAuth refresh grant revoked. Retry or reconnect this MCP server to run OAuth again."

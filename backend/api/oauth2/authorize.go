@@ -70,16 +70,18 @@ func (s *Service) handleAuthorizeGet(c *echo.Context) error {
 		return oauth2ErrorRedirect(c, redirectURI, state, "invalid_request", "code_challenge_method must be S256")
 	}
 
-	consenting, failure := s.resolveConsentingUser(c, client)
-	if failure != nil {
-		return oauth2ErrorRedirect(c, redirectURI, state, failure.code, failure.description)
+	values := c.QueryParams()
+	resource, err := singleValue(values, "resource")
+	if err != nil {
+		return oauth2ErrorRedirect(c, redirectURI, state, "invalid_target", err.Error())
 	}
-
-	// Validate the resource/scope the client is asking for before showing a
-	// consent screen for something we would refuse to issue.
-	params, failure := s.parseGrantParams(ctx, c.QueryParams(), consenting.workspaceID)
-	if failure != nil {
-		return oauth2ErrorRedirect(c, redirectURI, state, failure.code, failure.description)
+	requestedScope, err := singleValue(values, "scope")
+	if err != nil {
+		return oauth2ErrorRedirect(c, redirectURI, state, "invalid_scope", err.Error())
+	}
+	scope, err := canonicalizeScope(requestedScope)
+	if err != nil {
+		return oauth2ErrorRedirect(c, redirectURI, state, "invalid_scope", err.Error())
 	}
 
 	// Redirect to frontend consent page.
@@ -93,8 +95,8 @@ func (s *Service) handleAuthorizeGet(c *echo.Context) error {
 		url.QueryEscape(state),
 		url.QueryEscape(codeChallenge),
 		url.QueryEscape(codeChallengeMethod),
-		url.QueryEscape(params.resource),
-		url.QueryEscape(params.scope),
+		url.QueryEscape(resource),
+		url.QueryEscape(scope),
 	)
 	return c.Redirect(http.StatusFound, consentURL)
 }

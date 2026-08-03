@@ -70,6 +70,35 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 
 	configured := newTestService(st, "https://bb.example.com")
 
+	t.Run("authorization starts without an existing browser session", func(t *testing.T) {
+		entryService := newTestService(st, "")
+		entryService.profile.SaaS = true
+		challenge := sha256.Sum256([]byte(testCodeVerifier))
+		query := url.Values{
+			"response_type":         {"code"},
+			"client_id":             {testClientID},
+			"redirect_uri":          {testRedirectURI},
+			"state":                 {"test-state"},
+			"code_challenge":        {base64.RawURLEncoding.EncodeToString(challenge[:])},
+			"code_challenge_method": {"S256"},
+			"resource":              {testResource},
+		}
+		req := httptest.NewRequest(http.MethodGet, "/api/oauth2/authorize?"+query.Encode(), nil)
+		rec := httptest.NewRecorder()
+		e := echo.New()
+		c := e.NewContext(req, rec)
+		require.NoError(t, entryService.handleAuthorizeGet(c))
+		response, err := echo.UnwrapResponse(c.Response())
+		require.NoError(t, err)
+		require.Equal(t, http.StatusFound, response.Status)
+
+		location, err := url.Parse(response.Header().Get("Location"))
+		require.NoError(t, err)
+		require.Equal(t, "/oauth2/consent", location.Path)
+		require.Equal(t, testClientID, location.Query().Get("client_id"))
+		require.Equal(t, testResource, location.Query().Get("resource"))
+	})
+
 	t.Run("configured external URL: matching resource and known scope are consented", func(t *testing.T) {
 		code := consentOK(t, configured, url.Values{"resource": {testResource}, "scope": {"mcp:read-only"}})
 

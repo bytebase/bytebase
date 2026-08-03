@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -30,6 +31,8 @@ type Server struct {
 	profile      *config.Profile
 	secret       string
 	openAPIIndex *OpenAPIIndex
+
+	revokedAccessTokens sync.Map // map[string]struct{}
 
 	// planCheckPollBudgetOverride lets tests shorten the plan-check poll budget.
 	// Zero means use the default (planCheckPollBudget).
@@ -109,6 +112,9 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return s.unauthorized(c, "authorization header format must be Bearer {token}")
 		}
 		tokenStr := parts[1]
+		if _, revoked := s.revokedAccessTokens.Load(tokenStr); revoked {
+			return s.unauthorized(c, "token revoked")
+		}
 
 		// Parse and validate JWT
 		claims := jwt.MapClaims{}
@@ -160,7 +166,10 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		if !ok || sub == "" {
 			return s.unauthorized(c, "invalid token: missing subject")
 		}
-		clientID, _ := claims["client_id"].(string)
+		clientID, ok := claims["client_id"].(string)
+		if !ok {
+			clientID = ""
+		}
 
 		// Extract workspace ID from token claims.
 		workspaceID, ok := claims["workspace_id"].(string)
