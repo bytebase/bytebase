@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { identityProviderServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/app/router/handles";
 import { FeatureAttention } from "@/components/FeatureAttention";
@@ -27,7 +26,6 @@ import {
 } from "@/components/ResourceIdField";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { FormField, FormFieldGroup, FormTitle } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -61,16 +59,13 @@ import {
   getIdentityProviderResourceId,
   idpNamePrefix,
 } from "@/stores/modules/v1/common";
-import type { OAuthWindowEventPayload } from "@/types";
 import type {
   IdentityProvider,
   LDAPIdentityProviderConfig,
   OAuth2IdentityProviderConfig,
   OIDCIdentityProviderConfig,
-  TestIdentityProviderResponse,
 } from "@/types/proto-es/v1/idp_service_pb";
 import {
-  CreateIdentityProviderRequestSchema,
   FieldMappingSchema,
   IdentityProviderConfigSchema,
   IdentityProviderSchema,
@@ -80,14 +75,13 @@ import {
   OAuth2AuthStyle,
   OAuth2IdentityProviderConfigSchema,
   OIDCIdentityProviderConfigSchema,
-  TestIdentityProviderRequestSchema,
 } from "@/types/proto-es/v1/idp_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   hasWorkspacePermissionV2,
   identityProviderTypeToString,
-  openWindowForSSO,
 } from "@/utils";
+import { TestConnectionButton } from "./IdpTestConnection";
 
 // ============================================================
 // Escape key stack
@@ -194,267 +188,6 @@ function ExternalURLInfo({ type }: { type: IdentityProviderType }) {
         </div>
       </div>
     </div>
-  );
-}
-
-// ============================================================
-// TestConnectionResultDialog
-// ============================================================
-
-function TestConnectionResultDialog({
-  response,
-  onClose,
-}: {
-  response: TestIdentityProviderResponse;
-  onClose: () => void;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <Dialog open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent className="w-[32rem] max-w-[calc(100vw-2rem)] p-6">
-        <div className="flex items-center gap-x-2">
-          <div className="size-6 text-success">&#10003;</div>
-          <DialogTitle>
-            {t("identity-provider.test-connection-success")}
-          </DialogTitle>
-        </div>
-
-        <div className="mt-4 flex flex-col gap-y-4">
-          <p className="text-sm text-control-light">
-            {t("identity-provider.userinfo-description")}
-          </p>
-          <div className="bg-gray-50 rounded-xs p-4">
-            <div className="flex flex-col gap-y-1">
-              {Object.entries(response.userInfo).map(([key, value]) => (
-                <div
-                  key={key}
-                  className="grid grid-cols-3 gap-2 py-1 border-b border-gray-200 last:border-b-0"
-                >
-                  <div
-                    className="text-sm font-medium text-control truncate"
-                    title={key}
-                  >
-                    {key}
-                  </div>
-                  <div
-                    className="col-span-2 text-sm text-main break-all"
-                    title={value}
-                  >
-                    {value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <p className="text-sm text-control-light">
-            {t("identity-provider.claims-description")}
-          </p>
-          <div className="bg-gray-50 rounded-xs p-4">
-            {Object.keys(response.claims).length === 0 ? (
-              <div className="text-sm text-control-light italic">
-                {t("identity-provider.no-claims")}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-y-1">
-                {Object.entries(response.claims).map(([key, value]) => (
-                  <div
-                    key={key}
-                    className="grid grid-cols-3 gap-2 py-1 border-b border-gray-200 last:border-b-0"
-                  >
-                    <div
-                      className="text-sm font-medium text-control truncate"
-                      title={key}
-                    >
-                      {key}
-                    </div>
-                    <div
-                      className="col-span-2 text-sm text-main break-all"
-                      title={value}
-                    >
-                      {value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex justify-end mt-4">
-          <Button onClick={onClose}>{t("common.close")}</Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ============================================================
-// TestConnectionButton
-// ============================================================
-
-function TestConnectionButton({
-  idp,
-  disabled,
-  isCreating,
-}: {
-  idp: IdentityProvider;
-  disabled: boolean;
-  isCreating?: boolean;
-}) {
-  const { t } = useTranslation();
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] =
-    useState<TestIdentityProviderResponse | null>(null);
-  const currentEventNameRef = useRef("");
-  const idpRef = useRef(idp);
-  idpRef.current = idp;
-  const testingRef = useRef(false);
-
-  // Stable event handler that reads latest state via refs
-  const handleOAuthEventRef = useRef(async (event: Event) => {
-    if (testingRef.current) return;
-    const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
-    if (payload.error) {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: "Request error occurred",
-        description: payload.error,
-      });
-      return;
-    }
-
-    try {
-      testingRef.current = true;
-      setTesting(true);
-      const currentIdp = idpRef.current;
-      const isOidc = currentIdp.type === IdentityProviderType.OIDC;
-      const request = create(TestIdentityProviderRequestSchema, {
-        identityProvider: currentIdp,
-        context: isOidc
-          ? { case: "oidcContext", value: { code: payload.code } }
-          : { case: "oauth2Context", value: { code: payload.code } },
-      });
-      const response =
-        await identityProviderServiceClientConnect.testIdentityProvider(
-          request
-        );
-      setTestResult(response);
-    } catch (error) {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: "Request error occurred",
-        description: (error as ConnectError).message,
-      });
-    } finally {
-      testingRef.current = false;
-      setTesting(false);
-    }
-  });
-
-  useEffect(() => {
-    return () => {
-      if (currentEventNameRef.current) {
-        window.removeEventListener(
-          currentEventNameRef.current,
-          handleOAuthEventRef.current as EventListener,
-          false
-        );
-      }
-    };
-  }, []);
-
-  const testConnection = async () => {
-    if (testingRef.current) return;
-
-    if (
-      idp.type === IdentityProviderType.OAUTH2 ||
-      idp.type === IdentityProviderType.OIDC
-    ) {
-      let idpForTesting: IdentityProvider = idp;
-      if (isCreating && idp.type === IdentityProviderType.OIDC) {
-        const request = create(CreateIdentityProviderRequestSchema, {
-          identityProviderId: idp.name,
-          identityProvider: idp,
-          validateOnly: true,
-        });
-        const response =
-          await identityProviderServiceClientConnect.createIdentityProvider(
-            request
-          );
-        idpForTesting = response;
-      }
-
-      const eventName = `bb.oauth.signin.${idpForTesting.name}`;
-      if (currentEventNameRef.current) {
-        window.removeEventListener(
-          currentEventNameRef.current,
-          handleOAuthEventRef.current as EventListener,
-          false
-        );
-      }
-      window.addEventListener(
-        eventName,
-        handleOAuthEventRef.current as EventListener,
-        false
-      );
-      currentEventNameRef.current = eventName;
-
-      try {
-        await openWindowForSSO(idpForTesting);
-      } catch (error) {
-        pushNotification({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: "Request error occurred",
-          description: (error as ConnectError).message,
-        });
-      }
-    } else if (idp.type === IdentityProviderType.LDAP) {
-      try {
-        testingRef.current = true;
-        setTesting(true);
-        const request = create(TestIdentityProviderRequestSchema, {
-          identityProvider: idp,
-        });
-        const response =
-          await identityProviderServiceClientConnect.testIdentityProvider(
-            request
-          );
-        setTestResult(response);
-      } catch (error) {
-        pushNotification({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: "Request error occurred",
-          description: (error as ConnectError).message,
-        });
-      } finally {
-        testingRef.current = false;
-        setTesting(false);
-      }
-    }
-  };
-
-  return (
-    <>
-      <Button
-        appearance="outline"
-        disabled={disabled || testing}
-        onClick={testConnection}
-      >
-        {t("identity-provider.test-connection")}
-      </Button>
-      {testResult && (
-        <TestConnectionResultDialog
-          response={testResult}
-          onClose={() => setTestResult(null)}
-        />
-      )}
-    </>
   );
 }
 

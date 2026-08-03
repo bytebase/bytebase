@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	goldap "github.com/go-ldap/ldap/v3"
 	"github.com/lor00x/goldap/message"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -128,7 +129,7 @@ func TestNewIdentityProvider(t *testing.T) {
 	}
 }
 
-func newMockServer(t *testing.T, uid, displayName, mail string) (host string, port int) {
+func newMockServer(t *testing.T, uid, displayName, mail, phone string) (host string, port int) {
 	// localhostCert is a PEM-encoded TLS cert with SAN IPs
 	// "127.0.0.1" and "[::1]", expiring at Jan 29 16:00:00 2084 GMT.
 	// generated from src/crypto/tls:
@@ -200,6 +201,7 @@ ZboOWVe3icTy64BT3OQhmg==
 		e.AddAttribute("uid", message.AttributeValue(uid))
 		e.AddAttribute("displayName", message.AttributeValue(displayName))
 		e.AddAttribute("mail", message.AttributeValue(mail))
+		e.AddAttribute("telephoneNumber", message.AttributeValue(phone))
 		w.Write(e)
 		w.Write(ldapserver.NewSearchResultDoneResponse(ldapserver.LDAPResultSuccess))
 	})
@@ -226,8 +228,9 @@ func TestIdentityProvider(t *testing.T) {
 		testUID         = "alice"
 		testDisplayName = "Alice Smith"
 		testMail        = "alice@example.com"
+		testPhone       = "+1-555-0100"
 	)
-	host, port := newMockServer(t, testUID, testDisplayName, testMail)
+	host, port := newMockServer(t, testUID, testDisplayName, testMail, testPhone)
 	ldap, err := NewIdentityProvider(
 		IdentityProviderConfig{
 			Host:             host,
@@ -241,17 +244,47 @@ func TestIdentityProvider(t *testing.T) {
 			FieldMapping: &storepb.FieldMapping{
 				Identifier:  "uid",
 				DisplayName: "displayName",
+				Phone:       "telephoneNumber",
 			},
 		},
 	)
 	require.NoError(t, err)
 
-	userInfo, err := ldap.Authenticate("alice", "pa$$word")
-	require.NoError(t, err)
-
 	wantUserInfo := &storepb.IdentityProviderUserInfo{
 		Identifier:  testUID,
 		DisplayName: testDisplayName,
+		Phone:       testPhone,
 	}
+
+	userInfo, err := ldap.Authenticate("alice", "pa$$word")
+	require.NoError(t, err)
 	assert.Equal(t, wantUserInfo, userInfo)
+
+	testUserInfo, attributes, err := ldap.TestAuthenticate("alice", "pa$$word")
+	require.NoError(t, err)
+	assert.Equal(t, wantUserInfo, testUserInfo)
+	assert.Equal(t, map[string]string{
+		"dn":              testUID,
+		"uid":             testUID,
+		"displayName":     testDisplayName,
+		"mail":            testMail,
+		"telephoneNumber": testPhone,
+	}, attributes)
+}
+
+func TestEntryAttributes(t *testing.T) {
+	entry := &goldap.Entry{
+		DN: "uid=alice,ou=Users,dc=example,dc=com",
+		Attributes: []*goldap.EntryAttribute{
+			goldap.NewEntryAttribute("mail", []string{"alice@example.com"}),
+			goldap.NewEntryAttribute("memberOf", []string{"cn=dba,dc=example,dc=com", "cn=dev,dc=example,dc=com"}),
+			goldap.NewEntryAttribute("jpegPhoto", []string{"\xff\xd8\xff"}),
+		},
+	}
+	assert.Equal(t, map[string]string{
+		"dn":        "uid=alice,ou=Users,dc=example,dc=com",
+		"mail":      "alice@example.com",
+		"memberOf":  "cn=dba,dc=example,dc=com, cn=dev,dc=example,dc=com",
+		"jpegPhoto": "<binary>",
+	}, entryAttributes(entry))
 }

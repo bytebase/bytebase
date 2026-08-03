@@ -2228,6 +2228,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.LDAPIdentityProviderTestRequestContext"><span class="badge">M</span>LDAPIdentityProviderTestRequestContext</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ListIdentityProvidersRequest"><span class="badge">M</span>ListIdentityProvidersRequest</a>
                 </li>
               
@@ -7369,7 +7373,7 @@ in Oracle and search path in Postgres. </p></td>
                   <td><p>Container is the container name to execute the query against, used for
 CosmosDB only. </p></td>
                 </tr>
-
+              
             </tbody>
           </table>
 
@@ -7551,7 +7555,7 @@ Oracle and search path in Postgres. </p></td>
                   <td><p>Container is the container name to execute the query against, used for
 CosmosDB only. </p></td>
                 </tr>
-
+              
             </tbody>
           </table>
 
@@ -25385,6 +25389,37 @@ server. </p></td>
 
         
       
+        <h3 id="bytebase.v1.LDAPIdentityProviderTestRequestContext">LDAPIdentityProviderTestRequestContext</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>username</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The username of a directory user, substituted into the user filter. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The password of the directory user. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ListIdentityProvidersRequest">ListIdentityProvidersRequest</h3>
         <p></p>
 
@@ -25667,6 +25702,13 @@ Should be fetched from the well-known configuration file of the OIDC provider. <
                   <td><a href="#bytebase.v1.OIDCIdentityProviderTestRequestContext">OIDCIdentityProviderTestRequestContext</a></td>
                   <td></td>
                   <td><p>OIDC authentication context for test connection. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ldap_context</td>
+                  <td><a href="#bytebase.v1.LDAPIdentityProviderTestRequestContext">LDAPIdentityProviderTestRequestContext</a></td>
+                  <td></td>
+                  <td><p>LDAP credentials context for test connection. </p></td>
                 </tr>
               
             </tbody>
@@ -35318,3 +35360,4 @@ Permissions required: bb.workspaces.setIamPolicy</p></td>
     </table>
   </body>
 </html>
+

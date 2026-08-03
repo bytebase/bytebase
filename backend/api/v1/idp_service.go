@@ -388,13 +388,37 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, req 
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create new LDAP identity provider"))
 		}
 
+		// With user credentials, run the full sign-in flow (search with the user
+		// filter, bind as the matched user, read attributes) so the base DN, user
+		// filter, and field mapping are actually verified.
+		if ldapContext := req.Msg.GetLdapContext(); ldapContext != nil {
+			if ldapContext.Username == "" || ldapContext.Password == "" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("username and password are required to test LDAP sign-in"))
+			}
+			userInfo, attributes, err := ldapIdentityProvider.TestAuthenticate(ldapContext.Username, ldapContext.Password)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to test sign-in, error: %s", err.Error()))
+			}
+			userInfoMap := make(map[string]string)
+			if userInfo.Identifier != "" {
+				userInfoMap["email"] = userInfo.Identifier
+			}
+			if userInfo.DisplayName != "" {
+				userInfoMap["title"] = userInfo.DisplayName
+			}
+			if userInfo.Phone != "" {
+				userInfoMap["phone"] = userInfo.Phone
+			}
+			return connect.NewResponse(&v1pb.TestIdentityProviderResponse{Claims: attributes, UserInfo: userInfoMap}), nil
+		}
+
+		// Without credentials, only connectivity and the service-account bind can
+		// be verified.
 		conn, err := ldapIdentityProvider.Connect()
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to test connection, error: %s", err.Error()))
 		}
 		_ = conn.Close()
-
-		// LDAP cannot return claims without username and password so we return an empty claims map.
 		return connect.NewResponse(&v1pb.TestIdentityProviderResponse{Claims: make(map[string]string)}), nil
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("identity provider type %s not supported", identityProvider.Type.String()))

@@ -153,6 +153,8 @@ message TestIdentityProviderRequest {
     OAuth2IdentityProviderTestRequestContext oauth2_context = 2;
     // OIDC authentication context for test connection.
     OIDCIdentityProviderTestRequestContext oidc_context = 3;
+    // LDAP credentials context for test connection.
+    LDAPIdentityProviderTestRequestContext ldap_context = 4;
   }
 }
 
@@ -164,6 +166,13 @@ message OAuth2IdentityProviderTestRequestContext {
 message OIDCIdentityProviderTestRequestContext {
   // Authorize code from OIDC provider.
   string code = 1;
+}
+
+message LDAPIdentityProviderTestRequestContext {
+  // The username of a directory user, substituted into the user filter.
+  string username = 1;
+  // The password of the directory user.
+  string password = 2;
 }
 
 message TestIdentityProviderResponse {
