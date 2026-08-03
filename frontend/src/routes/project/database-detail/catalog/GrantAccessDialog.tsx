@@ -419,7 +419,7 @@ export function GrantAccessDialog({
                   onValueChange={(value) => onRadioChange(value as RadioValue)}
                 >
                   <Tooltip content={t("issue.role-grant.all-databases-tip")}>
-                    <RadioGroupItem value="ALL" disabled={modeChangeProcessing}>
+                    <RadioGroupItem value="ALL" disabled>
                       {t("issue.role-grant.all-databases")}
                     </RadioGroupItem>
                   </Tooltip>
@@ -457,6 +457,7 @@ export function GrantAccessDialog({
                   projectName={projectName}
                   value={databaseResources}
                   includeColumns
+                  readonly
                   onChange={setDatabaseResources}
                 />
               )}
@@ -466,6 +467,7 @@ export function GrantAccessDialog({
                   factorList={factorList}
                   optionConfigMap={factorOptionConfigMap}
                   factorOperatorOverrideMap={factorOperatorOverrideMap}
+                  readonly
                   onUpdate={setExpr}
                 />
               )}

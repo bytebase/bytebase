@@ -18,6 +18,7 @@ function RadioGroupItem({
   children,
   className,
   contentClassName,
+  disabled,
   radioClassName,
   value,
   ...props
@@ -28,10 +29,15 @@ function RadioGroupItem({
 }) {
   return (
     <label
-      className={cn("flex items-center gap-x-2 cursor-pointer", className)}
+      className={cn(
+        "flex items-center gap-x-2",
+        disabled ? "cursor-not-allowed" : "cursor-pointer",
+        className
+      )}
     >
       <Radio.Root
         value={value}
+        disabled={disabled}
         className={cn(
           "flex size-4 shrink-0 items-center justify-center rounded-full border border-control-border",
           "data-[checked]:border-[rgb(var(--color-accent))] data-[checked]:border-[5px]",

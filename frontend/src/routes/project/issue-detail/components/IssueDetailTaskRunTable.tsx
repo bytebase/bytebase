@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIcon } from "@/components/EngineIcon";
+import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskRunStatusIcon } from "@/components/TaskRunStatusIcon";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
@@ -21,12 +21,9 @@ import {
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { getDateForPbTimestampProtoEs } from "@/types";
-import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   databaseForTask,
-  extractDatabaseResourceName,
-  extractInstanceResourceName,
   extractTaskUID,
   formatAbsoluteDateTime,
   humanizeDurationV1,
@@ -137,7 +134,10 @@ export function IssueDetailTaskRunTable({
                   {showDatabaseColumn && (
                     <TableCell>
                       {database ? (
-                        <IssueDetailTaskRunDatabaseCell database={database} />
+                        <DatabaseTargetDisplay
+                          database={database}
+                          showEnvironment
+                        />
                       ) : (
                         <span className="text-control-light">-</span>
                       )}
@@ -208,39 +208,5 @@ function IssueDetailTaskRunDateCell({
       ts={parsedDate.getTime() / 1000}
       className="text-sm text-control"
     />
-  );
-}
-
-function IssueDetailTaskRunDatabaseCell({ database }: { database: Database }) {
-  const { t } = useTranslation();
-  const environmentList = useAppStore((s) => s.environmentList);
-  const environmentName =
-    database.effectiveEnvironment ??
-    database.instanceResource?.environment ??
-    "";
-  const environment = useMemo(
-    () => useAppStore.getState().getEnvironmentByName(environmentName),
-    [environmentList, environmentName]
-  );
-  const instance = database.instanceResource;
-  const { databaseName } = extractDatabaseResourceName(database.name);
-  const instanceTitle =
-    instance?.title ||
-    extractInstanceResourceName(database.name) ||
-    t("common.unknown");
-
-  return (
-    <div className="flex min-w-0 items-center truncate text-sm">
-      {instance && (
-        <EngineIcon
-          engine={instance.engine}
-          className="mr-1 inline-block h-4 w-4"
-        />
-      )}
-      <span className="mr-1 truncate text-gray-400">{environment.title}</span>
-      <span className="truncate text-gray-600">{instanceTitle}</span>
-      <span className="mx-1 shrink-0 text-gray-500 opacity-60">/</span>
-      <span className="truncate text-gray-800">{databaseName}</span>
-    </div>
   );
 }

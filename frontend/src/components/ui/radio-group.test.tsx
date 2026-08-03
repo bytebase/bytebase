@@ -94,4 +94,24 @@ describe("RadioGroupItem", () => {
 
     unmount();
   });
+
+  test("uses a not-allowed cursor for a disabled option", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        RadioGroup,
+        { value: "workspace", onValueChange: () => undefined },
+        createElement(
+          RadioGroupItem,
+          { value: "workspace", disabled: true },
+          "Workspace"
+        )
+      )
+    );
+
+    const label = container.querySelector("label");
+    expect(label?.className).toContain("cursor-not-allowed");
+    expect(label?.className).not.toContain("cursor-pointer");
+
+    unmount();
+  });
 });

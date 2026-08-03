@@ -95,6 +95,19 @@ vi.mock("@/components/EnvironmentLabel", () => ({
   ),
 }));
 
+vi.mock("@/components/DatabaseTargetDisplay", () => ({
+  DatabaseTargetDisplay: ({
+    database,
+    target,
+  }: {
+    database?: { name: string };
+    target?: string;
+  }) => {
+    const name = database?.name ?? target ?? "";
+    return <span>{name.split("/databases/").at(-1) ?? name}</span>;
+  },
+}));
+
 vi.mock("@/utils", () => ({
   engineNameV1: (engine: number) => `engine-${engine}`,
   extractDatabaseResourceName: mocks.extractDatabaseResourceName,
@@ -137,10 +150,12 @@ function Harness({
   includeColumns,
   initialValue = [],
   onValueChange,
+  readonly,
 }: {
   includeColumns?: boolean;
   initialValue?: DatabaseResource[];
   onValueChange?: (value: DatabaseResource[]) => void;
+  readonly?: boolean;
 }) {
   const [value, setValue] = useState<DatabaseResource[]>(initialValue);
 
@@ -149,6 +164,7 @@ function Harness({
       projectName="projects/project"
       value={value}
       includeColumns={includeColumns}
+      readonly={readonly}
       onChange={(next) => {
         setValue(next);
         onValueChange?.(next);
@@ -551,6 +567,44 @@ describe("DatabaseResourceSelector", () => {
         table: "employee",
       },
     ]);
+
+    unmount();
+  });
+
+  test("prevents resource changes when readonly", async () => {
+    const onValueChange = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <Harness
+        includeColumns
+        readonly
+        initialValue={[
+          {
+            databaseFullName: databaseName,
+            schema: "public",
+            table: "employee",
+            columns: ["salary"],
+          },
+        ]}
+        onValueChange={onValueChange}
+      />
+    );
+    await flushPromises();
+    await expandDatabase(container);
+    clickFirstButtonInRow(container, "public");
+    clickFirstButtonInRow(container, "employee");
+
+    const salaryRow = rowForText(container, "salary");
+    const salaryCheckbox = salaryRow.querySelector('[role="checkbox"]');
+    expect(salaryCheckbox?.getAttribute("aria-disabled")).toBe("true");
+
+    clickCheckboxInRow(container, "id");
+
+    const selectedResource = rowForText(
+      container,
+      "hr.public.employee: salary"
+    );
+    expect(selectedResource.querySelector("button")).toBeNull();
+    expect(onValueChange).not.toHaveBeenCalled();
 
     unmount();
   });

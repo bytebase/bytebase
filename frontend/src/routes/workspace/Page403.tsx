@@ -35,7 +35,7 @@ export function Page403() {
       <div className="rounded-md border border-red-200 bg-red-50 p-4">
         <div className="flex items-start gap-3">
           <ShieldAlert className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
-          <div className="flex flex-col gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-2 wrap-anywhere">
             <div className="font-medium text-red-800">
               {t("common.missing-required-permission", { permissions: "" })}
             </div>

@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/api";
-import { EngineIcon } from "@/components/EngineIcon";
+import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { TaskStatusIcon } from "@/components/TaskStatusIcon";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -38,12 +38,7 @@ import {
   Task_Type,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { unknownDatabase } from "@/types/v1/database";
-import {
-  extractDatabaseResourceName,
-  extractInstanceResourceName,
-  extractStageUID,
-} from "@/utils";
+import { extractStageUID } from "@/utils";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 import {
   CANCELABLE_TASK_STATUSES,
@@ -581,48 +576,9 @@ function groupTasksByStage(tasks: Task[]) {
 
 function IssueDetailTaskDatabaseName({ task }: { task: Task }) {
   if (task.target) {
-    return <IssueDetailDatabaseTarget target={task.target} />;
+    return <DatabaseTargetDisplay target={task.target} showEnvironment />;
   }
   return <span className="truncate">{task.name.split("/").at(-1)}</span>;
-}
-
-function IssueDetailDatabaseTarget({ target }: { target: string }) {
-  const { t } = useTranslation();
-  const databasesByName = useAppStore((s) => s.databasesByName);
-  const environmentList = useAppStore((s) => s.environmentList);
-  const database = useMemo(
-    () => databasesByName[target] ?? unknownDatabase(),
-    [databasesByName, target]
-  );
-  const environmentName =
-    database.effectiveEnvironment ??
-    database.instanceResource?.environment ??
-    "";
-  const environment = useMemo(
-    () => useAppStore.getState().getEnvironmentByName(environmentName),
-    [environmentList, environmentName]
-  );
-  const instance = database.instanceResource;
-  const { databaseName } = extractDatabaseResourceName(target);
-  const instanceTitle =
-    instance?.title ||
-    extractInstanceResourceName(target) ||
-    t("common.unknown");
-
-  return (
-    <div className="flex min-w-0 items-center truncate text-sm">
-      {instance && (
-        <EngineIcon
-          engine={instance.engine}
-          className="mr-1 inline-block h-4 w-4"
-        />
-      )}
-      <span className="mr-1 truncate text-gray-400">{environment.title}</span>
-      <span className="truncate text-gray-600">{instanceTitle}</span>
-      <span className="mx-1 shrink-0 text-gray-500 opacity-60">›</span>
-      <span className="truncate text-gray-800">{databaseName}</span>
-    </div>
-  );
 }
 
 function IssueDetailStageEnvironment({

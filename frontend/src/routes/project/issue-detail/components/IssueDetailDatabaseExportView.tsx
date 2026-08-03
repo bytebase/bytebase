@@ -1,16 +1,11 @@
 import { clone, create } from "@bufbuild/protobuf";
-import {
-  ChevronRight,
-  EllipsisVertical,
-  ExternalLink,
-  FolderTree,
-} from "lucide-react";
+import { EllipsisVertical, ExternalLink, FolderTree } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { planServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/app/router/handles";
-import { EngineIcon } from "@/components/EngineIcon";
+import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { TaskStatusIcon } from "@/components/TaskStatusIcon";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,12 +38,7 @@ import {
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { type Task, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { unknownDatabase } from "@/types/v1/database";
-import {
-  extractDatabaseResourceName,
-  extractInstanceResourceName,
-  extractTaskUID,
-} from "@/utils";
+import { extractTaskUID } from "@/utils";
 import { extractDatabaseGroupName } from "@/utils/v1/databaseGroup";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 import { refreshIssueDetailState } from "../utils/refreshIssueDetailState";
@@ -627,47 +617,12 @@ function IssueDetailDatabaseExportDatabaseTarget({
 }: {
   target: string;
 }) {
-  const { t } = useTranslation();
-  const databasesByName = useAppStore((s) => s.databasesByName);
-  const environmentList = useAppStore((s) => s.environmentList);
-  const database = useMemo(
-    () => databasesByName[target] ?? unknownDatabase(),
-    [databasesByName, target]
-  );
-  const environmentName =
-    database.effectiveEnvironment ??
-    database.instanceResource?.environment ??
-    "";
-  const environment = useMemo(
-    () => useAppStore.getState().getEnvironmentByName(environmentName),
-    [environmentList, environmentName]
-  );
-  const instance = database.instanceResource;
-  const { databaseName } = extractDatabaseResourceName(target);
-  const instanceTitle =
-    instance?.title ||
-    extractInstanceResourceName(target) ||
-    t("common.unknown");
-
   return (
-    <div className="flex min-w-0 max-w-full items-center text-sm">
-      {instance && (
-        <EngineIcon
-          engine={instance.engine}
-          className="mr-1 inline-block h-4 w-4 shrink-0"
-        />
-      )}
-      <span className="mr-1 max-w-24 shrink truncate text-gray-400">
-        {environment.title}
-      </span>
-      <span className="min-w-0 shrink-[2] truncate text-gray-600">
-        {instanceTitle}
-      </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-gray-500 opacity-60" />
-      <span className="min-w-12 flex-1 truncate text-gray-800">
-        {databaseName}
-      </span>
-    </div>
+    <DatabaseTargetDisplay
+      target={target}
+      showEnvironment
+      className="flex min-w-0 max-w-full"
+    />
   );
 }
 
