@@ -63,25 +63,9 @@ func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *CheckTarge
 		}
 	}()
 
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(target.Target)
+	instance, database, err := resolveDatabaseTarget(ctx, e.store, target.Target)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse target %s", target.Target)
-	}
-
-	instance, err := e.store.GetInstanceByResourceID(ctx, instanceID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance %s not found", instanceID)
-	}
-
-	database, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found %q", databaseName)
+		return nil, err
 	}
 
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)

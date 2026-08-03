@@ -217,7 +217,6 @@ func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creat
 		return nil, err
 	}
 	defer tx.Rollback()
-
 	project := &ProjectMessage{
 		ResourceID: create.ResourceID,
 		Workspace:  create.Workspace,
@@ -348,6 +347,9 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
+	if err := acquireProjectPurgeLock(ctx, tx, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to lock project purge fence for %s", resourceID)
+	}
 
 	// Delete query history before locking database-scoped rows to preserve the
 	// canonical sibling-branch order.

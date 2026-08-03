@@ -118,12 +118,14 @@ func (s *Store) UpsertDBSchema(
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	var metadata, schema, config []byte
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&metadata,
-		&schema,
-		&config,
-	); err != nil {
+	err = s.withDatabasePurgeFence(ctx, instanceID, databaseName, "", func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, "SELECT 1 FROM db_schema WHERE instance = $1 AND db_name = $2 FOR UPDATE", instanceID, databaseName)
+		return err
+	}, func(tx *sql.Tx, _ *databaseOwnership) error {
+		var metadata, schema, config []byte
+		return tx.QueryRowContext(ctx, query, args...).Scan(&metadata, &schema, &config)
+	})
+	if err != nil {
 		return err
 	}
 
@@ -153,7 +155,14 @@ func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName str
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	err = s.withDatabasePurgeFence(ctx, instanceID, databaseName, "", func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, "SELECT 1 FROM db_schema WHERE instance = $1 AND db_name = $2 FOR UPDATE", instanceID, databaseName)
+		return err
+	}, func(tx *sql.Tx, _ *databaseOwnership) error {
+		_, err := tx.ExecContext(ctx, query, args...)
+		return err
+	})
+	if err != nil {
 		return err
 	}
 

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/pkg/errors"
@@ -167,12 +168,15 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (
 		return nil, errors.Wrapf(err, "failed to marshal revision payload")
 	}
 
-	if err := s.GetDB().QueryRowContext(ctx, query,
-		revision.InstanceID,
-		revision.DatabaseName,
-		revision.Version,
-		p,
-	).Scan(&revision.ResourceID, &revision.CreatedAt); err != nil {
+	err = s.withDatabasePurgeFence(ctx, revision.InstanceID, revision.DatabaseName, "", nil, func(tx *sql.Tx, _ *databaseOwnership) error {
+		return tx.QueryRowContext(ctx, query,
+			revision.InstanceID,
+			revision.DatabaseName,
+			revision.Version,
+			p,
+		).Scan(&revision.ResourceID, &revision.CreatedAt)
+	})
+	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query and scan")
 	}
 

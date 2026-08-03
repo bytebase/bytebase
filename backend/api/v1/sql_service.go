@@ -149,7 +149,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 			queryContext,
 		)
 
-		s.createQueryHistory(database, store.QueryHistoryTypeQuery, request.Statement, user.Email, duration, queryErr)
+		s.createQueryHistory(instance, database, store.QueryHistoryTypeQuery, request.Statement, user.Email, duration, queryErr)
 		response := &v1pb.AdminExecuteResponse{}
 		if queryErr != nil {
 			response.Results = []*v1pb.QueryResult{
@@ -220,7 +220,7 @@ func (s *SQLService) preCheckAccess(ctx context.Context, statement string, insta
 		return nil
 	}
 
-	databaseFullName := common.FormatDatabase(database.InstanceID, database.DatabaseName)
+	databaseFullName := formatDatabaseResourceName(instance, database)
 	now := time.Now().UTC().Format(time.RFC3339)
 
 	filter := fmt.Sprintf(
@@ -417,7 +417,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	)
 
 	// Update activity.
-	s.createQueryHistory(database, store.QueryHistoryTypeQuery, statement, user.Email, duration, queryErr)
+	s.createQueryHistory(instance, database, store.QueryHistoryTypeQuery, statement, user.Email, duration, queryErr)
 
 	if queryErr != nil {
 		if len(results) == 0 {
@@ -1010,7 +1010,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	}
 	bytes, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, optionalAccessCheck, s.schemaSyncer, dataSource, skipMasking)
 
-	s.createQueryHistory(database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr)
+	s.createQueryHistory(instance, database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr)
 
 	if exportErr != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New(exportErr.Error()))
@@ -1228,11 +1228,11 @@ func exportSQLWithContext(
 	return export.SQLToWriter(w, instance.Metadata.GetEngine(), statementPrefix, result)
 }
 
-func (s *SQLService) createQueryHistory(database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userEmail string, duration time.Duration, queryErr error) {
+func (s *SQLService) createQueryHistory(instance *store.InstanceMessage, database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userEmail string, duration time.Duration, queryErr error) {
 	qh := &store.QueryHistoryMessage{
 		Creator:   userEmail,
 		Project:   database.ProjectID,
-		Database:  common.FormatDatabase(database.InstanceID, database.DatabaseName),
+		Database:  formatDatabaseResourceName(instance, database),
 		Statement: statement,
 		Type:      queryType,
 		Payload: &storepb.QueryHistoryPayload{
@@ -1362,7 +1362,8 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 
 	checkDatabaseAccess := func(perm permission.Permission) error {
 		databaseFullName := common.FormatDatabase(instance.ResourceID, database.DatabaseName)
-		if _, granted := grantedTargets[databaseFullName]; granted {
+		grantTargetName := formatDatabaseResourceName(instance, database)
+		if _, granted := grantedTargets[grantTargetName]; granted {
 			return nil
 		}
 		attributes := map[string]any{
@@ -1503,7 +1504,12 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		var deniedResources []string
 		for column := range span.SourceColumns {
 			columnDatabaseFullName := common.FormatDatabase(instance.ResourceID, column.Database)
-			if _, granted := grantedTargets[columnDatabaseFullName]; granted {
+			grantTargetName := formatDatabaseResourceName(instance, &store.DatabaseMessage{
+				ProjectID:    database.ProjectID,
+				InstanceID:   instance.ResourceID,
+				DatabaseName: column.Database,
+			})
+			if _, granted := grantedTargets[grantTargetName]; granted {
 				continue
 			}
 			attributes := map[string]any{
@@ -1602,7 +1608,12 @@ func (s *SQLService) authorizeWriteTargets(
 	var deniedResources []string
 	for _, t := range targets {
 		databaseFullName := common.FormatDatabase(instance.ResourceID, t.database)
-		if _, granted := grantedTargets[databaseFullName]; granted {
+		grantTargetName := formatDatabaseResourceName(instance, &store.DatabaseMessage{
+			ProjectID:    database.ProjectID,
+			InstanceID:   instance.ResourceID,
+			DatabaseName: t.database,
+		})
+		if _, granted := grantedTargets[grantTargetName]; granted {
 			continue
 		}
 		// A target with no table name is a database-only target: DDL on a non-table object
@@ -1862,7 +1873,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 		return nil, nil, nil, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
 
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(requestName)
+	targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(requestName)
 	if err != nil {
 		return nil, nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", requestName))
 	}
@@ -1877,6 +1888,19 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 	if database == nil {
 		return nil, nil, nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", requestName))
 	}
+	if targetProjectID != nil && database.ProjectID != *targetProjectID {
+		return nil, nil, nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", requestName, *targetProjectID))
+	}
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: &database.ProjectID,
+	})
+	if err != nil {
+		return nil, nil, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %q", database.ProjectID))
+	}
+	if project == nil || project.Deleted {
+		return nil, nil, nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", database.ProjectID))
+	}
 
 	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
@@ -1887,6 +1911,13 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 	}
 	if instance == nil {
 		return nil, nil, nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", database.InstanceID))
+	}
+	if instance.Deleted {
+		return nil, nil, nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", database.InstanceID))
+	}
+	if (targetProjectID == nil) != (instance.ProjectID == nil) ||
+		targetProjectID != nil && *targetProjectID != *instance.ProjectID {
+		return nil, nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database name %q is not canonical for its instance", requestName))
 	}
 
 	return user, instance, database, nil

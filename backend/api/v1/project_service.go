@@ -397,16 +397,8 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		if common.IsDefaultProject(project.Workspace, project.ResourceID) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be purged"))
 		}
-
-		// If project is not already soft-deleted, soft-delete it first
 		if !project.Deleted {
-			if err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
-				ResourceID: project.ResourceID,
-				Workspace:  project.Workspace,
-				Delete:     &deletePatch,
-			}); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
-			}
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("project %q must be archived before it can be deleted", req.Msg.Name))
 		}
 
 		// Permanently delete the project and all related resources (moves databases to default project)
@@ -483,20 +475,9 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 			projectsToPurge = append(projectsToPurge, project)
 		}
 
-		// Soft-delete projects that aren't already deleted
-		var projectsToSoftDelete []*store.UpdateProjectMessage
 		for _, project := range projectsToPurge {
 			if !project.Deleted {
-				projectsToSoftDelete = append(projectsToSoftDelete, &store.UpdateProjectMessage{
-					ResourceID: project.ResourceID,
-					Workspace:  project.Workspace,
-					Delete:     &deletePatch,
-				})
-			}
-		}
-		if len(projectsToSoftDelete) > 0 {
-			if err := s.store.UpdateProjects(ctx, projectsToSoftDelete...); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
+				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("project %q must be archived before it can be deleted", project.GetName()))
 			}
 		}
 

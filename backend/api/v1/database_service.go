@@ -73,6 +73,9 @@ func (s *DatabaseService) getInstanceForDatabaseResource(ctx context.Context, pr
 	if projectID != nil && (instance.ProjectID == nil || *projectID != *instance.ProjectID) {
 		return nil, errors.Errorf("project in database resource name does not own instance %q", instanceID)
 	}
+	if err := ensureProjectInstanceIsActive(ctx, s.store, instance); err != nil {
+		return nil, err
+	}
 	return instance, nil
 }
 
@@ -300,6 +303,16 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 		}
 		find.InstanceID = &instanceID
 	} else if projectID, err := common.GetProjectID(req.Msg.Parent); err == nil {
+		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+			Workspace:  common.GetWorkspaceIDFromContext(ctx),
+			ResourceID: &projectID,
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		if project == nil || project.Deleted {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", req.Msg.Parent))
+		}
 		ok, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, common.GetWorkspaceIDFromContext(ctx), projectID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))

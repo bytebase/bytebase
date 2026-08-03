@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -349,11 +350,18 @@ func findResourceResolver(route resourceRoute) (resourceRoute, resourceResolver,
 }
 
 func resolveRawResource(ctx context.Context, stores *store.Store, name string) (*common.Resource, error) {
+	return resolveRawResourceWithArchivedProject(ctx, stores, name, false)
+}
+
+func resolveRawResourceWithArchivedProject(ctx context.Context, stores *store.Store, name string, allowArchivedProject bool) (*common.Resource, error) {
 	if name == "projects/-" || strings.HasPrefix(name, "instances/-/databases/") {
 		return workspaceFallback(ctx), nil
 	}
 
 	parts := strings.Split(name, "/")
+	if allowArchivedProject && getResourceRoute(parts) == (resourceRoute{projectCollection, instanceCollection}) {
+		return resolveProjectInstanceResourceForLifecycle(ctx, stores, parts)
+	}
 	_, resolver, ok := findResourceResolver(getResourceRoute(parts))
 	if !ok {
 		return workspaceFallback(ctx), nil
@@ -514,7 +522,7 @@ func populateRawResources(ctx context.Context, stores *store.Store, request any,
 
 	var resources []*common.Resource
 	for _, name := range rawNames {
-		resource, err := resolveRawResource(ctx, stores, name)
+		resource, err := resolveRawResourceWithArchivedProject(ctx, stores, name, allowsArchivedProjectResourceResolution(method))
 		if err != nil {
 			return nil, err
 		}
@@ -526,6 +534,10 @@ func populateRawResources(ctx context.Context, stores *store.Store, request any,
 }
 
 func getProjectScopedInstance(ctx context.Context, stores *store.Store, projectID, instanceID string) (*store.InstanceMessage, error) {
+	return getProjectScopedInstanceWithArchivedProject(ctx, stores, projectID, instanceID, false)
+}
+
+func getProjectScopedInstanceWithArchivedProject(ctx context.Context, stores *store.Store, projectID, instanceID string, allowArchivedProject bool) (*store.InstanceMessage, error) {
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
 		Workspace:  workspaceID,
@@ -538,7 +550,31 @@ func getProjectScopedInstance(ctx context.Context, stores *store.Store, projectI
 	if instance == nil || instance.Workspace != workspaceID {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", common.FormatProjectInstance(projectID, instanceID)))
 	}
+	if !allowArchivedProject {
+		if err := ensureProjectInstanceIsActive(ctx, stores, instance); err != nil {
+			return nil, err
+		}
+	}
 	return instance, nil
+}
+
+func resolveProjectInstanceResourceForLifecycle(ctx context.Context, stores *store.Store, parts []string) (*common.Resource, error) {
+	projectID, err := requiredResourceIdentifier(parts, 1, projectCollection)
+	if err != nil {
+		return nil, err
+	}
+	instanceID, err := requiredResourceIdentifier(parts, 3, instanceCollection)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := getProjectScopedInstanceWithArchivedProject(ctx, stores, projectID, instanceID, true); err != nil {
+		return nil, err
+	}
+	return &common.Resource{Type: common.ResourceTypeProject, ID: projectID}, nil
+}
+
+func allowsArchivedProjectResourceResolution(method string) bool {
+	return method == v1connect.InstanceServiceDeleteInstanceProcedure || method == v1connect.InstanceServiceUndeleteInstanceProcedure
 }
 
 func getResourceFromRequest(ctx context.Context, request any, method string) ([]string, error) {

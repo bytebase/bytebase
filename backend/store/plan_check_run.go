@@ -423,9 +423,12 @@ func (s *Store) ClaimAvailablePlanCheckRuns(ctx context.Context) ([]*ClaimedPlan
 		UPDATE plan_check_run
 		SET status = ?, updated_at = now()
 		WHERE (project, id) IN (
-			SELECT project, id FROM plan_check_run
-			WHERE status = ?
-			FOR UPDATE SKIP LOCKED
+			SELECT plan_check_run.project, plan_check_run.id
+			FROM plan_check_run
+			JOIN project ON project.resource_id = plan_check_run.project
+			WHERE plan_check_run.status = ?
+			  AND project.deleted = FALSE
+			FOR UPDATE OF plan_check_run SKIP LOCKED
 		)
 		RETURNING id, project, plan_id, COALESCE((result->>'approvalInputVersion')::bigint, 0)
 	`, PlanCheckRunStatusRunning, PlanCheckRunStatusAvailable)

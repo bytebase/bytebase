@@ -38,8 +38,10 @@ func TestCollisionDeleteProjectCascade(t *testing.T) {
 	a.Greater(len(beforeB.Plans), 0, "project B should have plans")
 	a.Greater(len(beforeB.Issues), 0, "project B should have issues")
 
-	// DeleteProject with Purge=true handles both soft-delete and hard-delete
-	// (cascade) in one gRPC call.
+	// Project purge is an explicit archive-then-purge lifecycle.
+	_, err = ctl.projectServiceClient.DeleteProject(ctx,
+		connect.NewRequest(&v1pb.DeleteProjectRequest{Name: fixture.ProjectA.Name}))
+	a.NoError(err)
 	_, err = ctl.projectServiceClient.DeleteProject(ctx,
 		connect.NewRequest(&v1pb.DeleteProjectRequest{
 			Name:  fixture.ProjectA.Name,
@@ -53,6 +55,21 @@ func TestCollisionDeleteProjectCascade(t *testing.T) {
 	_, err = ctl.projectServiceClient.GetProject(ctx,
 		connect.NewRequest(&v1pb.GetProjectRequest{Name: fixture.ProjectA.Name}))
 	a.Error(err, "project A should be gone after purge; GetProject should fail")
+	auditLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx,
+		connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+			Parent: "projects/-",
+			Filter: `method == "/bytebase.v1.ProjectService/DeleteProject"`,
+		}))
+	a.NoError(err)
+	a.NotEmpty(auditLogs.Msg.AuditLogs, "project audit logs must survive project purge under retention policy")
+	foundProjectAudit := false
+	for _, auditLog := range auditLogs.Msg.AuditLogs {
+		if auditLog.Resource == fixture.ProjectA.Name {
+			foundProjectAudit = true
+			break
+		}
+	}
+	a.True(foundProjectAudit, "purged project audit logs retain canonical names as text")
 
 	afterB := snapshotProject(ctx, t, ctl, fixture.ProjectB)
 	assertProjectUnchanged(t, beforeB, afterB, "project B after project A deleted")

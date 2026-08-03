@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"time"
 
@@ -93,7 +94,10 @@ func (s *Store) CreateSyncHistory(ctx context.Context, instanceID, databaseName 
 	}
 
 	var resourceID string
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&resourceID); err != nil {
+	err = s.withDatabasePurgeFence(ctx, instanceID, databaseName, "", nil, func(tx *sql.Tx, _ *databaseOwnership) error {
+		return tx.QueryRowContext(ctx, query, args...).Scan(&resourceID)
+	})
+	if err != nil {
 		return "", errors.Wrapf(err, "failed to insert")
 	}
 

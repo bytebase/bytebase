@@ -16,6 +16,26 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
+func formatDatabaseTarget(ctx context.Context, s *store.Store, database *store.DatabaseMessage) (string, error) {
+	instance, err := s.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: &database.InstanceID,
+	})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
+	}
+	if instance == nil {
+		return "", errors.Errorf("instance %q not found", database.InstanceID)
+	}
+	if instance.Deleted {
+		return "", errors.Errorf("instance %q has been deleted", database.InstanceID)
+	}
+	if instance.ProjectID == nil {
+		return common.FormatDatabase(database.InstanceID, database.DatabaseName), nil
+	}
+	return common.FormatProjectDatabase(*instance.ProjectID, database.InstanceID, database.DatabaseName), nil
+}
+
 func applyDatabaseGroupSpecTransformations(ctx context.Context, s *store.Store, specs []*storepb.PlanConfig_Spec, projectID string) ([]*storepb.PlanConfig_Spec, error) {
 	var result []*storepb.PlanConfig_Spec
 	for _, spec := range specs {
@@ -50,7 +70,11 @@ func applyDatabaseGroupSpecTransformations(ctx context.Context, s *store.Store, 
 
 					var databases []string
 					for _, db := range matchedDatabases {
-						databases = append(databases, common.FormatDatabase(db.InstanceID, db.DatabaseName))
+						target, err := formatDatabaseTarget(ctx, s, db)
+						if err != nil {
+							return nil, err
+						}
+						databases = append(databases, target)
 					}
 					config.Targets = databases
 				}
@@ -248,15 +272,26 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 	databases := []*store.DatabaseMessage{}
 
 	for _, target := range targets {
-		if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
+		if targetProjectID, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
 			databaseGroup, err := getDatabaseGroupByName(ctx, s, target, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get database group %q", target)
 			}
 			for _, matched := range databaseGroup.MatchedDatabases {
-				instanceID, databaseName, err := common.GetInstanceDatabaseID(matched.Name)
+				matchedProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(matched.Name)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to parse %q", matched.Name)
+				}
+				instanceName := common.FormatInstance(instanceID)
+				if matchedProjectID != nil {
+					instanceName = common.FormatProjectInstance(*matchedProjectID, instanceID)
+				}
+				instance, err := getInstanceMessage(ctx, s, instanceName)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get instance for %q", matched.Name)
+				}
+				if instance.Deleted {
+					return nil, errors.Errorf("instance %q has been deleted", instanceName)
 				}
 				database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
 					Workspace:    common.GetWorkspaceIDFromContext(ctx),
@@ -269,12 +304,22 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 				if database == nil {
 					return nil, errors.Errorf("database %q not found", matched.Name)
 				}
+				if database.ProjectID != targetProjectID {
+					return nil, errors.Errorf("database %q does not belong to project %q", matched.Name, targetProjectID)
+				}
 				databases = append(databases, database)
 			}
-		} else if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
-			instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
+		} else if targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target); err == nil {
+			instanceName := common.FormatInstance(instanceID)
+			if targetProjectID != nil {
+				instanceName = common.FormatProjectInstance(*targetProjectID, instanceID)
+			}
+			instance, err := getInstanceMessage(ctx, s, instanceName)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to parse %q", target)
+				return nil, errors.Wrapf(err, "failed to get instance for %q", target)
+			}
+			if instance.Deleted {
+				return nil, errors.Errorf("instance %q has been deleted", instanceName)
 			}
 			database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
 				Workspace:    common.GetWorkspaceIDFromContext(ctx),
@@ -286,6 +331,9 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 			}
 			if database == nil {
 				return nil, errors.Errorf("database %q not found", target)
+			}
+			if targetProjectID != nil && database.ProjectID != *targetProjectID {
+				return nil, errors.Errorf("database %q does not belong to project %q", target, *targetProjectID)
 			}
 			databases = append(databases, database)
 		} else {

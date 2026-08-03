@@ -112,9 +112,19 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
 	}
-
 	// Check 1: RunAt time
 	if taskRun.RunAt != nil && time.Now().Before(*taskRun.RunAt) {
+		return nil
+	}
+
+	project, err := s.store.GetProjectByResourceID(ctx, task.ProjectID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get project")
+	}
+	if project == nil {
+		return errors.Errorf("project %v not found", task.ProjectID)
+	}
+	if project.Deleted {
 		return nil
 	}
 
