@@ -4,13 +4,89 @@ import (
 	"context"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/permission"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/store"
 )
+
+const getDatabaseProcedure = "/bytebase.v1.DatabaseService/GetDatabase"
+
+func TestACLCheckResourceResolutionStatus(t *testing.T) {
+	ctx, stores, _, _, _, _ := setupWorkspaceInstanceDescendantServiceTest(t)
+	interceptor := NewACLInterceptor(stores, "", nil, nil)
+
+	for _, test := range []struct {
+		name    string
+		request *v1pb.GetDatabaseRequest
+		want    connect.Code
+	}{
+		{
+			name:    "missing workspace database parent instance",
+			request: &v1pb.GetDatabaseRequest{Name: common.FormatDatabase("missing", "app")},
+			want:    connect.CodeNotFound,
+		},
+		{
+			name:    "malformed workspace database name",
+			request: &v1pb.GetDatabaseRequest{Name: "instances//databases/app"},
+			want:    connect.CodeInvalidArgument,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := interceptor.doACLCheck(authenticatedACLContext(ctx), test.request, getDatabaseProcedure)
+			require.Equal(t, test.want, connect.CodeOf(err))
+		})
+	}
+}
+
+func TestACLCheckAuthenticatesBeforeResolvingResources(t *testing.T) {
+	ctx, stores, _, _, _, _ := setupWorkspaceInstanceDescendantServiceTest(t)
+	interceptor := NewACLInterceptor(stores, "", nil, nil)
+
+	err := interceptor.doACLCheck(
+		unauthenticatedACLContext(ctx),
+		&v1pb.GetDatabaseRequest{Name: common.FormatDatabase("missing", "app")},
+		getDatabaseProcedure,
+	)
+	require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
+}
+
+func TestACLCheckPanicPreventsRequestAdmission(t *testing.T) {
+	ctx := authenticatedACLContext(context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default"))
+	interceptor := NewACLInterceptor(nil, "", nil, nil)
+	aclCheckReturnedNil := false
+
+	panicked := false
+	func() {
+		defer func() {
+			panicked = recover() != nil
+		}()
+		if err := interceptor.doACLCheck(
+			ctx,
+			&v1pb.GetDatabaseRequest{Name: common.FormatDatabase("instance", "app")},
+			getDatabaseProcedure,
+		); err == nil {
+			aclCheckReturnedNil = true
+		}
+	}()
+
+	require.True(t, panicked, "the outer Connect recovery adapter must receive ACL panics")
+	require.False(t, aclCheckReturnedNil, "a recovered ACL panic must not admit the request")
+}
+
+func authenticatedACLContext(ctx context.Context) context.Context {
+	ctx = context.WithValue(ctx, common.AuthContextKey, &common.AuthContext{AuthMethod: common.AuthMethodCustom})
+	return context.WithValue(ctx, common.UserContextKey, &store.UserMessage{Email: "user@example.com"})
+}
+
+func unauthenticatedACLContext(ctx context.Context) context.Context {
+	ctx = context.WithValue(ctx, common.AuthContextKey, &common.AuthContext{AuthMethod: common.AuthMethodCustom})
+	return context.WithValue(ctx, common.UserContextKey, (*store.UserMessage)(nil))
+}
 
 func TestGetResourceRoute(t *testing.T) {
 	tests := []struct {
