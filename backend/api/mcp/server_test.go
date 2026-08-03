@@ -173,35 +173,6 @@ func TestMCPAuthMiddlewareOAuthContext(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 }
 
-func TestMCPAuthMiddlewareRevokedTokenTriggersOAuth(t *testing.T) {
-	secret := "test-secret-key"
-	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
-	token := generateOAuth2MCPToken(t, secret, "client-A", "ws-test")
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	s, err := NewServer(nil, profile, secret)
-	require.NoError(t, err)
-	s.revokeAccessToken(token)
-	handler := s.authMiddleware(func(c *echo.Context) error {
-		return c.String(http.StatusOK, "success")
-	})
-
-	err = handler(c)
-	if err != nil {
-		echo.DefaultHTTPErrorHandler(true)(c, err)
-	}
-
-	require.Equal(t, http.StatusUnauthorized, rec.Code)
-	require.Contains(t, rec.Body.String(), "reauthorization required")
-	require.Contains(t, rec.Header().Get("WWW-Authenticate"), "resource_metadata=")
-}
-
 // TestMCPProxiedPublicHostNotRejected is the BYT-9693 regression. Behind a
 // same-host reverse proxy (proxy_pass http://127.0.0.1:8080), the connection
 // Bytebase accepts has a loopback LocalAddr while the proxy preserves the public

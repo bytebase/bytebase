@@ -38,10 +38,9 @@ func (s *Server) handleReauthorize(ctx context.Context, _ *mcp.CallToolRequest, 
 	if err := s.store.DeleteOAuth2RefreshTokensByUserAndClient(ctx, userEmail, clientID); err != nil {
 		return formatToolError(errors.Wrap(err, "failed to revoke OAuth refresh tokens")), nil, nil
 	}
-	s.revokeAccessToken(getAccessToken(ctx))
 
 	workspaceID := getWorkspaceID(ctx)
-	message := "OAuth grant revoked. Retry or reconnect this MCP server to run OAuth again."
+	message := "OAuth refresh grant revoked. Retry or reconnect this MCP server to run OAuth again."
 	if workspaceID != "" {
 		message = fmt.Sprintf("%s The previous grant was for workspace %q.", message, workspaceID)
 	}

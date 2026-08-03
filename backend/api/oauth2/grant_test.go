@@ -135,15 +135,18 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 	})
 
 	t.Run("no configured external URL: a resource request gets the actionable setup error", func(t *testing.T) {
-		// The ship gate of proposal v2 §6.2 — self-hosted instances running on
-		// the request-Host fallback break here, and the error has to tell the
-		// admin exactly what to set rather than fail generically.
+		_, err := st.UpsertSetting(ctx, &store.SettingMessage{
+			Name:      storepb.SettingName_WORKSPACE_PROFILE,
+			Workspace: testWorkspace,
+			Value:     &storepb.WorkspaceProfileSetting{},
+		})
+		require.NoError(t, err)
+
 		unconfigured := newTestService(st, "")
 		redirect := consent(t, unconfigured, url.Values{"resource": {testResource}})
 		require.Equal(t, "server_error", redirect.Query().Get("error"))
 		description := redirect.Query().Get("error_description")
-		require.Contains(t, description, "--external-url")
-		require.Contains(t, description, "External URL")
+		require.Contains(t, description, "external URL isn't setup yet")
 	})
 
 	t.Run("no configured external URL: a request without a resource still works", func(t *testing.T) {

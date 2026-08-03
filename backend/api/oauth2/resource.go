@@ -67,8 +67,7 @@ func (s *Service) parseGrantParams(ctx context.Context, values url.Values, works
 	}
 
 	// GetEffectiveExternalURL reports "not configured" as an error, never as an
-	// empty string. A lookup failure is treated identically — fail closed, never
-	// fall back to the request — with the cause logged rather than returned.
+	// empty string. Fail closed, never fall back to the request.
 	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
 	if err != nil {
 		slog.Error("rejected an MCP OAuth resource binding because no external URL is configured",
