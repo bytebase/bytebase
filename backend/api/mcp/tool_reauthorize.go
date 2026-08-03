@@ -39,6 +39,9 @@ func (s *Server) handleReauthorize(ctx context.Context, _ *mcp.CallToolRequest, 
 	if err := s.store.DeleteOAuth2RefreshTokensByUserAndClient(ctx, userEmail, clientID); err != nil {
 		return formatToolError(errors.Wrap(err, "failed to revoke OAuth refresh tokens")), nil, nil
 	}
+	// MCP sessions are currently process-local and already require requests to
+	// stay on the same replica. This marker follows that constraint. If MCP gains
+	// multi-replica session support, move the reauthorization state to shared storage.
 	s.revokedAccessTokens.Store(accessToken, struct{}{})
 
 	workspaceID := getWorkspaceID(ctx)
