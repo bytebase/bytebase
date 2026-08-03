@@ -187,6 +187,14 @@ export declare type TestIdentityProviderRequest = Message<"bytebase.v1.TestIdent
      */
     value: OIDCIdentityProviderTestRequestContext;
     case: "oidcContext";
+  } | {
+    /**
+     * LDAP credentials context for test connection.
+     *
+     * @generated from field: bytebase.v1.LDAPIdentityProviderTestRequestContext ldap_context = 4;
+     */
+    value: LDAPIdentityProviderTestRequestContext;
+    case: "ldapContext";
   } | { case: undefined; value?: undefined };
 };
 
@@ -231,6 +239,31 @@ export declare type OIDCIdentityProviderTestRequestContext = Message<"bytebase.v
  * Use `create(OIDCIdentityProviderTestRequestContextSchema)` to create a new message.
  */
 export declare const OIDCIdentityProviderTestRequestContextSchema: GenMessage<OIDCIdentityProviderTestRequestContext>;
+
+/**
+ * @generated from message bytebase.v1.LDAPIdentityProviderTestRequestContext
+ */
+export declare type LDAPIdentityProviderTestRequestContext = Message<"bytebase.v1.LDAPIdentityProviderTestRequestContext"> & {
+  /**
+   * The username of a directory user, substituted into the user filter.
+   *
+   * @generated from field: string username = 1;
+   */
+  username: string;
+
+  /**
+   * The password of the directory user.
+   *
+   * @generated from field: string password = 2;
+   */
+  password: string;
+};
+
+/**
+ * Describes the message bytebase.v1.LDAPIdentityProviderTestRequestContext.
+ * Use `create(LDAPIdentityProviderTestRequestContextSchema)` to create a new message.
+ */
+export declare const LDAPIdentityProviderTestRequestContextSchema: GenMessage<LDAPIdentityProviderTestRequestContext>;
 
 /**
  * @generated from message bytebase.v1.TestIdentityProviderResponse

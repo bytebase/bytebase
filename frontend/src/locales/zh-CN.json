@@ -909,6 +909,7 @@
     }
   },
   "identity-provider": {
+    "attributes-description": "以下是匹配到的目录条目返回的属性。请在用户信息字段映射中使用这些属性名。",
     "claims-description": "身份提供商返回了以下 claims。此信息可帮助您配置用户信息映射。",
     "delete-warning": "您确定要删除此身份提供者吗？通过此 SSO 注册的用户将无法再使用该身份提供者登录。如果您在工作区设置中禁用了密码登录，这些用户可能会被完全锁定。",
     "identity-provider-create-failed": "无法创建身份提供商",
@@ -917,7 +918,13 @@
     "identity-provider-deleted": "身份提供商已成功删除",
     "identity-provider-permission-denied": "没有权限",
     "identity-provider-update-failed": "无法更新身份提供商",
+    "ldap-connectivity-verified": "已成功连接 LDAP 服务器并使用服务账号完成绑定。Base DN、用户过滤器和字段映射尚未验证——请使用目录用户的凭据运行测试登录进行检查。",
+    "ldap-test-connectivity-only": "仅测试连接",
+    "ldap-test-description": "输入目录用户的凭据以验证完整登录流程：Base DN、用户过滤器和字段映射。或仅测试连接，即只验证服务器连接和服务账号绑定。",
+    "ldap-test-sign-in": "测试登录",
+    "ldap-test-title": "测试 LDAP 登录",
     "no-claims": "身份提供商未返回 claims。",
+    "no-user-info-mapped": "未匹配到任何用户信息。请对照下方返回的值检查字段映射。",
     "self": "身份提供商",
     "test-connection": "测试连接",
     "test-connection-success": "测试连接成功",

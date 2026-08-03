@@ -534,6 +534,7 @@
     - [IdentityProvider](#bytebase-v1-IdentityProvider)
     - [IdentityProviderConfig](#bytebase-v1-IdentityProviderConfig)
     - [LDAPIdentityProviderConfig](#bytebase-v1-LDAPIdentityProviderConfig)
+    - [LDAPIdentityProviderTestRequestContext](#bytebase-v1-LDAPIdentityProviderTestRequestContext)
     - [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest)
     - [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse)
     - [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig)
@@ -8895,6 +8896,22 @@ LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
 
 
 
+<a name="bytebase-v1-LDAPIdentityProviderTestRequestContext"></a>
+
+### LDAPIdentityProviderTestRequestContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| username | [string](#string) |  | The username of a directory user, substituted into the user filter. |
+| password | [string](#string) |  | The password of the directory user. |
+
+
+
+
+
+
 <a name="bytebase-v1-ListIdentityProvidersRequest"></a>
 
 ### ListIdentityProvidersRequest
@@ -9011,6 +9028,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to test connection including uncreated. |
 | oauth2_context | [OAuth2IdentityProviderTestRequestContext](#bytebase-v1-OAuth2IdentityProviderTestRequestContext) |  |  |
 | oidc_context | [OIDCIdentityProviderTestRequestContext](#bytebase-v1-OIDCIdentityProviderTestRequestContext) |  | OIDC authentication context for test connection. |
+| ldap_context | [LDAPIdentityProviderTestRequestContext](#bytebase-v1-LDAPIdentityProviderTestRequestContext) |  | LDAP credentials context for test connection. |
 
 
 

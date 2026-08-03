@@ -24468,6 +24468,19 @@ components:
         - SECURITY_PROTOCOL_UNSPECIFIED
         - START_TLS
         - LDAPS
+    bytebase.v1.LDAPIdentityProviderTestRequestContext:
+      type: object
+      properties:
+        username:
+          type: string
+          title: username
+          description: The username of a directory user, substituted into the user filter.
+        password:
+          type: string
+          title: password
+          description: The password of the directory user.
+      title: LDAPIdentityProviderTestRequestContext
+      additionalProperties: false
     bytebase.v1.Label:
       type: object
       properties:
@@ -31168,6 +31181,15 @@ components:
               description: The identity provider to test connection including uncreated.
               $ref: '#/components/schemas/bytebase.v1.IdentityProvider'
         - oneOf:
+            - type: object
+              properties:
+                ldapContext:
+                  title: ldap_context
+                  description: LDAP credentials context for test connection.
+                  $ref: '#/components/schemas/bytebase.v1.LDAPIdentityProviderTestRequestContext'
+              title: ldap_context
+              required:
+                - ldapContext
             - type: object
               properties:
                 oauth2Context:
