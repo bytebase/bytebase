@@ -123,6 +123,9 @@ func (x *TestIdentityProviderRequest) Equal(y *TestIdentityProviderRequest) bool
 	if !x.GetOidcContext().Equal(y.GetOidcContext()) {
 		return false
 	}
+	if !x.GetLdapContext().Equal(y.GetLdapContext()) {
+		return false
+	}
 	return true
 }
 
@@ -147,6 +150,22 @@ func (x *OIDCIdentityProviderTestRequestContext) Equal(y *OIDCIdentityProviderTe
 		return x == nil && y == nil
 	}
 	if x.Code != y.Code {
+		return false
+	}
+	return true
+}
+
+func (x *LDAPIdentityProviderTestRequestContext) Equal(y *LDAPIdentityProviderTestRequestContext) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Username != y.Username {
+		return false
+	}
+	if x.Password != y.Password {
 		return false
 	}
 	return true

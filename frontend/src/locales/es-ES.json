@@ -909,6 +909,7 @@
     }
   },
   "identity-provider": {
+    "attributes-description": "Los siguientes atributos fueron devueltos por la entrada del directorio coincidente. Utilice estos nombres de atributo exactos en la asignación de campos de información del usuario.",
     "claims-description": "El proveedor de identidad devolvió las siguientes notificaciones. Esta información puede ayudarle a configurar las asignaciones de campos.",
     "delete-warning": "¿Seguro que desea eliminar este proveedor de identidad? Los usuarios que se registraron con este SSO ya no podrán iniciar sesión con él. Si el inicio de sesión con contraseña está deshabilitado en la configuración de su espacio de trabajo, es posible que estos usuarios queden completamente bloqueados.",
     "identity-provider-create-failed": "No se pudo crear el proveedor de identidad",
@@ -917,7 +918,13 @@
     "identity-provider-deleted": "Proveedor de identidad eliminado exitosamente",
     "identity-provider-permission-denied": "Permiso denegado",
     "identity-provider-update-failed": "No se pudo actualizar el proveedor de identidad",
+    "ldap-connectivity-verified": "Conexión con el servidor LDAP y enlace con la cuenta de servicio realizados correctamente. El Base DN, el filtro de usuario y la asignación de campos no se han verificado; ejecute la prueba de inicio de sesión con las credenciales de un usuario del directorio para comprobarlos.",
+    "ldap-test-connectivity-only": "Probar solo la conectividad",
+    "ldap-test-description": "Introduzca las credenciales de un usuario del directorio para verificar el flujo completo de inicio de sesión: Base DN, filtro de usuario y asignación de campos. O pruebe solo la conectividad, que verifica únicamente la conexión al servidor y el enlace de la cuenta de servicio.",
+    "ldap-test-sign-in": "Probar inicio de sesión",
+    "ldap-test-title": "Probar inicio de sesión LDAP",
     "no-claims": "El proveedor de identidad no devolvió ninguna reclamación.",
+    "no-user-info-mapped": "No se asignó ninguna información de usuario. Compruebe que la asignación de campos coincida con los valores siguientes.",
     "self": "Proveedor de identidad",
     "test-connection": "Probar conexión",
     "test-connection-success": "Conexión de prueba exitosa",

@@ -909,6 +909,7 @@
     }
   },
   "identity-provider": {
+    "attributes-description": "一致したディレクトリエントリから返された属性は以下のとおりです。ユーザー情報のフィールドマッピングには、これらの属性名をそのまま使用してください。",
     "claims-description": "IDプロバイダーから以下のクレームが返されました。この情報は、フィールドマッピングの設定に役立ちます。",
     "delete-warning": "このアイデンティティプロバイダを削除してもよろしいですか？このSSO経由でサインアップしたユーザーは、今後このSSOでサインインできなくなります。ワークスペースの設定でパスワードによるサインインが無効になっている場合、これらのユーザーは完全にロックアウトされる可能性があります。",
     "identity-provider-create-failed": "IDプロバイダの作成に失敗しました",
@@ -917,7 +918,13 @@
     "identity-provider-deleted": "ID プロバイダが正常に削除されました",
     "identity-provider-permission-denied": "許可が拒否されました",
     "identity-provider-update-failed": "IDプロバイダの更新に失敗しました",
+    "ldap-connectivity-verified": "LDAP サーバーへの接続とサービスアカウントによるバインドに成功しました。Base DN、ユーザーフィルター、フィールドマッピングは未検証です。ディレクトリユーザーの認証情報でサインインテストを実行して確認してください。",
+    "ldap-test-connectivity-only": "接続のみテスト",
+    "ldap-test-description": "ディレクトリユーザーの認証情報を入力すると、Base DN、ユーザーフィルター、フィールドマッピングを含むサインインフロー全体を検証できます。接続のみのテストでは、サーバーへの接続とサービスアカウントのバインドだけを検証します。",
+    "ldap-test-sign-in": "サインインをテスト",
+    "ldap-test-title": "LDAP サインインのテスト",
     "no-claims": "アイデンティティ プロバイダーから返されるクレームはありません。",
+    "no-user-info-mapped": "ユーザー情報がマッピングされませんでした。フィールドマッピングが以下の値と一致しているか確認してください。",
     "self": "IDプロバイダ",
     "test-connection": "テスト接続",
     "test-connection-success": "テスト接続に成功しました",

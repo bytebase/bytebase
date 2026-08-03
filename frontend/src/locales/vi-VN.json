@@ -909,6 +909,7 @@
     }
   },
   "identity-provider": {
+    "attributes-description": "Các thuộc tính sau được trả về từ mục thư mục khớp. Hãy dùng chính xác các tên thuộc tính này trong ánh xạ trường thông tin người dùng.",
     "claims-description": "Các yêu cầu sau đây đã được nhà cung cấp danh tính trả về. Thông tin này có thể giúp bạn cấu hình ánh xạ trường.",
     "delete-warning": "Bạn có chắc chắn muốn xóa nhà cung cấp danh tính này không? Người dùng đã đăng ký qua SSO này sẽ không thể đăng nhập bằng SSO này nữa. Nếu đăng nhập bằng mật khẩu bị vô hiệu hóa trong cài đặt không gian làm việc của bạn, những người dùng này có thể bị khóa hoàn toàn.",
     "identity-provider-create-failed": "Không tạo được nhà cung cấp danh tính",
@@ -917,7 +918,13 @@
     "identity-provider-deleted": "Nhà cung cấp danh tính đã xóa thành công",
     "identity-provider-permission-denied": "Quyền bị từ chối",
     "identity-provider-update-failed": "Không cập nhật được nhà cung cấp danh tính",
+    "ldap-connectivity-verified": "Đã kết nối máy chủ LDAP và liên kết bằng tài khoản dịch vụ thành công. Base DN, bộ lọc người dùng và ánh xạ trường chưa được kiểm tra — hãy chạy kiểm tra đăng nhập bằng thông tin đăng nhập của một người dùng thư mục để xác minh.",
+    "ldap-test-connectivity-only": "Chỉ kiểm tra kết nối",
+    "ldap-test-description": "Nhập thông tin đăng nhập của một người dùng thư mục để kiểm tra toàn bộ luồng đăng nhập: Base DN, bộ lọc người dùng và ánh xạ trường. Hoặc chỉ kiểm tra kết nối, tức là chỉ xác minh kết nối máy chủ và liên kết tài khoản dịch vụ.",
+    "ldap-test-sign-in": "Kiểm tra đăng nhập",
+    "ldap-test-title": "Kiểm tra đăng nhập LDAP",
     "no-claims": "Nhà cung cấp danh tính không trả lại bất kỳ khiếu nại nào.",
+    "no-user-info-mapped": "Không có thông tin người dùng nào được ánh xạ. Hãy kiểm tra ánh xạ trường so với các giá trị bên dưới.",
     "self": "Nhà cung cấp danh tính",
     "test-connection": "Kiểm tra kết nối",
     "test-connection-success": "Kiểm tra kết nối thành công",

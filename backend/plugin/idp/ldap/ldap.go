@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/go-ldap/ldap/v3"
 	"github.com/pkg/errors"
@@ -128,6 +129,29 @@ func (p *IdentityProvider) Connect() (*ldap.Conn, error) {
 
 // Authenticate authenticates the user with the given username and password.
 func (p *IdentityProvider) Authenticate(username, password string) (*storepb.IdentityProviderUserInfo, error) {
+	entry, err := p.searchAndBind(username, password, p.mappedAttributes())
+	if err != nil {
+		return nil, err
+	}
+	return p.userInfoFromEntry(entry), nil
+}
+
+// TestAuthenticate runs the same flow as Authenticate but requests every user
+// attribute of the matched entry, returning them alongside the mapped user
+// info so admins can verify their field mapping against real directory data.
+func (p *IdentityProvider) TestAuthenticate(username, password string) (*storepb.IdentityProviderUserInfo, map[string]string, error) {
+	// A nil attribute list requests all user attributes (RFC 4511).
+	entry, err := p.searchAndBind(username, password, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	return p.userInfoFromEntry(entry), entryAttributes(entry), nil
+}
+
+// searchAndBind searches for the user matching the configured filter, binds as
+// the matched entry to verify the password, and returns the entry carrying the
+// requested attributes.
+func (p *IdentityProvider) searchAndBind(username, password string, attributes []string) (*ldap.Entry, error) {
 	conn, err := p.Connect()
 	if err != nil {
 		return nil, errors.Errorf("connect: %v", err)
@@ -143,7 +167,7 @@ func (p *IdentityProvider) Authenticate(username, password string) (*storepb.Ide
 			0,
 			false,
 			strings.ReplaceAll(p.config.UserFilter, "%s", ldap.EscapeFilter(username)),
-			[]string{"dn", p.config.FieldMapping.Identifier, p.config.FieldMapping.DisplayName},
+			attributes,
 			nil,
 		),
 	)
@@ -179,10 +203,45 @@ func (p *IdentityProvider) Authenticate(username, password string) (*storepb.Ide
 	if err != nil {
 		return nil, errors.Errorf("bind user: %v", err)
 	}
+	return entry, nil
+}
 
-	identifier := entry.GetAttributeValue(p.config.FieldMapping.Identifier)
+// mappedAttributes returns the attributes to request for the configured field
+// mapping, skipping unset mappings: LDAP servers only return explicitly
+// requested attributes.
+func (p *IdentityProvider) mappedAttributes() []string {
+	attributes := []string{"dn", p.config.FieldMapping.Identifier}
+	for _, attribute := range []string{p.config.FieldMapping.DisplayName, p.config.FieldMapping.Phone} {
+		if attribute != "" {
+			attributes = append(attributes, attribute)
+		}
+	}
+	return attributes
+}
+
+func (p *IdentityProvider) userInfoFromEntry(entry *ldap.Entry) *storepb.IdentityProviderUserInfo {
 	return &storepb.IdentityProviderUserInfo{
-		Identifier:  identifier,
+		Identifier:  entry.GetAttributeValue(p.config.FieldMapping.Identifier),
 		DisplayName: entry.GetAttributeValue(p.config.FieldMapping.DisplayName),
-	}, nil
+		Phone:       entry.GetAttributeValue(p.config.FieldMapping.Phone),
+	}
+}
+
+// entryAttributes flattens an LDAP entry into a display map: multi-valued
+// attributes are comma-joined and non-UTF-8 values are replaced with a
+// placeholder.
+func entryAttributes(entry *ldap.Entry) map[string]string {
+	attributes := map[string]string{"dn": entry.DN}
+	for _, attribute := range entry.Attributes {
+		values := make([]string, 0, len(attribute.Values))
+		for _, value := range attribute.Values {
+			if utf8.ValidString(value) {
+				values = append(values, value)
+			} else {
+				values = append(values, "<binary>")
+			}
+		}
+		attributes[attribute.Name] = strings.Join(values, ", ")
+	}
+	return attributes
 }
