@@ -17,7 +17,10 @@ service RevisionService {
   // Lists schema revisions for a database.
   // Permissions required: bb.revisions.list
   rpc ListRevisions(ListRevisionsRequest) returns (ListRevisionsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/revisions"};
+    option (google.api.http) = {
+      get: "/v1/{parent=instances/*/databases/*}/revisions"
+      additional_bindings: {get: "/v1/{parent=projects/*/instances/*/databases/*}/revisions"}
+    };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.revisions.list";
     option (bytebase.v1.auth_method) = IAM;
@@ -26,7 +29,10 @@ service RevisionService {
   // Retrieves a schema revision by name.
   // Permissions required: bb.revisions.get
   rpc GetRevision(GetRevisionRequest) returns (Revision) {
-    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/revisions/*}"};
+    option (google.api.http) = {
+      get: "/v1/{name=instances/*/databases/*/revisions/*}"
+      additional_bindings: {get: "/v1/{name=projects/*/instances/*/databases/*/revisions/*}"}
+    };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.revisions.get";
     option (bytebase.v1.auth_method) = IAM;
@@ -38,6 +44,10 @@ service RevisionService {
     option (google.api.http) = {
       post: "/v1/{parent=instances/*/databases/*}/revisions:batchCreate"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{parent=projects/*/instances/*/databases/*}/revisions:batchCreate"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.revisions.create";
     option (bytebase.v1.auth_method) = IAM;
@@ -46,7 +56,10 @@ service RevisionService {
   // Deletes a schema revision.
   // Permissions required: bb.revisions.delete
   rpc DeleteRevision(DeleteRevisionRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/revisions/*}"};
+    option (google.api.http) = {
+      delete: "/v1/{name=instances/*/databases/*/revisions/*}"
+      additional_bindings: {delete: "/v1/{name=projects/*/instances/*/databases/*/revisions/*}"}
+    };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.revisions.delete";
     option (bytebase.v1.auth_method) = IAM;
@@ -55,7 +68,7 @@ service RevisionService {
 
 message ListRevisionsRequest {
   // The parent of the revisions.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -87,7 +100,7 @@ message ListRevisionsResponse {
 }
 
 message CreateRevisionRequest {
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -99,7 +112,7 @@ message CreateRevisionRequest {
 
 message BatchCreateRevisionsRequest {
   // The parent resource shared by all revisions being created.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -117,7 +130,7 @@ message BatchCreateRevisionsResponse {
 
 message GetRevisionRequest {
   // The name of the revision.
-  // Format: instances/{instance}/databases/{database}/revisions/{revision}
+  // Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Revision"}
@@ -126,7 +139,7 @@ message GetRevisionRequest {
 
 message DeleteRevisionRequest {
   // The name of the revision to delete.
-  // Format: instances/{instance}/databases/{database}/revisions/{revision}
+  // Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Revision"}
@@ -137,9 +150,10 @@ message Revision {
   option (google.api.resource) = {
     type: "bytebase.com/Revision"
     pattern: "instances/{instance}/databases/{database}/revisions/{revision}"
+    pattern: "projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}"
   };
 
-  // Format: instances/{instance}/databases/{database}/revisions/{revision}
+  // Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}
   string name = 1;
 
   // Format: projects/{project}/releases/{release}

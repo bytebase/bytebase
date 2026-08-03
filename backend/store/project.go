@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	stdsql "database/sql"
 	"fmt"
 	"strings"
 
@@ -348,7 +349,8 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 	}
 	defer tx.Rollback()
 
-	// Delete query_history entries that reference this project
+	// Delete query history before locking database-scoped rows to preserve the
+	// canonical sibling-branch order.
 	q := qb.Q().Space("DELETE FROM query_history WHERE project = ?", resourceID)
 	sql, args, err := q.ToSQL()
 	if err != nil {
@@ -358,7 +360,7 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrapf(err, "failed to delete query_history for project %s", resourceID)
 	}
 
-	// Delete policy entries that reference this project
+	// Delete policy entries that reference this project.
 	q = qb.Q().Space("DELETE FROM policy")
 	q.Space("WHERE (resource_type = ? AND resource = 'projects/' || ?)", storepb.Policy_PROJECT.String(), resourceID)
 	q.And("workspace = ?", workspace)
@@ -367,7 +369,7 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrap(err, "failed to build policy delete query")
 	}
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete policies for project %s", resourceID)
+		return errors.Wrapf(err, "failed to delete policy for project %s", resourceID)
 	}
 
 	// Delete worksheet_organizer entries referencing project principals.
@@ -380,6 +382,20 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 	}
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete worksheet_organizer for project %s", resourceID)
+	}
+
+	// Clear project-instance references before deleting their instances.
+	q = qb.Q().Space(`
+		UPDATE worksheet
+		SET instance = NULL, db_name = NULL
+		WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)
+	`, resourceID)
+	sql, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrap(err, "failed to build project instance worksheet update query")
+	}
+	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+		return errors.Wrapf(err, "failed to update worksheets for project instances in project %s", resourceID)
 	}
 
 	// Delete worksheets created by project service accounts or workload identities.
@@ -547,26 +563,52 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrapf(err, "failed to delete db_groups for project %s", resourceID)
 	}
 
-	// Nullify revision.deleter references.
-	q = qb.Q().Space(`UPDATE revision SET deleter = NULL
-		WHERE deleter IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
-		   OR deleter IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build revision update query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to nullify revision.deleter for project %s", resourceID)
+	// Purge the databases and database-scoped history of project instances.
+	// Workspace instances remain shared infrastructure, so their databases are
+	// reassigned to the default project below instead.
+	for _, statement := range []struct {
+		name string
+		sql  string
+	}{
+		{"changelog", "DELETE FROM changelog WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
+		{"sync_history", "DELETE FROM sync_history WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
+		{"revision deleter", `UPDATE revision SET deleter = NULL
+			WHERE deleter IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
+			   OR deleter IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`},
+		{"revision", "DELETE FROM revision WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
+		{"db_schema", "DELETE FROM db_schema WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
+		{"database", "DELETE FROM db WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
+	} {
+		if statement.name == "revision deleter" {
+			q = qb.Q().Space(statement.sql, resourceID, workspace, resourceID, workspace)
+		} else {
+			q = qb.Q().Space(statement.sql, resourceID)
+		}
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrapf(err, "failed to build %s delete query", statement.name)
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete %s for project %s", statement.name, resourceID)
+		}
 	}
 
-	// Move databases to the default project instead of deleting them
-	q = qb.Q().Space("UPDATE db SET project = ? WHERE project = ?", defaultProjectID, resourceID)
+	// Move only workspace-instance databases to the default project. Project
+	// instance databases were deleted with their owning instance above.
+	q = qb.Q().Space(`
+		UPDATE db
+		SET project = ?
+		FROM instance
+		WHERE db.instance = instance.resource_id
+		  AND db.project = ?
+		  AND instance.project IS NULL
+	`, defaultProjectID, resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
-		return errors.Wrap(err, "failed to build db update query")
+		return errors.Wrap(err, "failed to build workspace database update query")
 	}
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to move databases to default project for project %s", resourceID)
+		return errors.Wrapf(err, "failed to move workspace databases to default project for project %s", resourceID)
 	}
 
 	// Delete project webhooks
@@ -597,6 +639,63 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 	}
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete workload identities for project %s", resourceID)
+	}
+
+	// Lock existing project instances after all of their descendants. A new
+	// project instance is rejected because this project is already soft-deleted.
+	q = qb.Q().Space(`
+		SELECT resource_id
+		FROM instance
+		WHERE project = ?
+		ORDER BY resource_id
+		FOR UPDATE
+	`, resourceID)
+	sql, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrap(err, "failed to build project instance lock query")
+	}
+	if err := func() error {
+		rows, err := tx.QueryContext(ctx, sql, args...)
+		if err != nil {
+			return errors.Wrapf(err, "failed to lock project instances for project %s", resourceID)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var instanceID string
+			if err := rows.Scan(&instanceID); err != nil {
+				return errors.Wrap(err, "failed to scan locked project instance")
+			}
+		}
+		return rows.Err()
+	}(); err != nil {
+		return err
+	}
+
+	// Every project instance is deleted with its owner; they are never converted
+	// into workspace instances.
+	q = qb.Q().Space("DELETE FROM instance WHERE project = ?", resourceID)
+	sql, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrap(err, "failed to build project instance delete query")
+	}
+	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+		return errors.Wrapf(err, "failed to delete project instances for project %s", resourceID)
+	}
+
+	var projectDeleted bool
+	if err := tx.QueryRowContext(ctx, `
+		SELECT deleted
+		FROM project
+		WHERE resource_id = $1 AND workspace = $2
+		FOR UPDATE
+	`, resourceID, workspace).Scan(&projectDeleted); err != nil {
+		if errors.Is(err, stdsql.ErrNoRows) {
+			return errors.Errorf("project %s not found or not marked as deleted", resourceID)
+		}
+		return errors.Wrapf(err, "failed to lock project %s", resourceID)
+	}
+	if !projectDeleted {
+		return errors.Errorf("project %s not found or not marked as deleted", resourceID)
 	}
 
 	// Finally, delete the project itself (only if it's marked as deleted)

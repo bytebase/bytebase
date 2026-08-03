@@ -80,7 +80,7 @@ func (Revision_Type) EnumDescriptor() ([]byte, []int) {
 type ListRevisionsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent of the revisions.
-	// Format: instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of revisions to return. The service may return fewer
 	// than this value. If unspecified, at most 10 revisions will be returned. The
@@ -213,7 +213,7 @@ func (x *ListRevisionsResponse) GetNextPageToken() string {
 
 type CreateRevisionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Format: instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The revision to create.
 	Revision      *Revision `protobuf:"bytes,2,opt,name=revision,proto3" json:"revision,omitempty"`
@@ -268,7 +268,7 @@ func (x *CreateRevisionRequest) GetRevision() *Revision {
 type BatchCreateRevisionsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource shared by all revisions being created.
-	// Format: instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The request message specifying the revisions to create.
 	// A maximum of 100 revisions can be created in a batch.
@@ -369,7 +369,7 @@ func (x *BatchCreateRevisionsResponse) GetRevisions() []*Revision {
 type GetRevisionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the revision.
-	// Format: instances/{instance}/databases/{database}/revisions/{revision}
+	// Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -415,7 +415,7 @@ func (x *GetRevisionRequest) GetName() string {
 type DeleteRevisionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the revision to delete.
-	// Format: instances/{instance}/databases/{database}/revisions/{revision}
+	// Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -460,7 +460,7 @@ func (x *DeleteRevisionRequest) GetName() string {
 
 type Revision struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Format: instances/{instance}/databases/{database}/revisions/{revision}
+	// Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Format: projects/{project}/releases/{release}
 	// Can be empty.
@@ -629,7 +629,7 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\x15bytebase.com/RevisionR\x04name\"J\n" +
 	"\x15DeleteRevisionRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/RevisionR\x04name\"\xfb\x04\n" +
+	"\x15bytebase.com/RevisionR\x04name\"\xd0\x05\n" +
 	"\bRevision\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x123\n" +
 	"\arelease\x18\x02 \x01(\tB\x19\xfaA\x16\n" +
@@ -650,13 +650,13 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tVERSIONED\x10\x01\x12\x0f\n" +
-	"\vDECLARATIVE\x10\x02:Z\xeaAW\n" +
-	"\x15bytebase.com/Revision\x12>instances/{instance}/databases/{database}/revisions/{revision}2\xdc\x05\n" +
-	"\x0fRevisionService\x12\xb0\x01\n" +
-	"\rListRevisions\x12!.bytebase.v1.ListRevisionsRequest\x1a\".bytebase.v1.ListRevisionsResponse\"X\xdaA\x06parent\x8a\xea0\x11bb.revisions.list\x90\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{parent=instances/*/databases/*}/revisions\x12\x9c\x01\n" +
-	"\vGetRevision\x12\x1f.bytebase.v1.GetRevisionRequest\x1a\x15.bytebase.v1.Revision\"U\xdaA\x04name\x8a\xea0\x10bb.revisions.get\x90\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{name=instances/*/databases/*/revisions/*}\x12\xcd\x01\n" +
-	"\x14BatchCreateRevisions\x12(.bytebase.v1.BatchCreateRevisionsRequest\x1a).bytebase.v1.BatchCreateRevisionsResponse\"`\x8a\xea0\x13bb.revisions.create\x90\xea0\x01\x82\xd3\xe4\x93\x02?:\x01*\":/v1/{parent=instances/*/databases/*}/revisions:batchCreate\x12\xa6\x01\n" +
-	"\x0eDeleteRevision\x12\".bytebase.v1.DeleteRevisionRequest\x1a\x16.google.protobuf.Empty\"X\xdaA\x04name\x8a\xea0\x13bb.revisions.delete\x90\xea0\x01\x82\xd3\xe4\x93\x020*./v1/{name=instances/*/databases/*/revisions/*}B\xaa\x01\n" +
+	"\vDECLARATIVE\x10\x02:\xae\x01\xeaA\xaa\x01\n" +
+	"\x15bytebase.com/Revision\x12>instances/{instance}/databases/{database}/revisions/{revision}\x12Qprojects/{project}/instances/{instance}/databases/{database}/revisions/{revision}2\xe4\a\n" +
+	"\x0fRevisionService\x12\xee\x01\n" +
+	"\rListRevisions\x12!.bytebase.v1.ListRevisionsRequest\x1a\".bytebase.v1.ListRevisionsResponse\"\x95\x01\xdaA\x06parent\x8a\xea0\x11bb.revisions.list\x90\xea0\x01\x82\xd3\xe4\x93\x02mZ;\x129/v1/{parent=projects/*/instances/*/databases/*}/revisions\x12./v1/{parent=instances/*/databases/*}/revisions\x12\xda\x01\n" +
+	"\vGetRevision\x12\x1f.bytebase.v1.GetRevisionRequest\x1a\x15.bytebase.v1.Revision\"\x92\x01\xdaA\x04name\x8a\xea0\x10bb.revisions.get\x90\xea0\x01\x82\xd3\xe4\x93\x02mZ;\x129/v1/{name=projects/*/instances/*/databases/*/revisions/*}\x12./v1/{name=instances/*/databases/*/revisions/*}\x12\x9b\x02\n" +
+	"\x14BatchCreateRevisions\x12(.bytebase.v1.BatchCreateRevisionsRequest\x1a).bytebase.v1.BatchCreateRevisionsResponse\"\xad\x01\x8a\xea0\x13bb.revisions.create\x90\xea0\x01\x82\xd3\xe4\x93\x02\x8b\x01:\x01*ZJ:\x01*\"E/v1/{parent=projects/*/instances/*/databases/*}/revisions:batchCreate\":/v1/{parent=instances/*/databases/*}/revisions:batchCreate\x12\xe4\x01\n" +
+	"\x0eDeleteRevision\x12\".bytebase.v1.DeleteRevisionRequest\x1a\x16.google.protobuf.Empty\"\x95\x01\xdaA\x04name\x8a\xea0\x13bb.revisions.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02mZ;*9/v1/{name=projects/*/instances/*/databases/*/revisions/*}*./v1/{name=instances/*/databases/*/revisions/*}B\xaa\x01\n" +
 	"\x0fcom.bytebase.v1B\x14RevisionServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

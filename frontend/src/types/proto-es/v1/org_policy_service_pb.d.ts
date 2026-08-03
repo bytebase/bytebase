@@ -20,8 +20,6 @@ export declare type CreatePolicyRequest = Message<"bytebase.v1.CreatePolicyReque
    * The parent resource where this instance will be created.
    * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
-   * Instance resource name: instances/instance-id.
-   * Database resource name: instances/instance-id/databases/database-name.
    *
    * @generated from field: string parent = 1;
    */
@@ -59,8 +57,6 @@ export declare type UpdatePolicyRequest = Message<"bytebase.v1.UpdatePolicyReque
    * Format: {resource name}/policies/{policy type}
    * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
-   * Instance resource name: instances/instance-id.
-   * Database resource name: instances/instance-id/databases/database-name.
    *
    * @generated from field: bytebase.v1.Policy policy = 1;
    */
@@ -97,8 +93,6 @@ export declare type DeletePolicyRequest = Message<"bytebase.v1.DeletePolicyReque
    * Format: {resource name}/policies/{policy type}
    * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
-   * Instance resource name: instances/instance-id.
-   * Database resource name: instances/instance-id/databases/database-name.
    *
    * @generated from field: string name = 1;
    */
@@ -190,8 +184,6 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
    * Format: {resource name}/policies/{policy type}
    * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
-   * Instance resource name: instances/instance-id.
-   * Database resource name: instances/instance-id/databases/database-name.
    *
    * @generated from field: string name = 1;
    */

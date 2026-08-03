@@ -12,7 +12,6 @@ import (
 	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
@@ -256,93 +255,82 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	return databases, nil
 }
 
-// CreateDatabaseDefault creates a new database in the default project.
+// CreateDatabaseDefault creates a database discovered by schema sync.
 func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
-	q := qb.Q().Space(`
-		INSERT INTO db (
-			instance,
-			project,
-			name,
-			deleted
-		)
+	ownership, err := s.getDatabaseOwnership(ctx, create.InstanceID, create.DatabaseName)
+	if err != nil {
+		return nil, err
+	}
+	projectID, err := ownership.projectForDefaultCreate(create.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	q := qb.Q().Space(`INSERT INTO db (instance, project, name, deleted)
 		VALUES (?, ?, ?, ?)
-		ON CONFLICT (instance, name) DO UPDATE SET
-			deleted = EXCLUDED.deleted`,
-		create.InstanceID,
-		create.ProjectID,
-		create.DatabaseName,
-		false,
-	)
-
+		ON CONFLICT (instance, name) DO UPDATE SET deleted = EXCLUDED.deleted`,
+		create.InstanceID, projectID, create.DatabaseName, false)
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
+		return nil, errors.Wrap(err, "failed to build sql")
 	}
-
 	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
-
-	// Invalidate and update the cache.
 	s.removeDatabaseCache(ctx, create.InstanceID, create.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
 }
 
 // UpsertDatabase upserts a database.
 func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
-	metadataString, err := protojson.Marshal(create.Metadata)
+	metadata, err := protojson.Marshal(create.Metadata)
 	if err != nil {
 		return nil, err
 	}
-
+	ownership, err := s.getDatabaseOwnership(ctx, create.InstanceID, create.DatabaseName)
+	if err != nil {
+		return nil, err
+	}
+	projectID, err := ownership.projectForUpsert(create.ProjectID)
+	if err != nil {
+		return nil, err
+	}
 	var environment *string
 	if create.EnvironmentID != nil && *create.EnvironmentID != "" {
 		environment = create.EnvironmentID
 	}
-
-	q := qb.Q().Space(`
-		INSERT INTO db (
-			instance,
-			project,
-			environment,
-			name,
-			deleted,
-			metadata
-		)
+	q := qb.Q().Space(`INSERT INTO db (instance, project, environment, name, deleted, metadata)
 		VALUES (?, ?, ?, ?, ?, ?)
 		ON CONFLICT (instance, name) DO UPDATE SET
-			project = EXCLUDED.project,
-			environment = EXCLUDED.environment,
-			name = EXCLUDED.name,
-			metadata = EXCLUDED.metadata`,
-		create.InstanceID,
-		create.ProjectID,
-		environment,
-		create.DatabaseName,
-		create.Deleted,
-		metadataString,
-	)
-
+			project = EXCLUDED.project, environment = EXCLUDED.environment,
+			name = EXCLUDED.name, metadata = EXCLUDED.metadata`,
+		create.InstanceID, projectID, environment, create.DatabaseName, create.Deleted, metadata)
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
+		return nil, errors.Wrap(err, "failed to build sql")
 	}
-
 	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
-
-	// Invalidate and update the cache.
 	s.removeDatabaseCache(ctx, create.InstanceID, create.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
 }
 
 // UpdateDatabase updates a database.
 func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage) (*DatabaseMessage, error) {
+	ownership, err := s.getDatabaseOwnership(ctx, patch.InstanceID, patch.DatabaseName)
+	if err != nil {
+		return nil, err
+	}
+	if !ownership.exists {
+		return nil, common.Errorf(common.NotFound, "database %s not found", common.FormatDatabase(patch.InstanceID, patch.DatabaseName))
+	}
+	projectID, err := ownership.projectForUpdate(patch.ProjectID)
+	if err != nil {
+		return nil, err
+	}
 	set := qb.Q()
-
-	if v := patch.ProjectID; v != nil {
-		set.Comma("project = ?", *v)
+	if patch.ProjectID != nil {
+		set.Comma("project = ?", projectID)
 	}
 	if v := patch.EnvironmentID; v != nil {
 		if *v == "" {
@@ -354,50 +342,42 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	if v := patch.Deleted; v != nil {
 		set.Comma("deleted = ?", *v)
 	}
-	if fs := patch.MetadataUpdates; len(fs) > 0 {
-		database, err := s.GetDatabase(ctx, &FindDatabaseMessage{
-			InstanceID:   &patch.InstanceID,
-			DatabaseName: &patch.DatabaseName,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database %q", common.FormatDatabase(patch.InstanceID, patch.DatabaseName))
+	if len(patch.MetadataUpdates) > 0 {
+		metadata := &storepb.DatabaseMetadata{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal(ownership.metadata, metadata); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal metadata for database %q", common.FormatDatabase(patch.InstanceID, patch.DatabaseName))
 		}
-		md := proto.CloneOf(database.Metadata)
-		for _, f := range fs {
-			f(md)
+		for _, update := range patch.MetadataUpdates {
+			update(metadata)
 		}
-		metadataBytes, err := protojson.Marshal(md)
+		metadataBytes, err := protojson.Marshal(metadata)
 		if err != nil {
 			return nil, err
 		}
 		set.Comma("metadata = ?", metadataBytes)
 	}
-
 	if set.Len() == 0 {
 		return nil, errors.New("no fields to update")
 	}
-
 	q := qb.Q().Space("UPDATE db SET ? WHERE instance = ? AND name = ?", set, patch.InstanceID, patch.DatabaseName)
-
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
+		return nil, errors.Wrap(err, "failed to build sql")
 	}
-
 	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
-
-	// Invalidate and update database cache.
 	s.removeDatabaseCache(ctx, patch.InstanceID, patch.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &patch.InstanceID, DatabaseName: &patch.DatabaseName, ShowDeleted: true})
 }
 
-// BatchUpdateDatabases update databases in batch.
+// BatchUpdateDatabases updates databases in batch.
 func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseMessage, update *BatchUpdateDatabases) error {
 	set := qb.Q()
-
 	if update.ProjectID != nil {
+		if *update.ProjectID == "" {
+			return common.Errorf(common.Invalid, "database project cannot be empty")
+		}
 		set.Comma("project = ?", *update.ProjectID)
 	}
 	if v := update.EnvironmentID; v != nil {
@@ -410,46 +390,165 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 	if set.Len() == 0 {
 		return errors.New("no update field specified")
 	}
-
 	where := qb.Q()
-
 	if v := update.FindByEnvironmentID; v != nil {
-		where.Or("environment = ?", *v)
+		where.Or("db.environment = ?", *v)
 	}
-
 	if len(databases) > 0 {
-		var dbInstances, dbNames []string
+		instances, names := make([]string, 0, len(databases)), make([]string, 0, len(databases))
 		for _, database := range databases {
-			dbInstances = append(dbInstances, database.InstanceID)
-			dbNames = append(dbNames, database.DatabaseName)
+			instances, names = append(instances, database.InstanceID), append(names, database.DatabaseName)
 		}
-		where.Or(`(db.instance, db.name) IN (SELECT * FROM unnest(?::TEXT[], ?::TEXT[]))`, dbInstances, dbNames)
+		where.Or(`(db.instance, db.name) IN (SELECT * FROM unnest(?::TEXT[], ?::TEXT[]))`, instances, names)
 	}
-
 	if where.Len() == 0 {
-		return errors.Errorf("empty where")
+		return errors.New("empty where")
 	}
-
 	if update.Workspace != "" {
 		where.And("db.instance IN (SELECT resource_id FROM instance WHERE workspace = ?)", update.Workspace)
 	}
 
-	q := qb.Q().Space("UPDATE db SET ? WHERE ?", set, where)
+	validOwnership := qb.Q().Space("TRUE")
+	if update.ProjectID != nil {
+		validOwnership = qb.Q().Space(`
+			NOT EXISTS (
+				SELECT 1 FROM targets
+				WHERE instance_project IS NOT NULL
+				  AND (project <> instance_project OR instance_project <> ?)
+			)
+		`, *update.ProjectID)
+	}
 
+	q := qb.Q().Space(`
+		WITH targets AS MATERIALIZED (
+			SELECT db.instance, db.name, db.project, instance.project AS instance_project
+			FROM db
+			JOIN instance ON instance.resource_id = db.instance
+			WHERE ?
+		),
+		validation AS (
+			SELECT ? AS valid
+		),
+		updated AS (
+			UPDATE db
+			SET ?
+			FROM targets, validation
+			WHERE validation.valid
+			  AND db.instance = targets.instance
+			  AND db.name = targets.name
+			RETURNING db.instance, db.name
+		)
+		SELECT validation.valid, updated.instance, updated.name
+		FROM validation
+		LEFT JOIN updated ON TRUE
+	`, where, validOwnership, set)
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
+		return errors.Wrap(err, "failed to build sql")
 	}
-
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
-		return err
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	if err != nil {
+		return errors.Wrap(err, "failed to update databases")
 	}
+	defer rows.Close()
 
-	// Invalidate cache for updated databases
-	for _, database := range databases {
+	var updated []*DatabaseMessage
+	for rows.Next() {
+		var valid bool
+		var instanceID, databaseName sql.NullString
+		if err := rows.Scan(&valid, &instanceID, &databaseName); err != nil {
+			return errors.Wrap(err, "failed to scan updated database")
+		}
+		if !valid {
+			return common.Errorf(common.Invalid, "cannot move a project instance database to another project")
+		}
+		if instanceID.Valid && databaseName.Valid {
+			updated = append(updated, &DatabaseMessage{
+				InstanceID:   instanceID.String,
+				DatabaseName: databaseName.String,
+			})
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return errors.Wrap(err, "failed to update databases")
+	}
+	for _, database := range updated {
 		s.removeDatabaseCache(ctx, database.InstanceID, database.DatabaseName)
 	}
 	return nil
+}
+
+type databaseOwnership struct {
+	exists          bool
+	projectID       string
+	metadata        []byte
+	instanceProject *string
+}
+
+func (s *Store) getDatabaseOwnership(ctx context.Context, instanceID, databaseName string) (*databaseOwnership, error) {
+	ownership := &databaseOwnership{}
+	var databaseProject sql.NullString
+	var instanceProject sql.NullString
+	if err := s.GetDB().QueryRowContext(ctx, `
+		SELECT db.project, db.metadata, instance.project
+		FROM instance
+		LEFT JOIN db ON db.instance = instance.resource_id AND db.name = $2
+		WHERE instance.resource_id = $1
+	`, instanceID, databaseName).Scan(&databaseProject, &ownership.metadata, &instanceProject); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, common.Errorf(common.NotFound, "instance %s not found", instanceID)
+		}
+		return nil, errors.Wrapf(err, "failed to get database ownership for instance %s", instanceID)
+	}
+	if databaseProject.Valid {
+		ownership.exists = true
+		ownership.projectID = databaseProject.String
+	}
+	if instanceProject.Valid {
+		projectID := instanceProject.String
+		ownership.instanceProject = &projectID
+	}
+	return ownership, nil
+}
+
+func (ownership *databaseOwnership) projectForDefaultCreate(requestedProjectID string) (string, error) {
+	if ownership.instanceProject != nil {
+		if ownership.exists && ownership.projectID != *ownership.instanceProject {
+			return "", common.Errorf(common.Invalid, "database on project instance must belong to project %s", *ownership.instanceProject)
+		}
+		return *ownership.instanceProject, nil
+	}
+	if requestedProjectID == "" {
+		return "", common.Errorf(common.Invalid, "database project cannot be empty")
+	}
+	return requestedProjectID, nil
+}
+
+func (ownership *databaseOwnership) projectForUpsert(requestedProjectID string) (string, error) {
+	if ownership.instanceProject != nil {
+		if ownership.exists && (requestedProjectID != *ownership.instanceProject || ownership.projectID != *ownership.instanceProject) {
+			return "", common.Errorf(common.Invalid, "database on project instance must belong to project %s", *ownership.instanceProject)
+		}
+		return *ownership.instanceProject, nil
+	}
+	if requestedProjectID == "" {
+		return "", common.Errorf(common.Invalid, "database project cannot be empty")
+	}
+	return requestedProjectID, nil
+}
+
+func (ownership *databaseOwnership) projectForUpdate(requestedProjectID *string) (string, error) {
+	projectID := ownership.projectID
+	if requestedProjectID != nil {
+		projectID = *requestedProjectID
+	}
+	if projectID == "" {
+		return "", common.Errorf(common.Invalid, "database project cannot be empty")
+	}
+	if ownership.instanceProject != nil && (ownership.projectID != *ownership.instanceProject || projectID != *ownership.instanceProject) {
+		return "", common.Errorf(common.Invalid, "database on project instance must belong to project %s", *ownership.instanceProject)
+	}
+	return projectID, nil
 }
 
 func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {

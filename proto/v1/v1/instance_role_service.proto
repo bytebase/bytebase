@@ -15,7 +15,10 @@ service InstanceRoleService {
   // Lists all database roles in an instance.
   // Permissions required: bb.instanceRoles.list
   rpc ListInstanceRoles(ListInstanceRolesRequest) returns (ListInstanceRolesResponse) {
-    option (google.api.http) = {get: "/v1/{parent=instances/*}/roles"};
+    option (google.api.http) = {
+      get: "/v1/{parent=instances/*}/roles"
+      additional_bindings: {get: "/v1/{parent=projects/*/instances/*}/roles"}
+    };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.instanceRoles.list";
     option (bytebase.v1.auth_method) = IAM;
@@ -24,7 +27,7 @@ service InstanceRoleService {
 
 message ListInstanceRolesRequest {
   // The parent, which owns this collection of roles.
-  // Format: instances/{instance}
+  // Format: instances/{instance} or projects/{project}/instances/{instance}
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Instance"}
@@ -63,10 +66,11 @@ message InstanceRole {
   option (google.api.resource) = {
     type: "bytebase.com/InstanceRole"
     pattern: "instances/{instance}/roles/{role}"
+    pattern: "projects/{project}/instances/{instance}/roles/{role}"
   };
 
   // The name of the role.
-  // Format: instances/{instance}/roles/{role}
+  // Format: instances/{instance}/roles/{role} or projects/{project}/instances/{instance}/roles/{role}
   // The role name is the unique name for the role.
   string name = 1;
 

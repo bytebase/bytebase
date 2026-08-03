@@ -14,6 +14,9 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -220,14 +223,24 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 	}
 	limitPlusOne := offset.limit + 1
 
+	parentProjectID, err := s.getProjectInstanceParent(ctx, req.Msg.Parent)
+	if err != nil {
+		return nil, err
+	}
+
 	find := &store.FindInstanceMessage{
-		Workspace:   common.GetWorkspaceIDFromContext(ctx),
-		ShowDeleted: req.Msg.ShowDeleted,
-		Limit:       &limitPlusOne,
-		Offset:      &offset.offset,
+		Workspace:     common.GetWorkspaceIDFromContext(ctx),
+		ProjectID:     parentProjectID,
+		WorkspaceOnly: parentProjectID == nil,
+		ShowDeleted:   req.Msg.ShowDeleted,
+		Limit:         &limitPlusOne,
+		Offset:        &offset.offset,
 	}
 	filterQ, err := store.GetListInstanceFilter(req.Msg.Filter)
 	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := validateProjectInstanceListFilter(parentProjectID, req.Msg.Filter); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	find.FilterQ = filterQ
@@ -262,20 +275,82 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(response), nil
 }
 
+func validateProjectInstanceListFilter(parentProjectID *string, filter string) error {
+	if parentProjectID == nil || filter == "" {
+		return nil
+	}
+	env, err := cel.NewEnv()
+	if err != nil {
+		return errors.Wrap(err, "failed to create CEL environment")
+	}
+	ast, issues := env.Parse(filter)
+	if issues != nil {
+		return errors.Errorf("failed to parse filter %q", filter)
+	}
+
+	var validate func(celast.Expr) error
+	validate = func(expr celast.Expr) error {
+		if expr.Kind() != celast.CallKind {
+			return nil
+		}
+		call := expr.AsCall()
+		switch call.FunctionName() {
+		case celoperators.LogicalAnd, celoperators.LogicalOr:
+			for _, arg := range call.Args() {
+				if err := validate(arg); err != nil {
+					return err
+				}
+			}
+		case celoperators.Equals:
+			variable, value := getVariableAndValueFromExpr(expr)
+			if variable != "project" {
+				break
+			}
+			projectName, ok := value.(string)
+			if !ok {
+				return nil
+			}
+			projectID, err := common.GetProjectID(projectName)
+			if err != nil {
+				return errors.Errorf("invalid project filter %q", projectName)
+			}
+			if projectID != *parentProjectID {
+				return errors.Errorf("project filter %q does not match parent %q", projectName, common.FormatProject(*parentProjectID))
+			}
+		default:
+			for _, arg := range call.Args() {
+				if err := validate(arg); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+	return validate(ast.NativeRep().Expr())
+}
+
 // ListInstanceDatabase list all databases in the instance.
 func (s *InstanceService) ListInstanceDatabase(ctx context.Context, req *connect.Request[v1pb.ListInstanceDatabaseRequest]) (*connect.Response[v1pb.ListInstanceDatabaseResponse], error) {
 	var instanceMessage *store.InstanceMessage
 
 	if req.Msg.Instance != nil {
-		instanceID, err := common.GetInstanceID(req.Msg.Name)
+		projectID, instanceID, err := common.GetInstanceResourceName(req.Msg.Name)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		if projectID != nil {
+			parent := common.FormatProject(*projectID)
+			projectID, err = s.getProjectInstanceParent(ctx, &parent)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if instanceMessage, err = convertToStoreInstance(instanceID, req.Msg.Instance); err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		instanceMessage.Workspace = common.GetWorkspaceIDFromContext(ctx)
+		instanceMessage.ProjectID = projectID
 	} else {
 		instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
 		if err != nil {
@@ -305,7 +380,11 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance ID %v", req.Msg.InstanceId))
 	}
 
-	if err := s.instanceCountGuard(ctx); err != nil {
+	if req.Msg.Parent != nil && req.Msg.InitialDatabaseProject != "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("initial_database_project must be unset when parent is set"))
+	}
+	projectID, err := s.getProjectInstanceParent(ctx, req.Msg.Parent)
+	if err != nil {
 		return nil, err
 	}
 
@@ -322,6 +401,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	// connection below, before the instance is persisted.
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	instanceMessage.Workspace = workspaceID
+	instanceMessage.ProjectID = projectID
 	initialProjectID, err := s.getInitialDatabaseProjectID(ctx, req.Msg.GetInitialDatabaseProject())
 	if err != nil {
 		return nil, err
@@ -345,6 +425,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 
 		result := s.convertToV1Instance(ctx, instanceMessage)
 		return connect.NewResponse(result), nil
+	}
+	if err := s.instanceCountGuard(ctx); err != nil {
+		return nil, err
 	}
 
 	if err := s.checkActivationLimit(ctx, workspaceID, instanceMessage.Metadata.GetActivation()); err != nil {
@@ -403,6 +486,31 @@ func (s *InstanceService) getInitialDatabaseProjectID(ctx context.Context, proje
 		return "", connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectName))
 	}
 	return project.ResourceID, nil
+}
+
+func (s *InstanceService) getProjectInstanceParent(ctx context.Context, parent *string) (*string, error) {
+	if parent == nil {
+		return nil, nil
+	}
+	projectID, err := common.GetProjectID(*parent)
+	if err != nil || projectID == "-" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance parent %q", *parent))
+	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if common.IsDefaultProject(workspaceID, projectID) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project %q cannot own instances", *parent))
+	}
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+		Workspace:  workspaceID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if project == nil || project.Deleted {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", *parent))
+	}
+	return &projectID, nil
 }
 
 func instanceWithMetadata(instance *store.InstanceMessage, metadata *storepb.Instance) *store.InstanceMessage {
@@ -677,7 +785,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") && req.Msg.AllowMissing {
 			// When allow_missing is true and instance doesn't exist, create a new one
-			instanceID, ierr := common.GetInstanceID(req.Msg.Instance.Name)
+			projectID, instanceID, ierr := common.GetInstanceResourceName(req.Msg.Instance.Name)
 			if ierr != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, ierr)
 			}
@@ -685,6 +793,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			return s.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 				InstanceId: instanceID,
 				Instance:   req.Msg.Instance,
+				Parent:     instanceCollectionParent(projectID),
 			}))
 		}
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -789,6 +898,9 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, err
 	}
+	if req.Msg.Force && instance.ProjectID != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("force deletion is only supported for workspace instances"))
+	}
 
 	// Handle purge (hard delete) of soft-deleted instance
 	if req.Msg.Purge {
@@ -811,29 +923,31 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 		return connect.NewResponse(&emptypb.Empty{}), nil
 	}
 
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: &instance.ResourceID})
-	if err != nil {
-		return nil, err
-	}
-	if req.Msg.Force {
-		if len(databases) > 0 {
-			defaultProjectID, err := s.store.GetDefaultProjectID(ctx, common.GetWorkspaceIDFromContext(ctx))
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get default project ID"))
-			}
-			if err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectID: &defaultProjectID}); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
-			}
+	if instance.ProjectID == nil {
+		databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: &instance.ResourceID})
+		if err != nil {
+			return nil, err
 		}
-	} else {
-		var databaseNames []string
-		for _, database := range databases {
-			if !common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), database.ProjectID) {
-				databaseNames = append(databaseNames, database.DatabaseName)
+		if req.Msg.Force {
+			if len(databases) > 0 {
+				defaultProjectID, err := s.store.GetDefaultProjectID(ctx, common.GetWorkspaceIDFromContext(ctx))
+				if err != nil {
+					return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get default project ID"))
+				}
+				if err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectID: &defaultProjectID}); err != nil {
+					return nil, connect.NewError(connect.CodeInternal, err)
+				}
 			}
-		}
-		if len(databaseNames) > 0 {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("all databases should be transferred to the unassigned project before deleting the instance"))
+		} else {
+			var databaseNames []string
+			for _, database := range databases {
+				if !common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), database.ProjectID) {
+					databaseNames = append(databaseNames, database.DatabaseName)
+				}
+			}
+			if len(databaseNames) > 0 {
+				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("all databases should be transferred to the unassigned project before deleting the instance"))
+			}
 		}
 	}
 
@@ -923,14 +1037,16 @@ func (s *InstanceService) SyncInstance(ctx context.Context, req *connect.Request
 
 // BatchSyncInstances syncs multiple instances.
 func (s *InstanceService) BatchSyncInstances(ctx context.Context, req *connect.Request[v1pb.BatchSyncInstancesRequest]) (*connect.Response[v1pb.BatchSyncInstancesResponse], error) {
-	for _, r := range req.Msg.Requests {
-		instance, err := getInstanceMessage(ctx, s.store, r.Name)
-		if err != nil {
-			return nil, err
-		}
-		if instance.Deleted {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", r.Name))
-		}
+	names := make([]string, 0, len(req.Msg.Requests))
+	for _, request := range req.Msg.Requests {
+		names = append(names, request.Name)
+	}
+	instances, err := s.getInstanceCollection(ctx, req.Msg.Parent, names)
+	if err != nil {
+		return nil, err
+	}
+	for i, instance := range instances {
+		r := req.Msg.Requests[i]
 
 		updatedInstance, _, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
 		if err != nil {
@@ -949,6 +1065,33 @@ func (s *InstanceService) BatchSyncInstances(ctx context.Context, req *connect.R
 
 // BatchUpdateInstances update multiple instances.
 func (s *InstanceService) BatchUpdateInstances(ctx context.Context, req *connect.Request[v1pb.BatchUpdateInstancesRequest]) (*connect.Response[v1pb.BatchUpdateInstancesResponse], error) {
+	projectID, err := s.getProjectInstanceParent(ctx, req.Msg.Parent)
+	if err != nil {
+		return nil, err
+	}
+	for _, updateReq := range req.Msg.GetRequests() {
+		name := updateReq.GetInstance().GetName()
+		instanceProjectID, _, err := common.GetInstanceResourceName(name)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		if (projectID == nil) != (instanceProjectID == nil) || projectID != nil && *projectID != *instanceProjectID {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("instance %q is not in its requested collection", name))
+		}
+	}
+	for _, updateReq := range req.Msg.GetRequests() {
+		name := updateReq.GetInstance().GetName()
+		instance, err := getInstanceMessage(ctx, s.store, name)
+		if err != nil {
+			if connect.CodeOf(err) == connect.CodeNotFound && updateReq.AllowMissing {
+				continue
+			}
+			return nil, err
+		}
+		if instance.Deleted {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", name))
+		}
+	}
 	response := &v1pb.BatchUpdateInstancesResponse{}
 	for _, updateReq := range req.Msg.GetRequests() {
 		updated, err := s.UpdateInstance(ctx, connect.NewRequest(updateReq))
@@ -1284,14 +1427,16 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 }
 
 func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (*store.InstanceMessage, error) {
-	instanceID, err := common.GetInstanceID(name)
+	projectID, instanceID, err := common.GetInstanceResourceName(name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	find := &store.FindInstanceMessage{
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
-		ResourceID: &instanceID,
+		Workspace:     common.GetWorkspaceIDFromContext(ctx),
+		ResourceID:    &instanceID,
+		ProjectID:     projectID,
+		WorkspaceOnly: projectID == nil,
 	}
 	instance, err := stores.GetInstance(ctx, find)
 	if err != nil {
@@ -1304,8 +1449,40 @@ func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (
 	return instance, nil
 }
 
-// buildInstanceName builds the instance name with the given instance ID.
-func buildInstanceName(instanceID string) string {
+func instanceCollectionParent(projectID *string) *string {
+	if projectID == nil {
+		return nil
+	}
+	return new(common.FormatProject(*projectID))
+}
+
+func (s *InstanceService) getInstanceCollection(ctx context.Context, parent *string, names []string) ([]*store.InstanceMessage, error) {
+	projectID, err := s.getProjectInstanceParent(ctx, parent)
+	if err != nil {
+		return nil, err
+	}
+	instances := make([]*store.InstanceMessage, 0, len(names))
+	for _, name := range names {
+		instance, err := getInstanceMessage(ctx, s.store, name)
+		if err != nil {
+			return nil, err
+		}
+		if instance.Deleted {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", name))
+		}
+		if (projectID == nil) != (instance.ProjectID == nil) || projectID != nil && *projectID != *instance.ProjectID {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("instance %q is not in its requested collection", name))
+		}
+		instances = append(instances, instance)
+	}
+	return instances, nil
+}
+
+// buildInstanceName builds an instance name in its owner collection.
+func buildInstanceName(instanceID string, projectID *string) string {
+	if projectID != nil {
+		return common.FormatProjectInstance(*projectID, instanceID)
+	}
 	var b strings.Builder
 	b.Grow(len(common.InstanceNamePrefix) + len(instanceID))
 	_, _ = b.WriteString(common.InstanceNamePrefix)

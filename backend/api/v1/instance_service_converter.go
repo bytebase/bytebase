@@ -18,7 +18,7 @@ func convertToV1Instance(instance *store.InstanceMessage, activation bool) *v1pb
 	dataSources := convertDataSources(instance.Metadata.GetDataSources())
 
 	return &v1pb.Instance{
-		Name:          buildInstanceName(instance.ResourceID),
+		Name:          buildInstanceName(instance.ResourceID, instance.ProjectID),
 		Title:         instance.Metadata.GetTitle(),
 		Engine:        engine,
 		EngineVersion: instance.Metadata.GetVersion(),
@@ -36,10 +36,9 @@ func convertToV1Instance(instance *store.InstanceMessage, activation bool) *v1pb
 }
 
 // buildRoleName builds the role name with the given instance ID and role name.
-func buildRoleName(b *strings.Builder, instanceID, roleName string) string {
+func buildRoleName(b *strings.Builder, instanceID string, projectID *string, roleName string) string {
 	b.Reset()
-	_, _ = b.WriteString(common.InstanceNamePrefix)
-	_, _ = b.WriteString(instanceID)
+	_, _ = b.WriteString(buildInstanceName(instanceID, projectID))
 	_, _ = b.WriteString("/")
 	_, _ = b.WriteString(common.RolePrefix)
 	_, _ = b.WriteString(roleName)
@@ -55,7 +54,7 @@ func convertInstanceRoles(instance *store.InstanceMessage, roles []*storepb.Inst
 
 	for _, role := range roles {
 		v1Roles = append(v1Roles, &v1pb.InstanceRole{
-			Name:      buildRoleName(&b, instance.ResourceID, role.Name),
+			Name:      buildRoleName(&b, instance.ResourceID, instance.ProjectID, role.Name),
 			RoleName:  role.Name,
 			Attribute: role.Attribute,
 		})
@@ -115,7 +114,7 @@ func convertToStoreSyncDatabases(syncDatabases *v1pb.SyncDatabases) *storepb.Syn
 
 func convertToV1InstanceResource(instanceMessage *store.InstanceMessage, activation bool) *v1pb.InstanceResource {
 	return &v1pb.InstanceResource{
-		Name:          buildInstanceName(instanceMessage.ResourceID),
+		Name:          buildInstanceName(instanceMessage.ResourceID, instanceMessage.ProjectID),
 		Title:         instanceMessage.Metadata.GetTitle(),
 		Engine:        convertToEngine(instanceMessage.Metadata.GetEngine()),
 		EngineVersion: instanceMessage.Metadata.GetVersion(),

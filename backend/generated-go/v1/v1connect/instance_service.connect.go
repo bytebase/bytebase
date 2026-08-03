@@ -80,7 +80,7 @@ type InstanceServiceClient interface {
 	// Gets a database instance by name.
 	// Permissions required: bb.instances.get
 	GetInstance(context.Context, *connect.Request[v1.GetInstanceRequest]) (*connect.Response[v1.Instance], error)
-	// Lists all database instances.
+	// Lists database instances, optionally within a project.
 	// Permissions required: bb.instances.list
 	ListInstances(context.Context, *connect.Request[v1.ListInstancesRequest]) (*connect.Response[v1.ListInstancesResponse], error)
 	// Creates a new database instance.
@@ -297,7 +297,7 @@ type InstanceServiceHandler interface {
 	// Gets a database instance by name.
 	// Permissions required: bb.instances.get
 	GetInstance(context.Context, *connect.Request[v1.GetInstanceRequest]) (*connect.Response[v1.Instance], error)
-	// Lists all database instances.
+	// Lists database instances, optionally within a project.
 	// Permissions required: bb.instances.list
 	ListInstances(context.Context, *connect.Request[v1.ListInstancesRequest]) (*connect.Response[v1.ListInstancesResponse], error)
 	// Creates a new database instance.

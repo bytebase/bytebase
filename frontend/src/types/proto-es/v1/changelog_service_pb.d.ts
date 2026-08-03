@@ -17,7 +17,7 @@ export declare const file_v1_changelog_service: GenFile;
 export declare type ListChangelogsRequest = Message<"bytebase.v1.ListChangelogsRequest"> & {
   /**
    * The parent of the changelogs.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string parent = 1;
    */
@@ -104,7 +104,7 @@ export declare const ListChangelogsResponseSchema: GenMessage<ListChangelogsResp
 export declare type GetChangelogRequest = Message<"bytebase.v1.GetChangelogRequest"> & {
   /**
    * The name of the changelog to retrieve.
-   * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+   * Format: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}
    *
    * @generated from field: string name = 1;
    */
@@ -127,7 +127,7 @@ export declare const GetChangelogRequestSchema: GenMessage<GetChangelogRequest>;
  */
 export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
   /**
-   * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+   * Format: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}
    *
    * @generated from field: string name = 1;
    */

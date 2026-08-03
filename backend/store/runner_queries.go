@@ -64,6 +64,7 @@ func (s *Store) GetInstanceByResourceID(ctx context.Context, resourceID string) 
 		SELECT
 			instance.resource_id,
 			instance.workspace,
+			instance.project,
 			instance.environment,
 			instance.deleted,
 			instance.metadata
@@ -76,11 +77,13 @@ func (s *Store) GetInstanceByResourceID(ctx context.Context, resourceID string) 
 	}
 
 	var instance InstanceMessage
+	var project sql.NullString
 	var environment sql.NullString
 	var metadata []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&instance.ResourceID,
 		&instance.Workspace,
+		&project,
 		&environment,
 		&instance.Deleted,
 		&metadata,
@@ -92,6 +95,9 @@ func (s *Store) GetInstanceByResourceID(ctx context.Context, resourceID string) 
 	}
 	if environment.Valid {
 		instance.EnvironmentID = &environment.String
+	}
+	if project.Valid {
+		instance.ProjectID = &project.String
 	}
 	instanceMetadata := &storepb.Instance{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, instanceMetadata); err != nil {
@@ -118,6 +124,7 @@ func (s *Store) ListAllInstances(ctx context.Context, showDeleted bool) ([]*Inst
 		SELECT
 			instance.resource_id,
 			instance.workspace,
+			instance.project,
 			instance.environment,
 			instance.deleted,
 			instance.metadata
@@ -139,11 +146,13 @@ func (s *Store) ListAllInstances(ctx context.Context, showDeleted bool) ([]*Inst
 	defer rows.Close()
 	for rows.Next() {
 		var instance InstanceMessage
+		var project sql.NullString
 		var environment sql.NullString
 		var metadata []byte
 		if err := rows.Scan(
 			&instance.ResourceID,
 			&instance.Workspace,
+			&project,
 			&environment,
 			&instance.Deleted,
 			&metadata,
@@ -152,6 +161,9 @@ func (s *Store) ListAllInstances(ctx context.Context, showDeleted bool) ([]*Inst
 		}
 		if environment.Valid {
 			instance.EnvironmentID = &environment.String
+		}
+		if project.Valid {
+			instance.ProjectID = &project.String
 		}
 		instanceMetadata := &storepb.Instance{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, instanceMetadata); err != nil {

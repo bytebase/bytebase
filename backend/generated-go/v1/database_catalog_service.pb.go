@@ -91,7 +91,7 @@ func (ObjectSchema_Type) EnumDescriptor() ([]byte, []int) {
 type GetDatabaseCatalogRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the database catalog to retrieve.
-	// Format: instances/{instance}/databases/{database}/catalog
+	// Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -140,7 +140,7 @@ type UpdateDatabaseCatalogRequest struct {
 	// The database catalog to update.
 	//
 	// The catalog's `name` field is used to identify the database catalog to update.
-	// Format: instances/{instance}/databases/{database}/catalog
+	// Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
 	Catalog *DatabaseCatalog `protobuf:"bytes,1,opt,name=catalog,proto3" json:"catalog,omitempty"`
 	// If set to true, and the database catalog is not found, a new database catalog will be created.
 	// In this situation, `update_mask` is ignored.
@@ -197,7 +197,7 @@ func (x *UpdateDatabaseCatalogRequest) GetAllowMissing() bool {
 type DatabaseCatalog struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the database catalog.
-	// Format: instances/{instance}/databases/{database}/catalog
+	// Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The schemas in the database.
 	Schemas       []*SchemaCatalog `protobuf:"bytes,2,rep,name=schemas,proto3" json:"schemas,omitempty"`
@@ -740,11 +740,11 @@ const file_v1_database_catalog_service_proto_rawDesc = "" +
 	"\x1cbytebase.com/DatabaseCatalogR\x04name\"\x80\x01\n" +
 	"\x1cUpdateDatabaseCatalogRequest\x12;\n" +
 	"\acatalog\x18\x01 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogB\x03\xe0A\x02R\acatalog\x12#\n" +
-	"\rallow_missing\x18\x02 \x01(\bR\fallowMissing\"\xb1\x01\n" +
+	"\rallow_missing\x18\x02 \x01(\bR\fallowMissing\"\xf9\x01\n" +
 	"\x0fDatabaseCatalog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x124\n" +
-	"\aschemas\x18\x02 \x03(\v2\x1a.bytebase.v1.SchemaCatalogR\aschemas:T\xeaAQ\n" +
-	"\x1cbytebase.com/DatabaseCatalog\x121instances/{instance}/databases/{database}/catalog\"V\n" +
+	"\aschemas\x18\x02 \x03(\v2\x1a.bytebase.v1.SchemaCatalogR\aschemas:\x9b\x01\xeaA\x97\x01\n" +
+	"\x1cbytebase.com/DatabaseCatalog\x121instances/{instance}/databases/{database}/catalog\x12Dprojects/{project}/instances/{instance}/databases/{database}/catalog\"V\n" +
 	"\rSchemaCatalog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x121\n" +
 	"\x06tables\x18\x02 \x03(\v2\x19.bytebase.v1.TableCatalogR\x06tables\"\x94\x02\n" +
@@ -793,10 +793,10 @@ const file_v1_database_catalog_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06OBJECT\x10\x04\x12\t\n" +
 	"\x05ARRAY\x10\x05B\x06\n" +
-	"\x04kind2\xb3\x03\n" +
-	"\x16DatabaseCatalogService\x12\xb4\x01\n" +
-	"\x12GetDatabaseCatalog\x12&.bytebase.v1.GetDatabaseCatalogRequest\x1a\x1c.bytebase.v1.DatabaseCatalog\"X\xdaA\x04name\x8a\xea0\x17bb.databaseCatalogs.get\x90\xea0\x01\x82\xd3\xe4\x93\x02,\x12*/v1/{name=instances/*/databases/*/catalog}\x12\xe1\x01\n" +
-	"\x15UpdateDatabaseCatalog\x12).bytebase.v1.UpdateDatabaseCatalogRequest\x1a\x1c.bytebase.v1.DatabaseCatalog\"\x7f\xdaA\x13catalog,update_mask\x8a\xea0\x1abb.databaseCatalogs.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02=:\acatalog22/v1/{catalog.name=instances/*/databases/*/catalog}B\xb1\x01\n" +
+	"\x04kind2\xb9\x04\n" +
+	"\x16DatabaseCatalogService\x12\xee\x01\n" +
+	"\x12GetDatabaseCatalog\x12&.bytebase.v1.GetDatabaseCatalogRequest\x1a\x1c.bytebase.v1.DatabaseCatalog\"\x91\x01\xdaA\x04name\x8a\xea0\x17bb.databaseCatalogs.get\x90\xea0\x01\x82\xd3\xe4\x93\x02eZ7\x125/v1/{name=projects/*/instances/*/databases/*/catalog}\x12*/v1/{name=instances/*/databases/*/catalog}\x12\xad\x02\n" +
+	"\x15UpdateDatabaseCatalog\x12).bytebase.v1.UpdateDatabaseCatalogRequest\x1a\x1c.bytebase.v1.DatabaseCatalog\"\xca\x01\xdaA\x13catalog,update_mask\x8a\xea0\x1abb.databaseCatalogs.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x87\x01:\acatalogZH:\acatalog2=/v1/{catalog.name=projects/*/instances/*/databases/*/catalog}22/v1/{catalog.name=instances/*/databases/*/catalog}B\xb1\x01\n" +
 	"\x0fcom.bytebase.v1B\x1bDatabaseCatalogServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

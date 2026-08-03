@@ -98,6 +98,16 @@ func TestShouldDiffSchemaViaSDL(t *testing.T) {
 	}
 }
 
+func TestFormatDatabaseResourceName(t *testing.T) {
+	database := &store.DatabaseMessage{InstanceID: "instance-a", DatabaseName: "app"}
+	require.Equal(t, "instances/instance-a/databases/app", formatDatabaseResourceName(&store.InstanceMessage{ResourceID: "instance-a"}, database))
+	projectID := "project-a"
+	require.Equal(t, "projects/project-a/instances/instance-a/databases/app", formatDatabaseResourceName(&store.InstanceMessage{
+		ResourceID: "instance-a",
+		ProjectID:  &projectID,
+	}, database))
+}
+
 func TestListDatabaseFilter(t *testing.T) {
 	testCases := []struct {
 		input    string

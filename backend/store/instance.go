@@ -24,6 +24,7 @@ import (
 type InstanceMessage struct {
 	ResourceID    string
 	Workspace     string
+	ProjectID     *string
 	EnvironmentID *string
 	Deleted       bool
 	Metadata      *storepb.Instance
@@ -43,21 +44,33 @@ type UpdateInstanceMessage struct {
 
 // FindInstanceMessage is the message for finding instances.
 type FindInstanceMessage struct {
-	Workspace   string
-	ResourceID  *string
-	ResourceIDs *[]string
-	ShowDeleted bool
-	Limit       *int
-	Offset      *int
-	FilterQ     *qb.Query
-	OrderByKeys []*OrderByKey
+	Workspace string
+	// ProjectID filters instances to this exact project.
+	ProjectID *string
+	// WorkspaceOnly filters workspace-level instances.
+	WorkspaceOnly bool
+	ResourceID    *string
+	ResourceIDs   *[]string
+	ShowDeleted   bool
+	Limit         *int
+	Offset        *int
+	FilterQ       *qb.Query
+	OrderByKeys   []*OrderByKey
 }
 
 // GetInstance gets an instance by the resource_id.
 func (s *Store) GetInstance(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
+	if find.ProjectID != nil && find.WorkspaceOnly {
+		return nil, errors.New("project ID and workspace-only scope cannot both be set")
+	}
+
 	if find.ResourceID != nil {
 		if v, ok := s.instanceCache.Get(getInstanceCacheKey(*find.ResourceID)); ok && s.enableCache {
-			return v, nil
+			if (find.ProjectID == nil && !find.WorkspaceOnly) ||
+				(find.WorkspaceOnly && v.ProjectID == nil) ||
+				(find.ProjectID != nil && v.ProjectID != nil && *find.ProjectID == *v.ProjectID) {
+				return v, nil
+			}
 		}
 	}
 
@@ -82,7 +95,17 @@ func (s *Store) GetInstance(ctx context.Context, find *FindInstanceMessage) (*In
 
 // ListInstances lists all instance.
 func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([]*InstanceMessage, error) {
+	if find.ProjectID != nil && find.WorkspaceOnly {
+		return nil, errors.New("project ID and workspace-only scope cannot both be set")
+	}
+
 	where := qb.Q().Space("instance.workspace = ?", find.Workspace)
+	if v := find.ProjectID; v != nil {
+		where.And("instance.project = ?", *v)
+	}
+	if find.WorkspaceOnly {
+		where.And("instance.project IS NULL")
+	}
 	if filterQ := find.FilterQ; filterQ != nil {
 		where.And("?", filterQ)
 	}
@@ -101,6 +124,7 @@ func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([
 		SELECT
 			instance.resource_id,
 			instance.workspace,
+			instance.project,
 			instance.environment,
 			instance.deleted,
 			instance.metadata
@@ -138,11 +162,13 @@ func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([
 	defer rows.Close()
 	for rows.Next() {
 		var instanceMessage InstanceMessage
+		var project sql.NullString
 		var environment sql.NullString
 		var metadata []byte
 		if err := rows.Scan(
 			&instanceMessage.ResourceID,
 			&instanceMessage.Workspace,
+			&project,
 			&environment,
 			&instanceMessage.Deleted,
 			&metadata,
@@ -151,6 +177,9 @@ func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([
 		}
 		if environment.Valid {
 			instanceMessage.EnvironmentID = &environment.String
+		}
+		if project.Valid {
+			instanceMessage.ProjectID = &project.String
 		}
 
 		instanceMetadata := &storepb.Instance{}
@@ -192,24 +221,56 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 		environment = instanceCreate.EnvironmentID
 	}
 
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	if instanceCreate.ProjectID != nil {
+		if common.IsDefaultProject(instanceCreate.Workspace, *instanceCreate.ProjectID) {
+			return nil, errors.Errorf("default project %s cannot own an instance", *instanceCreate.ProjectID)
+		}
+		var deleted bool
+		if err := tx.QueryRowContext(ctx, `
+			SELECT deleted
+			FROM project
+			WHERE resource_id = $1 AND workspace = $2
+			FOR UPDATE
+		`, *instanceCreate.ProjectID, instanceCreate.Workspace).Scan(&deleted); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, common.Errorf(common.NotFound, "project %s not found", *instanceCreate.ProjectID)
+			}
+			return nil, errors.Wrapf(err, "failed to lock project %s", *instanceCreate.ProjectID)
+		}
+		if deleted {
+			return nil, common.Errorf(common.NotFound, "project %s is deleted", *instanceCreate.ProjectID)
+		}
+	}
+
 	q := qb.Q().Space(`
 			INSERT INTO instance (
 				resource_id,
 				workspace,
+				project,
 				environment,
 				metadata
-			) VALUES (?, ?, ?, ?)
-		`, instanceCreate.ResourceID, instanceCreate.Workspace, environment, metadataBytes)
+			) VALUES (?, ?, ?, ?, ?)
+		`, instanceCreate.ResourceID, instanceCreate.Workspace, instanceCreate.ProjectID, environment, metadataBytes)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
 	instance := &InstanceMessage{
 		EnvironmentID: instanceCreate.EnvironmentID,
+		ProjectID:     instanceCreate.ProjectID,
 		ResourceID:    instanceCreate.ResourceID,
 		Workspace:     instanceCreate.Workspace,
 		Metadata:      instanceCreate.Metadata,
@@ -267,18 +328,33 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 	q := qb.Q().Space("UPDATE instance SET ?", set).
 		Space("WHERE ?", where)
 
+	if v := patch.ResourceID; v != nil {
+		q.Space("RETURNING workspace, project")
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to build sql")
+		}
+		var workspace string
+		var project sql.NullString
+		if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&workspace, &project); err != nil {
+			return nil, err
+		}
+		s.instanceCache.Remove(getInstanceCacheKey(*v))
+		find := &FindInstanceMessage{Workspace: workspace, ResourceID: v}
+		if project.Valid {
+			find.ProjectID = &project.String
+		} else {
+			find.WorkspaceOnly = true
+		}
+		return s.GetInstance(ctx, find)
+	}
+
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-
 	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
-	}
-
-	if v := patch.ResourceID; v != nil {
-		s.instanceCache.Remove(getInstanceCacheKey(*v))
-		return s.GetInstance(ctx, &FindInstanceMessage{Workspace: patch.Workspace, ResourceID: v})
 	}
 
 	return nil, nil
@@ -549,9 +625,10 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 // HasSampleInstances checks if there are sample instances in the database.
 func (s *Store) HasSampleInstances(ctx context.Context, workspaceID string) (bool, error) {
 	instances, err := s.ListInstances(ctx, &FindInstanceMessage{
-		Workspace:   workspaceID,
-		ResourceIDs: &[]string{"test-sample-instance", "prod-sample-instance"},
-		ShowDeleted: false,
+		Workspace:     workspaceID,
+		WorkspaceOnly: true,
+		ResourceIDs:   &[]string{"test-sample-instance", "prod-sample-instance"},
+		ShowDeleted:   false,
 	})
 	if err != nil {
 		return false, err
@@ -571,18 +648,19 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 	}
 	defer tx.Rollback()
 
-	// Delete query_history entries that reference this instance
-	// The database field contains instance reference like 'instances/{instance}/databases/{database}'
+	// Delete query history before locking database-scoped rows to preserve the
+	// canonical sibling-branch order.
 	q := qb.Q().Space(`
 		DELETE FROM query_history
 		WHERE database LIKE 'instances/' || ? || '/databases/%'
-	`, resourceID)
+		   OR database LIKE 'projects/%/instances/' || ? || '/databases/%'
+	`, resourceID, resourceID)
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
+		return errors.Wrap(err, "failed to build query history delete query")
 	}
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete query_history for instance %s", resourceID)
+		return errors.Wrapf(err, "failed to delete query history for instance %s", resourceID)
 	}
 
 	// Update worksheets to nullify instance and db_name references
@@ -631,6 +709,36 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 	}
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete task_run for instance %s", resourceID)
+	}
+
+	// Lock tasks in full primary-key order before deleting them.
+	q = qb.Q().Space(`
+		SELECT project, id
+		FROM task
+		WHERE instance = ?
+		ORDER BY project, id
+		FOR UPDATE
+	`, resourceID)
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrap(err, "failed to build instance task lock query")
+	}
+	if err := func() error {
+		rows, err := tx.QueryContext(ctx, query, args...)
+		if err != nil {
+			return errors.Wrapf(err, "failed to lock tasks for instance %s", resourceID)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var projectID string
+			var taskID int64
+			if err := rows.Scan(&projectID, &taskID); err != nil {
+				return errors.Wrap(err, "failed to scan locked task")
+			}
+		}
+		return rows.Err()
+	}(); err != nil {
+		return err
 	}
 
 	// Delete tasks associated with this instance
@@ -705,7 +813,34 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 		return errors.Wrapf(err, "failed to delete databases for instance %s", resourceID)
 	}
 
-	// Finally, delete the instance itself (only if it's marked as deleted)
+	// Lock the instance only after all descendant branches. A project owner is
+	// locked after its instance, matching the canonical child-to-parent order.
+	var projectID sql.NullString
+	var deleted bool
+	if err := tx.QueryRowContext(ctx, `
+		SELECT project, deleted
+		FROM instance
+		WHERE resource_id = $1 AND workspace = $2
+		FOR UPDATE
+	`, resourceID, workspace).Scan(&projectID, &deleted); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errors.Errorf("instance %s not found or not marked as deleted", resourceID)
+		}
+		return errors.Wrapf(err, "failed to lock instance %s", resourceID)
+	}
+	if !deleted {
+		return errors.Errorf("instance %s not found or not marked as deleted", resourceID)
+	}
+	if projectID.Valid {
+		var lockedProjectID string
+		if err := tx.QueryRowContext(ctx, `
+			SELECT resource_id FROM project WHERE resource_id = $1 FOR UPDATE
+		`, projectID.String).Scan(&lockedProjectID); err != nil {
+			return errors.Wrapf(err, "failed to lock owning project %s", projectID.String)
+		}
+	}
+
+	// Delete the soft-deleted instance after locking its owning project.
 	q = qb.Q().Space(`
 		DELETE FROM instance
 		WHERE resource_id = ? AND deleted = TRUE AND workspace = ?
@@ -829,8 +964,8 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 				return nil, errors.Errorf("invalid project filter %q", value)
 			}
 			return qb.Q().Space(
-				`EXISTS (SELECT 1 FROM db WHERE db.instance = instance.resource_id AND db.project = ?)`,
-				projectID), nil
+				`(instance.project = ? OR EXISTS (SELECT 1 FROM db WHERE db.instance = instance.resource_id AND db.project = ?))`,
+				projectID, projectID), nil
 		default:
 			return nil, errors.Errorf("unsupport variable %q", variable)
 		}

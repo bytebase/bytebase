@@ -2478,7 +2478,7 @@ paths:
         - bytebase.v1.InstanceService
       summary: ListInstances
       description: |-
-        Lists all database instances.
+        Lists database instances, optionally within a project.
          Permissions required: bb.instances.list
       operationId: bytebase.v1.InstanceService.ListInstances
       parameters:
@@ -8231,7 +8231,7 @@ components:
           title: name
           description: |-
             The name of the instance to add a data source to.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
         dataSource:
           title: data_source
           description: |-
@@ -8836,7 +8836,7 @@ components:
           title: parent
           description: |-
             The parent resource shared by all revisions being created.
-             Format: instances/{instance}/databases/{database}
+             Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
         requests:
           type: array
           items:
@@ -8940,7 +8940,8 @@ components:
           description: |-
             The parent resource shared by all databases being retrieved.
              - projects/{project}: batch get databases in a project;
-             - instances/{instances}: batch get databases in a instance;
+             - instances/{instance}: batch get databases in an instance;
+             - projects/{project}/instances/{instance}: batch get databases in a project instance;
              Use "-" as wildcard to batch get databases across parent.
         names:
           type: array
@@ -9128,7 +9129,7 @@ components:
           title: parent
           description: |-
             The parent resource shared by all databases being updated.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
              If the operation spans parents, a dash (-) may be accepted as a wildcard.
         names:
           type: array
@@ -9145,6 +9146,15 @@ components:
     bytebase.v1.BatchSyncInstancesRequest:
       type: object
       properties:
+        parent:
+          type:
+            - string
+            - "null"
+          title: parent
+          description: |-
+            The parent, which owns this collection of instances.
+             Format: projects/{project}. If omitted, all targets must be workspace
+             instances; otherwise, every target must belong to this project collection.
         requests:
           type: array
           items:
@@ -9167,7 +9177,7 @@ components:
           title: parent
           description: |-
             The parent resource shared by all databases being updated.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
              If the operation spans parents, a dash (-) may be accepted as a wildcard.
              We only support updating the project of databases for now.
         requests:
@@ -9194,6 +9204,15 @@ components:
     bytebase.v1.BatchUpdateInstancesRequest:
       type: object
       properties:
+        parent:
+          type:
+            - string
+            - "null"
+          title: parent
+          description: |-
+            The parent, which owns this collection of instances.
+             Format: projects/{project}. If omitted, all targets must be workspace
+             instances; otherwise, every target must belong to this project collection.
         requests:
           type: array
           items:
@@ -9461,7 +9480,7 @@ components:
         name:
           type: string
           title: name
-          description: 'Format: instances/{instance}/databases/{database}/changelogs/{changelog}'
+          description: 'Format: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}'
         createTime:
           title: create_time
           $ref: '#/components/schemas/google.protobuf.Timestamp'
@@ -9906,6 +9925,15 @@ components:
     bytebase.v1.CreateInstanceRequest:
       type: object
       properties:
+        parent:
+          type:
+            - string
+            - "null"
+          title: parent
+          description: |-
+            The parent, which owns this collection of instances.
+             Format: projects/{project}. If omitted, the instance is created in the
+             workspace collection.
         instance:
           title: instance
           description: The instance to create.
@@ -9928,7 +9956,7 @@ components:
           title: initial_database_project
           description: |-
             The project to assign newly discovered databases to during initial sync.
-             Format: projects/{project}
+             Format: projects/{project}. This must be unset when `parent` is set.
       title: CreateInstanceRequest
       additionalProperties: false
     bytebase.v1.CreateIssueCommentRequest:
@@ -9986,8 +10014,6 @@ components:
             The parent resource where this instance will be created.
              Workspace resource name: workspaces/{workspace-id}.
              Environment resource name: environments/environment-id.
-             Instance resource name: instances/instance-id.
-             Database resource name: instances/instance-id/databases/database-name.
         policy:
           title: policy
           description: The policy to create.
@@ -10074,7 +10100,7 @@ components:
         parent:
           type: string
           title: parent
-          description: 'Format: instances/{instance}/databases/{database}'
+          description: 'Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}'
         revision:
           title: revision
           description: The revision to create.
@@ -10775,7 +10801,7 @@ components:
           title: name
           description: |-
             The name of the database.
-             Format: instances/{instance}/databases/{database}
+             Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
              {database} is the database name in the instance.
         state:
           title: state
@@ -10859,7 +10885,7 @@ components:
           title: name
           description: |-
             The name of the database catalog.
-             Format: instances/{instance}/databases/{database}/catalog
+             Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
         schemas:
           type: array
           items:
@@ -10945,7 +10971,7 @@ components:
           description: |-
             The database metadata name.
 
-             Format: instances/{instance}/databases/{database}/metadata
+             Format: instances/{instance}/databases/{database}/metadata or projects/{project}/instances/{instance}/databases/{database}/metadata
         schemas:
           type: array
           items:
@@ -11058,11 +11084,14 @@ components:
           title: name
           description: |-
             The name of the instance to delete.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
         force:
           type: boolean
           title: force
-          description: If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
+          description: |-
+            If set to true, a workspace instance's databases are moved to the default
+             project before the instance is soft-deleted. Project instances reject this
+             option because their databases must remain in the owning project.
         purge:
           type: boolean
           title: purge
@@ -11084,8 +11113,6 @@ components:
              Format: {resource name}/policies/{policy type}
              Workspace resource name: workspaces/{workspace-id}.
              Environment resource name: environments/environment-id.
-             Instance resource name: instances/instance-id.
-             Database resource name: instances/instance-id/databases/database-name.
       title: DeletePolicyRequest
       additionalProperties: false
     bytebase.v1.DeleteProjectRequest:
@@ -11139,7 +11166,7 @@ components:
           title: name
           description: |-
             The name of the revision to delete.
-             Format: instances/{instance}/databases/{database}/revisions/{revision}
+             Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}
       title: DeleteRevisionRequest
       additionalProperties: false
     bytebase.v1.DeleteRoleRequest:
@@ -11247,7 +11274,7 @@ components:
           title: name
           description: |-
             The database whose current schema is the diff source.
-             Format: instances/{instance}/databases/{database}
+             Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
         targetMetadata:
           title: target_metadata
           description: |-
@@ -11278,8 +11305,8 @@ components:
               description: |-
                 The name of the database or changelog.
                  Format:
-                 database: instances/{instance}/databases/{database}
-                 changelog: instances/{instance}/databases/{database}/changelogs/{changelog}
+                 database: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
+                 changelog: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}
         - oneOf:
             - type: object
               properties:
@@ -11289,7 +11316,7 @@ components:
                   description: |-
                     The resource name of the changelog
                      Format:
-                     instances/{instance}/databases/{database}/changelogs/{changelog}
+                     instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}
               title: changelog
               required:
                 - changelog
@@ -11960,7 +11987,7 @@ components:
           title: name
           description: |-
             The name of the changelog to retrieve.
-             Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+             Format: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}
         view:
           title: view
           $ref: '#/components/schemas/bytebase.v1.ChangelogView'
@@ -11974,7 +12001,7 @@ components:
           title: name
           description: |-
             The name of the database catalog to retrieve.
-             Format: instances/{instance}/databases/{database}/catalog
+             Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
       title: GetDatabaseCatalogRequest
       additionalProperties: false
       description: Request message for getting a database catalog.
@@ -12002,7 +12029,7 @@ components:
           title: name
           description: |-
             The name of the database to retrieve metadata.
-             Format: instances/{instance}/databases/{database}/metadata
+             Format: instances/{instance}/databases/{database}/metadata or projects/{project}/instances/{instance}/databases/{database}/metadata
         filter:
           type: string
           title: filter
@@ -12040,7 +12067,7 @@ components:
           title: name
           description: |-
             The name of the database to retrieve.
-             Format: instances/{instance}/databases/{database}
+             Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
       title: GetDatabaseRequest
       additionalProperties: false
     bytebase.v1.GetDatabaseSDLSchemaRequest:
@@ -12051,7 +12078,7 @@ components:
           title: name
           description: |-
             The name of the database to retrieve SDL schema.
-             Format: instances/{instance}/databases/{database}/sdlSchema
+             Format: instances/{instance}/databases/{database}/sdlSchema or projects/{project}/instances/{instance}/databases/{database}/sdlSchema
         format:
           title: format
           description: The format of the SDL schema output.
@@ -12074,7 +12101,7 @@ components:
           title: name
           description: |-
             The name of the database to retrieve schema.
-             Format: instances/{instance}/databases/{database}/schema
+             Format: instances/{instance}/databases/{database}/schema or projects/{project}/instances/{instance}/databases/{database}/schema
       title: GetDatabaseSchemaRequest
       additionalProperties: false
     bytebase.v1.GetGroupRequest:
@@ -12121,7 +12148,7 @@ components:
           title: name
           description: |-
             The name of the instance to retrieve.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
       title: GetInstanceRequest
       additionalProperties: false
     bytebase.v1.GetIssueRequest:
@@ -12226,7 +12253,7 @@ components:
           title: name
           description: |-
             The name of the revision.
-             Format: instances/{instance}/databases/{database}/revisions/{revision}
+             Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}
       title: GetRevisionRequest
       additionalProperties: false
     bytebase.v1.GetRoleRequest:
@@ -12260,7 +12287,7 @@ components:
           title: name
           description: |-
             The name of the database.
-             Format: instances/{instance}/databases/{database}
+             Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
         type:
           title: type
           $ref: '#/components/schemas/bytebase.v1.GetSchemaStringRequest.ObjectType'
@@ -12718,7 +12745,7 @@ components:
           title: name
           description: |-
             The name of the instance.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
         state:
           title: state
           description: The lifecycle state of the instance.
@@ -12830,7 +12857,7 @@ components:
           title: name
           description: |-
             The name of the instance.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
         environment:
           type:
             - string
@@ -12849,7 +12876,7 @@ components:
           title: name
           description: |-
             The name of the role.
-             Format: instances/{instance}/roles/{role}
+             Format: instances/{instance}/roles/{role} or projects/{project}/instances/{instance}/roles/{role}
              The role name is the unique name for the role.
         roleName:
           type: string
@@ -13371,7 +13398,7 @@ components:
           title: parent
           description: |-
             The parent of the changelogs.
-             Format: instances/{instance}/databases/{database}
+             Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
         pageSize:
           type: integer
           title: page_size
@@ -13463,7 +13490,8 @@ components:
           description: |-
             - projects/{project}: list databases in a project, require "bb.projects.get" permission.
              - workspaces/{id}: list databases in the workspace, require "bb.databases.list" permission.
-             - instances/{instances}: list databases in a instance, require "bb.instances.get" permission
+             - instances/{instance}: list databases in an instance, require "bb.instances.get" permission.
+             - projects/{project}/instances/{instance}: list databases in a project instance, require "bb.instances.get" permission.
         pageSize:
           type: integer
           title: page_size
@@ -13643,7 +13671,7 @@ components:
           title: name
           description: |-
             The name of the instance.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
         instance:
           oneOf:
             - $ref: '#/components/schemas/bytebase.v1.Instance'
@@ -13671,7 +13699,7 @@ components:
           title: parent
           description: |-
             The parent, which owns this collection of roles.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
         pageSize:
           type: integer
           title: page_size
@@ -13718,6 +13746,16 @@ components:
     bytebase.v1.ListInstancesRequest:
       type: object
       properties:
+        parent:
+          type:
+            - string
+            - "null"
+          title: parent
+          description: |-
+            The parent, which owns this collection of instances.
+             Format: projects/{project}. If omitted, only workspace instances are
+             returned. Wildcard project parents are not supported. When set, the
+             `project` filter must be omitted or match this parent.
         pageSize:
           type: integer
           title: page_size
@@ -14273,7 +14311,7 @@ components:
           title: parent
           description: |-
             The parent of the revisions.
-             Format: instances/{instance}/databases/{database}
+             Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
         pageSize:
           type: integer
           title: page_size
@@ -15766,8 +15804,6 @@ components:
                  Format: {resource name}/policies/{policy type}
                  Workspace resource name: workspaces/{workspace-id}.
                  Environment resource name: environments/environment-id.
-                 Instance resource name: instances/instance-id.
-                 Database resource name: instances/instance-id/databases/database-name.
             inheritFromParent:
               type: boolean
               title: inherit_from_parent
@@ -16707,7 +16743,7 @@ components:
           title: name
           description: |-
             The name of the instance to remove a data source from.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
         dataSource:
           title: data_source
           description: |-
@@ -16870,7 +16906,7 @@ components:
         name:
           type: string
           title: name
-          description: 'Format: instances/{instance}/databases/{database}/revisions/{revision}'
+          description: 'Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}'
         release:
           type: string
           title: release
@@ -18679,7 +18715,7 @@ components:
           title: name
           description: |-
             The name of the database to sync.
-             Format: instances/{instance}/databases/{database}
+             Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
       title: SyncDatabaseRequest
       additionalProperties: false
     bytebase.v1.SyncDatabaseResponse:
@@ -18704,7 +18740,7 @@ components:
           title: name
           description: |-
             The name of instance.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
         enableFullSync:
           type: boolean
           title: enable_full_sync
@@ -19938,7 +19974,7 @@ components:
           title: name
           description: |-
             The name of the deleted instance.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
       title: UndeleteInstanceRequest
       additionalProperties: false
     bytebase.v1.UndeleteProjectRequest:
@@ -20006,7 +20042,7 @@ components:
           title: name
           description: |-
             The name of the instance to update a data source.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
         dataSource:
           title: data_source
           description: Identified by data source ID.
@@ -20036,7 +20072,7 @@ components:
             The database catalog to update.
 
              The catalog's `name` field is used to identify the database catalog to update.
-             Format: instances/{instance}/databases/{database}/catalog
+             Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
           $ref: '#/components/schemas/bytebase.v1.DatabaseCatalog'
         allowMissing:
           type: boolean
@@ -20080,7 +20116,7 @@ components:
             The database to update.
 
              The database's `name` field is used to identify the database to update.
-             Format: instances/{instance}/databases/{database}
+             Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
           $ref: '#/components/schemas/bytebase.v1.Database'
         updateMask:
           title: update_mask
@@ -20166,7 +20202,7 @@ components:
             The instance to update.
 
              The instance's `name` field is used to identify the instance to update.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
           $ref: '#/components/schemas/bytebase.v1.Instance'
         updateMask:
           title: update_mask
@@ -20177,7 +20213,9 @@ components:
           title: allow_missing
           description: |-
             If set to true, and the instance is not found, a new instance will be created.
-             In this situation, `update_mask` is ignored.
+             In this situation, `update_mask` is ignored. A project-nested name creates
+             the instance only under its encoded active, non-default project; it never
+             falls back to a workspace instance.
       title: UpdateInstanceRequest
       additionalProperties: false
     bytebase.v1.UpdateIssueCommentRequest:
@@ -20263,8 +20301,6 @@ components:
              Format: {resource name}/policies/{policy type}
              Workspace resource name: workspaces/{workspace-id}.
              Environment resource name: environments/environment-id.
-             Instance resource name: instances/instance-id.
-             Database resource name: instances/instance-id/databases/database-name.
           $ref: '#/components/schemas/bytebase.v1.Policy'
         updateMask:
           title: update_mask
