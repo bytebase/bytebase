@@ -6,9 +6,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
+	"net/url"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -121,30 +121,45 @@ func Unobfuscate(dst, seed string) (string, error) {
 }
 
 // NormalizeExternalURL will format the external url.
-func NormalizeExternalURL(url string) (string, error) {
-	r := strings.TrimSpace(url)
+func NormalizeExternalURL(externalURL string) (string, error) {
+	r := strings.TrimSpace(externalURL)
 	r = strings.TrimSuffix(r, "/")
-	if !HasPrefixes(r, "http://", "https://") {
-		return "", errors.Errorf("%s must start with http:// or https://", url)
+	u, err := url.Parse(r)
+	if err != nil {
+		return "", errors.Wrapf(err, "%s malformed", externalURL)
 	}
-	parts := strings.Split(r, ":")
-	if len(parts) > 3 {
-		return "", errors.Errorf("%s malformed", url)
+	scheme := strings.ToLower(u.Scheme)
+	if scheme != "http" && scheme != "https" {
+		return "", errors.Errorf("%s must start with http:// or https://", externalURL)
 	}
-	if len(parts) == 3 {
-		port, err := strconv.Atoi(parts[2])
-		if err != nil {
-			return "", errors.Errorf("%s has non integer port", url)
-		}
+	if u.Host == "" {
+		return "", errors.Errorf("%s must name a host", externalURL)
+	}
+	if u.User != nil {
+		return "", errors.Errorf("%s must not carry userinfo", externalURL)
+	}
+	if u.RawQuery != "" || u.ForceQuery {
+		return "", errors.Errorf("%s must not carry a query string", externalURL)
+	}
+	if u.Fragment != "" || u.RawFragment != "" {
+		return "", errors.Errorf("%s must not carry a fragment", externalURL)
+	}
+
+	host := strings.ToLower(u.Host)
+	port := u.Port()
+	if port != "" {
 		// The external URL is used as the redirectURL in the get token process of OAuth, and the
 		// RedirectURL needs to be consistent with the RedirectURL in the get code process.
 		// The frontend gets it through window.location.origin in the get code
 		// process, so port 80/443 need to be cropped.
-		if port == 80 || port == 443 {
-			r = strings.Join(parts[0:2], ":")
+		if (scheme == "http" && port == "80") || (scheme == "https" && port == "443") {
+			host = strings.ToLower(u.Hostname())
+			if strings.Contains(host, ":") {
+				host = "[" + host + "]"
+			}
 		}
 	}
-	return r, nil
+	return scheme + "://" + host + strings.TrimSuffix(u.EscapedPath(), "/"), nil
 }
 
 // ValidatePhone validates the phone number.

@@ -197,6 +197,11 @@ func TestNormalizeExternalURL(t *testing.T) {
 			want:    "https://localhost:3000",
 			wantErr: false,
 		},
+		{
+			url:     "HTTPS://LOCALHOST:443/mcp/",
+			want:    "https://localhost/mcp",
+			wantErr: false,
+		},
 		// Missing http:// or https://
 		{
 			url:     "localhost:3000",
@@ -206,6 +211,21 @@ func TestNormalizeExternalURL(t *testing.T) {
 		// Invalid port
 		{
 			url:     "http://localhost:xxx",
+			want:    "",
+			wantErr: true,
+		},
+		{
+			url:     "https://user@localhost",
+			want:    "",
+			wantErr: true,
+		},
+		{
+			url:     "https://localhost?x=1",
+			want:    "",
+			wantErr: true,
+		},
+		{
+			url:     "https://localhost#fragment",
 			want:    "",
 			wantErr: true,
 		},

@@ -110,6 +110,38 @@ func getAccessToken(ctx context.Context) string {
 	return ""
 }
 
+// Context key for storing the authenticated user email.
+type userEmailKey struct{}
+
+// withUserEmail adds the authenticated user email to the context.
+func withUserEmail(ctx context.Context, email string) context.Context {
+	return context.WithValue(ctx, userEmailKey{}, email)
+}
+
+// getUserEmail retrieves the authenticated user email from the context.
+func getUserEmail(ctx context.Context) string {
+	if email, ok := ctx.Value(userEmailKey{}).(string); ok {
+		return email
+	}
+	return ""
+}
+
+// Context key for storing the OAuth2 client ID.
+type oauth2ClientIDKey struct{}
+
+// withOAuth2ClientID adds the OAuth2 client ID to the context.
+func withOAuth2ClientID(ctx context.Context, id string) context.Context {
+	return context.WithValue(ctx, oauth2ClientIDKey{}, id)
+}
+
+// getOAuth2ClientID retrieves the OAuth2 client ID from the context.
+func getOAuth2ClientID(ctx context.Context) string {
+	if id, ok := ctx.Value(oauth2ClientIDKey{}).(string); ok {
+		return id
+	}
+	return ""
+}
+
 // Context key for storing the workspace ID.
 type workspaceIDKey struct{}
 

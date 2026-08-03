@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -31,6 +32,9 @@ type Server struct {
 	secret       string
 	openAPIIndex *OpenAPIIndex
 
+	revokedAccessTokensMu sync.RWMutex
+	revokedAccessTokens   map[string]struct{}
+
 	// planCheckPollBudgetOverride lets tests shorten the plan-check poll budget.
 	// Zero means use the default (planCheckPollBudget).
 	planCheckPollBudgetOverride time.Duration
@@ -50,11 +54,12 @@ func NewServer(store *store.Store, profile *config.Profile, secret string) (*Ser
 	}
 
 	s := &Server{
-		mcpServer:    mcpServer,
-		store:        store,
-		profile:      profile,
-		secret:       secret,
-		openAPIIndex: openAPIIndex,
+		mcpServer:           mcpServer,
+		store:               store,
+		profile:             profile,
+		secret:              secret,
+		openAPIIndex:        openAPIIndex,
+		revokedAccessTokens: map[string]struct{}{},
 	}
 	s.registerTools()
 
@@ -86,6 +91,7 @@ func (s *Server) registerTools() {
 	s.registerQueryTool()
 	s.registerSchemaTool()
 	s.registerChangeTool()
+	s.registerReauthorizeTool()
 }
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
@@ -108,6 +114,9 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return s.unauthorized(c, "authorization header format must be Bearer {token}")
 		}
 		tokenStr := parts[1]
+		if s.accessTokenRevoked(tokenStr) {
+			return s.unauthorized(c, "reauthorization required")
+		}
 
 		// Parse and validate JWT
 		claims := jwt.MapClaims{}
@@ -159,6 +168,7 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		if !ok || sub == "" {
 			return s.unauthorized(c, "invalid token: missing subject")
 		}
+		clientID, _ := claims["client_id"].(string)
 
 		// Extract workspace ID from token claims.
 		workspaceID, ok := claims["workspace_id"].(string)
@@ -178,11 +188,32 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// Store access token and workspace ID in request context for MCP tools.
 		ctx := c.Request().Context()
 		ctx = withAccessToken(ctx, tokenStr)
+		ctx = withUserEmail(ctx, sub)
+		ctx = withOAuth2ClientID(ctx, clientID)
 		ctx = withWorkspaceID(ctx, workspaceID)
 		c.SetRequest(c.Request().WithContext(ctx))
 
 		return next(c)
 	}
+}
+
+func (s *Server) revokeAccessToken(token string) {
+	if token == "" {
+		return
+	}
+	s.revokedAccessTokensMu.Lock()
+	defer s.revokedAccessTokensMu.Unlock()
+	if s.revokedAccessTokens == nil {
+		s.revokedAccessTokens = map[string]struct{}{}
+	}
+	s.revokedAccessTokens[token] = struct{}{}
+}
+
+func (s *Server) accessTokenRevoked(token string) bool {
+	s.revokedAccessTokensMu.RLock()
+	defer s.revokedAccessTokensMu.RUnlock()
+	_, ok := s.revokedAccessTokens[token]
+	return ok
 }
 
 // RegisterRoutes registers the MCP server routes with Echo.

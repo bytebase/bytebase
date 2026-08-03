@@ -70,9 +70,14 @@ func (s *Service) handleAuthorizeGet(c *echo.Context) error {
 		return oauth2ErrorRedirect(c, redirectURI, state, "invalid_request", "code_challenge_method must be S256")
 	}
 
+	consenting, failure := s.resolveConsentingUser(c, client)
+	if failure != nil {
+		return oauth2ErrorRedirect(c, redirectURI, state, failure.code, failure.description)
+	}
+
 	// Validate the resource/scope the client is asking for before showing a
 	// consent screen for something we would refuse to issue.
-	params, failure := s.parseGrantParams(ctx, c.QueryParams())
+	params, failure := s.parseGrantParams(ctx, c.QueryParams(), consenting.workspaceID)
 	if failure != nil {
 		return oauth2ErrorRedirect(c, redirectURI, state, failure.code, failure.description)
 	}
@@ -117,6 +122,11 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "user denied the request")
 	}
 
+	consenting, failure := s.resolveConsentingUser(c, client)
+	if failure != nil {
+		return oauth2ErrorRedirect(c, redirectURI, state, failure.code, failure.description)
+	}
+
 	// Re-validate resource/scope here rather than trusting what the consent page
 	// posted back: this endpoint is reachable directly, so the GET's validation
 	// is not a guarantee about the POST.
@@ -124,12 +134,7 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 	if err != nil {
 		return oauth2ErrorRedirect(c, redirectURI, state, "invalid_request", "failed to parse request")
 	}
-	params, failure := s.parseGrantParams(ctx, formValues)
-	if failure != nil {
-		return oauth2ErrorRedirect(c, redirectURI, state, failure.code, failure.description)
-	}
-
-	consenting, failure := s.resolveConsentingUser(c, client)
+	params, failure := s.parseGrantParams(ctx, formValues, consenting.workspaceID)
 	if failure != nil {
 		return oauth2ErrorRedirect(c, redirectURI, state, failure.code, failure.description)
 	}

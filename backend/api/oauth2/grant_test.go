@@ -116,7 +116,6 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		wantCode string
 	}{
 		{"resource on another host", url.Values{"resource": {"https://evil.example.com/mcp"}}, "invalid_target"},
-		{"noncanonical resource", url.Values{"resource": {"https://bb.example.com:443/mcp"}}, "invalid_target"},
 		{"resource parameter repeated", url.Values{"resource": {testResource, testResource}}, "invalid_target"},
 		{"unknown scope", url.Values{"scope": {"mcp:admin"}}, "invalid_scope"},
 		{"scope parameter repeated", url.Values{"scope": {"mcp:read-only", "mcp:read-write"}}, "invalid_scope"},
@@ -127,6 +126,13 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 			require.Equal(t, tc.wantCode, redirect.Query().Get("error"))
 		})
 	}
+
+	t.Run("default port resource is consented as the canonical resource", func(t *testing.T) {
+		code := consentOK(t, configured, url.Values{"resource": {"https://bb.example.com:443/mcp"}})
+		got, err := st.GetOAuth2AuthorizationCode(ctx, testClientID, code)
+		require.NoError(t, err)
+		require.Equal(t, testResource, got.Config.Resource)
+	})
 
 	t.Run("no configured external URL: a resource request gets the actionable setup error", func(t *testing.T) {
 		// The ship gate of proposal v2 §6.2 — self-hosted instances running on
