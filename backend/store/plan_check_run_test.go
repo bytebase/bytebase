@@ -41,6 +41,45 @@ func TestClaimAvailablePlanCheckRunsDefaultsMissingApprovalInputVersion(t *testi
 	require.EqualValues(t, 0, claimed[0].ApprovalInputVersion)
 }
 
+func TestClaimAvailablePlanCheckRunsSkipsArchivedProjects(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanCheckRunVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "archived plan",
+		Config:    &storepb.PlanConfig{ApprovalInputVersion: 1},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	created, err := s.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 1},
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+
+	archived := true
+	require.NoError(t, s.UpdateProjects(ctx, &store.UpdateProjectMessage{
+		ResourceID: "project-a",
+		Workspace:  "default",
+		Delete:     &archived,
+	}))
+	claimed, err := s.ClaimAvailablePlanCheckRuns(ctx)
+	require.NoError(t, err)
+	require.Empty(t, claimed)
+
+	archived = false
+	require.NoError(t, s.UpdateProjects(ctx, &store.UpdateProjectMessage{
+		ResourceID: "project-a",
+		Workspace:  "default",
+		Delete:     &archived,
+	}))
+	claimed, err = s.ClaimAvailablePlanCheckRuns(ctx)
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+}
+
 func TestUpdatePlanCheckRunIfApprovalInputVersionSkipsStaleWorkerOnRefreshedRow(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)

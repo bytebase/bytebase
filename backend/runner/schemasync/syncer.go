@@ -106,6 +106,10 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					s.databaseSyncMap.Delete(key)
+					instance, ok := instanceMap[database.InstanceID]
+					if !ok || !s.canScheduleDatabaseSync(ctx, instance, database) {
+						return true
+					}
 					dbwp.Go(func() {
 						slog.Debug("Sync database schema", slog.String("instance", database.InstanceID), slog.String("database", database.DatabaseName))
 						if err := s.SyncDatabaseSchema(ctx, database); err != nil {
@@ -178,6 +182,9 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 	now := time.Now()
 	for _, instance := range instances {
 		instance := instance
+		if !s.canScheduleInstanceSync(ctx, instance) {
+			continue
+		}
 		interval := s.getOrDefaultSyncInterval(ctx, instance)
 		if interval == defaultSyncInterval {
 			continue
@@ -220,6 +227,9 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		if !ok {
 			continue
 		}
+		if !s.canScheduleDatabaseSync(ctx, instance, database) {
+			continue
+		}
 		// The database inherits the sync interval from the instance.
 		interval := s.getOrDefaultSyncInterval(ctx, instance)
 		if interval == defaultSyncInterval {
@@ -237,9 +247,33 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 	}
 }
 
+func (s *Syncer) canScheduleInstanceSync(ctx context.Context, instance *store.InstanceMessage) bool {
+	return instance.ProjectID == nil || s.isProjectActive(ctx, *instance.ProjectID)
+}
+
+func (s *Syncer) canScheduleDatabaseSync(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) bool {
+	return !database.Deleted && s.canScheduleInstanceSync(ctx, instance) && s.isProjectActive(ctx, database.ProjectID)
+}
+
+func (s *Syncer) isProjectActive(ctx context.Context, projectID string) bool {
+	project, err := s.store.GetProjectByResourceID(ctx, projectID)
+	if err != nil {
+		slog.Error("failed to get project for schema sync", slog.String("project", projectID), log.BBError(err))
+		return false
+	}
+	if project == nil {
+		slog.Warn("project not found for schema sync", slog.String("project", projectID))
+		return false
+	}
+	return !project.Deleted
+}
+
 func (s *Syncer) SyncAllDatabases(ctx context.Context, instance *store.InstanceMessage) {
 	find := &store.FindDatabaseMessage{}
 	if instance != nil {
+		if !s.canScheduleInstanceSync(ctx, instance) {
+			return
+		}
 		find.InstanceID = &instance.ResourceID
 	}
 	databases, err := s.store.ListDatabases(ctx, find)
@@ -250,8 +284,7 @@ func (s *Syncer) SyncAllDatabases(ctx context.Context, instance *store.InstanceM
 	}
 
 	for _, database := range databases {
-		// Skip deleted databases.
-		if database.Deleted {
+		if database.Deleted || instance != nil && !s.canScheduleDatabaseSync(ctx, instance, database) {
 			continue
 		}
 		s.databaseSyncMap.Store(database.String(), database)

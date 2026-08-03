@@ -19,11 +19,14 @@ type TaskMessage struct {
 	ID int64
 
 	// Related fields
-	ProjectID    string
-	PlanID       int64
-	InstanceID   string
-	Environment  string // The environment ID (was stage_id). Could be empty if the task does not have an environment.
-	DatabaseName *string
+	ProjectID  string
+	PlanID     int64
+	InstanceID string
+	// InstanceProjectID is the owning project for a Project Instance. Nil means
+	// the task targets a Workspace Instance.
+	InstanceProjectID *string
+	Environment       string // The environment ID (was stage_id). Could be empty if the task does not have an environment.
+	DatabaseName      *string
 
 	// Domain specific fields
 	Type    storepb.Task_Type
@@ -274,6 +277,7 @@ func (*Store) listTasksImpl(ctx context.Context, txn *sql.Tx, find *TaskFind) ([
 			task.project,
 			task.plan_id,
 			task.instance,
+			instance.project,
 			task.db_name,
 			task.environment,
 			COALESCE(latest_task_run.status, ?) AS latest_task_run_status,
@@ -282,6 +286,7 @@ func (*Store) listTasksImpl(ctx context.Context, txn *sql.Tx, find *TaskFind) ([
 			latest_task_run.updated_at,
 			latest_task_run.run_at
 		FROM task
+		JOIN instance ON instance.resource_id = task.instance
 		LEFT JOIN LATERAL (
 			SELECT
 				task_run.status,
@@ -354,6 +359,7 @@ func (*Store) listTasksImpl(ctx context.Context, txn *sql.Tx, find *TaskFind) ([
 			&task.ProjectID,
 			&task.PlanID,
 			&task.InstanceID,
+			&task.InstanceProjectID,
 			&task.DatabaseName,
 			&task.Environment,
 			&latestTaskRunStatusString,

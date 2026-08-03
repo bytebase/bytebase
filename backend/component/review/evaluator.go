@@ -346,6 +346,50 @@ type specTarget struct {
 	sheetSha256 string
 }
 
+func validateInstanceTarget(ctx context.Context, stores *store.Store, projectID *string, instanceID string) error {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if workspaceID == "" {
+		workspaceID = "default"
+	}
+	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:     workspaceID,
+		ResourceID:    &instanceID,
+		ProjectID:     projectID,
+		WorkspaceOnly: projectID == nil,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get instance %q", instanceID)
+	}
+	if instance == nil {
+		return errors.Errorf("instance %q not found in requested scope", instanceID)
+	}
+	if instance.Deleted {
+		return errors.Errorf("instance %q has been deleted", instanceID)
+	}
+	return nil
+}
+
+func formatDatabaseTarget(ctx context.Context, stores *store.Store, database *store.DatabaseMessage) (string, error) {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if workspaceID == "" {
+		workspaceID = "default"
+	}
+	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:  workspaceID,
+		ResourceID: &database.InstanceID,
+	})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
+	}
+	if instance == nil {
+		return "", errors.Errorf("instance %q not found", database.InstanceID)
+	}
+	if instance.ProjectID == nil {
+		return common.FormatDatabase(database.InstanceID, database.DatabaseName), nil
+	}
+	return common.FormatProjectDatabase(*instance.ProjectID, database.InstanceID, database.DatabaseName), nil
+}
+
 // unfoldDatabaseTargets unfolds database groups and returns all database targets.
 // If the targets list contains a single database group reference, it unfolds it to individual databases.
 // Otherwise, it returns the targets as-is.
@@ -382,7 +426,11 @@ func unfoldDatabaseTargets(ctx context.Context, stores *store.Store, dbTargets [
 			// Replace dbTargets with unfolded databases
 			var unfolded []string
 			for _, db := range matchedDatabases {
-				unfolded = append(unfolded, common.FormatDatabase(db.InstanceID, db.DatabaseName))
+				target, err := formatDatabaseTarget(ctx, stores, db)
+				if err != nil {
+					return nil, err
+				}
+				unfolded = append(unfolded, target)
 			}
 			return unfolded, nil
 		}
@@ -394,14 +442,6 @@ func unfoldDatabaseTargets(ctx context.Context, stores *store.Store, dbTargets [
 // allDatabases must be nil or the full unfiltered project database list; callers pass it
 // through to keep database-group matching and direct database lookup on the same snapshot.
 func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storepb.PlanConfig_Spec, projectID string, allDatabases []*store.DatabaseMessage, databaseGroup *v1pb.DatabaseGroup) ([]specTarget, error) {
-	var databaseMap map[string]*store.DatabaseMessage
-	buildDatabaseMap := func(databases []*store.DatabaseMessage) map[string]*store.DatabaseMessage {
-		m := make(map[string]*store.DatabaseMessage, len(databases))
-		for _, db := range databases {
-			m[common.FormatDatabase(db.InstanceID, db.DatabaseName)] = db
-		}
-		return m
-	}
 	getAllDatabases := func() error {
 		if allDatabases == nil {
 			var err error
@@ -410,21 +450,18 @@ func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storep
 				return errors.Wrapf(err, "failed to list databases for project %q", projectID)
 			}
 		}
-		if databaseMap == nil {
-			databaseMap = buildDatabaseMap(allDatabases)
-		}
 		return nil
 	}
 	getDatabase := func(target string) (*store.DatabaseMessage, error) {
-		if databaseMap != nil {
-			if db := databaseMap[target]; db != nil {
-				return db, nil
-			}
-		}
-
-		instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
+		targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse database target %q", target)
+		}
+		if targetProjectID != nil && *targetProjectID != projectID {
+			return nil, errors.Errorf("database target %q does not belong to project %q", target, projectID)
+		}
+		if err := validateInstanceTarget(ctx, stores, targetProjectID, instanceID); err != nil {
+			return nil, err
 		}
 		databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
 			ProjectID:    &projectID,
@@ -470,9 +507,15 @@ func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storep
 	for _, spec := range specs {
 		switch config := spec.Config.(type) {
 		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-			instanceID, err := common.GetInstanceID(config.CreateDatabaseConfig.Target)
+			targetProjectID, instanceID, err := common.GetInstanceResourceName(config.CreateDatabaseConfig.Target)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to parse instance from target %q", config.CreateDatabaseConfig.Target)
+			}
+			if targetProjectID != nil && *targetProjectID != projectID {
+				return nil, errors.Errorf("instance target %q does not belong to project %q", config.CreateDatabaseConfig.Target, projectID)
+			}
+			if err := validateInstanceTarget(ctx, stores, targetProjectID, instanceID); err != nil {
+				return nil, err
 			}
 			// For CREATE_DATABASE, create a synthetic database message
 			// since the database doesn't exist yet
@@ -508,7 +551,7 @@ func buildStatementSummaryResultMap(results []*storepb.PlanCheckRunResult_Result
 		if result.Type != storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT {
 			continue
 		}
-		instanceID, databaseName, err := common.GetInstanceDatabaseID(result.Target)
+		_, instanceID, databaseName, err := common.GetDatabaseResourceName(result.Target)
 		if err != nil {
 			continue
 		}
@@ -841,9 +884,15 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 	var celVarsList []map[string]any
 
 	for _, target := range targets {
-		instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
+		targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target)
 		if err != nil {
 			return nil, false, errors.Wrapf(err, "failed to parse target %q", target)
+		}
+		if targetProjectID != nil && *targetProjectID != issue.ProjectID {
+			return nil, false, errors.Errorf("target %q does not belong to project %q", target, issue.ProjectID)
+		}
+		if err := validateInstanceTarget(ctx, stores, targetProjectID, instanceID); err != nil {
+			return nil, false, err
 		}
 
 		databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
@@ -937,8 +986,14 @@ func getDatabasesForRoleGrant(ctx context.Context, stores *store.Store, projectI
 	}
 	requestedDBs := make(map[dbKey]bool)
 	for _, identifier := range databaseIdentifiers {
-		instanceID, databaseName, err := common.GetInstanceDatabaseID(identifier)
+		targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(identifier)
 		if err != nil {
+			return nil, err
+		}
+		if targetProjectID != nil && *targetProjectID != projectID {
+			return nil, errors.Errorf("database target %q does not belong to project %q", identifier, projectID)
+		}
+		if err := validateInstanceTarget(ctx, stores, targetProjectID, instanceID); err != nil {
 			return nil, err
 		}
 		requestedDBs[dbKey{instanceID: instanceID, databaseName: databaseName}] = true

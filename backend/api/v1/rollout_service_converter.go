@@ -225,13 +225,17 @@ func convertToTask(project *store.ProjectMessage, task *store.TaskMessage) (*v1p
 
 func convertToTaskFromDatabaseCreate(project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	stageID := common.FormatStageID(task.Environment)
+	target, err := formatTaskInstanceTarget(project, task)
+	if err != nil {
+		return nil, err
+	}
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PlanID, stageID, task.ID),
 		SpecId:        task.Payload.GetSpecId(),
 		Type:          convertToTaskType(task),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
 		SkippedReason: task.Payload.GetSkippedReason(),
-		Target:        common.FormatInstance(task.InstanceID),
+		Target:        target,
 		Payload: &v1pb.Task_DatabaseCreate_{
 			DatabaseCreate: &v1pb.Task_DatabaseCreate{
 				Sheet: common.FormatSheet(project.ResourceID, task.Payload.GetSheetSha256()),
@@ -253,6 +257,11 @@ func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.Ta
 	}
 
 	stageID := common.FormatStageID(task.Environment)
+	instanceTarget, err := formatTaskInstanceTarget(project, task)
+	if err != nil {
+		return nil, err
+	}
+	target := fmt.Sprintf("%s/%s%s", instanceTarget, common.DatabaseIDPrefix, *task.DatabaseName)
 
 	// Build DatabaseUpdate payload
 	databaseUpdate := &v1pb.Task_DatabaseUpdate{}
@@ -274,7 +283,7 @@ func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.Ta
 		Type:          convertToTaskType(task),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
 		SkippedReason: task.Payload.GetSkippedReason(),
-		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, task.InstanceID, common.DatabaseIDPrefix, *(task.DatabaseName)),
+		Target:        target,
 		Payload: &v1pb.Task_DatabaseUpdate_{
 			DatabaseUpdate: databaseUpdate,
 		},
@@ -286,6 +295,16 @@ func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.Ta
 		v1pbTask.RunTime = timestamppb.New(*task.RunAt)
 	}
 	return v1pbTask, nil
+}
+
+func formatTaskInstanceTarget(project *store.ProjectMessage, task *store.TaskMessage) (string, error) {
+	if task.InstanceProjectID == nil {
+		return common.FormatInstance(task.InstanceID), nil
+	}
+	if *task.InstanceProjectID != project.ResourceID {
+		return "", errors.Errorf("task instance %q belongs to project %q, not %q", task.InstanceID, *task.InstanceProjectID, project.ResourceID)
+	}
+	return common.FormatProjectInstance(project.ResourceID, task.InstanceID), nil
 }
 
 func convertToTaskStatus(latestTaskRunStatus storepb.TaskRun_Status, skipped bool) v1pb.Task_Status {

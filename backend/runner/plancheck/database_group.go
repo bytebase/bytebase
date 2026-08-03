@@ -47,8 +47,19 @@ func GetDatabaseGroupForPlan(ctx context.Context, stores *store.Store, plan *sto
 
 	result := &v1pb.DatabaseGroup{Name: target}
 	for _, db := range matchedDatabases {
+		instance, err := stores.GetInstanceByResourceID(ctx, db.InstanceID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get instance %q", db.InstanceID)
+		}
+		if instance == nil {
+			return nil, errors.Errorf("instance %q not found", db.InstanceID)
+		}
+		name := common.FormatDatabase(db.InstanceID, db.DatabaseName)
+		if instance.ProjectID != nil {
+			name = common.FormatProjectDatabase(*instance.ProjectID, db.InstanceID, db.DatabaseName)
+		}
 		result.MatchedDatabases = append(result.MatchedDatabases, &v1pb.DatabaseGroup_Database{
-			Name: common.FormatDatabase(db.InstanceID, db.DatabaseName),
+			Name: name,
 		})
 	}
 	return result, nil

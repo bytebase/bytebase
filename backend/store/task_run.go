@@ -238,9 +238,11 @@ func (s *Store) ClaimAvailableTaskRuns(ctx context.Context, replicaID string) ([
 		UPDATE task_run
 		SET status = ?, updated_at = now(), replica_id = ?
 		WHERE (project, id) IN (
-			SELECT task_run.project, task_run.id FROM task_run
-			WHERE task_run.status = ?
-			FOR UPDATE SKIP LOCKED
+			SELECT task_run.project, task_run.id
+			FROM task_run
+			JOIN project ON project.resource_id = task_run.project
+			WHERE task_run.status = ? AND project.deleted = FALSE
+			FOR UPDATE OF task_run SKIP LOCKED
 		)
 		RETURNING id, task_id, project
 	`, storepb.TaskRun_RUNNING.String(), replicaID, storepb.TaskRun_AVAILABLE.String())

@@ -125,6 +125,10 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 		slog.Error("project not found for rollout creation", slog.String("project_id", plan.ProjectID))
 		return
 	}
+	if project.Deleted {
+		slog.Debug("project is archived, skipping rollout creation", slog.String("project_id", plan.ProjectID))
+		return
+	}
 
 	// Check approval status (must be approved)
 	approved, err := utils.CheckIssueApprovedForPlan(issue, plan)

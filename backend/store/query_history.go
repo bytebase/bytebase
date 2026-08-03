@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"time"
 
@@ -95,15 +96,22 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 		payload,
 	)
 
-	sql, args, err := q.ToSQL()
+	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if err := s.GetDB().QueryRowContext(ctx, sql, args...).Scan(
-		&create.ResourceID,
-		&create.CreatedAt,
-	); err != nil {
+	_, instanceID, databaseName, err := common.GetDatabaseResourceName(create.Database)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid query history database %q", create.Database)
+	}
+	err = s.withDatabasePurgeFence(ctx, instanceID, databaseName, create.Project, nil, func(tx *sql.Tx, _ *databaseOwnership) error {
+		return tx.QueryRowContext(ctx, query, args...).Scan(
+			&create.ResourceID,
+			&create.CreatedAt,
+		)
+	})
+	if err != nil {
 		return nil, err
 	}
 

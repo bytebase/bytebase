@@ -424,6 +424,17 @@ func getRequestResource(request any) string {
 		return r.GetName()
 	case *v1pb.UndeleteInstanceRequest:
 		return r.GetName()
+	case *v1pb.CreateProjectRequest:
+		if name := r.GetProject().GetName(); name != "" {
+			return name
+		}
+		return common.FormatProject(r.GetProjectId())
+	case *v1pb.UpdateProjectRequest:
+		return r.GetProject().GetName()
+	case *v1pb.DeleteProjectRequest:
+		return r.GetName()
+	case *v1pb.UndeleteProjectRequest:
+		return r.GetName()
 	case *v1pb.AddDataSourceRequest:
 		return r.GetName()
 	case *v1pb.RemoveDataSourceRequest:
