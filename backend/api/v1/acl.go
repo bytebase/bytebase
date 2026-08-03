@@ -433,7 +433,7 @@ func resolveProjectDatabaseResource(ctx context.Context, stores *store.Store, pa
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
 	if database == nil {
-		return nil, errors.Errorf("database %q not found", strings.Join(parts[:6], "/"))
+		return nil, common.Errorf(common.NotFound, "database %q not found", strings.Join(parts[:6], "/"))
 	}
 	return &common.Resource{Type: common.ResourceTypeProject, ID: projectID}, nil
 }
@@ -489,7 +489,7 @@ func resolveWorkspaceDatabaseResource(ctx context.Context, stores *store.Store, 
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
 	if database == nil {
-		return nil, errors.Errorf("database %q not found", strings.Join(parts[:4], "/"))
+		return nil, common.Errorf(common.NotFound, "database %q not found", strings.Join(parts[:4], "/"))
 	}
 	return &common.Resource{Type: common.ResourceTypeProject, ID: database.ProjectID}, nil
 }

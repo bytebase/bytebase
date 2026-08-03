@@ -51,6 +51,15 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	a.Equal(databaseName, database.Msg.Name)
 	a.Equal(ctl.project.Name, database.Msg.Project)
 
+	for _, name := range []string{
+		projectInstance.Name + "/databases/missing",
+		workspace.Name + "/databases/missing",
+	} {
+		_, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{Name: name}))
+		a.Error(err)
+		a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+	}
+
 	projectInstances, err := ctl.instanceServiceClient.ListInstances(ctx, connect.NewRequest(&v1pb.ListInstancesRequest{
 		Parent:   &projectParent,
 		PageSize: 100,
