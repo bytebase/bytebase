@@ -908,6 +908,7 @@
     }
   },
   "identity-provider": {
+    "attributes-description": "The following attributes were returned from the matched directory entry. Use these exact attribute names in the user information field mapping.",
     "claims-description": "The following claims were returned by the identity provider. This information can help you configure field mappings.",
     "delete-warning": "Are you sure you want to delete this identity provider? Users who signed up via this SSO will not be able to sign in with it anymore. If password sign-in is disabled in your workspace settings, these users may be locked out completely.",
     "identity-provider-create-failed": "Failed to create identity provider",
@@ -916,7 +917,13 @@
     "identity-provider-deleted": "Identity provider deleted successfully",
     "identity-provider-permission-denied": "Permission denied",
     "identity-provider-update-failed": "Failed to update identity provider",
+    "ldap-connectivity-verified": "Connected to the LDAP server and bound with the service account successfully. Base DN, user filter, and field mapping were not verified — run Test Sign-in with a directory user's credentials to check them.",
+    "ldap-test-connectivity-only": "Test Connectivity Only",
+    "ldap-test-description": "Enter the credentials of a directory user to verify the full sign-in flow: base DN, user filter, and field mapping. Or test connectivity only, which verifies just the server connection and the service account bind.",
+    "ldap-test-sign-in": "Test Sign-in",
+    "ldap-test-title": "Test LDAP Sign-in",
     "no-claims": "No claims returned by the identity provider.",
+    "no-user-info-mapped": "No user information was mapped. Check that the field mapping matches the values below.",
     "self": "Identity Provider",
     "test-connection": "Test Connection",
     "test-connection-success": "Test Connection Successful",
