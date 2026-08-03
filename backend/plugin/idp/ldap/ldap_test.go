@@ -129,7 +129,7 @@ func TestNewIdentityProvider(t *testing.T) {
 	}
 }
 
-func newMockServer(t *testing.T, uid, displayName, mail, phone string) (host string, port int) {
+func newMockServer(t *testing.T, uid, displayName, mail, phone string) (host string, port int, searchAttrs *[][]string) {
 	// localhostCert is a PEM-encoded TLS cert with SAN IPs
 	// "127.0.0.1" and "[::1]", expiring at Jan 29 16:00:00 2084 GMT.
 	// generated from src/crypto/tls:
@@ -191,12 +191,19 @@ ZboOWVe3icTy64BT3OQhmg==
 		ServerName:   "127.0.0.1",
 	}
 
+	var searches [][]string
 	server := ldapserver.NewServer()
 	routes := ldapserver.NewRouteMux()
 	routes.Bind(func(w ldapserver.ResponseWriter, _ *ldapserver.Message) {
 		w.Write(ldapserver.NewBindResponse(ldapserver.LDAPResultSuccess))
 	})
-	routes.Search(func(w ldapserver.ResponseWriter, _ *ldapserver.Message) {
+	routes.Search(func(w ldapserver.ResponseWriter, m *ldapserver.Message) {
+		req := m.GetSearchRequest()
+		requested := make([]string, 0, len(req.Attributes()))
+		for _, a := range req.Attributes() {
+			requested = append(requested, string(a))
+		}
+		searches = append(searches, requested)
 		e := ldapserver.NewSearchResultEntry(uid)
 		e.AddAttribute("uid", message.AttributeValue(uid))
 		e.AddAttribute("displayName", message.AttributeValue(displayName))
@@ -220,7 +227,7 @@ ZboOWVe3icTy64BT3OQhmg==
 
 	// Give a second for the server to start
 	time.Sleep(time.Second)
-	return "127.0.0.1", 10389
+	return "127.0.0.1", 10389, &searches
 }
 
 func TestIdentityProvider(t *testing.T) {
@@ -230,7 +237,7 @@ func TestIdentityProvider(t *testing.T) {
 		testMail        = "alice@example.com"
 		testPhone       = "+14155550100"
 	)
-	host, port := newMockServer(t, testUID, testDisplayName, testMail, testPhone)
+	host, port, searches := newMockServer(t, testUID, testDisplayName, testMail, testPhone)
 	ldap, err := NewIdentityProvider(
 		IdentityProviderConfig{
 			Host:             host,
@@ -270,6 +277,15 @@ func TestIdentityProvider(t *testing.T) {
 		"mail":            testMail,
 		"telephoneNumber": testPhone,
 	}, attributes)
+
+	// Authenticate requests only the mapped attributes; TestAuthenticate must also
+	// request "*" so the discovery view is complete, while still naming the mapped
+	// attributes so an operational-attribute mapping (e.g. entryUUID) is returned.
+	require.Len(t, *searches, 2)
+	authSearch, testSearch := (*searches)[0], (*searches)[1]
+	assert.NotContains(t, authSearch, "*")
+	assert.Subset(t, authSearch, []string{"uid", "displayName", "telephoneNumber"})
+	assert.Subset(t, testSearch, []string{"*", "uid", "displayName", "telephoneNumber"})
 }
 
 func TestUserInfoFromEntry(t *testing.T) {
