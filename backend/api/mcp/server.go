@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -30,6 +31,8 @@ type Server struct {
 	profile      *config.Profile
 	secret       string
 	openAPIIndex *OpenAPIIndex
+
+	revokedAccessTokens sync.Map // map[string]struct{}
 
 	// planCheckPollBudgetOverride lets tests shorten the plan-check poll budget.
 	// Zero means use the default (planCheckPollBudget).
@@ -86,6 +89,7 @@ func (s *Server) registerTools() {
 	s.registerQueryTool()
 	s.registerSchemaTool()
 	s.registerChangeTool()
+	s.registerReauthorizeTool()
 }
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
@@ -108,6 +112,9 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return s.unauthorized(c, "authorization header format must be Bearer {token}")
 		}
 		tokenStr := parts[1]
+		if _, revoked := s.revokedAccessTokens.Load(tokenStr); revoked {
+			return s.unauthorized(c, "token revoked")
+		}
 
 		// Parse and validate JWT
 		claims := jwt.MapClaims{}
@@ -159,6 +166,10 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		if !ok || sub == "" {
 			return s.unauthorized(c, "invalid token: missing subject")
 		}
+		clientID, ok := claims["client_id"].(string)
+		if !ok {
+			clientID = ""
+		}
 
 		// Extract workspace ID from token claims.
 		workspaceID, ok := claims["workspace_id"].(string)
@@ -178,6 +189,8 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// Store access token and workspace ID in request context for MCP tools.
 		ctx := c.Request().Context()
 		ctx = withAccessToken(ctx, tokenStr)
+		ctx = withUserEmail(ctx, sub)
+		ctx = withOAuth2ClientID(ctx, clientID)
 		ctx = withWorkspaceID(ctx, workspaceID)
 		c.SetRequest(c.Request().WithContext(ctx))
 

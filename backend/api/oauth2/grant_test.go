@@ -70,6 +70,35 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 
 	configured := newTestService(st, "https://bb.example.com")
 
+	t.Run("authorization starts without an existing browser session", func(t *testing.T) {
+		entryService := newTestService(st, "")
+		entryService.profile.SaaS = true
+		challenge := sha256.Sum256([]byte(testCodeVerifier))
+		query := url.Values{
+			"response_type":         {"code"},
+			"client_id":             {testClientID},
+			"redirect_uri":          {testRedirectURI},
+			"state":                 {"test-state"},
+			"code_challenge":        {base64.RawURLEncoding.EncodeToString(challenge[:])},
+			"code_challenge_method": {"S256"},
+			"resource":              {testResource},
+		}
+		req := httptest.NewRequest(http.MethodGet, "/api/oauth2/authorize?"+query.Encode(), nil)
+		rec := httptest.NewRecorder()
+		e := echo.New()
+		c := e.NewContext(req, rec)
+		require.NoError(t, entryService.handleAuthorizeGet(c))
+		response, err := echo.UnwrapResponse(c.Response())
+		require.NoError(t, err)
+		require.Equal(t, http.StatusFound, response.Status)
+
+		location, err := url.Parse(response.Header().Get("Location"))
+		require.NoError(t, err)
+		require.Equal(t, "/oauth2/consent", location.Path)
+		require.Equal(t, testClientID, location.Query().Get("client_id"))
+		require.Equal(t, testResource, location.Query().Get("resource"))
+	})
+
 	t.Run("configured external URL: matching resource and known scope are consented", func(t *testing.T) {
 		code := consentOK(t, configured, url.Values{"resource": {testResource}, "scope": {"mcp:read-only"}})
 
@@ -116,7 +145,6 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		wantCode string
 	}{
 		{"resource on another host", url.Values{"resource": {"https://evil.example.com/mcp"}}, "invalid_target"},
-		{"noncanonical resource", url.Values{"resource": {"https://bb.example.com:443/mcp"}}, "invalid_target"},
 		{"resource parameter repeated", url.Values{"resource": {testResource, testResource}}, "invalid_target"},
 		{"unknown scope", url.Values{"scope": {"mcp:admin"}}, "invalid_scope"},
 		{"scope parameter repeated", url.Values{"scope": {"mcp:read-only", "mcp:read-write"}}, "invalid_scope"},
@@ -128,16 +156,26 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		})
 	}
 
+	t.Run("default port resource is consented as the canonical resource", func(t *testing.T) {
+		code := consentOK(t, configured, url.Values{"resource": {"https://bb.example.com:443/mcp"}})
+		got, err := st.GetOAuth2AuthorizationCode(ctx, testClientID, code)
+		require.NoError(t, err)
+		require.Equal(t, testResource, got.Config.Resource)
+	})
+
 	t.Run("no configured external URL: a resource request gets the actionable setup error", func(t *testing.T) {
-		// The ship gate of proposal v2 §6.2 — self-hosted instances running on
-		// the request-Host fallback break here, and the error has to tell the
-		// admin exactly what to set rather than fail generically.
+		_, err := st.UpsertSetting(ctx, &store.SettingMessage{
+			Name:      storepb.SettingName_WORKSPACE_PROFILE,
+			Workspace: testWorkspace,
+			Value:     &storepb.WorkspaceProfileSetting{},
+		})
+		require.NoError(t, err)
+
 		unconfigured := newTestService(st, "")
 		redirect := consent(t, unconfigured, url.Values{"resource": {testResource}})
 		require.Equal(t, "server_error", redirect.Query().Get("error"))
 		description := redirect.Query().Get("error_description")
-		require.Contains(t, description, "--external-url")
-		require.Contains(t, description, "External URL")
+		require.Contains(t, description, "external URL isn't setup yet")
 	})
 
 	t.Run("no configured external URL: a request without a resource still works", func(t *testing.T) {

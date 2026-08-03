@@ -70,11 +70,18 @@ func (s *Service) handleAuthorizeGet(c *echo.Context) error {
 		return oauth2ErrorRedirect(c, redirectURI, state, "invalid_request", "code_challenge_method must be S256")
 	}
 
-	// Validate the resource/scope the client is asking for before showing a
-	// consent screen for something we would refuse to issue.
-	params, failure := s.parseGrantParams(ctx, c.QueryParams())
-	if failure != nil {
-		return oauth2ErrorRedirect(c, redirectURI, state, failure.code, failure.description)
+	values := c.QueryParams()
+	resource, err := singleValue(values, "resource")
+	if err != nil {
+		return oauth2ErrorRedirect(c, redirectURI, state, "invalid_target", err.Error())
+	}
+	requestedScope, err := singleValue(values, "scope")
+	if err != nil {
+		return oauth2ErrorRedirect(c, redirectURI, state, "invalid_scope", err.Error())
+	}
+	scope, err := canonicalizeScope(requestedScope)
+	if err != nil {
+		return oauth2ErrorRedirect(c, redirectURI, state, "invalid_scope", err.Error())
 	}
 
 	// Redirect to frontend consent page.
@@ -88,8 +95,8 @@ func (s *Service) handleAuthorizeGet(c *echo.Context) error {
 		url.QueryEscape(state),
 		url.QueryEscape(codeChallenge),
 		url.QueryEscape(codeChallengeMethod),
-		url.QueryEscape(params.resource),
-		url.QueryEscape(params.scope),
+		url.QueryEscape(resource),
+		url.QueryEscape(scope),
 	)
 	return c.Redirect(http.StatusFound, consentURL)
 }
@@ -117,6 +124,11 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "user denied the request")
 	}
 
+	consenting, failure := s.resolveConsentingUser(c, client)
+	if failure != nil {
+		return oauth2ErrorRedirect(c, redirectURI, state, failure.code, failure.description)
+	}
+
 	// Re-validate resource/scope here rather than trusting what the consent page
 	// posted back: this endpoint is reachable directly, so the GET's validation
 	// is not a guarantee about the POST.
@@ -124,12 +136,7 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 	if err != nil {
 		return oauth2ErrorRedirect(c, redirectURI, state, "invalid_request", "failed to parse request")
 	}
-	params, failure := s.parseGrantParams(ctx, formValues)
-	if failure != nil {
-		return oauth2ErrorRedirect(c, redirectURI, state, failure.code, failure.description)
-	}
-
-	consenting, failure := s.resolveConsentingUser(c, client)
+	params, failure := s.parseGrantParams(ctx, formValues, consenting.workspaceID)
 	if failure != nil {
 		return oauth2ErrorRedirect(c, redirectURI, state, failure.code, failure.description)
 	}

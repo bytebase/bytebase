@@ -147,6 +147,32 @@ func TestMCPAuthMiddlewareValidToken(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 }
 
+func TestMCPAuthMiddlewareOAuthContext(t *testing.T) {
+	secret := "test-secret-key"
+	profile := &config.Profile{Mode: common.ReleaseModeDev}
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+generateOAuth2MCPToken(t, secret, "client-A", "ws-test"))
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	s, err := NewServer(nil, profile, secret)
+	require.NoError(t, err)
+	handler := s.authMiddleware(func(c *echo.Context) error {
+		ctx := c.Request().Context()
+		require.Equal(t, "test@example.com", getUserEmail(ctx))
+		require.Equal(t, "client-A", getOAuth2ClientID(ctx))
+		require.Equal(t, "ws-test", getWorkspaceID(ctx))
+		return c.String(http.StatusOK, "success")
+	})
+
+	err = handler(c)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, rec.Code)
+}
+
 // TestMCPProxiedPublicHostNotRejected is the BYT-9693 regression. Behind a
 // same-host reverse proxy (proxy_pass http://127.0.0.1:8080), the connection
 // Bytebase accepts has a loopback LocalAddr while the proxy preserves the public
@@ -230,6 +256,24 @@ func generateValidToken(t *testing.T, secret string) string {
 		"aud": auth.OAuth2AccessTokenAudience,
 		"exp": time.Now().Add(time.Hour).Unix(),
 		"iat": time.Now().Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token.Header["kid"] = "v1"
+	tokenStr, err := token.SignedString([]byte(secret))
+	require.NoError(t, err)
+	return tokenStr
+}
+
+func generateOAuth2MCPToken(t *testing.T, secret, clientID, workspaceID string) string {
+	t.Helper()
+	claims := jwt.MapClaims{
+		"iss":          "bytebase",
+		"sub":          "test@example.com",
+		"aud":          auth.OAuth2AccessTokenAudience,
+		"exp":          time.Now().Add(time.Hour).Unix(),
+		"iat":          time.Now().Unix(),
+		"client_id":    clientID,
+		"workspace_id": workspaceID,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	token.Header["kid"] = "v1"
