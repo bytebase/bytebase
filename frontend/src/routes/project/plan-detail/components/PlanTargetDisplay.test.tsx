@@ -28,6 +28,14 @@ vi.mock("@/components/EngineIcon", () => ({
   ),
 }));
 
+vi.mock("@/components/EnvironmentLabel", () => ({
+  EnvironmentLabel: ({
+    environment,
+  }: {
+    environment: { title: string };
+  }) => <span>{environment.title}</span>,
+}));
+
 vi.mock("@/lib/utils", () => ({
   cn: (...classes: Array<string | false | null | undefined>) =>
     classes.filter(Boolean).join(" "),
@@ -130,9 +138,7 @@ describe("PlanTargetDisplay", () => {
 
     expect(rootElement?.className).toContain("inline-flex");
     expect(rootElement?.className).toContain("max-w-full");
-    expect(rootElement?.getAttribute("title")).toBe(
-      "Production / prod-instance / app"
-    );
+    expect(rootElement?.getAttribute("title")).toBeNull();
     expect(environment?.className).toContain("max-w-24");
     expect(instance?.className).toContain("max-w-40");
     expect(database?.className).toContain("flex-1");

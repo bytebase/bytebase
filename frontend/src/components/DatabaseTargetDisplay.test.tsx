@@ -143,7 +143,7 @@ describe("DatabaseTargetDisplay", () => {
     expect(container.textContent).toContain("prod-instance");
     expect(container.textContent).toContain("app");
     expect(container.firstElementChild?.textContent).toBe(
-      "POSTGRESprod-instanceProductionapp"
+      "POSTGRESprod-instance / Productionapp"
     );
   });
 

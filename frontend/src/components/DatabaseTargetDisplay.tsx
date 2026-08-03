@@ -1,4 +1,3 @@
-import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import { EngineIcon } from "@/components/EngineIcon";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
@@ -19,7 +18,6 @@ const sizeClasses: Record<
     icon: string;
     instance: string;
     root: string;
-    separator: string;
   }
 > = {
   sm: {
@@ -28,7 +26,6 @@ const sizeClasses: Record<
     icon: "h-4 w-4",
     instance: "max-w-40",
     root: "text-sm",
-    separator: "h-4 w-4",
   },
   md: {
     database: "min-w-16",
@@ -36,7 +33,6 @@ const sizeClasses: Record<
     icon: "h-5 w-5",
     instance: "max-w-48",
     root: "text-base",
-    separator: "h-5 w-5",
   },
 };
 
@@ -126,9 +122,9 @@ export function DatabaseTargetDisplay({
         />
       )}
       {shouldShowSeparator && (
-        <ChevronRight
-          className={cn("shrink-0 text-control-light/80", classes.separator)}
-        />
+        <span className="shrink-0 whitespace-pre text-control-light/80">
+          {" / "}
+        </span>
       )}
       {showEnvironment && environment?.title && (
         <EllipsisText
