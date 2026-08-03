@@ -128,20 +128,20 @@ func configureGrpcRouters(
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
 		// keep a multiline stack
 		slog.Error("v1 server panic error", "method", s.Procedure, log.BBError(errors.Errorf("error: %v\n%s", p, stack)))
-		return connect.NewError(connect.CodeInternal, errors.Errorf("error: %v\n%s", p, stack))
+		return connect.NewError(connect.CodeInternal, errors.New("internal error"))
 	}
 
 	// Create validation interceptor.
 	validateInterceptor := validate.NewInterceptor()
 
 	handlerOpts := connect.WithHandlerOptions(
+		connect.WithRecover(onPanic),
 		connect.WithInterceptors(
 			validateInterceptor,
 			auth.New(stores, secret, licenseService, bus, profile),
 			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
 			apiv1.NewAuditInterceptor(stores, secret, profile),
 		),
-		connect.WithRecover(onPanic),
 	)
 
 	connectHandlers := make(map[string]http.Handler)

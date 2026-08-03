@@ -2,15 +2,104 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/permission"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/store"
 )
+
+func TestResourceResolutionConnectError(t *testing.T) {
+	t.Run("preserves connect error", func(t *testing.T) {
+		want := connect.NewError(connect.CodeNotFound, errors.New("missing resource"))
+		require.Same(t, want, resourceResolutionConnectError(want))
+	})
+
+	t.Run("converts unknown error", func(t *testing.T) {
+		err := resourceResolutionConnectError(errors.New("store unavailable"))
+		require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+		require.ErrorContains(t, err, "failed to populate raw resources: store unavailable")
+	})
+}
+
+func TestACLCheckResourceResolutionStatus(t *testing.T) {
+	ctx, stores, _, _, _, _ := setupWorkspaceInstanceDescendantServiceTest(t)
+	interceptor := NewACLInterceptor(stores, "", nil, nil)
+
+	for _, test := range []struct {
+		name    string
+		request *v1pb.GetDatabaseRequest
+		want    connect.Code
+	}{
+		{
+			name:    "missing workspace database parent instance",
+			request: &v1pb.GetDatabaseRequest{Name: common.FormatDatabase("missing", "app")},
+			want:    connect.CodeNotFound,
+		},
+		{
+			name:    "malformed workspace database name",
+			request: &v1pb.GetDatabaseRequest{Name: "instances//databases/app"},
+			want:    connect.CodeInvalidArgument,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := interceptor.doACLCheck(authenticatedACLContext(ctx), test.request, v1connect.DatabaseServiceGetDatabaseProcedure)
+			require.Equal(t, test.want, connect.CodeOf(err))
+		})
+	}
+}
+
+func TestACLCheckAuthenticatesBeforeResolvingResources(t *testing.T) {
+	ctx, stores, _, _, _, _ := setupWorkspaceInstanceDescendantServiceTest(t)
+	interceptor := NewACLInterceptor(stores, "", nil, nil)
+
+	err := interceptor.doACLCheck(
+		unauthenticatedACLContext(ctx),
+		&v1pb.GetDatabaseRequest{Name: common.FormatDatabase("missing", "app")},
+		v1connect.DatabaseServiceGetDatabaseProcedure,
+	)
+	require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
+}
+
+func TestACLCheckPanicPreventsRequestAdmission(t *testing.T) {
+	ctx := authenticatedACLContext(context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default"))
+	interceptor := NewACLInterceptor(nil, "", nil, nil)
+	aclCheckReturnedNil := false
+
+	panicked := false
+	func() {
+		defer func() {
+			panicked = recover() != nil
+		}()
+		if err := interceptor.doACLCheck(
+			ctx,
+			&v1pb.GetDatabaseRequest{Name: common.FormatDatabase("instance", "app")},
+			v1connect.DatabaseServiceGetDatabaseProcedure,
+		); err == nil {
+			aclCheckReturnedNil = true
+		}
+	}()
+
+	require.True(t, panicked, "the outer Connect recovery adapter must receive ACL panics")
+	require.False(t, aclCheckReturnedNil, "a recovered ACL panic must not admit the request")
+}
+
+func authenticatedACLContext(ctx context.Context) context.Context {
+	ctx = context.WithValue(ctx, common.AuthContextKey, &common.AuthContext{AuthMethod: common.AuthMethodCustom})
+	return context.WithValue(ctx, common.UserContextKey, &store.UserMessage{Email: "user@example.com"})
+}
+
+func unauthenticatedACLContext(ctx context.Context) context.Context {
+	ctx = context.WithValue(ctx, common.AuthContextKey, &common.AuthContext{AuthMethod: common.AuthMethodCustom})
+	return context.WithValue(ctx, common.UserContextKey, (*store.UserMessage)(nil))
+}
 
 func TestGetResourceRoute(t *testing.T) {
 	tests := []struct {
@@ -136,12 +225,14 @@ func TestResolveRawResource(t *testing.T) {
 	t.Run("rejects project instance in another project", func(t *testing.T) {
 		resource, err := resolveRawResource(ctx, stores, common.FormatProjectInstance("project-b", instanceID)+"/roles/role-a")
 		require.Error(t, err)
+		require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 		require.Nil(t, resource)
 	})
 
 	t.Run("rejects missing project database", func(t *testing.T) {
 		resource, err := resolveRawResource(ctx, stores, common.FormatProjectDatabase("project-a", instanceID, "missing")+"/schema")
 		require.Error(t, err)
+		require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 		require.Nil(t, resource)
 	})
 
@@ -156,6 +247,7 @@ func TestResolveRawResource(t *testing.T) {
 		} {
 			resource, err := resolveRawResource(ctx, nil, name)
 			require.Error(t, err, name)
+			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err), name)
 			require.Nil(t, resource, name)
 		}
 	})
