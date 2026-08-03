@@ -923,29 +923,31 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 		return connect.NewResponse(&emptypb.Empty{}), nil
 	}
 
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: &instance.ResourceID})
-	if err != nil {
-		return nil, err
-	}
-	if req.Msg.Force {
-		if len(databases) > 0 {
-			defaultProjectID, err := s.store.GetDefaultProjectID(ctx, common.GetWorkspaceIDFromContext(ctx))
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get default project ID"))
-			}
-			if err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectID: &defaultProjectID}); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
-			}
+	if instance.ProjectID == nil {
+		databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: &instance.ResourceID})
+		if err != nil {
+			return nil, err
 		}
-	} else {
-		var databaseNames []string
-		for _, database := range databases {
-			if !common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), database.ProjectID) {
-				databaseNames = append(databaseNames, database.DatabaseName)
+		if req.Msg.Force {
+			if len(databases) > 0 {
+				defaultProjectID, err := s.store.GetDefaultProjectID(ctx, common.GetWorkspaceIDFromContext(ctx))
+				if err != nil {
+					return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get default project ID"))
+				}
+				if err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectID: &defaultProjectID}); err != nil {
+					return nil, connect.NewError(connect.CodeInternal, err)
+				}
 			}
-		}
-		if len(databaseNames) > 0 {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("all databases should be transferred to the unassigned project before deleting the instance"))
+		} else {
+			var databaseNames []string
+			for _, database := range databases {
+				if !common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), database.ProjectID) {
+					databaseNames = append(databaseNames, database.DatabaseName)
+				}
+			}
+			if len(databaseNames) > 0 {
+				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("all databases should be transferred to the unassigned project before deleting the instance"))
+			}
 		}
 	}
 

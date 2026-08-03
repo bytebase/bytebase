@@ -176,14 +176,21 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	a.Equal(beforeProject.Msg.Title, afterProject.Msg.Title)
 	a.Equal(beforeWorkspace.Msg.Title, afterWorkspace.Msg.Title)
 
-	// A project instance cannot force-transfer its databases, but a database-free
-	// project instance can still be archived and restored normally.
+	// A project instance cannot force-transfer its databases, but can be
+	// archived normally even after synchronization discovers databases.
 	_, err = ctl.instanceServiceClient.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{
-		Name:  allowMissingName,
+		Name:  projectInstance.Name,
 		Force: true,
 	}))
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	_, err = ctl.instanceServiceClient.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: projectInstance.Name}))
+	a.NoError(err)
+	archivedProjectInstance, err := ctl.instanceServiceClient.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{Name: projectInstance.Name}))
+	a.NoError(err)
+	a.Equal(v1pb.State_DELETED, archivedProjectInstance.Msg.State)
+
+	// A database-free project instance can still be archived and restored normally.
 	_, err = ctl.instanceServiceClient.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: allowMissingName}))
 	a.NoError(err)
 	archived, err := ctl.instanceServiceClient.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{Name: allowMissingName}))
