@@ -213,14 +213,11 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 }
 
 func resourceResolutionConnectError(err error) error {
-	switch common.ErrorCode(err) {
-	case common.Invalid:
-		return connect.NewError(connect.CodeInvalidArgument, err)
-	case common.NotFound:
-		return connect.NewError(connect.CodeNotFound, err)
-	default:
-		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to populate raw resources"))
+	var connectErr *connect.Error
+	if errors.As(err, &connectErr) {
+		return err
 	}
+	return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to populate raw resources"))
 }
 
 func getPermissionForRequest(request any, defaultPermission permission.Permission) permission.Permission {
@@ -377,15 +374,16 @@ func resolveProjectResource(ctx context.Context, stores *store.Store, parts []st
 	if err != nil {
 		return nil, err
 	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	project, err := stores.GetProject(ctx, &store.FindProjectMessage{
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		Workspace:  workspaceID,
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, common.Wrapf(err, common.Internal, "failed to get project")
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get project"))
 	}
-	if project == nil {
-		return nil, common.Errorf(common.NotFound, "project %q not found", projectID)
+	if project == nil || project.Workspace != workspaceID {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
 	return &common.Resource{Type: common.ResourceTypeProject, ID: projectID}, nil
 }
@@ -429,10 +427,10 @@ func resolveProjectDatabaseResource(ctx context.Context, stores *store.Store, pa
 		ShowDeleted:  true,
 	})
 	if err != nil {
-		return nil, common.Wrapf(err, common.Internal, "failed to get database")
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get database"))
 	}
 	if database == nil {
-		return nil, common.Errorf(common.NotFound, "database %q not found", strings.Join(parts[:6], "/"))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", strings.Join(parts[:6], "/")))
 	}
 	return &common.Resource{Type: common.ResourceTypeProject, ID: projectID}, nil
 }
@@ -449,10 +447,10 @@ func resolveWorkspaceInstanceResource(ctx context.Context, stores *store.Store, 
 		ResourceID:    &instanceID,
 	})
 	if err != nil {
-		return nil, common.Wrapf(err, common.Internal, "failed to get instance")
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get instance"))
 	}
-	if instance == nil {
-		return nil, common.Errorf(common.NotFound, "instance %q not found", strings.Join(parts[:2], "/"))
+	if instance == nil || instance.Workspace != workspaceID {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", strings.Join(parts[:2], "/")))
 	}
 	return &common.Resource{Type: common.ResourceTypeWorkspace, ID: workspaceID}, nil
 }
@@ -473,10 +471,10 @@ func resolveWorkspaceDatabaseResource(ctx context.Context, stores *store.Store, 
 		ResourceID:    &instanceID,
 	})
 	if err != nil {
-		return nil, common.Wrapf(err, common.Internal, "failed to get instance")
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get instance"))
 	}
-	if instance == nil {
-		return nil, common.Errorf(common.NotFound, "instance %q not found", instanceID)
+	if instance == nil || instance.Workspace != workspaceID {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
 	}
 	database, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{
 		Workspace:    workspaceID,
@@ -485,17 +483,17 @@ func resolveWorkspaceDatabaseResource(ctx context.Context, stores *store.Store, 
 		ShowDeleted:  true,
 	})
 	if err != nil {
-		return nil, common.Wrapf(err, common.Internal, "failed to get database")
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get database"))
 	}
 	if database == nil {
-		return nil, common.Errorf(common.NotFound, "database %q not found", strings.Join(parts[:4], "/"))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", strings.Join(parts[:4], "/")))
 	}
 	return &common.Resource{Type: common.ResourceTypeProject, ID: database.ProjectID}, nil
 }
 
 func requiredResourceIdentifier(parts []string, index int, collection string) (string, error) {
 	if len(parts) <= index || parts[index] == "" {
-		return "", common.Errorf(common.Invalid, "invalid %s resource %q", collection, strings.Join(parts, "/"))
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid %s resource %q", collection, strings.Join(parts, "/")))
 	}
 	return parts[index], nil
 }
@@ -528,16 +526,17 @@ func populateRawResources(ctx context.Context, stores *store.Store, request any,
 }
 
 func getProjectScopedInstance(ctx context.Context, stores *store.Store, projectID, instanceID string) (*store.InstanceMessage, error) {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		Workspace:  workspaceID,
 		ProjectID:  &projectID,
 		ResourceID: &instanceID,
 	})
 	if err != nil {
-		return nil, common.Wrapf(err, common.Internal, "failed to get instance")
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get instance"))
 	}
-	if instance == nil {
-		return nil, common.Errorf(common.NotFound, "instance %q not found", common.FormatProjectInstance(projectID, instanceID))
+	if instance == nil || instance.Workspace != workspaceID {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", common.FormatProjectInstance(projectID, instanceID)))
 	}
 	return instance, nil
 }
@@ -545,13 +544,13 @@ func getProjectScopedInstance(ctx context.Context, stores *store.Store, projectI
 func getResourceFromRequest(ctx context.Context, request any, method string) ([]string, error) {
 	pm, ok := request.(proto.Message)
 	if !ok {
-		return nil, common.Errorf(common.Invalid, "invalid request for method %q", method)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid request for method %q", method))
 	}
 	mr := pm.ProtoReflect()
 
 	methodTokens := strings.Split(method, "/")
 	if len(methodTokens) != 3 {
-		return nil, common.Errorf(common.Invalid, "invalid method %q", method)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid method %q", method))
 	}
 	shortMethod := methodTokens[2]
 
@@ -614,7 +613,7 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 		if hasPath(r.GetUpdateMask(), "project") {
 			projectID, err := common.GetProjectID(r.GetDatabase().GetProject())
 			if err != nil {
-				return nil, common.Wrapf(err, common.Invalid, "failed to get projectID from %q", r.GetDatabase().GetProject())
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get projectID from %q", r.GetDatabase().GetProject()))
 			}
 			// Allow to transfer databases to the default project.
 			if common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), projectID) {

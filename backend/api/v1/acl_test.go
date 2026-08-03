@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -15,6 +16,19 @@ import (
 )
 
 const getDatabaseProcedure = "/bytebase.v1.DatabaseService/GetDatabase"
+
+func TestResourceResolutionConnectError(t *testing.T) {
+	t.Run("preserves connect error", func(t *testing.T) {
+		want := connect.NewError(connect.CodeNotFound, errors.New("missing resource"))
+		require.Same(t, want, resourceResolutionConnectError(want))
+	})
+
+	t.Run("converts unknown error", func(t *testing.T) {
+		err := resourceResolutionConnectError(errors.New("store unavailable"))
+		require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+		require.ErrorContains(t, err, "failed to populate raw resources: store unavailable")
+	})
+}
 
 func TestACLCheckResourceResolutionStatus(t *testing.T) {
 	ctx, stores, _, _, _, _ := setupWorkspaceInstanceDescendantServiceTest(t)
@@ -212,12 +226,14 @@ func TestResolveRawResource(t *testing.T) {
 	t.Run("rejects project instance in another project", func(t *testing.T) {
 		resource, err := resolveRawResource(ctx, stores, common.FormatProjectInstance("project-b", instanceID)+"/roles/role-a")
 		require.Error(t, err)
+		require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 		require.Nil(t, resource)
 	})
 
 	t.Run("rejects missing project database", func(t *testing.T) {
 		resource, err := resolveRawResource(ctx, stores, common.FormatProjectDatabase("project-a", instanceID, "missing")+"/schema")
 		require.Error(t, err)
+		require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 		require.Nil(t, resource)
 	})
 
@@ -232,6 +248,7 @@ func TestResolveRawResource(t *testing.T) {
 		} {
 			resource, err := resolveRawResource(ctx, nil, name)
 			require.Error(t, err, name)
+			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err), name)
 			require.Nil(t, resource, name)
 		}
 	})
