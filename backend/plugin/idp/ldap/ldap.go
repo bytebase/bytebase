@@ -141,8 +141,12 @@ func (p *IdentityProvider) Authenticate(username, password string) (*storepb.Ide
 // attribute of the matched entry, returning them alongside the mapped user
 // info so admins can verify their field mapping against real directory data.
 func (p *IdentityProvider) TestAuthenticate(username, password string) (*storepb.IdentityProviderUserInfo, map[string]string, error) {
-	// A nil attribute list requests all user attributes (RFC 4511).
-	entry, err := p.searchAndBind(username, password, nil)
+	// "*" requests all user attributes for the discovery view, but operational
+	// attributes (e.g. OpenLDAP entryUUID) are only returned when named explicitly.
+	// Append the mapped attributes so a mapping onto an operational attribute is
+	// still returned here, matching what real Authenticate requests — otherwise the
+	// test could report a mapped value as missing when sign-in would actually work.
+	entry, err := p.searchAndBind(username, password, append([]string{"*"}, p.mappedAttributes()...))
 	if err != nil {
 		return nil, nil, err
 	}
