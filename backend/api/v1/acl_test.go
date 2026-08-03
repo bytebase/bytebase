@@ -12,10 +12,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/permission"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
 )
-
-const getDatabaseProcedure = "/bytebase.v1.DatabaseService/GetDatabase"
 
 func TestResourceResolutionConnectError(t *testing.T) {
 	t.Run("preserves connect error", func(t *testing.T) {
@@ -51,7 +50,7 @@ func TestACLCheckResourceResolutionStatus(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := interceptor.doACLCheck(authenticatedACLContext(ctx), test.request, getDatabaseProcedure)
+			err := interceptor.doACLCheck(authenticatedACLContext(ctx), test.request, v1connect.DatabaseServiceGetDatabaseProcedure)
 			require.Equal(t, test.want, connect.CodeOf(err))
 		})
 	}
@@ -64,7 +63,7 @@ func TestACLCheckAuthenticatesBeforeResolvingResources(t *testing.T) {
 	err := interceptor.doACLCheck(
 		unauthenticatedACLContext(ctx),
 		&v1pb.GetDatabaseRequest{Name: common.FormatDatabase("missing", "app")},
-		getDatabaseProcedure,
+		v1connect.DatabaseServiceGetDatabaseProcedure,
 	)
 	require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 }
@@ -82,7 +81,7 @@ func TestACLCheckPanicPreventsRequestAdmission(t *testing.T) {
 		if err := interceptor.doACLCheck(
 			ctx,
 			&v1pb.GetDatabaseRequest{Name: common.FormatDatabase("instance", "app")},
-			getDatabaseProcedure,
+			v1connect.DatabaseServiceGetDatabaseProcedure,
 		); err == nil {
 			aclCheckReturnedNil = true
 		}
