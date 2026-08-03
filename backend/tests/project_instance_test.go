@@ -194,6 +194,39 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	a.Equal(v1pb.State_ACTIVE, restored.Msg.State)
 }
 
+func TestBatchUpdateProjectInstanceAllowMissing(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	pg, err := provisionPgInstance(ctx, t)
+	a.NoError(err)
+
+	const instanceID = "bot35-batch-allow-missing"
+	parent := ctl.project.Name
+	name := fmt.Sprintf("%s/instances/%s", parent, instanceID)
+	created, err := ctl.instanceServiceClient.BatchUpdateInstances(ctx, connect.NewRequest(&v1pb.BatchUpdateInstancesRequest{
+		Parent: &parent,
+		Requests: []*v1pb.UpdateInstanceRequest{{
+			Instance: func() *v1pb.Instance {
+				instance := projectInstanceTestSpec("created by batch allow missing", pg)
+				instance.Name = name
+				instance.SyncDatabases = &v1pb.SyncDatabases{}
+				return instance
+			}(),
+			UpdateMask:   &fieldmaskpb.FieldMask{Paths: []string{"title"}},
+			AllowMissing: true,
+		}},
+	}))
+	a.NoError(err)
+	a.Len(created.Msg.Instances, 1)
+	a.Equal(name, created.Msg.Instances[0].Name)
+}
+
 //nolint:tparallel // Subtests share one server lifecycle.
 func TestProjectInstanceValidation(t *testing.T) {
 	t.Parallel()

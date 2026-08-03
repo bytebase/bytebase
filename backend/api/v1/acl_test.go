@@ -368,6 +368,27 @@ func TestGetResourceFromRequest(t *testing.T) {
 			want:   []string{"projects/project-a", "projects/project-a/instances/hello"},
 		},
 		{
+			request: &v1pb.BatchUpdateInstancesRequest{
+				Parent: new("projects/project-a"),
+				Requests: []*v1pb.UpdateInstanceRequest{
+					{Instance: &v1pb.Instance{Name: "projects/project-a/instances/new-instance"}, AllowMissing: true},
+					{Instance: &v1pb.Instance{Name: "projects/project-a/instances/existing-instance"}},
+				},
+			},
+			method: "/bytebase.v1.InstanceService/BatchUpdateInstances",
+			want:   []string{"projects/project-a", "projects/project-a/instances/existing-instance"},
+		},
+		{
+			request: &v1pb.BatchUpdateInstancesRequest{
+				Requests: []*v1pb.UpdateInstanceRequest{
+					{Instance: &v1pb.Instance{Name: "instances/new-instance"}, AllowMissing: true},
+					{Instance: &v1pb.Instance{Name: "instances/existing-instance"}},
+				},
+			},
+			method: "/bytebase.v1.InstanceService/BatchUpdateInstances",
+			want:   []string{"", "instances/existing-instance"},
+		},
+		{
 			request: &v1pb.CancelPlanCheckRunRequest{
 				Name: "projects/hello/plans/world/planCheckRun",
 			},
@@ -501,6 +522,23 @@ func TestHasAllowMissingEnabled(t *testing.T) {
 			name: "UpdateIdentityProviderRequest with AllowMissing false",
 			request: &v1pb.UpdateIdentityProviderRequest{
 				AllowMissing: false,
+			},
+			want: false,
+		},
+		{
+			name: "BatchUpdateInstancesRequest with nested AllowMissing true",
+			request: &v1pb.BatchUpdateInstancesRequest{
+				Requests: []*v1pb.UpdateInstanceRequest{
+					{AllowMissing: false},
+					{AllowMissing: true},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "BatchUpdateInstancesRequest with nested AllowMissing false",
+			request: &v1pb.BatchUpdateInstancesRequest{
+				Requests: []*v1pb.UpdateInstanceRequest{{AllowMissing: false}},
 			},
 			want: false,
 		},

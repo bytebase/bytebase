@@ -1063,12 +1063,32 @@ func (s *InstanceService) BatchSyncInstances(ctx context.Context, req *connect.R
 
 // BatchUpdateInstances update multiple instances.
 func (s *InstanceService) BatchUpdateInstances(ctx context.Context, req *connect.Request[v1pb.BatchUpdateInstancesRequest]) (*connect.Response[v1pb.BatchUpdateInstancesResponse], error) {
-	names := make([]string, 0, len(req.Msg.Requests))
-	for _, request := range req.Msg.Requests {
-		names = append(names, request.GetInstance().GetName())
-	}
-	if _, err := s.getInstanceCollection(ctx, req.Msg.Parent, names); err != nil {
+	projectID, err := s.getProjectInstanceParent(ctx, req.Msg.Parent)
+	if err != nil {
 		return nil, err
+	}
+	for _, updateReq := range req.Msg.GetRequests() {
+		name := updateReq.GetInstance().GetName()
+		instanceProjectID, _, err := common.GetInstanceResourceName(name)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		if (projectID == nil) != (instanceProjectID == nil) || projectID != nil && *projectID != *instanceProjectID {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("instance %q is not in its requested collection", name))
+		}
+	}
+	for _, updateReq := range req.Msg.GetRequests() {
+		name := updateReq.GetInstance().GetName()
+		instance, err := getInstanceMessage(ctx, s.store, name)
+		if err != nil {
+			if connect.CodeOf(err) == connect.CodeNotFound && updateReq.AllowMissing {
+				continue
+			}
+			return nil, err
+		}
+		if instance.Deleted {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", name))
+		}
 	}
 	response := &v1pb.BatchUpdateInstancesResponse{}
 	for _, updateReq := range req.Msg.GetRequests() {

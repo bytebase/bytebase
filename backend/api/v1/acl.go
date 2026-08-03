@@ -90,6 +90,13 @@ func hasAllowMissingEnabled(request any) bool {
 	if request == nil {
 		return false
 	}
+	if r, ok := request.(*v1pb.BatchUpdateInstancesRequest); ok {
+		for _, updateRequest := range r.GetRequests() {
+			if updateRequest.GetAllowMissing() {
+				return true
+			}
+		}
+	}
 
 	pm, ok := request.(proto.Message)
 	if !ok {
@@ -568,6 +575,18 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 		if _, err := common.GetInstanceID(r.Instance.Name); err == nil {
 			return []string{""}, nil
 		}
+	}
+	if r, ok := request.(*v1pb.BatchUpdateInstancesRequest); ok {
+		// The batch parent authorizes every implicit creation. An empty parent
+		// represents the workspace instance collection.
+		resources = append(resources, r.GetParent())
+		for _, updateRequest := range r.GetRequests() {
+			if updateRequest.GetAllowMissing() {
+				continue
+			}
+			resources = append(resources, getResourceFromSingleRequest(updateRequest.ProtoReflect(), "UpdateInstance"))
+		}
+		return resources, nil
 	}
 
 	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
