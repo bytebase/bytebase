@@ -228,7 +228,7 @@ func TestIdentityProvider(t *testing.T) {
 		testUID         = "alice"
 		testDisplayName = "Alice Smith"
 		testMail        = "alice@example.com"
-		testPhone       = "+1-555-0100"
+		testPhone       = "+14155550100"
 	)
 	host, port := newMockServer(t, testUID, testDisplayName, testMail, testPhone)
 	ldap, err := NewIdentityProvider(
@@ -270,6 +270,42 @@ func TestIdentityProvider(t *testing.T) {
 		"mail":            testMail,
 		"telephoneNumber": testPhone,
 	}, attributes)
+}
+
+func TestUserInfoFromEntry(t *testing.T) {
+	p := &IdentityProvider{
+		config: IdentityProviderConfig{
+			FieldMapping: &storepb.FieldMapping{
+				Identifier:  "uid",
+				DisplayName: "cn",
+				Phone:       "telephoneNumber",
+			},
+		},
+	}
+	entryWithPhone := func(phone string) *goldap.Entry {
+		attributes := []*goldap.EntryAttribute{
+			goldap.NewEntryAttribute("uid", []string{"alice"}),
+			goldap.NewEntryAttribute("cn", []string{"Alice Smith"}),
+		}
+		if phone != "" {
+			attributes = append(attributes, goldap.NewEntryAttribute("telephoneNumber", []string{phone}))
+		}
+		return &goldap.Entry{DN: "uid=alice,dc=example,dc=com", Attributes: attributes}
+	}
+
+	got := p.userInfoFromEntry(entryWithPhone("+14155550100"))
+	assert.Equal(t, "alice", got.Identifier)
+	assert.Equal(t, "Alice Smith", got.DisplayName)
+	assert.Equal(t, "+14155550100", got.Phone)
+
+	// A raw directory phone that is not a valid E.164 number (local number,
+	// fictional range, extension) must be dropped, not persisted as principal.phone.
+	for _, invalid := range []string{"+1-555-0199", "555-0199", "x1234"} {
+		assert.Emptyf(t, p.userInfoFromEntry(entryWithPhone(invalid)).Phone, "phone %q should be dropped", invalid)
+	}
+
+	// No phone attribute present -> empty.
+	assert.Empty(t, p.userInfoFromEntry(entryWithPhone("")).Phone)
 }
 
 func TestEntryAttributes(t *testing.T) {
