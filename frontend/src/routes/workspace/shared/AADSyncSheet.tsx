@@ -67,6 +67,10 @@ export function AADSyncSheet({
   // cleared explicitly — otherwise reopening would redisplay a token that is
   // supposed to have been shown once.
   const [mintedToken, setMintedToken] = useState("");
+  // Each rotation invalidates the previous token, so two in flight can resolve
+  // out of order and leave the admin copying a token the server has already
+  // replaced. One at a time.
+  const [rotating, setRotating] = useState(false);
 
   const handleClose = () => {
     setMintedToken("");
@@ -74,6 +78,8 @@ export function AADSyncSheet({
   };
 
   const handleRotateToken = async () => {
+    if (rotating) return;
+
     if (tokenConfigured) {
       const confirmed = window.confirm(
         t("settings.members.entra-sync.regenerate-token-warning")
@@ -81,6 +87,7 @@ export function AADSyncSheet({
       if (!confirmed) return;
     }
 
+    setRotating(true);
     try {
       const resp = await workspaceServiceClientConnect.rotateDirectorySyncToken(
         create(RotateDirectorySyncTokenRequestSchema, {
@@ -96,6 +103,8 @@ export function AADSyncSheet({
       });
     } catch {
       // error already shown by the client interceptor
+    } finally {
+      setRotating(false);
     }
   };
 
@@ -186,6 +195,7 @@ export function AADSyncSheet({
                   appearance="outline"
                   size="sm"
                   className="self-start"
+                  disabled={rotating}
                   onClick={handleRotateToken}
                 >
                   {tokenConfigured
