@@ -135,14 +135,13 @@ func undeclaredExtensionAdvice(name string) *storepb.Advice {
 		Code:   code.SDLUndeclaredExtension.Int32(),
 		Title:  "Undeclared extension",
 		Content: fmt.Sprintf(
-			"Extension '%s' is installed on the database but not declared in the SDL.\n\n"+
+			"Extension %s is installed on the database but not declared in the SDL.\n\n"+
 				"Add this line to keep it:\n"+
-				"  CREATE EXTENSION IF NOT EXISTS %q;\n\n"+
+				"  CREATE EXTENSION IF NOT EXISTS %s;\n\n"+
 				"An undeclared extension makes the differ treat the extension's own functions and "+
 				"types as orphans, and PostgreSQL will not drop them individually. To remove the "+
 				"extension itself, run DROP EXTENSION outside the declarative pipeline.",
-			name, name),
-	}
+			wtQuoteIdent(name), wtQuoteIdent(name))
 }
 
 func dropAdvice(content string) *storepb.Advice {
