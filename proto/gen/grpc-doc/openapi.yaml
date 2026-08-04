@@ -124,22 +124,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.SearchQueryHistoriesResponse'
       deprecated: true
-  /v1/actuator/cache:
-    delete:
-      tags:
-        - ActuatorService
-      summary: DeleteCache
-      description: |-
-        Clears the system cache to force data refresh.
-         Permissions required: None
-      operationId: ActuatorService_DeleteCache
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/google.protobuf.Empty'
   /v1/actuator/info:
     get:
       tags:
@@ -22094,11 +22078,6 @@ components:
       title: DatabaseSchema
       additionalProperties: false
       description: DatabaseSchema is the metadata for databases.
-    bytebase.v1.DeleteCacheRequest:
-      type: object
-      title: DeleteCacheRequest
-      additionalProperties: false
-      description: Request message for deleting cache.
     bytebase.v1.DeleteDatabaseGroupRequest:
       type: object
       properties:
