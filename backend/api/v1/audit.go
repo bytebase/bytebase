@@ -483,6 +483,18 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.RemoveDataSourceRequest:
 			r.DataSource = redactDataSource(r.DataSource)
 			return r
+		case *v1pb.UpdateSettingRequest:
+			r = proto.CloneOf(r)
+			r.Setting = redactSetting(r.Setting)
+			return r
+		case *v1pb.CreateIdentityProviderRequest:
+			r = proto.CloneOf(r)
+			r.IdentityProvider = redactIdentityProvider(r.IdentityProvider)
+			return r
+		case *v1pb.UpdateIdentityProviderRequest:
+			r = proto.CloneOf(r)
+			r.IdentityProvider = redactIdentityProvider(r.IdentityProvider)
+			return r
 		default:
 			if p, ok := r.(protoreflect.ProtoMessage); ok {
 				return p
@@ -519,6 +531,12 @@ func getResponseString(response any) (string, error) {
 			return redactExchangeTokenResponse(r)
 		case *v1pb.RotateDirectorySyncTokenResponse:
 			return redactRotateDirectorySyncTokenResponse(r)
+		case *v1pb.ServiceAccount:
+			return redactServiceAccount(r)
+		case *v1pb.Setting:
+			return redactSetting(r)
+		case *v1pb.IdentityProvider:
+			return redactIdentityProvider(r)
 		case *v1pb.User:
 			return redactUser(r)
 		case *v1pb.Instance:
@@ -639,6 +657,95 @@ func redactRotateDirectorySyncTokenResponse(r *v1pb.RotateDirectorySyncTokenResp
 		return nil
 	}
 	return &v1pb.RotateDirectorySyncTokenResponse{}
+}
+
+// redactServiceAccount drops the API key. Create and key rotation are the only
+// responses that carry it — the read path never populates it — and it is a live
+// credential, so logging it would hand a working key to anyone who can read the
+// audit log or its stdout stream.
+func redactServiceAccount(r *v1pb.ServiceAccount) *v1pb.ServiceAccount {
+	if r == nil {
+		return nil
+	}
+	r = proto.CloneOf(r)
+	if r.ServiceKey != "" {
+		r.ServiceKey = maskedString
+	}
+	return r
+}
+
+// redactIdentityProvider masks the IdP credentials. The read path already blanks
+// these (convertToIdentityProvider), so they only reach the audit log through
+// the create/update request payload.
+func redactIdentityProvider(r *v1pb.IdentityProvider) *v1pb.IdentityProvider {
+	if r == nil {
+		return nil
+	}
+	r = proto.CloneOf(r)
+	switch config := r.GetConfig().GetConfig().(type) {
+	case *v1pb.IdentityProviderConfig_Oauth2Config:
+		if config.Oauth2Config.GetClientSecret() != "" {
+			config.Oauth2Config.ClientSecret = maskedString
+		}
+	case *v1pb.IdentityProviderConfig_OidcConfig:
+		if config.OidcConfig.GetClientSecret() != "" {
+			config.OidcConfig.ClientSecret = maskedString
+		}
+	case *v1pb.IdentityProviderConfig_LdapConfig:
+		if config.LdapConfig.GetBindPassword() != "" {
+			config.LdapConfig.BindPassword = maskedString
+		}
+	default:
+	}
+	return r
+}
+
+// redactSetting masks every credential a settings payload can carry. The read
+// path blanks these, so they reach the audit log only through UpdateSetting's
+// request. Each secret is masked rather than dropped so the log still records
+// that the field was being written.
+func redactSetting(r *v1pb.Setting) *v1pb.Setting {
+	if r == nil {
+		return nil
+	}
+	r = proto.CloneOf(r)
+	switch value := r.GetValue().GetValue().(type) {
+	case *v1pb.SettingValue_Email:
+		if smtp := value.Email.GetSmtp(); smtp.GetPassword() != "" {
+			smtp.Password = maskedString
+		}
+	case *v1pb.SettingValue_Ai:
+		if value.Ai.GetApiKey() != "" {
+			value.Ai.ApiKey = maskedString
+		}
+	case *v1pb.SettingValue_AppIm:
+		maskAppIMSecrets(value.AppIm)
+	default:
+	}
+	return r
+}
+
+func maskAppIMSecrets(s *v1pb.AppIMSetting) {
+	for _, setting := range s.GetSettings() {
+		if v := setting.GetSlack(); v.GetToken() != "" {
+			v.Token = maskedString
+		}
+		if v := setting.GetFeishu(); v.GetAppSecret() != "" {
+			v.AppSecret = maskedString
+		}
+		if v := setting.GetWecom(); v.GetSecret() != "" {
+			v.Secret = maskedString
+		}
+		if v := setting.GetLark(); v.GetAppSecret() != "" {
+			v.AppSecret = maskedString
+		}
+		if v := setting.GetDingtalk(); v.GetClientSecret() != "" {
+			v.ClientSecret = maskedString
+		}
+		if v := setting.GetTeams(); v.GetClientSecret() != "" {
+			v.ClientSecret = maskedString
+		}
+	}
 }
 
 func redactCreateUserRequest(r *v1pb.CreateUserRequest) *v1pb.CreateUserRequest {

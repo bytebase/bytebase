@@ -1,0 +1,126 @@
+package v1
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+)
+
+// Audited RPCs write their request and response payloads to audit_log, and to
+// stdout when RuntimeEnableAuditLogStdout is set. Anything with
+// bb.auditLogs.search/export, or read access to the log pipeline, can read them.
+// So no live credential may survive into either payload.
+//
+// These are behavioral: each case populates a secret and asserts the marshaled
+// audit string does not contain it. A redactor that stops covering a field fails
+// here rather than silently starting to log it.
+
+const secretSentinel = "s3cr3t-sentinel-value"
+
+func TestAuditResponseRedactsCredentials(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		response any
+	}{
+		{
+			// Only create and key rotation populate this; the read path never
+			// does. It is a live API key.
+			name:     "service account key",
+			response: &v1pb.ServiceAccount{Name: "serviceAccounts/a@b.com", ServiceKey: secretSentinel},
+		},
+		{
+			name: "smtp password in a returned setting",
+			response: &v1pb.Setting{Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_Email{
+				Email: &v1pb.EmailSetting{Config: &v1pb.EmailSetting_Smtp{
+					Smtp: &v1pb.EmailSetting_SMTPConfig{Password: secretSentinel},
+				}},
+			}}},
+		},
+		{
+			name: "idp client secret in a returned provider",
+			response: &v1pb.IdentityProvider{Config: &v1pb.IdentityProviderConfig{
+				Config: &v1pb.IdentityProviderConfig_Oauth2Config{
+					Oauth2Config: &v1pb.OAuth2IdentityProviderConfig{ClientSecret: secretSentinel},
+				},
+			}},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getResponseString(tt.response)
+			require.NoError(t, err)
+			require.NotContains(t, got, secretSentinel, "credential written to the audit log")
+		})
+	}
+}
+
+func TestAuditRequestRedactsCredentials(t *testing.T) {
+	settingRequest := func(v *v1pb.SettingValue) *v1pb.UpdateSettingRequest {
+		return &v1pb.UpdateSettingRequest{Setting: &v1pb.Setting{Value: v}}
+	}
+	imSetting := func(s *v1pb.AppIMSetting_IMSetting) *v1pb.UpdateSettingRequest {
+		return settingRequest(&v1pb.SettingValue{Value: &v1pb.SettingValue_AppIm{
+			AppIm: &v1pb.AppIMSetting{Settings: []*v1pb.AppIMSetting_IMSetting{s}},
+		}})
+	}
+
+	for _, tt := range []struct {
+		name    string
+		request any
+	}{
+		{"smtp password", settingRequest(&v1pb.SettingValue{Value: &v1pb.SettingValue_Email{
+			Email: &v1pb.EmailSetting{Config: &v1pb.EmailSetting_Smtp{
+				Smtp: &v1pb.EmailSetting_SMTPConfig{Password: secretSentinel},
+			}},
+		}})},
+		{"ai api key", settingRequest(&v1pb.SettingValue{Value: &v1pb.SettingValue_Ai{
+			Ai: &v1pb.AISetting{ApiKey: secretSentinel},
+		}})},
+		{"slack token", imSetting(&v1pb.AppIMSetting_IMSetting{Payload: &v1pb.AppIMSetting_IMSetting_Slack{Slack: &v1pb.AppIMSetting_Slack{Token: secretSentinel}}})},
+		{"feishu app secret", imSetting(&v1pb.AppIMSetting_IMSetting{Payload: &v1pb.AppIMSetting_IMSetting_Feishu{Feishu: &v1pb.AppIMSetting_Feishu{AppSecret: secretSentinel}}})},
+		{"wecom secret", imSetting(&v1pb.AppIMSetting_IMSetting{Payload: &v1pb.AppIMSetting_IMSetting_Wecom{Wecom: &v1pb.AppIMSetting_Wecom{Secret: secretSentinel}}})},
+		{"lark app secret", imSetting(&v1pb.AppIMSetting_IMSetting{Payload: &v1pb.AppIMSetting_IMSetting_Lark{Lark: &v1pb.AppIMSetting_Lark{AppSecret: secretSentinel}}})},
+		{"dingtalk client secret", imSetting(&v1pb.AppIMSetting_IMSetting{Payload: &v1pb.AppIMSetting_IMSetting_Dingtalk{Dingtalk: &v1pb.AppIMSetting_DingTalk{ClientSecret: secretSentinel}}})},
+		{"teams client secret", imSetting(&v1pb.AppIMSetting_IMSetting{Payload: &v1pb.AppIMSetting_IMSetting_Teams{Teams: &v1pb.AppIMSetting_Teams{ClientSecret: secretSentinel}}})},
+		{"oauth2 client secret", &v1pb.CreateIdentityProviderRequest{IdentityProvider: &v1pb.IdentityProvider{
+			Config: &v1pb.IdentityProviderConfig{Config: &v1pb.IdentityProviderConfig_Oauth2Config{
+				Oauth2Config: &v1pb.OAuth2IdentityProviderConfig{ClientSecret: secretSentinel},
+			}},
+		}}},
+		{"oidc client secret", &v1pb.CreateIdentityProviderRequest{IdentityProvider: &v1pb.IdentityProvider{
+			Config: &v1pb.IdentityProviderConfig{Config: &v1pb.IdentityProviderConfig_OidcConfig{
+				OidcConfig: &v1pb.OIDCIdentityProviderConfig{ClientSecret: secretSentinel},
+			}},
+		}}},
+		{"ldap bind password", &v1pb.UpdateIdentityProviderRequest{IdentityProvider: &v1pb.IdentityProvider{
+			Config: &v1pb.IdentityProviderConfig{Config: &v1pb.IdentityProviderConfig_LdapConfig{
+				LdapConfig: &v1pb.LDAPIdentityProviderConfig{BindPassword: secretSentinel},
+			}},
+		}}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getRequestString(tt.request)
+			require.NoError(t, err)
+			require.NotContains(t, got, secretSentinel, "credential written to the audit log")
+		})
+	}
+}
+
+// Redaction must not mutate the caller's message: these run on the live request
+// and response objects, so masking in place would corrupt what the handler
+// returns to the client or what a later interceptor reads.
+func TestAuditRedactionDoesNotMutateInput(t *testing.T) {
+	account := &v1pb.ServiceAccount{ServiceKey: secretSentinel}
+	_, err := getResponseString(account)
+	require.NoError(t, err)
+	require.Equal(t, secretSentinel, account.GetServiceKey(), "redaction mutated the response")
+
+	request := &v1pb.UpdateSettingRequest{Setting: &v1pb.Setting{Value: &v1pb.SettingValue{
+		Value: &v1pb.SettingValue_Ai{Ai: &v1pb.AISetting{ApiKey: secretSentinel}},
+	}}}
+	_, err = getRequestString(request)
+	require.NoError(t, err)
+	require.Equal(t, secretSentinel, request.GetSetting().GetValue().GetAi().GetApiKey(),
+		"redaction mutated the request")
+}
