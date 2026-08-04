@@ -41,10 +41,18 @@ type InstanceService struct {
 	v1connect.UnimplementedInstanceServiceHandler
 	store                 *store.Store
 	profile               *config.Profile
-	licenseService        *enterprise.LicenseService
+	licenseService        instanceLicenseService
 	dbFactory             *dbfactory.DBFactory
 	schemaSyncer          *schemasync.Syncer
 	sampleInstanceManager *sampleinstance.Manager
+}
+
+type instanceLicenseService interface {
+	GetActivatedInstanceLimit(context.Context, string) int
+	GetInstanceLimit(context.Context, string) int
+	IsFeatureEnabledForInstance(context.Context, string, v1pb.PlanFeature, *store.InstanceMessage) error
+	IsInstanceEffectivelyActivated(context.Context, string, *store.InstanceMessage) bool
+	IsUnifiedInstanceLicense(context.Context, string) bool
 }
 
 const (
@@ -987,6 +995,9 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 		return connect.NewResponse(result), nil
 	}
 	if err := s.instanceCountGuard(ctx); err != nil {
+		return nil, err
+	}
+	if err := s.checkActivationLimit(ctx, instance.Workspace, instance.Metadata.GetActivation()); err != nil {
 		return nil, err
 	}
 
