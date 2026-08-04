@@ -236,7 +236,7 @@ func (s *DatabaseGroupService) ListDatabaseGroups(ctx context.Context, req *conn
 
 	var apiDatabaseGroups []*v1pb.DatabaseGroup
 	for _, databaseGroup := range databaseGroups {
-		group, err := convertStoreToV1DatabaseGroup(ctx, s.store, databaseGroup, projectResourceID, allProjectDatabases)
+		group, err := convertStoreToV1DatabaseGroup(ctx, databaseGroup, projectResourceID, allProjectDatabases)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert database group %q", databaseGroup.ResourceID))
 		}
@@ -295,12 +295,11 @@ func convertStoreToV1DatabaseGroupWithView(ctx context.Context, stores *store.St
 		allProjectDatabases = databases
 	}
 
-	return convertStoreToV1DatabaseGroup(ctx, stores, databaseGroup, projectResourceID, allProjectDatabases)
+	return convertStoreToV1DatabaseGroup(ctx, databaseGroup, projectResourceID, allProjectDatabases)
 }
 
 func convertStoreToV1DatabaseGroup(
 	ctx context.Context,
-	stores *store.Store,
 	databaseGroup *store.DatabaseGroupMessage,
 	projectResourceID string,
 	databases []*store.DatabaseMessage,
@@ -316,12 +315,8 @@ func convertStoreToV1DatabaseGroup(
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get matched databases for group %v with error: %v", ret.Name, err.Error()))
 	}
 	for _, database := range matches {
-		name, err := formatDatabaseTarget(ctx, stores, database)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
 		ret.MatchedDatabases = append(ret.MatchedDatabases, &v1pb.DatabaseGroup_Database{
-			Name: name,
+			Name: database.ResourceName(),
 		})
 	}
 	return ret, nil

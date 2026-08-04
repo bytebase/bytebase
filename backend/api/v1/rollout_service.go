@@ -398,6 +398,7 @@ func CreateRolloutAndPendingTasks(
 	if issue != nil && issue.Payload.GetDraft() {
 		return errDraftIssueNotSubmitted
 	}
+	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, project.Workspace)
 
 	result, err := review.NewWorkflow(s).CreateRollout(ctx, review.CreateRolloutInput{
 		Workspace: project.Workspace,

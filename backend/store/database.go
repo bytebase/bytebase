@@ -21,9 +21,10 @@ import (
 
 // DatabaseMessage is the message for database.
 type DatabaseMessage struct {
-	ProjectID    string
-	InstanceID   string
-	DatabaseName string
+	ProjectID         string
+	InstanceProjectID *string
+	InstanceID        string
+	DatabaseName      string
 
 	EnvironmentID          *string
 	EffectiveEnvironmentID *string
@@ -34,6 +35,14 @@ type DatabaseMessage struct {
 }
 
 func (d *DatabaseMessage) String() string {
+	return common.FormatDatabase(d.InstanceID, d.DatabaseName)
+}
+
+// ResourceName returns the canonical database resource name for the owning instance scope.
+func (d *DatabaseMessage) ResourceName() string {
+	if d.InstanceProjectID != nil {
+		return common.FormatProjectDatabase(*d.InstanceProjectID, d.InstanceID, d.DatabaseName)
+	}
 	return common.FormatDatabase(d.InstanceID, d.DatabaseName)
 }
 
@@ -168,6 +177,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	q := qb.Q().Space(`
 		SELECT
 			db.project,
+			instance.project,
 			COALESCE(
 				db.environment,
 				instance.environment
@@ -213,9 +223,10 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	for rows.Next() {
 		databaseMessage := &DatabaseMessage{}
 		var metadataString string
-		var effectiveEnvironment, environment, engine sql.NullString
+		var instanceProject, effectiveEnvironment, environment, engine sql.NullString
 		if err := rows.Scan(
 			&databaseMessage.ProjectID,
+			&instanceProject,
 			&effectiveEnvironment,
 			&environment,
 			&databaseMessage.InstanceID,
@@ -225,6 +236,9 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 			&engine,
 		); err != nil {
 			return nil, err
+		}
+		if instanceProject.Valid {
+			databaseMessage.InstanceProjectID = &instanceProject.String
 		}
 		if effectiveEnvironment.Valid {
 			databaseMessage.EffectiveEnvironmentID = &effectiveEnvironment.String
