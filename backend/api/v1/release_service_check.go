@@ -81,6 +81,20 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 			if targetProjectID != nil && *targetProjectID != projectID {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database target %q does not belong to project %q", target, projectID))
 			}
+			database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+				Workspace:    workspaceID,
+				InstanceID:   &instanceID,
+				DatabaseName: &databaseName,
+			})
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", target))
+			}
+			if database == nil {
+				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
+			}
+			if database.ProjectID != projectID {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database target %q does not belong to project %q", target, projectID))
+			}
 			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 				Workspace:  workspaceID,
 				ResourceID: &instanceID,
@@ -94,20 +108,6 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 			if (targetProjectID == nil) != (instance.ProjectID == nil) ||
 				targetProjectID != nil && *targetProjectID != *instance.ProjectID {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database target %q is not canonical for its instance", target))
-			}
-			database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-				Workspace:    common.GetWorkspaceIDFromContext(ctx),
-				InstanceID:   &instanceID,
-				DatabaseName: &databaseName,
-			})
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", target))
-			}
-			if database == nil {
-				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
-			}
-			if database.ProjectID != projectID {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database target %q does not belong to project %q", target, projectID))
 			}
 			targets = append(targets, &releaseCheckTarget{database: database, name: target})
 			continue
@@ -141,23 +141,9 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 				return nil, err
 			}
 			for _, database := range matches {
-				instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
-					Workspace:  workspaceID,
-					ResourceID: &database.InstanceID,
-				})
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, err)
-				}
-				if instance == nil || instance.Deleted {
-					return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", database.InstanceID))
-				}
-				name := common.FormatDatabase(database.InstanceID, database.DatabaseName)
-				if instance.ProjectID != nil {
-					name = common.FormatProjectDatabase(*instance.ProjectID, database.InstanceID, database.DatabaseName)
-				}
 				targets = append(targets, &releaseCheckTarget{
 					database: database,
-					name:     name,
+					name:     database.ResourceName(),
 				})
 			}
 			continue

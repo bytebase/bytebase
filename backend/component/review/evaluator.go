@@ -346,48 +346,56 @@ type specTarget struct {
 	sheetSha256 string
 }
 
-func validateInstanceTarget(ctx context.Context, stores *store.Store, projectID *string, instanceID string) error {
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	if workspaceID == "" {
-		workspaceID = "default"
-	}
-	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
-		Workspace:     workspaceID,
-		ResourceID:    &instanceID,
-		ProjectID:     projectID,
-		WorkspaceOnly: projectID == nil,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to get instance %q", instanceID)
-	}
-	if instance == nil {
-		return errors.Errorf("instance %q not found in requested scope", instanceID)
-	}
-	if instance.Deleted {
-		return errors.Errorf("instance %q has been deleted", instanceID)
-	}
-	return nil
+type instanceTarget struct {
+	projectID  *string
+	instanceID string
 }
 
-func formatDatabaseTarget(ctx context.Context, stores *store.Store, database *store.DatabaseMessage) (string, error) {
+func validateInstanceTarget(ctx context.Context, stores *store.Store, projectID *string, instanceID string) error {
+	_, err := getActiveTargetInstances(ctx, stores, []instanceTarget{{projectID: projectID, instanceID: instanceID}})
+	return err
+}
+
+func getActiveTargetInstances(ctx context.Context, stores *store.Store, targets []instanceTarget) (map[string]*store.InstanceMessage, error) {
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	if workspaceID == "" {
 		workspaceID = "default"
 	}
-	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
-		Workspace:  workspaceID,
-		ResourceID: &database.InstanceID,
+	instanceIDs := make([]string, 0, len(targets))
+	seen := make(map[string]bool, len(targets))
+	for _, target := range targets {
+		if !seen[target.instanceID] {
+			seen[target.instanceID] = true
+			instanceIDs = append(instanceIDs, target.instanceID)
+		}
+	}
+	instanceByID := make(map[string]*store.InstanceMessage, len(instanceIDs))
+	if len(instanceIDs) == 0 {
+		return instanceByID, nil
+	}
+	instances, err := stores.ListInstances(ctx, &store.FindInstanceMessage{
+		Workspace:   workspaceID,
+		ResourceIDs: &instanceIDs,
+		ShowDeleted: true,
 	})
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
+		return nil, errors.Wrap(err, "failed to list target instances")
 	}
-	if instance == nil {
-		return "", errors.Errorf("instance %q not found", database.InstanceID)
+	for _, instance := range instances {
+		instanceByID[instance.ResourceID] = instance
 	}
-	if instance.ProjectID == nil {
-		return common.FormatDatabase(database.InstanceID, database.DatabaseName), nil
+	for _, target := range targets {
+		instance := instanceByID[target.instanceID]
+		matchesScope := instance != nil && ((target.projectID == nil && instance.ProjectID == nil) ||
+			(target.projectID != nil && instance.ProjectID != nil && *target.projectID == *instance.ProjectID))
+		if !matchesScope {
+			return nil, errors.Errorf("instance %q not found in requested scope", target.instanceID)
+		}
+		if instance.Deleted {
+			return nil, errors.Errorf("instance %q has been deleted", target.instanceID)
+		}
 	}
-	return common.FormatProjectDatabase(*instance.ProjectID, database.InstanceID, database.DatabaseName), nil
+	return instanceByID, nil
 }
 
 // unfoldDatabaseTargets unfolds database groups and returns all database targets.
@@ -426,11 +434,7 @@ func unfoldDatabaseTargets(ctx context.Context, stores *store.Store, dbTargets [
 			// Replace dbTargets with unfolded databases
 			var unfolded []string
 			for _, db := range matchedDatabases {
-				target, err := formatDatabaseTarget(ctx, stores, db)
-				if err != nil {
-					return nil, err
-				}
-				unfolded = append(unfolded, target)
+				unfolded = append(unfolded, db.ResourceName())
 			}
 			return unfolded, nil
 		}
@@ -460,9 +464,6 @@ func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storep
 		if targetProjectID != nil && *targetProjectID != projectID {
 			return nil, errors.Errorf("database target %q does not belong to project %q", target, projectID)
 		}
-		if err := validateInstanceTarget(ctx, stores, targetProjectID, instanceID); err != nil {
-			return nil, err
-		}
 		databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
 			ProjectID:    &projectID,
 			InstanceID:   &instanceID,
@@ -473,6 +474,9 @@ func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storep
 		}
 		if len(databases) == 0 {
 			return nil, errors.Errorf("database %q not found", target)
+		}
+		if databases[0].ResourceName() != target {
+			return nil, errors.Errorf("database target %q is not canonical for its instance", target)
 		}
 		return databases[0], nil
 	}
@@ -880,9 +884,17 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 		return []map[string]any{baseVars}, true, nil
 	}
 
-	statement := accessGrant.Payload.Query
-	var celVarsList []map[string]any
-
+	type databaseKey struct {
+		instanceID   string
+		databaseName string
+	}
+	type parsedTarget struct {
+		name string
+		key  databaseKey
+	}
+	parsedTargets := make([]parsedTarget, 0, len(targets))
+	instanceTargets := make([]instanceTarget, 0, len(targets))
+	requestedDatabases := make(map[databaseKey]bool, len(targets))
 	for _, target := range targets {
 		targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target)
 		if err != nil {
@@ -891,29 +903,57 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 		if targetProjectID != nil && *targetProjectID != issue.ProjectID {
 			return nil, false, errors.Errorf("target %q does not belong to project %q", target, issue.ProjectID)
 		}
-		if err := validateInstanceTarget(ctx, stores, targetProjectID, instanceID); err != nil {
-			return nil, false, err
-		}
+		key := databaseKey{instanceID: instanceID, databaseName: databaseName}
+		parsedTargets = append(parsedTargets, parsedTarget{name: target, key: key})
+		instanceTargets = append(instanceTargets, instanceTarget{projectID: targetProjectID, instanceID: instanceID})
+		requestedDatabases[key] = true
+	}
 
-		databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
-			InstanceID:   &instanceID,
-			DatabaseName: &databaseName,
-		})
-		if err != nil {
-			return nil, false, errors.Wrapf(err, "failed to get database %q", target)
+	instanceByID, err := getActiveTargetInstances(ctx, stores, instanceTargets)
+	if err != nil {
+		return nil, false, err
+	}
+
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
+		Workspace: workspaceID,
+		ProjectID: &issue.ProjectID,
+	})
+	if err != nil {
+		return nil, false, errors.Wrapf(err, "failed to list databases for project %q", issue.ProjectID)
+	}
+	databaseByKey := make(map[databaseKey]*store.DatabaseMessage, len(requestedDatabases))
+	for _, database := range databases {
+		key := databaseKey{instanceID: database.InstanceID, databaseName: database.DatabaseName}
+		if requestedDatabases[key] {
+			databaseByKey[key] = database
 		}
-		if len(databases) == 0 {
+	}
+
+	resolvedTargets := make([]struct {
+		name     string
+		database *store.DatabaseMessage
+	}, 0, len(parsedTargets))
+	for _, target := range parsedTargets {
+		database := databaseByKey[target.key]
+		if database == nil {
 			continue
 		}
-		database := databases[0]
+		if database.ResourceName() != target.name {
+			return nil, false, errors.Errorf("database target %q is not canonical for its instance", target.name)
+		}
+		resolvedTargets = append(resolvedTargets, struct {
+			name     string
+			database *store.DatabaseMessage
+		}{name: target.name, database: database})
+	}
 
-		instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-		if err != nil {
-			return nil, false, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
-		}
-		if instance == nil {
-			continue
-		}
+	statement := accessGrant.Payload.Query
+	var celVarsList []map[string]any
+
+	for _, target := range resolvedTargets {
+		database := target.database
+		instance := instanceByID[database.InstanceID]
 		engine := instance.Metadata.GetEngine()
 
 		targetVars := maps.Clone(baseVars)
@@ -945,7 +985,7 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 			)
 			if err != nil {
 				slog.Debug("failed to extract resources from access grant query; emitting target vars without schema/table",
-					slog.String("target", target), slog.String("instance", database.InstanceID),
+					slog.String("target", target.name), slog.String("instance", database.InstanceID),
 					log.BBError(err))
 				resources = nil
 			}
@@ -984,7 +1024,8 @@ func getDatabasesForRoleGrant(ctx context.Context, stores *store.Store, projectI
 		instanceID   string
 		databaseName string
 	}
-	requestedDBs := make(map[dbKey]bool)
+	requestedDBs := make(map[dbKey][]string)
+	instanceTargets := make([]instanceTarget, 0, len(databaseIdentifiers))
 	for _, identifier := range databaseIdentifiers {
 		targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(identifier)
 		if err != nil {
@@ -993,14 +1034,19 @@ func getDatabasesForRoleGrant(ctx context.Context, stores *store.Store, projectI
 		if targetProjectID != nil && *targetProjectID != projectID {
 			return nil, errors.Errorf("database target %q does not belong to project %q", identifier, projectID)
 		}
-		if err := validateInstanceTarget(ctx, stores, targetProjectID, instanceID); err != nil {
-			return nil, err
-		}
-		requestedDBs[dbKey{instanceID: instanceID, databaseName: databaseName}] = true
+		key := dbKey{instanceID: instanceID, databaseName: databaseName}
+		requestedDBs[key] = append(requestedDBs[key], identifier)
+		instanceTargets = append(instanceTargets, instanceTarget{projectID: targetProjectID, instanceID: instanceID})
+	}
+	if _, err := getActiveTargetInstances(ctx, stores, instanceTargets); err != nil {
+		return nil, err
 	}
 
 	// Batch fetch all databases in the project
-	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
+	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
+		ProjectID: &projectID,
+	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list databases for project %q", projectID)
 	}
@@ -1009,7 +1055,12 @@ func getDatabasesForRoleGrant(ctx context.Context, stores *store.Store, projectI
 	var result []*store.DatabaseMessage
 	for _, db := range allDatabases {
 		key := dbKey{instanceID: db.InstanceID, databaseName: db.DatabaseName}
-		if requestedDBs[key] {
+		if identifiers, ok := requestedDBs[key]; ok {
+			for _, identifier := range identifiers {
+				if db.ResourceName() != identifier {
+					return nil, errors.Errorf("database target %q is not canonical for its instance", identifier)
+				}
+			}
 			result = append(result, db)
 		}
 	}

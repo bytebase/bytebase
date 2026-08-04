@@ -16,26 +16,6 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
-func formatDatabaseTarget(ctx context.Context, s *store.Store, database *store.DatabaseMessage) (string, error) {
-	instance, err := s.GetInstance(ctx, &store.FindInstanceMessage{
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
-		ResourceID: &database.InstanceID,
-	})
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
-	}
-	if instance == nil {
-		return "", errors.Errorf("instance %q not found", database.InstanceID)
-	}
-	if instance.Deleted {
-		return "", errors.Errorf("instance %q has been deleted", database.InstanceID)
-	}
-	if instance.ProjectID == nil {
-		return common.FormatDatabase(database.InstanceID, database.DatabaseName), nil
-	}
-	return common.FormatProjectDatabase(*instance.ProjectID, database.InstanceID, database.DatabaseName), nil
-}
-
 func applyDatabaseGroupSpecTransformations(ctx context.Context, s *store.Store, specs []*storepb.PlanConfig_Spec, projectID string) ([]*storepb.PlanConfig_Spec, error) {
 	var result []*storepb.PlanConfig_Spec
 	for _, spec := range specs {
@@ -70,11 +50,7 @@ func applyDatabaseGroupSpecTransformations(ctx context.Context, s *store.Store, 
 
 					var databases []string
 					for _, db := range matchedDatabases {
-						target, err := formatDatabaseTarget(ctx, s, db)
-						if err != nil {
-							return nil, err
-						}
-						databases = append(databases, target)
+						databases = append(databases, db.ResourceName())
 					}
 					config.Targets = databases
 				}
@@ -278,20 +254,9 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 				return nil, errors.Wrapf(err, "failed to get database group %q", target)
 			}
 			for _, matched := range databaseGroup.MatchedDatabases {
-				matchedProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(matched.Name)
+				_, instanceID, databaseName, err := common.GetDatabaseResourceName(matched.Name)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to parse %q", matched.Name)
-				}
-				instanceName := common.FormatInstance(instanceID)
-				if matchedProjectID != nil {
-					instanceName = common.FormatProjectInstance(*matchedProjectID, instanceID)
-				}
-				instance, err := getInstanceMessage(ctx, s, instanceName)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to get instance for %q", matched.Name)
-				}
-				if instance.Deleted {
-					return nil, errors.Errorf("instance %q has been deleted", instanceName)
 				}
 				database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
 					Workspace:    common.GetWorkspaceIDFromContext(ctx),
@@ -307,20 +272,12 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 				if database.ProjectID != targetProjectID {
 					return nil, errors.Errorf("database %q does not belong to project %q", matched.Name, targetProjectID)
 				}
+				if database.ResourceName() != matched.Name {
+					return nil, errors.Errorf("database target %q is not canonical for its instance", matched.Name)
+				}
 				databases = append(databases, database)
 			}
 		} else if targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target); err == nil {
-			instanceName := common.FormatInstance(instanceID)
-			if targetProjectID != nil {
-				instanceName = common.FormatProjectInstance(*targetProjectID, instanceID)
-			}
-			instance, err := getInstanceMessage(ctx, s, instanceName)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get instance for %q", target)
-			}
-			if instance.Deleted {
-				return nil, errors.Errorf("instance %q has been deleted", instanceName)
-			}
 			database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
 				Workspace:    common.GetWorkspaceIDFromContext(ctx),
 				InstanceID:   &instanceID,
@@ -335,12 +292,55 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 			if targetProjectID != nil && database.ProjectID != *targetProjectID {
 				return nil, errors.Errorf("database %q does not belong to project %q", target, *targetProjectID)
 			}
+			if database.ResourceName() != target {
+				return nil, errors.Errorf("database target %q is not canonical for its instance", target)
+			}
 			databases = append(databases, database)
 		} else {
 			return nil, errors.Errorf("invalid target %q", target)
 		}
 	}
+	if err := validateRolloutDatabaseInstances(ctx, s, databases); err != nil {
+		return nil, err
+	}
 	return databases, nil
+}
+
+func validateRolloutDatabaseInstances(ctx context.Context, s *store.Store, databases []*store.DatabaseMessage) error {
+	instanceIDs := make([]string, 0, len(databases))
+	seen := make(map[string]bool, len(databases))
+	for _, database := range databases {
+		if !seen[database.InstanceID] {
+			seen[database.InstanceID] = true
+			instanceIDs = append(instanceIDs, database.InstanceID)
+		}
+	}
+	if len(instanceIDs) == 0 {
+		return nil
+	}
+
+	instances, err := s.ListInstances(ctx, &store.FindInstanceMessage{
+		Workspace:   common.GetWorkspaceIDFromContext(ctx),
+		ResourceIDs: &instanceIDs,
+		ShowDeleted: true,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to list rollout target instances")
+	}
+	instanceByID := make(map[string]*store.InstanceMessage, len(instances))
+	for _, instance := range instances {
+		instanceByID[instance.ResourceID] = instance
+	}
+	for _, database := range databases {
+		instance := instanceByID[database.InstanceID]
+		if instance == nil {
+			return errors.Errorf("instance %q not found", database.InstanceID)
+		}
+		if instance.Deleted {
+			return errors.Errorf("instance %q has been deleted", database.InstanceID)
+		}
+	}
+	return nil
 }
 
 // checkCharacterSetCollationOwner checks if the character set, collation and owner are legal according to the dbType.

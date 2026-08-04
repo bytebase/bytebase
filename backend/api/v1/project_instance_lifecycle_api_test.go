@@ -88,7 +88,13 @@ func TestUndeleteProjectInstanceChecksActivationLimit(t *testing.T) {
 		ResourceID: "other-project-instance",
 		Workspace:  "default",
 		ProjectID:  &otherProjectID,
-		Metadata:   &storepb.Instance{Activation: true},
+		Metadata: &storepb.Instance{
+			Activation: true,
+			DataSources: []*storepb.DataSource{{
+				Id:   "admin",
+				Type: storepb.DataSourceType_ADMIN,
+			}},
+		},
 	})
 	require.NoError(t, err)
 
