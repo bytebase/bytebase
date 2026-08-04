@@ -4710,7 +4710,6 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
 | enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
 | watermark | [bool](#bool) |  | Whether to display watermark on pages. Requires ENTERPRISE license. |
-| directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
 | password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-store-WorkspaceProfileSetting-PasswordRestriction) |  | Password restriction settings. |
 | access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
 | enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
@@ -4721,6 +4720,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | sql_editor_custom_theme | [SQLEditorThemeSetting](#bytebase-store-SQLEditorThemeSetting) |  | The enforced CUSTOM theme&#39;s full definition — present ONLY when sql_editor_theme_id is a custom uuid. tokens is always complete. |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for request role. Deprecated: use just-in-time access request flows instead. |
 | mcp_capability | [WorkspaceProfileSetting.MCPCapability](#bytebase-store-WorkspaceProfileSetting-MCPCapability) |  | The maximum capability available to MCP (Model Context Protocol) sessions in this workspace, acting as an admin-set ceiling. Unset is treated as READ_WRITE for backward compatibility; DISABLED rejects all MCP connections. Enforced server-side by the /mcp endpoint. |
+| directory_sync_token_hash | [string](#string) |  | Hex-encoded SHA-256 of the SCIM directory sync token. The plaintext is shown once at rotation and never stored. SHA-256 rather than a slow KDF because the token is 122 bits of crypto/rand, not a human-chosen secret. |
 
 
 

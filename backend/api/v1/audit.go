@@ -517,6 +517,8 @@ func getResponseString(response any) (string, error) {
 			return redactLoginResponse(r)
 		case *v1pb.ExchangeTokenResponse:
 			return redactExchangeTokenResponse(r)
+		case *v1pb.RotateDirectorySyncTokenResponse:
+			return redactRotateDirectorySyncTokenResponse(r)
 		case *v1pb.User:
 			return redactUser(r)
 		case *v1pb.Instance:
@@ -625,6 +627,18 @@ func redactExchangeTokenResponse(r *v1pb.ExchangeTokenResponse) *v1pb.ExchangeTo
 		return nil
 	}
 	return &v1pb.ExchangeTokenResponse{}
+}
+
+// redactRotateDirectorySyncTokenResponse drops the newly minted SCIM token. The
+// whole point of hashing it at rest is that the plaintext exists only in the
+// single response to the admin who rotated it; writing it to the audit log would
+// hand a working credential to anyone who can read that log. Returns an empty
+// response so the audit entry still records that the rotation happened.
+func redactRotateDirectorySyncTokenResponse(r *v1pb.RotateDirectorySyncTokenResponse) *v1pb.RotateDirectorySyncTokenResponse {
+	if r == nil {
+		return nil
+	}
+	return &v1pb.RotateDirectorySyncTokenResponse{}
 }
 
 func redactCreateUserRequest(r *v1pb.CreateUserRequest) *v1pb.CreateUserRequest {

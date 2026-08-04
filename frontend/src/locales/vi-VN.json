@@ -2540,11 +2540,15 @@
         "description": "Đồng bộ người dùng và nhóm từ Entra ID (trước đây là Azure AD) hoặc Okta sang phiên bản Bytebase của bạn.",
         "endpoint": "Điểm cuối",
         "endpoint-tip": "Người dùng và nhóm sẽ được đồng bộ đến Bytebase qua điểm cuối này.",
-        "reset-token": "Đặt lại mã thông báo",
-        "reset-token-warning": "Bạn cần cập nhật cấu hình cung cấp ứng dụng Entra.",
+        "generate-token": "Tạo mã thông báo",
+        "regenerate-token": "Tạo lại mã thông báo",
+        "regenerate-token-warning": "Mã thông báo hiện tại sẽ ngừng hoạt động ngay lập tức và bạn cần cập nhật cấu hình cung cấp ứng dụng. Tiếp tục?",
         "secret-token": "Mã thông báo bí mật",
         "secret-token-tip": "Mã xác thực cho điểm cuối. Vui lòng giữ bí mật.",
-        "self": "Đồng bộ từ SCIM"
+        "self": "Đồng bộ từ SCIM",
+        "token-configured": "Đã cấu hình mã thông báo. Mã sẽ không được hiển thị lại — hãy tạo lại nếu bạn không còn giữ.",
+        "token-not-configured": "Chưa có mã thông báo nào được tạo.",
+        "token-shown-once": "Hãy sao chép mã thông báo này ngay. Mã sẽ không được hiển thị lại."
       },
       "grant-access": "Cấp Quyền truy cập",
       "groups": {

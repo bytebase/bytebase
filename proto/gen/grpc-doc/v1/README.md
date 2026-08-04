@@ -768,6 +768,8 @@
     - [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest)
     - [ListWorkspacesRequest](#bytebase-v1-ListWorkspacesRequest)
     - [ListWorkspacesResponse](#bytebase-v1-ListWorkspacesResponse)
+    - [RotateDirectorySyncTokenRequest](#bytebase-v1-RotateDirectorySyncTokenRequest)
+    - [RotateDirectorySyncTokenResponse](#bytebase-v1-RotateDirectorySyncTokenResponse)
     - [UpdateWorkspaceRequest](#bytebase-v1-UpdateWorkspaceRequest)
     - [Workspace](#bytebase-v1-Workspace)
   
@@ -4481,7 +4483,6 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
 | enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
 | watermark | [bool](#bool) |  | Whether to display watermark on pages. Requires ENTERPRISE license. |
-| directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
 | password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-v1-WorkspaceProfileSetting-PasswordRestriction) |  | Password restriction settings. |
 | access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
 | enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
@@ -4492,6 +4493,7 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | sql_editor_custom_theme | [SQLEditorThemeSetting](#bytebase-v1-SQLEditorThemeSetting) |  | The enforced CUSTOM theme&#39;s full definition — present ONLY when sql_editor_theme_id is a custom uuid. tokens is always complete. |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for request role. Deprecated: use just-in-time access request flows instead. |
 | mcp_capability | [WorkspaceProfileSetting.MCPCapability](#bytebase-v1-WorkspaceProfileSetting-MCPCapability) |  | The maximum capability available to MCP (Model Context Protocol) sessions in this workspace, acting as an admin-set ceiling. Unset is treated as READ_WRITE for backward compatibility; DISABLED rejects all MCP connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected — omit the update mask path to leave the ceiling unset. |
+| directory_sync_token_configured | [bool](#bool) |  | Whether a directory sync token has been generated for this workspace. The token itself is never returned; this only lets the UI decide between offering &#34;generate&#34; and &#34;regenerate&#34;. |
 
 
 
@@ -12360,6 +12362,36 @@ WorksheetService manages SQL worksheets for query development.
 
 
 
+<a name="bytebase-v1-RotateDirectorySyncTokenRequest"></a>
+
+### RotateDirectorySyncTokenRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The workspace whose directory sync token is rotated. Format: workspaces/{workspace} |
+
+
+
+
+
+
+<a name="bytebase-v1-RotateDirectorySyncTokenResponse"></a>
+
+### RotateDirectorySyncTokenResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| token | [string](#string) |  | The new token, in plaintext. This is the only time it is ever returned. |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateWorkspaceRequest"></a>
 
 ### UpdateWorkspaceRequest
@@ -12413,6 +12445,7 @@ WorkspaceService manages workspace-level operations and profile.
 | DeleteWorkspace | [DeleteWorkspaceRequest](#bytebase-v1-DeleteWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Deletes a workspace. SaaS only. Cancels any active subscription and soft-deletes the workspace so all associated data becomes inaccessible. Requires workspace admin permission. |
 | LeaveWorkspace | [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Removes the calling user from a workspace and switches to the next available workspace. Available to any workspace member. Fails if the caller is the last workspace admin. |
 | SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Sets IAM policy for the workspace. Permissions required: bb.workspaces.setIamPolicy |
+| RotateDirectorySyncToken | [RotateDirectorySyncTokenRequest](#bytebase-v1-RotateDirectorySyncTokenRequest) | [RotateDirectorySyncTokenResponse](#bytebase-v1-RotateDirectorySyncTokenResponse) | Mints a new directory sync (SCIM) token, immediately invalidating the previous one. The plaintext token is returned exactly once and cannot be retrieved afterwards; only its hash is stored. Callers that lose it must rotate again and update their identity provider. Permissions required: bb.workspaces.rotateDirectorySyncToken |
 
  
 
