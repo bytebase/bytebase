@@ -200,25 +200,22 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Req
 // the ACL interceptor, so the workspace is taken from context here.
 func (s *WorkspaceService) RotateDirectorySyncToken(ctx context.Context, _ *connect.Request[v1pb.RotateDirectorySyncTokenRequest]) (*connect.Response[v1pb.RotateDirectorySyncTokenResponse], error) {
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-
-	setting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace profile setting"))
-	}
-
 	token := uuid.New().String()
 
-	updated, ok := proto.Clone(setting).(*storepb.WorkspaceProfileSetting)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to clone workspace profile setting"))
-	}
-	updated.DirectorySyncTokenHash = common.HashDirectorySyncToken(token)
-
-	if _, err := s.store.UpsertSetting(ctx, &store.SettingMessage{
-		Name:      storepb.SettingName_WORKSPACE_PROFILE,
-		Workspace: workspaceID,
-		Value:     updated,
-	}); err != nil {
+	// Row-locking read-modify-write: a plain read-then-upsert would let a
+	// concurrent UpdateSetting on WORKSPACE_PROFILE clobber the new hash — the
+	// admin would be handed a token that never became the stored one, and SCIM
+	// would keep accepting the token they think they just replaced. apply stays
+	// free of database reads; it runs holding the row lock and the connection.
+	if _, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE,
+		func(current proto.Message) (proto.Message, error) {
+			profile, ok := current.(*storepb.WorkspaceProfileSetting)
+			if !ok {
+				return nil, errors.Errorf("unexpected setting value type %T", current)
+			}
+			profile.DirectorySyncTokenHash = common.HashDirectorySyncToken(token)
+			return profile, nil
+		}, nil); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to store directory sync token"))
 	}
 
