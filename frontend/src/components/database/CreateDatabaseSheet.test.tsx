@@ -97,8 +97,22 @@ vi.mock("@/components/ui/combobox", () => ({
     }),
 }));
 
-vi.mock("@/hooks/useClickOutside", () => ({
-  useClickOutside: () => undefined,
+vi.mock("@/components/ui/popover", () => ({
+  Popover: ({ children }: { children: ReactNode }) => children,
+  PopoverTrigger: ({
+    children,
+    className: _c,
+  }: {
+    children: ReactNode;
+    className?: string;
+  }) => createElement("button", { type: "button" }, children),
+  PopoverContent: ({
+    children,
+    className: _c,
+  }: {
+    children: ReactNode;
+    className?: string;
+  }) => createElement("div", { "data-testid": "popover-content" }, children),
 }));
 
 vi.mock("@/lib/utils", () => ({
