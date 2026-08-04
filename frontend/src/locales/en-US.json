@@ -496,6 +496,10 @@
     "cluster": "Cluster",
     "database-owner-name": "Database owner name",
     "issue-title": "Issue title",
+    "labels-misconfigured": {
+      "description": "This project requires issue labels, but no labels have been configured. Please contact the project owner to add labels before creating a database.",
+      "title": "Issue labels required but not configured"
+    },
     "new-collection-name": "New Collection Name",
     "new-database-name": "New database name",
     "reserved-db-error": "{{databaseName}} is a reserved name"
