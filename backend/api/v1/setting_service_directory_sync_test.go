@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -40,6 +41,34 @@ func TestWorkspaceProfileReportsTokenConfigured(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			require.Equal(t, tt.want, convertToWorkspaceProfileSetting(tt.store).GetDirectorySyncTokenConfigured())
+		})
+	}
+}
+
+// The ACL rejects a well-formed name for another workspace, but an empty or
+// unparseable one falls back to the caller's own workspace and passes. Rotation
+// invalidates a live SCIM credential, so a malformed request must be rejected
+// rather than silently breaking the caller's integration — which means the
+// handler has to parse the name itself.
+func TestRotateDirectorySyncTokenRejectsMalformedNames(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		wantErr bool
+	}{
+		{"", true},
+		{"garbage", true},
+		{"workspaces/", true},
+		{"workspaces/ws1/extra", true},
+		{"projects/p1", true},
+		{"workspaces/ws1", false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := common.GetWorkspaceID(tt.name)
+			if tt.wantErr {
+				require.Error(t, err, "malformed name %q must not reach the rotation", tt.name)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }
