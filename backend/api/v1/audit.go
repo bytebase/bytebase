@@ -44,6 +44,11 @@ type AuditInterceptor struct {
 	store   *store.Store
 	secret  string
 	profile *config.Profile
+
+	// createAuditLogFunc, when set, replaces createAuditLog for streaming sends.
+	// Test-only seam that lets unit tests observe audit persistence ordering
+	// without a database.
+	createAuditLogFunc func(context.Context, *auditEntry) error
 }
 
 // NewAuditInterceptor returns a new v1 API audit interceptor.
@@ -145,11 +150,9 @@ func (c *auditConnectStreamingConn) Receive(msg any) error {
 }
 
 func (c *auditConnectStreamingConn) Send(resp any) error {
-	err := c.StreamingHandlerConn.Send(resp)
-	if err != nil {
-		return err
-	}
-	// Create audit log for each message pair
+	// Create the audit log for each message pair before delivering the
+	// response, so a client that observes a successful response can rely on
+	// the audit entry already being durably persisted.
 	if c.curRequest != nil {
 		entry := &auditEntry{
 			request:  c.curRequest,
@@ -159,11 +162,15 @@ func (c *auditConnectStreamingConn) Send(resp any) error {
 			peerAddr: c.Peer().Addr,
 			latency:  time.Since(c.startTime),
 		}
-		if auditErr := c.interceptor.createAuditLog(c.ctx, entry); auditErr != nil {
+		writeAuditLog := c.interceptor.createAuditLog
+		if c.interceptor.createAuditLogFunc != nil {
+			writeAuditLog = c.interceptor.createAuditLogFunc
+		}
+		if auditErr := writeAuditLog(c.ctx, entry); auditErr != nil {
 			return auditErr
 		}
 	}
-	return nil
+	return c.StreamingHandlerConn.Send(resp)
 }
 
 // auditEntry bundles the per-request data needed to write an audit log.
