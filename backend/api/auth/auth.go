@@ -51,10 +51,11 @@ const (
 	apiTokenDuration = 1 * time.Hour
 	// DefaultAccessTokenDuration is the default access token expiration duration.
 	DefaultAccessTokenDuration = 1 * time.Hour
-	// OAuth2AccessTokenDuration is the lifetime of OAuth2 (MCP) access tokens.
-	// Shared by the oauth2 token endpoint (mint) and the /mcp middleware, whose
-	// legacy-audience migration window is exactly one of these lifetimes: after
-	// that, every legacy token minted by a pre-upgrade release has expired.
+	// OAuth2AccessTokenDuration is the lifetime of OAuth2 (MCP) access tokens,
+	// minted by the oauth2 token endpoint. It also bounds how long legacy
+	// bb.oauth2.access acceptance at /mcp outlives an upgrade: nothing mints
+	// that audience anymore, so acceptance drains no later than one of these
+	// lifetimes after the last legacy-capable replica leaves service.
 	OAuth2AccessTokenDuration = 1 * time.Hour
 	// DefaultRefreshTokenDuration is the default refresh token expiration duration.
 	DefaultRefreshTokenDuration = 7 * 24 * time.Hour

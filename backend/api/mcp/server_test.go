@@ -253,11 +253,12 @@ func TestMCPUnauthenticatedRejectedEndToEnd(t *testing.T) {
 // TestMCPAuthMiddlewareAudienceMatrix is the P1a PR 3 audience boundary. The
 // durably accepted audience is the live-config MCP resource URI (external URL
 // + /mcp, trusted config only — never request headers). Legacy bb.oauth2.access
-// tokens are accepted solely inside the migration window (one OAuth2
-// access-token lifetime from process start, by which time every token minted
-// by a pre-upgrade release has expired on its own). Plain bb.user.access
-// session tokens are accepted without a window until the scoped
-// service-account flow lands (rejectPlainUserTokenAtMCP).
+// tokens are accepted while they remain unexpired: this release never mints
+// that audience, so acceptance drains no later than one access-token lifetime
+// after the last legacy-capable replica leaves service (the expired-token 401
+// in TestMCPAuthMiddleware is the other half of that invariant). Plain
+// bb.user.access session tokens are accepted until the scoped service-account
+// flow lands (rejectPlainUserTokenAtMCP).
 func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 	secret := "test-secret-key"
 
@@ -273,20 +274,12 @@ func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 		// externalURL is the trusted live config ("" = unconfigured).
 		externalURL    string
 		token          func(t *testing.T) string
-		windowExpired  bool
 		expectedStatus int
 	}{
 		{
 			name:           "matching resource audience is accepted",
 			externalURL:    "https://bb.example.com",
 			token:          func(t *testing.T) string { return mintResourceToken(t, "https://bb.example.com/mcp") },
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "resource audience still accepted after the migration window",
-			externalURL:    "https://bb.example.com",
-			token:          func(t *testing.T) string { return mintResourceToken(t, "https://bb.example.com/mcp") },
-			windowExpired:  true,
 			expectedStatus: http.StatusOK,
 		},
 		{
@@ -305,32 +298,20 @@ func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
-			name:           "legacy oauth2 audience accepted during the window",
+			// Unexpired legacy tokens (minted by a pre-upgrade replica, which
+			// during a rolling deploy can outlive any single process's start)
+			// are accepted; their own exp claim is what retires them.
+			name:           "unexpired legacy oauth2 audience is accepted",
 			externalURL:    "https://bb.example.com",
 			token:          func(t *testing.T) string { return generateValidToken(t, secret) },
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "legacy oauth2 audience rejected after the window",
-			externalURL:    "https://bb.example.com",
-			token:          func(t *testing.T) string { return generateValidToken(t, secret) },
-			windowExpired:  true,
-			expectedStatus: http.StatusUnauthorized,
-		},
-		{
-			name:           "plain user audience accepted during the window",
-			externalURL:    "https://bb.example.com",
-			token:          func(t *testing.T) string { return generateUserAudienceToken(t, secret) },
-			expectedStatus: http.StatusOK,
-		},
-		{
-			// bb.user.access is NOT window-gated: web login mints it daily
-			// forever, and its retirement (rejectPlainUserTokenAtMCP) is gated
+			// bb.user.access retirement (rejectPlainUserTokenAtMCP) is gated
 			// on the scoped service-account flow landing first.
-			name:           "plain user audience still accepted after the window",
+			name:           "plain user audience is accepted",
 			externalURL:    "https://bb.example.com",
 			token:          func(t *testing.T) string { return generateUserAudienceToken(t, secret) },
-			windowExpired:  true,
 			expectedStatus: http.StatusOK,
 		},
 		{
@@ -342,7 +323,7 @@ func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
-			name:           "unconfigured external URL still admits legacy tokens during the window",
+			name:           "unconfigured external URL still admits legacy tokens",
 			externalURL:    "",
 			token:          func(t *testing.T) string { return generateValidToken(t, secret) },
 			expectedStatus: http.StatusOK,
@@ -354,9 +335,6 @@ func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 			profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: tc.externalURL}
 			s, err := NewServer(nil, profile, secret)
 			require.NoError(t, err)
-			if tc.windowExpired {
-				s.legacyAudienceWindowEnd = time.Now().Add(-time.Second)
-			}
 
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
@@ -397,45 +375,49 @@ func TestDecideAudience(t *testing.T) {
 	infraDown := connect.NewError(connect.CodeInternal, errors.New("failed to get workspace setting: db unreachable"))
 
 	t.Run("matching expected audience is allowed", func(t *testing.T) {
-		allowed, err := decideAudience(expected, expected, nil, false, rejectPlainUserTokenAtMCP)
+		allowed, err := decideAudience(expected, expected, nil, rejectPlainUserTokenAtMCP)
 		require.NoError(t, err)
 		require.True(t, allowed)
 	})
 
-	t.Run("mismatch with a closed window is refused", func(t *testing.T) {
-		allowed, err := decideAudience("https://old.example.com/mcp", expected, nil, false, rejectPlainUserTokenAtMCP)
+	t.Run("unknown audience is refused", func(t *testing.T) {
+		allowed, err := decideAudience("https://old.example.com/mcp", expected, nil, rejectPlainUserTokenAtMCP)
 		require.NoError(t, err)
 		require.False(t, allowed)
 	})
 
-	t.Run("unconfigured external URL falls back to the legacy window", func(t *testing.T) {
-		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, "", unconfigured, true, rejectPlainUserTokenAtMCP)
+	t.Run("legacy oauth2 audience is accepted while its token lives", func(t *testing.T) {
+		// No clock gate: this release never mints bb.oauth2.access, so the
+		// population drains by each token's own exp — no later than one
+		// access-token lifetime after the last legacy-capable replica leaves
+		// service. A process-start window would race rolling deploys.
+		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, expected, nil, rejectPlainUserTokenAtMCP)
 		require.NoError(t, err)
 		require.True(t, allowed)
 	})
 
-	t.Run("oauth2 audience is refused once the window closes", func(t *testing.T) {
-		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, "", unconfigured, false, rejectPlainUserTokenAtMCP)
+	t.Run("unconfigured external URL still admits legacy audiences", func(t *testing.T) {
+		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, "", unconfigured, rejectPlainUserTokenAtMCP)
 		require.NoError(t, err)
-		require.False(t, allowed)
+		require.True(t, allowed)
 	})
 
-	t.Run("plain user audience is accepted regardless of the window", func(t *testing.T) {
-		allowed, err := decideAudience(auth.AccessTokenAudience, expected, nil, false, false)
+	t.Run("plain user audience is accepted while the flip is off", func(t *testing.T) {
+		allowed, err := decideAudience(auth.AccessTokenAudience, expected, nil, false)
 		require.NoError(t, err)
 		require.True(t, allowed)
 	})
 
 	t.Run("plain user audience is refused once the scoped-SA-gated flip lands", func(t *testing.T) {
 		// Pins the PR 5/6 behavior: flipping rejectPlainUserTokenAtMCP retires
-		// bb.user.access at /mcp even while the oauth2 window is still open.
-		allowed, err := decideAudience(auth.AccessTokenAudience, expected, nil, true, true)
+		// bb.user.access at /mcp without touching the oauth2 legacy audience.
+		allowed, err := decideAudience(auth.AccessTokenAudience, expected, nil, true)
 		require.NoError(t, err)
 		require.False(t, allowed)
 	})
 
 	t.Run("infra failure is reported as an error, not a token verdict", func(t *testing.T) {
-		allowed, err := decideAudience(expected, "", infraDown, true, rejectPlainUserTokenAtMCP)
+		allowed, err := decideAudience(expected, "", infraDown, rejectPlainUserTokenAtMCP)
 		require.Error(t, err)
 		require.False(t, allowed)
 	})
@@ -496,6 +478,11 @@ func generateOAuth2MCPToken(t *testing.T, secret, clientID, workspaceID string) 
 	return tokenStr
 }
 
+// generateExpiredToken mints an expired legacy-audience (bb.oauth2.access)
+// token. The middleware matrix accepts that audience with no clock gate, so
+// the "expired token returns 401" row above is the other half of the drain
+// invariant: JWT expiry validation, not a window, is what retires the legacy
+// population.
 func generateExpiredToken(t *testing.T, secret string) string {
 	t.Helper()
 	claims := jwt.MapClaims{
