@@ -200,6 +200,14 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Req
 // the ACL interceptor, so the workspace is taken from context here.
 func (s *WorkspaceService) RotateDirectorySyncToken(ctx context.Context, _ *connect.Request[v1pb.RotateDirectorySyncTokenRequest]) (*connect.Response[v1pb.RotateDirectorySyncTokenResponse], error) {
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+
+	// The update path this replaces gated on the same feature. Without it an
+	// unlicensed workspace can mint a token that reads as configured in the UI
+	// while the SCIM middleware rejects every request that uses it.
+	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DIRECTORY_SYNC); err != nil {
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
+	}
+
 	token := uuid.New().String()
 
 	// Row-locking read-modify-write: a plain read-then-upsert would let a
