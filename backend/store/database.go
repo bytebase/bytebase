@@ -614,7 +614,7 @@ func lockDatabaseOwnership(ctx context.Context, tx *sql.Tx, instanceID, database
 	var instanceProject sql.NullString
 	var deleted bool
 	if err := tx.QueryRowContext(ctx, `
-		SELECT project, deleted FROM instance WHERE resource_id = $1 FOR UPDATE
+		SELECT project, deleted FROM instance WHERE resource_id = $1 FOR NO KEY UPDATE
 	`, instanceID).Scan(&instanceProject, &deleted); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, common.Errorf(common.NotFound, "instance %s not found", instanceID)
