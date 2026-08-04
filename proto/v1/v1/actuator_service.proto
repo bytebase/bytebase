@@ -38,13 +38,6 @@ service ActuatorService {
     option (bytebase.v1.permission) = "bb.projects.create";
     option (bytebase.v1.auth_method) = IAM;
   }
-
-  // Clears the system cache to force data refresh.
-  // Permissions required: None
-  rpc DeleteCache(DeleteCacheRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/actuator/cache"};
-    option (bytebase.v1.allow_without_credential) = true;
-  }
 }
 
 // Request message for setting up sample data.
@@ -58,9 +51,6 @@ message GetActuatorInfoRequest {
   // or no workspace-scoped fields are returned (SaaS).
   string name = 1 [(google.api.resource_reference) = {type: "bytebase.com/Workspace"}];
 }
-
-// Request message for deleting cache.
-message DeleteCacheRequest {}
 
 message Restriction {
   // Whether self-service user signup is disabled.
