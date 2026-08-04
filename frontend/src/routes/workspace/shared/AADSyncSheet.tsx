@@ -71,13 +71,15 @@ export function AADSyncSheet({
   // out of order and leave the admin copying a token the server has already
   // replaced. One at a time.
   const [rotating, setRotating] = useState(false);
+  // Set on a successful rotation and deliberately NOT cleared on close, unlike
+  // the plaintext above. loadWorkspaceProfile swallows its error and resolves
+  // undefined, so a failed refresh leaves the store reporting no token; without
+  // a fallback that survives closing, reopening would offer "Generate" again
+  // and the next click would skip the regeneration warning and invalidate the
+  // token the admin just copied.
+  const [rotatedSinceMount, setRotatedSinceMount] = useState(false);
 
-  // A successful rotation means a token exists, whatever the profile refresh
-  // that follows does — loadWorkspaceProfile swallows its error and resolves
-  // undefined, so relying on the store alone would leave the button offering
-  // "Generate" after the first token was minted. The next click would then skip
-  // the regeneration warning and silently invalidate the token just copied.
-  const tokenConfigured = storedTokenConfigured || mintedToken !== "";
+  const tokenConfigured = storedTokenConfigured || rotatedSinceMount;
 
   const handleClose = () => {
     setMintedToken("");
@@ -102,6 +104,7 @@ export function AADSyncSheet({
         })
       );
       setMintedToken(resp.token);
+      setRotatedSinceMount(true);
       await useAppStore.getState().loadWorkspaceProfile(true);
       pushNotification({
         module: "bytebase",

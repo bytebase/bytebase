@@ -251,6 +251,39 @@ describe("AADSyncSheet SCIM token", () => {
     vi.spyOn(window, "confirm").mockRestore();
   });
 
+  it("still knows a token exists after closing when the refresh failed", async () => {
+    // The sheet stays mounted, and closing clears the one-time plaintext. If
+    // that were the only signal, reopening after a failed refresh would offer
+    // "Generate" again and skip the warning on the next click.
+    mocks.rotate.mockResolvedValue({ token: "tok-first" });
+    mocks.loadWorkspaceProfile.mockResolvedValue(undefined);
+    mocks.tokenConfigured = false;
+
+    await renderSheet();
+    await act(async () => {
+      buttonByText(entra("generate-token"))?.click();
+    });
+    await act(async () => {
+      buttonByText("common.cancel")?.click();
+    });
+
+    // Reopened: plaintext gone, but the action must still be a regeneration.
+    await renderSheet();
+    expect(tokenInput()).toBeUndefined();
+    expect(buttonByText(entra("regenerate-token"))).toBeTruthy();
+    expect(buttonByText(entra("generate-token"))).toBeFalsy();
+
+    const confirmSpy = vi
+      .spyOn(window, "confirm")
+      .mockReturnValue(false) as unknown as { mock: { calls: unknown[] } };
+    await act(async () => {
+      buttonByText(entra("regenerate-token"))?.click();
+    });
+    expect(confirmSpy.mock.calls.length).toBe(1);
+    expect(mocks.rotate).toHaveBeenCalledTimes(1);
+    vi.spyOn(window, "confirm").mockRestore();
+  });
+
   it("hides the rotate control without permission", async () => {
     mocks.hasRotatePermission = false;
     await renderSheet();
