@@ -1,9 +1,11 @@
 import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Copy } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { workspaceServiceClientConnect } from "@/api";
 import { ExternalUrlAlert } from "@/components/ExternalUrlAlert";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,6 +19,7 @@ import {
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
+import { RotateDirectorySyncTokenRequestSchema } from "@/types/proto-es/v1/workspace_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 // ============================================================
@@ -34,8 +37,8 @@ export function AADSyncSheet({
 
   const externalUrl = useAppStore((s) => s.serverInfo?.externalUrl ?? "");
   const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
-  const directorySyncToken = useAppStore(
-    (s) => s.getWorkspaceProfile().directorySyncToken
+  const tokenConfigured = useAppStore(
+    (s) => s.getWorkspaceProfile().directorySyncTokenConfigured
   );
 
   const scimUrl =
@@ -59,31 +62,45 @@ export function AADSyncSheet({
     }
   };
 
-  const handleResetToken = async () => {
-    const confirmed = window.confirm(
-      t("settings.members.entra-sync.reset-token-warning")
-    );
-    if (!confirmed) return;
+  // The plaintext token is returned exactly once by the rotate RPC, so it lives
+  // in local state only. The sheet stays mounted when closed, so this must be
+  // cleared explicitly — otherwise reopening would redisplay a token that is
+  // supposed to have been shown once.
+  const [mintedToken, setMintedToken] = useState("");
+
+  const handleClose = () => {
+    setMintedToken("");
+    onClose();
+  };
+
+  const handleRotateToken = async () => {
+    if (tokenConfigured) {
+      const confirmed = window.confirm(
+        t("settings.members.entra-sync.regenerate-token-warning")
+      );
+      if (!confirmed) return;
+    }
 
     try {
-      await useAppStore.getState().updateWorkspaceProfile({
-        payload: { directorySyncToken: "" },
-        updateMask: create(FieldMaskSchema, {
-          paths: ["value.workspace_profile.directory_sync_token"],
-        }),
-      });
+      const resp = await workspaceServiceClientConnect.rotateDirectorySyncToken(
+        create(RotateDirectorySyncTokenRequestSchema, {
+          name: workspaceResourceName,
+        })
+      );
+      setMintedToken(resp.token);
+      await useAppStore.getState().loadWorkspaceProfile(true);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("common.updated"),
       });
     } catch {
-      // error already shown by store
+      // error already shown by the client interceptor
     }
   };
 
   return (
-    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+    <Sheet open={open} onOpenChange={(next) => !next && handleClose()}>
       <SheetContent width="standard">
         <SheetHeader>
           <SheetTitle>{t("settings.members.entra-sync.self")}</SheetTitle>
@@ -132,30 +149,48 @@ export function AADSyncSheet({
               <span className="textinfolabel text-sm">
                 {t("settings.members.entra-sync.secret-token-tip")}
               </span>
-              <div className="flex items-center gap-x-2">
-                <Input
-                  readOnly
-                  type="password"
-                  value={directorySyncToken}
-                  className="flex-1 text-sm"
-                />
+              {mintedToken ? (
+                <>
+                  <div className="flex items-center gap-x-2">
+                    <Input
+                      readOnly
+                      value={mintedToken}
+                      className="flex-1 text-sm font-mono"
+                    />
+                    <Button
+                      appearance="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(mintedToken)}
+                    >
+                      <Copy className="size-4" />
+                    </Button>
+                  </div>
+                  <Alert
+                    variant="warning"
+                    description={t(
+                      "settings.members.entra-sync.token-shown-once"
+                    )}
+                  />
+                </>
+              ) : (
+                <span className="textinfolabel text-sm">
+                  {tokenConfigured
+                    ? t("settings.members.entra-sync.token-configured")
+                    : t("settings.members.entra-sync.token-not-configured")}
+                </span>
+              )}
+              {hasWorkspacePermissionV2(
+                "bb.workspaces.rotateDirectorySyncToken"
+              ) && (
                 <Button
                   appearance="outline"
                   size="sm"
-                  disabled={!directorySyncToken}
-                  onClick={() => copyToClipboard(directorySyncToken)}
+                  className="self-start"
+                  onClick={handleRotateToken}
                 >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              {hasWorkspacePermissionV2("bb.settings.setWorkspaceProfile") && (
-                <Button
-                  appearance="outline"
-                  size="sm"
-                  className="self-start text-error border-error hover:bg-error/10"
-                  onClick={handleResetToken}
-                >
-                  {t("settings.members.entra-sync.reset-token")}
+                  {tokenConfigured
+                    ? t("settings.members.entra-sync.regenerate-token")
+                    : t("settings.members.entra-sync.generate-token")}
                 </Button>
               )}
             </div>
@@ -163,7 +198,7 @@ export function AADSyncSheet({
         </SheetBody>
 
         <SheetFooter>
-          <Button appearance="outline" onClick={onClose}>
+          <Button appearance="outline" onClick={handleClose}>
             {t("common.cancel")}
           </Button>
         </SheetFooter>

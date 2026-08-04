@@ -125,9 +125,6 @@ message WorkspaceProfileSetting {
   // Requires ENTERPRISE license.
   bool watermark = 14;
 
-  // The token for directory sync authentication.
-  string directory_sync_token = 15;
-
   reserved 16;
 
   message PasswordRestriction {
@@ -183,6 +180,11 @@ message WorkspaceProfileSetting {
   // READ_WRITE for backward compatibility; DISABLED rejects all MCP
   // connections. Enforced server-side by the /mcp endpoint.
   MCPCapability mcp_capability = 26;
+
+  // Hex-encoded SHA-256 of the SCIM directory sync token. The plaintext is shown
+  // once at rotation and never stored. SHA-256 rather than a slow KDF because the
+  // token is 122 bits of crypto/rand, not a human-chosen secret.
+  string directory_sync_token_hash = 27;
 }
 
 message SQLEditorThemeSetting {

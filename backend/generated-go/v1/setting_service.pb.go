@@ -1074,8 +1074,6 @@ type WorkspaceProfileSetting struct {
 	// Whether to display watermark on pages.
 	// Requires ENTERPRISE license.
 	Watermark bool `protobuf:"varint,14,opt,name=watermark,proto3" json:"watermark,omitempty"`
-	// The token for directory sync authentication.
-	DirectorySyncToken string `protobuf:"bytes,15,opt,name=directory_sync_token,json=directorySyncToken,proto3" json:"directory_sync_token,omitempty"`
 	// Password restriction settings.
 	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,17,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
 	// The duration for access token. Default is 1 hour.
@@ -1105,8 +1103,12 @@ type WorkspaceProfileSetting struct {
 	// connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected —
 	// omit the update mask path to leave the ceiling unset.
 	McpCapability WorkspaceProfileSetting_MCPCapability `protobuf:"varint,26,opt,name=mcp_capability,json=mcpCapability,proto3,enum=bytebase.v1.WorkspaceProfileSetting_MCPCapability" json:"mcp_capability,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Whether a directory sync token has been generated for this workspace.
+	// The token itself is never returned; this only lets the UI decide between
+	// offering "generate" and "regenerate".
+	DirectorySyncTokenConfigured bool `protobuf:"varint,27,opt,name=directory_sync_token_configured,json=directorySyncTokenConfigured,proto3" json:"directory_sync_token_configured,omitempty"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *WorkspaceProfileSetting) Reset() {
@@ -1237,13 +1239,6 @@ func (x *WorkspaceProfileSetting) GetWatermark() bool {
 	return false
 }
 
-func (x *WorkspaceProfileSetting) GetDirectorySyncToken() string {
-	if x != nil {
-		return x.DirectorySyncToken
-	}
-	return ""
-}
-
 func (x *WorkspaceProfileSetting) GetPasswordRestriction() *WorkspaceProfileSetting_PasswordRestriction {
 	if x != nil {
 		return x.PasswordRestriction
@@ -1312,6 +1307,13 @@ func (x *WorkspaceProfileSetting) GetMcpCapability() WorkspaceProfileSetting_MCP
 		return x.McpCapability
 	}
 	return WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED
+}
+
+func (x *WorkspaceProfileSetting) GetDirectorySyncTokenConfigured() bool {
+	if x != nil {
+		return x.DirectorySyncTokenConfigured
+	}
+	return false
 }
 
 type SQLEditorThemeSetting struct {
@@ -3528,7 +3530,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkH\x00R\x04lark\x12@\n" +
 	"\bdingtalk\x18\x06 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkH\x00R\bdingtalk\x127\n" +
 	"\x05teams\x18\a \x01(\v2\x1f.bytebase.v1.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\x9a\x10\n" +
+	"\apayload\"\xb4\x10\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -3545,8 +3547,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18enable_metric_collection\x18\v \x01(\bR\x16enableMetricCollection\x12S\n" +
 	"\x18inactive_session_timeout\x18\f \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
 	"\x17enable_audit_log_stdout\x18\r \x01(\bR\x14enableAuditLogStdout\x12\x1c\n" +
-	"\twatermark\x18\x0e \x01(\bR\twatermark\x120\n" +
-	"\x14directory_sync_token\x18\x0f \x01(\tR\x12directorySyncToken\x12k\n" +
+	"\twatermark\x18\x0e \x01(\bR\twatermark\x12k\n" +
 	"\x14password_restriction\x18\x11 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionR\x13passwordRestriction\x12M\n" +
 	"\x15access_token_duration\x18\x12 \x01(\v2\x19.google.protobuf.DurationR\x13accessTokenDuration\x12!\n" +
 	"\fenable_debug\x18\x13 \x01(\bR\venableDebug\x12&\n" +
@@ -3556,7 +3557,8 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x13sql_editor_theme_id\x18\x17 \x01(\tR\x10sqlEditorThemeId\x12Y\n" +
 	"\x17sql_editor_custom_theme\x18\x18 \x01(\v2\".bytebase.v1.SQLEditorThemeSettingR\x14sqlEditorCustomTheme\x12Q\n" +
 	"\x17maximum_role_expiration\x18\x19 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12Y\n" +
-	"\x0emcp_capability\x18\x1a \x01(\x0e22.bytebase.v1.WorkspaceProfileSetting.MCPCapabilityR\rmcpCapability\x1a\x93\x03\n" +
+	"\x0emcp_capability\x18\x1a \x01(\x0e22.bytebase.v1.WorkspaceProfileSetting.MCPCapabilityR\rmcpCapability\x12J\n" +
+	"\x1fdirectory_sync_token_configured\x18\x1b \x01(\bB\x03\xe0A\x03R\x1cdirectorySyncTokenConfigured\x1a\x93\x03\n" +
 	"\x13PasswordRestriction\x12\x1d\n" +
 	"\n" +
 	"min_length\x18\x01 \x01(\x05R\tminLength\x12%\n" +

@@ -8,8 +8,10 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
@@ -189,6 +191,38 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Req
 		Title: updated.Payload.GetTitle(),
 		Logo:  updated.Payload.GetLogo(),
 	}), nil
+}
+
+// RotateDirectorySyncToken mints a new SCIM token and returns it once. Only the
+// hash is persisted, so the plaintext cannot be recovered afterwards.
+//
+// The request's name is resolved and matched against the caller's workspace by
+// the ACL interceptor, so the workspace is taken from context here.
+func (s *WorkspaceService) RotateDirectorySyncToken(ctx context.Context, _ *connect.Request[v1pb.RotateDirectorySyncTokenRequest]) (*connect.Response[v1pb.RotateDirectorySyncTokenResponse], error) {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+
+	setting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace profile setting"))
+	}
+
+	token := uuid.New().String()
+
+	updated, ok := proto.Clone(setting).(*storepb.WorkspaceProfileSetting)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to clone workspace profile setting"))
+	}
+	updated.DirectorySyncTokenHash = common.HashDirectorySyncToken(token)
+
+	if _, err := s.store.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_WORKSPACE_PROFILE,
+		Workspace: workspaceID,
+		Value:     updated,
+	}); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to store directory sync token"))
+	}
+
+	return connect.NewResponse(&v1pb.RotateDirectorySyncTokenResponse{Token: token}), nil
 }
 
 func (s *WorkspaceService) GetIamPolicy(ctx context.Context, _ *connect.Request[v1pb.GetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {

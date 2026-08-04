@@ -228,9 +228,6 @@ message WorkspaceProfileSetting {
   // Requires ENTERPRISE license.
   bool watermark = 14;
 
-  // The token for directory sync authentication.
-  string directory_sync_token = 15;
-
   reserved 16;
 
   message PasswordRestriction {
@@ -305,6 +302,11 @@ message WorkspaceProfileSetting {
   // connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected —
   // omit the update mask path to leave the ceiling unset.
   MCPCapability mcp_capability = 26;
+
+  // Whether a directory sync token has been generated for this workspace.
+  // The token itself is never returned; this only lets the UI decide between
+  // offering "generate" and "regenerate".
+  bool directory_sync_token_configured = 27 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message SQLEditorThemeSetting {

@@ -2540,11 +2540,15 @@
         "description": "Entra ID (旧 Azure AD) または Okta のユーザーとグループを Bytebase インスタンスに同期します。",
         "endpoint": "エンドポイント",
         "endpoint-tip": "ユーザーとグループはこのエンドポイントを介して Bytebase に同期されます。",
-        "reset-token": "トークンをリセット",
-        "reset-token-warning": "Entra アプリケーションのプロビジョニング設定を更新する必要があります。",
+        "generate-token": "トークンを生成",
+        "regenerate-token": "トークンを再生成",
+        "regenerate-token-warning": "現在のトークンは直ちに無効になり、アプリケーションのプロビジョニング設定を更新する必要があります。続行しますか？",
         "secret-token": "シークレットトークン",
         "secret-token-tip": "エンドポイントの検証トークンです。秘密にしてください。",
-        "self": "SCIM から同期"
+        "self": "SCIM から同期",
+        "token-configured": "トークンは設定済みです。再表示はできないため、紛失した場合は再生成してください。",
+        "token-not-configured": "トークンはまだ生成されていません。",
+        "token-shown-once": "このトークンを今すぐコピーしてください。二度と表示されません。"
       },
       "grant-access": "アクセスを許可する",
       "groups": {

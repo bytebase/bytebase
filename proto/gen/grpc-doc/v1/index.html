@@ -3100,6 +3100,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.RotateDirectorySyncTokenRequest"><span class="badge">M</span>RotateDirectorySyncTokenRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.RotateDirectorySyncTokenResponse"><span class="badge">M</span>RotateDirectorySyncTokenResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdateWorkspaceRequest"><span class="badge">M</span>UpdateWorkspaceRequest</a>
                 </li>
               
@@ -12975,13 +12983,6 @@ Requires ENTERPRISE license. </p></td>
                 </tr>
               
                 <tr>
-                  <td>directory_sync_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The token for directory sync authentication. </p></td>
-                </tr>
-              
-                <tr>
                   <td>password_restriction</td>
                   <td><a href="#bytebase.v1.WorkspaceProfileSetting.PasswordRestriction">WorkspaceProfileSetting.PasswordRestriction</a></td>
                   <td></td>
@@ -13058,6 +13059,15 @@ this workspace, acting as an admin-set ceiling. Unset is treated as
 READ_WRITE for backward compatibility; DISABLED rejects all MCP
 connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected —
 omit the update mask path to leave the ceiling unset. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>directory_sync_token_configured</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether a directory sync token has been generated for this workspace.
+The token itself is never returned; this only lets the UI decide between
+offering &#34;generate&#34; and &#34;regenerate&#34;. </p></td>
                 </tr>
               
             </tbody>
@@ -35164,6 +35174,55 @@ Use &#34;workspaces/-&#34; to get the current/default workspace. </p></td>
 
         
       
+        <h3 id="bytebase.v1.RotateDirectorySyncTokenRequest">RotateDirectorySyncTokenRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The workspace whose directory sync token is rotated.
+Format: workspaces/{workspace} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.RotateDirectorySyncTokenResponse">RotateDirectorySyncTokenResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The new token, in plaintext. This is the only time it is ever returned. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.UpdateWorkspaceRequest">UpdateWorkspaceRequest</h3>
         <p></p>
 
@@ -35306,6 +35365,17 @@ caller is the last workspace admin.</p></td>
 Permissions required: bb.workspaces.setIamPolicy</p></td>
               </tr>
             
+              <tr>
+                <td>RotateDirectorySyncToken</td>
+                <td><a href="#bytebase.v1.RotateDirectorySyncTokenRequest">RotateDirectorySyncTokenRequest</a></td>
+                <td><a href="#bytebase.v1.RotateDirectorySyncTokenResponse">RotateDirectorySyncTokenResponse</a></td>
+                <td><p>Mints a new directory sync (SCIM) token, immediately invalidating the
+previous one. The plaintext token is returned exactly once and cannot be
+retrieved afterwards; only its hash is stored. Callers that lose it must
+rotate again and update their identity provider.
+Permissions required: bb.workspaces.rotateDirectorySyncToken</p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -35390,6 +35460,16 @@ Permissions required: bb.workspaces.setIamPolicy</p></td>
                 <td>SetIamPolicy</td>
                 <td>POST</td>
                 <td>/v1/{resource=workspaces/*}:setIamPolicy</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>RotateDirectorySyncToken</td>
+                <td>POST</td>
+                <td>/v1/{name=workspaces/*}:rotateDirectorySyncToken</td>
                 <td>*</td>
               </tr>
               

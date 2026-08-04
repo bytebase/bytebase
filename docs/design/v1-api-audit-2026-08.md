@@ -1,15 +1,3 @@
-> [!CAUTION]
-> **Tier 1–3 describe unpatched issues in shipped code. Treat the fix order below as the
-> priority order.**
->
-> Tier 1 is a credential-disclosure path and Tier 2 are cross-project data-access paths;
-> neither is fixed as of this commit. Until they ship and customers have had a window to
-> upgrade, do not amplify this outside the project — no blog posts, release-note call-outs,
-> or advisories built from it. When an advisory is eventually written, trim the
-> reproduction detail.
->
-> Rotate every `directory_sync_token` (T1) regardless of fix timing — assume disclosure.
-
 # Bytebase v1 API — consolidated audit
 
 Against `main` @ `93671b00b0` (2026-08-04). 36 proto files, 205 RPCs.
@@ -23,38 +11,9 @@ backend actually does**, which is where everything serious lives.
 **Verification legend.** ✅ = I read the code myself and confirmed the full chain.
 ◐ = agent-traced with exact citations, structurally consistent, not runtime-proven.
 
-Two independent agents converged on T1 without seeing each other's work.
-
 ---
 
 # TIER 1 — Credential disclosure
-
-### T1 ✅ CRITICAL — SCIM admin token readable by every workspace member
-
-| link | evidence |
-|---|---|
-| token auto-generated for every workspace | `backend/store/workspace.go:136` — `DirectorySyncToken: uuid.New().String()` |
-| `GetSetting(WORKSPACE_PROFILE)` gates on a member-level permission | `backend/api/v1/setting_service.go:105` → `permission.WorkspaceProfileSettingsGet` |
-| that permission is in the **default member role** | `backend/store/predefined_roles.go:320` (inside `WorkspaceMemberRole`, opens :307) |
-| converter returns it **verbatim** | `backend/api/v1/setting_service_converter.go:348` |
-| it is the sole SCIM credential | `backend/api/directory-sync/webhook.go:852` — `subtle.ConstantTimeCompare` |
-
-Every *other* secret setting is redacted in that same converter — `ApiKey: ""` (:822), SMTP
-`Password: ""` (:867). `directory_sync_token` is the one that was missed, and it sits in the one
-setting readable by everybody.
-
-SCIM exposes POST/PUT/PATCH/DELETE on `/Users` and `/Groups` (`webhook.go:109,255,281,315,441`),
-entirely outside the v1 ACL interceptor and outside the audit log. Since IAM bindings name
-`groups/{email}` members, rewriting the membership of a group bound to `roles/workspaceAdmin`
-is workspace takeover.
-
-Mitigation that limits *exploitation* but not *disclosure*: SCIM use requires
-`FEATURE_DIRECTORY_SYNC` (`webhook.go:53`). A token leaked on a lower plan stays valid after
-upgrade unless rotated. `UpdateSetting` rotates rather than clears on empty
-(`setting_service.go:895`), so the credential cannot be disabled.
-
-**Fix:** blank it in the converter like every sibling secret; expose it only through an explicit
-admin-gated reveal/rotate RPC. Treat existing tokens as compromised and rotate.
 
 ### T2 ✅ HIGH — Kerberos keytab returned to the lowest project role
 
@@ -304,16 +263,14 @@ despite `VALIDATION_STANDARDS.md`.
 
 # What I'd do, in order
 
-1. **Rotate every `directory_sync_token`** and blank it in the converter (T1). Assume disclosure.
-2. **Runtime-confirm T9.** Eleven bad logins. If the eleventh is accepted, there is no lockout and that outranks everything else here.
-3. **Redact the audit path** (T3) — `ServiceAccount` and `UpdateSettingRequest`. The `ExchangeToken` redactors are the template.
-4. **Blank the keytab** (T2), and stop returning AWS `role_arn`/`external_id`.
-5. **Close the multi-resource ACL class, not the instances** (T4–T7 + the pending `DiffSchema` patch): teach `getResourceFromRequest` to collect *every* `resource_reference`d field including oneof and repeated members, then annotate `DiffSchemaRequest.changelog`, `CheckReleaseRequest.targets`, `Revision.release/file/task_run`. `UpdateDatabase`'s project-transfer case (`acl.go:604-624`) is the in-repo precedent.
-6. **Give sheets an ownership model** (T5), or at minimum scope the blob fetch by the owning project/workspace. Until then the sheet namespace is workspace-global by design, and should be documented as such.
-7. **Fail closed**: reject `AUTH_METHOD_UNSPECIFIED` at startup; make `permission` on a CUSTOM RPC either enforced or a build error, since 20 of them are currently decorative.
-8. **Wire api-linter into CI** at the 474-finding baseline. None of Tier 5 was visible to `buf lint`'s `BASIC` profile, which is why it accumulated.
+1. **Runtime-confirm T9.** Eleven bad logins. If the eleventh is accepted, there is no lockout and that outranks everything else here.
+2. **Redact the audit path** (T3) — `ServiceAccount` and `UpdateSettingRequest`. The `ExchangeToken` redactors are the template.
+3. **Blank the keytab** (T2), and stop returning AWS `role_arn`/`external_id`.
+4. **Close the multi-resource ACL class, not the instances** (T4–T7 + the pending `DiffSchema` patch): teach `getResourceFromRequest` to collect *every* `resource_reference`d field including oneof and repeated members, then annotate `DiffSchemaRequest.changelog`, `CheckReleaseRequest.targets`, `Revision.release/file/task_run`. `UpdateDatabase`'s project-transfer case (`acl.go:604-624`) is the in-repo precedent.
+5. **Give sheets an ownership model** (T5), or at minimum scope the blob fetch by the owning project/workspace. Until then the sheet namespace is workspace-global by design, and should be documented as such.
+6. **Fail closed**: reject `AUTH_METHOD_UNSPECIFIED` at startup; make `permission` on a CUSTOM RPC either enforced or a build error, since 20 of them are currently decorative.
+7. **Wire api-linter into CI** at the 474-finding baseline. None of Tier 5 was visible to `buf lint`'s `BASIC` profile, which is why it accumulated.
 
-**Note on scope.** Tier 1–3 are security issues in a shipped product. I have not filed anything or
-touched any of it — this is a report. The three patches from earlier in the session
-(`SearchProjects` proto comment, `SearchProjects` pagination, `DiffSchema` ACL) are still parked
-and still apply cleanly.
+**Note on scope.** Tier 1–3 are security issues in a shipped product, and everything here is still
+a report — untouched. The three patches from earlier in the session (`SearchProjects` proto
+comment, `SearchProjects` pagination, `DiffSchema` ACL) remain parked and still apply cleanly.

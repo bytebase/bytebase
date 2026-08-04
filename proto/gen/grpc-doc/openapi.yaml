@@ -18578,6 +18578,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.LoginResponse'
+  /v1/workspaces/{workspace}:rotateDirectorySyncToken:
+    post:
+      tags:
+        - WorkspaceService
+      summary: RotateDirectorySyncToken
+      description: |-
+        Mints a new directory sync (SCIM) token, immediately invalidating the
+         previous one. The plaintext token is returned exactly once and cannot be
+         retrieved afterwards; only its hash is stored. Callers that lose it must
+         rotate again and update their identity provider.
+         Permissions required: bb.workspaces.rotateDirectorySyncToken
+      operationId: WorkspaceService_RotateDirectorySyncToken
+      parameters:
+        - name: workspace
+          in: path
+          description: The workspace id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.RotateDirectorySyncTokenResponse'
   /v1/workspaces/{workspace}:setIamPolicy:
     post:
       tags:
@@ -28365,6 +28391,29 @@ components:
       title: RolloutPolicy
       additionalProperties: false
       description: Rollout policy configuration.
+    bytebase.v1.RotateDirectorySyncTokenRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The workspace whose directory sync token is rotated.
+             Format: workspaces/{workspace}
+      title: RotateDirectorySyncTokenRequest
+      required:
+        - name
+      additionalProperties: false
+    bytebase.v1.RotateDirectorySyncTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          title: token
+          description: The new token, in plaintext. This is the only time it is ever returned.
+          readOnly: true
+      title: RotateDirectorySyncTokenResponse
+      additionalProperties: false
     bytebase.v1.RowValue:
       type: object
       oneOf:
@@ -32591,10 +32640,6 @@ components:
           description: |-
             Whether to display watermark on pages.
              Requires ENTERPRISE license.
-        directorySyncToken:
-          type: string
-          title: directory_sync_token
-          description: The token for directory sync authentication.
         passwordRestriction:
           title: password_restriction
           description: Password restriction settings.
@@ -32653,6 +32698,14 @@ components:
              connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected —
              omit the update mask path to leave the ceiling unset.
           $ref: '#/components/schemas/bytebase.v1.WorkspaceProfileSetting.MCPCapability'
+        directorySyncTokenConfigured:
+          type: boolean
+          title: directory_sync_token_configured
+          description: |-
+            Whether a directory sync token has been generated for this workspace.
+             The token itself is never returned; this only lets the UI decide between
+             offering "generate" and "regenerate".
+          readOnly: true
       title: WorkspaceProfileSetting
       additionalProperties: false
     bytebase.v1.WorkspaceProfileSetting.MCPCapability:

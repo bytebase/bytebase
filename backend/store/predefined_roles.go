@@ -162,6 +162,7 @@ var PredefinedRoles = []*RoleMessage{
 			permission.WorkspacesUpdate,
 			permission.WorkspacesDelete,
 			permission.WorkspacesSetIamPolicy,
+			permission.WorkspacesRotateDirectorySyncToken,
 			permission.SubscriptionManage,
 			permission.ServiceAccountsCreate,
 			permission.ServiceAccountsDelete,

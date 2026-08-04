@@ -2540,11 +2540,15 @@
         "description": "Sincronice usuarios y grupos de Entra ID (anteriormente Azure AD) u Okta con su instancia de Bytebase.",
         "endpoint": "Punto final",
         "endpoint-tip": "Los usuarios y grupos se sincronizarán con Bytebase a través de este endpoint.",
-        "reset-token": "Restablecer token",
-        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra.",
+        "generate-token": "Generar token",
+        "regenerate-token": "Regenerar token",
+        "regenerate-token-warning": "El token actual dejará de funcionar de inmediato y deberá actualizar la configuración de aprovisionamiento de la aplicación. ¿Continuar?",
         "secret-token": "Secret Token",
         "secret-token-tip": "El token de verificación para el endpoint. Por favor, manténgalo en secreto.",
-        "self": "Sincronización desde SCIM"
+        "self": "Sincronización desde SCIM",
+        "token-configured": "Hay un token configurado. No se puede volver a mostrar: regenérelo si ya no dispone de él.",
+        "token-not-configured": "Todavía no se ha generado ningún token.",
+        "token-shown-once": "Copie este token ahora. No se volverá a mostrar."
       },
       "grant-access": "Conceder acceso",
       "groups": {
