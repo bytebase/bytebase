@@ -248,6 +248,7 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, 
 			slog.String("token_use", claims.TokenUse),
 			slog.String("method", procedure),
 			slog.String("principal", claims.Subject),
+			slog.String("workspace", claims.WorkspaceID),
 			slog.String("audience", strings.Join(claims.Audience, ",")))
 	}
 

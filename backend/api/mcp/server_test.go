@@ -22,8 +22,9 @@ import (
 func TestMCPAuthMiddleware(t *testing.T) {
 	secret := "test-secret-key"
 	// ExternalURL short-circuits utils.GetEffectiveExternalURL away from
-	// the nil store; it's also the canonical URL the WWW-Authenticate
-	// resource_metadata pointer should resolve to.
+	// the nil store, and the minted tokens carry a workspace so no singleton
+	// workspace lookup runs either; it's also the canonical URL the
+	// WWW-Authenticate resource_metadata pointer should resolve to.
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 
 	tests := []struct {
@@ -123,7 +124,7 @@ func TestMCPAuthMiddleware(t *testing.T) {
 
 func TestMCPAuthMiddlewareValidToken(t *testing.T) {
 	secret := "test-secret-key"
-	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
@@ -151,7 +152,7 @@ func TestMCPAuthMiddlewareValidToken(t *testing.T) {
 
 func TestMCPAuthMiddlewareOAuthContext(t *testing.T) {
 	secret := "test-secret-key"
-	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
@@ -271,7 +272,8 @@ func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 
 	tests := []struct {
 		name string
-		// externalURL is the trusted live config ("" = unconfigured).
+		// externalURL is the trusted live config. The unconfigured ("") case
+		// needs a store to resolve, so it lives in TestDecideAudience.
 		externalURL    string
 		token          func(t *testing.T) string
 		expectedStatus int
@@ -314,20 +316,6 @@ func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 			token:          func(t *testing.T) string { return generateUserAudienceToken(t, secret) },
 			expectedStatus: http.StatusOK,
 		},
-		{
-			name:        "unconfigured external URL fails closed for resource tokens",
-			externalURL: "",
-			// No trusted config means no expected audience to compare against;
-			// the request-derived host must never substitute for it.
-			token:          func(t *testing.T) string { return mintResourceToken(t, "https://bb.example.com/mcp") },
-			expectedStatus: http.StatusUnauthorized,
-		},
-		{
-			name:           "unconfigured external URL still admits legacy tokens",
-			externalURL:    "",
-			token:          func(t *testing.T) string { return generateValidToken(t, secret) },
-			expectedStatus: http.StatusOK,
-		},
 	}
 
 	for _, tc := range tests {
@@ -366,9 +354,10 @@ func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 }
 
 // TestDecideAudience covers the resolver branches the HTTP matrix cannot reach
-// without a failing store: a deliberately unconfigured deployment falls back to
-// the legacy window, while an infra failure reading the trusted config surfaces
-// as an error — a server problem, never a verdict against the token.
+// without a DB-backed store: a deliberately unconfigured deployment admits only
+// the legacy audiences (resource-bound tokens fail closed), while an infra
+// failure reading the trusted config surfaces as an error — a server problem,
+// never a verdict against the token.
 func TestDecideAudience(t *testing.T) {
 	const expected = "https://bb.example.com/mcp"
 	unconfigured := connect.NewError(connect.CodeFailedPrecondition, errors.New("external URL isn't setup yet"))
@@ -402,6 +391,14 @@ func TestDecideAudience(t *testing.T) {
 		require.True(t, allowed)
 	})
 
+	t.Run("unconfigured external URL fails closed for resource tokens", func(t *testing.T) {
+		// No trusted config means no expected audience to compare against; the
+		// request-derived host must never substitute for it.
+		allowed, err := decideAudience("https://bb.example.com/mcp", "", unconfigured, rejectPlainUserTokenAtMCP)
+		require.NoError(t, err)
+		require.False(t, allowed)
+	})
+
 	t.Run("plain user audience is accepted while the flip is off", func(t *testing.T) {
 		allowed, err := decideAudience(auth.AccessTokenAudience, expected, nil, false)
 		require.NoError(t, err)
@@ -431,11 +428,12 @@ func TestDecideAudience(t *testing.T) {
 func generateUserAudienceToken(t *testing.T, secret string) string {
 	t.Helper()
 	claims := jwt.MapClaims{
-		"iss": "bytebase",
-		"sub": "test@example.com",
-		"aud": auth.AccessTokenAudience,
-		"exp": time.Now().Add(time.Hour).Unix(),
-		"iat": time.Now().Unix(),
+		"iss":          "bytebase",
+		"sub":          "test@example.com",
+		"aud":          auth.AccessTokenAudience,
+		"workspace_id": "ws-test",
+		"exp":          time.Now().Add(time.Hour).Unix(),
+		"iat":          time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	token.Header["kid"] = "v1"
@@ -447,11 +445,12 @@ func generateUserAudienceToken(t *testing.T, secret string) string {
 func generateValidToken(t *testing.T, secret string) string {
 	t.Helper()
 	claims := jwt.MapClaims{
-		"iss": "bytebase",
-		"sub": "test@example.com",
-		"aud": auth.OAuth2AccessTokenAudience,
-		"exp": time.Now().Add(time.Hour).Unix(),
-		"iat": time.Now().Unix(),
+		"iss":          "bytebase",
+		"sub":          "test@example.com",
+		"aud":          auth.OAuth2AccessTokenAudience,
+		"workspace_id": "ws-test",
+		"exp":          time.Now().Add(time.Hour).Unix(),
+		"iat":          time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	token.Header["kid"] = "v1"
@@ -502,11 +501,12 @@ func generateExpiredToken(t *testing.T, secret string) string {
 func generateTokenWithWrongAudience(t *testing.T, secret string) string {
 	t.Helper()
 	claims := jwt.MapClaims{
-		"iss": "bytebase",
-		"sub": "test@example.com",
-		"aud": "wrong.audience",
-		"exp": time.Now().Add(time.Hour).Unix(),
-		"iat": time.Now().Unix(),
+		"iss":          "bytebase",
+		"sub":          "test@example.com",
+		"aud":          "wrong.audience",
+		"workspace_id": "ws-test",
+		"exp":          time.Now().Add(time.Hour).Unix(),
+		"iat":          time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	token.Header["kid"] = "v1"

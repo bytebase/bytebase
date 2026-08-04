@@ -283,12 +283,7 @@ func decideAudience(aud any, expected string, resolveErr error, rejectPlainUserT
 // /mcp path. Request-derived values must never feed this — a Host header is
 // attacker-controlled and would let anyone mint a matching binding.
 func (s *Server) expectedMCPAudience(ctx context.Context, workspaceID string) (string, error) {
-	if s.store == nil && s.profile.ExternalURL == "" {
-		// Same class as GetEffectiveExternalURL's "isn't setup yet" error:
-		// deliberately unconfigured, not an infra failure.
-		return "", connect.NewError(connect.CodeFailedPrecondition, errors.New("no external URL configured"))
-	}
-	if workspaceID == "" && !s.profile.SaaS && s.store != nil {
+	if workspaceID == "" && !s.profile.SaaS {
 		if id, err := s.store.GetWorkspaceID(ctx); err == nil {
 			workspaceID = id
 		}
@@ -297,7 +292,7 @@ func (s *Server) expectedMCPAudience(ctx context.Context, workspaceID string) (s
 	if err != nil {
 		return "", err
 	}
-	return strings.TrimSuffix(externalURL, "/") + mcpResourcePath, nil
+	return externalURL + mcpResourcePath, nil
 }
 
 // audienceMatches reports whether a JWT aud claim (string or array form)
@@ -409,18 +404,16 @@ func (s *Server) buildResourceMetadataURL(c *echo.Context) string {
 
 	ctx := c.Request().Context()
 	if s.profile.ExternalURL != "" {
-		return strings.TrimSuffix(s.profile.ExternalURL, "/") + resourceMetadataPath
+		return s.profile.ExternalURL + resourceMetadataPath
 	}
 	workspaceID := ""
-	if !s.profile.SaaS && s.store != nil {
+	if !s.profile.SaaS {
 		if ws, err := s.store.GetWorkspaceID(ctx); err == nil {
 			workspaceID = ws
 		}
 	}
-	if s.store != nil {
-		if externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID); err == nil && externalURL != "" {
-			return strings.TrimSuffix(externalURL, "/") + resourceMetadataPath
-		}
+	if externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID); err == nil {
+		return externalURL + resourceMetadataPath
 	}
 
 	req := c.Request()
