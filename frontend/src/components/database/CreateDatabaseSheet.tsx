@@ -34,10 +34,6 @@ import {
 } from "@/components/ui/sheet";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
-import {
-  createPlanWithDraftReview,
-  DraftReviewIssueCreationError,
-} from "@/lib/plan/workflow";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -50,6 +46,12 @@ import {
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import {
+  CreateIssueRequestSchema,
+  Issue_Type,
+  IssueSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
+import {
+  CreatePlanRequestSchema,
   Plan_CreateDatabaseConfigSchema,
   Plan_SpecSchema,
   PlanSchema,
@@ -58,6 +60,7 @@ import {
   enginesSupportCreateDatabase,
   extractPlanUID,
   extractProjectResourceName,
+  getIssueRoute,
   instanceV1HasCollationAndCharacterSet,
   normalizeTitle,
 } from "@/utils";
@@ -189,6 +192,8 @@ function CreateDatabaseForm({
     projectReactive !== undefined;
   const enforceIssueTitle =
     projectHydrated && (projectReactive?.enforceIssueTitle ?? false);
+  const forceIssueLabels =
+    projectHydrated && (projectReactive?.forceIssueLabels ?? false);
 
   const projectFetchRef = useRef(0);
   useEffect(() => {
@@ -254,12 +259,10 @@ function CreateDatabaseForm({
   }, [databaseName, enforceIssueTitle, projectHydrated]);
 
   const projectIssueLabels = selectedProject?.issueLabels ?? [];
-  const [canCreateDraftReview, createPermissionReason] = usePermissionCheck(
+  const labelsMisconfigured =
+    forceIssueLabels && projectIssueLabels.length === 0;
+  const [canCreateIssue, createPermissionReason] = usePermissionCheck(
     ["bb.plans.create", "bb.issues.create"],
-    projectReactive
-  );
-  const [canUpdateIssue] = usePermissionCheck(
-    ["bb.issues.update"],
     projectReactive
   );
 
@@ -277,8 +280,10 @@ function CreateDatabaseForm({
     !isReservedName &&
     (!requireOwner || !!ownerName) &&
     projectHydrated &&
-    canCreateDraftReview &&
-    !(enforceIssueTitle && !normalizeTitle(title));
+    canCreateIssue &&
+    !(enforceIssueTitle && !normalizeTitle(title)) &&
+    !labelsMisconfigured &&
+    (!forceIssueLabels || issueLabels.length > 0);
 
   const instanceFetchRef = useRef(0);
   useEffect(() => {
@@ -392,44 +397,61 @@ function CreateDatabaseForm({
         specs: [spec],
         creator: currentUser.name,
       });
-      const { plan: createdPlan } = await createPlanWithDraftReview({
-        createIssue: (request) =>
-          issueServiceClientConnect.createIssue(request),
-        createPlan: (request) => planServiceClientConnect.createPlan(request),
-        creator: `users/${currentUser.email}`,
-        labels: issueLabels,
-        parent: effectiveProjectName,
-        plan: planCreate,
-      });
-      if (!isSessionActive(sessionId)) return;
-
-      onClose();
-      await router.push({
-        name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-        params: {
-          projectId: extractProjectResourceName(createdPlan.name),
-          planId: extractPlanUID(createdPlan.name),
-        },
-      });
-    } catch (error: unknown) {
-      if (!isSessionActive(sessionId)) return;
-      if (error instanceof DraftReviewIssueCreationError) {
+      // Create Database bypasses the draft review workflow (BYT-10015): the
+      // plan gets a submitted issue immediately and the user lands on Issue
+      // Detail. The rollout is still created on demand.
+      const createdPlan = await planServiceClientConnect.createPlan(
+        create(CreatePlanRequestSchema, {
+          parent: effectiveProjectName,
+          plan: planCreate,
+        })
+      );
+      let createdIssue;
+      try {
+        createdIssue = await issueServiceClientConnect.createIssue(
+          create(CreateIssueRequestSchema, {
+            parent: effectiveProjectName,
+            issue: create(IssueSchema, {
+              creator: `users/${currentUser.email}`,
+              draft: false,
+              labels: issueLabels,
+              plan: createdPlan.name,
+              title: effectiveTitle,
+              type: Issue_Type.DATABASE_CHANGE,
+            }),
+          })
+        );
+      } catch (error: unknown) {
+        // The plan exists but its issue was not created. Land on Plan Detail
+        // so the user can recover from there instead of orphaning the plan.
+        if (!isSessionActive(sessionId)) return;
         onClose();
         await router.push({
           name: PROJECT_V1_ROUTE_PLAN_DETAIL,
           params: {
-            projectId: extractProjectResourceName(error.plan.name),
-            planId: extractPlanUID(error.plan.name),
+            projectId: extractProjectResourceName(createdPlan.name),
+            planId: extractPlanUID(createdPlan.name),
           },
         });
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.failed"),
+          description: String(error),
+        });
+        return;
       }
+      if (!isSessionActive(sessionId)) return;
+
+      onClose();
+      await router.push(getIssueRoute(createdIssue));
+    } catch (error: unknown) {
+      if (!isSessionActive(sessionId)) return;
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: t("common.failed"),
-        description: String(
-          error instanceof DraftReviewIssueCreationError ? error.cause : error
-        ),
+        description: String(error),
       });
     } finally {
       if (isSessionActive(sessionId)) {
@@ -465,20 +487,22 @@ function CreateDatabaseForm({
             </FormField>
           )}
 
-          {selectedProject && projectIssueLabels.length > 0 && (
-            <IssueLabelSelect
-              labels={projectIssueLabels}
-              selected={issueLabels}
-              required={false}
-              onChange={setIssueLabels}
-            />
-          )}
-          {projectHydrated && !canUpdateIssue && (
+          {labelsMisconfigured && (
             <Alert
               variant="warning"
-              description={t("plan.draft-update-permission-required")}
+              title={t("create-db.labels-misconfigured.title")}
+              description={t("create-db.labels-misconfigured.description")}
             />
           )}
+          {selectedProject &&
+            (projectIssueLabels.length > 0 || forceIssueLabels) && (
+              <IssueLabelSelect
+                labels={projectIssueLabels}
+                selected={issueLabels}
+                required={forceIssueLabels}
+                onChange={setIssueLabels}
+              />
+            )}
 
           <FormField
             title={
