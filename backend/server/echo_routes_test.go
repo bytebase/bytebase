@@ -92,7 +92,14 @@ func TestMetricsRouteDisabledInSaaS(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := echo.New()
-			registerMetricsRoute(e, &config.Profile{SaaS: tt.saas})
+			if tt.saas {
+				registerMetricsRoute(e, &config.Profile{SaaS: true}, nil, nil)
+			} else {
+				// Self-host: use a real store and license service so the
+				// product-level license gauges are registered and collected.
+				_, st, licenseService := newMetricsTestEcho(t)
+				registerMetricsRoute(e, &config.Profile{SaaS: false}, st, licenseService)
+			}
 
 			req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
 			rec := httptest.NewRecorder()

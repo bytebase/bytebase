@@ -319,7 +319,39 @@ func (s *LicenseService) IsFeatureEnabledForInstance(ctx context.Context, worksp
 
 // GetUserLimit gets the user limit value for the plan.
 func (s *LicenseService) GetUserLimit(ctx context.Context, workspaceID string) int {
-	subscription := s.LoadSubscription(ctx, workspaceID)
+	return userLimitFromSubscription(s.LoadSubscription(ctx, workspaceID))
+}
+
+// GetUserLimitUncached returns the effective user limit read directly from the
+// database, bypassing the per-replica subscription and setting caches. Metrics
+// collection uses this so replicas derive equivalent values from shared
+// metadata. A metadata read failure is returned as an error instead of silently
+// falling back to the Free plan.
+func (s *LicenseService) GetUserLimitUncached(ctx context.Context, workspaceID string) (int, error) {
+	setting, err := s.store.GetSystemSettingUncached(ctx, workspaceID)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to get system setting")
+	}
+	if setting == nil {
+		return userLimitFromSubscription(defaultFreeSubscription), nil
+	}
+	if setting.License == "" {
+		return userLimitFromSubscription(defaultFreeSubscription), nil
+	}
+	subscription := defaultFreeSubscription
+	parsedSubscription, parseErr := s.parseLicense(setting.License, workspaceID)
+	if parseErr == nil {
+		subscription = parsedSubscription
+	}
+	// An expired or malformed license has the effective Free plan, mirroring
+	// LoadSubscription.
+	if isExpired(subscription) {
+		subscription = &v1pb.Subscription{Plan: v1pb.PlanType_FREE}
+	}
+	return userLimitFromSubscription(subscription), nil
+}
+
+func userLimitFromSubscription(subscription *v1pb.Subscription) int {
 	// Prefer to take values from the license first.
 	if subscription.Seats > 0 {
 		return int(subscription.Seats)
@@ -332,11 +364,7 @@ func (s *LicenseService) GetUserLimit(ctx context.Context, workspaceID string) i
 
 	// To be compatible with old licenses which don't have seat field set in the claim.
 	// Unlimited seat license.
-	if subscription.Seats <= 0 {
-		return math.MaxInt
-	}
-
-	return int(subscription.Seats)
+	return math.MaxInt
 }
 
 // GetInstanceLimit gets the instance limit value for the plan.

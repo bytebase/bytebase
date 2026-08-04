@@ -8,6 +8,10 @@ Bytebase is a governed database development workspace. It turns proposed databas
 The top-level collaboration boundary that contains projects, database connections, environments, users, and policies.
 _Avoid_: Project, organization
 
+**Seat-Occupying User**:
+An end user who consumes one workspace license seat through workspace membership. Pending invited users count; soft-deleted users and non-user identities do not.
+_Avoid_: Active user, principal count, logged-in user
+
 **Project**:
 A governance boundary for an application or team's databases. It can own project instances and owns database membership, issue workflow, approvals, labels, and rollout limits.
 _Avoid_: Workspace, repository, environment
