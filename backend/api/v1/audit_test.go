@@ -4,15 +4,20 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
+	"net/http"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
 // TestLogAuditToStdoutFormat is a contract test for the structured JSON fields
@@ -170,4 +175,89 @@ func TestAuditRedactsCredentials(t *testing.T) {
 			"issued Bytebase access token must never be logged — anyone with "+
 				"audit read access could use it as a valid API token")
 	})
+}
+
+// TestStreamingAuditPersistedBeforeSend pins the streaming audit contract: a
+// client must not observe a successful streaming response before the
+// corresponding audit entry is durably persisted. Regression test for the
+// TestAdminExecuteAuditLog flake where the audit insert raced the
+// client-visible response.
+func TestStreamingAuditPersistedBeforeSend(t *testing.T) {
+	t.Run("audit persisted before response delivered", func(t *testing.T) {
+		a := require.New(t)
+		recorder := &auditOrderRecorder{}
+		interceptor := &AuditInterceptor{
+			createAuditLogFunc: func(_ context.Context, _ *auditEntry) error {
+				recorder.record("audit")
+				return nil
+			},
+		}
+		handler := interceptor.WrapStreamingHandler(func(_ context.Context, conn connect.StreamingHandlerConn) error {
+			if err := conn.Receive(&v1pb.AdminExecuteRequest{}); err != nil {
+				return err
+			}
+			return conn.Send(&v1pb.AdminExecuteResponse{})
+		})
+
+		ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
+		a.NoError(handler(ctx, &auditRecorderConn{recorder: recorder}))
+
+		a.Equal([]string{"audit", "send"}, recorder.events,
+			"audit entry must be durably persisted before the response becomes observable to the client")
+	})
+
+	t.Run("audit failure blocks response delivery", func(t *testing.T) {
+		a := require.New(t)
+		recorder := &auditOrderRecorder{}
+		persistErr := errors.New("persist failed")
+		interceptor := &AuditInterceptor{
+			createAuditLogFunc: func(_ context.Context, _ *auditEntry) error {
+				recorder.record("audit")
+				return persistErr
+			},
+		}
+		handler := interceptor.WrapStreamingHandler(func(_ context.Context, conn connect.StreamingHandlerConn) error {
+			if err := conn.Receive(&v1pb.AdminExecuteRequest{}); err != nil {
+				return err
+			}
+			return conn.Send(&v1pb.AdminExecuteResponse{})
+		})
+
+		ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
+		a.ErrorIs(handler(ctx, &auditRecorderConn{recorder: recorder}), persistErr)
+		a.Equal([]string{"audit"}, recorder.events,
+			"response must not be delivered when the audit entry cannot be persisted")
+	})
+}
+
+// auditOrderRecorder records the order of audit persistence ("audit") and
+// underlying stream delivery ("send") events.
+type auditOrderRecorder struct {
+	events []string
+}
+
+func (r *auditOrderRecorder) record(event string) {
+	r.events = append(r.events, event)
+}
+
+// auditRecorderConn is a connect.StreamingHandlerConn fake whose Send stands
+// in for the moment the response becomes observable to the client.
+type auditRecorderConn struct {
+	connect.StreamingHandlerConn
+	recorder *auditOrderRecorder
+}
+
+func (*auditRecorderConn) Spec() connect.Spec {
+	return connect.Spec{Procedure: v1connect.SQLServiceAdminExecuteProcedure}
+}
+
+func (*auditRecorderConn) Peer() connect.Peer { return connect.Peer{} }
+
+func (*auditRecorderConn) RequestHeader() http.Header { return http.Header{} }
+
+func (*auditRecorderConn) Receive(any) error { return nil }
+
+func (c *auditRecorderConn) Send(any) error {
+	c.recorder.record("send")
+	return nil
 }
