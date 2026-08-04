@@ -41,9 +41,15 @@ remains correct for us today.
 ### 1. Hash at rest
 
 Add `directory_sync_token_hash` (hex SHA-256) as **field 27** — free on both sides — to
-`WorkspaceProfileSetting` in `proto/store/store/setting.proto`. Reserve field 15 there once
-migrated. The SCIM handler hashes the presented token and compares against the stored hash,
-still with `subtle.ConstantTimeCompare`.
+`WorkspaceProfileSetting` in `proto/store/store/setting.proto`. The SCIM handler hashes the
+presented token and compares against the stored hash, still with `subtle.ConstantTimeCompare`.
+
+Field 15 is deleted outright rather than reserved, by explicit decision: the retired declaration
+read as clutter, and reuse is a low practical risk since new fields append past the current
+maximum. The tradeoff is that nothing structurally prevents a future field from reclaiming tag 15
+— on the store side that is near-harmless (settings serialize through protojson, which is
+name-keyed), but on the v1 side a reused tag would be misread by an old binary client still
+sending `directory_sync_token`. Revisit if v1 ever gains binary clients outside this repo.
 
 Plain SHA-256, deliberately — not bcrypt/argon2. Slow KDFs exist to defend low-entropy
 human-chosen secrets. This is a 122-bit random token; a slow KDF buys nothing and costs latency
@@ -54,7 +60,8 @@ harmless by construction — which is the property that makes this bug class una
 
 ### 2. Remove the read path from the v1 API
 
-Delete `directory_sync_token` (field 15) from `proto/v1/v1/setting_service.proto`; reserve 15.
+Delete `directory_sync_token` (field 15) from `proto/v1/v1/setting_service.proto` — deleted
+outright, not reserved; see the note under "Hash at rest".
 Add `bool directory_sync_token_configured` (field 27) so the UI can render state without the
 secret.
 
