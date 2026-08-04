@@ -22,6 +22,9 @@ import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DETAIL,
   PROJECT_V1_ROUTE_GITOPS,
+  PROJECT_V1_ROUTE_INSTANCE_CREATE,
+  PROJECT_V1_ROUTE_INSTANCE_DETAIL,
+  PROJECT_V1_ROUTE_INSTANCES,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_MASKING_EXEMPTION,
@@ -569,6 +572,39 @@ const projectV1Routes: RouteObject[] = [
         // tab (mirrors the legacy vue-router DETAIL → ISSUES redirect). `issues`
         // is relative to the parent `projects/:projectId`.
         element: <Navigate to="issues" replace />,
+      },
+      {
+        path: "instances/new",
+        handle: {
+          name: PROJECT_V1_ROUTE_INSTANCE_CREATE,
+          requiredPermissionList: (): Permission[] => ["bb.instances.create"],
+        },
+        lazy: lazyPage(
+          () => import("@/routes/project/ProjectCreateInstancePage"),
+          (m) => m.ProjectCreateInstancePage
+        ),
+      },
+      {
+        path: "instances",
+        handle: {
+          name: PROJECT_V1_ROUTE_INSTANCES,
+          requiredPermissionList: (): Permission[] => ["bb.instances.list"],
+        },
+        lazy: lazyPage(
+          () => import("@/routes/project/ProjectInstancesPage"),
+          (m) => m.ProjectInstancesPage
+        ),
+      },
+      {
+        path: "instances/:instanceId",
+        handle: {
+          name: PROJECT_V1_ROUTE_INSTANCE_DETAIL,
+          requiredPermissionList: (): Permission[] => ["bb.instances.get"],
+        },
+        lazy: lazyPage(
+          () => import("@/routes/project/ProjectInstanceDetailPage"),
+          (m) => m.ProjectInstanceDetailPage
+        ),
       },
       {
         path: "databases",

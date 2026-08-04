@@ -18,6 +18,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_GITOPS,
+  PROJECT_V1_ROUTE_INSTANCES,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_MASKING_EXEMPTION,
   PROJECT_V1_ROUTE_MEMBERS,
@@ -33,6 +34,7 @@ import { RouterLink } from "@/components/RouterLink";
 import { useRecentVisit } from "@/hooks/useRecentVisit";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
+import { isDev } from "@/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -117,6 +119,12 @@ function useSidebarItems(): SidebarItem[] {
         type: "div",
         expand: true,
         children: [
+          {
+            title: t("common.instances"),
+            path: PROJECT_V1_ROUTE_INSTANCES,
+            type: "div",
+            hide: isDefault || !isDev(),
+          },
           {
             title: t("common.databases"),
             path: PROJECT_V1_ROUTE_DATABASES,

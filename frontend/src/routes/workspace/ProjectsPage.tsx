@@ -53,6 +53,10 @@ import {
   CREATE_PROJECT_PRODUCT_INTRO,
   useProductIntro,
 } from "@/lib/productIntro";
+import {
+  defaultActiveStateSearchParams,
+  getResourceStateFilter,
+} from "@/lib/resourceStateFilter";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -64,10 +68,6 @@ import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
-import {
-  defaultActiveStateSearchParams,
-  getResourceStateFilter,
-} from "./resourceStateFilter";
 
 const parseProjectSearch = createAdvancedSearchParser(["state", "label"]);
 

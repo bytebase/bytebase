@@ -11,6 +11,8 @@ import {
 } from "../proto-es/v1/instance_service_pb";
 
 export const UNKNOWN_INSTANCE_NAME = `instances/${UNKNOWN_ID}`;
+const INSTANCE_NAME_PATTERN =
+  /^(?:instances|projects\/[^/]+\/instances)\/[^/]+$/;
 
 export const unknownInstance = (): Instance => {
   return create(InstanceSchema, {
@@ -31,7 +33,7 @@ export const unknownInstanceResource = (): InstanceResource => {
 export const isValidInstanceName = (name: unknown): name is string => {
   return (
     typeof name === "string" &&
-    name.startsWith("instances/") &&
+    INSTANCE_NAME_PATTERN.test(name) &&
     name !== UNKNOWN_INSTANCE_NAME
   );
 };

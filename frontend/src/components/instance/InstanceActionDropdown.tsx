@@ -13,23 +13,28 @@ import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { InstanceDeleteDialog } from "./InstanceDeleteDialog";
+import { hasInstancePermission } from "./permission";
 
 interface InstanceActionDropdownProps {
   instance: Instance;
+  project?: Project;
+  onArchived?: () => void;
   onDeleted?: () => void;
 }
 
 export function InstanceActionDropdown({
   instance,
+  project,
+  onArchived,
   onDeleted,
 }: InstanceActionDropdownProps) {
   const { t } = useTranslation();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const canArchive = hasWorkspacePermissionV2("bb.instances.delete");
-  const canRestore = hasWorkspacePermissionV2("bb.instances.undelete");
+  const canArchive = hasInstancePermission(project, "bb.instances.delete");
+  const canRestore = hasInstancePermission(project, "bb.instances.undelete");
 
   const handleArchive = useCallback(async () => {
     const msg = t("instance.archive-instance-instance-name", {
@@ -48,8 +53,12 @@ export function InstanceActionDropdown({
         0: instance.title,
       }),
     });
-    router.replace({ name: INSTANCE_ROUTE_DASHBOARD });
-  }, [instance, t]);
+    if (onArchived) {
+      onArchived();
+    } else {
+      router.replace({ name: INSTANCE_ROUTE_DASHBOARD });
+    }
+  }, [instance, onArchived, t]);
 
   const handleRestore = useCallback(async () => {
     if (
@@ -109,8 +118,11 @@ export function InstanceActionDropdown({
         instance={instance}
         onOpenChange={setShowDeleteConfirm}
         onDeleted={() => {
-          onDeleted?.();
-          router.replace({ name: INSTANCE_ROUTE_DASHBOARD });
+          if (onDeleted) {
+            onDeleted();
+          } else {
+            router.replace({ name: INSTANCE_ROUTE_DASHBOARD });
+          }
         }}
       />
     </>

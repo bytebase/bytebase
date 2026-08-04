@@ -9,8 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Trans, useTranslation } from "react-i18next";
-import { router } from "@/app/router";
+import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/components/EngineIcon";
 import { EnvironmentSelect } from "@/components/EnvironmentSelect";
 import { FeatureBadge } from "@/components/FeatureBadge";
@@ -18,7 +17,6 @@ import { LabelListEditor } from "@/components/LabelListEditor";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { ResourceIdField } from "@/components/ResourceIdField";
 import { RouterLink } from "@/components/RouterLink";
-import { ResourceLink } from "@/components/sql-review/ResourceLink";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,14 +28,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useProjectByName } from "@/hooks/useProjectByName";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
   environmentNamePrefix,
   instanceNamePrefix,
-  projectNamePrefix,
 } from "@/stores/modules/v1/common";
 import {
   isValidEnvironmentName,
@@ -493,7 +489,6 @@ function SyncDatabases({
   const { t } = useTranslation();
   const ctx = useInstanceFormContext();
   const { hideAdvancedFeatures, instance, pendingCreateInstance } = ctx;
-  const project = useProjectByName(projectName ?? "");
 
   const [syncAll, setSyncAll] = useState(syncDatabases === undefined);
   const [selectedSet, setSelectedSet] = useState<Set<string>>(
@@ -568,8 +563,6 @@ function SyncDatabases({
   const visibleDatabases = filteredDatabases.slice(0, visibleDatabaseCount);
   const hasMore = filteredDatabases.length > visibleDatabaseCount;
   const hasProjectContext = !!projectName && isCreatingProp;
-  const projectTitle =
-    project.name === projectName ? project.title || projectName : projectName;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.nativeEvent.isComposing) return;
@@ -624,26 +617,6 @@ function SyncDatabases({
       }
     >
       <div className="flex flex-col gap-y-2">
-        {hasProjectContext && (
-          <Alert variant="info">
-            <Trans
-              t={t}
-              i18nKey="instance.sync-databases.project-description"
-              values={{ project: projectTitle }}
-              components={{
-                project: (
-                  <ResourceLink
-                    resource={projectName || ""}
-                    showResourceType={false}
-                    className="underline underline-offset-2"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  />
-                ),
-              }}
-            />
-          </Alert>
-        )}
         <label className="flex items-center gap-x-2 cursor-pointer">
           <Checkbox
             checked={syncAll}
@@ -747,6 +720,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
     showConnectionOptionsEvent,
     emitShowConnectionOptions,
     setResourceIdValidated,
+    parent,
   } = ctx;
   const { isEngineBeta, defaultPort, instanceLink, allowEditPort } = specs;
 
@@ -848,30 +822,14 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
     return id;
   }, [basicInfo.name]);
 
-  const routeProjectId = useMemo(() => {
-    const projectId = router.currentRoute.value.query.project;
-    return typeof projectId === "string" && projectId ? projectId : undefined;
-  }, []);
-  const routeProjectName = routeProjectId
-    ? `${projectNamePrefix}${routeProjectId}`
-    : "";
-
-  useEffect(() => {
-    if (!routeProjectName) return;
-    useAppStore
-      .getState()
-      .fetchProject(routeProjectName, true)
-      .catch(() => {
-        // Ignore prefetch failure. The instance creation request still uses the
-        // route project name directly.
-      });
-  }, [routeProjectName]);
-
   const setResourceId = useCallback(
     (id: string) => {
-      setBasicInfo((prev) => ({ ...prev, name: `instances/${id}` }));
+      setBasicInfo((prev) => ({
+        ...prev,
+        name: parent ? `${parent}/instances/${id}` : `instances/${id}`,
+      }));
     },
-    [setBasicInfo]
+    [parent, setBasicInfo]
   );
 
   // Duplicate-instance check used by the shared ResourceIdField's `validate`
@@ -884,7 +842,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
         const existing = await useAppStore
           .getState()
           .getOrFetchInstanceByName(
-            `${instanceNamePrefix}${id}`,
+            parent ? `${parent}/instances/${id}` : `${instanceNamePrefix}${id}`,
             true /* silent */
           );
         if (existing) {
@@ -902,7 +860,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
       }
       return [];
     },
-    [isCreating, t]
+    [isCreating, parent, t]
   );
 
   const currentMongoDBConnectionSchema = useMemo(() => {
@@ -1791,7 +1749,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                   allowEdit={
                     isCreating ? allowEdit && !!allowCreate : allowEdit
                   }
-                  projectName={routeProjectName}
+                  projectName={parent}
                   onOpenInfoPanel={onOpenInfoPanel}
                   syncDatabases={basicInfo.syncDatabases}
                   onSyncDatabasesChange={handleChangeSyncDatabases}

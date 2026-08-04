@@ -446,7 +446,7 @@ export type InstanceSlice = {
   createInstance: (
     instance: Instance,
     validateOnly?: boolean,
-    options?: { initialDatabaseProject?: string }
+    options?: { parent?: string; initialDatabaseProject?: string }
   ) => Promise<Instance>;
   updateInstance: (
     instance: Instance,
@@ -461,10 +461,12 @@ export type InstanceSlice = {
   ) => Promise<SyncInstanceResponse>;
   batchSyncInstances: (
     instanceNameList: string[],
-    enableFullSync: boolean
+    enableFullSync: boolean,
+    parent?: string
   ) => Promise<void>;
   batchUpdateInstances: (
-    requests: UpdateInstanceRequest[]
+    requests: UpdateInstanceRequest[],
+    parent?: string
   ) => Promise<Instance[]>;
   createDataSource: (params: {
     instance: string;
@@ -486,6 +488,7 @@ export type InstanceSlice = {
     instance?: Instance
   ) => Promise<ListInstanceDatabaseResponse>;
   fetchInstanceList: (params: {
+    parent?: string;
     pageSize?: number;
     pageToken?: string;
     orderBy?: string;

@@ -170,9 +170,13 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
     },
 
     createInstance: async (instance, validateOnly, options) => {
+      if (options?.parent && options.initialDatabaseProject) {
+        throw new Error("parent and initialDatabaseProject cannot both be set");
+      }
       const validateOnlyValue = validateOnly ?? false;
       const response = await instanceServiceClientConnect.createInstance(
         createProto(CreateInstanceRequestSchema, {
+          parent: options?.parent,
           instance,
           instanceId: extractInstanceResourceName(instance.name),
           validateOnly: validateOnlyValue,
@@ -237,17 +241,18 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
         })
       ),
 
-    batchSyncInstances: async (instanceNameList, enableFullSync) => {
+    batchSyncInstances: async (instanceNameList, enableFullSync, parent) => {
       await instanceServiceClientConnect.batchSyncInstances(
         createProto(BatchSyncInstancesRequestSchema, {
+          parent,
           requests: instanceNameList.map((name) => ({ name, enableFullSync })),
         })
       );
     },
 
-    batchUpdateInstances: async (requests) => {
+    batchUpdateInstances: async (requests, parent) => {
       const response = await instanceServiceClientConnect.batchUpdateInstances(
-        createProto(BatchUpdateInstancesRequestSchema, { requests })
+        createProto(BatchUpdateInstancesRequestSchema, { parent, requests })
       );
       return upsertInstances(response.instances);
     },
@@ -316,6 +321,7 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
     fetchInstanceList: async (params) => {
       const response = await instanceServiceClientConnect.listInstances(
         createProto(ListInstancesRequestSchema, {
+          parent: params.parent,
           pageSize: params.pageSize,
           pageToken: params.pageToken,
           orderBy: params.orderBy,

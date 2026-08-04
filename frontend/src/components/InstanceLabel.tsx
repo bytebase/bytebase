@@ -1,6 +1,9 @@
 import { type MouseEventHandler, type ReactNode, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { INSTANCE_ROUTE_DETAIL } from "@/app/router/handles";
+import {
+  INSTANCE_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_INSTANCE_DETAIL,
+} from "@/app/router/handles";
 import { EngineIcon } from "@/components/EngineIcon";
 import { RouterLink, type RouterLinkProps } from "@/components/RouterLink";
 import { cn } from "@/lib/utils";
@@ -12,6 +15,8 @@ import type {
 import { isValidInstanceName } from "@/types/v1/instance";
 import {
   extractInstanceResourceName,
+  extractProjectResourceName,
+  hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   instanceV1Name,
 } from "@/utils";
@@ -36,8 +41,14 @@ export function InstanceLabel({
   const { t } = useTranslation();
   const name = instanceProp?.name ?? instanceName ?? "";
   const instanceId = extractInstanceResourceName(name);
+  const projectName = name.match(/^(projects\/[^/]+)\/instances\/[^/]+$/)?.[1];
   const validInstanceName = isValidInstanceName(name) && !!instanceId;
-  const canGetInstance = hasWorkspacePermissionV2("bb.instances.get");
+  const project = useAppStore((s) =>
+    projectName ? s.projectsByName[projectName] : undefined
+  );
+  const canGetInstance = projectName
+    ? !!project && hasProjectPermissionV2(project, "bb.instances.get")
+    : hasWorkspacePermissionV2("bb.instances.get");
   const cachedInstance = useAppStore((s) =>
     validInstanceName && canGetInstance ? s.instancesByName[name] : undefined
   );
@@ -99,8 +110,15 @@ export function InstanceLabel({
     <RouterLink
       {...linkProps}
       to={{
-        name: INSTANCE_ROUTE_DETAIL,
-        params: { instanceId },
+        name: projectName
+          ? PROJECT_V1_ROUTE_INSTANCE_DETAIL
+          : INSTANCE_ROUTE_DETAIL,
+        params: projectName
+          ? {
+              projectId: extractProjectResourceName(projectName),
+              instanceId,
+            }
+          : { instanceId },
       }}
       className={cn(
         "inline-flex min-w-0 max-w-full items-center gap-x-1 normal-link hover:underline",

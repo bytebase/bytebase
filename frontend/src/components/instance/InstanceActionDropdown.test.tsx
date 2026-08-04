@@ -5,6 +5,10 @@ import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { InstanceSchema } from "@/types/proto-es/v1/instance_service_pb";
+import {
+  type Project,
+  ProjectSchema,
+} from "@/types/proto-es/v1/project_service_pb";
 import { InstanceActionDropdown } from "./InstanceActionDropdown";
 
 (
@@ -19,10 +23,15 @@ globalThis.ResizeObserver ??= class ResizeObserver {
 
 const mocks = vi.hoisted(() => ({
   hasWorkspacePermissionV2: vi.fn(() => true),
+  hasInstancePermission: vi.fn(() => true),
   archiveInstance: vi.fn(),
   restoreInstance: vi.fn(),
   deleteInstance: vi.fn(),
   routerReplace: vi.fn(),
+}));
+
+vi.mock("./permission", () => ({
+  hasInstancePermission: mocks.hasInstancePermission,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -60,7 +69,11 @@ vi.mock("@/utils", async () => {
   };
 });
 
-const renderMenu = async (state: State) => {
+const renderMenu = async (
+  state: State,
+  project?: Project,
+  callbacks?: { onArchived?: () => void; onDeleted?: () => void }
+) => {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -71,7 +84,13 @@ const renderMenu = async (state: State) => {
   });
 
   await act(async () => {
-    root.render(<InstanceActionDropdown instance={instance} />);
+    root.render(
+      <InstanceActionDropdown
+        instance={instance}
+        project={project}
+        {...callbacks}
+      />
+    );
   });
   await act(async () => {
     container
@@ -112,6 +131,22 @@ describe("InstanceActionDropdown", () => {
     act(() => menu.root.unmount());
   });
 
+  test("checks project permissions for a project instance", async () => {
+    const project = create(ProjectSchema, { name: "projects/app" });
+    const menu = await renderMenu(State.ACTIVE, project);
+
+    expect(mocks.hasInstancePermission).toHaveBeenCalledWith(
+      project,
+      "bb.instances.delete"
+    );
+    expect(mocks.hasInstancePermission).toHaveBeenCalledWith(
+      project,
+      "bb.instances.undelete"
+    );
+
+    act(() => menu.root.unmount());
+  });
+
   test("opens the default instance list after archiving", async () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     mocks.archiveInstance.mockResolvedValue(undefined);
@@ -129,6 +164,27 @@ describe("InstanceActionDropdown", () => {
     expect(mocks.routerReplace).toHaveBeenCalledWith({
       name: "workspace.instance",
     });
+
+    confirmSpy.mockRestore();
+    act(() => menu.root.unmount());
+  });
+
+  test("uses the owner callback after archiving", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const onArchived = vi.fn();
+    mocks.archiveInstance.mockResolvedValue(undefined);
+    const menu = await renderMenu(State.ACTIVE, undefined, { onArchived });
+    const archiveItem = Array.from(
+      document.body.querySelectorAll("[role='menuitem']")
+    ).find((el) => el.textContent === "common.archive");
+
+    await act(async () => {
+      archiveItem?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(onArchived).toHaveBeenCalledOnce();
+    expect(mocks.routerReplace).not.toHaveBeenCalled();
 
     confirmSpy.mockRestore();
     act(() => menu.root.unmount());

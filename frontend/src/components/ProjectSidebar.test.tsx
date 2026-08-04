@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     query: {},
   },
   defaultProject: "",
+  dev: true,
   getOrFetchProjectByName: vi.fn(),
   record: vi.fn(),
   push: vi.fn(),
@@ -38,6 +39,7 @@ const t = vi.hoisted(
       "common.databases": "Databases",
       "common.groups": "Groups",
       "common.issues": "Issues",
+      "common.instances": "Instances",
       "common.manage": "Manage",
       "common.members": options?.count === 2 ? "Members" : "Member",
       "common.setting": "Setting",
@@ -99,6 +101,11 @@ vi.mock("@/stores/app", () => {
   return { useAppStore };
 });
 
+vi.mock("@/utils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils")>()),
+  isDev: () => mocks.dev,
+}));
+
 let ProjectSidebar: typeof import("./ProjectSidebar").ProjectSidebar;
 
 const renderIntoContainer = (element: ReactElement) => {
@@ -127,10 +134,52 @@ beforeEach(async () => {
     projectId: "sample",
   };
   mocks.defaultProject = "";
+  mocks.dev = true;
   ({ ProjectSidebar } = await import("./ProjectSidebar"));
 });
 
 describe("ProjectSidebar", () => {
+  test("renders project instances before databases", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <ProjectSidebar />
+    );
+    render();
+
+    const labels = Array.from(container.querySelectorAll("a")).map((link) =>
+      link.textContent?.trim()
+    );
+    expect(labels.indexOf("Instances")).toBeGreaterThan(-1);
+    expect(labels.indexOf("Instances")).toBeLessThan(
+      labels.indexOf("Databases")
+    );
+
+    unmount();
+  });
+
+  test("hides project instances for the default project", () => {
+    mocks.defaultProject = "projects/sample";
+    const { container, render, unmount } = renderIntoContainer(
+      <ProjectSidebar />
+    );
+    render();
+
+    expect(container.textContent).not.toContain("Instances");
+
+    unmount();
+  });
+
+  test("hides project instances in release builds", () => {
+    mocks.dev = false;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProjectSidebar />
+    );
+    render();
+
+    expect(container.textContent).not.toContain("Instances");
+
+    unmount();
+  });
+
   test("renders the settings route with a plural label", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ProjectSidebar />

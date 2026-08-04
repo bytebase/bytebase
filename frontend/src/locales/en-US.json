@@ -1272,7 +1272,6 @@
     "sync-databases": {
       "add-database": "+ Add database, press enter to submit",
       "description": "Choose which databases to sync from this instance.",
-      "project-description": "Synced databases will be added to <project>{{project}}</project>.",
       "project-sync-all": "Sync all databases to this project",
       "search-database": "Search database",
       "self": "Sync Databases",
