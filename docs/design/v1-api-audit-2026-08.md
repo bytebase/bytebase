@@ -29,28 +29,6 @@ Same read path, lower severity: AWS `role_arn` and `external_id` are marked `INP
 returned anyway (`instance_service.proto:756,759` → `instance_service_converter.go:302-303`).
 The external ID is the confused-deputy guard shared with the customer's AWS account.
 
-### T3 ✅ HIGH — live credentials written to the audit log in plaintext
-
-> **FIXED.** Redactors added for `ServiceAccount` (the API key), `UpdateSettingRequest` and
-> `Setting` (SMTP password, AI key, all six IM secrets), and `IdentityProvider` (OAuth2/OIDC
-> client secrets, LDAP bind password), wired into both `getRequestString` and
-> `getResponseString`. Covered by behavioral tests that populate each secret and assert it never
-> reaches the marshaled payload; removing the redactors fails 11 of them.
->
-> The IdP secrets were **not** in the original finding — the read path blanks them, so only the
-> create/update *request* payload leaked. Found by walking every audited RPC's request and
-> response message tree for secret-shaped fields rather than reasoning from the reported cases.
->
-> Existing audit rows are not rewritten. Treat any service-account key, SMTP password, AI key, IM
-> secret, or IdP client secret written before this as disclosed to anyone with audit-log read
-> access, and rotate.
-
-- **Service-account API keys.** `backend/api/v1/service_account_service.go:117` (create) and `:270` (rotate) set `result.ServiceKey = serviceKey`. `audit.go` has redactors only for `ExchangeToken` (`:463`, `:512`) — none for `ServiceAccount` — so it falls through to `default: protojson.Marshal` and the live key lands in `audit_log.response`, and in stdout when `RuntimeEnableAuditLogStdout` is set (`audit.go:312`).
-- The codebase already names this exact hazard for the sibling type: `redactExchangeTokenResponse` exists because *"Logging it would give anyone with audit-log read access a valid API token"* (`audit.go:612-616`).
-- **◐ `UpdateSetting` payloads.** No `*v1pb.UpdateSettingRequest` case in `getRequestString` (`audit.go:446-495`), so SMTP password, AI `api_key`, all six IM secrets and the directory-sync token are logged unredacted. Note `getRequestResource` *does* have a case for this type (`audit.go:433`) — the type was handled for resource extraction but not for redaction.
-
-Anyone with `bb.auditLogs.search`/`export`, or read access to the log pipeline, harvests these.
-
 ---
 
 # TIER 2 — Cross-project authorization gaps
@@ -278,12 +256,11 @@ despite `VALIDATION_STANDARDS.md`.
 # What I'd do, in order
 
 1. **Runtime-confirm T9.** Eleven bad logins. If the eleventh is accepted, there is no lockout and that outranks everything else here.
-2. ~~**Redact the audit path** (T3).~~ **Done** — plus IdP secrets, which the original finding missed. Rotate anything already written to the log.
-3. **Blank the keytab** (T2), and stop returning AWS `role_arn`/`external_id`.
-4. **Close the multi-resource ACL class, not the instances** (T4–T7 + the pending `DiffSchema` patch): teach `getResourceFromRequest` to collect *every* `resource_reference`d field including oneof and repeated members, then annotate `DiffSchemaRequest.changelog`, `CheckReleaseRequest.targets`, `Revision.release/file/task_run`. `UpdateDatabase`'s project-transfer case (`acl.go:604-624`) is the in-repo precedent.
-5. **Give sheets an ownership model** (T5), or at minimum scope the blob fetch by the owning project/workspace. Until then the sheet namespace is workspace-global by design, and should be documented as such.
-6. **Fail closed**: reject `AUTH_METHOD_UNSPECIFIED` at startup; make `permission` on a CUSTOM RPC either enforced or a build error, since 20 of them are currently decorative.
-7. **Wire api-linter into CI** at the 474-finding baseline. None of Tier 5 was visible to `buf lint`'s `BASIC` profile, which is why it accumulated.
+2. **Blank the keytab** (T2), and stop returning AWS `role_arn`/`external_id`.
+3. **Close the multi-resource ACL class, not the instances** (T4–T7 + the pending `DiffSchema` patch): teach `getResourceFromRequest` to collect *every* `resource_reference`d field including oneof and repeated members, then annotate `DiffSchemaRequest.changelog`, `CheckReleaseRequest.targets`, `Revision.release/file/task_run`. `UpdateDatabase`'s project-transfer case (`acl.go:604-624`) is the in-repo precedent.
+4. **Give sheets an ownership model** (T5), or at minimum scope the blob fetch by the owning project/workspace. Until then the sheet namespace is workspace-global by design, and should be documented as such.
+5. **Fail closed**: reject `AUTH_METHOD_UNSPECIFIED` at startup; make `permission` on a CUSTOM RPC either enforced or a build error, since 20 of them are currently decorative.
+6. **Wire api-linter into CI** at the 474-finding baseline. None of Tier 5 was visible to `buf lint`'s `BASIC` profile, which is why it accumulated.
 
 **Note on scope.** Tier 1–3 are security issues in a shipped product, and everything here is still
 a report — untouched. The three patches from earlier in the session (`SearchProjects` proto
