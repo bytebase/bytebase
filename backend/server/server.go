@@ -245,7 +245,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.bus, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
-	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, oauth2Service, mcpServer, stripeWebhookHandler, profile)
+	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, oauth2Service, mcpServer, stripeWebhookHandler, s.store, s.licenseService, profile)
 
 	serverStarted = true
 	return s, nil
