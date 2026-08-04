@@ -36,12 +36,17 @@ type Server struct {
 	revokedAccessTokens sync.Map // map[string]struct{}
 
 	// legacyAudienceWindowEnd is when the migration window for legacy
-	// fixed-audience tokens (bb.oauth2.access, bb.user.access) at /mcp closes.
-	// Anchored at process start: the post-upgrade server never mints those
-	// audiences, so every legitimately issued legacy token expires within one
-	// access-token lifetime of the deploy, and process start is at or after the
-	// last pre-upgrade mint. A restart re-opens the window harmlessly — there
-	// are no fresh legacy tokens left for it to admit.
+	// bb.oauth2.access tokens at /mcp closes. Anchored at process start: the
+	// post-upgrade server never mints that audience, so every legitimately
+	// issued token expires within one access-token lifetime of the deploy, and
+	// process start is at or after the last pre-upgrade mint. A restart
+	// re-opens the window harmlessly — there are no fresh bb.oauth2.access
+	// tokens left for it to admit.
+	//
+	// That self-bounding argument holds only for an audience nothing mints
+	// anymore. bb.user.access is minted by every web login, so it is
+	// deliberately NOT window-gated — a window would just make its acceptance
+	// flap with restarts; see rejectPlainUserTokenAtMCP for how it retires.
 	legacyAudienceWindowEnd time.Time
 
 	// planCheckPollBudgetOverride lets tests shorten the plan-check poll budget.
@@ -216,6 +221,15 @@ func (s *Server) RegisterRoutes(e *echo.Echo) {
 	e.Any(mcpResourcePath, echo.WrapHandler(s.httpHandler), s.authMiddleware)
 }
 
+// rejectPlainUserTokenAtMCP is the flip that retires plain web-session tokens
+// (bb.user.access) at /mcp. Deliberately inactive: unlike bb.oauth2.access,
+// this audience is minted by every web login, so no migration window can
+// retire it — and the spec gates the hard cut on a scoped service-account /
+// workload-identity flow existing first (spec §"Deferred product decisions";
+// proposal §6.5 names the service-account token proxy as the dependent).
+// Flipped in PR 5/6 once that credential ships.
+const rejectPlainUserTokenAtMCP = false
+
 // audienceAllowed reports whether a bearer token's audience admits it to /mcp.
 //
 // The durable rule is a single audience: the canonical MCP resource URI derived
@@ -225,11 +239,11 @@ func (s *Server) RegisterRoutes(e *echo.Echo) {
 // re-authorize, by design (grants must not silently rebind to a URL the user
 // never consented to).
 //
-// The two fixed legacy audiences are admitted only inside the migration window
-// (see legacyAudienceWindowEnd): bb.oauth2.access tokens minted by a
-// pre-upgrade release, and bb.user.access web-session tokens pasted into MCP
-// clients manually, which get the same one-lifetime grace instead of an abrupt
-// cut at deploy.
+// Legacy bb.oauth2.access tokens (minted by a pre-upgrade release, never by
+// this one) are admitted only inside the migration window (see
+// legacyAudienceWindowEnd). Plain bb.user.access session tokens pasted into
+// MCP clients manually are admitted without a window until
+// rejectPlainUserTokenAtMCP flips.
 //
 // If no trusted external URL is configured, there is no expected audience and
 // resource-bound tokens fail closed; after the window such a deployment
@@ -239,12 +253,13 @@ func (s *Server) RegisterRoutes(e *echo.Echo) {
 // verdict, so the caller reports a server problem instead of blaming the token.
 func (s *Server) audienceAllowed(ctx context.Context, aud any, workspaceID string) (bool, error) {
 	expected, resolveErr := s.expectedMCPAudience(ctx, workspaceID)
-	return decideAudience(aud, expected, resolveErr, time.Now().Before(s.legacyAudienceWindowEnd))
+	return decideAudience(aud, expected, resolveErr, time.Now().Before(s.legacyAudienceWindowEnd), rejectPlainUserTokenAtMCP)
 }
 
 // decideAudience is the pure decision behind audienceAllowed, split out so the
-// resolver-failure branches are unit-testable without a failing store.
-func decideAudience(aud any, expected string, resolveErr error, legacyWindowOpen bool) (bool, error) {
+// resolver-failure branches and the rejectPlainUserToken flip are
+// unit-testable without a failing store or a const edit.
+func decideAudience(aud any, expected string, resolveErr error, legacyWindowOpen, rejectPlainUserToken bool) (bool, error) {
 	switch {
 	case resolveErr == nil:
 		if audienceMatches(aud, expected) {
@@ -253,15 +268,18 @@ func decideAudience(aud any, expected string, resolveErr error, legacyWindowOpen
 	case connect.CodeOf(resolveErr) == connect.CodeFailedPrecondition:
 		// Deliberately unconfigured (GetEffectiveExternalURL's "isn't setup
 		// yet"): no expected audience exists, so fall through to the legacy
-		// window rather than erroring.
+		// audiences rather than erroring.
 		slog.Warn("no external URL is configured; only legacy-audience tokens can authenticate at /mcp",
 			log.BBError(resolveErr))
 	default:
 		// Infra failure reading the trusted config: not a verdict on the token.
 		return false, resolveErr
 	}
-	if legacyWindowOpen {
-		return audienceMatches(aud, auth.OAuth2AccessTokenAudience) || audienceMatches(aud, auth.AccessTokenAudience), nil
+	if !rejectPlainUserToken && audienceMatches(aud, auth.AccessTokenAudience) {
+		return true, nil
+	}
+	if legacyWindowOpen && audienceMatches(aud, auth.OAuth2AccessTokenAudience) {
+		return true, nil
 	}
 	return false, nil
 }

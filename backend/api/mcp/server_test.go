@@ -251,11 +251,13 @@ func TestMCPUnauthenticatedRejectedEndToEnd(t *testing.T) {
 }
 
 // TestMCPAuthMiddlewareAudienceMatrix is the P1a PR 3 audience boundary. The
-// only durably accepted audience is the live-config MCP resource URI
-// (external URL + /mcp, trusted config only — never request headers). The two
-// fixed legacy audiences are accepted solely inside the migration window: one
-// OAuth2 access-token lifetime from process start, by which time every token
-// minted by a pre-upgrade release has expired on its own.
+// durably accepted audience is the live-config MCP resource URI (external URL
+// + /mcp, trusted config only — never request headers). Legacy bb.oauth2.access
+// tokens are accepted solely inside the migration window (one OAuth2
+// access-token lifetime from process start, by which time every token minted
+// by a pre-upgrade release has expired on its own). Plain bb.user.access
+// session tokens are accepted without a window until the scoped
+// service-account flow lands (rejectPlainUserTokenAtMCP).
 func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 	secret := "test-secret-key"
 
@@ -316,17 +318,20 @@ func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
-			name:           "legacy user audience accepted during the window",
+			name:           "plain user audience accepted during the window",
 			externalURL:    "https://bb.example.com",
 			token:          func(t *testing.T) string { return generateUserAudienceToken(t, secret) },
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "legacy user audience rejected after the window",
+			// bb.user.access is NOT window-gated: web login mints it daily
+			// forever, and its retirement (rejectPlainUserTokenAtMCP) is gated
+			// on the scoped service-account flow landing first.
+			name:           "plain user audience still accepted after the window",
 			externalURL:    "https://bb.example.com",
 			token:          func(t *testing.T) string { return generateUserAudienceToken(t, secret) },
 			windowExpired:  true,
-			expectedStatus: http.StatusUnauthorized,
+			expectedStatus: http.StatusOK,
 		},
 		{
 			name:        "unconfigured external URL fails closed for resource tokens",
@@ -392,33 +397,52 @@ func TestDecideAudience(t *testing.T) {
 	infraDown := connect.NewError(connect.CodeInternal, errors.New("failed to get workspace setting: db unreachable"))
 
 	t.Run("matching expected audience is allowed", func(t *testing.T) {
-		allowed, err := decideAudience(expected, expected, nil, false)
+		allowed, err := decideAudience(expected, expected, nil, false, rejectPlainUserTokenAtMCP)
 		require.NoError(t, err)
 		require.True(t, allowed)
 	})
 
 	t.Run("mismatch with a closed window is refused", func(t *testing.T) {
-		allowed, err := decideAudience("https://old.example.com/mcp", expected, nil, false)
+		allowed, err := decideAudience("https://old.example.com/mcp", expected, nil, false, rejectPlainUserTokenAtMCP)
 		require.NoError(t, err)
 		require.False(t, allowed)
 	})
 
 	t.Run("unconfigured external URL falls back to the legacy window", func(t *testing.T) {
-		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, "", unconfigured, true)
+		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, "", unconfigured, true, rejectPlainUserTokenAtMCP)
 		require.NoError(t, err)
 		require.True(t, allowed)
 	})
 
-	t.Run("unconfigured external URL after the window refuses everything", func(t *testing.T) {
-		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, "", unconfigured, false)
+	t.Run("oauth2 audience is refused once the window closes", func(t *testing.T) {
+		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, "", unconfigured, false, rejectPlainUserTokenAtMCP)
+		require.NoError(t, err)
+		require.False(t, allowed)
+	})
+
+	t.Run("plain user audience is accepted regardless of the window", func(t *testing.T) {
+		allowed, err := decideAudience(auth.AccessTokenAudience, expected, nil, false, false)
+		require.NoError(t, err)
+		require.True(t, allowed)
+	})
+
+	t.Run("plain user audience is refused once the scoped-SA-gated flip lands", func(t *testing.T) {
+		// Pins the PR 5/6 behavior: flipping rejectPlainUserTokenAtMCP retires
+		// bb.user.access at /mcp even while the oauth2 window is still open.
+		allowed, err := decideAudience(auth.AccessTokenAudience, expected, nil, true, true)
 		require.NoError(t, err)
 		require.False(t, allowed)
 	})
 
 	t.Run("infra failure is reported as an error, not a token verdict", func(t *testing.T) {
-		allowed, err := decideAudience(expected, "", infraDown, true)
+		allowed, err := decideAudience(expected, "", infraDown, true, rejectPlainUserTokenAtMCP)
 		require.Error(t, err)
 		require.False(t, allowed)
+	})
+
+	t.Run("the plain-user-token flip is inactive this release", func(t *testing.T) {
+		require.False(t, rejectPlainUserTokenAtMCP,
+			"retiring bb.user.access at /mcp is gated on the scoped service-account flow (spec deferred decisions; proposal 6.5)")
 	})
 }
 
