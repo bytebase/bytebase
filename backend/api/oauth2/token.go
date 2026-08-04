@@ -214,7 +214,25 @@ func (s *Service) validateAuthorizationCode(ctx context.Context, client *store.O
 	if failure := checkConsentedScope(formValues, authCode.Config.Scope); failure != nil {
 		return nil, failure
 	}
+	if authCode.Config.Resource == "" {
+		return nil, legacyGrantFailure()
+	}
 	return authCode, nil
+}
+
+// legacyGrantFailure refuses a grant stored without a resource binding — a row
+// created before resource persistence (3.22.1), since consent now binds every
+// grant. Access tokens carry the grant's resource as their audience, so an
+// unbound grant has nothing valid to mint. invalid_grant makes an RFC-compliant
+// client discard the grant and rerun the OAuth flow; the description adds the
+// in-band recovery for MCP clients (the reauthorize tool exists for exactly
+// this). Callers run it before consuming the grant, so the row is left to the
+// expiry sweep instead of being burned by a refusal that issued nothing.
+func legacyGrantFailure() *oauth2Failure {
+	return &oauth2Failure{
+		code:        "invalid_grant",
+		description: "this grant predates MCP resource binding and can no longer be used; re-authorize to get a new grant (run the reauthorize tool in an MCP session, or remove and reconnect this MCP server)",
+	}
 }
 
 // tokenFailure renders a helper's refusal as an RFC 6749 token-endpoint error.
@@ -236,45 +254,11 @@ func (s *Service) handleRefreshTokenGrant(c *echo.Context, client *store.OAuth2C
 		return oauth2Error(c, http.StatusBadRequest, "unauthorized_client", "client not authorized for refresh_token grant")
 	}
 
-	// Validate refresh token
-	if req.RefreshToken == "" {
-		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "refresh_token is required")
+	refreshToken, failure := s.validateRefreshTokenGrant(ctx, client, req, formValues)
+	if failure != nil {
+		return tokenFailure(c, failure)
 	}
-
 	tokenHash := auth.HashToken(req.RefreshToken)
-	refreshToken, err := s.store.GetOAuth2RefreshToken(ctx, client.ClientID, tokenHash)
-	if err != nil {
-		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to lookup refresh token")
-	}
-	if refreshToken == nil {
-		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "invalid refresh token")
-	}
-
-	// Validate token belongs to this client BEFORE deleting
-	// This prevents DoS where attacker with stolen token invalidates it for legitimate client
-	if refreshToken.ClientID != client.ClientID {
-		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "refresh token was not issued to this client")
-	}
-
-	// Validate not expired
-	if time.Now().After(refreshToken.ExpiresAt) {
-		// Delete expired token
-		if err := s.store.DeleteOAuth2RefreshToken(ctx, client.ClientID, tokenHash); err != nil {
-			slog.Warn("failed to delete expired OAuth2 refresh token", log.BBError(err))
-		}
-		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "refresh token has expired")
-	}
-
-	// A refresh re-issues the grant as consented: the stored resource and scope
-	// are carried forward verbatim, and a request naming different ones is
-	// rejected rather than honored. Checked before the token is consumed so a
-	// rejected refresh leaves the client able to retry correctly.
-	if failure := checkConsentedResource(formValues, refreshToken.Config.GetResource()); failure != nil {
-		return tokenFailure(c, failure)
-	}
-	if failure := checkConsentedScope(formValues, refreshToken.Config.GetScope()); failure != nil {
-		return tokenFailure(c, failure)
-	}
 
 	// Consume the refresh token after validations pass. This atomic delete is
 	// the single-use rotation gate: concurrent refreshes race here so only the
@@ -312,6 +296,56 @@ func (s *Service) handleRefreshTokenGrant(c *echo.Context, client *store.OAuth2C
 		resource:    refreshToken.Config.GetResource(),
 		scope:       refreshToken.Config.GetScope(),
 	})
+}
+
+// validateRefreshTokenGrant looks up the refresh token and runs every check
+// that must pass before it may be consumed: client binding, expiry, the
+// consented resource/scope match, and the legacy resource-binding gate.
+// Returning a failure leaves the token intact so the client can correct its
+// request and retry — or, when the grant itself is retired, re-authorize.
+func (s *Service) validateRefreshTokenGrant(ctx context.Context, client *store.OAuth2ClientMessage, req *tokenRequest, formValues url.Values) (*store.OAuth2RefreshTokenMessage, *oauth2Failure) {
+	if req.RefreshToken == "" {
+		return nil, &oauth2Failure{code: "invalid_request", description: "refresh_token is required"}
+	}
+
+	tokenHash := auth.HashToken(req.RefreshToken)
+	refreshToken, err := s.store.GetOAuth2RefreshToken(ctx, client.ClientID, tokenHash)
+	if err != nil {
+		return nil, &oauth2Failure{code: "server_error", description: "failed to lookup refresh token"}
+	}
+	if refreshToken == nil {
+		return nil, &oauth2Failure{code: "invalid_grant", description: "invalid refresh token"}
+	}
+
+	// Validate token belongs to this client BEFORE deleting
+	// This prevents DoS where attacker with stolen token invalidates it for legitimate client
+	if refreshToken.ClientID != client.ClientID {
+		return nil, &oauth2Failure{code: "invalid_grant", description: "refresh token was not issued to this client"}
+	}
+
+	// Validate not expired
+	if time.Now().After(refreshToken.ExpiresAt) {
+		// Delete expired token
+		if err := s.store.DeleteOAuth2RefreshToken(ctx, client.ClientID, tokenHash); err != nil {
+			slog.Warn("failed to delete expired OAuth2 refresh token", log.BBError(err))
+		}
+		return nil, &oauth2Failure{code: "invalid_grant", description: "refresh token has expired"}
+	}
+
+	// A refresh re-issues the grant as consented: the stored resource and scope
+	// are carried forward verbatim, and a request naming different ones is
+	// rejected rather than honored. Checked before the token is consumed so a
+	// rejected refresh leaves the client able to retry correctly.
+	if failure := checkConsentedResource(formValues, refreshToken.Config.GetResource()); failure != nil {
+		return nil, failure
+	}
+	if failure := checkConsentedScope(formValues, refreshToken.Config.GetScope()); failure != nil {
+		return nil, failure
+	}
+	if refreshToken.Config.GetResource() == "" {
+		return nil, legacyGrantFailure()
+	}
+	return refreshToken, nil
 }
 
 // workspaceResolutionError maps the typed errors from resolveBoundWorkspace
@@ -395,7 +429,9 @@ func (s *Service) issueTokens(c *echo.Context, client *store.OAuth2ClientMessage
 
 	// Generate access token (JWT) with the workspace_id claim that
 	// downstream APIs (gRPC services, MCP middleware) use to scope requests.
-	accessToken, err := auth.GenerateOAuth2AccessToken(grant.userEmail, client.ClientID, grant.workspaceID, s.secret, accessTokenExpiry)
+	// The audience is the grant's stored canonical resource, so the token is
+	// only accepted at the /mcp endpoint the user consented to.
+	accessToken, err := auth.GenerateOAuth2AccessToken(grant.userEmail, client.ClientID, grant.workspaceID, grant.resource, s.secret, accessTokenExpiry)
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", fmt.Sprintf("failed to generate access token with error: %v", err))
 	}

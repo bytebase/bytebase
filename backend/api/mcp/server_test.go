@@ -8,8 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -246,6 +248,194 @@ func TestMCPUnauthenticatedRejectedEndToEnd(t *testing.T) {
 	defer resp.Body.Close()
 
 	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+}
+
+// TestMCPAuthMiddlewareAudienceMatrix is the P1a PR 3 audience boundary. The
+// only durably accepted audience is the live-config MCP resource URI
+// (external URL + /mcp, trusted config only — never request headers). The two
+// fixed legacy audiences are accepted solely inside the migration window: one
+// OAuth2 access-token lifetime from process start, by which time every token
+// minted by a pre-upgrade release has expired on its own.
+func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
+	secret := "test-secret-key"
+
+	mintResourceToken := func(t *testing.T, resource string) string {
+		t.Helper()
+		token, err := auth.GenerateOAuth2AccessToken("test@example.com", "client-A", "ws-test", resource, secret, time.Hour)
+		require.NoError(t, err)
+		return token
+	}
+
+	tests := []struct {
+		name string
+		// externalURL is the trusted live config ("" = unconfigured).
+		externalURL    string
+		token          func(t *testing.T) string
+		windowExpired  bool
+		expectedStatus int
+	}{
+		{
+			name:           "matching resource audience is accepted",
+			externalURL:    "https://bb.example.com",
+			token:          func(t *testing.T) string { return mintResourceToken(t, "https://bb.example.com/mcp") },
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "resource audience still accepted after the migration window",
+			externalURL:    "https://bb.example.com",
+			token:          func(t *testing.T) string { return mintResourceToken(t, "https://bb.example.com/mcp") },
+			windowExpired:  true,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "rotated external URL kills outstanding resource tokens",
+			externalURL: "https://new.example.com",
+			// The token was minted from a grant stored under the old URL; the
+			// middleware compares against live config, so rotation 401s it at
+			// use time and the client re-authorizes.
+			token:          func(t *testing.T) string { return mintResourceToken(t, "https://old.example.com/mcp") },
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "bare-origin audience is not the canonical resource",
+			externalURL:    "https://bb.example.com",
+			token:          func(t *testing.T) string { return mintResourceToken(t, "https://bb.example.com") },
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "legacy oauth2 audience accepted during the window",
+			externalURL:    "https://bb.example.com",
+			token:          func(t *testing.T) string { return generateValidToken(t, secret) },
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "legacy oauth2 audience rejected after the window",
+			externalURL:    "https://bb.example.com",
+			token:          func(t *testing.T) string { return generateValidToken(t, secret) },
+			windowExpired:  true,
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "legacy user audience accepted during the window",
+			externalURL:    "https://bb.example.com",
+			token:          func(t *testing.T) string { return generateUserAudienceToken(t, secret) },
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "legacy user audience rejected after the window",
+			externalURL:    "https://bb.example.com",
+			token:          func(t *testing.T) string { return generateUserAudienceToken(t, secret) },
+			windowExpired:  true,
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:        "unconfigured external URL fails closed for resource tokens",
+			externalURL: "",
+			// No trusted config means no expected audience to compare against;
+			// the request-derived host must never substitute for it.
+			token:          func(t *testing.T) string { return mintResourceToken(t, "https://bb.example.com/mcp") },
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "unconfigured external URL still admits legacy tokens during the window",
+			externalURL:    "",
+			token:          func(t *testing.T) string { return generateValidToken(t, secret) },
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: tc.externalURL}
+			s, err := NewServer(nil, profile, secret)
+			require.NoError(t, err)
+			if tc.windowExpired {
+				s.legacyAudienceWindowEnd = time.Now().Add(-time.Second)
+			}
+
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", "Bearer "+tc.token(t))
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			handler := s.authMiddleware(func(c *echo.Context) error {
+				return c.String(http.StatusOK, "success")
+			})
+			err = handler(c)
+			if err != nil {
+				echo.DefaultHTTPErrorHandler(true)(c, err)
+			}
+
+			require.Equal(t, tc.expectedStatus, rec.Code, rec.Body.String())
+			if tc.expectedStatus == http.StatusUnauthorized {
+				require.Contains(t, strings.ToLower(rec.Body.String()), "audience")
+				// Containment: even audience-mismatch challenges must not
+				// advertise the scope vocabulary before P1b enforcement.
+				wwwAuth := rec.Header().Get("WWW-Authenticate")
+				require.NotEmpty(t, wwwAuth)
+				require.NotContains(t, wwwAuth, "scope=")
+				require.NotContains(t, wwwAuth, "mcp:read")
+			}
+		})
+	}
+}
+
+// TestDecideAudience covers the resolver branches the HTTP matrix cannot reach
+// without a failing store: a deliberately unconfigured deployment falls back to
+// the legacy window, while an infra failure reading the trusted config surfaces
+// as an error — a server problem, never a verdict against the token.
+func TestDecideAudience(t *testing.T) {
+	const expected = "https://bb.example.com/mcp"
+	unconfigured := connect.NewError(connect.CodeFailedPrecondition, errors.New("external URL isn't setup yet"))
+	infraDown := connect.NewError(connect.CodeInternal, errors.New("failed to get workspace setting: db unreachable"))
+
+	t.Run("matching expected audience is allowed", func(t *testing.T) {
+		allowed, err := decideAudience(expected, expected, nil, false)
+		require.NoError(t, err)
+		require.True(t, allowed)
+	})
+
+	t.Run("mismatch with a closed window is refused", func(t *testing.T) {
+		allowed, err := decideAudience("https://old.example.com/mcp", expected, nil, false)
+		require.NoError(t, err)
+		require.False(t, allowed)
+	})
+
+	t.Run("unconfigured external URL falls back to the legacy window", func(t *testing.T) {
+		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, "", unconfigured, true)
+		require.NoError(t, err)
+		require.True(t, allowed)
+	})
+
+	t.Run("unconfigured external URL after the window refuses everything", func(t *testing.T) {
+		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, "", unconfigured, false)
+		require.NoError(t, err)
+		require.False(t, allowed)
+	})
+
+	t.Run("infra failure is reported as an error, not a token verdict", func(t *testing.T) {
+		allowed, err := decideAudience(expected, "", infraDown, true)
+		require.Error(t, err)
+		require.False(t, allowed)
+	})
+}
+
+func generateUserAudienceToken(t *testing.T, secret string) string {
+	t.Helper()
+	claims := jwt.MapClaims{
+		"iss": "bytebase",
+		"sub": "test@example.com",
+		"aud": auth.AccessTokenAudience,
+		"exp": time.Now().Add(time.Hour).Unix(),
+		"iat": time.Now().Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token.Header["kid"] = "v1"
+	tokenStr, err := token.SignedString([]byte(secret))
+	require.NoError(t, err)
+	return tokenStr
 }
 
 func generateValidToken(t *testing.T, secret string) string {

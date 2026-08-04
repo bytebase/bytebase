@@ -46,9 +46,16 @@ type oauth2Failure struct {
 }
 
 // parseGrantParams extracts and validates the `resource` (RFC 8707) and `scope`
-// (RFC 6749) parameters of an authorization request. Both are optional — clients
-// that send neither still consent successfully — but a value that is present is
-// validated strictly, and multiple occurrences of either are rejected.
+// (RFC 6749) parameters of an authorization request. Both parameters are
+// optional, and a value that is present is validated strictly; multiple
+// occurrences of either are rejected.
+//
+// The resulting grant is always resource-bound (P1a PR 3): the stored resource
+// becomes the access token's audience, so a client that omits `resource`
+// (mandatory for MCP clients per RFC 8707, but not every DCR client is one) is
+// bound to the canonical MCP resource — the only value validateResource would
+// accept anyway. Leaving such a grant unbound instead would mint tokens no
+// audience check accepts once the legacy migration window closes.
 func (s *Service) parseGrantParams(ctx context.Context, values url.Values, workspaceID string) (grantParams, *oauth2Failure) {
 	resource, err := singleValue(values, "resource")
 	if err != nil {
@@ -62,19 +69,21 @@ func (s *Service) parseGrantParams(ctx context.Context, values url.Values, works
 	if err != nil {
 		return grantParams{}, &oauth2Failure{code: "invalid_scope", description: err.Error()}
 	}
-	if resource == "" {
-		return grantParams{scope: scope}, nil
-	}
 
-	// GetEffectiveExternalURL reports "not configured" as an error, never as an
-	// empty string. Fail closed, never fall back to the request.
+	// Every consent needs the trusted external URL now that every grant is
+	// bound. GetEffectiveExternalURL reports "not configured" as an error, never
+	// as an empty string. Fail closed with the actionable setup error, never
+	// fall back to the request.
 	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
 	if err != nil {
-		slog.Error("rejected an MCP OAuth resource binding because no external URL is configured",
+		slog.Error("rejected an MCP OAuth consent because no external URL is configured",
 			slog.String("resource", resource))
 		return grantParams{}, &oauth2Failure{code: "server_error", description: err.Error()}
 	}
 
+	if resource == "" {
+		return grantParams{resource: externalURL + mcpResourcePath, scope: scope}, nil
+	}
 	canonical, err := validateResource(resource, externalURL)
 	if err != nil {
 		return grantParams{}, &oauth2Failure{code: "invalid_target", description: err.Error()}
@@ -107,14 +116,12 @@ func checkConsentedResource(values url.Values, consented string) *oauth2Failure 
 	if err != nil {
 		return &oauth2Failure{code: "invalid_target", description: err.Error()}
 	}
-	// Codes and refresh tokens issued before 3.22.1 read back with no resource,
-	// and RFC 8707 clients send `resource` on every exchange *and* every refresh.
-	// Rejecting it would fail each in-flight code and every live session at its
-	// next refresh, for up to a refresh-token lifetime after upgrade. Accept it
-	// without binding: the stored value stays empty and is what gets carried
-	// forward, so an unbound grant cannot acquire a binding here. Retiring that
-	// population is PR 3's job (spec §"PR 3": legacy refresh grants require
-	// re-consent), and it needs the audience change to do it coherently.
+	// Codes and refresh tokens issued before 3.22.1 read back with no resource.
+	// The parameter check accepts anything for them so the refusal such a grant
+	// gets is the deliberate one: the legacy gate right after these checks
+	// (legacyGrantFailure) refuses the grant itself with re-auth guidance,
+	// rather than a confusing mismatch error against a value that was never
+	// consented. An unbound grant still cannot acquire a binding here.
 	if consented == "" {
 		return nil
 	}
