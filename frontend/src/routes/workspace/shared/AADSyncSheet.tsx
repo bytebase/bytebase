@@ -37,7 +37,7 @@ export function AADSyncSheet({
 
   const externalUrl = useAppStore((s) => s.serverInfo?.externalUrl ?? "");
   const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
-  const tokenConfigured = useAppStore(
+  const storedTokenConfigured = useAppStore(
     (s) => s.getWorkspaceProfile().directorySyncTokenConfigured
   );
 
@@ -71,6 +71,13 @@ export function AADSyncSheet({
   // out of order and leave the admin copying a token the server has already
   // replaced. One at a time.
   const [rotating, setRotating] = useState(false);
+
+  // A successful rotation means a token exists, whatever the profile refresh
+  // that follows does — loadWorkspaceProfile swallows its error and resolves
+  // undefined, so relying on the store alone would leave the button offering
+  // "Generate" after the first token was minted. The next click would then skip
+  // the regeneration warning and silently invalidate the token just copied.
+  const tokenConfigured = storedTokenConfigured || mintedToken !== "";
 
   const handleClose = () => {
     setMintedToken("");
