@@ -9951,12 +9951,6 @@ components:
           type: boolean
           title: validate_only
           description: Validate only also tests the data source connection.
-        initialDatabaseProject:
-          type: string
-          title: initial_database_project
-          description: |-
-            The project to assign newly discovered databases to during initial sync.
-             Format: projects/{project}. This must be unset when `parent` is set.
       title: CreateInstanceRequest
       additionalProperties: false
     bytebase.v1.CreateIssueCommentRequest:

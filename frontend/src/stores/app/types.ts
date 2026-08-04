@@ -446,7 +446,7 @@ export type InstanceSlice = {
   createInstance: (
     instance: Instance,
     validateOnly?: boolean,
-    options?: { parent?: string; initialDatabaseProject?: string }
+    options?: { parent?: string }
   ) => Promise<Instance>;
   updateInstance: (
     instance: Instance,

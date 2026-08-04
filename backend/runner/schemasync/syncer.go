@@ -295,20 +295,8 @@ func (s *Syncer) GetInstanceMeta(ctx context.Context, instance *store.InstanceMe
 	return instanceMeta, nil
 }
 
-// SyncInstanceOptions controls one-off sync behavior.
-type SyncInstanceOptions struct {
-	// InitialProjectID assigns newly discovered databases to this project.
-	// Empty means the workspace default project.
-	InitialProjectID string
-}
-
 // SyncInstance syncs the schema for all databases in an instance.
 func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (*store.InstanceMessage, []*storepb.DatabaseSchemaMetadata, []*store.DatabaseMessage, error) {
-	return s.SyncInstanceWithOptions(ctx, instance, SyncInstanceOptions{})
-}
-
-// SyncInstanceWithOptions syncs the schema for all databases in an instance with one-off options.
-func (s *Syncer) SyncInstanceWithOptions(ctx context.Context, instance *store.InstanceMessage, options SyncInstanceOptions) (*store.InstanceMessage, []*storepb.DatabaseSchemaMetadata, []*store.DatabaseMessage, error) {
 	instanceMeta, err := s.GetInstanceMeta(ctx, instance)
 	if err != nil {
 		return nil, nil, nil, err
@@ -336,16 +324,13 @@ func (s *Syncer) SyncInstanceWithOptions(ctx context.Context, instance *store.In
 	}
 	var newDatabases []*store.DatabaseMessage
 	var filteredDatabaseMetadatas []*storepb.DatabaseSchemaMetadata
-	databaseProjectID := options.InitialProjectID
-	if databaseProjectID == "" {
-		if instance.ProjectID != nil {
-			databaseProjectID = *instance.ProjectID
-		} else {
-			var err error
-			databaseProjectID, err = s.store.GetDefaultProjectID(ctx, instance.Workspace)
-			if err != nil {
-				return nil, nil, nil, errors.Wrapf(err, "failed to get default project ID for instance %q", instance.ResourceID)
-			}
+	var databaseProjectID string
+	if instance.ProjectID != nil {
+		databaseProjectID = *instance.ProjectID
+	} else {
+		databaseProjectID, err = s.store.GetDefaultProjectID(ctx, instance.Workspace)
+		if err != nil {
+			return nil, nil, nil, errors.Wrapf(err, "failed to get default project ID for instance %q", instance.ResourceID)
 		}
 	}
 

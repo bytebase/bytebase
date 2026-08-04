@@ -716,12 +716,9 @@ type CreateInstanceRequest struct {
 	// are /[a-z][0-9]-/.
 	InstanceId string `protobuf:"bytes,2,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
 	// Validate only also tests the data source connection.
-	ValidateOnly bool `protobuf:"varint,3,opt,name=validate_only,json=validateOnly,proto3" json:"validate_only,omitempty"`
-	// The project to assign newly discovered databases to during initial sync.
-	// Format: projects/{project}. This must be unset when `parent` is set.
-	InitialDatabaseProject string `protobuf:"bytes,4,opt,name=initial_database_project,json=initialDatabaseProject,proto3" json:"initial_database_project,omitempty"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	ValidateOnly  bool `protobuf:"varint,3,opt,name=validate_only,json=validateOnly,proto3" json:"validate_only,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateInstanceRequest) Reset() {
@@ -780,13 +777,6 @@ func (x *CreateInstanceRequest) GetValidateOnly() bool {
 		return x.ValidateOnly
 	}
 	return false
-}
-
-func (x *CreateInstanceRequest) GetInitialDatabaseProject() string {
-	if x != nil {
-		return x.InitialDatabaseProject
-	}
-	return ""
 }
 
 type UpdateInstanceRequest struct {
@@ -3112,15 +3102,14 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\a_parent\"t\n" +
 	"\x15ListInstancesResponse\x123\n" +
 	"\tinstances\x18\x01 \x03(\v2\x15.bytebase.v1.InstanceR\tinstances\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x93\x02\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xf9\x01\n" +
 	"\x15CreateInstanceRequest\x127\n" +
 	"\x06parent\x18\x05 \x01(\tB\x1a\xfaA\x17\x12\x15bytebase.com/InstanceH\x00R\x06parent\x88\x01\x01\x126\n" +
 	"\binstance\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceB\x03\xe0A\x02R\binstance\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
 	"instanceId\x12#\n" +
-	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnly\x128\n" +
-	"\x18initial_database_project\x18\x04 \x01(\tR\x16initialDatabaseProjectB\t\n" +
-	"\a_parent\"\xb1\x01\n" +
+	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnlyB\t\n" +
+	"\a_parentJ\x04\b\x04\x10\x05R\x18initial_database_project\"\xb1\x01\n" +
 	"\x15UpdateInstanceRequest\x126\n" +
 	"\binstance\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceB\x03\xe0A\x02R\binstance\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +

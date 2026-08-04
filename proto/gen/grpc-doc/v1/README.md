@@ -6579,7 +6579,6 @@ InstanceRoleService manages database roles within instances.
 
 This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
-| initial_database_project | [string](#string) |  | The project to assign newly discovered databases to during initial sync. Format: projects/{project}. This must be unset when `parent` is set. |
 
 
 

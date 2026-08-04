@@ -170,9 +170,6 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
     },
 
     createInstance: async (instance, validateOnly, options) => {
-      if (options?.parent && options.initialDatabaseProject) {
-        throw new Error("parent and initialDatabaseProject cannot both be set");
-      }
       const validateOnlyValue = validateOnly ?? false;
       const response = await instanceServiceClientConnect.createInstance(
         createProto(CreateInstanceRequestSchema, {
@@ -180,7 +177,6 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
           instance,
           instanceId: extractInstanceResourceName(instance.name),
           validateOnly: validateOnlyValue,
-          initialDatabaseProject: options?.initialDatabaseProject,
         }),
         {
           contextValues: createContextValues().set(

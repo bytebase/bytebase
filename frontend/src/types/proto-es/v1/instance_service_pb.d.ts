@@ -197,14 +197,6 @@ export declare type CreateInstanceRequest = Message<"bytebase.v1.CreateInstanceR
    * @generated from field: bool validate_only = 3;
    */
   validateOnly: boolean;
-
-  /**
-   * The project to assign newly discovered databases to during initial sync.
-   * Format: projects/{project}. This must be unset when `parent` is set.
-   *
-   * @generated from field: string initial_database_project = 4;
-   */
-  initialDatabaseProject: string;
 };
 
 /**

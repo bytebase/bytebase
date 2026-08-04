@@ -93,24 +93,7 @@ describe("instance store project parent", () => {
 
     expect(mocks.createInstance.mock.calls[0][0]).toMatchObject({
       parent: "projects/app",
-      initialDatabaseProject: "",
     });
-  });
-
-  test("rejects conflicting create ownership options", async () => {
-    const store = createStore();
-    const instance = create(InstanceSchema, {
-      name: "projects/app/instances/prod",
-      title: "Prod",
-    });
-
-    await expect(
-      store.createInstance(instance, false, {
-        parent: "projects/app",
-        initialDatabaseProject: "projects/other",
-      } as Parameters<typeof store.createInstance>[2])
-    ).rejects.toThrow("parent and initialDatabaseProject cannot both be set");
-    expect(mocks.createInstance).not.toHaveBeenCalled();
   });
 
   test("forwards the project parent for batch operations", async () => {

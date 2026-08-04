@@ -12,41 +12,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func TestCreateInstanceAssignsSyncedDatabasesToProject(t *testing.T) {
-	t.Parallel()
-	a := require.New(t)
-	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
-
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
-	databaseName := "project_assignment"
-	createPgDatabase(t, pgContainer, databaseName)
-
-	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId:             generateRandomString("instance"),
-		InitialDatabaseProject: ctl.project.Name,
-		Instance: &v1pb.Instance{
-			Title:       "project-aware-sync",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
-		},
-	}))
-	a.NoError(err)
-	instance := instanceResp.Msg
-
-	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
-		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
-	}))
-	a.NoError(err)
-	a.Equal(ctl.project.Name, databaseResp.Msg.Project)
-}
-
 func TestCreateInstanceWithoutProjectKeepsDefaultProject(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
