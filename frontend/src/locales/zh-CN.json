@@ -496,6 +496,10 @@
     "cluster": "集群",
     "database-owner-name": "数据库所有者",
     "issue-title": "工单标题",
+    "labels-misconfigured": {
+      "description": "此项目要求选择工单标签，但尚未配置任何标签。请联系项目所有者添加标签后再创建数据库。",
+      "title": "项目要求工单标签但未配置"
+    },
     "new-collection-name": "新集合名称",
     "new-database-name": "新数据库名称",
     "reserved-db-error": "{{databaseName}} 是一个预留名称"

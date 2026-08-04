@@ -119,7 +119,6 @@ vi.mock("@/types/proto-es/v1/plan_service_pb", () => ({
 
 vi.mock("@/types/proto-es/v1/issue_service_pb", () => ({
   Issue_Type: { DATABASE_CHANGE: 1 },
-  IssueStatus: { OPEN: 1 },
   CreateIssueRequestSchema: {},
   IssueSchema: {},
 }));
@@ -225,10 +224,18 @@ vi.mock("@/types", () => ({
 }));
 
 vi.mock("@/utils", () => ({
+  colorToHex: () => undefined,
   enginesSupportCreateDatabase: () => [],
   extractPlanUID: (name: string) => name.split("/").at(-1) ?? "",
   extractProjectResourceName: (name: string) => name.split("/")[1] ?? "",
   getDefaultPagination: () => 20,
+  getIssueRoute: (issue: { name: string }) => ({
+    name: "workspace.project.issue.detail",
+    params: {
+      projectId: issue.name.split("/")[1] ?? "",
+      issueId: issue.name.split("/").at(-1) ?? "",
+    },
+  }),
   instanceV1HasCollationAndCharacterSet: () => false,
   normalizeTitle: (s: string) => s.trim(),
 }));
@@ -261,7 +268,7 @@ beforeEach(() => {
   });
   mocks.createIssue.mockResolvedValue({
     name: "projects/foo/issues/456",
-    draft: true,
+    draft: false,
     plan: "projects/foo/plans/123",
   });
 });
@@ -273,20 +280,34 @@ afterEach(() => {
   document.body.removeChild(container);
 });
 
-function setupProjectMock(enforceIssueTitle: boolean) {
+interface ProjectMockOptions {
+  issueLabels?: { value: string }[];
+  forceIssueLabels?: boolean;
+}
+
+function setupProjectMock(
+  enforceIssueTitle: boolean,
+  {
+    issueLabels = [],
+    forceIssueLabels = false,
+  }: ProjectMockOptions = {}
+) {
   mocks.getOrFetchProjectByName.mockImplementation(async (name: string) => ({
     name,
     enforceIssueTitle,
-    issueLabels: [],
-    forceIssueLabels: false,
+    issueLabels,
+    forceIssueLabels,
   }));
   appStoreState.instancesByName[TEST_INSTANCE.name] = TEST_INSTANCE;
   mocks.instancesByName[TEST_INSTANCE.name] = TEST_INSTANCE;
   mocks.getOrFetchInstanceByName.mockResolvedValue(TEST_INSTANCE);
 }
 
-async function renderSheet(enforceIssueTitle: boolean): Promise<void> {
-  setupProjectMock(enforceIssueTitle);
+async function renderSheet(
+  enforceIssueTitle: boolean,
+  options?: ProjectMockOptions
+): Promise<void> {
+  setupProjectMock(enforceIssueTitle, options);
   await act(async () => {
     root.render(
       createElement(CreateDatabaseSheet, {
@@ -341,6 +362,21 @@ function getCreateButton(): HTMLButtonElement {
   return [...container.querySelectorAll("button")].find((b) =>
     b.textContent?.includes("common.create")
   ) as HTMLButtonElement;
+}
+
+async function selectIssueLabel(value: string): Promise<void> {
+  const toggle = [...container.querySelectorAll("button")].find((b) =>
+    b.textContent?.includes("common.select")
+  ) as HTMLButtonElement;
+  await act(async () => {
+    toggle.click();
+  });
+  const option = [...container.querySelectorAll("button")].find(
+    (b) => b !== toggle && b.textContent?.trim() === value
+  ) as HTMLButtonElement;
+  await act(async () => {
+    option.click();
+  });
 }
 
 async function flush(): Promise<void> {
@@ -733,31 +769,20 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
     expect(getCreateButton().disabled).toBe(true);
   });
 
-  it("creates one Plan and one linked draft Issue with the exact payload", async () => {
-    mocks.getOrFetchProjectByName.mockImplementation(async (name: string) => ({
-      name,
-      enforceIssueTitle: false,
+  it("creates one Plan and one linked non-draft Issue, then opens Issue Detail (BYT-10015)", async () => {
+    await renderSheet(false, {
       issueLabels: [{ value: "required" }],
       forceIssueLabels: true,
-    }));
-    mocks.instancesByName[TEST_INSTANCE.name] = TEST_INSTANCE;
-    mocks.getOrFetchInstanceByName.mockResolvedValue(TEST_INSTANCE);
-    await act(async () => {
-      root.render(
-        createElement(CreateDatabaseSheet, {
-          open: true,
-          onClose: () => {},
-          projectName: "projects/foo",
-        })
-      );
-      await Promise.resolve();
-      await Promise.resolve();
     });
     await fillInstance();
     await fillDatabaseName("widgets");
     await flush();
 
+    // forceIssueLabels: Create stays disabled until a label is selected.
+    expect(getCreateButton().disabled).toBe(true);
+    await selectIssueLabel("required");
     expect(getCreateButton().disabled).toBe(false);
+
     await act(async () => {
       getCreateButton().click();
       await Promise.resolve();
@@ -794,20 +819,32 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
     expect(mocks.createIssue).toHaveBeenCalledWith({
       issue: {
         creator: "users/me@example.com",
-        description: undefined,
-        draft: true,
-        labels: [],
+        draft: false,
+        labels: ["required"],
         plan: "projects/foo/plans/123",
-        status: 1,
-        title: "Create database 'widgets'",
+        title: "quick-action.create-db 'widgets'",
         type: 1,
       },
       parent: "projects/foo",
     });
     expect(mocks.routerPush).toHaveBeenCalledWith({
-      name: "workspace.project.plan.detail",
-      params: { planId: "123", projectId: "foo" },
+      name: "workspace.project.issue.detail",
+      params: { issueId: "456", projectId: "foo" },
     });
+  });
+
+  it("blocks Create and warns when the project requires issue labels but has none configured", async () => {
+    await renderSheet(false, {
+      forceIssueLabels: true,
+    });
+    await fillInstance();
+    await fillDatabaseName("widgets");
+    await flush();
+
+    const alert = container.querySelector("[role='alert']");
+    expect(alert?.textContent).toContain("create-db.labels-misconfigured");
+    expect(getCreateButton().disabled).toBe(true);
+    expect(mocks.createPlan).not.toHaveBeenCalled();
   });
 
   it("ignores a stale create completion after close, reopen, and project switch", async () => {
@@ -870,8 +907,8 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
     expect(getCreateButton().disabled).toBe(true);
   });
 
-  it("routes to the malformed Plan and surfaces the Issue error without retrying", async () => {
-    const failure = new Error("draft issue failed");
+  it("routes to the orphaned Plan and surfaces the Issue error without retrying", async () => {
+    const failure = new Error("issue failed");
     mocks.createIssue.mockRejectedValue(failure);
     await renderSheet(false);
     await fillInstance();
@@ -892,13 +929,13 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
     });
     expect(mocks.pushNotification).toHaveBeenCalledWith(
       expect.objectContaining({
-        description: "Error: draft issue failed",
+        description: "Error: issue failed",
         style: "CRITICAL",
       })
     );
   });
 
-  it("requires both create permissions but only warns when issue-update is missing", async () => {
+  it("requires only the create permissions — bb.issues.update is not needed (BYT-10015)", async () => {
     mocks.permissions["bb.issues.update"] = false;
     await renderSheet(false);
     await fillInstance();
@@ -906,10 +943,7 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
     await flush();
 
     expect(getCreateButton().disabled).toBe(false);
-    const permissionAlert = container.querySelector("[role='alert']");
-    expect(permissionAlert?.textContent).toContain(
-      "plan.draft-update-permission-required"
-    );
+    expect(container.querySelector("[role='alert']")).toBeNull();
 
     mocks.permissions["bb.issues.create"] = false;
     await act(async () => {

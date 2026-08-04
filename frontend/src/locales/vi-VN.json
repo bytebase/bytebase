@@ -496,6 +496,10 @@
     "cluster": "Cụm",
     "database-owner-name": "Tên chủ sở hữu cơ sở dữ liệu",
     "issue-title": "Tiêu đề vấn đề",
+    "labels-misconfigured": {
+      "description": "Dự án này yêu cầu nhãn vấn đề, nhưng chưa có nhãn nào được cấu hình. Vui lòng liên hệ chủ sở hữu dự án để thêm nhãn trước khi tạo cơ sở dữ liệu.",
+      "title": "Dự án yêu cầu nhãn vấn đề nhưng chưa cấu hình"
+    },
     "new-collection-name": "Tên bộ sưu tập mới",
     "new-database-name": "Tên cơ sở dữ liệu mới",
     "reserved-db-error": "{{databaseName}} là một tên dành riêng"
