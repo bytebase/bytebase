@@ -186,6 +186,35 @@ describe("AADSyncSheet SCIM token", () => {
     expect(container.textContent).not.toContain("token-shown-once");
   });
 
+  it("does not mint a second token while one rotation is in flight", async () => {
+    let release: (v: { token: string }) => void = () => {};
+    mocks.rotate.mockReturnValue(
+      new Promise<{ token: string }>((resolve) => {
+        release = resolve;
+      })
+    );
+
+    await renderSheet();
+    await act(async () => {
+      buttonByText("generate-token")?.click();
+    });
+
+    // Second click while the first is pending must be ignored: each rotation
+    // invalidates the previous token, so racing them can display a dead one.
+    await act(async () => {
+      buttonByText("generate-token")?.click();
+    });
+    expect(mocks.rotate).toHaveBeenCalledTimes(1);
+    expect(buttonByText("generate-token")?.disabled).toBe(true);
+
+    await act(async () => {
+      release({ token: "tok-only-one" });
+    });
+    expect(tokenInput()?.value).toBe("tok-only-one");
+    // Re-enabled once settled, so a later deliberate rotation still works.
+    expect(buttonByText("generate-token")?.disabled).toBe(false);
+  });
+
   it("hides the rotate control without permission", async () => {
     mocks.hasRotatePermission = false;
     await renderSheet();
