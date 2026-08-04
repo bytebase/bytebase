@@ -112,6 +112,8 @@ func pgSDLDropAdvices(userSDLText string, currentSchema *model.DatabaseMetadata,
 			advices = append(advices, dropAdvice(fmt.Sprintf("Dropping trigger '%s' on '%s.%s'.", op.ObjectName, op.SchemaName, op.ParentObject)))
 		case catalog.OpDropConstraint:
 			advices = append(advices, dropAdvice(fmt.Sprintf("Dropping constraint from table '%s.%s'.", op.SchemaName, op.ParentObject)))
+		case catalog.OpDropExtension:
+			advices = append(advices, undeclaredExtensionAdvice(op.ObjectName))
 		case catalog.OpAlterFunction:
 			advices = append(advices, replaceAdvice(fmt.Sprintf("Function '%s.%s' definition will be replaced.", op.SchemaName, op.ObjectName)))
 		default:
@@ -119,6 +121,28 @@ func pgSDLDropAdvices(userSDLText string, currentSchema *model.DatabaseMetadata,
 	}
 
 	return advices, nil
+}
+
+// undeclaredExtensionAdvice reports an extension that is installed on the database but
+// absent from the SDL. This is an ERROR, not a warning: the catalog does not track which
+// objects an extension owns, so a plan that drops the extension also drops every object
+// its script materialized, and PostgreSQL refuses those ("cannot drop function armor(bytea)
+// because extension pgcrypto requires it", SQLSTATE 2BP01) — the rollout can never succeed.
+// Failing the check with the one-line fix beats letting the task die mid-transaction.
+func undeclaredExtensionAdvice(name string) *storepb.Advice {
+	return &storepb.Advice{
+		Status: storepb.Advice_ERROR,
+		Code:   code.SDLUndeclaredExtension.Int32(),
+		Title:  "Undeclared extension",
+		Content: fmt.Sprintf(
+			"Extension '%s' is installed on the database but not declared in the SDL.\n\n"+
+				"Add this line to keep it:\n"+
+				"  CREATE EXTENSION IF NOT EXISTS %q;\n\n"+
+				"An undeclared extension makes the differ treat the extension's own functions and "+
+				"types as orphans, and PostgreSQL will not drop them individually. To remove the "+
+				"extension itself, run DROP EXTENSION outside the declarative pipeline.",
+			name, name),
+	}
 }
 
 func dropAdvice(content string) *storepb.Advice {

@@ -843,9 +843,22 @@ var commonAllowedSDLStatementTypes = map[storepb.StatementType]bool{
 // SDL allowlist. MySQL declarative dumps also emit scheduled events as CREATE EVENT —
 // a MySQL-only object with no PostgreSQL analog (the pg parser can never classify one,
 // but keying it per engine documents the intent and keeps other engines' gates exact).
+//
+// CREATE EXTENSION is the PostgreSQL-only counterpart and must be declarable, because an
+// extension is the one object whose declaration the differ cannot infer. The SDL dump
+// emits one per installed extension (pg writeExtension) while deliberately omitting the
+// extension's OWN objects (synced with SkipDump, from pg_depend deptype='e'). Rejecting
+// the statement forced users to delete the line, which left the extension declared on the
+// source side of the diff only — omni materializes a bundled extension's functions when it
+// loads CREATE EXTENSION, so the differ saw them as undeclared orphans and emitted DROP
+// FUNCTION, which PostgreSQL refuses (SQLSTATE 2BP01). Accepting it makes both sides of
+// the diff agree and makes Export Schema output valid SDL.
 var extraAllowedSDLStatementTypesByEngine = map[storepb.Engine]map[storepb.StatementType]bool{
 	storepb.Engine_MYSQL: {
 		storepb.StatementType_CREATE_EVENT: true,
+	},
+	storepb.Engine_POSTGRES: {
+		storepb.StatementType_CREATE_EXTENSION: true,
 	},
 }
 
