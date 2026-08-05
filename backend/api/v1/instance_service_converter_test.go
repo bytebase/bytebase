@@ -220,6 +220,36 @@ func TestRetainStoredKeytabOnEmptyUpdate(t *testing.T) {
 	retainStoredKeytabOnEmptyUpdate(nil, stored)
 }
 
+func TestRetainStoredKeytabs(t *testing.T) {
+	krbDS := func(id string, keytab []byte) *storepb.DataSource {
+		return &storepb.DataSource{
+			Id: id,
+			SaslConfig: &storepb.SASLConfig{
+				Mechanism: &storepb.SASLConfig_KrbConfig{
+					KrbConfig: &storepb.KerberosConfig{Keytab: keytab},
+				},
+			},
+		}
+	}
+	stored := []*storepb.DataSource{
+		krbDS("admin", []byte("admin-keytab")),
+		krbDS("ro", []byte("ro-keytab")),
+	}
+
+	updated := []*storepb.DataSource{
+		krbDS("admin", nil),                  // unchanged on read-modify-write
+		krbDS("ro", []byte("new-ro-keytab")), // freshly uploaded
+		krbDS("added", nil),                  // new data source, nothing stored
+		{Id: "plain"},                        // no SASL config at all
+	}
+	retainStoredKeytabs(updated, stored)
+
+	require.Equal(t, []byte("admin-keytab"), updated[0].GetSaslConfig().GetKrbConfig().Keytab)
+	require.Equal(t, []byte("new-ro-keytab"), updated[1].GetSaslConfig().GetKrbConfig().Keytab)
+	require.Empty(t, updated[2].GetSaslConfig().GetKrbConfig().Keytab)
+	require.Nil(t, updated[3].GetSaslConfig())
+}
+
 // assertNoInputOnlyValues walks every populated message field and requires
 // that fields annotated INPUT_ONLY carry no value. It pins the read-path
 // contract: whatever the proto declares write-only must be blanked by the

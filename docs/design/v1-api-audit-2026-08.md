@@ -13,33 +13,6 @@ backend actually does**, which is where everything serious lives.
 
 ---
 
-# TIER 1 — Credential disclosure
-
-### T2 ✅ HIGH — Kerberos keytab returned to the lowest project role — **FIXED on this branch**
-
-- Returned verbatim: `backend/api/v1/instance_service_converter.go:442` (`Keytab: m.KrbConfig.Keytab`)
-- Sibling credentials are all blanked in the same file, with the comment *"We don't return the password and SSLs on reads."* (`:248-286`)
-- The audit redactor **masks this exact field** — `backend/api/v1/audit.go:711` — proving it is classified sensitive; the read path simply doesn't.
-- Reachable via `Database.instance_resource` (`proto/v1/v1/database_service.proto:528`, populated at `database_service.go:1192`), which needs only `bb.databases.get` — held by `ProjectViewerRole` (`predefined_roles.go:589`).
-
-Any project viewer calls `GetDatabase` and extracts the keytab, then authenticates straight to
-the database, bypassing Bytebase entirely.
-
-Same read path, lower severity: AWS `role_arn` and `external_id` are marked `INPUT_ONLY` but
-returned anyway (`instance_service.proto:756,759` → `instance_service_converter.go:302-303`).
-The external ID is the confused-deputy guard shared with the customer's AWS account.
-
-**Fix (this branch):** keytab blanked on read and annotated `INPUT_ONLY`; `UpdateDataSource`
-retains the stored keytab when the update carries an empty one (read-modify-write safe);
-AWS `role_arn`/`external_id` blanked on read (presence-only credential struct);
-`master_password` annotated `INPUT_ONLY` (was already blanked); frontend requires the keytab
-only on create. A reflection test (`TestConvertDataSourcesBlanksEveryInputOnlyField`) now pins
-every `INPUT_ONLY`-annotated field to stay blank through the read converters. Bonus sweep:
-dead `DataSource.cluster` field removed (never persisted, rejected on update), and every
-field-number gap across both proto trees is now `reserved` (64 messages/enums).
-
----
-
 # TIER 2 — Cross-project authorization gaps
 
 **Shared root cause.** The ACL authorizes exactly ONE resource per request — `parent`, else
@@ -255,23 +228,22 @@ List RPCs, the same 7 `state` fields missing `OUTPUT_ONLY`, the same enum zero-v
 HTTP patterns in `database_service` that match no declared resource pattern. It adds a cleaner
 framing for 30 `name` fields: they want `IDENTIFIER`.
 
-Still open from the first pass: only 4 files use `reserved` (7 enums and 13 messages carry
-unreserved gaps — SQLite's `Engine = 5` is the proven case); 28 of 205 RPCs lack the mandated
-`// Permissions required:` comment; 22 files have string fields and zero protovalidate constraints
-despite `VALIDATION_STANDARDS.md`.
+Still open from the first pass: 28 of 205 RPCs lack the mandated `// Permissions required:`
+comment; 22 files have string fields and zero protovalidate constraints despite
+`VALIDATION_STANDARDS.md`.
 
 ---
 
 # What I'd do, in order
 
 1. **Runtime-confirm T9.** Eleven bad logins. If the eleventh is accepted, there is no lockout and that outranks everything else here.
-2. ~~**Blank the keytab** (T2), and stop returning AWS `role_arn`/`external_id`.~~ **Done on this branch.**
-3. **Close the multi-resource ACL class, not the instances** (T4–T7 + the pending `DiffSchema` patch): teach `getResourceFromRequest` to collect *every* `resource_reference`d field including oneof and repeated members, then annotate `DiffSchemaRequest.changelog`, `CheckReleaseRequest.targets`, `Revision.release/file/task_run`. `UpdateDatabase`'s project-transfer case (`acl.go:604-624`) is the in-repo precedent.
-4. **Give sheets an ownership model** (T5), or at minimum scope the blob fetch by the owning project/workspace. Until then the sheet namespace is workspace-global by design, and should be documented as such.
-5. **Fail closed**: reject `AUTH_METHOD_UNSPECIFIED` at startup; make `permission` on a CUSTOM RPC either enforced or a build error, since 20 of them are currently decorative.
-6. **Wire api-linter into CI** at the 474-finding baseline. None of Tier 5 was visible to `buf lint`'s `BASIC` profile, which is why it accumulated.
+2. **Close the multi-resource ACL class, not the instances** (T4–T7 + the pending `DiffSchema` patch): teach `getResourceFromRequest` to collect *every* `resource_reference`d field including oneof and repeated members, then annotate `DiffSchemaRequest.changelog`, `CheckReleaseRequest.targets`, `Revision.release/file/task_run`. `UpdateDatabase`'s project-transfer case (`acl.go:604-624`) is the in-repo precedent.
+3. **Give sheets an ownership model** (T5), or at minimum scope the blob fetch by the owning project/workspace. Until then the sheet namespace is workspace-global by design, and should be documented as such.
+4. **Fail closed**: reject `AUTH_METHOD_UNSPECIFIED` at startup; make `permission` on a CUSTOM RPC either enforced or a build error, since 20 of them are currently decorative.
+5. **Wire api-linter into CI** at the 474-finding baseline. None of Tier 5 was visible to `buf lint`'s `BASIC` profile, which is why it accumulated.
 
-**Note on scope.** Tier 1–3 are security issues in a shipped product. T2 is fixed on this
-branch; everything else is still a report — untouched. The three patches from earlier in the
-session (`SearchProjects` proto comment, `SearchProjects` pagination, `DiffSchema` ACL) remain
-parked and still apply cleanly.
+**Note on scope.** Tier 2–3 are security issues in a shipped product, and everything here is
+still a report — untouched. Resolved findings are removed from this document (T1/T3 earlier;
+T2 via the INPUT_ONLY read-path fix). The three patches from earlier in the session
+(`SearchProjects` proto comment, `SearchProjects` pagination, `DiffSchema` ACL) remain parked
+and still apply cleanly.
