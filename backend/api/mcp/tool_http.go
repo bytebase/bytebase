@@ -65,6 +65,12 @@ func (s *Server) apiRequest(ctx context.Context, path string, body any) (*apiRes
 	// header. Name the surface explicitly rather than let audit rows for MCP
 	// actions go blank.
 	httpReq.Header.Set("User-Agent", internalAPIUserAgent)
+	// Audit derives the caller IP from X-Real-IP first. An in-memory request has
+	// no peer address to fall back to, so without this the origin of every
+	// MCP-originated action would be blank.
+	if ip := getCallerIP(ctx); ip != "" {
+		httpReq.Header.Set("X-Real-IP", ip)
+	}
 
 	// Mint the credential for this call. Per call, not per session: see
 	// delegatedIdentityKey.
@@ -259,6 +265,23 @@ func withDelegatedIdentity(ctx context.Context, identity auth.DelegatedMCPCreden
 func getDelegatedIdentity(ctx context.Context) (auth.DelegatedMCPCredential, bool) {
 	identity, ok := ctx.Value(delegatedIdentityKey{}).(auth.DelegatedMCPCredential)
 	return identity, ok
+}
+
+// Context key for the inbound caller's IP, carried onto internal requests so
+// audit records where an MCP-originated action actually came from.
+type callerIPKey struct{}
+
+// withCallerIP adds the inbound caller's IP to the context.
+func withCallerIP(ctx context.Context, ip string) context.Context {
+	return context.WithValue(ctx, callerIPKey{}, ip)
+}
+
+// getCallerIP retrieves the inbound caller's IP from the context.
+func getCallerIP(ctx context.Context) string {
+	if ip, ok := ctx.Value(callerIPKey{}).(string); ok {
+		return ip
+	}
+	return ""
 }
 
 // Context key for the session binding: the identity fingerprint the /mcp

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -207,6 +208,7 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		ctx = withOAuth2ClientID(ctx, clientID)
 		ctx = withWorkspaceID(ctx, workspaceID)
 		ctx = withDelegatedIdentity(ctx, delegated)
+		ctx = withCallerIP(ctx, callerIP(c.Request()))
 		ctx = withSessionBinding(ctx, sessionBinding{
 			fingerprint: sessionFingerprint(delegated),
 			expiry:      bearerExpiry(claims),
@@ -337,6 +339,27 @@ func sessionFingerprint(identity auth.DelegatedMCPCredential) string {
 		identity.Resource,
 		identity.Scope,
 	}, "\x00")
+}
+
+// callerIP resolves who made this /mcp request, using the same precedence the
+// audit interceptor applies to a public request: the proxy-set single IP
+// first, then the standard forwarding chain, then the peer address. The port
+// is dropped from the peer address so the value reads as an IP either way.
+//
+// The forwarding headers are client-controllable, exactly as they are for a
+// request that reaches the v1 API directly. Copying them preserves the existing
+// trust model rather than introducing one.
+func callerIP(r *http.Request) string {
+	if ip := r.Header.Get("X-Real-IP"); ip != "" {
+		return ip
+	}
+	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
+		return ip
+	}
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		return host
+	}
+	return r.RemoteAddr
 }
 
 // bearerExpiry reads the inbound token's expiry. The JWT parse upstream has

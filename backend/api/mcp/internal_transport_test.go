@@ -167,6 +167,75 @@ func TestApiRequestMintsCredentialPerCall(t *testing.T) {
 	}
 }
 
+// TestInternalRequestCarriesCallerIP pins that audit keeps seeing who made an
+// MCP-originated call. The audit interceptor derives caller IP from
+// X-Real-IP -> X-Forwarded-For -> peer address; on an in-memory request all
+// three are empty unless the boundary carries the inbound caller's IP forward,
+// so audit rows for MCP actions would record no origin at all. (The retired
+// loopback transport did no better: it recorded the 127.0.0.1 socket, never the
+// real client.)
+func TestInternalRequestCarriesCallerIP(t *testing.T) {
+	const secret = "test-secret-key"
+	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
+
+	tests := []struct {
+		name       string
+		headers    map[string]string
+		remoteAddr string
+		want       string
+	}{
+		{
+			name:       "X-Real-IP wins",
+			headers:    map[string]string{"X-Real-IP": "203.0.113.7", "X-Forwarded-For": "198.51.100.9"},
+			remoteAddr: "10.0.0.1:4444",
+			want:       "203.0.113.7",
+		},
+		{
+			name:       "X-Forwarded-For is next",
+			headers:    map[string]string{"X-Forwarded-For": "198.51.100.9"},
+			remoteAddr: "10.0.0.1:4444",
+			want:       "198.51.100.9",
+		},
+		{
+			name:       "peer address is the fallback, without its port",
+			remoteAddr: "10.0.0.1:4444",
+			want:       "10.0.0.1",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var capturedIP string
+			stub := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				capturedIP = r.Header.Get("X-Real-IP")
+				w.WriteHeader(http.StatusOK)
+				fmt.Fprint(w, `{}`)
+			})
+			s, err := NewServer(nil, profile, secret, stub)
+			require.NoError(t, err)
+
+			inbound, err := auth.GenerateOAuth2AccessToken("test@example.com", "client-A", "ws-test", "https://bb.example.com/mcp", "mcp:read-only", secret, time.Hour)
+			require.NoError(t, err)
+
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
+			req.Header.Set("Authorization", "Bearer "+inbound)
+			for k, v := range tc.headers {
+				req.Header.Set(k, v)
+			}
+			req.RemoteAddr = tc.remoteAddr
+			c := e.NewContext(req, httptest.NewRecorder())
+
+			handler := s.authMiddleware(func(c *echo.Context) error {
+				_, err := s.apiRequest(c.Request().Context(), "/api/test", nil)
+				return err
+			})
+			require.NoError(t, handler(c))
+			require.Equal(t, tc.want, capturedIP)
+		})
+	}
+}
+
 // TestMCPAuthMiddlewareRejectsInternalCredential is the /mcp half of the hard
 // boundary: the public /mcp listener must never accept the internal credential
 // it mints for the private transport. A leaked credential is useless here.
