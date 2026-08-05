@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -1413,6 +1414,15 @@ func setupIssueServiceTestStore(ctx context.Context, t *testing.T) *store.Store 
 	stores, err := store.New(ctx, pgURL, false)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+
+	// SearchIssues authorizes the caller itself (CUSTOM auth), so the test
+	// principal needs a role carrying bb.issues.get.
+	_, err = stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+		Workspace: "default",
+		Member:    common.FormatUserEmail("creator@example.com"),
+		Roles:     []string{"roles/workspaceAdmin"},
+	})
+	require.NoError(t, err)
 	return stores
 }
 
@@ -1431,7 +1441,9 @@ func newIssueServiceForTest(t *testing.T, stores *store.Store) *IssueService {
 
 	b, err := bus.New()
 	require.NoError(t, err)
-	return NewIssueService(stores, webhook.NewManager(stores, nil), b, nil, nil)
+	iamManager, err := iam.NewManager(stores, nil, false)
+	require.NoError(t, err)
+	return NewIssueService(stores, webhook.NewManager(stores, nil), b, nil, iamManager)
 }
 
 func createIssueServiceApprovalIssue(ctx context.Context, t *testing.T, stores *store.Store) (*store.PlanMessage, *store.IssueMessage) {

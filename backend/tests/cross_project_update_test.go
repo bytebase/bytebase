@@ -322,3 +322,80 @@ func TestCollisionListIssuesIsolation(t *testing.T) {
 			"ListIssues for project A returned an issue from another project: %s", issue.Name)
 	}
 }
+
+// TestSearchIssuesConcreteProjectAuthorization is the regression lock for
+// audit finding T4: SearchIssues uses CUSTOM auth, so the ACL interceptor
+// performs no permission check and the handler must authorize both the
+// concrete-project and the AIP-159 wildcard branch itself. Before the fix,
+// any authenticated workspace member could read every non-draft issue in any
+// project by naming that project as the parent.
+func TestSearchIssuesConcreteProjectAuthorization(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	fixture := setupCollidingProjects(ctx, t, ctl)
+	ownerToken := ctl.authInterceptor.token
+
+	// A member of project A only. Project B is off limits for this user.
+	memberToken := bot35CreateProjectUser(ctx, t, ctl, fixture.ProjectA.Name, "roles/projectDeveloper", "issue-search-member")
+
+	ctl.authInterceptor.token = memberToken
+	// Concrete parent the caller cannot read: denied, not silently served.
+	_, err = ctl.issueServiceClient.SearchIssues(ctx,
+		connect.NewRequest(&v1pb.SearchIssuesRequest{
+			Parent:   fixture.ProjectB.Name,
+			PageSize: 100,
+		}))
+	a.Error(err, "SearchIssues on an unauthorized project must fail")
+	a.Equal(connect.CodePermissionDenied, connect.CodeOf(err))
+
+	// Concrete parent the caller can read still works.
+	allowed, err := ctl.issueServiceClient.SearchIssues(ctx,
+		connect.NewRequest(&v1pb.SearchIssuesRequest{
+			Parent:   fixture.ProjectA.Name,
+			PageSize: 100,
+		}))
+	a.NoError(err, "SearchIssues on an authorized project must succeed")
+	a.Greater(len(allowed.Msg.Issues), 0, "project A should have issues (fixture creates them)")
+	for _, issue := range allowed.Msg.Issues {
+		a.True(strings.HasPrefix(issue.Name, fixture.ProjectA.Name+"/"),
+			"SearchIssues for project A returned an issue from another project: %s", issue.Name)
+	}
+
+	// The AIP-159 wildcard keeps searching across collections, restricted to
+	// the projects the caller can read.
+	wildcard, err := ctl.issueServiceClient.SearchIssues(ctx,
+		connect.NewRequest(&v1pb.SearchIssuesRequest{
+			Parent:   "projects/-",
+			PageSize: 100,
+		}))
+	a.NoError(err, "wildcard search must remain available")
+	a.Greater(len(wildcard.Msg.Issues), 0, "the caller can read project A's issues")
+	for _, issue := range wildcard.Msg.Issues {
+		a.False(strings.HasPrefix(issue.Name, fixture.ProjectB.Name+"/"),
+			"wildcard search leaked an issue from an unauthorized project: %s", issue.Name)
+	}
+
+	// A workspace admin still sees both projects through the wildcard, so the
+	// filter narrows by permission rather than always dropping other projects.
+	ctl.authInterceptor.token = ownerToken
+	adminWildcard, err := ctl.issueServiceClient.SearchIssues(ctx,
+		connect.NewRequest(&v1pb.SearchIssuesRequest{
+			Parent:   "projects/-",
+			PageSize: 100,
+		}))
+	a.NoError(err)
+	var sawB bool
+	for _, issue := range adminWildcard.Msg.Issues {
+		if strings.HasPrefix(issue.Name, fixture.ProjectB.Name+"/") {
+			sawB = true
+		}
+	}
+	a.True(sawB, "an admin wildcard search should include project B's issues")
+}

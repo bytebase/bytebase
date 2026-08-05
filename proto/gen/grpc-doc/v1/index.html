@@ -10760,7 +10760,10 @@ Format: users/{email}. </p></td>
                   <td></td>
                   <td><p>The parent, which owns this collection of issues.
 Format: projects/{project}
-Use &#34;projects/-&#34; to list all issues from all projects. </p></td>
+Use the wildcard &#34;projects/-&#34; to search across collections (AIP-159); the
+result is restricted to the projects where the caller holds
+bb.issues.get. For a concrete project, the caller must hold bb.issues.get
+on that project or the request is denied. </p></td>
                 </tr>
               
                 <tr>
