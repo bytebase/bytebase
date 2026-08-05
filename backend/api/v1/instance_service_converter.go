@@ -464,6 +464,21 @@ func retainStoredKeytabOnEmptyUpdate(updated, stored *storepb.SASLConfig) {
 	}
 }
 
+// retainStoredKeytabs applies retainStoredKeytabOnEmptyUpdate across a full
+// data source replacement (UpdateInstance with update_mask=data_sources),
+// matching stored data sources by ID.
+func retainStoredKeytabs(updated, stored []*storepb.DataSource) {
+	storedByID := make(map[string]*storepb.DataSource, len(stored))
+	for _, ds := range stored {
+		storedByID[ds.GetId()] = ds
+	}
+	for _, ds := range updated {
+		if existing, ok := storedByID[ds.GetId()]; ok {
+			retainStoredKeytabOnEmptyUpdate(ds.GetSaslConfig(), existing.GetSaslConfig())
+		}
+	}
+}
+
 func convertDataSourceAddresses(addresses []*storepb.DataSource_Address) []*v1pb.DataSource_Address {
 	res := make([]*v1pb.DataSource_Address, 0, len(addresses))
 	for _, address := range addresses {

@@ -839,6 +839,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
+			retainStoredKeytabs(dataSources, instance.Metadata.GetDataSources())
 			normalizeGCPDataSources(instance.Metadata.GetEngine(), dataSources)
 			for _, ds := range dataSources {
 				if err := validateAndSanitizeDataSourceTLS(ds); err != nil {
