@@ -57,7 +57,7 @@ func TestReauthorizeRejectsCurrentAccessToken(t *testing.T) {
 	require.NoError(t, err)
 
 	const secret = "test-secret-key"
-	s, err := NewServer(st, &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}, secret)
+	s, err := NewServer(st, &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}, secret, nil)
 	require.NoError(t, err)
 
 	accessToken := generateOAuth2MCPToken(t, secret, "client-A", "ws-test")

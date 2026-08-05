@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
-	"net/http/httptest"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,33 +13,70 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 )
 
-// newTestServerWithMock creates a *Server backed by a mock HTTP server.
-// The mock server is automatically closed when the test completes.
+// newTestServerWithMock creates a *Server whose internal transport dispatches
+// to the given handler in memory — the same shape production uses, no socket.
 func newTestServerWithMock(t *testing.T, handler http.Handler) *Server {
 	t.Helper()
-	mock := httptest.NewServer(handler)
-	t.Cleanup(mock.Close)
-	// Parse port from URL like "http://127.0.0.1:PORT".
-	parts := strings.Split(mock.URL, ":")
-	port, _ := strconv.Atoi(parts[len(parts)-1])
 	return &Server{
-		profile: &config.Profile{Port: port},
+		profile:        &config.Profile{},
+		internalClient: newInternalAPIClient(handler),
 	}
 }
 
-func TestApiRequest_AuthForwarding(t *testing.T) {
+// TestApiRequest_DelegatedCredentialReplacesInboundBearer is the PR 4
+// bearer-elimination pin, replacing the retired TestApiRequest_AuthForwarding
+// (which asserted the loopback design: the inbound bearer forwarded verbatim).
+// Internal requests carry the minted delegated credential, and the inbound
+// bearer string must not appear anywhere in the request.
+func TestApiRequest_DelegatedCredentialReplacesInboundBearer(t *testing.T) {
+	const inboundBearer = "inbound-public-bearer-token"
+	const delegated = "minted-delegated-credential"
 	var capturedAuth string
 	s := newTestServerWithMock(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedAuth = r.Header.Get("Authorization")
+		for name, values := range r.Header {
+			for _, v := range values {
+				require.NotContains(t, v, inboundBearer,
+					"inbound bearer leaked into internal request header %s", name)
+			}
+		}
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{}`)
 	}))
 
-	ctx := withAccessToken(context.Background(), "test-token-123")
+	ctx := withAccessToken(context.Background(), inboundBearer)
+	ctx = withDelegatedCredential(ctx, delegated)
 	resp, err := s.apiRequest(ctx, "/api/test", nil)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.Status)
-	require.Equal(t, "Bearer test-token-123", capturedAuth)
+	require.Equal(t, "Bearer "+delegated, capturedAuth)
+}
+
+// TestApiRequest_InMemoryDispatch pins the transport shape: the request
+// reaches the internal handler with its connect headers and body intact, and
+// the response round-trips — all without a listener.
+func TestApiRequest_InMemoryDispatch(t *testing.T) {
+	var capturedPath, capturedProto, capturedContentType string
+	var capturedBody []byte
+	s := newTestServerWithMock(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		capturedProto = r.Header.Get("Connect-Protocol-Version")
+		capturedContentType = r.Header.Get("Content-Type")
+		capturedBody, _ = io.ReadAll(r.Body)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"ok":true}`)
+	}))
+
+	resp, err := s.apiRequest(context.Background(), "/bytebase.v1.SQLService/Query", map[string]any{"statement": "SELECT 1"})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.Status)
+	require.Equal(t, "/bytebase.v1.SQLService/Query", capturedPath)
+	require.Equal(t, "1", capturedProto)
+	require.Equal(t, "application/json", capturedContentType)
+	require.JSONEq(t, `{"statement":"SELECT 1"}`, string(capturedBody))
+	require.JSONEq(t, `{"ok":true}`, string(resp.Body))
+	require.Equal(t, "application/json", resp.Headers.Get("Content-Type"))
 }
 
 func TestApiRequest_ErrorParsing(t *testing.T) {

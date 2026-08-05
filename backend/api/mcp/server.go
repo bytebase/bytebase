@@ -12,6 +12,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
@@ -33,6 +34,11 @@ type Server struct {
 	secret       string
 	openAPIIndex *OpenAPIIndex
 
+	// internalClient carries tool API calls to the internal handler chain over
+	// the private in-memory transport, authenticated by the delegated
+	// credential minted in authMiddleware.
+	internalClient *http.Client
+
 	revokedAccessTokens sync.Map // map[string]struct{}
 
 	// planCheckPollBudgetOverride lets tests shorten the plan-check poll budget.
@@ -40,8 +46,9 @@ type Server struct {
 	planCheckPollBudgetOverride time.Duration
 }
 
-// NewServer creates a new MCP server.
-func NewServer(store *store.Store, profile *config.Profile, secret string) (*Server, error) {
+// NewServer creates a new MCP server. internalAPI is the internal API handler
+// chain tool calls dispatch to in memory; it is never bound to a listener.
+func NewServer(store *store.Store, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
 	mcpServer := mcp.NewServer(&mcp.Implementation{
 		Name:    "bytebase",
 		Version: profile.Version,
@@ -54,11 +61,12 @@ func NewServer(store *store.Store, profile *config.Profile, secret string) (*Ser
 	}
 
 	s := &Server{
-		mcpServer:    mcpServer,
-		store:        store,
-		profile:      profile,
-		secret:       secret,
-		openAPIIndex: openAPIIndex,
+		mcpServer:      mcpServer,
+		store:          store,
+		profile:        profile,
+		secret:         secret,
+		openAPIIndex:   openAPIIndex,
+		internalClient: newInternalAPIClient(internalAPI),
 	}
 	s.registerTools()
 
@@ -139,28 +147,11 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return s.unauthorized(c, "invalid token")
 		}
 
-		// Extract user email from subject
-		sub, ok := claims["sub"].(string)
-		if !ok || sub == "" {
-			return s.unauthorized(c, "invalid token: missing subject")
+		identity, errMsg := extractTokenIdentity(claims)
+		if errMsg != "" {
+			return s.unauthorized(c, errMsg)
 		}
-		clientID, ok := claims["client_id"].(string)
-		if !ok {
-			clientID = ""
-		}
-
-		// Extract workspace ID from token claims. Read before the audience
-		// check because resolving the expected audience needs the workspace to
-		// look up the trusted external URL.
-		workspaceID, ok := claims["workspace_id"].(string)
-		if !ok {
-			workspaceID = ""
-		}
-
-		aud, ok := claims["aud"]
-		if !ok {
-			return s.unauthorized(c, "invalid token: missing audience")
-		}
+		sub, clientID, workspaceID, aud := identity.sub, identity.clientID, identity.workspaceID, identity.aud
 		allowed, err := s.audienceAllowed(c.Request().Context(), aud, workspaceID)
 		if err != nil {
 			// Infra failure reading the trusted config, not a verdict on the
@@ -182,12 +173,33 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusForbidden, "MCP access is disabled for this workspace by policy")
 		}
 
+		// Mint the delegated credential that carries this request's identity and
+		// grant state onto the private in-memory transport. The inbound bearer
+		// stops at this boundary: internal API requests authenticate with the
+		// credential, never the bearer. Grant state is copied verbatim from the
+		// inbound token — empty for legacy sessions (PR 5 assigns their
+		// synthetic LEGACY_FULL semantics). Identity only, no roles: downstream
+		// authorization re-resolves live exactly as for a public request.
+		credential, err := auth.GenerateInternalMCPToken(auth.DelegatedMCPCredential{
+			Principal:     sub,
+			WorkspaceID:   workspaceID,
+			ClientID:      clientID,
+			CorrelationID: uuid.NewString(),
+			Scope:         grantScope(claims),
+			Resource:      grantResource(claims, aud),
+		}, s.secret)
+		if err != nil {
+			slog.Error("failed to mint the delegated MCP credential", log.BBError(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to establish the internal credential")
+		}
+
 		// Store access token and workspace ID in request context for MCP tools.
 		ctx := c.Request().Context()
 		ctx = withAccessToken(ctx, tokenStr)
 		ctx = withUserEmail(ctx, sub)
 		ctx = withOAuth2ClientID(ctx, clientID)
 		ctx = withWorkspaceID(ctx, workspaceID)
+		ctx = withDelegatedCredential(ctx, credential)
 		c.SetRequest(c.Request().WithContext(ctx))
 
 		return next(c)
@@ -291,6 +303,76 @@ func (s *Server) expectedMCPAudience(ctx context.Context, workspaceID string) (s
 		return "", err
 	}
 	return externalURL + mcpResourcePath, nil
+}
+
+// tokenIdentity is the identity material authMiddleware works with after a
+// token verifies: subject, optional client and workspace, and the audience.
+// The workspace is extracted before the audience check because resolving the
+// expected audience needs it to look up the trusted external URL.
+type tokenIdentity struct {
+	sub         string
+	clientID    string
+	workspaceID string
+	aud         any
+}
+
+// extractTokenIdentity pulls the identity claims out of a verified token. A
+// missing subject or audience is a token defect (non-empty error message);
+// client_id and workspace_id are optional.
+func extractTokenIdentity(claims jwt.MapClaims) (*tokenIdentity, string) {
+	sub, ok := claims["sub"].(string)
+	if !ok || sub == "" {
+		return nil, "invalid token: missing subject"
+	}
+	aud, ok := claims["aud"]
+	if !ok {
+		return nil, "invalid token: missing audience"
+	}
+	identity := &tokenIdentity{sub: sub, aud: aud}
+	if clientID, ok := claims["client_id"].(string); ok {
+		identity.clientID = clientID
+	}
+	if workspaceID, ok := claims["workspace_id"].(string); ok {
+		identity.workspaceID = workspaceID
+	}
+	return identity, ""
+}
+
+// grantScope extracts the grant's stored scope from the inbound token's claims.
+// The scope claim is minted onto OAuth2 access tokens verbatim from the grant;
+// legacy tokens (plain sessions, pre-scope OAuth2) have none — empty grant
+// state, by design.
+func grantScope(claims jwt.MapClaims) string {
+	if scope, ok := claims["scope"].(string); ok {
+		return scope
+	}
+	return ""
+}
+
+// grantResource extracts the grant's stored resource from the inbound token.
+// For MCP OAuth2 tokens the resource-bound audience IS the stored resource
+// (PR 3 mints it from the grant verbatim). The legacy fixed audiences are not
+// resources, so legacy tokens yield empty grant state.
+func grantResource(claims jwt.MapClaims, aud any) string {
+	tokenUse, ok := claims["token_use"].(string)
+	if !ok || tokenUse != auth.TokenUseMCP {
+		return ""
+	}
+	if audienceMatches(aud, auth.OAuth2AccessTokenAudience) || audienceMatches(aud, auth.AccessTokenAudience) {
+		return ""
+	}
+	switch v := aud.(type) {
+	case string:
+		return v
+	case []any:
+		for _, a := range v {
+			if str, ok := a.(string); ok {
+				return str
+			}
+		}
+	default:
+	}
+	return ""
 }
 
 // audienceMatches reports whether a JWT aud claim (string or array form)
