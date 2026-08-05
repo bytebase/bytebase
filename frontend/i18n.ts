@@ -12,6 +12,7 @@ config({ path: "./.env.i18n" });
 const SOURCE_LANG = process.env.npm_config_source ?? "en-US";
 const TARGET_LANGS = process.env.npm_config_target?.split(".") ?? [
   "es-ES",
+  "id-ID",
   "ja-JP",
   "zh-CN",
   "vi-VN",

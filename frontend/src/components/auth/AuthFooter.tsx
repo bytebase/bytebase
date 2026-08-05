@@ -13,6 +13,7 @@ const LANGUAGE_LIST: readonly LanguageOption[] = [
   { label: "English", value: "en-US" },
   { label: "简体中文", value: "zh-CN" },
   { label: "Español", value: "es-ES" },
+  { label: "Bahasa Indonesia", value: "id-ID" },
   { label: "日本語", value: "ja-JP" },
   { label: "Tiếng việt", value: "vi-VN" },
 ];
@@ -20,6 +21,7 @@ const LANGUAGE_LIST: readonly LanguageOption[] = [
 function resolveLabel(locale: string): string {
   if (locale === "zh-CN" || locale === "zh") return "简体中文";
   if (locale === "es-ES" || locale === "es") return "Español";
+  if (locale === "id-ID" || locale === "id") return "Bahasa Indonesia";
   if (locale === "ja-JP" || locale === "ja") return "日本語";
   if (locale === "vi-VN" || locale === "vi") return "Tiếng việt";
   return "English";
