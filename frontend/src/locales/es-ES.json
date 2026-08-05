@@ -1166,6 +1166,7 @@
     },
     "instance-id": "ID de la instancia",
     "instance-name": "Nombre de la instancia",
+    "keytab-write-only": "El keytab es de solo escritura. Suba un archivo nuevo para reemplazar el existente.",
     "new-instance": "Nueva instancia",
     "no-environment": "Esta instancia no ha sido ligada al entorno.",
     "no-extra-params-configured": "No hay parámetros de conexión adicionales configurados",

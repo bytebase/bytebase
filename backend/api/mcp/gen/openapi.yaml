@@ -10512,10 +10512,6 @@ components:
             redisType:
               title: redis_type
               $ref: '#/components/schemas/bytebase.v1.DataSource.RedisType'
-            cluster:
-              type: string
-              title: cluster
-              description: Cluster is the cluster name for the data source. Used by CockroachDB.
             extraConnectionParameters:
               type: object
               title: extra_connection_parameters

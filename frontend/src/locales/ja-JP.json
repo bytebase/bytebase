@@ -1166,6 +1166,7 @@
     },
     "instance-id": "インスタンスID",
     "instance-name": "@:common.instance@:instance.name",
+    "keytab-write-only": "キータブは書き込み専用です。新しいファイルをアップロードすると既存のものを置き換えます。",
     "new-instance": "新しいインスタンス",
     "no-environment": "このインスタンスは環境にバインドされていません",
     "no-extra-params-configured": "追加の接続パラメーターは構成されていません",

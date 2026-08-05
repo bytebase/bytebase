@@ -1361,13 +1361,6 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
   redisType: DataSource_RedisType;
 
   /**
-   * Cluster is the cluster name for the data source. Used by CockroachDB.
-   *
-   * @generated from field: string cluster = 35;
-   */
-  cluster: string;
-
-  /**
    * Extra connection parameters for the database connection.
    * For PostgreSQL HA, this can be used to set target_session_attrs=read-write
    *

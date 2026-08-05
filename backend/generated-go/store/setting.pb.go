@@ -2886,7 +2886,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\n" +
 	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/type/color.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"P\n" +
 	"\rSystemSetting\x12\x18\n" +
-	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03R\vauth_secretR\fworkspace_id\"\xcd\x13\n" +
+	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03R\vauth_secretR\fworkspace_id\"\xd3\x13\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2943,7 +2943,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\bDISABLED\x10\x01\x12\r\n" +
 	"\tREAD_ONLY\x10\x03\x12\x0e\n" +
 	"\n" +
-	"READ_WRITE\x10\x04\"\x04\b\x02\x10\x02J\x04\b\x10\x10\x11\"\xf6\x01\n" +
+	"READ_WRITE\x10\x04\"\x04\b\x02\x10\x02J\x04\b\x0f\x10\x10J\x04\b\x10\x10\x11\"\xf6\x01\n" +
 	"\x15SQLEditorThemeSetting\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
@@ -2965,22 +2965,22 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x0fCREATE_DATABASE\x10\x02\x12\x13\n" +
 	"\vEXPORT_DATA\x10\x03\x1a\x02\b\x01\x12\x10\n" +
 	"\fREQUEST_ROLE\x10\x04\x12\x12\n" +
-	"\x0eREQUEST_ACCESS\x10\x05\"\xcf\x05\n" +
+	"\x0eREQUEST_ACCESS\x10\x05\"\xe1\x05\n" +
 	"\x19DataClassificationSetting\x12\\\n" +
-	"\aconfigs\x18\x01 \x03(\v2B.bytebase.store.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\xd3\x04\n" +
+	"\aconfigs\x18\x01 \x03(\v2B.bytebase.store.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\xe5\x04\n" +
 	"\x18DataClassificationConfig\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12`\n" +
 	"\x06levels\x18\x03 \x03(\v2H.bytebase.store.DataClassificationSetting.DataClassificationConfig.LevelR\x06levels\x12~\n" +
-	"\x0eclassification\x18\x04 \x03(\v2V.bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntryR\x0eclassification\x1a3\n" +
+	"\x0eclassification\x18\x04 \x03(\v2V.bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntryR\x0eclassification\x1a?\n" +
 	"\x05Level\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x14\n" +
-	"\x05level\x18\x04 \x01(\x05R\x05level\x1a_\n" +
+	"\x05level\x18\x04 \x01(\x05R\x05levelJ\x04\b\x01\x10\x02J\x04\b\x03\x10\x04\x1ae\n" +
 	"\x12DataClassification\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x19\n" +
 	"\x05level\x18\x04 \x01(\x05H\x00R\x05level\x88\x01\x01B\b\n" +
-	"\x06_level\x1a\x98\x01\n" +
+	"\x06_levelJ\x04\b\x03\x10\x04\x1a\x98\x01\n" +
 	"\x13ClassificationEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12k\n" +
 	"\x05value\x18\x02 \x01(\v2U.bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassificationR\x05value:\x028\x01\"\xa0\x06\n" +
@@ -3011,15 +3011,15 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x15MASK_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05INNER\x10\x01\x12\t\n" +
 	"\x05OUTER\x10\x02B\x06\n" +
-	"\x04mask\"\x83\x02\n" +
+	"\x04mask\"\x89\x02\n" +
 	"\x13SemanticTypeSetting\x12F\n" +
-	"\x05types\x18\x01 \x03(\v20.bytebase.store.SemanticTypeSetting.SemanticTypeR\x05types\x1a\xa3\x01\n" +
+	"\x05types\x18\x01 \x03(\v20.bytebase.store.SemanticTypeSetting.SemanticTypeR\x05types\x1a\xa9\x01\n" +
 	"\fSemanticType\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x127\n" +
 	"\talgorithm\x18\x06 \x01(\v2\x19.bytebase.store.AlgorithmR\talgorithm\x12\x12\n" +
-	"\x04icon\x18\a \x01(\tR\x04icon\"\xd4\a\n" +
+	"\x04icon\x18\a \x01(\tR\x04iconJ\x04\b\x04\x10\x06\"\xd4\a\n" +
 	"\fAppIMSetting\x12B\n" +
 	"\bsettings\x18\x01 \x03(\v2&.bytebase.store.AppIMSetting.IMSettingR\bsettings\x1a\x1d\n" +
 	"\x05Slack\x12\x14\n" +

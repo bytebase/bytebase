@@ -21549,13 +21549,10 @@ components:
             masterPassword:
               type: string
               title: master_password
+              writeOnly: true
             redisType:
               title: redis_type
               $ref: '#/components/schemas/bytebase.v1.DataSource.RedisType'
-            cluster:
-              type: string
-              title: cluster
-              description: Cluster is the cluster name for the data source. Used by CockroachDB.
             extraConnectionParameters:
               type: object
               title: extra_connection_parameters
@@ -24398,6 +24395,7 @@ components:
           title: keytab
           format: byte
           description: The keytab file contents for authentication.
+          writeOnly: true
         kdcHost:
           type: string
           title: kdc_host

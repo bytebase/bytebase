@@ -147,6 +147,7 @@ message DeleteRevisionRequest {
 }
 
 message Revision {
+  reserved 10 to 12;
   option (google.api.resource) = {
     type: "bytebase.com/Revision"
     pattern: "instances/{instance}/databases/{database}/revisions/{revision}"

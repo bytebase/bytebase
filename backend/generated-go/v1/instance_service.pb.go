@@ -2073,8 +2073,6 @@ type DataSource struct {
 	MasterUsername string               `protobuf:"bytes,32,opt,name=master_username,json=masterUsername,proto3" json:"master_username,omitempty"`
 	MasterPassword string               `protobuf:"bytes,33,opt,name=master_password,json=masterPassword,proto3" json:"master_password,omitempty"`
 	RedisType      DataSource_RedisType `protobuf:"varint,34,opt,name=redis_type,json=redisType,proto3,enum=bytebase.v1.DataSource_RedisType" json:"redis_type,omitempty"`
-	// Cluster is the cluster name for the data source. Used by CockroachDB.
-	Cluster string `protobuf:"bytes,35,opt,name=cluster,proto3" json:"cluster,omitempty"`
 	// Extra connection parameters for the database connection.
 	// For PostgreSQL HA, this can be used to set target_session_attrs=read-write
 	ExtraConnectionParameters map[string]string `protobuf:"bytes,36,rep,name=extra_connection_parameters,json=extraConnectionParameters,proto3" json:"extra_connection_parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -2466,13 +2464,6 @@ func (x *DataSource) GetRedisType() DataSource_RedisType {
 		return x.RedisType
 	}
 	return DataSource_REDIS_TYPE_UNSPECIFIED
-}
-
-func (x *DataSource) GetCluster() string {
-	if x != nil {
-		return x.Cluster
-	}
-	return ""
 }
 
 func (x *DataSource) GetExtraConnectionParameters() map[string]string {
@@ -3179,7 +3170,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\x12#\n" +
 	"\rallow_missing\x18\x05 \x01(\bR\fallowMissing\"-\n" +
 	"\rSyncDatabases\x12\x1c\n" +
-	"\tdatabases\x18\x01 \x03(\tR\tdatabases\"\xcf\x06\n" +
+	"\tdatabases\x18\x01 \x03(\tR\tdatabases\"\xdb\x06\n" +
 	"\bInstance\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
@@ -3202,7 +3193,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:Y\xeaAV\n" +
 	"\x15bytebase.com/Instance\x12\x14instances/{instance}\x12'projects/{project}/instances/{instance}B\x0e\n" +
-	"\f_environment\"\xf2\t\n" +
+	"\f_environmentJ\x04\b\x02\x10\x03J\x04\b\r\x10\x0e\"\xf2\t\n" +
 	"\x18DataSourceExternalSecret\x12Q\n" +
 	"\vsecret_type\x18\x01 \x01(\x0e20.bytebase.v1.DataSourceExternalSecret.SecretTypeR\n" +
 	"secretType\x12\x10\n" +
@@ -3250,7 +3241,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x05PLAIN\x10\x01\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x02\x12\b\n" +
 	"\x04FILE\x10\x03B\r\n" +
-	"\vauth_option\"\xfd\x18\n" +
+	"\vauth_option\"\xf4\x18\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
@@ -3305,11 +3296,10 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\fwarehouse_id\x18\x1d \x01(\tR\vwarehouseId\x12\x1f\n" +
 	"\vmaster_name\x18\x1f \x01(\tR\n" +
 	"masterName\x12'\n" +
-	"\x0fmaster_username\x18  \x01(\tR\x0emasterUsername\x12'\n" +
-	"\x0fmaster_password\x18! \x01(\tR\x0emasterPassword\x12@\n" +
+	"\x0fmaster_username\x18  \x01(\tR\x0emasterUsername\x12,\n" +
+	"\x0fmaster_password\x18! \x01(\tB\x03\xe0A\x04R\x0emasterPassword\x12@\n" +
 	"\n" +
-	"redis_type\x18\" \x01(\x0e2!.bytebase.v1.DataSource.RedisTypeR\tredisType\x12\x18\n" +
-	"\acluster\x18# \x01(\tR\acluster\x12v\n" +
+	"redis_type\x18\" \x01(\x0e2!.bytebase.v1.DataSource.RedisTypeR\tredisType\x12v\n" +
 	"\x1bextra_connection_parameters\x18$ \x03(\v26.bytebase.v1.DataSource.ExtraConnectionParametersEntryR\x19extraConnectionParameters\x12\x1d\n" +
 	"\n" +
 	"project_id\x189 \x01(\tR\tprojectId\x12\x1f\n" +
@@ -3352,7 +3342,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"STANDALONE\x10\x01\x12\f\n" +
 	"\bSENTINEL\x10\x02\x12\v\n" +
 	"\aCLUSTER\x10\x03B\x0f\n" +
-	"\riam_extension\"\xa8\x02\n" +
+	"\riam_extensionJ\x04\b#\x10$J\x04\b2\x108\"\xa8\x02\n" +
 	"\x10InstanceResource\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12+\n" +
 	"\x06engine\x18\x02 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12*\n" +
@@ -3368,12 +3358,12 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"SASLConfig\x12<\n" +
 	"\n" +
 	"krb_config\x18\x01 \x01(\v2\x1b.bytebase.v1.KerberosConfigH\x00R\tkrbConfigB\v\n" +
-	"\tmechanism\"\xe0\x01\n" +
+	"\tmechanism\"\xe5\x01\n" +
 	"\x0eKerberosConfig\x12\x18\n" +
 	"\aprimary\x18\x01 \x01(\tR\aprimary\x12\x1a\n" +
 	"\binstance\x18\x02 \x01(\tR\binstance\x12\x14\n" +
-	"\x05realm\x18\x03 \x01(\tR\x05realm\x12\x16\n" +
-	"\x06keytab\x18\x04 \x01(\fR\x06keytab\x12\x19\n" +
+	"\x05realm\x18\x03 \x01(\tR\x05realm\x12\x1b\n" +
+	"\x06keytab\x18\x04 \x01(\fB\x03\xe0A\x04R\x06keytab\x12\x19\n" +
 	"\bkdc_host\x18\x05 \x01(\tR\akdcHost\x12\x19\n" +
 	"\bkdc_port\x18\x06 \x01(\tR\akdcPort\x124\n" +
 	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol*G\n" +

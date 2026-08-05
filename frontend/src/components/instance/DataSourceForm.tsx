@@ -496,6 +496,8 @@ export function DataSourceForm({
     DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM;
   const isIAM = isAzureIAM || isAwsIAM || isGoogleIAM;
 
+  const [keytabFileName, setKeytabFileName] = useState("");
+
   const handleKeytabUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -504,6 +506,7 @@ export function DataSourceForm({
       const data = new Uint8Array(reader.result as ArrayBuffer);
       if (dataSource.saslConfig?.mechanism?.case === "krbConfig") {
         const krbValue = dataSource.saslConfig.mechanism.value;
+        setKeytabFileName(file.name);
         update({
           saslConfig: create(SASLConfigSchema, {
             ...dataSource.saslConfig,
@@ -786,7 +789,13 @@ export function DataSourceForm({
                     className="sm:col-span-3 sm:col-start-1"
                     title={
                       <>
-                        Keytab File <span className="text-error">*</span>
+                        Keytab File
+                        {dataSource.pendingCreate && (
+                          <>
+                            {" "}
+                            <span className="text-error">*</span>
+                          </>
+                        )}
                       </>
                     }
                   >
@@ -804,7 +813,17 @@ export function DataSourceForm({
                       >
                         Click or Drag your .keytab file here
                       </label>
+                      {keytabFileName && (
+                        <p className="mt-2 textinfolabel truncate">
+                          {keytabFileName}
+                        </p>
+                      )}
                     </div>
+                    {!dataSource.pendingCreate && (
+                      <p className="mt-1 textinfolabel">
+                        {t("instance.keytab-write-only")}
+                      </p>
+                    )}
                   </FormField>
                 </>
               )}

@@ -1166,6 +1166,7 @@
     },
     "instance-id": "实例 ID",
     "instance-name": "实例名称",
+    "keytab-write-only": "Keytab 仅写入。上传新文件以替换现有 keytab。",
     "new-instance": "新实例",
     "no-environment": "此实例尚未绑定到环境",
     "no-extra-params-configured": "没有配置的额外连接参数",

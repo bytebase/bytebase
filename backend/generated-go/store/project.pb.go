@@ -315,7 +315,7 @@ const file_store_project_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12(\n" +
 	"\x05color\x18\x02 \x01(\v2\x12.google.type.ColorR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xe5\a\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xf1\a\n" +
 	"\aProject\x128\n" +
 	"\fissue_labels\x18\x01 \x03(\v2\x15.bytebase.store.LabelR\vissueLabels\x12,\n" +
 	"\x12force_issue_labels\x18\x02 \x01(\bR\x10forceIssueLabels\x12.\n" +
@@ -337,7 +337,7 @@ const file_store_project_proto_rawDesc = "" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x8f\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x03\x10\x05J\x04\b\x06\x10\bB\x8f\x01\n" +
 	"\x12com.bytebase.storeB\fProjectProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

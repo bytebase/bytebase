@@ -204,7 +204,7 @@ var File_store_task_proto protoreflect.FileDescriptor
 
 const file_store_task_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/task.proto\x12\x0ebytebase.store\"\xa9\x02\n" +
+	"\x10store/task.proto\x12\x0ebytebase.store\"\xb5\x02\n" +
 	"\x04Task\x12\x18\n" +
 	"\askipped\x18\x01 \x01(\bR\askipped\x12%\n" +
 	"\x0eskipped_reason\x18\x02 \x01(\tR\rskippedReason\x12\x17\n" +
@@ -217,7 +217,8 @@ const file_store_task_proto_rawDesc = "" +
 	"\x15TASK_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CREATE\x10\x01\x12\x14\n" +
 	"\x10DATABASE_MIGRATE\x10\x02B\b\n" +
-	"\x06sourceB\x8c\x01\n" +
+	"\x06sourceJ\x04\b\x04\x10\n" +
+	"J\x04\b\f\x10\rB\x8c\x01\n" +
 	"\x12com.bytebase.storeB\tTaskProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

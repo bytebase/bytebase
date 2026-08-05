@@ -1202,7 +1202,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x1dListReleaseCategoriesResponse\x12\x1e\n" +
 	"\n" +
 	"categories\x18\x01 \x03(\tR\n" +
-	"categories\"\xee\x05\n" +
+	"categories\"\xfa\x05\n" +
 	"\aRelease\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1a\n" +
 	"\bcategory\x18\x02 \x01(\tR\bcategory\x12/\n" +
@@ -1213,14 +1213,14 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12-\n" +
 	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12-\n" +
-	"\x04type\x18\b \x01(\x0e2\x19.bytebase.v1.Release.TypeR\x04type\x1a\xae\x01\n" +
+	"\x04type\x18\b \x01(\x0e2\x19.bytebase.v1.Release.TypeR\x04type\x1a\xba\x01\n" +
 	"\x04File\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12\x18\n" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x12-\n" +
 	"\x05sheet\x18\x03 \x01(\tB\x17\xfaA\x14\n" +
 	"\x12bytebase.com/SheetR\x05sheet\x12!\n" +
 	"\tstatement\x18\a \x01(\fB\x03\xe0A\x04R\tstatement\x12&\n" +
-	"\fsheet_sha256\x18\x04 \x01(\tB\x03\xe0A\x03R\vsheetSha256\x1aN\n" +
+	"\fsheet_sha256\x18\x04 \x01(\tB\x03\xe0A\x03R\vsheetSha256J\x04\b\x01\x10\x02J\x04\b\x05\x10\x06\x1aN\n" +
 	"\tVCSSource\x12/\n" +
 	"\bvcs_type\x18\x01 \x01(\x0e2\x14.bytebase.v1.VCSTypeR\avcsType\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url\"<\n" +

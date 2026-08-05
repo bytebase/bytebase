@@ -7,6 +7,7 @@ import "store/common.proto";
 option go_package = "generated-go/store";
 
 message ReleasePayload {
+  reserved 1;
   repeated File files = 2;
 
   VCSSource vcs_source = 3;
@@ -14,6 +15,7 @@ message ReleasePayload {
   SchemaChangeType type = 4;
 
   message File {
+    reserved 1, 3, 5;
     // The path of the file, e.g., `2.2/V0001_create_table.sql`.
     string path = 2;
     // The SHA256 hash of the sheet content (hex-encoded).

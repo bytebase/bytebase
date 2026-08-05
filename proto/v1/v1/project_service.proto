@@ -386,6 +386,7 @@ message Label {
 }
 
 message Project {
+  reserved 8 to 9, 11 to 12;
   option (google.api.resource) = {
     type: "bytebase.com/Project"
     pattern: "projects/{project}"
@@ -546,6 +547,7 @@ message Webhook {
 message Activity {
   // Activity type enumeration.
   enum Type {
+    reserved 1 to 9;
     // Unspecified type.
     TYPE_UNSPECIFIED = 0;
     // ISSUE_CREATED represents a new issue creation event.

@@ -1166,6 +1166,7 @@
     },
     "instance-id": "ID phiên bản",
     "instance-name": "Tên phiên bản",
+    "keytab-write-only": "Keytab chỉ ghi. Tải lên tệp mới để thay thế keytab hiện có.",
     "new-instance": "Phiên bản mới",
     "no-environment": "Trường hợp này không bị ràng buộc với môi trường",
     "no-extra-params-configured": "Không có thông số kết nối bổ sung được cấu hình",

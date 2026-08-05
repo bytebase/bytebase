@@ -15,6 +15,7 @@ enum SyncStatus {
 
 // DatabaseMetadata is the metadata for databases.
 message DatabaseMetadata {
+  reserved 5;
   reserved 6; // drifted field removed
   reserved 7; // version field removed, use release instead
 
@@ -223,6 +224,7 @@ message SequenceMetadata {
 }
 
 message TriggerMetadata {
+  reserved 2;
   // The name of the trigger.
   string name = 1;
 
@@ -346,6 +348,7 @@ message StreamMetadata {
 
 // TableMetadata is the metadata for tables.
 message TableMetadata {
+  reserved 13 to 14;
   // The name of the table.
   string name = 1;
 
@@ -516,6 +519,7 @@ message TablePartitionMetadata {
 
 // ColumnMetadata is the metadata for columns.
 message ColumnMetadata {
+  reserved 4 to 5, 11 to 12;
   // The name of the column.
   string name = 1;
 
@@ -985,6 +989,7 @@ message ForeignKeyMetadata {
 
 // InstanceRoleMetadata is the message for instance role.
 message InstanceRoleMetadata {
+  reserved 1, 3 to 6;
   // The role name. It's unique within the instance.
   string name = 2;
 
@@ -1012,6 +1017,7 @@ message SchemaCatalog {
 }
 
 message TableCatalog {
+  reserved 4 to 6;
   // The name of the table.
   string name = 1;
 

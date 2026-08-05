@@ -449,7 +449,7 @@ const file_v1_changelog_service_proto_rawDesc = "" +
 	"\x13GetChangelogRequest\x12:\n" +
 	"\x04name\x18\x01 \x01(\tB&\xe0A\x02\xfaA \n" +
 	"\x1ebytebase.com/DatabaseChangelogR\x04name\x12.\n" +
-	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\x8e\x04\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\xa0\x04\n" +
 	"\tChangelog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
 	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -467,7 +467,7 @@ const file_v1_changelog_service_proto_rawDesc = "" +
 	"\x04DONE\x10\x02\x12\n" +
 	"\n" +
 	"\x06FAILED\x10\x03:\xbb\x01\xeaA\xb7\x01\n" +
-	"\x1ebytebase.com/DatabaseChangelog\x12@instances/{instance}/databases/{database}/changelogs/{changelog}\x12Sprojects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}*b\n" +
+	"\x1ebytebase.com/DatabaseChangelog\x12@instances/{instance}/databases/{database}/changelogs/{changelog}\x12Sprojects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}J\x04\b\x04\x10\aJ\x04\b\t\x10\vJ\x04\b\f\x10\x0f*b\n" +
 	"\rChangelogView\x12\x1e\n" +
 	"\x1aCHANGELOG_VIEW_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14CHANGELOG_VIEW_BASIC\x10\x01\x12\x17\n" +

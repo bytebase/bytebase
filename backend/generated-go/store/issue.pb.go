@@ -306,7 +306,7 @@ var File_store_issue_proto protoreflect.FileDescriptor
 
 const file_store_issue_proto_rawDesc = "" +
 	"\n" +
-	"\x11store/issue.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"\xb8\x03\n" +
+	"\x11store/issue.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"\xbe\x03\n" +
 	"\x05Issue\x12@\n" +
 	"\bapproval\x18\x01 \x01(\v2$.bytebase.store.IssuePayloadApprovalR\bapproval\x128\n" +
 	"\n" +
@@ -315,13 +315,13 @@ const file_store_issue_proto_rawDesc = "" +
 	"\n" +
 	"risk_level\x18\x04 \x01(\x0e2\x19.bytebase.store.RiskLevelR\triskLevel\x12&\n" +
 	"\x0faccess_grant_id\x18\x05 \x01(\tR\raccessGrantId\x12\x14\n" +
-	"\x05draft\x18\x06 \x01(\bR\x05draft\"Y\n" +
+	"\x05draft\x18\x06 \x01(\bR\x05draft\"_\n" +
 	"\x04Type\x12\x1a\n" +
 	"\x16ISSUE_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CHANGE\x10\x01\x12\x0e\n" +
 	"\n" +
 	"ROLE_GRANT\x10\x02\x12\x10\n" +
-	"\fACCESS_GRANT\x10\x04\"H\n" +
+	"\fACCESS_GRANT\x10\x04\"\x04\b\x03\x10\x03\"H\n" +
 	"\x06Status\x12\x1c\n" +
 	"\x18ISSUE_STATUS_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04OPEN\x10\x01\x12\b\n" +

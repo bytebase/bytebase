@@ -214,8 +214,8 @@ var File_store_project_webhook_proto protoreflect.FileDescriptor
 
 const file_store_project_webhook_proto_rawDesc = "" +
 	"\n" +
-	"\x1bstore/project_webhook.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xb0\x01\n" +
-	"\bActivity\"\xa3\x01\n" +
+	"\x1bstore/project_webhook.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xb6\x01\n" +
+	"\bActivity\"\xa9\x01\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rISSUE_CREATED\x10\n" +
@@ -224,7 +224,7 @@ const file_store_project_webhook_proto_rawDesc = "" +
 	"\x0fISSUE_SENT_BACK\x10\f\x12\x13\n" +
 	"\x0fPIPELINE_FAILED\x10\r\x12\x16\n" +
 	"\x12PIPELINE_COMPLETED\x10\x0e\x12\x12\n" +
-	"\x0eISSUE_APPROVED\x10\x0f\"\xcf\x01\n" +
+	"\x0eISSUE_APPROVED\x10\x0f\"\x04\b\x01\x10\t\"\xcf\x01\n" +
 	"\x0eProjectWebhook\x12/\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1b.bytebase.store.WebhookTypeR\x04type\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +
