@@ -127,6 +127,28 @@ func TestBatchUpdateDatabasesRejectsArchivedInstance(t *testing.T) {
 	require.Equal(t, "default", projectID)
 }
 
+func TestBatchUpdateDatabasesClearsEnvironmentOnArchivedInstance(t *testing.T) {
+	environmentID, unset := "env-a", ""
+	fixture := newProjectDeletionLockOrderFixture(t, `
+		INSERT INTO instance (resource_id, workspace, project, deleted)
+			VALUES ('instance-a', 'default', NULL, TRUE);
+		INSERT INTO db (instance, name, project, environment)
+			VALUES ('instance-a', 'db-a', 'default', 'env-a');
+	`)
+
+	err := fixture.store.BatchUpdateDatabases(fixture.ctx, nil, &store.BatchUpdateDatabases{
+		Workspace:           "default",
+		FindByEnvironmentID: &environmentID,
+		EnvironmentID:       &unset,
+	})
+	require.NoError(t, err, "environment cleanup must remain possible after an instance is archived")
+
+	var environment sql.NullString
+	require.NoError(t, fixture.db.QueryRowContext(fixture.ctx,
+		"SELECT environment FROM db WHERE instance = 'instance-a' AND name = 'db-a'").Scan(&environment))
+	require.False(t, environment.Valid, "the archived instance must not retain a deleted environment reference")
+}
+
 func TestBatchUpdateDatabasesByEnvironment(t *testing.T) {
 	envA, unset := "env-a", ""
 	fixture := newProjectDeletionLockOrderFixture(t, `
@@ -162,4 +184,60 @@ func TestBatchUpdateDatabasesByEnvironment(t *testing.T) {
 	requireDatabaseEnvironment("instance-a", "db-a", "")
 	requireDatabaseEnvironment("instance-a", "db-b", "env-b")
 	requireDatabaseEnvironment("instance-b", "db-c", "env-a")
+}
+
+func TestBatchUpdateDatabasesByEnvironmentRevalidatesDynamicTargets(t *testing.T) {
+	environmentID, unset := "env-a", ""
+	fixture := newProjectDeletionLockOrderFixture(t, `
+		INSERT INTO instance (resource_id, workspace, project)
+			VALUES ('instance-a', 'default', NULL);
+		INSERT INTO db (instance, name, project, environment) VALUES
+			('instance-a', 'db-a', 'default', 'env-a'),
+			('instance-a', 'db-b', 'default', 'env-b');
+	`)
+
+	// Block the batch on its default-project purge fence. It reaches that fence
+	// only after the outside-transaction target read has completed.
+	conn, err := fixture.db.Conn(fixture.ctx)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, conn.Close()) })
+	_, err = conn.ExecContext(fixture.ctx, "SELECT pg_advisory_lock($1, hashtext($2))", int64(store.AdvisoryLockKeyProjectPurge), "default")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, err := conn.ExecContext(fixture.ctx, "SELECT pg_advisory_unlock($1, hashtext($2))", int64(store.AdvisoryLockKeyProjectPurge), "default")
+		require.NoError(t, err)
+	})
+	var barrierPID int
+	require.NoError(t, conn.QueryRowContext(fixture.ctx, "SELECT pg_backend_pid()").Scan(&barrierPID))
+
+	result := make(chan error, 1)
+	go func() {
+		result <- fixture.store.BatchUpdateDatabases(fixture.ctx, nil, &store.BatchUpdateDatabases{
+			Workspace:           "default",
+			FindByEnvironmentID: &environmentID,
+			EnvironmentID:       &unset,
+		})
+	}()
+	waitForBackendBlockedByPID(fixture.ctx, t, fixture.db, barrierPID)
+
+	// db-b was not in the pre-read target set, but becomes a match before the
+	// fenced transaction scans. The batch must either include it or explicitly
+	// request a retry; it must not report success and silently leave it behind.
+	_, err = fixture.db.ExecContext(fixture.ctx,
+		"UPDATE db SET environment = 'env-a' WHERE instance = 'instance-a' AND name = 'db-b'")
+	require.NoError(t, err)
+	_, err = conn.ExecContext(fixture.ctx, "SELECT pg_advisory_unlock($1, hashtext($2))", int64(store.AdvisoryLockKeyProjectPurge), "default")
+	require.NoError(t, err)
+
+	err = <-result
+	if err != nil {
+		require.NotContains(t, strings.ToLower(err.Error()), "foreign key")
+		require.Contains(t, strings.ToLower(err.Error()), "retry")
+		return
+	}
+
+	var environment sql.NullString
+	require.NoError(t, fixture.db.QueryRowContext(fixture.ctx,
+		"SELECT environment FROM db WHERE instance = 'instance-a' AND name = 'db-b'").Scan(&environment))
+	require.False(t, environment.Valid, "a matching database added during the fence wait must not be skipped")
 }

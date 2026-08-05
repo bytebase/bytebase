@@ -437,36 +437,47 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 	if err != nil {
 		return err
 	}
-	instances := make([]string, 0, len(targets))
-	projects := make([]string, 0, len(targets))
+	fenceInstances := make([]string, 0, len(targets))
+	fenceProjects := make([]string, 0, len(targets))
 	for _, target := range targets {
-		instances = append(instances, target.instanceID)
-		projects = append(projects, target.projectID)
+		fenceInstances = append(fenceInstances, target.instanceID)
+		fenceProjects = append(fenceProjects, target.projectID)
 		if target.instanceProject != "" {
-			projects = append(projects, target.instanceProject)
+			fenceProjects = append(fenceProjects, target.instanceProject)
 		}
 	}
 	if update.ProjectID != nil {
-		projects = append(projects, *update.ProjectID)
+		fenceProjects = append(fenceProjects, *update.ProjectID)
 	}
-	slices.Sort(instances)
-	instances = slices.Compact(instances)
-	slices.Sort(projects)
-	projects = slices.Compact(projects)
+	slices.Sort(fenceInstances)
+	fenceInstances = slices.Compact(fenceInstances)
+	slices.Sort(fenceProjects)
+	fenceProjects = slices.Compact(fenceProjects)
 
 	var updated []databaseBatchTarget
-	err = s.withDatabaseBatchPurgeFence(ctx, instances, projects, func(tx *sql.Tx) error {
-		locked, err := lockDatabaseBatchTargets(ctx, tx, where, targets)
+	err = s.withDatabaseBatchPurgeFence(ctx, fenceInstances, fenceProjects, func(tx *sql.Tx) error {
+		// Dynamic environment matching can gain rows between the pre-read and
+		// the purge fences. Lock the complete current match set so a newly
+		// matching row is either included or causes a retry below; never leave
+		// it silently unchanged.
+		locked, err := lockDatabaseBatchTargets(ctx, tx, where, targets, update.FindByEnvironmentID != nil)
 		if err != nil {
 			return err
+		}
+		for _, target := range locked {
+			if !slices.Contains(fenceInstances, target.instanceID) || !slices.Contains(fenceProjects, target.projectID) || (target.instanceProject != "" && !slices.Contains(fenceProjects, target.instanceProject)) {
+				return common.Errorf(common.Conflict, "batch database targets changed; retry")
+			}
 		}
 		instances, err := lockDatabaseBatchInstances(ctx, tx, locked)
 		if err != nil {
 			return err
 		}
-		for instanceID, instance := range instances {
-			if instance.deleted {
-				return common.Errorf(common.Conflict, "instance %s is archived", instanceID)
+		if update.ProjectID != nil {
+			for instanceID, instance := range instances {
+				if instance.deleted {
+					return common.Errorf(common.Conflict, "instance %s is archived", instanceID)
+				}
 			}
 		}
 		// Revalidate lifecycle under the transaction: every target must still
@@ -474,11 +485,11 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 		// before the fences were acquired shows up here as a retry instead of
 		// an FK failure.
 		for _, target := range locked {
-			if !slices.Contains(projects, target.projectID) {
-				return errors.Errorf("database ownership changed to project %s for %s; retry", target.projectID, common.FormatDatabase(target.instanceID, target.databaseName))
+			if !slices.Contains(fenceProjects, target.projectID) {
+				return common.Errorf(common.Conflict, "database ownership changed to project %s for %s; retry", target.projectID, common.FormatDatabase(target.instanceID, target.databaseName))
 			}
-			if instanceProject := instances[target.instanceID].projectID; instanceProject != "" && !slices.Contains(projects, instanceProject) {
-				return errors.Errorf("database ownership changed to project instance %s for %s; retry", instanceProject, common.FormatDatabase(target.instanceID, target.databaseName))
+			if instanceProject := instances[target.instanceID].projectID; instanceProject != "" && !slices.Contains(fenceProjects, instanceProject) {
+				return common.Errorf(common.Conflict, "database ownership changed to project instance %s for %s; retry", instanceProject, common.FormatDatabase(target.instanceID, target.databaseName))
 			}
 		}
 		// Lock every affected project, including the destination, after the
@@ -624,26 +635,29 @@ func (s *Store) withDatabaseBatchPurgeFence(
 	return errors.Wrap(tx.Commit(), "failed to commit batch database write transaction")
 }
 
-// lockDatabaseBatchTargets locks the pre-read batch targets in full
-// primary-key order and re-applies the original where clause so rows that no
-// longer match are skipped. Only db rows are locked.
-func lockDatabaseBatchTargets(ctx context.Context, tx *sql.Tx, where *qb.Query, targets []databaseBatchTarget) ([]databaseBatchTarget, error) {
-	if len(targets) == 0 {
+// lockDatabaseBatchTargets locks the batch targets in full primary-key order.
+// Dynamic environment queries re-scan the original where clause so rows that
+// start matching after the pre-read are detected. Static targets re-apply the
+// clause to the pre-read identities, so rows that no longer match are skipped.
+// Only db rows are locked.
+func lockDatabaseBatchTargets(ctx context.Context, tx *sql.Tx, where *qb.Query, targets []databaseBatchTarget, dynamic bool) ([]databaseBatchTarget, error) {
+	if len(targets) == 0 && !dynamic {
 		return nil, nil
-	}
-	instances, names := make([]string, 0, len(targets)), make([]string, 0, len(targets))
-	for _, target := range targets {
-		instances, names = append(instances, target.instanceID), append(names, target.databaseName)
 	}
 	q := qb.Q().Space(`
 		SELECT db.instance, db.name, db.project, instance.project
 		FROM db
 		JOIN instance ON instance.resource_id = db.instance
-		WHERE (db.instance, db.name) IN (SELECT * FROM unnest(?::TEXT[], ?::TEXT[]))
-		  AND ?
-		ORDER BY db.instance, db.name
-		FOR UPDATE OF db
-	`, instances, names, where)
+		WHERE ?
+	`, where)
+	if !dynamic {
+		instances, names := make([]string, 0, len(targets)), make([]string, 0, len(targets))
+		for _, target := range targets {
+			instances, names = append(instances, target.instanceID), append(names, target.databaseName)
+		}
+		q.And(`(db.instance, db.name) IN (SELECT * FROM unnest(?::TEXT[], ?::TEXT[]))`, instances, names)
+	}
+	q.Space("ORDER BY db.instance, db.name FOR UPDATE OF db")
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build batch database lock query")
