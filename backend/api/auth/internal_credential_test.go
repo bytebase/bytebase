@@ -49,11 +49,17 @@ func TestInternalMCPCredentialEmptyGrantState(t *testing.T) {
 	require.Equal(t, "demo@example.com", got.Principal)
 }
 
-// TestInternalMCPCredentialWireShape pins the boundary markers on the wire:
-// a dedicated kid (so the public keyfuncs, which only ever return the key for
-// kid "v1", refuse to even verify the signature), a dedicated audience, and a
-// dedicated token_use. Each is an independent rejection layer on the public
-// surfaces.
+// TestInternalMCPCredentialWireShape pins what separates the internal
+// credential from every public one: a signing key derived from the secret, and
+// a dedicated audience. Each layer independently refuses in both directions, so
+// this test is the only place the derivation itself is pinned — the
+// public-surface rejection tests stay green on the audience check alone.
+//
+// There is deliberately no token_use: unlike the external MCP token, whose
+// per-deployment resource audience cannot be matched against a constant, this
+// audience is a constant and already says "internal". The kid is shared with
+// public tokens, so it discriminates nothing; that is what the derived key and
+// audience are for.
 func TestInternalMCPCredentialWireShape(t *testing.T) {
 	tokenStr, err := GenerateInternalMCPToken(testDelegatedCredential(), testSecret)
 	require.NoError(t, err)
@@ -61,14 +67,12 @@ func TestInternalMCPCredentialWireShape(t *testing.T) {
 	parser := jwt.NewParser()
 	token, _, err := parser.ParseUnverified(tokenStr, jwt.MapClaims{})
 	require.NoError(t, err)
-	require.Equal(t, internalMCPKeyID, token.Header["kid"])
 	claims, ok := token.Claims.(jwt.MapClaims)
 	require.True(t, ok)
-	require.Equal(t, []any{InternalMCPAudience}, claims["aud"])
-	require.Equal(t, TokenUseMCPInternal, claims["token_use"])
+	require.Equal(t, []any{internalMCPAudience}, claims["aud"])
+	require.NotContains(t, claims, "token_use",
+		"the audience identifies the credential; a token_use would be redundant")
 
-	// The signing key must not be the raw secret: even a hypothetical kid-check
-	// bypass on a public surface fails signature verification.
 	_, err = jwt.ParseWithClaims(tokenStr, jwt.MapClaims{}, func(_ *jwt.Token) (any, error) {
 		return []byte(testSecret), nil
 	})
@@ -90,13 +94,14 @@ func TestGeneralAPIRejectsInternalMCPCredential(t *testing.T) {
 
 // TestCheckTokenAudienceRejectsInternalCredential covers the second boundary
 // layer on the general API: even if the internal credential's signature were
-// somehow accepted, its audience and token_use admit it nowhere.
+// somehow accepted, its audience admits it nowhere. Carrying no token_use is
+// part of that — the claim is absent, so the MCP admission branch (which keys
+// on token_use == TokenUseMCP) cannot fire either.
 func TestCheckTokenAudienceRejectsInternalCredential(t *testing.T) {
 	claims := &claimsMessage{
 		RegisteredClaims: jwt.RegisteredClaims{
-			Audience: jwt.ClaimStrings{InternalMCPAudience},
+			Audience: jwt.ClaimStrings{internalMCPAudience},
 		},
-		TokenUse: TokenUseMCPInternal,
 	}
 	_, err := checkTokenAudience(claims)
 	require.Error(t, err)

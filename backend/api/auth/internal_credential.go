@@ -10,18 +10,13 @@ import (
 )
 
 const (
-	// InternalMCPAudience is the audience of the delegated credential minted at
-	// the /mcp boundary for the private in-memory transport. No public listener
-	// ever accepts it.
-	InternalMCPAudience = "bb.mcp.internal"
-	// TokenUseMCPInternal marks the delegated credential's token_use claim,
-	// distinct from TokenUseMCP so the general API's token_use recognition
-	// never admits it.
-	TokenUseMCPInternal = "mcp_internal"
-	// internalMCPKeyID is the kid of the delegated credential. The public
-	// keyfuncs only ever return a key for kid "v1", so an internal credential
-	// presented on a public surface fails before signature verification.
-	internalMCPKeyID = "mcp-internal-v1"
+	// internalMCPAudience is the audience of the delegated credential minted at
+	// the /mcp boundary for the private in-memory transport, and the only claim
+	// that marks it as internal. No public listener ever accepts it. A separate
+	// token_use would say nothing the audience does not: unlike the external MCP
+	// token, whose audience is a per-deployment resource URI that no verifier
+	// can match against a constant, this audience IS a constant.
+	internalMCPAudience = "bb.mcp.internal"
 	// internalMCPTokenDuration is the delegated credential's lifetime. It is
 	// request-scale: minted per inbound MCP request, it only needs to cover one
 	// tool execution (worst case a multi-call change tool with plan-check
@@ -54,13 +49,21 @@ type internalMCPClaimsMessage struct {
 }
 
 // internalMCPSigningKey derives the internal credential's signing key from the
-// server secret. Deriving (instead of reusing the secret raw) means that even a
-// hypothetical kid-check bypass on a public surface still fails signature
-// verification, and a leaked internal credential can never be re-signed into a
-// public one.
+// server secret.
+//
+// This is one of two independent layers separating internal from public
+// credentials; the audience check is the other, and either alone is sufficient
+// (verified by mutation: signing these with the raw secret leaves every
+// public-surface rejection test green, and it fails only the wire-shape test
+// that pins this derivation). Keep both. The credential shares the public kid,
+// so a public verifier will try it, hand back the raw secret, and fail on the
+// signature before it ever reads a claim.
+//
+// The derivation also means a leaked internal credential can never be
+// re-signed into a public one.
 func internalMCPSigningKey(secret string) []byte {
 	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write([]byte(InternalMCPAudience + ":" + internalMCPKeyID))
+	mac.Write([]byte(internalMCPAudience + ":" + keyID))
 	return mac.Sum(nil)
 }
 
@@ -73,14 +76,13 @@ func generateInternalMCPTokenWithExpiry(cred DelegatedMCPCredential, secret stri
 	claims := &internalMCPClaimsMessage{
 		claimsMessage: claimsMessage{
 			RegisteredClaims: jwt.RegisteredClaims{
-				Audience:  jwt.ClaimStrings{InternalMCPAudience},
+				Audience:  jwt.ClaimStrings{internalMCPAudience},
 				ExpiresAt: jwt.NewNumericDate(expirationTime),
 				IssuedAt:  jwt.NewNumericDate(time.Now()),
 				Issuer:    issuer,
 				Subject:   cred.Principal,
 			},
 			WorkspaceID: cred.WorkspaceID,
-			TokenUse:    TokenUseMCPInternal,
 		},
 		ClientID:      cred.ClientID,
 		CorrelationID: cred.CorrelationID,
@@ -88,7 +90,7 @@ func generateInternalMCPTokenWithExpiry(cred DelegatedMCPCredential, secret stri
 		GrantResource: cred.Resource,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token.Header["kid"] = internalMCPKeyID
+	token.Header["kid"] = keyID
 	return token.SignedString(internalMCPSigningKey(secret))
 }
 
@@ -97,10 +99,10 @@ func generateInternalMCPTokenWithExpiry(cred DelegatedMCPCredential, secret stri
 // minted at the /mcp boundary for the internal transport.
 //
 // Guards that must not serve MCP sessions have to ask this rather than
-// inspecting the audience: since P1a PR 3 the external token's audience is a
-// per-deployment resource URI (so token_use is the recognizer), and since PR 4
-// tool traffic presents the delegated credential instead, which is signed with
-// a derived key and therefore invisible to ExtractClaimsFromExpiredToken.
+// inspecting claims themselves: since P1a PR 3 the external token's audience is
+// a per-deployment resource URI (so token_use is the recognizer), and since PR
+// 4 tool traffic presents the delegated credential instead, which is signed
+// with a derived key and therefore invisible to ExtractClaimsFromExpiredToken.
 func IsMCPOriginatedToken(tokenStr, secret string) bool {
 	if tokenStr == "" {
 		return false
@@ -116,27 +118,23 @@ func IsMCPOriginatedToken(tokenStr, secret string) bool {
 }
 
 // VerifyInternalMCPToken validates a delegated credential and returns its
-// claims. It accepts ONLY the internal credential: the dedicated kid selects
-// the derived key (so tokens signed with the raw secret fail), and audience and
-// token_use are checked strictly on top.
+// claims. It accepts ONLY the internal credential: the derived key rejects
+// everything minted for a public surface, and the audience is checked on top.
 func VerifyInternalMCPToken(tokenStr, secret string) (*DelegatedMCPCredential, error) {
 	claims := &internalMCPClaimsMessage{}
 	if _, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Name {
 			return nil, errs.Errorf("unexpected internal credential signing method=%v", t.Header["alg"])
 		}
-		if kid, ok := t.Header["kid"].(string); ok && kid == internalMCPKeyID {
+		if kid, ok := t.Header["kid"].(string); ok && kid == keyID {
 			return internalMCPSigningKey(secret), nil
 		}
 		return nil, errs.Errorf("unexpected internal credential kid=%v", t.Header["kid"])
 	}); err != nil {
 		return nil, errs.Wrap(err, "invalid internal MCP credential")
 	}
-	if !audienceContains(claims.Audience, InternalMCPAudience) {
+	if !audienceContains(claims.Audience, internalMCPAudience) {
 		return nil, errs.Errorf("internal MCP credential audience mismatch, got %q", claims.Audience)
-	}
-	if claims.TokenUse != TokenUseMCPInternal {
-		return nil, errs.Errorf("internal MCP credential token_use mismatch, got %q", claims.TokenUse)
 	}
 	return &DelegatedMCPCredential{
 		Principal:     claims.Subject,
