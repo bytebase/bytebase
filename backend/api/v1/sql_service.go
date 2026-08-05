@@ -1016,7 +1016,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	if exportErr != nil {
 		var connectErr *connect.Error
 		if errors.As(exportErr, &connectErr) {
-			return nil, exportErr
+			return nil, connectErr
 		}
 		return nil, connect.NewError(connect.CodeInternal, exportErr)
 	}
