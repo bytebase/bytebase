@@ -43,36 +43,38 @@ func TestRestore(t *testing.T) {
 	a.NoError(err)
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
-	for i, t := range tests {
-		getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
-		result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-			GetDatabaseMetadataFunc: getter,
-			ListDatabaseNamesFunc:   lister,
-			IsCaseSensitive:         false,
-		}, t.Input, &store.PriorBackupDetail_Item{
-			SourceTable: &store.PriorBackupDetail_Item_Table{
-				Database: "instances/i1/databases/" + t.OriginalDatabase,
-				Table:    t.OriginalTable,
-			},
-			TargetTable: &store.PriorBackupDetail_Item_Table{
-				Database: "instances/i1/databases/" + t.BackupDatabase,
-				Table:    t.BackupTable,
-			},
-			StartPosition: &store.Position{
-				Line:   0,
-				Column: 0,
-			},
-			EndPosition: &store.Position{
-				Line:   math.MaxInt32,
-				Column: 0,
-			},
-		})
-		a.NoError(err)
+	for _, databasePrefix := range []string{"instances/i1/databases/", "projects/project-a/instances/i1/databases/"} {
+		for i, t := range tests {
+			getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+			result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+				GetDatabaseMetadataFunc: getter,
+				ListDatabaseNamesFunc:   lister,
+				IsCaseSensitive:         false,
+			}, t.Input, &store.PriorBackupDetail_Item{
+				SourceTable: &store.PriorBackupDetail_Item_Table{
+					Database: databasePrefix + t.OriginalDatabase,
+					Table:    t.OriginalTable,
+				},
+				TargetTable: &store.PriorBackupDetail_Item_Table{
+					Database: databasePrefix + t.BackupDatabase,
+					Table:    t.BackupTable,
+				},
+				StartPosition: &store.Position{
+					Line:   0,
+					Column: 0,
+				},
+				EndPosition: &store.Position{
+					Line:   math.MaxInt32,
+					Column: 0,
+				},
+			})
+			a.NoError(err)
 
-		if record {
-			tests[i].Result = result
-		} else {
-			a.Equal(t.Result, result, t.Input)
+			if record {
+				tests[i].Result = result
+			} else {
+				a.Equal(t.Result, result, t.Input)
+			}
 		}
 	}
 	if record {

@@ -261,3 +261,19 @@ func (c *auditRecorderConn) Send(any) error {
 	c.recorder.record("send")
 	return nil
 }
+
+func TestProjectLifecycleAuditResource(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		request any
+	}{
+		{name: "create", request: &v1pb.CreateProjectRequest{ProjectId: "project-a", Project: &v1pb.Project{}}},
+		{name: "update", request: &v1pb.UpdateProjectRequest{Project: &v1pb.Project{Name: "projects/project-a"}}},
+		{name: "delete", request: &v1pb.DeleteProjectRequest{Name: "projects/project-a"}},
+		{name: "undelete", request: &v1pb.UndeleteProjectRequest{Name: "projects/project-a"}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			require.Equal(t, "projects/project-a", getRequestResource(test.request))
+		})
+	}
+}

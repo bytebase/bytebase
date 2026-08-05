@@ -2,6 +2,7 @@ package review
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -662,7 +663,218 @@ func TestProcessIssueSkipsDraft(t *testing.T) {
 	require.Empty(t, b.RolloutCreationChan)
 }
 
+func TestApplyApprovalTemplateResolvesProjectInstanceOutsideRequestContext(t *testing.T) {
+	ctx := context.Background()
+	const workspaceID = "workspace-a"
+	s := setupApprovalRunnerStoreInWorkspace(ctx, t, workspaceID)
+
+	environment := "prod"
+	projectID := "project-a"
+	_, err := s.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID:    "prod",
+		Workspace:     workspaceID,
+		ProjectID:     &projectID,
+		EnvironmentID: &environment,
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	_, err = s.UpsertDatabase(ctx, &store.DatabaseMessage{
+		ProjectID:    projectID,
+		InstanceID:   "prod",
+		DatabaseName: "app",
+		Metadata:     &storepb.DatabaseMetadata{Labels: map[string]string{}},
+	})
+	require.NoError(t, err)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: projectID,
+		Name:      "approval plan",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{{
+				Id: "change",
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+						Targets: []string{"projects/project-a/instances/prod/databases/app"},
+					},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    projectID,
+		CreatorEmail: "creator@example.com",
+		Title:        "approval issue",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Payload:      &storepb.Issue{},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+	created, err := s.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: projectID,
+		PlanUID:   plan.UID,
+		Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+	planCheckRun, err := s.GetPlanCheckRun(ctx, projectID, plan.UID)
+	require.NoError(t, err)
+	require.NoError(t, s.UpdatePlanCheckRun(ctx, projectID, store.PlanCheckRunStatusDone, &storepb.PlanCheckRunResult{
+		ApprovalInputVersion: 2,
+	}, planCheckRun.UID))
+
+	evaluator := &ApprovalEvaluator{workflow: NewWorkflow(s)}
+	evaluator.evaluateApproval = func(ctx context.Context, issue *store.IssueMessage, _ *store.ProjectMessage, _ *storepb.WorkspaceApprovalSetting) error {
+		_, approvalInputVersion, done, err := buildCELVariablesForIssue(ctx, s, issue)
+		if err != nil {
+			return err
+		}
+		if !done {
+			return errors.New("approval variables are not ready")
+		}
+		issue.Payload.Approval = &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  true,
+			ApprovalInputVersion: approvalInputVersion,
+		}
+		return nil
+	}
+	result, err := evaluator.ApplyApprovalTemplate(ctx, ApplyApprovalTemplateInput{
+		Workspace: workspaceID,
+		ProjectID: projectID,
+		IssueUID:  issue.UID,
+	})
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.True(t, result.Issue.Payload.GetApproval().GetApprovalFindingDone())
+}
+
+func TestBuildCELVariablesForAccessGrantResolvesProjectInstanceWithoutCache(t *testing.T) {
+	ctx := context.Background()
+	const workspaceID = "workspace-a"
+	s := setupApprovalRunnerStoreInWorkspace(ctx, t, workspaceID)
+	projectID := "project-a"
+	setupApprovalProjectInstanceDatabase(ctx, t, s)
+
+	accessGrant, err := s.CreateAccessGrant(ctx, &store.AccessGrantMessage{
+		ProjectID: projectID,
+		Creator:   "creator@example.com",
+		Status:    storepb.AccessGrant_PENDING,
+		Payload: &storepb.AccessGrantPayload{
+			Targets: []string{"projects/project-a/instances/prod/databases/app"},
+		},
+	})
+	require.NoError(t, err)
+
+	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
+	variables, done, err := buildCELVariablesForAccessGrant(ctx, s, &store.IssueMessage{
+		ProjectID: projectID,
+		Payload:   &storepb.Issue{AccessGrantId: accessGrant.ID},
+	})
+	require.NoError(t, err)
+	require.True(t, done)
+	require.Len(t, variables, 1)
+	require.Equal(t, "prod", variables[0][common.CELAttributeResourceInstanceID])
+	require.Equal(t, "app", variables[0][common.CELAttributeResourceDatabaseName])
+	require.Equal(t, storepb.Engine_POSTGRES.String(), variables[0][common.CELAttributeResourceDBEngine])
+	require.Equal(t, "prod", variables[0][common.CELAttributeResourceEnvironmentID])
+}
+
+func TestBuildCELVariablesForAccessGrantRejectsArchivedProjectInstanceWithoutCache(t *testing.T) {
+	ctx := context.Background()
+	const workspaceID = "workspace-a"
+	s := setupApprovalRunnerStoreInWorkspace(ctx, t, workspaceID)
+	projectID := "project-a"
+	setupApprovalProjectInstanceDatabase(ctx, t, s)
+
+	accessGrant, err := s.CreateAccessGrant(ctx, &store.AccessGrantMessage{
+		ProjectID: projectID,
+		Creator:   "creator@example.com",
+		Status:    storepb.AccessGrant_PENDING,
+		Payload: &storepb.AccessGrantPayload{
+			Targets: []string{"projects/project-a/instances/prod/databases/app"},
+		},
+	})
+	require.NoError(t, err)
+	deleted := true
+	instanceID := "prod"
+	_, err = s.UpdateInstance(ctx, &store.UpdateInstanceMessage{
+		Workspace:  workspaceID,
+		ResourceID: &instanceID,
+		Deleted:    &deleted,
+	})
+	require.NoError(t, err)
+
+	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
+	_, _, err = buildCELVariablesForAccessGrant(ctx, s, &store.IssueMessage{
+		ProjectID: projectID,
+		Payload:   &storepb.Issue{AccessGrantId: accessGrant.ID},
+	})
+	require.ErrorContains(t, err, `instance "prod" has been deleted`)
+}
+
+func TestGetDatabasesForRoleGrantRejectsEveryNoncanonicalAlias(t *testing.T) {
+	ctx := context.Background()
+	const workspaceID = "workspace-a"
+	s := setupApprovalRunnerStoreInWorkspace(ctx, t, workspaceID)
+	projectID := "project-a"
+	setupApprovalProjectInstanceDatabase(ctx, t, s)
+
+	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
+	_, err := getDatabasesForRoleGrant(ctx, s, projectID, []string{
+		"instances/prod/databases/app",
+		"projects/project-a/instances/prod/databases/app",
+	})
+	require.ErrorContains(t, err, `instance "prod" not found in requested scope`)
+}
+
+func TestGetDatabasesForRoleGrantRejectsNoncanonicalScopeForMissingDatabase(t *testing.T) {
+	ctx := context.Background()
+	const workspaceID = "workspace-a"
+	s := setupApprovalRunnerStoreInWorkspace(ctx, t, workspaceID)
+	projectID := "project-a"
+	setupApprovalProjectInstanceDatabase(ctx, t, s)
+
+	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
+	_, err := getDatabasesForRoleGrant(ctx, s, projectID, []string{
+		"instances/prod/databases/missing",
+	})
+	require.ErrorContains(t, err, `instance "prod" not found in requested scope`)
+}
+
+func setupApprovalProjectInstanceDatabase(ctx context.Context, t *testing.T, s *store.Store) {
+	t.Helper()
+	const workspaceID = "workspace-a"
+	projectID := "project-a"
+	environment := "prod"
+	_, err := s.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID:    "prod",
+		Workspace:     workspaceID,
+		ProjectID:     &projectID,
+		EnvironmentID: &environment,
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	_, err = s.UpsertDatabase(ctx, &store.DatabaseMessage{
+		ProjectID:    projectID,
+		InstanceID:   "prod",
+		DatabaseName: "app",
+		Metadata:     &storepb.DatabaseMetadata{Labels: map[string]string{}},
+	})
+	require.NoError(t, err)
+}
+
 func setupApprovalRunnerStore(ctx context.Context, t *testing.T) *store.Store {
+	return setupApprovalRunnerStoreInWorkspace(ctx, t, "default")
+}
+
+func setupApprovalRunnerStoreInWorkspace(ctx context.Context, t *testing.T, workspaceID string) *store.Store {
 	t.Helper()
 
 	container := testcontainer.GetTestPgContainer(ctx, t)
@@ -671,11 +883,11 @@ func setupApprovalRunnerStore(ctx context.Context, t *testing.T) *store.Store {
 	db := container.GetDB()
 	require.NoError(t, migrator.MigrateSchema(ctx, db))
 
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO workspace (resource_id) VALUES ('default');
-		INSERT INTO principal (name, email, password_hash) VALUES ('creator', 'creator@example.com', 'unused');
-		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
-	`)
+	_, err := db.ExecContext(ctx, "INSERT INTO workspace (resource_id) VALUES ($1)", workspaceID)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, "INSERT INTO principal (name, email, password_hash) VALUES ('creator', 'creator@example.com', 'unused')")
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, "INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', $1, 'Project A')", workspaceID)
 	require.NoError(t, err)
 
 	pgURL := fmt.Sprintf(

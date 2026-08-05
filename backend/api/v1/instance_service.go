@@ -41,10 +41,18 @@ type InstanceService struct {
 	v1connect.UnimplementedInstanceServiceHandler
 	store                 *store.Store
 	profile               *config.Profile
-	licenseService        *enterprise.LicenseService
+	licenseService        instanceLicenseService
 	dbFactory             *dbfactory.DBFactory
 	schemaSyncer          *schemasync.Syncer
 	sampleInstanceManager *sampleinstance.Manager
+}
+
+type instanceLicenseService interface {
+	GetActivatedInstanceLimit(context.Context, string) int
+	GetInstanceLimit(context.Context, string) int
+	IsFeatureEnabledForInstance(context.Context, string, v1pb.PlanFeature, *store.InstanceMessage) error
+	IsInstanceEffectivelyActivated(context.Context, string, *store.InstanceMessage) bool
+	IsUnifiedInstanceLicense(context.Context, string) bool
 }
 
 const (
@@ -895,7 +903,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 
 // DeleteInstance deletes an instance.
 func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Request[v1pb.DeleteInstanceRequest]) (*connect.Response[emptypb.Empty], error) {
-	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
+	instance, err := getInstanceMessageForLifecycle(ctx, s.store, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -952,14 +960,17 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 		}
 	}
 
-	metadata := proto.CloneOf(instance.Metadata)
-	metadata.Activation = false
-	if _, err := s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
+	patch := &store.UpdateInstanceMessage{
 		ResourceID: &instance.ResourceID,
 		Workspace:  instance.Workspace,
 		Deleted:    &deletePatch,
-		Metadata:   metadata,
-	}); err != nil {
+	}
+	if instance.ProjectID == nil {
+		metadata := proto.CloneOf(instance.Metadata)
+		metadata.Activation = false
+		patch.Metadata = metadata
+	}
+	if _, err := s.store.UpdateInstance(ctx, patch); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -975,7 +986,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 
 // UndeleteInstance undeletes an instance.
 func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Request[v1pb.UndeleteInstanceRequest]) (*connect.Response[v1pb.Instance], error) {
-	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
+	instance, err := getInstanceMessageForLifecycle(ctx, s.store, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -985,6 +996,9 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 		return connect.NewResponse(result), nil
 	}
 	if err := s.instanceCountGuard(ctx); err != nil {
+		return nil, err
+	}
+	if err := s.checkActivationLimit(ctx, instance.Workspace, instance.Metadata.GetActivation()); err != nil {
 		return nil, err
 	}
 
@@ -1430,6 +1444,14 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 }
 
 func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (*store.InstanceMessage, error) {
+	return getInstanceMessageWithArchivedProject(ctx, stores, name, false)
+}
+
+func getInstanceMessageForLifecycle(ctx context.Context, stores *store.Store, name string) (*store.InstanceMessage, error) {
+	return getInstanceMessageWithArchivedProject(ctx, stores, name, true)
+}
+
+func getInstanceMessageWithArchivedProject(ctx context.Context, stores *store.Store, name string, allowArchivedProject bool) (*store.InstanceMessage, error) {
 	projectID, instanceID, err := common.GetInstanceResourceName(name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -1448,8 +1470,30 @@ func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (
 	if instance == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", name))
 	}
+	if !allowArchivedProject {
+		if err := ensureProjectInstanceIsActive(ctx, stores, instance); err != nil {
+			return nil, err
+		}
+	}
 
 	return instance, nil
+}
+
+func ensureProjectInstanceIsActive(ctx context.Context, stores *store.Store, instance *store.InstanceMessage) error {
+	if instance.ProjectID == nil {
+		return nil
+	}
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: instance.ProjectID,
+	})
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get instance project"))
+	}
+	if project == nil || project.Deleted {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", *instance.ProjectID))
+	}
+	return nil
 }
 
 func instanceCollectionParent(projectID *string) *string {

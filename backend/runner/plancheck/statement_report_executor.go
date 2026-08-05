@@ -66,17 +66,9 @@ func (e *StatementReportExecutor) RunForTarget(ctx context.Context, target *Chec
 		}, nil
 	}
 
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(target.Target)
+	instance, database, err := resolveDatabaseTarget(ctx, e.store, target.Target)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse target %s", target.Target)
-	}
-
-	instance, err := e.store.GetInstanceByResourceID(ctx, instanceID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %v", instanceID)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance %s not found", instanceID)
+		return nil, err
 	}
 	if !common.EngineSupportStatementReport(instance.Metadata.GetEngine()) {
 		return []*storepb.PlanCheckRunResult_Result{
@@ -87,14 +79,6 @@ func (e *StatementReportExecutor) RunForTarget(ctx context.Context, target *Chec
 				Content: "",
 			},
 		}, nil
-	}
-
-	database, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found %q", databaseName)
 	}
 
 	// Check statement syntax error.

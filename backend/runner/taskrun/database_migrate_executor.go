@@ -783,13 +783,16 @@ func (exec *DatabaseMigrateExecutor) backupData(
 	}
 
 	sourceDatabaseName := common.FormatDatabase(database.InstanceID, database.DatabaseName)
-	// Format: instances/{instance}/databases/{database}
 	backupDBName := common.BackupDatabaseNameOfEngine(database.Engine)
 	targetDatabaseName := common.FormatDatabase(database.InstanceID, backupDBName)
+	if instance.ProjectID != nil {
+		sourceDatabaseName = common.FormatProjectDatabase(*instance.ProjectID, database.InstanceID, database.DatabaseName)
+		targetDatabaseName = common.FormatProjectDatabase(*instance.ProjectID, database.InstanceID, backupDBName)
+	}
 	var backupDatabase *store.DatabaseMessage
 	var backupDriver db.Driver
 
-	backupInstanceID, backupDatabaseName, err := common.GetInstanceDatabaseID(targetDatabaseName)
+	_, backupInstanceID, backupDatabaseName, err := common.GetDatabaseResourceName(targetDatabaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse backup database")
 	}

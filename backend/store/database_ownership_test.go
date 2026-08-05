@@ -116,6 +116,32 @@ func TestDatabaseWritersRespectProjectInstanceOwnership(t *testing.T) {
 	require.Equal(t, projectB, getDatabaseProject(ctx, t, s, "workspace-instance", "independent"))
 }
 
+func TestListDatabasesIncludesInstanceProject(t *testing.T) {
+	fixture := newProjectDeletionLockOrderFixture(t, `
+		ALTER TABLE instance ADD COLUMN IF NOT EXISTS project TEXT REFERENCES project(resource_id);
+		INSERT INTO project (resource_id, workspace, name) VALUES ('project-b', 'default', 'Project B');
+		INSERT INTO instance (resource_id, workspace, project) VALUES
+			('project-instance', 'default', 'project-b'),
+			('workspace-instance', 'default', NULL);
+		INSERT INTO db (instance, name, project) VALUES
+			('project-instance', 'project-db', 'project-b'),
+			('workspace-instance', 'workspace-db', 'project-b');
+	`)
+
+	databases, err := fixture.store.ListDatabases(fixture.ctx, &store.FindDatabaseMessage{ShowDeleted: true})
+	require.NoError(t, err)
+	require.Len(t, databases, 2)
+	byInstance := make(map[string]*store.DatabaseMessage, len(databases))
+	for _, database := range databases {
+		byInstance[database.InstanceID] = database
+	}
+	require.NotNil(t, byInstance["project-instance"].InstanceProjectID)
+	require.Equal(t, "project-b", *byInstance["project-instance"].InstanceProjectID)
+	require.Equal(t, "projects/project-b/instances/project-instance/databases/project-db", byInstance["project-instance"].ResourceName())
+	require.Nil(t, byInstance["workspace-instance"].InstanceProjectID)
+	require.Equal(t, "instances/workspace-instance/databases/workspace-db", byInstance["workspace-instance"].ResourceName())
+}
+
 func getDatabaseProject(ctx context.Context, t *testing.T, s *store.Store, instanceID, databaseName string) string {
 	t.Helper()
 	database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{

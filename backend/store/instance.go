@@ -226,7 +226,6 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 		return nil, err
 	}
 	defer tx.Rollback()
-
 	if instanceCreate.ProjectID != nil {
 		if common.IsDefaultProject(instanceCreate.Workspace, *instanceCreate.ProjectID) {
 			return nil, errors.Errorf("default project %s cannot own an instance", *instanceCreate.ProjectID)
@@ -647,6 +646,9 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 		return errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
+	if err := acquireInstancePurgeLock(ctx, tx, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to lock instance purge fence for %s", resourceID)
+	}
 
 	// Delete query history before locking database-scoped rows to preserve the
 	// canonical sibling-branch order.
