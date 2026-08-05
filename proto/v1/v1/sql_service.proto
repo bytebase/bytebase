@@ -427,6 +427,10 @@ message ExportRequest {
   // The default schema to search objects. Equals to the current schema in
   // Oracle and search path in Postgres.
   optional string schema = 8;
+
+  // Container is the container name to execute the query against, used for
+  // CosmosDB only.
+  optional string container = 9;
 }
 
 message ExportResponse {

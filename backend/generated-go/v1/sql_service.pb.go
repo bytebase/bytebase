@@ -1441,7 +1441,10 @@ type ExportRequest struct {
 	DataSourceId string `protobuf:"bytes,7,opt,name=data_source_id,json=dataSourceId,proto3" json:"data_source_id,omitempty"`
 	// The default schema to search objects. Equals to the current schema in
 	// Oracle and search path in Postgres.
-	Schema        *string `protobuf:"bytes,8,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
+	Schema *string `protobuf:"bytes,8,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
+	// Container is the container name to execute the query against, used for
+	// CosmosDB only.
+	Container     *string `protobuf:"bytes,9,opt,name=container,proto3,oneof" json:"container,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1528,6 +1531,13 @@ func (x *ExportRequest) GetDataSourceId() string {
 func (x *ExportRequest) GetSchema() string {
 	if x != nil && x.Schema != nil {
 		return *x.Schema
+	}
+	return ""
+}
+
+func (x *ExportRequest) GetContainer() string {
+	if x != nil && x.Container != nil {
+		return *x.Container
 	}
 	return ""
 }
@@ -2197,7 +2207,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x15RULE_TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fPARSER_BASED\x10\x01\x12\x0e\n" +
 	"\n" +
-	"AI_POWERED\x10\x02\"\xa9\x02\n" +
+	"AI_POWERED\x10\x02\"\xda\x02\n" +
 	"\rExportRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
@@ -2207,8 +2217,11 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x05admin\x18\x05 \x01(\bR\x05admin\x12\x1a\n" +
 	"\bpassword\x18\x06 \x01(\tR\bpassword\x12$\n" +
 	"\x0edata_source_id\x18\a \x01(\tR\fdataSourceId\x12\x1b\n" +
-	"\x06schema\x18\b \x01(\tH\x00R\x06schema\x88\x01\x01B\t\n" +
-	"\a_schema\"\\\n" +
+	"\x06schema\x18\b \x01(\tH\x00R\x06schema\x88\x01\x01\x12!\n" +
+	"\tcontainer\x18\t \x01(\tH\x01R\tcontainer\x88\x01\x01B\t\n" +
+	"\a_schemaB\f\n" +
+	"\n" +
+	"_container\"\\\n" +
 	"\x0eExportResponse\x12\x18\n" +
 	"\acontent\x18\x01 \x01(\fR\acontent\x120\n" +
 	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant2\x9d\x06\n" +
