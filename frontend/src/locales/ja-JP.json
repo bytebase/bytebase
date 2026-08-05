@@ -677,6 +677,10 @@
     "column": "列",
     "columns": "カラム",
     "comment": "コメント",
+    "container": {
+      "select": "コンテナーを選択",
+      "unspecified": "未指定"
+    },
     "create-database": "データベースを作成",
     "data-size": "データサイズ",
     "edit-environment": "環境の編集",
@@ -773,10 +777,6 @@
     "sync-schema-button": "スキーマを同期",
     "sync-status": "同期ステータス",
     "sync-status-failed": "同期に失敗しました",
-    "table": {
-      "select": "テーブルを選択",
-      "select-tip": "開始するにはテーブルを選択してください。"
-    },
     "transfer-project": "プロジェクトの転送",
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",

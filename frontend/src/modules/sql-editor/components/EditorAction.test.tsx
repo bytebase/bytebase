@@ -129,6 +129,11 @@ vi.mock("./AdminModeButton", () => ({
 vi.mock("./ChooserGroup", () => ({
   ChooserGroup: () => <div data-testid="chooser-group" />,
 }));
+vi.mock("./ContainerChooser", () => ({
+  ContainerChooser: ({ variant }: { variant?: string }) => (
+    <div data-testid="run-container-chooser" data-variant={variant} />
+  ),
+}));
 vi.mock("./OpenAIButton", () => ({
   OpenAIButton: () => <div data-testid="openai-button" />,
 }));
@@ -283,6 +288,35 @@ describe("EditorAction", () => {
       | HTMLButtonElement
       | undefined;
     expect(runButton?.disabled).toBe(true);
+    expect(
+      container
+        .querySelector("[data-testid='query-context-setting-popover']")
+        ?.getAttribute("data-disabled")
+    ).toBe("false");
+
+    unmount();
+  });
+
+  test("CosmosDB Run button renders an inline container selector when container is missing", () => {
+    setup({ engine: Engine.COSMOSDB });
+    const onExecute = vi.fn();
+
+    const { container, render, unmount } = renderIntoContainer(
+      <EditorAction onExecute={onExecute} />
+    );
+    render();
+
+    expect(
+      container
+        .querySelector("[data-testid='run-container-chooser']")
+        ?.getAttribute("data-variant")
+    ).toBe("run");
+    expect(onExecute).not.toHaveBeenCalled();
+    expect(
+      container
+        .querySelector("[data-testid='query-context-setting-popover']")
+        ?.getAttribute("data-disabled")
+    ).toBe("false");
 
     unmount();
   });

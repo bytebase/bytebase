@@ -46,6 +46,30 @@ describe("getPortalDropdownStyle", () => {
     });
   });
 
+  test("clamps a minimum-width dropdown inside the viewport", () => {
+    expect(
+      getPortalDropdownStyle(
+        {
+          top: 120,
+          left: 760,
+          width: 96,
+          bottom: 156,
+        },
+        240,
+        800,
+        {
+          minWidth: 192,
+          viewportWidth: 920,
+        }
+      )
+    ).toEqual({
+      position: "fixed",
+      left: 724,
+      width: 192,
+      top: 160,
+    });
+  });
+
   test("ignores scroll events that originate from the dropdown itself", () => {
     const dropdown = document.createElement("div");
     const optionList = document.createElement("div");
