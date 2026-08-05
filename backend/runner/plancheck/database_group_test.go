@@ -89,6 +89,37 @@ func TestGetDatabaseGroupForPlanMatchesDatabases(t *testing.T) {
 	}, databaseNames(got.MatchedDatabases))
 }
 
+func TestGetDatabaseGroupForPlanUsesDatabaseResourceName(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlancheckStore(ctx, t)
+	setupPlancheckDatabaseGroupFixture(ctx, t, s)
+
+	projectID := "project-a"
+	target := "projects/project-a/databaseGroups/group"
+	got, err := GetDatabaseGroupForPlan(ctx, s, &store.PlanMessage{
+		ProjectID: projectID,
+		Config: &storepb.PlanConfig{
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+						Targets: []string{target},
+					},
+				},
+			}},
+		},
+	}, []*store.DatabaseMessage{{
+		ProjectID:         projectID,
+		InstanceProjectID: &projectID,
+		InstanceID:        "not-loaded",
+		DatabaseName:      "app",
+		Metadata:          &storepb.DatabaseMetadata{Labels: map[string]string{}},
+	}})
+	require.NoError(t, err)
+	require.Equal(t, []string{
+		common.FormatProjectDatabase(projectID, "not-loaded", "app"),
+	}, databaseNames(got.MatchedDatabases))
+}
+
 func setupPlancheckStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
 
