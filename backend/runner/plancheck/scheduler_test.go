@@ -51,3 +51,41 @@ func TestMarkPlanCheckRunDoneSkipsDraftIssue(t *testing.T) {
 	require.Equal(t, store.PlanCheckRunStatusDone, run.Status)
 	require.Empty(t, b.ApprovalCheckChan)
 }
+
+func TestRunPlanCheckRunStopsAfterProjectArchive(t *testing.T) {
+	ctx := context.Background()
+	stores := setupPlancheckStore(ctx, t)
+	b, err := bus.New()
+	require.NoError(t, err)
+
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "archived plan",
+		Config:    &storepb.PlanConfig{ApprovalInputVersion: 1},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	created, err := stores.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 1},
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+	claimed, err := stores.ClaimAvailablePlanCheckRuns(ctx)
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+
+	archived := true
+	require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{
+		ResourceID: "project-a",
+		Workspace:  "default",
+		Delete:     &archived,
+	}))
+	scheduler := NewScheduler(stores, b, nil, nil)
+	scheduler.runPlanCheckRun(ctx, "project-a", claimed[0].UID, plan.UID, 1)
+
+	run, err := stores.GetPlanCheckRun(ctx, "project-a", plan.UID)
+	require.NoError(t, err)
+	require.Equal(t, store.PlanCheckRunStatusCanceled, run.Status)
+	require.Equal(t, "project is archived", run.Result.GetError())
+}

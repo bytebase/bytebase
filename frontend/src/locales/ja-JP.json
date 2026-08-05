@@ -677,6 +677,10 @@
     "column": "列",
     "columns": "カラム",
     "comment": "コメント",
+    "container": {
+      "select": "コンテナーを選択",
+      "unspecified": "未指定"
+    },
     "create-database": "データベースを作成",
     "data-size": "データサイズ",
     "edit-environment": "環境の編集",
@@ -773,10 +777,6 @@
     "sync-schema-button": "スキーマを同期",
     "sync-status": "同期ステータス",
     "sync-status-failed": "同期に失敗しました",
-    "table": {
-      "select": "テーブルを選択",
-      "select-tip": "開始するにはテーブルを選択してください。"
-    },
     "transfer-project": "プロジェクトの転送",
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
@@ -1166,6 +1166,7 @@
     },
     "instance-id": "インスタンスID",
     "instance-name": "@:common.instance@:instance.name",
+    "keytab-write-only": "キータブは書き込み専用です。新しいファイルをアップロードすると既存のものを置き換えます。",
     "new-instance": "新しいインスタンス",
     "no-environment": "このインスタンスは環境にバインドされていません",
     "no-extra-params-configured": "追加の接続パラメーターは構成されていません",
@@ -2539,11 +2540,15 @@
         "description": "Entra ID (旧 Azure AD) または Okta のユーザーとグループを Bytebase インスタンスに同期します。",
         "endpoint": "エンドポイント",
         "endpoint-tip": "ユーザーとグループはこのエンドポイントを介して Bytebase に同期されます。",
-        "reset-token": "トークンをリセット",
-        "reset-token-warning": "Entra アプリケーションのプロビジョニング設定を更新する必要があります。",
+        "generate-token": "トークンを生成",
+        "regenerate-token": "トークンを再生成",
+        "regenerate-token-warning": "現在のトークンは直ちに無効になり、アプリケーションのプロビジョニング設定を更新する必要があります。続行しますか？",
         "secret-token": "シークレットトークン",
         "secret-token-tip": "エンドポイントの検証トークンです。秘密にしてください。",
-        "self": "SCIM から同期"
+        "self": "SCIM から同期",
+        "token-configured": "トークンは設定済みです。再表示はできないため、紛失した場合は再生成してください。",
+        "token-not-configured": "トークンはまだ生成されていません。",
+        "token-shown-once": "このトークンを今すぐコピーしてください。二度と表示されません。"
       },
       "grant-access": "アクセスを許可する",
       "groups": {

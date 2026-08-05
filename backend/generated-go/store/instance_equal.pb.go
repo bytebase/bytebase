@@ -370,9 +370,6 @@ func (x *DataSource) Equal(y *DataSource) bool {
 	if x.RedisType != y.RedisType {
 		return false
 	}
-	if x.Cluster != y.Cluster {
-		return false
-	}
 	if len(x.ExtraConnectionParameters) != len(y.ExtraConnectionParameters) {
 		return false
 	}

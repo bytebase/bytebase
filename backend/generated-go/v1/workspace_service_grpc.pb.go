@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	WorkspaceService_GetWorkspace_FullMethodName    = "/bytebase.v1.WorkspaceService/GetWorkspace"
-	WorkspaceService_ListWorkspaces_FullMethodName  = "/bytebase.v1.WorkspaceService/ListWorkspaces"
-	WorkspaceService_UpdateWorkspace_FullMethodName = "/bytebase.v1.WorkspaceService/UpdateWorkspace"
-	WorkspaceService_GetIamPolicy_FullMethodName    = "/bytebase.v1.WorkspaceService/GetIamPolicy"
-	WorkspaceService_DeleteWorkspace_FullMethodName = "/bytebase.v1.WorkspaceService/DeleteWorkspace"
-	WorkspaceService_LeaveWorkspace_FullMethodName  = "/bytebase.v1.WorkspaceService/LeaveWorkspace"
-	WorkspaceService_SetIamPolicy_FullMethodName    = "/bytebase.v1.WorkspaceService/SetIamPolicy"
+	WorkspaceService_GetWorkspace_FullMethodName             = "/bytebase.v1.WorkspaceService/GetWorkspace"
+	WorkspaceService_ListWorkspaces_FullMethodName           = "/bytebase.v1.WorkspaceService/ListWorkspaces"
+	WorkspaceService_UpdateWorkspace_FullMethodName          = "/bytebase.v1.WorkspaceService/UpdateWorkspace"
+	WorkspaceService_GetIamPolicy_FullMethodName             = "/bytebase.v1.WorkspaceService/GetIamPolicy"
+	WorkspaceService_DeleteWorkspace_FullMethodName          = "/bytebase.v1.WorkspaceService/DeleteWorkspace"
+	WorkspaceService_LeaveWorkspace_FullMethodName           = "/bytebase.v1.WorkspaceService/LeaveWorkspace"
+	WorkspaceService_SetIamPolicy_FullMethodName             = "/bytebase.v1.WorkspaceService/SetIamPolicy"
+	WorkspaceService_RotateDirectorySyncToken_FullMethodName = "/bytebase.v1.WorkspaceService/RotateDirectorySyncToken"
 )
 
 // WorkspaceServiceClient is the client API for WorkspaceService service.
@@ -58,6 +59,12 @@ type WorkspaceServiceClient interface {
 	// Sets IAM policy for the workspace.
 	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
+	// Mints a new directory sync (SCIM) token, immediately invalidating the
+	// previous one. The plaintext token is returned exactly once and cannot be
+	// retrieved afterwards; only its hash is stored. Callers that lose it must
+	// rotate again and update their identity provider.
+	// Permissions required: bb.workspaces.rotateDirectorySyncToken
+	RotateDirectorySyncToken(ctx context.Context, in *RotateDirectorySyncTokenRequest, opts ...grpc.CallOption) (*RotateDirectorySyncTokenResponse, error)
 }
 
 type workspaceServiceClient struct {
@@ -138,6 +145,16 @@ func (c *workspaceServiceClient) SetIamPolicy(ctx context.Context, in *SetIamPol
 	return out, nil
 }
 
+func (c *workspaceServiceClient) RotateDirectorySyncToken(ctx context.Context, in *RotateDirectorySyncTokenRequest, opts ...grpc.CallOption) (*RotateDirectorySyncTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RotateDirectorySyncTokenResponse)
+	err := c.cc.Invoke(ctx, WorkspaceService_RotateDirectorySyncToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WorkspaceServiceServer is the server API for WorkspaceService service.
 // All implementations must embed UnimplementedWorkspaceServiceServer
 // for forward compatibility.
@@ -168,6 +185,12 @@ type WorkspaceServiceServer interface {
 	// Sets IAM policy for the workspace.
 	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
+	// Mints a new directory sync (SCIM) token, immediately invalidating the
+	// previous one. The plaintext token is returned exactly once and cannot be
+	// retrieved afterwards; only its hash is stored. Callers that lose it must
+	// rotate again and update their identity provider.
+	// Permissions required: bb.workspaces.rotateDirectorySyncToken
+	RotateDirectorySyncToken(context.Context, *RotateDirectorySyncTokenRequest) (*RotateDirectorySyncTokenResponse, error)
 	mustEmbedUnimplementedWorkspaceServiceServer()
 }
 
@@ -198,6 +221,9 @@ func (UnimplementedWorkspaceServiceServer) LeaveWorkspace(context.Context, *Leav
 }
 func (UnimplementedWorkspaceServiceServer) SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetIamPolicy not implemented")
+}
+func (UnimplementedWorkspaceServiceServer) RotateDirectorySyncToken(context.Context, *RotateDirectorySyncTokenRequest) (*RotateDirectorySyncTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RotateDirectorySyncToken not implemented")
 }
 func (UnimplementedWorkspaceServiceServer) mustEmbedUnimplementedWorkspaceServiceServer() {}
 func (UnimplementedWorkspaceServiceServer) testEmbeddedByValue()                          {}
@@ -346,6 +372,24 @@ func _WorkspaceService_SetIamPolicy_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorkspaceService_RotateDirectorySyncToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RotateDirectorySyncTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkspaceServiceServer).RotateDirectorySyncToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkspaceService_RotateDirectorySyncToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkspaceServiceServer).RotateDirectorySyncToken(ctx, req.(*RotateDirectorySyncTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // WorkspaceService_ServiceDesc is the grpc.ServiceDesc for WorkspaceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -380,6 +424,10 @@ var WorkspaceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetIamPolicy",
 			Handler:    _WorkspaceService_SetIamPolicy_Handler,
+		},
+		{
+			MethodName: "RotateDirectorySyncToken",
+			Handler:    _WorkspaceService_RotateDirectorySyncToken_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -147,19 +147,13 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("reason is required"))
 	}
 
-	// Validate the query is a read-only statement (SELECT).
-	instanceID, _, err := common.GetInstanceDatabaseID(ag.Targets[0])
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid target %q", ag.Targets[0]))
-	}
+	// Validate every target before creating any access-grant or issue rows.
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{Workspace: workspaceID, ResourceID: &instanceID})
+	instance, err := s.validateAccessGrantTargets(ctx, projectID, ag.Targets)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance %q", instanceID))
+		return nil, err
 	}
-	if instance == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
-	}
+	// Validate the query is a read-only statement (SELECT).
 	if ok, err := isReadOnlyStatementForAccessGrant(ctx, instance.Metadata.GetEngine(), ag.Query); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid query"))
 	} else if !ok {
@@ -276,6 +270,57 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	}
 
 	return connect.NewResponse(convertToAccessGrant(grant)), nil
+}
+
+func (s *AccessGrantService) validateAccessGrantTargets(ctx context.Context, projectID string, targets []string) (*store.InstanceMessage, error) {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  workspaceID,
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %q", projectID))
+	}
+	if project == nil || project.Deleted {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
+	}
+
+	var firstInstance *store.InstanceMessage
+	for _, target := range targets {
+		targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid target %q", target))
+		}
+		if targetProjectID != nil && *targetProjectID != projectID {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", target, projectID))
+		}
+		database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+			Workspace:    workspaceID,
+			InstanceID:   &instanceID,
+			DatabaseName: &databaseName,
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+		}
+		if database == nil || database.ProjectID != projectID {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", target, projectID))
+		}
+		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{Workspace: workspaceID, ResourceID: &instanceID})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance %q", instanceID))
+		}
+		if instance == nil || instance.Deleted {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
+		}
+		if (targetProjectID == nil) != (instance.ProjectID == nil) ||
+			targetProjectID != nil && *targetProjectID != *instance.ProjectID {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("target %q is not canonical for its instance", target))
+		}
+		if firstInstance == nil {
+			firstInstance = instance
+		}
+	}
+	return firstInstance, nil
 }
 
 // ActivateAccessGrant activates a pending access grant.

@@ -50,6 +50,15 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	a.NoError(err)
 	a.Equal(databaseName, database.Msg.Name)
 	a.Equal(ctl.project.Name, database.Msg.Project)
+	_, err = ctl.databaseServiceClient.SyncDatabase(ctx, connect.NewRequest(&v1pb.SyncDatabaseRequest{Name: databaseName}))
+	a.NoError(err)
+	query, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:      databaseName,
+		Statement: "SELECT 1;",
+		Limit:     10,
+	}))
+	a.NoError(err)
+	a.Len(query.Msg.Results, 1)
 
 	for _, name := range []string{
 		projectInstance.Name + "/databases/missing",
@@ -198,6 +207,47 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	archivedProjectInstance, err := ctl.instanceServiceClient.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{Name: projectInstance.Name}))
 	a.NoError(err)
 	a.Equal(v1pb.State_DELETED, archivedProjectInstance.Msg.State)
+	_, err = ctl.instanceServiceClient.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{
+		Name:  projectInstance.Name,
+		Purge: true,
+	}))
+	a.NoError(err)
+	_, err = ctl.instanceServiceClient.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{Name: projectInstance.Name}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+	_, err = ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{Name: databaseName}))
+	a.Error(err)
+
+	histories, err := ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent:   ctl.project.Name,
+		PageSize: 1000,
+	}))
+	a.NoError(err)
+	for _, history := range histories.Msg.QueryHistories {
+		a.NotEqual(databaseName, history.Database, "direct instance purge must remove its query history")
+	}
+	auditLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: ctl.project.Name,
+		Filter: `method == "/bytebase.v1.InstanceService/DeleteInstance"`,
+	}))
+	a.NoError(err)
+	foundCanonicalAuditResource := false
+	for _, auditLog := range auditLogs.Msg.AuditLogs {
+		if auditLog.Resource == projectInstance.Name {
+			foundCanonicalAuditResource = true
+			break
+		}
+	}
+	a.True(foundCanonicalAuditResource, "audit logs must retain the canonical instance name after purge")
+
+	physicalDatabaseCount := 0
+	a.NoError(pg.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM pg_database WHERE datname = $1", databaseID).Scan(&physicalDatabaseCount))
+	a.Equal(1, physicalDatabaseCount, "Bytebase purge must not delete the physical database")
+	reused := createProjectInstanceTestInstance(ctx, t, ctl, &projectParent, projectID, "reused project instance", pg)
+	a.Equal(projectInstance.Name, reused.Name)
+	reusedDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{Name: databaseName}))
+	a.NoError(err)
+	a.Equal(databaseName, reusedDatabase.Msg.Name)
 
 	// A database-free project instance can still be archived and restored normally.
 	_, err = ctl.instanceServiceClient.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: allowMissingName}))
@@ -208,6 +258,24 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	restored, err := ctl.instanceServiceClient.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: allowMissingName}))
 	a.NoError(err)
 	a.Equal(v1pb.State_ACTIVE, restored.Msg.State)
+
+	// Project archival hides descendants without changing their individual
+	// lifecycle state. Restoration reveals the same resources again.
+	_, err = ctl.projectServiceClient.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: ctl.project.Name}))
+	a.NoError(err)
+	_, err = ctl.instanceServiceClient.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{Name: reused.Name}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+	_, err = ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{Name: databaseName}))
+	a.Error(err)
+	_, err = ctl.projectServiceClient.UndeleteProject(ctx, connect.NewRequest(&v1pb.UndeleteProjectRequest{Name: ctl.project.Name}))
+	a.NoError(err)
+	restoredInstance, err := ctl.instanceServiceClient.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{Name: reused.Name}))
+	a.NoError(err)
+	a.Equal(v1pb.State_ACTIVE, restoredInstance.Msg.State)
+	restoredDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{Name: databaseName}))
+	a.NoError(err)
+	a.Equal(databaseName, restoredDatabase.Msg.Name)
 }
 
 func TestBatchUpdateProjectInstanceAllowMissing(t *testing.T) {

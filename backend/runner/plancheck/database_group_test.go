@@ -83,7 +83,41 @@ func TestGetDatabaseGroupForPlanMatchesDatabases(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	require.Equal(t, target, got.Name)
-	require.Equal(t, []string{common.FormatDatabase("prod", "app")}, databaseNames(got.MatchedDatabases))
+	require.Equal(t, []string{
+		common.FormatDatabase("prod", "app"),
+		common.FormatProjectDatabase("project-a", "project-prod", "app"),
+	}, databaseNames(got.MatchedDatabases))
+}
+
+func TestGetDatabaseGroupForPlanUsesDatabaseResourceName(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlancheckStore(ctx, t)
+	setupPlancheckDatabaseGroupFixture(ctx, t, s)
+
+	projectID := "project-a"
+	target := "projects/project-a/databaseGroups/group"
+	got, err := GetDatabaseGroupForPlan(ctx, s, &store.PlanMessage{
+		ProjectID: projectID,
+		Config: &storepb.PlanConfig{
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+						Targets: []string{target},
+					},
+				},
+			}},
+		},
+	}, []*store.DatabaseMessage{{
+		ProjectID:         projectID,
+		InstanceProjectID: &projectID,
+		InstanceID:        "not-loaded",
+		DatabaseName:      "app",
+		Metadata:          &storepb.DatabaseMetadata{Labels: map[string]string{}},
+	}})
+	require.NoError(t, err)
+	require.Equal(t, []string{
+		common.FormatProjectDatabase(projectID, "not-loaded", "app"),
+	}, databaseNames(got.MatchedDatabases))
 }
 
 func setupPlancheckStore(ctx context.Context, t *testing.T) *store.Store {
@@ -123,6 +157,17 @@ func setupPlancheckDatabaseGroupFixture(ctx context.Context, t *testing.T, s *st
 		},
 	})
 	require.NoError(t, err)
+	projectID := "project-a"
+	_, err = s.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "project-prod",
+		Workspace:  "default",
+		ProjectID:  &projectID,
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
 	for _, databaseName := range []string{"app", "audit"} {
 		_, err = s.UpsertDatabase(ctx, &store.DatabaseMessage{
 			ProjectID:    "project-a",
@@ -132,6 +177,13 @@ func setupPlancheckDatabaseGroupFixture(ctx context.Context, t *testing.T, s *st
 		})
 		require.NoError(t, err)
 	}
+	_, err = s.UpsertDatabase(ctx, &store.DatabaseMessage{
+		ProjectID:    "project-a",
+		InstanceID:   "project-prod",
+		DatabaseName: "app",
+		Metadata:     &storepb.DatabaseMetadata{Labels: map[string]string{}},
+	})
+	require.NoError(t, err)
 	_, err = s.CreateDatabaseGroup(ctx, &store.DatabaseGroupMessage{
 		ProjectID:  "project-a",
 		ResourceID: "group",

@@ -491,6 +491,7 @@ message SyncDatabases {
 }
 
 message Instance {
+  reserved 2, 13;
   option (google.api.resource) = {
     type: "bytebase.com/Instance"
     pattern: "instances/{instance}"
@@ -642,6 +643,7 @@ message DataSourceExternalSecret {
 }
 
 message DataSource {
+  reserved 35, 50 to 55;
   // The unique identifier for this data source.
   string id = 1;
   // The type of data source (ADMIN or READ_ONLY).
@@ -789,7 +791,7 @@ message DataSource {
 
   // master_username and master_password are master credentials used by redis sentinel mode.
   string master_username = 32;
-  string master_password = 33;
+  string master_password = 33 [(google.api.field_behavior) = INPUT_ONLY];
 
   enum RedisType {
     REDIS_TYPE_UNSPECIFIED = 0;
@@ -798,9 +800,6 @@ message DataSource {
     CLUSTER = 3;
   }
   RedisType redis_type = 34;
-
-  // Cluster is the cluster name for the data source. Used by CockroachDB.
-  string cluster = 35;
 
   // Extra connection parameters for the database connection.
   // For PostgreSQL HA, this can be used to set target_session_attrs=read-write
@@ -864,7 +863,7 @@ message KerberosConfig {
   // The Kerberos realm.
   string realm = 3;
   // The keytab file contents for authentication.
-  bytes keytab = 4;
+  bytes keytab = 4 [(google.api.field_behavior) = INPUT_ONLY];
   // The hostname of the Key Distribution Center (KDC).
   string kdc_host = 5;
   // The port of the Key Distribution Center (KDC).

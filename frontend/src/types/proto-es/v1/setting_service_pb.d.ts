@@ -591,13 +591,6 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   watermark: boolean;
 
   /**
-   * The token for directory sync authentication.
-   *
-   * @generated from field: string directory_sync_token = 15;
-   */
-  directorySyncToken: string;
-
-  /**
    * Password restriction settings.
    *
    * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 17;
@@ -675,6 +668,15 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bytebase.v1.WorkspaceProfileSetting.MCPCapability mcp_capability = 26;
    */
   mcpCapability: WorkspaceProfileSetting_MCPCapability;
+
+  /**
+   * Whether a directory sync token has been generated for this workspace.
+   * The token itself is never returned; this only lets the UI decide between
+   * offering "generate" and "regenerate".
+   *
+   * @generated from field: bool directory_sync_token_configured = 27;
+   */
+  directorySyncTokenConfigured: boolean;
 };
 
 /**

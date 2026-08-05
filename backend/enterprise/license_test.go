@@ -2,14 +2,24 @@ package enterprise
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
+	"fmt"
 	"math"
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -125,4 +135,84 @@ func TestCreateLicenseUsesEqualInstanceClaims(t *testing.T) {
 	if claims.ActiveInstances != 10 {
 		t.Fatalf("ActiveInstances = %d, want 10", claims.ActiveInstances)
 	}
+}
+
+func TestGetUserLimitUncached(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	db := container.GetDB()
+	require.NoError(t, migrator.MigrateSchema(ctx, db))
+
+	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres",
+		container.GetHost(), container.GetPort())
+	s, err := store.New(ctx, pgURL, false)
+	require.NoError(t, err)
+	t.Cleanup(func() { s.Close() })
+
+	// Sign licenses with a test-only keypair so finite and expired licenses can
+	// be exercised.
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	publicKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PUBLIC KEY", Bytes: x509.MarshalPKCS1PublicKey(&privateKey.PublicKey)})
+	publicKey, err := jwt.ParseRSAPublicKeyFromPEM(publicKeyPEM)
+	require.NoError(t, err)
+	licenseService := &LicenseService{
+		store: s,
+		config: &Config{
+			PublicKey:  publicKey,
+			PrivateKey: privateKey,
+			Version:    keyID,
+			Issuer:     issuer,
+			Audience:   audience,
+			Mode:       common.ReleaseModeDev,
+		},
+		cache: expirable.NewLRU[string, *v1pb.Subscription](8, nil, time.Minute),
+	}
+	licenseService.replicaCache.Store(&replicaCacheState{replicaCount: 1, loadedAt: time.Now()})
+
+	// No workspace: the Free plan limit applies.
+	limit, err := licenseService.GetUserLimitUncached(ctx, "")
+	require.NoError(t, err)
+	require.Equal(t, userLimitValues[v1pb.PlanType_FREE], limit)
+
+	// Workspace without a license: the Free plan limit applies.
+	_, err = s.CreateWorkspace(ctx, &store.WorkspaceMessage{ResourceID: "ws-a"}, "admin@example.com")
+	require.NoError(t, err)
+	limit, err = licenseService.GetUserLimitUncached(ctx, "ws-a")
+	require.NoError(t, err)
+	require.Equal(t, userLimitValues[v1pb.PlanType_FREE], limit)
+
+	storeLicense := func(t *testing.T, params *LicenseParams) {
+		t.Helper()
+		token, err := licenseService.CreateLicense(params)
+		require.NoError(t, err)
+		require.NoError(t, s.UpdateLicense(ctx, "ws-a", token))
+	}
+
+	// Finite Enterprise license: the seat claim wins.
+	storeLicense(t, &LicenseParams{
+		Plan: v1pb.PlanType_ENTERPRISE.String(), Seats: 100, WorkspaceID: "ws-a",
+	})
+	limit, err = licenseService.GetUserLimitUncached(ctx, "ws-a")
+	require.NoError(t, err)
+	require.Equal(t, 100, limit)
+
+	// Legacy Enterprise license without a seat claim: unlimited.
+	storeLicense(t, &LicenseParams{
+		Plan: v1pb.PlanType_ENTERPRISE.String(), Seats: 0, WorkspaceID: "ws-a",
+	})
+	limit, err = licenseService.GetUserLimitUncached(ctx, "ws-a")
+	require.NoError(t, err)
+	require.Equal(t, math.MaxInt, limit)
+
+	// Expired Enterprise license: falls back to the Free plan limit.
+	storeLicense(t, &LicenseParams{
+		Plan: v1pb.PlanType_ENTERPRISE.String(), Seats: 100, WorkspaceID: "ws-a",
+		ExpiresAt: time.Now().Add(-time.Hour),
+	})
+	limit, err = licenseService.GetUserLimitUncached(ctx, "ws-a")
+	require.NoError(t, err)
+	require.Equal(t, userLimitValues[v1pb.PlanType_FREE], limit)
 }

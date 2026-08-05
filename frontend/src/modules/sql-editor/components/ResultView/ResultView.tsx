@@ -198,6 +198,7 @@ export function ResultView({
           admin,
           password: options.password,
           schema: executeParams.connection.schema,
+          container: executeParams.connection.table,
         })
       );
       resolve([

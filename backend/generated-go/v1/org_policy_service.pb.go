@@ -1126,7 +1126,7 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\fshow_deleted\x18\x03 \x01(\bR\vshowDeletedB\x0e\n" +
 	"\f_policy_type\"G\n" +
 	"\x14ListPoliciesResponse\x12/\n" +
-	"\bpolicies\x18\x01 \x03(\v2\x13.bytebase.v1.PolicyR\bpolicies\"\xff\x05\n" +
+	"\bpolicies\x18\x01 \x03(\v2\x13.bytebase.v1.PolicyR\bpolicies\"\x85\x06\n" +
 	"\x06Policy\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12.\n" +
 	"\x13inherit_from_parent\x18\x02 \x01(\bR\x11inheritFromParent\x12+\n" +
@@ -1141,7 +1141,7 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	" \x01(\bR\aenforce\x12I\n" +
 	"\rresource_type\x18\v \x01(\x0e2\x1f.bytebase.v1.PolicyResourceTypeB\x03\xe0A\x03R\fresourceType:\x97\x01\xeaA\x93\x01\n" +
 	"\x13bytebase.com/Policy\x12(workspaces/{workspace}/policies/{policy}\x12$projects/{project}/policies/{policy}\x12,environments/{environment}/policies/{policy}B\b\n" +
-	"\x06policy\"C\n" +
+	"\x06policyJ\x04\b\b\x10\t\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
 	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xcb\x01\n" +
@@ -1167,7 +1167,7 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x04tags\x18\x01 \x03(\v2 .bytebase.v1.TagPolicy.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\x7f\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\x85\x01\n" +
 	"\n" +
 	"PolicyType\x12\x1b\n" +
 	"\x17POLICY_TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
@@ -1176,7 +1176,7 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x0eROLLOUT_POLICY\x10\x03\x12\a\n" +
 	"\x03TAG\x10\x04\x12\x0e\n" +
 	"\n" +
-	"DATA_QUERY\x10\x06*`\n" +
+	"DATA_QUERY\x10\x06\"\x04\b\x05\x10\x05*`\n" +
 	"\x12PolicyResourceType\x12\x1d\n" +
 	"\x19RESOURCE_TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tWORKSPACE\x10\x01\x12\x0f\n" +

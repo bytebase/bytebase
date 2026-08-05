@@ -99,11 +99,11 @@ func findFirstOracleDMLOnce(statement string) (oracleast.StmtNode, error) {
 }
 
 func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, node oracleast.StmtNode, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
-	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
+	_, _, sourceDatabase, err := common.GetDatabaseResourceName(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
 	}
-	_, targetDatabase, err := common.GetInstanceDatabaseID(backupItem.TargetTable.Database)
+	_, _, targetDatabase, err := common.GetDatabaseResourceName(backupItem.TargetTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get target database ID for %s", backupItem.TargetTable.Database)
 	}
@@ -360,7 +360,7 @@ func extractSQL(statement string, backupItem *storepb.PriorBackupDetail_Item) (s
 		}
 	}
 
-	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
+	_, _, sourceDatabase, err := common.GetDatabaseResourceName(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
 	}

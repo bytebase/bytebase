@@ -1194,6 +1194,14 @@ func (s *AuthService) resolveWorkspaceForLogin(ctx context.Context, user *store.
 	}
 }
 
+// isMCPBoundToken reports whether extracted claims identify an MCP OAuth2
+// access token: the current generation by its token_use claim (the audience is
+// a per-deployment resource URI, so it cannot be matched by value here), the
+// pre-3.23 generation by the fixed legacy audience.
+func isMCPBoundToken(claims *auth.ExpiredTokenClaims) bool {
+	return claims.TokenUse == auth.TokenUseMCP || slices.Contains(claims.Audience, auth.OAuth2AccessTokenAudience)
+}
+
 // SwitchWorkspace switches the current user's active workspace and issues new tokens.
 func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[v1pb.SwitchWorkspaceRequest]) (*connect.Response[v1pb.LoginResponse], error) {
 	request := req.Msg
@@ -1219,7 +1227,7 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 	accessTokenStr, _ := auth.GetTokenFromHeaders(req.Header())
 	if accessTokenStr != "" {
 		tokenClaims, err := auth.ExtractClaimsFromExpiredToken(accessTokenStr, s.secret)
-		if err == nil && slices.Contains(tokenClaims.Audience, auth.OAuth2AccessTokenAudience) {
+		if err == nil && isMCPBoundToken(tokenClaims) {
 			return nil, connect.NewError(connect.CodePermissionDenied, errors.New("OAuth2 tokens cannot be used to switch workspaces"))
 		}
 	}

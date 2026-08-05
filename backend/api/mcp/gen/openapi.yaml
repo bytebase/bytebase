@@ -255,44 +255,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.SearchMyAccessGrantsResponse'
-  /bytebase.v1.ActuatorService/DeleteCache:
-    post:
-      tags:
-        - bytebase.v1.ActuatorService
-      summary: DeleteCache
-      description: |-
-        Clears the system cache to force data refresh.
-         Permissions required: None
-      operationId: bytebase.v1.ActuatorService.DeleteCache
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.DeleteCacheRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/google.protobuf.Empty'
   /bytebase.v1.ActuatorService/GetActuatorInfo:
     post:
       tags:
@@ -7756,6 +7718,47 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListWorkspacesResponse'
+  /bytebase.v1.WorkspaceService/RotateDirectorySyncToken:
+    post:
+      tags:
+        - bytebase.v1.WorkspaceService
+      summary: RotateDirectorySyncToken
+      description: |-
+        Mints a new directory sync (SCIM) token, immediately invalidating the
+         previous one. The plaintext token is returned exactly once and cannot be
+         retrieved afterwards; only its hash is stored. Callers that lose it must
+         rotate again and update their identity provider.
+         Permissions required: bb.workspaces.rotateDirectorySyncToken
+      operationId: bytebase.v1.WorkspaceService.RotateDirectorySyncToken
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.RotateDirectorySyncTokenRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.RotateDirectorySyncTokenResponse'
   /bytebase.v1.WorkspaceService/SetIamPolicy:
     post:
       tags:
@@ -10503,10 +10506,6 @@ components:
             redisType:
               title: redis_type
               $ref: '#/components/schemas/bytebase.v1.DataSource.RedisType'
-            cluster:
-              type: string
-              title: cluster
-              description: Cluster is the cluster name for the data source. Used by CockroachDB.
             extraConnectionParameters:
               type: object
               title: extra_connection_parameters
@@ -11030,11 +11029,6 @@ components:
       title: DatabaseSchema
       additionalProperties: false
       description: DatabaseSchema is the metadata for databases.
-    bytebase.v1.DeleteCacheRequest:
-      type: object
-      title: DeleteCacheRequest
-      additionalProperties: false
-      description: Request message for deleting cache.
     bytebase.v1.DeleteDatabaseGroupRequest:
       type: object
       properties:
@@ -11739,6 +11733,14 @@ components:
           description: |-
             The default schema to search objects. Equals to the current schema in
              Oracle and search path in Postgres.
+        container:
+          type:
+            - string
+            - "null"
+          title: container
+          description: |-
+            Container is the container name to execute the query against, used for
+             CosmosDB only.
       title: ExportRequest
       additionalProperties: false
     bytebase.v1.ExportResponse:
@@ -17102,6 +17104,26 @@ components:
       title: RolloutPolicy
       additionalProperties: false
       description: Rollout policy configuration.
+    bytebase.v1.RotateDirectorySyncTokenRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The workspace whose directory sync token is rotated.
+             Format: workspaces/{workspace}
+      title: RotateDirectorySyncTokenRequest
+      additionalProperties: false
+    bytebase.v1.RotateDirectorySyncTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          title: token
+          description: The new token, in plaintext. This is the only time it is ever returned.
+      title: RotateDirectorySyncTokenResponse
+      additionalProperties: false
     bytebase.v1.RowValue:
       type: object
       oneOf:
@@ -21182,10 +21204,6 @@ components:
           description: |-
             Whether to display watermark on pages.
              Requires ENTERPRISE license.
-        directorySyncToken:
-          type: string
-          title: directory_sync_token
-          description: The token for directory sync authentication.
         passwordRestriction:
           title: password_restriction
           description: Password restriction settings.
@@ -21244,6 +21262,13 @@ components:
              connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected —
              omit the update mask path to leave the ceiling unset.
           $ref: '#/components/schemas/bytebase.v1.WorkspaceProfileSetting.MCPCapability'
+        directorySyncTokenConfigured:
+          type: boolean
+          title: directory_sync_token_configured
+          description: |-
+            Whether a directory sync token has been generated for this workspace.
+             The token itself is never returned; this only lets the UI decide between
+             offering "generate" and "regenerate".
       title: WorkspaceProfileSetting
       additionalProperties: false
     bytebase.v1.WorkspaceProfileSetting.MCPCapability:

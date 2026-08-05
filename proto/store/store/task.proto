@@ -6,6 +6,7 @@ option go_package = "generated-go/store";
 
 // Task is the metadata for database operation tasks.
 message Task {
+  reserved 4 to 9, 12;
   // Type represents the type of database operation to perform.
   enum Type {
     TASK_TYPE_UNSPECIFIED = 0;

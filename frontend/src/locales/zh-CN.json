@@ -677,6 +677,10 @@
     "column": "列",
     "columns": "列",
     "comment": "注释",
+    "container": {
+      "select": "选择容器",
+      "unspecified": "未指定"
+    },
     "create-database": "创建数据库",
     "data-size": "数据大小",
     "edit-environment": "编辑环境",
@@ -773,10 +777,6 @@
     "sync-schema-button": "同步 Schema",
     "sync-status": "同步状态",
     "sync-status-failed": "同步失败",
-    "table": {
-      "select": "选择表",
-      "select-tip": "请选择一个表来开始查询。"
-    },
     "transfer-project": "转移项目",
     "unassign": "取消分配",
     "unassign-alert-description": "选定的数据库将从项目中移除",
@@ -1166,6 +1166,7 @@
     },
     "instance-id": "实例 ID",
     "instance-name": "实例名称",
+    "keytab-write-only": "Keytab 仅写入。上传新文件以替换现有 keytab。",
     "new-instance": "新实例",
     "no-environment": "此实例尚未绑定到环境",
     "no-extra-params-configured": "没有配置的额外连接参数",
@@ -2539,11 +2540,15 @@
         "description": "将 Entra ID（前 Azure AD）或 Okta 中的用户和组同步到您的 Bytebase 实例。",
         "endpoint": "端点",
         "endpoint-tip": "用户和组将通过此端点同步到 Bytebase。",
-        "reset-token": "重置密钥",
-        "reset-token-warning": "您需要更新 Entra 应用程序配置。",
+        "generate-token": "生成密钥",
+        "regenerate-token": "重新生成密钥",
+        "regenerate-token-warning": "当前密钥将立即失效，您需要更新应用程序配置。是否继续？",
         "secret-token": "Secret Token",
         "secret-token-tip": "端点的验证令牌，请妥善保管。",
-        "self": "从 SCIM 同步"
+        "self": "从 SCIM 同步",
+        "token-configured": "已配置密钥。密钥无法再次显示，如已遗失请重新生成。",
+        "token-not-configured": "尚未生成密钥。",
+        "token-shown-once": "请立即复制此密钥，它不会再次显示。"
       },
       "grant-access": "授予访问权限",
       "groups": {

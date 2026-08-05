@@ -26,6 +26,13 @@ that branch. The active-project check in `nextProjectID` covers this case only f
 writers that call it; it is not a repository-wide purge fence because other
 writers bypass `nextProjectID`.
 
+Database creation, database-sync, and Query History writers, together with direct
+project/instance purge, additionally take the matching transaction-scoped purge
+fence before any row lock. This closes the absent database-descendant gap;
+writers then retain the normal child-to-parent row-lock order. Database sync may
+continue for an archived project while its row exists, but never through a
+soft-deleted instance.
+
 Every new or modified writer of purge-managed data must define its project
 lifecycle policy: require an active project for new resources, or require only an
 existing project when deleted-project continuation is intentional. Serialize and

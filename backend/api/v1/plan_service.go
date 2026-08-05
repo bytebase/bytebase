@@ -579,7 +579,7 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	var releaseCount, sheetCount int
 	var sheetSha256s []string
 	var releaseString string
-	var instanceIDs []string
+	var instanceTargets []string
 	var databaseGroups []string
 	seenDatabaseGroups := map[string]bool{}
 	var databaseNames []string
@@ -599,17 +599,23 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 		case *v1pb.Plan_Spec_CreateDatabaseConfig:
 			configTypeCount["create_database"]++
 			if target := config.CreateDatabaseConfig.Target; target != "" {
-				instanceID, err := common.GetInstanceID(target)
+				targetProjectID, _, err := common.GetInstanceResourceName(target)
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance name %q: %v", target, err))
 				}
-				instanceIDs = append(instanceIDs, instanceID)
+				if targetProjectID != nil && *targetProjectID != projectID {
+					return nil, errors.Errorf("instance %q (project %q) does not belong to plan project %q", target, *targetProjectID, projectID)
+				}
+				instanceTargets = append(instanceTargets, target)
 			}
 		case *v1pb.Plan_Spec_ChangeDatabaseConfig:
 			configTypeCount["change_database"]++
 			var databaseTarget, databaseGroupTarget int
 			for _, target := range config.ChangeDatabaseConfig.Targets {
-				if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
+				if targetProjectID, _, _, err := common.GetDatabaseResourceName(target); err == nil {
+					if targetProjectID != nil && *targetProjectID != projectID {
+						return nil, errors.Errorf("database %q (project %q) does not belong to plan project %q", target, *targetProjectID, projectID)
+					}
 					databaseTarget++
 					databaseNames = append(databaseNames, target)
 				} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
@@ -654,7 +660,7 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	}
 
 	// Allow at most one instance.
-	if len(instanceIDs) > 1 {
+	if len(instanceTargets) > 1 {
 		return nil, errors.Errorf("plan contains targets on multiple instances, but only one instance is allowed")
 	}
 
@@ -669,17 +675,13 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	}
 
 	// Validate resources existence.
-	if len(instanceIDs) == 1 {
-		instanceID := instanceIDs[0]
-		instance, err := s.GetInstance(ctx, &store.FindInstanceMessage{
-			Workspace:  common.GetWorkspaceIDFromContext(ctx),
-			ResourceID: &instanceID,
-		})
+	if len(instanceTargets) == 1 {
+		instance, err := getInstanceMessage(ctx, s, instanceTargets[0])
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance %q: %v", instanceID, err))
+			return nil, err
 		}
-		if instance == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
+		if instance.Deleted {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", instanceTargets[0]))
 		}
 	}
 
@@ -704,9 +706,12 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	}
 
 	for _, name := range databaseNames {
-		instanceID, dbName, err := common.GetInstanceDatabaseID(name)
+		targetProjectID, instanceID, dbName, err := common.GetDatabaseResourceName(name)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid database name %q", name))
+		}
+		if targetProjectID != nil && *targetProjectID != projectID {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database %q (project %q) does not belong to plan project %q", name, *targetProjectID, projectID))
 		}
 		db, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
 			Workspace:    common.GetWorkspaceIDFromContext(ctx),
@@ -718,6 +723,17 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 		}
 		if db == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", name))
+		}
+		instanceName := common.FormatInstance(instanceID)
+		if targetProjectID != nil {
+			instanceName = common.FormatProjectInstance(*targetProjectID, instanceID)
+		}
+		instance, err := getInstanceMessage(ctx, s, instanceName)
+		if err != nil {
+			return nil, err
+		}
+		if instance.Deleted {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", instanceName))
 		}
 
 		if db.ProjectID != projectID {

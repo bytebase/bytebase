@@ -44,6 +44,11 @@ type AuditInterceptor struct {
 	store   *store.Store
 	secret  string
 	profile *config.Profile
+
+	// createAuditLogFunc, when set, replaces createAuditLog for streaming sends.
+	// Test-only seam that lets unit tests observe audit persistence ordering
+	// without a database.
+	createAuditLogFunc func(context.Context, *auditEntry) error
 }
 
 // NewAuditInterceptor returns a new v1 API audit interceptor.
@@ -145,11 +150,9 @@ func (c *auditConnectStreamingConn) Receive(msg any) error {
 }
 
 func (c *auditConnectStreamingConn) Send(resp any) error {
-	err := c.StreamingHandlerConn.Send(resp)
-	if err != nil {
-		return err
-	}
-	// Create audit log for each message pair
+	// Create the audit log for each message pair before delivering the
+	// response, so a client that observes a successful response can rely on
+	// the audit entry already being durably persisted.
 	if c.curRequest != nil {
 		entry := &auditEntry{
 			request:  c.curRequest,
@@ -159,11 +162,15 @@ func (c *auditConnectStreamingConn) Send(resp any) error {
 			peerAddr: c.Peer().Addr,
 			latency:  time.Since(c.startTime),
 		}
-		if auditErr := c.interceptor.createAuditLog(c.ctx, entry); auditErr != nil {
+		writeAuditLog := c.interceptor.createAuditLog
+		if c.interceptor.createAuditLogFunc != nil {
+			writeAuditLog = c.interceptor.createAuditLogFunc
+		}
+		if auditErr := writeAuditLog(c.ctx, entry); auditErr != nil {
 			return auditErr
 		}
 	}
-	return nil
+	return c.StreamingHandlerConn.Send(resp)
 }
 
 // auditEntry bundles the per-request data needed to write an audit log.
@@ -424,6 +431,17 @@ func getRequestResource(request any) string {
 		return r.GetName()
 	case *v1pb.UndeleteInstanceRequest:
 		return r.GetName()
+	case *v1pb.CreateProjectRequest:
+		if name := r.GetProject().GetName(); name != "" {
+			return name
+		}
+		return common.FormatProject(r.GetProjectId())
+	case *v1pb.UpdateProjectRequest:
+		return r.GetProject().GetName()
+	case *v1pb.DeleteProjectRequest:
+		return r.GetName()
+	case *v1pb.UndeleteProjectRequest:
+		return r.GetName()
 	case *v1pb.AddDataSourceRequest:
 		return r.GetName()
 	case *v1pb.RemoveDataSourceRequest:
@@ -476,6 +494,18 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.RemoveDataSourceRequest:
 			r.DataSource = redactDataSource(r.DataSource)
 			return r
+		case *v1pb.UpdateSettingRequest:
+			r = proto.CloneOf(r)
+			r.Setting = redactSetting(r.Setting)
+			return r
+		case *v1pb.CreateIdentityProviderRequest:
+			r = proto.CloneOf(r)
+			r.IdentityProvider = redactIdentityProvider(r.IdentityProvider)
+			return r
+		case *v1pb.UpdateIdentityProviderRequest:
+			r = proto.CloneOf(r)
+			r.IdentityProvider = redactIdentityProvider(r.IdentityProvider)
+			return r
 		default:
 			if p, ok := r.(protoreflect.ProtoMessage); ok {
 				return p
@@ -510,6 +540,14 @@ func getResponseString(response any) (string, error) {
 			return redactLoginResponse(r)
 		case *v1pb.ExchangeTokenResponse:
 			return redactExchangeTokenResponse(r)
+		case *v1pb.RotateDirectorySyncTokenResponse:
+			return redactRotateDirectorySyncTokenResponse(r)
+		case *v1pb.ServiceAccount:
+			return redactServiceAccount(r)
+		case *v1pb.Setting:
+			return redactSetting(r)
+		case *v1pb.IdentityProvider:
+			return redactIdentityProvider(r)
 		case *v1pb.User:
 			return redactUser(r)
 		case *v1pb.Instance:
@@ -618,6 +656,107 @@ func redactExchangeTokenResponse(r *v1pb.ExchangeTokenResponse) *v1pb.ExchangeTo
 		return nil
 	}
 	return &v1pb.ExchangeTokenResponse{}
+}
+
+// redactRotateDirectorySyncTokenResponse drops the newly minted SCIM token. The
+// whole point of hashing it at rest is that the plaintext exists only in the
+// single response to the admin who rotated it; writing it to the audit log would
+// hand a working credential to anyone who can read that log. Returns an empty
+// response so the audit entry still records that the rotation happened.
+func redactRotateDirectorySyncTokenResponse(r *v1pb.RotateDirectorySyncTokenResponse) *v1pb.RotateDirectorySyncTokenResponse {
+	if r == nil {
+		return nil
+	}
+	return &v1pb.RotateDirectorySyncTokenResponse{}
+}
+
+// redactServiceAccount drops the API key. Create and key rotation are the only
+// responses that carry it — the read path never populates it — and it is a live
+// credential, so logging it would hand a working key to anyone who can read the
+// audit log or its stdout stream.
+func redactServiceAccount(r *v1pb.ServiceAccount) *v1pb.ServiceAccount {
+	if r == nil {
+		return nil
+	}
+	r = proto.CloneOf(r)
+	if r.ServiceKey != "" {
+		r.ServiceKey = maskedString
+	}
+	return r
+}
+
+// redactIdentityProvider masks the IdP credentials. The read path already blanks
+// these (convertToIdentityProvider), so they only reach the audit log through
+// the create/update request payload.
+func redactIdentityProvider(r *v1pb.IdentityProvider) *v1pb.IdentityProvider {
+	if r == nil {
+		return nil
+	}
+	r = proto.CloneOf(r)
+	switch config := r.GetConfig().GetConfig().(type) {
+	case *v1pb.IdentityProviderConfig_Oauth2Config:
+		if config.Oauth2Config.GetClientSecret() != "" {
+			config.Oauth2Config.ClientSecret = maskedString
+		}
+	case *v1pb.IdentityProviderConfig_OidcConfig:
+		if config.OidcConfig.GetClientSecret() != "" {
+			config.OidcConfig.ClientSecret = maskedString
+		}
+	case *v1pb.IdentityProviderConfig_LdapConfig:
+		if config.LdapConfig.GetBindPassword() != "" {
+			config.LdapConfig.BindPassword = maskedString
+		}
+	default:
+	}
+	return r
+}
+
+// redactSetting masks every credential a settings payload can carry. The read
+// path blanks these, so they reach the audit log only through UpdateSetting's
+// request. Each secret is masked rather than dropped so the log still records
+// that the field was being written.
+func redactSetting(r *v1pb.Setting) *v1pb.Setting {
+	if r == nil {
+		return nil
+	}
+	r = proto.CloneOf(r)
+	switch value := r.GetValue().GetValue().(type) {
+	case *v1pb.SettingValue_Email:
+		if smtp := value.Email.GetSmtp(); smtp.GetPassword() != "" {
+			smtp.Password = maskedString
+		}
+	case *v1pb.SettingValue_Ai:
+		if value.Ai.GetApiKey() != "" {
+			value.Ai.ApiKey = maskedString
+		}
+	case *v1pb.SettingValue_AppIm:
+		maskAppIMSecrets(value.AppIm)
+	default:
+	}
+	return r
+}
+
+func maskAppIMSecrets(s *v1pb.AppIMSetting) {
+	for _, setting := range s.GetSettings() {
+		if v := setting.GetSlack(); v.GetToken() != "" {
+			v.Token = maskedString
+		}
+		if v := setting.GetFeishu(); v.GetAppSecret() != "" {
+			v.AppSecret = maskedString
+		}
+		if v := setting.GetWecom(); v.GetSecret() != "" {
+			v.Secret = maskedString
+		}
+		if v := setting.GetLark(); v.GetAppSecret() != "" {
+			v.AppSecret = maskedString
+		}
+		if v := setting.GetDingtalk(); v.GetClientSecret() != "" {
+			v.ClientSecret = maskedString
+		}
+		if v := setting.GetTeams(); v.GetClientSecret() != "" {
+			v.ClientSecret = maskedString
+		}
+	}
 }
 
 func redactCreateUserRequest(r *v1pb.CreateUserRequest) *v1pb.CreateUserRequest {

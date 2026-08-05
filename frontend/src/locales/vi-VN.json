@@ -677,6 +677,10 @@
     "column": "Cột",
     "columns": "Cột",
     "comment": "Bình luận",
+    "container": {
+      "select": "Chọn container",
+      "unspecified": "Không xác định"
+    },
     "create-database": "Tạo cơ sở dữ liệu",
     "data-size": "Kích thước dữ liệu",
     "edit-environment": "Chỉnh sửa Môi trường",
@@ -773,10 +777,6 @@
     "sync-schema-button": "Đồng bộ lược đồ",
     "sync-status": "Trạng thái đồng bộ",
     "sync-status-failed": "Đồng bộ thất bại",
-    "table": {
-      "select": "Chọn bảng",
-      "select-tip": "Vui lòng chọn một bảng để bắt đầu."
-    },
     "transfer-project": "Chuyển dự án",
     "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
@@ -1166,6 +1166,7 @@
     },
     "instance-id": "ID phiên bản",
     "instance-name": "Tên phiên bản",
+    "keytab-write-only": "Keytab chỉ ghi. Tải lên tệp mới để thay thế keytab hiện có.",
     "new-instance": "Phiên bản mới",
     "no-environment": "Trường hợp này không bị ràng buộc với môi trường",
     "no-extra-params-configured": "Không có thông số kết nối bổ sung được cấu hình",
@@ -2539,11 +2540,15 @@
         "description": "Đồng bộ người dùng và nhóm từ Entra ID (trước đây là Azure AD) hoặc Okta sang phiên bản Bytebase của bạn.",
         "endpoint": "Điểm cuối",
         "endpoint-tip": "Người dùng và nhóm sẽ được đồng bộ đến Bytebase qua điểm cuối này.",
-        "reset-token": "Đặt lại mã thông báo",
-        "reset-token-warning": "Bạn cần cập nhật cấu hình cung cấp ứng dụng Entra.",
+        "generate-token": "Tạo mã thông báo",
+        "regenerate-token": "Tạo lại mã thông báo",
+        "regenerate-token-warning": "Mã thông báo hiện tại sẽ ngừng hoạt động ngay lập tức và bạn cần cập nhật cấu hình cung cấp ứng dụng. Tiếp tục?",
         "secret-token": "Mã thông báo bí mật",
         "secret-token-tip": "Mã xác thực cho điểm cuối. Vui lòng giữ bí mật.",
-        "self": "Đồng bộ từ SCIM"
+        "self": "Đồng bộ từ SCIM",
+        "token-configured": "Đã cấu hình mã thông báo. Mã sẽ không được hiển thị lại — hãy tạo lại nếu bạn không còn giữ.",
+        "token-not-configured": "Chưa có mã thông báo nào được tạo.",
+        "token-shown-once": "Hãy sao chép mã thông báo này ngay. Mã sẽ không được hiển thị lại."
       },
       "grant-access": "Cấp Quyền truy cập",
       "groups": {

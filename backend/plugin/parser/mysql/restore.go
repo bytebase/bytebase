@@ -64,11 +64,11 @@ func findFirstDML(statement string) (ast.Node, error) {
 }
 
 func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, node ast.Node, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
-	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
+	_, _, sourceDatabase, err := common.GetDatabaseResourceName(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
 	}
-	_, targetDatabase, err := common.GetInstanceDatabaseID(backupItem.TargetTable.Database)
+	_, _, targetDatabase, err := common.GetDatabaseResourceName(backupItem.TargetTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get target database ID for %s", backupItem.TargetTable.Database)
 	}
@@ -295,7 +295,7 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 		}
 	}
 
-	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
+	_, _, sourceDatabase, err := common.GetDatabaseResourceName(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
 	}

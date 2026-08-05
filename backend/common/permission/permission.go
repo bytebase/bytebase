@@ -157,6 +157,7 @@ const (
 	WorkspacesSetIamPolicy               Permission = "bb.workspaces.setIamPolicy"
 	WorkspacesUpdate                     Permission = "bb.workspaces.update"
 	WorkspacesDelete                     Permission = "bb.workspaces.delete"
+	WorkspacesRotateDirectorySyncToken   Permission = "bb.workspaces.rotateDirectorySyncToken"
 )
 
 var allPermissions = func() []Permission {

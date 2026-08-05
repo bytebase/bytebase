@@ -14,6 +14,7 @@ message PageToken {
 
 // Engine represents the type of database system.
 enum Engine {
+  reserved 5;
   ENGINE_UNSPECIFIED = 0;
   CLICKHOUSE = 1;
   MYSQL = 2;
@@ -139,6 +140,7 @@ enum WebhookType {
 
 // StatementType represents the type of SQL statement.
 enum StatementType {
+  reserved 13 to 19, 32 to 39, 47 to 49, 56 to 59;
   STATEMENT_TYPE_UNSPECIFIED = 0;
 
   // DDL - CREATE statements

@@ -258,7 +258,6 @@
   
 - [v1/actuator_service.proto](#v1_actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
-    - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [Restriction](#bytebase-v1-Restriction)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
@@ -769,6 +768,8 @@
     - [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest)
     - [ListWorkspacesRequest](#bytebase-v1-ListWorkspacesRequest)
     - [ListWorkspacesResponse](#bytebase-v1-ListWorkspacesResponse)
+    - [RotateDirectorySyncTokenRequest](#bytebase-v1-RotateDirectorySyncTokenRequest)
+    - [RotateDirectorySyncTokenResponse](#bytebase-v1-RotateDirectorySyncTokenResponse)
     - [UpdateWorkspaceRequest](#bytebase-v1-UpdateWorkspaceRequest)
     - [Workspace](#bytebase-v1-Workspace)
   
@@ -2380,6 +2381,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | password | [string](#string) |  | The zip password provide by users. |
 | data_source_id | [string](#string) |  | The id of data source. If omitted, Export resolves the data source server-side by using the single read-only data source when exactly one exists, or the admin data source otherwise. It can also be set explicitly to export from the admin data source or a specific read-only data source. |
 | schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
+| container | [string](#string) | optional | Container is the container name to execute the query against, used for CosmosDB only. |
 
 
 
@@ -4482,7 +4484,6 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
 | enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
 | watermark | [bool](#bool) |  | Whether to display watermark on pages. Requires ENTERPRISE license. |
-| directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
 | password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-v1-WorkspaceProfileSetting-PasswordRestriction) |  | Password restriction settings. |
 | access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
 | enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
@@ -4493,6 +4494,7 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | sql_editor_custom_theme | [SQLEditorThemeSetting](#bytebase-v1-SQLEditorThemeSetting) |  | The enforced CUSTOM theme&#39;s full definition — present ONLY when sql_editor_theme_id is a custom uuid. tokens is always complete. |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for request role. Deprecated: use just-in-time access request flows instead. |
 | mcp_capability | [WorkspaceProfileSetting.MCPCapability](#bytebase-v1-WorkspaceProfileSetting-MCPCapability) |  | The maximum capability available to MCP (Model Context Protocol) sessions in this workspace, acting as an admin-set ceiling. Unset is treated as READ_WRITE for backward compatibility; DISABLED rejects all MCP connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected — omit the update mask path to leave the ceiling unset. |
+| directory_sync_token_configured | [bool](#bool) |  | Whether a directory sync token has been generated for this workspace. The token itself is never returned; this only lets the UI decide between offering &#34;generate&#34; and &#34;regenerate&#34;. |
 
 
 
@@ -4718,16 +4720,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 
 
-<a name="bytebase-v1-DeleteCacheRequest"></a>
-
-### DeleteCacheRequest
-Request message for deleting cache.
-
-
-
-
-
-
 <a name="bytebase-v1-GetActuatorInfoRequest"></a>
 
 ### GetActuatorInfoRequest
@@ -4787,7 +4779,6 @@ ActuatorService manages system health and operational information.
 | ----------- | ------------ | ------------- | ------------|
 | GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets system information and health status of the Bytebase instance. When `name` is provided (or the workspace-scoped binding is used), the response includes workspace-scoped fields for that workspace. Permissions required: None |
 | SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sets up sample data for demonstration and testing purposes. Permissions required: bb.projects.create |
-| DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Clears the system cache to force data refresh. Permissions required: None |
 
  
 
@@ -6641,7 +6632,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | master_username | [string](#string) |  | master_username and master_password are master credentials used by redis sentinel mode. |
 | master_password | [string](#string) |  |  |
 | redis_type | [DataSource.RedisType](#bytebase-v1-DataSource-RedisType) |  |  |
-| cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
 | extra_connection_parameters | [DataSource.ExtraConnectionParametersEntry](#bytebase-v1-DataSource-ExtraConnectionParametersEntry) | repeated | Extra connection parameters for the database connection. For PostgreSQL HA, this can be used to set target_session_attrs=read-write |
 | project_id | [string](#string) |  | project_id and instance_id are the GCP resource identifiers. project_id is used by Spanner and BigQuery; instance_id is used by Spanner. For these engines, host and port optionally override the default Google API endpoint (e.g. a Private Service Connect endpoint like spanner-nonprod.p.googleapis.com). |
 | instance_id | [string](#string) |  |  |
@@ -12371,6 +12361,36 @@ WorksheetService manages SQL worksheets for query development.
 
 
 
+<a name="bytebase-v1-RotateDirectorySyncTokenRequest"></a>
+
+### RotateDirectorySyncTokenRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The workspace whose directory sync token is rotated. Format: workspaces/{workspace} |
+
+
+
+
+
+
+<a name="bytebase-v1-RotateDirectorySyncTokenResponse"></a>
+
+### RotateDirectorySyncTokenResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| token | [string](#string) |  | The new token, in plaintext. This is the only time it is ever returned. |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateWorkspaceRequest"></a>
 
 ### UpdateWorkspaceRequest
@@ -12424,6 +12444,7 @@ WorkspaceService manages workspace-level operations and profile.
 | DeleteWorkspace | [DeleteWorkspaceRequest](#bytebase-v1-DeleteWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Deletes a workspace. SaaS only. Cancels any active subscription and soft-deletes the workspace so all associated data becomes inaccessible. Requires workspace admin permission. |
 | LeaveWorkspace | [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Removes the calling user from a workspace and switches to the next available workspace. Available to any workspace member. Fails if the caller is the last workspace admin. |
 | SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Sets IAM policy for the workspace. Permissions required: bb.workspaces.setIamPolicy |
+| RotateDirectorySyncToken | [RotateDirectorySyncTokenRequest](#bytebase-v1-RotateDirectorySyncTokenRequest) | [RotateDirectorySyncTokenResponse](#bytebase-v1-RotateDirectorySyncTokenResponse) | Mints a new directory sync (SCIM) token, immediately invalidating the previous one. The plaintext token is returned exactly once and cannot be retrieved afterwards; only its hash is stored. Callers that lose it must rotate again and update their identity provider. Permissions required: bb.workspaces.rotateDirectorySyncToken |
 
  
 

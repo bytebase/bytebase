@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -138,29 +139,6 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return s.unauthorized(c, "invalid token")
 		}
 
-		// Validate audience - accept both user access tokens and OAuth2 access tokens
-		aud, ok := claims["aud"]
-		if !ok {
-			return s.unauthorized(c, "invalid token: missing audience")
-		}
-
-		validAudience := false
-		switch v := aud.(type) {
-		case string:
-			validAudience = v == auth.OAuth2AccessTokenAudience || v == auth.AccessTokenAudience
-		case []any:
-			for _, a := range v {
-				if str, ok := a.(string); ok && (str == auth.OAuth2AccessTokenAudience || str == auth.AccessTokenAudience) {
-					validAudience = true
-					break
-				}
-			}
-		default:
-		}
-		if !validAudience {
-			return s.unauthorized(c, "invalid token: audience mismatch")
-		}
-
 		// Extract user email from subject
 		sub, ok := claims["sub"].(string)
 		if !ok || sub == "" {
@@ -171,10 +149,28 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			clientID = ""
 		}
 
-		// Extract workspace ID from token claims.
+		// Extract workspace ID from token claims. Read before the audience
+		// check because resolving the expected audience needs the workspace to
+		// look up the trusted external URL.
 		workspaceID, ok := claims["workspace_id"].(string)
 		if !ok {
 			workspaceID = ""
+		}
+
+		aud, ok := claims["aud"]
+		if !ok {
+			return s.unauthorized(c, "invalid token: missing audience")
+		}
+		allowed, err := s.audienceAllowed(c.Request().Context(), aud, workspaceID)
+		if err != nil {
+			// Infra failure reading the trusted config, not a verdict on the
+			// token: a 401 here would tell a compliant client to discard a
+			// perfectly good token mid-outage. 503 says retry instead.
+			slog.Error("failed to resolve the MCP resource audience; cannot verify the token", log.BBError(err))
+			return echo.NewHTTPError(http.StatusServiceUnavailable, "cannot verify token audience; retry shortly")
+		}
+		if !allowed {
+			return s.unauthorized(c, "invalid token: audience mismatch")
 		}
 
 		// Enforce the workspace MCP capability ceiling before dispatching to any
@@ -198,10 +194,120 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+// mcpResourcePath is the path of the MCP endpoint. Appended to the trusted
+// external URL it forms the canonical MCP resource URI — the audience every
+// OAuth2 access token is minted with since P1a PR 3 (mirrors the constant of
+// the same name in the oauth2 package, which stores that URI on the grant).
+const mcpResourcePath = "/mcp"
+
 // RegisterRoutes registers the MCP server routes with Echo.
 func (s *Server) RegisterRoutes(e *echo.Echo) {
 	// MCP Streamable HTTP endpoint with authentication
-	e.Any("/mcp", echo.WrapHandler(s.httpHandler), s.authMiddleware)
+	e.Any(mcpResourcePath, echo.WrapHandler(s.httpHandler), s.authMiddleware)
+}
+
+// audienceAllowed reports whether a bearer token's audience admits it to /mcp.
+//
+// The durable rule is a single audience: the canonical MCP resource URI derived
+// from the trusted live config (never from request headers). Tokens are minted
+// from the grant's stored resource, so rotating the external URL makes them
+// mismatch here — a clean 401 at use time that drives the client to
+// re-authorize, by design (grants must not silently rebind to a URL the user
+// never consented to).
+//
+// Legacy bb.oauth2.access tokens are admitted while their own exp claim keeps
+// them alive — deliberately with no clock gate. This release never mints that
+// audience, but replicas running the previous release keep minting it until
+// they leave service (the grant gates only constrain new-code replicas), so
+// any process-local window races a rolling deploy: it can close before the
+// last old-replica mint expires, 401-ing valid tokens depending on which
+// replica serves the request. Keying on token expiry instead gives the exact
+// bound: legacy acceptance drains no later than one access-token lifetime
+// after the last legacy-capable replica leaves service. Remove the acceptance
+// entirely in a later release, once no supported mixed-version deployment can
+// still mint the audience.
+//
+// Plain bb.user.access session tokens pasted into MCP clients manually are
+// admitted for now — see the acceptance branch in decideAudience for the
+// retirement gating.
+//
+// If no trusted external URL is configured, there is no expected audience and
+// resource-bound tokens fail closed; after the window such a deployment
+// rejects everything at /mcp until the external URL is set, matching the PR 2
+// rule that MCP OAuth requires a configured external URL. A transient failure
+// reading the config is different: it returns an error rather than a false
+// verdict, so the caller reports a server problem instead of blaming the token.
+func (s *Server) audienceAllowed(ctx context.Context, aud any, workspaceID string) (bool, error) {
+	expected, resolveErr := s.expectedMCPAudience(ctx, workspaceID)
+	return decideAudience(aud, expected, resolveErr)
+}
+
+// decideAudience is the pure decision behind audienceAllowed, split out so the
+// resolver-failure branches are unit-testable without a failing store.
+func decideAudience(aud any, expected string, resolveErr error) (bool, error) {
+	switch {
+	case resolveErr == nil:
+		if audienceMatches(aud, expected) {
+			return true, nil
+		}
+	case connect.CodeOf(resolveErr) == connect.CodeFailedPrecondition:
+		// Deliberately unconfigured (GetEffectiveExternalURL's "isn't setup
+		// yet"): no expected audience exists, so fall through to the legacy
+		// audiences rather than erroring.
+		slog.Warn("no external URL is configured; only legacy-audience tokens can authenticate at /mcp",
+			log.BBError(resolveErr))
+	default:
+		// Infra failure reading the trusted config: not a verdict on the token.
+		return false, resolveErr
+	}
+	// Plain web-session tokens stay accepted at /mcp for now: bb.user.access is
+	// minted by every web login, so no migration window can retire it, and the
+	// spec gates the hard cut on a scoped service-account / workload-identity
+	// flow existing first (spec §"Deferred product decisions"; proposal §6.5
+	// names the service-account token proxy as the dependent). PR 5/6 replaces
+	// this acceptance with a rejection once that credential ships, bringing its
+	// own tests.
+	if audienceMatches(aud, auth.AccessTokenAudience) {
+		return true, nil
+	}
+	// Unexpired legacy tokens only: the JWT exp check upstream has already
+	// rejected the rest, and this release mints none, so this branch drains on
+	// its own (see audienceAllowed).
+	return audienceMatches(aud, auth.OAuth2AccessTokenAudience), nil
+}
+
+// expectedMCPAudience resolves the audience /mcp accepts: the trusted external
+// URL (flag or workspace setting, per utils.GetEffectiveExternalURL) plus the
+// /mcp path. Request-derived values must never feed this — a Host header is
+// attacker-controlled and would let anyone mint a matching binding.
+func (s *Server) expectedMCPAudience(ctx context.Context, workspaceID string) (string, error) {
+	if workspaceID == "" && !s.profile.SaaS {
+		if id, err := s.store.GetWorkspaceID(ctx); err == nil {
+			workspaceID = id
+		}
+	}
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
+	if err != nil {
+		return "", err
+	}
+	return externalURL + mcpResourcePath, nil
+}
+
+// audienceMatches reports whether a JWT aud claim (string or array form)
+// contains exactly want.
+func audienceMatches(aud any, want string) bool {
+	switch v := aud.(type) {
+	case string:
+		return v == want
+	case []any:
+		for _, a := range v {
+			if str, ok := a.(string); ok && str == want {
+				return true
+			}
+		}
+	default:
+	}
+	return false
 }
 
 // unauthorized writes a 401 with an RFC 9728 / MCP-authorization-spec
@@ -296,7 +402,7 @@ func (s *Server) buildResourceMetadataURL(c *echo.Context) string {
 
 	ctx := c.Request().Context()
 	if s.profile.ExternalURL != "" {
-		return strings.TrimSuffix(s.profile.ExternalURL, "/") + resourceMetadataPath
+		return s.profile.ExternalURL + resourceMetadataPath
 	}
 	workspaceID := ""
 	if !s.profile.SaaS {
@@ -304,8 +410,8 @@ func (s *Server) buildResourceMetadataURL(c *echo.Context) string {
 			workspaceID = ws
 		}
 	}
-	if externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID); err == nil && externalURL != "" {
-		return strings.TrimSuffix(externalURL, "/") + resourceMetadataPath
+	if externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID); err == nil {
+		return externalURL + resourceMetadataPath
 	}
 
 	req := c.Request()

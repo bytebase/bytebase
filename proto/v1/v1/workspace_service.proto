@@ -3,7 +3,9 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
+import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
 import "v1/auth_service.proto";
@@ -81,6 +83,36 @@ service WorkspaceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
+
+  // Mints a new directory sync (SCIM) token, immediately invalidating the
+  // previous one. The plaintext token is returned exactly once and cannot be
+  // retrieved afterwards; only its hash is stored. Callers that lose it must
+  // rotate again and update their identity provider.
+  // Permissions required: bb.workspaces.rotateDirectorySyncToken
+  rpc RotateDirectorySyncToken(RotateDirectorySyncTokenRequest) returns (RotateDirectorySyncTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=workspaces/*}:rotateDirectorySyncToken"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.workspaces.rotateDirectorySyncToken";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
+}
+
+message RotateDirectorySyncTokenRequest {
+  // The workspace whose directory sync token is rotated.
+  // Format: workspaces/{workspace}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Workspace"}
+  ];
+}
+
+message RotateDirectorySyncTokenResponse {
+  // The new token, in plaintext. This is the only time it is ever returned.
+  string token = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message ListWorkspacesRequest {}

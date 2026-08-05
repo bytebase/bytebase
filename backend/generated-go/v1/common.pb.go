@@ -983,7 +983,7 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x11STATE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
 	"\x06ACTIVE\x10\x01\x12\v\n" +
-	"\aDELETED\x10\x02*\xe4\x02\n" +
+	"\aDELETED\x10\x02*\xea\x02\n" +
 	"\x06Engine\x12\x16\n" +
 	"\x12ENGINE_UNSPECIFIED\x10\x00\x12\x0e\n" +
 	"\n" +
@@ -1013,7 +1013,7 @@ const file_v1_common_proto_rawDesc = "" +
 	"\vCOCKROACHDB\x10\x16\x12\f\n" +
 	"\bCOSMOSDB\x10\x17\x12\t\n" +
 	"\x05TRINO\x10\x18\x12\r\n" +
-	"\tCASSANDRA\x10\x19*\\\n" +
+	"\tCASSANDRA\x10\x19\"\x04\b\x05\x10\x05*\\\n" +
 	"\aVCSType\x12\x18\n" +
 	"\x14VCS_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
@@ -1055,7 +1055,7 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x06FEISHU\x10\x05\x12\t\n" +
 	"\x05WECOM\x10\x06\x12\b\n" +
 	"\x04LARK\x10\a\x12\x0f\n" +
-	"\vGOOGLE_CHAT\x10\b*\xeb\x05\n" +
+	"\vGOOGLE_CHAT\x10\b*\x83\x06\n" +
 	"\rStatementType\x12\x1e\n" +
 	"\x1aSTATEMENT_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fCREATE_DATABASE\x10\x01\x12\x10\n" +
@@ -1107,7 +1107,7 @@ const file_v1_common_proto_rawDesc = "" +
 	"\n" +
 	"\x06UPDATE\x10=\x12\n" +
 	"\n" +
-	"\x06DELETE\x10>B\xa1\x01\n" +
+	"\x06DELETE\x10>\"\x04\b\r\x10\x13\"\x04\b \x10'\"\x04\b/\x101\"\x04\b8\x10;B\xa1\x01\n" +
 	"\x0fcom.bytebase.v1B\vCommonProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

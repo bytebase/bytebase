@@ -393,6 +393,7 @@ message RetryIssueApprovalRequest {
 }
 
 message Issue {
+  reserved 12, 14, 16;
   option (google.api.resource) = {
     type: "bytebase.com/Issue"
     pattern: "projects/{project}/issues/{issue}"
@@ -410,6 +411,7 @@ message Issue {
 
   // The type of issue.
   enum Type {
+    reserved 3;
     // Unspecified issue type.
     TYPE_UNSPECIFIED = 0;
     // Database schema or data change.
@@ -573,6 +575,7 @@ message UpdateIssueCommentRequest {
 
 // A comment on an issue.
 message IssueComment {
+  reserved 9 to 11;
   // Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid}
   string name = 1;
 

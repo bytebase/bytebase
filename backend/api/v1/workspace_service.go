@@ -8,8 +8,10 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
@@ -189,6 +191,54 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Req
 		Title: updated.Payload.GetTitle(),
 		Logo:  updated.Payload.GetLogo(),
 	}), nil
+}
+
+// RotateDirectorySyncToken mints a new SCIM token and returns it once. Only the
+// hash is persisted, so the plaintext cannot be recovered afterwards.
+func (s *WorkspaceService) RotateDirectorySyncToken(ctx context.Context, req *connect.Request[v1pb.RotateDirectorySyncTokenRequest]) (*connect.Response[v1pb.RotateDirectorySyncTokenResponse], error) {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+
+	// Validate the name here rather than leaning on the ACL. The interceptor
+	// rejects a well-formed name for another workspace, but an empty or
+	// unparseable one resolves to the workspace fallback (acl.go resolveRawResource),
+	// which matches the caller's own workspace and passes. Rotation is
+	// destructive — it invalidates a live SCIM credential — so a malformed
+	// request must fail rather than quietly break the caller's integration.
+	requested, err := common.GetWorkspaceID(req.Msg.GetName())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid workspace name %q", req.Msg.GetName()))
+	}
+	if requested != workspaceID {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace mismatch"))
+	}
+
+	// The update path this replaces gated on the same feature. Without it an
+	// unlicensed workspace can mint a token that reads as configured in the UI
+	// while the SCIM middleware rejects every request that uses it.
+	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DIRECTORY_SYNC); err != nil {
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
+	}
+
+	token := uuid.New().String()
+
+	// Row-locking read-modify-write: a plain read-then-upsert would let a
+	// concurrent UpdateSetting on WORKSPACE_PROFILE clobber the new hash — the
+	// admin would be handed a token that never became the stored one, and SCIM
+	// would keep accepting the token they think they just replaced. apply stays
+	// free of database reads; it runs holding the row lock and the connection.
+	if _, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE,
+		func(current proto.Message) (proto.Message, error) {
+			profile, ok := current.(*storepb.WorkspaceProfileSetting)
+			if !ok {
+				return nil, errors.Errorf("unexpected setting value type %T", current)
+			}
+			profile.DirectorySyncTokenHash = common.HashDirectorySyncToken(token)
+			return profile, nil
+		}, nil); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to store directory sync token"))
+	}
+
+	return connect.NewResponse(&v1pb.RotateDirectorySyncTokenResponse{Token: token}), nil
 }
 
 func (s *WorkspaceService) GetIamPolicy(ctx context.Context, _ *connect.Request[v1pb.GetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {

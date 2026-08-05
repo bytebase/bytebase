@@ -14,6 +14,7 @@ message SyncDatabases {
 
 // Instance is the proto for instances.
 message Instance {
+  reserved 8;
   string title = 1;
   Engine engine = 2;
   bool activation = 3;
@@ -60,6 +61,8 @@ message InstanceRole {
 }
 
 message DataSource {
+  reserved 35;
+
   string id = 1;
   DataSourceType type = 2;
   string username = 3;
@@ -206,8 +209,6 @@ message DataSource {
     CLUSTER = 3;
   }
   RedisType redis_type = 34;
-  // Cluster is the cluster name for the data source. Used by CockroachDB.
-  string cluster = 35;
 
   // Extra connection parameters for the database connection.
   // For PostgreSQL HA, this can be used to set target_session_attrs=read-write

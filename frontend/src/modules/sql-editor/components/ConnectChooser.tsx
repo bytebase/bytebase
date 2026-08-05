@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import type { ComboboxOption } from "@/components/ui/combobox";
 import {
   getPortalDropdownStyle,
@@ -28,6 +29,11 @@ type ConnectChooserProps = {
   readonly options: ComboboxOption[];
   readonly isChosen: boolean;
   readonly placeholder: string;
+  readonly dropdownClassName?: string;
+  readonly dropdownMinWidth?: number;
+  readonly openSignal?: number;
+  readonly triggerClassName?: string;
+  readonly triggerVariant?: "connection" | "run";
 };
 
 /**
@@ -46,6 +52,11 @@ export function ConnectChooser({
   options,
   isChosen,
   placeholder,
+  dropdownClassName,
+  dropdownMinWidth,
+  openSignal,
+  triggerClassName,
+  triggerVariant = "connection",
 }: ConnectChooserProps) {
   const { t } = useTranslation();
   const displayValue = value || t("db.schema.default");
@@ -56,6 +67,7 @@ export function ConnectChooser({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+  const lastOpenSignalRef = useRef(openSignal);
 
   const filteredOptions = useMemo(() => {
     if (!search) return options;
@@ -77,7 +89,11 @@ export function ConnectChooser({
       const nextStyle = getPortalDropdownStyle(
         rect,
         dropdownHeight,
-        window.innerHeight
+        window.innerHeight,
+        {
+          minWidth: dropdownMinWidth,
+          viewportWidth: window.innerWidth,
+        }
       );
       setDropdownStyle((prev) =>
         isPortalDropdownStyleEqual(prev, nextStyle) ? prev : nextStyle
@@ -134,6 +150,14 @@ export function ConnectChooser({
     }
   }, [open]);
 
+  useEffect(() => {
+    if (openSignal === undefined) return;
+    if (lastOpenSignalRef.current === openSignal) return;
+    lastOpenSignalRef.current = openSignal;
+    setOpen(true);
+    setSearch("");
+  }, [openSignal]);
+
   const handleSelect = useCallback(
     (optionValue: string) => {
       onChange(optionValue);
@@ -149,7 +173,8 @@ export function ConnectChooser({
       style={dropdownStyle}
       className={cn(
         "bg-background border border-control-border rounded-sm shadow-lg overflow-hidden",
-        LAYER_SURFACE_CLASS
+        LAYER_SURFACE_CLASS,
+        dropdownClassName
       )}
     >
       <SearchInput
@@ -197,29 +222,71 @@ export function ConnectChooser({
     </div>
   );
 
+  const triggerContent = (
+    <>
+      <Network
+        className={cn(
+          "size-4 shrink-0",
+          triggerVariant === "run"
+            ? "text-current"
+            : isChosen
+              ? "text-accent"
+              : "text-control-placeholder"
+        )}
+      />
+      {isChosen ? (
+        <span
+          className={cn(
+            "truncate",
+            triggerVariant === "connection" && "text-control"
+          )}
+        >
+          {displayValue}
+        </span>
+      ) : (
+        <span
+          className={cn(
+            "whitespace-nowrap",
+            triggerVariant === "connection" && "text-control-placeholder"
+          )}
+        >
+          {placeholder}
+        </span>
+      )}
+    </>
+  );
+
   return (
     <>
-      <ConnectionChooserButton
-        ref={triggerRef}
-        className={isChosen ? "max-w-[12rem]" : "max-w-none"}
-        aria-label={placeholder}
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <Network
+      {triggerVariant === "run" ? (
+        <Button
+          ref={triggerRef}
+          variant="default"
+          size="sm"
           className={cn(
-            "size-4 shrink-0",
-            isChosen ? "text-accent" : "text-control-placeholder"
+            "h-7 min-w-[10rem] px-1.5 gap-1 rounded-r-none text-sm",
+            triggerClassName
           )}
-        />
-        {isChosen ? (
-          <span className="truncate text-control">{displayValue}</span>
-        ) : (
-          <span className="text-control-placeholder whitespace-nowrap">
-            {placeholder}
-          </span>
-        )}
-      </ConnectionChooserButton>
+          aria-label={placeholder}
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
+          {triggerContent}
+        </Button>
+      ) : (
+        <ConnectionChooserButton
+          ref={triggerRef}
+          className={cn(
+            isChosen ? "max-w-[12rem]" : "max-w-none",
+            triggerClassName
+          )}
+          aria-label={placeholder}
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
+          {triggerContent}
+        </ConnectionChooserButton>
+      )}
       {open && createPortal(dropdownContent, getLayerRoot("overlay"))}
     </>
   );

@@ -1158,10 +1158,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.DeleteCacheRequest"><span class="badge">M</span>DeleteCacheRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetActuatorInfoRequest"><span class="badge">M</span>GetActuatorInfoRequest</a>
                 </li>
               
@@ -3101,6 +3097,14 @@
               
                 <li>
                   <a href="#bytebase.v1.ListWorkspacesResponse"><span class="badge">M</span>ListWorkspacesResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.RotateDirectorySyncTokenRequest"><span class="badge">M</span>RotateDirectorySyncTokenRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.RotateDirectorySyncTokenResponse"><span class="badge">M</span>RotateDirectorySyncTokenResponse</a>
                 </li>
               
                 <li>
@@ -7473,6 +7477,14 @@ data source or a specific read-only data source. </p></td>
                   <td>optional</td>
                   <td><p>The default schema to search objects. Equals to the current schema in
 Oracle and search path in Postgres. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>container</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Container is the container name to execute the query against, used for
+CosmosDB only. </p></td>
                 </tr>
               
             </tbody>
@@ -12979,13 +12991,6 @@ Requires ENTERPRISE license. </p></td>
                 </tr>
               
                 <tr>
-                  <td>directory_sync_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The token for directory sync authentication. </p></td>
-                </tr>
-              
-                <tr>
                   <td>password_restriction</td>
                   <td><a href="#bytebase.v1.WorkspaceProfileSetting.PasswordRestriction">WorkspaceProfileSetting.PasswordRestriction</a></td>
                   <td></td>
@@ -13062,6 +13067,15 @@ this workspace, acting as an admin-set ceiling. Unset is treated as
 READ_WRITE for backward compatibility; DISABLED rejects all MCP
 connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected —
 omit the update mask path to leave the ceiling unset. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>directory_sync_token_configured</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether a directory sync token has been generated for this workspace.
+The token itself is never returned; this only lets the UI decide between
+offering &#34;generate&#34; and &#34;regenerate&#34;. </p></td>
                 </tr>
               
             </tbody>
@@ -13761,13 +13775,6 @@ Format: projects/{id} </p></td>
 
         
       
-        <h3 id="bytebase.v1.DeleteCacheRequest">DeleteCacheRequest</h3>
-        <p>Request message for deleting cache.</p>
-
-        
-
-        
-      
         <h3 id="bytebase.v1.GetActuatorInfoRequest">GetActuatorInfoRequest</h3>
         <p>Request message for getting actuator information.</p>
 
@@ -13887,14 +13894,6 @@ Permissions required: None</p></td>
 Permissions required: bb.projects.create</p></td>
               </tr>
             
-              <tr>
-                <td>DeleteCache</td>
-                <td><a href="#bytebase.v1.DeleteCacheRequest">DeleteCacheRequest</a></td>
-                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p>Clears the system cache to force data refresh.
-Permissions required: None</p></td>
-              </tr>
-            
           </tbody>
         </table>
 
@@ -13936,16 +13935,6 @@ Permissions required: None</p></td>
                 <td>SetupSample</td>
                 <td>POST</td>
                 <td>/v1/actuator:setupSample</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>DeleteCache</td>
-                <td>DELETE</td>
-                <td>/v1/actuator/cache</td>
                 <td></td>
               </tr>
               
@@ -18819,13 +18808,6 @@ CLOUD_SQL_IP_TYPE_UNSPECIFIED is treated as PUBLIC for backward compatibility. <
                   <td><a href="#bytebase.v1.DataSource.RedisType">DataSource.RedisType</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>cluster</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Cluster is the cluster name for the data source. Used by CockroachDB. </p></td>
                 </tr>
               
                 <tr>
@@ -35185,6 +35167,55 @@ Use &#34;workspaces/-&#34; to get the current/default workspace. </p></td>
 
         
       
+        <h3 id="bytebase.v1.RotateDirectorySyncTokenRequest">RotateDirectorySyncTokenRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The workspace whose directory sync token is rotated.
+Format: workspaces/{workspace} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.RotateDirectorySyncTokenResponse">RotateDirectorySyncTokenResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The new token, in plaintext. This is the only time it is ever returned. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.UpdateWorkspaceRequest">UpdateWorkspaceRequest</h3>
         <p></p>
 
@@ -35327,6 +35358,17 @@ caller is the last workspace admin.</p></td>
 Permissions required: bb.workspaces.setIamPolicy</p></td>
               </tr>
             
+              <tr>
+                <td>RotateDirectorySyncToken</td>
+                <td><a href="#bytebase.v1.RotateDirectorySyncTokenRequest">RotateDirectorySyncTokenRequest</a></td>
+                <td><a href="#bytebase.v1.RotateDirectorySyncTokenResponse">RotateDirectorySyncTokenResponse</a></td>
+                <td><p>Mints a new directory sync (SCIM) token, immediately invalidating the
+previous one. The plaintext token is returned exactly once and cannot be
+retrieved afterwards; only its hash is stored. Callers that lose it must
+rotate again and update their identity provider.
+Permissions required: bb.workspaces.rotateDirectorySyncToken</p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -35411,6 +35453,16 @@ Permissions required: bb.workspaces.setIamPolicy</p></td>
                 <td>SetIamPolicy</td>
                 <td>POST</td>
                 <td>/v1/{resource=workspaces/*}:setIamPolicy</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>RotateDirectorySyncToken</td>
+                <td>POST</td>
+                <td>/v1/{name=workspaces/*}:rotateDirectorySyncToken</td>
                 <td>*</td>
               </tr>
               

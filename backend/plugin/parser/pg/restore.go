@@ -84,7 +84,7 @@ func findStatementAtPosition(statement string, backupItem *storepb.PriorBackupDe
 }
 
 func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, node ast.Node, backupItem *storepb.PriorBackupDetail_Item, prependStatements string) (string, error) {
-	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
+	_, _, sourceDatabase, err := common.GetDatabaseResourceName(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
 	}
