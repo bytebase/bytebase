@@ -41,6 +41,37 @@ func TestExtractDomain(t *testing.T) {
 	}
 }
 
+// TestIsMCPBoundToken pins the SwitchWorkspace guard predicate through the real
+// mint -> extract pipeline. For every token minted after P1a PR 3 the token_use
+// clause is the only one that fires (the audience is a per-deployment resource
+// URI, not the fixed legacy string), so dropping it would let a workspace-bound
+// MCP token mint plain user tokens for other workspaces.
+func TestIsMCPBoundToken(t *testing.T) {
+	const secret = "test-secret"
+
+	t.Run("current MCP token is caught via token_use", func(t *testing.T) {
+		tokenStr, err := auth.GenerateOAuth2AccessToken("demo@example.com", "client-A", "ws-test", "https://bb.example.com/mcp", secret, time.Hour)
+		require.NoError(t, err)
+		claims, err := auth.ExtractClaimsFromExpiredToken(tokenStr, secret)
+		require.NoError(t, err)
+		require.True(t, isMCPBoundToken(claims))
+	})
+
+	t.Run("legacy oauth2 token is caught via the fixed audience", func(t *testing.T) {
+		require.True(t, isMCPBoundToken(&auth.ExpiredTokenClaims{
+			Audience: []string{auth.OAuth2AccessTokenAudience},
+		}))
+	})
+
+	t.Run("web session token is not caught", func(t *testing.T) {
+		tokenStr, err := auth.GenerateAccessToken("demo@example.com", "ws-test", secret, time.Hour)
+		require.NoError(t, err)
+		claims, err := auth.ExtractClaimsFromExpiredToken(tokenStr, secret)
+		require.NoError(t, err)
+		require.False(t, isMCPBoundToken(claims))
+	})
+}
+
 func TestLoginAuthMethodRequiresPasswordReset(t *testing.T) {
 	emailCode := "123456"
 	tests := []struct {

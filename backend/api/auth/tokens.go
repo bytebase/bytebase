@@ -31,6 +31,10 @@ type claimsMessage struct {
 	jwt.RegisteredClaims
 	WorkspaceID string `json:"workspace_id,omitempty"`
 	LoginMethod string `json:"login_method,omitempty"`
+	// TokenUse is set to TokenUseMCP on OAuth2 MCP tokens and absent on web
+	// session tokens. Declared here rather than on oauth2ClaimsMessage because
+	// this is the type every verifier parses into.
+	TokenUse string `json:"token_use,omitempty"`
 }
 
 // oauth2ClaimsMessage extends claimsMessage with OAuth2-specific fields.
@@ -88,9 +92,15 @@ func generateTokenWithLoginMethod(userEmail string, workspaceID string, aud stri
 
 // GenerateOAuth2AccessToken generates an access token for OAuth2 clients.
 // The clientID is included in the token claims for audit purposes.
-func GenerateOAuth2AccessToken(userEmail, clientID, workspaceID, secret string, duration time.Duration) (string, error) {
+//
+// audience is the canonical MCP resource URI stored on the grant at consent
+// time. It is the caller's value on purpose: minting from the stored grant
+// rather than live config means rotating the external URL invalidates
+// outstanding tokens at /mcp (audience mismatch, clean 401 driving a re-auth)
+// instead of quietly rebinding them to a resource the user never approved.
+func GenerateOAuth2AccessToken(userEmail, clientID, workspaceID, audience, secret string, duration time.Duration) (string, error) {
 	expirationTime := time.Now().Add(duration)
-	return generateOAuth2Token(userEmail, clientID, workspaceID, OAuth2AccessTokenAudience, expirationTime, []byte(secret))
+	return generateOAuth2Token(userEmail, clientID, workspaceID, audience, expirationTime, []byte(secret))
 }
 
 // ExpiredTokenClaims holds the claims extracted from an expired JWT.
@@ -98,6 +108,7 @@ type ExpiredTokenClaims struct {
 	Subject     string
 	WorkspaceID string
 	Audience    []string
+	TokenUse    string
 }
 
 // ExtractClaimsFromExpiredToken parses a JWT (even if expired) and returns key claims.
@@ -121,6 +132,7 @@ func ExtractClaimsFromExpiredToken(tokenString, secret string) (*ExpiredTokenCla
 		Subject:     claims.Subject,
 		WorkspaceID: claims.WorkspaceID,
 		Audience:    claims.Audience,
+		TokenUse:    claims.TokenUse,
 	}, nil
 }
 
@@ -137,6 +149,7 @@ func generateOAuth2Token(userEmail, clientID, workspaceID, aud string, expiratio
 				Subject:   userEmail,
 			},
 			WorkspaceID: workspaceID,
+			TokenUse:    TokenUseMCP,
 		},
 	}
 

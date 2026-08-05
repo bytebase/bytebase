@@ -30,8 +30,11 @@ const (
 	refreshTokenPrefix = "bb_refresh_"
 	authCodePrefix     = "bb_code_"
 
-	authCodeExpiry       = 10 * time.Minute
-	accessTokenExpiry    = 1 * time.Hour
+	authCodeExpiry = 10 * time.Minute
+	// accessTokenExpiry aliases the shared constant so the /mcp middleware's
+	// legacy-audience migration window (one access-token lifetime from process
+	// start) stays exactly as long as the tokens it exists for.
+	accessTokenExpiry    = auth.OAuth2AccessTokenDuration
 	refreshTokenExpiry   = 30 * 24 * time.Hour
 	clientInactiveExpiry = 30 * 24 * time.Hour
 

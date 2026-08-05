@@ -32,10 +32,6 @@ func (s *Server) handleReauthorize(ctx context.Context, _ *mcp.CallToolRequest, 
 			Message: "reauthorize requires an MCP OAuth access token",
 		}), nil, nil
 	}
-	if s.store == nil {
-		return formatToolError(errors.New("store is not configured")), nil, nil
-	}
-
 	if err := s.store.DeleteOAuth2RefreshTokensByUserAndClient(ctx, userEmail, clientID); err != nil {
 		return formatToolError(errors.Wrap(err, "failed to revoke OAuth refresh tokens")), nil, nil
 	}
