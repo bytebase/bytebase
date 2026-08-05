@@ -679,7 +679,6 @@
     "comment": "Bình luận",
     "container": {
       "select": "Chọn container",
-      "select-tip": "Vui lòng chọn một container để bắt đầu.",
       "unspecified": "Không xác định"
     },
     "create-database": "Tạo cơ sở dữ liệu",
@@ -778,10 +777,6 @@
     "sync-schema-button": "Đồng bộ lược đồ",
     "sync-status": "Trạng thái đồng bộ",
     "sync-status-failed": "Đồng bộ thất bại",
-    "table": {
-      "select": "Chọn bảng",
-      "select-tip": "Vui lòng chọn một bảng để bắt đầu."
-    },
     "transfer-project": "Chuyển dự án",
     "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",

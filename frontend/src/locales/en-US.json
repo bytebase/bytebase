@@ -679,7 +679,6 @@
     "comment": "Comment",
     "container": {
       "select": "Select container",
-      "select-tip": "Please select a container to start.",
       "unspecified": "Unspecified"
     },
     "create-database": "Create database",
@@ -778,10 +777,6 @@
     "sync-schema-button": "Sync Schema",
     "sync-status": "Sync status",
     "sync-status-failed": "Sync failed",
-    "table": {
-      "select": "Select table",
-      "select-tip": "Please select a table to start."
-    },
     "transfer-project": "Transfer Project",
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",

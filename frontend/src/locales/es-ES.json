@@ -679,7 +679,6 @@
     "comment": "Comentario",
     "container": {
       "select": "Seleccionar contenedor",
-      "select-tip": "Seleccione un contenedor para comenzar.",
       "unspecified": "Sin especificar"
     },
     "create-database": "Crear base de datos",
@@ -778,10 +777,6 @@
     "sync-schema-button": "Sincronizar esquema",
     "sync-status": "Estado de sincronización",
     "sync-status-failed": "Sincronización fallida",
-    "table": {
-      "select": "Seleccionar tabla",
-      "select-tip": "Seleccione una mesa para comenzar."
-    },
     "transfer-project": "Transferir proyecto",
     "unassign": "Desasignar",
     "unassign-alert-description": "Las bases de datos seleccionadas serán eliminadas del proyecto",

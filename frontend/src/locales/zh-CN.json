@@ -679,7 +679,6 @@
     "comment": "注释",
     "container": {
       "select": "选择容器",
-      "select-tip": "请选择一个容器来开始查询。",
       "unspecified": "未指定"
     },
     "create-database": "创建数据库",
@@ -778,10 +777,6 @@
     "sync-schema-button": "同步 Schema",
     "sync-status": "同步状态",
     "sync-status-failed": "同步失败",
-    "table": {
-      "select": "选择表",
-      "select-tip": "请选择一个表来开始查询。"
-    },
     "transfer-project": "转移项目",
     "unassign": "取消分配",
     "unassign-alert-description": "选定的数据库将从项目中移除",
