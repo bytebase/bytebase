@@ -19,30 +19,8 @@ backend actually does**, which is where everything serious lives.
 `name`, else `resource`, else `project`, and only if that field carries a `resource_reference`
 annotation (`backend/api/v1/acl.go:667-685`). Any *second* resource name in the body is invisible
 to it. `DiffSchema` (fix already written, patch `04`) was one instance; these are the rest.
-
-### T4 ✅ HIGH — `SearchIssues` performs no authorization for a concrete project
-
-`backend/api/v1/issue_service.go:321-323`:
-
-```go
-var projectIDs []string
-if projectID != "-" {
-    projectIDs = append(projectIDs, projectID)   // no permission check
-} else {
-    projectIDsFilter, err := getProjectIDsSearchFilter(ctx, user, permission.IssuesGet, ...)
-}
-```
-
-`auth_method = CUSTOM` makes `doIAMPermissionCheck` return early (`acl.go:246`), and `parent` has
-no `resource_reference` (`issue_service.proto:270`) so the resolver yields only the workspace
-fallback. `CheckPermission` appears in `issue_service.go` only at `:799` and `:1217` — neither on
-this path. `workspaceMember` does not hold `bb.issues.get`.
-
-Perverse detail: the **wildcard** `projects/-` branch is correctly filtered. The concrete-project
-branch — the one that looks safe — is the hole. Any authenticated member reads every non-draft
-issue in any project: titles, descriptions, creators, labels, risk levels, approval state.
-
-**Fix:** call `CheckPermission(IssuesGet, user, workspaceID, projectID)` on the concrete branch.
+The related CUSTOM-auth variant — the interceptor checks nothing at all, so the handler must
+authorize every branch itself — was T4 (`SearchIssues`), now fixed.
 
 ### T5 ✅ HIGH — sheet content is globally readable by SHA256
 
@@ -237,7 +215,7 @@ comment; 22 files have string fields and zero protovalidate constraints despite
 # What I'd do, in order
 
 1. **Runtime-confirm T9.** Eleven bad logins. If the eleventh is accepted, there is no lockout and that outranks everything else here.
-2. **Close the multi-resource ACL class, not the instances** (T4–T7 + the pending `DiffSchema` patch): teach `getResourceFromRequest` to collect *every* `resource_reference`d field including oneof and repeated members, then annotate `DiffSchemaRequest.changelog`, `CheckReleaseRequest.targets`, `Revision.release/file/task_run`. `UpdateDatabase`'s project-transfer case (`acl.go:604-624`) is the in-repo precedent.
+2. **Close the multi-resource ACL class, not the instances** (T6–T7 + the pending `DiffSchema` patch): teach `getResourceFromRequest` to collect *every* `resource_reference`d field including oneof and repeated members, then annotate `DiffSchemaRequest.changelog`, `CheckReleaseRequest.targets`, `Revision.release/file/task_run`. `UpdateDatabase`'s project-transfer case (`acl.go:604-624`) is the in-repo precedent.
 3. **Give sheets an ownership model** (T5), or at minimum scope the blob fetch by the owning project/workspace. Until then the sheet namespace is workspace-global by design, and should be documented as such.
 4. **Fail closed**: reject `AUTH_METHOD_UNSPECIFIED` at startup; make `permission` on a CUSTOM RPC either enforced or a build error, since 20 of them are currently decorative.
 5. **Wire api-linter into CI** at the 474-finding baseline. None of Tier 5 was visible to `buf lint`'s `BASIC` profile, which is why it accumulated.
