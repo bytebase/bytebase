@@ -361,19 +361,28 @@ func sessionFingerprint(identity auth.DelegatedMCPCredential) string {
 	}, "\x00")
 }
 
-// liveRequestMetadata overlays the current request's caller IP onto the
-// context the tool handler runs with. Without it a tool call reads the IP
-// captured when the session was opened, so every action from a client that
-// changed network mid-session would be audited against its first address.
+// liveRequestMetadata overlays the current request's caller IP and bearer onto
+// the context the tool handler runs with. Tool handlers otherwise see only what
+// the session was opened with, which goes stale in two ways that matter:
 //
-// The headers come from the live JSON-RPC request; authMiddleware has already
+//   - the caller IP, so a client that changed network mid-session would have
+//     every later action audited against its first address; and
+//   - the bearer, so reauthorize would revoke the token the caller already
+//     replaced by refreshing, leaving the one in its hand working until expiry.
+//
+// The headers come from the live JSON-RPC request. authMiddleware has already
 // normalized the peer address into X-Real-IP, so a direct connection resolves
-// here too. If a request arrives without them, the session's value stands.
+// here too, and it has already validated the bearer, so this only carries a
+// value that was accepted moments ago. If a request arrives without them, the
+// session's values stand.
 func liveRequestMetadata(next mcp.MethodHandler) mcp.MethodHandler {
 	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 		if extra := req.GetExtra(); extra != nil && extra.Header != nil {
 			if ip := headerCallerIP(extra.Header); ip != "" {
 				ctx = withCallerIP(ctx, ip)
+			}
+			if token, err := auth.GetTokenFromHeaders(extra.Header); err == nil && token != "" {
+				ctx = withAccessToken(ctx, token)
 			}
 		}
 		return next(ctx, method, req)
