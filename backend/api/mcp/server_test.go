@@ -77,7 +77,7 @@ func TestMCPAuthMiddleware(t *testing.T) {
 			c := e.NewContext(req, rec)
 
 			// Create server with auth
-			s, err := NewServer(nil, profile, secret)
+			s, err := NewServer(nil, profile, secret, nil)
 			require.NoError(t, err)
 			handler := s.authMiddleware(func(c *echo.Context) error {
 				return c.String(http.StatusOK, "success")
@@ -135,7 +135,7 @@ func TestMCPAuthMiddlewareValidToken(t *testing.T) {
 
 	// Create server with auth - note: we pass nil store since we're testing middleware only
 	// A full integration test would require a real store
-	s, err := NewServer(nil, profile, secret)
+	s, err := NewServer(nil, profile, secret, nil)
 	require.NoError(t, err)
 	handler := s.authMiddleware(func(c *echo.Context) error {
 		// Verify access token is set in request context
@@ -161,7 +161,7 @@ func TestMCPAuthMiddlewareOAuthContext(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	s, err := NewServer(nil, profile, secret)
+	s, err := NewServer(nil, profile, secret, nil)
 	require.NoError(t, err)
 	handler := s.authMiddleware(func(c *echo.Context) error {
 		ctx := c.Request().Context()
@@ -192,7 +192,7 @@ func TestMCPProxiedPublicHostNotRejected(t *testing.T) {
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 
-	s, err := NewServer(nil, profile, secret)
+	s, err := NewServer(nil, profile, secret, nil)
 	require.NoError(t, err)
 
 	e := echo.New()
@@ -231,7 +231,7 @@ func TestMCPUnauthenticatedRejectedEndToEnd(t *testing.T) {
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 
-	s, err := NewServer(nil, profile, secret)
+	s, err := NewServer(nil, profile, secret, nil)
 	require.NoError(t, err)
 
 	e := echo.New()
@@ -265,7 +265,7 @@ func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 
 	mintResourceToken := func(t *testing.T, resource string) string {
 		t.Helper()
-		token, err := auth.GenerateOAuth2AccessToken("test@example.com", "client-A", "ws-test", resource, secret, time.Hour)
+		token, err := auth.GenerateOAuth2AccessToken("test@example.com", "client-A", "ws-test", resource, "", secret, time.Hour)
 		require.NoError(t, err)
 		return token
 	}
@@ -321,7 +321,7 @@ func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: tc.externalURL}
-			s, err := NewServer(nil, profile, secret)
+			s, err := NewServer(nil, profile, secret, nil)
 			require.NoError(t, err)
 
 			e := echo.New()

@@ -82,7 +82,7 @@ func TestMCPKillSwitchEndToEnd(t *testing.T) {
 
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
-	srv, err := NewServer(s, profile, secret)
+	srv, err := NewServer(s, profile, secret, nil)
 	require.NoError(t, err)
 
 	statusFor := func(workspaceID string) int {
@@ -144,7 +144,7 @@ func TestMCPKillSwitchBypassesSettingCache(t *testing.T) {
 
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
-	srv, err := NewServer(s, profile, secret)
+	srv, err := NewServer(s, profile, secret, nil)
 	require.NoError(t, err)
 
 	statusFor := func() int {

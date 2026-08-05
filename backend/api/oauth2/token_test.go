@@ -120,7 +120,7 @@ func TestIssueTokensPlacesWorkspaceInJWT(t *testing.T) {
 	const clientID = "client-xyz"
 	const workspaceID = "ws-consent-bound"
 
-	tokenStr, err := auth.GenerateOAuth2AccessToken(userEmail, clientID, workspaceID, testResource, secret, time.Hour)
+	tokenStr, err := auth.GenerateOAuth2AccessToken(userEmail, clientID, workspaceID, testResource, "", secret, time.Hour)
 	require.NoError(t, err)
 
 	// Decode the token (signature-verified) and assert the workspace_id

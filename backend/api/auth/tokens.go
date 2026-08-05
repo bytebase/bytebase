@@ -41,6 +41,10 @@ type claimsMessage struct {
 type oauth2ClaimsMessage struct {
 	claimsMessage
 	ClientID string `json:"client_id,omitempty"`
+	// Scope echoes the grant's stored scope verbatim (RFC 9068 shape) so the
+	// /mcp boundary can copy the grant state onto the delegated credential
+	// without a store lookup. Absent on legacy grants that stored no scope.
+	Scope string `json:"scope,omitempty"`
 }
 
 // GenerateAPIToken generates an API token.
@@ -98,9 +102,11 @@ func generateTokenWithLoginMethod(userEmail string, workspaceID string, aud stri
 // rather than live config means rotating the external URL invalidates
 // outstanding tokens at /mcp (audience mismatch, clean 401 driving a re-auth)
 // instead of quietly rebinding them to a resource the user never approved.
-func GenerateOAuth2AccessToken(userEmail, clientID, workspaceID, audience, secret string, duration time.Duration) (string, error) {
+//
+// scope is the grant's stored scope, carried verbatim like the audience.
+func GenerateOAuth2AccessToken(userEmail, clientID, workspaceID, audience, scope, secret string, duration time.Duration) (string, error) {
 	expirationTime := time.Now().Add(duration)
-	return generateOAuth2Token(userEmail, clientID, workspaceID, audience, expirationTime, []byte(secret))
+	return generateOAuth2Token(userEmail, clientID, workspaceID, audience, scope, expirationTime, []byte(secret))
 }
 
 // ExpiredTokenClaims holds the claims extracted from an expired JWT.
@@ -137,9 +143,10 @@ func ExtractClaimsFromExpiredToken(tokenString, secret string) (*ExpiredTokenCla
 }
 
 // generateOAuth2Token creates a JWT token with OAuth2-specific claims including client_id.
-func generateOAuth2Token(userEmail, clientID, workspaceID, aud string, expirationTime time.Time, secret []byte) (string, error) {
+func generateOAuth2Token(userEmail, clientID, workspaceID, aud, scope string, expirationTime time.Time, secret []byte) (string, error) {
 	claims := &oauth2ClaimsMessage{
 		ClientID: clientID,
+		Scope:    scope,
 		claimsMessage: claimsMessage{
 			RegisteredClaims: jwt.RegisteredClaims{
 				Audience:  jwt.ClaimStrings{aud},
