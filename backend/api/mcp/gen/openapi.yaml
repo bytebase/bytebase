@@ -2327,6 +2327,8 @@ paths:
       summary: DeleteInstance
       description: |-
         Deletes or soft-deletes a database instance.
+         Soft-delete requests fail with FAILED_PRECONDITION while any task run
+         targeting the instance is pending, available, or running.
          Permissions required: bb.instances.delete
       operationId: bytebase.v1.InstanceService.DeleteInstance
       parameters:
@@ -2555,6 +2557,8 @@ paths:
       summary: UndeleteInstance
       description: |-
         Restores a soft-deleted database instance.
+         Restore requests fail with FAILED_PRECONDITION while any task run targeting
+         the instance is pending, available, or running.
          Permissions required: bb.instances.undelete
       operationId: bytebase.v1.InstanceService.UndeleteInstance
       parameters:

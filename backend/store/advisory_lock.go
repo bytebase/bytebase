@@ -29,8 +29,8 @@ const (
 	// AdvisoryLockKeyProjectPurge serializes project-owned writes with project
 	// purge, including writes to an otherwise absent database descendant.
 	AdvisoryLockKeyProjectPurge AdvisoryLockKey = 1006
-	// AdvisoryLockKeyInstancePurge serializes database writes with instance
-	// purge, which cannot lock an absent database descendant.
+	// AdvisoryLockKeyInstancePurge serializes instance lifecycle operations with
+	// descendant creation and purge when the descendant row may not exist yet.
 	AdvisoryLockKeyInstancePurge AdvisoryLockKey = 1007
 )
 

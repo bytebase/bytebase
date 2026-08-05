@@ -331,6 +331,120 @@ func (s *Store) removeProjectCache(resourceID string) {
 	s.projectCache.Remove(resourceID)
 }
 
+// projectDescendantCacheKeys snapshots the cache keys of every instance,
+// database, and schema row that a project purge is about to remove or
+// reassign, so their cache entries can be invalidated after the purge commits.
+type projectDescendantCacheKeys struct {
+	instanceIDs []string
+	databases   []projectDatabaseCacheKey
+	schemas     []projectSchemaCacheKey
+}
+
+type projectDatabaseCacheKey struct {
+	workspace    string
+	instanceID   string
+	databaseName string
+}
+
+type projectSchemaCacheKey struct {
+	instanceID   string
+	databaseName string
+}
+
+// captureProjectDescendantCacheKeys reads the cache keys of every descendant
+// row that DeleteProject will delete (project instances and their databases
+// and schemas) or reassign (workspace-instance databases owned by the
+// project). It must run inside the purge transaction before any of those rows
+// are removed.
+func captureProjectDescendantCacheKeys(ctx context.Context, tx *stdsql.Tx, projectID string) (*projectDescendantCacheKeys, error) {
+	keys := &projectDescendantCacheKeys{}
+
+	rows, err := tx.QueryContext(ctx, `
+		SELECT resource_id
+		FROM instance
+		WHERE project = $1
+		ORDER BY resource_id
+	`, projectID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to capture project instance cache keys for project %s", projectID)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var instanceID string
+		if err := rows.Scan(&instanceID); err != nil {
+			return nil, errors.Wrap(err, "failed to scan project instance cache key")
+		}
+		keys.instanceIDs = append(keys.instanceIDs, instanceID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read project instance cache keys")
+	}
+
+	rows, err = tx.QueryContext(ctx, `
+		SELECT db.instance, db.name, instance.workspace
+		FROM db
+		JOIN instance ON instance.resource_id = db.instance
+		WHERE instance.project = $1 OR db.project = $1
+		ORDER BY db.instance, db.name
+	`, projectID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to capture project database cache keys for project %s", projectID)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var key projectDatabaseCacheKey
+		if err := rows.Scan(&key.instanceID, &key.databaseName, &key.workspace); err != nil {
+			return nil, errors.Wrap(err, "failed to scan project database cache key")
+		}
+		keys.databases = append(keys.databases, key)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read project database cache keys")
+	}
+
+	rows, err = tx.QueryContext(ctx, `
+		SELECT db_schema.instance, db_schema.db_name
+		FROM db_schema
+		JOIN instance ON instance.resource_id = db_schema.instance
+		WHERE instance.project = $1
+		ORDER BY db_schema.instance, db_schema.db_name
+	`, projectID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to capture project schema cache keys for project %s", projectID)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var key projectSchemaCacheKey
+		if err := rows.Scan(&key.instanceID, &key.databaseName); err != nil {
+			return nil, errors.Wrap(err, "failed to scan project schema cache key")
+		}
+		keys.schemas = append(keys.schemas, key)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read project schema cache keys")
+	}
+
+	return keys, nil
+}
+
+// removeProjectDescendantCaches invalidates the captured descendant cache
+// entries and the project entry itself. It must only run after the purge
+// transaction commits; a failed purge must not publish invalidation.
+func (s *Store) removeProjectDescendantCaches(keys *projectDescendantCacheKeys, projectID string) {
+	for _, instanceID := range keys.instanceIDs {
+		s.instanceCache.Remove(getInstanceCacheKey(instanceID))
+	}
+	for _, key := range keys.databases {
+		// Remove both the unscoped (runner) and workspace-scoped (API) entries.
+		s.databaseCache.Remove(getDatabaseCacheKey("", key.instanceID, key.databaseName))
+		s.databaseCache.Remove(getDatabaseCacheKey(key.workspace, key.instanceID, key.databaseName))
+	}
+	for _, key := range keys.schemas {
+		s.dbSchemaCache.Remove(getDBSchemaCacheKey(key.instanceID, key.databaseName))
+	}
+	s.projectCache.Remove(projectID)
+}
+
 // DeleteProject permanently purges a soft-deleted project and all related resources.
 // This operation is irreversible and should only be used for:
 // - Administrative cleanup of old soft-deleted projects
@@ -349,6 +463,14 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 	defer tx.Rollback()
 	if err := acquireProjectPurgeLock(ctx, tx, resourceID); err != nil {
 		return errors.Wrapf(err, "failed to lock project purge fence for %s", resourceID)
+	}
+
+	// Capture descendant cache keys before any descendant rows are removed so
+	// the post-commit invalidation is precise and does not require re-reading
+	// rows that no longer exist.
+	cacheKeys, err := captureProjectDescendantCacheKeys(ctx, tx, resourceID)
+	if err != nil {
+		return errors.Wrap(err, "failed to capture project descendant cache keys")
 	}
 
 	// Delete query history before locking database-scoped rows to preserve the
@@ -723,8 +845,9 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrap(err, "failed to commit transaction")
 	}
 
-	// Clear the project from cache
-	s.projectCache.Remove(resourceID)
+	// Publish invalidation only after the purge commits: every captured
+	// descendant entry is removed while unrelated cache entries survive.
+	s.removeProjectDescendantCaches(cacheKeys, resourceID)
 
 	return nil
 }
