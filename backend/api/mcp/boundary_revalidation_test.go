@@ -210,6 +210,87 @@ func TestBoundaryRevalidatesEveryRequest(t *testing.T) {
 	})
 }
 
+// forwardedTransport presents a fixed bearer and a settable X-Forwarded-For, so
+// a test can move an established session to a different client IP.
+type forwardedTransport struct {
+	token string
+	ip    atomic.Pointer[string]
+}
+
+func (t *forwardedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req = req.Clone(req.Context())
+	req.Header.Set("Authorization", "Bearer "+t.token)
+	if ip := t.ip.Load(); ip != nil {
+		req.Header.Set("X-Forwarded-For", *ip)
+	}
+	return http.DefaultTransport.RoundTrip(req)
+}
+
+// TestInternalRequestUsesLiveCallerIP pins that audit sees where a tool call
+// came from NOW, not where the session was opened from. Tool handlers run on
+// the initialize request's context, so a caller IP read from that context is
+// frozen for the session's life: a client that changes network mid-session
+// (wifi to cellular, VPN toggle, proxy rotation) would have every later action
+// attributed to the address it first connected from.
+//
+// The session identity is still pinned — a moving IP must not end the session,
+// which is what makes taking the live address safe: it cannot be a different
+// principal's.
+func TestInternalRequestUsesLiveCallerIP(t *testing.T) {
+	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
+
+	var capturedIP atomic.Pointer[string]
+	stub := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ip := r.Header.Get("X-Real-IP")
+		capturedIP.Store(&ip)
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{}`)
+	})
+	s, err := NewServer(nil, profile, revalidationSecret, stub)
+	require.NoError(t, err)
+
+	e := echo.New()
+	s.RegisterRoutes(e)
+	ts := httptest.NewServer(e)
+	defer ts.Close()
+
+	transport := &forwardedTransport{
+		token: mintMCPToken(t, "test@example.com", "client-A", "ws-test", "mcp:read-only", time.Hour),
+	}
+	first := "203.0.113.7"
+	transport.ip.Store(&first)
+
+	client := mcp.NewClient(&mcp.Implementation{Name: "probe", Version: "0"}, nil)
+	session, err := client.Connect(context.Background(), &mcp.StreamableClientTransport{
+		Endpoint:   ts.URL + "/mcp",
+		HTTPClient: &http.Client{Transport: transport},
+		MaxRetries: -1,
+	}, nil)
+	require.NoError(t, err)
+	defer session.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	callTool := func() error {
+		_, err := session.CallTool(ctx, &mcp.CallToolParams{
+			Name:      "call_api",
+			Arguments: map[string]any{"operationId": "SQLService/Query"},
+		})
+		return err
+	}
+
+	require.NoError(t, callTool())
+	require.Equal(t, first, *capturedIP.Load())
+
+	// The same client, same credential, now reaching us from a different address.
+	second := "198.51.100.22"
+	transport.ip.Store(&second)
+
+	require.NoError(t, callTool(), "an IP change must not end the session")
+	require.Equal(t, second, *capturedIP.Load(),
+		"audit must attribute the call to where it came from now, not to the session's first address")
+}
+
 // mintMCPToken mints an MCP OAuth2 access token bound to this deployment's
 // canonical resource URI.
 func mintMCPToken(t *testing.T, email, clientID, workspaceID, scope string, ttl time.Duration) string {

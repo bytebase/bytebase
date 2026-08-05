@@ -89,6 +89,15 @@ func NewServer(store *store.Store, profile *config.Profile, secret string, inter
 		return s.mcpServer
 	}, &mcp.StreamableHTTPOptions{DisableLocalhostProtection: true})
 
+	// Refresh per-request metadata that would otherwise be frozen at session
+	// start. The SDK runs tool handlers on the initialize request's context, but
+	// hands each JSON-RPC request's own HTTP headers to receiving middleware, so
+	// this is where a long-lived session picks up where its current request came
+	// from. Identity stays pinned to the session (see below), which is what
+	// makes trusting the live address safe: it cannot belong to another
+	// principal.
+	mcpServer.AddReceivingMiddleware(liveRequestMetadata)
+
 	// Pin each session to the identity it was opened with. The SDK captures
 	// TokenInfo.UserID when a session is created and rejects later requests
 	// carrying a different one, but only when a TokenInfo reaches it — and the
@@ -208,7 +217,12 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		ctx = withOAuth2ClientID(ctx, clientID)
 		ctx = withWorkspaceID(ctx, workspaceID)
 		ctx = withDelegatedIdentity(ctx, delegated)
-		ctx = withCallerIP(ctx, callerIP(c.Request()))
+		// Normalize the resolved address onto the request so the per-request
+		// path sees it too: receiving middleware gets each request's headers,
+		// but never its peer address.
+		resolvedIP := callerIP(c.Request())
+		c.Request().Header.Set("X-Real-IP", resolvedIP)
+		ctx = withCallerIP(ctx, resolvedIP)
 		ctx = withSessionBinding(ctx, sessionBinding{
 			fingerprint: sessionFingerprint(delegated),
 			expiry:      bearerExpiry(claims),
@@ -339,6 +353,34 @@ func sessionFingerprint(identity auth.DelegatedMCPCredential) string {
 		identity.Resource,
 		identity.Scope,
 	}, "\x00")
+}
+
+// liveRequestMetadata overlays the current request's caller IP onto the
+// context the tool handler runs with. Without it a tool call reads the IP
+// captured when the session was opened, so every action from a client that
+// changed network mid-session would be audited against its first address.
+//
+// The headers come from the live JSON-RPC request; authMiddleware has already
+// normalized the peer address into X-Real-IP, so a direct connection resolves
+// here too. If a request arrives without them, the session's value stands.
+func liveRequestMetadata(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		if extra := req.GetExtra(); extra != nil && extra.Header != nil {
+			if ip := headerCallerIP(extra.Header); ip != "" {
+				ctx = withCallerIP(ctx, ip)
+			}
+		}
+		return next(ctx, method, req)
+	}
+}
+
+// headerCallerIP reads the caller IP from request headers, in the order the
+// audit interceptor applies.
+func headerCallerIP(header http.Header) string {
+	if ip := header.Get("X-Real-IP"); ip != "" {
+		return ip
+	}
+	return header.Get("X-Forwarded-For")
 }
 
 // callerIP resolves who made this /mcp request, using the same precedence the
