@@ -178,30 +178,22 @@ func (c *authStreamingConn) Receive(msg any) error {
 	return c.StreamingHandlerConn.Receive(msg)
 }
 
-// rejectMCPTokenOnGeneralAPI is the P1a PR 5 flip: while false, an MCP
-// resource-bound token (token_use=mcp) used on the general API is admitted with
-// an audit log line so operators can find integrations that rely on it; once
-// true, such tokens are refused outright and stop being universal API bearers.
-// Deliberately inactive for one release (spec §"PR 3") — note that until PR 4's
-// private in-memory transport lands, /mcp tool calls themselves reach the
-// general API with the inbound bearer, so audit entries are expected traffic,
-// not misuse.
-const rejectMCPTokenOnGeneralAPI = false
-
 // checkTokenAudience decides whether a token's audience admits it to the
 // general (non-/mcp) API. The fixed audiences — web sessions and OAuth2 tokens
 // minted before the audience became the MCP resource URI — pass unflagged. An
 // MCP resource-bound token is recognized by token_use (its audience varies per
-// deployment) and reported as mcpToken so the caller can audit-log it; reject
-// turns that admission into a refusal. Anything else is refused.
-func checkTokenAudience(claims *claimsMessage, reject bool) (mcpToken bool, err error) {
+// deployment) and reported as mcpToken so the caller can audit-log it.
+// Anything else is refused.
+func checkTokenAudience(claims *claimsMessage) (mcpToken bool, err error) {
 	if audienceContains(claims.Audience, AccessTokenAudience) || audienceContains(claims.Audience, OAuth2AccessTokenAudience) {
 		return false, nil
 	}
 	if claims.TokenUse == TokenUseMCP {
-		if reject {
-			return true, errs.New("MCP tokens are only accepted at /mcp; use a personal access token or service account for the API")
-		}
+		// Admitted and audit-logged, not rejected: until PR 4's private
+		// in-memory transport lands, /mcp tool calls reach this interceptor
+		// carrying the inbound bearer, so rejecting here would break every MCP
+		// tool call. PR 5 replaces this admission with a rejection after that
+		// cutover (spec §"PR 3" / §"PR 5").
 		return true, nil
 	}
 	return false, errs.Errorf(
@@ -239,7 +231,7 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, 
 		return nil, nil, errs.New("failed to parse claim")
 	}
 
-	mcpToken, err := checkTokenAudience(claims, rejectMCPTokenOnGeneralAPI)
+	mcpToken, err := checkTokenAudience(claims)
 	if err != nil {
 		return nil, nil, err
 	}

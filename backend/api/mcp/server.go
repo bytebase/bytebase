@@ -206,15 +206,6 @@ func (s *Server) RegisterRoutes(e *echo.Echo) {
 	e.Any(mcpResourcePath, echo.WrapHandler(s.httpHandler), s.authMiddleware)
 }
 
-// rejectPlainUserTokenAtMCP is the flip that retires plain web-session tokens
-// (bb.user.access) at /mcp. Deliberately inactive: unlike bb.oauth2.access,
-// this audience is minted by every web login, so no migration window can
-// retire it — and the spec gates the hard cut on a scoped service-account /
-// workload-identity flow existing first (spec §"Deferred product decisions";
-// proposal §6.5 names the service-account token proxy as the dependent).
-// Flipped in PR 5/6 once that credential ships.
-const rejectPlainUserTokenAtMCP = false
-
 // audienceAllowed reports whether a bearer token's audience admits it to /mcp.
 //
 // The durable rule is a single audience: the canonical MCP resource URI derived
@@ -237,7 +228,8 @@ const rejectPlainUserTokenAtMCP = false
 // still mint the audience.
 //
 // Plain bb.user.access session tokens pasted into MCP clients manually are
-// admitted until rejectPlainUserTokenAtMCP flips.
+// admitted for now — see the acceptance branch in decideAudience for the
+// retirement gating.
 //
 // If no trusted external URL is configured, there is no expected audience and
 // resource-bound tokens fail closed; after the window such a deployment
@@ -247,13 +239,12 @@ const rejectPlainUserTokenAtMCP = false
 // verdict, so the caller reports a server problem instead of blaming the token.
 func (s *Server) audienceAllowed(ctx context.Context, aud any, workspaceID string) (bool, error) {
 	expected, resolveErr := s.expectedMCPAudience(ctx, workspaceID)
-	return decideAudience(aud, expected, resolveErr, rejectPlainUserTokenAtMCP)
+	return decideAudience(aud, expected, resolveErr)
 }
 
 // decideAudience is the pure decision behind audienceAllowed, split out so the
-// resolver-failure branches and the rejectPlainUserToken flip are
-// unit-testable without a failing store or a const edit.
-func decideAudience(aud any, expected string, resolveErr error, rejectPlainUserToken bool) (bool, error) {
+// resolver-failure branches are unit-testable without a failing store.
+func decideAudience(aud any, expected string, resolveErr error) (bool, error) {
 	switch {
 	case resolveErr == nil:
 		if audienceMatches(aud, expected) {
@@ -269,7 +260,14 @@ func decideAudience(aud any, expected string, resolveErr error, rejectPlainUserT
 		// Infra failure reading the trusted config: not a verdict on the token.
 		return false, resolveErr
 	}
-	if !rejectPlainUserToken && audienceMatches(aud, auth.AccessTokenAudience) {
+	// Plain web-session tokens stay accepted at /mcp for now: bb.user.access is
+	// minted by every web login, so no migration window can retire it, and the
+	// spec gates the hard cut on a scoped service-account / workload-identity
+	// flow existing first (spec §"Deferred product decisions"; proposal §6.5
+	// names the service-account token proxy as the dependent). PR 5/6 replaces
+	// this acceptance with a rejection once that credential ships, bringing its
+	// own tests.
+	if audienceMatches(aud, auth.AccessTokenAudience) {
 		return true, nil
 	}
 	// Unexpired legacy tokens only: the JWT exp check upstream has already

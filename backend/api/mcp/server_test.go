@@ -259,7 +259,7 @@ func TestMCPUnauthenticatedRejectedEndToEnd(t *testing.T) {
 // after the last legacy-capable replica leaves service (the expired-token 401
 // in TestMCPAuthMiddleware is the other half of that invariant). Plain
 // bb.user.access session tokens are accepted until the scoped service-account
-// flow lands (rejectPlainUserTokenAtMCP).
+// flow lands (spec "Deferred product decisions"; proposal §6.5).
 func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 	secret := "test-secret-key"
 
@@ -309,8 +309,8 @@ func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			// bb.user.access retirement (rejectPlainUserTokenAtMCP) is gated
-			// on the scoped service-account flow landing first.
+			// bb.user.access retirement is gated on the scoped service-account
+			// flow landing first (PR 5/6).
 			name:           "plain user audience is accepted",
 			externalURL:    "https://bb.example.com",
 			token:          func(t *testing.T) string { return generateUserAudienceToken(t, secret) },
@@ -364,13 +364,13 @@ func TestDecideAudience(t *testing.T) {
 	infraDown := connect.NewError(connect.CodeInternal, errors.New("failed to get workspace setting: db unreachable"))
 
 	t.Run("matching expected audience is allowed", func(t *testing.T) {
-		allowed, err := decideAudience(expected, expected, nil, rejectPlainUserTokenAtMCP)
+		allowed, err := decideAudience(expected, expected, nil)
 		require.NoError(t, err)
 		require.True(t, allowed)
 	})
 
 	t.Run("unknown audience is refused", func(t *testing.T) {
-		allowed, err := decideAudience("https://old.example.com/mcp", expected, nil, rejectPlainUserTokenAtMCP)
+		allowed, err := decideAudience("https://old.example.com/mcp", expected, nil)
 		require.NoError(t, err)
 		require.False(t, allowed)
 	})
@@ -380,13 +380,13 @@ func TestDecideAudience(t *testing.T) {
 		// population drains by each token's own exp — no later than one
 		// access-token lifetime after the last legacy-capable replica leaves
 		// service. A process-start window would race rolling deploys.
-		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, expected, nil, rejectPlainUserTokenAtMCP)
+		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, expected, nil)
 		require.NoError(t, err)
 		require.True(t, allowed)
 	})
 
 	t.Run("unconfigured external URL still admits legacy audiences", func(t *testing.T) {
-		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, "", unconfigured, rejectPlainUserTokenAtMCP)
+		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, "", unconfigured)
 		require.NoError(t, err)
 		require.True(t, allowed)
 	})
@@ -394,34 +394,21 @@ func TestDecideAudience(t *testing.T) {
 	t.Run("unconfigured external URL fails closed for resource tokens", func(t *testing.T) {
 		// No trusted config means no expected audience to compare against; the
 		// request-derived host must never substitute for it.
-		allowed, err := decideAudience("https://bb.example.com/mcp", "", unconfigured, rejectPlainUserTokenAtMCP)
+		allowed, err := decideAudience("https://bb.example.com/mcp", "", unconfigured)
 		require.NoError(t, err)
 		require.False(t, allowed)
 	})
 
-	t.Run("plain user audience is accepted while the flip is off", func(t *testing.T) {
-		allowed, err := decideAudience(auth.AccessTokenAudience, expected, nil, false)
+	t.Run("plain user audience is accepted", func(t *testing.T) {
+		allowed, err := decideAudience(auth.AccessTokenAudience, expected, nil)
 		require.NoError(t, err)
 		require.True(t, allowed)
 	})
 
-	t.Run("plain user audience is refused once the scoped-SA-gated flip lands", func(t *testing.T) {
-		// Pins the PR 5/6 behavior: flipping rejectPlainUserTokenAtMCP retires
-		// bb.user.access at /mcp without touching the oauth2 legacy audience.
-		allowed, err := decideAudience(auth.AccessTokenAudience, expected, nil, true)
-		require.NoError(t, err)
-		require.False(t, allowed)
-	})
-
 	t.Run("infra failure is reported as an error, not a token verdict", func(t *testing.T) {
-		allowed, err := decideAudience(expected, "", infraDown, rejectPlainUserTokenAtMCP)
+		allowed, err := decideAudience(expected, "", infraDown)
 		require.Error(t, err)
 		require.False(t, allowed)
-	})
-
-	t.Run("the plain-user-token flip is inactive this release", func(t *testing.T) {
-		require.False(t, rejectPlainUserTokenAtMCP,
-			"retiring bb.user.access at /mcp is gated on the scoped service-account flow (spec deferred decisions; proposal 6.5)")
 	})
 }
 
