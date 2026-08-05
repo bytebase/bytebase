@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestCheckTokenAudience pins the general-API audience policy for P1a PR 3:
-// the fixed audiences keep working, an MCP resource-bound token (token_use=mcp)
-// is admitted but flagged for audit logging, and everything else is refused.
-// PR 5 replaces the admission with a rejection once PR 4's private transport
-// stops /mcp tool calls from carrying the inbound bearer here.
+// TestCheckTokenAudience pins the general-API audience policy for P1a PR 5:
+// the fixed audiences keep working, an MCP token (token_use=mcp) is refused
+// outright — since PR 4's private transport, /mcp tool traffic never presents
+// it here, so any appearance is a leaked or misused token, not tool traffic —
+// and everything else is refused as an audience mismatch.
 func TestCheckTokenAudience(t *testing.T) {
 	claimsWith := func(aud string, tokenUse string) *claimsMessage {
 		return &claimsMessage{
@@ -20,26 +20,37 @@ func TestCheckTokenAudience(t *testing.T) {
 		}
 	}
 
-	t.Run("web session audience is accepted and not flagged", func(t *testing.T) {
-		mcpToken, err := checkTokenAudience(claimsWith(AccessTokenAudience, ""))
+	t.Run("web session audience is accepted", func(t *testing.T) {
+		err := checkTokenAudience(claimsWith(AccessTokenAudience, ""))
 		require.NoError(t, err)
-		require.False(t, mcpToken)
 	})
 
-	t.Run("legacy oauth2 audience is accepted and not flagged", func(t *testing.T) {
-		mcpToken, err := checkTokenAudience(claimsWith(OAuth2AccessTokenAudience, ""))
+	t.Run("legacy oauth2 audience without token_use is accepted", func(t *testing.T) {
+		// Minted only by pre-PR-3 replicas; acceptance drains within one
+		// access-token lifetime of the last such replica leaving service.
+		err := checkTokenAudience(claimsWith(OAuth2AccessTokenAudience, ""))
 		require.NoError(t, err)
-		require.False(t, mcpToken)
 	})
 
-	t.Run("mcp resource-bound token is admitted but flagged for auditing", func(t *testing.T) {
-		mcpToken, err := checkTokenAudience(claimsWith(testResource, TokenUseMCP))
-		require.NoError(t, err)
-		require.True(t, mcpToken)
+	t.Run("mcp resource-bound token is refused", func(t *testing.T) {
+		err := checkTokenAudience(claimsWith(testResource, TokenUseMCP))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "only accepted at /mcp")
+	})
+
+	t.Run("token_use=mcp is refused even with an accepted fixed audience", func(t *testing.T) {
+		// Nothing mints this combination; if one ever appears, the MCP marker
+		// must win over the audience allowlist — the rejection keys on what the
+		// token IS, not on which audience it also happens to carry.
+		for _, aud := range []string{AccessTokenAudience, OAuth2AccessTokenAudience} {
+			err := checkTokenAudience(claimsWith(aud, TokenUseMCP))
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "only accepted at /mcp")
+		}
 	})
 
 	t.Run("unknown audience without token_use is refused", func(t *testing.T) {
-		_, err := checkTokenAudience(claimsWith("wrong.audience", ""))
+		err := checkTokenAudience(claimsWith("wrong.audience", ""))
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "audience mismatch")
 	})
