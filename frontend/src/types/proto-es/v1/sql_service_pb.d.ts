@@ -1061,6 +1061,14 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
    * @generated from field: optional string schema = 8;
    */
   schema?: string | undefined;
+
+  /**
+   * Container is the container name to execute the query against, used for
+   * CosmosDB only.
+   *
+   * @generated from field: optional string container = 9;
+   */
+  container?: string | undefined;
 };
 
 /**

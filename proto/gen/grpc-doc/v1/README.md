@@ -2381,6 +2381,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | password | [string](#string) |  | The zip password provide by users. |
 | data_source_id | [string](#string) |  | The id of data source. If omitted, Export resolves the data source server-side by using the single read-only data source when exactly one exists, or the admin data source otherwise. It can also be set explicitly to export from the admin data source or a specific read-only data source. |
 | schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
+| container | [string](#string) | optional | Container is the container name to execute the query against, used for CosmosDB only. |
 
 
 

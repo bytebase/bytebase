@@ -4661,6 +4661,14 @@ paths:
                   description: |-
                     The default schema to search objects. Equals to the current schema in
                      Oracle and search path in Postgres.
+                container:
+                  type:
+                    - string
+                    - "null"
+                  title: container
+                  description: |-
+                    Container is the container name to execute the query against, used for
+                     CosmosDB only.
               title: ExportRequest
               additionalProperties: false
         required: true
@@ -22847,6 +22855,14 @@ components:
           description: |-
             The default schema to search objects. Equals to the current schema in
              Oracle and search path in Postgres.
+        container:
+          type:
+            - string
+            - "null"
+          title: container
+          description: |-
+            Container is the container name to execute the query against, used for
+             CosmosDB only.
       title: ExportRequest
       required:
         - name

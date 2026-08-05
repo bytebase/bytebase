@@ -173,11 +173,12 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 // — by the time the second pass runs the rows would already be masked, and
 // a JIT grant with unmask=true would silently export masked data. See PR
 // #20487 review (RainbowDashy).
-func buildExportQueryContext(restriction *store.EffectiveQueryDataPolicy, userEmail string, schema *string, skipMasking bool) db.QueryContext {
+func buildExportQueryContext(restriction *store.EffectiveQueryDataPolicy, userEmail string, schema *string, container string, skipMasking bool) db.QueryContext {
 	qc := db.QueryContext{
 		Limit:                int(restriction.MaximumResultRows),
 		OperatorEmail:        userEmail,
 		MaximumSQLResultSize: restriction.MaximumResultSize,
+		Container:            container,
 		SkipMasking:          skipMasking,
 	}
 	if restriction.MaxQueryTimeoutInSeconds > 0 {
@@ -1013,7 +1014,11 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	s.createQueryHistory(database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr)
 
 	if exportErr != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.New(exportErr.Error()))
+		var connectErr *connect.Error
+		if errors.As(exportErr, &connectErr) {
+			return nil, exportErr
+		}
+		return nil, connect.NewError(connect.CodeInternal, exportErr)
 	}
 
 	exportResponse := &v1pb.ExportResponse{
@@ -1071,7 +1076,7 @@ func doExport(
 		request.Limit,
 		database.ProjectID,
 	)
-	queryContext := buildExportQueryContext(queryRestriction, user.Email, request.Schema, skipMasking)
+	queryContext := buildExportQueryContext(queryRestriction, user.Email, request.Schema, request.GetContainer(), skipMasking)
 
 	// Split the statement for span analysis
 	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), request.Statement)
