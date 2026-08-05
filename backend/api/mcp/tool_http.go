@@ -261,6 +261,27 @@ func getDelegatedIdentity(ctx context.Context) (auth.DelegatedMCPCredential, boo
 	return identity, ok
 }
 
+// Context key for the session binding: the identity fingerprint the /mcp
+// session is pinned to, plus the bearer's own expiry. Established per request
+// by authMiddleware and read by the SDK session-ownership check.
+type sessionBindingKey struct{}
+
+type sessionBinding struct {
+	fingerprint string
+	expiry      time.Time
+}
+
+// withSessionBinding adds the session binding to the context.
+func withSessionBinding(ctx context.Context, binding sessionBinding) context.Context {
+	return context.WithValue(ctx, sessionBindingKey{}, binding)
+}
+
+// getSessionBinding retrieves the session binding from the context.
+func getSessionBinding(ctx context.Context) (sessionBinding, bool) {
+	binding, ok := ctx.Value(sessionBindingKey{}).(sessionBinding)
+	return binding, ok
+}
+
 // Context key for storing the authenticated user email.
 type userEmailKey struct{}
 

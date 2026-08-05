@@ -32,6 +32,8 @@ func (t *swappingTransport) RoundTrip(req *http.Request) (*http.Response, error)
 	return http.DefaultTransport.RoundTrip(req)
 }
 
+const revalidationSecret = "test-secret-key"
+
 // TestBoundaryRevalidatesEveryRequest pins the invariant the delegated
 // credential rests on: authMiddleware guards the whole /mcp route, so EVERY
 // JSON-RPC POST — not just initialize — re-validates the live bearer before any
@@ -39,7 +41,6 @@ func (t *swappingTransport) RoundTrip(req *http.Request) (*http.Response, error)
 // therefore not a way around token expiry or revocation: a session whose
 // credential has gone bad cannot reach a tool at all.
 func TestBoundaryRevalidatesEveryRequest(t *testing.T) {
-	const secret = "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 
 	newSession := func(t *testing.T) (*mcp.ClientSession, *swappingTransport, *int32, *Server) {
@@ -50,7 +51,7 @@ func TestBoundaryRevalidatesEveryRequest(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, `{}`)
 		})
-		s, err := NewServer(nil, profile, secret, stub)
+		s, err := NewServer(nil, profile, revalidationSecret, stub)
 		require.NoError(t, err)
 
 		e := echo.New()
@@ -58,8 +59,7 @@ func TestBoundaryRevalidatesEveryRequest(t *testing.T) {
 		ts := httptest.NewServer(e)
 		t.Cleanup(ts.Close)
 
-		valid, err := auth.GenerateOAuth2AccessToken("test@example.com", "client-A", "ws-test", "https://bb.example.com/mcp", "mcp:read-only", secret, time.Hour)
-		require.NoError(t, err)
+		valid := mintMCPToken(t, "test@example.com", "client-A", "ws-test", "mcp:read-only", time.Hour)
 		transport := &swappingTransport{}
 		transport.token.Store(&valid)
 
@@ -91,8 +91,7 @@ func TestBoundaryRevalidatesEveryRequest(t *testing.T) {
 		require.NoError(t, callTool(ctx, session))
 		require.Equal(t, int32(1), atomic.LoadInt32(toolHits))
 
-		expired, err := auth.GenerateOAuth2AccessToken("test@example.com", "client-A", "ws-test", "https://bb.example.com/mcp", "mcp:read-only", secret, -time.Minute)
-		require.NoError(t, err)
+		expired := mintMCPToken(t, "test@example.com", "client-A", "ws-test", "mcp:read-only", -time.Minute)
 		transport.token.Store(&expired)
 
 		require.Error(t, callTool(ctx, session),
@@ -116,4 +115,106 @@ func TestBoundaryRevalidatesEveryRequest(t *testing.T) {
 			"a revoked bearer must be refused at the boundary")
 		require.Equal(t, int32(1), atomic.LoadInt32(toolHits))
 	})
+
+	// The session identity is captured at initialize and reused for the whole
+	// session (the SDK gives tool handlers the initialize request's context), so
+	// the boundary admitting a DIFFERENT valid bearer mid-session would run the
+	// internal call under the original principal. Substituting another user's
+	// valid token would then execute as the session's user; substituting a token
+	// for a workspace where MCP is still enabled would sidestep the kill switch
+	// on the session's own workspace. The session must be bound to the identity
+	// it was opened with.
+	t.Run("a different principal's valid bearer cannot take over the session", func(t *testing.T) {
+		session, transport, toolHits, _ := newSession(t)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		require.NoError(t, callTool(ctx, session))
+		require.Equal(t, int32(1), atomic.LoadInt32(toolHits))
+
+		other := mintMCPToken(t, "attacker@example.com", "client-A", "ws-test", "mcp:read-only", time.Hour)
+		transport.token.Store(&other)
+
+		require.Error(t, callTool(ctx, session),
+			"a bearer for a different principal must not drive an established session")
+		require.Equal(t, int32(1), atomic.LoadInt32(toolHits),
+			"no internal call may run under the session's original identity for a substituted bearer")
+	})
+
+	t.Run("a bearer for a different workspace cannot take over the session", func(t *testing.T) {
+		session, transport, toolHits, _ := newSession(t)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		require.NoError(t, callTool(ctx, session))
+
+		otherWorkspace := mintMCPToken(t, "test@example.com", "client-A", "ws-other", "mcp:read-only", time.Hour)
+		transport.token.Store(&otherWorkspace)
+
+		require.Error(t, callTool(ctx, session),
+			"a bearer bound to another workspace must not drive this session")
+		require.Equal(t, int32(1), atomic.LoadInt32(toolHits))
+	})
+
+	t.Run("a different OAuth client cannot take over the session", func(t *testing.T) {
+		session, transport, toolHits, _ := newSession(t)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		require.NoError(t, callTool(ctx, session))
+
+		// Same user, different registered client: a separate grant, so a
+		// separate session.
+		otherClient := mintMCPToken(t, "test@example.com", "client-B", "ws-test", "mcp:read-only", time.Hour)
+		transport.token.Store(&otherClient)
+
+		require.Error(t, callTool(ctx, session),
+			"a bearer issued to another OAuth client must not drive this session")
+		require.Equal(t, int32(1), atomic.LoadInt32(toolHits))
+	})
+
+	t.Run("a narrowed re-consent cannot ride the old session", func(t *testing.T) {
+		session, transport, toolHits, _ := newSession(t)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		require.NoError(t, callTool(ctx, session))
+
+		// Same user, same client: only the consented scope changed. The session
+		// still holds the wider grant state, so it must not keep serving.
+		reconsented := mintMCPToken(t, "test@example.com", "client-A", "ws-test", "mcp:read-write", time.Hour)
+		transport.token.Store(&reconsented)
+
+		require.Error(t, callTool(ctx, session),
+			"a re-consented grant must re-initialize rather than inherit the old session's state")
+		require.Equal(t, int32(1), atomic.LoadInt32(toolHits))
+	})
+
+	// The binding must key on identity, not on the token string: a routine
+	// refresh mints a new token with the same principal, workspace, client,
+	// resource and scope, and must keep working.
+	t.Run("a refreshed bearer for the same identity keeps working", func(t *testing.T) {
+		session, transport, toolHits, _ := newSession(t)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		require.NoError(t, callTool(ctx, session))
+
+		refreshed := mintMCPToken(t, "test@example.com", "client-A", "ws-test", "mcp:read-only", 2*time.Hour)
+		require.NotEqual(t, *transport.token.Load(), refreshed)
+		transport.token.Store(&refreshed)
+
+		require.NoError(t, callTool(ctx, session),
+			"refreshing a token must not break an open session")
+		require.Equal(t, int32(2), atomic.LoadInt32(toolHits))
+	})
+}
+
+// mintMCPToken mints an MCP OAuth2 access token bound to this deployment's
+// canonical resource URI.
+func mintMCPToken(t *testing.T, email, clientID, workspaceID, scope string, ttl time.Duration) string {
+	t.Helper()
+	token, err := auth.GenerateOAuth2AccessToken(email, clientID, workspaceID, "https://bb.example.com/mcp", scope, revalidationSecret, ttl)
+	require.NoError(t, err)
+	return token
 }

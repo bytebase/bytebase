@@ -14,6 +14,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
+	mcpauth "github.com/modelcontextprotocol/go-sdk/auth"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 
@@ -28,7 +29,7 @@ import (
 // Server is the MCP server for Bytebase.
 type Server struct {
 	mcpServer    *mcp.Server
-	httpHandler  *mcp.StreamableHTTPHandler
+	httpHandler  http.Handler
 	store        *store.Store
 	profile      *config.Profile
 	secret       string
@@ -83,9 +84,18 @@ func NewServer(store *store.Store, profile *config.Profile, secret string, inter
 	// the token — not network position — is the security boundary, and the
 	// rebinding threat targets unauthenticated, browser-reached localhost
 	// servers, which Bytebase is not.
-	s.httpHandler = mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
+	streamable := mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
 		return s.mcpServer
 	}, &mcp.StreamableHTTPOptions{DisableLocalhostProtection: true})
+
+	// Pin each session to the identity it was opened with. The SDK captures
+	// TokenInfo.UserID when a session is created and rejects later requests
+	// carrying a different one, but only when a TokenInfo reaches it — and the
+	// context key is settable solely through this middleware. Without it the
+	// check is inert, and since tool handlers run on the initialize request's
+	// context, a substituted-but-valid bearer would be admitted while the tool
+	// executed under the session's original identity.
+	s.httpHandler = mcpauth.RequireBearerToken(s.verifySessionBinding, nil)(streamable)
 
 	return s, nil
 }
@@ -197,6 +207,10 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		ctx = withOAuth2ClientID(ctx, clientID)
 		ctx = withWorkspaceID(ctx, workspaceID)
 		ctx = withDelegatedIdentity(ctx, delegated)
+		ctx = withSessionBinding(ctx, sessionBinding{
+			fingerprint: sessionFingerprint(delegated),
+			expiry:      bearerExpiry(claims),
+		})
 		c.SetRequest(c.Request().WithContext(ctx))
 
 		return next(c)
@@ -300,6 +314,58 @@ func (s *Server) expectedMCPAudience(ctx context.Context, workspaceID string) (s
 		return "", err
 	}
 	return externalURL + mcpResourcePath, nil
+}
+
+// sessionFingerprint is the identity a /mcp session is pinned to for its whole
+// life. Two bearers may drive the same session only if they agree on every
+// field: principal, workspace, OAuth client, and the grant's stored resource
+// and scope.
+//
+// Substituting any of them is a different session: another user's token would
+// otherwise execute as the session's principal, a token for another workspace
+// would sidestep the kill switch on the session's own workspace, and a
+// re-consented grant would keep riding the state consented earlier. The
+// correlation ID is deliberately excluded — it is per request, not per session.
+//
+// The separator cannot appear in any component, so distinct identities cannot
+// collide by concatenation.
+func sessionFingerprint(identity auth.DelegatedMCPCredential) string {
+	return strings.Join([]string{
+		identity.Principal,
+		identity.WorkspaceID,
+		identity.ClientID,
+		identity.Resource,
+		identity.Scope,
+	}, "\x00")
+}
+
+// bearerExpiry reads the inbound token's expiry. The JWT parse upstream has
+// already rejected expired and malformed tokens, so this only re-surfaces the
+// value for the SDK, which requires a non-zero future expiration.
+func bearerExpiry(claims jwt.MapClaims) time.Time {
+	exp, err := claims.GetExpirationTime()
+	if err != nil || exp == nil {
+		return time.Time{}
+	}
+	return exp.Time
+}
+
+// verifySessionBinding hands the SDK the identity behind the current request so
+// it can enforce session ownership. The bearer itself was already validated by
+// authMiddleware, which runs first and puts the resolved identity on the
+// request context; this only translates that into the SDK's shape.
+func (*Server) verifySessionBinding(_ context.Context, _ string, req *http.Request) (*mcpauth.TokenInfo, error) {
+	binding, ok := getSessionBinding(req.Context())
+	if !ok {
+		// Unreachable through the registered route: authMiddleware establishes
+		// the binding before this runs. Fail closed rather than leave a session
+		// unpinned if that ever stops being true.
+		return nil, mcpauth.ErrInvalidToken
+	}
+	return &mcpauth.TokenInfo{
+		UserID:     binding.fingerprint,
+		Expiration: binding.expiry,
+	}, nil
 }
 
 // tokenIdentity is the identity material authMiddleware works with after a
