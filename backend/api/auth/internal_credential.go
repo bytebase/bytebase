@@ -92,6 +92,29 @@ func generateInternalMCPTokenWithExpiry(cred DelegatedMCPCredential, secret stri
 	return token.SignedString(internalMCPSigningKey(secret))
 }
 
+// IsMCPOriginatedToken reports whether a bearer identifies MCP-originated
+// traffic — either an external MCP OAuth2 token or the delegated credential
+// minted at the /mcp boundary for the internal transport.
+//
+// Guards that must not serve MCP sessions have to ask this rather than
+// inspecting the audience: since P1a PR 3 the external token's audience is a
+// per-deployment resource URI (so token_use is the recognizer), and since PR 4
+// tool traffic presents the delegated credential instead, which is signed with
+// a derived key and therefore invisible to ExtractClaimsFromExpiredToken.
+func IsMCPOriginatedToken(tokenStr, secret string) bool {
+	if tokenStr == "" {
+		return false
+	}
+	if _, err := VerifyInternalMCPToken(tokenStr, secret); err == nil {
+		return true
+	}
+	claims, err := ExtractClaimsFromExpiredToken(tokenStr, secret)
+	if err != nil {
+		return false
+	}
+	return claims.TokenUse == TokenUseMCP || audienceContains(claims.Audience, OAuth2AccessTokenAudience)
+}
+
 // VerifyInternalMCPToken validates a delegated credential and returns its
 // claims. It accepts ONLY the internal credential: the dedicated kid selects
 // the derived key (so tokens signed with the raw secret fail), and audience and

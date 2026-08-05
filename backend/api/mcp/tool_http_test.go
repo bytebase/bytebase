@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/component/config"
 )
 
@@ -30,26 +32,39 @@ func newTestServerWithMock(t *testing.T, handler http.Handler) *Server {
 // bearer string must not appear anywhere in the request.
 func TestApiRequest_DelegatedCredentialReplacesInboundBearer(t *testing.T) {
 	const inboundBearer = "inbound-public-bearer-token"
-	const delegated = "minted-delegated-credential"
 	var capturedAuth string
+	var capturedHeaders http.Header
 	s := newTestServerWithMock(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedAuth = r.Header.Get("Authorization")
-		for name, values := range r.Header {
-			for _, v := range values {
-				require.NotContains(t, v, inboundBearer,
-					"inbound bearer leaked into internal request header %s", name)
-			}
-		}
+		capturedHeaders = r.Header.Clone()
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{}`)
 	}))
 
+	s.secret = "test-secret-key"
 	ctx := withAccessToken(context.Background(), inboundBearer)
-	ctx = withDelegatedCredential(ctx, delegated)
+	ctx = withDelegatedIdentity(ctx, auth.DelegatedMCPCredential{
+		Principal:     "test@example.com",
+		WorkspaceID:   "ws-test",
+		CorrelationID: "corr-1",
+	})
 	resp, err := s.apiRequest(ctx, "/api/test", nil)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.Status)
-	require.Equal(t, "Bearer "+delegated, capturedAuth)
+
+	// Assert on the test goroutine: the handler ran on the transport's.
+	for name, values := range capturedHeaders {
+		for _, v := range values {
+			require.NotContains(t, v, inboundBearer,
+				"inbound bearer leaked into internal request header %s", name)
+		}
+	}
+
+	credential := strings.TrimPrefix(capturedAuth, "Bearer ")
+	require.NotEqual(t, capturedAuth, credential, "internal requests must carry a bearer credential")
+	cred, err := auth.VerifyInternalMCPToken(credential, s.secret)
+	require.NoError(t, err)
+	require.Equal(t, "test@example.com", cred.Principal)
 }
 
 // TestApiRequest_InMemoryDispatch pins the transport shape: the request

@@ -1194,14 +1194,6 @@ func (s *AuthService) resolveWorkspaceForLogin(ctx context.Context, user *store.
 	}
 }
 
-// isMCPBoundToken reports whether extracted claims identify an MCP OAuth2
-// access token: the current generation by its token_use claim (the audience is
-// a per-deployment resource URI, so it cannot be matched by value here), the
-// pre-3.23 generation by the fixed legacy audience.
-func isMCPBoundToken(claims *auth.ExpiredTokenClaims) bool {
-	return claims.TokenUse == auth.TokenUseMCP || slices.Contains(claims.Audience, auth.OAuth2AccessTokenAudience)
-}
-
 // SwitchWorkspace switches the current user's active workspace and issues new tokens.
 func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[v1pb.SwitchWorkspaceRequest]) (*connect.Response[v1pb.LoginResponse], error) {
 	request := req.Msg
@@ -1222,14 +1214,15 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only end users can switch workspaces"))
 	}
 
-	// Reject OAuth2 tokens — they are bound to a specific workspace via the OAuth client
-	// and must not be used to mint plain user tokens for other workspaces.
+	// Reject MCP-originated calls — an MCP session is bound to a specific
+	// workspace via the OAuth grant and must not be able to mint plain user
+	// tokens, for its own workspace or any other. Since P1a PR 4 tool traffic
+	// arrives on the internal transport carrying the delegated credential, so
+	// this asks auth (which recognizes both that credential and an external MCP
+	// token) rather than extracting claims itself.
 	accessTokenStr, _ := auth.GetTokenFromHeaders(req.Header())
-	if accessTokenStr != "" {
-		tokenClaims, err := auth.ExtractClaimsFromExpiredToken(accessTokenStr, s.secret)
-		if err == nil && isMCPBoundToken(tokenClaims) {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.New("OAuth2 tokens cannot be used to switch workspaces"))
-		}
+	if auth.IsMCPOriginatedToken(accessTokenStr, s.secret) {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("OAuth2 tokens cannot be used to switch workspaces"))
 	}
 
 	// Verify the user is a member of the target workspace.

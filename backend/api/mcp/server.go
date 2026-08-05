@@ -173,24 +173,21 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusForbidden, "MCP access is disabled for this workspace by policy")
 		}
 
-		// Mint the delegated credential that carries this request's identity and
-		// grant state onto the private in-memory transport. The inbound bearer
-		// stops at this boundary: internal API requests authenticate with the
-		// credential, never the bearer. Grant state is copied verbatim from the
-		// inbound token — empty for legacy sessions (PR 5 assigns their
-		// synthetic LEGACY_FULL semantics). Identity only, no roles: downstream
-		// authorization re-resolves live exactly as for a public request.
-		credential, err := auth.GenerateInternalMCPToken(auth.DelegatedMCPCredential{
+		// Establish the delegated identity that carries this request's principal
+		// and grant state onto the private in-memory transport. The inbound
+		// bearer stops at this boundary: internal API requests mint their own
+		// credential from this identity and never see the bearer. Grant state is
+		// copied verbatim from the inbound token — empty for legacy sessions (PR
+		// 5 assigns their synthetic LEGACY_FULL semantics). Identity only, no
+		// roles: downstream authorization re-resolves live exactly as for a
+		// public request.
+		delegated := auth.DelegatedMCPCredential{
 			Principal:     sub,
 			WorkspaceID:   workspaceID,
 			ClientID:      clientID,
 			CorrelationID: uuid.NewString(),
 			Scope:         grantScope(claims),
 			Resource:      grantResource(claims, aud),
-		}, s.secret)
-		if err != nil {
-			slog.Error("failed to mint the delegated MCP credential", log.BBError(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to establish the internal credential")
 		}
 
 		// Store access token and workspace ID in request context for MCP tools.
@@ -199,7 +196,7 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		ctx = withUserEmail(ctx, sub)
 		ctx = withOAuth2ClientID(ctx, clientID)
 		ctx = withWorkspaceID(ctx, workspaceID)
-		ctx = withDelegatedCredential(ctx, credential)
+		ctx = withDelegatedIdentity(ctx, delegated)
 		c.SetRequest(c.Request().WithContext(ctx))
 
 		return next(c)
@@ -353,6 +350,14 @@ func grantScope(claims jwt.MapClaims) string {
 // For MCP OAuth2 tokens the resource-bound audience IS the stored resource
 // (PR 3 mints it from the grant verbatim). The legacy fixed audiences are not
 // resources, so legacy tokens yield empty grant state.
+//
+// Resource is therefore what distinguishes the two kinds of empty scope, and PR
+// 5 must key on it: a token minted by a PR-3-era replica during the upgrade
+// window is resource-bound but predates the scope claim, so it arrives with a
+// resource and no scope even though its grant DID record a consented scope.
+// Treating that as the synthetic LEGACY_FULL grant would silently widen a
+// read-only session to workspace admin. Genuinely pre-grant sessions carry
+// neither.
 func grantResource(claims jwt.MapClaims, aud any) string {
 	tokenUse, ok := claims["token_use"].(string)
 	if !ok || tokenUse != auth.TokenUseMCP {

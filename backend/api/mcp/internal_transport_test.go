@@ -1,12 +1,15 @@
 package mcp
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/require"
 
@@ -16,7 +19,8 @@ import (
 )
 
 // runAuthMiddleware pushes one authenticated request through authMiddleware and
-// returns the delegated credential the next handler observed in context.
+// returns a credential minted from the delegated identity the next handler
+// observed in context — the same thing apiRequest does on every internal call.
 func runAuthMiddleware(t *testing.T, s *Server, bearer string) (credential string, status int) {
 	t.Helper()
 	e := echo.New()
@@ -27,7 +31,12 @@ func runAuthMiddleware(t *testing.T, s *Server, bearer string) (credential strin
 	c := e.NewContext(req, rec)
 
 	handler := s.authMiddleware(func(c *echo.Context) error {
-		credential = getDelegatedCredential(c.Request().Context())
+		identity, ok := getDelegatedIdentity(c.Request().Context())
+		if ok {
+			minted, err := auth.GenerateInternalMCPToken(identity, s.secret)
+			require.NoError(t, err)
+			credential = minted
+		}
 		return c.String(http.StatusOK, "success")
 	})
 	if err := handler(c); err != nil {
@@ -101,6 +110,60 @@ func TestMCPAuthMiddlewareLegacySessionEmptyGrantState(t *testing.T) {
 			require.Empty(t, cred.Resource, "a legacy fixed audience is not a grant resource")
 			require.NotEmpty(t, cred.CorrelationID)
 		})
+	}
+}
+
+// TestApiRequestMintsCredentialPerCall is the session-lifetime pin. The MCP SDK
+// hands every tool handler the context of the request that CREATED the session
+// (go-sdk v1.6.1 streamable.go: server.Connect(req.Context(), ...)), so anything
+// the boundary stashes in that context is frozen at session start. A credential
+// minted there would carry a fixed expiry and brick every tool call once its
+// short TTL elapsed — while the session stays open, since /mcp never re-runs
+// the middleware for it. Minting inside apiRequest instead keeps the TTL
+// genuinely request-scale: each internal call gets a freshly minted credential.
+func TestApiRequestMintsCredentialPerCall(t *testing.T) {
+	const secret = "test-secret-key"
+	var credentials []string
+	s := newTestServerWithMock(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		credentials = append(credentials, strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{}`)
+	}))
+	s.secret = secret
+
+	// The context a tool handler sees: the session's, established once.
+	ctx := withDelegatedIdentity(context.Background(), auth.DelegatedMCPCredential{
+		Principal:     "test@example.com",
+		WorkspaceID:   "ws-test",
+		CorrelationID: "corr-1",
+	})
+
+	_, err := s.apiRequest(ctx, "/api/test", nil)
+	require.NoError(t, err)
+	// JWT expiry has one-second resolution, so separate the calls enough that a
+	// call-time mint is observably later than a session-time one.
+	time.Sleep(1100 * time.Millisecond)
+	_, err = s.apiRequest(ctx, "/api/test", nil)
+	require.NoError(t, err)
+
+	require.Len(t, credentials, 2)
+	first, _, err := jwt.NewParser().ParseUnverified(credentials[0], jwt.MapClaims{})
+	require.NoError(t, err)
+	second, _, err := jwt.NewParser().ParseUnverified(credentials[1], jwt.MapClaims{})
+	require.NoError(t, err)
+	firstExp, err := first.Claims.GetExpirationTime()
+	require.NoError(t, err)
+	secondExp, err := second.Claims.GetExpirationTime()
+	require.NoError(t, err)
+	require.True(t, secondExp.After(firstExp.Time),
+		"each internal call must mint a fresh credential; a session-frozen one expires mid-session")
+
+	// Both must still be valid credentials carrying the session's identity.
+	for _, credential := range credentials {
+		cred, err := auth.VerifyInternalMCPToken(credential, secret)
+		require.NoError(t, err)
+		require.Equal(t, "test@example.com", cred.Principal)
+		require.Equal(t, "corr-1", cred.CorrelationID, "the boundary's correlation ID travels on every call")
 	}
 }
 

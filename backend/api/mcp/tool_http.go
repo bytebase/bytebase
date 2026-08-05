@@ -6,10 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/stacktrace"
 )
 
 // apiResponse holds the HTTP response from an internal API call.
@@ -22,6 +27,9 @@ type apiResponse struct {
 // internalAPIBaseURL is the nominal URL of the internal API handler chain. The
 // in-memory transport never dials it — it exists only to satisfy http.Request.
 const internalAPIBaseURL = "https://mcp-internal.bytebase.invalid"
+
+// internalAPIUserAgent identifies MCP-originated calls in audit records.
+const internalAPIUserAgent = "bytebase-mcp/internal"
 
 // apiRequest executes a Connect-RPC POST against the internal API handler
 // chain. Requests ride the private in-memory transport and authenticate with
@@ -52,8 +60,19 @@ func (s *Server) apiRequest(ctx context.Context, path string, body any) (*apiRes
 
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Connect-Protocol-Version", "1")
+	// The in-memory transport adds no User-Agent of its own (net/http writes one
+	// only when marshaling to the wire), and the audit interceptor records the
+	// header. Name the surface explicitly rather than let audit rows for MCP
+	// actions go blank.
+	httpReq.Header.Set("User-Agent", internalAPIUserAgent)
 
-	if credential := getDelegatedCredential(ctx); credential != "" {
+	// Mint the credential for this call. Per call, not per session: see
+	// delegatedIdentityKey.
+	if identity, ok := getDelegatedIdentity(ctx); ok {
+		credential, err := auth.GenerateInternalMCPToken(identity, s.secret)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to mint the delegated credential")
+		}
 		httpReq.Header.Set("Authorization", "Bearer "+credential)
 	}
 
@@ -99,20 +118,40 @@ func (t *internalRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	if t.handler == nil {
 		return nil, errors.New("internal MCP API transport is not configured")
 	}
+	if req.Body != nil {
+		defer req.Body.Close()
+	}
 	rec := &responseRecorder{header: make(http.Header), status: http.StatusOK}
 	// Serve on a goroutine so cancellation aborts the call like a dropped
 	// connection would on a real transport. An abandoned handler keeps running
 	// until it observes req.Context() itself — the same semantics a server
 	// gives a disconnected client — and nothing reads its recorder afterwards.
+	//
+	// Recover here as well: on a real listener net/http contains a panic that
+	// escapes the handler, and the retired loopback transport had echo's
+	// recover middleware on top of that. Without this, such a panic would take
+	// the process down. connect's own WithRecover handles panics inside the
+	// RPC; this covers everything outside it (routing, unknown paths).
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
+		defer func() {
+			if p := recover(); p != nil {
+				stack := stacktrace.TakeStacktrace(20 /* n */, 3 /* skip */)
+				slog.Error("internal MCP transport panic", "path", req.URL.Path,
+					log.BBError(errors.Errorf("error: %v\n%s", p, stack)))
+				rec.panicked = true
+			}
+		}()
 		t.handler.ServeHTTP(rec, req)
 	}()
 	select {
 	case <-req.Context().Done():
 		return nil, req.Context().Err()
 	case <-done:
+	}
+	if rec.panicked {
+		return nil, errors.New("internal API request panicked")
 	}
 	return &http.Response{
 		StatusCode:    rec.status,
@@ -135,6 +174,7 @@ type responseRecorder struct {
 	body        bytes.Buffer
 	status      int
 	wroteHeader bool
+	panicked    bool
 }
 
 func (r *responseRecorder) Header() http.Header {
@@ -199,22 +239,26 @@ func getAccessToken(ctx context.Context) string {
 	return ""
 }
 
-// Context key for storing the delegated credential minted at the /mcp
-// boundary. This — never the inbound access token — is what internal API
-// requests authenticate with.
-type delegatedCredentialKey struct{}
+// Context key for the delegated identity established at the /mcp boundary.
+// Internal API requests mint their credential from this — never from the
+// inbound access token, which stops at the boundary.
+//
+// The context carries the identity, not a minted credential, because the MCP
+// SDK hands every tool handler the context of the request that CREATED the
+// session. A credential minted at the boundary would therefore be frozen at
+// session start, and its request-scale TTL would expire mid-session while the
+// session stayed open.
+type delegatedIdentityKey struct{}
 
-// withDelegatedCredential adds the delegated credential to the context.
-func withDelegatedCredential(ctx context.Context, credential string) context.Context {
-	return context.WithValue(ctx, delegatedCredentialKey{}, credential)
+// withDelegatedIdentity adds the delegated identity to the context.
+func withDelegatedIdentity(ctx context.Context, identity auth.DelegatedMCPCredential) context.Context {
+	return context.WithValue(ctx, delegatedIdentityKey{}, identity)
 }
 
-// getDelegatedCredential retrieves the delegated credential from the context.
-func getDelegatedCredential(ctx context.Context) string {
-	if credential, ok := ctx.Value(delegatedCredentialKey{}).(string); ok {
-		return credential
-	}
-	return ""
+// getDelegatedIdentity retrieves the delegated identity from the context.
+func getDelegatedIdentity(ctx context.Context) (auth.DelegatedMCPCredential, bool) {
+	identity, ok := ctx.Value(delegatedIdentityKey{}).(auth.DelegatedMCPCredential)
+	return identity, ok
 }
 
 // Context key for storing the authenticated user email.
