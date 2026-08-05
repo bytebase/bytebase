@@ -288,6 +288,7 @@ export function BatchQuerySelect({
               admin: tab?.mode === "ADMIN",
               password: options.password,
               schema: context.params.connection.schema,
+              container: context.params.connection.table,
             })
           );
           contents.push({

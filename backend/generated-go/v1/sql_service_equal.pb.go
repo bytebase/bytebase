@@ -500,6 +500,9 @@ func (x *ExportRequest) Equal(y *ExportRequest) bool {
 	if p, q := x.Schema, y.Schema; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}
+	if p, q := x.Container, y.Container; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
 	return true
 }
 
