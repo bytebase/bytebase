@@ -50,7 +50,7 @@ func TestIsMCPBoundToken(t *testing.T) {
 	const secret = "test-secret"
 
 	t.Run("current MCP token is caught via token_use", func(t *testing.T) {
-		tokenStr, err := auth.GenerateOAuth2AccessToken("demo@example.com", "client-A", "ws-test", "https://bb.example.com/mcp", secret, time.Hour)
+		tokenStr, err := auth.GenerateOAuth2AccessToken("demo@example.com", "client-A", "ws-test", "https://bb.example.com/mcp", "", secret, time.Hour)
 		require.NoError(t, err)
 		claims, err := auth.ExtractClaimsFromExpiredToken(tokenStr, secret)
 		require.NoError(t, err)

@@ -244,40 +244,52 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, 
 			slog.String("audience", strings.Join(claims.Audience, ",")))
 	}
 
-	account, err := in.store.GetAccountByEmail(ctx, claims.Subject)
+	user, err := resolvePrincipal(ctx, in.store, in.profile, claims.Subject, claims.WorkspaceID)
 	if err != nil {
-		return nil, nil, errs.Errorf("failed to find principal %q in the access token", claims.Subject)
+		return nil, nil, err
+	}
+	return user, claims, nil
+}
+
+// resolvePrincipal turns a verified token's identity claims into a live user:
+// account lookup, deactivation check, workspace-membership verification, and
+// principal resolution. Shared by the public interceptor and the internal MCP
+// interceptor so both surfaces re-resolve identity state identically on every
+// request — a credential is never trusted for anything beyond who and where.
+func resolvePrincipal(ctx context.Context, stores *store.Store, profile *config.Profile, subject, workspaceID string) (*store.UserMessage, error) {
+	account, err := stores.GetAccountByEmail(ctx, subject)
+	if err != nil {
+		return nil, errs.Errorf("failed to find principal %q in the access token", subject)
 	}
 	if account == nil {
-		return nil, nil, errs.Errorf("principal %q not exists in the access token", claims.Subject)
+		return nil, errs.Errorf("principal %q not exists in the access token", subject)
 	}
 	if account.MemberDeleted {
-		return nil, nil, errs.Errorf("principal %q has been deactivated by administrators", account.Email)
+		return nil, errs.Errorf("principal %q has been deactivated by administrators", account.Email)
 	}
 
 	// Verify workspace membership.
 	// We always require workspace_id in the claims even for non-SaaS (single workspace) mode
-	if claims.WorkspaceID == "" {
-		return nil, nil, errs.New("empty workspace in the token")
+	if workspaceID == "" {
+		return nil, errs.New("empty workspace in the token")
 	}
-	if err := in.verifyWorkspaceMembership(ctx, claims.WorkspaceID, account); err != nil {
-		return nil, nil, err
+	if err := verifyWorkspaceMembership(ctx, stores, profile, workspaceID, account); err != nil {
+		return nil, err
 	}
 
 	// Convert to UserMessage for context storage.
-	user, err := in.store.ResolvePrincipalAsUser(ctx, account)
+	user, err := stores.ResolvePrincipalAsUser(ctx, account)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if user == nil {
-		return nil, nil, errs.Errorf("user %q not found", account.Email)
+		return nil, errs.Errorf("user %q not found", account.Email)
 	}
-
-	return user, claims, nil
+	return user, nil
 }
 
 // verifyWorkspaceMembership checks that the account is a member of the workspace.
-func (in *APIAuthInterceptor) verifyWorkspaceMembership(ctx context.Context, workspaceID string, account *store.AccountMessage) error {
+func verifyWorkspaceMembership(ctx context.Context, stores *store.Store, profile *config.Profile, workspaceID string, account *store.AccountMessage) error {
 	switch account.Type {
 	case storepb.PrincipalType_SERVICE_ACCOUNT, storepb.PrincipalType_WORKLOAD_IDENTITY:
 		// Service accounts and workload identities have workspace on their record.
@@ -289,7 +301,7 @@ func (in *APIAuthInterceptor) verifyWorkspaceMembership(ctx context.Context, wor
 	case storepb.PrincipalType_END_USER:
 		// END_USER membership is verified via workspace IAM policy.
 		// Check direct membership, group membership, and allUsers.
-		iamPolicy, err := in.store.GetWorkspaceIamPolicy(ctx, workspaceID)
+		iamPolicy, err := stores.GetWorkspaceIamPolicy(ctx, workspaceID)
 		if err != nil {
 			return errs.Wrap(err, "failed to get workspace IAM policy")
 		}
@@ -299,12 +311,12 @@ func (in *APIAuthInterceptor) verifyWorkspaceMembership(ctx context.Context, wor
 				if member == userMember {
 					return nil
 				}
-				if member == common.AllUsers && !in.profile.SaaS {
+				if member == common.AllUsers && !profile.SaaS {
 					return nil
 				}
 				// Check group membership.
 				if strings.HasPrefix(member, common.GroupPrefix) {
-					groupMembers, _ := in.store.GetGroupMembersSnapshot(ctx, workspaceID, member)
+					groupMembers, _ := stores.GetGroupMembersSnapshot(ctx, workspaceID, member)
 					if groupMembers != nil && groupMembers[userMember] {
 						return nil
 					}

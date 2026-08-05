@@ -431,7 +431,7 @@ func (s *Service) issueTokens(c *echo.Context, client *store.OAuth2ClientMessage
 	// downstream APIs (gRPC services, MCP middleware) use to scope requests.
 	// The audience is the grant's stored canonical resource, so the token is
 	// only accepted at the /mcp endpoint the user consented to.
-	accessToken, err := auth.GenerateOAuth2AccessToken(grant.userEmail, client.ClientID, grant.workspaceID, grant.resource, s.secret, accessTokenExpiry)
+	accessToken, err := auth.GenerateOAuth2AccessToken(grant.userEmail, client.ClientID, grant.workspaceID, grant.resource, grant.scope, s.secret, accessTokenExpiry)
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", fmt.Sprintf("failed to generate access token with error: %v", err))
 	}
