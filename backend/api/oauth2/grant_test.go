@@ -495,7 +495,7 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 			"client_id":     {testClientID},
 		})
 
-		require.NotEqual(t, http.StatusUnauthorized, mcpStatus(t, st, "https://bb.example.com", got.AccessToken),
+		require.Equal(t, http.StatusOK, mcpStatus(t, st, "https://bb.example.com", got.AccessToken),
 			"the same token must keep working at /mcp")
 
 		interceptor := auth.New(st, testSecret, nil, nil, &config.Profile{})

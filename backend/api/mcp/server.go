@@ -495,14 +495,11 @@ func grantScope(claims jwt.MapClaims) string {
 // (PR 3 mints it from the grant verbatim). The legacy fixed audiences are not
 // resources, so legacy tokens yield empty grant state.
 //
-// Resource is therefore what distinguishes the two kinds of empty scope, and
-// common.DelegatedGrant — where PR 5 carries it verbatim — documents why: a
-// token minted by a PR-3-era replica during the upgrade window is
-// resource-bound but predates the scope claim, so it arrives with a resource
-// and no scope even though its grant DID record a consented scope. Collapsing
-// that into the pre-grant case would silently widen a read-only session to
-// full legacy semantics when P1b enforces. Genuinely pre-grant sessions carry
-// neither.
+// Resource is therefore what distinguishes a grant-backed session with an
+// empty scope (a scope-less consent, or a PR-3-era token predating the scope
+// claim) from a genuinely pre-grant one, which carries neither.
+// common.DelegatedGrant — where PR 5 carries both values verbatim — documents
+// why the two must never collapse.
 func grantResource(claims jwt.MapClaims, aud any) string {
 	tokenUse, ok := claims["token_use"].(string)
 	if !ok || tokenUse != auth.TokenUseMCP {

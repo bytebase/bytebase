@@ -96,17 +96,19 @@ type Resource struct {
 //   - Scope and Resource both empty: a genuinely pre-grant legacy session — a
 //     plain web-session token at /mcp, or an OAuth2 token from before grants
 //     recorded scope and resource.
-//   - Scope empty, Resource present: a token minted by a PR-3-era replica
-//     during a rolling upgrade. Its grant DID record a consented scope — the
-//     claim just predates the credential carrying it — so it must never be
-//     collapsed into the pre-grant case: that would widen a consented
-//     read-only session to full legacy semantics for up to one access-token
-//     lifetime. P1b resolves this state most-restrictively.
+//   - Scope empty, Resource present: a grant that recorded no scope. Two
+//     indistinguishable origins: a client that omitted `scope` at consent — a
+//     permanent, steady-state population — or, transiently, a token minted by
+//     a PR-3-era replica during a rolling upgrade, whose grant DID record a
+//     consented scope that the claim predates. Neither may be collapsed into
+//     the pre-grant case: that could widen a consented read-only session to
+//     full legacy semantics. P1b resolves this state most-restrictively.
 //
-// No store lookup recovers the missing scope, deliberately: the refresh-token
-// row holding it is keyed by (client_id, token_hash) and the credential
-// carries no token hash, the population self-drains within one access-token
-// lifetime of the upgrade, and nothing enforces on the value yet.
+// No store lookup recovers a missing scope, deliberately: the steady-state
+// population has nothing to recover (the grant stored none), the transient
+// one self-drains within an access-token lifetime and its refresh-token row
+// is keyed by a (client_id, token_hash) the credential does not carry, and
+// nothing enforces on the value yet.
 type DelegatedGrant struct {
 	// Scope is the consented permission-set name (e.g. "mcp:read-only");
 	// empty in the two states above.

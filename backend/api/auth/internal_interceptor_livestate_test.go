@@ -122,12 +122,13 @@ func TestInternalInterceptorPopulatesDelegatedGrant(t *testing.T) {
 			},
 		},
 		{
-			// The rolling-upgrade state: a PR-3-era token is resource-bound but
-			// predates the scope claim. Its grant DID record a consented scope,
-			// so the populated resource is what keeps it distinguishable from
-			// the genuinely pre-grant row above — collapsing the two would
-			// widen a consented read-only session to full legacy semantics.
-			name: "migration-window token: resource present, scope empty",
+			// A grant that recorded no scope: a scope-less consent (permanent
+			// population) or a PR-3-era mint during a rolling upgrade
+			// (transient, and its grant DID record a scope). The populated
+			// resource is what keeps it distinguishable from the genuinely
+			// pre-grant row above — collapsing the two could widen a consented
+			// read-only session to full legacy semantics.
+			name: "grant-backed token: resource present, scope empty",
 			cred: DelegatedMCPCredential{
 				Principal:     liveUserEmail,
 				WorkspaceID:   liveWorkspace,

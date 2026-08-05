@@ -122,13 +122,24 @@ func TestMCPTokenIsRejectedOnGeneralAPI(t *testing.T) {
 	a.NoError(err)
 	defer session.Close()
 
+	// call_api reports internal-API failures in its structured output (it never
+	// sets IsError), so the assertion that tool calls keep working must be on
+	// the status the internal chain actually returned.
 	callTool := func() {
 		result, err := session.CallTool(ctx, &mcp.CallToolParams{
 			Name:      "call_api",
 			Arguments: map[string]any{"operationId": "ProjectService/ListProjects"},
 		})
 		a.NoError(err)
-		a.False(result.IsError, "tool calls must keep working for an MCP-audience token: %v", result.Content)
+		raw, err := json.Marshal(result.StructuredContent)
+		a.NoError(err)
+		var out struct {
+			Status int    `json:"status"`
+			Error  string `json:"error"`
+		}
+		a.NoError(json.Unmarshal(raw, &out))
+		a.Equal(http.StatusOK, out.Status,
+			"tool calls must keep working for an MCP-audience token: %s", out.Error)
 	}
 	callTool()
 
