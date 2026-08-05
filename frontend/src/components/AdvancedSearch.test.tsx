@@ -107,4 +107,66 @@ describe("AdvancedSearch", () => {
       HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
     }
   });
+
+  test("renders selected scope values with fixed height and centered custom content", () => {
+    render(
+      <AdvancedSearch
+        params={{
+          query: "",
+          scopes: [
+            { id: "project", value: "unassigned" },
+            { id: "engine", value: "COSMOSDB" },
+          ],
+        }}
+        scopeOptions={[
+          {
+            id: "project",
+            title: "Project",
+            options: [
+              {
+                value: "unassigned",
+                keywords: ["unassigned"],
+                custom: true,
+                render: () => <i>Unassigned</i>,
+              },
+            ],
+          },
+          {
+            id: "engine",
+            title: "Engine",
+            options: [
+              {
+                value: "COSMOSDB",
+                keywords: ["cosmosdb"],
+                custom: true,
+                render: () => (
+                  <span>
+                    <span aria-hidden>🛸</span>
+                    CosmosDB
+                  </span>
+                ),
+              },
+            ],
+          },
+        ]}
+        onParamsChange={vi.fn()}
+      />
+    );
+
+    const projectTag = document.querySelector(
+      '[data-search-scope-id="project"]'
+    );
+    const engineTag = document.querySelector(
+      '[data-search-scope-id="engine"]'
+    );
+    expect(projectTag?.className).toContain("h-6");
+    expect(engineTag?.className).toContain("h-6");
+
+    const projectValue = projectTag?.children.item(1);
+    const engineValue = engineTag?.children.item(1);
+    expect(projectValue?.className).toContain("inline-flex");
+    expect(projectValue?.className).toContain("items-center");
+    expect(engineValue?.className).toContain("inline-flex");
+    expect(engineValue?.className).toContain("items-center");
+  });
 });

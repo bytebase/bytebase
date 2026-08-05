@@ -43,11 +43,20 @@ const mocks = vi.hoisted(() => ({
   batchSyncDatabases: vi.fn(),
   batchUpdateDatabases: vi.fn(),
   pushNotification: vi.fn(),
+  routerPush: vi.fn(),
 }));
 
 vi.mock("react-router", () => ({
   useLocation: () => mocks.location,
   useNavigate: () => mocks.navigate,
+}));
+
+vi.mock("@/app/router", () => ({
+  PROJECT_V1_ROUTE_DATABASES: "workspace.project.database",
+  router: {
+    beforeEach: () => () => {},
+    push: mocks.routerPush,
+  },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -100,11 +109,16 @@ vi.mock("@/stores", () => ({
 }));
 
 vi.mock("@/utils", () => ({
+  extractDatabaseResourceName: (name: string) => {
+    const [, instanceName, , databaseName] = name.split("/");
+    return { instanceName, databaseName };
+  },
   extractInstanceResourceName: (name: string) => name.split("/").pop() ?? "",
   extractProjectResourceName: (name: string) => name.split("/").pop() ?? "",
   getDefaultPagination: () => 10,
   hasWorkspacePermissionV2: () => true,
   instanceV1Name: (instance: Instance) => instance.title,
+  isNullOrUndefined: (value: unknown) => value === null || value === undefined,
   isValidDatabaseName: (name: string) =>
     /^instances\/[^/]+\/databases\/[^/]+$/.test(name),
   setDocumentTitle: vi.fn(),
@@ -168,7 +182,24 @@ vi.mock("@/components/database", () => ({
     );
   },
   LabelEditorSheet: () => null,
-  TransferProjectSheet: () => null,
+  TransferProjectSheet: ({
+    open,
+    onTransfer,
+  }: {
+    open: boolean;
+    onTransfer: (projectName: string) => Promise<void>;
+  }) =>
+    open ? (
+      <button
+        type="button"
+        data-testid="transfer-project-sheet"
+        onClick={() => {
+          void onTransfer("projects/app");
+        }}
+      >
+        transfer
+      </button>
+    ) : null,
 }));
 
 vi.mock("@/lib/productIntro", () => ({
@@ -260,5 +291,39 @@ describe("InstanceDetailPage", () => {
         .querySelector("[data-selection-column-intro-target]")
         ?.getAttribute("data-selection-column-intro-target")
     ).toBe("prepare-database");
+  });
+
+  it("redirects to the target project databases page after transferring from the instance database list", async () => {
+    mocks.projects = [
+      { name: "projects/default" },
+      { name: "projects/app" },
+    ] as Project[];
+
+    await render(<InstanceDetailPage instanceId="prod" />);
+
+    const transferSyncedButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) =>
+      button.textContent?.includes("db.instance-databases-synced-action")
+    ) as HTMLButtonElement;
+    await act(async () => {
+      transferSyncedButton.click();
+      await Promise.resolve();
+    });
+
+    const transferSheet = container.querySelector(
+      '[data-testid="transfer-project-sheet"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      transferSheet.click();
+      await Promise.resolve();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.project.database",
+      params: {
+        projectId: "app",
+      },
+    });
   });
 });

@@ -28,7 +28,6 @@ import {
   getDefaultPagination,
   getSheetStatement,
   isWorksheetReadableV1,
-  storageKeySqlEditorWorksheetFilter,
   storageKeySqlEditorWorksheetFolder,
   storageKeySqlEditorWorksheetTree,
   workspaceCacheScope,
@@ -70,10 +69,6 @@ export interface WorksheetFilter {
   showShared: boolean;
   showDraft: boolean;
 }
-
-type PersistedWorksheetFilter = Omit<WorksheetFilter, "keyword"> & {
-  keyword?: string;
-};
 
 export interface FolderContext {
   rootPath: string;
@@ -446,31 +441,9 @@ const currentScope = (): {
   }
 };
 
-const isPersistedWorksheetFilter = (
-  v: unknown
-): v is PersistedWorksheetFilter =>
-  typeof v === "object" &&
-  v !== null &&
-  typeof (v as PersistedWorksheetFilter).onlyShowStarred === "boolean" &&
-  typeof (v as PersistedWorksheetFilter).showMine === "boolean" &&
-  typeof (v as PersistedWorksheetFilter).showShared === "boolean" &&
-  typeof (v as PersistedWorksheetFilter).showDraft === "boolean";
-
 const reloadFromStorage = () => {
   const scope = currentScope();
   if (!scope) return;
-
-  const filter = safeReadJSON(
-    storageKeySqlEditorWorksheetFilter(
-      scope.wsScope,
-      scope.project,
-      scope.email
-    ),
-    (v) => (isPersistedWorksheetFilter(v) ? v : undefined)
-  );
-  const hydratedFilter = filter
-    ? { ...INITIAL_FILTER, ...filter, keyword: INITIAL_FILTER.keyword }
-    : { ...INITIAL_FILTER };
 
   const expandedArray = safeReadJSON<string[]>(
     storageKeySqlEditorWorksheetTree(scope.wsScope, scope.project, scope.email),
@@ -503,30 +476,12 @@ const reloadFromStorage = () => {
   }
 
   useSheetContextStore.getState().hydrate({
-    filter: hydratedFilter,
+    filter: { ...INITIAL_FILTER },
     expandedKeys,
     selectedKeys: [],
     editingNode: undefined,
     viewStates,
   });
-};
-
-const persistFilter = (filter: WorksheetFilter) => {
-  const scope = currentScope();
-  if (!scope) return;
-  safeWriteJSON(
-    storageKeySqlEditorWorksheetFilter(
-      scope.wsScope,
-      scope.project,
-      scope.email
-    ),
-    {
-      onlyShowStarred: filter.onlyShowStarred,
-      showMine: filter.showMine,
-      showShared: filter.showShared,
-      showDraft: filter.showDraft,
-    }
-  );
 };
 
 const persistExpandedKeys = (keys: Set<string>) => {
@@ -1400,7 +1355,6 @@ const bindWatchers = () => {
   });
 
   useSheetContextStore.subscribe((state, prev) => {
-    if (state.filter !== prev.filter) persistFilter(state.filter);
     if (state.expandedKeys !== prev.expandedKeys)
       persistExpandedKeys(state.expandedKeys);
 
