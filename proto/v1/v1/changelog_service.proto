@@ -103,6 +103,7 @@ message GetChangelogRequest {
 }
 
 message Changelog {
+  reserved 4 to 6, 9 to 10, 12 to 14;
   option (google.api.resource) = {
     type: "bytebase.com/DatabaseChangelog"
     pattern: "instances/{instance}/databases/{database}/changelogs/{changelog}"

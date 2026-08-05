@@ -199,19 +199,19 @@ var File_store_release_proto protoreflect.FileDescriptor
 
 const file_store_release_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xf6\x02\n" +
+	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x8e\x03\n" +
 	"\x0eReleasePayload\x129\n" +
 	"\x05files\x18\x02 \x03(\v2#.bytebase.store.ReleasePayload.FileR\x05files\x12G\n" +
 	"\n" +
 	"vcs_source\x18\x03 \x01(\v2(.bytebase.store.ReleasePayload.VCSSourceR\tvcsSource\x124\n" +
-	"\x04type\x18\x04 \x01(\x0e2 .bytebase.store.SchemaChangeTypeR\x04type\x1aW\n" +
+	"\x04type\x18\x04 \x01(\x0e2 .bytebase.store.SchemaChangeTypeR\x04type\x1ai\n" +
 	"\x04File\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12!\n" +
 	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x12\x18\n" +
-	"\aversion\x18\x06 \x01(\tR\aversion\x1aQ\n" +
+	"\aversion\x18\x06 \x01(\tR\aversionJ\x04\b\x01\x10\x02J\x04\b\x03\x10\x04J\x04\b\x05\x10\x06\x1aQ\n" +
 	"\tVCSSource\x122\n" +
 	"\bvcs_type\x18\x01 \x01(\x0e2\x17.bytebase.store.VCSTypeR\avcsType\x12\x10\n" +
-	"\x03url\x18\x02 \x01(\tR\x03urlB\x8f\x01\n" +
+	"\x03url\x18\x02 \x01(\tR\x03urlJ\x04\b\x01\x10\x02B\x8f\x01\n" +
 	"\x12com.bytebase.storeB\fReleaseProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

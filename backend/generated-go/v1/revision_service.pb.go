@@ -629,7 +629,7 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\x15bytebase.com/RevisionR\x04name\"J\n" +
 	"\x15DeleteRevisionRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/RevisionR\x04name\"\xd0\x05\n" +
+	"\x15bytebase.com/RevisionR\x04name\"\xd6\x05\n" +
 	"\bRevision\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x123\n" +
 	"\arelease\x18\x02 \x01(\tB\x19\xfaA\x16\n" +
@@ -651,7 +651,8 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tVERSIONED\x10\x01\x12\x0f\n" +
 	"\vDECLARATIVE\x10\x02:\xae\x01\xeaA\xaa\x01\n" +
-	"\x15bytebase.com/Revision\x12>instances/{instance}/databases/{database}/revisions/{revision}\x12Qprojects/{project}/instances/{instance}/databases/{database}/revisions/{revision}2\xe4\a\n" +
+	"\x15bytebase.com/Revision\x12>instances/{instance}/databases/{database}/revisions/{revision}\x12Qprojects/{project}/instances/{instance}/databases/{database}/revisions/{revision}J\x04\b\n" +
+	"\x10\r2\xe4\a\n" +
 	"\x0fRevisionService\x12\xee\x01\n" +
 	"\rListRevisions\x12!.bytebase.v1.ListRevisionsRequest\x1a\".bytebase.v1.ListRevisionsResponse\"\x95\x01\xdaA\x06parent\x8a\xea0\x11bb.revisions.list\x90\xea0\x01\x82\xd3\xe4\x93\x02mZ;\x129/v1/{parent=projects/*/instances/*/databases/*}/revisions\x12./v1/{parent=instances/*/databases/*}/revisions\x12\xda\x01\n" +
 	"\vGetRevision\x12\x1f.bytebase.v1.GetRevisionRequest\x1a\x15.bytebase.v1.Revision\"\x92\x01\xdaA\x04name\x8a\xea0\x10bb.revisions.get\x90\xea0\x01\x82\xd3\xe4\x93\x02mZ;\x129/v1/{name=projects/*/instances/*/databases/*/revisions/*}\x12./v1/{name=instances/*/databases/*/revisions/*}\x12\x9b\x02\n" +

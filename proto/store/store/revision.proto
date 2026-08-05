@@ -8,6 +8,7 @@ import "store/common.proto";
 option go_package = "generated-go/store";
 
 message RevisionPayload {
+  reserved 3;
   // Format: projects/{project}/releases/{release}
   // Can be empty.
   string release = 1 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];

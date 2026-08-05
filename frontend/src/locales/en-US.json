@@ -1166,6 +1166,7 @@
     },
     "instance-id": "Instance ID",
     "instance-name": "Instance Name",
+    "keytab-write-only": "Keytab is write-only. Upload a new file to replace the existing one.",
     "new-instance": "New Instance",
     "no-environment": "This instance has not been bound to the environment",
     "no-extra-params-configured": "No extra connection parameters configured",

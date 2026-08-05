@@ -17,6 +17,7 @@ message PlanConfig {
   int64 approval_input_version = 3;
 
   message Spec {
+    reserved 3 to 4;
     // A UUID4 string that uniquely identifies the Spec.
     string id = 5;
 
@@ -27,6 +28,7 @@ message PlanConfig {
   }
 
   message CreateDatabaseConfig {
+    reserved 8;
     // The resource name of the instance on which the database is created.
     // Format: instances/{instance}
     string target = 1 [(google.api.field_behavior) = REQUIRED];
@@ -49,6 +51,7 @@ message PlanConfig {
   }
 
   message ChangeDatabaseConfig {
+    reserved 1, 3 to 7;
     // The list of targets.
     // Multi-database format: [instances/{instance-id}/databases/{database-name}].
     // Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].

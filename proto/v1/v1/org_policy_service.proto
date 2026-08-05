@@ -177,6 +177,7 @@ message ListPoliciesResponse {
 }
 
 message Policy {
+  reserved 8;
   option (google.api.resource) = {
     type: "bytebase.com/Policy"
     pattern: "workspaces/{workspace}/policies/{policy}"
@@ -214,6 +215,7 @@ message Policy {
 
 // The type of organizational policy.
 enum PolicyType {
+  reserved 5;
   // Unspecified policy type.
   POLICY_TYPE_UNSPECIFIED = 0;
   // Data masking rule policy.

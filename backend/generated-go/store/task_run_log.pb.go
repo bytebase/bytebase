@@ -1213,7 +1213,7 @@ var File_store_task_run_log_proto protoreflect.FileDescriptor
 
 const file_store_task_run_log_proto_rawDesc = "" +
 	"\n" +
-	"\x18store/task_run_log.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xda\x15\n" +
+	"\x18store/task_run_log.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xec\x15\n" +
 	"\n" +
 	"TaskRunLog\x123\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1f.bytebase.store.TaskRunLog.TypeR\x04type\x12\x1d\n" +
@@ -1241,11 +1241,11 @@ const file_store_task_run_log_proto_rawDesc = "" +
 	"\x05error\x18\x01 \x01(\tR\x05error\x1a[\n" +
 	"\x0eCommandExecute\x12+\n" +
 	"\x05range\x18\x01 \x01(\v2\x15.bytebase.store.RangeR\x05range\x12\x1c\n" +
-	"\tstatement\x18\x02 \x01(\tR\tstatement\x1ax\n" +
+	"\tstatement\x18\x02 \x01(\tR\tstatement\x1a~\n" +
 	"\x0fCommandResponse\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x12#\n" +
 	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x12*\n" +
-	"\x11all_affected_rows\x18\x04 \x03(\x03R\x0fallAffectedRows\x1a\x13\n" +
+	"\x11all_affected_rows\x18\x04 \x03(\x03R\x0fallAffectedRowsJ\x04\b\x01\x10\x02\x1a\x13\n" +
 	"\x11DatabaseSyncStart\x1a'\n" +
 	"\x0fDatabaseSyncEnd\x12\x14\n" +
 	"\x05error\x18\x01 \x01(\tR\x05error\x1a\xb5\x01\n" +
@@ -1275,7 +1275,7 @@ const file_store_task_run_log_proto_rawDesc = "" +
 	"\tfile_path\x18\x02 \x01(\tR\bfilePath\x1a\x15\n" +
 	"\x13GhostMigrationStart\x1a)\n" +
 	"\x11GhostMigrationEnd\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\"\xf6\x02\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"\xfc\x02\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11SCHEMA_DUMP_START\x10\x01\x12\x13\n" +
@@ -1294,7 +1294,7 @@ const file_store_task_run_log_proto_rawDesc = "" +
 	"\x10COMPUTE_DIFF_END\x10\r\x12\x18\n" +
 	"\x14RELEASE_FILE_EXECUTE\x10\x0e\x12\x19\n" +
 	"\x15GHOST_MIGRATION_START\x10\x0f\x12\x17\n" +
-	"\x13GHOST_MIGRATION_END\x10\x10\"\xcd\x03\n" +
+	"\x13GHOST_MIGRATION_END\x10\x10\"\x04\b\a\x10\aJ\x04\b\b\x10\t\"\xcd\x03\n" +
 	"\x11PriorBackupDetail\x12<\n" +
 	"\x05items\x18\x01 \x03(\v2&.bytebase.store.PriorBackupDetail.ItemR\x05items\x1a\xf9\x02\n" +
 	"\x04Item\x12O\n" +

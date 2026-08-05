@@ -32,6 +32,7 @@ message TaskRun {
 
 // TaskRunResult contains the outcome and metadata from a task run execution.
 message TaskRunResult {
+  reserved 2 to 4;
   // Error message for failed task runs. Empty for successful or canceled runs.
   string detail = 1;
 
@@ -50,6 +51,7 @@ message SchedulerInfo {
 
   // WaitingCause indicates why a task run is waiting to execute.
   message WaitingCause {
+    reserved 1 to 2;
     oneof cause {
       // Task is waiting due to parallel execution limit.
       bool parallel_tasks_limit = 3;

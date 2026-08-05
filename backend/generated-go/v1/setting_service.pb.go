@@ -3530,7 +3530,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkH\x00R\x04lark\x12@\n" +
 	"\bdingtalk\x18\x06 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkH\x00R\bdingtalk\x127\n" +
 	"\x05teams\x18\a \x01(\v2\x1f.bytebase.v1.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\xb4\x10\n" +
+	"\apayload\"\xba\x10\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -3573,7 +3573,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\bDISABLED\x10\x01\x12\r\n" +
 	"\tREAD_ONLY\x10\x03\x12\x0e\n" +
 	"\n" +
-	"READ_WRITE\x10\x04\"\x04\b\x02\x10\x02J\x04\b\x10\x10\x11\"\xf3\x01\n" +
+	"READ_WRITE\x10\x04\"\x04\b\x02\x10\x02J\x04\b\x0f\x10\x10J\x04\b\x10\x10\x11\"\xf3\x01\n" +
 	"\x15SQLEditorThemeSetting\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
@@ -3603,33 +3603,33 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x0fCHANGE_DATABASE\x10\x01\x12\x13\n" +
 	"\x0fCREATE_DATABASE\x10\x02\x12\x10\n" +
 	"\fREQUEST_ROLE\x10\x04\x12\x12\n" +
-	"\x0eREQUEST_ACCESS\x10\x05\"\x04\b\x03\x10\x03*\vEXPORT_DATA\"\xc3\x05\n" +
+	"\x0eREQUEST_ACCESS\x10\x05\"\x04\b\x03\x10\x03*\vEXPORT_DATA\"\xd5\x05\n" +
 	"\x19DataClassificationSetting\x12Y\n" +
-	"\aconfigs\x18\x01 \x03(\v2?.bytebase.v1.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\xca\x04\n" +
+	"\aconfigs\x18\x01 \x03(\v2?.bytebase.v1.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\xdc\x04\n" +
 	"\x18DataClassificationConfig\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12]\n" +
 	"\x06levels\x18\x03 \x03(\v2E.bytebase.v1.DataClassificationSetting.DataClassificationConfig.LevelR\x06levels\x12{\n" +
-	"\x0eclassification\x18\x04 \x03(\v2S.bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntryR\x0eclassification\x1a3\n" +
+	"\x0eclassification\x18\x04 \x03(\v2S.bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntryR\x0eclassification\x1a?\n" +
 	"\x05Level\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x14\n" +
-	"\x05level\x18\x04 \x01(\x05R\x05level\x1a_\n" +
+	"\x05level\x18\x04 \x01(\x05R\x05levelJ\x04\b\x01\x10\x02J\x04\b\x03\x10\x04\x1ae\n" +
 	"\x12DataClassification\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x19\n" +
 	"\x05level\x18\x04 \x01(\x05H\x00R\x05level\x88\x01\x01B\b\n" +
-	"\x06_level\x1a\x95\x01\n" +
+	"\x06_levelJ\x04\b\x03\x10\x04\x1a\x95\x01\n" +
 	"\x13ClassificationEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12h\n" +
-	"\x05value\x18\x02 \x01(\v2R.bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassificationR\x05value:\x028\x01\"\xfd\x01\n" +
+	"\x05value\x18\x02 \x01(\v2R.bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassificationR\x05value:\x028\x01\"\x83\x02\n" +
 	"\x13SemanticTypeSetting\x12C\n" +
-	"\x05types\x18\x01 \x03(\v2-.bytebase.v1.SemanticTypeSetting.SemanticTypeR\x05types\x1a\xa0\x01\n" +
+	"\x05types\x18\x01 \x03(\v2-.bytebase.v1.SemanticTypeSetting.SemanticTypeR\x05types\x1a\xa6\x01\n" +
 	"\fSemanticType\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x124\n" +
 	"\talgorithm\x18\x06 \x01(\v2\x16.bytebase.v1.AlgorithmR\talgorithm\x12\x12\n" +
-	"\x04icon\x18\a \x01(\tR\x04icon\"\x8e\x06\n" +
+	"\x04icon\x18\a \x01(\tR\x04iconJ\x04\b\x04\x10\x06\"\x8e\x06\n" +
 	"\tAlgorithm\x12>\n" +
 	"\tfull_mask\x18\x01 \x01(\v2\x1f.bytebase.v1.Algorithm.FullMaskH\x00R\bfullMask\x12A\n" +
 	"\n" +

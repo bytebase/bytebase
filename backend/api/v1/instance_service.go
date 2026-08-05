@@ -1267,7 +1267,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 			}
 			dataSource.ExternalSecret = externalSecret
 		case "sasl_config":
-			dataSource.SaslConfig = convertV1DataSourceSaslConfig(req.Msg.DataSource.SaslConfig)
+			saslConfig := convertV1DataSourceSaslConfig(req.Msg.DataSource.SaslConfig)
+			retainStoredKeytabOnEmptyUpdate(saslConfig, dataSource.SaslConfig)
+			dataSource.SaslConfig = saslConfig
 		case "authentication_type":
 			dataSource.AuthenticationType = convertV1AuthenticationType(req.Msg.DataSource.AuthenticationType)
 		case "additional_addresses":

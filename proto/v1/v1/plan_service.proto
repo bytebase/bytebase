@@ -185,6 +185,7 @@ message UpdatePlanRequest {
 }
 
 message Plan {
+  reserved 4;
   option (google.api.resource) = {
     type: "bytebase.com/Plan"
     pattern: "projects/{project}/plans/{plan}"
@@ -252,6 +253,7 @@ message Plan {
   IssueStatus issue_status = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   message CreateDatabaseConfig {
+    reserved 8;
     // The resource name of the instance on which the database is created.
     // Format: instances/{instance}
     string target = 1 [(google.api.field_behavior) = REQUIRED];
@@ -274,6 +276,7 @@ message Plan {
   }
 
   message ChangeDatabaseConfig {
+    reserved 4 to 5;
     // The list of targets.
     // Multi-database format: [instances/{instance-id}/databases/{database-name}].
     // Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
@@ -343,6 +346,7 @@ message CancelPlanCheckRunRequest {
 message CancelPlanCheckRunResponse {}
 
 message PlanCheckRun {
+  reserved 2, 4 to 5;
   option (google.api.resource) = {
     type: "bytebase.com/PlanCheckRun"
     pattern: "projects/{project}/plans/{plan}/planCheckRun"
@@ -389,11 +393,13 @@ message PlanCheckRun {
       SqlReviewReport sql_review_report = 6;
     }
     message SqlSummaryReport {
+      reserved 1;
       // statement_types are the types of statements that are found in the sql.
       repeated StatementType statement_types = 2;
       int64 affected_rows = 3;
     }
     message SqlReviewReport {
+      reserved 1 to 4;
       // Position of the SQL statement.
       Position start_position = 5;
       Position end_position = 6;

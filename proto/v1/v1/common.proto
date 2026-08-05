@@ -15,6 +15,7 @@ enum State {
 
 // Database engine type.
 enum Engine {
+  reserved 5;
   // Unspecified database engine.
   ENGINE_UNSPECIFIED = 0;
   // ClickHouse columnar database.
@@ -203,6 +204,7 @@ enum WebhookType {
 
 // StatementType represents the type of SQL statement.
 enum StatementType {
+  reserved 13 to 19, 32 to 39, 47 to 49, 56 to 59;
   STATEMENT_TYPE_UNSPECIFIED = 0;
 
   // DDL - CREATE statements

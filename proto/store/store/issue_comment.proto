@@ -9,6 +9,7 @@ import "store/plan.proto";
 option go_package = "generated-go/store";
 
 message IssueCommentPayload {
+  reserved 4 to 6;
   string comment = 1;
 
   oneof event {

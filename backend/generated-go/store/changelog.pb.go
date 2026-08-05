@@ -78,11 +78,11 @@ var File_store_changelog_proto protoreflect.FileDescriptor
 
 const file_store_changelog_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/changelog.proto\x12\x0ebytebase.store\"R\n" +
+	"\x15store/changelog.proto\x12\x0ebytebase.store\"X\n" +
 	"\x10ChangelogPayload\x12\x19\n" +
 	"\btask_run\x18\x01 \x01(\tR\ataskRun\x12\x1d\n" +
 	"\n" +
-	"git_commit\x18\x06 \x01(\tR\tgitCommitJ\x04\b\a\x10\bB\x91\x01\n" +
+	"git_commit\x18\x06 \x01(\tR\tgitCommitJ\x04\b\x02\x10\x06J\x04\b\a\x10\bB\x91\x01\n" +
 	"\x12com.bytebase.storeB\x0eChangelogProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
