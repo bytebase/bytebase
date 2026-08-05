@@ -677,6 +677,11 @@
     "column": "Columna",
     "columns": "Columnas",
     "comment": "Comentario",
+    "container": {
+      "select": "Seleccionar contenedor",
+      "select-tip": "Seleccione un contenedor para comenzar.",
+      "unspecified": "Sin especificar"
+    },
     "create-database": "Crear base de datos",
     "data-size": "Tamaño de datos",
     "edit-environment": "Editar entorno",

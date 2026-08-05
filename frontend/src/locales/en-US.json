@@ -677,6 +677,11 @@
     "column": "Column",
     "columns": "Columns",
     "comment": "Comment",
+    "container": {
+      "select": "Select container",
+      "select-tip": "Please select a container to start.",
+      "unspecified": "Unspecified"
+    },
     "create-database": "Create database",
     "data-size": "Data size",
     "edit-environment": "Edit Environment",

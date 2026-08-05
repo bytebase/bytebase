@@ -677,6 +677,11 @@
     "column": "列",
     "columns": "列",
     "comment": "注释",
+    "container": {
+      "select": "选择容器",
+      "select-tip": "请选择一个容器来开始查询。",
+      "unspecified": "未指定"
+    },
     "create-database": "创建数据库",
     "data-size": "数据大小",
     "edit-environment": "编辑环境",

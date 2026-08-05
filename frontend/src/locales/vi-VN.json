@@ -677,6 +677,11 @@
     "column": "Cột",
     "columns": "Cột",
     "comment": "Bình luận",
+    "container": {
+      "select": "Chọn container",
+      "select-tip": "Vui lòng chọn một container để bắt đầu.",
+      "unspecified": "Không xác định"
+    },
     "create-database": "Tạo cơ sở dữ liệu",
     "data-size": "Kích thước dữ liệu",
     "edit-environment": "Chỉnh sửa Môi trường",

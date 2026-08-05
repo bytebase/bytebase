@@ -25,6 +25,7 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
 import { AdminModeButton } from "./AdminModeButton";
 import { ChooserGroup } from "./ChooserGroup";
+import { ContainerChooser } from "./ContainerChooser";
 import { OpenAIButton } from "./OpenAIButton";
 import { QueryContextSettingPopover } from "./QueryContextSettingPopover";
 import { SharePopoverBody } from "./SharePopoverBody";
@@ -74,18 +75,13 @@ export function EditorAction({ onExecute }: Props) {
   const isAdminMode = tabMode === "ADMIN";
   const showSheetsFeature = tabMode === "WORKSHEET";
   const isEmptyStatement = !currentTab || tabStatement === "";
-
-  const queryTip =
-    instance.engine === Engine.COSMOSDB && !tabConnectionTable
-      ? t("database.table.select-tip")
-      : "";
+  const isCosmosDBWithoutContainer =
+    instance.engine === Engine.COSMOSDB && !tabConnectionTable;
 
   const allowQuery = (() => {
     if (isDisconnected) return false;
     if (isEmptyStatement) return false;
-    if (instance.engine === Engine.COSMOSDB) {
-      return !!tabConnectionTable;
-    }
+    if (isCosmosDBWithoutContainer) return false;
     return true;
   })();
 
@@ -166,22 +162,26 @@ export function EditorAction({ onExecute }: Props) {
 
         {!isAdminMode && (
           <div className="inline-flex">
-            <Tooltip content={queryTip} side="bottom">
-              <Button
-                variant="default"
-                size="sm"
-                className={cn("h-7 px-1.5 gap-1 rounded-r-none text-sm")}
-                disabled={!allowQuery}
-                onClick={handleRunQuery}
-              >
-                <Play className="size-4 fill-current" />
-                <span className="inline-flex items-center">
-                  (limit&nbsp;{resultRowsLimit})
-                </span>
-              </Button>
-            </Tooltip>
+            {isCosmosDBWithoutContainer ? (
+              <ContainerChooser variant="run" />
+            ) : (
+              <Tooltip content="" side="bottom">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className={cn("h-7 px-1.5 gap-1 rounded-r-none text-sm")}
+                  disabled={!allowQuery}
+                  onClick={handleRunQuery}
+                >
+                  <Play className="size-4 fill-current" />
+                  <span className="inline-flex items-center">
+                    (limit&nbsp;{resultRowsLimit})
+                  </span>
+                </Button>
+              </Tooltip>
+            )}
             <QueryContextSettingPopover
-              disabled={!showQueryContextSettingPopover || !allowQuery}
+              disabled={!showQueryContextSettingPopover}
             />
           </div>
         )}

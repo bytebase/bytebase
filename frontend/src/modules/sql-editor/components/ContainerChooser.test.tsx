@@ -68,20 +68,41 @@ vi.mock("./ConnectChooser", () => ({
     options,
     isChosen,
     value,
+    onChange,
+    dropdownClassName,
+    dropdownMinWidth,
+    triggerClassName,
+    triggerVariant,
   }: {
     placeholder: string;
     options: { value: string; label: string }[];
     isChosen: boolean;
     value: string;
+    onChange: (value: string) => void;
+    dropdownClassName?: string;
+    dropdownMinWidth?: number;
+    triggerClassName?: string;
+    triggerVariant?: string;
   }) => (
-    <div data-testid="connect-chooser">
+    <div
+      data-testid="connect-chooser"
+      data-dropdown-class-name={dropdownClassName}
+      data-dropdown-min-width={dropdownMinWidth}
+      data-trigger-class-name={triggerClassName}
+      data-trigger-variant={triggerVariant}
+    >
       <span data-testid="placeholder">{placeholder}</span>
       <span data-testid="value">{value}</span>
       <span data-testid="is-chosen">{String(isChosen)}</span>
       {options.map((o) => (
-        <span key={o.value} data-testid={`option-${o.value}`}>
+        <button
+          key={o.value}
+          type="button"
+          data-testid={`option-${o.value}`}
+          onClick={() => onChange(o.value)}
+        >
           {o.label}
-        </span>
+        </button>
       ))}
     </div>
   ),
@@ -126,6 +147,7 @@ beforeEach(async () => {
   );
   mocks.tabTable = undefined;
   mocks.currentTabId = "tab1";
+  mocks.router.currentRoute.value.query = {};
   mocks.getSQLEditorTabsState.mockReturnValue({
     currentTabId: "tab1",
     tabsById: new Map([["tab1", { connection: {} }]]),
@@ -165,6 +187,9 @@ describe("ContainerChooser", () => {
     expect(
       container.querySelector("[data-testid='connect-chooser']")
     ).not.toBeNull();
+    expect(container.querySelector("[data-testid='placeholder']")?.textContent).toBe(
+      "database.container.select"
+    );
     unmount();
   });
 
@@ -205,6 +230,157 @@ describe("ContainerChooser", () => {
     expect(
       container.querySelector("[data-testid='is-chosen']")?.textContent
     ).toBe("true");
+    expect(
+      container
+        .querySelector("[data-testid='connect-chooser']")
+        ?.getAttribute("data-trigger-class-name")
+    ).toBeNull();
+    expect(
+      container
+        .querySelector("[data-testid='connect-chooser']")
+        ?.getAttribute("data-dropdown-min-width")
+    ).toBe("192");
     unmount();
+  });
+
+  test("renders run variant when mounted for the Run button", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <ContainerChooser variant="run" />
+    );
+    render();
+
+    expect(
+      container
+        .querySelector("[data-testid='connect-chooser']")
+        ?.getAttribute("data-trigger-variant")
+    ).toBe("run");
+    unmount();
+  });
+
+  test("does not auto-select the only known CosmosDB container", () => {
+    const updateCurrentTab = vi.fn();
+    mocks.getSQLEditorTabsState.mockReturnValue({
+      currentTabId: "tab1",
+      tabsById: new Map([["tab1", { connection: { database: "db" } }]]),
+      updateCurrentTab,
+    });
+    mocks.metadata = {
+      schemas: [
+        {
+          name: "default",
+          tables: [{ name: "only-container" }],
+        },
+      ],
+    };
+
+    const { render, unmount } = renderIntoContainer(<ContainerChooser />);
+    render();
+
+    expect(updateCurrentTab).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("allows clearing the selected container even when it is the only container", () => {
+    const updateCurrentTab = vi.fn((payload) => {
+      mocks.tabTable = payload.connection.table;
+    });
+    mocks.tabTable = "only-container";
+    mocks.getSQLEditorTabsState.mockImplementation(() => ({
+      currentTabId: "tab1",
+      tabsById: new Map([
+        [
+          "tab1",
+          {
+            connection: {
+              database: "db",
+              table: mocks.tabTable,
+            },
+          },
+        ],
+      ]),
+      updateCurrentTab,
+    }));
+    mocks.metadata = {
+      schemas: [
+        {
+          name: "default",
+          tables: [{ name: "only-container" }],
+        },
+      ],
+    };
+
+    const { container, render, unmount } = renderIntoContainer(
+      <ContainerChooser />
+    );
+    render();
+    act(() => {
+      container
+        .querySelector<HTMLButtonElement>("[data-testid='option--1']")
+        ?.click();
+    });
+    render();
+
+    expect(updateCurrentTab).toHaveBeenCalledTimes(1);
+    expect(updateCurrentTab).toHaveBeenCalledWith({
+      connection: {
+        database: "db",
+        table: undefined,
+      },
+    });
+    unmount();
+  });
+
+  test("does not restore a cleared container from a stale route query", () => {
+    const updateCurrentTab = vi.fn((payload) => {
+      mocks.tabTable = payload.connection.table;
+    });
+    mocks.tabTable = "ED";
+    mocks.router.currentRoute.value.query = { table: "ED" };
+    mocks.getSQLEditorTabsState.mockImplementation(() => ({
+      currentTabId: "tab1",
+      tabsById: new Map([
+        [
+          "tab1",
+          {
+            connection: {
+              database: "db",
+              table: mocks.tabTable,
+            },
+          },
+        ],
+      ]),
+      updateCurrentTab,
+    }));
+    mocks.metadata = {
+      schemas: [
+        {
+          name: "default",
+          tables: [{ name: "WorldCities" }, { name: "ED" }],
+        },
+      ],
+    };
+
+    const first = renderIntoContainer(<ContainerChooser />);
+    first.render();
+    updateCurrentTab.mockClear();
+
+    act(() => {
+      first.container
+        .querySelector<HTMLButtonElement>("[data-testid='option--1']")
+        ?.click();
+    });
+    first.unmount();
+
+    const second = renderIntoContainer(<ContainerChooser />);
+    second.render();
+
+    expect(updateCurrentTab).toHaveBeenCalledTimes(1);
+    expect(updateCurrentTab).toHaveBeenCalledWith({
+      connection: {
+        database: "db",
+        table: undefined,
+      },
+    });
+    second.unmount();
   });
 });
