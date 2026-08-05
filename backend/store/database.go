@@ -388,6 +388,12 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 }
 
 // BatchUpdateDatabases updates databases in batch.
+//
+// The batch runs in one transaction after acquiring every affected source and
+// destination project purge fence and instance purge fence in deterministic
+// sorted order. Without the fences, a concurrent project purge could sweep the
+// destination project's rows and make the terminal project deletion fail on
+// the db.project foreign key.
 func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseMessage, update *BatchUpdateDatabases) error {
 	set := qb.Q()
 	if update.ProjectID != nil {
@@ -424,74 +430,303 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 		where.And("db.instance IN (SELECT resource_id FROM instance WHERE workspace = ?)", update.Workspace)
 	}
 
-	validOwnership := qb.Q().Space("TRUE")
-	if update.ProjectID != nil {
-		validOwnership = qb.Q().Space(`
-			NOT EXISTS (
-				SELECT 1 FROM targets
-				WHERE instance_project IS NOT NULL
-				  AND (project <> instance_project OR instance_project <> ?)
-			)
-		`, *update.ProjectID)
+	// Discover every affected database before acquiring purge fences so the
+	// source/destination project and instance fence sets are known up front.
+	// The transaction below re-reads these targets under the fences.
+	targets, err := s.listDatabaseBatchTargets(ctx, where)
+	if err != nil {
+		return err
 	}
+	instances := make([]string, 0, len(targets))
+	projects := make([]string, 0, len(targets))
+	for _, target := range targets {
+		instances = append(instances, target.instanceID)
+		projects = append(projects, target.projectID)
+		if target.instanceProject != "" {
+			projects = append(projects, target.instanceProject)
+		}
+	}
+	if update.ProjectID != nil {
+		projects = append(projects, *update.ProjectID)
+	}
+	slices.Sort(instances)
+	instances = slices.Compact(instances)
+	slices.Sort(projects)
+	projects = slices.Compact(projects)
 
+	var updated []databaseBatchTarget
+	err = s.withDatabaseBatchPurgeFence(ctx, instances, projects, func(tx *sql.Tx) error {
+		locked, err := lockDatabaseBatchTargets(ctx, tx, where, targets)
+		if err != nil {
+			return err
+		}
+		instances, err := lockDatabaseBatchInstances(ctx, tx, locked)
+		if err != nil {
+			return err
+		}
+		for instanceID, instance := range instances {
+			if instance.deleted {
+				return common.Errorf(common.Conflict, "instance %s is archived", instanceID)
+			}
+		}
+		// Revalidate lifecycle under the transaction: every target must still
+		// be covered by the pre-read purge fences. A purge that committed
+		// before the fences were acquired shows up here as a retry instead of
+		// an FK failure.
+		for _, target := range locked {
+			if !slices.Contains(projects, target.projectID) {
+				return errors.Errorf("database ownership changed to project %s for %s; retry", target.projectID, common.FormatDatabase(target.instanceID, target.databaseName))
+			}
+			if instanceProject := instances[target.instanceID].projectID; instanceProject != "" && !slices.Contains(projects, instanceProject) {
+				return errors.Errorf("database ownership changed to project instance %s for %s; retry", instanceProject, common.FormatDatabase(target.instanceID, target.databaseName))
+			}
+		}
+		// Lock every affected project, including the destination, after the
+		// database rows and instances. A purged destination fails cleanly with
+		// NotFound instead of an FK violation.
+		projectIDs := make([]string, 0, len(locked)+1)
+		for _, target := range locked {
+			projectIDs = append(projectIDs, target.projectID)
+			if instanceProject := instances[target.instanceID].projectID; instanceProject != "" {
+				projectIDs = append(projectIDs, instanceProject)
+			}
+		}
+		if update.ProjectID != nil {
+			projectIDs = append(projectIDs, *update.ProjectID)
+		}
+		slices.Sort(projectIDs)
+		projectIDs = slices.Compact(projectIDs)
+		for _, projectID := range projectIDs {
+			var foundProjectID string
+			if err := tx.QueryRowContext(ctx, "SELECT resource_id FROM project WHERE resource_id = $1 FOR UPDATE", projectID).Scan(&foundProjectID); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return common.Errorf(common.NotFound, "project %s not found", projectID)
+				}
+				return errors.Wrapf(err, "failed to lock project %s", projectID)
+			}
+		}
+		// Atomic validation: any invalid target rejects the whole batch before
+		// any row is updated.
+		if update.ProjectID != nil {
+			for _, target := range locked {
+				if instanceProject := instances[target.instanceID].projectID; instanceProject != "" {
+					if target.projectID != instanceProject || instanceProject != *update.ProjectID {
+						return common.Errorf(common.Invalid, "cannot move a project instance database to another project")
+					}
+				}
+			}
+		}
+		if len(locked) == 0 {
+			return nil
+		}
+		updateInstances, updateNames := make([]string, 0, len(locked)), make([]string, 0, len(locked))
+		for _, target := range locked {
+			updateInstances = append(updateInstances, target.instanceID)
+			updateNames = append(updateNames, target.databaseName)
+		}
+		q := qb.Q().Space(`
+			UPDATE db SET ?
+			FROM unnest(?::TEXT[], ?::TEXT[]) AS u(instance, name)
+			WHERE db.instance = u.instance AND db.name = u.name
+		`, set, updateInstances, updateNames)
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build batch database update sql")
+		}
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return errors.Wrap(err, "failed to update databases")
+		}
+		updated = locked
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	for _, target := range updated {
+		s.removeDatabaseCache(ctx, target.instanceID, target.databaseName)
+	}
+	return nil
+}
+
+type databaseBatchTarget struct {
+	instanceID      string
+	databaseName    string
+	projectID       string
+	instanceProject string
+}
+
+// listDatabaseBatchTargets finds the databases matched by the batch update
+// where clause. It runs outside the purge fences; the result only determines
+// which fences to acquire and which rows to lock inside the transaction.
+func (s *Store) listDatabaseBatchTargets(ctx context.Context, where *qb.Query) ([]databaseBatchTarget, error) {
 	q := qb.Q().Space(`
-		WITH targets AS MATERIALIZED (
-			SELECT db.instance, db.name, db.project, instance.project AS instance_project
-			FROM db
-			JOIN instance ON instance.resource_id = db.instance
-			WHERE ?
-		),
-		validation AS (
-			SELECT ? AS valid
-		),
-		updated AS (
-			UPDATE db
-			SET ?
-			FROM targets, validation
-			WHERE validation.valid
-			  AND db.instance = targets.instance
-			  AND db.name = targets.name
-			RETURNING db.instance, db.name
-		)
-		SELECT validation.valid, updated.instance, updated.name
-		FROM validation
-		LEFT JOIN updated ON TRUE
-	`, where, validOwnership, set)
+		SELECT db.instance, db.name, db.project, instance.project
+		FROM db
+		JOIN instance ON instance.resource_id = db.instance
+		WHERE ?
+		ORDER BY db.instance, db.name
+	`, where)
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return errors.Wrap(err, "failed to build sql")
+		return nil, errors.Wrap(err, "failed to build batch database target query")
 	}
 	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
-		return errors.Wrap(err, "failed to update databases")
+		return nil, errors.Wrap(err, "failed to find batch database targets")
 	}
 	defer rows.Close()
-
-	var updated []*DatabaseMessage
+	var targets []databaseBatchTarget
 	for rows.Next() {
-		var valid bool
-		var instanceID, databaseName sql.NullString
-		if err := rows.Scan(&valid, &instanceID, &databaseName); err != nil {
-			return errors.Wrap(err, "failed to scan updated database")
+		var target databaseBatchTarget
+		var instanceProject sql.NullString
+		if err := rows.Scan(&target.instanceID, &target.databaseName, &target.projectID, &instanceProject); err != nil {
+			return nil, errors.Wrap(err, "failed to scan batch database target")
 		}
-		if !valid {
-			return common.Errorf(common.Invalid, "cannot move a project instance database to another project")
+		if instanceProject.Valid {
+			target.instanceProject = instanceProject.String
 		}
-		if instanceID.Valid && databaseName.Valid {
-			updated = append(updated, &DatabaseMessage{
-				InstanceID:   instanceID.String,
-				DatabaseName: databaseName.String,
-			})
-		}
+		targets = append(targets, target)
 	}
 	if err := rows.Err(); err != nil {
-		return errors.Wrap(err, "failed to update databases")
+		return nil, errors.Wrap(err, "failed to read batch database targets")
 	}
-	for _, database := range updated {
-		s.removeDatabaseCache(ctx, database.InstanceID, database.DatabaseName)
+	return targets, nil
+}
+
+// withDatabaseBatchPurgeFence serializes a batch database write with direct
+// project and instance purge. Advisory fences are acquired in deterministic
+// sorted order (all project fences, then all instance fences) before any row
+// lock.
+func (s *Store) withDatabaseBatchPurgeFence(
+	ctx context.Context,
+	instances []string,
+	projects []string,
+	write func(*sql.Tx) error,
+) error {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to begin batch database write transaction")
 	}
-	return nil
+	defer tx.Rollback()
+	for _, projectID := range projects {
+		if err := acquireProjectPurgeLock(ctx, tx, projectID); err != nil {
+			return errors.Wrapf(err, "failed to lock project purge fence for %s", projectID)
+		}
+	}
+	for _, instanceID := range instances {
+		if err := acquireInstancePurgeLock(ctx, tx, instanceID); err != nil {
+			return errors.Wrapf(err, "failed to lock instance purge fence for %s", instanceID)
+		}
+	}
+	if err := write(tx); err != nil {
+		return err
+	}
+	return errors.Wrap(tx.Commit(), "failed to commit batch database write transaction")
+}
+
+// lockDatabaseBatchTargets locks the pre-read batch targets in full
+// primary-key order and re-applies the original where clause so rows that no
+// longer match are skipped. Only db rows are locked.
+func lockDatabaseBatchTargets(ctx context.Context, tx *sql.Tx, where *qb.Query, targets []databaseBatchTarget) ([]databaseBatchTarget, error) {
+	if len(targets) == 0 {
+		return nil, nil
+	}
+	instances, names := make([]string, 0, len(targets)), make([]string, 0, len(targets))
+	for _, target := range targets {
+		instances, names = append(instances, target.instanceID), append(names, target.databaseName)
+	}
+	q := qb.Q().Space(`
+		SELECT db.instance, db.name, db.project, instance.project
+		FROM db
+		JOIN instance ON instance.resource_id = db.instance
+		WHERE (db.instance, db.name) IN (SELECT * FROM unnest(?::TEXT[], ?::TEXT[]))
+		  AND ?
+		ORDER BY db.instance, db.name
+		FOR UPDATE OF db
+	`, instances, names, where)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build batch database lock query")
+	}
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to lock batch database targets")
+	}
+	defer rows.Close()
+	var locked []databaseBatchTarget
+	for rows.Next() {
+		var target databaseBatchTarget
+		var instanceProject sql.NullString
+		if err := rows.Scan(&target.instanceID, &target.databaseName, &target.projectID, &instanceProject); err != nil {
+			return nil, errors.Wrap(err, "failed to scan locked batch database target")
+		}
+		if instanceProject.Valid {
+			target.instanceProject = instanceProject.String
+		}
+		locked = append(locked, target)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read locked batch database targets")
+	}
+	return locked, nil
+}
+
+type databaseBatchInstance struct {
+	projectID string
+	deleted   bool
+}
+
+// lockDatabaseBatchInstances locks the instances of the locked targets in
+// sorted order and returns their current lifecycle and owning project.
+func lockDatabaseBatchInstances(ctx context.Context, tx *sql.Tx, targets []databaseBatchTarget) (map[string]databaseBatchInstance, error) {
+	instanceIDs := make([]string, 0, len(targets))
+	for _, target := range targets {
+		instanceIDs = append(instanceIDs, target.instanceID)
+	}
+	slices.Sort(instanceIDs)
+	instanceIDs = slices.Compact(instanceIDs)
+	instances := make(map[string]databaseBatchInstance, len(instanceIDs))
+	if len(instanceIDs) == 0 {
+		return instances, nil
+	}
+	q := qb.Q().Space(`
+		SELECT resource_id, project, deleted
+		FROM instance
+		WHERE resource_id IN (SELECT * FROM unnest(?::TEXT[]))
+		ORDER BY resource_id
+		FOR NO KEY UPDATE
+	`, instanceIDs)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build batch database instance lock query")
+	}
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to lock batch database instances")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var instanceID string
+		var project sql.NullString
+		var deleted bool
+		if err := rows.Scan(&instanceID, &project, &deleted); err != nil {
+			return nil, errors.Wrap(err, "failed to scan locked batch database instance")
+		}
+		instance := databaseBatchInstance{deleted: deleted}
+		if project.Valid {
+			instance.projectID = project.String
+		}
+		instances[instanceID] = instance
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read locked batch database instances")
+	}
+	for _, instanceID := range instanceIDs {
+		if _, ok := instances[instanceID]; !ok {
+			return nil, common.Errorf(common.NotFound, "instance %s not found", instanceID)
+		}
+	}
+	return instances, nil
 }
 
 type databaseOwnership struct {

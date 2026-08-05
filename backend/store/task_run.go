@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"slices"
 	"time"
 
 	"github.com/pkg/errors"
@@ -241,7 +242,9 @@ func (s *Store) ClaimAvailableTaskRuns(ctx context.Context, replicaID string) ([
 			SELECT task_run.project, task_run.id
 			FROM task_run
 			JOIN project ON project.resource_id = task_run.project
-			WHERE task_run.status = ? AND project.deleted = FALSE
+			JOIN task ON task.project = task_run.project AND task.id = task_run.task_id
+			JOIN instance ON instance.resource_id = task.instance
+			WHERE task_run.status = ? AND project.deleted = FALSE AND instance.deleted = FALSE
 			FOR UPDATE OF task_run SKIP LOCKED
 		)
 		RETURNING id, task_id, project
@@ -342,15 +345,24 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 			payloadStr = s
 		}
 	}
+	instanceIDs, err := s.listTaskRunCreationInstances(ctx, projects, taskUIDs)
+	if err != nil {
+		return err
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
+	for _, instanceID := range instanceIDs {
+		if err := acquireInstancePurgeLock(ctx, tx, instanceID); err != nil {
+			return errors.Wrapf(err, "failed to lock instance lifecycle fence for %s", instanceID)
+		}
+	}
 
 	lockQ := qb.Q().Space(`
-		SELECT task.project, task.id
+		SELECT task.project, task.id, task.instance
 		FROM (
 			SELECT
 				unnest(CAST(? AS TEXT[])) AS project,
@@ -364,6 +376,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		return errors.Wrapf(err, "failed to build task lock sql")
 	}
 	lockedTaskCount := 0
+	lockedInstanceIDs := make([]string, 0, len(instanceIDs))
 	if err := func() error {
 		rows, err := tx.QueryContext(ctx, lockQuery, lockArgs...)
 		if err != nil {
@@ -373,9 +386,14 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		for rows.Next() {
 			var lockedProjectID string
 			var lockedTaskUID int64
-			if err := rows.Scan(&lockedProjectID, &lockedTaskUID); err != nil {
+			var lockedInstanceID string
+			if err := rows.Scan(&lockedProjectID, &lockedTaskUID, &lockedInstanceID); err != nil {
 				return errors.Wrapf(err, "failed to scan locked task")
 			}
+			if !slices.Contains(instanceIDs, lockedInstanceID) {
+				return common.Errorf(common.Conflict, "task %s/%d changed to instance %s; retry", lockedProjectID, lockedTaskUID, lockedInstanceID)
+			}
+			lockedInstanceIDs = append(lockedInstanceIDs, lockedInstanceID)
 			lockedTaskCount++
 		}
 		if err := rows.Err(); err != nil {
@@ -388,8 +406,24 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 	if lockedTaskCount == 0 {
 		return nil
 	}
+	slices.Sort(lockedInstanceIDs)
+	lockedInstanceIDs = slices.Compact(lockedInstanceIDs)
+	for _, instanceID := range lockedInstanceIDs {
+		var deleted bool
+		if err := tx.QueryRowContext(ctx, `
+			SELECT deleted FROM instance WHERE resource_id = $1 FOR UPDATE
+		`, instanceID).Scan(&deleted); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return common.Errorf(common.NotFound, "instance %s not found", instanceID)
+			}
+			return errors.Wrapf(err, "failed to lock instance %s", instanceID)
+		}
+		if deleted {
+			return common.Errorf(common.Conflict, "instance %s is archived", instanceID)
+		}
+	}
 
-	// Keep the child-to-parent lock order used by project deletion: task, then project.
+	// Keep the child-to-parent lock order used by project deletion: task, instance, then project.
 	baseID, err := nextProjectID(ctx, tx, "task_run", projectID)
 	if err != nil {
 		return err
@@ -463,6 +497,40 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 	}
 
 	return nil
+}
+
+func (s *Store) listTaskRunCreationInstances(ctx context.Context, projects []string, taskUIDs []int64) ([]string, error) {
+	q := qb.Q().Space(`
+		SELECT DISTINCT task.instance
+		FROM (
+			SELECT
+				unnest(CAST(? AS TEXT[])) AS project,
+				unnest(CAST(? AS BIGINT[])) AS task_id
+		) requested_tasks
+		JOIN task ON task.project = requested_tasks.project AND task.id = requested_tasks.task_id
+		ORDER BY task.instance
+	`, projects, taskUIDs)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build task run instance query")
+	}
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list task run instances")
+	}
+	defer rows.Close()
+	var instanceIDs []string
+	for rows.Next() {
+		var instanceID string
+		if err := rows.Scan(&instanceID); err != nil {
+			return nil, errors.Wrap(err, "failed to scan task run instance")
+		}
+		instanceIDs = append(instanceIDs, instanceID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read task run instances")
+	}
+	return instanceIDs, nil
 }
 
 // patchTaskRunStatusImpl updates a taskRun status. Returns the new state of the taskRun after update.
