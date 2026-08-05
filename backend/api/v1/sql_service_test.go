@@ -87,12 +87,12 @@ func TestBuildExportQueryContextPropagatesSkipMasking(t *testing.T) {
 	}
 
 	t.Run("grant with unmask=true sets SkipMasking", func(t *testing.T) {
-		qc := buildExportQueryContext(restriction, "alice@example.com", nil, true)
+		qc := buildExportQueryContext(restriction, "alice@example.com", nil, "", true)
 		require.True(t, qc.SkipMasking, "SkipMasking must propagate so driver-level masking is bypassed")
 	})
 
 	t.Run("grant with unmask=false keeps SkipMasking false", func(t *testing.T) {
-		qc := buildExportQueryContext(restriction, "alice@example.com", nil, false)
+		qc := buildExportQueryContext(restriction, "alice@example.com", nil, "", false)
 		require.False(t, qc.SkipMasking, "SkipMasking must stay false so masking still applies")
 	})
 }
@@ -107,12 +107,13 @@ func TestBuildExportQueryContextPropagatesOtherFields(t *testing.T) {
 		MaxQueryTimeoutInSeconds: 30,
 	}
 
-	qc := buildExportQueryContext(restriction, "alice@example.com", &schema, false)
+	qc := buildExportQueryContext(restriction, "alice@example.com", &schema, "customers", false)
 
 	require.Equal(t, 500, qc.Limit)
 	require.Equal(t, "alice@example.com", qc.OperatorEmail)
 	require.Equal(t, int64(2<<20), qc.MaximumSQLResultSize)
 	require.Equal(t, "public", qc.Schema)
+	require.Equal(t, "customers", qc.Container)
 	require.NotNil(t, qc.Timeout)
 	require.Equal(t, int64(30), qc.Timeout.Seconds)
 }
@@ -126,7 +127,7 @@ func TestBuildExportQueryContextOmitsTimeoutWhenZero(t *testing.T) {
 		MaximumResultSize: 1 << 20,
 	}
 
-	qc := buildExportQueryContext(restriction, "alice@example.com", nil, false)
+	qc := buildExportQueryContext(restriction, "alice@example.com", nil, "", false)
 	require.Nil(t, qc.Timeout)
 	require.Equal(t, "", qc.Schema)
 }
