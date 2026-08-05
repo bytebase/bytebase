@@ -25,11 +25,16 @@ func TestCheckTokenAudience(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("legacy oauth2 audience without token_use is accepted", func(t *testing.T) {
-		// Minted only by pre-PR-3 replicas; acceptance drains within one
-		// access-token lifetime of the last such replica leaving service.
+	t.Run("legacy oauth2 audience is refused: it is MCP-minted too", func(t *testing.T) {
+		// bb.oauth2.access was only ever minted by the MCP authorization
+		// server (pre-PR-3, before tokens carried token_use), so it is an MCP
+		// token by provenance and gets the same refusal. Unlike at /mcp, no
+		// legitimate traffic drains through here: the pre-PR-4 loopback
+		// transport dialed its own replica, so even mid-rolling-upgrade no old
+		// replica ever lands a legacy bearer on this chain.
 		err := checkTokenAudience(claimsWith(OAuth2AccessTokenAudience, ""))
-		require.NoError(t, err)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "only accepted at /mcp")
 	})
 
 	t.Run("mcp resource-bound token is refused", func(t *testing.T) {
@@ -38,15 +43,13 @@ func TestCheckTokenAudience(t *testing.T) {
 		require.Contains(t, err.Error(), "only accepted at /mcp")
 	})
 
-	t.Run("token_use=mcp is refused even with an accepted fixed audience", func(t *testing.T) {
+	t.Run("token_use=mcp is refused even with the accepted fixed audience", func(t *testing.T) {
 		// Nothing mints this combination; if one ever appears, the MCP marker
 		// must win over the audience allowlist — the rejection keys on what the
 		// token IS, not on which audience it also happens to carry.
-		for _, aud := range []string{AccessTokenAudience, OAuth2AccessTokenAudience} {
-			err := checkTokenAudience(claimsWith(aud, TokenUseMCP))
-			require.Error(t, err)
-			require.Contains(t, err.Error(), "only accepted at /mcp")
-		}
+		err := checkTokenAudience(claimsWith(AccessTokenAudience, TokenUseMCP))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "only accepted at /mcp")
 	})
 
 	t.Run("unknown audience without token_use is refused", func(t *testing.T) {

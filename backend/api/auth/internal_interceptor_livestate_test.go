@@ -22,6 +22,8 @@ import (
 const (
 	liveWorkspace = "ws-live"
 	liveUserEmail = "live@example.com"
+	liveClientID  = "client-A"
+	liveResource  = "https://bb.example.com/mcp"
 )
 
 // procedureRequest overrides a request's Spec so the interceptor sees a real
@@ -105,10 +107,10 @@ func TestInternalInterceptorPopulatesDelegatedGrant(t *testing.T) {
 			cred: DelegatedMCPCredential{
 				Principal:     liveUserEmail,
 				WorkspaceID:   liveWorkspace,
-				ClientID:      "client-A",
+				ClientID:      liveClientID,
 				CorrelationID: "corr-1",
 				Scope:         "mcp:read-only",
-				Resource:      "https://bb.example.com/mcp",
+				Resource:      liveResource,
 			},
 		},
 		{
@@ -129,9 +131,9 @@ func TestInternalInterceptorPopulatesDelegatedGrant(t *testing.T) {
 			cred: DelegatedMCPCredential{
 				Principal:     liveUserEmail,
 				WorkspaceID:   liveWorkspace,
-				ClientID:      "client-A",
+				ClientID:      liveClientID,
 				CorrelationID: "corr-3",
-				Resource:      "https://bb.example.com/mcp",
+				Resource:      liveResource,
 			},
 		},
 	}
@@ -176,10 +178,10 @@ func TestInternalChainMembershipRevocationTakesEffectNextRequest(t *testing.T) {
 	token, err := GenerateInternalMCPToken(DelegatedMCPCredential{
 		Principal:     liveUserEmail,
 		WorkspaceID:   liveWorkspace,
-		ClientID:      "client-A",
+		ClientID:      liveClientID,
 		CorrelationID: "corr-live",
 		Scope:         "mcp:read-only",
-		Resource:      "https://bb.example.com/mcp",
+		Resource:      liveResource,
 	}, testSecret)
 	require.NoError(t, err)
 

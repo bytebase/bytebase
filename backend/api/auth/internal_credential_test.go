@@ -33,8 +33,10 @@ func TestInternalMCPCredentialRoundTrip(t *testing.T) {
 }
 
 // TestInternalMCPCredentialEmptyGrantState pins that legacy sessions (plain
-// bb.user.access at /mcp, pre-scope OAuth2 tokens) mint a credential with empty
-// scope and resource — PR 5, not this PR, assigns their LEGACY_FULL semantics.
+// bb.user.access at /mcp, pre-scope OAuth2 tokens) mint a credential with
+// empty scope and resource, carried verbatim into common.AuthContext — P1b,
+// not this layer, resolves what empty grant state may do
+// (common.DelegatedGrant).
 func TestInternalMCPCredentialEmptyGrantState(t *testing.T) {
 	cred := testDelegatedCredential()
 	cred.Scope = ""

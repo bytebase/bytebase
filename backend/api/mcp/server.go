@@ -197,10 +197,10 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// and grant state onto the private in-memory transport. The inbound
 		// bearer stops at this boundary: internal API requests mint their own
 		// credential from this identity and never see the bearer. Grant state is
-		// copied verbatim from the inbound token — empty for legacy sessions (PR
-		// 5 assigns their synthetic LEGACY_FULL semantics). Identity only, no
-		// roles: downstream authorization re-resolves live exactly as for a
-		// public request.
+		// copied verbatim from the inbound token — empty for legacy sessions
+		// (common.DelegatedGrant documents the empty-state semantics; P1b
+		// resolves them). Identity only, no roles: downstream authorization
+		// re-resolves live exactly as for a public request.
 		delegated := auth.DelegatedMCPCredential{
 			Principal:     sub,
 			WorkspaceID:   workspaceID,
@@ -495,12 +495,13 @@ func grantScope(claims jwt.MapClaims) string {
 // (PR 3 mints it from the grant verbatim). The legacy fixed audiences are not
 // resources, so legacy tokens yield empty grant state.
 //
-// Resource is therefore what distinguishes the two kinds of empty scope, and PR
-// 5 must key on it: a token minted by a PR-3-era replica during the upgrade
-// window is resource-bound but predates the scope claim, so it arrives with a
-// resource and no scope even though its grant DID record a consented scope.
-// Treating that as the synthetic LEGACY_FULL grant would silently widen a
-// read-only session to workspace admin. Genuinely pre-grant sessions carry
+// Resource is therefore what distinguishes the two kinds of empty scope, and
+// common.DelegatedGrant — where PR 5 carries it verbatim — documents why: a
+// token minted by a PR-3-era replica during the upgrade window is
+// resource-bound but predates the scope claim, so it arrives with a resource
+// and no scope even though its grant DID record a consented scope. Collapsing
+// that into the pre-grant case would silently widen a read-only session to
+// full legacy semantics when P1b enforces. Genuinely pre-grant sessions carry
 // neither.
 func grantResource(claims jwt.MapClaims, aud any) string {
 	tokenUse, ok := claims["token_use"].(string)

@@ -187,11 +187,15 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		// Example: "bb.roles.update" -> "bb.roles.create"
 		createPerm := strings.Replace(string(authContext.Permission), ".update", ".create", 1)
 
-		// Create a new auth context for create permission check
+		// Create a new auth context for create permission check. It must keep
+		// carrying the delegated grant state: this secondary check is the same
+		// request, and shedding the marker would let a future grant-keyed gate
+		// evaluate an MCP-originated request as public-chain.
 		createAuthContext := &common.AuthContext{
-			Permission: permission.Permission(createPerm),
-			AuthMethod: authContext.AuthMethod,
-			Resources:  authContext.Resources,
+			Permission:     permission.Permission(createPerm),
+			AuthMethod:     authContext.AuthMethod,
+			Resources:      authContext.Resources,
+			DelegatedGrant: authContext.DelegatedGrant,
 		}
 		ok, extra, err := doIAMPermissionCheck(ctx, in.iamManager, fullMethod, user, createAuthContext)
 		if err != nil {

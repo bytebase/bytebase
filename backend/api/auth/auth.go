@@ -38,8 +38,9 @@ const (
 	MFATempTokenAudience = "bb.user.mfa-temp"
 	// OAuth2AccessTokenAudience is the audience OAuth2 access tokens carried
 	// before they were bound to the MCP resource URI (P1a PR 3). No longer
-	// minted; still recognized so tokens issued by a pre-upgrade release keep
-	// working until they expire.
+	// minted; still recognized at /mcp so tokens issued by a pre-upgrade
+	// release keep working there until they expire. The general API refuses
+	// it like any other MCP-minted token.
 	OAuth2AccessTokenAudience = "bb.oauth2.access"
 	// TokenUseMCP is the token_use claim value marking a token as an MCP OAuth2
 	// credential. The audience of such a token is a per-deployment resource URI,
@@ -178,27 +179,28 @@ func (c *authStreamingConn) Receive(msg any) error {
 }
 
 // checkTokenAudience decides whether a token's audience admits it to the
-// general (non-/mcp) API. An MCP token — recognized by token_use, since its
-// audience is a per-deployment resource URI — is refused outright, whatever
-// audience it also carries: since PR 4's private in-memory transport, /mcp
-// tool traffic authenticates with the internal delegated credential, so
-// nothing legitimate presents an MCP token here anymore and admitting one
-// would keep it a universal API bearer (P1a PR 5, retiring PR 3's audit-only
-// admission). The fixed audiences — web sessions and OAuth2 tokens minted
-// before the audience became the MCP resource URI — pass. Anything else is
-// refused.
+// general (non-/mcp) API. An MCP token is refused outright — recognized the
+// way IsMCPOriginatedToken defines the provenance: token_use=mcp (the modern
+// resource-bound shape, whatever audience it also carries) or the legacy
+// bb.oauth2.access audience, which only the MCP authorization server ever
+// minted. Since PR 4's private in-memory transport, /mcp tool traffic
+// authenticates with the internal delegated credential, so nothing legitimate
+// presents either shape here anymore and admitting one would keep it a
+// universal API bearer (P1a PR 5, retiring PR 3's audit-only admission; the
+// legacy audience keeps draining at /mcp only, where old-replica tool traffic
+// genuinely needs it during a rolling upgrade). Web session tokens pass;
+// anything else is refused.
 func checkTokenAudience(claims *claimsMessage) error {
-	if claims.TokenUse == TokenUseMCP {
+	if claims.TokenUse == TokenUseMCP || audienceContains(claims.Audience, OAuth2AccessTokenAudience) {
 		return errs.New("MCP tokens are only accepted at /mcp; use a personal access token or service account for the API")
 	}
-	if audienceContains(claims.Audience, AccessTokenAudience) || audienceContains(claims.Audience, OAuth2AccessTokenAudience) {
+	if audienceContains(claims.Audience, AccessTokenAudience) {
 		return nil
 	}
 	return errs.Errorf(
-		"invalid access token, audience mismatch, got %q, expected %q or %q",
+		"invalid access token, audience mismatch, got %q, expected %q",
 		claims.Audience,
 		AccessTokenAudience,
-		OAuth2AccessTokenAudience,
 	)
 }
 
