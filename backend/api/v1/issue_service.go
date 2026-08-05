@@ -337,6 +337,19 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 			projectIDs = *projectIDsFilter
 		}
 	} else {
+		// Resolve the project first so an unknown parent is a NotFound rather
+		// than an INTERNAL out of CheckPermission's own project lookup. This
+		// matches what the ACL interceptor does for the IAM-authorized RPCs.
+		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+			Workspace:  common.GetWorkspaceIDFromContext(ctx),
+			ResourceID: &projectID,
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
+		}
+		if project == nil {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
+		}
 		ok, err := s.iamManager.CheckPermission(ctx, permission.IssuesGet, user, common.GetWorkspaceIDFromContext(ctx), projectID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission %q", permission.IssuesGet))

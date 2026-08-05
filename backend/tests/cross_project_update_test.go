@@ -368,6 +368,16 @@ func TestSearchIssuesConcreteProjectAuthorization(t *testing.T) {
 			"SearchIssues for project A returned an issue from another project: %s", issue.Name)
 	}
 
+	// An unknown parent is NotFound, not INTERNAL: CheckPermission's own
+	// project lookup would otherwise surface as a 500 for a typo'd project.
+	_, err = ctl.issueServiceClient.SearchIssues(ctx,
+		connect.NewRequest(&v1pb.SearchIssuesRequest{
+			Parent:   "projects/does-not-exist",
+			PageSize: 100,
+		}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err), "unknown project must be NotFound")
+
 	// The AIP-159 wildcard keeps searching across collections, restricted to
 	// the projects the caller can read.
 	wildcard, err := ctl.issueServiceClient.SearchIssues(ctx,
@@ -398,4 +408,15 @@ func TestSearchIssuesConcreteProjectAuthorization(t *testing.T) {
 		}
 	}
 	a.True(sawB, "an admin wildcard search should include project B's issues")
+
+	// An admin holds the permission workspace-wide, so CheckPermission never
+	// reaches its project lookup: without the explicit resolve, an unknown
+	// project would silently return an empty page instead of NotFound.
+	_, err = ctl.issueServiceClient.SearchIssues(ctx,
+		connect.NewRequest(&v1pb.SearchIssuesRequest{
+			Parent:   "projects/does-not-exist",
+			PageSize: 100,
+		}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err), "unknown project must be NotFound for an admin too")
 }
