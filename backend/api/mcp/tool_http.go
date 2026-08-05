@@ -69,7 +69,7 @@ func (s *Server) apiRequest(ctx context.Context, path string, body any) (*apiRes
 	// no peer address to fall back to, so without this the origin of every
 	// MCP-originated action would be blank.
 	if ip := getCallerIP(ctx); ip != "" {
-		httpReq.Header.Set("X-Real-IP", ip)
+		httpReq.Header.Set(headerRealIP, ip)
 	}
 
 	// Mint the credential for this call. Per call, not per session: see

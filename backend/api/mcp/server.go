@@ -221,7 +221,7 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// path sees it too: receiving middleware gets each request's headers,
 		// but never its peer address.
 		resolvedIP := callerIP(c.Request())
-		c.Request().Header.Set("X-Real-IP", resolvedIP)
+		c.Request().Header.Set(headerRealIP, resolvedIP)
 		ctx = withCallerIP(ctx, resolvedIP)
 		ctx = withSessionBinding(ctx, sessionBinding{
 			fingerprint: sessionFingerprint(delegated),
@@ -238,6 +238,12 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 // OAuth2 access token is minted with since P1a PR 3 (mirrors the constant of
 // the same name in the oauth2 package, which stores that URI on the grant).
 const mcpResourcePath = "/mcp"
+
+// Caller-IP headers, in the precedence the audit interceptor reads them.
+const (
+	headerRealIP       = "X-Real-IP"
+	headerForwardedFor = "X-Forwarded-For"
+)
 
 // RegisterRoutes registers the MCP server routes with Echo.
 func (s *Server) RegisterRoutes(e *echo.Echo) {
@@ -375,27 +381,25 @@ func liveRequestMetadata(next mcp.MethodHandler) mcp.MethodHandler {
 }
 
 // headerCallerIP reads the caller IP from request headers, in the order the
-// audit interceptor applies.
+// audit interceptor applies: the proxy-set single IP first, then the standard
+// forwarding chain.
 func headerCallerIP(header http.Header) string {
-	if ip := header.Get("X-Real-IP"); ip != "" {
+	if ip := header.Get(headerRealIP); ip != "" {
 		return ip
 	}
-	return header.Get("X-Forwarded-For")
+	return header.Get(headerForwardedFor)
 }
 
-// callerIP resolves who made this /mcp request, using the same precedence the
-// audit interceptor applies to a public request: the proxy-set single IP
-// first, then the standard forwarding chain, then the peer address. The port
-// is dropped from the peer address so the value reads as an IP either way.
+// callerIP resolves who made this /mcp request: the forwarding headers if
+// present, otherwise the peer address, whose port is dropped so the value reads
+// as an IP either way. Same precedence the audit interceptor applies to a
+// request that reaches the v1 API directly.
 //
-// The forwarding headers are client-controllable, exactly as they are for a
-// request that reaches the v1 API directly. Copying them preserves the existing
-// trust model rather than introducing one.
+// The forwarding headers are client-controllable, exactly as they are on that
+// direct path. Reading them preserves the existing trust model rather than
+// introducing one.
 func callerIP(r *http.Request) string {
-	if ip := r.Header.Get("X-Real-IP"); ip != "" {
-		return ip
-	}
-	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
+	if ip := headerCallerIP(r.Header); ip != "" {
 		return ip
 	}
 	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
