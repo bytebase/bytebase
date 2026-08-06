@@ -26,8 +26,18 @@ import (
 // against the live server — RFC 7591 dynamic client registration, PKCE
 // consent, code exchange — and returns the resource-bound access token plus
 // the registered client ID. consentBearer is the token of the user granting
-// consent; the minted token is bound to that principal.
+// consent; the minted token is bound to that principal. The grant consents to
+// mcp:read-only.
 func mintMCPOAuthToken(t *testing.T, ctl *controller, consentBearer string) (string, string) {
+	t.Helper()
+	return mintMCPOAuthTokenWithScope(t, ctl, consentBearer, "mcp:read-only")
+}
+
+// mintMCPOAuthTokenWithScope is the same flow with the consented scope chosen
+// by the caller. An empty scope omits the parameter entirely, emulating a
+// client that never asks for one: the grant then records no scope while the
+// resource IS bound — the resource-only grant state (common.DelegatedGrant).
+func mintMCPOAuthTokenWithScope(t *testing.T, ctl *controller, consentBearer, scope string) (string, string) {
 	t.Helper()
 	httpClient := &http.Client{}
 	redirectURI := "http://localhost/cb"
@@ -53,7 +63,9 @@ func mintMCPOAuthToken(t *testing.T, ctl *controller, consentBearer string) (str
 		"code_challenge_method": {"S256"},
 		"action":                {"allow"},
 		"resource":              {ctl.rootURL + "/mcp"},
-		"scope":                 {"mcp:read-only"},
+	}
+	if scope != "" {
+		form.Set("scope", scope)
 	}
 	req, err := http.NewRequest(http.MethodPost, ctl.rootURL+"/api/oauth2/authorize", strings.NewReader(form.Encode()))
 	require.NoError(t, err)
