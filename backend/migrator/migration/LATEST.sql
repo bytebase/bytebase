@@ -603,15 +603,18 @@ CREATE TABLE replica_heartbeat (
     last_heartbeat TIMESTAMPTZ NOT NULL
 );
 
+-- Append-only log with no primary key on purpose: entries for one task run can
+-- legitimately share a created_at microsecond (BYT-10035).
 CREATE TABLE task_run_log (
     project text NOT NULL REFERENCES project(resource_id),
     task_run_id integer NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     -- Stored as TaskRunLog (proto/store/store/task_run_log.proto)
     payload jsonb NOT NULL DEFAULT '{}',
-    PRIMARY KEY (project, task_run_id, created_at),
     FOREIGN KEY (project, task_run_id) REFERENCES task_run(project, id)
 );
+
+CREATE INDEX idx_task_run_log_project_task_run_id_created_at ON task_run_log(project, task_run_id, created_at);
 
 -----------------------
 -- OAuth2 and auth
