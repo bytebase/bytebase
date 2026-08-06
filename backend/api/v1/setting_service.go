@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"google.golang.org/protobuf/proto" // Added
@@ -889,13 +888,6 @@ func mergeWorkspaceProfilePaths(request *connect.Request[v1pb.UpdateSettingReque
 			oldSetting.EnableAuditLogStdout = payload.EnableAuditLogStdout
 		case "value.workspace_profile.watermark":
 			oldSetting.Watermark = payload.Watermark
-		case "value.workspace_profile.directory_sync_token":
-			// Generate a new token if the payload is empty.
-			// This handles both initial setup and token reset (when user explicitly sends empty string).
-			if payload.DirectorySyncToken == "" {
-				payload.DirectorySyncToken = uuid.New().String()
-			}
-			oldSetting.DirectorySyncToken = payload.DirectorySyncToken
 		case "value.workspace_profile.password_restriction":
 			oldSetting.PasswordRestriction = payload.PasswordRestriction
 		case "value.workspace_profile.sql_result_size":

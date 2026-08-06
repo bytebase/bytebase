@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/google/cel-go/cel"
@@ -12,7 +13,6 @@ import (
 	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
@@ -21,9 +21,10 @@ import (
 
 // DatabaseMessage is the message for database.
 type DatabaseMessage struct {
-	ProjectID    string
-	InstanceID   string
-	DatabaseName string
+	ProjectID         string
+	InstanceProjectID *string
+	InstanceID        string
+	DatabaseName      string
 
 	EnvironmentID          *string
 	EffectiveEnvironmentID *string
@@ -34,6 +35,14 @@ type DatabaseMessage struct {
 }
 
 func (d *DatabaseMessage) String() string {
+	return common.FormatDatabase(d.InstanceID, d.DatabaseName)
+}
+
+// ResourceName returns the canonical database resource name for the owning instance scope.
+func (d *DatabaseMessage) ResourceName() string {
+	if d.InstanceProjectID != nil {
+		return common.FormatProjectDatabase(*d.InstanceProjectID, d.InstanceID, d.DatabaseName)
+	}
 	return common.FormatDatabase(d.InstanceID, d.DatabaseName)
 }
 
@@ -168,6 +177,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	q := qb.Q().Space(`
 		SELECT
 			db.project,
+			instance.project,
 			COALESCE(
 				db.environment,
 				instance.environment
@@ -213,9 +223,10 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	for rows.Next() {
 		databaseMessage := &DatabaseMessage{}
 		var metadataString string
-		var effectiveEnvironment, environment, engine sql.NullString
+		var instanceProject, effectiveEnvironment, environment, engine sql.NullString
 		if err := rows.Scan(
 			&databaseMessage.ProjectID,
+			&instanceProject,
 			&effectiveEnvironment,
 			&environment,
 			&databaseMessage.InstanceID,
@@ -225,6 +236,9 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 			&engine,
 		); err != nil {
 			return nil, err
+		}
+		if instanceProject.Valid {
+			databaseMessage.InstanceProjectID = &instanceProject.String
 		}
 		if effectiveEnvironment.Valid {
 			databaseMessage.EffectiveEnvironmentID = &effectiveEnvironment.String
@@ -256,148 +270,136 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	return databases, nil
 }
 
-// CreateDatabaseDefault creates a new database in the default project.
+// CreateDatabaseDefault creates a database discovered by schema sync.
 func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
-	q := qb.Q().Space(`
-		INSERT INTO db (
-			instance,
-			project,
-			name,
-			deleted
-		)
-		VALUES (?, ?, ?, ?)
-		ON CONFLICT (instance, name) DO UPDATE SET
-			deleted = EXCLUDED.deleted`,
-		create.InstanceID,
-		create.ProjectID,
-		create.DatabaseName,
-		false,
-	)
-
-	query, args, err := q.ToSQL()
+	err := s.withDatabasePurgeFence(ctx, create.InstanceID, create.DatabaseName, create.ProjectID, nil, func(tx *sql.Tx, ownership *databaseOwnership) error {
+		projectID, err := ownership.projectForDefaultCreate(create.ProjectID)
+		if err != nil {
+			return err
+		}
+		query, args, err := qb.Q().Space(`INSERT INTO db (instance, project, name, deleted)
+			VALUES (?, ?, ?, ?)
+			ON CONFLICT (instance, name) DO UPDATE SET deleted = EXCLUDED.deleted`,
+			create.InstanceID, projectID, create.DatabaseName, false).ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build sql")
+		}
+		_, err = tx.ExecContext(ctx, query, args...)
+		return err
+	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
-
-	// Invalidate and update the cache.
 	s.removeDatabaseCache(ctx, create.InstanceID, create.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
 }
 
 // UpsertDatabase upserts a database.
 func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
-	metadataString, err := protojson.Marshal(create.Metadata)
+	metadata, err := protojson.Marshal(create.Metadata)
 	if err != nil {
 		return nil, err
 	}
-
 	var environment *string
 	if create.EnvironmentID != nil && *create.EnvironmentID != "" {
 		environment = create.EnvironmentID
 	}
-
-	q := qb.Q().Space(`
-		INSERT INTO db (
-			instance,
-			project,
-			environment,
-			name,
-			deleted,
-			metadata
-		)
-		VALUES (?, ?, ?, ?, ?, ?)
-		ON CONFLICT (instance, name) DO UPDATE SET
-			project = EXCLUDED.project,
-			environment = EXCLUDED.environment,
-			name = EXCLUDED.name,
-			metadata = EXCLUDED.metadata`,
-		create.InstanceID,
-		create.ProjectID,
-		environment,
-		create.DatabaseName,
-		create.Deleted,
-		metadataString,
-	)
-
-	query, args, err := q.ToSQL()
+	err = s.withDatabasePurgeFence(ctx, create.InstanceID, create.DatabaseName, create.ProjectID, nil, func(tx *sql.Tx, ownership *databaseOwnership) error {
+		projectID, err := ownership.projectForUpsert(create.ProjectID)
+		if err != nil {
+			return err
+		}
+		query, args, err := qb.Q().Space(`INSERT INTO db (instance, project, environment, name, deleted, metadata)
+			VALUES (?, ?, ?, ?, ?, ?)
+			ON CONFLICT (instance, name) DO UPDATE SET
+				project = EXCLUDED.project, environment = EXCLUDED.environment,
+				name = EXCLUDED.name, metadata = EXCLUDED.metadata`,
+			create.InstanceID, projectID, environment, create.DatabaseName, create.Deleted, metadata).ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build sql")
+		}
+		_, err = tx.ExecContext(ctx, query, args...)
+		return err
+	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
-
-	// Invalidate and update the cache.
 	s.removeDatabaseCache(ctx, create.InstanceID, create.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
 }
 
 // UpdateDatabase updates a database.
 func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage) (*DatabaseMessage, error) {
-	set := qb.Q()
-
-	if v := patch.ProjectID; v != nil {
-		set.Comma("project = ?", *v)
+	requestedProjectID := ""
+	if patch.ProjectID != nil {
+		requestedProjectID = *patch.ProjectID
 	}
-	if v := patch.EnvironmentID; v != nil {
-		if *v == "" {
-			set.Comma("environment = NULL")
-		} else {
-			set.Comma("environment = ?", *v)
+	err := s.withDatabasePurgeFence(ctx, patch.InstanceID, patch.DatabaseName, requestedProjectID, nil, func(tx *sql.Tx, ownership *databaseOwnership) error {
+		if !ownership.exists {
+			return common.Errorf(common.NotFound, "database %s not found", common.FormatDatabase(patch.InstanceID, patch.DatabaseName))
 		}
-	}
-	if v := patch.Deleted; v != nil {
-		set.Comma("deleted = ?", *v)
-	}
-	if fs := patch.MetadataUpdates; len(fs) > 0 {
-		database, err := s.GetDatabase(ctx, &FindDatabaseMessage{
-			InstanceID:   &patch.InstanceID,
-			DatabaseName: &patch.DatabaseName,
-		})
+		projectID, err := ownership.projectForUpdate(patch.ProjectID)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database %q", common.FormatDatabase(patch.InstanceID, patch.DatabaseName))
+			return err
 		}
-		md := proto.CloneOf(database.Metadata)
-		for _, f := range fs {
-			f(md)
+		set := qb.Q()
+		if patch.ProjectID != nil {
+			set.Comma("project = ?", projectID)
 		}
-		metadataBytes, err := protojson.Marshal(md)
+		if v := patch.EnvironmentID; v != nil {
+			if *v == "" {
+				set.Comma("environment = NULL")
+			} else {
+				set.Comma("environment = ?", *v)
+			}
+		}
+		if v := patch.Deleted; v != nil {
+			set.Comma("deleted = ?", *v)
+		}
+		if len(patch.MetadataUpdates) > 0 {
+			metadata := &storepb.DatabaseMetadata{}
+			if err := common.ProtojsonUnmarshaler.Unmarshal(ownership.metadata, metadata); err != nil {
+				return errors.Wrapf(err, "failed to unmarshal metadata for database %q", common.FormatDatabase(patch.InstanceID, patch.DatabaseName))
+			}
+			for _, update := range patch.MetadataUpdates {
+				update(metadata)
+			}
+			metadataBytes, err := protojson.Marshal(metadata)
+			if err != nil {
+				return err
+			}
+			set.Comma("metadata = ?", metadataBytes)
+		}
+		if set.Len() == 0 {
+			return errors.New("no fields to update")
+		}
+		query, args, err := qb.Q().Space("UPDATE db SET ? WHERE instance = ? AND name = ?", set, patch.InstanceID, patch.DatabaseName).ToSQL()
 		if err != nil {
-			return nil, err
+			return errors.Wrap(err, "failed to build sql")
 		}
-		set.Comma("metadata = ?", metadataBytes)
-	}
-
-	if set.Len() == 0 {
-		return nil, errors.New("no fields to update")
-	}
-
-	q := qb.Q().Space("UPDATE db SET ? WHERE instance = ? AND name = ?", set, patch.InstanceID, patch.DatabaseName)
-
-	query, args, err := q.ToSQL()
+		_, err = tx.ExecContext(ctx, query, args...)
+		return err
+	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
-
-	// Invalidate and update database cache.
 	s.removeDatabaseCache(ctx, patch.InstanceID, patch.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &patch.InstanceID, DatabaseName: &patch.DatabaseName, ShowDeleted: true})
 }
 
-// BatchUpdateDatabases update databases in batch.
+// BatchUpdateDatabases updates databases in batch.
+//
+// The batch runs in one transaction after acquiring every affected source and
+// destination project purge fence and instance purge fence in deterministic
+// sorted order. Without the fences, a concurrent project purge could sweep the
+// destination project's rows and make the terminal project deletion fail on
+// the db.project foreign key.
 func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseMessage, update *BatchUpdateDatabases) error {
 	set := qb.Q()
-
 	if update.ProjectID != nil {
+		if *update.ProjectID == "" {
+			return common.Errorf(common.Invalid, "database project cannot be empty")
+		}
 		set.Comma("project = ?", *update.ProjectID)
 	}
 	if v := update.EnvironmentID; v != nil {
@@ -410,46 +412,512 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 	if set.Len() == 0 {
 		return errors.New("no update field specified")
 	}
-
 	where := qb.Q()
-
 	if v := update.FindByEnvironmentID; v != nil {
-		where.Or("environment = ?", *v)
+		where.Or("db.environment = ?", *v)
 	}
-
 	if len(databases) > 0 {
-		var dbInstances, dbNames []string
+		instances, names := make([]string, 0, len(databases)), make([]string, 0, len(databases))
 		for _, database := range databases {
-			dbInstances = append(dbInstances, database.InstanceID)
-			dbNames = append(dbNames, database.DatabaseName)
+			instances, names = append(instances, database.InstanceID), append(names, database.DatabaseName)
 		}
-		where.Or(`(db.instance, db.name) IN (SELECT * FROM unnest(?::TEXT[], ?::TEXT[]))`, dbInstances, dbNames)
+		where.Or(`(db.instance, db.name) IN (SELECT * FROM unnest(?::TEXT[], ?::TEXT[]))`, instances, names)
 	}
-
 	if where.Len() == 0 {
-		return errors.Errorf("empty where")
+		return errors.New("empty where")
 	}
-
 	if update.Workspace != "" {
 		where.And("db.instance IN (SELECT resource_id FROM instance WHERE workspace = ?)", update.Workspace)
 	}
 
-	q := qb.Q().Space("UPDATE db SET ? WHERE ?", set, where)
+	// Discover every affected database before acquiring purge fences so the
+	// source/destination project and instance fence sets are known up front.
+	// The transaction below re-reads these targets under the fences.
+	targets, err := s.listDatabaseBatchTargets(ctx, where)
+	if err != nil {
+		return err
+	}
+	fenceInstances := make([]string, 0, len(targets))
+	fenceProjects := make([]string, 0, len(targets))
+	for _, target := range targets {
+		fenceInstances = append(fenceInstances, target.instanceID)
+		fenceProjects = append(fenceProjects, target.projectID)
+		if target.instanceProject != "" {
+			fenceProjects = append(fenceProjects, target.instanceProject)
+		}
+	}
+	if update.ProjectID != nil {
+		fenceProjects = append(fenceProjects, *update.ProjectID)
+	}
+	slices.Sort(fenceInstances)
+	fenceInstances = slices.Compact(fenceInstances)
+	slices.Sort(fenceProjects)
+	fenceProjects = slices.Compact(fenceProjects)
 
+	var updated []databaseBatchTarget
+	err = s.withDatabaseBatchPurgeFence(ctx, fenceInstances, fenceProjects, func(tx *sql.Tx) error {
+		// Dynamic environment matching can gain rows between the pre-read and
+		// the purge fences. Lock the complete current match set so a newly
+		// matching row is either included or causes a retry below; never leave
+		// it silently unchanged.
+		locked, err := lockDatabaseBatchTargets(ctx, tx, where, targets, update.FindByEnvironmentID != nil)
+		if err != nil {
+			return err
+		}
+		for _, target := range locked {
+			if !slices.Contains(fenceInstances, target.instanceID) || !slices.Contains(fenceProjects, target.projectID) || (target.instanceProject != "" && !slices.Contains(fenceProjects, target.instanceProject)) {
+				return common.Errorf(common.Conflict, "batch database targets changed; retry")
+			}
+		}
+		instances, err := lockDatabaseBatchInstances(ctx, tx, locked)
+		if err != nil {
+			return err
+		}
+		if update.ProjectID != nil {
+			for instanceID, instance := range instances {
+				if instance.deleted {
+					return common.Errorf(common.Conflict, "instance %s is archived", instanceID)
+				}
+			}
+		}
+		// Revalidate lifecycle under the transaction: every target must still
+		// be covered by the pre-read purge fences. A purge that committed
+		// before the fences were acquired shows up here as a retry instead of
+		// an FK failure.
+		for _, target := range locked {
+			if !slices.Contains(fenceProjects, target.projectID) {
+				return common.Errorf(common.Conflict, "database ownership changed to project %s for %s; retry", target.projectID, common.FormatDatabase(target.instanceID, target.databaseName))
+			}
+			if instanceProject := instances[target.instanceID].projectID; instanceProject != "" && !slices.Contains(fenceProjects, instanceProject) {
+				return common.Errorf(common.Conflict, "database ownership changed to project instance %s for %s; retry", instanceProject, common.FormatDatabase(target.instanceID, target.databaseName))
+			}
+		}
+		// Lock every affected project, including the destination, after the
+		// database rows and instances. A purged destination fails cleanly with
+		// NotFound instead of an FK violation.
+		projectIDs := make([]string, 0, len(locked)+1)
+		for _, target := range locked {
+			projectIDs = append(projectIDs, target.projectID)
+			if instanceProject := instances[target.instanceID].projectID; instanceProject != "" {
+				projectIDs = append(projectIDs, instanceProject)
+			}
+		}
+		if update.ProjectID != nil {
+			projectIDs = append(projectIDs, *update.ProjectID)
+		}
+		slices.Sort(projectIDs)
+		projectIDs = slices.Compact(projectIDs)
+		for _, projectID := range projectIDs {
+			var foundProjectID string
+			if err := tx.QueryRowContext(ctx, "SELECT resource_id FROM project WHERE resource_id = $1 FOR UPDATE", projectID).Scan(&foundProjectID); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return common.Errorf(common.NotFound, "project %s not found", projectID)
+				}
+				return errors.Wrapf(err, "failed to lock project %s", projectID)
+			}
+		}
+		// Atomic validation: any invalid target rejects the whole batch before
+		// any row is updated.
+		if update.ProjectID != nil {
+			for _, target := range locked {
+				if instanceProject := instances[target.instanceID].projectID; instanceProject != "" {
+					if target.projectID != instanceProject || instanceProject != *update.ProjectID {
+						return common.Errorf(common.Invalid, "cannot move a project instance database to another project")
+					}
+				}
+			}
+		}
+		if len(locked) == 0 {
+			return nil
+		}
+		updateInstances, updateNames := make([]string, 0, len(locked)), make([]string, 0, len(locked))
+		for _, target := range locked {
+			updateInstances = append(updateInstances, target.instanceID)
+			updateNames = append(updateNames, target.databaseName)
+		}
+		q := qb.Q().Space(`
+			UPDATE db SET ?
+			FROM unnest(?::TEXT[], ?::TEXT[]) AS u(instance, name)
+			WHERE db.instance = u.instance AND db.name = u.name
+		`, set, updateInstances, updateNames)
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build batch database update sql")
+		}
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return errors.Wrap(err, "failed to update databases")
+		}
+		updated = locked
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	for _, target := range updated {
+		s.removeDatabaseCache(ctx, target.instanceID, target.databaseName)
+	}
+	return nil
+}
+
+type databaseBatchTarget struct {
+	instanceID      string
+	databaseName    string
+	projectID       string
+	instanceProject string
+}
+
+// listDatabaseBatchTargets finds the databases matched by the batch update
+// where clause. It runs outside the purge fences; the result only determines
+// which fences to acquire and which rows to lock inside the transaction.
+func (s *Store) listDatabaseBatchTargets(ctx context.Context, where *qb.Query) ([]databaseBatchTarget, error) {
+	q := qb.Q().Space(`
+		SELECT db.instance, db.name, db.project, instance.project
+		FROM db
+		JOIN instance ON instance.resource_id = db.instance
+		WHERE ?
+		ORDER BY db.instance, db.name
+	`, where)
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
+		return nil, errors.Wrap(err, "failed to build batch database target query")
 	}
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find batch database targets")
+	}
+	defer rows.Close()
+	var targets []databaseBatchTarget
+	for rows.Next() {
+		var target databaseBatchTarget
+		var instanceProject sql.NullString
+		if err := rows.Scan(&target.instanceID, &target.databaseName, &target.projectID, &instanceProject); err != nil {
+			return nil, errors.Wrap(err, "failed to scan batch database target")
+		}
+		if instanceProject.Valid {
+			target.instanceProject = instanceProject.String
+		}
+		targets = append(targets, target)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read batch database targets")
+	}
+	return targets, nil
+}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+// withDatabaseBatchPurgeFence serializes a batch database write with direct
+// project and instance purge. Advisory fences are acquired in deterministic
+// sorted order (all project fences, then all instance fences) before any row
+// lock.
+func (s *Store) withDatabaseBatchPurgeFence(
+	ctx context.Context,
+	instances []string,
+	projects []string,
+	write func(*sql.Tx) error,
+) error {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to begin batch database write transaction")
+	}
+	defer tx.Rollback()
+	for _, projectID := range projects {
+		if err := acquireProjectPurgeLock(ctx, tx, projectID); err != nil {
+			return errors.Wrapf(err, "failed to lock project purge fence for %s", projectID)
+		}
+	}
+	for _, instanceID := range instances {
+		if err := acquireInstancePurgeLock(ctx, tx, instanceID); err != nil {
+			return errors.Wrapf(err, "failed to lock instance purge fence for %s", instanceID)
+		}
+	}
+	if err := write(tx); err != nil {
+		return err
+	}
+	return errors.Wrap(tx.Commit(), "failed to commit batch database write transaction")
+}
+
+// lockDatabaseBatchTargets locks the batch targets in full primary-key order.
+// Dynamic environment queries re-scan the original where clause so rows that
+// start matching after the pre-read are detected. Static targets re-apply the
+// clause to the pre-read identities, so rows that no longer match are skipped.
+// Only db rows are locked.
+func lockDatabaseBatchTargets(ctx context.Context, tx *sql.Tx, where *qb.Query, targets []databaseBatchTarget, dynamic bool) ([]databaseBatchTarget, error) {
+	if len(targets) == 0 && !dynamic {
+		return nil, nil
+	}
+	q := qb.Q().Space(`
+		SELECT db.instance, db.name, db.project, instance.project
+		FROM db
+		JOIN instance ON instance.resource_id = db.instance
+		WHERE ?
+	`, where)
+	if !dynamic {
+		instances, names := make([]string, 0, len(targets)), make([]string, 0, len(targets))
+		for _, target := range targets {
+			instances, names = append(instances, target.instanceID), append(names, target.databaseName)
+		}
+		q.And(`(db.instance, db.name) IN (SELECT * FROM unnest(?::TEXT[], ?::TEXT[]))`, instances, names)
+	}
+	q.Space("ORDER BY db.instance, db.name FOR UPDATE OF db")
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build batch database lock query")
+	}
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to lock batch database targets")
+	}
+	defer rows.Close()
+	var locked []databaseBatchTarget
+	for rows.Next() {
+		var target databaseBatchTarget
+		var instanceProject sql.NullString
+		if err := rows.Scan(&target.instanceID, &target.databaseName, &target.projectID, &instanceProject); err != nil {
+			return nil, errors.Wrap(err, "failed to scan locked batch database target")
+		}
+		if instanceProject.Valid {
+			target.instanceProject = instanceProject.String
+		}
+		locked = append(locked, target)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read locked batch database targets")
+	}
+	return locked, nil
+}
+
+type databaseBatchInstance struct {
+	projectID string
+	deleted   bool
+}
+
+// lockDatabaseBatchInstances locks the instances of the locked targets in
+// sorted order and returns their current lifecycle and owning project.
+func lockDatabaseBatchInstances(ctx context.Context, tx *sql.Tx, targets []databaseBatchTarget) (map[string]databaseBatchInstance, error) {
+	instanceIDs := make([]string, 0, len(targets))
+	for _, target := range targets {
+		instanceIDs = append(instanceIDs, target.instanceID)
+	}
+	slices.Sort(instanceIDs)
+	instanceIDs = slices.Compact(instanceIDs)
+	instances := make(map[string]databaseBatchInstance, len(instanceIDs))
+	if len(instanceIDs) == 0 {
+		return instances, nil
+	}
+	q := qb.Q().Space(`
+		SELECT resource_id, project, deleted
+		FROM instance
+		WHERE resource_id IN (SELECT * FROM unnest(?::TEXT[]))
+		ORDER BY resource_id
+		FOR NO KEY UPDATE
+	`, instanceIDs)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build batch database instance lock query")
+	}
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to lock batch database instances")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var instanceID string
+		var project sql.NullString
+		var deleted bool
+		if err := rows.Scan(&instanceID, &project, &deleted); err != nil {
+			return nil, errors.Wrap(err, "failed to scan locked batch database instance")
+		}
+		instance := databaseBatchInstance{deleted: deleted}
+		if project.Valid {
+			instance.projectID = project.String
+		}
+		instances[instanceID] = instance
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read locked batch database instances")
+	}
+	for _, instanceID := range instanceIDs {
+		if _, ok := instances[instanceID]; !ok {
+			return nil, common.Errorf(common.NotFound, "instance %s not found", instanceID)
+		}
+	}
+	return instances, nil
+}
+
+type databaseOwnership struct {
+	exists          bool
+	projectID       string
+	metadata        []byte
+	instanceProject *string
+}
+
+// withDatabasePurgeFence serializes a database write with direct project and
+// instance purge. Database descendants may be absent, so row locks alone cannot
+// prevent a purge from passing their table before the writer inserts one.
+//
+// Database sync intentionally supports an archived (but still existing) project
+// owner. It does not support a purged or soft-deleted instance: that state is a
+// direct-purge boundary and no new database data may be written through it.
+func (s *Store) withDatabasePurgeFence(
+	ctx context.Context,
+	instanceID, databaseName, requestedProjectID string,
+	lockChild func(*sql.Tx) error,
+	write func(*sql.Tx, *databaseOwnership) error,
+) error {
+	projectID, err := s.databasePurgeProject(ctx, instanceID, databaseName, requestedProjectID)
+	if err != nil {
 		return err
 	}
 
-	// Invalidate cache for updated databases
-	for _, database := range databases {
-		s.removeDatabaseCache(ctx, database.InstanceID, database.DatabaseName)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to begin database write transaction")
 	}
-	return nil
+	defer tx.Rollback()
+	projectFences := []string{projectID}
+	if requestedProjectID != "" {
+		projectFences = append(projectFences, requestedProjectID)
+	}
+	slices.Sort(projectFences)
+	projectFences = slices.Compact(projectFences)
+	for _, fence := range projectFences {
+		if err := acquireProjectPurgeLock(ctx, tx, fence); err != nil {
+			return errors.Wrapf(err, "failed to lock project purge fence for %s", fence)
+		}
+	}
+	if err := acquireInstancePurgeLock(ctx, tx, instanceID); err != nil {
+		return errors.Wrapf(err, "failed to lock instance purge fence for %s", instanceID)
+	}
+	if lockChild != nil {
+		if err := lockChild(tx); err != nil {
+			return err
+		}
+	}
+
+	ownership, err := lockDatabaseOwnership(ctx, tx, instanceID, databaseName)
+	if err != nil {
+		return err
+	}
+	if ownership.instanceProject != nil {
+		projectID = *ownership.instanceProject
+	} else if requestedProjectID == "" && ownership.exists {
+		projectID = ownership.projectID
+	}
+	if !slices.Contains(projectFences, projectID) {
+		return errors.Errorf("database ownership changed to project %s; retry", projectID)
+	}
+	for _, projectFence := range projectFences {
+		var foundProjectID string
+		if err := tx.QueryRowContext(ctx, "SELECT resource_id FROM project WHERE resource_id = $1 FOR UPDATE", projectFence).Scan(&foundProjectID); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return common.Errorf(common.NotFound, "project %s not found", projectFence)
+			}
+			return errors.Wrapf(err, "failed to lock project %s", projectFence)
+		}
+	}
+	if err := write(tx, ownership); err != nil {
+		return err
+	}
+	return errors.Wrap(tx.Commit(), "failed to commit database write transaction")
+}
+
+func (s *Store) databasePurgeProject(ctx context.Context, instanceID, databaseName, requestedProjectID string) (string, error) {
+	var instanceProject, databaseProject sql.NullString
+	if err := s.GetDB().QueryRowContext(ctx, `
+		SELECT instance.project, db.project
+		FROM instance
+		LEFT JOIN db ON db.instance = instance.resource_id AND db.name = $2
+		WHERE instance.resource_id = $1
+	`, instanceID, databaseName).Scan(&instanceProject, &databaseProject); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", common.Errorf(common.NotFound, "instance %s not found", instanceID)
+		}
+		return "", errors.Wrapf(err, "failed to find database purge project for instance %s", instanceID)
+	}
+	if instanceProject.Valid {
+		return instanceProject.String, nil
+	}
+	if databaseProject.Valid {
+		return databaseProject.String, nil
+	}
+	if requestedProjectID != "" {
+		return requestedProjectID, nil
+	}
+	return "", common.Errorf(common.NotFound, "database %s not found", common.FormatDatabase(instanceID, databaseName))
+}
+
+func lockDatabaseOwnership(ctx context.Context, tx *sql.Tx, instanceID, databaseName string) (*databaseOwnership, error) {
+	ownership := &databaseOwnership{}
+	var databaseProject sql.NullString
+	if err := tx.QueryRowContext(ctx, `
+		SELECT project, metadata FROM db
+		WHERE instance = $1 AND name = $2
+		FOR UPDATE
+	`, instanceID, databaseName).Scan(&databaseProject, &ownership.metadata); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrapf(err, "failed to lock database %s", common.FormatDatabase(instanceID, databaseName))
+	}
+	if databaseProject.Valid {
+		ownership.exists = true
+		ownership.projectID = databaseProject.String
+	}
+
+	var instanceProject sql.NullString
+	var deleted bool
+	if err := tx.QueryRowContext(ctx, `
+		SELECT project, deleted FROM instance WHERE resource_id = $1 FOR NO KEY UPDATE
+	`, instanceID).Scan(&instanceProject, &deleted); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, common.Errorf(common.NotFound, "instance %s not found", instanceID)
+		}
+		return nil, errors.Wrapf(err, "failed to lock instance %s", instanceID)
+	}
+	if deleted {
+		return nil, common.Errorf(common.NotFound, "instance %s is deleted", instanceID)
+	}
+	if instanceProject.Valid {
+		projectID := instanceProject.String
+		ownership.instanceProject = &projectID
+	}
+	return ownership, nil
+}
+
+func (ownership *databaseOwnership) projectForDefaultCreate(requestedProjectID string) (string, error) {
+	if ownership.instanceProject != nil {
+		if ownership.exists && ownership.projectID != *ownership.instanceProject {
+			return "", common.Errorf(common.Invalid, "database on project instance must belong to project %s", *ownership.instanceProject)
+		}
+		return *ownership.instanceProject, nil
+	}
+	if requestedProjectID == "" {
+		return "", common.Errorf(common.Invalid, "database project cannot be empty")
+	}
+	return requestedProjectID, nil
+}
+
+func (ownership *databaseOwnership) projectForUpsert(requestedProjectID string) (string, error) {
+	if ownership.instanceProject != nil {
+		if ownership.exists && (requestedProjectID != *ownership.instanceProject || ownership.projectID != *ownership.instanceProject) {
+			return "", common.Errorf(common.Invalid, "database on project instance must belong to project %s", *ownership.instanceProject)
+		}
+		return *ownership.instanceProject, nil
+	}
+	if requestedProjectID == "" {
+		return "", common.Errorf(common.Invalid, "database project cannot be empty")
+	}
+	return requestedProjectID, nil
+}
+
+func (ownership *databaseOwnership) projectForUpdate(requestedProjectID *string) (string, error) {
+	projectID := ownership.projectID
+	if requestedProjectID != nil {
+		projectID = *requestedProjectID
+	}
+	if projectID == "" {
+		return "", common.Errorf(common.Invalid, "database project cannot be empty")
+	}
+	if ownership.instanceProject != nil && (ownership.projectID != *ownership.instanceProject || projectID != *ownership.instanceProject) {
+		return "", common.Errorf(common.Invalid, "database on project instance must belong to project %s", *ownership.instanceProject)
+	}
+	return projectID, nil
 }
 
 func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {

@@ -146,4 +146,5 @@ export type Permission =
   | "bb.workspaces.delete"
   | "bb.workspaces.getIamPolicy"
   | "bb.workspaces.update"
-  | "bb.workspaces.setIamPolicy";
+  | "bb.workspaces.setIamPolicy"
+  | "bb.workspaces.rotateDirectorySyncToken";

@@ -258,7 +258,6 @@
   
 - [v1/actuator_service.proto](#v1_actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
-    - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [Restriction](#bytebase-v1-Restriction)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
@@ -534,6 +533,7 @@
     - [IdentityProvider](#bytebase-v1-IdentityProvider)
     - [IdentityProviderConfig](#bytebase-v1-IdentityProviderConfig)
     - [LDAPIdentityProviderConfig](#bytebase-v1-LDAPIdentityProviderConfig)
+    - [LDAPIdentityProviderTestRequestContext](#bytebase-v1-LDAPIdentityProviderTestRequestContext)
     - [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest)
     - [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse)
     - [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig)
@@ -768,6 +768,8 @@
     - [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest)
     - [ListWorkspacesRequest](#bytebase-v1-ListWorkspacesRequest)
     - [ListWorkspacesResponse](#bytebase-v1-ListWorkspacesResponse)
+    - [RotateDirectorySyncTokenRequest](#bytebase-v1-RotateDirectorySyncTokenRequest)
+    - [RotateDirectorySyncTokenResponse](#bytebase-v1-RotateDirectorySyncTokenResponse)
     - [UpdateWorkspaceRequest](#bytebase-v1-UpdateWorkspaceRequest)
     - [Workspace](#bytebase-v1-Workspace)
   
@@ -2379,6 +2381,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | password | [string](#string) |  | The zip password provide by users. |
 | data_source_id | [string](#string) |  | The id of data source. If omitted, Export resolves the data source server-side by using the single read-only data source when exactly one exists, or the admin data source otherwise. It can also be set explicitly to export from the admin data source or a specific read-only data source. |
 | schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
+| container | [string](#string) | optional | Container is the container name to execute the query against, used for CosmosDB only. |
 
 
 
@@ -3605,7 +3608,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project} Use &#34;projects/-&#34; to list all issues from all projects. |
+| parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project} Use the wildcard &#34;projects/-&#34; to search across collections (AIP-159); the result is restricted to the projects where the caller holds bb.issues.get. For a concrete project, the caller must hold bb.issues.get on that project or the request is denied. |
 | page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 10 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `SearchIssues` call. Provide this to retrieve the subsequent page.
 
@@ -4481,7 +4484,6 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
 | enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
 | watermark | [bool](#bool) |  | Whether to display watermark on pages. Requires ENTERPRISE license. |
-| directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
 | password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-v1-WorkspaceProfileSetting-PasswordRestriction) |  | Password restriction settings. |
 | access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
 | enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
@@ -4492,6 +4494,7 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | sql_editor_custom_theme | [SQLEditorThemeSetting](#bytebase-v1-SQLEditorThemeSetting) |  | The enforced CUSTOM theme&#39;s full definition — present ONLY when sql_editor_theme_id is a custom uuid. tokens is always complete. |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for request role. Deprecated: use just-in-time access request flows instead. |
 | mcp_capability | [WorkspaceProfileSetting.MCPCapability](#bytebase-v1-WorkspaceProfileSetting-MCPCapability) |  | The maximum capability available to MCP (Model Context Protocol) sessions in this workspace, acting as an admin-set ceiling. Unset is treated as READ_WRITE for backward compatibility; DISABLED rejects all MCP connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected — omit the update mask path to leave the ceiling unset. |
+| directory_sync_token_configured | [bool](#bool) |  | Whether a directory sync token has been generated for this workspace. The token itself is never returned; this only lets the UI decide between offering &#34;generate&#34; and &#34;regenerate&#34;. |
 
 
 
@@ -4717,16 +4720,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 
 
-<a name="bytebase-v1-DeleteCacheRequest"></a>
-
-### DeleteCacheRequest
-Request message for deleting cache.
-
-
-
-
-
-
 <a name="bytebase-v1-GetActuatorInfoRequest"></a>
 
 ### GetActuatorInfoRequest
@@ -4786,7 +4779,6 @@ ActuatorService manages system health and operational information.
 | ----------- | ------------ | ------------- | ------------|
 | GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets system information and health status of the Bytebase instance. When `name` is provided (or the workspace-scoped binding is used), the response includes workspace-scoped fields for that workspace. Permissions required: None |
 | SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sets up sample data for demonstration and testing purposes. Permissions required: bb.projects.create |
-| DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Clears the system cache to force data refresh. Permissions required: None |
 
  
 
@@ -5863,7 +5855,7 @@ CelService manages CEL (Common Expression Language) parsing and formatting opera
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
+| name | [string](#string) |  | Format: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | status | [Changelog.Status](#bytebase-v1-Changelog-Status) |  |  |
 | schema | [string](#string) |  |  |
@@ -5884,7 +5876,7 @@ CelService manages CEL (Common Expression Language) parsing and formatting opera
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the changelog to retrieve. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
+| name | [string](#string) |  | The name of the changelog to retrieve. Format: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog} |
 | view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
 
 
@@ -5900,7 +5892,7 @@ CelService manages CEL (Common Expression Language) parsing and formatting opera
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent of the changelogs. Format: instances/{instance}/databases/{database} |
+| parent | [string](#string) |  | The parent of the changelogs. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | page_size | [int32](#int32) |  | The maximum number of changelogs to return. The service may return fewer than this value. If unspecified, at most 10 changelogs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from the previous call. Provide this to retrieve the subsequent page.
 
@@ -6030,7 +6022,7 @@ Catalog metadata for a database including schemas, tables, and columns.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database catalog. Format: instances/{instance}/databases/{database}/catalog |
+| name | [string](#string) |  | The name of the database catalog. Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog |
 | schemas | [SchemaCatalog](#bytebase-v1-SchemaCatalog) | repeated | The schemas in the database. |
 
 
@@ -6046,7 +6038,7 @@ Request message for getting a database catalog.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database catalog to retrieve. Format: instances/{instance}/databases/{database}/catalog |
+| name | [string](#string) |  | The name of the database catalog to retrieve. Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog |
 
 
 
@@ -6176,7 +6168,7 @@ Request message for updating a database catalog.
 | ----- | ---- | ----- | ----------- |
 | catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  | The database catalog to update.
 
-The catalog&#39;s `name` field is used to identify the database catalog to update. Format: instances/{instance}/databases/{database}/catalog |
+The catalog&#39;s `name` field is used to identify the database catalog to update. Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog |
 | allow_missing | [bool](#bool) |  | If set to true, and the database catalog is not found, a new database catalog will be created. In this situation, `update_mask` is ignored. |
 
 
@@ -6416,7 +6408,7 @@ InstanceRole is the API message for instance role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the role. Format: instances/{instance}/roles/{role} The role name is the unique name for the role. |
+| name | [string](#string) |  | The name of the role. Format: instances/{instance}/roles/{role} or projects/{project}/instances/{instance}/roles/{role} The role name is the unique name for the role. |
 | role_name | [string](#string) |  | The role name. It&#39;s unique within the instance. |
 | password | [string](#string) | optional | The role password. |
 | connection_limit | [int32](#int32) | optional | The connection count limit for this role. |
@@ -6436,7 +6428,7 @@ InstanceRole is the API message for instance role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of roles. Format: instances/{instance} |
+| parent | [string](#string) |  | The parent, which owns this collection of roles. Format: instances/{instance} or projects/{project}/instances/{instance} |
 | page_size | [int32](#int32) |  | Not used. The maximum number of roles to return. The service may return fewer than this value. If unspecified, at most 10 roles will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListInstanceRoles` call. Provide this to retrieve the subsequent page.
 
@@ -6498,7 +6490,7 @@ InstanceRoleService manages database roles within instances.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to add a data source to. Format: instances/{instance} |
+| name | [string](#string) |  | The name of the instance to add a data source to. Format: instances/{instance} or projects/{project}/instances/{instance} |
 | data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be added. |
 | validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
@@ -6515,6 +6507,7 @@ InstanceRoleService manages database roles within instances.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| parent | [string](#string) | optional | The parent, which owns this collection of instances. Format: projects/{project}. If omitted, all targets must be workspace instances; otherwise, every target must belong to this project collection. |
 | requests | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | repeated | The request message specifying the instances to sync. A maximum of 1000 instances can be synced in a batch. |
 
 
@@ -6540,6 +6533,7 @@ InstanceRoleService manages database roles within instances.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| parent | [string](#string) | optional | The parent, which owns this collection of instances. Format: projects/{project}. If omitted, all targets must be workspace instances; otherwise, every target must belong to this project collection. |
 | requests | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | repeated | The request message specifying the resources to update. |
 
 
@@ -6570,12 +6564,13 @@ InstanceRoleService manages database roles within instances.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| parent | [string](#string) | optional | The parent, which owns this collection of instances. Format: projects/{project}. If omitted, the instance is created in the workspace collection. |
 | instance | [Instance](#bytebase-v1-Instance) |  | The instance to create. |
 | instance_id | [string](#string) |  | The ID to use for the instance, which will become the final component of the instance&#39;s resource name.
 
 This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
-| initial_database_project | [string](#string) |  | The project to assign newly discovered databases to during initial sync. Format: projects/{project} |
+| initial_database_project | [string](#string) |  | The project to assign newly discovered databases to during initial sync. Format: projects/{project}. This must be unset when `parent` is set. |
 
 
 
@@ -6638,7 +6633,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | master_username | [string](#string) |  | master_username and master_password are master credentials used by redis sentinel mode. |
 | master_password | [string](#string) |  |  |
 | redis_type | [DataSource.RedisType](#bytebase-v1-DataSource-RedisType) |  |  |
-| cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
 | extra_connection_parameters | [DataSource.ExtraConnectionParametersEntry](#bytebase-v1-DataSource-ExtraConnectionParametersEntry) | repeated | Extra connection parameters for the database connection. For PostgreSQL HA, this can be used to set target_session_attrs=read-write |
 | project_id | [string](#string) |  | project_id and instance_id are the GCP resource identifiers. project_id is used by Spanner and BigQuery; instance_id is used by Spanner. For these engines, host and port optionally override the default Google API endpoint (e.g. a Private Service Connect endpoint like spanner-nonprod.p.googleapis.com). |
 | instance_id | [string](#string) |  |  |
@@ -6784,8 +6778,8 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to delete. Format: instances/{instance} |
-| force | [bool](#bool) |  | If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. |
+| name | [string](#string) |  | The name of the instance to delete. Format: instances/{instance} or projects/{project}/instances/{instance} |
+| force | [bool](#bool) |  | If set to true, a workspace instance&#39;s databases are moved to the default project before the instance is soft-deleted. Project instances reject this option because their databases must remain in the owning project. |
 | purge | [bool](#bool) |  | If set to true, permanently purge the soft-deleted instance and all related resources. This operation is irreversible. Following AIP-165, this should only be used for administrative cleanup of old soft-deleted instances. The instance must already be soft-deleted for this to work. |
 
 
@@ -6801,7 +6795,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to retrieve. Format: instances/{instance} |
+| name | [string](#string) |  | The name of the instance to retrieve. Format: instances/{instance} or projects/{project}/instances/{instance} |
 
 
 
@@ -6816,7 +6810,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
+| name | [string](#string) |  | The name of the instance. Format: instances/{instance} or projects/{project}/instances/{instance} |
 | state | [State](#bytebase-v1-State) |  | The lifecycle state of the instance. |
 | title | [string](#string) |  | The display title of the instance. |
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine type. |
@@ -6865,7 +6859,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | engine_version | [string](#string) |  | The version of the database engine. |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated | Data source configurations for the instance. |
 | activation | [bool](#bool) |  | Whether the instance is activated. |
-| name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
+| name | [string](#string) |  | The name of the instance. Format: instances/{instance} or projects/{project}/instances/{instance} |
 | environment | [string](#string) | optional | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 
 
@@ -6902,7 +6896,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
+| name | [string](#string) |  | The name of the instance. Format: instances/{instance} or projects/{project}/instances/{instance} |
 | instance | [Instance](#bytebase-v1-Instance) | optional | The target instance. We need to set this field if the target instance is not created yet. |
 
 
@@ -6933,6 +6927,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| parent | [string](#string) | optional | The parent, which owns this collection of instances. Format: projects/{project}. If omitted, only workspace instances are returned. Wildcard project parents are not supported. When set, the `project` filter must be omitted or match this parent. |
 | page_size | [int32](#int32) |  | The maximum number of instances to return. The service may return fewer than this value. If unspecified, at most 10 instances will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListInstances` call. Provide this to retrieve the subsequent page.
 
@@ -6974,7 +6969,7 @@ For example: name == &#34;sample instance&#34; name.contains(&#34;sample&#34;) r
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to remove a data source from. Format: instances/{instance} |
+| name | [string](#string) |  | The name of the instance to remove a data source from. Format: instances/{instance} or projects/{project}/instances/{instance} |
 | data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be removed. |
 
 
@@ -7020,7 +7015,7 @@ For example: name == &#34;sample instance&#34; name.contains(&#34;sample&#34;) r
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of instance. Format: instances/{instance} |
+| name | [string](#string) |  | The name of instance. Format: instances/{instance} or projects/{project}/instances/{instance} |
 | enable_full_sync | [bool](#bool) |  | When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only the instance metadata (such as the database list) and any newly discovered databases will be synced. |
 
 
@@ -7051,7 +7046,7 @@ For example: name == &#34;sample instance&#34; name.contains(&#34;sample&#34;) r
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the deleted instance. Format: instances/{instance} |
+| name | [string](#string) |  | The name of the deleted instance. Format: instances/{instance} or projects/{project}/instances/{instance} |
 
 
 
@@ -7066,7 +7061,7 @@ For example: name == &#34;sample instance&#34; name.contains(&#34;sample&#34;) r
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to update a data source. Format: instances/{instance} |
+| name | [string](#string) |  | The name of the instance to update a data source. Format: instances/{instance} or projects/{project}/instances/{instance} |
 | data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
@@ -7087,9 +7082,9 @@ For example: name == &#34;sample instance&#34; name.contains(&#34;sample&#34;) r
 | ----- | ---- | ----- | ----------- |
 | instance | [Instance](#bytebase-v1-Instance) |  | The instance to update.
 
-The instance&#39;s `name` field is used to identify the instance to update. Format: instances/{instance} |
+The instance&#39;s `name` field is used to identify the instance to update. Format: instances/{instance} or projects/{project}/instances/{instance} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the instance is not found, a new instance will be created. In this situation, `update_mask` is ignored. |
+| allow_missing | [bool](#bool) |  | If set to true, and the instance is not found, a new instance will be created. In this situation, `update_mask` is ignored. A project-nested name creates the instance only under its encoded active, non-default project; it never falls back to a workspace instance. |
 
 
 
@@ -7221,11 +7216,11 @@ InstanceService manages database instances and their connections.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetInstance | [GetInstanceRequest](#bytebase-v1-GetInstanceRequest) | [Instance](#bytebase-v1-Instance) | Gets a database instance by name. Permissions required: bb.instances.get |
-| ListInstances | [ListInstancesRequest](#bytebase-v1-ListInstancesRequest) | [ListInstancesResponse](#bytebase-v1-ListInstancesResponse) | Lists all database instances. Permissions required: bb.instances.list |
+| ListInstances | [ListInstancesRequest](#bytebase-v1-ListInstancesRequest) | [ListInstancesResponse](#bytebase-v1-ListInstancesResponse) | Lists database instances, optionally within a project. Permissions required: bb.instances.list |
 | CreateInstance | [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest) | [Instance](#bytebase-v1-Instance) | Creates a new database instance. Permissions required: bb.instances.create |
 | UpdateInstance | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | [Instance](#bytebase-v1-Instance) | Updates a database instance. Permissions required: bb.instances.update |
-| DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes or soft-deletes a database instance. Permissions required: bb.instances.delete |
-| UndeleteInstance | [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest) | [Instance](#bytebase-v1-Instance) | Restores a soft-deleted database instance. Permissions required: bb.instances.undelete |
+| DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes or soft-deletes a database instance. Soft-delete requests fail with FAILED_PRECONDITION while any task run targeting the instance is pending, available, or running. Permissions required: bb.instances.delete |
+| UndeleteInstance | [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest) | [Instance](#bytebase-v1-Instance) | Restores a soft-deleted database instance. Restore requests fail with FAILED_PRECONDITION while any task run targeting the instance is pending, available, or running. Permissions required: bb.instances.undelete |
 | SyncInstance | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse) | Syncs database schemas and metadata from an instance. Permissions required: bb.instances.sync |
 | ListInstanceDatabase | [ListInstanceDatabaseRequest](#bytebase-v1-ListInstanceDatabaseRequest) | [ListInstanceDatabaseResponse](#bytebase-v1-ListInstanceDatabaseResponse) | Lists all databases within an instance without creating them. Permissions required: bb.instances.get |
 | BatchSyncInstances | [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest) | [BatchSyncInstancesResponse](#bytebase-v1-BatchSyncInstancesResponse) | Syncs multiple instances in a single request. Permissions required: bb.instances.sync |
@@ -7253,7 +7248,7 @@ InstanceService manages database instances and their connections.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource shared by all databases being retrieved. - projects/{project}: batch get databases in a project; - instances/{instances}: batch get databases in a instance; Use &#34;-&#34; as wildcard to batch get databases across parent. |
+| parent | [string](#string) |  | The parent resource shared by all databases being retrieved. - projects/{project}: batch get databases in a project; - instances/{instance}: batch get databases in an instance; - projects/{project}/instances/{instance}: batch get databases in a project instance; Use &#34;-&#34; as wildcard to batch get databases across parent. |
 | names | [string](#string) | repeated | The list of database names to retrieve. |
 
 
@@ -7284,7 +7279,7 @@ InstanceService manages database instances and their connections.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource shared by all databases being updated. Format: instances/{instance} If the operation spans parents, a dash (-) may be accepted as a wildcard. |
+| parent | [string](#string) |  | The parent resource shared by all databases being updated. Format: instances/{instance} or projects/{project}/instances/{instance} If the operation spans parents, a dash (-) may be accepted as a wildcard. |
 | names | [string](#string) | repeated | The list of database names to sync. |
 
 
@@ -7310,7 +7305,7 @@ InstanceService manages database instances and their connections.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource shared by all databases being updated. Format: instances/{instance} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the project of databases for now. |
+| parent | [string](#string) |  | The parent resource shared by all databases being updated. Format: instances/{instance} or projects/{project}/instances/{instance} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the project of databases for now. |
 | requests | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | repeated | The request message specifying the resources to update. A maximum of 1000 databases can be modified in a batch. |
 
 
@@ -7451,7 +7446,7 @@ This field is populated when syncing from the database. When empty (e.g., when p
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database. Format: instances/{instance}/databases/{database} {database} is the database name in the instance. |
+| name | [string](#string) |  | The name of the database. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} {database} is the database name in the instance. |
 | state | [State](#bytebase-v1-State) |  | The existence of a database. |
 | successful_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest synchronization time. |
 | project | [string](#string) |  | The project for a database. Format: projects/{project} |
@@ -7495,7 +7490,7 @@ DatabaseMetadata is the metadata for databases.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The database metadata name.
 
-Format: instances/{instance}/databases/{database}/metadata |
+Format: instances/{instance}/databases/{database}/metadata or projects/{project}/instances/{instance}/databases/{database}/metadata |
 | schemas | [SchemaMetadata](#bytebase-v1-SchemaMetadata) | repeated | The schemas is the list of schemas in a database. |
 | character_set | [string](#string) |  | The character_set is the character set of a database. |
 | collation | [string](#string) |  | The collation is the collation of a database. |
@@ -7580,7 +7575,7 @@ DependencyColumn is the metadata for dependency columns.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The database whose current schema is the diff source. Format: instances/{instance}/databases/{database} |
+| name | [string](#string) |  | The database whose current schema is the diff source. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. The source metadata and the engine are read from the database, so only the target travels in the request. Must describe the COMPLETE target schema: the diff runs against the full stored source, so any object omitted from the target (for example by a truncated metadata fetch) is treated as dropped. |
 
 
@@ -7611,9 +7606,9 @@ DependencyColumn is the metadata for dependency columns.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database or changelog. Format: database: instances/{instance}/databases/{database} changelog: instances/{instance}/databases/{database}/changelogs/{changelog} |
+| name | [string](#string) |  | The name of the database or changelog. Format: database: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} changelog: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog} |
 | schema | [string](#string) |  | The target schema. |
-| changelog | [string](#string) |  | The resource name of the changelog Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
+| changelog | [string](#string) |  | The resource name of the changelog Format: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog} |
 
 
 
@@ -7816,7 +7811,7 @@ FunctionMetadata is the metadata for functions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/metadata |
+| name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/metadata or projects/{project}/instances/{instance}/databases/{database}/metadata |
 | filter | [string](#string) |  | Filter is used to filter databases returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
 Supported filter: - schema: the schema name, support &#34;==&#34; operator. - table: the table name, support &#34;==&#34; and &#34;.contains()&#34; operator.
@@ -7837,7 +7832,7 @@ For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; table.conta
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve. Format: instances/{instance}/databases/{database} |
+| name | [string](#string) |  | The name of the database to retrieve. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 
 
 
@@ -7852,7 +7847,7 @@ For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; table.conta
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve SDL schema. Format: instances/{instance}/databases/{database}/sdlSchema |
+| name | [string](#string) |  | The name of the database to retrieve SDL schema. Format: instances/{instance}/databases/{database}/sdlSchema or projects/{project}/instances/{instance}/databases/{database}/sdlSchema |
 | format | [GetDatabaseSDLSchemaRequest.SDLFormat](#bytebase-v1-GetDatabaseSDLSchemaRequest-SDLFormat) |  | The format of the SDL schema output. |
 
 
@@ -7868,7 +7863,7 @@ For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; table.conta
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve schema. Format: instances/{instance}/databases/{database}/schema |
+| name | [string](#string) |  | The name of the database to retrieve schema. Format: instances/{instance}/databases/{database}/schema or projects/{project}/instances/{instance}/databases/{database}/schema |
 
 
 
@@ -7883,7 +7878,7 @@ For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; table.conta
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database. Format: instances/{instance}/databases/{database} |
+| name | [string](#string) |  | The name of the database. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | type | [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType) |  |  |
 | schema | [string](#string) |  | It&#39;s empty for DATABASE. |
 | object | [string](#string) |  | It&#39;s empty for DATABASE and SCHEMA. |
@@ -7964,7 +7959,7 @@ IndexMetadata is the metadata for indexes.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | - projects/{project}: list databases in a project, require &#34;bb.projects.get&#34; permission. - workspaces/{id}: list databases in the workspace, require &#34;bb.databases.list&#34; permission. - instances/{instances}: list databases in a instance, require &#34;bb.instances.get&#34; permission |
+| parent | [string](#string) |  | - projects/{project}: list databases in a project, require &#34;bb.projects.get&#34; permission. - workspaces/{id}: list databases in the workspace, require &#34;bb.databases.list&#34; permission. - instances/{instance}: list databases in an instance, require &#34;bb.instances.get&#34; permission. - projects/{project}/instances/{instance}: list databases in a project instance, require &#34;bb.instances.get&#34; permission. |
 | page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 10 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
 
@@ -8195,7 +8190,7 @@ StorageConfig defines storage and performance parameters for spatial indexes.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to sync. Format: instances/{instance}/databases/{database} |
+| name | [string](#string) |  | The name of the database to sync. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 
 
 
@@ -8344,7 +8339,7 @@ TessellationConfig defines tessellation parameters for spatial indexes.
 | ----- | ---- | ----- | ----------- |
 | database | [Database](#bytebase-v1-Database) |  | The database to update.
 
-The database&#39;s `name` field is used to identify the database to update. Format: instances/{instance}/databases/{database} |
+The database&#39;s `name` field is used to identify the database to update. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | allow_missing | [bool](#bool) |  | If set to true, and the database is not found, a new database will be created. In this situation, `update_mask` is ignored. |
 
@@ -8891,6 +8886,22 @@ LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
 
 
 
+<a name="bytebase-v1-LDAPIdentityProviderTestRequestContext"></a>
+
+### LDAPIdentityProviderTestRequestContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| username | [string](#string) |  | The username of a directory user, substituted into the user filter. |
+| password | [string](#string) |  | The password of the directory user. |
+
+
+
+
+
+
 <a name="bytebase-v1-ListIdentityProvidersRequest"></a>
 
 ### ListIdentityProvidersRequest
@@ -9007,6 +9018,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to test connection including uncreated. |
 | oauth2_context | [OAuth2IdentityProviderTestRequestContext](#bytebase-v1-OAuth2IdentityProviderTestRequestContext) |  |  |
 | oidc_context | [OIDCIdentityProviderTestRequestContext](#bytebase-v1-OIDCIdentityProviderTestRequestContext) |  | OIDC authentication context for test connection. |
+| ldap_context | [LDAPIdentityProviderTestRequestContext](#bytebase-v1-LDAPIdentityProviderTestRequestContext) |  | LDAP credentials context for test connection. |
 
 
 
@@ -9159,7 +9171,7 @@ IdentityProviderService manages external identity providers for SSO authenticati
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this instance will be created. Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+| parent | [string](#string) |  | The parent resource where this instance will be created. Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. |
 | policy | [Policy](#bytebase-v1-Policy) |  | The policy to create. |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  | The type of policy to create. |
 
@@ -9176,7 +9188,7 @@ IdentityProviderService manages external identity providers for SSO authenticati
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+| name | [string](#string) |  | The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. |
 
 
 
@@ -9311,7 +9323,7 @@ For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.proje
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the policy. Format: {resource name}/policies/{policy type} Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+| name | [string](#string) |  | The name of the policy. Format: {resource name}/policies/{policy type} Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. |
 | inherit_from_parent | [bool](#bool) |  | Whether this policy inherits from its parent resource. |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  | The type of policy. |
 | rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
@@ -9402,7 +9414,7 @@ Policy for tagging resources with metadata.
 | ----- | ---- | ----- | ----------- |
 | policy | [Policy](#bytebase-v1-Policy) |  | The policy to update.
 
-The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: workspaces/{workspace-id}. Environment resource name: environments/environment-id. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | allow_missing | [bool](#bool) |  | If set to true, and the policy is not found, a new policy will be created. In this situation, `update_mask` is ignored. |
 
@@ -10643,7 +10655,7 @@ ReviewConfigService manages approval flow configurations.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource shared by all revisions being created. Format: instances/{instance}/databases/{database} |
+| parent | [string](#string) |  | The parent resource shared by all revisions being created. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | requests | [CreateRevisionRequest](#bytebase-v1-CreateRevisionRequest) | repeated | The request message specifying the revisions to create. A maximum of 100 revisions can be created in a batch. |
 
 
@@ -10674,7 +10686,7 @@ ReviewConfigService manages approval flow configurations.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: instances/{instance}/databases/{database} |
+| parent | [string](#string) |  | Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | revision | [Revision](#bytebase-v1-Revision) |  | The revision to create. |
 
 
@@ -10690,7 +10702,7 @@ ReviewConfigService manages approval flow configurations.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the revision to delete. Format: instances/{instance}/databases/{database}/revisions/{revision} |
+| name | [string](#string) |  | The name of the revision to delete. Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision} |
 
 
 
@@ -10705,7 +10717,7 @@ ReviewConfigService manages approval flow configurations.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the revision. Format: instances/{instance}/databases/{database}/revisions/{revision} |
+| name | [string](#string) |  | The name of the revision. Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision} |
 
 
 
@@ -10720,7 +10732,7 @@ ReviewConfigService manages approval flow configurations.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent of the revisions. Format: instances/{instance}/databases/{database} |
+| parent | [string](#string) |  | The parent of the revisions. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | page_size | [int32](#int32) |  | The maximum number of revisions to return. The service may return fewer than this value. If unspecified, at most 10 revisions will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListRevisions` call. Provide this to retrieve the subsequent page.
 
@@ -10756,7 +10768,7 @@ When paginating, all other parameters provided to `ListRevisions` must match the
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: instances/{instance}/databases/{database}/revisions/{revision} |
+| name | [string](#string) |  | Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision} |
 | release | [string](#string) |  | Format: projects/{project}/releases/{release} Can be empty. |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | deleter | [string](#string) |  | Format: users/hello@world.com Can be empty. |
@@ -12350,6 +12362,36 @@ WorksheetService manages SQL worksheets for query development.
 
 
 
+<a name="bytebase-v1-RotateDirectorySyncTokenRequest"></a>
+
+### RotateDirectorySyncTokenRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The workspace whose directory sync token is rotated. Format: workspaces/{workspace} |
+
+
+
+
+
+
+<a name="bytebase-v1-RotateDirectorySyncTokenResponse"></a>
+
+### RotateDirectorySyncTokenResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| token | [string](#string) |  | The new token, in plaintext. This is the only time it is ever returned. |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateWorkspaceRequest"></a>
 
 ### UpdateWorkspaceRequest
@@ -12403,6 +12445,7 @@ WorkspaceService manages workspace-level operations and profile.
 | DeleteWorkspace | [DeleteWorkspaceRequest](#bytebase-v1-DeleteWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Deletes a workspace. SaaS only. Cancels any active subscription and soft-deletes the workspace so all associated data becomes inaccessible. Requires workspace admin permission. |
 | LeaveWorkspace | [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Removes the calling user from a workspace and switches to the next available workspace. Available to any workspace member. Fails if the caller is the last workspace admin. |
 | SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Sets IAM policy for the workspace. Permissions required: bb.workspaces.setIamPolicy |
+| RotateDirectorySyncToken | [RotateDirectorySyncTokenRequest](#bytebase-v1-RotateDirectorySyncTokenRequest) | [RotateDirectorySyncTokenResponse](#bytebase-v1-RotateDirectorySyncTokenResponse) | Mints a new directory sync (SCIM) token, immediately invalidating the previous one. The plaintext token is returned exactly once and cannot be retrieved afterwards; only its hash is stored. Callers that lose it must rotate again and update their identity provider. Permissions required: bb.workspaces.rotateDirectorySyncToken |
 
  
 

@@ -366,18 +366,18 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\"\xcf\x06\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\"\xe7\x06\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
 	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12\x1f\n" +
 	"\vhas_rollout\x18\x02 \x01(\bR\n" +
 	"hasRollout\x124\n" +
-	"\x16approval_input_version\x18\x03 \x01(\x03R\x14approvalInputVersion\x1a\xf2\x01\n" +
+	"\x16approval_input_version\x18\x03 \x01(\x03R\x14approvalInputVersion\x1a\xf8\x01\n" +
 	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x05 \x01(\tR\x02id\x12g\n" +
 	"\x16create_database_config\x18\x01 \x01(\v2/.bytebase.store.PlanConfig.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12g\n" +
 	"\x16change_database_config\x18\x02 \x01(\v2/.bytebase.store.PlanConfig.ChangeDatabaseConfigH\x00R\x14changeDatabaseConfigB\b\n" +
-	"\x06config\x1a\x9d\x02\n" +
+	"\x06configJ\x04\b\x03\x10\x05\x1a\xa3\x02\n" +
 	"\x14CreateDatabaseConfig\x12\x1b\n" +
 	"\x06target\x18\x01 \x01(\tB\x03\xe0A\x02R\x06target\x12\x1f\n" +
 	"\bdatabase\x18\x02 \x01(\tB\x03\xe0A\x02R\bdatabase\x12\x19\n" +
@@ -386,13 +386,13 @@ const file_store_plan_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x03\xe0A\x01R\tcollation\x12\x1d\n" +
 	"\acluster\x18\x06 \x01(\tB\x03\xe0A\x01R\acluster\x12\x19\n" +
 	"\x05owner\x18\a \x01(\tB\x03\xe0A\x01R\x05owner\x12%\n" +
-	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\x9d\x01\n" +
+	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironmentJ\x04\b\b\x10\t\x1a\xa9\x01\n" +
 	"\x14ChangeDatabaseConfig\x12\x18\n" +
 	"\atargets\x18\n" +
 	" \x03(\tR\atargets\x12!\n" +
 	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12\x18\n" +
 	"\arelease\x18\t \x01(\tR\arelease\x12.\n" +
-	"\x13enable_prior_backup\x18\b \x01(\bR\x11enablePriorBackupB\x8c\x01\n" +
+	"\x13enable_prior_backup\x18\b \x01(\bR\x11enablePriorBackupJ\x04\b\x01\x10\x02J\x04\b\x03\x10\bB\x8c\x01\n" +
 	"\x12com.bytebase.storeB\tPlanProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

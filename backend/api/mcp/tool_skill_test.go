@@ -13,7 +13,7 @@ import (
 
 func TestGetSkillListSkills(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret")
+	s, err := NewServer(nil, profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test listing all skills (no parameters)
@@ -30,7 +30,7 @@ func TestGetSkillListSkills(t *testing.T) {
 
 func TestGetSkillSpecificSkill(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret")
+	s, err := NewServer(nil, profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test getting query skill
@@ -49,7 +49,7 @@ func TestGetSkillSpecificSkill(t *testing.T) {
 
 func TestGetSkillNotFound(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret")
+	s, err := NewServer(nil, profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test getting non-existent skill
@@ -67,7 +67,7 @@ func TestGetSkillNotFound(t *testing.T) {
 
 func TestGetSkillAllSkillsLoadable(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret")
+	s, err := NewServer(nil, profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	skills := []string{"query", "database-change", "grant-permission"}

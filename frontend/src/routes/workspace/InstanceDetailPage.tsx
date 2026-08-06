@@ -3,6 +3,7 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router";
+import { PROJECT_V1_ROUTE_DATABASES, router } from "@/app/router";
 import {
   AdvancedSearch,
   getValueFromScopes,
@@ -284,6 +285,12 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
           module: "bytebase",
           style: "SUCCESS",
           title: t("database.successfully-transferred-databases"),
+        });
+        void router.push({
+          name: PROJECT_V1_ROUTE_DATABASES,
+          params: {
+            projectId: extractProjectResourceName(projectName),
+          },
         });
       } catch {
         pushNotification({

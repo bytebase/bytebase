@@ -16,7 +16,7 @@ export declare const file_v1_instance_role_service: GenFile;
 export declare type ListInstanceRolesRequest = Message<"bytebase.v1.ListInstanceRolesRequest"> & {
   /**
    * The parent, which owns this collection of roles.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string parent = 1;
    */
@@ -93,7 +93,7 @@ export declare const ListInstanceRolesResponseSchema: GenMessage<ListInstanceRol
 export declare type InstanceRole = Message<"bytebase.v1.InstanceRole"> & {
   /**
    * The name of the role.
-   * Format: instances/{instance}/roles/{role}
+   * Format: instances/{instance}/roles/{role} or projects/{project}/instances/{instance}/roles/{role}
    * The role name is the unique name for the role.
    *
    * @generated from field: string name = 1;

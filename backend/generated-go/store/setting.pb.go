@@ -599,8 +599,6 @@ type WorkspaceProfileSetting struct {
 	// Whether to display watermark on pages.
 	// Requires ENTERPRISE license.
 	Watermark bool `protobuf:"varint,14,opt,name=watermark,proto3" json:"watermark,omitempty"`
-	// The token for directory sync authentication.
-	DirectorySyncToken string `protobuf:"bytes,15,opt,name=directory_sync_token,json=directorySyncToken,proto3" json:"directory_sync_token,omitempty"`
 	// Password restriction settings.
 	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,17,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
 	// The duration for access token. Default is 1 hour.
@@ -629,8 +627,12 @@ type WorkspaceProfileSetting struct {
 	// READ_WRITE for backward compatibility; DISABLED rejects all MCP
 	// connections. Enforced server-side by the /mcp endpoint.
 	McpCapability WorkspaceProfileSetting_MCPCapability `protobuf:"varint,26,opt,name=mcp_capability,json=mcpCapability,proto3,enum=bytebase.store.WorkspaceProfileSetting_MCPCapability" json:"mcp_capability,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Hex-encoded SHA-256 of the SCIM directory sync token. The plaintext is shown
+	// once at rotation and never stored. SHA-256 rather than a slow KDF because the
+	// token is 122 bits of crypto/rand, not a human-chosen secret.
+	DirectorySyncTokenHash string `protobuf:"bytes,27,opt,name=directory_sync_token_hash,json=directorySyncTokenHash,proto3" json:"directory_sync_token_hash,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *WorkspaceProfileSetting) Reset() {
@@ -761,13 +763,6 @@ func (x *WorkspaceProfileSetting) GetWatermark() bool {
 	return false
 }
 
-func (x *WorkspaceProfileSetting) GetDirectorySyncToken() string {
-	if x != nil {
-		return x.DirectorySyncToken
-	}
-	return ""
-}
-
 func (x *WorkspaceProfileSetting) GetPasswordRestriction() *WorkspaceProfileSetting_PasswordRestriction {
 	if x != nil {
 		return x.PasswordRestriction
@@ -836,6 +831,13 @@ func (x *WorkspaceProfileSetting) GetMcpCapability() WorkspaceProfileSetting_MCP
 		return x.McpCapability
 	}
 	return WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED
+}
+
+func (x *WorkspaceProfileSetting) GetDirectorySyncTokenHash() string {
+	if x != nil {
+		return x.DirectorySyncTokenHash
+	}
+	return ""
 }
 
 type SQLEditorThemeSetting struct {
@@ -2884,7 +2886,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\n" +
 	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/type/color.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"P\n" +
 	"\rSystemSetting\x12\x18\n" +
-	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03R\vauth_secretR\fworkspace_id\"\xc4\x13\n" +
+	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03R\vauth_secretR\fworkspace_id\"\xd3\x13\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2901,8 +2903,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x18enable_metric_collection\x18\v \x01(\bR\x16enableMetricCollection\x12S\n" +
 	"\x18inactive_session_timeout\x18\f \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
 	"\x17enable_audit_log_stdout\x18\r \x01(\bR\x14enableAuditLogStdout\x12\x1c\n" +
-	"\twatermark\x18\x0e \x01(\bR\twatermark\x120\n" +
-	"\x14directory_sync_token\x18\x0f \x01(\tR\x12directorySyncToken\x12n\n" +
+	"\twatermark\x18\x0e \x01(\bR\twatermark\x12n\n" +
 	"\x14password_restriction\x18\x11 \x01(\v2;.bytebase.store.WorkspaceProfileSetting.PasswordRestrictionR\x13passwordRestriction\x12M\n" +
 	"\x15access_token_duration\x18\x12 \x01(\v2\x19.google.protobuf.DurationR\x13accessTokenDuration\x12!\n" +
 	"\fenable_debug\x18\x13 \x01(\bR\venableDebug\x12&\n" +
@@ -2912,7 +2913,8 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x13sql_editor_theme_id\x18\x17 \x01(\tR\x10sqlEditorThemeId\x12\\\n" +
 	"\x17sql_editor_custom_theme\x18\x18 \x01(\v2%.bytebase.store.SQLEditorThemeSettingR\x14sqlEditorCustomTheme\x12Q\n" +
 	"\x17maximum_role_expiration\x18\x19 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12\\\n" +
-	"\x0emcp_capability\x18\x1a \x01(\x0e25.bytebase.store.WorkspaceProfileSetting.MCPCapabilityR\rmcpCapability\x1a\x92\x02\n" +
+	"\x0emcp_capability\x18\x1a \x01(\x0e25.bytebase.store.WorkspaceProfileSetting.MCPCapabilityR\rmcpCapability\x129\n" +
+	"\x19directory_sync_token_hash\x18\x1b \x01(\tR\x16directorySyncTokenHash\x1a\x92\x02\n" +
 	"\fAnnouncement\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +
 	"\x04link\x18\x03 \x01(\tR\x04link\x12\\\n" +
@@ -2941,7 +2943,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\bDISABLED\x10\x01\x12\r\n" +
 	"\tREAD_ONLY\x10\x03\x12\x0e\n" +
 	"\n" +
-	"READ_WRITE\x10\x04\"\x04\b\x02\x10\x02J\x04\b\x10\x10\x11\"\xf6\x01\n" +
+	"READ_WRITE\x10\x04\"\x04\b\x02\x10\x02J\x04\b\x0f\x10\x10J\x04\b\x10\x10\x11\"\xf6\x01\n" +
 	"\x15SQLEditorThemeSetting\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
@@ -2963,22 +2965,22 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x0fCREATE_DATABASE\x10\x02\x12\x13\n" +
 	"\vEXPORT_DATA\x10\x03\x1a\x02\b\x01\x12\x10\n" +
 	"\fREQUEST_ROLE\x10\x04\x12\x12\n" +
-	"\x0eREQUEST_ACCESS\x10\x05\"\xcf\x05\n" +
+	"\x0eREQUEST_ACCESS\x10\x05\"\xe1\x05\n" +
 	"\x19DataClassificationSetting\x12\\\n" +
-	"\aconfigs\x18\x01 \x03(\v2B.bytebase.store.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\xd3\x04\n" +
+	"\aconfigs\x18\x01 \x03(\v2B.bytebase.store.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\xe5\x04\n" +
 	"\x18DataClassificationConfig\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12`\n" +
 	"\x06levels\x18\x03 \x03(\v2H.bytebase.store.DataClassificationSetting.DataClassificationConfig.LevelR\x06levels\x12~\n" +
-	"\x0eclassification\x18\x04 \x03(\v2V.bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntryR\x0eclassification\x1a3\n" +
+	"\x0eclassification\x18\x04 \x03(\v2V.bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntryR\x0eclassification\x1a?\n" +
 	"\x05Level\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x14\n" +
-	"\x05level\x18\x04 \x01(\x05R\x05level\x1a_\n" +
+	"\x05level\x18\x04 \x01(\x05R\x05levelJ\x04\b\x01\x10\x02J\x04\b\x03\x10\x04\x1ae\n" +
 	"\x12DataClassification\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x19\n" +
 	"\x05level\x18\x04 \x01(\x05H\x00R\x05level\x88\x01\x01B\b\n" +
-	"\x06_level\x1a\x98\x01\n" +
+	"\x06_levelJ\x04\b\x03\x10\x04\x1a\x98\x01\n" +
 	"\x13ClassificationEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12k\n" +
 	"\x05value\x18\x02 \x01(\v2U.bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassificationR\x05value:\x028\x01\"\xa0\x06\n" +
@@ -3009,15 +3011,15 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x15MASK_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05INNER\x10\x01\x12\t\n" +
 	"\x05OUTER\x10\x02B\x06\n" +
-	"\x04mask\"\x83\x02\n" +
+	"\x04mask\"\x89\x02\n" +
 	"\x13SemanticTypeSetting\x12F\n" +
-	"\x05types\x18\x01 \x03(\v20.bytebase.store.SemanticTypeSetting.SemanticTypeR\x05types\x1a\xa3\x01\n" +
+	"\x05types\x18\x01 \x03(\v20.bytebase.store.SemanticTypeSetting.SemanticTypeR\x05types\x1a\xa9\x01\n" +
 	"\fSemanticType\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x127\n" +
 	"\talgorithm\x18\x06 \x01(\v2\x19.bytebase.store.AlgorithmR\talgorithm\x12\x12\n" +
-	"\x04icon\x18\a \x01(\tR\x04icon\"\xd4\a\n" +
+	"\x04icon\x18\a \x01(\tR\x04iconJ\x04\b\x04\x10\x06\"\xd4\a\n" +
 	"\fAppIMSetting\x12B\n" +
 	"\bsettings\x18\x01 \x03(\v2&.bytebase.store.AppIMSetting.IMSettingR\bsettings\x1a\x1d\n" +
 	"\x05Slack\x12\x14\n" +

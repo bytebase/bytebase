@@ -136,6 +136,50 @@ func GetEnvironmentID(name string) (string, error) {
 	return tokens[0], nil
 }
 
+// GetInstanceResourceName gets the IDs from a workspace- or project-scoped instance resource name.
+func GetInstanceResourceName(name string) (*string, string, error) {
+	if projectID, instanceID, err := GetProjectIDInstanceID(name); err == nil {
+		return &projectID, instanceID, nil
+	}
+	if instanceID, err := GetInstanceID(name); err == nil {
+		return nil, instanceID, nil
+	}
+	return nil, "", errors.Errorf("invalid instance name %q", name)
+}
+
+// GetDatabaseResourceName gets the IDs from a workspace- or project-scoped database resource name.
+func GetDatabaseResourceName(name string) (*string, string, string, error) {
+	if instanceID, databaseID, err := GetInstanceDatabaseID(name); err == nil {
+		return nil, instanceID, databaseID, nil
+	}
+	projectID, instanceID, databaseID, err := GetProjectIDInstanceDatabaseID(name)
+	if err != nil {
+		return nil, "", "", err
+	}
+	return &projectID, instanceID, databaseID, nil
+}
+
+// GetDatabaseResourceNameWithSuffix gets the IDs from a database resource name with the given suffix.
+func GetDatabaseResourceNameWithSuffix(name, suffix string) (*string, string, string, error) {
+	databaseName, err := TrimSuffix(name, suffix)
+	if err != nil {
+		return nil, "", "", err
+	}
+	return GetDatabaseResourceName(databaseName)
+}
+
+// GetDatabaseChangelogResourceName gets the IDs from a workspace- or project-scoped changelog resource name.
+func GetDatabaseChangelogResourceName(name string) (*string, string, string, string, error) {
+	if instanceID, databaseID, changelogID, err := GetInstanceDatabaseChangelogID(name); err == nil {
+		return nil, instanceID, databaseID, changelogID, nil
+	}
+	projectID, instanceID, databaseID, changelogID, err := GetProjectIDInstanceDatabaseChangelogID(name)
+	if err != nil {
+		return nil, "", "", "", err
+	}
+	return &projectID, instanceID, databaseID, changelogID, nil
+}
+
 // GetInstanceID returns the instance ID from a resource name.
 func GetInstanceID(name string) (string, error) {
 	// the instance request should be instances/{instance-id}
@@ -173,6 +217,42 @@ func GetInstanceDatabaseChangelogID(name string) (string, string, string, error)
 		return "", "", "", err
 	}
 	return tokens[0], tokens[1], tokens[2], nil
+}
+
+// GetProjectIDInstanceID returns the project ID and instance ID from a project instance resource name.
+func GetProjectIDInstanceID(name string) (string, string, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, InstanceNamePrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
+// GetProjectIDInstanceDatabaseID returns the project ID, instance ID, and database ID from a project database resource name.
+func GetProjectIDInstanceDatabaseID(name string) (string, string, string, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, InstanceNamePrefix, DatabaseIDPrefix)
+	if err != nil {
+		return "", "", "", err
+	}
+	return tokens[0], tokens[1], tokens[2], nil
+}
+
+// GetProjectIDInstanceDatabaseRevisionID returns the project ID, instance ID, database ID, and revision ID from a project revision resource name.
+func GetProjectIDInstanceDatabaseRevisionID(name string) (string, string, string, string, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, InstanceNamePrefix, DatabaseIDPrefix, RevisionNamePrefix)
+	if err != nil {
+		return "", "", "", "", err
+	}
+	return tokens[0], tokens[1], tokens[2], tokens[3], nil
+}
+
+// GetProjectIDInstanceDatabaseChangelogID returns the project ID, instance ID, database ID, and changelog ID from a project changelog resource name.
+func GetProjectIDInstanceDatabaseChangelogID(name string) (string, string, string, string, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, InstanceNamePrefix, DatabaseIDPrefix, ChangelogPrefix)
+	if err != nil {
+		return "", "", "", "", err
+	}
+	return tokens[0], tokens[1], tokens[2], tokens[3], nil
 }
 
 // GetUserEmail returns the user email from a resource name.
@@ -523,7 +603,7 @@ func GetNameParentTokens(name string, tokenPrefixes ...string) ([]string, error)
 
 	var tokens []string
 	for i, tokenPrefix := range tokenPrefixes {
-		if fmt.Sprintf("%s/", parts[2*i]) != tokenPrefix {
+		if parts[2*i+1] == "" || fmt.Sprintf("%s/", parts[2*i]) != tokenPrefix {
 			return nil, errors.Errorf("invalid prefix %q in request %q", tokenPrefix, name)
 		}
 		tokens = append(tokens, parts[2*i+1])
@@ -587,6 +667,16 @@ func FormatDatabase(instance string, database string) string {
 	return fmt.Sprintf("%s/%s%s", FormatInstance(instance), DatabaseIDPrefix, database)
 }
 
+// FormatProjectInstance formats a project instance resource name.
+func FormatProjectInstance(projectID, instanceID string) string {
+	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), InstanceNamePrefix, instanceID)
+}
+
+// FormatProjectDatabase formats a project database resource name.
+func FormatProjectDatabase(projectID, instanceID, databaseID string) string {
+	return fmt.Sprintf("%s/%s%s", FormatProjectInstance(projectID, instanceID), DatabaseIDPrefix, databaseID)
+}
+
 func FormatRole(role string) string {
 	return fmt.Sprintf("%s%s", RolePrefix, role)
 }
@@ -646,6 +736,16 @@ func FormatChangelog(instanceID, databaseID string, changelogID string) string {
 	return fmt.Sprintf("%s/%s%s", FormatDatabase(instanceID, databaseID), ChangelogPrefix, changelogID)
 }
 
+// FormatProjectRevision formats a project revision resource name.
+func FormatProjectRevision(projectID, instanceID, databaseID, revisionID string) string {
+	return fmt.Sprintf("%s/%s%s", FormatProjectDatabase(projectID, instanceID, databaseID), RevisionNamePrefix, revisionID)
+}
+
+// FormatProjectChangelog formats a project changelog resource name.
+func FormatProjectChangelog(projectID, instanceID, databaseID, changelogID string) string {
+	return fmt.Sprintf("%s/%s%s", FormatProjectDatabase(projectID, instanceID, databaseID), ChangelogPrefix, changelogID)
+}
+
 func FormatPlan(projectID string, planUID int64) string {
 	return fmt.Sprintf("%s/%s%d", FormatProject(projectID), PlanPrefix, planUID)
 }
@@ -665,7 +765,7 @@ func GetPolicyResourceTypeAndResource(requestName string) (storepb.Policy_Resour
 		return storepb.Policy_RESOURCE_UNSPECIFIED, nil, connect.NewError(connect.CodeInvalidArgument, errors.New("policy parent resource name must not be empty"))
 	}
 
-	if strings.HasPrefix(requestName, WorkspacePrefix) {
+	if _, err := GetWorkspaceID(requestName); err == nil {
 		return storepb.Policy_WORKSPACE, &requestName, nil
 	}
 

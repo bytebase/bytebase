@@ -146,9 +146,6 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x.Watermark != y.Watermark {
 		return false
 	}
-	if x.DirectorySyncToken != y.DirectorySyncToken {
-		return false
-	}
 	if !x.PasswordRestriction.Equal(y.PasswordRestriction) {
 		return false
 	}
@@ -177,6 +174,9 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 		return false
 	}
 	if x.McpCapability != y.McpCapability {
+		return false
+	}
+	if x.DirectorySyncTokenHash != y.DirectorySyncTokenHash {
 		return false
 	}
 	return true

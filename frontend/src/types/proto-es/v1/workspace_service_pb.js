@@ -4,7 +4,9 @@
 
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import { file_google_api_annotations } from "../google/api/annotations_pb";
+import { file_google_api_client } from "../google/api/client_pb";
 import { file_google_api_field_behavior } from "../google/api/field_behavior_pb";
+import { file_google_api_resource } from "../google/api/resource_pb";
 import { file_google_protobuf_field_mask } from "@bufbuild/protobuf/wkt";
 import { file_v1_annotation } from "./annotation_pb";
 import { file_v1_auth_service } from "./auth_service_pb";
@@ -14,56 +16,70 @@ import { file_v1_iam_policy } from "./iam_policy_pb";
  * Describes the file v1/workspace_service.proto.
  */
 export const file_v1_workspace_service = /*@__PURE__*/
-  fileDesc("Chp2MS93b3Jrc3BhY2Vfc2VydmljZS5wcm90bxILYnl0ZWJhc2UudjEiFwoVTGlzdFdvcmtzcGFjZXNSZXF1ZXN0IkQKFkxpc3RXb3Jrc3BhY2VzUmVzcG9uc2USKgoKd29ya3NwYWNlcxgBIAMoCzIWLmJ5dGViYXNlLnYxLldvcmtzcGFjZSIjChNHZXRXb3Jrc3BhY2VSZXF1ZXN0EgwKBG5hbWUYASABKAkiNgoJV29ya3NwYWNlEgwKBG5hbWUYASABKAkSDQoFdGl0bGUYAiABKAkSDAoEbG9nbxgDIAEoCSIrChZEZWxldGVXb3Jrc3BhY2VSZXF1ZXN0EhEKBG5hbWUYASABKAlCA+BBAiJ5ChZVcGRhdGVXb3Jrc3BhY2VSZXF1ZXN0Ei4KCXdvcmtzcGFjZRgBIAEoCzIWLmJ5dGViYXNlLnYxLldvcmtzcGFjZUID4EECEi8KC3VwZGF0ZV9tYXNrGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFzayIqChVMZWF2ZVdvcmtzcGFjZVJlcXVlc3QSEQoEbmFtZRgBIAEoCUID4EECMvcHChBXb3Jrc3BhY2VTZXJ2aWNlEm0KDEdldFdvcmtzcGFjZRIgLmJ5dGViYXNlLnYxLkdldFdvcmtzcGFjZVJlcXVlc3QaFi5ieXRlYmFzZS52MS5Xb3Jrc3BhY2UiI4DqMAGC0+STAhkSFy92MS97bmFtZT13b3Jrc3BhY2VzLyp9EnUKDkxpc3RXb3Jrc3BhY2VzEiIuYnl0ZWJhc2UudjEuTGlzdFdvcmtzcGFjZXNSZXF1ZXN0GiMuYnl0ZWJhc2UudjEuTGlzdFdvcmtzcGFjZXNSZXNwb25zZSIakOowAoLT5JMCEBIOL3YxL3dvcmtzcGFjZXMSnAEKD1VwZGF0ZVdvcmtzcGFjZRIjLmJ5dGViYXNlLnYxLlVwZGF0ZVdvcmtzcGFjZVJlcXVlc3QaFi5ieXRlYmFzZS52MS5Xb3Jrc3BhY2UiTIrqMBRiYi53b3Jrc3BhY2VzLnVwZGF0ZZDqMAGY6jABgtPkkwImOgEqMiEvdjEve3dvcmtzcGFjZS5uYW1lPXdvcmtzcGFjZXMvKn0SnAEKDEdldElhbVBvbGljeRIgLmJ5dGViYXNlLnYxLkdldElhbVBvbGljeVJlcXVlc3QaFi5ieXRlYmFzZS52MS5JYW1Qb2xpY3kiUorqMBpiYi53b3Jrc3BhY2VzLmdldElhbVBvbGljeZDqMAGC0+STAioSKC92MS97cmVzb3VyY2U9d29ya3NwYWNlcy8qfTpnZXRJYW1Qb2xpY3kSkwEKD0RlbGV0ZVdvcmtzcGFjZRIjLmJ5dGViYXNlLnYxLkRlbGV0ZVdvcmtzcGFjZVJlcXVlc3QaGi5ieXRlYmFzZS52MS5Mb2dpblJlc3BvbnNlIj+K6jAUYmIud29ya3NwYWNlcy5kZWxldGWQ6jABmOowAYLT5JMCGSoXL3YxL3tuYW1lPXdvcmtzcGFjZXMvKn0SggEKDkxlYXZlV29ya3NwYWNlEiIuYnl0ZWJhc2UudjEuTGVhdmVXb3Jrc3BhY2VSZXF1ZXN0GhouYnl0ZWJhc2UudjEuTG9naW5SZXNwb25zZSIwkOowApjqMAGC0+STAiI6ASoiHS92MS97bmFtZT13b3Jrc3BhY2VzLyp9OmxlYXZlEqMBCgxTZXRJYW1Qb2xpY3kSIC5ieXRlYmFzZS52MS5TZXRJYW1Qb2xpY3lSZXF1ZXN0GhYuYnl0ZWJhc2UudjEuSWFtUG9saWN5IlmK6jAaYmIud29ya3NwYWNlcy5zZXRJYW1Qb2xpY3mQ6jABmOowAYLT5JMCLToBKiIoL3YxL3tyZXNvdXJjZT13b3Jrc3BhY2VzLyp9OnNldElhbVBvbGljeUKrAQoPY29tLmJ5dGViYXNlLnYxQhVXb3Jrc3BhY2VTZXJ2aWNlUHJvdG9QAVo0Z2l0aHViLmNvbS9ieXRlYmFzZS9ieXRlYmFzZS9iYWNrZW5kL2dlbmVyYXRlZC1nby92MaICA0JYWKoCC0J5dGViYXNlLlYxygILQnl0ZWJhc2VcVjHiAhdCeXRlYmFzZVxWMVxHUEJNZXRhZGF0YeoCDEJ5dGViYXNlOjpWMWIGcHJvdG8z", [file_google_api_annotations, file_google_api_field_behavior, file_google_protobuf_field_mask, file_v1_annotation, file_v1_auth_service, file_v1_iam_policy]);
+  fileDesc("Chp2MS93b3Jrc3BhY2Vfc2VydmljZS5wcm90bxILYnl0ZWJhc2UudjEiTwofUm90YXRlRGlyZWN0b3J5U3luY1Rva2VuUmVxdWVzdBIsCgRuYW1lGAEgASgJQh7gQQL6QRgKFmJ5dGViYXNlLmNvbS9Xb3Jrc3BhY2UiNgogUm90YXRlRGlyZWN0b3J5U3luY1Rva2VuUmVzcG9uc2USEgoFdG9rZW4YASABKAlCA+BBAyIXChVMaXN0V29ya3NwYWNlc1JlcXVlc3QiRAoWTGlzdFdvcmtzcGFjZXNSZXNwb25zZRIqCgp3b3Jrc3BhY2VzGAEgAygLMhYuYnl0ZWJhc2UudjEuV29ya3NwYWNlIiMKE0dldFdvcmtzcGFjZVJlcXVlc3QSDAoEbmFtZRgBIAEoCSI2CglXb3Jrc3BhY2USDAoEbmFtZRgBIAEoCRINCgV0aXRsZRgCIAEoCRIMCgRsb2dvGAMgASgJIisKFkRlbGV0ZVdvcmtzcGFjZVJlcXVlc3QSEQoEbmFtZRgBIAEoCUID4EECInkKFlVwZGF0ZVdvcmtzcGFjZVJlcXVlc3QSLgoJd29ya3NwYWNlGAEgASgLMhYuYnl0ZWJhc2UudjEuV29ya3NwYWNlQgPgQQISLwoLdXBkYXRlX21hc2sYAiABKAsyGi5nb29nbGUucHJvdG9idWYuRmllbGRNYXNrIioKFUxlYXZlV29ya3NwYWNlUmVxdWVzdBIRCgRuYW1lGAEgASgJQgPgQQIy5wkKEFdvcmtzcGFjZVNlcnZpY2USbQoMR2V0V29ya3NwYWNlEiAuYnl0ZWJhc2UudjEuR2V0V29ya3NwYWNlUmVxdWVzdBoWLmJ5dGViYXNlLnYxLldvcmtzcGFjZSIjgOowAYLT5JMCGRIXL3YxL3tuYW1lPXdvcmtzcGFjZXMvKn0SdQoOTGlzdFdvcmtzcGFjZXMSIi5ieXRlYmFzZS52MS5MaXN0V29ya3NwYWNlc1JlcXVlc3QaIy5ieXRlYmFzZS52MS5MaXN0V29ya3NwYWNlc1Jlc3BvbnNlIhqQ6jACgtPkkwIQEg4vdjEvd29ya3NwYWNlcxKcAQoPVXBkYXRlV29ya3NwYWNlEiMuYnl0ZWJhc2UudjEuVXBkYXRlV29ya3NwYWNlUmVxdWVzdBoWLmJ5dGViYXNlLnYxLldvcmtzcGFjZSJMiuowFGJiLndvcmtzcGFjZXMudXBkYXRlkOowAZjqMAGC0+STAiY6ASoyIS92MS97d29ya3NwYWNlLm5hbWU9d29ya3NwYWNlcy8qfRKcAQoMR2V0SWFtUG9saWN5EiAuYnl0ZWJhc2UudjEuR2V0SWFtUG9saWN5UmVxdWVzdBoWLmJ5dGViYXNlLnYxLklhbVBvbGljeSJSiuowGmJiLndvcmtzcGFjZXMuZ2V0SWFtUG9saWN5kOowAYLT5JMCKhIoL3YxL3tyZXNvdXJjZT13b3Jrc3BhY2VzLyp9OmdldElhbVBvbGljeRKTAQoPRGVsZXRlV29ya3NwYWNlEiMuYnl0ZWJhc2UudjEuRGVsZXRlV29ya3NwYWNlUmVxdWVzdBoaLmJ5dGViYXNlLnYxLkxvZ2luUmVzcG9uc2UiP4rqMBRiYi53b3Jrc3BhY2VzLmRlbGV0ZZDqMAGY6jABgtPkkwIZKhcvdjEve25hbWU9d29ya3NwYWNlcy8qfRKCAQoOTGVhdmVXb3Jrc3BhY2USIi5ieXRlYmFzZS52MS5MZWF2ZVdvcmtzcGFjZVJlcXVlc3QaGi5ieXRlYmFzZS52MS5Mb2dpblJlc3BvbnNlIjCQ6jACmOowAYLT5JMCIjoBKiIdL3YxL3tuYW1lPXdvcmtzcGFjZXMvKn06bGVhdmUSowEKDFNldElhbVBvbGljeRIgLmJ5dGViYXNlLnYxLlNldElhbVBvbGljeVJlcXVlc3QaFi5ieXRlYmFzZS52MS5JYW1Qb2xpY3kiWYrqMBpiYi53b3Jrc3BhY2VzLnNldElhbVBvbGljeZDqMAGY6jABgtPkkwItOgEqIigvdjEve3Jlc291cmNlPXdvcmtzcGFjZXMvKn06c2V0SWFtUG9saWN5Eu0BChhSb3RhdGVEaXJlY3RvcnlTeW5jVG9rZW4SLC5ieXRlYmFzZS52MS5Sb3RhdGVEaXJlY3RvcnlTeW5jVG9rZW5SZXF1ZXN0Gi0uYnl0ZWJhc2UudjEuUm90YXRlRGlyZWN0b3J5U3luY1Rva2VuUmVzcG9uc2UidNpBBG5hbWWK6jAmYmIud29ya3NwYWNlcy5yb3RhdGVEaXJlY3RvcnlTeW5jVG9rZW6Q6jABmOowAYLT5JMCNToBKiIwL3YxL3tuYW1lPXdvcmtzcGFjZXMvKn06cm90YXRlRGlyZWN0b3J5U3luY1Rva2VuQqsBCg9jb20uYnl0ZWJhc2UudjFCFVdvcmtzcGFjZVNlcnZpY2VQcm90b1ABWjRnaXRodWIuY29tL2J5dGViYXNlL2J5dGViYXNlL2JhY2tlbmQvZ2VuZXJhdGVkLWdvL3YxogIDQlhYqgILQnl0ZWJhc2UuVjHKAgtCeXRlYmFzZVxWMeICF0J5dGViYXNlXFYxXEdQQk1ldGFkYXRh6gIMQnl0ZWJhc2U6OlYxYgZwcm90bzM", [file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_field_mask, file_v1_annotation, file_v1_auth_service, file_v1_iam_policy]);
+
+/**
+ * Describes the message bytebase.v1.RotateDirectorySyncTokenRequest.
+ * Use `create(RotateDirectorySyncTokenRequestSchema)` to create a new message.
+ */
+export const RotateDirectorySyncTokenRequestSchema = /*@__PURE__*/
+  messageDesc(file_v1_workspace_service, 0);
+
+/**
+ * Describes the message bytebase.v1.RotateDirectorySyncTokenResponse.
+ * Use `create(RotateDirectorySyncTokenResponseSchema)` to create a new message.
+ */
+export const RotateDirectorySyncTokenResponseSchema = /*@__PURE__*/
+  messageDesc(file_v1_workspace_service, 1);
 
 /**
  * Describes the message bytebase.v1.ListWorkspacesRequest.
  * Use `create(ListWorkspacesRequestSchema)` to create a new message.
  */
 export const ListWorkspacesRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 0);
+  messageDesc(file_v1_workspace_service, 2);
 
 /**
  * Describes the message bytebase.v1.ListWorkspacesResponse.
  * Use `create(ListWorkspacesResponseSchema)` to create a new message.
  */
 export const ListWorkspacesResponseSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 1);
+  messageDesc(file_v1_workspace_service, 3);
 
 /**
  * Describes the message bytebase.v1.GetWorkspaceRequest.
  * Use `create(GetWorkspaceRequestSchema)` to create a new message.
  */
 export const GetWorkspaceRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 2);
+  messageDesc(file_v1_workspace_service, 4);
 
 /**
  * Describes the message bytebase.v1.Workspace.
  * Use `create(WorkspaceSchema)` to create a new message.
  */
 export const WorkspaceSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 3);
+  messageDesc(file_v1_workspace_service, 5);
 
 /**
  * Describes the message bytebase.v1.DeleteWorkspaceRequest.
  * Use `create(DeleteWorkspaceRequestSchema)` to create a new message.
  */
 export const DeleteWorkspaceRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 4);
+  messageDesc(file_v1_workspace_service, 6);
 
 /**
  * Describes the message bytebase.v1.UpdateWorkspaceRequest.
  * Use `create(UpdateWorkspaceRequestSchema)` to create a new message.
  */
 export const UpdateWorkspaceRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 5);
+  messageDesc(file_v1_workspace_service, 7);
 
 /**
  * Describes the message bytebase.v1.LeaveWorkspaceRequest.
  * Use `create(LeaveWorkspaceRequestSchema)` to create a new message.
  */
 export const LeaveWorkspaceRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 6);
+  messageDesc(file_v1_workspace_service, 8);
 
 /**
  * WorkspaceService manages workspace-level operations and profile.

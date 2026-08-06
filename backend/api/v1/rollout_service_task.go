@@ -50,7 +50,7 @@ func applyDatabaseGroupSpecTransformations(ctx context.Context, s *store.Store, 
 
 					var databases []string
 					for _, db := range matchedDatabases {
-						databases = append(databases, common.FormatDatabase(db.InstanceID, db.DatabaseName))
+						databases = append(databases, db.ResourceName())
 					}
 					config.Targets = databases
 				}
@@ -248,13 +248,13 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 	databases := []*store.DatabaseMessage{}
 
 	for _, target := range targets {
-		if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
+		if targetProjectID, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
 			databaseGroup, err := getDatabaseGroupByName(ctx, s, target, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get database group %q", target)
 			}
 			for _, matched := range databaseGroup.MatchedDatabases {
-				instanceID, databaseName, err := common.GetInstanceDatabaseID(matched.Name)
+				_, instanceID, databaseName, err := common.GetDatabaseResourceName(matched.Name)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to parse %q", matched.Name)
 				}
@@ -269,13 +269,15 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 				if database == nil {
 					return nil, errors.Errorf("database %q not found", matched.Name)
 				}
+				if database.ProjectID != targetProjectID {
+					return nil, errors.Errorf("database %q does not belong to project %q", matched.Name, targetProjectID)
+				}
+				if database.ResourceName() != matched.Name {
+					return nil, errors.Errorf("database target %q is not canonical for its instance", matched.Name)
+				}
 				databases = append(databases, database)
 			}
-		} else if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
-			instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to parse %q", target)
-			}
+		} else if targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target); err == nil {
 			database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
 				Workspace:    common.GetWorkspaceIDFromContext(ctx),
 				InstanceID:   &instanceID,
@@ -287,12 +289,58 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 			if database == nil {
 				return nil, errors.Errorf("database %q not found", target)
 			}
+			if targetProjectID != nil && database.ProjectID != *targetProjectID {
+				return nil, errors.Errorf("database %q does not belong to project %q", target, *targetProjectID)
+			}
+			if database.ResourceName() != target {
+				return nil, errors.Errorf("database target %q is not canonical for its instance", target)
+			}
 			databases = append(databases, database)
 		} else {
 			return nil, errors.Errorf("invalid target %q", target)
 		}
 	}
+	if err := validateRolloutDatabaseInstances(ctx, s, databases); err != nil {
+		return nil, err
+	}
 	return databases, nil
+}
+
+func validateRolloutDatabaseInstances(ctx context.Context, s *store.Store, databases []*store.DatabaseMessage) error {
+	instanceIDs := make([]string, 0, len(databases))
+	seen := make(map[string]bool, len(databases))
+	for _, database := range databases {
+		if !seen[database.InstanceID] {
+			seen[database.InstanceID] = true
+			instanceIDs = append(instanceIDs, database.InstanceID)
+		}
+	}
+	if len(instanceIDs) == 0 {
+		return nil
+	}
+
+	instances, err := s.ListInstances(ctx, &store.FindInstanceMessage{
+		Workspace:   common.GetWorkspaceIDFromContext(ctx),
+		ResourceIDs: &instanceIDs,
+		ShowDeleted: true,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to list rollout target instances")
+	}
+	instanceByID := make(map[string]*store.InstanceMessage, len(instances))
+	for _, instance := range instances {
+		instanceByID[instance.ResourceID] = instance
+	}
+	for _, database := range databases {
+		instance := instanceByID[database.InstanceID]
+		if instance == nil {
+			return errors.Errorf("instance %q not found", database.InstanceID)
+		}
+		if instance.Deleted {
+			return errors.Errorf("instance %q has been deleted", database.InstanceID)
+		}
+	}
+	return nil
 }
 
 // checkCharacterSetCollationOwner checks if the character set, collation and owner are legal according to the dbType.

@@ -1624,7 +1624,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12(\n" +
 	"\x05color\x18\x02 \x01(\v2\x12.google.type.ColorR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\x9b\t\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xa7\t\n" +
 	"\aProject\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
@@ -1651,7 +1651,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:-\xeaA*\n" +
-	"\x14bytebase.com/Project\x12\x12projects/{project}\"\x80\x01\n" +
+	"\x14bytebase.com/Project\x12\x12projects/{project}J\x04\b\b\x10\n" +
+	"J\x04\b\v\x10\r\"\x80\x01\n" +
 	"\x11AddWebhookRequest\x126\n" +
 	"\aproject\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\aproject\x123\n" +
@@ -1676,8 +1677,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x03url\x18\x04 \x01(\tB\x03\xe0A\x02R\x03url\x12%\n" +
 	"\x0edirect_message\x18\x06 \x01(\bR\rdirectMessage\x12N\n" +
 	"\x12notification_types\x18\x05 \x03(\x0e2\x1a.bytebase.v1.Activity.TypeB\x03\xe0A\x06R\x11notificationTypes:@\xeaA=\n" +
-	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\xb0\x01\n" +
-	"\bActivity\"\xa3\x01\n" +
+	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\xb6\x01\n" +
+	"\bActivity\"\xa9\x01\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rISSUE_CREATED\x10\n" +
@@ -1686,7 +1687,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x0fISSUE_SENT_BACK\x10\f\x12\x13\n" +
 	"\x0fPIPELINE_FAILED\x10\r\x12\x16\n" +
 	"\x12PIPELINE_COMPLETED\x10\x0e\x12\x12\n" +
-	"\x0eISSUE_APPROVED\x10\x0f2\x82\x12\n" +
+	"\x0eISSUE_APPROVED\x10\x0f\"\x04\b\x01\x10\t2\x82\x12\n" +
 	"\x0eProjectService\x12\x7f\n" +
 	"\n" +
 	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\";\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x95\x01\n" +

@@ -8,8 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -20,8 +22,9 @@ import (
 func TestMCPAuthMiddleware(t *testing.T) {
 	secret := "test-secret-key"
 	// ExternalURL short-circuits utils.GetEffectiveExternalURL away from
-	// the nil store; it's also the canonical URL the WWW-Authenticate
-	// resource_metadata pointer should resolve to.
+	// the nil store, and the minted tokens carry a workspace so no singleton
+	// workspace lookup runs either; it's also the canonical URL the
+	// WWW-Authenticate resource_metadata pointer should resolve to.
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 
 	tests := []struct {
@@ -74,7 +77,7 @@ func TestMCPAuthMiddleware(t *testing.T) {
 			c := e.NewContext(req, rec)
 
 			// Create server with auth
-			s, err := NewServer(nil, profile, secret)
+			s, err := NewServer(nil, profile, secret, nil)
 			require.NoError(t, err)
 			handler := s.authMiddleware(func(c *echo.Context) error {
 				return c.String(http.StatusOK, "success")
@@ -121,7 +124,7 @@ func TestMCPAuthMiddleware(t *testing.T) {
 
 func TestMCPAuthMiddlewareValidToken(t *testing.T) {
 	secret := "test-secret-key"
-	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
@@ -132,13 +135,39 @@ func TestMCPAuthMiddlewareValidToken(t *testing.T) {
 
 	// Create server with auth - note: we pass nil store since we're testing middleware only
 	// A full integration test would require a real store
-	s, err := NewServer(nil, profile, secret)
+	s, err := NewServer(nil, profile, secret, nil)
 	require.NoError(t, err)
 	handler := s.authMiddleware(func(c *echo.Context) error {
 		// Verify access token is set in request context
 		ctx := c.Request().Context()
 		token := getAccessToken(ctx)
 		require.NotEmpty(t, token)
+		return c.String(http.StatusOK, "success")
+	})
+
+	err = handler(c)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestMCPAuthMiddlewareOAuthContext(t *testing.T) {
+	secret := "test-secret-key"
+	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+generateOAuth2MCPToken(t, secret, "client-A", "ws-test"))
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	s, err := NewServer(nil, profile, secret, nil)
+	require.NoError(t, err)
+	handler := s.authMiddleware(func(c *echo.Context) error {
+		ctx := c.Request().Context()
+		require.Equal(t, "test@example.com", getUserEmail(ctx))
+		require.Equal(t, "client-A", getOAuth2ClientID(ctx))
+		require.Equal(t, "ws-test", getWorkspaceID(ctx))
 		return c.String(http.StatusOK, "success")
 	})
 
@@ -163,7 +192,7 @@ func TestMCPProxiedPublicHostNotRejected(t *testing.T) {
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 
-	s, err := NewServer(nil, profile, secret)
+	s, err := NewServer(nil, profile, secret, nil)
 	require.NoError(t, err)
 
 	e := echo.New()
@@ -202,7 +231,7 @@ func TestMCPUnauthenticatedRejectedEndToEnd(t *testing.T) {
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 
-	s, err := NewServer(nil, profile, secret)
+	s, err := NewServer(nil, profile, secret, nil)
 	require.NoError(t, err)
 
 	e := echo.New()
@@ -222,14 +251,176 @@ func TestMCPUnauthenticatedRejectedEndToEnd(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 }
 
-func generateValidToken(t *testing.T, secret string) string {
+// TestMCPAuthMiddlewareAudienceMatrix is the P1a PR 3 audience boundary. The
+// durably accepted audience is the live-config MCP resource URI (external URL
+// + /mcp, trusted config only — never request headers). Legacy bb.oauth2.access
+// tokens are accepted while they remain unexpired: this release never mints
+// that audience, so acceptance drains no later than one access-token lifetime
+// after the last legacy-capable replica leaves service (the expired-token 401
+// in TestMCPAuthMiddleware is the other half of that invariant). Plain
+// bb.user.access session tokens are accepted until the scoped service-account
+// flow lands (spec "Deferred product decisions"; proposal §6.5).
+func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
+	secret := "test-secret-key"
+
+	mintResourceToken := func(t *testing.T, resource string) string {
+		t.Helper()
+		token, err := auth.GenerateOAuth2AccessToken("test@example.com", "client-A", "ws-test", resource, "", secret, time.Hour)
+		require.NoError(t, err)
+		return token
+	}
+
+	tests := []struct {
+		name string
+		// externalURL is the trusted live config. The unconfigured ("") case
+		// needs a store to resolve, so it lives in TestDecideAudience.
+		externalURL    string
+		token          func(t *testing.T) string
+		expectedStatus int
+	}{
+		{
+			name:           "matching resource audience is accepted",
+			externalURL:    "https://bb.example.com",
+			token:          func(t *testing.T) string { return mintResourceToken(t, "https://bb.example.com/mcp") },
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "rotated external URL kills outstanding resource tokens",
+			externalURL: "https://new.example.com",
+			// The token was minted from a grant stored under the old URL; the
+			// middleware compares against live config, so rotation 401s it at
+			// use time and the client re-authorizes.
+			token:          func(t *testing.T) string { return mintResourceToken(t, "https://old.example.com/mcp") },
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "bare-origin audience is not the canonical resource",
+			externalURL:    "https://bb.example.com",
+			token:          func(t *testing.T) string { return mintResourceToken(t, "https://bb.example.com") },
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			// Unexpired legacy tokens (minted by a pre-upgrade replica, which
+			// during a rolling deploy can outlive any single process's start)
+			// are accepted; their own exp claim is what retires them.
+			name:           "unexpired legacy oauth2 audience is accepted",
+			externalURL:    "https://bb.example.com",
+			token:          func(t *testing.T) string { return generateValidToken(t, secret) },
+			expectedStatus: http.StatusOK,
+		},
+		{
+			// bb.user.access retirement is gated on the scoped service-account
+			// flow landing first (PR 5/6).
+			name:           "plain user audience is accepted",
+			externalURL:    "https://bb.example.com",
+			token:          func(t *testing.T) string { return generateUserAudienceToken(t, secret) },
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: tc.externalURL}
+			s, err := NewServer(nil, profile, secret, nil)
+			require.NoError(t, err)
+
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", "Bearer "+tc.token(t))
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			handler := s.authMiddleware(func(c *echo.Context) error {
+				return c.String(http.StatusOK, "success")
+			})
+			err = handler(c)
+			if err != nil {
+				echo.DefaultHTTPErrorHandler(true)(c, err)
+			}
+
+			require.Equal(t, tc.expectedStatus, rec.Code, rec.Body.String())
+			if tc.expectedStatus == http.StatusUnauthorized {
+				require.Contains(t, strings.ToLower(rec.Body.String()), "audience")
+				// Containment: even audience-mismatch challenges must not
+				// advertise the scope vocabulary before P1b enforcement.
+				wwwAuth := rec.Header().Get("WWW-Authenticate")
+				require.NotEmpty(t, wwwAuth)
+				require.NotContains(t, wwwAuth, "scope=")
+				require.NotContains(t, wwwAuth, "mcp:read")
+			}
+		})
+	}
+}
+
+// TestDecideAudience covers the resolver branches the HTTP matrix cannot reach
+// without a DB-backed store: a deliberately unconfigured deployment admits only
+// the legacy audiences (resource-bound tokens fail closed), while an infra
+// failure reading the trusted config surfaces as an error — a server problem,
+// never a verdict against the token.
+func TestDecideAudience(t *testing.T) {
+	const expected = "https://bb.example.com/mcp"
+	unconfigured := connect.NewError(connect.CodeFailedPrecondition, errors.New("external URL isn't setup yet"))
+	infraDown := connect.NewError(connect.CodeInternal, errors.New("failed to get workspace setting: db unreachable"))
+
+	t.Run("matching expected audience is allowed", func(t *testing.T) {
+		allowed, err := decideAudience(expected, expected, nil)
+		require.NoError(t, err)
+		require.True(t, allowed)
+	})
+
+	t.Run("unknown audience is refused", func(t *testing.T) {
+		allowed, err := decideAudience("https://old.example.com/mcp", expected, nil)
+		require.NoError(t, err)
+		require.False(t, allowed)
+	})
+
+	t.Run("legacy oauth2 audience is accepted while its token lives", func(t *testing.T) {
+		// No clock gate: this release never mints bb.oauth2.access, so the
+		// population drains by each token's own exp — no later than one
+		// access-token lifetime after the last legacy-capable replica leaves
+		// service. A process-start window would race rolling deploys.
+		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, expected, nil)
+		require.NoError(t, err)
+		require.True(t, allowed)
+	})
+
+	t.Run("unconfigured external URL still admits legacy audiences", func(t *testing.T) {
+		allowed, err := decideAudience(auth.OAuth2AccessTokenAudience, "", unconfigured)
+		require.NoError(t, err)
+		require.True(t, allowed)
+	})
+
+	t.Run("unconfigured external URL fails closed for resource tokens", func(t *testing.T) {
+		// No trusted config means no expected audience to compare against; the
+		// request-derived host must never substitute for it.
+		allowed, err := decideAudience("https://bb.example.com/mcp", "", unconfigured)
+		require.NoError(t, err)
+		require.False(t, allowed)
+	})
+
+	t.Run("plain user audience is accepted", func(t *testing.T) {
+		allowed, err := decideAudience(auth.AccessTokenAudience, expected, nil)
+		require.NoError(t, err)
+		require.True(t, allowed)
+	})
+
+	t.Run("infra failure is reported as an error, not a token verdict", func(t *testing.T) {
+		allowed, err := decideAudience(expected, "", infraDown)
+		require.Error(t, err)
+		require.False(t, allowed)
+	})
+}
+
+func generateUserAudienceToken(t *testing.T, secret string) string {
 	t.Helper()
 	claims := jwt.MapClaims{
-		"iss": "bytebase",
-		"sub": "test@example.com",
-		"aud": auth.OAuth2AccessTokenAudience,
-		"exp": time.Now().Add(time.Hour).Unix(),
-		"iat": time.Now().Unix(),
+		"iss":          "bytebase",
+		"sub":          "test@example.com",
+		"aud":          auth.AccessTokenAudience,
+		"workspace_id": "ws-test",
+		"exp":          time.Now().Add(time.Hour).Unix(),
+		"iat":          time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	token.Header["kid"] = "v1"
@@ -238,6 +429,46 @@ func generateValidToken(t *testing.T, secret string) string {
 	return tokenStr
 }
 
+func generateValidToken(t *testing.T, secret string) string {
+	t.Helper()
+	claims := jwt.MapClaims{
+		"iss":          "bytebase",
+		"sub":          "test@example.com",
+		"aud":          auth.OAuth2AccessTokenAudience,
+		"workspace_id": "ws-test",
+		"exp":          time.Now().Add(time.Hour).Unix(),
+		"iat":          time.Now().Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token.Header["kid"] = "v1"
+	tokenStr, err := token.SignedString([]byte(secret))
+	require.NoError(t, err)
+	return tokenStr
+}
+
+func generateOAuth2MCPToken(t *testing.T, secret, clientID, workspaceID string) string {
+	t.Helper()
+	claims := jwt.MapClaims{
+		"iss":          "bytebase",
+		"sub":          "test@example.com",
+		"aud":          auth.OAuth2AccessTokenAudience,
+		"exp":          time.Now().Add(time.Hour).Unix(),
+		"iat":          time.Now().Unix(),
+		"client_id":    clientID,
+		"workspace_id": workspaceID,
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token.Header["kid"] = "v1"
+	tokenStr, err := token.SignedString([]byte(secret))
+	require.NoError(t, err)
+	return tokenStr
+}
+
+// generateExpiredToken mints an expired legacy-audience (bb.oauth2.access)
+// token. The middleware matrix accepts that audience with no clock gate, so
+// the "expired token returns 401" row above is the other half of the drain
+// invariant: JWT expiry validation, not a window, is what retires the legacy
+// population.
 func generateExpiredToken(t *testing.T, secret string) string {
 	t.Helper()
 	claims := jwt.MapClaims{
@@ -257,11 +488,12 @@ func generateExpiredToken(t *testing.T, secret string) string {
 func generateTokenWithWrongAudience(t *testing.T, secret string) string {
 	t.Helper()
 	claims := jwt.MapClaims{
-		"iss": "bytebase",
-		"sub": "test@example.com",
-		"aud": "wrong.audience",
-		"exp": time.Now().Add(time.Hour).Unix(),
-		"iat": time.Now().Unix(),
+		"iss":          "bytebase",
+		"sub":          "test@example.com",
+		"aud":          "wrong.audience",
+		"workspace_id": "ws-test",
+		"exp":          time.Now().Add(time.Hour).Unix(),
+		"iat":          time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	token.Header["kid"] = "v1"

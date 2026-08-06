@@ -270,14 +270,17 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		EnableMetricCollection:   v1Setting.EnableMetricCollection,
 		EnableAuditLogStdout:     v1Setting.EnableAuditLogStdout,
 		Watermark:                v1Setting.Watermark,
-		DirectorySyncToken:       v1Setting.DirectorySyncToken,
-		PasswordRestriction:      convertToStorePasswordRestriction(v1Setting.PasswordRestriction),
-		EnableDebug:              v1Setting.EnableDebug,
-		SqlResultSize:            v1Setting.SqlResultSize,
-		QueryTimeout:             v1Setting.QueryTimeout,
-		SqlEditorThemeId:         v1Setting.SqlEditorThemeId,
-		SqlEditorCustomTheme:     convertToStoreSQLEditorThemeSetting(v1Setting.SqlEditorCustomTheme),
-		McpCapability:            storepb.WorkspaceProfileSetting_MCPCapability(v1Setting.McpCapability),
+		// The directory sync token is not settable through this blob; it is minted
+		// by WorkspaceService.RotateDirectorySyncToken. Callers of UpdateSetting
+		// must not be able to choose it, so nothing is carried over here — the
+		// update path preserves the stored hash instead.
+		PasswordRestriction:  convertToStorePasswordRestriction(v1Setting.PasswordRestriction),
+		EnableDebug:          v1Setting.EnableDebug,
+		SqlResultSize:        v1Setting.SqlResultSize,
+		QueryTimeout:         v1Setting.QueryTimeout,
+		SqlEditorThemeId:     v1Setting.SqlEditorThemeId,
+		SqlEditorCustomTheme: convertToStoreSQLEditorThemeSetting(v1Setting.SqlEditorCustomTheme),
+		McpCapability:        storepb.WorkspaceProfileSetting_MCPCapability(v1Setting.McpCapability),
 	}
 
 	// Convert announcement if present. The store only holds the theme colors.
@@ -345,15 +348,18 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		EnableMetricCollection:   storeSetting.EnableMetricCollection,
 		EnableAuditLogStdout:     storeSetting.EnableAuditLogStdout,
 		Watermark:                storeSetting.Watermark,
-		DirectorySyncToken:       storeSetting.DirectorySyncToken,
-		PasswordRestriction:      convertToPasswordRestrictionSetting(storeSetting.PasswordRestriction),
-		Announcement:             convertToV1Announcement(storeSetting.Announcement),
-		EnableDebug:              storeSetting.EnableDebug,
-		SqlResultSize:            storeSetting.SqlResultSize,
-		QueryTimeout:             storeSetting.QueryTimeout,
-		SqlEditorThemeId:         storeSetting.SqlEditorThemeId,
-		SqlEditorCustomTheme:     convertToV1SQLEditorThemeSetting(storeSetting.SqlEditorCustomTheme),
-		McpCapability:            v1pb.WorkspaceProfileSetting_MCPCapability(storeSetting.McpCapability),
+		// The token itself is never returned: this blob is readable by every
+		// workspace member. Only whether one exists, so the UI can offer
+		// "generate" vs "regenerate".
+		DirectorySyncTokenConfigured: storeSetting.GetDirectorySyncTokenHash() != "",
+		PasswordRestriction:          convertToPasswordRestrictionSetting(storeSetting.PasswordRestriction),
+		Announcement:                 convertToV1Announcement(storeSetting.Announcement),
+		EnableDebug:                  storeSetting.EnableDebug,
+		SqlResultSize:                storeSetting.SqlResultSize,
+		QueryTimeout:                 storeSetting.QueryTimeout,
+		SqlEditorThemeId:             storeSetting.SqlEditorThemeId,
+		SqlEditorCustomTheme:         convertToV1SQLEditorThemeSetting(storeSetting.SqlEditorCustomTheme),
+		McpCapability:                v1pb.WorkspaceProfileSetting_MCPCapability(storeSetting.McpCapability),
 	}
 }
 

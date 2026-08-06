@@ -18,7 +18,7 @@ func convertToV1Instance(instance *store.InstanceMessage, activation bool) *v1pb
 	dataSources := convertDataSources(instance.Metadata.GetDataSources())
 
 	return &v1pb.Instance{
-		Name:          buildInstanceName(instance.ResourceID),
+		Name:          buildInstanceName(instance.ResourceID, instance.ProjectID),
 		Title:         instance.Metadata.GetTitle(),
 		Engine:        engine,
 		EngineVersion: instance.Metadata.GetVersion(),
@@ -36,10 +36,9 @@ func convertToV1Instance(instance *store.InstanceMessage, activation bool) *v1pb
 }
 
 // buildRoleName builds the role name with the given instance ID and role name.
-func buildRoleName(b *strings.Builder, instanceID, roleName string) string {
+func buildRoleName(b *strings.Builder, instanceID string, projectID *string, roleName string) string {
 	b.Reset()
-	_, _ = b.WriteString(common.InstanceNamePrefix)
-	_, _ = b.WriteString(instanceID)
+	_, _ = b.WriteString(buildInstanceName(instanceID, projectID))
 	_, _ = b.WriteString("/")
 	_, _ = b.WriteString(common.RolePrefix)
 	_, _ = b.WriteString(roleName)
@@ -55,7 +54,7 @@ func convertInstanceRoles(instance *store.InstanceMessage, roles []*storepb.Inst
 
 	for _, role := range roles {
 		v1Roles = append(v1Roles, &v1pb.InstanceRole{
-			Name:      buildRoleName(&b, instance.ResourceID, role.Name),
+			Name:      buildRoleName(&b, instance.ResourceID, instance.ProjectID, role.Name),
 			RoleName:  role.Name,
 			Attribute: role.Attribute,
 		})
@@ -115,7 +114,7 @@ func convertToStoreSyncDatabases(syncDatabases *v1pb.SyncDatabases) *storepb.Syn
 
 func convertToV1InstanceResource(instanceMessage *store.InstanceMessage, activation bool) *v1pb.InstanceResource {
 	return &v1pb.InstanceResource{
-		Name:          buildInstanceName(instanceMessage.ResourceID),
+		Name:          buildInstanceName(instanceMessage.ResourceID, instanceMessage.ProjectID),
 		Title:         instanceMessage.Metadata.GetTitle(),
 		Engine:        convertToEngine(instanceMessage.Metadata.GetEngine()),
 		EngineVersion: instanceMessage.Metadata.GetVersion(),
@@ -297,12 +296,12 @@ func convertDataSources(dataSources []*storepb.DataSource) []*v1pb.DataSource {
 				}
 			}
 		case v1pb.DataSource_AWS_RDS_IAM:
-			if awsCredential := ds.GetAwsCredential(); awsCredential != nil {
+			if ds.GetAwsCredential() != nil {
+				// All AWSCredential fields are INPUT_ONLY (the external ID is
+				// the confused-deputy guard); presence alone signals that the
+				// credential is configured.
 				dataSource.IamExtension = &v1pb.DataSource_AwsCredential{
-					AwsCredential: &v1pb.DataSource_AWSCredential{
-						RoleArn:    awsCredential.RoleArn,
-						ExternalId: awsCredential.ExternalId,
-					},
+					AwsCredential: &v1pb.DataSource_AWSCredential{},
 				}
 			}
 		case v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM:
@@ -437,10 +436,10 @@ func convertDataSourceSaslConfig(saslConfig *storepb.SASLConfig) *v1pb.SASLConfi
 	case *storepb.SASLConfig_KrbConfig:
 		storeSaslConfig.Mechanism = &v1pb.SASLConfig_KrbConfig{
 			KrbConfig: &v1pb.KerberosConfig{
-				Primary:              m.KrbConfig.Primary,
-				Instance:             m.KrbConfig.Instance,
-				Realm:                m.KrbConfig.Realm,
-				Keytab:               m.KrbConfig.Keytab,
+				Primary:  m.KrbConfig.Primary,
+				Instance: m.KrbConfig.Instance,
+				Realm:    m.KrbConfig.Realm,
+				// The keytab is INPUT_ONLY and never returned on reads.
 				KdcHost:              m.KrbConfig.KdcHost,
 				KdcPort:              m.KrbConfig.KdcPort,
 				KdcTransportProtocol: m.KrbConfig.KdcTransportProtocol,
@@ -450,6 +449,34 @@ func convertDataSourceSaslConfig(saslConfig *storepb.SASLConfig) *v1pb.SASLConfi
 		return nil
 	}
 	return storeSaslConfig
+}
+
+// retainStoredKeytabOnEmptyUpdate keeps the stored keytab when an update
+// carries an empty one. The keytab is INPUT_ONLY — reads return it blank — so
+// a read-modify-write client would otherwise wipe it on every update.
+func retainStoredKeytabOnEmptyUpdate(updated, stored *storepb.SASLConfig) {
+	updatedKrb := updated.GetKrbConfig()
+	if updatedKrb == nil || len(updatedKrb.Keytab) > 0 {
+		return
+	}
+	if storedKrb := stored.GetKrbConfig(); storedKrb != nil {
+		updatedKrb.Keytab = storedKrb.Keytab
+	}
+}
+
+// retainStoredKeytabs applies retainStoredKeytabOnEmptyUpdate across a full
+// data source replacement (UpdateInstance with update_mask=data_sources),
+// matching stored data sources by ID.
+func retainStoredKeytabs(updated, stored []*storepb.DataSource) {
+	storedByID := make(map[string]*storepb.DataSource, len(stored))
+	for _, ds := range stored {
+		storedByID[ds.GetId()] = ds
+	}
+	for _, ds := range updated {
+		if existing, ok := storedByID[ds.GetId()]; ok {
+			retainStoredKeytabOnEmptyUpdate(ds.GetSaslConfig(), existing.GetSaslConfig())
+		}
+	}
 }
 
 func convertDataSourceAddresses(addresses []*storepb.DataSource_Address) []*v1pb.DataSource_Address {

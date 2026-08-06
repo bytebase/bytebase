@@ -7442,13 +7442,6 @@ CLOUD_SQL_IP_TYPE_UNSPECIFIED is treated as PUBLIC for backward compatibility. <
                 </tr>
               
                 <tr>
-                  <td>cluster</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Cluster is the cluster name for the data source. Used by CockroachDB. </p></td>
-                </tr>
-              
-                <tr>
                   <td>extra_connection_parameters</td>
                   <td><a href="#bytebase.store.DataSource.ExtraConnectionParametersEntry">DataSource.ExtraConnectionParametersEntry</a></td>
                   <td>repeated</td>
@@ -12944,13 +12937,6 @@ Requires ENTERPRISE license. </p></td>
                 </tr>
               
                 <tr>
-                  <td>directory_sync_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The token for directory sync authentication. </p></td>
-                </tr>
-              
-                <tr>
                   <td>password_restriction</td>
                   <td><a href="#bytebase.store.WorkspaceProfileSetting.PasswordRestriction">WorkspaceProfileSetting.PasswordRestriction</a></td>
                   <td></td>
@@ -13026,6 +13012,15 @@ Deprecated: use just-in-time access request flows instead. </p></td>
 this workspace, acting as an admin-set ceiling. Unset is treated as
 READ_WRITE for backward compatibility; DISABLED rejects all MCP
 connections. Enforced server-side by the /mcp endpoint. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>directory_sync_token_hash</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Hex-encoded SHA-256 of the SCIM directory sync token. The plaintext is shown
+once at rotation and never stored. SHA-256 rather than a slow KDF because the
+token is 122 bits of crypto/rand, not a human-chosen secret. </p></td>
                 </tr>
               
             </tbody>

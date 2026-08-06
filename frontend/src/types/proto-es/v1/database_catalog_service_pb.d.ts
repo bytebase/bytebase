@@ -18,7 +18,7 @@ export declare const file_v1_database_catalog_service: GenFile;
 export declare type GetDatabaseCatalogRequest = Message<"bytebase.v1.GetDatabaseCatalogRequest"> & {
   /**
    * The name of the database catalog to retrieve.
-   * Format: instances/{instance}/databases/{database}/catalog
+   * Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
    *
    * @generated from field: string name = 1;
    */
@@ -41,7 +41,7 @@ export declare type UpdateDatabaseCatalogRequest = Message<"bytebase.v1.UpdateDa
    * The database catalog to update.
    *
    * The catalog's `name` field is used to identify the database catalog to update.
-   * Format: instances/{instance}/databases/{database}/catalog
+   * Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
    *
    * @generated from field: bytebase.v1.DatabaseCatalog catalog = 1;
    */
@@ -70,7 +70,7 @@ export declare const UpdateDatabaseCatalogRequestSchema: GenMessage<UpdateDataba
 export declare type DatabaseCatalog = Message<"bytebase.v1.DatabaseCatalog"> & {
   /**
    * The name of the database catalog.
-   * Format: instances/{instance}/databases/{database}/catalog
+   * Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
    *
    * @generated from field: string name = 1;
    */

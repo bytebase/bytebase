@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
@@ -18,19 +18,6 @@ import (
 // resource URI that RFC 8707 clients name in the `resource` parameter, and that
 // our RFC 9728 metadata document publishes.
 const mcpResourcePath = "/mcp"
-
-// externalURLSetupError is returned when a client asks to bind a token to a
-// resource but the deployment has no configured external URL. It names the two
-// places an admin can set one, because the fix is entirely on the server side
-// and the client operator can do nothing about it.
-const externalURLSetupError = "MCP OAuth requires a configured external URL. Start the server with --external-url https://<your-bytebase-host>, or set Settings > General > External URL " +
-	"(https://docs.bytebase.com/get-started/self-host/external-url), then reconnect. The request Host header is deliberately not trusted for resource binding."
-
-// errExternalURLNotConfigured is returned by trustedExternalURL when no trusted
-// external URL is available, so resource validation is never handed an empty base
-// to interpret. Mapped to the actionable configuration error above at the call
-// site; every other validation failure is a client error.
-var errExternalURLNotConfigured = errors.New("no configured external URL to validate the resource against")
 
 // scopeLadder is the P1a scope vocabulary — one scope per predefined permission
 // set — ordered narrowest to widest. Vocabulary per proposal v2 §4; the
@@ -44,7 +31,7 @@ var scopeLadder = []string{"mcp:read-only", "mcp:read-write"}
 
 // grantParams is the validated resource/scope pair consented for one grant.
 type grantParams struct {
-	// resource is canonical (see canonicalizeResourceURI) or empty.
+	// resource is canonical or empty.
 	resource string
 	// scope is the single mode the requested scope set resolved to, or empty.
 	scope string
@@ -58,54 +45,18 @@ type oauth2Failure struct {
 	description string
 }
 
-// trustedExternalURL returns the canonical external URL configured for this
-// deployment: the --external-url flag, else the workspace setting. It returns
-// errExternalURLNotConfigured when neither is available, so callers never have to
-// interpret an empty string.
-//
-// Unlike getBaseURL this deliberately has no request-derived tier. Host and
-// X-Forwarded-Proto are client-controlled, so a header-derived value would let a
-// caller choose the audience its own token is bound to — which is the entire
-// property the resource binding exists to establish.
-func (s *Service) trustedExternalURL(ctx context.Context) (string, error) {
-	if s.profile.ExternalURL != "" {
-		return strings.TrimSuffix(s.profile.ExternalURL, "/"), nil
-	}
-	// The workspace ID is only resolved on self-hosted, and that is a correctness
-	// requirement rather than an assumption that SaaS passes the flag:
-	//
-	//   - GetWorkspaceID is a singleton lookup (`... WHERE deleted = FALSE LIMIT 1`),
-	//     so on SaaS it returns an arbitrary workspace. Feeding that to
-	//     GetEffectiveExternalURL would validate this grant's resource against an
-	//     unrelated tenant's setting.
-	//   - On SaaS the setting cannot hold a value anyway: writes to
-	//     workspace_profile.external_url are rejected outright in SaaS mode
-	//     (setting_service.go), so the flag is the only source that can exist.
-	//
-	// Same tier order as getBaseURL and mcp's buildResourceMetadataURL, minus
-	// their request-derived tail. Unifying the three is BOT-32.
-	workspaceID := ""
-	if !s.profile.SaaS {
-		if ws, err := s.store.GetWorkspaceID(ctx); err == nil {
-			workspaceID = ws
-		}
-	}
-	// GetEffectiveExternalURL reports "not configured" as an error, never as an
-	// empty string. A lookup failure is treated identically — fail closed, never
-	// fall back to the request — with the cause logged rather than returned.
-	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
-	if err != nil {
-		slog.Warn("failed to resolve trusted external URL for OAuth2 resource binding", log.BBError(err))
-		return "", errExternalURLNotConfigured
-	}
-	return strings.TrimSuffix(externalURL, "/"), nil
-}
-
 // parseGrantParams extracts and validates the `resource` (RFC 8707) and `scope`
-// (RFC 6749) parameters of an authorization request. Both are optional — clients
-// that send neither still consent successfully — but a value that is present is
-// validated strictly, and multiple occurrences of either are rejected.
-func (s *Service) parseGrantParams(ctx context.Context, values url.Values) (grantParams, *oauth2Failure) {
+// (RFC 6749) parameters of an authorization request. Both parameters are
+// optional, and a value that is present is validated strictly; multiple
+// occurrences of either are rejected.
+//
+// The resulting grant is always resource-bound (P1a PR 3): the stored resource
+// becomes the access token's audience, so a client that omits `resource`
+// (mandatory for MCP clients per RFC 8707, but not every DCR client is one) is
+// bound to the canonical MCP resource — the only value validateResource would
+// accept anyway. Leaving such a grant unbound instead would mint tokens no
+// audience check accepts once the legacy migration window closes.
+func (s *Service) parseGrantParams(ctx context.Context, values url.Values, workspaceID string) (grantParams, *oauth2Failure) {
 	resource, err := singleValue(values, "resource")
 	if err != nil {
 		return grantParams{}, &oauth2Failure{code: "invalid_target", description: err.Error()}
@@ -118,17 +69,22 @@ func (s *Service) parseGrantParams(ctx context.Context, values url.Values) (gran
 	if err != nil {
 		return grantParams{}, &oauth2Failure{code: "invalid_scope", description: err.Error()}
 	}
-	if resource == "" {
-		return grantParams{scope: scope}, nil
+
+	// Every consent needs the trusted external URL now that every grant is
+	// bound. GetEffectiveExternalURL reports "not configured" as an error, never
+	// as an empty string. Fail closed with the actionable setup error, never
+	// fall back to the request.
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
+	if err != nil {
+		slog.Error("rejected an MCP OAuth consent because no external URL is configured",
+			slog.String("resource", resource))
+		return grantParams{}, &oauth2Failure{code: "server_error", description: err.Error()}
 	}
 
-	trustedBaseURL, err := s.trustedExternalURL(ctx)
-	if err != nil {
-		slog.Error("rejected an MCP OAuth resource binding because no external URL is configured",
-			slog.String("resource", resource))
-		return grantParams{}, &oauth2Failure{code: "server_error", description: externalURLSetupError}
+	if resource == "" {
+		return grantParams{resource: externalURL + mcpResourcePath, scope: scope}, nil
 	}
-	canonical, err := validateResource(resource, trustedBaseURL)
+	canonical, err := validateResource(resource, externalURL)
 	if err != nil {
 		return grantParams{}, &oauth2Failure{code: "invalid_target", description: err.Error()}
 	}
@@ -156,18 +112,16 @@ func checkConsentedResource(values url.Values, consented string) *oauth2Failure 
 	if requested == "" {
 		return nil
 	}
-	canonical, err := canonicalizeResourceURI(requested)
+	canonical, err := common.NormalizeExternalURL(requested)
 	if err != nil {
 		return &oauth2Failure{code: "invalid_target", description: err.Error()}
 	}
-	// Codes and refresh tokens issued before 3.22.1 read back with no resource,
-	// and RFC 8707 clients send `resource` on every exchange *and* every refresh.
-	// Rejecting it would fail each in-flight code and every live session at its
-	// next refresh, for up to a refresh-token lifetime after upgrade. Accept it
-	// without binding: the stored value stays empty and is what gets carried
-	// forward, so an unbound grant cannot acquire a binding here. Retiring that
-	// population is PR 3's job (spec §"PR 3": legacy refresh grants require
-	// re-consent), and it needs the audience change to do it coherently.
+	// Codes and refresh tokens issued before 3.22.1 read back with no resource.
+	// The parameter check accepts anything for them so the refusal such a grant
+	// gets is the deliberate one: the legacy gate right after these checks
+	// (legacyGrantFailure) refuses the grant itself with re-auth guidance,
+	// rather than a confusing mismatch error against a value that was never
+	// consented. An unbound grant still cannot acquire a binding here.
 	if consented == "" {
 		return nil
 	}
@@ -233,9 +187,8 @@ func singleValue(values url.Values, name string) (string, error) {
 }
 
 // validateResource checks that a client-supplied resource indicator names this
-// server and returns the form to consent to. trustedBaseURL comes from
-// trustedExternalURL, which reports an unconfigured deployment as an error, so it
-// is always a real URL here.
+// server and returns the form to consent to. externalURL comes from deployment
+// config and is already normalized.
 //
 // Accepted inputs: the canonical MCP resource URI (<base>/mcp) and the bare
 // origin (<base>) — the two values our own RFC 9728 metadata documents publish,
@@ -245,53 +198,16 @@ func singleValue(values url.Values, name string) (string, error) {
 // access token's audience to this stored value, and two accepted spellings of one
 // resource would mean two audiences to accept at /mcp — forever, since grants are
 // long-lived. Normalizing at the door keeps the audience single-valued.
-func validateResource(resource, trustedBaseURL string) (string, error) {
-	base, err := canonicalizeResourceURI(trustedBaseURL)
-	if err != nil {
-		return "", errors.Wrapf(err, "configured external URL %q is not a usable absolute URL", trustedBaseURL)
-	}
-	mcpResource := base + mcpResourcePath
-	canonical, err := canonicalizeResourceURI(resource)
+func validateResource(resource, externalURL string) (string, error) {
+	mcpResource := externalURL + mcpResourcePath
+	canonical, err := common.NormalizeExternalURL(resource)
 	if err != nil {
 		return "", err
 	}
-	if canonical != base && canonical != mcpResource {
+	if canonical != externalURL && canonical != mcpResource {
 		return "", errors.Errorf("resource %q is not this server's MCP resource; expected %q", canonical, mcpResource)
 	}
 	return mcpResource, nil
-}
-
-// canonicalizeResourceURI normalizes the two differences a resource URI may
-// carry without changing which resource it names: scheme and host case, and a
-// trailing slash. Everything else is left exactly as sent — a port, a
-// percent-encoded path, a different path — so a noncanonical value fails the
-// comparison in validateResource instead of being quietly accepted as equal.
-//
-// Query strings, fragments, and userinfo are rejected outright: RFC 8707 §2
-// resource URIs must not carry a fragment, and none of the three ever appear in
-// a legitimate MCP resource identifier.
-func canonicalizeResourceURI(resource string) (string, error) {
-	u, err := url.Parse(resource)
-	if err != nil {
-		return "", errors.Wrap(err, "resource is not a valid URI")
-	}
-	scheme := strings.ToLower(u.Scheme)
-	if scheme != "http" && scheme != "https" {
-		return "", errors.Errorf("resource must be an absolute http(s) URI, got %q", resource)
-	}
-	if u.Host == "" {
-		return "", errors.Errorf("resource must name a host, got %q", resource)
-	}
-	if u.User != nil {
-		return "", errors.New("resource must not carry userinfo")
-	}
-	if u.RawQuery != "" || u.ForceQuery {
-		return "", errors.New("resource must not carry a query string")
-	}
-	if u.Fragment != "" || u.RawFragment != "" {
-		return "", errors.New("resource must not carry a fragment")
-	}
-	return scheme + "://" + strings.ToLower(u.Host) + strings.TrimSuffix(u.EscapedPath(), "/"), nil
 }
 
 // canonicalizeScope reduces a requested scope set to the one mode a grant can be

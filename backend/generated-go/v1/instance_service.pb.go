@@ -464,7 +464,7 @@ func (DataSource_RedisType) EnumDescriptor() ([]byte, []int) {
 type GetInstanceRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the instance to retrieve.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -509,6 +509,11 @@ func (x *GetInstanceRequest) GetName() string {
 
 type ListInstancesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// The parent, which owns this collection of instances.
+	// Format: projects/{project}. If omitted, only workspace instances are
+	// returned. Wildcard project parents are not supported. When set, the
+	// `project` filter must be omitted or match this parent.
+	Parent *string `protobuf:"bytes,6,opt,name=parent,proto3,oneof" json:"parent,omitempty"`
 	// The maximum number of instances to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 10 instances will be returned.
@@ -597,6 +602,13 @@ func (x *ListInstancesRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ListInstancesRequest.ProtoReflect.Descriptor instead.
 func (*ListInstancesRequest) Descriptor() ([]byte, []int) {
 	return file_v1_instance_service_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ListInstancesRequest) GetParent() string {
+	if x != nil && x.Parent != nil {
+		return *x.Parent
+	}
+	return ""
 }
 
 func (x *ListInstancesRequest) GetPageSize() int32 {
@@ -691,6 +703,10 @@ func (x *ListInstancesResponse) GetNextPageToken() string {
 
 type CreateInstanceRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// The parent, which owns this collection of instances.
+	// Format: projects/{project}. If omitted, the instance is created in the
+	// workspace collection.
+	Parent *string `protobuf:"bytes,5,opt,name=parent,proto3,oneof" json:"parent,omitempty"`
 	// The instance to create.
 	Instance *Instance `protobuf:"bytes,1,opt,name=instance,proto3" json:"instance,omitempty"`
 	// The ID to use for the instance, which will become the final component of
@@ -702,7 +718,7 @@ type CreateInstanceRequest struct {
 	// Validate only also tests the data source connection.
 	ValidateOnly bool `protobuf:"varint,3,opt,name=validate_only,json=validateOnly,proto3" json:"validate_only,omitempty"`
 	// The project to assign newly discovered databases to during initial sync.
-	// Format: projects/{project}
+	// Format: projects/{project}. This must be unset when `parent` is set.
 	InitialDatabaseProject string `protobuf:"bytes,4,opt,name=initial_database_project,json=initialDatabaseProject,proto3" json:"initial_database_project,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -738,6 +754,13 @@ func (*CreateInstanceRequest) Descriptor() ([]byte, []int) {
 	return file_v1_instance_service_proto_rawDescGZIP(), []int{3}
 }
 
+func (x *CreateInstanceRequest) GetParent() string {
+	if x != nil && x.Parent != nil {
+		return *x.Parent
+	}
+	return ""
+}
+
 func (x *CreateInstanceRequest) GetInstance() *Instance {
 	if x != nil {
 		return x.Instance
@@ -771,12 +794,14 @@ type UpdateInstanceRequest struct {
 	// The instance to update.
 	//
 	// The instance's `name` field is used to identify the instance to update.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Instance *Instance `protobuf:"bytes,1,opt,name=instance,proto3" json:"instance,omitempty"`
 	// The list of fields to update.
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	// If set to true, and the instance is not found, a new instance will be created.
-	// In this situation, `update_mask` is ignored.
+	// In this situation, `update_mask` is ignored. A project-nested name creates
+	// the instance only under its encoded active, non-default project; it never
+	// falls back to a workspace instance.
 	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -836,9 +861,11 @@ func (x *UpdateInstanceRequest) GetAllowMissing() bool {
 type DeleteInstanceRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the instance to delete.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
+	// If set to true, a workspace instance's databases are moved to the default
+	// project before the instance is soft-deleted. Project instances reject this
+	// option because their databases must remain in the owning project.
 	Force bool `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
 	// If set to true, permanently purge the soft-deleted instance and all related resources.
 	// This operation is irreversible. Following AIP-165, this should only be used for
@@ -903,7 +930,7 @@ func (x *DeleteInstanceRequest) GetPurge() bool {
 type UndeleteInstanceRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the deleted instance.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -949,7 +976,7 @@ func (x *UndeleteInstanceRequest) GetName() string {
 type SyncInstanceRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of instance.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only
 	// the instance metadata (such as the database list) and any newly discovered databases will be synced.
@@ -1005,7 +1032,7 @@ func (x *SyncInstanceRequest) GetEnableFullSync() bool {
 type ListInstanceDatabaseRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the instance.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The target instance. We need to set this field if the target instance is not created yet.
 	Instance      *Instance `protobuf:"bytes,2,opt,name=instance,proto3,oneof" json:"instance,omitempty"`
@@ -1149,6 +1176,10 @@ func (x *SyncInstanceResponse) GetDatabases() []string {
 
 type BatchSyncInstancesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// The parent, which owns this collection of instances.
+	// Format: projects/{project}. If omitted, all targets must be workspace
+	// instances; otherwise, every target must belong to this project collection.
+	Parent *string `protobuf:"bytes,2,opt,name=parent,proto3,oneof" json:"parent,omitempty"`
 	// The request message specifying the instances to sync.
 	// A maximum of 1000 instances can be synced in a batch.
 	Requests      []*SyncInstanceRequest `protobuf:"bytes,1,rep,name=requests,proto3" json:"requests,omitempty"`
@@ -1184,6 +1215,13 @@ func (x *BatchSyncInstancesRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use BatchSyncInstancesRequest.ProtoReflect.Descriptor instead.
 func (*BatchSyncInstancesRequest) Descriptor() ([]byte, []int) {
 	return file_v1_instance_service_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *BatchSyncInstancesRequest) GetParent() string {
+	if x != nil && x.Parent != nil {
+		return *x.Parent
+	}
+	return ""
 }
 
 func (x *BatchSyncInstancesRequest) GetRequests() []*SyncInstanceRequest {
@@ -1231,6 +1269,10 @@ func (*BatchSyncInstancesResponse) Descriptor() ([]byte, []int) {
 
 type BatchUpdateInstancesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// The parent, which owns this collection of instances.
+	// Format: projects/{project}. If omitted, all targets must be workspace
+	// instances; otherwise, every target must belong to this project collection.
+	Parent *string `protobuf:"bytes,2,opt,name=parent,proto3,oneof" json:"parent,omitempty"`
 	// The request message specifying the resources to update.
 	Requests      []*UpdateInstanceRequest `protobuf:"bytes,1,rep,name=requests,proto3" json:"requests,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1265,6 +1307,13 @@ func (x *BatchUpdateInstancesRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use BatchUpdateInstancesRequest.ProtoReflect.Descriptor instead.
 func (*BatchUpdateInstancesRequest) Descriptor() ([]byte, []int) {
 	return file_v1_instance_service_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *BatchUpdateInstancesRequest) GetParent() string {
+	if x != nil && x.Parent != nil {
+		return *x.Parent
+	}
+	return ""
 }
 
 func (x *BatchUpdateInstancesRequest) GetRequests() []*UpdateInstanceRequest {
@@ -1321,7 +1370,7 @@ func (x *BatchUpdateInstancesResponse) GetInstances() []*Instance {
 type AddDataSourceRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the instance to add a data source to.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Identified by data source ID.
 	// Only READ_ONLY data source can be added.
@@ -1386,7 +1435,7 @@ func (x *AddDataSourceRequest) GetValidateOnly() bool {
 type RemoveDataSourceRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the instance to remove a data source from.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Identified by data source ID.
 	// Only READ_ONLY data source can be removed.
@@ -1442,7 +1491,7 @@ func (x *RemoveDataSourceRequest) GetDataSource() *DataSource {
 type UpdateDataSourceRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the instance to update a data source.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Identified by data source ID.
 	DataSource *DataSource `protobuf:"bytes,2,opt,name=data_source,json=dataSource,proto3" json:"data_source,omitempty"`
@@ -1569,7 +1618,7 @@ func (x *SyncDatabases) GetDatabases() []string {
 type Instance struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the instance.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The lifecycle state of the instance.
 	State State `protobuf:"varint,3,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
@@ -2024,8 +2073,6 @@ type DataSource struct {
 	MasterUsername string               `protobuf:"bytes,32,opt,name=master_username,json=masterUsername,proto3" json:"master_username,omitempty"`
 	MasterPassword string               `protobuf:"bytes,33,opt,name=master_password,json=masterPassword,proto3" json:"master_password,omitempty"`
 	RedisType      DataSource_RedisType `protobuf:"varint,34,opt,name=redis_type,json=redisType,proto3,enum=bytebase.v1.DataSource_RedisType" json:"redis_type,omitempty"`
-	// Cluster is the cluster name for the data source. Used by CockroachDB.
-	Cluster string `protobuf:"bytes,35,opt,name=cluster,proto3" json:"cluster,omitempty"`
 	// Extra connection parameters for the database connection.
 	// For PostgreSQL HA, this can be used to set target_session_attrs=read-write
 	ExtraConnectionParameters map[string]string `protobuf:"bytes,36,rep,name=extra_connection_parameters,json=extraConnectionParameters,proto3" json:"extra_connection_parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -2419,13 +2466,6 @@ func (x *DataSource) GetRedisType() DataSource_RedisType {
 	return DataSource_REDIS_TYPE_UNSPECIFIED
 }
 
-func (x *DataSource) GetCluster() string {
-	if x != nil {
-		return x.Cluster
-	}
-	return ""
-}
-
 func (x *DataSource) GetExtraConnectionParameters() map[string]string {
 	if x != nil {
 		return x.ExtraConnectionParameters
@@ -2482,7 +2522,7 @@ type InstanceResource struct {
 	// Whether the instance is activated.
 	Activation bool `protobuf:"varint,5,opt,name=activation,proto3" json:"activation,omitempty"`
 	// The name of the instance.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Name string `protobuf:"bytes,6,opt,name=name,proto3" json:"name,omitempty"`
 	// The environment resource.
 	// Format: environments/prod where prod is the environment resource ID.
@@ -3051,23 +3091,27 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x19v1/instance_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x1ev1/instance_role_service.proto\"G\n" +
 	"\x12GetInstanceRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/InstanceR\x04name\"\xa8\x01\n" +
-	"\x14ListInstancesRequest\x12\x1b\n" +
+	"\x15bytebase.com/InstanceR\x04name\"\xec\x01\n" +
+	"\x14ListInstancesRequest\x127\n" +
+	"\x06parent\x18\x06 \x01(\tB\x1a\xfaA\x17\x12\x15bytebase.com/InstanceH\x00R\x06parent\x88\x01\x01\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\x12!\n" +
 	"\fshow_deleted\x18\x03 \x01(\bR\vshowDeleted\x12\x16\n" +
 	"\x06filter\x18\x04 \x01(\tR\x06filter\x12\x19\n" +
-	"\border_by\x18\x05 \x01(\tR\aorderBy\"t\n" +
+	"\border_by\x18\x05 \x01(\tR\aorderByB\t\n" +
+	"\a_parent\"t\n" +
 	"\x15ListInstancesResponse\x123\n" +
 	"\tinstances\x18\x01 \x03(\v2\x15.bytebase.v1.InstanceR\tinstances\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xcf\x01\n" +
-	"\x15CreateInstanceRequest\x126\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x93\x02\n" +
+	"\x15CreateInstanceRequest\x127\n" +
+	"\x06parent\x18\x05 \x01(\tB\x1a\xfaA\x17\x12\x15bytebase.com/InstanceH\x00R\x06parent\x88\x01\x01\x126\n" +
 	"\binstance\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceB\x03\xe0A\x02R\binstance\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
 	"instanceId\x12#\n" +
 	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnly\x128\n" +
-	"\x18initial_database_project\x18\x04 \x01(\tR\x16initialDatabaseProject\"\xb1\x01\n" +
+	"\x18initial_database_project\x18\x04 \x01(\tR\x16initialDatabaseProjectB\t\n" +
+	"\a_parent\"\xb1\x01\n" +
 	"\x15UpdateInstanceRequest\x126\n" +
 	"\binstance\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceB\x03\xe0A\x02R\binstance\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
@@ -3093,12 +3137,16 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x1cListInstanceDatabaseResponse\x12\x1c\n" +
 	"\tdatabases\x18\x01 \x03(\tR\tdatabases\"4\n" +
 	"\x14SyncInstanceResponse\x12\x1c\n" +
-	"\tdatabases\x18\x01 \x03(\tR\tdatabases\"^\n" +
-	"\x19BatchSyncInstancesRequest\x12A\n" +
-	"\brequests\x18\x01 \x03(\v2 .bytebase.v1.SyncInstanceRequestB\x03\xe0A\x02R\brequests\"\x1c\n" +
-	"\x1aBatchSyncInstancesResponse\"b\n" +
-	"\x1bBatchUpdateInstancesRequest\x12C\n" +
-	"\brequests\x18\x01 \x03(\v2\".bytebase.v1.UpdateInstanceRequestB\x03\xe0A\x02R\brequests\"S\n" +
+	"\tdatabases\x18\x01 \x03(\tR\tdatabases\"\xa2\x01\n" +
+	"\x19BatchSyncInstancesRequest\x127\n" +
+	"\x06parent\x18\x02 \x01(\tB\x1a\xfaA\x17\x12\x15bytebase.com/InstanceH\x00R\x06parent\x88\x01\x01\x12A\n" +
+	"\brequests\x18\x01 \x03(\v2 .bytebase.v1.SyncInstanceRequestB\x03\xe0A\x02R\brequestsB\t\n" +
+	"\a_parent\"\x1c\n" +
+	"\x1aBatchSyncInstancesResponse\"\xa6\x01\n" +
+	"\x1bBatchUpdateInstancesRequest\x127\n" +
+	"\x06parent\x18\x02 \x01(\tB\x1a\xfaA\x17\x12\x15bytebase.com/InstanceH\x00R\x06parent\x88\x01\x01\x12C\n" +
+	"\brequests\x18\x01 \x03(\v2\".bytebase.v1.UpdateInstanceRequestB\x03\xe0A\x02R\brequestsB\t\n" +
+	"\a_parent\"S\n" +
 	"\x1cBatchUpdateInstancesResponse\x123\n" +
 	"\tinstances\x18\x01 \x03(\v2\x15.bytebase.v1.InstanceR\tinstances\"\xad\x01\n" +
 	"\x14AddDataSourceRequest\x121\n" +
@@ -3122,7 +3170,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\x12#\n" +
 	"\rallow_missing\x18\x05 \x01(\bR\fallowMissing\"-\n" +
 	"\rSyncDatabases\x12\x1c\n" +
-	"\tdatabases\x18\x01 \x03(\tR\tdatabases\"\xa6\x06\n" +
+	"\tdatabases\x18\x01 \x03(\tR\tdatabases\"\xdb\x06\n" +
 	"\bInstance\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
@@ -3143,9 +3191,9 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x06labels\x18\x10 \x03(\v2!.bytebase.v1.Instance.LabelsEntryR\x06labels\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:0\xeaA-\n" +
-	"\x15bytebase.com/Instance\x12\x14instances/{instance}B\x0e\n" +
-	"\f_environment\"\xf2\t\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:Y\xeaAV\n" +
+	"\x15bytebase.com/Instance\x12\x14instances/{instance}\x12'projects/{project}/instances/{instance}B\x0e\n" +
+	"\f_environmentJ\x04\b\x02\x10\x03J\x04\b\r\x10\x0e\"\xf2\t\n" +
 	"\x18DataSourceExternalSecret\x12Q\n" +
 	"\vsecret_type\x18\x01 \x01(\x0e20.bytebase.v1.DataSourceExternalSecret.SecretTypeR\n" +
 	"secretType\x12\x10\n" +
@@ -3193,7 +3241,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x05PLAIN\x10\x01\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x02\x12\b\n" +
 	"\x04FILE\x10\x03B\r\n" +
-	"\vauth_option\"\xfd\x18\n" +
+	"\vauth_option\"\xf4\x18\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
@@ -3248,11 +3296,10 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\fwarehouse_id\x18\x1d \x01(\tR\vwarehouseId\x12\x1f\n" +
 	"\vmaster_name\x18\x1f \x01(\tR\n" +
 	"masterName\x12'\n" +
-	"\x0fmaster_username\x18  \x01(\tR\x0emasterUsername\x12'\n" +
-	"\x0fmaster_password\x18! \x01(\tR\x0emasterPassword\x12@\n" +
+	"\x0fmaster_username\x18  \x01(\tR\x0emasterUsername\x12,\n" +
+	"\x0fmaster_password\x18! \x01(\tB\x03\xe0A\x04R\x0emasterPassword\x12@\n" +
 	"\n" +
-	"redis_type\x18\" \x01(\x0e2!.bytebase.v1.DataSource.RedisTypeR\tredisType\x12\x18\n" +
-	"\acluster\x18# \x01(\tR\acluster\x12v\n" +
+	"redis_type\x18\" \x01(\x0e2!.bytebase.v1.DataSource.RedisTypeR\tredisType\x12v\n" +
 	"\x1bextra_connection_parameters\x18$ \x03(\v26.bytebase.v1.DataSource.ExtraConnectionParametersEntryR\x19extraConnectionParameters\x12\x1d\n" +
 	"\n" +
 	"project_id\x189 \x01(\tR\tprojectId\x12\x1f\n" +
@@ -3295,7 +3342,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"STANDALONE\x10\x01\x12\f\n" +
 	"\bSENTINEL\x10\x02\x12\v\n" +
 	"\aCLUSTER\x10\x03B\x0f\n" +
-	"\riam_extension\"\xa8\x02\n" +
+	"\riam_extensionJ\x04\b#\x10$J\x04\b2\x108\"\xa8\x02\n" +
 	"\x10InstanceResource\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12+\n" +
 	"\x06engine\x18\x02 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12*\n" +
@@ -3311,33 +3358,33 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"SASLConfig\x12<\n" +
 	"\n" +
 	"krb_config\x18\x01 \x01(\v2\x1b.bytebase.v1.KerberosConfigH\x00R\tkrbConfigB\v\n" +
-	"\tmechanism\"\xe0\x01\n" +
+	"\tmechanism\"\xe5\x01\n" +
 	"\x0eKerberosConfig\x12\x18\n" +
 	"\aprimary\x18\x01 \x01(\tR\aprimary\x12\x1a\n" +
 	"\binstance\x18\x02 \x01(\tR\binstance\x12\x14\n" +
-	"\x05realm\x18\x03 \x01(\tR\x05realm\x12\x16\n" +
-	"\x06keytab\x18\x04 \x01(\fR\x06keytab\x12\x19\n" +
+	"\x05realm\x18\x03 \x01(\tR\x05realm\x12\x1b\n" +
+	"\x06keytab\x18\x04 \x01(\fB\x03\xe0A\x04R\x06keytab\x12\x19\n" +
 	"\bkdc_host\x18\x05 \x01(\tR\akdcHost\x12\x19\n" +
 	"\bkdc_port\x18\x06 \x01(\tR\akdcPort\x124\n" +
 	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol*G\n" +
 	"\x0eDataSourceType\x12\x1b\n" +
 	"\x17DATA_SOURCE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ADMIN\x10\x01\x12\r\n" +
-	"\tREAD_ONLY\x10\x022\xd4\x10\n" +
-	"\x0fInstanceService\x12\x84\x01\n" +
-	"\vGetInstance\x12\x1f.bytebase.v1.GetInstanceRequest\x1a\x15.bytebase.v1.Instance\"=\xdaA\x04name\x8a\xea0\x10bb.instances.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x18\x12\x16/v1/{name=instances/*}\x12\x89\x01\n" +
-	"\rListInstances\x12!.bytebase.v1.ListInstancesRequest\x1a\".bytebase.v1.ListInstancesResponse\"1\xdaA\x00\x8a\xea0\x11bb.instances.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x0f\x12\r/v1/instances\x12\x96\x01\n" +
-	"\x0eCreateInstance\x12\".bytebase.v1.CreateInstanceRequest\x1a\x15.bytebase.v1.Instance\"I\xdaA\binstance\x8a\xea0\x13bb.instances.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x19:\binstance\"\r/v1/instances\x12\xb4\x01\n" +
-	"\x0eUpdateInstance\x12\".bytebase.v1.UpdateInstanceRequest\x1a\x15.bytebase.v1.Instance\"g\xdaA\x14instance,update_mask\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02+:\binstance2\x1f/v1/{instance.name=instances/*}\x12\x92\x01\n" +
-	"\x0eDeleteInstance\x12\".bytebase.v1.DeleteInstanceRequest\x1a\x16.google.protobuf.Empty\"D\xdaA\x04name\x8a\xea0\x13bb.instances.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x18*\x16/v1/{name=instances/*}\x12\x9c\x01\n" +
-	"\x10UndeleteInstance\x12$.bytebase.v1.UndeleteInstanceRequest\x1a\x15.bytebase.v1.Instance\"K\x8a\xea0\x15bb.instances.undelete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02$:\x01*\"\x1f/v1/{name=instances/*}:undelete\x12\x94\x01\n" +
-	"\fSyncInstance\x12 .bytebase.v1.SyncInstanceRequest\x1a!.bytebase.v1.SyncInstanceResponse\"?\x8a\xea0\x11bb.instances.sync\x90\xea0\x01\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/{name=instances/*}:sync\x12\xb0\x01\n" +
-	"\x14ListInstanceDatabase\x12(.bytebase.v1.ListInstanceDatabaseRequest\x1a).bytebase.v1.ListInstanceDatabaseResponse\"C\x8a\xea0\x10bb.instances.get\x90\xea0\x01\x82\xd3\xe4\x93\x02%:\x01*\" /v1/{name=instances/*}:databases\x12\xa2\x01\n" +
-	"\x12BatchSyncInstances\x12&.bytebase.v1.BatchSyncInstancesRequest\x1a'.bytebase.v1.BatchSyncInstancesResponse\";\x8a\xea0\x11bb.instances.sync\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/v1/instances:batchSync\x12\xb0\x01\n" +
-	"\x14BatchUpdateInstances\x12(.bytebase.v1.BatchUpdateInstancesRequest\x1a).bytebase.v1.BatchUpdateInstancesResponse\"C\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/v1/instances:batchUpdate\x12\x99\x01\n" +
-	"\rAddDataSource\x12!.bytebase.v1.AddDataSourceRequest\x1a\x15.bytebase.v1.Instance\"N\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02):\x01*\"$/v1/{name=instances/*}:addDataSource\x12\xa2\x01\n" +
-	"\x10RemoveDataSource\x12$.bytebase.v1.RemoveDataSourceRequest\x1a\x15.bytebase.v1.Instance\"Q\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/{name=instances/*}:removeDataSource\x12\xc6\x01\n" +
-	"\x10UpdateDataSource\x12$.bytebase.v1.UpdateDataSourceRequest\x1a\x15.bytebase.v1.Instance\"u\xdaA\x17data_source,update_mask\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x026:\vdata_source2'/v1/{name=instances/*}:updateDataSourceB\xaa\x01\n" +
+	"\tREAD_ONLY\x10\x022\xd6\x15\n" +
+	"\x0fInstanceService\x12\xa9\x01\n" +
+	"\vGetInstance\x12\x1f.bytebase.v1.GetInstanceRequest\x1a\x15.bytebase.v1.Instance\"b\xdaA\x04name\x8a\xea0\x10bb.instances.get\x90\xea0\x01\x82\xd3\xe4\x93\x02=Z#\x12!/v1/{name=projects/*/instances/*}\x12\x16/v1/{name=instances/*}\x12\xae\x01\n" +
+	"\rListInstances\x12!.bytebase.v1.ListInstancesRequest\x1a\".bytebase.v1.ListInstancesResponse\"V\xdaA\x00\x8a\xea0\x11bb.instances.list\x90\xea0\x01\x82\xd3\xe4\x93\x024Z#\x12!/v1/{parent=projects/*}/instances\x12\r/v1/instances\x12\xc5\x01\n" +
+	"\x0eCreateInstance\x12\".bytebase.v1.CreateInstanceRequest\x1a\x15.bytebase.v1.Instance\"x\xdaA\binstance\x8a\xea0\x13bb.instances.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02H:\binstanceZ-:\binstance\"!/v1/{parent=projects/*}/instances\"\r/v1/instances\x12\xed\x01\n" +
+	"\x0eUpdateInstance\x12\".bytebase.v1.UpdateInstanceRequest\x1a\x15.bytebase.v1.Instance\"\x9f\x01\xdaA\x14instance,update_mask\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02c:\binstanceZ6:\binstance2*/v1/{instance.name=projects/*/instances/*}2\x1f/v1/{instance.name=instances/*}\x12\xb7\x01\n" +
+	"\x0eDeleteInstance\x12\".bytebase.v1.DeleteInstanceRequest\x1a\x16.google.protobuf.Empty\"i\xdaA\x04name\x8a\xea0\x13bb.instances.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02=Z#*!/v1/{name=projects/*/instances/*}*\x16/v1/{name=instances/*}\x12\xcd\x01\n" +
+	"\x10UndeleteInstance\x12$.bytebase.v1.UndeleteInstanceRequest\x1a\x15.bytebase.v1.Instance\"|\x8a\xea0\x15bb.instances.undelete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02U:\x01*Z/:\x01*\"*/v1/{name=projects/*/instances/*}:undelete\"\x1f/v1/{name=instances/*}:undelete\x12\xc1\x01\n" +
+	"\fSyncInstance\x12 .bytebase.v1.SyncInstanceRequest\x1a!.bytebase.v1.SyncInstanceResponse\"l\x8a\xea0\x11bb.instances.sync\x90\xea0\x01\x82\xd3\xe4\x93\x02M:\x01*Z+:\x01*\"&/v1/{name=projects/*/instances/*}:sync\"\x1b/v1/{name=instances/*}:sync\x12\xe2\x01\n" +
+	"\x14ListInstanceDatabase\x12(.bytebase.v1.ListInstanceDatabaseRequest\x1a).bytebase.v1.ListInstanceDatabaseResponse\"u\x8a\xea0\x10bb.instances.get\x90\xea0\x01\x82\xd3\xe4\x93\x02W:\x01*Z0:\x01*\"+/v1/{name=projects/*/instances/*}:databases\" /v1/{name=instances/*}:databases\x12\xd4\x01\n" +
+	"\x12BatchSyncInstances\x12&.bytebase.v1.BatchSyncInstancesRequest\x1a'.bytebase.v1.BatchSyncInstancesResponse\"m\x8a\xea0\x11bb.instances.sync\x90\xea0\x01\x82\xd3\xe4\x93\x02N:\x01*Z0:\x01*\"+/v1/{parent=projects/*}/instances:batchSync\"\x17/v1/instances:batchSync\x12\xe4\x01\n" +
+	"\x14BatchUpdateInstances\x12(.bytebase.v1.BatchUpdateInstancesRequest\x1a).bytebase.v1.BatchUpdateInstancesResponse\"w\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02R:\x01*Z2:\x01*\"-/v1/{parent=projects/*}/instances:batchUpdate\"\x19/v1/instances:batchUpdate\x12\xd0\x01\n" +
+	"\rAddDataSource\x12!.bytebase.v1.AddDataSourceRequest\x1a\x15.bytebase.v1.Instance\"\x84\x01\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02_:\x01*Z4:\x01*\"//v1/{name=projects/*/instances/*}:addDataSource\"$/v1/{name=instances/*}:addDataSource\x12\xdc\x01\n" +
+	"\x10RemoveDataSource\x12$.bytebase.v1.RemoveDataSourceRequest\x1a\x15.bytebase.v1.Instance\"\x8a\x01\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02e:\x01*Z7:\x01*\"2/v1/{name=projects/*/instances/*}:removeDataSource\"'/v1/{name=instances/*}:removeDataSource\x12\x8a\x02\n" +
+	"\x10UpdateDataSource\x12$.bytebase.v1.UpdateDataSourceRequest\x1a\x15.bytebase.v1.Instance\"\xb8\x01\xdaA\x17data_source,update_mask\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02y:\vdata_sourceZA:\vdata_source22/v1/{name=projects/*/instances/*}:updateDataSource2'/v1/{name=instances/*}:updateDataSourceB\xaa\x01\n" +
 	"\x0fcom.bytebase.v1B\x14InstanceServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -3484,7 +3531,11 @@ func file_v1_instance_service_proto_init() {
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
 	file_v1_instance_role_service_proto_init()
+	file_v1_instance_service_proto_msgTypes[1].OneofWrappers = []any{}
+	file_v1_instance_service_proto_msgTypes[3].OneofWrappers = []any{}
 	file_v1_instance_service_proto_msgTypes[8].OneofWrappers = []any{}
+	file_v1_instance_service_proto_msgTypes[11].OneofWrappers = []any{}
+	file_v1_instance_service_proto_msgTypes[13].OneofWrappers = []any{}
 	file_v1_instance_service_proto_msgTypes[19].OneofWrappers = []any{}
 	file_v1_instance_service_proto_msgTypes[20].OneofWrappers = []any{
 		(*DataSourceExternalSecret_AppRole)(nil),

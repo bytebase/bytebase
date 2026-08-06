@@ -18,6 +18,7 @@ message Label {
 
 // Project contains settings and configuration for a Bytebase project.
 message Project {
+  reserved 3 to 4, 6 to 7;
   // Available labels that can be applied to issues in this project.
   repeated Label issue_labels = 1;
   // Force issue labels to be used when creating an issue.

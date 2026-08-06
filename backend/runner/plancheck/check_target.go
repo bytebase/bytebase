@@ -5,7 +5,8 @@ import storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 // CheckTarget represents a derived check target from a plan.
 // This is computed at runtime from the plan's specs, not stored.
 type CheckTarget struct {
-	// Target is the database resource name: instances/{instance}/databases/{database}
+	// Target is the canonical database resource name: instances/{instance}/databases/{database}
+	// or projects/{project}/instances/{instance}/databases/{database}.
 	Target string
 	// SheetSha256 is the content hash of the SQL sheet
 	SheetSha256 string

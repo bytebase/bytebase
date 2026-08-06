@@ -144,3 +144,4 @@ permissions:
   - bb.workspaces.getIamPolicy
   - bb.workspaces.update
   - bb.workspaces.setIamPolicy
+  - bb.workspaces.rotateDirectorySyncToken

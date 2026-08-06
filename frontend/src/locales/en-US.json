@@ -496,6 +496,10 @@
     "cluster": "Cluster",
     "database-owner-name": "Database owner name",
     "issue-title": "Issue title",
+    "labels-misconfigured": {
+      "description": "This project requires issue labels, but no labels have been configured. Please contact the project owner to add labels before creating a database.",
+      "title": "Issue labels required but not configured"
+    },
     "new-collection-name": "New Collection Name",
     "new-database-name": "New database name",
     "reserved-db-error": "{{databaseName}} is a reserved name"
@@ -673,6 +677,10 @@
     "column": "Column",
     "columns": "Columns",
     "comment": "Comment",
+    "container": {
+      "select": "Select container",
+      "unspecified": "Unspecified"
+    },
     "create-database": "Create database",
     "data-size": "Data size",
     "edit-environment": "Edit Environment",
@@ -769,10 +777,6 @@
     "sync-schema-button": "Sync Schema",
     "sync-status": "Sync status",
     "sync-status-failed": "Sync failed",
-    "table": {
-      "select": "Select table",
-      "select-tip": "Please select a table to start."
-    },
     "transfer-project": "Transfer Project",
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
@@ -909,6 +913,7 @@
     }
   },
   "identity-provider": {
+    "attributes-description": "The following attributes were returned from the matched directory entry. Use these exact attribute names in the user information field mapping.",
     "claims-description": "The following claims were returned by the identity provider. This information can help you configure field mappings.",
     "delete-warning": "Are you sure you want to delete this identity provider? Users who signed up via this SSO will not be able to sign in with it anymore. If password sign-in is disabled in your workspace settings, these users may be locked out completely.",
     "identity-provider-create-failed": "Failed to create identity provider",
@@ -917,7 +922,13 @@
     "identity-provider-deleted": "Identity provider deleted successfully",
     "identity-provider-permission-denied": "Permission denied",
     "identity-provider-update-failed": "Failed to update identity provider",
+    "ldap-connectivity-verified": "Connected to the LDAP server and bound with the service account successfully. Base DN, user filter, and field mapping were not verified — run Test Sign-in with a directory user's credentials to check them.",
+    "ldap-test-connectivity-only": "Test Connectivity Only",
+    "ldap-test-description": "Enter the credentials of a directory user to verify the full sign-in flow: base DN, user filter, and field mapping. Or test connectivity only, which verifies just the server connection and the service account bind.",
+    "ldap-test-sign-in": "Test Sign-in",
+    "ldap-test-title": "Test LDAP Sign-in",
     "no-claims": "No claims returned by the identity provider.",
+    "no-user-info-mapped": "No user information was mapped. Check that the field mapping matches the values below.",
     "self": "Identity Provider",
     "test-connection": "Test Connection",
     "test-connection-success": "Test Connection Successful",
@@ -1155,6 +1166,7 @@
     },
     "instance-id": "Instance ID",
     "instance-name": "Instance Name",
+    "keytab-write-only": "Keytab is write-only. Upload a new file to replace the existing one.",
     "new-instance": "New Instance",
     "no-environment": "This instance has not been bound to the environment",
     "no-extra-params-configured": "No extra connection parameters configured",
@@ -2529,11 +2541,15 @@
         "description": "Sync users and groups from Entra ID (formerly Azure AD) or Okta to your Bytebase instance.",
         "endpoint": "Endpoint",
         "endpoint-tip": "Users and groups will be synced to Bytebase via this endpoint.",
-        "reset-token": "Reset token",
-        "reset-token-warning": "You need to update the application provisioning config.",
+        "generate-token": "Generate token",
+        "regenerate-token": "Regenerate token",
+        "regenerate-token-warning": "The current token stops working immediately and you will need to update the application provisioning config. Continue?",
         "secret-token": "Secret Token",
         "secret-token-tip": "The verification token for the endpoint. Please keep it in secret.",
-        "self": "Sync from SCIM"
+        "self": "Sync from SCIM",
+        "token-configured": "A token is configured. It cannot be displayed again — regenerate if you no longer have it.",
+        "token-not-configured": "No token has been generated yet.",
+        "token-shown-once": "Copy this token now. It will not be shown again."
       },
       "grant-access": "Grant Access",
       "groups": {

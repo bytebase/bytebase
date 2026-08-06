@@ -490,7 +490,10 @@ type SearchIssuesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent, which owns this collection of issues.
 	// Format: projects/{project}
-	// Use "projects/-" to list all issues from all projects.
+	// Use the wildcard "projects/-" to search across collections (AIP-159); the
+	// result is restricted to the projects where the caller holds
+	// bb.issues.get. For a concrete project, the caller must hold bb.issues.get
+	// on that project or the request is denied.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of issues to return. The service may return fewer than
 	// this value.
@@ -2192,7 +2195,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\acomment\x18\x02 \x01(\tR\acomment\"K\n" +
 	"\x19RetryIssueApprovalRequest\x12.\n" +
 	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
-	"\x12bytebase.com/IssueR\x04name\"\xf8\b\n" +
+	"\x12bytebase.com/IssueR\x04name\"\x90\t\n" +
 	"\x05Issue\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
@@ -2224,14 +2227,14 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\f\n" +
 	"\bAPPROVED\x10\x02\x12\f\n" +
-	"\bREJECTED\x10\x03\"S\n" +
+	"\bREJECTED\x10\x03\"Y\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CHANGE\x10\x01\x12\x0e\n" +
 	"\n" +
 	"ROLE_GRANT\x10\x02\x12\x10\n" +
-	"\fACCESS_GRANT\x10\x04::\xeaA7\n" +
-	"\x12bytebase.com/Issue\x12!projects/{project}/issues/{issue}\"\x9f\x01\n" +
+	"\fACCESS_GRANT\x10\x04\"\x04\b\x03\x10\x03::\xeaA7\n" +
+	"\x12bytebase.com/Issue\x12!projects/{project}/issues/{issue}J\x04\b\f\x10\rJ\x04\b\x0e\x10\x0fJ\x04\b\x10\x10\x11\"\x9f\x01\n" +
 	"\tRoleGrant\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x12\n" +
 	"\x04user\x18\x02 \x01(\tR\x04user\x12/\n" +
@@ -2264,7 +2267,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\rissue_comment\x18\x02 \x01(\v2\x19.bytebase.v1.IssueCommentR\fissueComment\x12@\n" +
 	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x04 \x01(\bR\fallowMissing\"\xb2\n" +
+	"\rallow_missing\x18\x04 \x01(\bR\fallowMissing\"\xb8\n" +
 	"\n" +
 	"\fIssueComment\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12#\n" +
@@ -2312,7 +2315,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\n" +
 	"from_specs\x18\x01 \x03(\v2\x16.bytebase.v1.Plan.SpecR\tfromSpecs\x121\n" +
 	"\bto_specs\x18\x02 \x03(\v2\x16.bytebase.v1.Plan.SpecR\atoSpecsB\a\n" +
-	"\x05event2\xec\x10\n" +
+	"\x05eventJ\x04\b\t\x10\f2\xec\x10\n" +
 	"\fIssueService\x12\x80\x01\n" +
 	"\bGetIssue\x12\x1c.bytebase.v1.GetIssueRequest\x1a\x12.bytebase.v1.Issue\"B\xdaA\x04name\x8a\xea0\rbb.issues.get\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/issues/*}\x12\x9c\x01\n" +
 	"\vCreateIssue\x12\x1f.bytebase.v1.CreateIssueRequest\x1a\x12.bytebase.v1.Issue\"X\xdaA\fparent,issue\x8a\xea0\x10bb.issues.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02':\x05issue\"\x1e/v1/{parent=projects/*}/issues\x12\x94\x01\n" +

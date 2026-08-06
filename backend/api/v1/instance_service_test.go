@@ -23,6 +23,35 @@ func TestValidateExtraConnectionParametersRejectsTiDBAllowAllFiles(t *testing.T)
 	require.Contains(t, err.Error(), "allowAllFiles")
 }
 
+func TestValidateProjectInstanceListFilter(t *testing.T) {
+	projectID := "project-a"
+	tests := []struct {
+		name    string
+		parent  *string
+		filter  string
+		wantErr bool
+	}{
+		{name: "project parent accepts omitted filter", parent: &projectID},
+		{name: "project parent accepts matching project filter", parent: &projectID, filter: `project == "projects/project-a"`},
+		{name: "project parent accepts matching project filter in conjunction", parent: &projectID, filter: `project == "projects/project-a" && engine == "POSTGRES"`},
+		{name: "project parent rejects another project filter", parent: &projectID, filter: `project == "projects/project-b"`, wantErr: true},
+		{name: "project parent rejects reversed another project filter", parent: &projectID, filter: `"projects/project-b" == project`, wantErr: true},
+		{name: "project parent rejects another project in disjunction", parent: &projectID, filter: `project == "projects/project-a" || project == "projects/project-b"`, wantErr: true},
+		{name: "project parent rejects another project under negation", parent: &projectID, filter: `!(project == "projects/project-b")`, wantErr: true},
+		{name: "workspace parent retains project filter behavior", filter: `project == "projects/project-b"`},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := validateProjectInstanceListFilter(test.parent, test.filter)
+			if test.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestClassifyConnectionFailure(t *testing.T) {
 	connectErr := connect.NewError(connect.CodeInvalidArgument, errors.New("generic connect error"))
 	connectErr.Meta().Set(connectionCategoryHeader, connectionCategoryAuthFailed)

@@ -496,6 +496,10 @@
     "cluster": "Clúster",
     "database-owner-name": "Nombre del propietario de la base de datos",
     "issue-title": "Título del problema",
+    "labels-misconfigured": {
+      "description": "Este proyecto requiere etiquetas de incidencia, pero no se ha configurado ninguna etiqueta. Contacte con el propietario del proyecto para añadir etiquetas antes de crear una base de datos.",
+      "title": "Se requieren etiquetas de incidencia pero no están configuradas"
+    },
     "new-collection-name": "Nuevo Nombre de Colección",
     "new-database-name": "Nuevo nombre de la base de datos",
     "reserved-db-error": "{{databaseName}} es un nombre reservado"
@@ -673,6 +677,10 @@
     "column": "Columna",
     "columns": "Columnas",
     "comment": "Comentario",
+    "container": {
+      "select": "Seleccionar contenedor",
+      "unspecified": "Sin especificar"
+    },
     "create-database": "Crear base de datos",
     "data-size": "Tamaño de datos",
     "edit-environment": "Editar entorno",
@@ -769,10 +777,6 @@
     "sync-schema-button": "Sincronizar esquema",
     "sync-status": "Estado de sincronización",
     "sync-status-failed": "Sincronización fallida",
-    "table": {
-      "select": "Seleccionar tabla",
-      "select-tip": "Seleccione una mesa para comenzar."
-    },
     "transfer-project": "Transferir proyecto",
     "unassign": "Desasignar",
     "unassign-alert-description": "Las bases de datos seleccionadas serán eliminadas del proyecto",
@@ -909,6 +913,7 @@
     }
   },
   "identity-provider": {
+    "attributes-description": "Los siguientes atributos fueron devueltos por la entrada del directorio coincidente. Utilice estos nombres de atributo exactos en la asignación de campos de información del usuario.",
     "claims-description": "El proveedor de identidad devolvió las siguientes notificaciones. Esta información puede ayudarle a configurar las asignaciones de campos.",
     "delete-warning": "¿Seguro que desea eliminar este proveedor de identidad? Los usuarios que se registraron con este SSO ya no podrán iniciar sesión con él. Si el inicio de sesión con contraseña está deshabilitado en la configuración de su espacio de trabajo, es posible que estos usuarios queden completamente bloqueados.",
     "identity-provider-create-failed": "No se pudo crear el proveedor de identidad",
@@ -917,7 +922,13 @@
     "identity-provider-deleted": "Proveedor de identidad eliminado exitosamente",
     "identity-provider-permission-denied": "Permiso denegado",
     "identity-provider-update-failed": "No se pudo actualizar el proveedor de identidad",
+    "ldap-connectivity-verified": "Conexión con el servidor LDAP y enlace con la cuenta de servicio realizados correctamente. El Base DN, el filtro de usuario y la asignación de campos no se han verificado; ejecute la prueba de inicio de sesión con las credenciales de un usuario del directorio para comprobarlos.",
+    "ldap-test-connectivity-only": "Probar solo la conectividad",
+    "ldap-test-description": "Introduzca las credenciales de un usuario del directorio para verificar el flujo completo de inicio de sesión: Base DN, filtro de usuario y asignación de campos. O pruebe solo la conectividad, que verifica únicamente la conexión al servidor y el enlace de la cuenta de servicio.",
+    "ldap-test-sign-in": "Probar inicio de sesión",
+    "ldap-test-title": "Probar inicio de sesión LDAP",
     "no-claims": "El proveedor de identidad no devolvió ninguna reclamación.",
+    "no-user-info-mapped": "No se asignó ninguna información de usuario. Compruebe que la asignación de campos coincida con los valores siguientes.",
     "self": "Proveedor de identidad",
     "test-connection": "Probar conexión",
     "test-connection-success": "Conexión de prueba exitosa",
@@ -1155,6 +1166,7 @@
     },
     "instance-id": "ID de la instancia",
     "instance-name": "Nombre de la instancia",
+    "keytab-write-only": "El keytab es de solo escritura. Suba un archivo nuevo para reemplazar el existente.",
     "new-instance": "Nueva instancia",
     "no-environment": "Esta instancia no ha sido ligada al entorno.",
     "no-extra-params-configured": "No hay parámetros de conexión adicionales configurados",
@@ -2529,11 +2541,15 @@
         "description": "Sincronice usuarios y grupos de Entra ID (anteriormente Azure AD) u Okta con su instancia de Bytebase.",
         "endpoint": "Punto final",
         "endpoint-tip": "Los usuarios y grupos se sincronizarán con Bytebase a través de este endpoint.",
-        "reset-token": "Restablecer token",
-        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra.",
+        "generate-token": "Generar token",
+        "regenerate-token": "Regenerar token",
+        "regenerate-token-warning": "El token actual dejará de funcionar de inmediato y deberá actualizar la configuración de aprovisionamiento de la aplicación. ¿Continuar?",
         "secret-token": "Secret Token",
         "secret-token-tip": "El token de verificación para el endpoint. Por favor, manténgalo en secreto.",
-        "self": "Sincronización desde SCIM"
+        "self": "Sincronización desde SCIM",
+        "token-configured": "Hay un token configurado. No se puede volver a mostrar: regenérelo si ya no dispone de él.",
+        "token-not-configured": "Todavía no se ha generado ningún token.",
+        "token-shown-once": "Copie este token ahora. No se volverá a mostrar."
       },
       "grant-access": "Conceder acceso",
       "groups": {

@@ -794,8 +794,6 @@ type DataSource struct {
 	MasterPassword           string               `protobuf:"bytes,44,opt,name=master_password,json=masterPassword,proto3" json:"master_password,omitempty"`
 	ObfuscatedMasterPassword string               `protobuf:"bytes,33,opt,name=obfuscated_master_password,json=obfuscatedMasterPassword,proto3" json:"obfuscated_master_password,omitempty"`
 	RedisType                DataSource_RedisType `protobuf:"varint,34,opt,name=redis_type,json=redisType,proto3,enum=bytebase.store.DataSource_RedisType" json:"redis_type,omitempty"`
-	// Cluster is the cluster name for the data source. Used by CockroachDB.
-	Cluster string `protobuf:"bytes,35,opt,name=cluster,proto3" json:"cluster,omitempty"`
 	// Extra connection parameters for the database connection.
 	// For PostgreSQL HA, this can be used to set target_session_attrs=read-write
 	ExtraConnectionParameters map[string]string `protobuf:"bytes,36,rep,name=extra_connection_parameters,json=extraConnectionParameters,proto3" json:"extra_connection_parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -1229,13 +1227,6 @@ func (x *DataSource) GetRedisType() DataSource_RedisType {
 		return x.RedisType
 	}
 	return DataSource_REDIS_TYPE_UNSPECIFIED
-}
-
-func (x *DataSource) GetCluster() string {
-	if x != nil {
-		return x.Cluster
-	}
-	return ""
 }
 
 func (x *DataSource) GetExtraConnectionParameters() map[string]string {
@@ -1997,7 +1988,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\n" +
 	"\x14store/instance.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"-\n" +
 	"\rSyncDatabases\x12\x1c\n" +
-	"\tdatabases\x18\x01 \x03(\tR\tdatabases\"\xa3\x05\n" +
+	"\tdatabases\x18\x01 \x03(\tR\tdatabases\"\xa9\x05\n" +
 	"\bInstance\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12.\n" +
 	"\x06engine\x18\x02 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\x12\x1e\n" +
@@ -2016,7 +2007,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x06labels\x18\r \x03(\v2$.bytebase.store.Instance.LabelsEntryR\x06labels\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xce\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\b\x10\t\"\xce\x01\n" +
 	"\fInstanceRole\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12.\n" +
 	"\x10connection_limit\x18\x02 \x01(\x05H\x00R\x0fconnectionLimit\x88\x01\x01\x12$\n" +
@@ -2026,7 +2017,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x11_connection_limitB\x0e\n" +
 	"\f_valid_untilB\f\n" +
 	"\n" +
-	"_attribute\"\xb2\x1e\n" +
+	"_attribute\"\x9e\x1e\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x122\n" +
@@ -2088,8 +2079,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x0fmaster_password\x18, \x01(\tR\x0emasterPassword\x12<\n" +
 	"\x1aobfuscated_master_password\x18! \x01(\tR\x18obfuscatedMasterPassword\x12C\n" +
 	"\n" +
-	"redis_type\x18\" \x01(\x0e2$.bytebase.store.DataSource.RedisTypeR\tredisType\x12\x18\n" +
-	"\acluster\x18# \x01(\tR\acluster\x12y\n" +
+	"redis_type\x18\" \x01(\x0e2$.bytebase.store.DataSource.RedisTypeR\tredisType\x12y\n" +
 	"\x1bextra_connection_parameters\x18$ \x03(\v29.bytebase.store.DataSource.ExtraConnectionParametersEntryR\x19extraConnectionParameters\x12\x1d\n" +
 	"\n" +
 	"project_id\x189 \x01(\tR\tprojectId\x12\x1f\n" +
@@ -2137,7 +2127,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"STANDALONE\x10\x01\x12\f\n" +
 	"\bSENTINEL\x10\x02\x12\v\n" +
 	"\aCLUSTER\x10\x03B\x0f\n" +
-	"\riam_extension\"Z\n" +
+	"\riam_extensionJ\x04\b#\x10$\"Z\n" +
 	"\n" +
 	"SASLConfig\x12?\n" +
 	"\n" +

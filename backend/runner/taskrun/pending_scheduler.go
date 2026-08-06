@@ -112,19 +112,42 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
 	}
-
 	// Check 1: RunAt time
 	if taskRun.RunAt != nil && time.Now().Before(*taskRun.RunAt) {
 		return nil
 	}
 
-	// Check 3: Database mutual exclusion (for sequential tasks)
+	project, err := s.store.GetProjectByResourceID(ctx, task.ProjectID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get project")
+	}
+	if project == nil {
+		return errors.Errorf("project %v not found", task.ProjectID)
+	}
+	if project.Deleted {
+		return nil
+	}
+
+	// Check 3: Instance archival. A pending task run must not be promoted to
+	// AVAILABLE while its target instance is archived.
+	instance, err := s.store.GetInstanceByResourceID(ctx, task.InstanceID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get instance")
+	}
+	if instance == nil {
+		return errors.Errorf("instance %v not found", task.InstanceID)
+	}
+	if instance.Deleted {
+		return nil
+	}
+
+	// Check 4: Database mutual exclusion (for sequential tasks)
 	canProceed, _ := sc.checkDatabaseMutualExclusion(task)
 	if !canProceed {
 		return nil
 	}
 
-	// Check 4: Parallel task limit per rollout
+	// Check 5: Parallel task limit per rollout
 	maxParallel, err := s.getMaxParallelForTask(ctx, task)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get max parallel limit")

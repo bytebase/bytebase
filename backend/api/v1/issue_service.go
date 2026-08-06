@@ -318,15 +318,17 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 	}
 	issueFind.OrderByKeys = orderByKeys
 
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
+	// This RPC uses CUSTOM auth, so the ACL interceptor performs no permission
+	// check: both branches below must authorize the read themselves.
 	var projectIDs []string
-	if projectID != "-" {
-		projectIDs = append(projectIDs, projectID)
-	} else {
-		// Cross-project search
-		user, ok := GetUserFromContext(ctx)
-		if !ok {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-		}
+	if projectID == "-" {
+		// AIP-159 wildcard: search across every project where the caller holds
+		// the permission. An empty set makes the store return zero rows.
 		projectIDsFilter, err := getProjectIDsSearchFilter(ctx, user, permission.IssuesGet, s.iamManager, s.store)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get projectIDs"))
@@ -334,6 +336,28 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 		if projectIDsFilter != nil {
 			projectIDs = *projectIDsFilter
 		}
+	} else {
+		// Resolve the project first so an unknown parent is a NotFound rather
+		// than an INTERNAL out of CheckPermission's own project lookup. This
+		// matches what the ACL interceptor does for the IAM-authorized RPCs.
+		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+			Workspace:  common.GetWorkspaceIDFromContext(ctx),
+			ResourceID: &projectID,
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
+		}
+		if project == nil {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
+		}
+		ok, err := s.iamManager.CheckPermission(ctx, permission.IssuesGet, user, common.GetWorkspaceIDFromContext(ctx), projectID)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission %q", permission.IssuesGet))
+		}
+		if !ok {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q in %q", permission.IssuesGet, req.Msg.Parent))
+		}
+		projectIDs = append(projectIDs, projectID)
 	}
 	issueFind.ProjectIDs = projectIDs
 	issueFind.ExcludeDraft = true

@@ -125,6 +125,10 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, projectID string, uid i
 		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, approvalInputVersion, "project not found")
 		return
 	}
+	if project.Deleted {
+		s.markPlanCheckRunCanceled(ctxWithCancel, projectID, uid, approvalInputVersion, "project is archived")
+		return
+	}
 
 	// Get database group if needed (for spec expansion)
 	databaseGroup, err := GetDatabaseGroupForPlan(ctxWithCancel, s.store, plan, nil)

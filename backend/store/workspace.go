@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	colorpb "google.golang.org/genproto/googleapis/type/color"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -131,9 +130,12 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 				},
 			},
 		}},
+		// No directory sync token is minted here on purpose. It is a bearer
+		// credential, and generating one for every workspace left a live secret
+		// sitting on workspaces that never enable SCIM. Admins mint one on demand
+		// via WorkspaceService.RotateDirectorySyncToken.
 		{storepb.SettingName_WORKSPACE_PROFILE, &storepb.WorkspaceProfileSetting{
 			EnableMetricCollection: true,
-			DirectorySyncToken:     uuid.New().String(),
 			DisallowSignup:         false,
 			DisallowPasswordSignin: false,
 			PasswordRestriction:    &storepb.WorkspaceProfileSetting_PasswordRestriction{MinLength: 8},

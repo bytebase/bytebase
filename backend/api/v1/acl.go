@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"log/slog"
 	"regexp"
 	"strings"
 
@@ -16,11 +15,11 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -90,6 +89,13 @@ func hasAllowMissingEnabled(request any) bool {
 	if request == nil {
 		return false
 	}
+	if r, ok := request.(*v1pb.BatchUpdateInstancesRequest); ok {
+		for _, updateRequest := range r.GetRequests() {
+			if updateRequest.GetAllowMissing() {
+				return true
+			}
+		}
+	}
 
 	pm, ok := request.(proto.Message)
 	if !ok {
@@ -111,26 +117,11 @@ func hasAllowMissingEnabled(request any) bool {
 }
 
 func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMethod string) error {
-	defer func() {
-		if r := recover(); r != nil {
-			perr, ok := r.(error)
-			if !ok {
-				perr = errors.Errorf("%v", r)
-			}
-			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
-		}
-	}()
-
 	authContextAny := ctx.Value(common.AuthContextKey)
 	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
 		return connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
 	}
-	resources, err := populateRawResources(ctx, in.store, request, fullMethod)
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to populate raw resources %s", err))
-	}
-	authContext.Resources = resources
 	authContext.Permission = getPermissionForRequest(request, authContext.Permission)
 
 	if auth.IsAuthenticationSkipped(fullMethod, authContext) {
@@ -150,10 +141,16 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	if workspaceID == "" {
 		return connect.NewError(connect.CodeUnauthenticated, errors.Errorf("empty workspace id"))
 	}
+	resources, err := populateRawResources(ctx, in.store, request, fullMethod)
+	if err != nil {
+		return resourceResolutionConnectError(err)
+	}
+	authContext.Resources = resources
 
 	// Workspace isolation: verify all resources belong to the caller's workspace.
-	// Instance and database ownership is already validated in populateRawResources
-	// (via workspace-filtered store lookups). Here we validate workspace and project resources.
+	// Project, instance, and database ownership is already validated in
+	// populateRawResources via workspace-filtered store lookups. Here we validate
+	// workspace resources.
 	// Runs after authentication so unauthenticated requests get 401 first,
 	// preventing resource existence probing.
 	for _, resource := range authContext.Resources {
@@ -161,14 +158,6 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		case common.ResourceTypeWorkspace:
 			if resource.ID != workspaceID {
 				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace mismatch"))
-			}
-		case common.ResourceTypeProject:
-			project, err := in.store.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &resource.ID})
-			if err != nil {
-				return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
-			}
-			if project == nil || project.Workspace != workspaceID {
-				return connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", resource.ID))
 			}
 		default:
 		}
@@ -222,6 +211,14 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	}
 
 	return nil
+}
+
+func resourceResolutionConnectError(err error) error {
+	var connectErr *connect.Error
+	if errors.As(err, &connectErr) {
+		return err
+	}
+	return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to populate raw resources"))
 }
 
 func getPermissionForRequest(request any, defaultPermission permission.Permission) permission.Permission {
@@ -299,22 +296,224 @@ func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMeth
 	return true, nil, nil
 }
 
-var workspaceRegex = regexp.MustCompile(`^workspaces/[^/]+`)
-var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
-var databaseRegex = regexp.MustCompile(`^instances/[^/]+/databases/[^/]+`)
-var instanceRegex = regexp.MustCompile(`^instances/[^/]+`)
+const (
+	maxResourceRouteDepth = 3
 
-// populateRawResources extracts resources from the request and validates workspace ownership.
-//
-// Resource resolution strategy:
-//   - workspaces/{id}        → ResourceTypeWorkspace (direct match)
-//   - projects/{id}          → ResourceTypeProject (direct match)
-//   - instances/{id}/databases/{name} → looks up database with workspace filter, returns ResourceTypeProject (parent project)
-//   - instances/{id}[/...]   → looks up instance with workspace filter, returns ResourceTypeWorkspace (instance permissions are workspace-scoped)
-//   - default                → ResourceTypeWorkspace from context (fallback for unmatched patterns)
-//
-// All instance/database lookups use the workspace ID from the request context,
-// ensuring the resource belongs to the caller's workspace before any permission check.
+	workspaceCollection = "workspaces"
+	projectCollection   = "projects"
+	instanceCollection  = "instances"
+	databaseCollection  = "databases"
+)
+
+type resourceRoute [maxResourceRouteDepth]string
+
+type resourceResolver func(context.Context, *store.Store, []string) (*common.Resource, error)
+
+var resourceResolvers = map[resourceRoute]resourceResolver{
+	{workspaceCollection}:                                       resolveWorkspaceResource,
+	{projectCollection}:                                         resolveProjectResource,
+	{projectCollection, instanceCollection}:                     resolveProjectInstanceResource,
+	{projectCollection, instanceCollection, databaseCollection}: resolveProjectDatabaseResource,
+	{instanceCollection}:                                        resolveWorkspaceInstanceResource,
+	{instanceCollection, databaseCollection}:                    resolveWorkspaceDatabaseResource,
+}
+
+func getResourceRoute(parts []string) resourceRoute {
+	var route resourceRoute
+	for i := range route {
+		partIndex := 2 * i
+		if partIndex >= len(parts) {
+			break
+		}
+		route[i] = parts[partIndex]
+	}
+	return route
+}
+
+func findResourceResolver(route resourceRoute) (resourceRoute, resourceResolver, bool) {
+	for {
+		if resolver, ok := resourceResolvers[route]; ok {
+			return route, resolver, true
+		}
+		cleared := false
+		for i := len(route) - 1; i >= 0; i-- {
+			if route[i] != "" {
+				route[i] = ""
+				cleared = true
+				break
+			}
+		}
+		if !cleared {
+			return resourceRoute{}, nil, false
+		}
+	}
+}
+
+func resolveRawResource(ctx context.Context, stores *store.Store, name string) (*common.Resource, error) {
+	return resolveRawResourceWithArchivedProject(ctx, stores, name, false)
+}
+
+func resolveRawResourceWithArchivedProject(ctx context.Context, stores *store.Store, name string, allowArchivedProject bool) (*common.Resource, error) {
+	if name == "projects/-" || strings.HasPrefix(name, "instances/-/databases/") {
+		return workspaceFallback(ctx), nil
+	}
+
+	parts := strings.Split(name, "/")
+	if allowArchivedProject && getResourceRoute(parts) == (resourceRoute{projectCollection, instanceCollection}) {
+		return resolveProjectInstanceResourceForLifecycle(ctx, stores, parts)
+	}
+	_, resolver, ok := findResourceResolver(getResourceRoute(parts))
+	if !ok {
+		return workspaceFallback(ctx), nil
+	}
+	return resolver(ctx, stores, parts)
+}
+
+func resolveWorkspaceResource(_ context.Context, _ *store.Store, parts []string) (*common.Resource, error) {
+	workspaceID, err := requiredResourceIdentifier(parts, 1, workspaceCollection)
+	if err != nil {
+		return nil, err
+	}
+	return &common.Resource{Type: common.ResourceTypeWorkspace, ID: workspaceID}, nil
+}
+
+func resolveProjectResource(ctx context.Context, stores *store.Store, parts []string) (*common.Resource, error) {
+	projectID, err := requiredResourceIdentifier(parts, 1, projectCollection)
+	if err != nil {
+		return nil, err
+	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  workspaceID,
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get project"))
+	}
+	if project == nil || project.Workspace != workspaceID {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
+	}
+	return &common.Resource{Type: common.ResourceTypeProject, ID: projectID}, nil
+}
+
+func resolveProjectInstanceResource(ctx context.Context, stores *store.Store, parts []string) (*common.Resource, error) {
+	projectID, err := requiredResourceIdentifier(parts, 1, projectCollection)
+	if err != nil {
+		return nil, err
+	}
+	instanceID, err := requiredResourceIdentifier(parts, 3, instanceCollection)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := getProjectScopedInstance(ctx, stores, projectID, instanceID); err != nil {
+		return nil, err
+	}
+	return &common.Resource{Type: common.ResourceTypeProject, ID: projectID}, nil
+}
+
+func resolveProjectDatabaseResource(ctx context.Context, stores *store.Store, parts []string) (*common.Resource, error) {
+	projectID, err := requiredResourceIdentifier(parts, 1, projectCollection)
+	if err != nil {
+		return nil, err
+	}
+	instanceID, err := requiredResourceIdentifier(parts, 3, instanceCollection)
+	if err != nil {
+		return nil, err
+	}
+	databaseName, err := requiredResourceIdentifier(parts, 5, databaseCollection)
+	if err != nil {
+		return nil, err
+	}
+	instance, err := getProjectScopedInstance(ctx, stores, projectID, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	database, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
+		InstanceID:   &instance.ResourceID,
+		DatabaseName: &databaseName,
+		ShowDeleted:  true,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get database"))
+	}
+	if database == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", strings.Join(parts[:6], "/")))
+	}
+	return &common.Resource{Type: common.ResourceTypeProject, ID: projectID}, nil
+}
+
+func resolveWorkspaceInstanceResource(ctx context.Context, stores *store.Store, parts []string) (*common.Resource, error) {
+	instanceID, err := requiredResourceIdentifier(parts, 1, instanceCollection)
+	if err != nil {
+		return nil, err
+	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:     workspaceID,
+		WorkspaceOnly: true,
+		ResourceID:    &instanceID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get instance"))
+	}
+	if instance == nil || instance.Workspace != workspaceID {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", strings.Join(parts[:2], "/")))
+	}
+	return &common.Resource{Type: common.ResourceTypeWorkspace, ID: workspaceID}, nil
+}
+
+func resolveWorkspaceDatabaseResource(ctx context.Context, stores *store.Store, parts []string) (*common.Resource, error) {
+	instanceID, err := requiredResourceIdentifier(parts, 1, instanceCollection)
+	if err != nil {
+		return nil, err
+	}
+	databaseName, err := requiredResourceIdentifier(parts, 3, databaseCollection)
+	if err != nil {
+		return nil, err
+	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:     workspaceID,
+		WorkspaceOnly: true,
+		ResourceID:    &instanceID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get instance"))
+	}
+	if instance == nil || instance.Workspace != workspaceID {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
+	}
+	database, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{
+		Workspace:    workspaceID,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+		ShowDeleted:  true,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get database"))
+	}
+	if database == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", strings.Join(parts[:4], "/")))
+	}
+	return &common.Resource{Type: common.ResourceTypeProject, ID: database.ProjectID}, nil
+}
+
+func requiredResourceIdentifier(parts []string, index int, collection string) (string, error) {
+	if len(parts) <= index || parts[index] == "" {
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid %s resource %q", collection, strings.Join(parts, "/")))
+	}
+	return parts[index], nil
+}
+
+func workspaceFallback(ctx context.Context) *common.Resource {
+	if workspaceID := common.GetWorkspaceIDFromContext(ctx); workspaceID != "" {
+		return &common.Resource{Type: common.ResourceTypeWorkspace, ID: workspaceID}
+	}
+	return nil
+}
+
+// populateRawResources extracts authorization resources from the request.
 func populateRawResources(ctx context.Context, stores *store.Store, request any, method string) ([]*common.Resource, error) {
 	rawNames, err := getResourceFromRequest(ctx, request, method)
 	if err != nil {
@@ -323,122 +522,117 @@ func populateRawResources(ctx context.Context, stores *store.Store, request any,
 
 	var resources []*common.Resource
 	for _, name := range rawNames {
-		switch {
-		case strings.HasPrefix(name, "workspaces/"):
-			match := workspaceRegex.FindString(name)
-			if match == "" {
-				return nil, errors.Errorf("invalid workspace resource %q", name)
-			}
-			wsID, err := common.GetWorkspaceID(match)
-			if err != nil {
-				return nil, err
-			}
-			resources = append(resources, &common.Resource{
-				Type: common.ResourceTypeWorkspace,
-				ID:   wsID,
-			})
-		// TODO(d): remove "projects/-" hack later.
-		case strings.HasPrefix(name, "projects/") && name != "projects/-":
-			project := projectRegex.FindString(name)
-			if project == "" {
-				return nil, errors.Errorf("invalid project resource %q", name)
-			}
-			projectID, err := common.GetProjectID(project)
-			if err != nil {
-				return nil, err
-			}
-			resources = append(resources, &common.Resource{
-				Type: common.ResourceTypeProject,
-				ID:   projectID,
-			})
-		// Database resources: look up the database (with workspace filter) and resolve
-		// to its parent project for project-level permission checks.
-		case strings.HasPrefix(name, "instances/") && strings.Contains(name, "/databases/") && !strings.HasPrefix(name, "instances/-/databases/"):
-			match := databaseRegex.FindString(name)
-			if match != "" {
-				instanceID, databaseName, err := common.GetInstanceDatabaseID(match)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to parse %q", match)
-				}
-				database, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{
-					Workspace:    common.GetWorkspaceIDFromContext(ctx),
-					InstanceID:   &instanceID,
-					DatabaseName: &databaseName,
-					ShowDeleted:  true,
-				})
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to get database")
-				}
-				if database == nil {
-					return nil, errors.Errorf("database %q not found", match)
-				}
-				resources = append(resources, &common.Resource{
-					Type: common.ResourceTypeProject,
-					ID:   database.ProjectID,
-				})
-			}
-		// Instance resources (e.g. instances/{id}, instances/{id}/roles/{role}):
-		// validate the instance belongs to the caller's workspace. Returns workspace
-		// resource since instance permissions are workspace-scoped.
-		case strings.HasPrefix(name, "instances/") && !strings.Contains(name, "/databases/"):
-			match := instanceRegex.FindString(name)
-			if match != "" {
-				instanceID, err := common.GetInstanceID(match)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to parse %q", match)
-				}
-				workspaceID := common.GetWorkspaceIDFromContext(ctx)
-				instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
-					Workspace:  workspaceID,
-					ResourceID: &instanceID,
-				})
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to get instance")
-				}
-				if instance == nil {
-					return nil, errors.Errorf("instance %q not found", match)
-				}
-				resources = append(resources, &common.Resource{
-					Type: common.ResourceTypeWorkspace,
-					ID:   workspaceID,
-				})
-			}
-		default:
-			if workspaceID := common.GetWorkspaceIDFromContext(ctx); workspaceID != "" {
-				resources = append(resources, &common.Resource{
-					Type: common.ResourceTypeWorkspace,
-					ID:   workspaceID,
-				})
-			}
+		resource, err := resolveRawResourceWithArchivedProject(ctx, stores, name, allowsArchivedProjectResourceResolution(method))
+		if err != nil {
+			return nil, err
+		}
+		if resource != nil {
+			resources = append(resources, resource)
 		}
 	}
 	return resources, nil
 }
 
+func getProjectScopedInstance(ctx context.Context, stores *store.Store, projectID, instanceID string) (*store.InstanceMessage, error) {
+	return getProjectScopedInstanceWithArchivedProject(ctx, stores, projectID, instanceID, false)
+}
+
+func getProjectScopedInstanceWithArchivedProject(ctx context.Context, stores *store.Store, projectID, instanceID string, allowArchivedProject bool) (*store.InstanceMessage, error) {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:  workspaceID,
+		ProjectID:  &projectID,
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get instance"))
+	}
+	if instance == nil || instance.Workspace != workspaceID {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", common.FormatProjectInstance(projectID, instanceID)))
+	}
+	if !allowArchivedProject {
+		if err := ensureProjectInstanceIsActive(ctx, stores, instance); err != nil {
+			return nil, err
+		}
+	}
+	return instance, nil
+}
+
+func resolveProjectInstanceResourceForLifecycle(ctx context.Context, stores *store.Store, parts []string) (*common.Resource, error) {
+	projectID, err := requiredResourceIdentifier(parts, 1, projectCollection)
+	if err != nil {
+		return nil, err
+	}
+	instanceID, err := requiredResourceIdentifier(parts, 3, instanceCollection)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := getProjectScopedInstanceWithArchivedProject(ctx, stores, projectID, instanceID, true); err != nil {
+		return nil, err
+	}
+	return &common.Resource{Type: common.ResourceTypeProject, ID: projectID}, nil
+}
+
+func allowsArchivedProjectResourceResolution(method string) bool {
+	return method == v1connect.InstanceServiceDeleteInstanceProcedure || method == v1connect.InstanceServiceUndeleteInstanceProcedure
+}
+
 func getResourceFromRequest(ctx context.Context, request any, method string) ([]string, error) {
 	pm, ok := request.(proto.Message)
 	if !ok {
-		return nil, errors.Errorf("invalid request for method %q", method)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid request for method %q", method))
 	}
 	mr := pm.ProtoReflect()
 
 	methodTokens := strings.Split(method, "/")
 	if len(methodTokens) != 3 {
-		return nil, errors.Errorf("invalid method %q", method)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid method %q", method))
 	}
 	shortMethod := methodTokens[2]
 
-	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
-		return []string{""}, nil
-	}
-
 	var resources []string
+
+	if r, ok := request.(*v1pb.CreateInstanceRequest); ok && r.Parent != nil {
+		projectID, err := common.GetProjectID(*r.Parent)
+		if err == nil && common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), projectID) {
+			// Default projects cannot own instances. Authorize at workspace scope so
+			// InstanceService can return its canonical invalid-argument response.
+			return []string{""}, nil
+		}
+	}
+	if r, ok := request.(*v1pb.UpdateInstanceRequest); ok && r.AllowMissing && r.Instance != nil {
+		if projectID, _, err := common.GetProjectIDInstanceID(r.Instance.Name); err == nil {
+			// The instance does not exist yet, so authorize the implicit creation
+			// against its project collection instead of resolving the instance.
+			return []string{common.FormatProject(projectID)}, nil
+		}
+		if _, err := common.GetInstanceID(r.Instance.Name); err == nil {
+			return []string{""}, nil
+		}
+	}
+	if r, ok := request.(*v1pb.BatchUpdateInstancesRequest); ok {
+		// The batch parent authorizes every implicit creation. An empty parent
+		// represents the workspace instance collection.
+		resources = append(resources, r.GetParent())
+		for _, updateRequest := range r.GetRequests() {
+			if updateRequest.GetAllowMissing() {
+				continue
+			}
+			resources = append(resources, getResourceFromSingleRequest(updateRequest.ProtoReflect(), "UpdateInstance"))
+		}
+		return resources, nil
+	}
 
 	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
 		// During instance creation, the request carries an inline instance so
 		// the handler can preview remote databases before the instance exists.
-		// Use the workspace resource instead of validating the future instance name.
-		resources = append(resources, "")
+		// Use the nested parent project when present; a top-level candidate is
+		// still authorized at workspace scope.
+		if projectID, _, err := common.GetProjectIDInstanceID(r.GetName()); err == nil {
+			resources = append(resources, common.FormatProject(projectID))
+		} else {
+			resources = append(resources, "")
+		}
 		return resources, nil
 	}
 
@@ -455,7 +649,7 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 		if hasPath(r.GetUpdateMask(), "project") {
 			projectID, err := common.GetProjectID(r.GetDatabase().GetProject())
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get projectID from %q", r.GetDatabase().GetProject())
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get projectID from %q", r.GetDatabase().GetProject()))
 			}
 			// Allow to transfer databases to the default project.
 			if common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), projectID) {
@@ -472,6 +666,10 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 	}
 
 	if strings.HasPrefix(shortMethod, "Batch") {
+		parentDesc := mr.Descriptor().Fields().ByName("parent")
+		if parentDesc != nil && proto.HasExtension(parentDesc.Options(), annotationsproto.E_ResourceReference) && mr.Has(parentDesc) {
+			resources = append(resources, mr.Get(parentDesc).String())
+		}
 		// Handle batch get requests.
 		if strings.HasPrefix(shortMethod, "BatchGet") {
 			namesDesc := mr.Descriptor().Fields().ByName("names")

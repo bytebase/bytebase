@@ -240,6 +240,7 @@ message ListRolloutsResponse {
 }
 
 message CreateRolloutRequest {
+  reserved 2;
   // The parent plan for which this rollout will be created.
   // Format: projects/{project}/plans/{plan}
   string parent = 1 [
@@ -286,6 +287,7 @@ message GetTaskRunLogRequest {
 }
 
 message Rollout {
+  reserved 2, 5;
   option (google.api.resource) = {
     type: "bytebase.com/Rollout"
     pattern: "projects/{project}/plans/{plan}/rollout"
@@ -331,6 +333,7 @@ message Stage {
 }
 
 message Task {
+  reserved 9;
   option (google.api.resource) = {
     type: "bytebase.com/Task"
     pattern: "projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}"
@@ -398,12 +401,14 @@ message Task {
 
   // Payload for creating a new database.
   message DatabaseCreate {
+    reserved 1 to 3;
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 4;
   }
 
   // Payload for updating a database schema.
   message DatabaseUpdate {
+    reserved 2 to 3;
     // The source can be either a sheet or a release.
     oneof source {
       // Format: projects/{project}/sheets/{sheet}
@@ -415,6 +420,7 @@ message Task {
 }
 
 message TaskRun {
+  reserved 7 to 8, 10, 13;
   option (google.api.resource) = {
     type: "bytebase.com/TaskRun"
     pattern: "projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}"
@@ -466,6 +472,7 @@ message TaskRun {
 
     // Information about why a task run is waiting.
     message WaitingCause {
+      reserved 1 to 2;
       // The reason the task run is waiting.
       oneof cause {
         // Waiting due to parallel tasks limit.
@@ -497,8 +504,10 @@ message TaskRunLog {
 }
 
 message TaskRunLogEntry {
+  reserved 7;
   // The type of log entry.
   enum Type {
+    reserved 4;
     // Unspecified type.
     TYPE_UNSPECIFIED = 0;
     // Schema dump operation.

@@ -22,16 +22,22 @@ service InstanceService {
   // Gets a database instance by name.
   // Permissions required: bb.instances.get
   rpc GetInstance(GetInstanceRequest) returns (Instance) {
-    option (google.api.http) = {get: "/v1/{name=instances/*}"};
+    option (google.api.http) = {
+      get: "/v1/{name=instances/*}"
+      additional_bindings: {get: "/v1/{name=projects/*/instances/*}"}
+    };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.instances.get";
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Lists all database instances.
+  // Lists database instances, optionally within a project.
   // Permissions required: bb.instances.list
   rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
-    option (google.api.http) = {get: "/v1/instances"};
+    option (google.api.http) = {
+      get: "/v1/instances"
+      additional_bindings: {get: "/v1/{parent=projects/*}/instances"}
+    };
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.instances.list";
     option (bytebase.v1.auth_method) = IAM;
@@ -43,6 +49,10 @@ service InstanceService {
     option (google.api.http) = {
       post: "/v1/instances"
       body: "instance"
+      additional_bindings: {
+        post: "/v1/{parent=projects/*}/instances"
+        body: "instance"
+      }
     };
     option (google.api.method_signature) = "instance";
     option (bytebase.v1.permission) = "bb.instances.create";
@@ -56,6 +66,10 @@ service InstanceService {
     option (google.api.http) = {
       patch: "/v1/{instance.name=instances/*}"
       body: "instance"
+      additional_bindings: {
+        patch: "/v1/{instance.name=projects/*/instances/*}"
+        body: "instance"
+      }
     };
     option (google.api.method_signature) = "instance,update_mask";
     option (bytebase.v1.permission) = "bb.instances.update";
@@ -64,9 +78,14 @@ service InstanceService {
   }
 
   // Deletes or soft-deletes a database instance.
+  // Soft-delete requests fail with FAILED_PRECONDITION while any task run
+  // targeting the instance is pending, available, or running.
   // Permissions required: bb.instances.delete
   rpc DeleteInstance(DeleteInstanceRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=instances/*}"};
+    option (google.api.http) = {
+      delete: "/v1/{name=instances/*}"
+      additional_bindings: {delete: "/v1/{name=projects/*/instances/*}"}
+    };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.instances.delete";
     option (bytebase.v1.auth_method) = IAM;
@@ -74,11 +93,17 @@ service InstanceService {
   }
 
   // Restores a soft-deleted database instance.
+  // Restore requests fail with FAILED_PRECONDITION while any task run targeting
+  // the instance is pending, available, or running.
   // Permissions required: bb.instances.undelete
   rpc UndeleteInstance(UndeleteInstanceRequest) returns (Instance) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*}:undelete"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{name=projects/*/instances/*}:undelete"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.instances.undelete";
     option (bytebase.v1.auth_method) = IAM;
@@ -91,6 +116,10 @@ service InstanceService {
     option (google.api.http) = {
       post: "/v1/{name=instances/*}:sync"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{name=projects/*/instances/*}:sync"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.instances.sync";
     option (bytebase.v1.auth_method) = IAM;
@@ -102,6 +131,10 @@ service InstanceService {
     option (google.api.http) = {
       post: "/v1/{name=instances/*}:databases"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{name=projects/*/instances/*}:databases"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.instances.get";
     option (bytebase.v1.auth_method) = IAM;
@@ -113,6 +146,10 @@ service InstanceService {
     option (google.api.http) = {
       post: "/v1/instances:batchSync"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{parent=projects/*}/instances:batchSync"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.instances.sync";
     option (bytebase.v1.auth_method) = IAM;
@@ -124,6 +161,10 @@ service InstanceService {
     option (google.api.http) = {
       post: "/v1/instances:batchUpdate"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{parent=projects/*}/instances:batchUpdate"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.instances.update";
     option (bytebase.v1.auth_method) = IAM;
@@ -136,6 +177,10 @@ service InstanceService {
     option (google.api.http) = {
       post: "/v1/{name=instances/*}:addDataSource"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{name=projects/*/instances/*}:addDataSource"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.instances.update";
     option (bytebase.v1.auth_method) = IAM;
@@ -148,6 +193,10 @@ service InstanceService {
     option (google.api.http) = {
       post: "/v1/{name=instances/*}:removeDataSource"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{name=projects/*/instances/*}:removeDataSource"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.instances.update";
     option (bytebase.v1.auth_method) = IAM;
@@ -160,6 +209,10 @@ service InstanceService {
     option (google.api.http) = {
       patch: "/v1/{name=instances/*}:updateDataSource"
       body: "data_source"
+      additional_bindings: {
+        patch: "/v1/{name=projects/*/instances/*}:updateDataSource"
+        body: "data_source"
+      }
     };
     option (google.api.method_signature) = "data_source,update_mask";
     option (bytebase.v1.permission) = "bb.instances.update";
@@ -170,7 +223,7 @@ service InstanceService {
 
 message GetInstanceRequest {
   // The name of the instance to retrieve.
-  // Format: instances/{instance}
+  // Format: instances/{instance} or projects/{project}/instances/{instance}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Instance"}
@@ -178,6 +231,12 @@ message GetInstanceRequest {
 }
 
 message ListInstancesRequest {
+  // The parent, which owns this collection of instances.
+  // Format: projects/{project}. If omitted, only workspace instances are
+  // returned. Wildcard project parents are not supported. When set, the
+  // `project` filter must be omitted or match this parent.
+  optional string parent = 6 [(google.api.resource_reference) = {child_type: "bytebase.com/Instance"}];
+
   // The maximum number of instances to return. The service may return fewer than
   // this value.
   // If unspecified, at most 10 instances will be returned.
@@ -250,6 +309,11 @@ message ListInstancesResponse {
 }
 
 message CreateInstanceRequest {
+  // The parent, which owns this collection of instances.
+  // Format: projects/{project}. If omitted, the instance is created in the
+  // workspace collection.
+  optional string parent = 5 [(google.api.resource_reference) = {child_type: "bytebase.com/Instance"}];
+
   // The instance to create.
   Instance instance = 1 [(google.api.field_behavior) = REQUIRED];
 
@@ -264,7 +328,7 @@ message CreateInstanceRequest {
   bool validate_only = 3;
 
   // The project to assign newly discovered databases to during initial sync.
-  // Format: projects/{project}
+  // Format: projects/{project}. This must be unset when `parent` is set.
   string initial_database_project = 4;
 }
 
@@ -272,26 +336,30 @@ message UpdateInstanceRequest {
   // The instance to update.
   //
   // The instance's `name` field is used to identify the instance to update.
-  // Format: instances/{instance}
+  // Format: instances/{instance} or projects/{project}/instances/{instance}
   Instance instance = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
 
   // If set to true, and the instance is not found, a new instance will be created.
-  // In this situation, `update_mask` is ignored.
+  // In this situation, `update_mask` is ignored. A project-nested name creates
+  // the instance only under its encoded active, non-default project; it never
+  // falls back to a workspace instance.
   bool allow_missing = 3;
 }
 
 message DeleteInstanceRequest {
   // The name of the instance to delete.
-  // Format: instances/{instance}
+  // Format: instances/{instance} or projects/{project}/instances/{instance}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Instance"}
   ];
 
-  // If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
+  // If set to true, a workspace instance's databases are moved to the default
+  // project before the instance is soft-deleted. Project instances reject this
+  // option because their databases must remain in the owning project.
   bool force = 2;
 
   // If set to true, permanently purge the soft-deleted instance and all related resources.
@@ -303,7 +371,7 @@ message DeleteInstanceRequest {
 
 message UndeleteInstanceRequest {
   // The name of the deleted instance.
-  // Format: instances/{instance}
+  // Format: instances/{instance} or projects/{project}/instances/{instance}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Instance"}
@@ -312,7 +380,7 @@ message UndeleteInstanceRequest {
 
 message SyncInstanceRequest {
   // The name of instance.
-  // Format: instances/{instance}
+  // Format: instances/{instance} or projects/{project}/instances/{instance}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Instance"}
@@ -325,7 +393,7 @@ message SyncInstanceRequest {
 
 message ListInstanceDatabaseRequest {
   // The name of the instance.
-  // Format: instances/{instance}
+  // Format: instances/{instance} or projects/{project}/instances/{instance}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Instance"}
@@ -346,6 +414,11 @@ message SyncInstanceResponse {
 }
 
 message BatchSyncInstancesRequest {
+  // The parent, which owns this collection of instances.
+  // Format: projects/{project}. If omitted, all targets must be workspace
+  // instances; otherwise, every target must belong to this project collection.
+  optional string parent = 2 [(google.api.resource_reference) = {child_type: "bytebase.com/Instance"}];
+
   // The request message specifying the instances to sync.
   // A maximum of 1000 instances can be synced in a batch.
   repeated SyncInstanceRequest requests = 1 [(google.api.field_behavior) = REQUIRED];
@@ -354,6 +427,11 @@ message BatchSyncInstancesRequest {
 message BatchSyncInstancesResponse {}
 
 message BatchUpdateInstancesRequest {
+  // The parent, which owns this collection of instances.
+  // Format: projects/{project}. If omitted, all targets must be workspace
+  // instances; otherwise, every target must belong to this project collection.
+  optional string parent = 2 [(google.api.resource_reference) = {child_type: "bytebase.com/Instance"}];
+
   // The request message specifying the resources to update.
   repeated UpdateInstanceRequest requests = 1 [(google.api.field_behavior) = REQUIRED];
 }
@@ -364,7 +442,7 @@ message BatchUpdateInstancesResponse {
 
 message AddDataSourceRequest {
   // The name of the instance to add a data source to.
-  // Format: instances/{instance}
+  // Format: instances/{instance} or projects/{project}/instances/{instance}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Instance"}
@@ -380,7 +458,7 @@ message AddDataSourceRequest {
 
 message RemoveDataSourceRequest {
   // The name of the instance to remove a data source from.
-  // Format: instances/{instance}
+  // Format: instances/{instance} or projects/{project}/instances/{instance}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Instance"}
@@ -393,7 +471,7 @@ message RemoveDataSourceRequest {
 
 message UpdateDataSourceRequest {
   // The name of the instance to update a data source.
-  // Format: instances/{instance}
+  // Format: instances/{instance} or projects/{project}/instances/{instance}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Instance"}
@@ -418,13 +496,15 @@ message SyncDatabases {
 }
 
 message Instance {
+  reserved 2, 13;
   option (google.api.resource) = {
     type: "bytebase.com/Instance"
     pattern: "instances/{instance}"
+    pattern: "projects/{project}/instances/{instance}"
   };
 
   // The name of the instance.
-  // Format: instances/{instance}
+  // Format: instances/{instance} or projects/{project}/instances/{instance}
   string name = 1;
 
   // The lifecycle state of the instance.
@@ -568,6 +648,7 @@ message DataSourceExternalSecret {
 }
 
 message DataSource {
+  reserved 35, 50 to 55;
   // The unique identifier for this data source.
   string id = 1;
   // The type of data source (ADMIN or READ_ONLY).
@@ -715,7 +796,7 @@ message DataSource {
 
   // master_username and master_password are master credentials used by redis sentinel mode.
   string master_username = 32;
-  string master_password = 33;
+  string master_password = 33 [(google.api.field_behavior) = INPUT_ONLY];
 
   enum RedisType {
     REDIS_TYPE_UNSPECIFIED = 0;
@@ -724,9 +805,6 @@ message DataSource {
     CLUSTER = 3;
   }
   RedisType redis_type = 34;
-
-  // Cluster is the cluster name for the data source. Used by CockroachDB.
-  string cluster = 35;
 
   // Extra connection parameters for the database connection.
   // For PostgreSQL HA, this can be used to set target_session_attrs=read-write
@@ -767,7 +845,7 @@ message InstanceResource {
   bool activation = 5;
 
   // The name of the instance.
-  // Format: instances/{instance}
+  // Format: instances/{instance} or projects/{project}/instances/{instance}
   string name = 6;
 
   // The environment resource.
@@ -790,7 +868,7 @@ message KerberosConfig {
   // The Kerberos realm.
   string realm = 3;
   // The keytab file contents for authentication.
-  bytes keytab = 4;
+  bytes keytab = 4 [(google.api.field_behavior) = INPUT_ONLY];
   // The hostname of the Key Distribution Center (KDC).
   string kdc_host = 5;
   // The port of the Key Distribution Center (KDC).

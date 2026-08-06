@@ -266,7 +266,10 @@ message ListIssuesResponse {
 message SearchIssuesRequest {
   // The parent, which owns this collection of issues.
   // Format: projects/{project}
-  // Use "projects/-" to list all issues from all projects.
+  // Use the wildcard "projects/-" to search across collections (AIP-159); the
+  // result is restricted to the projects where the caller holds
+  // bb.issues.get. For a concrete project, the caller must hold bb.issues.get
+  // on that project or the request is denied.
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The maximum number of issues to return. The service may return fewer than
@@ -393,6 +396,7 @@ message RetryIssueApprovalRequest {
 }
 
 message Issue {
+  reserved 12, 14, 16;
   option (google.api.resource) = {
     type: "bytebase.com/Issue"
     pattern: "projects/{project}/issues/{issue}"
@@ -410,6 +414,7 @@ message Issue {
 
   // The type of issue.
   enum Type {
+    reserved 3;
     // Unspecified issue type.
     TYPE_UNSPECIFIED = 0;
     // Database schema or data change.
@@ -573,6 +578,7 @@ message UpdateIssueCommentRequest {
 
 // A comment on an issue.
 message IssueComment {
+  reserved 9 to 11;
   // Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid}
   string name = 1;
 

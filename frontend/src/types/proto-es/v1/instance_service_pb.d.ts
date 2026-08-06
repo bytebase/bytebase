@@ -19,7 +19,7 @@ export declare const file_v1_instance_service: GenFile;
 export declare type GetInstanceRequest = Message<"bytebase.v1.GetInstanceRequest"> & {
   /**
    * The name of the instance to retrieve.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string name = 1;
    */
@@ -36,6 +36,16 @@ export declare const GetInstanceRequestSchema: GenMessage<GetInstanceRequest>;
  * @generated from message bytebase.v1.ListInstancesRequest
  */
 export declare type ListInstancesRequest = Message<"bytebase.v1.ListInstancesRequest"> & {
+  /**
+   * The parent, which owns this collection of instances.
+   * Format: projects/{project}. If omitted, only workspace instances are
+   * returned. Wildcard project parents are not supported. When set, the
+   * `project` filter must be omitted or match this parent.
+   *
+   * @generated from field: optional string parent = 6;
+   */
+  parent?: string | undefined;
+
   /**
    * The maximum number of instances to return. The service may return fewer than
    * this value.
@@ -155,6 +165,15 @@ export declare const ListInstancesResponseSchema: GenMessage<ListInstancesRespon
  */
 export declare type CreateInstanceRequest = Message<"bytebase.v1.CreateInstanceRequest"> & {
   /**
+   * The parent, which owns this collection of instances.
+   * Format: projects/{project}. If omitted, the instance is created in the
+   * workspace collection.
+   *
+   * @generated from field: optional string parent = 5;
+   */
+  parent?: string | undefined;
+
+  /**
    * The instance to create.
    *
    * @generated from field: bytebase.v1.Instance instance = 1;
@@ -181,7 +200,7 @@ export declare type CreateInstanceRequest = Message<"bytebase.v1.CreateInstanceR
 
   /**
    * The project to assign newly discovered databases to during initial sync.
-   * Format: projects/{project}
+   * Format: projects/{project}. This must be unset when `parent` is set.
    *
    * @generated from field: string initial_database_project = 4;
    */
@@ -202,7 +221,7 @@ export declare type UpdateInstanceRequest = Message<"bytebase.v1.UpdateInstanceR
    * The instance to update.
    *
    * The instance's `name` field is used to identify the instance to update.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: bytebase.v1.Instance instance = 1;
    */
@@ -217,7 +236,9 @@ export declare type UpdateInstanceRequest = Message<"bytebase.v1.UpdateInstanceR
 
   /**
    * If set to true, and the instance is not found, a new instance will be created.
-   * In this situation, `update_mask` is ignored.
+   * In this situation, `update_mask` is ignored. A project-nested name creates
+   * the instance only under its encoded active, non-default project; it never
+   * falls back to a workspace instance.
    *
    * @generated from field: bool allow_missing = 3;
    */
@@ -236,14 +257,16 @@ export declare const UpdateInstanceRequestSchema: GenMessage<UpdateInstanceReque
 export declare type DeleteInstanceRequest = Message<"bytebase.v1.DeleteInstanceRequest"> & {
   /**
    * The name of the instance to delete.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string name = 1;
    */
   name: string;
 
   /**
-   * If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
+   * If set to true, a workspace instance's databases are moved to the default
+   * project before the instance is soft-deleted. Project instances reject this
+   * option because their databases must remain in the owning project.
    *
    * @generated from field: bool force = 2;
    */
@@ -272,7 +295,7 @@ export declare const DeleteInstanceRequestSchema: GenMessage<DeleteInstanceReque
 export declare type UndeleteInstanceRequest = Message<"bytebase.v1.UndeleteInstanceRequest"> & {
   /**
    * The name of the deleted instance.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string name = 1;
    */
@@ -291,7 +314,7 @@ export declare const UndeleteInstanceRequestSchema: GenMessage<UndeleteInstanceR
 export declare type SyncInstanceRequest = Message<"bytebase.v1.SyncInstanceRequest"> & {
   /**
    * The name of instance.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string name = 1;
    */
@@ -318,7 +341,7 @@ export declare const SyncInstanceRequestSchema: GenMessage<SyncInstanceRequest>;
 export declare type ListInstanceDatabaseRequest = Message<"bytebase.v1.ListInstanceDatabaseRequest"> & {
   /**
    * The name of the instance.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string name = 1;
    */
@@ -379,6 +402,15 @@ export declare const SyncInstanceResponseSchema: GenMessage<SyncInstanceResponse
  */
 export declare type BatchSyncInstancesRequest = Message<"bytebase.v1.BatchSyncInstancesRequest"> & {
   /**
+   * The parent, which owns this collection of instances.
+   * Format: projects/{project}. If omitted, all targets must be workspace
+   * instances; otherwise, every target must belong to this project collection.
+   *
+   * @generated from field: optional string parent = 2;
+   */
+  parent?: string | undefined;
+
+  /**
    * The request message specifying the instances to sync.
    * A maximum of 1000 instances can be synced in a batch.
    *
@@ -409,6 +441,15 @@ export declare const BatchSyncInstancesResponseSchema: GenMessage<BatchSyncInsta
  * @generated from message bytebase.v1.BatchUpdateInstancesRequest
  */
 export declare type BatchUpdateInstancesRequest = Message<"bytebase.v1.BatchUpdateInstancesRequest"> & {
+  /**
+   * The parent, which owns this collection of instances.
+   * Format: projects/{project}. If omitted, all targets must be workspace
+   * instances; otherwise, every target must belong to this project collection.
+   *
+   * @generated from field: optional string parent = 2;
+   */
+  parent?: string | undefined;
+
   /**
    * The request message specifying the resources to update.
    *
@@ -445,7 +486,7 @@ export declare const BatchUpdateInstancesResponseSchema: GenMessage<BatchUpdateI
 export declare type AddDataSourceRequest = Message<"bytebase.v1.AddDataSourceRequest"> & {
   /**
    * The name of the instance to add a data source to.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string name = 1;
    */
@@ -479,7 +520,7 @@ export declare const AddDataSourceRequestSchema: GenMessage<AddDataSourceRequest
 export declare type RemoveDataSourceRequest = Message<"bytebase.v1.RemoveDataSourceRequest"> & {
   /**
    * The name of the instance to remove a data source from.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string name = 1;
    */
@@ -506,7 +547,7 @@ export declare const RemoveDataSourceRequestSchema: GenMessage<RemoveDataSourceR
 export declare type UpdateDataSourceRequest = Message<"bytebase.v1.UpdateDataSourceRequest"> & {
   /**
    * The name of the instance to update a data source.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string name = 1;
    */
@@ -570,7 +611,7 @@ export declare const SyncDatabasesSchema: GenMessage<SyncDatabases>;
 export declare type Instance = Message<"bytebase.v1.Instance"> & {
   /**
    * The name of the instance.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string name = 1;
    */
@@ -1320,13 +1361,6 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
   redisType: DataSource_RedisType;
 
   /**
-   * Cluster is the cluster name for the data source. Used by CockroachDB.
-   *
-   * @generated from field: string cluster = 35;
-   */
-  cluster: string;
-
-  /**
    * Extra connection parameters for the database connection.
    * For PostgreSQL HA, this can be used to set target_session_attrs=read-write
    *
@@ -1600,7 +1634,7 @@ export declare type InstanceResource = Message<"bytebase.v1.InstanceResource"> &
 
   /**
    * The name of the instance.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string name = 6;
    */
@@ -1754,7 +1788,7 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
-   * Lists all database instances.
+   * Lists database instances, optionally within a project.
    * Permissions required: bb.instances.list
    *
    * @generated from rpc bytebase.v1.InstanceService.ListInstances
@@ -1788,6 +1822,8 @@ export declare const InstanceService: GenService<{
   },
   /**
    * Deletes or soft-deletes a database instance.
+   * Soft-delete requests fail with FAILED_PRECONDITION while any task run
+   * targeting the instance is pending, available, or running.
    * Permissions required: bb.instances.delete
    *
    * @generated from rpc bytebase.v1.InstanceService.DeleteInstance
@@ -1799,6 +1835,8 @@ export declare const InstanceService: GenService<{
   },
   /**
    * Restores a soft-deleted database instance.
+   * Restore requests fail with FAILED_PRECONDITION while any task run targeting
+   * the instance is pending, available, or running.
    * Permissions required: bb.instances.undelete
    *
    * @generated from rpc bytebase.v1.InstanceService.UndeleteInstance

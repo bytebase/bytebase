@@ -120,7 +120,7 @@ func TestIssueTokensPlacesWorkspaceInJWT(t *testing.T) {
 	const clientID = "client-xyz"
 	const workspaceID = "ws-consent-bound"
 
-	tokenStr, err := auth.GenerateOAuth2AccessToken(userEmail, clientID, workspaceID, secret, time.Hour)
+	tokenStr, err := auth.GenerateOAuth2AccessToken(userEmail, clientID, workspaceID, testResource, "", secret, time.Hour)
 	require.NoError(t, err)
 
 	// Decode the token (signature-verified) and assert the workspace_id
@@ -134,6 +134,7 @@ func TestIssueTokensPlacesWorkspaceInJWT(t *testing.T) {
 	require.Equal(t, workspaceID, claims["workspace_id"])
 	require.Equal(t, userEmail, claims["sub"])
 	require.Equal(t, clientID, claims["client_id"])
-	// `aud` is serialized as a single-element array by jwt.ClaimStrings.
-	require.Equal(t, []any{auth.OAuth2AccessTokenAudience}, claims["aud"])
+	// `aud` is serialized as a single-element array by jwt.ClaimStrings. Since
+	// P1a PR 3 it carries the grant's stored canonical resource URI.
+	require.Equal(t, []any{testResource}, claims["aud"])
 }

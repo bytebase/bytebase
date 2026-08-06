@@ -103,21 +103,9 @@ func parseChangelogFilter(filter string, find *store.FindChangelogMessage) error
 }
 
 func (s *ChangelogService) ListChangelogs(ctx context.Context, req *connect.Request[v1pb.ListChangelogsRequest]) (*connect.Response[v1pb.ListChangelogsResponse], error) {
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(req.Msg.Parent)
+	instance, database, err := getInstanceDatabaseMessage(ctx, s.store, req.Msg.Parent)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", req.Msg.Parent))
-	}
-	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-		Workspace:    common.GetWorkspaceIDFromContext(ctx),
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
-		ShowDeleted:  true,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
-	}
-	if database == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", req.Msg.Parent))
+		return nil, err
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -157,7 +145,7 @@ func (s *ChangelogService) ListChangelogs(ctx context.Context, req *connect.Requ
 	}
 
 	// no subsequent pages
-	converted := convertToChangelogs(database, changelogs)
+	converted := convertToChangelogs(instance, database, changelogs)
 	return connect.NewResponse(&v1pb.ListChangelogsResponse{
 		Changelogs:    converted,
 		NextPageToken: nextPageToken,
@@ -165,14 +153,19 @@ func (s *ChangelogService) ListChangelogs(ctx context.Context, req *connect.Requ
 }
 
 func (s *ChangelogService) GetChangelog(ctx context.Context, req *connect.Request[v1pb.GetChangelogRequest]) (*connect.Response[v1pb.Changelog], error) {
-	instanceID, databaseName, changelogID, err := common.GetInstanceDatabaseChangelogID(req.Msg.Name)
+	parent, changelogID, err := getChangelogParentAndID(req.Msg.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", req.Msg.Name))
+	}
+	instance, database, err := getInstanceDatabaseMessage(ctx, s.store, parent)
+	if err != nil {
+		return nil, err
 	}
 
 	find := &store.FindChangelogMessage{
-		InstanceID: instanceID,
-		ResourceID: &changelogID,
+		InstanceID:   database.InstanceID,
+		DatabaseName: &database.DatabaseName,
+		ResourceID:   &changelogID,
 	}
 	if req.Msg.View == v1pb.ChangelogView_CHANGELOG_VIEW_FULL {
 		find.ShowFull = true
@@ -186,35 +179,76 @@ func (s *ChangelogService) GetChangelog(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("changelog %q not found", changelogID))
 	}
 
-	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+	converted := convertToChangelog(instance, database, changelog)
+	return connect.NewResponse(converted), nil
+}
+
+func getInstanceDatabaseMessage(ctx context.Context, stores *store.Store, parent string) (*store.InstanceMessage, *store.DatabaseMessage, error) {
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(parent)
+	if err != nil {
+		if projectID, nestedInstanceID, nestedDatabaseName, projectErr := common.GetProjectIDInstanceDatabaseID(parent); projectErr == nil {
+			instanceID, databaseName = nestedInstanceID, nestedDatabaseName
+			instance, getErr := getInstanceMessage(ctx, stores, common.FormatProjectInstance(projectID, instanceID))
+			if getErr != nil {
+				return nil, nil, getErr
+			}
+			database, getErr := getDatabaseMessage(ctx, stores, instanceID, databaseName, parent)
+			return instance, database, getErr
+		}
+		return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", parent))
+	}
+
+	instance, err := getInstanceMessage(ctx, stores, common.FormatInstance(instanceID))
+	if err != nil {
+		return nil, nil, err
+	}
+	database, err := getDatabaseMessage(ctx, stores, instanceID, databaseName, parent)
+	return instance, database, err
+}
+
+func getDatabaseMessage(ctx context.Context, stores *store.Store, instanceID, databaseName, requestName string) (*store.DatabaseMessage, error) {
+	database, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{
 		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
 		ShowDeleted:  true,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
 	}
 	if database == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseName))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", requestName))
 	}
-
-	converted := convertToChangelog(database, changelog)
-	return connect.NewResponse(converted), nil
+	return database, nil
 }
 
-func convertToChangelogs(d *store.DatabaseMessage, cs []*store.ChangelogMessage) []*v1pb.Changelog {
+func getChangelogParentAndID(name string) (string, string, error) {
+	if projectID, instanceID, databaseName, changelogID, err := common.GetProjectIDInstanceDatabaseChangelogID(name); err == nil {
+		return common.FormatProjectDatabase(projectID, instanceID, databaseName), changelogID, nil
+	}
+	instanceID, databaseName, changelogID, err := common.GetInstanceDatabaseChangelogID(name)
+	if err != nil {
+		return "", "", err
+	}
+	return common.FormatDatabase(instanceID, databaseName), changelogID, nil
+}
+
+func convertToChangelogs(instance *store.InstanceMessage, d *store.DatabaseMessage, cs []*store.ChangelogMessage) []*v1pb.Changelog {
 	var changelogs []*v1pb.Changelog
 	for _, c := range cs {
-		changelog := convertToChangelog(d, c)
+		changelog := convertToChangelog(instance, d, c)
 		changelogs = append(changelogs, changelog)
 	}
 	return changelogs
 }
 
-func convertToChangelog(d *store.DatabaseMessage, c *store.ChangelogMessage) *v1pb.Changelog {
+func convertToChangelog(instance *store.InstanceMessage, d *store.DatabaseMessage, c *store.ChangelogMessage) *v1pb.Changelog {
+	name := common.FormatChangelog(d.InstanceID, d.DatabaseName, c.ResourceID)
+	if instance.ProjectID != nil {
+		name = common.FormatProjectChangelog(*instance.ProjectID, d.InstanceID, d.DatabaseName, c.ResourceID)
+	}
 	cl := &v1pb.Changelog{
-		Name:       common.FormatChangelog(d.InstanceID, d.DatabaseName, c.ResourceID),
+		Name:       name,
 		CreateTime: timestamppb.New(c.CreatedAt),
 		Status:     convertToChangelogStatus(c.Status),
 		Schema:     "",

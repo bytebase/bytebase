@@ -13,6 +13,7 @@ option go_package = "generated-go/store";
 message Issue {
   // Type represents the category of issue.
   enum Type {
+    reserved 3;
     ISSUE_TYPE_UNSPECIFIED = 0;
     // Issue for database schema or data changes.
     DATABASE_CHANGE = 1;

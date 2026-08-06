@@ -19,6 +19,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/api/mcp"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -70,6 +72,35 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 
 	configured := newTestService(st, "https://bb.example.com")
 
+	t.Run("authorization starts without an existing browser session", func(t *testing.T) {
+		entryService := newTestService(st, "")
+		entryService.profile.SaaS = true
+		challenge := sha256.Sum256([]byte(testCodeVerifier))
+		query := url.Values{
+			"response_type":         {"code"},
+			"client_id":             {testClientID},
+			"redirect_uri":          {testRedirectURI},
+			"state":                 {"test-state"},
+			"code_challenge":        {base64.RawURLEncoding.EncodeToString(challenge[:])},
+			"code_challenge_method": {"S256"},
+			"resource":              {testResource},
+		}
+		req := httptest.NewRequest(http.MethodGet, "/api/oauth2/authorize?"+query.Encode(), nil)
+		rec := httptest.NewRecorder()
+		e := echo.New()
+		c := e.NewContext(req, rec)
+		require.NoError(t, entryService.handleAuthorizeGet(c))
+		response, err := echo.UnwrapResponse(c.Response())
+		require.NoError(t, err)
+		require.Equal(t, http.StatusFound, response.Status)
+
+		location, err := url.Parse(response.Header().Get("Location"))
+		require.NoError(t, err)
+		require.Equal(t, "/oauth2/consent", location.Path)
+		require.Equal(t, testClientID, location.Query().Get("client_id"))
+		require.Equal(t, testResource, location.Query().Get("resource"))
+	})
+
 	t.Run("configured external URL: matching resource and known scope are consented", func(t *testing.T) {
 		code := consentOK(t, configured, url.Values{"resource": {testResource}, "scope": {"mcp:read-only"}})
 
@@ -101,13 +132,19 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		require.Equal(t, testResource, got.Config.Resource)
 	})
 
-	t.Run("no resource and no scope still consents (clients that predate both)", func(t *testing.T) {
+	t.Run("no resource requested: the grant is bound to this server's MCP resource", func(t *testing.T) {
+		// Since PR 3 every new grant is resource-bound, because its tokens carry
+		// the resource as their audience: an unbound grant would mint tokens no
+		// audience check accepts once the legacy window closes, sending the
+		// client into a re-auth loop. A client that never sends `resource`
+		// (mandatory for MCP clients per RFC 8707, but not every DCR client is
+		// one) is defaulted to the only resource this server would accept anyway.
 		code := consentOK(t, configured, url.Values{})
 
 		got, err := st.GetOAuth2AuthorizationCode(ctx, testClientID, code)
 		require.NoError(t, err)
-		require.Empty(t, got.Config.Resource)
-		require.Empty(t, got.Config.Scope)
+		require.Equal(t, testResource, got.Config.Resource)
+		require.Empty(t, got.Config.Scope, "only the resource is defaulted; scope stays exactly as requested")
 	})
 
 	rejections := []struct {
@@ -116,7 +153,6 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		wantCode string
 	}{
 		{"resource on another host", url.Values{"resource": {"https://evil.example.com/mcp"}}, "invalid_target"},
-		{"noncanonical resource", url.Values{"resource": {"https://bb.example.com:443/mcp"}}, "invalid_target"},
 		{"resource parameter repeated", url.Values{"resource": {testResource, testResource}}, "invalid_target"},
 		{"unknown scope", url.Values{"scope": {"mcp:admin"}}, "invalid_scope"},
 		{"scope parameter repeated", url.Values{"scope": {"mcp:read-only", "mcp:read-write"}}, "invalid_scope"},
@@ -128,22 +164,37 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		})
 	}
 
+	t.Run("default port resource is consented as the canonical resource", func(t *testing.T) {
+		code := consentOK(t, configured, url.Values{"resource": {"https://bb.example.com:443/mcp"}})
+		got, err := st.GetOAuth2AuthorizationCode(ctx, testClientID, code)
+		require.NoError(t, err)
+		require.Equal(t, testResource, got.Config.Resource)
+	})
+
 	t.Run("no configured external URL: a resource request gets the actionable setup error", func(t *testing.T) {
-		// The ship gate of proposal v2 §6.2 — self-hosted instances running on
-		// the request-Host fallback break here, and the error has to tell the
-		// admin exactly what to set rather than fail generically.
+		_, err := st.UpsertSetting(ctx, &store.SettingMessage{
+			Name:      storepb.SettingName_WORKSPACE_PROFILE,
+			Workspace: testWorkspace,
+			Value:     &storepb.WorkspaceProfileSetting{},
+		})
+		require.NoError(t, err)
+
 		unconfigured := newTestService(st, "")
 		redirect := consent(t, unconfigured, url.Values{"resource": {testResource}})
 		require.Equal(t, "server_error", redirect.Query().Get("error"))
 		description := redirect.Query().Get("error_description")
-		require.Contains(t, description, "--external-url")
-		require.Contains(t, description, "External URL")
+		require.Contains(t, description, "external URL isn't setup yet")
 	})
 
-	t.Run("no configured external URL: a request without a resource still works", func(t *testing.T) {
+	t.Run("no configured external URL: consent without a resource gets the setup error too", func(t *testing.T) {
+		// PR 2 let a resource-less request through on an unconfigured instance;
+		// PR 3 binds every grant, and the binding needs the trusted URL. Failing
+		// consent with the actionable setup pointer beats minting tokens that
+		// can only ever 401 at /mcp.
 		unconfigured := newTestService(st, "")
-		require.NotEmpty(t, consentOK(t, unconfigured, url.Values{}),
-			"resource binding is opt-in, so today's clients must not break on an unconfigured instance")
+		redirect := consent(t, unconfigured, url.Values{})
+		require.Equal(t, "server_error", redirect.Query().Get("error"))
+		require.Contains(t, redirect.Query().Get("error_description"), "external URL isn't setup yet")
 	})
 
 	t.Run("the workspace setting is trusted too, not only the flag", func(t *testing.T) {
@@ -265,45 +316,187 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 			"the canonical form must survive rotation, not drift back to what the client sent")
 	})
 
-	t.Run("a grant with no consented resource survives a resource-bearing exchange", func(t *testing.T) {
-		// This is the upgrade path. A code or refresh token issued before 3.22.1
-		// has no stored resource, and RFC 8707 clients keep sending `resource` on
-		// every exchange and refresh — so rejecting the parameter here would fail
-		// in-flight codes and every live session at its next refresh. The
-		// parameter is accepted and ignored, and the grant must stay UNBOUND:
-		// accepting a binding here would be a resource the user never consented
-		// to, and would let PR 3 mint an MCP-audience token off a legacy grant.
-		code := consentOK(t, configured, url.Values{})
+	t.Run("legacy unbound grants are refused at the token endpoint with re-auth guidance", func(t *testing.T) {
+		// Rows created before 3.22.1 carry no resource in Config. PR 2 kept them
+		// redeemable as a deliberate interim; PR 3 retires them: tokens are now
+		// audience-bound to the grant's stored resource, so an unbound grant has
+		// nothing valid to mint. invalid_grant is what makes RFC-compliant
+		// clients discard the grant and rerun the OAuth flow, and the
+		// description points at the reauthorize tool as the in-band recovery.
+		challenge := sha256.Sum256([]byte(testCodeVerifier))
+		const legacyCode = "bb_code_legacy_unbound"
+		_, err := st.CreateOAuth2AuthorizationCode(ctx, &store.OAuth2AuthorizationCodeMessage{
+			Code:      legacyCode,
+			ClientID:  testClientID,
+			UserEmail: testUserEmail,
+			Workspace: testWorkspace,
+			Config: &storepb.OAuth2AuthorizationCodeConfig{
+				RedirectUri:         testRedirectURI,
+				CodeChallenge:       base64.RawURLEncoding.EncodeToString(challenge[:]),
+				CodeChallengeMethod: "S256",
+			},
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		})
+		require.NoError(t, err)
 
+		exchanged := postToken(t, configured, url.Values{
+			"grant_type":    {"authorization_code"},
+			"code":          {legacyCode},
+			"redirect_uri":  {testRedirectURI},
+			"code_verifier": {testCodeVerifier},
+			"client_id":     {testClientID},
+		})
+		require.Equal(t, http.StatusBadRequest, exchanged.Code)
+		require.Equal(t, "invalid_grant", errorCode(t, exchanged))
+		require.Contains(t, errorDescription(t, exchanged), "re-authorize")
+		require.Contains(t, errorDescription(t, exchanged), "reauthorize tool")
+
+		const legacyRefresh = "bb_refresh_legacy_unbound"
+		_, err = st.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
+			TokenHash: auth.HashToken(legacyRefresh),
+			ClientID:  testClientID,
+			UserEmail: testUserEmail,
+			Workspace: testWorkspace,
+			Config:    &storepb.OAuth2RefreshTokenConfig{},
+			ExpiresAt: time.Now().Add(24 * time.Hour),
+		})
+		require.NoError(t, err)
+
+		refreshed := postToken(t, configured, url.Values{
+			"grant_type":    {"refresh_token"},
+			"refresh_token": {legacyRefresh},
+			"client_id":     {testClientID},
+		})
+		require.Equal(t, http.StatusBadRequest, refreshed.Code)
+		require.Equal(t, "invalid_grant", errorCode(t, refreshed))
+		require.Contains(t, errorDescription(t, refreshed), "reauthorize tool")
+
+		// Refusal happens before consumption: the row is left for the expiry
+		// sweep (or the user's reauthorize) rather than burned by a refresh
+		// that issued nothing.
+		row, err := st.GetOAuth2RefreshToken(ctx, testClientID, auth.HashToken(legacyRefresh))
+		require.NoError(t, err)
+		require.NotNil(t, row)
+
+		// A bound grant with no scope is not legacy — only a missing resource
+		// marks the retired population.
+		boundCode := consentOK(t, configured, url.Values{"resource": {testResource}})
+		bound := tokenOK(t, configured, url.Values{
+			"grant_type":    {"authorization_code"},
+			"code":          {boundCode},
+			"redirect_uri":  {testRedirectURI},
+			"code_verifier": {testCodeVerifier},
+			"client_id":     {testClientID},
+		})
+		tokenOK(t, configured, url.Values{
+			"grant_type":    {"refresh_token"},
+			"refresh_token": {bound.RefreshToken},
+			"client_id":     {testClientID},
+		})
+	})
+
+	t.Run("rotating the external URL kills outstanding tokens at /mcp until re-consent", func(t *testing.T) {
+		code := consentOK(t, configured, url.Values{"resource": {testResource}})
 		first := tokenOK(t, configured, url.Values{
 			"grant_type":    {"authorization_code"},
 			"code":          {code},
 			"redirect_uri":  {testRedirectURI},
 			"code_verifier": {testCodeVerifier},
 			"client_id":     {testClientID},
-			"resource":      {testResource},
-			"scope":         {"mcp:read-write"},
 		})
-		require.Empty(t, first.Scope, "an unbound grant must not adopt the scope the client asked for")
+		require.NotEqual(t, http.StatusUnauthorized, mcpStatus(t, st, "https://bb.example.com", first.AccessToken),
+			"a token bound to the live resource must be admitted at /mcp")
 
-		stored, err := st.GetOAuth2RefreshToken(ctx, testClientID, auth.HashToken(first.RefreshToken))
-		require.NoError(t, err)
-		require.NotNil(t, stored)
-		require.Empty(t, stored.Config.GetResource(), "the requested resource must be ignored, never bound to a grant that never consented to one")
-		require.Empty(t, stored.Config.GetScope())
+		// Rotate the trusted external URL. The middleware computes its expected
+		// audience from live config, so the outstanding token dies at use time
+		// with a clean 401 — never silently rebinds.
+		require.Equal(t, http.StatusUnauthorized, mcpStatus(t, st, "https://bb-new.example.com", first.AccessToken))
 
-		// And the same on refresh, so a legacy session keeps working indefinitely
-		// until PR 3 retires it deliberately.
-		second := tokenOK(t, configured, url.Values{
+		// The token endpoint, by contrast, mints from the grant's STORED
+		// resource, never live config: refresh succeeds but hands back a token
+		// still bound to the consented (old) resource, equally dead at /mcp.
+		rotated := newTestService(st, "https://bb-new.example.com")
+		second := tokenOK(t, rotated, url.Values{
 			"grant_type":    {"refresh_token"},
 			"refresh_token": {first.RefreshToken},
 			"client_id":     {testClientID},
-			"resource":      {testResource},
 		})
-		rotated, err := st.GetOAuth2RefreshToken(ctx, testClientID, auth.HashToken(second.RefreshToken))
+		require.Equal(t, http.StatusUnauthorized, mcpStatus(t, st, "https://bb-new.example.com", second.AccessToken))
+
+		// Recovery is a fresh consent under the new URL — here without a
+		// resource parameter, so this also proves the defaulted binding works
+		// end to end.
+		codeB := consentOK(t, rotated, url.Values{})
+		third := tokenOK(t, rotated, url.Values{
+			"grant_type":    {"authorization_code"},
+			"code":          {codeB},
+			"redirect_uri":  {testRedirectURI},
+			"code_verifier": {testCodeVerifier},
+			"client_id":     {testClientID},
+		})
+		require.NotEqual(t, http.StatusUnauthorized, mcpStatus(t, st, "https://bb-new.example.com", third.AccessToken))
+	})
+
+	t.Run("the /mcp middleware trusts the workspace-setting external URL tier", func(t *testing.T) {
+		// The audience matrix and the rotation chain drive the --external-url
+		// flag tier only; the normal self-hosted shape configures the URL in
+		// Settings. A regression that silently drops the setting tier from the
+		// middleware would 401 every MCP request on such deployments while the
+		// consent-side tests stay green.
+		_, err := st.UpsertSetting(ctx, &store.SettingMessage{
+			Name:      storepb.SettingName_WORKSPACE_PROFILE,
+			Workspace: testWorkspace,
+			Value:     &storepb.WorkspaceProfileSetting{ExternalUrl: "https://bb.example.com"},
+		})
 		require.NoError(t, err)
-		require.NotNil(t, rotated)
-		require.Empty(t, rotated.Config.GetResource())
+		t.Cleanup(func() {
+			_, err := st.UpsertSetting(ctx, &store.SettingMessage{
+				Name:      storepb.SettingName_WORKSPACE_PROFILE,
+				Workspace: testWorkspace,
+				Value:     &storepb.WorkspaceProfileSetting{},
+			})
+			require.NoError(t, err)
+		})
+
+		fromSetting := newTestService(st, "")
+		code := consentOK(t, fromSetting, url.Values{"resource": {testResource}})
+		got := tokenOK(t, fromSetting, url.Values{
+			"grant_type":    {"authorization_code"},
+			"code":          {code},
+			"redirect_uri":  {testRedirectURI},
+			"code_verifier": {testCodeVerifier},
+			"client_id":     {testClientID},
+		})
+		require.NotEqual(t, http.StatusUnauthorized, mcpStatus(t, st, "", got.AccessToken),
+			"an empty flag must resolve the audience from the workspace setting")
+	})
+
+	t.Run("an MCP token still authenticates on the general API (audit-only this release)", func(t *testing.T) {
+		// Until PR 4's private transport, /mcp tool calls forward the inbound
+		// bearer to the general API, so this admission is what keeps every MCP
+		// tool call working. PR 5 flips rejectMCPTokenOnGeneralAPI to retire it;
+		// this test is the tripwire against flipping it early by accident.
+		_, err := st.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+			Workspace: testWorkspace,
+			Member:    common.FormatUserEmail(testUserEmail),
+			Roles:     []string{"roles/workspaceMember"},
+		})
+		require.NoError(t, err)
+
+		code := consentOK(t, configured, url.Values{"resource": {testResource}})
+		got := tokenOK(t, configured, url.Values{
+			"grant_type":    {"authorization_code"},
+			"code":          {code},
+			"redirect_uri":  {testRedirectURI},
+			"code_verifier": {testCodeVerifier},
+			"client_id":     {testClientID},
+		})
+
+		interceptor := auth.New(st, testSecret, nil, nil, &config.Profile{})
+		user, workspaceID, _, err := interceptor.AuthenticateToken(ctx, got.AccessToken)
+		require.NoError(t, err)
+		require.Equal(t, testUserEmail, user.Email)
+		require.Equal(t, testWorkspace, workspaceID)
 	})
 
 	t.Run("a requested scope set is consented as its maximum", func(t *testing.T) {
@@ -413,6 +606,34 @@ func errorCode(t *testing.T, rec *httptest.ResponseRecorder) string {
 	var body map[string]string
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
 	return body["error"]
+}
+
+func errorDescription(t *testing.T, rec *httptest.ResponseRecorder) string {
+	t.Helper()
+	var body map[string]string
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+	return body["error_description"]
+}
+
+// mcpStatus posts an MCP initialize request to a freshly wired /mcp endpoint
+// whose trusted external URL is externalURL, and returns the HTTP status. 401
+// means the auth middleware refused the token; anything else means the token
+// got through to the MCP handler.
+func mcpStatus(t *testing.T, st *store.Store, externalURL, accessToken string) int {
+	t.Helper()
+	srv, err := mcp.NewServer(st, &config.Profile{ExternalURL: externalURL}, testSecret, nil)
+	require.NoError(t, err)
+	e := echo.New()
+	srv.RegisterRoutes(e)
+
+	body := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"0"}}}`
+	req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	return rec.Code
 }
 
 // redirectTargetOf pulls the callback URL out of the meta-refresh page the

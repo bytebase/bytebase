@@ -25,7 +25,7 @@ const (
 type ListInstanceRolesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent, which owns this collection of roles.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// Not used.
 	// The maximum number of roles to return. The service may return fewer than
@@ -163,7 +163,7 @@ func (x *ListInstanceRolesResponse) GetNextPageToken() string {
 type InstanceRole struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the role.
-	// Format: instances/{instance}/roles/{role}
+	// Format: instances/{instance}/roles/{role} or projects/{project}/instances/{instance}/roles/{role}
 	// The role name is the unique name for the role.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The role name. It's unique within the instance.
@@ -268,7 +268,7 @@ const file_v1_instance_role_service_proto_rawDesc = "" +
 	"\arefresh\x18\x04 \x01(\bR\arefresh\"t\n" +
 	"\x19ListInstanceRolesResponse\x12/\n" +
 	"\x05roles\x18\x01 \x03(\v2\x19.bytebase.v1.InstanceRoleR\x05roles\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xe1\x02\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x97\x03\n" +
 	"\fInstanceRole\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +
 	"\trole_name\x18\x02 \x01(\tR\broleName\x12$\n" +
@@ -276,15 +276,15 @@ const file_v1_instance_role_service_proto_rawDesc = "" +
 	"\x10connection_limit\x18\x04 \x01(\x05H\x01R\x0fconnectionLimit\x88\x01\x01\x12$\n" +
 	"\vvalid_until\x18\x05 \x01(\tH\x02R\n" +
 	"validUntil\x88\x01\x01\x12!\n" +
-	"\tattribute\x18\x06 \x01(\tH\x03R\tattribute\x88\x01\x01:A\xeaA>\n" +
-	"\x19bytebase.com/InstanceRole\x12!instances/{instance}/roles/{role}B\v\n" +
+	"\tattribute\x18\x06 \x01(\tH\x03R\tattribute\x88\x01\x01:w\xeaAt\n" +
+	"\x19bytebase.com/InstanceRole\x12!instances/{instance}/roles/{role}\x124projects/{project}/instances/{instance}/roles/{role}B\v\n" +
 	"\t_passwordB\x13\n" +
 	"\x11_connection_limitB\x0e\n" +
 	"\f_valid_untilB\f\n" +
 	"\n" +
-	"_attribute2\xc8\x01\n" +
-	"\x13InstanceRoleService\x12\xb0\x01\n" +
-	"\x11ListInstanceRoles\x12%.bytebase.v1.ListInstanceRolesRequest\x1a&.bytebase.v1.ListInstanceRolesResponse\"L\xdaA\x06parent\x8a\xea0\x15bb.instanceRoles.list\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{parent=instances/*}/rolesB\xae\x01\n" +
+	"_attribute2\xf5\x01\n" +
+	"\x13InstanceRoleService\x12\xdd\x01\n" +
+	"\x11ListInstanceRoles\x12%.bytebase.v1.ListInstanceRolesRequest\x1a&.bytebase.v1.ListInstanceRolesResponse\"y\xdaA\x06parent\x8a\xea0\x15bb.instanceRoles.list\x90\xea0\x01\x82\xd3\xe4\x93\x02MZ+\x12)/v1/{parent=projects/*/instances/*}/roles\x12\x1e/v1/{parent=instances/*}/rolesB\xae\x01\n" +
 	"\x0fcom.bytebase.v1B\x18InstanceRoleServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

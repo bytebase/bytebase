@@ -36,6 +36,7 @@ message SystemSetting {
 }
 
 message WorkspaceProfileSetting {
+  reserved 15;
   message Announcement {
     reserved 1;
     reserved "level";
@@ -125,9 +126,6 @@ message WorkspaceProfileSetting {
   // Requires ENTERPRISE license.
   bool watermark = 14;
 
-  // The token for directory sync authentication.
-  string directory_sync_token = 15;
-
   reserved 16;
 
   message PasswordRestriction {
@@ -183,6 +181,11 @@ message WorkspaceProfileSetting {
   // READ_WRITE for backward compatibility; DISABLED rejects all MCP
   // connections. Enforced server-side by the /mcp endpoint.
   MCPCapability mcp_capability = 26;
+
+  // Hex-encoded SHA-256 of the SCIM directory sync token. The plaintext is shown
+  // once at rotation and never stored. SHA-256 rather than a slow KDF because the
+  // token is 122 bits of crypto/rand, not a human-chosen secret.
+  string directory_sync_token_hash = 27;
 }
 
 message SQLEditorThemeSetting {
@@ -218,6 +221,7 @@ message DataClassificationSetting {
     string title = 2;
 
     message Level {
+      reserved 1, 3;
       string title = 2;
       // The numeric level for ordering. Higher = more sensitive.
       int32 level = 4;
@@ -227,6 +231,7 @@ message DataClassificationSetting {
     repeated Level levels = 3;
 
     message DataClassification {
+      reserved 3;
       // id is the classification id in [0-9]+-[0-9]+-[0-9]+ format.
       string id = 1;
       string title = 2;
@@ -295,6 +300,7 @@ message Algorithm {
 
 message SemanticTypeSetting {
   message SemanticType {
+    reserved 4 to 5;
     // id is the uuid for semantic type.
     string id = 1;
     // the title of the semantic type, it should not be empty.

@@ -44,7 +44,7 @@ type InstanceServiceClient interface {
 	// Gets a database instance by name.
 	// Permissions required: bb.instances.get
 	GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
-	// Lists all database instances.
+	// Lists database instances, optionally within a project.
 	// Permissions required: bb.instances.list
 	ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error)
 	// Creates a new database instance.
@@ -54,9 +54,13 @@ type InstanceServiceClient interface {
 	// Permissions required: bb.instances.update
 	UpdateInstance(ctx context.Context, in *UpdateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	// Deletes or soft-deletes a database instance.
+	// Soft-delete requests fail with FAILED_PRECONDITION while any task run
+	// targeting the instance is pending, available, or running.
 	// Permissions required: bb.instances.delete
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Restores a soft-deleted database instance.
+	// Restore requests fail with FAILED_PRECONDITION while any task run targeting
+	// the instance is pending, available, or running.
 	// Permissions required: bb.instances.undelete
 	UndeleteInstance(ctx context.Context, in *UndeleteInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	// Syncs database schemas and metadata from an instance.
@@ -229,7 +233,7 @@ type InstanceServiceServer interface {
 	// Gets a database instance by name.
 	// Permissions required: bb.instances.get
 	GetInstance(context.Context, *GetInstanceRequest) (*Instance, error)
-	// Lists all database instances.
+	// Lists database instances, optionally within a project.
 	// Permissions required: bb.instances.list
 	ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error)
 	// Creates a new database instance.
@@ -239,9 +243,13 @@ type InstanceServiceServer interface {
 	// Permissions required: bb.instances.update
 	UpdateInstance(context.Context, *UpdateInstanceRequest) (*Instance, error)
 	// Deletes or soft-deletes a database instance.
+	// Soft-delete requests fail with FAILED_PRECONDITION while any task run
+	// targeting the instance is pending, available, or running.
 	// Permissions required: bb.instances.delete
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*emptypb.Empty, error)
 	// Restores a soft-deleted database instance.
+	// Restore requests fail with FAILED_PRECONDITION while any task run targeting
+	// the instance is pending, available, or running.
 	// Permissions required: bb.instances.undelete
 	UndeleteInstance(context.Context, *UndeleteInstanceRequest) (*Instance, error)
 	// Syncs database schemas and metadata from an instance.

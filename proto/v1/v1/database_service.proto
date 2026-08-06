@@ -19,7 +19,10 @@ service DatabaseService {
   // Retrieves a database by name.
   // Permissions required: bb.databases.get
   rpc GetDatabase(GetDatabaseRequest) returns (Database) {
-    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*}"};
+    option (google.api.http) = {
+      get: "/v1/{name=instances/*/databases/*}"
+      additional_bindings: {get: "/v1/{name=projects/*/instances/*/databases/*}"}
+    };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
@@ -31,6 +34,7 @@ service DatabaseService {
     option (google.api.http) = {
       get: "/v1/{parent=projects/*}/databases:batchGet"
       additional_bindings: {get: "/v1/{parent=instances/*}/databases:batchGet"}
+      additional_bindings: {get: "/v1/{parent=projects/*/instances/*}/databases:batchGet"}
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = CUSTOM;
@@ -44,6 +48,7 @@ service DatabaseService {
 
       additional_bindings: {get: "/v1/{parent=instances/*}/databases"}
       additional_bindings: {get: "/v1/{parent=workspaces/*}/databases"}
+      additional_bindings: {get: "/v1/{parent=projects/*/instances/*}/databases"}
     };
 
     option (google.api.method_signature) = "";
@@ -57,6 +62,10 @@ service DatabaseService {
     option (google.api.http) = {
       patch: "/v1/{database.name=instances/*/databases/*}"
       body: "database"
+      additional_bindings: {
+        patch: "/v1/{database.name=projects/*/instances/*/databases/*}"
+        body: "database"
+      }
     };
     option (google.api.method_signature) = "database,update_mask";
     option (bytebase.v1.permission) = "bb.databases.update";
@@ -70,6 +79,10 @@ service DatabaseService {
     option (google.api.http) = {
       post: "/v1/{parent=instances/*}/databases:batchUpdate"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{parent=projects/*/instances/*}/databases:batchUpdate"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.databases.update";
     option (bytebase.v1.auth_method) = IAM;
@@ -82,6 +95,10 @@ service DatabaseService {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:sync"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{name=projects/*/instances/*/databases/*}:sync"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.databases.sync";
     option (bytebase.v1.auth_method) = IAM;
@@ -93,6 +110,10 @@ service DatabaseService {
     option (google.api.http) = {
       post: "/v1/{parent=instances/*}/databases:batchSync"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{parent=projects/*/instances/*}/databases:batchSync"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.databases.sync";
     option (bytebase.v1.auth_method) = IAM;
@@ -101,7 +122,10 @@ service DatabaseService {
   // Retrieves database metadata including tables, columns, and indexes.
   // Permissions required: bb.databases.getSchema
   rpc GetDatabaseMetadata(GetDatabaseMetadataRequest) returns (DatabaseMetadata) {
-    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
+    option (google.api.http) = {
+      get: "/v1/{name=instances/*/databases/*/metadata}"
+      additional_bindings: {get: "/v1/{name=projects/*/instances/*/databases/*/metadata}"}
+    };
     option (bytebase.v1.permission) = "bb.databases.getSchema";
     option (bytebase.v1.auth_method) = IAM;
   }
@@ -109,7 +133,10 @@ service DatabaseService {
   // Retrieves database schema as DDL statements.
   // Permissions required: bb.databases.getSchema
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
-    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
+    option (google.api.http) = {
+      get: "/v1/{name=instances/*/databases/*/schema}"
+      additional_bindings: {get: "/v1/{name=projects/*/instances/*/databases/*/schema}"}
+    };
     option (bytebase.v1.permission) = "bb.databases.getSchema";
     option (bytebase.v1.auth_method) = IAM;
   }
@@ -117,7 +144,10 @@ service DatabaseService {
   // Retrieves database schema in SDL (Schema Definition Language) format.
   // Permissions required: bb.databases.getSchema
   rpc GetDatabaseSDLSchema(GetDatabaseSDLSchemaRequest) returns (DatabaseSDLSchema) {
-    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/sdlSchema}"};
+    option (google.api.http) = {
+      get: "/v1/{name=instances/*/databases/*/sdlSchema}"
+      additional_bindings: {get: "/v1/{name=projects/*/instances/*/databases/*/sdlSchema}"}
+    };
     option (bytebase.v1.permission) = "bb.databases.getSchema";
     option (bytebase.v1.auth_method) = IAM;
   }
@@ -127,10 +157,19 @@ service DatabaseService {
   rpc DiffSchema(DiffSchemaRequest) returns (DiffSchemaResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:diffSchema"
+
       body: "*"
+      additional_bindings: {
+        post: "/v1/{name=projects/*/instances/*/databases/*}:diffSchema"
+        body: "*"
+      }
 
       additional_bindings: {
         post: "/v1/{name=instances/*/databases/*/changelogs/*}:diffSchema"
+        body: "*"
+      }
+      additional_bindings: {
+        post: "/v1/{name=projects/*/instances/*/databases/*/changelogs/*}:diffSchema"
         body: "*"
       }
     };
@@ -146,6 +185,10 @@ service DatabaseService {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:diffMetadata"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{name=projects/*/instances/*/databases/*}:diffMetadata"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.databases.diffMetadata";
     option (bytebase.v1.auth_method) = IAM;
@@ -154,7 +197,10 @@ service DatabaseService {
   // Generates schema DDL for a database object.
   // Permissions required: bb.databases.getSchema
   rpc GetSchemaString(GetSchemaStringRequest) returns (GetSchemaStringResponse) {
-    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schemaString}"};
+    option (google.api.http) = {
+      get: "/v1/{name=instances/*/databases/*/schemaString}"
+      additional_bindings: {get: "/v1/{name=projects/*/instances/*/databases/*/schemaString}"}
+    };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.databases.getSchema";
     option (bytebase.v1.auth_method) = IAM;
@@ -163,7 +209,7 @@ service DatabaseService {
 
 message GetDatabaseRequest {
   // The name of the database to retrieve.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -173,7 +219,8 @@ message GetDatabaseRequest {
 message BatchGetDatabasesRequest {
   // The parent resource shared by all databases being retrieved.
   // - projects/{project}: batch get databases in a project;
-  // - instances/{instances}: batch get databases in a instance;
+  // - instances/{instance}: batch get databases in an instance;
+  // - projects/{project}/instances/{instance}: batch get databases in a project instance;
   // Use "-" as wildcard to batch get databases across parent.
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
@@ -195,7 +242,8 @@ message BatchGetDatabasesResponse {
 message ListDatabasesRequest {
   // - projects/{project}: list databases in a project, require "bb.projects.get" permission.
   // - workspaces/{id}: list databases in the workspace, require "bb.databases.list" permission.
-  // - instances/{instances}: list databases in a instance, require "bb.instances.get" permission
+  // - instances/{instance}: list databases in an instance, require "bb.instances.get" permission.
+  // - projects/{project}/instances/{instance}: list databases in a project instance, require "bb.instances.get" permission.
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {child_type: "bytebase.com/Database"}
@@ -272,7 +320,7 @@ message UpdateDatabaseRequest {
   // The database to update.
   //
   // The database's `name` field is used to identify the database to update.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
   Database database = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
@@ -285,7 +333,7 @@ message UpdateDatabaseRequest {
 
 message BatchUpdateDatabasesRequest {
   // The parent resource shared by all databases being updated.
-  // Format: instances/{instance}
+  // Format: instances/{instance} or projects/{project}/instances/{instance}
   // If the operation spans parents, a dash (-) may be accepted as a wildcard.
   // We only support updating the project of databases for now.
   string parent = 1;
@@ -302,7 +350,7 @@ message BatchUpdateDatabasesResponse {
 
 message BatchSyncDatabasesRequest {
   // The parent resource shared by all databases being updated.
-  // Format: instances/{instance}
+  // Format: instances/{instance} or projects/{project}/instances/{instance}
   // If the operation spans parents, a dash (-) may be accepted as a wildcard.
   string parent = 1;
 
@@ -317,7 +365,7 @@ message BatchSyncDatabasesResponse {}
 
 message SyncDatabaseRequest {
   // The name of the database to sync.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -328,7 +376,7 @@ message SyncDatabaseResponse {}
 
 message GetDatabaseMetadataRequest {
   // The name of the database to retrieve metadata.
-  // Format: instances/{instance}/databases/{database}/metadata
+  // Format: instances/{instance}/databases/{database}/metadata or projects/{project}/instances/{instance}/databases/{database}/metadata
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/DatabaseMetadata"}
@@ -359,7 +407,7 @@ message GetDatabaseMetadataRequest {
 
 message GetDatabaseSchemaRequest {
   // The name of the database to retrieve schema.
-  // Format: instances/{instance}/databases/{database}/schema
+  // Format: instances/{instance}/databases/{database}/schema or projects/{project}/instances/{instance}/databases/{database}/schema
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/DatabaseSchema"}
@@ -368,7 +416,7 @@ message GetDatabaseSchemaRequest {
 
 message GetDatabaseSDLSchemaRequest {
   // The name of the database to retrieve SDL schema.
-  // Format: instances/{instance}/databases/{database}/sdlSchema
+  // Format: instances/{instance}/databases/{database}/sdlSchema or projects/{project}/instances/{instance}/databases/{database}/sdlSchema
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -394,8 +442,8 @@ message GetDatabaseSDLSchemaRequest {
 message DiffSchemaRequest {
   // The name of the database or changelog.
   // Format:
-  // database: instances/{instance}/databases/{database}
-  // changelog: instances/{instance}/databases/{database}/changelogs/{changelog}
+  // database: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
+  // changelog: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -407,7 +455,7 @@ message DiffSchemaRequest {
 
     // The resource name of the changelog
     // Format:
-    // instances/{instance}/databases/{database}/changelogs/{changelog}
+    // instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}
     string changelog = 3;
   }
 }
@@ -418,7 +466,7 @@ message DiffSchemaResponse {
 
 message DiffMetadataRequest {
   // The database whose current schema is the diff source.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -441,10 +489,11 @@ message Database {
   option (google.api.resource) = {
     type: "bytebase.com/Database"
     pattern: "instances/{instance}/databases/{database}"
+    pattern: "projects/{project}/instances/{instance}/databases/{database}"
   };
 
   // The name of the database.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
   // {database} is the database name in the instance.
   string name = 1;
 
@@ -502,11 +551,12 @@ message DatabaseMetadata {
   option (google.api.resource) = {
     type: "bytebase.com/DatabaseMetadata"
     pattern: "instances/{instance}/databases/{database}/metadata"
+    pattern: "projects/{project}/instances/{instance}/databases/{database}/metadata"
   };
 
   // The database metadata name.
   //
-  // Format: instances/{instance}/databases/{database}/metadata
+  // Format: instances/{instance}/databases/{database}/metadata or projects/{project}/instances/{instance}/databases/{database}/metadata
   string name = 1;
 
   // The schemas is the list of schemas in a database.
@@ -1419,7 +1469,7 @@ message DatabaseSDLSchema {
 
 message GetSchemaStringRequest {
   // The name of the database.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}

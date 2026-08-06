@@ -48,7 +48,7 @@ func GetDatabaseGroupForPlan(ctx context.Context, stores *store.Store, plan *sto
 	result := &v1pb.DatabaseGroup{Name: target}
 	for _, db := range matchedDatabases {
 		result.MatchedDatabases = append(result.MatchedDatabases, &v1pb.DatabaseGroup_Database{
-			Name: common.FormatDatabase(db.InstanceID, db.DatabaseName),
+			Name: db.ResourceName(),
 		})
 	}
 	return result, nil

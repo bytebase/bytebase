@@ -440,6 +440,8 @@ CREATE TABLE instance (
     -- global unique
     resource_id text NOT NULL PRIMARY KEY,
     workspace text NOT NULL REFERENCES workspace(resource_id),
+    -- NULL for workspace instances; set for project instances.
+    project text REFERENCES project(resource_id),
     deleted boolean NOT NULL DEFAULT FALSE,
     environment text,
     -- Stored as Instance (proto/store/store/instance.proto)
@@ -447,6 +449,7 @@ CREATE TABLE instance (
 );
 
 CREATE INDEX idx_instance_workspace ON instance(workspace);
+CREATE INDEX idx_instance_project ON instance(project) WHERE project IS NOT NULL;
 CREATE INDEX idx_instance_metadata_engine ON instance((metadata->>'engine'));
 
 -- db stores the databases for a particular instance

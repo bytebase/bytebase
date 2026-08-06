@@ -4817,7 +4817,7 @@ var File_store_database_proto protoreflect.FileDescriptor
 
 const file_store_database_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa0\x03\n" +
+	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa6\x03\n" +
 	"\x10DatabaseMetadata\x12D\n" +
 	"\x06labels\x18\x01 \x03(\v2,.bytebase.store.DatabaseMetadata.LabelsEntryR\x06labels\x12@\n" +
 	"\x0elast_sync_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\flastSyncTime\x12)\n" +
@@ -4831,7 +4831,7 @@ const file_store_database_proto_rawDesc = "" +
 	" \x01(\tR\tsyncError\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x06\x10\aJ\x04\b\a\x10\b\"\x84\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x05\x10\x06J\x04\b\x06\x10\aJ\x04\b\a\x10\b\"\x84\x04\n" +
 	"\x16DatabaseSchemaMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
 	"\aschemas\x18\x02 \x03(\v2\x1e.bytebase.store.SchemaMetadataR\aschemas\x12#\n" +
@@ -4918,7 +4918,7 @@ const file_store_database_proto_rawDesc = "" +
 	"ownerTable\x12!\n" +
 	"\fowner_column\x18\v \x01(\tR\vownerColumn\x12\x18\n" +
 	"\acomment\x18\f \x01(\tR\acomment\x12\x1b\n" +
-	"\tskip_dump\x18\r \x01(\bR\bskipDump\"\x9e\x02\n" +
+	"\tskip_dump\x18\r \x01(\bR\bskipDump\"\xa4\x02\n" +
 	"\x0fTriggerMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05event\x18\x03 \x01(\tR\x05event\x12\x16\n" +
@@ -4929,7 +4929,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\x14collation_connection\x18\b \x01(\tR\x13collationConnection\x12\x18\n" +
 	"\acomment\x18\t \x01(\tR\acomment\x12\x1b\n" +
 	"\tskip_dump\x18\n" +
-	" \x01(\bR\bskipDump\"\xcc\x01\n" +
+	" \x01(\bR\bskipDumpJ\x04\b\x02\x10\x03\"\xcc\x01\n" +
 	"\fRuleMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05event\x18\x02 \x01(\tR\x05event\x12\x1c\n" +
@@ -4980,7 +4980,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\x10MODE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fMODE_DEFAULT\x10\x01\x12\x14\n" +
 	"\x10MODE_APPEND_ONLY\x10\x02\x12\x14\n" +
-	"\x10MODE_INSERT_ONLY\x10\x03\"\xf4\a\n" +
+	"\x10MODE_INSERT_ONLY\x10\x03\"\xfa\a\n" +
 	"\rTableMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
 	"\acolumns\x18\x02 \x03(\v2\x1e.bytebase.store.ColumnMetadataR\acolumns\x127\n" +
@@ -5008,7 +5008,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\x05rules\x18\x18 \x03(\v2\x1c.bytebase.store.RuleMetadataR\x05rules\x12#\n" +
 	"\rsharding_info\x18\x16 \x01(\tR\fshardingInfo\x12(\n" +
 	"\x10primary_key_type\x18\x17 \x01(\tR\x0eprimaryKeyType\x12Z\n" +
-	"\x13exclude_constraints\x18\x19 \x03(\v2).bytebase.store.ExcludeConstraintMetadataR\x12excludeConstraints\"M\n" +
+	"\x13exclude_constraints\x18\x19 \x03(\v2).bytebase.store.ExcludeConstraintMetadataR\x12excludeConstraintsJ\x04\b\r\x10\x0f\"M\n" +
 	"\x17CheckConstraintMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\n" +
@@ -5047,7 +5047,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
-	"LINEAR_KEY\x10\b\"\x9d\x06\n" +
+	"LINEAR_KEY\x10\b\"\xa9\x06\n" +
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x12\x18\n" +
@@ -5077,7 +5077,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\x06ALWAYS\x10\x01\x12\x0e\n" +
 	"\n" +
 	"BY_DEFAULT\x10\x02B\a\n" +
-	"\x05_srid\"\xb2\x01\n" +
+	"\x05_sridJ\x04\b\x04\x10\x06J\x04\b\v\x10\r\"\xb2\x01\n" +
 	"\x12GenerationMetadata\x12;\n" +
 	"\x04type\x18\x01 \x01(\x0e2'.bytebase.store.GenerationMetadata.TypeR\x04type\x12\x1e\n" +
 	"\n" +
@@ -5248,22 +5248,22 @@ const file_store_database_proto_rawDesc = "" +
 	"\ton_delete\x18\x06 \x01(\tR\bonDelete\x12\x1b\n" +
 	"\ton_update\x18\a \x01(\tR\bonUpdate\x12\x1d\n" +
 	"\n" +
-	"match_type\x18\b \x01(\tR\tmatchType\"@\n" +
+	"match_type\x18\b \x01(\tR\tmatchType\"L\n" +
 	"\x14InstanceRoleMetadata\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
-	"\x05grant\x18\a \x01(\tR\x05grant\"c\n" +
+	"\x05grant\x18\a \x01(\tR\x05grantJ\x04\b\x01\x10\x02J\x04\b\x03\x10\a\"c\n" +
 	"\x0eDatabaseConfig\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x127\n" +
 	"\aschemas\x18\x02 \x03(\v2\x1d.bytebase.store.SchemaCatalogR\aschemasJ\x04\b\x03\x10\x04\"Y\n" +
 	"\rSchemaCatalog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x124\n" +
-	"\x06tables\x18\x02 \x03(\v2\x1c.bytebase.store.TableCatalogR\x06tables\"\xdd\x01\n" +
+	"\x06tables\x18\x02 \x03(\v2\x1c.bytebase.store.TableCatalogR\x06tables\"\xe3\x01\n" +
 	"\fTableCatalog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x127\n" +
 	"\acolumns\x18\x02 \x03(\v2\x1d.bytebase.store.ColumnCatalogR\acolumns\x12F\n" +
 	"\robject_schema\x18\a \x01(\v2\x1c.bytebase.store.ObjectSchemaH\x00R\fobjectSchema\x88\x01\x01\x12&\n" +
 	"\x0eclassification\x18\x03 \x01(\tR\x0eclassificationB\x10\n" +
-	"\x0e_object_schema\"\xc8\x02\n" +
+	"\x0e_object_schemaJ\x04\b\x04\x10\a\"\xc8\x02\n" +
 	"\rColumnCatalog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12#\n" +
 	"\rsemantic_type\x18\x02 \x01(\tR\fsemanticType\x12A\n" +

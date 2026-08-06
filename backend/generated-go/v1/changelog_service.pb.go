@@ -129,7 +129,7 @@ func (Changelog_Status) EnumDescriptor() ([]byte, []int) {
 type ListChangelogsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent of the changelogs.
-	// Format: instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of changelogs to return. The service may return fewer
 	// than this value. If unspecified, at most 10 changelogs will be returned.
@@ -281,7 +281,7 @@ func (x *ListChangelogsResponse) GetNextPageToken() string {
 type GetChangelogRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the changelog to retrieve.
-	// Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+	// Format: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}
 	Name          string        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	View          ChangelogView `protobuf:"varint,2,opt,name=view,proto3,enum=bytebase.v1.ChangelogView" json:"view,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -334,7 +334,7 @@ func (x *GetChangelogRequest) GetView() ChangelogView {
 
 type Changelog struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+	// Format: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}
 	Name       string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	Status     Changelog_Status       `protobuf:"varint,3,opt,name=status,proto3,enum=bytebase.v1.Changelog_Status" json:"status,omitempty"`
@@ -449,7 +449,7 @@ const file_v1_changelog_service_proto_rawDesc = "" +
 	"\x13GetChangelogRequest\x12:\n" +
 	"\x04name\x18\x01 \x01(\tB&\xe0A\x02\xfaA \n" +
 	"\x1ebytebase.com/DatabaseChangelogR\x04name\x12.\n" +
-	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\xb7\x03\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\xa0\x04\n" +
 	"\tChangelog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
 	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -466,15 +466,15 @@ const file_v1_changelog_service_proto_rawDesc = "" +
 	"\aPENDING\x10\x01\x12\b\n" +
 	"\x04DONE\x10\x02\x12\n" +
 	"\n" +
-	"\x06FAILED\x10\x03:e\xeaAb\n" +
-	"\x1ebytebase.com/DatabaseChangelog\x12@instances/{instance}/databases/{database}/changelogs/{changelog}*b\n" +
+	"\x06FAILED\x10\x03:\xbb\x01\xeaA\xb7\x01\n" +
+	"\x1ebytebase.com/DatabaseChangelog\x12@instances/{instance}/databases/{database}/changelogs/{changelog}\x12Sprojects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}J\x04\b\x04\x10\aJ\x04\b\t\x10\vJ\x04\b\f\x10\x0f*b\n" +
 	"\rChangelogView\x12\x1e\n" +
 	"\x1aCHANGELOG_VIEW_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14CHANGELOG_VIEW_BASIC\x10\x01\x12\x17\n" +
-	"\x13CHANGELOG_VIEW_FULL\x10\x022\xee\x02\n" +
-	"\x10ChangelogService\x12\xb5\x01\n" +
-	"\x0eListChangelogs\x12\".bytebase.v1.ListChangelogsRequest\x1a#.bytebase.v1.ListChangelogsResponse\"Z\xdaA\x06parent\x8a\xea0\x12bb.changelogs.list\x90\xea0\x01\x82\xd3\xe4\x93\x021\x12//v1/{parent=instances/*/databases/*}/changelogs\x12\xa1\x01\n" +
-	"\fGetChangelog\x12 .bytebase.v1.GetChangelogRequest\x1a\x16.bytebase.v1.Changelog\"W\xdaA\x04name\x8a\xea0\x11bb.changelogs.get\x90\xea0\x01\x82\xd3\xe4\x93\x021\x12//v1/{name=instances/*/databases/*/changelogs/*}B\xab\x01\n" +
+	"\x13CHANGELOG_VIEW_FULL\x10\x022\xec\x03\n" +
+	"\x10ChangelogService\x12\xf4\x01\n" +
+	"\x0eListChangelogs\x12\".bytebase.v1.ListChangelogsRequest\x1a#.bytebase.v1.ListChangelogsResponse\"\x98\x01\xdaA\x06parent\x8a\xea0\x12bb.changelogs.list\x90\xea0\x01\x82\xd3\xe4\x93\x02oZ<\x12:/v1/{parent=projects/*/instances/*/databases/*}/changelogs\x12//v1/{parent=instances/*/databases/*}/changelogs\x12\xe0\x01\n" +
+	"\fGetChangelog\x12 .bytebase.v1.GetChangelogRequest\x1a\x16.bytebase.v1.Changelog\"\x95\x01\xdaA\x04name\x8a\xea0\x11bb.changelogs.get\x90\xea0\x01\x82\xd3\xe4\x93\x02oZ<\x12:/v1/{name=projects/*/instances/*/databases/*/changelogs/*}\x12//v1/{name=instances/*/databases/*/changelogs/*}B\xab\x01\n" +
 	"\x0fcom.bytebase.v1B\x15ChangelogServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

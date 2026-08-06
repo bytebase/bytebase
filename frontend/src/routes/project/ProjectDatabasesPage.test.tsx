@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   routerCurrentName: "workspace.project.database",
   routerCurrentQuery: {} as Record<string, unknown>,
   routerPush: vi.fn(),
+  batchUpdateDatabases: vi.fn(),
   useProductIntro: vi.fn(),
   captureMetric: vi.fn(),
   removeDatabaseMetadataCache: vi.fn(),
@@ -153,9 +154,24 @@ vi.mock("@/components/database", async () => {
       );
     },
     LabelEditorSheet: () => null,
-    TransferProjectSheet: ({ open }: { open: boolean }) =>
+    TransferProjectSheet: ({
+      open,
+      onTransfer,
+    }: {
+      open: boolean;
+      onTransfer: (projectName: string) => Promise<void>;
+    }) =>
       open
-        ? React.createElement("div", { "data-testid": "transfer-project-sheet" })
+        ? React.createElement(
+            "button",
+            {
+              "data-testid": "transfer-project-sheet",
+              onClick: () => {
+                void onTransfer("projects/target");
+              },
+            },
+            "transfer"
+          )
         : null,
   };
 });
@@ -201,7 +217,7 @@ vi.mock("@/stores/app", () => {
     fetchInstance: mocks.fetchInstance,
     fetchInstanceList: mocks.fetchInstanceList,
     batchSyncDatabases: vi.fn(),
-    batchUpdateDatabases: vi.fn(),
+    batchUpdateDatabases: mocks.batchUpdateDatabases,
     serverInfo: { defaultProject: "projects/default" },
   });
   return { useAppStore };
@@ -234,6 +250,7 @@ beforeEach(async () => {
   mocks.instancesByName = {};
   mocks.routerCurrentName = "workspace.project.database";
   mocks.routerCurrentQuery = {};
+  mocks.batchUpdateDatabases.mockResolvedValue(undefined);
   mocks.workspacePermissions = new Set([
     "bb.instances.create",
     "bb.instances.get",
@@ -615,6 +632,53 @@ describe("ProjectDatabasesPage", () => {
     expect(
       container.querySelector('[data-testid="transfer-project-sheet"]')
     ).not.toBeNull();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("redirects to target project databases page after batch transfer", async () => {
+    mocks.visibleDatabases = [{ name: "instances/prod/databases/app" }];
+    mocks.databasesByName = {
+      "instances/prod/databases/app": { name: "instances/prod/databases/app" },
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="default" />);
+      await Promise.resolve();
+    });
+
+    const selectAllButton = container.querySelector(
+      '[data-testid="batch-select-all"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      selectAllButton.click();
+    });
+
+    const transferButton = container.querySelector(
+      '[data-testid="batch-transfer-project"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      transferButton.click();
+    });
+
+    const transferSheet = container.querySelector(
+      '[data-testid="transfer-project-sheet"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      transferSheet.click();
+      await Promise.resolve();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.project.database",
+      params: {
+        projectId: "target",
+      },
+    });
 
     act(() => {
       root.unmount();

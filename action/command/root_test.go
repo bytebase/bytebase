@@ -204,7 +204,3 @@ func (s *actuatorInfoTestService) GetActuatorInfo(context.Context, *connect.Requ
 func (*actuatorInfoTestService) SetupSample(context.Context, *connect.Request[v1pb.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error) {
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
-
-func (*actuatorInfoTestService) DeleteCache(context.Context, *connect.Request[v1pb.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error) {
-	return connect.NewResponse(&emptypb.Empty{}), nil
-}

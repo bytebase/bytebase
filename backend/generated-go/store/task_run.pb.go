@@ -388,17 +388,17 @@ const file_store_task_run_proto_rawDesc = "" +
 	"\bCANCELED\x10\x05\x12\x0f\n" +
 	"\vNOT_STARTED\x10\x06\x12\v\n" +
 	"\aSKIPPED\x10\a\x12\r\n" +
-	"\tAVAILABLE\x10\b\"W\n" +
+	"\tAVAILABLE\x10\b\"]\n" +
 	"\rTaskRunResult\x12\x16\n" +
 	"\x06detail\x18\x01 \x01(\tR\x06detail\x12(\n" +
-	"\x10has_prior_backup\x18\x06 \x01(\bR\x0ehasPriorBackupJ\x04\b\x05\x10\x06\"\xea\x01\n" +
+	"\x10has_prior_backup\x18\x06 \x01(\bR\x0ehasPriorBackupJ\x04\b\x02\x10\x05J\x04\b\x05\x10\x06\"\xf0\x01\n" +
 	"\rSchedulerInfo\x12;\n" +
 	"\vreport_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"reportTime\x12O\n" +
-	"\rwaiting_cause\x18\x02 \x01(\v2*.bytebase.store.SchedulerInfo.WaitingCauseR\fwaitingCause\x1aK\n" +
+	"\rwaiting_cause\x18\x02 \x01(\v2*.bytebase.store.SchedulerInfo.WaitingCauseR\fwaitingCause\x1aQ\n" +
 	"\fWaitingCause\x122\n" +
 	"\x14parallel_tasks_limit\x18\x03 \x01(\bH\x00R\x12parallelTasksLimitB\a\n" +
-	"\x05cause\"\x82\x01\n" +
+	"\x05causeJ\x04\b\x01\x10\x03\"\x82\x01\n" +
 	"\x0eTaskRunPayload\x12D\n" +
 	"\x0escheduler_info\x18\x01 \x01(\v2\x1d.bytebase.store.SchedulerInfoR\rschedulerInfo\x12*\n" +
 	"\x11skip_prior_backup\x18\x02 \x01(\bR\x0fskipPriorBackupB\x8f\x01\n" +

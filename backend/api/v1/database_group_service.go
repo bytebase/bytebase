@@ -316,7 +316,7 @@ func convertStoreToV1DatabaseGroup(
 	}
 	for _, database := range matches {
 		ret.MatchedDatabases = append(ret.MatchedDatabases, &v1pb.DatabaseGroup_Database{
-			Name: common.FormatDatabase(database.InstanceID, database.DatabaseName),
+			Name: database.ResourceName(),
 		})
 	}
 	return ret, nil

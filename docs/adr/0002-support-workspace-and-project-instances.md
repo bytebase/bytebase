@@ -189,17 +189,20 @@ writers so that no writer can commit after the owning project is removed.
 
 Directly archiving a project instance leaves its databases assigned to the
 owning project, but they are unavailable to data and workflow operations until
-the instance is restored. Instance restore and purge operations remain
-available. Archival does not stop or delete the physical databases and does not
-fence already-started descendant writers; their committed results remain
-unavailable until restoration. Purging serializes against those writers, then
-deletes the databases, their metadata and history, and instance-targeting tasks
-and task runs. Project-level issues, plans, and releases remain, retaining
-canonical target names that may later identify a replacement resource if the
-purged instance ID is reused; audit logs also remain under the workspace
-retention policy. This matches the workspace-instance purge boundary, except
-that the workspace-instance `force` behavior that transfers databases to the
-default project does not apply. `DeleteInstance` rejects `force=true` with
+the instance is restored. Archive and restore return `FAILED_PRECONDITION` while
+any targeting task run is `PENDING`, `AVAILABLE`, or `RUNNING`; operators must
+cancel that work or wait for it to finish before retrying the lifecycle request.
+Applying the same guard to restoration prevents legacy queued work from
+silently resuming. Archival does not stop or delete the physical databases.
+Purging serializes against descendant writers, then deletes the databases,
+their metadata and history, and instance-targeting tasks and task runs.
+Project-level issues, plans, and releases remain, retaining canonical target
+names that may later identify a replacement resource if the purged instance ID
+is reused; audit logs also remain under the workspace retention policy. This
+matches the workspace-instance purge boundary, except that the
+workspace-instance `force` behavior that transfers databases to the default
+project does not apply. For workspace instances, that transfer and archival
+commit atomically after the active-task-run check. `DeleteInstance` rejects `force=true` with
 `INVALID_ARGUMENT` for a project instance; ordinary archival needs no force
 because its databases remain owned by the project.
 

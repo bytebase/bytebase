@@ -51,17 +51,9 @@ func (e *StatementAdviseExecutor) RunForTarget(ctx context.Context, target *Chec
 	enablePriorBackup := target.EnablePriorBackup
 	enableGhost := target.EnableGhost
 
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(target.Target)
+	instance, database, err := resolveDatabaseTarget(ctx, e.store, target.Target)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse target %s", target.Target)
-	}
-
-	instance, err := e.store.GetInstanceByResourceID(ctx, instanceID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance %s not found", instanceID)
+		return nil, err
 	}
 	if !common.EngineSupportStatementAdvise(instance.Metadata.GetEngine()) {
 		return []*storepb.PlanCheckRunResult_Result{
@@ -72,14 +64,6 @@ func (e *StatementAdviseExecutor) RunForTarget(ctx context.Context, target *Chec
 				Content: "",
 			},
 		}, nil
-	}
-
-	database, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found %q", databaseName)
 	}
 
 	results, err := e.runReview(ctx, instance, database, fullSheet.Statement, enablePriorBackup, enableGhost)

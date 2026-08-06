@@ -384,7 +384,7 @@ var File_store_issue_comment_proto protoreflect.FileDescriptor
 
 const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\"\xdf\b\n" +
+	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\"\xe5\b\n" +
 	"\x13IssueCommentPayload\x12\x18\n" +
 	"\acomment\x18\x01 \x01(\tR\acomment\x12J\n" +
 	"\bapproval\x18\x02 \x01(\v2,.bytebase.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12T\n" +
@@ -419,7 +419,7 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
 	"from_specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\tfromSpecs\x12:\n" +
 	"\bto_specs\x18\x02 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\atoSpecsB\a\n" +
-	"\x05eventB\x94\x01\n" +
+	"\x05eventJ\x04\b\x04\x10\aB\x94\x01\n" +
 	"\x12com.bytebase.storeB\x11IssueCommentProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

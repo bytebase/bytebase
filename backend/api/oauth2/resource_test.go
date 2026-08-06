@@ -6,8 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/bytebase/bytebase/backend/component/config"
 )
 
 const testTrustedBase = "https://bb.example.com"
@@ -28,6 +26,7 @@ func TestValidateResource(t *testing.T) {
 		{"canonical MCP resource URI", "https://bb.example.com/mcp", "https://bb.example.com/mcp"},
 		{"trailing slash is stripped", "https://bb.example.com/mcp/", "https://bb.example.com/mcp"},
 		{"scheme and host case are normalized", "HTTPS://BB.Example.COM/mcp", "https://bb.example.com/mcp"},
+		{"default port is stripped", "https://bb.example.com:443/mcp", "https://bb.example.com/mcp"},
 		// Our own RFC 9728 document at the unsuffixed well-known path publishes
 		// the bare origin as `resource`, so a client that read it must not be
 		// rejected for using the value we advertised — but it is stored as the
@@ -51,10 +50,6 @@ func TestValidateResource(t *testing.T) {
 		{"different scheme", "http://bb.example.com/mcp"},
 		{"different path", "https://bb.example.com/v1/sql"},
 		{"path case differs (paths are case-sensitive)", "https://bb.example.com/MCP"},
-		// Not normalized on purpose: adding :443 to a URI we never published is
-		// a noncanonical value, and quietly treating it as equal would widen
-		// what counts as "this server".
-		{"explicit default port", "https://bb.example.com:443/mcp"},
 		{"nondefault port", "https://bb.example.com:8443/mcp"},
 		{"percent-encoded path separator", "https://bb.example.com%2Fmcp"},
 		{"query string", "https://bb.example.com/mcp?x=1"},
@@ -72,24 +67,13 @@ func TestValidateResource(t *testing.T) {
 		})
 	}
 
-	t.Run("a trailing slash on the configured URL does not change what is accepted", func(t *testing.T) {
-		got, err := validateResource("https://bb.example.com/mcp", "https://bb.example.com/")
-		require.NoError(t, err)
-		require.Equal(t, "https://bb.example.com/mcp", got)
-	})
-
-	t.Run("a mixed-case configured URL still matches a canonical resource", func(t *testing.T) {
-		got, err := validateResource("https://bb.example.com/mcp", "https://BB.Example.com")
-		require.NoError(t, err)
-		require.Equal(t, "https://bb.example.com/mcp", got)
-	})
-
 	t.Run("every accepted spelling collapses to one stored value", func(t *testing.T) {
 		stored := map[string]struct{}{}
 		for _, in := range []string{
 			"https://bb.example.com/mcp",
 			"https://bb.example.com/mcp/",
 			"HTTPS://BB.Example.COM/mcp",
+			"https://bb.example.com:443/mcp",
 			"https://bb.example.com",
 			"https://bb.example.com/",
 		} {
@@ -188,7 +172,7 @@ func TestCheckConsentedResource(t *testing.T) {
 		{"bare origin with trailing slash matches", url.Values{"resource": {"https://bb.example.com/"}}, consented, ""},
 		{"bare origin of a different host still fails", url.Values{"resource": {"https://evil.example.com"}}, consented, "invalid_target"},
 		{"different resource", url.Values{"resource": {"https://evil.example.com/mcp"}}, consented, "invalid_target"},
-		{"noncanonical value that is not equivalent", url.Values{"resource": {"https://bb.example.com:443/mcp"}}, consented, "invalid_target"},
+		{"default port is equivalent", url.Values{"resource": {"https://bb.example.com:443/mcp"}}, consented, ""},
 		{"malformed value", url.Values{"resource": {"not a uri"}}, consented, "invalid_target"},
 		{"repeated value", url.Values{"resource": {consented, consented}}, consented, "invalid_target"},
 		// A grant with no stored resource predates the column (or the client never
@@ -255,17 +239,4 @@ func TestCheckConsentedScope(t *testing.T) {
 			require.Equal(t, tc.wantCode, failure.code)
 		})
 	}
-}
-
-// TestTrustedExternalURLUsesTheFlagOnly is the negative control for the whole
-// PR: getBaseURL falls back to the request Host, and that fallback must never
-// reach resource validation, because a client controls it and could then name
-// the audience of its own token. trustedExternalURL takes no request at all —
-// there is nothing to fall back to.
-func TestTrustedExternalURLUsesTheFlagOnly(t *testing.T) {
-	s := &Service{profile: &config.Profile{ExternalURL: "https://bb.example.com/"}}
-	got, err := s.trustedExternalURL(t.Context())
-	require.NoError(t, err)
-	require.Equal(t, "https://bb.example.com", got,
-		"the flag is the trusted tier and its trailing slash is normalized away")
 }

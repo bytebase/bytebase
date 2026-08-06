@@ -1574,7 +1574,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x03\xe0A\x02R\x04plan\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x95\x0e\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xa7\x0e\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
@@ -1601,7 +1601,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x06config\x1aJ\n" +
 	"\x1cPlanCheckRunStatusCountEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\x1a\x9d\x02\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\x1a\xa3\x02\n" +
 	"\x14CreateDatabaseConfig\x12\x1b\n" +
 	"\x06target\x18\x01 \x01(\tB\x03\xe0A\x02R\x06target\x12\x1f\n" +
 	"\bdatabase\x18\x02 \x01(\tB\x03\xe0A\x02R\bdatabase\x12\x19\n" +
@@ -1610,20 +1610,20 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x03\xe0A\x01R\tcollation\x12\x1d\n" +
 	"\acluster\x18\x06 \x01(\tB\x03\xe0A\x01R\acluster\x12\x19\n" +
 	"\x05owner\x18\a \x01(\tB\x03\xe0A\x01R\x05owner\x12%\n" +
-	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\xab\x01\n" +
+	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironmentJ\x04\b\b\x10\t\x1a\xb1\x01\n" +
 	"\x14ChangeDatabaseConfig\x12\x18\n" +
 	"\atargets\x18\x01 \x03(\tR\atargets\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x123\n" +
 	"\arelease\x18\x03 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\arelease\x12.\n" +
-	"\x13enable_prior_backup\x18\x06 \x01(\bR\x11enablePriorBackup\x1a|\n" +
+	"\x13enable_prior_backup\x18\x06 \x01(\bR\x11enablePriorBackupJ\x04\b\x04\x10\x06\x1a|\n" +
 	"\x13RolloutStageSummary\x12\x14\n" +
 	"\x05stage\x18\x01 \x01(\tR\x05stage\x12O\n" +
 	"\x12task_status_counts\x18\x02 \x03(\v2!.bytebase.v1.Plan.TaskStatusCountR\x10taskStatusCounts\x1aY\n" +
 	"\x0fTaskStatusCount\x120\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x18.bytebase.v1.Task.StatusR\x06status\x12\x14\n" +
 	"\x05count\x18\x02 \x01(\x05R\x05count:7\xeaA4\n" +
-	"\x11bytebase.com/Plan\x12\x1fprojects/{project}/plans/{plan}\"O\n" +
+	"\x11bytebase.com/Plan\x12\x1fprojects/{project}/plans/{plan}J\x04\b\x04\x10\x05\"O\n" +
 	"\x16GetPlanCheckRunRequest\x125\n" +
 	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x1b\n" +
 	"\x19bytebase.com/PlanCheckRunR\x04name\"o\n" +
@@ -1637,14 +1637,14 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x19CancelPlanCheckRunRequest\x125\n" +
 	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x1b\n" +
 	"\x19bytebase.com/PlanCheckRunR\x04name\"\x1c\n" +
-	"\x1aCancelPlanCheckRunResponse\"\x9f\t\n" +
+	"\x1aCancelPlanCheckRunResponse\"\xb8\t\n" +
 	"\fPlanCheckRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
 	"\x06status\x18\x03 \x01(\x0e2 .bytebase.v1.PlanCheckRun.StatusR\x06status\x12:\n" +
 	"\aresults\x18\x06 \x03(\v2 .bytebase.v1.PlanCheckRun.ResultR\aresults\x12\x14\n" +
 	"\x05error\x18\a \x01(\tR\x05error\x12@\n" +
 	"\vcreate_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x1a\x8b\x06\n" +
+	"createTime\x1a\x98\x06\n" +
 	"\x06Result\x121\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x19.bytebase.v1.Advice.LevelR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
@@ -1653,13 +1653,13 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x06target\x18\a \x01(\tR\x06target\x129\n" +
 	"\x04type\x18\b \x01(\x0e2%.bytebase.v1.PlanCheckRun.Result.TypeR\x04type\x12a\n" +
 	"\x12sql_summary_report\x18\x05 \x01(\v21.bytebase.v1.PlanCheckRun.Result.SqlSummaryReportH\x00R\x10sqlSummaryReport\x12^\n" +
-	"\x11sql_review_report\x18\x06 \x01(\v20.bytebase.v1.PlanCheckRun.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a|\n" +
+	"\x11sql_review_report\x18\x06 \x01(\v20.bytebase.v1.PlanCheckRun.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\x82\x01\n" +
 	"\x10SqlSummaryReport\x12C\n" +
 	"\x0fstatement_types\x18\x02 \x03(\x0e2\x1a.bytebase.v1.StatementTypeR\x0estatementTypes\x12#\n" +
-	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x1a\x89\x01\n" +
+	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRowsJ\x04\b\x01\x10\x02\x1a\x8f\x01\n" +
 	"\x0fSqlReviewReport\x12<\n" +
 	"\x0estart_position\x18\x05 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x128\n" +
-	"\fend_position\x18\x06 \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\"`\n" +
+	"\fend_position\x18\x06 \x01(\v2\x15.bytebase.v1.PositionR\vendPositionJ\x04\b\x01\x10\x05\"`\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10STATEMENT_ADVISE\x10\x01\x12\x1c\n" +
@@ -1674,7 +1674,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06FAILED\x10\x03\x12\f\n" +
 	"\bCANCELED\x10\x04:L\xeaAI\n" +
-	"\x19bytebase.com/PlanCheckRun\x12,projects/{project}/plans/{plan}/planCheckRun2\xfe\b\n" +
+	"\x19bytebase.com/PlanCheckRun\x12,projects/{project}/plans/{plan}/planCheckRunJ\x04\b\x02\x10\x03J\x04\b\x04\x10\x062\xfe\b\n" +
 	"\vPlanService\x12{\n" +
 	"\aGetPlan\x12\x1b.bytebase.v1.GetPlanRequest\x1a\x11.bytebase.v1.Plan\"@\xdaA\x04name\x8a\xea0\fbb.plans.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v1/{name=projects/*/plans/*}\x12\x8f\x01\n" +
 	"\tListPlans\x12\x1d.bytebase.v1.ListPlansRequest\x1a\x1e.bytebase.v1.ListPlansResponse\"C\xdaA\x06parent\x8a\xea0\rbb.plans.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v1/{parent=projects/*}/plans\x12\x95\x01\n" +

@@ -50,20 +50,6 @@ export declare type GetActuatorInfoRequest = Message<"bytebase.v1.GetActuatorInf
 export declare const GetActuatorInfoRequestSchema: GenMessage<GetActuatorInfoRequest>;
 
 /**
- * Request message for deleting cache.
- *
- * @generated from message bytebase.v1.DeleteCacheRequest
- */
-export declare type DeleteCacheRequest = Message<"bytebase.v1.DeleteCacheRequest"> & {
-};
-
-/**
- * Describes the message bytebase.v1.DeleteCacheRequest.
- * Use `create(DeleteCacheRequestSchema)` to create a new message.
- */
-export declare const DeleteCacheRequestSchema: GenMessage<DeleteCacheRequest>;
-
-/**
  * @generated from message bytebase.v1.Restriction
  */
 export declare type Restriction = Message<"bytebase.v1.Restriction"> & {
@@ -299,17 +285,6 @@ export declare const ActuatorService: GenService<{
   setupSample: {
     methodKind: "unary";
     input: typeof SetupSampleRequestSchema;
-    output: typeof EmptySchema;
-  },
-  /**
-   * Clears the system cache to force data refresh.
-   * Permissions required: None
-   *
-   * @generated from rpc bytebase.v1.ActuatorService.DeleteCache
-   */
-  deleteCache: {
-    methodKind: "unary";
-    input: typeof DeleteCacheRequestSchema;
     output: typeof EmptySchema;
   },
 }>;

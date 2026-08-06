@@ -17,7 +17,7 @@ export declare const file_v1_revision_service: GenFile;
 export declare type ListRevisionsRequest = Message<"bytebase.v1.ListRevisionsRequest"> & {
   /**
    * The parent of the revisions.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string parent = 1;
    */
@@ -88,7 +88,7 @@ export declare const ListRevisionsResponseSchema: GenMessage<ListRevisionsRespon
  */
 export declare type CreateRevisionRequest = Message<"bytebase.v1.CreateRevisionRequest"> & {
   /**
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string parent = 1;
    */
@@ -114,7 +114,7 @@ export declare const CreateRevisionRequestSchema: GenMessage<CreateRevisionReque
 export declare type BatchCreateRevisionsRequest = Message<"bytebase.v1.BatchCreateRevisionsRequest"> & {
   /**
    * The parent resource shared by all revisions being created.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string parent = 1;
    */
@@ -159,7 +159,7 @@ export declare const BatchCreateRevisionsResponseSchema: GenMessage<BatchCreateR
 export declare type GetRevisionRequest = Message<"bytebase.v1.GetRevisionRequest"> & {
   /**
    * The name of the revision.
-   * Format: instances/{instance}/databases/{database}/revisions/{revision}
+   * Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}
    *
    * @generated from field: string name = 1;
    */
@@ -178,7 +178,7 @@ export declare const GetRevisionRequestSchema: GenMessage<GetRevisionRequest>;
 export declare type DeleteRevisionRequest = Message<"bytebase.v1.DeleteRevisionRequest"> & {
   /**
    * The name of the revision to delete.
-   * Format: instances/{instance}/databases/{database}/revisions/{revision}
+   * Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}
    *
    * @generated from field: string name = 1;
    */
@@ -196,7 +196,7 @@ export declare const DeleteRevisionRequestSchema: GenMessage<DeleteRevisionReque
  */
 export declare type Revision = Message<"bytebase.v1.Revision"> & {
   /**
-   * Format: instances/{instance}/databases/{database}/revisions/{revision}
+   * Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}
    *
    * @generated from field: string name = 1;
    */

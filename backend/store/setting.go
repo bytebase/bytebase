@@ -122,6 +122,23 @@ func (s *Store) GetSystemSetting(ctx context.Context, workspaceID string) (*stor
 	return val, nil
 }
 
+// GetSystemSettingUncached gets the SYSTEM setting directly from the database,
+// bypassing the setting cache. Returns (nil, nil) if no SYSTEM setting exists.
+func (s *Store) GetSystemSettingUncached(ctx context.Context, workspaceID string) (*storepb.SystemSetting, error) {
+	setting, err := s.GetSettingUncached(ctx, workspaceID, storepb.SettingName_SYSTEM)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get setting %v", storepb.SettingName_SYSTEM)
+	}
+	if setting == nil {
+		return nil, nil
+	}
+	val, ok := setting.Value.(*storepb.SystemSetting)
+	if !ok {
+		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_SYSTEM)
+	}
+	return val, nil
+}
+
 // UpdateLicense updates the license in SYSTEM setting.
 func (s *Store) UpdateLicense(ctx context.Context, workspaceID string, license string) error {
 	setting, err := s.GetSetting(ctx, workspaceID, storepb.SettingName_SYSTEM)

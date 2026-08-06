@@ -22,7 +22,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	stripeplugin "github.com/bytebase/bytebase/backend/plugin/stripe"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func configureEchoRouters(
@@ -32,6 +34,8 @@ func configureEchoRouters(
 	oauth2Service *oauth2.Service,
 	mcpServer *mcp.Server,
 	stripeWebhookHandler *stripeapi.WebhookHandler,
+	stores *store.Store,
+	licenseService *enterprise.LicenseService,
 	profile *config.Profile,
 ) {
 	e.Use(recoverMiddleware)
@@ -63,7 +67,7 @@ func configureEchoRouters(
 
 	registerPprof(e, &profile.RuntimeDebug)
 
-	registerMetricsRoute(e, profile)
+	registerMetricsRoute(e, profile, stores, licenseService)
 
 	e.GET("/healthz", func(c *echo.Context) error {
 		return c.String(http.StatusOK, "OK")
@@ -93,7 +97,7 @@ func configureEchoRouters(
 	embedFrontend(e)
 }
 
-func registerMetricsRoute(e *echo.Echo, profile *config.Profile) {
+func registerMetricsRoute(e *echo.Echo, profile *config.Profile, stores *store.Store, licenseService *enterprise.LicenseService) {
 	if profile.SaaS {
 		return
 	}
@@ -121,11 +125,16 @@ func registerMetricsRoute(e *echo.Echo, profile *config.Profile) {
 	// Use promhttp directly: pass the local registry as the Registerer
 	// for self-instrumentation; pass the Gatherers fold as the gather
 	// source. Both observability surfaces preserved.
+	// Product-level license gauges are registered on the local registry only;
+	// they are computed synchronously on every scrape from fresh shared
+	// metadata. A collection failure fails the whole scrape (HTTP 500 via
+	// HTTPErrorOnError) instead of emitting zero, stale, or missing gauges.
+	registry.MustRegister(newLicenseSeatsCollector(stores, licenseService))
 	e.GET("/metrics", echo.WrapHandler(promhttp.InstrumentMetricHandler(
 		registry,
 		promhttp.HandlerFor(
 			prometheus.Gatherers{registry, prometheus.DefaultGatherer},
-			promhttp.HandlerOpts{},
+			promhttp.HandlerOpts{ErrorHandling: promhttp.HTTPErrorOnError},
 		),
 	)))
 }

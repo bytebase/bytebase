@@ -496,6 +496,10 @@
     "cluster": "集まる",
     "database-owner-name": "データベース所有者",
     "issue-title": "課題タイトル",
+    "labels-misconfigured": {
+      "description": "このプロジェクトはイシューラベルを必須にしていますが、ラベルが設定されていません。データベースを作成する前に、プロジェクトのオーナーに連絡してラベルを追加してください。",
+      "title": "イシューラベルが必須ですが設定されていません"
+    },
     "new-collection-name": "新しいコレクション名",
     "new-database-name": "新しいデータベース名",
     "reserved-db-error": "{{databaseName}} は予約された名前です"
@@ -673,6 +677,10 @@
     "column": "列",
     "columns": "カラム",
     "comment": "コメント",
+    "container": {
+      "select": "コンテナーを選択",
+      "unspecified": "未指定"
+    },
     "create-database": "データベースを作成",
     "data-size": "データサイズ",
     "edit-environment": "環境の編集",
@@ -769,10 +777,6 @@
     "sync-schema-button": "スキーマを同期",
     "sync-status": "同期ステータス",
     "sync-status-failed": "同期に失敗しました",
-    "table": {
-      "select": "テーブルを選択",
-      "select-tip": "開始するにはテーブルを選択してください。"
-    },
     "transfer-project": "プロジェクトの転送",
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
@@ -909,6 +913,7 @@
     }
   },
   "identity-provider": {
+    "attributes-description": "一致したディレクトリエントリから返された属性は以下のとおりです。ユーザー情報のフィールドマッピングには、これらの属性名をそのまま使用してください。",
     "claims-description": "IDプロバイダーから以下のクレームが返されました。この情報は、フィールドマッピングの設定に役立ちます。",
     "delete-warning": "このアイデンティティプロバイダを削除してもよろしいですか？このSSO経由でサインアップしたユーザーは、今後このSSOでサインインできなくなります。ワークスペースの設定でパスワードによるサインインが無効になっている場合、これらのユーザーは完全にロックアウトされる可能性があります。",
     "identity-provider-create-failed": "IDプロバイダの作成に失敗しました",
@@ -917,7 +922,13 @@
     "identity-provider-deleted": "ID プロバイダが正常に削除されました",
     "identity-provider-permission-denied": "許可が拒否されました",
     "identity-provider-update-failed": "IDプロバイダの更新に失敗しました",
+    "ldap-connectivity-verified": "LDAP サーバーへの接続とサービスアカウントによるバインドに成功しました。Base DN、ユーザーフィルター、フィールドマッピングは未検証です。ディレクトリユーザーの認証情報でサインインテストを実行して確認してください。",
+    "ldap-test-connectivity-only": "接続のみテスト",
+    "ldap-test-description": "ディレクトリユーザーの認証情報を入力すると、Base DN、ユーザーフィルター、フィールドマッピングを含むサインインフロー全体を検証できます。接続のみのテストでは、サーバーへの接続とサービスアカウントのバインドだけを検証します。",
+    "ldap-test-sign-in": "サインインをテスト",
+    "ldap-test-title": "LDAP サインインのテスト",
     "no-claims": "アイデンティティ プロバイダーから返されるクレームはありません。",
+    "no-user-info-mapped": "ユーザー情報がマッピングされませんでした。フィールドマッピングが以下の値と一致しているか確認してください。",
     "self": "IDプロバイダ",
     "test-connection": "テスト接続",
     "test-connection-success": "テスト接続に成功しました",
@@ -1155,6 +1166,7 @@
     },
     "instance-id": "インスタンスID",
     "instance-name": "@:common.instance@:instance.name",
+    "keytab-write-only": "キータブは書き込み専用です。新しいファイルをアップロードすると既存のものを置き換えます。",
     "new-instance": "新しいインスタンス",
     "no-environment": "このインスタンスは環境にバインドされていません",
     "no-extra-params-configured": "追加の接続パラメーターは構成されていません",
@@ -2529,11 +2541,15 @@
         "description": "Entra ID (旧 Azure AD) または Okta のユーザーとグループを Bytebase インスタンスに同期します。",
         "endpoint": "エンドポイント",
         "endpoint-tip": "ユーザーとグループはこのエンドポイントを介して Bytebase に同期されます。",
-        "reset-token": "トークンをリセット",
-        "reset-token-warning": "Entra アプリケーションのプロビジョニング設定を更新する必要があります。",
+        "generate-token": "トークンを生成",
+        "regenerate-token": "トークンを再生成",
+        "regenerate-token-warning": "現在のトークンは直ちに無効になり、アプリケーションのプロビジョニング設定を更新する必要があります。続行しますか？",
         "secret-token": "シークレットトークン",
         "secret-token-tip": "エンドポイントの検証トークンです。秘密にしてください。",
-        "self": "SCIM から同期"
+        "self": "SCIM から同期",
+        "token-configured": "トークンは設定済みです。再表示はできないため、紛失した場合は再生成してください。",
+        "token-not-configured": "トークンはまだ生成されていません。",
+        "token-shown-once": "このトークンを今すぐコピーしてください。二度と表示されません。"
       },
       "grant-access": "アクセスを許可する",
       "groups": {

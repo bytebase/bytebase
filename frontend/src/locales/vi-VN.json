@@ -496,6 +496,10 @@
     "cluster": "Cụm",
     "database-owner-name": "Tên chủ sở hữu cơ sở dữ liệu",
     "issue-title": "Tiêu đề vấn đề",
+    "labels-misconfigured": {
+      "description": "Dự án này yêu cầu nhãn vấn đề, nhưng chưa có nhãn nào được cấu hình. Vui lòng liên hệ chủ sở hữu dự án để thêm nhãn trước khi tạo cơ sở dữ liệu.",
+      "title": "Dự án yêu cầu nhãn vấn đề nhưng chưa cấu hình"
+    },
     "new-collection-name": "Tên bộ sưu tập mới",
     "new-database-name": "Tên cơ sở dữ liệu mới",
     "reserved-db-error": "{{databaseName}} là một tên dành riêng"
@@ -673,6 +677,10 @@
     "column": "Cột",
     "columns": "Cột",
     "comment": "Bình luận",
+    "container": {
+      "select": "Chọn container",
+      "unspecified": "Không xác định"
+    },
     "create-database": "Tạo cơ sở dữ liệu",
     "data-size": "Kích thước dữ liệu",
     "edit-environment": "Chỉnh sửa Môi trường",
@@ -769,10 +777,6 @@
     "sync-schema-button": "Đồng bộ lược đồ",
     "sync-status": "Trạng thái đồng bộ",
     "sync-status-failed": "Đồng bộ thất bại",
-    "table": {
-      "select": "Chọn bảng",
-      "select-tip": "Vui lòng chọn một bảng để bắt đầu."
-    },
     "transfer-project": "Chuyển dự án",
     "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
@@ -909,6 +913,7 @@
     }
   },
   "identity-provider": {
+    "attributes-description": "Các thuộc tính sau được trả về từ mục thư mục khớp. Hãy dùng chính xác các tên thuộc tính này trong ánh xạ trường thông tin người dùng.",
     "claims-description": "Các yêu cầu sau đây đã được nhà cung cấp danh tính trả về. Thông tin này có thể giúp bạn cấu hình ánh xạ trường.",
     "delete-warning": "Bạn có chắc chắn muốn xóa nhà cung cấp danh tính này không? Người dùng đã đăng ký qua SSO này sẽ không thể đăng nhập bằng SSO này nữa. Nếu đăng nhập bằng mật khẩu bị vô hiệu hóa trong cài đặt không gian làm việc của bạn, những người dùng này có thể bị khóa hoàn toàn.",
     "identity-provider-create-failed": "Không tạo được nhà cung cấp danh tính",
@@ -917,7 +922,13 @@
     "identity-provider-deleted": "Nhà cung cấp danh tính đã xóa thành công",
     "identity-provider-permission-denied": "Quyền bị từ chối",
     "identity-provider-update-failed": "Không cập nhật được nhà cung cấp danh tính",
+    "ldap-connectivity-verified": "Đã kết nối máy chủ LDAP và liên kết bằng tài khoản dịch vụ thành công. Base DN, bộ lọc người dùng và ánh xạ trường chưa được kiểm tra — hãy chạy kiểm tra đăng nhập bằng thông tin đăng nhập của một người dùng thư mục để xác minh.",
+    "ldap-test-connectivity-only": "Chỉ kiểm tra kết nối",
+    "ldap-test-description": "Nhập thông tin đăng nhập của một người dùng thư mục để kiểm tra toàn bộ luồng đăng nhập: Base DN, bộ lọc người dùng và ánh xạ trường. Hoặc chỉ kiểm tra kết nối, tức là chỉ xác minh kết nối máy chủ và liên kết tài khoản dịch vụ.",
+    "ldap-test-sign-in": "Kiểm tra đăng nhập",
+    "ldap-test-title": "Kiểm tra đăng nhập LDAP",
     "no-claims": "Nhà cung cấp danh tính không trả lại bất kỳ khiếu nại nào.",
+    "no-user-info-mapped": "Không có thông tin người dùng nào được ánh xạ. Hãy kiểm tra ánh xạ trường so với các giá trị bên dưới.",
     "self": "Nhà cung cấp danh tính",
     "test-connection": "Kiểm tra kết nối",
     "test-connection-success": "Kiểm tra kết nối thành công",
@@ -1155,6 +1166,7 @@
     },
     "instance-id": "ID phiên bản",
     "instance-name": "Tên phiên bản",
+    "keytab-write-only": "Keytab chỉ ghi. Tải lên tệp mới để thay thế keytab hiện có.",
     "new-instance": "Phiên bản mới",
     "no-environment": "Trường hợp này không bị ràng buộc với môi trường",
     "no-extra-params-configured": "Không có thông số kết nối bổ sung được cấu hình",
@@ -2529,11 +2541,15 @@
         "description": "Đồng bộ người dùng và nhóm từ Entra ID (trước đây là Azure AD) hoặc Okta sang phiên bản Bytebase của bạn.",
         "endpoint": "Điểm cuối",
         "endpoint-tip": "Người dùng và nhóm sẽ được đồng bộ đến Bytebase qua điểm cuối này.",
-        "reset-token": "Đặt lại mã thông báo",
-        "reset-token-warning": "Bạn cần cập nhật cấu hình cung cấp ứng dụng Entra.",
+        "generate-token": "Tạo mã thông báo",
+        "regenerate-token": "Tạo lại mã thông báo",
+        "regenerate-token-warning": "Mã thông báo hiện tại sẽ ngừng hoạt động ngay lập tức và bạn cần cập nhật cấu hình cung cấp ứng dụng. Tiếp tục?",
         "secret-token": "Mã thông báo bí mật",
         "secret-token-tip": "Mã xác thực cho điểm cuối. Vui lòng giữ bí mật.",
-        "self": "Đồng bộ từ SCIM"
+        "self": "Đồng bộ từ SCIM",
+        "token-configured": "Đã cấu hình mã thông báo. Mã sẽ không được hiển thị lại — hãy tạo lại nếu bạn không còn giữ.",
+        "token-not-configured": "Chưa có mã thông báo nào được tạo.",
+        "token-shown-once": "Hãy sao chép mã thông báo này ngay. Mã sẽ không được hiển thị lại."
       },
       "grant-access": "Cấp Quyền truy cập",
       "groups": {

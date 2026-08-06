@@ -284,13 +284,14 @@ export function InstanceFormProvider({
         }
         if (ds.saslConfig?.mechanism?.case === "krbConfig") {
           const krbConfig = ds.saslConfig.mechanism.value;
-          if (
-            !krbConfig.primary ||
-            !krbConfig.realm ||
-            !krbConfig.kdcHost ||
-            !krbConfig.keytab
-          )
+          if (!krbConfig.primary || !krbConfig.realm || !krbConfig.kdcHost) {
             return false;
+          }
+          // Keytab is INPUT_ONLY: the backend never returns it. Require it
+          // only on create; on edit, an empty keytab keeps the existing one.
+          if (ds.pendingCreate && krbConfig.keytab.length === 0) {
+            return false;
+          }
         }
         if (!ds.externalSecret) return true;
         switch (ds.externalSecret.secretType) {

@@ -316,6 +316,7 @@ message Release {
 
   // A SQL file in a release.
   message File {
+    reserved 1, 5;
     // The path of the file. e.g., `2.2/V0001_create_table.sql`.
     string path = 2;
 

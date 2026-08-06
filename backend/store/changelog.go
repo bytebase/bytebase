@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"time"
 
@@ -92,7 +93,16 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 	}
 
 	var resourceID string
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&resourceID); err != nil {
+	err = s.withDatabasePurgeFence(ctx, create.InstanceID, create.DatabaseName, "", func(tx *sql.Tx) error {
+		if create.SyncHistory == nil {
+			return nil
+		}
+		_, err := tx.ExecContext(ctx, "SELECT 1 FROM sync_history WHERE resource_id = $1 FOR UPDATE", *create.SyncHistory)
+		return err
+	}, func(tx *sql.Tx, _ *databaseOwnership) error {
+		return tx.QueryRowContext(ctx, query, args...).Scan(&resourceID)
+	})
+	if err != nil {
 		return "", errors.Wrapf(err, "failed to insert")
 	}
 
