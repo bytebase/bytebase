@@ -543,6 +543,10 @@ type projectSnapshot struct {
 	DatabaseGroups []*v1pb.DatabaseGroup
 	// PlanWebhookDeliveries is the only snapshot field read directly from
 	// the metadata DB — plan_webhook_delivery has no public gRPC read API.
+	// It is NOT compared in assertProjectUnchanged: delivery rows are
+	// claimed asynchronously after rollout completion, so only the dedicated
+	// webhook collision test compares them, after explicitly waiting for the
+	// row set to stabilize.
 	PlanWebhookDeliveries []*planWebhookDelivery
 }
 
@@ -735,7 +739,6 @@ func assertProjectUnchanged(
 ) {
 	t.Helper()
 	a := require.New(t)
-
 	assertNoChange(t, before.Plans, after.Plans,
 		func(p *v1pb.Plan) string { return p.Name },
 		func(b, af *v1pb.Plan) {
@@ -800,14 +803,6 @@ func assertProjectUnchanged(
 			a.True(proto.Equal(b.DatabaseExpr, af.DatabaseExpr), "%s: database group %s expression changed", label, b.Name)
 		},
 		label, "db_group")
-
-	assertNoChange(t, before.PlanWebhookDeliveries, after.PlanWebhookDeliveries,
-		func(d *planWebhookDelivery) string { return fmt.Sprintf("%d", d.PlanID) },
-		func(b, af *planWebhookDelivery) {
-			a.Equal(b.EventType, af.EventType, "%s: plan_webhook_delivery plan %d event_type changed", label, b.PlanID)
-			a.True(b.DeliveredAt.Equal(af.DeliveredAt), "%s: plan_webhook_delivery plan %d delivered_at changed", label, b.PlanID)
-		},
-		label, "plan_webhook_delivery")
 }
 
 // assertNoChange compares two row slices keyed by name, fails if any

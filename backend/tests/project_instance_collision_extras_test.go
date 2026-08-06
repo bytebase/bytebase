@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -75,9 +76,20 @@ func TestCollision_PlanWebhookDeliveryWrite(t *testing.T) {
 	projectAID, err := common.GetProjectID(fixture.ProjectA.Name)
 	a.NoError(err)
 	waitForPlanWebhookDelivery(ctx, t, ctl, projectAID, planA2UID)
+	// Project B's delivery row set was stabilized before the baseline; the
+	// webhook table is async-claimed so it is compared here explicitly
+	// rather than inside the generic assertProjectUnchanged.
+	waitForPlanWebhookDeliveriesStable(ctx, t, ctl, projectBID)
 
 	afterB := snapshotProject(ctx, t, ctl, fixture.ProjectB)
 	assertProjectUnchanged(t, beforeB, afterB, "project B after plan A webhook delivery claim")
+	assertNoChange(t, beforeB.PlanWebhookDeliveries, afterB.PlanWebhookDeliveries,
+		func(d *planWebhookDelivery) string { return fmt.Sprintf("%d", d.PlanID) },
+		func(b, af *planWebhookDelivery) {
+			a.Equal(b.EventType, af.EventType, "project B plan_webhook_delivery plan %d event_type changed", b.PlanID)
+			a.True(b.DeliveredAt.Equal(af.DeliveredAt), "project B plan_webhook_delivery plan %d delivered_at changed", b.PlanID)
+		},
+		"project B after plan A webhook delivery claim", "plan_webhook_delivery")
 }
 
 // waitForPlanWebhookDelivery polls the metadata DB until the
