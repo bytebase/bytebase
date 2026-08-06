@@ -85,8 +85,8 @@ func TestMCPAuthMiddlewareMintsDelegatedCredential(t *testing.T) {
 // TestMCPAuthMiddlewareLegacySessionEmptyGrantState pins that legacy sessions
 // keep working through tools: a plain bb.user.access web token and a legacy
 // bb.oauth2.access token both mint a credential from their principal with
-// EMPTY grant state — no scope, no resource. PR 5, not this PR, assigns their
-// synthetic LEGACY_FULL semantics.
+// EMPTY grant state — no scope, no resource. PR 5 carries that state verbatim
+// into common.AuthContext; P1b resolves it (common.DelegatedGrant).
 func TestMCPAuthMiddlewareLegacySessionEmptyGrantState(t *testing.T) {
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}

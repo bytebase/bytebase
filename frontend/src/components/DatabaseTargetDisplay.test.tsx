@@ -1,7 +1,8 @@
-import { act } from "react";
+import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { DatabaseTargetDisplay } from "./DatabaseTargetDisplay";
 
 (
@@ -28,6 +29,36 @@ vi.mock("@/components/EngineIcon", () => ({
   ),
 }));
 
+vi.mock("@/components/EnvironmentLabel", () => ({
+  EnvironmentLabel: ({
+    className,
+    environment,
+  }: {
+    className?: string;
+    environment: { title: string };
+  }) => (
+    <span className={className} data-testid="environment-label">
+      {environment.title}
+    </span>
+  ),
+}));
+
+vi.mock("@/components/ui/ellipsis-text", () => ({
+  EllipsisText: ({
+    children,
+    className,
+    text,
+  }: {
+    children?: ReactNode;
+    className?: string;
+    text: string;
+  }) => (
+    <span className={className} data-testid={`ellipsis-${text}`}>
+      {children ?? text}
+    </span>
+  ),
+}));
+
 vi.mock("@/lib/utils", () => ({
   cn: (...classes: Array<string | false | null | undefined>) =>
     classes.filter(Boolean).join(" "),
@@ -50,17 +81,16 @@ vi.mock("@/types", () => ({
   isValidDatabaseName: (name: string) => name.includes("/databases/"),
 }));
 
-vi.mock("@/types/v1/database", () => ({
-  unknownDatabase: () => ({ name: "", instanceResource: { title: "" } }),
-}));
-
 vi.mock("@/utils", () => ({
-  extractDatabaseResourceName: (name: string) => ({
-    databaseName: name.split("/databases/")[1] ?? name,
-  }),
-  getInstanceResource: (database: {
-    instanceResource?: { engine: Engine; title: string };
-  }) => database.instanceResource,
+  extractDatabaseResourceName: (name: string) => {
+    const [, instanceAndDatabase = ""] = name.split("/instances/");
+    const [instanceName = "", databaseName = name] =
+      instanceAndDatabase.split("/databases/");
+    return {
+      databaseName,
+      instanceName,
+    };
+  },
 }));
 
 describe("DatabaseTargetDisplay", () => {
@@ -107,8 +137,64 @@ describe("DatabaseTargetDisplay", () => {
 
     expect(container.textContent).toContain("POSTGRES");
     expect(container.textContent).toContain("Production");
+    expect(
+      container.querySelector('[data-testid="environment-label"]')
+    ).toBeTruthy();
     expect(container.textContent).toContain("prod-instance");
     expect(container.textContent).toContain("app");
+    expect(container.firstElementChild?.textContent).toBe(
+      "POSTGRESprod-instance / Productionapp"
+    );
+  });
+
+  it("renders a passed database even when it is not in the store cache", () => {
+    mocks.databasesByName = {};
+
+    act(() => {
+      root.render(
+        <DatabaseTargetDisplay
+          showEnvironment
+          database={{
+            name: "projects/p/instances/bbdev/databases/employee",
+            effectiveEnvironment: "environments/prod",
+            instanceResource: {
+              engine: Engine.POSTGRES,
+              title: "bbdev",
+            },
+          } as Database}
+        />
+      );
+    });
+
+    expect(container.textContent).toContain("POSTGRES");
+    expect(container.textContent).toContain("Production");
+    expect(container.textContent).toContain("bbdev");
+    expect(container.textContent).toContain("employee");
+    expect(
+      container.querySelector('[data-testid="ellipsis-employee"]')
+    ).toBeTruthy();
+  });
+
+  it("falls back to target path context while the database cache is missing", () => {
+    mocks.databasesByName = {};
+
+    act(() => {
+      root.render(
+        <DatabaseTargetDisplay
+          showEnvironment
+          target="projects/p/instances/bbdev/databases/employee"
+        />
+      );
+    });
+
+    expect(container.querySelector('[data-testid="engine-icon"]')).toBeNull();
+    expect(container.textContent).not.toContain("MYSQL");
+    expect(container.textContent).not.toContain("UNKNOWN");
+    expect(container.textContent).toContain("bbdev");
+    expect(container.textContent).toContain("employee");
+    expect(
+      container.querySelector('[data-testid="ellipsis-bbdev"]')
+    ).toBeTruthy();
   });
 
   it("applies stable truncation priority across environment, instance, and database name", () => {
@@ -134,13 +220,32 @@ describe("DatabaseTargetDisplay", () => {
 
     expect(rootElement?.className).toContain("inline-flex");
     expect(rootElement?.className).toContain("max-w-full");
-    expect(rootElement?.getAttribute("title")).toBe(
-      "Production / prod-instance / app"
-    );
+    expect(rootElement?.getAttribute("title")).toBeNull();
     expect(environment?.className).toContain("max-w-24");
     expect(instance?.className).toContain("max-w-40");
     expect(database?.className).toContain("flex-1");
     expect(database?.className).toContain("min-w-12");
+  });
+
+  it("uses overflow-aware tooltips for truncated identity names", () => {
+    act(() => {
+      root.render(
+        <DatabaseTargetDisplay
+          showEnvironment
+          target="projects/p/instances/prod/databases/app"
+        />
+      );
+    });
+
+    expect(
+      container.querySelector('[data-testid="ellipsis-prod-instance"]')
+    ).toBeTruthy();
+    expect(
+      container.querySelector('[data-testid="ellipsis-Production"]')
+    ).toBeTruthy();
+    expect(
+      container.querySelector('[data-testid="ellipsis-app"]')
+    ).toBeTruthy();
   });
 
   it("can hide optional database metadata", () => {
@@ -184,12 +289,15 @@ describe("DatabaseTargetDisplay", () => {
   });
 
   it("falls back to the raw target when the target is not a database", () => {
+    const target = "projects/p/databaseGroups/prod";
+
     act(() => {
-      root.render(
-        <DatabaseTargetDisplay target="projects/p/databaseGroups/prod" />
-      );
+      root.render(<DatabaseTargetDisplay target={target} />);
     });
 
-    expect(container.textContent).toContain("projects/p/databaseGroups/prod");
+    expect(container.textContent).toContain(target);
+    expect(
+      container.querySelector(`[data-testid="ellipsis-${target}"]`)
+    ).toBeTruthy();
   });
 });

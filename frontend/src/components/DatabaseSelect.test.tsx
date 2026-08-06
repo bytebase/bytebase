@@ -60,11 +60,21 @@ vi.mock("@/components/ui/combobox", () => ({
   },
 }));
 
-// EngineIcon / EnvironmentLabel are only used inside option.render — never
-// invoked by these tests — but stub them so the module imports cleanly.
-vi.mock("@/components/EngineIcon", () => ({ EngineIcon: () => null }));
-vi.mock("@/components/EnvironmentLabel", () => ({
-  EnvironmentLabel: () => null,
+vi.mock("@/components/DatabaseTargetDisplay", () => ({
+  DatabaseTargetDisplay: ({
+    database,
+    target,
+  }: {
+    database?: { name: string };
+    target?: string;
+  }) => {
+    const name = database?.name ?? target ?? "";
+    const matches = name.match(
+      /(?:^|\/)instances\/(?<instanceName>[^/]+)\/databases\/(?<databaseName>[^/]+)(?:$|\/)/
+    );
+    const { instanceName = "", databaseName = name } = matches?.groups ?? {};
+    return <span>{`${instanceName} / ${databaseName}`}</span>;
+  },
 }));
 
 vi.mock("@/utils", () => ({
@@ -345,6 +355,31 @@ describe("DatabaseSelect — single mode (regression guard for Sync Schema)", ()
     );
     expect(opt).toBeDefined();
     expect(opt?.label).toBe("keep");
+    unmount();
+  });
+
+  test("selected value uses database target display when cache misses", async () => {
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [],
+      nextPageToken: "",
+    });
+    const { unmount } = render(
+      <DatabaseSelect
+        value="instances/bbdev/databases/employee"
+        onChange={vi.fn()}
+        projectName="projects/p"
+      />
+    );
+    await flush();
+
+    const renderedValue = combo.props?.renderValue?.({
+      value: "instances/bbdev/databases/employee",
+      label: "employee",
+    }) as ReactElement;
+    const valueView = render(renderedValue);
+
+    expect(valueView.container.textContent).toBe("bbdev / employee");
+    valueView.unmount();
     unmount();
   });
 

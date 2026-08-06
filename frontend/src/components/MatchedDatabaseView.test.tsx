@@ -41,6 +41,14 @@ vi.mock("@/components/EngineIcon", () => ({
   ),
 }));
 
+vi.mock("@/components/EnvironmentLabel", () => ({
+  EnvironmentLabel: ({
+    environment,
+  }: {
+    environment: { title: string };
+  }) => <span>{environment.title}</span>,
+}));
+
 vi.mock("@/lib/utils", () => ({
   cn: (...classes: Array<string | false | null | undefined>) =>
     classes.filter(Boolean).join(" "),

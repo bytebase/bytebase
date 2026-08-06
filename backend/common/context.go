@@ -84,12 +84,55 @@ type Resource struct {
 	ID string
 }
 
+// DelegatedGrant is the OAuth2 grant state of the delegated MCP credential a
+// request arrived with on the internal MCP transport. It is grant identity,
+// not authorization state: roles and membership are re-resolved live per
+// request, and nothing enforces on these values yet — P1b's capability gate is
+// the consumer this shape is the contract for.
+//
+// Scope and Resource are the grant's STORED values, copied verbatim from the
+// verified credential, and their empty states are load-bearing:
+//
+//   - Scope and Resource both empty: a genuinely pre-grant legacy session — a
+//     plain web-session token at /mcp, or an OAuth2 token from before grants
+//     recorded scope and resource.
+//   - Scope empty, Resource present: a grant that recorded no scope. Two
+//     indistinguishable origins: a client that omitted `scope` at consent — a
+//     permanent, steady-state population — or, transiently, a token minted by
+//     a PR-3-era replica during a rolling upgrade, whose grant DID record a
+//     consented scope that the claim predates. Neither may be collapsed into
+//     the pre-grant case: that could widen a consented read-only session to
+//     full legacy semantics. P1b resolves this state most-restrictively.
+//
+// No store lookup recovers a missing scope, deliberately: the steady-state
+// population has nothing to recover (the grant stored none), the transient
+// one self-drains within an access-token lifetime and its refresh-token row
+// is keyed by a (client_id, token_hash) the credential does not carry, and
+// nothing enforces on the value yet.
+type DelegatedGrant struct {
+	// Scope is the consented permission-set name (e.g. "mcp:read-only");
+	// empty in the two states above.
+	Scope string
+	// Resource is the grant's stored MCP resource URI.
+	Resource string
+	// ClientID is the OAuth2 client the grant was consented to.
+	ClientID string
+	// CorrelationID identifies the delegation this request rode in on. It is
+	// minted at the /mcp boundary and session-scoped in practice: tool
+	// handlers run on their session's initialize-time identity.
+	CorrelationID string
+}
+
 type AuthContext struct {
 	Audit                  bool
 	AllowWithoutCredential bool
 	Permission             string
 	AuthMethod             AuthMethod
 	Resources              []*Resource
+	// DelegatedGrant carries the grant state of the delegated MCP credential
+	// on internal-chain requests; nil on the public chain. Presence, not any
+	// field value, marks a request as MCP-originated.
+	DelegatedGrant *DelegatedGrant
 }
 
 func GetAuthContextFromContext(ctx context.Context) (*AuthContext, bool) {

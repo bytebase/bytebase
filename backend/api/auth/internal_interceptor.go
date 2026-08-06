@@ -58,6 +58,16 @@ func (in *InternalMCPAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.
 		if err != nil {
 			return nil, err
 		}
+		// The credential's grant state travels verbatim into the AuthContext —
+		// this is the contract P1b's enforcement keys on (see
+		// common.DelegatedGrant for the empty-state semantics). Grant state
+		// only: the principal is re-resolved below, and RBAC downstream.
+		authContext.DelegatedGrant = &common.DelegatedGrant{
+			Scope:         cred.Scope,
+			Resource:      cred.Resource,
+			ClientID:      cred.ClientID,
+			CorrelationID: cred.CorrelationID,
+		}
 		ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
 
 		user, err := resolvePrincipal(ctx, in.store, in.profile, cred.Principal, cred.WorkspaceID)

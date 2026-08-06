@@ -1,16 +1,14 @@
 import { Download, EyeOff, Loader2, Shield } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIcon } from "@/components/EngineIcon";
+import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { isValidDatabaseName } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
-import { unknownDatabase } from "@/types/v1/database";
 import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
 import { getAccessGrantExpirationText } from "@/utils/accessGrant";
-import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 
 export function IssueDetailAccessGrantDetails() {
@@ -160,45 +158,13 @@ export function IssueDetailAccessGrantDetails() {
 }
 
 function IssueDetailAccessGrantTarget({ target }: { target: string }) {
-  const databasesByName = useAppStore((s) => s.databasesByName);
-  const database = useMemo(
-    () => databasesByName[target] ?? unknownDatabase(),
-    [databasesByName, target]
-  );
-  // Subscribe to the env cache so the row re-resolves once it loads; compute
-  // via getState() in a memo because getEnvironmentByName returns a fresh
-  // fallback object on a miss (unsafe as a raw selector — would loop).
-  const environmentList = useAppStore((s) => s.environmentList);
-  const environment = useMemo(
-    () =>
-      useAppStore
-        .getState()
-        .getEnvironmentByName(
-          database.effectiveEnvironment ?? database.environment ?? ""
-        ),
-    [environmentList, database]
-  );
-  const instance = database.instanceResource;
-  const { databaseName } = extractDatabaseResourceName(target);
-
   return (
     <div className="inline-flex min-w-0 items-center gap-2 rounded-sm border px-2 py-1.5">
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center truncate text-sm">
-          {instance && (
-            <EngineIcon
-              engine={instance.engine}
-              className="mr-1 inline-block h-4 w-4"
-            />
-          )}
-          <span className="mr-1 truncate text-gray-400">
-            {environment.title}
-          </span>
-          <span className="truncate text-gray-600">{instance?.title}</span>
-          <span className="mx-1 shrink-0 text-gray-500">&gt;</span>
-          <span className="truncate text-gray-800">{databaseName}</span>
-        </div>
-      </div>
+      <DatabaseTargetDisplay
+        target={target}
+        showEnvironment
+        className="min-w-0 flex-1"
+      />
     </div>
   );
 }
