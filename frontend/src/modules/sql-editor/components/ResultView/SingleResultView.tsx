@@ -23,6 +23,7 @@ import {
   type ScopeOption,
   type SearchParams,
 } from "@/components/AdvancedSearch";
+import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import {
   DataExportButton,
   type DataExportRequest,
@@ -69,7 +70,7 @@ import { formatAsCSV, formatAsSQL, formatAsText } from "./copy-formats";
 import { DetailPanel } from "./DetailPanel";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
-import { ResultStatusBar, RichDatabaseName } from "./ResultStatusBar";
+import { ResultStatusBar } from "./ResultStatusBar";
 import { SelectionCopyTooltips } from "./SelectionCopyTooltips";
 import type { ResultTableColumn, ResultTableRow, SortState } from "./types";
 import {
@@ -800,16 +801,12 @@ function useLocalStorageBoolean(
   return [value, update];
 }
 
-/**
- * Inline simplified `DatabaseInfo` for the export drawer's form-prefix slot.
- * Vue version showed `[engine] instance > [env] database`; we mirror that.
- */
 function DatabaseInfo({ database }: { database: Database }) {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-1 mb-3">
       <span className="text-xs text-control-light">{t("common.database")}</span>
-      <RichDatabaseName database={database} />
+      <DatabaseTargetDisplay database={database} showEnvironment />
     </div>
   );
 }

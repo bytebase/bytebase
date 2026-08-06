@@ -1301,6 +1301,7 @@
           }
         }
       },
+      "container": "Container",
       "details": "Access Grant Details",
       "duration-after-approval": "{{duration}} after issue approved",
       "expired-at": "Expired at",

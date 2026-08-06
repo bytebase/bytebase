@@ -198,7 +198,7 @@ func buildExportQueryContext(restriction *store.EffectiveQueryDataPolicy, userEm
 //
 // The returned grant has a non-nil Payload — callers may deref
 // `Payload.Unmask` / `Payload.Export` without an additional check.
-func (s *SQLService) preCheckAccess(ctx context.Context, statement string, instance *store.InstanceMessage, database *store.DatabaseMessage, requireExport bool) *store.AccessGrantMessage {
+func (s *SQLService) preCheckAccess(ctx context.Context, statement string, instance *store.InstanceMessage, database *store.DatabaseMessage, schema *string, container string, requireExport bool) *store.AccessGrantMessage {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &database.ProjectID,
@@ -262,7 +262,13 @@ func (s *SQLService) preCheckAccess(ctx context.Context, statement string, insta
 		slog.Warn("skip access grant for non-read-only query", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		return nil
 	}
-	return selectBestAccessGrant(grants)
+	matchingGrants := make([]*store.AccessGrantMessage, 0, len(grants))
+	for _, grant := range grants {
+		if accessGrantMatchesExecutionContext(grant, schema, container) {
+			matchingGrants = append(matchingGrants, grant)
+		}
+	}
+	return selectBestAccessGrant(matchingGrants)
 }
 
 // selectBestAccessGrant picks the highest-ranked grant by capability count
@@ -306,6 +312,17 @@ func selectBestAccessGrant(grants []*store.AccessGrantMessage) *store.AccessGran
 	return best
 }
 
+func accessGrantMatchesExecutionContext(grant *store.AccessGrantMessage, schema *string, container string) bool {
+	if grant.Payload == nil {
+		return false
+	}
+	requestSchema := ""
+	if schema != nil {
+		requestSchema = *schema
+	}
+	return grant.Payload.Schema == requestSchema && grant.Payload.Container == container
+}
+
 func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryRequest]) (*connect.Response[v1pb.QueryResponse], error) {
 	request := req.Msg
 	// Prepare related message.
@@ -314,7 +331,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		return nil, err
 	}
 
-	accessGrant := s.preCheckAccess(ctx, request.Statement, instance, database, false /* requireExport */)
+	accessGrant := s.preCheckAccess(ctx, request.Statement, instance, database, request.Schema, request.GetContainer(), false /* requireExport */)
 
 	statement := request.Statement
 	// In Redshift datashare, Rewrite query used for parser.
@@ -990,7 +1007,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	// requireExport=true narrows the CEL filter to grants with export=true,
 	// so a tied unmask-only grant can't shadow a separately-active export
 	// grant via slice order (PR #20491 bot review).
-	accessGrant := s.preCheckAccess(ctx, request.Statement, instance, database, true /* requireExport */)
+	accessGrant := s.preCheckAccess(ctx, request.Statement, instance, database, request.Schema, request.GetContainer(), true /* requireExport */)
 
 	// Validate the request.
 	// New query ACL experience.

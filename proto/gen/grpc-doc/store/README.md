@@ -399,6 +399,8 @@
 | reason | [string](#string) |  |  |
 | requested_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The requested duration for the access grant. Stored when the user provides a TTL instead of an absolute expire_time. The server computes expire_time from this value at activation time. |
 | export | [bool](#bool) |  | Whether export the query result. |
+| schema | [string](#string) |  | The default schema to execute the query. |
+| container | [string](#string) |  | The container name to execute the query against, used for CosmosDB only. |
 
 
 

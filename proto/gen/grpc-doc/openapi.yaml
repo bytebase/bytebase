@@ -16022,6 +16022,14 @@ components:
               type: boolean
               title: export
               description: Whether export the query result.
+            schema:
+              type: string
+              title: schema
+              description: The default schema to execute the query.
+            container:
+              type: string
+              title: container
+              description: The container name to execute the query against, used for CosmosDB only.
         - oneOf:
             - type: object
               properties:

@@ -145,6 +145,12 @@ message AccessGrant {
 
   // Whether export the query result.
   bool export = 13;
+
+  // The default schema to execute the query.
+  string schema = 14;
+
+  // The container name to execute the query against, used for CosmosDB only.
+  string container = 15;
 }
 
 message GetAccessGrantRequest {

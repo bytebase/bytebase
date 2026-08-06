@@ -1,9 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { act } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { ResultStatusBar, RichDatabaseName } from "./ResultStatusBar";
+import { ResultStatusBar } from "./ResultStatusBar";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: {
@@ -13,8 +12,20 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("@/components/EngineIcon", () => ({
-  EngineIcon: () => <span data-testid="engine-icon" />,
+vi.mock("@/components/DatabaseTargetDisplay", () => ({
+  DatabaseTargetDisplay: ({
+    database,
+    showEnvironment,
+  }: {
+    database: Database;
+    showEnvironment?: boolean;
+  }) => (
+    <span
+      data-testid="database-target-display"
+      data-database={database.name}
+      data-show-environment={String(showEnvironment)}
+    />
+  ),
 }));
 
 vi.mock("@/components/ui/tooltip", () => ({
@@ -27,25 +38,6 @@ vi.mock("@/stores/app", () => ({
       notify: vi.fn(),
     }),
   },
-}));
-
-vi.mock("@/utils/v1/database", () => ({
-  extractDatabaseResourceName: () => ({
-    instance: "instances/prod",
-    database: "instances/prod/databases/very-long-database-name",
-    instanceName: "prod",
-    databaseName: "very-long-database-name",
-  }),
-  getDatabaseEnvironment: () => ({ title: "Prod" }),
-  getInstanceResource: () => ({
-    name: "instances/prod",
-    title: "bytebase-3.17.11-selfhost",
-    engine: Engine.POSTGRES,
-  }),
-}));
-
-vi.mock("@/utils/v1/instance", () => ({
-  instanceV1Name: () => "bytebase-3.17.11-selfhost",
 }));
 
 const database = {
@@ -109,11 +101,18 @@ describe("ResultStatusBar", () => {
     expect(statement.textContent).toContain("SELECT db.environment");
   });
 
-  test("does not cap rich database names outside the status bar", () => {
-    render(<RichDatabaseName database={database} />);
+  test("renders the database with the unified display", () => {
+    render(
+      <ResultStatusBar
+        database={database}
+        statement="SELECT 1"
+        queryTime="3 ms"
+      />
+    );
 
-    const databaseLabel = screen.getByTestId("result-status-database");
-    expect(databaseLabel.className).not.toContain("max-w-[45%]");
+    const databaseTarget = screen.getByTestId("database-target-display");
+    expect(databaseTarget.getAttribute("data-database")).toBe(database.name);
+    expect(databaseTarget.getAttribute("data-show-environment")).toBe("true");
   });
 
   test("lets the statement use available space while keeping copy attached", () => {
@@ -133,6 +132,16 @@ describe("ResultStatusBar", () => {
     expect(statement.className).not.toContain("max-w-3xl");
     expect(statementText?.classList.contains("flex-1")).toBe(false);
     expect(copyButton.className).toContain("shrink-0");
+  });
+
+  test("hides the statement copy button when the statement is empty", () => {
+    render(
+      <ResultStatusBar database={database} statement="" queryTime="3 ms" />
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "common.copy" })
+    ).not.toBeInTheDocument();
   });
 
   test("hides the database label when it would constrain the statement", () => {

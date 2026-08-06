@@ -845,6 +845,8 @@ Authorization method for RPC calls.
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | reason | [string](#string) |  |  |
 | export | [bool](#bool) |  | Whether export the query result. |
+| schema | [string](#string) |  | The default schema to execute the query. |
+| container | [string](#string) |  | The container name to execute the query against, used for CosmosDB only. |
 
 
 

@@ -192,6 +192,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	result := &v1pb.QueryResult{
 		ColumnNames:     []string{"result"},
 		ColumnTypeNames: []string{"TEXT"},
+		Statement:       statement,
 	}
 	for _, item := range items {
 		result.Rows = append(result.Rows, &v1pb.QueryRow{
@@ -202,6 +203,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	}
 
 	result.Latency = durationpb.New(time.Since(startTime))
+	result.RowsCount = int64(len(result.Rows))
 
 	return []*v1pb.QueryResult{result}, nil
 }

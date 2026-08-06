@@ -95,11 +95,13 @@ func TestConvertToAccessGrantPropagatesPayloadFields(t *testing.T) {
 		Status:     storepb.AccessGrant_ACTIVE,
 		ExpireTime: &expire,
 		Payload: &storepb.AccessGrantPayload{
-			Targets: []string{"instances/inst/databases/db"},
-			Query:   "SELECT * FROM t",
-			Unmask:  true,
-			Export:  true,
-			Reason:  "investigating PR-1234",
+			Targets:   []string{"instances/inst/databases/db"},
+			Query:     "SELECT * FROM t",
+			Unmask:    true,
+			Export:    true,
+			Reason:    "investigating PR-1234",
+			Schema:    "APP",
+			Container: "orders",
 		},
 	}
 
@@ -110,6 +112,8 @@ func TestConvertToAccessGrantPropagatesPayloadFields(t *testing.T) {
 	require.True(t, ag.Unmask)
 	require.True(t, ag.Export)
 	require.Equal(t, "investigating PR-1234", ag.Reason)
+	require.Equal(t, "APP", ag.Schema)
+	require.Equal(t, "orders", ag.Container)
 }
 
 // TestConvertToAccessGrantNilPayloadIsSafe guards the `if p := msg.Payload; p != nil`
@@ -130,4 +134,69 @@ func TestConvertToAccessGrantNilPayloadIsSafe(t *testing.T) {
 	require.False(t, ag.Unmask)
 	require.False(t, ag.Export)
 	require.Empty(t, ag.Reason)
+	require.Empty(t, ag.Schema)
+	require.Empty(t, ag.Container)
+}
+
+func TestAccessGrantMatchesExecutionContext(t *testing.T) {
+	schema := "APP"
+	tests := []struct {
+		name      string
+		payload   *storepb.AccessGrantPayload
+		schema    *string
+		container string
+		want      bool
+	}{
+		{
+			name: "matching schema and container",
+			payload: &storepb.AccessGrantPayload{
+				Schema:    "APP",
+				Container: "orders",
+			},
+			schema:    &schema,
+			container: "orders",
+			want:      true,
+		},
+		{
+			name: "different schema",
+			payload: &storepb.AccessGrantPayload{
+				Schema:    "APP",
+				Container: "orders",
+			},
+			schema:    func() *string { v := "OTHER"; return &v }(),
+			container: "orders",
+			want:      false,
+		},
+		{
+			name: "different container",
+			payload: &storepb.AccessGrantPayload{
+				Schema:    "APP",
+				Container: "orders",
+			},
+			schema:    &schema,
+			container: "customers",
+			want:      false,
+		},
+		{
+			name:      "nil payload",
+			payload:   nil,
+			schema:    &schema,
+			container: "orders",
+			want:      false,
+		},
+		{
+			name:      "empty context matches omitted values",
+			payload:   &storepb.AccessGrantPayload{},
+			schema:    nil,
+			container: "",
+			want:      true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			grant := &store.AccessGrantMessage{Payload: tc.payload}
+			require.Equal(t, tc.want, accessGrantMatchesExecutionContext(grant, tc.schema, tc.container))
+		})
+	}
 }

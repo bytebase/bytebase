@@ -204,6 +204,8 @@ type GrantLike = {
   name: string;
   query: string;
   targets: string[];
+  schema?: string;
+  container?: string;
   unmask: boolean;
   issue: string;
   status: number;
@@ -447,6 +449,45 @@ describe("AccessPane", () => {
       "execute-sql",
       expect.objectContaining({
         statement: grant.query,
+      })
+    );
+    unmount();
+  });
+
+  test("click Run on a grant preserves schema and CosmosDB container", async () => {
+    const grant = {
+      ...makeGrant("grant1"),
+      schema: "APP",
+      container: "orders",
+    };
+    mocks.searchMyAccessGrants.mockResolvedValue({
+      accessGrants: [grant],
+      nextPageToken: "",
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AccessPane />);
+    render();
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    const runBtn = container.querySelector(
+      "[data-run-btn]"
+    ) as HTMLButtonElement;
+    expect(runBtn).not.toBeNull();
+
+    await act(async () => {
+      runBtn.click();
+    });
+
+    expect(mocks.sqlEditorEventsEmit).toHaveBeenCalledWith(
+      "execute-sql",
+      expect.objectContaining({
+        connection: expect.objectContaining({
+          schema: "APP",
+          table: "orders",
+        }),
       })
     );
     unmount();
