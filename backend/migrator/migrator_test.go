@@ -2,7 +2,6 @@ package migrator
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -96,6 +95,18 @@ func TestMigration3_16_2_TaskRunLogDuplicateTimestamps(t *testing.T) {
 		SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'task_run_log' AND column_name = 'id')
 	`).Scan(&hasIDColumn))
 	require.False(t, hasIDColumn)
+
+	var hasIndex bool
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'idx_task_run_log_task_run_id_created_at')
+	`).Scan(&hasIndex))
+	require.True(t, hasIndex)
+
+	var hasOldIndex bool
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'idx_task_run_log_task_run_id')
+	`).Scan(&hasOldIndex))
+	require.False(t, hasOldIndex)
 }
 
 // TestMigration3_17_1_TaskRunLogDuplicateTimestamps verifies that the 3.17.1
@@ -124,7 +135,7 @@ func TestMigration3_17_1_TaskRunLogDuplicateTimestamps(t *testing.T) {
 			created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 			payload JSONB NOT NULL DEFAULT '{}'
 		);
-		CREATE INDEX idx_task_run_log_task_run_id ON task_run_log(task_run_id);
+		CREATE INDEX idx_task_run_log_task_run_id_created_at ON task_run_log(task_run_id, created_at);
 
 		INSERT INTO project VALUES ('proj-a');
 		INSERT INTO plan VALUES (1, 'proj-a');
@@ -161,17 +172,18 @@ func TestMigration3_17_1_TaskRunLogDuplicateTimestamps(t *testing.T) {
 	`).Scan(&hasIndex))
 	require.True(t, hasIndex)
 
-	var hasOldIndex bool
+	var oldIndexCount int
 	require.NoError(t, db.QueryRowContext(ctx, `
-		SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'idx_task_run_log_task_run_id')
-	`).Scan(&hasOldIndex))
-	require.False(t, hasOldIndex)
+		SELECT COUNT(*) FROM pg_indexes WHERE schemaname = 'public' AND indexname IN ('idx_task_run_log_task_run_id', 'idx_task_run_log_task_run_id_created_at')
+	`).Scan(&oldIndexCount))
+	require.Zero(t, oldIndexCount)
 }
 
 // TestMigration3_22_4_DropTaskRunLogPkey verifies that the pkey drop converges
-// both historical shapes — the 2-column PK left by upgrading through the
-// original 3.16.2 and the 3-column PK of fresh installs — is idempotent, and
-// that same-microsecond entries insert afterwards instead of colliding.
+// every historical shape — the 2-column PK left by upgrading through the
+// original 3.16.2, the 3-column PK of fresh installs, and the no-PK state left
+// by a release-branch backport of the 3.16.2 fix — is idempotent, and that
+// same-microsecond entries insert afterwards instead of colliding.
 func TestMigration3_22_4_DropTaskRunLogPkey(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)
@@ -182,36 +194,59 @@ func TestMigration3_22_4_DropTaskRunLogPkey(t *testing.T) {
 	statement, err := migrationFS.ReadFile("migration/3.22/0004##drop_task_run_log_pkey.sql")
 	require.NoError(t, err)
 
-	for _, pkey := range []string{"(task_run_id, created_at)", "(project, task_run_id, created_at)"} {
-		_, err := db.ExecContext(ctx, fmt.Sprintf(`
-			DROP TABLE IF EXISTS task_run_log;
-			CREATE TABLE task_run_log (
-				project TEXT NOT NULL,
-				task_run_id INTEGER NOT NULL,
-				created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-				payload JSONB NOT NULL DEFAULT '{}',
-				PRIMARY KEY %s
-			);`, pkey))
-		require.NoError(t, err)
+	const tableDDL = `
+		CREATE TABLE task_run_log (
+			project TEXT NOT NULL,
+			task_run_id INTEGER NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+			payload JSONB NOT NULL DEFAULT '{}'`
+
+	scenarios := []struct {
+		name  string
+		setup string
+	}{
+		{
+			"2-col pkey from the original 3.16.2",
+			tableDDL + `, PRIMARY KEY (task_run_id, created_at));
+			CREATE INDEX idx_task_run_log_task_run_id ON task_run_log(task_run_id);`,
+		},
+		{
+			"3-col pkey from a fresh install",
+			tableDDL + `, PRIMARY KEY (project, task_run_id, created_at));`,
+		},
+		{
+			"no pkey from a release-branch backport of the 3.16.2 fix",
+			tableDDL + `);
+			CREATE INDEX idx_task_run_log_task_run_id_created_at ON task_run_log(task_run_id, created_at);`,
+		},
+	}
+	for _, scenario := range scenarios {
+		_, err := db.ExecContext(ctx, `DROP TABLE IF EXISTS task_run_log;`+scenario.setup)
+		require.NoError(t, err, scenario.name)
 
 		_, err = db.ExecContext(ctx, string(statement))
-		require.NoError(t, err)
-		// Re-running must be a no-op: the file also applies to databases that
-		// come through the edited 3.16.2/3.17.1 path with no pkey left at all.
+		require.NoError(t, err, scenario.name)
+		// Re-running must be a no-op.
 		_, err = db.ExecContext(ctx, string(statement))
-		require.NoError(t, err)
+		require.NoError(t, err, scenario.name)
 
 		var hasPkey bool
 		require.NoError(t, db.QueryRowContext(ctx, `
 			SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'task_run_log_pkey' AND conrelid = 'task_run_log'::regclass)
 		`).Scan(&hasPkey))
-		require.False(t, hasPkey, "pkey %s should be dropped", pkey)
+		require.False(t, hasPkey, scenario.name)
 
 		var hasIndex bool
 		require.NoError(t, db.QueryRowContext(ctx, `
 			SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'idx_task_run_log_project_task_run_id_created_at')
 		`).Scan(&hasIndex))
-		require.True(t, hasIndex)
+		require.True(t, hasIndex, scenario.name)
+
+		var oldIndexCount int
+		require.NoError(t, db.QueryRowContext(ctx, `
+			SELECT COUNT(*) FROM pg_indexes WHERE schemaname = 'public' AND indexname IN ('idx_task_run_log_task_run_id', 'idx_task_run_log_task_run_id_created_at')
+		`).Scan(&oldIndexCount))
+		require.Zero(t, oldIndexCount, scenario.name)
 
 		_, err = db.ExecContext(ctx, `
 			INSERT INTO task_run_log (project, task_run_id, created_at) VALUES

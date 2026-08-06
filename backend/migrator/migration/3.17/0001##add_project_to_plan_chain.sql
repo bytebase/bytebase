@@ -62,6 +62,7 @@ ALTER TABLE task_run_log ALTER COLUMN project SET NOT NULL;
 -- a primary key.
 ALTER TABLE task_run_log DROP CONSTRAINT IF EXISTS task_run_log_pkey;
 DROP INDEX IF EXISTS idx_task_run_log_task_run_id;
+DROP INDEX IF EXISTS idx_task_run_log_task_run_id_created_at;
 CREATE INDEX IF NOT EXISTS idx_task_run_log_project_task_run_id_created_at ON task_run_log(project, task_run_id, created_at);
 
 -- plan_check_run
