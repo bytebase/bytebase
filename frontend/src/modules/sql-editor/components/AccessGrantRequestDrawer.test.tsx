@@ -755,4 +755,61 @@ describe("AccessGrantRequestDrawer", () => {
     );
     unmount();
   });
+
+  test("prop schema and CosmosDB container are submitted to createAccessGrant", async () => {
+    mocks.currentTabDatabase = "instances/inst1/databases/db1";
+    mocks.currentTabSchema = "ACTIVE_TAB_SCHEMA";
+    mocks.currentTabTable = "active-tab-container";
+    mocks.createAccessGrant.mockResolvedValue({
+      status: 2,
+      issue: "",
+      name: "projects/proj1/accessGrants/g",
+    });
+    const onClose = vi.fn();
+    const {
+      container,
+      render: renderFn,
+      unmount,
+    } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        targets={["instances/inst1/databases/db2"]}
+        query="SELECT * FROM orders"
+        schema="REQUEST_SCHEMA"
+        container="request-container"
+        onClose={onClose}
+      />
+    );
+    renderFn();
+
+    const textarea = container.querySelector(
+      "[data-testid='textarea']"
+    ) as HTMLTextAreaElement;
+    await act(async () => {
+      const changeEvent = new Event("change", { bubbles: true });
+      Object.defineProperty(textarea, "value", {
+        writable: true,
+        value: "rerun existing grant",
+      });
+      Object.defineProperty(changeEvent, "target", {
+        writable: false,
+        value: textarea,
+      });
+      textarea.dispatchEvent(changeEvent);
+    });
+
+    const submitBtn = container.querySelector(
+      "[data-submit-btn]"
+    ) as HTMLButtonElement;
+    await act(async () => submitBtn.click());
+
+    expect(mocks.createAccessGrant).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accessGrant: expect.objectContaining({
+          schema: "REQUEST_SCHEMA",
+          container: "request-container",
+        }),
+      })
+    );
+    unmount();
+  });
 });

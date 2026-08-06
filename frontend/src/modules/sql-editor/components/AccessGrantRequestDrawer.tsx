@@ -469,6 +469,8 @@ export function AccessGrantRequestDrawer({
   query,
   unmask,
   export: exportResult,
+  schema,
+  container,
   onClose,
 }: Props) {
   const propsRef = useRef({
@@ -476,6 +478,8 @@ export function AccessGrantRequestDrawer({
     query,
     unmask,
     export: exportResult,
+    schema,
+    container,
     onClose,
   });
   // Freeze props while drawer is open so inner form stays stable during close animation
@@ -513,7 +517,7 @@ export function AccessGrantRequestDrawer({
         onPointerDown={stopDrawerEvent}
       >
         <AccessGrantRequestDrawerInner
-          key={`${targets?.join(",")}-${query}-${unmask}-${exportResult}`}
+          key={`${targets?.join(",")}-${query}-${unmask}-${exportResult}-${schema}-${container}`}
           stableProps={stableProps}
           onClose={onClose}
         />
