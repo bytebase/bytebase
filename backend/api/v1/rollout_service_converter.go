@@ -354,6 +354,23 @@ func convertToTaskRunLog(parent string, logs []*store.TaskRunLog) *v1pb.TaskRunL
 
 func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntry {
 	var entries []*v1pb.TaskRunLogEntry
+	// task_run_log rows have no per-row sequence and can share a created_at
+	// microsecond, so an end/response event may not directly follow its start
+	// entry. Attach each one to the nearest entry of the matching type that is
+	// still awaiting its end instead of requiring strict adjacency.
+	unpaired := map[v1pb.TaskRunLogEntry_Type][]int{}
+	push := func(t v1pb.TaskRunLogEntry_Type) {
+		unpaired[t] = append(unpaired[t], len(entries)-1)
+	}
+	pop := func(t v1pb.TaskRunLogEntry_Type) *v1pb.TaskRunLogEntry {
+		stack := unpaired[t]
+		if len(stack) == 0 {
+			return nil
+		}
+		i := stack[len(stack)-1]
+		unpaired[t] = stack[:len(stack)-1]
+		return entries[i]
+	}
 	for _, l := range logs {
 		switch l.Payload.Type {
 		case storepb.TaskRunLog_SCHEMA_DUMP_START:
@@ -365,13 +382,11 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					StartTime: timestamppb.New(l.T),
 				},
 			})
+			push(v1pb.TaskRunLogEntry_SCHEMA_DUMP)
 
 		case storepb.TaskRunLog_SCHEMA_DUMP_END:
-			if len(entries) == 0 {
-				continue
-			}
-			prev := entries[len(entries)-1]
-			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_SCHEMA_DUMP {
+			prev := pop(v1pb.TaskRunLogEntry_SCHEMA_DUMP)
+			if prev == nil {
 				continue
 			}
 			prev.SchemaDump.EndTime = timestamppb.New(l.T)
@@ -388,13 +403,11 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					Statement: l.Payload.CommandExecute.Statement,
 				},
 			})
+			push(v1pb.TaskRunLogEntry_COMMAND_EXECUTE)
 
 		case storepb.TaskRunLog_COMMAND_RESPONSE:
-			if len(entries) == 0 {
-				continue
-			}
-			prev := entries[len(entries)-1]
-			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_COMMAND_EXECUTE {
+			prev := pop(v1pb.TaskRunLogEntry_COMMAND_EXECUTE)
+			if prev == nil {
 				continue
 			}
 			prev.CommandExecute.Response = &v1pb.TaskRunLogEntry_CommandExecute_CommandResponse{
@@ -413,13 +426,11 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					StartTime: timestamppb.New(l.T),
 				},
 			})
+			push(v1pb.TaskRunLogEntry_DATABASE_SYNC)
 
 		case storepb.TaskRunLog_DATABASE_SYNC_END:
-			if len(entries) == 0 {
-				continue
-			}
-			prev := entries[len(entries)-1]
-			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_DATABASE_SYNC {
+			prev := pop(v1pb.TaskRunLogEntry_DATABASE_SYNC)
+			if prev == nil {
 				continue
 			}
 			prev.DatabaseSync.EndTime = timestamppb.New(l.T)
@@ -445,13 +456,11 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					StartTime: timestamppb.New(l.T),
 				},
 			})
+			push(v1pb.TaskRunLogEntry_PRIOR_BACKUP)
 
 		case storepb.TaskRunLog_PRIOR_BACKUP_END:
-			if len(entries) == 0 {
-				continue
-			}
-			prev := entries[len(entries)-1]
-			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_PRIOR_BACKUP {
+			prev := pop(v1pb.TaskRunLogEntry_PRIOR_BACKUP)
+			if prev == nil {
 				continue
 			}
 			prev.PriorBackup.EndTime = timestamppb.New(l.T)
@@ -467,13 +476,11 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					StartTime: timestamppb.New(l.T),
 				},
 			})
+			push(v1pb.TaskRunLogEntry_COMPUTE_DIFF)
 
 		case storepb.TaskRunLog_COMPUTE_DIFF_END:
-			if len(entries) == 0 {
-				continue
-			}
-			prev := entries[len(entries)-1]
-			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_COMPUTE_DIFF {
+			prev := pop(v1pb.TaskRunLogEntry_COMPUTE_DIFF)
+			if prev == nil {
 				continue
 			}
 			prev.ComputeDiff.EndTime = timestamppb.New(l.T)
@@ -511,13 +518,11 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					StartTime: timestamppb.New(l.T),
 				},
 			})
+			push(v1pb.TaskRunLogEntry_GHOST_MIGRATION)
 
 		case storepb.TaskRunLog_GHOST_MIGRATION_END:
-			if len(entries) == 0 {
-				continue
-			}
-			prev := entries[len(entries)-1]
-			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_GHOST_MIGRATION {
+			prev := pop(v1pb.TaskRunLogEntry_GHOST_MIGRATION)
+			if prev == nil {
 				continue
 			}
 			prev.GhostMigration.EndTime = timestamppb.New(l.T)
