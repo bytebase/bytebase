@@ -58,13 +58,16 @@ func (s *Store) CreateTaskRunLog(ctx context.Context, projectID string, taskRunU
 }
 
 func (s *Store) ListTaskRunLogs(ctx context.Context, projectID string, taskRunUID int64) ([]*TaskRunLog, error) {
+	// created_at can tie across entries (no per-row sequence exists); ctid
+	// breaks ties in insertion order, which is stable because the table is
+	// append-only and rows are never updated.
 	q := qb.Q().Space(`
 		SELECT
 			created_at,
 			payload
 		FROM task_run_log
 		WHERE task_run_log.project = ? AND task_run_log.task_run_id = ?
-		ORDER BY created_at
+		ORDER BY created_at, ctid
 	`, projectID, taskRunUID)
 
 	sql, args, err := q.ToSQL()

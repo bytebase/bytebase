@@ -175,7 +175,10 @@ The frontend is migrating from Vue to React. **All new UI code should be written
 
 Several tables use composite primary keys (e.g., `(project, id)`). Check
 `backend/migrator/migration/LATEST.sql` for the full list — any table with a
-multi-column PRIMARY KEY.
+multi-column PRIMARY KEY. `task_run_log` deliberately has no primary key (it is
+an append-only log whose entries can share a `created_at` microsecond,
+BYT-10035) but is equally project-scoped, so the same predicate rules apply to
+it.
 
 When writing or modifying queries on these tables:
 - Every WHERE, JOIN, USING, DELETE, and UPDATE predicate must include ALL primary key

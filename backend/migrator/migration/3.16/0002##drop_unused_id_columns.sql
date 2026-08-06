@@ -109,10 +109,13 @@ BEGIN
     END IF;
 END $$;
 
--- task_run_log: use (task_run_id, created_at) as PK
+-- task_run_log: append-only log with no natural key. Entries for one task run
+-- can share a created_at microsecond (BYT-10035), so the intended primary key
+-- is replaced with a non-unique index of the same shape.
 ALTER TABLE task_run_log DROP CONSTRAINT IF EXISTS task_run_log_pkey;
 ALTER TABLE task_run_log DROP COLUMN IF EXISTS id;
-ALTER TABLE task_run_log ADD PRIMARY KEY (task_run_id, created_at);
+DROP INDEX IF EXISTS idx_task_run_log_task_run_id;
+CREATE INDEX IF NOT EXISTS idx_task_run_log_task_run_id_created_at ON task_run_log(task_run_id, created_at);
 
 -- release: natural key = (project, train, iteration)
 ALTER TABLE release DROP CONSTRAINT IF EXISTS release_pkey;
