@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -128,9 +129,35 @@ func TestMCPAuditProvenance(t *testing.T) {
 	a.Equal(int32(connect.CodePermissionDenied), denied.Status.Code)
 	a.NotNil(denied.McpDelegation)
 	a.Equal("mcp:read-only", denied.McpDelegation.Scope)
+	a.Equal(ctl.rootURL+"/mcp", denied.McpDelegation.Resource)
 	a.Equal(clientID, denied.McpDelegation.ClientId)
 	a.Equal(permitted.McpDelegation.CorrelationId, denied.McpDelegation.CorrelationId,
 		"one MCP session carries one correlation ID across all of its tool calls")
+
+	// A denial on a project-scoped resource keeps its true project parent —
+	// the denied probe must show up for that project's auditors. (Only
+	// UNVALIDATED resources — the workspace-mismatch arm — fall back to the
+	// caller's workspace; an IAM denial's resources passed workspace-scoped
+	// validation.)
+	projects, err := ctl.projectServiceClient.ListProjects(ctx, connect.NewRequest(&v1pb.ListProjectsRequest{}))
+	a.NoError(err)
+	a.NotEmpty(projects.Msg.Projects)
+	projectName := projects.Msg.Projects[0].Name
+	a.Equal(http.StatusForbidden, callAPI("ProjectService/SetIamPolicy", map[string]any{
+		"resource": projectName,
+		"policy":   map[string]any{"bindings": []any{}},
+	}))
+	projectDenied, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: projectName,
+		Filter: `method == "/bytebase.v1.ProjectService/SetIamPolicy"`,
+	}))
+	a.NoError(err)
+	a.Len(projectDenied.Msg.AuditLogs, 1, "the project-scoped denial must be audited under the project it targeted")
+	projectRow := projectDenied.Msg.AuditLogs[0]
+	a.True(strings.HasPrefix(projectRow.Name, projectName+"/auditLogs/"))
+	a.Equal("users/"+memberEmail, projectRow.User)
+	a.Equal(int32(connect.CodePermissionDenied), projectRow.Status.GetCode())
+	a.Equal(permitted.McpDelegation.CorrelationId, projectRow.McpDelegation.GetCorrelationId())
 
 	// Public-chain rows are untouched: the admin's direct v1 CreateUser (the
 	// member's own creation, same audited method as the denial) carries no

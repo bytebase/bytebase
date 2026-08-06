@@ -235,15 +235,27 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 		parent           string
 		auditWorkspaceID string
 	}
+	// One row per DISTINCT parent: batch requests repeat the same resource
+	// once per item, and since ACL-denied internal-chain calls are audited
+	// too, an unprivileged caller reaches this fan-out — duplicates would let
+	// one denied batch call naming N items write N identical rows.
 	var parents []auditParent
+	seenParent := make(map[string]bool)
+	appendParent := func(ap auditParent) {
+		if seenParent[ap.parent] {
+			return
+		}
+		seenParent[ap.parent] = true
+		parents = append(parents, ap)
+	}
 	for _, authResource := range authContext.Resources {
 		switch authResource.Type {
 		case common.ResourceTypeProject:
-			parents = append(parents, auditParent{
+			appendParent(auditParent{
 				parent: common.FormatProject(authResource.ID),
 			})
 		case common.ResourceTypeWorkspace:
-			parents = append(parents, auditParent{
+			appendParent(auditParent{
 				parent:           common.FormatWorkspace(authResource.ID),
 				auditWorkspaceID: authResource.ID,
 			})
@@ -423,9 +435,10 @@ func mcpDelegationAttrs(d *storepb.MCPDelegation) []slog.Attr {
 	if d == nil {
 		return nil
 	}
-	attrs := []slog.Attr{slog.Bool("mcp", true)}
-	if d.CorrelationId != "" {
-		attrs = append(attrs, slog.String("mcp_correlation_id", d.CorrelationId))
+	attrs := []slog.Attr{
+		slog.Bool("mcp", true),
+		// Minted for every session, legacy included — never empty.
+		slog.String("mcp_correlation_id", d.CorrelationId),
 	}
 	if d.Scope != "" {
 		attrs = append(attrs, slog.String("mcp_scope", d.Scope))

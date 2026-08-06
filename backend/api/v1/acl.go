@@ -146,30 +146,28 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	if err != nil {
 		return resourceResolutionConnectError(err)
 	}
-	authContext.Resources = resources
 
-	// Workspace isolation: verify all resources belong to the caller's workspace.
-	// Project, instance, and database ownership is already validated in
-	// populateRawResources via workspace-filtered store lookups. Here we validate
-	// workspace resources.
+	// Workspace isolation: verify all resources belong to the caller's
+	// workspace BEFORE publishing them on the AuthContext. Project, instance,
+	// and database ownership is already validated in populateRawResources via
+	// workspace-filtered store lookups; here we validate workspace resources.
+	// Publishing only validated entries matters on the internal MCP chain,
+	// where the audit interceptor runs outside ACL and derives a denied row's
+	// parents from Resources — an entry that failed this check must never
+	// become an audit parent (the denial would be filed under the foreign
+	// workspace the request named, not under the caller).
 	// Runs after authentication so unauthenticated requests get 401 first,
 	// preventing resource existence probing.
-	for _, resource := range authContext.Resources {
+	for _, resource := range resources {
 		switch resource.Type {
 		case common.ResourceTypeWorkspace:
 			if resource.ID != workspaceID {
-				// Resources must never leave this check holding an entry that
-				// failed workspace validation: on the internal MCP chain the
-				// audit interceptor runs outside ACL and derives the denied
-				// row's parent from Resources — a foreign workspace here would
-				// write the denial into another tenant's audit log. Clearing
-				// makes the audit fall back to the caller's own workspace.
-				authContext.Resources = nil
 				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace mismatch"))
 			}
 		default:
 		}
 	}
+	authContext.Resources = resources
 
 	ok, extra, err := doIAMPermissionCheck(ctx, in.iamManager, fullMethod, user, authContext)
 	if err != nil {

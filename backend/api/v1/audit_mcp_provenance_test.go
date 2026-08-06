@@ -156,6 +156,48 @@ func TestAuditRowCarriesMCPDelegationProvenance(t *testing.T) {
 	})
 }
 
+// TestAuditParentsDeduplicated pins that createAuditLog writes ONE row per
+// distinct parent. Batch requests repeat the same project resource once per
+// item, and since PR 5b routes ACL-denied internal-chain calls through the
+// audit interceptor, an unprivileged caller reaches this fan-out — without
+// dedup, a single denied batch call naming N items would write N identical
+// rows.
+func TestAuditParentsDeduplicated(t *testing.T) {
+	st := newAuditLiveStore(t)
+	in := NewAuditInterceptor(st, "test-secret", &config.Profile{})
+
+	authCtx := &common.AuthContext{
+		Audit:      true,
+		AuthMethod: common.AuthMethodIAM,
+		Resources: []*common.Resource{
+			{Type: common.ResourceTypeProject, ID: "proj-batch"},
+			{Type: common.ResourceTypeProject, ID: "proj-batch"},
+			{Type: common.ResourceTypeProject, ID: "proj-batch"},
+			{Type: common.ResourceTypeWorkspace, ID: auditTestWorkspace},
+		},
+		DelegatedGrant: &common.DelegatedGrant{CorrelationID: "corr-dedup"},
+	}
+	next := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
+		return connect.NewResponse(&v1pb.QueryResponse{}), nil
+	}
+	req := &specRequest{
+		AnyRequest: connect.NewRequest(&v1pb.QueryRequest{Name: "instances/i/databases/d"}),
+		procedure:  "/bytebase.v1.SQLService/Query",
+	}
+	_, err := in.WrapUnary(next)(newAuditTestContext(authCtx), req)
+	require.NoError(t, err)
+
+	rows := findRowsByCorrelation(t, st, "corr-dedup")
+	var parents []string
+	for _, row := range rows {
+		parents = append(parents, row.Payload.Parent)
+	}
+	require.ElementsMatch(t,
+		[]string{common.FormatProject("proj-batch"), "workspaces/" + auditTestWorkspace},
+		parents,
+		"one audit row per DISTINCT parent — repeated batch resources must not multiply rows")
+}
+
 // TestInternalChainAuditRecordsACLDenial pins PR 5b's denial-audit mechanism:
 // with the audit interceptor wrapped OUTSIDE the ACL interceptor (the internal
 // MCP chain's order), an ACL denial produces an audit row carrying the

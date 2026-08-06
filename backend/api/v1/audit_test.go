@@ -129,6 +129,7 @@ func TestLogAuditToStdoutFormat(t *testing.T) {
 	a.Equal("corr-42", delegated["mcp_correlation_id"],
 		"the session correlation ID is the key operators pivot on")
 	a.Equal("mcp:read-only", delegated["mcp_scope"])
+	a.Equal("https://bb.example.com/mcp", delegated["mcp_resource"])
 	a.Equal("client-A", delegated["mcp_client_id"])
 }
 
