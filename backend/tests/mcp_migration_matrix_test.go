@@ -34,7 +34,9 @@ package tests
 // them on a live server. NEW: TestMCPMigrationGrantStateMatrix.
 //
 // Row 4 — a grant whose client omitted `scope` at consent: resource bound,
-// scope empty. A PERMANENT population, not a migration artifact, and it must
+// scope empty. The state has two indistinguishable origins — scope-omitting
+// clients, which make it permanent rather than only migration-era, and,
+// transiently, PR-3-era tokens whose grant DID record a scope — and it must
 // never collapse into row 3. The AuthContext-level distinction is pinned
 // (internal_interceptor_livestate_test.go/"grant-backed token: resource
 // present, scope empty"); nothing minted the state from a real scope-less
@@ -81,15 +83,18 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// postMCP sends one authenticated request to /mcp and returns the boundary's
-// verdict. The body is irrelevant to these rows: authMiddleware admits or
-// refuses before the MCP handler ever sees it, so this reads the admission
-// decision directly instead of through the SDK's error shape.
+// postMCP sends one well-formed MCP initialize request to /mcp and returns the
+// boundary's verdict, so admission and refusal are both observable positively:
+// an admitted request reaches the handler and answers 200, a refused one
+// carries the refusing layer's status and message. Reading the status directly
+// keeps these rows off the SDK's error shape.
 func postMCP(t *testing.T, ctl *controller, bearer string) (int, string) {
 	t.Helper()
-	req, err := http.NewRequest(http.MethodPost, ctl.rootURL+"/mcp", strings.NewReader(`{}`))
+	const initialize = `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"bb-e2e","version":"0"}}}`
+	req, err := http.NewRequest(http.MethodPost, ctl.rootURL+"/mcp", strings.NewReader(initialize))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
 	req.Header.Set("Authorization", "Bearer "+bearer)
 	resp, err := (&http.Client{}).Do(req)
 	require.NoError(t, err)
@@ -158,8 +163,9 @@ func jwtClaims(t *testing.T, token string) map[string]any {
 // and that resource is the only thing separating it from the pre-grant case.
 // Collapsing the two would widen a consented session to full legacy
 // semantics, which is why the discriminator is asserted here rather than
-// assumed: the state is permanent (a client that never sends `scope` produces
-// it forever), not a migration artifact that drains.
+// assumed: the state does not fully drain (a client that never sends `scope`
+// produces it forever), so it outlives the migration window that also mints
+// it.
 func TestMCPMigrationGrantStateMatrix(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -211,24 +217,28 @@ func TestMCPMigrationGrantStateMatrix(t *testing.T) {
 	}
 	a.Len(delegated, 2, "each MCP session's call must produce exactly one provenance-carrying row")
 
+	// Each row is attributed by the OAuth client it came from — an axis
+	// independent of the resource — so the resource assertions below test the
+	// discriminator instead of restating how the rows were sorted.
 	var preGrant, resourceOnly *v1pb.MCPDelegation
 	for _, d := range delegated {
-		if d.Resource == "" {
+		if d.ClientId == "" {
 			preGrant = d
 		} else {
 			resourceOnly = d
 		}
 	}
-	a.NotNil(preGrant, "the plain-session row must record an empty resource")
-	a.NotNil(resourceOnly, "the scope-less grant's row must record its bound resource")
+	a.NotNil(preGrant, "a pasted web token was never issued to an OAuth client, so its row carries no client")
+	a.NotNil(resourceOnly, "the consented grant's row must name the client it was issued to")
+	a.Equal(clientID, resourceOnly.ClientId)
 
 	a.Empty(preGrant.Scope, "a pre-grant session has no consented scope")
-	a.Empty(preGrant.ClientId, "a pasted web token was never issued to an OAuth client")
+	a.Empty(preGrant.Resource, "a pre-grant session was never bound to a resource")
 	a.NotEmpty(preGrant.CorrelationId, "every MCP-originated row must be correlatable to its session")
 
 	a.Empty(resourceOnly.Scope, "the grant recorded no scope, so the row records none — never a resolved label")
-	a.Equal(ctl.rootURL+"/mcp", resourceOnly.Resource, "the grant's stored resource travels verbatim")
-	a.Equal(clientID, resourceOnly.ClientId)
+	a.Equal(ctl.rootURL+"/mcp", resourceOnly.Resource,
+		"the grant's stored resource travels verbatim — it is the only thing keeping this state out of the pre-grant one")
 	a.NotEmpty(resourceOnly.CorrelationId)
 
 	a.NotEqual(preGrant.CorrelationId, resourceOnly.CorrelationId,
@@ -256,25 +266,51 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
+	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
+		Name: "workspaces/-",
+	}))
+	a.NoError(err)
+	workspaceID := strings.TrimPrefix(workspace.Msg.Name, "workspaces/")
+
 	mcpToken, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
 
 	status, body := postMCP(t, ctl, mcpToken)
-	a.NotEqual(http.StatusForbidden, status,
+	a.Equal(http.StatusOK, status,
 		"control: with a readable policy the ceiling admits this session; %s", body)
 
 	db, err := sql.Open("pgx", ctl.profile.PgURL)
 	a.NoError(err)
 	defer db.Close()
 
-	// A wrong-typed ceiling is what makes the read fail. (An unrecognized enum
-	// NAME would not: the store's unmarshaler discards unknown values, so the
-	// field would simply read as unset — a different behavior, reported
-	// separately, and deliberately not asserted here.)
+	// The stored ceiling is given a value the profile cannot be parsed with, so
+	// the read errors. An unrecognized enum NAME would not do it: the store's
+	// unmarshaler discards values it does not know, so such a ceiling reads
+	// back as unset — a different behavior, and one this test deliberately does
+	// not assert either way.
+	restore := func() {
+		result, err := db.ExecContext(ctx, `
+			UPDATE setting SET value = value - 'mcpCapability'
+			WHERE workspace = $1 AND name = 'WORKSPACE_PROFILE';
+		`, workspaceID)
+		a.NoError(err)
+		affected, err := result.RowsAffected()
+		a.NoError(err)
+		a.Equal(int64(1), affected, "the corrupted policy row must be restored")
+	}
 	result, err := db.ExecContext(ctx, `
 		UPDATE setting SET value = jsonb_set(value, '{mcpCapability}', 'true')
-		WHERE name = 'WORKSPACE_PROFILE';
-	`)
+		WHERE workspace = $1 AND name = 'WORKSPACE_PROFILE';
+	`, workspaceID)
 	a.NoError(err)
+	// Registered before the assertions below so a failing one cannot leave the
+	// server running on an unreadable profile through teardown, burying the
+	// real failure under unrelated errors.
+	restored := false
+	t.Cleanup(func() {
+		if !restored {
+			restore()
+		}
+	})
 	affected, err := result.RowsAffected()
 	a.NoError(err)
 	a.Equal(int64(1), affected, "the workspace profile row must exist for this test to mean anything")
@@ -286,11 +322,8 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 
 	// Restoring the row proves the refusal was the unreadable policy and
 	// nothing else: the very same token opens a session again.
-	_, err = db.ExecContext(ctx, `
-		UPDATE setting SET value = value - 'mcpCapability'
-		WHERE name = 'WORKSPACE_PROFILE';
-	`)
-	a.NoError(err)
+	restore()
+	restored = true
 
 	session := openMCPSession(ctx, t, ctl, mcpToken)
 	defer session.Close()
@@ -333,8 +366,11 @@ func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 		Name:      "call_api",
 		Arguments: map[string]any{"operationId": "ProjectService/ListProjects"},
 	})
-	a.Error(err,
-		"an established session must not keep serving tool calls under a ceiling that now refuses it")
+	// The cause matters, not just the failure: a bare "some error" would go
+	// green if the session broke for an unrelated reason while the ceiling
+	// exemption regressed.
+	a.ErrorContains(err, http.StatusText(http.StatusForbidden),
+		"an established session must be stopped BY THE CEILING, not merely fail somehow")
 
 	// Widening again admits a new session, so the refusal was the ceiling
 	// rather than damage to the session or the grant.
