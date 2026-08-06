@@ -58,9 +58,13 @@ Read `backend/migrator/migration/LATEST.sql` and find every table with a multi-c
 - `issue (project, id)`
 - `task (project, id)`
 - `task_run (project, id)`
-- `task_run_log (project, task_run_id, created_at)`
 - `db_group (project, resource_id)`
 - `release (project, train, iteration)`
+
+`task_run_log` deliberately has no primary key (append-only log; entries for one
+task run can share a `created_at` microsecond — BYT-10035), but it is equally
+project-scoped: every predicate on it must include `project` alongside
+`task_run_id`.
 
 Always verify against LATEST.sql — tables may have been added since this list was
 last updated. Cross-reference with the tables your diff touches.
