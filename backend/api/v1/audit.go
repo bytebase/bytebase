@@ -235,15 +235,27 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 		parent           string
 		auditWorkspaceID string
 	}
+	// One row per DISTINCT parent: batch requests repeat the same resource
+	// once per item, and since ACL-denied internal-chain calls are audited
+	// too, an unprivileged caller reaches this fan-out — duplicates would let
+	// one denied batch call naming N items write N identical rows.
 	var parents []auditParent
+	seenParent := make(map[string]bool)
+	appendParent := func(ap auditParent) {
+		if seenParent[ap.parent] {
+			return
+		}
+		seenParent[ap.parent] = true
+		parents = append(parents, ap)
+	}
 	for _, authResource := range authContext.Resources {
 		switch authResource.Type {
 		case common.ResourceTypeProject:
-			parents = append(parents, auditParent{
+			appendParent(auditParent{
 				parent: common.FormatProject(authResource.ID),
 			})
 		case common.ResourceTypeWorkspace:
-			parents = append(parents, auditParent{
+			appendParent(auditParent{
 				parent:           common.FormatWorkspace(authResource.ID),
 				auditWorkspaceID: authResource.ID,
 			})
@@ -301,6 +313,7 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 			Latency:         durationpb.New(e.latency),
 			ServiceData:     e.serviceData,
 			RequestMetadata: requestMetadata,
+			McpDelegation:   mcpDelegationFromAuthContext(authContext),
 		}
 		// Resolve workspace for audit log.
 		workspaceIDForAudit := ap.auditWorkspaceID
@@ -322,6 +335,24 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 	}
 
 	return nil
+}
+
+// mcpDelegationFromAuthContext copies the delegated MCP grant state onto the
+// audit row, verbatim: empty grant values (legacy sessions) are recorded
+// empty, never resolved to a synthetic label. A nil return — every
+// public-chain request — leaves the row without MCP fields; presence of the
+// message is the MCP-origin marker.
+func mcpDelegationFromAuthContext(authContext *common.AuthContext) *storepb.MCPDelegation {
+	g := authContext.DelegatedGrant
+	if g == nil {
+		return nil
+	}
+	return &storepb.MCPDelegation{
+		Scope:         g.Scope,
+		Resource:      g.Resource,
+		ClientId:      g.ClientID,
+		CorrelationId: g.CorrelationID,
+	}
 }
 
 // logAuditToStdout writes audit log events to stdout using Go's standard slog library.
@@ -371,6 +402,8 @@ func logAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
 		attrs = append(attrs, slog.String("severity", p.Severity.String()))
 	}
 
+	attrs = append(attrs, mcpDelegationAttrs(p.McpDelegation)...)
+
 	// Include request payload (truncated to 100KB for log manageability)
 	// Request is already redacted for sensitive data by getRequestString()
 	if p.Request != "" {
@@ -392,6 +425,31 @@ func logAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
 	}
 
 	slog.LogAttrs(ctx, slog.LevelInfo, p.Method, attrs...)
+}
+
+// mcpDelegationAttrs renders the MCP provenance for stdout audit lines:
+// "mcp": true marks the row as MCP-originated even when the grant fields are
+// empty (legacy sessions); the correlation ID is what operators pivot on to
+// reassemble an agent session.
+func mcpDelegationAttrs(d *storepb.MCPDelegation) []slog.Attr {
+	if d == nil {
+		return nil
+	}
+	attrs := []slog.Attr{
+		slog.Bool("mcp", true),
+		// Minted for every session, legacy included — never empty.
+		slog.String("mcp_correlation_id", d.CorrelationId),
+	}
+	if d.Scope != "" {
+		attrs = append(attrs, slog.String("mcp_scope", d.Scope))
+	}
+	if d.Resource != "" {
+		attrs = append(attrs, slog.String("mcp_resource", d.Resource))
+	}
+	if d.ClientId != "" {
+		attrs = append(attrs, slog.String("mcp_client_id", d.ClientId))
+	}
+	return attrs
 }
 
 func getRequestResource(request any) string {

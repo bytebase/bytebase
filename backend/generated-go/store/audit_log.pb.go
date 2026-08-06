@@ -118,8 +118,12 @@ type AuditLog struct {
 	ServiceData *anypb.Any `protobuf:"bytes,10,opt,name=service_data,json=serviceData,proto3" json:"service_data,omitempty"`
 	// Metadata about the operation.
 	RequestMetadata *RequestMetadata `protobuf:"bytes,11,opt,name=request_metadata,json=requestMetadata,proto3" json:"request_metadata,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// MCP delegation provenance. Present exactly when the audited call arrived
+	// through the MCP server's delegated credential; never set for public API
+	// calls. Presence of this message is the MCP-origin marker.
+	McpDelegation *MCPDelegation `protobuf:"bytes,12,opt,name=mcp_delegation,json=mcpDelegation,proto3" json:"mcp_delegation,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AuditLog) Reset() {
@@ -229,6 +233,13 @@ func (x *AuditLog) GetRequestMetadata() *RequestMetadata {
 	return nil
 }
 
+func (x *AuditLog) GetMcpDelegation() *MCPDelegation {
+	if x != nil {
+		return x.McpDelegation
+	}
+	return nil
+}
+
 // Metadata about the request.
 type RequestMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -285,11 +296,93 @@ func (x *RequestMetadata) GetCallerSuppliedUserAgent() string {
 	return ""
 }
 
+// Provenance of a call that reached the API through the MCP (Model Context
+// Protocol) server's delegated credential. The values are copied verbatim from
+// the verified credential's grant state; empty fields record that the grant
+// stored nothing (legacy sessions), never a resolved or synthesized value.
+type MCPDelegation struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The OAuth2 grant's consented scope, e.g. "mcp:read-only".
+	// Empty when the grant recorded no scope.
+	Scope string `protobuf:"bytes,1,opt,name=scope,proto3" json:"scope,omitempty"`
+	// The grant's stored MCP resource URI.
+	// Empty for pre-grant legacy sessions.
+	Resource string `protobuf:"bytes,2,opt,name=resource,proto3" json:"resource,omitempty"`
+	// The OAuth2 client the grant was consented to.
+	// Empty for legacy web-session tokens at /mcp.
+	ClientId string `protobuf:"bytes,3,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	// Correlates the audit rows an MCP session produces. Minted at the /mcp
+	// boundary and session-scoped: the MCP SDK hands tool handlers the
+	// initialize-time context, so one MCP session carries one correlation ID
+	// across all of its tool calls.
+	CorrelationId string `protobuf:"bytes,4,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MCPDelegation) Reset() {
+	*x = MCPDelegation{}
+	mi := &file_store_audit_log_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MCPDelegation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MCPDelegation) ProtoMessage() {}
+
+func (x *MCPDelegation) ProtoReflect() protoreflect.Message {
+	mi := &file_store_audit_log_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MCPDelegation.ProtoReflect.Descriptor instead.
+func (*MCPDelegation) Descriptor() ([]byte, []int) {
+	return file_store_audit_log_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *MCPDelegation) GetScope() string {
+	if x != nil {
+		return x.Scope
+	}
+	return ""
+}
+
+func (x *MCPDelegation) GetResource() string {
+	if x != nil {
+		return x.Resource
+	}
+	return ""
+}
+
+func (x *MCPDelegation) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+func (x *MCPDelegation) GetCorrelationId() string {
+	if x != nil {
+		return x.CorrelationId
+	}
+	return ""
+}
+
 var File_store_audit_log_proto protoreflect.FileDescriptor
 
 const file_store_audit_log_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/audit_log.proto\x12\x0ebytebase.store\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\xcd\x04\n" +
+	"\x15store/audit_log.proto\x12\x0ebytebase.store\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\x93\x05\n" +
 	"\bAuditLog\x12\x16\n" +
 	"\x06parent\x18\x01 \x01(\tR\x06parent\x12\x16\n" +
 	"\x06method\x18\x02 \x01(\tR\x06method\x12\x1a\n" +
@@ -302,7 +395,8 @@ const file_store_audit_log_proto_rawDesc = "" +
 	"\alatency\x18\t \x01(\v2\x19.google.protobuf.DurationR\alatency\x127\n" +
 	"\fservice_data\x18\n" +
 	" \x01(\v2\x14.google.protobuf.AnyR\vserviceData\x12J\n" +
-	"\x10request_metadata\x18\v \x01(\v2\x1f.bytebase.store.RequestMetadataR\x0frequestMetadata\"\x85\x01\n" +
+	"\x10request_metadata\x18\v \x01(\v2\x1f.bytebase.store.RequestMetadataR\x0frequestMetadata\x12D\n" +
+	"\x0emcp_delegation\x18\f \x01(\v2\x1d.bytebase.store.MCPDelegationR\rmcpDelegation\"\x85\x01\n" +
 	"\bSeverity\x12\x18\n" +
 	"\x14SEVERITY_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05DEBUG\x10\x01\x12\b\n" +
@@ -316,7 +410,12 @@ const file_store_audit_log_proto_rawDesc = "" +
 	"\tEMERGENCY\x10\b\"k\n" +
 	"\x0fRequestMetadata\x12\x1b\n" +
 	"\tcaller_ip\x18\x01 \x01(\tR\bcallerIp\x12;\n" +
-	"\x1acaller_supplied_user_agent\x18\x02 \x01(\tR\x17callerSuppliedUserAgentB\x90\x01\n" +
+	"\x1acaller_supplied_user_agent\x18\x02 \x01(\tR\x17callerSuppliedUserAgent\"\x85\x01\n" +
+	"\rMCPDelegation\x12\x14\n" +
+	"\x05scope\x18\x01 \x01(\tR\x05scope\x12\x1a\n" +
+	"\bresource\x18\x02 \x01(\tR\bresource\x12\x1b\n" +
+	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12%\n" +
+	"\x0ecorrelation_id\x18\x04 \x01(\tR\rcorrelationIdB\x90\x01\n" +
 	"\x12com.bytebase.storeB\rAuditLogProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -332,26 +431,28 @@ func file_store_audit_log_proto_rawDescGZIP() []byte {
 }
 
 var file_store_audit_log_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_store_audit_log_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_store_audit_log_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_audit_log_proto_goTypes = []any{
 	(AuditLog_Severity)(0),      // 0: bytebase.store.AuditLog.Severity
 	(*AuditLog)(nil),            // 1: bytebase.store.AuditLog
 	(*RequestMetadata)(nil),     // 2: bytebase.store.RequestMetadata
-	(*status.Status)(nil),       // 3: google.rpc.Status
-	(*durationpb.Duration)(nil), // 4: google.protobuf.Duration
-	(*anypb.Any)(nil),           // 5: google.protobuf.Any
+	(*MCPDelegation)(nil),       // 3: bytebase.store.MCPDelegation
+	(*status.Status)(nil),       // 4: google.rpc.Status
+	(*durationpb.Duration)(nil), // 5: google.protobuf.Duration
+	(*anypb.Any)(nil),           // 6: google.protobuf.Any
 }
 var file_store_audit_log_proto_depIdxs = []int32{
 	0, // 0: bytebase.store.AuditLog.severity:type_name -> bytebase.store.AuditLog.Severity
-	3, // 1: bytebase.store.AuditLog.status:type_name -> google.rpc.Status
-	4, // 2: bytebase.store.AuditLog.latency:type_name -> google.protobuf.Duration
-	5, // 3: bytebase.store.AuditLog.service_data:type_name -> google.protobuf.Any
+	4, // 1: bytebase.store.AuditLog.status:type_name -> google.rpc.Status
+	5, // 2: bytebase.store.AuditLog.latency:type_name -> google.protobuf.Duration
+	6, // 3: bytebase.store.AuditLog.service_data:type_name -> google.protobuf.Any
 	2, // 4: bytebase.store.AuditLog.request_metadata:type_name -> bytebase.store.RequestMetadata
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	3, // 5: bytebase.store.AuditLog.mcp_delegation:type_name -> bytebase.store.MCPDelegation
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_store_audit_log_proto_init() }
@@ -365,7 +466,7 @@ func file_store_audit_log_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_audit_log_proto_rawDesc), len(file_store_audit_log_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

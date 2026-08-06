@@ -45,6 +45,11 @@ message AuditLog {
   // Metadata about the operation.
   RequestMetadata request_metadata = 11;
 
+  // MCP delegation provenance. Present exactly when the audited call arrived
+  // through the MCP server's delegated credential; never set for public API
+  // calls. Presence of this message is the MCP-origin marker.
+  MCPDelegation mcp_delegation = 12;
+
   enum Severity {
     SEVERITY_UNSPECIFIED = 0;
     DEBUG = 1;
@@ -66,4 +71,28 @@ message RequestMetadata {
   // The user agent of the caller.
   // This information is not authenticated and should be treated accordingly.
   string caller_supplied_user_agent = 2;
+}
+
+// Provenance of a call that reached the API through the MCP (Model Context
+// Protocol) server's delegated credential. The values are copied verbatim from
+// the verified credential's grant state; empty fields record that the grant
+// stored nothing (legacy sessions), never a resolved or synthesized value.
+message MCPDelegation {
+  // The OAuth2 grant's consented scope, e.g. "mcp:read-only".
+  // Empty when the grant recorded no scope.
+  string scope = 1;
+
+  // The grant's stored MCP resource URI.
+  // Empty for pre-grant legacy sessions.
+  string resource = 2;
+
+  // The OAuth2 client the grant was consented to.
+  // Empty for legacy web-session tokens at /mcp.
+  string client_id = 3;
+
+  // Correlates the audit rows an MCP session produces. Minted at the /mcp
+  // boundary and session-scoped: the MCP SDK hands tool handlers the
+  // initialize-time context, so one MCP session carries one correlation ID
+  // across all of its tool calls.
+  string correlation_id = 4;
 }

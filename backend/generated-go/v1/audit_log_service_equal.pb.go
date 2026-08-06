@@ -143,6 +143,9 @@ func (x *AuditLog) Equal(y *AuditLog) bool {
 	if !x.RequestMetadata.Equal(y.RequestMetadata) {
 		return false
 	}
+	if !x.McpDelegation.Equal(y.McpDelegation) {
+		return false
+	}
 	return true
 }
 
@@ -170,6 +173,28 @@ func (x *RequestMetadata) Equal(y *RequestMetadata) bool {
 		return false
 	}
 	if x.CallerSuppliedUserAgent != y.CallerSuppliedUserAgent {
+		return false
+	}
+	return true
+}
+
+func (x *MCPDelegation) Equal(y *MCPDelegation) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Scope != y.Scope {
+		return false
+	}
+	if x.Resource != y.Resource {
+		return false
+	}
+	if x.ClientId != y.ClientId {
+		return false
+	}
+	if x.CorrelationId != y.CorrelationId {
 		return false
 	}
 	return true

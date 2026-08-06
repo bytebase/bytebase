@@ -24,8 +24,10 @@ import (
 
 // mintMCPOAuthToken runs the full OAuth2 flow a real MCP client performs
 // against the live server — RFC 7591 dynamic client registration, PKCE
-// consent, code exchange — and returns the resource-bound access token.
-func mintMCPOAuthToken(t *testing.T, ctl *controller) string {
+// consent, code exchange — and returns the resource-bound access token plus
+// the registered client ID. consentBearer is the token of the user granting
+// consent; the minted token is bound to that principal.
+func mintMCPOAuthToken(t *testing.T, ctl *controller, consentBearer string) (string, string) {
 	t.Helper()
 	httpClient := &http.Client{}
 	redirectURI := "http://localhost/cb"
@@ -56,7 +58,7 @@ func mintMCPOAuthToken(t *testing.T, ctl *controller) string {
 	req, err := http.NewRequest(http.MethodPost, ctl.rootURL+"/api/oauth2/authorize", strings.NewReader(form.Encode()))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Authorization", "Bearer "+ctl.authInterceptor.token)
+	req.Header.Set("Authorization", "Bearer "+consentBearer)
 	consentResp, err := httpClient.Do(req)
 	require.NoError(t, err)
 	defer consentResp.Body.Close()
@@ -91,7 +93,7 @@ func mintMCPOAuthToken(t *testing.T, ctl *controller) string {
 	}
 	require.NoError(t, json.Unmarshal(tokenBody, &token))
 	require.NotEmpty(t, token.AccessToken)
-	return token.AccessToken
+	return token.AccessToken, reg.ClientID
 }
 
 // TestMCPTokenIsRejectedOnGeneralAPI is the P1a PR 5 boundary e2e: a real
@@ -112,7 +114,7 @@ func TestMCPTokenIsRejectedOnGeneralAPI(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	mcpToken := mintMCPOAuthToken(t, ctl)
+	mcpToken, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
 
 	client := mcp.NewClient(&mcp.Implementation{Name: "bb-e2e", Version: "0"}, nil)
 	session, err := client.Connect(ctx, &mcp.StreamableClientTransport{

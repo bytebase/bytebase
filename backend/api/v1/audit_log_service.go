@@ -164,17 +164,33 @@ func convertToAuditLogs(auditLogs []*store.AuditLog) []*v1pb.AuditLog {
 
 func convertToAuditLog(l *store.AuditLog) *v1pb.AuditLog {
 	return &v1pb.AuditLog{
-		Name:        fmt.Sprintf("%s/%s%s", l.Payload.Parent, common.AuditLogPrefix, l.ResourceID),
-		CreateTime:  timestamppb.New(l.CreatedAt),
-		User:        l.Payload.User,
-		Method:      l.Payload.Method,
-		Severity:    convertToAuditLogSeverity(l.Payload.Severity),
-		Resource:    l.Payload.Resource,
-		Request:     l.Payload.Request,
-		Response:    l.Payload.Response,
-		Status:      l.Payload.Status,
-		Latency:     l.Payload.Latency,
-		ServiceData: l.Payload.ServiceData,
+		Name:          fmt.Sprintf("%s/%s%s", l.Payload.Parent, common.AuditLogPrefix, l.ResourceID),
+		CreateTime:    timestamppb.New(l.CreatedAt),
+		User:          l.Payload.User,
+		Method:        l.Payload.Method,
+		Severity:      convertToAuditLogSeverity(l.Payload.Severity),
+		Resource:      l.Payload.Resource,
+		Request:       l.Payload.Request,
+		Response:      l.Payload.Response,
+		Status:        l.Payload.Status,
+		Latency:       l.Payload.Latency,
+		ServiceData:   l.Payload.ServiceData,
+		McpDelegation: convertToMCPDelegation(l.Payload.McpDelegation),
+	}
+}
+
+// convertToMCPDelegation surfaces the stored MCP provenance on the public
+// AuditLog. Preserving nil is load-bearing: presence of the message is the
+// MCP-origin marker operators read.
+func convertToMCPDelegation(d *storepb.MCPDelegation) *v1pb.MCPDelegation {
+	if d == nil {
+		return nil
+	}
+	return &v1pb.MCPDelegation{
+		Scope:         d.Scope,
+		Resource:      d.Resource,
+		ClientId:      d.ClientId,
+		CorrelationId: d.CorrelationId,
 	}
 }
 

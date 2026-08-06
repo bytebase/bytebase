@@ -291,6 +291,7 @@
     - [AuditLog](#bytebase-v1-AuditLog)
     - [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest)
     - [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse)
+    - [MCPDelegation](#bytebase-v1-MCPDelegation)
     - [RequestMetadata](#bytebase-v1-RequestMetadata)
     - [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest)
     - [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse)
@@ -5104,6 +5105,7 @@ Audit log entry recording system activity or API call.
 | latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration of the operation. |
 | service_data | [google.protobuf.Any](#google-protobuf-Any) |  | Service-specific metadata about the request, response, and activities. |
 | request_metadata | [RequestMetadata](#bytebase-v1-RequestMetadata) |  | Metadata about the request context. |
+| mcp_delegation | [MCPDelegation](#bytebase-v1-MCPDelegation) |  | MCP delegation provenance. Present exactly when the audited call arrived through the MCP server&#39;s delegated credential; never set for public API calls. Presence of this message is the MCP-origin marker. |
 
 
 
@@ -5140,6 +5142,27 @@ Response message for exporting audit logs.
 | ----- | ---- | ----- | ----------- |
 | content | [bytes](#bytes) |  | The exported audit log content in the requested format. |
 | next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to retrieve the next page of log entities. |
+
+
+
+
+
+
+<a name="bytebase-v1-MCPDelegation"></a>
+
+### MCPDelegation
+Provenance of a call that reached the API through the MCP (Model Context
+Protocol) server&#39;s delegated credential. The values are copied verbatim from
+the verified credential&#39;s grant state; empty fields record that the grant
+stored nothing (legacy sessions), never a resolved or synthesized value.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| scope | [string](#string) |  | The OAuth2 grant&#39;s consented scope, e.g. &#34;mcp:read-only&#34;. Empty when the grant recorded no scope. |
+| resource | [string](#string) |  | The grant&#39;s stored MCP resource URI. Empty for pre-grant legacy sessions. |
+| client_id | [string](#string) |  | The OAuth2 client the grant was consented to. Empty for legacy web-session tokens at /mcp. |
+| correlation_id | [string](#string) |  | Correlates the audit rows an MCP session produces. Minted at the /mcp boundary and session-scoped: the MCP SDK hands tool handlers the initialize-time context, so one MCP session carries one correlation ID across all of its tool calls. |
 
 
 

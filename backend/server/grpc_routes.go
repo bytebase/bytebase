@@ -194,16 +194,23 @@ func configureGrpcRouters(
 	// interceptor that accepts ONLY the delegated credential minted at the /mcp
 	// boundary. It is reachable exclusively through the in-memory transport
 	// handed to the MCP server — never bound to a listener, so the internal
-	// credential never touches a socket. ACL and audit run exactly as on the
-	// public chain: the credential carries identity + grant state, while
-	// authorization is re-resolved live per request.
+	// credential never touches a socket. ACL runs exactly as on the public
+	// chain: the credential carries identity + grant state, while authorization
+	// is re-resolved live per request.
+	//
+	// Unlike the public chain, audit sits OUTSIDE ACL (first-listed interceptor
+	// is outermost, so listing audit before ACL wraps it): an ACL denial must
+	// still produce an audit row, because a denied MCP call is exactly the
+	// event an operator investigating an agent needs to see. Methods whose
+	// annotation opts out of auditing stay unaudited for permitted and denied
+	// calls alike (needAudit gates both).
 	internalHandlerOpts := connect.WithHandlerOptions(
 		connect.WithRecover(onPanic),
 		connect.WithInterceptors(
 			validateInterceptor,
 			auth.NewInternalMCPAuthInterceptor(stores, secret, profile),
-			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
 			apiv1.NewAuditInterceptor(stores, secret, profile),
+			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
 		),
 	)
 	internalMCPMux := http.NewServeMux()

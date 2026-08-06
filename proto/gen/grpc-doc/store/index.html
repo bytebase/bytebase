@@ -307,6 +307,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.MCPDelegation"><span class="badge">M</span>MCPDelegation</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.RequestMetadata"><span class="badge">M</span>RequestMetadata</a>
                 </li>
               
@@ -2907,6 +2911,66 @@ Some fields are omitted because they are too large or contain sensitive informat
                   <td><a href="#bytebase.store.RequestMetadata">RequestMetadata</a></td>
                   <td></td>
                   <td><p>Metadata about the operation. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mcp_delegation</td>
+                  <td><a href="#bytebase.store.MCPDelegation">MCPDelegation</a></td>
+                  <td></td>
+                  <td><p>MCP delegation provenance. Present exactly when the audited call arrived
+through the MCP server&#39;s delegated credential; never set for public API
+calls. Presence of this message is the MCP-origin marker. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.MCPDelegation">MCPDelegation</h3>
+        <p>Provenance of a call that reached the API through the MCP (Model Context</p><p>Protocol) server's delegated credential. The values are copied verbatim from</p><p>the verified credential's grant state; empty fields record that the grant</p><p>stored nothing (legacy sessions), never a resolved or synthesized value.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>scope</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The OAuth2 grant&#39;s consented scope, e.g. &#34;mcp:read-only&#34;.
+Empty when the grant recorded no scope. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The grant&#39;s stored MCP resource URI.
+Empty for pre-grant legacy sessions. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The OAuth2 client the grant was consented to.
+Empty for legacy web-session tokens at /mcp. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>correlation_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Correlates the audit rows an MCP session produces. Minted at the /mcp
+boundary and session-scoped: the MCP SDK hands tool handlers the
+initialize-time context, so one MCP session carries one correlation ID
+across all of its tool calls. </p></td>
                 </tr>
               
             </tbody>
