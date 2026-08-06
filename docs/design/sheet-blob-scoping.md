@@ -77,8 +77,9 @@ clearing every other dependent table. Add
 DELETE FROM sheet_blob_ref WHERE project = ?
 ```
 
-to that sequence, before the `project` delete. Without it, purging any project fails on the
-foreign key — a hard breakage of a shipped path.
+to that sequence at the position established under transaction lock ordering below — after the
+`db` delete (`:704`) and before `project_webhook` (`:739`). Without it, purging any project fails
+on the foreign key, a hard breakage of a shipped path.
 
 Blobs whose only ref belonged to the purged project are left behind with zero refs. That is
 consistent with today's behavior (nothing has ever deleted from `sheet_blob`) and is the state
@@ -90,15 +91,23 @@ Derive `(project, sha256)` from every surviving reference. All of them live insi
 payloads, and `protojson` camelCases the keys — `sheetSha256`, not `sheet_sha256`.
 
 The authoritative source list is `grep -rn "sheet_sha256" proto/store/`, which returns exactly
-five messages. Re-run it before writing the migration rather than trusting this table.
+five messages. Re-run it before writing the migration rather than trusting this table — and for
+each hit, confirm two things the grep does not tell you: the **column name** in `LATEST.sql`
+(it is not always `payload`) and the **nesting** of the field inside its message (it is not
+always top-level).
 
-| Source | Path to the hash | Route to project |
-|---|---|---|
-| `plan.config` | `specs[].changeDatabaseConfig.sheetSha256` | `plan.project` |
-| `task.payload` | `sheetSha256` | `task.project` |
-| `release.payload` | `files[].sheetSha256` | `release.project` |
-| `plan_check_run.payload` | `sheetSha256` | `plan_check_run.project` |
-| `revision.payload` | `sheetSha256` | `db(instance, db_name)` → `db.project` |
+| Source | Column | Path to the hash | Route to project |
+|---|---|---|---|
+| `plan` | `config` | `specs[].changeDatabaseConfig.sheetSha256` | `plan.project` |
+| `task` | `payload` | `sheetSha256` | `task.project` |
+| `release` | `payload` | `files[].sheetSha256` | `release.project` |
+| `plan_check_run` | `result` | `results[].sheetSha256` | `plan_check_run.project` |
+| `revision` | `payload` | `sheetSha256` | `db(instance, db_name)` → `db.project` |
+
+`plan_check_run` is the one that punishes assumption: the column is `result`, not `payload`, and
+the hash lives on `PlanCheckRunResult.Result` inside the repeated `results` array, so the path is
+`result->'results'` with a `jsonb_array_elements` expansion — the same shape as `plan` and
+`release`, not the flat shape of `task` and `revision`.
 
 The first four carry `project` directly. Only `revision` needs the join through `db`, because
 it keys on `(instance, db_name)` and inherits its project from the database.
@@ -131,6 +140,43 @@ a sheet created but never attached to a plan or release; the UI attaches immedia
 `createSheet` caches the content client-side (`frontend/src/stores/app/sheet.ts:91`) so a fresh
 draft does not re-fetch. The alternative — leaving orphans globally readable — reproduces the
 bug, so accept the gap and note it in the migration comment.
+
+**Observed references are not authorization.** This is the sharpest limitation of the whole
+approach and it needs a decision before the migration runs.
+
+The backfill reconstructs which project *referenced* a hash. That is not the same as which
+project was *entitled* to it, and today's unscoped paths let the two diverge.
+`convertPlanSpecChangeDatabaseConfig` (`backend/api/v1/plan_service.go:1157`) parses a
+caller-supplied `projects/{project}/sheets/{sha}` and stores only the hash, discarding the
+project; `HasSheets` currently validates existence with no scope. So a plan in project B can
+already hold a reference to a hash owned by project A, and after the write nothing distinguishes
+it from a legitimate one. Backfilling `(B, sha)` would mint a permanent grant out of exactly the
+access this change exists to close.
+
+Shadow mode does not catch this. The ref row exists, so the gate neither logs nor denies — it
+is invisible to the safety net described below.
+
+There is no clean automated fix: the refactor that created this bug deleted the sheet's creator
+and project metadata, so no ground truth for "who owned this hash" survives anywhere. What can
+be done is to size the population and decide deliberately:
+
+```sql
+SELECT sha256, count(DISTINCT project) AS projects, array_agg(DISTINCT project)
+FROM sheet_blob_ref
+GROUP BY sha256
+HAVING count(DISTINCT project) > 1;
+```
+
+Run this immediately after the backfill, before enforcement. A hash claimed by more than one
+project is either honest dedup — two projects independently authored identical SQL, and both
+claims are real — or a laundered cross-project reference. They are indistinguishable from the
+data, so this is a review list, not an automatic filter. In most deployments it should be short
+or empty; if it is long, that is itself a finding worth reporting before proceeding.
+
+One timing note: this design is public on the PR, including the rule that a reference becomes an
+ownership edge. Between publication and the migration there is a window in which references could
+be planted deliberately. Capture the multi-project list at a known-good point rather than only
+after upgrade.
 
 ### Store API
 
@@ -339,8 +385,17 @@ SELECT ?, decode(r.payload->>'sheetSha256', 'hex')
 FROM revision r
 WHERE (r.instance, r.db_name) IN (...)
   AND r.payload->>'sheetSha256' IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM sheet_blob b
+    WHERE b.sha256 = decode(r.payload->>'sheetSha256', 'hex')
+  )
 ON CONFLICT DO NOTHING
 ```
+
+The `EXISTS` guard is the same one the backfill uses, and it matters more here. A revision naming
+a hash with no blob would otherwise violate the new foreign key and abort the whole
+`BatchUpdateDatabases` call — turning a scoping change into a regression on database transfer,
+a path that reads no sheet blobs today and has no reason to start failing.
 
 Ref rows for the source project stay — the content was genuinely authored there.
 
@@ -353,17 +408,57 @@ Two new multi-table write paths fall under the canonical ordering in
 `backend/store/README.md#transaction-row-lock-ordering`, which `AGENTS.md` requires be settled
 before the code is written.
 
-- **`CreateSheets`** becomes a transaction spanning `sheet_blob` and `sheet_blob_ref`. Insert
-  the blob first, then the ref: the ref's foreign key depends on the blob existing, so the order
-  is forced, and both are inserts with `ON CONFLICT DO NOTHING` rather than existing-row locks.
-- **The transfer path** inserts ref rows inside the transaction that already takes
-  `SELECT ... FOR UPDATE` on the destination project (`backend/store/database.go:512`). The
-  project lock is already held when the ref insert runs, which is the required order — parent
-  project locked, then child rows written.
+### Position in the canonical sibling order
+
+The README requires a new project-owned branch to establish its position in the canonical order
+before implementation, and to update that list, `DeleteProject`, and `DeleteInstance` together.
+`sheet_blob_ref` is a direct child of `project` with no descendants and no dependents, and every
+table that can reference a hash (`plan`, `task`, `release`, `plan_check_run`, `revision`) sits
+earlier in the list. Place it immediately after `db`:
+
+```text
+... -> changelog -> sync_history -> revision -> db_schema -> db
+-> sheet_blob_ref -> project_webhook -> service_account -> ...
+```
+
+That is also where the purge delete belongs — between the `db` delete
+(`backend/store/project.go:704`) and `project_webhook` (`:739`) — so the purge sequence and the
+canonical list stay consistent.
+
+### Lifecycle policy
+
+`sheet_blob_ref` is purge-managed data, so the README requires its writers to state whether they
+need an **active** project or merely an **existing** one, and to serialize that against project
+deletion.
+
+**`CreateSheets` requires an active project.** A sheet ref is a new resource; there is no
+deleted-project continuation case for it. The API create paths check the project before calling
+the store, but that check is not serialized with purge — a concurrent purge between the check and
+the insert would surface as a raw foreign-key violation rather than a controlled NotFound. So
+`CreateSheets` takes the same transaction-scoped purge fence before any row lock that database
+creation, batch database updates, and task-run creation already take.
+
+The transfer path needs nothing extra here: `BatchUpdateDatabases` already locks every involved
+project `FOR UPDATE` (`backend/store/database.go:509-517`) and fails NotFound on a missing one.
+
+### Ordering of the two paths
+
+- **`CreateSheets`** spans `sheet_blob` and `sheet_blob_ref`. Insert the blob first, then the
+  ref: the ref's foreign key requires the blob to exist, so the order is forced. Both are
+  `ON CONFLICT DO NOTHING` — new-row-only inserts, not upserts that can update an existing row,
+  so the README's rule 4 upsert clause does not apply to them. The foreign-key checks on
+  `project` and `sheet_blob` do count as locks and are covered by the purge fence above.
+- **The transfer path** inserts refs inside the existing `BatchUpdateDatabases` transaction,
+  which has already taken `FOR UPDATE` on every involved project. Note this is *not* an instance
+  of the child-to-parent rule — that rule governs locking **existing** rows, and these refs are
+  new rows with nothing to lock beforehand. The insert is safe here because the transaction
+  already holds a stronger lock on the parent than the foreign-key check needs, not because
+  parent-then-child is the required order. It is not; an earlier draft of this doc claimed
+  otherwise.
 
 Both need the deterministic real-PostgreSQL regression tests that section mandates, asserting
 terminal outcomes in both lock-acquisition directions rather than merely the absence of
-SQLSTATE `40P01`.
+SQLSTATE `40P01`, and covering the create-versus-purge race named above.
 
 ## Independent fixes, no schema needed
 
@@ -408,7 +503,14 @@ These are worth landing separately and first — none needs a migration.
 - **Project purge** — purge a project that owns sheet refs and assert it succeeds. This is the
   direct regression test for the new foreign key.
 - **Transfer** — create a revision under project A, move the database to project B, assert the
-  statement is still readable under B.
+  statement is still readable under B. Add a variant where a revision names a hash with no blob
+  and assert the transfer still succeeds, covering the `EXISTS` guard.
+- **Create versus purge** — the deterministic race required by the lifecycle policy: a
+  `CreateSheets` concurrent with a purge of its project must end in a controlled NotFound, not a
+  foreign-key error, in both lock-acquisition directions.
+- **Multi-project hashes** — seed a plan in project B referencing a hash created in project A
+  (the pre-existing unscoped path), run the backfill, and assert the audit query reports it.
+  The point is that the row is *detected*, not that it is silently blessed.
 - **`HasSheets`** no longer answers for a foreign project's hash.
 - **`TestCollision_Sheet`** in `backend/tests/`, per the composite-PK convention in `AGENTS.md`.
   Note that the shared `setupCollidingProjects` fixture and `assertProjectUnchanged` helper do
@@ -420,6 +522,9 @@ These are worth landing separately and first — none needs a migration.
 
 1. The five no-schema fixes above — T6 first, since it is the cheapest way to obtain a hash.
 2. Migration, backfill, purge delete, backfill verification query.
-3. Store API split, gate helper, call sites, transfer handling, tests — gate shipping in shadow
+3. Run the multi-project audit query and review its output. This is a gate, not a report: a long
+   list means cross-project references are already widespread and the plan needs revisiting
+   before enforcement, since the backfill would otherwise make them permanent.
+4. Store API split, gate helper, call sites, transfer handling, tests — gate shipping in shadow
    mode.
-4. Flip the gate to denying, one release later, once the shadow log is clean.
+5. Flip the gate to denying, one release later, once the shadow log is clean.
