@@ -49,6 +49,8 @@ type World struct {
 	Plan              string
 	ReleaseIDTemplate string // Template for release ID
 	ReleaseIDTimezone string // Timezone for release ID variables
+	PlanTitle         string // Title of the created plan; defaults to the release ID
+	PlanDescription   string // Description of the created plan
 
 	// Outputs
 	OutputMap struct {
