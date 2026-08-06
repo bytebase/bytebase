@@ -94,6 +94,12 @@
     },
     "export-finished": "Export finished",
     "export-tooltip": "Must select start time and end time within 30 days",
+    "mcp": {
+      "badge": "MCP",
+      "client-id": "Client ID",
+      "correlation-id": "Correlation ID",
+      "origin": "Originated from an MCP (Model Context Protocol) client"
+    },
     "table": {
       "actor": "Actor",
       "created-ts": "Time",

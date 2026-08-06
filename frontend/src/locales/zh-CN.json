@@ -94,6 +94,12 @@
     },
     "export-finished": "导出完成",
     "export-tooltip": "必须选择 30 天范围内的开始和结束日期",
+    "mcp": {
+      "badge": "MCP",
+      "client-id": "客户端 ID",
+      "correlation-id": "关联 ID",
+      "origin": "来自 MCP (Model Context Protocol) 客户端"
+    },
     "table": {
       "actor": "操作者",
       "created-ts": "时间",
