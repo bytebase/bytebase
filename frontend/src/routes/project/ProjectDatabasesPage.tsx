@@ -7,8 +7,8 @@ import { createBehaviorMetric } from "@/app/analytics/behavior";
 import { behaviorAnalytics } from "@/app/analytics/provider";
 import { router, useCurrentRoute } from "@/app/router";
 import {
-  INSTANCE_ROUTE_CREATE,
   PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_INSTANCE_CREATE,
   SQL_EDITOR_DATABASE_MODULE,
 } from "@/app/router/handles";
 import { markListScrollRestorationEntry } from "@/app/router/NavigationScrollRestoration";
@@ -262,7 +262,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     () => selectedDatabases.map((db) => db.name),
     [selectedDatabases]
   );
-  const canCreateInstance = hasWorkspacePermissionV2("bb.instances.create");
+  const canCreateInstance = hasProjectPermission("bb.instances.create");
 
   // Mirror `selectedDatabases` into a ref so the batch-operation handlers
   // below can read the latest value without listing it as a dep. Otherwise
@@ -572,7 +572,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const handleCreateDatabaseAction = useCallback(() => {
     if (checkingWorkspaceInstance) return;
     if (emptyProjectShouldConnectInstance) {
-      if (!hasWorkspacePermissionV2("bb.instances.create")) return;
+      if (!hasProjectPermission("bb.instances.create")) return;
       behaviorAnalytics.captureMetric(
         createBehaviorMetric("connect database clicked", {
           routeId: router.currentRoute.value.name?.toString(),
@@ -580,8 +580,8 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         })
       );
       router.push({
-        name: INSTANCE_ROUTE_CREATE,
-        query: { project: projectId },
+        name: PROJECT_V1_ROUTE_INSTANCE_CREATE,
+        params: { projectId },
       });
       return;
     }
@@ -589,6 +589,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   }, [
     checkingWorkspaceInstance,
     emptyProjectShouldConnectInstance,
+    hasProjectPermission,
     projectId,
     projectName,
   ]);

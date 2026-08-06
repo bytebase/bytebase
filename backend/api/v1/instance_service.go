@@ -388,9 +388,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance ID %v", req.Msg.InstanceId))
 	}
 
-	if req.Msg.Parent != nil && req.Msg.InitialDatabaseProject != "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("initial_database_project must be unset when parent is set"))
-	}
 	projectID, err := s.getProjectInstanceParent(ctx, req.Msg.Parent)
 	if err != nil {
 		return nil, err
@@ -410,10 +407,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	instanceMessage.Workspace = workspaceID
 	instanceMessage.ProjectID = projectID
-	initialProjectID, err := s.getInitialDatabaseProjectID(ctx, req.Msg.GetInitialDatabaseProject())
-	if err != nil {
-		return nil, err
-	}
 	for _, ds := range instanceMessage.Metadata.GetDataSources() {
 		if err := validateAndSanitizeDataSourceTLS(ds); err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -453,9 +446,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err == nil {
 		defer driver.Close(ctx)
-		updatedInstance, _, newDatabases, err := s.schemaSyncer.SyncInstanceWithOptions(ctx, instance, schemasync.SyncInstanceOptions{
-			InitialProjectID: initialProjectID,
-		})
+		updatedInstance, _, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
 		if err != nil {
 			slog.Warn("Failed to sync instance",
 				slog.String("instance", instance.ResourceID),
@@ -473,27 +464,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 
 	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
-}
-
-func (s *InstanceService) getInitialDatabaseProjectID(ctx context.Context, projectName string) (string, error) {
-	if projectName == "" {
-		return "", nil
-	}
-	projectID, err := common.GetProjectID(projectName)
-	if err != nil {
-		return "", connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid project %q", projectName))
-	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
-	})
-	if err != nil {
-		return "", connect.NewError(connect.CodeInternal, err)
-	}
-	if project == nil || project.Deleted {
-		return "", connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectName))
-	}
-	return project.ResourceID, nil
 }
 
 func (s *InstanceService) getProjectInstanceParent(ctx context.Context, parent *string) (*string, error) {

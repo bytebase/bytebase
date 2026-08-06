@@ -9,12 +9,21 @@ import {
   DataSourceType,
   InstanceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
+import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { unknownInstance } from "@/types/v1/instance";
 import {
   InstanceFormProvider,
   useInstanceFormContext,
 } from "./InstanceFormContext";
+
+const mocks = vi.hoisted(() => ({
+  hasInstancePermission: vi.fn(() => true),
+}));
+
+vi.mock("./permission", () => ({
+  hasInstancePermission: mocks.hasInstancePermission,
+}));
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -133,10 +142,13 @@ const Probe = () => {
   return (
     <div
       data-title={ctx.basicInfo.title}
+      data-name={ctx.basicInfo.name}
+      data-parent={ctx.parent}
       data-host={ctx.adminDataSource.host}
       data-environment={ctx.basicInfo.environment}
       data-value-changed={String(ctx.valueChanged)}
       data-is-editing={String(ctx.isEditing)}
+      data-can-update={String(ctx.hasPermission("bb.instances.update"))}
     />
   );
 };
@@ -162,8 +174,32 @@ const renderIntoContainer = () => {
 
 describe("InstanceFormProvider", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.hasInstancePermission.mockReturnValue(true);
     mockEnvironmentList = [];
     vi.useRealTimers();
+  });
+
+  test("uses project ownership for create names and permissions", async () => {
+    const project = create(ProjectSchema, { name: "projects/app" });
+    const harness = renderIntoContainer();
+
+    await harness.render(
+      <InstanceFormProvider parent="projects/app" project={project}>
+        <Probe />
+      </InstanceFormProvider>
+    );
+
+    const probe = harness.container.firstElementChild as HTMLElement;
+    expect(probe.dataset.name).toBe("projects/app/instances/-");
+    expect(probe.dataset.parent).toBe("projects/app");
+    expect(probe.dataset.canUpdate).toBe("true");
+    expect(mocks.hasInstancePermission).toHaveBeenCalledWith(
+      project,
+      "bb.instances.update"
+    );
+
+    harness.unmount();
   });
 
   test("selects the first environment by default when creating an instance", async () => {

@@ -89,9 +89,6 @@ func (x *CreateInstanceRequest) Equal(y *CreateInstanceRequest) bool {
 	if x.ValidateOnly != y.ValidateOnly {
 		return false
 	}
-	if x.InitialDatabaseProject != y.InitialDatabaseProject {
-		return false
-	}
 	return true
 }
 

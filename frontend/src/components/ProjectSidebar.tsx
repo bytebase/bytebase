@@ -18,6 +18,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_GITOPS,
+  PROJECT_V1_ROUTE_INSTANCES,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_MASKING_EXEMPTION,
   PROJECT_V1_ROUTE_MEMBERS,
@@ -117,6 +118,12 @@ function useSidebarItems(): SidebarItem[] {
         type: "div",
         expand: true,
         children: [
+          {
+            title: t("common.instances"),
+            path: PROJECT_V1_ROUTE_INSTANCES,
+            type: "div",
+            hide: isDefault,
+          },
           {
             title: t("common.databases"),
             path: PROJECT_V1_ROUTE_DATABASES,

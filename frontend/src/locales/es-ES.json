@@ -1273,7 +1273,6 @@
     "sync-databases": {
       "add-database": "+ Agregar base de datos, presione enter para enviar",
       "description": "Elige qué bases de datos sincronizar desde esta instancia.",
-      "project-description": "Las bases de datos sincronizadas se agregarán a <project>{{project}}</project>.",
       "project-sync-all": "Sincronizar todas las bases de datos con este proyecto",
       "search-database": "Buscar en la base de datos",
       "self": "Sincronizar bases de datos",

@@ -51,7 +51,7 @@ describe("InstanceFormBody", () => {
     expect(source.match(/<SyncDatabases/g)).toHaveLength(1);
   });
 
-  test("explains project-aware database sync in the instance form", () => {
+  test("labels project-aware database sync without a redundant alert", () => {
     const source = readFileSync(
       join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),
       "utf-8"
@@ -63,18 +63,37 @@ describe("InstanceFormBody", () => {
     expect(source).toContain("showLabel ? (");
     expect(source).toContain("instance.sync-databases.description");
     expect(source).toContain('t("instance.sync-databases.self")');
-    expect(source).toContain("instance.sync-databases.project-description");
+    expect(source).not.toContain("instance.sync-databases.project-description");
     expect(source).toContain("instance.sync-databases.project-sync-all");
     expect(source).toContain("projectName");
-    expect(source).toContain('useProjectByName(projectName ?? "")');
-    expect(source).toContain("project.title || projectName");
-    expect(source).toContain("values={{ project: projectTitle }}");
-    expect(source).toContain("fetchProject(routeProjectName");
-    expect(source).toContain("ResourceLink");
-    expect(source).toContain("showResourceType={false}");
-    expect(source).toContain('className="underline underline-offset-2"');
-    expect(source).toContain('target="_blank"');
-    expect(source).toContain('rel="noopener noreferrer"');
+    expect(source).not.toContain('useProjectByName(projectName ?? "")');
+    expect(source).not.toContain("fetchProject(routeProjectName");
+    expect(source).toContain("projectName={parent}");
+    expect(source).not.toContain("ResourceLink");
+  });
+
+  test("preserves the project parent when the resource id changes", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+
+    expect(source).toContain(
+      "parent ? `${parent}/instances/${id}` : `instances/${id}`"
+    );
+    expect(source).toContain(
+      "parent ? `${parent}/instances/${id}` : `${instanceNamePrefix}${id}`"
+    );
+    expect(source).not.toContain("router.currentRoute.value.query.project");
+  });
+
+  test("does not treat an inaccessible instance as a duplicate resource id", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+
+    expect(source).toContain("existing.name !== UNKNOWN_INSTANCE_NAME");
   });
 
   test("offers sync-all database details from the create instance form", () => {

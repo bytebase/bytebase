@@ -11,7 +11,8 @@ import {
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { SyncStatus } from "@/types/proto-es/v1/database_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { hasInstancePermission } from "./permission";
 
 interface InstanceSyncButtonProps {
   type?: "default" | "primary";
@@ -19,6 +20,7 @@ interface InstanceSyncButtonProps {
   disabled?: boolean;
   instanceName?: string;
   instanceTitle?: string;
+  project?: Project;
   onSyncSchema: (enableFullSync: boolean) => void;
 }
 
@@ -26,13 +28,14 @@ export function InstanceSyncButton({
   disabled = false,
   instanceName = "",
   instanceTitle = "",
+  project,
   onSyncSchema,
 }: InstanceSyncButtonProps) {
   const { t } = useTranslation();
   const [syncing, setSyncing] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const hasPermission = hasWorkspacePermissionV2("bb.instances.sync");
+  const hasPermission = hasInstancePermission(project, "bb.instances.sync");
 
   const syncSchema = useCallback(
     async (option: "sync-all" | "sync-new") => {

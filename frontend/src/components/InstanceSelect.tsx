@@ -100,10 +100,7 @@ export function InstanceSelect({
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-1.5">
               {inst.environment && (
-                <>
-                  <EnvironmentLabel environmentName={inst.environment} />
-                  <span className="text-control-placeholder">&gt;</span>
-                </>
+                <EnvironmentLabel environmentName={inst.environment} />
               )}
               <EngineIcon engine={inst.engine} className="h-4 w-4" />
               <span>{inst.title}</span>

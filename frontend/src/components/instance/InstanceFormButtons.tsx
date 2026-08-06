@@ -5,20 +5,15 @@ import { useTranslation } from "react-i18next";
 import { createBehaviorMetric } from "@/app/analytics/behavior";
 import { behaviorAnalytics } from "@/app/analytics/provider";
 import { router } from "@/app/router";
-import {
-  INSTANCE_ROUTE_DETAIL,
-  PROJECT_V1_ROUTE_DATABASES,
-} from "@/app/router/handles";
+import { INSTANCE_ROUTE_DETAIL } from "@/app/router/handles";
 import {
   PREPARE_DATABASE_PRODUCT_INTRO,
   PREPARE_DATABASE_TRANSFER_TIP,
   PRODUCT_INTRO_QUERY_KEY,
   PRODUCT_INTRO_TIP_QUERY_KEY,
-  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
-import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   DataSource,
@@ -101,6 +96,7 @@ export function InstanceFormButtons({
     valueChanged,
     onDismiss,
     emitShowConnectionOptions,
+    parent,
   } = context;
 
   const hasExternalSecretFeature = useAppStore((s) =>
@@ -240,19 +236,6 @@ export function InstanceFormButtons({
     return inst;
   };
 
-  const getRouteProjectContext = () => {
-    const projectId = router.currentRoute.value.query.project;
-    if (typeof projectId !== "string" || projectId.length === 0) {
-      return;
-    }
-    return {
-      id: projectId,
-      name: `${projectNamePrefix}${projectId}`,
-    };
-  };
-
-  const projectContext = getRouteProjectContext();
-
   const doCreate = async () => {
     if (!isCreating) return;
 
@@ -266,20 +249,9 @@ export function InstanceFormButtons({
     try {
       const createdInstance = await useAppStore
         .getState()
-        .createInstance(payload, false, {
-          initialDatabaseProject: projectContext?.name,
-        });
+        .createInstance(payload, false, parent ? { parent } : undefined);
       if (onCreated) {
         onCreated(createdInstance);
-      } else if (projectContext) {
-        router.push({
-          name: PROJECT_V1_ROUTE_DATABASES,
-          params: { projectId: projectContext.id },
-          query: {
-            [PRODUCT_INTRO_QUERY_KEY]: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
-            syncingInstance: extractInstanceResourceName(createdInstance.name),
-          },
-        });
       } else {
         const instanceId = extractInstanceResourceName(createdInstance.name);
         router.push({
@@ -303,7 +275,7 @@ export function InstanceFormButtons({
             0: createdInstance.title,
           }
         ),
-        description: projectContext
+        description: parent
           ? t("db.syncing-databases-for-instance", {
               0: createdInstance.title,
             })
@@ -318,7 +290,7 @@ export function InstanceFormButtons({
     behaviorAnalytics.captureMetric(
       createBehaviorMetric("instance create clicked", {
         routeId: router.currentRoute.value.name?.toString(),
-        resource: projectContext?.name,
+        resource: parent,
       })
     );
 
@@ -612,10 +584,10 @@ export function InstanceFormButtons({
               onClick={tryCreate}
             >
               {state.isRequesting
-                ? projectContext
+                ? parent
                   ? t("instance.connecting-database-to-project")
                   : t("common.creating")
-                : projectContext
+                : parent
                   ? t("instance.connect-database-to-project")
                   : t("common.create")}
             </Button>

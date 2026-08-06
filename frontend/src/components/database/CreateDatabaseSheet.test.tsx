@@ -76,6 +76,7 @@ vi.mock("@/components/ui/combobox", () => ({
     value,
     onChange,
     placeholder,
+    disabled,
     portal,
   }: {
     value: string;
@@ -84,6 +85,7 @@ vi.mock("@/components/ui/combobox", () => ({
     noResultsText?: string;
     options?: unknown[];
     onSearch?: (q: string) => void;
+    disabled?: boolean;
     portal?: boolean;
     renderValue?: (opt: unknown) => ReactNode;
   }) =>
@@ -92,6 +94,7 @@ vi.mock("@/components/ui/combobox", () => ({
       "data-portal": String(Boolean(portal)),
       value,
       placeholder,
+      disabled,
       onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
         onChange(e.target.value),
     }),
@@ -232,7 +235,8 @@ vi.mock("@/types", () => ({
     name.startsWith("projects/") &&
     name !== "projects/-1",
   isValidInstanceName: (name: string) =>
-    typeof name === "string" && name.startsWith("instances/"),
+    typeof name === "string" &&
+    /^(?:instances|projects\/[^/]+\/instances)\/[^/]+$/.test(name),
   defaultCharsetOfEngineV1: () => "utf8",
   defaultCollationOfEngineV1: () => "utf8_general_ci",
 }));
@@ -259,6 +263,11 @@ import { CreateDatabaseSheet } from "./CreateDatabaseSheet";
 
 const TEST_INSTANCE = {
   name: "instances/test-instance",
+  engine: Engine.MYSQL,
+  environment: "environments/dev",
+};
+const PROJECT_INSTANCE = {
+  name: "projects/app/instances/project-instance",
   engine: Engine.MYSQL,
   environment: "environments/dev",
 };
@@ -413,6 +422,25 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
 
     expect(projectSelect.dataset.portal).toBe("true");
     expect(instanceSelect.dataset.portal).toBe("true");
+  });
+
+  it("selects and locks the owner project for a project-owned instance", async () => {
+    setupProjectMock(false);
+    mocks.instancesByName[PROJECT_INSTANCE.name] = PROJECT_INSTANCE;
+    await renderSheetWithoutFixedProject();
+
+    await fillInstance(PROJECT_INSTANCE.name);
+    await flush();
+
+    const projectSelect = container.querySelector(
+      "input[placeholder='common.project']"
+    ) as HTMLInputElement;
+    expect(projectSelect.value).toBe("projects/app");
+    expect(projectSelect.disabled).toBe(true);
+
+    await fillInstance(TEST_INSTANCE.name);
+    expect(projectSelect.value).toBe("");
+    expect(projectSelect.disabled).toBe(false);
   });
 
   it("hydrates a fixed project only when an always-mounted sheet opens", async () => {

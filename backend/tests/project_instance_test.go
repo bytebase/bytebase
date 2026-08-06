@@ -349,16 +349,6 @@ func TestProjectInstanceValidation(t *testing.T) {
 	}))
 	a.Error(err)
 	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
-
-	parent := ctl.project.Name
-	_, err = ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		Parent:                 &parent,
-		InitialDatabaseProject: ctl.project.Name,
-		InstanceId:             "bot35-conflicting-parent",
-		Instance:               &v1pb.Instance{},
-	}))
-	a.Error(err)
-	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 }
 
 func createProjectForProjectInstanceTest(ctx context.Context, t *testing.T, ctl *controller, projectID string) *v1pb.Project {

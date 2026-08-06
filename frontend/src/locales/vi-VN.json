@@ -1273,7 +1273,6 @@
     "sync-databases": {
       "add-database": "+ Thêm cơ sở dữ liệu, nhấn enter để gửi",
       "description": "Chọn cơ sở dữ liệu cần đồng bộ từ instance này.",
-      "project-description": "Các cơ sở dữ liệu được đồng bộ sẽ được thêm vào <project>{{project}}</project>.",
       "project-sync-all": "Đồng bộ tất cả cơ sở dữ liệu vào dự án này",
       "search-database": "Tìm kiếm cơ sở dữ liệu",
       "self": "Đồng bộ cơ sở dữ liệu",

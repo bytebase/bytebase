@@ -13,6 +13,7 @@ const projectListPages = [
   "ProjectDatabasesPage.tsx",
   "ProjectGitOpsPage.tsx",
   "ProjectIssueDashboardPage.tsx",
+  "ProjectInstancesPage.tsx",
   "ProjectPlanDashboardPage.tsx",
   "ProjectReleaseDashboardPage.tsx",
   "ProjectWebhooksPage.tsx",

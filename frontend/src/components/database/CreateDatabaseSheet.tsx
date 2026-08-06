@@ -67,6 +67,9 @@ import {
 
 const INTERNAL_RDS_USERS = ["rds_ad", "rdsadmin", "rds_iam"];
 
+const getInstanceProjectName = (instanceName: string): string =>
+  instanceName.match(/^(projects\/[^/]+)\/instances\/[^/]+$/)?.[1] ?? "";
+
 export interface CreateDatabaseSheetProps {
   open: boolean;
   onClose: () => void;
@@ -177,7 +180,11 @@ function CreateDatabaseForm({
     { name: string; issueLabels: IssueLabel[] } | undefined
   >();
 
-  const effectiveProjectName = fixedProjectName || projectName;
+  const instanceProjectName = getInstanceProjectName(
+    selectedInstance?.name ?? ""
+  );
+  const effectiveProjectName =
+    instanceProjectName || fixedProjectName || projectName;
 
   // Project hydration and the reactive cache entry must agree on the exact
   // resource name. The store returns an unknown-project sentinel on a miss;
@@ -480,8 +487,9 @@ function CreateDatabaseForm({
               }
             >
               <ProjectSelect
-                value={projectName}
+                value={effectiveProjectName}
                 onChange={(name) => setProjectName(name)}
+                disabled={!!instanceProjectName}
                 portal
               />
             </FormField>

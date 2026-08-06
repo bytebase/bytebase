@@ -101,7 +101,22 @@ describe("workspace list page layout", () => {
         )
       ) {
         expect(source, file).toContain('padding="flush"');
-        expect(source, file).toContain('<WorkspacePageToolbar className="px-4');
+        const layoutSource =
+          file === "InstancesPage.tsx"
+            ? readFileSync(
+                join(componentsDir, "instance/InstanceDashboard.tsx"),
+                "utf8"
+              )
+            : source;
+        if (file === "InstancesPage.tsx") {
+          expect(layoutSource, file).toContain(
+            'layout === "workspace" && "px-4"'
+          );
+        } else {
+          expect(layoutSource, file).toContain(
+            '<WorkspacePageToolbar className="px-4'
+          );
+        }
       }
       expect(source, file).not.toContain(
         'className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4"'
@@ -132,7 +147,10 @@ describe("workspace list page layout", () => {
   });
 
   test("labels the instances page create action as connect instance", () => {
-    const source = readSettingsPage("InstancesPage.tsx");
+    const source = readFileSync(
+      join(componentsDir, "instance/InstanceDashboard.tsx"),
+      "utf8"
+    );
 
     expect(source).toContain('t("instance.connect-instance")');
     expect(source).not.toContain('{t("common.create")}');

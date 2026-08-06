@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
     "bb.instances.create",
     "bb.instances.list",
   ]),
+  projectPermissions: new Set<string>(["bb.instances.create"]),
 }));
 
 let ProjectDatabasesPage: typeof import("./ProjectDatabasesPage").ProjectDatabasesPage;
@@ -235,7 +236,9 @@ vi.mock("@/utils", async () => {
     extractInstanceResourceName: (name: string) =>
       name.replace(/^instances\//, ""),
     getDefaultPagination: () => 1000,
-    hasProjectPermissionV2: () => true,
+    hasProjectPermissionV2: (_project: unknown, permission: string) =>
+      permission !== "bb.instances.create" ||
+      mocks.projectPermissions.has(permission),
     hasWorkspacePermissionV2: (permission: string) =>
       mocks.workspacePermissions.has(permission),
     PERMISSIONS_FOR_DATABASE_CREATE_ISSUE: [],
@@ -256,6 +259,7 @@ beforeEach(async () => {
     "bb.instances.get",
     "bb.instances.list",
   ]);
+  mocks.projectPermissions = new Set(["bb.instances.create"]);
   ({ ProjectDatabasesPage } = await import("./ProjectDatabasesPage"));
 });
 
@@ -322,8 +326,8 @@ describe("ProjectDatabasesPage", () => {
     });
 
     expect(mocks.routerPush).toHaveBeenCalledWith({
-      name: "workspace.instance.create",
-      query: { project: "demo" },
+      name: "workspace.project.instance.create",
+      params: { projectId: "demo" },
     });
     expect(mocks.captureMetric).toHaveBeenCalledWith({
       event: "connect database clicked",
@@ -373,8 +377,8 @@ describe("ProjectDatabasesPage", () => {
     });
   });
 
-  test("disables the empty project connect action without workspace instance creation permission", async () => {
-    mocks.workspacePermissions.delete("bb.instances.create");
+  test("disables the empty project connect action without project instance creation permission", async () => {
+    mocks.projectPermissions.delete("bb.instances.create");
     const container = document.createElement("div");
     const root = createRoot(container);
 

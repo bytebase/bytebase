@@ -309,6 +309,9 @@ message ListInstancesResponse {
 }
 
 message CreateInstanceRequest {
+  reserved 4;
+  reserved "initial_database_project";
+
   // The parent, which owns this collection of instances.
   // Format: projects/{project}. If omitted, the instance is created in the
   // workspace collection.
@@ -326,10 +329,6 @@ message CreateInstanceRequest {
 
   // Validate only also tests the data source connection.
   bool validate_only = 3;
-
-  // The project to assign newly discovered databases to during initial sync.
-  // Format: projects/{project}. This must be unset when `parent` is set.
-  string initial_database_project = 4;
 }
 
 message UpdateInstanceRequest {

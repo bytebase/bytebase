@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   fetchDatabases: vi.fn(),
   batchUpdateDatabases: vi.fn(),
   captureMetric: vi.fn(),
+  onCreated: vi.fn(),
   context: undefined as Record<string, unknown> | undefined,
 }));
 
@@ -79,8 +80,7 @@ vi.mock("@/stores", () => ({
 vi.mock("@/utils", () => ({
   convertKVListToLabels: (list: { key: string; value: string }[]) =>
     Object.fromEntries(list.map(({ key, value }) => [key, value])),
-  extractInstanceResourceName: (name: string) =>
-    name.replace(/^instances\//, ""),
+  extractInstanceResourceName: (name: string) => name.split("/").at(-1) ?? "",
   isValidSpannerDataSource: (ds: { projectId: string; instanceId: string }) =>
     ds.projectId !== "" && ds.instanceId !== "",
   isValidBigQueryDataSource: (ds: { projectId: string }) =>
@@ -227,7 +227,7 @@ beforeEach(() => {
 
 describe("InstanceFormButtons", () => {
   test("uses project-aware create action text when creating from a project", async () => {
-    mocks.routerCurrentQuery = { project: "demo" };
+    mocks.context = { ...mocks.context, parent: "projects/demo" };
     const container = document.createElement("div");
     const root = createRoot(container);
 
@@ -246,12 +246,20 @@ describe("InstanceFormButtons", () => {
   });
 
   test("passes project context to instance creation without client-side database transfer", async () => {
-    mocks.routerCurrentQuery = { project: "demo" };
+    mocks.routerCurrentName = "workspace.project.instance.create";
+    mocks.context = { ...mocks.context, parent: "projects/demo" };
+    mocks.createInstance.mockResolvedValue(
+      create(InstanceSchema, {
+        name: "projects/demo/instances/prod",
+        title: "Production",
+        engine: Engine.POSTGRES,
+      })
+    );
     const container = document.createElement("div");
     const root = createRoot(container);
 
     await act(async () => {
-      root.render(<InstanceFormButtons />);
+      root.render(<InstanceFormButtons onCreated={mocks.onCreated} />);
     });
 
     const createButton = Array.from(container.querySelectorAll("button")).find(
@@ -267,24 +275,20 @@ describe("InstanceFormButtons", () => {
       expect.anything(),
       false,
       {
-        initialDatabaseProject: "projects/demo",
+        parent: "projects/demo",
       }
     );
     expect(mocks.fetchDatabases).not.toHaveBeenCalled();
     expect(mocks.batchUpdateDatabases).not.toHaveBeenCalled();
-    expect(mocks.routerPush).toHaveBeenCalledWith({
-      name: "workspace.project.database",
-      params: { projectId: "demo" },
-      query: {
-        intro: "project-instance-synced",
-        syncingInstance: "prod",
-      },
-    });
+    expect(mocks.onCreated).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "projects/demo/instances/prod" })
+    );
+    expect(mocks.routerPush).not.toHaveBeenCalled();
     expect(mocks.context?.onDismiss).not.toHaveBeenCalled();
     expect(mocks.captureMetric).toHaveBeenCalledWith({
       event: "instance create clicked",
       properties: {
-        route_id: "workspace.instance.create",
+        route_id: "workspace.project.instance.create",
         resource: "projects/demo",
       },
     });
@@ -386,9 +390,7 @@ describe("InstanceFormButtons", () => {
         syncDatabases: create(SyncDatabasesSchema, { databases: [] }),
       }),
       false,
-      {
-        initialDatabaseProject: undefined,
-      }
+      undefined
     );
 
     await act(async () => {

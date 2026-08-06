@@ -1273,7 +1273,6 @@
     "sync-databases": {
       "add-database": "+ 添加数据库，按回车键提交",
       "description": "选择要从此实例同步的数据库。",
-      "project-description": "同步的数据库将添加到 <project>{{project}}</project>。",
       "project-sync-all": "将所有数据库同步到此项目",
       "search-database": "搜索数据库",
       "self": "同步数据库",

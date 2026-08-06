@@ -13,34 +13,41 @@ import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { InstanceDeleteDialog } from "./InstanceDeleteDialog";
+import { hasInstancePermission } from "./permission";
 
 interface InstanceActionDropdownProps {
   instance: Instance;
+  project?: Project;
+  onArchived?: () => void;
   onDeleted?: () => void;
 }
 
 export function InstanceActionDropdown({
   instance,
+  project,
+  onArchived,
   onDeleted,
 }: InstanceActionDropdownProps) {
   const { t } = useTranslation();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const canArchive = hasWorkspacePermissionV2("bb.instances.delete");
-  const canRestore = hasWorkspacePermissionV2("bb.instances.undelete");
+  const canArchive = hasInstancePermission(project, "bb.instances.delete");
+  const canRestore = hasInstancePermission(project, "bb.instances.undelete");
 
   const handleArchive = useCallback(async () => {
     const msg = t("instance.archive-instance-instance-name", {
       0: instance.title,
     });
-    const forceArchive = window.confirm(
-      `${msg}\n\n${t("instance.archived-instances-will-not-be-displayed")}\n\n${t("instance.force-archive-description")}`
+    const confirmed = window.confirm(
+      project
+        ? `${msg}\n\n${t("instance.archived-instances-will-not-be-displayed")}`
+        : `${msg}\n\n${t("instance.archived-instances-will-not-be-displayed")}\n\n${t("instance.force-archive-description")}`
     );
-    if (!forceArchive) return;
+    if (!confirmed) return;
 
-    await useAppStore.getState().archiveInstance(instance, true);
+    await useAppStore.getState().archiveInstance(instance, !project);
     pushNotification({
       module: "bytebase",
       style: "INFO",
@@ -48,8 +55,12 @@ export function InstanceActionDropdown({
         0: instance.title,
       }),
     });
-    router.replace({ name: INSTANCE_ROUTE_DASHBOARD });
-  }, [instance, t]);
+    if (onArchived) {
+      onArchived();
+    } else {
+      router.replace({ name: INSTANCE_ROUTE_DASHBOARD });
+    }
+  }, [instance, onArchived, project, t]);
 
   const handleRestore = useCallback(async () => {
     if (
@@ -107,10 +118,14 @@ export function InstanceActionDropdown({
       <InstanceDeleteDialog
         open={showDeleteConfirm}
         instance={instance}
+        forceArchive={!project}
         onOpenChange={setShowDeleteConfirm}
         onDeleted={() => {
-          onDeleted?.();
-          router.replace({ name: INSTANCE_ROUTE_DASHBOARD });
+          if (onDeleted) {
+            onDeleted();
+          } else {
+            router.replace({ name: INSTANCE_ROUTE_DASHBOARD });
+          }
         }}
       />
     </>

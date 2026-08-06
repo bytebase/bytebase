@@ -14,6 +14,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
+import type { Permission } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type {
   DataSource,
@@ -27,11 +28,11 @@ import {
   DataSourceType,
   InstanceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   convertKVListToLabels,
   convertLabelsToKVList,
-  hasWorkspacePermissionV2,
   isValidBigQueryDataSource,
   isValidSpannerDataSource,
 } from "@/utils";
@@ -49,6 +50,7 @@ import {
   extractDataSourceEditState,
 } from "./common";
 import { effectivePortForEngine } from "./constants";
+import { hasInstancePermission } from "./permission";
 import { type InstanceSpecs, useInstanceSpecs } from "./specs";
 
 export type LocalState = {
@@ -65,6 +67,8 @@ type TestConnectionResult = {
 
 export interface InstanceFormContextValue {
   instance: Instance | undefined;
+  parent: string | undefined;
+  project: Project | undefined;
   hideAdvancedFeatures: boolean;
   state: LocalState;
   setState: React.Dispatch<React.SetStateAction<LocalState>>;
@@ -72,6 +76,7 @@ export interface InstanceFormContextValue {
   isCreating: boolean;
   allowEdit: boolean;
   allowCreate: boolean;
+  hasPermission: (permission: Permission) => boolean;
   environment: ReturnType<
     ReturnType<typeof useAppStore.getState>["getEnvironmentByName"]
   >;
@@ -130,11 +135,15 @@ export const useInstanceFormContext = () => {
 
 export function InstanceFormProvider({
   instance,
+  parent,
+  project,
   hideAdvancedFeatures = false,
   onDismiss,
   children,
 }: {
   instance?: Instance;
+  parent?: string;
+  project?: Project;
   hideAdvancedFeatures?: boolean;
   onDismiss?: () => void;
   children: ReactNode;
@@ -150,9 +159,13 @@ export function InstanceFormProvider({
     isRequesting: false,
   }));
 
-  const [basicInfo, setBasicInfo] = useState<BasicInfo>(() =>
-    extractBasicInfo(instance)
-  );
+  const [basicInfo, setBasicInfo] = useState<BasicInfo>(() => {
+    const info = extractBasicInfo(instance);
+    if (!instance && parent) {
+      info.name = `${parent}/${info.name}`;
+    }
+    return info;
+  });
   const [dataSourceEditState, setDataSourceEditState] =
     useState<DataSourceEditState>(() => extractDataSourceEditState(instance));
   const [labelKVList, setLabelKVList] = useState(() =>
@@ -214,10 +227,15 @@ export function InstanceFormProvider({
     setShowConnectionOptionsEvent((prev) => prev + 1);
   }, []);
 
+  const hasPermission = useCallback(
+    (permission: Permission) => hasInstancePermission(project, permission),
+    [project]
+  );
+
   const allowEdit = isCreating
     ? true
     : (instance?.state || State.STATE_UNSPECIFIED) === State.ACTIVE &&
-      hasWorkspacePermissionV2("bb.instances.update");
+      hasPermission("bb.instances.update");
 
   const adminDataSource = useMemo(
     () =>
@@ -335,7 +353,7 @@ export function InstanceFormProvider({
   );
 
   const allowCreate = useMemo(() => {
-    if (!hasWorkspacePermissionV2("bb.instances.create")) return false;
+    if (!hasPermission("bb.instances.create")) return false;
     if (basicInfo.engine === Engine.SPANNER) {
       return (
         !!basicInfo.title.trim() && isValidSpannerDataSource(adminDataSource)
@@ -369,6 +387,7 @@ export function InstanceFormProvider({
     resourceIdValidated,
     labelErrors,
     checkDataSource,
+    hasPermission,
   ]);
 
   const resetDataSource = useCallback(() => {
@@ -512,7 +531,9 @@ export function InstanceFormProvider({
         );
         inst.dataSources = [dataSourceCreate];
         try {
-          await useAppStore.getState().createInstance(inst, true);
+          await useAppStore
+            .getState()
+            .createInstance(inst, true, parent ? { parent } : undefined);
           return ok();
         } catch (err) {
           return fail(dataSourceCreate.host, err);
@@ -554,7 +575,7 @@ export function InstanceFormProvider({
         }
       }
     },
-    [isCreating, basicInfo, instance, extractDataSourceFromEdit, t]
+    [isCreating, basicInfo, instance, extractDataSourceFromEdit, parent, t]
   );
 
   // Debounced valueChanged to avoid expensive deep comparison on every keystroke.
@@ -586,6 +607,8 @@ export function InstanceFormProvider({
   const value: InstanceFormContextValue = useMemo(
     () => ({
       instance,
+      parent,
+      project,
       hideAdvancedFeatures,
       state,
       setState,
@@ -593,6 +616,7 @@ export function InstanceFormProvider({
       isCreating,
       allowEdit,
       allowCreate,
+      hasPermission,
       environment,
       basicInfo,
       setBasicInfo,
@@ -624,12 +648,15 @@ export function InstanceFormProvider({
     }),
     [
       instance,
+      parent,
+      project,
       hideAdvancedFeatures,
       state,
       specs,
       isCreating,
       allowEdit,
       allowCreate,
+      hasPermission,
       environment,
       basicInfo,
       labelKVList,

@@ -1,257 +1,68 @@
+import { create } from "@bufbuild/protobuf";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-
-(
-  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
-).IS_REACT_ACT_ENVIRONMENT = true;
+import { InstanceSchema } from "@/types/proto-es/v1/instance_service_pb";
+import { CreateInstancePage } from "./CreateInstancePage";
 
 const mocks = vi.hoisted(() => ({
-  useUnsavedChangesGuard: vi.fn(),
-  routerCurrentQuery: {} as Record<string, unknown>,
-  routerPush: vi.fn(),
-  instanceFormContext: {
-    basicInfo: { engine: 0 },
-    state: { isRequesting: false },
-    valueChanged: false,
-  },
-}));
-
-let CreateInstancePage: typeof import("./CreateInstancePage").CreateInstancePage;
-
-vi.mock("react-i18next", () => ({
-  initReactI18next: { type: "3rdParty", init: () => {} },
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
-
-vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
-  useUnsavedChangesGuard: mocks.useUnsavedChangesGuard,
+  push: vi.fn(),
+  viewProps: undefined as Record<string, unknown> | undefined,
 }));
 
 vi.mock("@/app/router", () => ({
-  router: {
-    push: mocks.routerPush,
-    currentRoute: {
-      get value() {
-        return { query: mocks.routerCurrentQuery };
-      },
-    },
+  router: { push: mocks.push },
+}));
+
+vi.mock("@/components/instance/CreateInstanceView", () => ({
+  CreateInstanceView: (props: Record<string, unknown>) => {
+    mocks.viewProps = props;
+    return <div data-testid="create-instance-view" />;
   },
 }));
-
-vi.mock("@/stores/app", () => ({
-  useAppStore: {
-    getState: () => ({
-      instanceCountLimit: () => 10,
-      activatedInstanceCount: () => 0,
-    }),
-  },
-}));
-
-vi.mock("@/stores", () => ({
-  pushNotification: vi.fn(),
-}));
-
-vi.mock("@/components/instance", () => ({
-  InfoPanel: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  InfoPanelContent: () => <div />,
-  InstanceFormBody: () => <div data-testid="instance-form-body" />,
-  InstanceFormButtons: ({ className }: { className?: string }) => (
-    <div data-testid="instance-form-buttons" className={className} />
-  ),
-  InstanceFormProvider: ({
-    children,
-    onDismiss,
-  }: {
-    children: React.ReactNode;
-    onDismiss?: () => void;
-  }) => (
-    <div>
-      <button type="button" data-testid="dismiss" onClick={onDismiss}>
-        dismiss
-      </button>
-      {children}
-    </div>
-  ),
-  useInstanceFormContext: () => mocks.instanceFormContext,
-}));
-
-beforeEach(async () => {
-  vi.clearAllMocks();
-  mocks.routerCurrentQuery = {};
-  mocks.instanceFormContext.state.isRequesting = false;
-  mocks.instanceFormContext.valueChanged = false;
-  globalThis.ResizeObserver = class ResizeObserver {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  } as typeof ResizeObserver;
-  ({ CreateInstancePage } = await import("./CreateInstancePage"));
-});
 
 describe("CreateInstancePage", () => {
-  test("keeps the scroll container flush with the page edge", () => {
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(<CreateInstancePage />);
-    });
-
-    const page = container.firstElementChild;
-    expect(page).not.toHaveClass("px-4");
-    expect(page).not.toHaveClass("sm:px-6");
-
-    const bodyPadding = container.querySelector(
-      "[data-testid='instance-form-body']"
-    )?.parentElement;
-    expect(bodyPadding).toHaveClass("px-4");
-    expect(bodyPadding).toHaveClass("sm:px-6");
-
-    const buttons = container.querySelector(
-      "[data-testid='instance-form-buttons']"
-    );
-    expect(buttons).not.toHaveClass("px-4");
-    expect(buttons).not.toHaveClass("sm:px-6");
-
-    act(() => {
-      root.unmount();
-    });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.viewProps = undefined;
   });
 
-  test("guards navigation when the create form has unsaved changes", () => {
+  test("renders the workspace-owned create view", () => {
     const container = document.createElement("div");
     const root = createRoot(container);
 
-    act(() => {
-      root.render(<CreateInstancePage />);
-    });
+    act(() => root.render(<CreateInstancePage />));
 
-    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(false);
-
-    mocks.instanceFormContext.valueChanged = true;
-    act(() => {
-      root.render(<CreateInstancePage />);
-    });
-
-    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(true);
-
-    mocks.instanceFormContext.state.isRequesting = true;
-    act(() => {
-      root.render(<CreateInstancePage />);
-    });
-
-    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(false);
-
-    act(() => {
-      root.unmount();
-    });
+    expect(mocks.viewProps).not.toHaveProperty("parent");
+    act(() => root.unmount());
   });
 
-  test("dismisses to the workspace instance dashboard by default", () => {
+  test("opens the workspace instance detail after creation", () => {
     const container = document.createElement("div");
     const root = createRoot(container);
+    act(() => root.render(<CreateInstancePage />));
 
+    const onCreated = mocks.viewProps?.onCreated as (instance: unknown) => void;
     act(() => {
-      root.render(<CreateInstancePage />);
+      onCreated(
+        create(InstanceSchema, {
+          name: "instances/prod",
+          title: "Production",
+        })
+      );
     });
 
-    const dismiss = container.querySelector(
-      "[data-testid='dismiss']"
-    ) as HTMLButtonElement;
-    act(() => {
-      dismiss.click();
-    });
-
-    expect(mocks.routerPush).toHaveBeenCalledWith({
-      name: "workspace.instance",
-    });
-
-    act(() => {
-      root.unmount();
-    });
-  });
-
-  test("dismisses to the project database page when project context is present", () => {
-    mocks.routerCurrentQuery = { project: "demo" };
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(<CreateInstancePage />);
-    });
-
-    const dismiss = container.querySelector(
-      "[data-testid='dismiss']"
-    ) as HTMLButtonElement;
-    act(() => {
-      dismiss.click();
-    });
-
-    expect(mocks.routerPush).toHaveBeenCalledWith({
-      name: "workspace.project.database",
-      params: { projectId: "demo" },
-    });
-
-    act(() => {
-      root.unmount();
-    });
-  });
-
-  test("keeps syncing instance and intro context when dismissing to the project database page", () => {
-    mocks.routerCurrentQuery = {
-      project: "demo",
-      syncingInstance: "prod",
-      intro: "connect-database",
-    };
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(<CreateInstancePage />);
-    });
-
-    const dismiss = container.querySelector(
-      "[data-testid='dismiss']"
-    ) as HTMLButtonElement;
-    act(() => {
-      dismiss.click();
-    });
-
-    expect(mocks.routerPush).toHaveBeenCalledWith({
-      name: "workspace.project.database",
-      params: { projectId: "demo" },
+    expect(mocks.push).toHaveBeenCalledWith({
+      name: "workspace.instance.detail",
+      params: { instanceId: "prod" },
       query: {
         syncingInstance: "prod",
-        intro: "connect-database",
+        intro: "prepare-database",
+        tip: "transfer-databases-to-project",
       },
+      hash: "databases",
     });
 
-    act(() => {
-      root.unmount();
-    });
-  });
-
-  test("shows the instance form directly for project-context setup", () => {
-    mocks.routerCurrentQuery = { project: "demo" };
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(<CreateInstancePage />);
-    });
-
-    expect(container.textContent).not.toContain(
-      "instance.create-readiness.title"
-    );
-    expect(
-      container.querySelector("[data-testid='instance-form-body']")
-    ).not.toBe(null);
-
-    act(() => {
-      root.unmount();
-    });
+    act(() => root.unmount());
   });
 });

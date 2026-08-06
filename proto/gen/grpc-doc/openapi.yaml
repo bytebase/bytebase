@@ -1820,14 +1820,6 @@ paths:
           schema:
             type: boolean
             title: validate_only
-        - name: initialDatabaseProject
-          in: query
-          description: |-
-            The project to assign newly discovered databases to during initial sync.
-             Format: projects/{project}. This must be unset when `parent` is set.
-          schema:
-            type: string
-            title: initial_database_project
       requestBody:
         description: The instance to create.
         content:
@@ -6882,14 +6874,6 @@ paths:
           schema:
             type: boolean
             title: validate_only
-        - name: initialDatabaseProject
-          in: query
-          description: |-
-            The project to assign newly discovered databases to during initial sync.
-             Format: projects/{project}. This must be unset when `parent` is set.
-          schema:
-            type: string
-            title: initial_database_project
       requestBody:
         description: The instance to create.
         content:
@@ -20951,12 +20935,6 @@ components:
           type: boolean
           title: validate_only
           description: Validate only also tests the data source connection.
-        initialDatabaseProject:
-          type: string
-          title: initial_database_project
-          description: |-
-            The project to assign newly discovered databases to during initial sync.
-             Format: projects/{project}. This must be unset when `parent` is set.
       title: CreateInstanceRequest
       required:
         - instance

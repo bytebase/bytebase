@@ -1273,7 +1273,6 @@
     "sync-databases": {
       "add-database": "+ データベースを追加し、Enterキーを押して送信します",
       "description": "このインスタンスから同期するデータベースを選択してください。",
-      "project-description": "同期されたデータベースは <project>{{project}}</project> に追加されます。",
       "project-sync-all": "すべてのデータベースをこのプロジェクトに同期する",
       "search-database": "データベースを検索",
       "self": "データベースを同期する",

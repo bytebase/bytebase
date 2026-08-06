@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => ({
   instancesByName: {} as Record<string, { name: string; title: string }>,
   fetchInstance: vi.fn(),
   hasWorkspacePermissionV2: vi.fn((_permission: string) => true),
+  hasProjectPermissionV2: vi.fn(() => true),
+  projectsByName: {} as Record<string, { name: string }>,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -40,6 +42,7 @@ vi.mock("@/components/RouterLink", () => ({
     <a
       className={className}
       data-instance-id={to.params?.instanceId}
+      data-project-id={to.params?.projectId}
       data-route-name={to.name}
       onClick={onClick}
     >
@@ -53,6 +56,9 @@ vi.mock("@/stores/app", () => {
     get instancesByName() {
       return mocks.instancesByName;
     },
+    get projectsByName() {
+      return mocks.projectsByName;
+    },
   };
   const useAppStore = (selector: (state: typeof appState) => unknown) =>
     selector(appState);
@@ -65,6 +71,7 @@ vi.mock("@/stores/app", () => {
 vi.mock("@/utils", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/utils")>()),
   hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
+  hasProjectPermissionV2: mocks.hasProjectPermissionV2,
 }));
 
 import { InstanceLabel } from "./InstanceLabel";
@@ -97,6 +104,7 @@ describe("InstanceLabel", () => {
         dataSources: [],
       } as never,
     };
+    mocks.projectsByName = {};
   });
 
   afterEach(() => {
@@ -148,6 +156,37 @@ describe("InstanceLabel", () => {
       "workspace.instance.detail"
     );
     expect(link?.getAttribute("data-instance-id")).toBe("prod");
+  });
+
+  test("links project-owned instances to the nested project route", async () => {
+    mocks.projectsByName = {
+      "projects/app": { name: "projects/app" },
+    };
+    mocks.instancesByName = {
+      "projects/app/instances/prod": {
+        name: "projects/app/instances/prod",
+        title: "Prod Instance",
+        engine: Engine.POSTGRES,
+        activation: true,
+        dataSources: [],
+      } as never,
+    };
+
+    const rendered = await render(
+      <InstanceLabel instanceName="projects/app/instances/prod" link />
+    );
+    root = rendered.root;
+
+    const link = rendered.container.querySelector("a");
+    expect(link?.getAttribute("data-route-name")).toBe(
+      "workspace.project.instance.detail"
+    );
+    expect(link?.getAttribute("data-project-id")).toBe("app");
+    expect(link?.getAttribute("data-instance-id")).toBe("prod");
+    expect(mocks.hasProjectPermissionV2).toHaveBeenCalledWith(
+      mocks.projectsByName["projects/app"],
+      "bb.instances.get"
+    );
   });
 
   test("renders invalid instance names as plain text even when link is requested", async () => {
