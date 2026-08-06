@@ -378,7 +378,10 @@ describe("InstanceDetailView", () => {
     expect(mocks.actionProps).toMatchObject({ project });
     expect(mocks.syncProps).toMatchObject({ project });
     expect(mocks.providerProps).toMatchObject({ project });
-    expect(mocks.batchProps?.onTransferProject).toBeUndefined();
+    expect(mocks.batchProps).toMatchObject({
+      project,
+      onTransferProject: undefined,
+    });
     expect(container.querySelector("[data-testid='transfer-project-sheet']"))
       .toBeNull();
     expect(container.querySelector("[data-testid='create-database-sheet']"))

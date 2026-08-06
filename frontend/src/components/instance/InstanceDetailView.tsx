@@ -733,6 +733,7 @@ export function InstanceDetailView({
             {/* Batch operations bar is fixed within the visible main content. */}
             <DatabaseBatchOperationsBar
               databases={selectedDatabases}
+              project={project}
               onSyncSchema={handleSyncSchema}
               onEditLabels={() => setShowLabelEditor(true)}
               onEditEnvironment={() => setShowEditEnvDrawer(true)}

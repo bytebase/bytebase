@@ -626,6 +626,7 @@ export function InstanceDashboard({
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [pageSize, setPageSize] = useSessionPageSize("bb.instance-table");
   const fetchIdRef = useRef(0);
+  const previousParentRef = useRef(parent);
 
   // Sort state
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -739,6 +740,18 @@ export function InstanceDashboard({
 
   // Selection state
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (previousParentRef.current === parent) return;
+    previousParentRef.current = parent;
+    fetchIdRef.current += 1;
+    setInstances([]);
+    nextPageTokenRef.current = "";
+    setHasMore(false);
+    setIsFetchingMore(false);
+    setLoading(true);
+    setSelectedNames(new Set());
+  }, [parent]);
 
   const selectedInstanceList = useMemo(() => {
     if (selectedNames.size === 0) return [];
