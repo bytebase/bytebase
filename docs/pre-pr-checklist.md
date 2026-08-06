@@ -91,9 +91,13 @@ If the diff adds or modifies a store method that touches a composite-PK table:
    `backend/tests/collision_helper_test.go`. The shared snapshot covers `plan`,
    `issue`, `task`, `task_run`, `plan_check_run`, `task_run_log`, `db_group`, and
    `release` (public APIs where one exists). `plan_webhook_delivery` has no public
-   read API and uses a table-specific raw metadata-DB read. For methods touching any
-   future table outside that set, add table-specific assertions inline — or extend
-   the shared helper first
+   read API and uses a table-specific raw metadata-DB read; its rows are claimed
+   asynchronously after rollout completion, so raw-read tests must stabilize the
+   row set before snapshotting and compare the table separately —
+   `assertProjectUnchanged` does not compare `PlanWebhookDeliveries`. See
+   `backend/tests/README.md` for the pattern. For methods touching any future
+   table outside that set, add table-specific assertions inline — or extend the
+   shared helper first
 3. If your test needs project B rolled out (to create task/task_run/plan_check_run
    rows that could collide with project A's), call `fixture.completeRolloutB(ctx, t, ctl)`
    — this is the ONLY supported rollout path and it proves `task` and `task_run`
