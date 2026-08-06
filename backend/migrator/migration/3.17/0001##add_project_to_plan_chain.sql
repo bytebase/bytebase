@@ -57,17 +57,12 @@ END $$;
 ALTER TABLE task_run_log ADD COLUMN IF NOT EXISTS project TEXT;
 UPDATE task_run_log SET project = task_run.project FROM task_run WHERE task_run_log.project IS NULL AND task_run_log.task_run_id = task_run.id;
 ALTER TABLE task_run_log ALTER COLUMN project SET NOT NULL;
-DO $$ BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint
-        WHERE conname = 'task_run_log_pkey'
-          AND conrelid = 'task_run_log'::regclass
-          AND array_length(conkey, 1) > 1
-    ) THEN
-        ALTER TABLE task_run_log DROP CONSTRAINT IF EXISTS task_run_log_pkey;
-        ALTER TABLE task_run_log ADD PRIMARY KEY (project, task_run_id, created_at);
-    END IF;
-END $$;
+-- Append-only log with no natural key: entries for one task run can share a
+-- created_at microsecond (BYT-10035), so index the read path instead of adding
+-- a primary key.
+ALTER TABLE task_run_log DROP CONSTRAINT IF EXISTS task_run_log_pkey;
+DROP INDEX IF EXISTS idx_task_run_log_task_run_id;
+CREATE INDEX IF NOT EXISTS idx_task_run_log_project_task_run_id_created_at ON task_run_log(project, task_run_id, created_at);
 
 -- plan_check_run
 ALTER TABLE plan_check_run ADD COLUMN IF NOT EXISTS project TEXT;
