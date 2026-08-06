@@ -104,6 +104,32 @@ func TestLogAuditToStdoutFormat(t *testing.T) {
 	a.Equal(float64(16), failed["status_code"], "failed call must carry status_code")
 	a.Equal("invalid email or password", failed["status_message"],
 		"failed call must carry status_message")
+
+	// MCP-delegated calls carry their provenance in stdout too, so operators
+	// tailing container logs can trace an agent session without the API.
+	a.NotContains(got, "mcp_correlation_id",
+		"non-MCP rows must not emit MCP keys")
+	buf.Reset()
+	p3 := &storepb.AuditLog{
+		Parent:   "workspaces/ws-abc",
+		Method:   "/bytebase.v1.SQLService/Query",
+		Severity: storepb.AuditLog_INFO,
+		McpDelegation: &storepb.MCPDelegation{
+			Scope:         "mcp:read-only",
+			Resource:      "https://bb.example.com/mcp",
+			ClientId:      "client-A",
+			CorrelationId: "corr-42",
+		},
+	}
+	logAuditToStdout(context.Background(), p3)
+
+	var delegated map[string]any
+	a.NoError(json.Unmarshal(bytes.TrimSpace(buf.Bytes()), &delegated))
+	a.Equal(true, delegated["mcp"], `mcp==true is how operators filter MCP-originated rows`)
+	a.Equal("corr-42", delegated["mcp_correlation_id"],
+		"the session correlation ID is the key operators pivot on")
+	a.Equal("mcp:read-only", delegated["mcp_scope"])
+	a.Equal("client-A", delegated["mcp_client_id"])
 }
 
 // TestAuditRedactsCredentials covers the request/response redactors that

@@ -19724,6 +19724,14 @@ components:
           title: request_metadata
           description: Metadata about the request context.
           $ref: '#/components/schemas/bytebase.v1.RequestMetadata'
+        mcpDelegation:
+          title: mcp_delegation
+          description: |-
+            MCP delegation provenance. Present exactly when the audited call arrived
+             through the MCP server's delegated credential; never set for public API
+             calls. Presence of this message is the MCP-origin marker.
+          readOnly: true
+          $ref: '#/components/schemas/bytebase.v1.MCPDelegation'
       title: AuditLog
       additionalProperties: false
       description: Audit log entry recording system activity or API call.
@@ -26125,6 +26133,42 @@ components:
       title: LogoutRequest
       additionalProperties: false
       description: Request to logout current user session.
+    bytebase.v1.MCPDelegation:
+      type: object
+      properties:
+        scope:
+          type: string
+          title: scope
+          description: |-
+            The OAuth2 grant's consented scope, e.g. "mcp:read-only".
+             Empty when the grant recorded no scope.
+        resource:
+          type: string
+          title: resource
+          description: |-
+            The grant's stored MCP resource URI.
+             Empty for pre-grant legacy sessions.
+        clientId:
+          type: string
+          title: client_id
+          description: |-
+            The OAuth2 client the grant was consented to.
+             Empty for legacy web-session tokens at /mcp.
+        correlationId:
+          type: string
+          title: correlation_id
+          description: |-
+            Correlates the audit rows an MCP session produces. Minted at the /mcp
+             boundary and session-scoped: the MCP SDK hands tool handlers the
+             initialize-time context, so one MCP session carries one correlation ID
+             across all of its tool calls.
+      title: MCPDelegation
+      additionalProperties: false
+      description: |-
+        Provenance of a call that reached the API through the MCP (Model Context
+         Protocol) server's delegated credential. The values are copied verbatim from
+         the verified credential's grant state; empty fields record that the grant
+         stored nothing (legacy sessions), never a resolved or synthesized value.
     bytebase.v1.MaskingExemptionPolicy:
       type: object
       properties:

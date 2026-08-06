@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"regexp"
+	"slices"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -157,6 +158,13 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		switch resource.Type {
 		case common.ResourceTypeWorkspace:
 			if resource.ID != workspaceID {
+				// Resources must never leave this check holding an entry that
+				// failed workspace validation: on the internal MCP chain the
+				// audit interceptor runs outside ACL and derives the denied
+				// row's parent from Resources — a foreign workspace here would
+				// write the denial into another tenant's audit log. Clearing
+				// makes the audit fall back to the caller's own workspace.
+				authContext.Resources = nil
 				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace mismatch"))
 			}
 		default:
@@ -236,12 +244,7 @@ func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {
 	if fieldMask == nil {
 		return false
 	}
-	for _, path := range fieldMask.Paths {
-		if path == want {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(fieldMask.Paths, want)
 }
 
 func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMethod string, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {

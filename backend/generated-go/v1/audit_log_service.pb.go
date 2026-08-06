@@ -450,8 +450,12 @@ type AuditLog struct {
 	ServiceData *anypb.Any `protobuf:"bytes,11,opt,name=service_data,json=serviceData,proto3" json:"service_data,omitempty"`
 	// Metadata about the request context.
 	RequestMetadata *RequestMetadata `protobuf:"bytes,12,opt,name=request_metadata,json=requestMetadata,proto3" json:"request_metadata,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// MCP delegation provenance. Present exactly when the audited call arrived
+	// through the MCP server's delegated credential; never set for public API
+	// calls. Presence of this message is the MCP-origin marker.
+	McpDelegation *MCPDelegation `protobuf:"bytes,13,opt,name=mcp_delegation,json=mcpDelegation,proto3" json:"mcp_delegation,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AuditLog) Reset() {
@@ -568,6 +572,13 @@ func (x *AuditLog) GetRequestMetadata() *RequestMetadata {
 	return nil
 }
 
+func (x *AuditLog) GetMcpDelegation() *MCPDelegation {
+	if x != nil {
+		return x.McpDelegation
+	}
+	return nil
+}
+
 // Additional audit data specific to certain operations.
 type AuditData struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -670,6 +681,88 @@ func (x *RequestMetadata) GetCallerSuppliedUserAgent() string {
 	return ""
 }
 
+// Provenance of a call that reached the API through the MCP (Model Context
+// Protocol) server's delegated credential. The values are copied verbatim from
+// the verified credential's grant state; empty fields record that the grant
+// stored nothing (legacy sessions), never a resolved or synthesized value.
+type MCPDelegation struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The OAuth2 grant's consented scope, e.g. "mcp:read-only".
+	// Empty when the grant recorded no scope.
+	Scope string `protobuf:"bytes,1,opt,name=scope,proto3" json:"scope,omitempty"`
+	// The grant's stored MCP resource URI.
+	// Empty for pre-grant legacy sessions.
+	Resource string `protobuf:"bytes,2,opt,name=resource,proto3" json:"resource,omitempty"`
+	// The OAuth2 client the grant was consented to.
+	// Empty for legacy web-session tokens at /mcp.
+	ClientId string `protobuf:"bytes,3,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	// Correlates the audit rows an MCP session produces. Minted at the /mcp
+	// boundary and session-scoped: the MCP SDK hands tool handlers the
+	// initialize-time context, so one MCP session carries one correlation ID
+	// across all of its tool calls.
+	CorrelationId string `protobuf:"bytes,4,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MCPDelegation) Reset() {
+	*x = MCPDelegation{}
+	mi := &file_v1_audit_log_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MCPDelegation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MCPDelegation) ProtoMessage() {}
+
+func (x *MCPDelegation) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_audit_log_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MCPDelegation.ProtoReflect.Descriptor instead.
+func (*MCPDelegation) Descriptor() ([]byte, []int) {
+	return file_v1_audit_log_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *MCPDelegation) GetScope() string {
+	if x != nil {
+		return x.Scope
+	}
+	return ""
+}
+
+func (x *MCPDelegation) GetResource() string {
+	if x != nil {
+		return x.Resource
+	}
+	return ""
+}
+
+func (x *MCPDelegation) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+func (x *MCPDelegation) GetCorrelationId() string {
+	if x != nil {
+		return x.CorrelationId
+	}
+	return ""
+}
+
 var File_v1_audit_log_service_proto protoreflect.FileDescriptor
 
 const file_v1_audit_log_service_proto_rawDesc = "" +
@@ -696,7 +789,7 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"page_token\x18\x06 \x01(\tR\tpageToken\"[\n" +
 	"\x17ExportAuditLogsResponse\x12\x18\n" +
 	"\acontent\x18\x01 \x01(\fR\acontent\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8a\x05\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xd2\x05\n" +
 	"\bAuditLog\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12@\n" +
 	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
@@ -711,7 +804,8 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"\alatency\x18\n" +
 	" \x01(\v2\x19.google.protobuf.DurationR\alatency\x127\n" +
 	"\fservice_data\x18\v \x01(\v2\x14.google.protobuf.AnyR\vserviceData\x12G\n" +
-	"\x10request_metadata\x18\f \x01(\v2\x1c.bytebase.v1.RequestMetadataR\x0frequestMetadata\"\x85\x01\n" +
+	"\x10request_metadata\x18\f \x01(\v2\x1c.bytebase.v1.RequestMetadataR\x0frequestMetadata\x12F\n" +
+	"\x0emcp_delegation\x18\r \x01(\v2\x1a.bytebase.v1.MCPDelegationB\x03\xe0A\x03R\rmcpDelegation\"\x85\x01\n" +
 	"\bSeverity\x12\x18\n" +
 	"\x14SEVERITY_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05DEBUG\x10\x01\x12\b\n" +
@@ -727,7 +821,12 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"\fpolicy_delta\x18\x01 \x01(\v2\x18.bytebase.v1.PolicyDeltaR\vpolicyDelta\"k\n" +
 	"\x0fRequestMetadata\x12\x1b\n" +
 	"\tcaller_ip\x18\x01 \x01(\tR\bcallerIp\x12;\n" +
-	"\x1acaller_supplied_user_agent\x18\x02 \x01(\tR\x17callerSuppliedUserAgent2\xa5\x03\n" +
+	"\x1acaller_supplied_user_agent\x18\x02 \x01(\tR\x17callerSuppliedUserAgent\"\x85\x01\n" +
+	"\rMCPDelegation\x12\x14\n" +
+	"\x05scope\x18\x01 \x01(\tR\x05scope\x12\x1a\n" +
+	"\bresource\x18\x02 \x01(\tR\bresource\x12\x1b\n" +
+	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12%\n" +
+	"\x0ecorrelation_id\x18\x04 \x01(\tR\rcorrelationId2\xa5\x03\n" +
 	"\x0fAuditLogService\x12\xc7\x01\n" +
 	"\x0fSearchAuditLogs\x12#.bytebase.v1.SearchAuditLogsRequest\x1a$.bytebase.v1.SearchAuditLogsResponse\"i\x8a\xea0\x13bb.auditLogs.search\x90\xea0\x01\x82\xd3\xe4\x93\x02H:\x01*Z\x19:\x01*\"\x14/v1/auditLogs:search\"(/v1/{parent=projects/*}/auditLogs:search\x12\xc7\x01\n" +
 	"\x0fExportAuditLogs\x12#.bytebase.v1.ExportAuditLogsRequest\x1a$.bytebase.v1.ExportAuditLogsResponse\"i\x8a\xea0\x13bb.auditLogs.export\x90\xea0\x01\x82\xd3\xe4\x93\x02H:\x01*Z\x19:\x01*\"\x14/v1/auditLogs:export\"(/v1/{parent=projects/*}/auditLogs:exportB\xaa\x01\n" +
@@ -746,7 +845,7 @@ func file_v1_audit_log_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_audit_log_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_audit_log_service_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_v1_audit_log_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_v1_audit_log_service_proto_goTypes = []any{
 	(AuditLog_Severity)(0),          // 0: bytebase.v1.AuditLog.Severity
 	(*SearchAuditLogsRequest)(nil),  // 1: bytebase.v1.SearchAuditLogsRequest
@@ -756,32 +855,34 @@ var file_v1_audit_log_service_proto_goTypes = []any{
 	(*AuditLog)(nil),                // 5: bytebase.v1.AuditLog
 	(*AuditData)(nil),               // 6: bytebase.v1.AuditData
 	(*RequestMetadata)(nil),         // 7: bytebase.v1.RequestMetadata
-	(ExportFormat)(0),               // 8: bytebase.v1.ExportFormat
-	(*timestamppb.Timestamp)(nil),   // 9: google.protobuf.Timestamp
-	(*status.Status)(nil),           // 10: google.rpc.Status
-	(*durationpb.Duration)(nil),     // 11: google.protobuf.Duration
-	(*anypb.Any)(nil),               // 12: google.protobuf.Any
-	(*PolicyDelta)(nil),             // 13: bytebase.v1.PolicyDelta
+	(*MCPDelegation)(nil),           // 8: bytebase.v1.MCPDelegation
+	(ExportFormat)(0),               // 9: bytebase.v1.ExportFormat
+	(*timestamppb.Timestamp)(nil),   // 10: google.protobuf.Timestamp
+	(*status.Status)(nil),           // 11: google.rpc.Status
+	(*durationpb.Duration)(nil),     // 12: google.protobuf.Duration
+	(*anypb.Any)(nil),               // 13: google.protobuf.Any
+	(*PolicyDelta)(nil),             // 14: bytebase.v1.PolicyDelta
 }
 var file_v1_audit_log_service_proto_depIdxs = []int32{
 	5,  // 0: bytebase.v1.SearchAuditLogsResponse.audit_logs:type_name -> bytebase.v1.AuditLog
-	8,  // 1: bytebase.v1.ExportAuditLogsRequest.format:type_name -> bytebase.v1.ExportFormat
-	9,  // 2: bytebase.v1.AuditLog.create_time:type_name -> google.protobuf.Timestamp
+	9,  // 1: bytebase.v1.ExportAuditLogsRequest.format:type_name -> bytebase.v1.ExportFormat
+	10, // 2: bytebase.v1.AuditLog.create_time:type_name -> google.protobuf.Timestamp
 	0,  // 3: bytebase.v1.AuditLog.severity:type_name -> bytebase.v1.AuditLog.Severity
-	10, // 4: bytebase.v1.AuditLog.status:type_name -> google.rpc.Status
-	11, // 5: bytebase.v1.AuditLog.latency:type_name -> google.protobuf.Duration
-	12, // 6: bytebase.v1.AuditLog.service_data:type_name -> google.protobuf.Any
+	11, // 4: bytebase.v1.AuditLog.status:type_name -> google.rpc.Status
+	12, // 5: bytebase.v1.AuditLog.latency:type_name -> google.protobuf.Duration
+	13, // 6: bytebase.v1.AuditLog.service_data:type_name -> google.protobuf.Any
 	7,  // 7: bytebase.v1.AuditLog.request_metadata:type_name -> bytebase.v1.RequestMetadata
-	13, // 8: bytebase.v1.AuditData.policy_delta:type_name -> bytebase.v1.PolicyDelta
-	1,  // 9: bytebase.v1.AuditLogService.SearchAuditLogs:input_type -> bytebase.v1.SearchAuditLogsRequest
-	3,  // 10: bytebase.v1.AuditLogService.ExportAuditLogs:input_type -> bytebase.v1.ExportAuditLogsRequest
-	2,  // 11: bytebase.v1.AuditLogService.SearchAuditLogs:output_type -> bytebase.v1.SearchAuditLogsResponse
-	4,  // 12: bytebase.v1.AuditLogService.ExportAuditLogs:output_type -> bytebase.v1.ExportAuditLogsResponse
-	11, // [11:13] is the sub-list for method output_type
-	9,  // [9:11] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	8,  // 8: bytebase.v1.AuditLog.mcp_delegation:type_name -> bytebase.v1.MCPDelegation
+	14, // 9: bytebase.v1.AuditData.policy_delta:type_name -> bytebase.v1.PolicyDelta
+	1,  // 10: bytebase.v1.AuditLogService.SearchAuditLogs:input_type -> bytebase.v1.SearchAuditLogsRequest
+	3,  // 11: bytebase.v1.AuditLogService.ExportAuditLogs:input_type -> bytebase.v1.ExportAuditLogsRequest
+	2,  // 12: bytebase.v1.AuditLogService.SearchAuditLogs:output_type -> bytebase.v1.SearchAuditLogsResponse
+	4,  // 13: bytebase.v1.AuditLogService.ExportAuditLogs:output_type -> bytebase.v1.ExportAuditLogsResponse
+	12, // [12:14] is the sub-list for method output_type
+	10, // [10:12] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_v1_audit_log_service_proto_init() }
@@ -798,7 +899,7 @@ func file_v1_audit_log_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_audit_log_service_proto_rawDesc), len(file_v1_audit_log_service_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

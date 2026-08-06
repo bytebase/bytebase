@@ -301,6 +301,7 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 			Latency:         durationpb.New(e.latency),
 			ServiceData:     e.serviceData,
 			RequestMetadata: requestMetadata,
+			McpDelegation:   mcpDelegationFromAuthContext(authContext),
 		}
 		// Resolve workspace for audit log.
 		workspaceIDForAudit := ap.auditWorkspaceID
@@ -322,6 +323,24 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 	}
 
 	return nil
+}
+
+// mcpDelegationFromAuthContext copies the delegated MCP grant state onto the
+// audit row, verbatim: empty grant values (legacy sessions) are recorded
+// empty, never resolved to a synthetic label. A nil return — every
+// public-chain request — leaves the row without MCP fields; presence of the
+// message is the MCP-origin marker.
+func mcpDelegationFromAuthContext(authContext *common.AuthContext) *storepb.MCPDelegation {
+	g := authContext.DelegatedGrant
+	if g == nil {
+		return nil
+	}
+	return &storepb.MCPDelegation{
+		Scope:         g.Scope,
+		Resource:      g.Resource,
+		ClientId:      g.ClientID,
+		CorrelationId: g.CorrelationID,
+	}
 }
 
 // logAuditToStdout writes audit log events to stdout using Go's standard slog library.
@@ -371,6 +390,8 @@ func logAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
 		attrs = append(attrs, slog.String("severity", p.Severity.String()))
 	}
 
+	attrs = append(attrs, mcpDelegationAttrs(p.McpDelegation)...)
+
 	// Include request payload (truncated to 100KB for log manageability)
 	// Request is already redacted for sensitive data by getRequestString()
 	if p.Request != "" {
@@ -392,6 +413,30 @@ func logAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
 	}
 
 	slog.LogAttrs(ctx, slog.LevelInfo, p.Method, attrs...)
+}
+
+// mcpDelegationAttrs renders the MCP provenance for stdout audit lines:
+// "mcp": true marks the row as MCP-originated even when the grant fields are
+// empty (legacy sessions); the correlation ID is what operators pivot on to
+// reassemble an agent session.
+func mcpDelegationAttrs(d *storepb.MCPDelegation) []slog.Attr {
+	if d == nil {
+		return nil
+	}
+	attrs := []slog.Attr{slog.Bool("mcp", true)}
+	if d.CorrelationId != "" {
+		attrs = append(attrs, slog.String("mcp_correlation_id", d.CorrelationId))
+	}
+	if d.Scope != "" {
+		attrs = append(attrs, slog.String("mcp_scope", d.Scope))
+	}
+	if d.Resource != "" {
+		attrs = append(attrs, slog.String("mcp_resource", d.Resource))
+	}
+	if d.ClientId != "" {
+		attrs = append(attrs, slog.String("mcp_client_id", d.ClientId))
+	}
+	return attrs
 }
 
 func getRequestResource(request any) string {

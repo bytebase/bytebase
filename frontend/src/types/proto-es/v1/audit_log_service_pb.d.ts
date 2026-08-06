@@ -294,6 +294,15 @@ export declare type AuditLog = Message<"bytebase.v1.AuditLog"> & {
    * @generated from field: bytebase.v1.RequestMetadata request_metadata = 12;
    */
   requestMetadata?: RequestMetadata | undefined;
+
+  /**
+   * MCP delegation provenance. Present exactly when the audited call arrived
+   * through the MCP server's delegated credential; never set for public API
+   * calls. Presence of this message is the MCP-origin marker.
+   *
+   * @generated from field: bytebase.v1.MCPDelegation mcp_delegation = 13;
+   */
+  mcpDelegation?: MCPDelegation | undefined;
 };
 
 /**
@@ -424,6 +433,56 @@ export declare type RequestMetadata = Message<"bytebase.v1.RequestMetadata"> & {
  * Use `create(RequestMetadataSchema)` to create a new message.
  */
 export declare const RequestMetadataSchema: GenMessage<RequestMetadata>;
+
+/**
+ * Provenance of a call that reached the API through the MCP (Model Context
+ * Protocol) server's delegated credential. The values are copied verbatim from
+ * the verified credential's grant state; empty fields record that the grant
+ * stored nothing (legacy sessions), never a resolved or synthesized value.
+ *
+ * @generated from message bytebase.v1.MCPDelegation
+ */
+export declare type MCPDelegation = Message<"bytebase.v1.MCPDelegation"> & {
+  /**
+   * The OAuth2 grant's consented scope, e.g. "mcp:read-only".
+   * Empty when the grant recorded no scope.
+   *
+   * @generated from field: string scope = 1;
+   */
+  scope: string;
+
+  /**
+   * The grant's stored MCP resource URI.
+   * Empty for pre-grant legacy sessions.
+   *
+   * @generated from field: string resource = 2;
+   */
+  resource: string;
+
+  /**
+   * The OAuth2 client the grant was consented to.
+   * Empty for legacy web-session tokens at /mcp.
+   *
+   * @generated from field: string client_id = 3;
+   */
+  clientId: string;
+
+  /**
+   * Correlates the audit rows an MCP session produces. Minted at the /mcp
+   * boundary and session-scoped: the MCP SDK hands tool handlers the
+   * initialize-time context, so one MCP session carries one correlation ID
+   * across all of its tool calls.
+   *
+   * @generated from field: string correlation_id = 4;
+   */
+  correlationId: string;
+};
+
+/**
+ * Describes the message bytebase.v1.MCPDelegation.
+ * Use `create(MCPDelegationSchema)` to create a new message.
+ */
+export declare const MCPDelegationSchema: GenMessage<MCPDelegation>;
 
 /**
  * AuditLogService manages audit logs for system activities and API calls.
