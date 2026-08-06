@@ -1303,6 +1303,7 @@
           }
         }
       },
+      "container": "コンテナ",
       "details": "アクセス付与の詳細",
       "duration-after-approval": "Issue 承認後 {{duration}}",
       "expired-at": "有効期限",

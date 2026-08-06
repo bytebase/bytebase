@@ -1303,6 +1303,7 @@
           }
         }
       },
+      "container": "Container",
       "details": "Chi tiết cấp quyền truy cập",
       "duration-after-approval": "{{duration}} sau khi yêu cầu được duyệt",
       "expired-at": "Hết hạn lúc",

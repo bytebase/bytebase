@@ -1303,6 +1303,7 @@
           }
         }
       },
+      "container": "容器",
       "details": "访问授权详情",
       "duration-after-approval": "工单批准后 {{duration}}",
       "expired-at": "过期时间",
