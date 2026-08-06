@@ -2,7 +2,6 @@ import {
   ChevronDown,
   ChevronRight,
   Columns3,
-  Database as DatabaseIcon,
   Layers,
   Table2,
   X,
@@ -16,7 +15,7 @@ import {
   type SearchParams,
   type ValueOption,
 } from "@/components/AdvancedSearch";
-import { EnvironmentLabel } from "@/components/EnvironmentLabel";
+import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppStore } from "@/stores/app";
 import type { DatabaseResource } from "@/types";
@@ -93,11 +92,13 @@ export function DatabaseResourceSelector({
   value,
   onChange,
   includeColumns = false,
+  readonly = false,
 }: {
   projectName: string;
   value: DatabaseResource[];
   onChange: (resources: DatabaseResource[]) => void;
   includeColumns?: boolean;
+  readonly?: boolean;
 }) {
   const { t } = useTranslation();
   const getOrFetchDatabaseMetadata = useAppStore(
@@ -837,6 +838,7 @@ export function DatabaseResourceSelector({
         checked={isTableChecked(dbName, schemaName, table.name)}
         indeterminate={isTableIndeterminate(dbName, schemaName, table.name)}
         expanded={expandedTables.has(key)}
+        readonly={readonly}
         onToggleExpand={() => toggleExpandTable(key)}
         onChange={() => toggleTable(dbName, schemaName, table.name)}
         isColumnChecked={(column) =>
@@ -864,8 +866,9 @@ export function DatabaseResourceSelector({
           <div className="flex items-center justify-between px-3 py-1.5 bg-control-bg border-b border-control-border text-xs text-control-light">
             <button
               type="button"
-              className="text-accent hover:underline cursor-pointer"
+              className="text-accent hover:underline cursor-pointer disabled:text-control-light disabled:no-underline disabled:cursor-not-allowed"
               onClick={toggleSelectAll}
+              disabled={readonly}
             >
               {isAllSelected
                 ? t("common.deselect-all")
@@ -880,9 +883,6 @@ export function DatabaseResourceSelector({
           </div>
           <div className="flex-1 overflow-y-auto">
             {databases.map((db) => {
-              const { databaseName } = extractDatabaseResourceName(db.name);
-              const envName = db.effectiveEnvironment ?? db.environment;
-              const instanceTitle = db.instanceResource?.title ?? "";
               const isExpanded = expandedDatabases.has(db.name);
               const metadata = metadataMap.get(db.name);
               const isLoading = loadingMetadata.has(db.name);
@@ -906,6 +906,7 @@ export function DatabaseResourceSelector({
                     </button>
                     <Checkbox
                       className="shrink-0"
+                      disabled={readonly}
                       checked={
                         dbChecked
                           ? true
@@ -915,20 +916,12 @@ export function DatabaseResourceSelector({
                       }
                       onCheckedChange={() => toggleDatabase(db)}
                     />
-                    {envName && (
-                      <EnvironmentLabel
-                        environmentName={envName}
-                        className="text-xs shrink-0"
-                      />
-                    )}
-                    <DatabaseIcon className="w-3.5 h-3.5 text-control-light shrink-0" />
-                    <span className="text-sm truncate">{databaseName}</span>
+                    <DatabaseTargetDisplay
+                      database={db}
+                      showEnvironment
+                      className="min-w-0"
+                    />
                   </div>
-                  {instanceTitle && (
-                    <div className="pl-10 text-xs text-control-light pb-0.5">
-                      ({instanceTitle})
-                    </div>
-                  )}
                   {isExpanded && (
                     <div className="pl-6">
                       {isLoading && (
@@ -976,6 +969,7 @@ export function DatabaseResourceSelector({
                                   </button>
                                   <Checkbox
                                     className="shrink-0"
+                                    disabled={readonly}
                                     checked={
                                       schemaChecked
                                         ? true
@@ -1043,13 +1037,15 @@ export function DatabaseResourceSelector({
                     className="flex items-center gap-x-1 px-2 py-1 text-sm hover:bg-control-bg group rounded-sm"
                   >
                     <span className="flex-1 truncate">{resourceLabel(r)}</span>
-                    <button
-                      type="button"
-                      className="shrink-0 w-4 h-4 text-control-light hover:text-control opacity-0 group-hover:opacity-100 cursor-pointer"
-                      onClick={() => removeResource(r)}
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                    {!readonly && (
+                      <button
+                        type="button"
+                        className="shrink-0 w-4 h-4 text-control-light hover:text-control opacity-0 group-hover:opacity-100 cursor-pointer"
+                        onClick={() => removeResource(r)}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1068,6 +1064,7 @@ function TableNode({
   checked,
   indeterminate,
   expanded,
+  readonly,
   onToggleExpand,
   onChange,
   isColumnChecked,
@@ -1079,6 +1076,7 @@ function TableNode({
   checked: boolean;
   indeterminate: boolean;
   expanded: boolean;
+  readonly: boolean;
   onToggleExpand: () => void;
   onChange: () => void;
   isColumnChecked: (column: string) => boolean;
@@ -1104,6 +1102,7 @@ function TableNode({
         )}
         <Checkbox
           className="shrink-0"
+          disabled={readonly}
           checked={checked ? true : indeterminate ? "indeterminate" : false}
           onCheckedChange={() => onChange()}
         />
@@ -1120,6 +1119,7 @@ function TableNode({
               <span className="shrink-0 w-4" />
               <Checkbox
                 className="shrink-0"
+                disabled={readonly}
                 checked={isColumnChecked(column.name)}
                 onCheckedChange={() => onColumnChange(column.name)}
               />

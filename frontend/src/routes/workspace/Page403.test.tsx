@@ -49,6 +49,25 @@ afterEach(() => {
 });
 
 describe("Page403", () => {
+  test("allows long permission details to wrap within the alert", () => {
+    const from = `/403?from=${"segment".repeat(40)}`;
+    mocks.currentRoute.value = {
+      query: {
+        api: "/bytebase.v1.WorkspaceService/GetIamPolicy",
+        from,
+      },
+    };
+
+    act(() => {
+      root.render(<Page403 />);
+    });
+
+    const details = container.querySelector(".wrap-anywhere");
+    expect(details).toBeTruthy();
+    expect(details?.className ?? "").toContain("min-w-0");
+    expect(details?.textContent).toContain(from);
+  });
+
   test("go back home navigates to the landing page", () => {
     act(() => {
       root.render(<Page403 />);

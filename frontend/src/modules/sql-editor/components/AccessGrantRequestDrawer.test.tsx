@@ -236,14 +236,10 @@ vi.mock("@/components/ui/button", () => ({
   ),
 }));
 
-// The drawer now renders the real DatabaseSelect, which imports EngineIcon and
-// EnvironmentLabel. Stub them so their transitive proto-es imports don't load
-// (they conflict with this file's minimal @bufbuild/protobuf(/wkt) mocks). They
-// are only referenced inside the picker's option.render, never invoked here
-// because the Combobox mock below renders plain <option> labels.
-vi.mock("@/components/EngineIcon", () => ({ EngineIcon: () => null }));
-vi.mock("@/components/EnvironmentLabel", () => ({
-  EnvironmentLabel: () => null,
+// Keep the real DatabaseSelect behavior under test without loading the shared
+// display's transitive proto-es dependencies into this minimal protobuf mock.
+vi.mock("@/components/DatabaseTargetDisplay", () => ({
+  DatabaseTargetDisplay: () => null,
 }));
 
 vi.mock("@/components/ui/combobox", () => ({

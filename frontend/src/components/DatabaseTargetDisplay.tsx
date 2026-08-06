@@ -1,11 +1,12 @@
-import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import { EngineIcon } from "@/components/EngineIcon";
+import { EnvironmentLabel } from "@/components/EnvironmentLabel";
+import { EllipsisText } from "@/components/ui/ellipsis-text";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import { isValidDatabaseName } from "@/types";
-import { unknownDatabase } from "@/types/v1/database";
-import { extractDatabaseResourceName, getInstanceResource } from "@/utils";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { extractDatabaseResourceName } from "@/utils";
 
 type DatabaseTargetDisplaySize = "sm" | "md";
 
@@ -17,7 +18,6 @@ const sizeClasses: Record<
     icon: string;
     instance: string;
     root: string;
-    separator: string;
   }
 > = {
   sm: {
@@ -26,7 +26,6 @@ const sizeClasses: Record<
     icon: "h-4 w-4",
     instance: "max-w-40",
     root: "text-sm",
-    separator: "h-4 w-4",
   },
   md: {
     database: "min-w-16",
@@ -34,34 +33,44 @@ const sizeClasses: Record<
     icon: "h-5 w-5",
     instance: "max-w-48",
     root: "text-base",
-    separator: "h-5 w-5",
   },
 };
 
-export function DatabaseTargetDisplay({
-  className,
-  showEngine = true,
-  showEnvironment = false,
-  showInstance = true,
-  size = "sm",
-  target,
-}: {
+type DatabaseTargetDisplayProps = {
   className?: string;
   showEngine?: boolean;
   showEnvironment?: boolean;
   showInstance?: boolean;
   size?: DatabaseTargetDisplaySize;
-  target: string;
-}) {
+} & (
+  | {
+      database?: Database;
+      target: string;
+    }
+  | {
+      database: Database;
+      target?: string;
+    }
+);
+
+export function DatabaseTargetDisplay({
+  className,
+  database: databaseProp,
+  showEngine = true,
+  showEnvironment = false,
+  showInstance = true,
+  size = "sm",
+  target,
+}: DatabaseTargetDisplayProps) {
   const databasesByName = useAppStore((s) => s.databasesByName);
   const environmentList = useAppStore((s) => s.environmentList);
   const classes = sizeClasses[size];
 
-  const database = databasesByName[target] ?? unknownDatabase();
+  const targetName = target ?? databaseProp?.name ?? "";
+  const database = databaseProp ?? databasesByName[targetName];
+  const instance = database?.instanceResource;
   const environmentName =
-    database.effectiveEnvironment ??
-    database.instanceResource?.environment ??
-    "";
+    database?.effectiveEnvironment ?? instance?.environment ?? "";
   const environment = useMemo(
     () =>
       environmentName
@@ -70,30 +79,24 @@ export function DatabaseTargetDisplay({
     [environmentList, environmentName]
   );
 
-  if (!isValidDatabaseName(target)) {
+  if (!isValidDatabaseName(targetName)) {
     return (
-      <span
+      <EllipsisText
+        text={targetName}
         className={cn(
           "truncate text-control-placeholder",
           classes.root,
           className
         )}
-      >
-        {target}
-      </span>
+      />
     );
   }
 
-  const instance = getInstanceResource(database);
-  const { databaseName } = extractDatabaseResourceName(target);
-  const shouldShowSeparator = showInstance && Boolean(instance.title);
-  const title = [
-    showEnvironment ? environment?.title : undefined,
-    showInstance ? instance.title : undefined,
-    databaseName,
-  ]
-    .filter(Boolean)
-    .join(" / ");
+  const { databaseName, instanceName } =
+    extractDatabaseResourceName(targetName);
+  const instanceTitle = instance?.title || instanceName;
+  const shouldShowInstance = showInstance && Boolean(instanceTitle);
+  const shouldShowSeparator = shouldShowInstance && Boolean(databaseName);
 
   return (
     <div
@@ -102,42 +105,39 @@ export function DatabaseTargetDisplay({
         classes.root,
         className
       )}
-      title={title}
     >
-      {showEngine && (
+      {showEngine && instance && (
         <EngineIcon
           engine={instance.engine}
           className={cn("mr-1 shrink-0", classes.icon)}
         />
       )}
-      {showEnvironment && environment?.title && (
-        <span
-          className={cn(
-            "mr-1 min-w-0 shrink truncate text-control-placeholder",
-            classes.environment
-          )}
-        >
-          {environment.title}
-        </span>
-      )}
-      {showInstance && instance.title && (
-        <span
+      {shouldShowInstance && (
+        <EllipsisText
+          text={instanceTitle}
           className={cn(
             "min-w-0 shrink-[2] truncate text-control-light",
             classes.instance
           )}
-        >
-          {instance.title}
-        </span>
-      )}
-      {shouldShowSeparator && (
-        <ChevronRight
-          className={cn("shrink-0 text-control-light/80", classes.separator)}
         />
       )}
-      <span className={cn("flex-1 truncate text-control", classes.database)}>
-        {databaseName}
-      </span>
+      {shouldShowSeparator && (
+        <span className="shrink-0 whitespace-pre text-control-light/80">
+          {" / "}
+        </span>
+      )}
+      {showEnvironment && environment?.title && (
+        <EllipsisText
+          text={environment.title}
+          className={cn("mr-1 min-w-0 shrink", classes.environment)}
+        >
+          <EnvironmentLabel environment={environment} />
+        </EllipsisText>
+      )}
+      <EllipsisText
+        text={databaseName}
+        className={cn("flex-1 truncate text-control", classes.database)}
+      />
     </div>
   );
 }

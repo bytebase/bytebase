@@ -1,17 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIcon } from "@/components/EngineIcon";
-import { EnvironmentLabel } from "@/components/EnvironmentLabel";
+import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { useAppStore } from "@/stores/app";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import {
-  extractDatabaseResourceName,
-  getDatabaseEnvironment,
-  getDefaultPagination,
-  getInstanceResource,
-} from "@/utils";
+import { extractDatabaseResourceName, getDefaultPagination } from "@/utils";
 
 interface BaseProps {
   placeholder?: string;
@@ -140,7 +134,6 @@ export function DatabaseSelect(props: DatabaseSelectProps) {
   );
 
   const buildOption = useCallback((database: Database): ComboboxOption => {
-    const inst = getInstanceResource(database);
     const { databaseName, instance } = extractDatabaseResourceName(
       database.name
     );
@@ -150,20 +143,7 @@ export function DatabaseSelect(props: DatabaseSelectProps) {
       description: instance,
       render: () => (
         <div className="flex flex-col gap-0.5">
-          <div className="flex items-center gap-1.5">
-            {inst.title && (
-              <>
-                <EngineIcon engine={inst.engine} className="h-4 w-4" />
-                <span>{inst.title}</span>
-                <span className="text-control-placeholder">&gt;</span>
-              </>
-            )}
-            <EnvironmentLabel
-              environmentName={getDatabaseEnvironment(database).name}
-            />
-            <span className="text-control-placeholder">&gt;</span>
-            <span>{databaseName}</span>
-          </div>
+          <DatabaseTargetDisplay database={database} showEnvironment />
           <span className="text-xs text-control-placeholder">
             {database.name}
           </span>
@@ -229,14 +209,8 @@ export function DatabaseSelect(props: DatabaseSelectProps) {
       onChange={(name) => onChange(name, resolveDatabase(name))}
       renderValue={(opt) => {
         const database = resolveDatabase(opt.value);
-        if (!database) return opt.label;
-        const inst = getInstanceResource(database);
-        return (
-          <span className="flex items-center gap-1.5 truncate">
-            <EngineIcon engine={inst.engine} className="h-4 w-4" />
-            {extractDatabaseResourceName(database.name).databaseName}
-          </span>
-        );
+        if (!database) return <DatabaseTargetDisplay target={opt.value} />;
+        return <DatabaseTargetDisplay database={database} />;
       }}
     />
   );
