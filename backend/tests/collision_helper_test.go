@@ -2,9 +2,11 @@ package tests
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
@@ -531,18 +533,69 @@ func createPlanIssueRollout(ctx context.Context, t *testing.T, ctl *controller, 
 // observed through the public gRPC API. Each slice's rows are keyed by the
 // UID parsed from their resource name.
 type projectSnapshot struct {
-	Plans         []*v1pb.Plan
-	Issues        []*v1pb.Issue
-	TaskRuns      []*v1pb.TaskRun
-	PlanCheckRuns []*v1pb.PlanCheckRun
-	IssueComments []*v1pb.IssueComment
+	Plans          []*v1pb.Plan
+	Issues         []*v1pb.Issue
+	TaskRuns       []*v1pb.TaskRun
+	TaskRunLogs    []*v1pb.TaskRunLog
+	PlanCheckRuns  []*v1pb.PlanCheckRun
+	IssueComments  []*v1pb.IssueComment
+	Releases       []*v1pb.Release
+	DatabaseGroups []*v1pb.DatabaseGroup
+	// PlanWebhookDeliveries is the only snapshot field read directly from
+	// the metadata DB — plan_webhook_delivery has no public gRPC read API.
+	// It is NOT compared in assertProjectUnchanged: delivery rows are
+	// claimed asynchronously after rollout completion, so only the dedicated
+	// webhook collision test compares them, after explicitly waiting for the
+	// row set to stabilize.
+	PlanWebhookDeliveries []*planWebhookDelivery
 }
 
-// snapshotProject captures every plan/issue/task_run/plan_check_run row
-// visible to the public gRPC API for the given project. Every read goes
-// through the service layer (auth + audit), not the raw store — so a
-// read-path regression that leaks cross-project data would also surface in
-// these calls.
+// planWebhookDelivery is one row of the plan_webhook_delivery table, which
+// has no public gRPC read API. The collision suite snapshots it with the
+// table-specific direct DB read below (see AGENTS.md's allowance for
+// tables without public read APIs).
+type planWebhookDelivery struct {
+	PlanID      int64
+	EventType   string
+	DeliveredAt time.Time
+}
+
+// listPlanWebhookDeliveries reads every plan_webhook_delivery row for the
+// project directly from the test metadata database. This mirrors the raw
+// metadata-DB access pattern used elsewhere in backend/tests (e.g.
+// project_instance_archive_task_run_test.go).
+func listPlanWebhookDeliveries(ctx context.Context, t *testing.T, ctl *controller, projectID string) []*planWebhookDelivery {
+	t.Helper()
+	a := require.New(t)
+	db, err := sql.Open("pgx", ctl.profile.PgURL)
+	a.NoError(err, "open metadata DB")
+	defer db.Close()
+
+	rows, err := db.QueryContext(ctx, `
+		SELECT plan_id, event_type, delivered_at
+		FROM plan_webhook_delivery
+		WHERE project = $1
+		ORDER BY plan_id
+	`, projectID)
+	a.NoError(err, "query plan_webhook_delivery for project %s", projectID)
+	defer rows.Close()
+
+	var out []*planWebhookDelivery
+	for rows.Next() {
+		var d planWebhookDelivery
+		a.NoError(rows.Scan(&d.PlanID, &d.EventType, &d.DeliveredAt))
+		out = append(out, &d)
+	}
+	a.NoError(rows.Err())
+	return out
+}
+
+// snapshotProject captures every plan/issue/task_run/task_run_log/
+// plan_check_run/issue_comment/release/database_group row visible to the
+// public gRPC API for the given project, plus the project's raw
+// plan_webhook_delivery rows. Every read goes through the service layer
+// (auth + audit) where an API exists — so a read-path regression that
+// leaks cross-project data would also surface in these calls.
 //
 // PlanCheckRuns are fetched via GetPlanCheckRun(planName+"/planCheckRun"),
 // which is the single-consolidated-PCR endpoint the UI itself uses. One
@@ -609,6 +662,19 @@ func snapshotProject(
 		}
 	}
 
+	// task_run_log rows are exposed through GetTaskRunLog, one message per
+	// task run.
+	var taskRunLogs []*v1pb.TaskRunLog
+	for _, tr := range taskRuns {
+		logResp, err := ctl.rolloutServiceClient.GetTaskRunLog(ctx, connect.NewRequest(&v1pb.GetTaskRunLogRequest{
+			Parent: tr.Name,
+		}))
+		a.NoError(err, "GetTaskRunLog for task run %s", tr.Name)
+		a.True(strings.HasPrefix(logResp.Msg.Name, project.Name+"/"),
+			"GetTaskRunLog for task run %s returned %q — read-path leak", tr.Name, logResp.Msg.Name)
+		taskRunLogs = append(taskRunLogs, logResp.Msg)
+	}
+
 	var issueComments []*v1pb.IssueComment
 	for _, i := range issues {
 		icResp, err := ctl.issueServiceClient.ListIssueComments(ctx, connect.NewRequest(&v1pb.ListIssueCommentsRequest{
@@ -623,12 +689,38 @@ func snapshotProject(
 		issueComments = append(issueComments, icResp.Msg.IssueComments...)
 	}
 
+	releasesResp, err := ctl.releaseServiceClient.ListReleases(ctx, connect.NewRequest(&v1pb.ListReleasesRequest{
+		Parent:   project.Name,
+		PageSize: 1000,
+	}))
+	a.NoError(err, "ListReleases(%s)", project.Name)
+	for _, r := range releasesResp.Msg.Releases {
+		a.True(strings.HasPrefix(r.Name, project.Name+"/"),
+			"ListReleases(%s) returned %q — read-path leak", project.Name, r.Name)
+	}
+
+	groupsResp, err := ctl.databaseGroupServiceClient.ListDatabaseGroups(ctx, connect.NewRequest(&v1pb.ListDatabaseGroupsRequest{
+		Parent: project.Name,
+	}))
+	a.NoError(err, "ListDatabaseGroups(%s)", project.Name)
+	for _, g := range groupsResp.Msg.DatabaseGroups {
+		a.True(strings.HasPrefix(g.Name, project.Name+"/"),
+			"ListDatabaseGroups(%s) returned %q — read-path leak", project.Name, g.Name)
+	}
+
+	projectID, err := common.GetProjectID(project.Name)
+	a.NoError(err, "GetProjectID(%s)", project.Name)
+
 	return &projectSnapshot{
-		Plans:         plans,
-		Issues:        issues,
-		TaskRuns:      taskRuns,
-		PlanCheckRuns: planCheckRuns,
-		IssueComments: issueComments,
+		Plans:                 plans,
+		Issues:                issues,
+		TaskRuns:              taskRuns,
+		TaskRunLogs:           taskRunLogs,
+		PlanCheckRuns:         planCheckRuns,
+		IssueComments:         issueComments,
+		Releases:              releasesResp.Msg.Releases,
+		DatabaseGroups:        groupsResp.Msg.DatabaseGroups,
+		PlanWebhookDeliveries: listPlanWebhookDeliveries(ctx, t, ctl, projectID),
 	}
 }
 
@@ -647,7 +739,6 @@ func assertProjectUnchanged(
 ) {
 	t.Helper()
 	a := require.New(t)
-
 	assertNoChange(t, before.Plans, after.Plans,
 		func(p *v1pb.Plan) string { return p.Name },
 		func(b, af *v1pb.Plan) {
@@ -671,6 +762,16 @@ func assertProjectUnchanged(
 		},
 		label, "task_run")
 
+	// task_run_log is keyed by composite (project, task_run_id); log rows
+	// are append-only once a task run is terminal, so any delta here means
+	// a cross-project write leaked into project B.
+	assertNoChange(t, before.TaskRunLogs, after.TaskRunLogs,
+		func(l *v1pb.TaskRunLog) string { return l.Name },
+		func(b, af *v1pb.TaskRunLog) {
+			a.True(proto.Equal(b, af), "%s: task_run_log %s content changed", label, b.Name)
+		},
+		label, "task_run_log")
+
 	assertNoChange(t, before.PlanCheckRuns, after.PlanCheckRuns,
 		func(p *v1pb.PlanCheckRun) string { return p.Name },
 		func(b, af *v1pb.PlanCheckRun) {
@@ -687,6 +788,21 @@ func assertProjectUnchanged(
 			a.Equal(b.Comment, af.Comment, "%s: issue_comment %s comment changed", label, b.Name)
 		},
 		label, "issue_comment")
+
+	assertNoChange(t, before.Releases, after.Releases,
+		func(r *v1pb.Release) string { return r.Name },
+		func(b, af *v1pb.Release) {
+			a.True(proto.Equal(b, af), "%s: release %s content changed", label, b.Name)
+		},
+		label, "release")
+
+	assertNoChange(t, before.DatabaseGroups, after.DatabaseGroups,
+		func(g *v1pb.DatabaseGroup) string { return g.Name },
+		func(b, af *v1pb.DatabaseGroup) {
+			a.Equal(b.Title, af.Title, "%s: database group %s title changed", label, b.Name)
+			a.True(proto.Equal(b.DatabaseExpr, af.DatabaseExpr), "%s: database group %s expression changed", label, b.Name)
+		},
+		label, "db_group")
 }
 
 // assertNoChange compares two row slices keyed by name, fails if any

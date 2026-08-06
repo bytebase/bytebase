@@ -88,10 +88,15 @@ If the diff adds or modifies a store method that touches a composite-PK table:
 
 1. Check if a corresponding `TestCollision*` or `TestClaim*` test exists in `backend/tests/`
 2. If not, add one using `setupCollidingProjects` and `assertProjectUnchanged` from
-   `backend/tests/collision_helper_test.go`. Note: the shared snapshot currently
-   covers `plan`, `issue`, `task`, `task_run`, and `plan_check_run`. For methods
-   touching `task_run_log`, `plan_webhook_delivery`, `db_group`, or `release`,
-   add table-specific assertions inline — the shared helper is not sufficient
+   `backend/tests/collision_helper_test.go`. The shared snapshot covers `plan`,
+   `issue`, `task`, `task_run`, `plan_check_run`, `task_run_log`, `db_group`, and
+   `release` (public APIs where one exists). `plan_webhook_delivery` is covered by the
+   dedicated `TestCollision_PlanWebhookDeliveryWrite` with a table-specific raw
+   metadata-DB read and explicit stabilization — its rows are claimed asynchronously
+   after rollout completion, so it is deliberately kept out of the generic snapshot to
+   avoid spurious cross-project-leak failures. For methods touching any future table
+   outside that set, add table-specific assertions inline — or extend the shared
+   helper first
 3. If your test needs project B rolled out (to create task/task_run/plan_check_run
    rows that could collide with project A's), call `fixture.completeRolloutB(ctx, t, ctl)`
    — this is the ONLY supported rollout path and it proves `task` and `task_run`
@@ -100,7 +105,10 @@ If the diff adds or modifies a store method that touches a composite-PK table:
    from public gRPC. The PCR claim test is belt-and-suspenders coverage; the
    load-bearing regression lock is the task_run claim test.) Do NOT hand-roll
    `CreateRollout` + `waitRollout` — the collision invariant must not be a
-   per-test responsibility
+   per-test responsibility. Tests that need a second colliding rollout pair
+   (e.g. `task_run_log` or `plan_webhook_delivery` writers) use
+   `createPlanIssueRollout` for both projects and assert the second pair's
+   plan/task-run UIDs collide explicitly
 4. If testing delete cascades across projects where both projects share an
    instance, also consider adding a variant using `setupCollidingProjectsSeparateInstances`
    to catch cross-project over-delete bugs that shared-instance tests cannot detect

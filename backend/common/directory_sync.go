@@ -1,3 +1,4 @@
+// nolint:revive // Package name "common" is the established repository-wide name.
 package common
 
 import (
