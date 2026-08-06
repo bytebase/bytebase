@@ -38,6 +38,7 @@ import {
 import {
   isValidEnvironmentName,
   UNKNOWN_ID,
+  UNKNOWN_INSTANCE_NAME,
   type ValidatedMessage,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -845,7 +846,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
             parent ? `${parent}/instances/${id}` : `${instanceNamePrefix}${id}`,
             true /* silent */
           );
-        if (existing) {
+        if (existing.name !== UNKNOWN_INSTANCE_NAME) {
           return [
             {
               type: "error",

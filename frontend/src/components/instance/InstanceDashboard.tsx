@@ -228,7 +228,9 @@ function InstanceActionDropdown({
 
   const handleArchive = useCallback(async () => {
     try {
-      await useAppStore.getState().archiveInstance(instance, forceArchive);
+      await useAppStore
+        .getState()
+        .archiveInstance(instance, project ? false : forceArchive);
       pushNotification({
         module: "bytebase",
         style: "INFO",
@@ -247,7 +249,7 @@ function InstanceActionDropdown({
         description: (error as { message?: string }).message,
       });
     }
-  }, [instance, forceArchive, t, onAction]);
+  }, [instance, project, forceArchive, t, onAction]);
 
   const handleRestore = useCallback(async () => {
     try {
@@ -332,18 +334,21 @@ function InstanceActionDropdown({
           setForceArchive(false);
         }}
       >
-        <label className="flex items-center gap-x-2 text-sm text-control-light mt-2">
-          <Checkbox
-            checked={forceArchive}
-            onCheckedChange={(checked) => setForceArchive(checked)}
-          />
-          {t("instance.force-archive-description")}
-        </label>
+        {!project && (
+          <label className="flex items-center gap-x-2 text-sm text-control-light mt-2">
+            <Checkbox
+              checked={forceArchive}
+              onCheckedChange={(checked) => setForceArchive(checked)}
+            />
+            {t("instance.force-archive-description")}
+          </label>
+        )}
       </ConfirmDialog>
 
       <InstanceDeleteDialog
         open={showDeleteConfirm}
         instance={instance}
+        forceArchive={!project}
         onOpenChange={setShowDeleteConfirm}
         onDeleted={onAction}
       />

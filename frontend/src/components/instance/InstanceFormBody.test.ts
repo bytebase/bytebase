@@ -87,6 +87,15 @@ describe("InstanceFormBody", () => {
     expect(source).not.toContain("router.currentRoute.value.query.project");
   });
 
+  test("does not treat an inaccessible instance as a duplicate resource id", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+
+    expect(source).toContain("existing.name !== UNKNOWN_INSTANCE_NAME");
+  });
+
   test("offers sync-all database details from the create instance form", () => {
     const source = readFileSync(
       join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),

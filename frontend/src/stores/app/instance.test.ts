@@ -4,22 +4,33 @@ import {
   InstanceSchema,
   type ListInstancesRequest,
 } from "@/types/proto-es/v1/instance_service_pb";
+import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { createInstanceSlice } from "./instance";
 
 const mocks = vi.hoisted(() => ({
+  getInstance: vi.fn(),
   listInstances: vi.fn(),
   createInstance: vi.fn(),
   batchSyncInstances: vi.fn(),
   batchUpdateInstances: vi.fn(),
+  hasWorkspacePermissionV2: vi.fn(() => true),
+  hasProjectPermissionV2: vi.fn(() => true),
 }));
 
 vi.mock("@/api", () => ({
   instanceServiceClientConnect: {
+    getInstance: mocks.getInstance,
     listInstances: mocks.listInstances,
     createInstance: mocks.createInstance,
     batchSyncInstances: mocks.batchSyncInstances,
     batchUpdateInstances: mocks.batchUpdateInstances,
   },
+}));
+
+vi.mock("@/utils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils")>()),
+  hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
+  hasProjectPermissionV2: mocks.hasProjectPermissionV2,
 }));
 
 const createStore = () => {
@@ -42,6 +53,8 @@ const createStore = () => {
 describe("instance store project parent", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.hasWorkspacePermissionV2.mockReturnValue(true);
+    mocks.hasProjectPermissionV2.mockReturnValue(true);
     mocks.listInstances.mockResolvedValue({
       instances: [],
       nextPageToken: "",
@@ -94,6 +107,29 @@ describe("instance store project parent", () => {
     expect(mocks.createInstance.mock.calls[0][0]).toMatchObject({
       parent: "projects/app",
     });
+  });
+
+  test("uses project permission to fetch a nested instance", async () => {
+    const store = createStore();
+    const project = create(ProjectSchema, { name: "projects/app" });
+    const instance = create(InstanceSchema, {
+      name: "projects/app/instances/prod",
+      title: "Prod",
+    });
+    Object.assign(store, {
+      projectsByName: { [project.name]: project },
+    });
+    mocks.hasWorkspacePermissionV2.mockReturnValue(false);
+    mocks.getInstance.mockResolvedValue(instance);
+
+    const result = await store.getOrFetchInstanceByName(instance.name, true);
+
+    expect(result).toBe(instance);
+    expect(mocks.hasProjectPermissionV2).toHaveBeenCalledWith(
+      project,
+      "bb.instances.get"
+    );
+    expect(mocks.getInstance).toHaveBeenCalledOnce();
   });
 
   test("forwards the project parent for batch operations", async () => {

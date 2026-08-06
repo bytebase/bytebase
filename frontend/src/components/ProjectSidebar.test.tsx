@@ -168,14 +168,14 @@ describe("ProjectSidebar", () => {
     unmount();
   });
 
-  test("hides project instances in release builds", () => {
+  test("renders project instances in release builds", () => {
     mocks.dev = false;
     const { container, render, unmount } = renderIntoContainer(
       <ProjectSidebar />
     );
     render();
 
-    expect(container.textContent).not.toContain("Instances");
+    expect(container.textContent).toContain("Instances");
 
     unmount();
   });

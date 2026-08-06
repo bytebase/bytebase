@@ -34,7 +34,6 @@ import { RouterLink } from "@/components/RouterLink";
 import { useRecentVisit } from "@/hooks/useRecentVisit";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import { isDev } from "@/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -123,7 +122,7 @@ function useSidebarItems(): SidebarItem[] {
             title: t("common.instances"),
             path: PROJECT_V1_ROUTE_INSTANCES,
             type: "div",
-            hide: isDefault || !isDev(),
+            hide: isDefault,
           },
           {
             title: t("common.databases"),

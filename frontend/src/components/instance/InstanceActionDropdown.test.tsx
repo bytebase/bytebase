@@ -78,7 +78,7 @@ const renderMenu = async (
   document.body.appendChild(container);
   const root = createRoot(container);
   const instance = create(InstanceSchema, {
-    name: "instances/prod",
+    name: project ? `${project.name}/instances/prod` : "instances/prod",
     title: "Production",
     state,
   });
@@ -190,6 +190,32 @@ describe("InstanceActionDropdown", () => {
     act(() => menu.root.unmount());
   });
 
+  test("archives a project instance without force", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const project = create(ProjectSchema, { name: "projects/app" });
+    mocks.archiveInstance.mockResolvedValue(undefined);
+    const menu = await renderMenu(State.ACTIVE, project);
+    const archiveItem = Array.from(
+      document.body.querySelectorAll("[role='menuitem']")
+    ).find((el) => el.textContent === "common.archive");
+
+    await act(async () => {
+      archiveItem?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(confirmSpy).toHaveBeenCalledWith(
+      expect.not.stringContaining("instance.force-archive-description")
+    );
+    expect(mocks.archiveInstance).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "projects/app/instances/prod" }),
+      false
+    );
+
+    confirmSpy.mockRestore();
+    act(() => menu.root.unmount());
+  });
+
   test("archives before purging an active instance after resource id confirmation", async () => {
     mocks.archiveInstance.mockResolvedValue(undefined);
     mocks.deleteInstance.mockResolvedValue(undefined);
@@ -261,6 +287,44 @@ describe("InstanceActionDropdown", () => {
 
     expect(mocks.archiveInstance).not.toHaveBeenCalled();
     expect(mocks.deleteInstance).toHaveBeenCalledWith("instances/prod");
+
+    act(() => menu.root.unmount());
+  });
+
+  test("archives a project instance without force before purging it", async () => {
+    mocks.archiveInstance.mockResolvedValue(undefined);
+    mocks.deleteInstance.mockResolvedValue(undefined);
+    const project = create(ProjectSchema, { name: "projects/app" });
+    const menu = await renderMenu(State.ACTIVE, project);
+    const deleteItem = Array.from(
+      document.body.querySelectorAll("[role='menuitem']")
+    ).find((el) => el.textContent === "common.delete");
+
+    await act(async () => {
+      deleteItem?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const input = document.body.querySelector("input") as HTMLInputElement;
+    const deleteButtons = Array.from(
+      document.body.querySelectorAll("button")
+    ).filter((el) => el.textContent === "common.delete");
+    const dialogDeleteButton = deleteButtons.at(-1) as HTMLButtonElement;
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: "prod" } });
+      dialogDeleteButton.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      );
+      await Promise.resolve();
+    });
+
+    expect(mocks.archiveInstance).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "projects/app/instances/prod" }),
+      false
+    );
+    expect(mocks.deleteInstance).toHaveBeenCalledWith(
+      "projects/app/instances/prod"
+    );
 
     act(() => menu.root.unmount());
   });

@@ -17,6 +17,7 @@ import { extractInstanceResourceName } from "@/utils";
 interface InstanceDeleteDialogProps {
   open: boolean;
   instance: Instance;
+  forceArchive?: boolean;
   onOpenChange: (open: boolean) => void;
   onDeleted?: () => void;
 }
@@ -24,6 +25,7 @@ interface InstanceDeleteDialogProps {
 export function InstanceDeleteDialog({
   open,
   instance,
+  forceArchive = true,
   onOpenChange,
   onDeleted,
 }: InstanceDeleteDialogProps) {
@@ -60,7 +62,7 @@ export function InstanceDeleteDialog({
     try {
       const store = useAppStore.getState();
       if (!isArchived) {
-        await store.archiveInstance(instance, true);
+        await store.archiveInstance(instance, forceArchive);
       }
       await store.deleteInstance(instance.name);
       pushNotification({
