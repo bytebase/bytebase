@@ -30,20 +30,26 @@ import (
 // mcp:read-only.
 func mintMCPOAuthToken(t *testing.T, ctl *controller, consentBearer string) (string, string) {
 	t.Helper()
-	return mintMCPOAuthTokenWithScope(t, ctl, consentBearer, "mcp:read-only")
+	accessToken, _, clientID := mintMCPOAuthTokenWithScope(t, ctl, consentBearer, "mcp:read-only")
+	return accessToken, clientID
 }
 
 // mintMCPOAuthTokenWithScope is the same flow with the consented scope chosen
-// by the caller. An empty scope omits the parameter entirely, emulating a
-// client that never asks for one: the grant then records no scope while the
-// resource IS bound — the resource-only grant state (common.DelegatedGrant).
-func mintMCPOAuthTokenWithScope(t *testing.T, ctl *controller, consentBearer, scope string) (string, string) {
+// by the caller, and also hands back the refresh token so a caller can drive
+// the grant's later life. An empty scope omits the parameter entirely,
+// emulating a client that never asks for one: the grant then records no scope
+// while the resource IS bound — the resource-only grant state
+// (common.DelegatedGrant).
+func mintMCPOAuthTokenWithScope(t *testing.T, ctl *controller, consentBearer, scope string) (string, string, string) {
 	t.Helper()
 	httpClient := &http.Client{}
 	redirectURI := "http://localhost/cb"
 
+	// Registering for refresh_token as well as authorization_code is what a
+	// real MCP client does, and it is what makes the grant's later life
+	// (refresh, re-consent) reachable from a test.
 	resp, err := httpClient.Post(ctl.rootURL+"/api/oauth2/register", "application/json",
-		strings.NewReader(`{"client_name":"bb-e2e","redirect_uris":["http://localhost/cb"],"grant_types":["authorization_code"],"token_endpoint_auth_method":"none"}`))
+		strings.NewReader(`{"client_name":"bb-e2e","redirect_uris":["http://localhost/cb"],"grant_types":["authorization_code","refresh_token"],"token_endpoint_auth_method":"none"}`))
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	var reg struct {
@@ -101,11 +107,44 @@ func mintMCPOAuthTokenWithScope(t *testing.T, ctl *controller, consentBearer, sc
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, tokenResp.StatusCode, string(tokenBody))
 	var token struct {
-		AccessToken string `json:"access_token"`
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
 	}
 	require.NoError(t, json.Unmarshal(tokenBody, &token))
 	require.NotEmpty(t, token.AccessToken)
-	return token.AccessToken, reg.ClientID
+	require.NotEmpty(t, token.RefreshToken)
+	return token.AccessToken, token.RefreshToken, reg.ClientID
+}
+
+// refreshMCPGrant runs an RFC 6749 refresh against the live token endpoint and
+// returns the re-issued access token. requestedScope is sent verbatim when
+// non-empty, so a caller can check what naming a scope on refresh does to the
+// grant.
+func refreshMCPGrant(t *testing.T, ctl *controller, clientID, refreshToken, requestedScope string) string {
+	t.Helper()
+	form := url.Values{
+		"grant_type":    {"refresh_token"},
+		"refresh_token": {refreshToken},
+		"client_id":     {clientID},
+	}
+	if requestedScope != "" {
+		form.Set("scope", requestedScope)
+	}
+	resp, err := (&http.Client{}).PostForm(ctl.rootURL+"/api/oauth2/token", form)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode, string(body))
+	var token struct {
+		AccessToken string `json:"access_token"`
+		Scope       string `json:"scope"`
+	}
+	require.NoError(t, json.Unmarshal(body, &token))
+	require.NotEmpty(t, token.AccessToken)
+	require.Empty(t, token.Scope,
+		"the token endpoint must echo the grant's consented scope, not what the refresh asked for")
+	return token.AccessToken
 }
 
 // TestMCPTokenIsRejectedOnGeneralAPI is the P1a PR 5 boundary e2e: a real

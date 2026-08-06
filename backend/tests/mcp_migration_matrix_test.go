@@ -40,9 +40,10 @@ package tests
 // never collapse into row 3. The AuthContext-level distinction is pinned
 // (internal_interceptor_livestate_test.go/"grant-backed token: resource
 // present, scope empty"); nothing minted the state from a real scope-less
-// token or carried it to an audit row. NEW:
-// TestMCPMigrationGrantStateMatrix, which asserts rows 3 and 4 against each
-// other.
+// token, carried it to an audit row, or checked it survives a refresh that
+// names a scope — the one path that could widen a grant which recorded none.
+// NEW: TestMCPMigrationGrantStateMatrix, which asserts rows 3 and 4 against
+// each other.
 //
 // Row 5 — bb.oauth2.access on the public v1 API is refused. MAPPED:
 // backend/api/auth/auth_test.go TestCheckTokenAudience/"legacy oauth2
@@ -189,11 +190,22 @@ func TestMCPMigrationGrantStateMatrix(t *testing.T) {
 	}), "a plain web-session token must keep working through tools")
 
 	// Row 4: a real consent that never names a scope.
-	scopelessToken, clientID := mintMCPOAuthTokenWithScope(t, ctl, ctl.authInterceptor.token, "")
+	scopelessToken, scopelessRefresh, clientID := mintMCPOAuthTokenWithScope(t, ctl, ctl.authInterceptor.token, "")
 	claims := jwtClaims(t, scopelessToken)
 	_, hasScope := claims["scope"]
 	a.False(hasScope, "a scope-less consent must mint a token carrying no scope claim at all")
 	a.Equal("mcp", claims["token_use"], "the token is still MCP-minted; only the scope is absent")
+
+	// The state has to survive the grant's own life, not just its first
+	// issuance. A refresh re-issues a grant as consented, and a scope-less
+	// grant is the one shape the consented-scope check waves through
+	// unvalidated (there is no consented value to compare against), so naming
+	// a scope on refresh is the way this state could quietly widen. Widening
+	// belongs to a fresh consent.
+	refreshedToken := refreshMCPGrant(t, ctl, clientID, scopelessRefresh, "mcp:read-write")
+	_, widened := jwtClaims(t, refreshedToken)["scope"]
+	a.False(widened,
+		"a refresh must carry the grant forward unchanged; naming a scope must not widen a grant that recorded none")
 
 	scopelessSession := openMCPSession(ctx, t, ctl, scopelessToken)
 	defer scopelessSession.Close()
