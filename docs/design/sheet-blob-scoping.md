@@ -142,17 +142,27 @@ The runners are the reason this distinction is real rather than cosmetic. When
 plan was created; it is not making an access-control decision. Threading a project through it
 purely to satisfy a signature would be authorization theater.
 
+Every primitive is set-shaped. Requests routinely carry many sheets — a release can have
+hundreds of files — so nothing here may be O(n) in round-trips. See "Batch shape" below.
+
 ```go
 // Content only. A hash fully determines the content, so no scope is involved.
-func (s *Store) GetSheetFull(ctx context.Context, sha256Hex string) (*SheetMessage, error)
-func (s *Store) GetSheetTruncated(ctx context.Context, sha256Hex string) (*SheetMessage, error)
+// Returns a map keyed by hex hash; an absent key means no such blob.
+func (s *Store) GetSheetsFull(ctx context.Context, sha256Hexes ...string) (map[string]*SheetMessage, error)
+func (s *Store) GetSheetsTruncated(ctx context.Context, sha256Hexes ...string) (map[string]*SheetMessage, error)
 
-// Scoped: a validation predicate, not a content read.
+// Scoped: which of these hashes may this project read? One query.
+func (s *Store) FilterSheetsForProject(ctx context.Context, projectID string, sha256Hexes ...string) (map[string]bool, error)
+
+// Scoped: a validation predicate, not a content read. Already batched today.
 func (s *Store) HasSheets(ctx context.Context, projectID string, sha256Hexes ...string) (bool, error)
 
-// Scoped: writes the ref row alongside the blob.
+// Scoped: writes blobs and ref rows, both as set inserts.
 func (s *Store) CreateSheets(ctx context.Context, projectID string, creates ...*SheetMessage) ([]*SheetMessage, error)
 ```
+
+The singular `GetSheetFull`/`GetSheetTruncated` can stay as thin wrappers for the genuinely
+single-sheet callers in the runners, but the batch form is the primitive.
 
 `HasSheets` gains the join and stops being a deployment-wide existence oracle:
 
@@ -163,8 +173,15 @@ JOIN sheet_blob_ref r ON r.sha256 = b.sha256
 WHERE b.sha256 IN (...) AND r.project = ?
 ```
 
-`CreateSheets` writes the blob and the ref row in one transaction. It currently issues a bare
-`ExecContext`; it needs a transaction so a blob cannot land without its ref.
+`CreateSheets` writes blobs and ref rows in one transaction. It currently issues a bare
+`ExecContext`; it needs a transaction so a blob cannot land without its ref. The ref insert
+mirrors the existing blob insert's array shape — one statement, not a loop:
+
+```sql
+INSERT INTO sheet_blob_ref (project, sha256)
+SELECT ?, unnest(CAST(? AS BYTEA[]))
+ON CONFLICT DO NOTHING
+```
 
 Three of its four call sites have a project to hand — `sheet_service.go:54` and `:97` (the
 resolved parent) and `release_service.go:96`. The fourth does not:
@@ -184,6 +201,11 @@ This is safe only because the ACL check is a separate step that runs first. The 
 `backend/store/sheet.go:43` returns before any query executes, so a scope predicate placed
 inside `getSheet` would be skipped on a cache hit. Enforcement must not live there.
 
+Ten entries is sized for the runner pattern — one sheet read repeatedly — not for batch reads,
+and a release with hundreds of files will miss on nearly all of them. That is fine and not a
+reason to grow it: the batch path collapses those misses into a single query, so the cache is an
+optimization for the repeated-single-sheet case rather than load-bearing for throughput.
+
 ### API-layer gate
 
 Moving enforcement out of the store means the compiler no longer finds missed call sites — and
@@ -192,15 +214,17 @@ unscoped. Replace the compiler with structure:
 
 Add one helper in `backend/api/v1/` that does check-then-fetch. It has to be a package-level
 function, not a method — three of the four routed call sites live in `ReleaseService` and
-`RolloutService`, not `SheetService`:
+`RolloutService`, not `SheetService` — and it takes a set, because its heaviest caller iterates
+over release files:
 
 ```go
-func sheetForProject(ctx context.Context, s *store.Store, projectID, sha256Hex string, raw bool) (*store.SheetMessage, error)
+func sheetsForProject(ctx context.Context, s *store.Store, projectID string, sha256Hexes []string, raw bool) (map[string]*store.SheetMessage, error)
 ```
 
-It verifies `sheet_blob_ref` for `(projectID, sha256Hex)` and returns NotFound if absent —
-NotFound rather than PermissionDenied, so the response does not confirm that a hash exists
-somewhere else — and only then calls the content getter. Every v1 sheet read routes through it:
+It filters the requested hashes through `sheet_blob_ref` for `projectID`, and any hash that does
+not survive yields NotFound — NotFound rather than PermissionDenied, so the response does not
+confirm that a hash exists somewhere else. Only the surviving hashes reach the content getter.
+Every v1 sheet read routes through it:
 
 - `backend/api/v1/sheet_service.go:136,138` — `project.ResourceID`, already resolved and
   workspace-checked at `:119-131`
@@ -215,8 +239,54 @@ same value already used to validate the release at `:759`).
 Runner and component call sites keep the unscoped content getters:
 `backend/runner/taskrun/*`, `backend/runner/plancheck/*`, `backend/component/review/evaluator.go:710`.
 
-Hold the line with a test asserting that nothing under `backend/api/v1/` calls `GetSheetFull`
-or `GetSheetTruncated` directly except the gate helper. Six call sites today, so it is cheap.
+Hold the line with a test asserting that nothing under `backend/api/v1/` calls any store sheet
+content getter directly except the gate helper. Six call sites today, so it is cheap.
+
+### Batch shape
+
+The gate must cost a bounded number of round-trips regardless of how many sheets a request
+carries. A release with two hundred files must not produce two hundred queries — still less four
+hundred, which a naive check-then-fetch per file would give.
+
+`sheetsForProject` is therefore two queries, whatever the input size:
+
+1. **One ref query** returning the subset of requested hashes readable by this project:
+
+   ```sql
+   SELECT encode(sha256, 'hex')
+   FROM sheet_blob_ref
+   WHERE project = ?
+     AND sha256 IN (SELECT decode(unnest(CAST(? AS TEXT[])), 'hex'))
+   ```
+
+   Anything requested but absent from the result is NotFound. This runs first, which is what
+   preserves the cache-ordering invariant above.
+
+2. **Cache lookups** for the surviving hashes, then **one content query** for the misses, using
+   the same `unnest` shape.
+
+Note that fusing both into a single join would be tempting and is wrong: it would make the
+content read the same statement as the permission check, which is exactly the arrangement that
+lets a cache hit skip the check. Keeping them as two steps is deliberate.
+
+Three existing call patterns need reshaping to feed it:
+
+- **`validateAndSanitizeReleaseFiles`** (`release_service.go:377-413`) calls `GetSheetFull` once
+  per file inside its loop. It already has all the files up front, so hoist a single collect pass
+  for every `f.Sheet`, one `sheetsForProject` call, then loop over the map. This path is O(n)
+  today, before this change — the fix is not new debt, it is a pre-existing N+1 that the scope
+  check would otherwise double.
+- **`rollout_service_task.go:214`** calls `getSheetContentBySha256(ctx, s, c.SheetSha256)` inside
+  a loop over target databases, but `c.SheetSha256` is loop-invariant — a spec targeting a
+  hundred databases fetches the same hash a hundred times. Hoist it above the loop. Only the
+  10-entry LRU keeps this from being a hundred queries today, which is a fragile reason for it to
+  be fast.
+- **`plan_service.go:746`** is already correct and worth copying: it collects `sheetSha256s`
+  across every spec and makes one `HasSheets` call.
+
+The write paths are already set-shaped and stay that way: `CreateSheets` uses array `unnest` for
+both inserts, the backfill is `INSERT ... SELECT`, and the transfer handler below is a single
+`INSERT ... SELECT` rather than a per-revision loop.
 
 ## Rollout safety
 
@@ -259,9 +329,20 @@ Revisions are the only case. `changelog` also keys on `(instance, db_name)`, but
 sheet reference at all, so it moves without implicating any hash.
 
 Handle it in the transfer path: when a database changes project, insert ref rows for the
-destination project covering every hash in that database's revisions. `ON CONFLICT DO NOTHING`,
-inside the transaction that already locks the project (`backend/store/database.go:512`). Ref
-rows for the source project stay — the content was genuinely authored there.
+destination project covering every hash in that database's revisions, inside the transaction
+that already locks the project (`backend/store/database.go:512`). One statement, not a loop over
+revisions, and it stays one statement for a batch transfer of many databases:
+
+```sql
+INSERT INTO sheet_blob_ref (project, sha256)
+SELECT ?, decode(r.payload->>'sheetSha256', 'hex')
+FROM revision r
+WHERE (r.instance, r.db_name) IN (...)
+  AND r.payload->>'sheetSha256' IS NOT NULL
+ON CONFLICT DO NOTHING
+```
+
+Ref rows for the source project stay — the content was genuinely authored there.
 
 This keeps the resource name honest rather than weakening the predicate to match the looser
 behavior.
@@ -316,8 +397,11 @@ These are worth landing separately and first — none needs a migration.
 - **Cache ordering** — request a blob under its owning project to warm the cache, then request
   the same hash under a foreign project and assert NotFound. This is the test that fails if
   enforcement ever migrates back into `getSheet` behind the cache read.
-- **Gate coverage** — assert nothing under `backend/api/v1/` calls `GetSheetFull` or
-  `GetSheetTruncated` outside the gate helper.
+- **Gate coverage** — assert nothing under `backend/api/v1/` calls a store sheet content getter
+  outside the gate helper.
+- **Query count** — create a release with many files and assert the gate issues a bounded number
+  of queries, not one per file. A count assertion is the only thing that actually holds the batch
+  shape; a correctness test passes just as happily against an N+1 implementation.
 - **Backfill** — build a metadata DB exercising each of the five reference sources, run the
   migration, assert every referenced hash resolves under its project and no unreferenced hash
   does.
