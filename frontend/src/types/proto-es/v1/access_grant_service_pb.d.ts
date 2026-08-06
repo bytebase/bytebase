@@ -120,6 +120,20 @@ export declare type AccessGrant = Message<"bytebase.v1.AccessGrant"> & {
    * @generated from field: bool export = 13;
    */
   export: boolean;
+
+  /**
+   * The default schema to execute the query.
+   *
+   * @generated from field: string schema = 14;
+   */
+  schema: string;
+
+  /**
+   * The container name to execute the query against, used for CosmosDB only.
+   *
+   * @generated from field: string container = 15;
+   */
+  container: string;
 };
 
 /**

@@ -95,11 +95,13 @@ func TestConvertToAccessGrantPropagatesPayloadFields(t *testing.T) {
 		Status:     storepb.AccessGrant_ACTIVE,
 		ExpireTime: &expire,
 		Payload: &storepb.AccessGrantPayload{
-			Targets: []string{"instances/inst/databases/db"},
-			Query:   "SELECT * FROM t",
-			Unmask:  true,
-			Export:  true,
-			Reason:  "investigating PR-1234",
+			Targets:   []string{"instances/inst/databases/db"},
+			Query:     "SELECT * FROM t",
+			Unmask:    true,
+			Export:    true,
+			Reason:    "investigating PR-1234",
+			Schema:    "APP",
+			Container: "orders",
 		},
 	}
 
@@ -110,6 +112,8 @@ func TestConvertToAccessGrantPropagatesPayloadFields(t *testing.T) {
 	require.True(t, ag.Unmask)
 	require.True(t, ag.Export)
 	require.Equal(t, "investigating PR-1234", ag.Reason)
+	require.Equal(t, "APP", ag.Schema)
+	require.Equal(t, "orders", ag.Container)
 }
 
 // TestConvertToAccessGrantNilPayloadIsSafe guards the `if p := msg.Payload; p != nil`
@@ -130,4 +134,6 @@ func TestConvertToAccessGrantNilPayloadIsSafe(t *testing.T) {
 	require.False(t, ag.Unmask)
 	require.False(t, ag.Export)
 	require.Empty(t, ag.Reason)
+	require.Empty(t, ag.Schema)
+	require.Empty(t, ag.Container)
 }

@@ -57,6 +57,8 @@ interface Props {
   readonly query?: string;
   readonly unmask?: boolean;
   readonly export?: boolean;
+  readonly schema?: string;
+  readonly container?: string;
   readonly onClose: () => void;
 }
 
@@ -102,11 +104,21 @@ function AccessGrantRequestDrawerInner({
       ?.database;
     return database ? [database] : [];
   }, [stableProps.targets]);
+  const defaultConnectionContext = useMemo(() => {
+    const tabsState = getSQLEditorTabsState();
+    return tabsState.tabsById.get(tabsState.currentTabId)?.connection;
+  }, []);
 
   const [targets, setTargets] = useState<string[]>(defaultTargets);
   const [query, setQuery] = useState(stableProps.query ?? "");
   const [unmask, setUnmask] = useState(stableProps.unmask ?? false);
   const [exportResult, setExportResult] = useState(stableProps.export ?? false);
+  const [schema] = useState(
+    stableProps.schema ?? defaultConnectionContext?.schema ?? ""
+  );
+  const [container] = useState(
+    stableProps.container ?? defaultConnectionContext?.table ?? ""
+  );
   const [duration, setDuration] = useState<number>(4);
   const [customExpireTime, setCustomExpireTime] = useState<string | undefined>(
     undefined
@@ -257,6 +269,8 @@ function AccessGrantRequestDrawerInner({
         export: exportResult,
         reason,
         expiration,
+        schema,
+        container,
       });
 
       const response = await accessGrantServiceClientConnect.createAccessGrant(

@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   project: "projects/proj1" as string,
   // Current tab connection database used to derive default targets.
   currentTabDatabase: "instances/inst1/databases/db1" as string | undefined,
+  currentTabSchema: undefined as string | undefined,
+  currentTabTable: undefined as string | undefined,
   // New zustand setters.
   setAsidePanelTab: vi.fn(),
   setHighlightAccessGrantName: vi.fn(),
@@ -78,7 +80,16 @@ vi.mock("@/modules/sql-editor/store/tab", () => ({
   getSQLEditorTabsState: () => ({
     currentTabId: "tab1",
     tabsById: new Map([
-      ["tab1", { connection: { database: mocks.currentTabDatabase } }],
+      [
+        "tab1",
+        {
+          connection: {
+            database: mocks.currentTabDatabase,
+            schema: mocks.currentTabSchema,
+            table: mocks.currentTabTable,
+          },
+        },
+      ],
     ]),
   }),
   useSQLEditorTabState: (
@@ -368,8 +379,10 @@ const setupMocks = () => {
 
   mocks.project = "projects/proj1";
   mocks.currentTabDatabase = "instances/inst1/databases/db1";
+  mocks.currentTabSchema = undefined;
+  mocks.currentTabTable = undefined;
 
-  mocks.fetchDatabases.mockResolvedValue({ databases: [], nextPageToken: "" });
+	mocks.fetchDatabases.mockResolvedValue({ databases: [], nextPageToken: "" });
   // vi.clearAllMocks() does not reset a plain hoisted property.
   mocks.dbOnSearch = undefined;
   mocks.maximumRequestExpirationSeconds = undefined;
@@ -683,6 +696,60 @@ describe("AccessGrantRequestDrawer", () => {
       expect.objectContaining({
         accessGrant: expect.objectContaining({
           targets: ["instances/inst1/databases/db1"],
+        }),
+      })
+    );
+    unmount();
+  });
+
+  test("current schema and CosmosDB container are submitted to createAccessGrant", async () => {
+    mocks.currentTabSchema = "APP";
+    mocks.currentTabTable = "orders";
+    mocks.createAccessGrant.mockResolvedValue({
+      status: 2,
+      issue: "",
+      name: "projects/proj1/accessGrants/g",
+    });
+    const onClose = vi.fn();
+    const {
+      container,
+      render: renderFn,
+      unmount,
+    } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        targets={["instances/inst1/databases/db1"]}
+        query="SELECT * FROM orders"
+        onClose={onClose}
+      />
+    );
+    renderFn();
+
+    const textarea = container.querySelector(
+      "[data-testid='textarea']"
+    ) as HTMLTextAreaElement;
+    await act(async () => {
+      const changeEvent = new Event("change", { bubbles: true });
+      Object.defineProperty(textarea, "value", {
+        writable: true,
+        value: "investigate orders",
+      });
+      Object.defineProperty(changeEvent, "target", {
+        writable: false,
+        value: textarea,
+      });
+      textarea.dispatchEvent(changeEvent);
+    });
+
+    const submitBtn = container.querySelector(
+      "[data-submit-btn]"
+    ) as HTMLButtonElement;
+    await act(async () => submitBtn.click());
+
+    expect(mocks.createAccessGrant).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accessGrant: expect.objectContaining({
+          schema: "APP",
+          container: "orders",
         }),
       })
     );

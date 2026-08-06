@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { RouterLink } from "@/components/RouterLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,14 +70,26 @@ export function AccessGrantItem({
     return `${t("issue.access-grant.expired-at")} ${info.value}`;
   })();
 
-  const allDatabaseNames = grant.targets.map((tgt) => {
-    const match = tgt.match(/databases\/(.+)$/);
-    return match ? match[1] : tgt;
-  });
-  const databaseNamesDisplay =
-    allDatabaseNames.length <= 2
-      ? allDatabaseNames.join(", ")
-      : `${allDatabaseNames.slice(0, 2).join(", ")} ${t("sql-editor.and-n-more-databases", { n: allDatabaseNames.length - 2 })}`;
+  const visibleTargets = grant.targets.slice(0, 2);
+  const remainingTargetCount = grant.targets.length - visibleTargets.length;
+  const databaseTargets = (
+    <div className="flex w-full min-w-0 flex-col gap-y-1">
+      {visibleTargets.map((target, index) => (
+        <DatabaseTargetDisplay
+          key={`${target}-${index}`}
+          target={target}
+          showEnvironment
+        />
+      ))}
+      {remainingTargetCount > 0 && (
+        <span className="text-xs text-control-placeholder">
+          {t("sql-editor.and-n-more-databases", {
+            n: remainingTargetCount,
+          })}
+        </span>
+      )}
+    </div>
+  );
 
   const issueLink = grant.issue
     ? grant.issue.startsWith("/")
@@ -156,24 +169,24 @@ export function AccessGrantItem({
       </Tooltip>
 
       <div className="w-full flex flex-col gap-y-2">
-        {allDatabaseNames.length <= 2 ? (
-          <span className="text-xs text-control-placeholder truncate">
-            {databaseNamesDisplay}
-          </span>
+        {remainingTargetCount === 0 ? (
+          databaseTargets
         ) : (
           <Tooltip
             content={
-              <div className="flex flex-col">
-                {allDatabaseNames.map((n) => (
-                  <span key={n}>{n}</span>
+              <div className="flex max-w-lg flex-col gap-y-1">
+                {grant.targets.map((target, index) => (
+                  <DatabaseTargetDisplay
+                    key={`${target}-${index}`}
+                    target={target}
+                    showEnvironment
+                  />
                 ))}
               </div>
             }
             side="right"
           >
-            <span className="text-xs text-control-placeholder truncate">
-              {databaseNamesDisplay}
-            </span>
+            {databaseTargets}
           </Tooltip>
         )}
 
