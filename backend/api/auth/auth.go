@@ -39,8 +39,9 @@ const (
 	MFATempTokenAudience = "bb.user.mfa-temp"
 	// OAuth2AccessTokenAudience is the audience OAuth2 access tokens carried
 	// before they were bound to the MCP resource URI (P1a PR 3). No longer
-	// minted; still recognized so tokens issued by a pre-upgrade release keep
-	// working until they expire.
+	// minted; still recognized at /mcp so tokens issued by a pre-upgrade
+	// release keep working there until they expire. The general API refuses
+	// it like any other MCP-minted token.
 	OAuth2AccessTokenAudience = "bb.oauth2.access"
 	// TokenUseMCP is the token_use claim value marking a token as an MCP OAuth2
 	// credential. The audience of such a token is a per-deployment resource URI,
@@ -106,7 +107,7 @@ func (in *APIAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 		}
 		ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
 
-		user, workspaceID, err := in.getUserConnect(ctx, accessTokenStr, req.Spec().Procedure)
+		user, workspaceID, err := in.getUserConnect(ctx, accessTokenStr)
 		if err != nil {
 			if IsAuthenticationSkipped(req.Spec().Procedure, authContext) {
 				return next(ctx, req)
@@ -141,7 +142,7 @@ func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandler
 		}
 		ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
 
-		user, claims, err := in.authenticate(ctx, accessTokenStr, conn.Spec().Procedure)
+		user, claims, err := in.authenticate(ctx, accessTokenStr)
 		if err != nil {
 			if IsAuthenticationSkipped(conn.Spec().Procedure, authContext) {
 				return next(ctx, conn)
@@ -178,37 +179,53 @@ func (c *authStreamingConn) Receive(msg any) error {
 	return c.StreamingHandlerConn.Receive(msg)
 }
 
+// isMCPProvenance reports whether parsed claims identify a token minted by
+// the MCP authorization server: the modern shape carries token_use=mcp
+// (whatever audience it also carries), and the legacy pre-PR-3 shape is
+// recognized by its bb.oauth2.access audience, which nothing else ever
+// minted. The general-API rejection and IsMCPOriginatedToken (behind
+// SwitchWorkspace's guard) key on this one definition — keep them keying on
+// it: two security decision points drifting apart is how one surface ends up
+// admitting what the other refuses.
+func isMCPProvenance(tokenUse string, audience jwt.ClaimStrings) bool {
+	return tokenUse == TokenUseMCP || audienceContains(audience, OAuth2AccessTokenAudience)
+}
+
 // checkTokenAudience decides whether a token's audience admits it to the
-// general (non-/mcp) API. The fixed audiences — web sessions and OAuth2 tokens
-// minted before the audience became the MCP resource URI — pass unflagged. An
-// MCP resource-bound token is recognized by token_use (its audience varies per
-// deployment) and reported as mcpToken so the caller can audit-log it.
-// Anything else is refused.
-func checkTokenAudience(claims *claimsMessage) (mcpToken bool, err error) {
-	if audienceContains(claims.Audience, AccessTokenAudience) || audienceContains(claims.Audience, OAuth2AccessTokenAudience) {
-		return false, nil
+// general (non-/mcp) API. An MCP token (isMCPProvenance) is refused outright:
+// since PR 4's private in-memory transport, /mcp tool traffic authenticates
+// with the internal delegated credential, so nothing legitimate presents one
+// here anymore and admitting it would keep it a universal API bearer (P1a PR
+// 5, retiring PR 3's audit-only admission; the legacy audience keeps draining
+// at /mcp only, where old-replica tool traffic genuinely needs it during a
+// rolling upgrade). Web session tokens pass; anything else is refused.
+func checkTokenAudience(claims *claimsMessage) error {
+	if isMCPProvenance(claims.TokenUse, claims.Audience) {
+		// Warn rather than refuse silently: the audit-only observation window
+		// the spec planned never shipped in a release, so this is the only
+		// server-side signal that an integration was relying on the old
+		// admission. Denial auditing proper is PR 5b.
+		slog.Warn("refused an MCP token on the general API",
+			slog.String("principal", claims.Subject),
+			slog.String("workspace", claims.WorkspaceID),
+			slog.String("audience", strings.Join(claims.Audience, ",")),
+			slog.String("token_use", claims.TokenUse))
+		return errs.New("MCP tokens are only accepted at /mcp; use a service account for the API")
 	}
-	if claims.TokenUse == TokenUseMCP {
-		// Admitted and audit-logged, not rejected: until PR 4's private
-		// in-memory transport lands, /mcp tool calls reach this interceptor
-		// carrying the inbound bearer, so rejecting here would break every MCP
-		// tool call. PR 5 replaces this admission with a rejection after that
-		// cutover (spec §"PR 3" / §"PR 5").
-		return true, nil
+	if audienceContains(claims.Audience, AccessTokenAudience) {
+		return nil
 	}
-	return false, errs.Errorf(
-		"invalid access token, audience mismatch, got %q, expected %q or %q",
+	return errs.Errorf(
+		"invalid access token, audience mismatch, got %q, expected %q",
 		claims.Audience,
 		AccessTokenAudience,
-		OAuth2AccessTokenAudience,
 	)
 }
 
 // authenticate is the shared authentication logic that validates JWT tokens.
 // Returns the user and claims, or an error. This is the single source of truth
-// for token validation. procedure names the RPC (or surface) being
-// authenticated; it only feeds the audit log for MCP tokens on the general API.
-func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, procedure string) (*store.UserMessage, *claimsMessage, error) {
+// for token validation.
+func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr string) (*store.UserMessage, *claimsMessage, error) {
 	if accessTokenStr == "" {
 		return nil, nil, errs.New("access token not found")
 	}
@@ -231,17 +248,8 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, 
 		return nil, nil, errs.New("failed to parse claim")
 	}
 
-	mcpToken, err := checkTokenAudience(claims)
-	if err != nil {
+	if err := checkTokenAudience(claims); err != nil {
 		return nil, nil, err
-	}
-	if mcpToken {
-		slog.Info("MCP resource-bound token used on the general API (audit-only this release)",
-			slog.String("token_use", claims.TokenUse),
-			slog.String("method", procedure),
-			slog.String("principal", claims.Subject),
-			slog.String("workspace", claims.WorkspaceID),
-			slog.String("audience", strings.Join(claims.Audience, ",")))
 	}
 
 	user, err := resolvePrincipal(ctx, in.store, in.profile, claims.Subject, claims.WorkspaceID)
@@ -331,8 +339,8 @@ func verifyWorkspaceMembership(ctx context.Context, stores *store.Store, profile
 }
 
 // authenticateConnect is a ConnectRPC-specific version that returns ConnectRPC errors.
-func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTokenStr, procedure string) (*store.UserMessage, *claimsMessage, error) {
-	user, claims, err := in.authenticate(ctx, accessTokenStr, procedure)
+func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTokenStr string) (*store.UserMessage, *claimsMessage, error) {
+	user, claims, err := in.authenticate(ctx, accessTokenStr)
 	if err != nil {
 		return nil, nil, connect.NewError(connect.CodeUnauthenticated, err)
 	}
@@ -341,8 +349,8 @@ func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTok
 
 // getUserConnect is a ConnectRPC-specific version that returns ConnectRPC errors.
 // Returns the user and workspace ID from the token claims.
-func (in *APIAuthInterceptor) getUserConnect(ctx context.Context, accessTokenStr, procedure string) (*store.UserMessage, string, error) {
-	user, claims, err := in.authenticateConnect(ctx, accessTokenStr, procedure)
+func (in *APIAuthInterceptor) getUserConnect(ctx context.Context, accessTokenStr string) (*store.UserMessage, string, error) {
+	user, claims, err := in.authenticateConnect(ctx, accessTokenStr)
 	if err != nil {
 		return nil, "", err
 	}
@@ -383,9 +391,9 @@ func GetUserEmailAndLoginMethodFromMFATempToken(token, secret string) (string, s
 
 // AuthenticateToken validates a JWT access token and returns the user and token expiry.
 // This is a non-ConnectRPC version that returns regular errors instead of ConnectRPC errors.
-// Its only caller is the LSP websocket handshake, hence the fixed surface label.
+// Its only caller is the LSP websocket handshake.
 func (in *APIAuthInterceptor) AuthenticateToken(ctx context.Context, accessTokenStr string) (*store.UserMessage, string, time.Time, error) {
-	user, claims, err := in.authenticate(ctx, accessTokenStr, "/lsp")
+	user, claims, err := in.authenticate(ctx, accessTokenStr)
 	if err != nil {
 		return nil, "", time.Time{}, err
 	}

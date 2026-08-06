@@ -471,11 +471,14 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 			"an empty flag must resolve the audience from the workspace setting")
 	})
 
-	t.Run("an MCP token still authenticates on the general API (audit-only this release)", func(t *testing.T) {
-		// Until PR 4's private transport, /mcp tool calls forward the inbound
-		// bearer to the general API, so this admission is what keeps every MCP
-		// tool call working. PR 5 flips rejectMCPTokenOnGeneralAPI to retire it;
-		// this test is the tripwire against flipping it early by accident.
+	t.Run("an MCP token is refused on the general API but keeps serving /mcp", func(t *testing.T) {
+		// PR 4's private transport took /mcp tool traffic off the general API,
+		// so PR 5 retired the audit-only admission this subtest used to pin: an
+		// MCP token is refused outright on the general API — even for a
+		// principal with a valid workspace membership, which is why the policy
+		// patch stays — while /mcp keeps accepting the same token. A regression
+		// that re-admits it would make every MCP token a universal API bearer
+		// again.
 		_, err := st.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
 			Workspace: testWorkspace,
 			Member:    common.FormatUserEmail(testUserEmail),
@@ -492,11 +495,13 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 			"client_id":     {testClientID},
 		})
 
+		require.Equal(t, http.StatusOK, mcpStatus(t, st, "https://bb.example.com", got.AccessToken),
+			"the same token must keep working at /mcp")
+
 		interceptor := auth.New(st, testSecret, nil, nil, &config.Profile{})
-		user, workspaceID, _, err := interceptor.AuthenticateToken(ctx, got.AccessToken)
-		require.NoError(t, err)
-		require.Equal(t, testUserEmail, user.Email)
-		require.Equal(t, testWorkspace, workspaceID)
+		_, _, _, err = interceptor.AuthenticateToken(ctx, got.AccessToken)
+		require.Error(t, err, "an MCP token must not authenticate on the general API")
+		require.Contains(t, err.Error(), "only accepted at /mcp")
 	})
 
 	t.Run("a requested scope set is consented as its maximum", func(t *testing.T) {

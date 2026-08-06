@@ -33,8 +33,10 @@ func TestInternalMCPCredentialRoundTrip(t *testing.T) {
 }
 
 // TestInternalMCPCredentialEmptyGrantState pins that legacy sessions (plain
-// bb.user.access at /mcp, pre-scope OAuth2 tokens) mint a credential with empty
-// scope and resource — PR 5, not this PR, assigns their LEGACY_FULL semantics.
+// bb.user.access at /mcp, pre-scope OAuth2 tokens) mint a credential with
+// empty scope and resource, carried verbatim into common.AuthContext — P1b,
+// not this layer, resolves what empty grant state may do
+// (common.DelegatedGrant).
 func TestInternalMCPCredentialEmptyGrantState(t *testing.T) {
 	cred := testDelegatedCredential()
 	cred.Scope = ""
@@ -88,23 +90,22 @@ func TestGeneralAPIRejectsInternalMCPCredential(t *testing.T) {
 	require.NoError(t, err)
 
 	in := New(nil, testSecret, nil, nil, nil)
-	_, _, err = in.authenticate(context.Background(), tokenStr, "/bytebase.v1.SQLService/Query")
+	_, _, err = in.authenticate(context.Background(), tokenStr)
 	require.Error(t, err, "the general API must never accept the internal MCP credential")
 }
 
 // TestCheckTokenAudienceRejectsInternalCredential covers the second boundary
 // layer on the general API: even if the internal credential's signature were
 // somehow accepted, its audience admits it nowhere. Carrying no token_use is
-// part of that — the claim is absent, so the MCP admission branch (which keys
-// on token_use == TokenUseMCP) cannot fire either.
+// part of that — the claim is absent, so the audience mismatch branch refuses
+// it rather than the MCP rejection (which keys on token_use == TokenUseMCP).
 func TestCheckTokenAudienceRejectsInternalCredential(t *testing.T) {
 	claims := &claimsMessage{
 		RegisteredClaims: jwt.RegisteredClaims{
 			Audience: jwt.ClaimStrings{internalMCPAudience},
 		},
 	}
-	_, err := checkTokenAudience(claims)
-	require.Error(t, err)
+	require.Error(t, checkTokenAudience(claims))
 }
 
 // TestVerifyInternalMCPTokenRejectsPublicTokens is the mirror boundary: the
