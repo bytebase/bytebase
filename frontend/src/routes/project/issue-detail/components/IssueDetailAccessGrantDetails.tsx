@@ -105,6 +105,32 @@ export function IssueDetailAccessGrantDetails() {
             </div>
           )}
 
+          {(accessGrant.schema || accessGrant.container) && (
+            <div className="flex flex-col gap-y-2">
+              <span className="text-sm text-control-light">
+                {t("common.scope")}
+              </span>
+              <div className="flex flex-col gap-y-1 text-sm">
+                {accessGrant.schema && (
+                  <div className="flex gap-x-2">
+                    <span className="text-control-light">
+                      {t("common.schema")}
+                    </span>
+                    <span className="font-medium">{accessGrant.schema}</span>
+                  </div>
+                )}
+                {accessGrant.container && (
+                  <div className="flex gap-x-2">
+                    <span className="text-control-light">
+                      {t("issue.access-grant.container")}
+                    </span>
+                    <span className="font-medium">{accessGrant.container}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {accessGrant.query && (
             <div className="flex flex-col gap-y-2">
               <span className="text-sm text-control-light">

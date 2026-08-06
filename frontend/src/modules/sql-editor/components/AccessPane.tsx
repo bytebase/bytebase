@@ -311,7 +311,12 @@ export function AccessPane() {
       const instanceName = database.replace(/\/databases\/.*$/, "");
       await getOrFetchDatabaseByName(database);
       await sqlEditorEvents.emit("execute-sql", {
-        connection: { instance: instanceName, database },
+        connection: {
+          instance: instanceName,
+          database,
+          schema: grant.schema || undefined,
+          table: grant.container || undefined,
+        },
         statement: grant.query,
         batchQueryContext: { databases: grant.targets },
       });
@@ -401,6 +406,8 @@ export function AccessPane() {
           query={pendingCreate?.query}
           unmask={pendingCreate?.unmask}
           export={pendingCreate?.export}
+          schema={pendingCreate?.schema}
+          container={pendingCreate?.container}
           targets={pendingCreate?.targets}
           onClose={handleDrawerClose}
         />

@@ -78,6 +78,7 @@ func runQuery(t *testing.T, driver *Driver, container, sql string) [][]byte {
 	results, err := driver.QueryConn(ctx, nil, sql, db.QueryContext{Container: container})
 	require.NoError(t, err, "QueryConn: %s", sql)
 	require.Len(t, results, 1, "driver returns exactly one QueryResult per query")
+	require.Equal(t, sql, results[0].Statement)
 
 	out := make([][]byte, 0, len(results[0].Rows))
 	for _, row := range results[0].Rows {

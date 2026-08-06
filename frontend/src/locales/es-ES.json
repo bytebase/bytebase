@@ -1302,6 +1302,7 @@
           }
         }
       },
+      "container": "Contenedor",
       "details": "Detalles de la concesión de acceso",
       "duration-after-approval": "{{duration}} después de aprobar la solicitud",
       "expired-at": "Expiró el",
