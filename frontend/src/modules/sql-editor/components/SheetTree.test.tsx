@@ -1120,6 +1120,7 @@ describe("SheetTree", () => {
     expect(loadMoreButton?.classList.contains("text-control-light")).toBe(false);
     expect(loadMoreButton?.classList.contains("text-xs")).toBe(true);
     expect(loadMoreButton?.classList.contains("cursor-pointer")).toBe(true);
+    expect(loadMoreButton?.classList.contains("pb-1")).toBe(true);
     expect(loadMoreButton?.textContent).toBe("···common.load-more");
 
     await act(async () => {
@@ -1182,6 +1183,7 @@ describe("SheetTree", () => {
     expect(loadMoreButton?.classList.contains("text-control-light")).toBe(false);
     expect(loadMoreButton?.classList.contains("text-xs")).toBe(true);
     expect(loadMoreButton?.classList.contains("cursor-pointer")).toBe(true);
+    expect(loadMoreButton?.classList.contains("pb-1")).toBe(true);
     expect(loadMoreButton?.textContent).toBe("···common.load-more");
 
     await act(async () => {
