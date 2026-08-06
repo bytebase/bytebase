@@ -7,6 +7,7 @@ import { createBehaviorMetric } from "@/app/analytics/behavior";
 import { behaviorAnalytics } from "@/app/analytics/provider";
 import { router, useCurrentRoute } from "@/app/router";
 import {
+  PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_INSTANCE_CREATE,
   SQL_EDITOR_DATABASE_MODULE,
 } from "@/app/router/handles";
@@ -80,6 +81,7 @@ import {
   PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   supportedEngineV1List,
 } from "@/utils";
+import { extractProjectResourceName } from "@/utils/v1/project";
 
 export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
@@ -442,6 +444,12 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
           module: "bytebase",
           style: "SUCCESS",
           title: t("database.successfully-transferred-databases"),
+        });
+        router.push({
+          name: PROJECT_V1_ROUTE_DATABASES,
+          params: {
+            projectId: extractProjectResourceName(projectName),
+          },
         });
       } catch {
         pushNotification({

@@ -1814,6 +1814,8 @@ export declare const InstanceService: GenService<{
   },
   /**
    * Deletes or soft-deletes a database instance.
+   * Soft-delete requests fail with FAILED_PRECONDITION while any task run
+   * targeting the instance is pending, available, or running.
    * Permissions required: bb.instances.delete
    *
    * @generated from rpc bytebase.v1.InstanceService.DeleteInstance
@@ -1825,6 +1827,8 @@ export declare const InstanceService: GenService<{
   },
   /**
    * Restores a soft-deleted database instance.
+   * Restore requests fail with FAILED_PRECONDITION while any task run targeting
+   * the instance is pending, available, or running.
    * Permissions required: bb.instances.undelete
    *
    * @generated from rpc bytebase.v1.InstanceService.UndeleteInstance

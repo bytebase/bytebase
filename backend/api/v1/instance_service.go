@@ -896,28 +896,22 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 		return connect.NewResponse(&emptypb.Empty{}), nil
 	}
 
-	// Regular soft delete flow
-	// Idempotent: if already deleted, return success
-	if instance.Deleted {
-		return connect.NewResponse(&emptypb.Empty{}), nil
-	}
-
-	if instance.ProjectID == nil {
-		databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: &instance.ResourceID})
-		if err != nil {
-			return nil, err
-		}
+	// Regular soft delete flow. Already archived instances still pass through
+	// the lifecycle guard so legacy active task runs are reported consistently.
+	alreadyDeleted := instance.Deleted
+	var moveDatabasesToProjectID *string
+	if !alreadyDeleted && instance.ProjectID == nil {
 		if req.Msg.Force {
-			if len(databases) > 0 {
-				defaultProjectID, err := s.store.GetDefaultProjectID(ctx, common.GetWorkspaceIDFromContext(ctx))
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get default project ID"))
-				}
-				if err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectID: &defaultProjectID}); err != nil {
-					return nil, connect.NewError(connect.CodeInternal, err)
-				}
+			defaultProjectID, err := s.store.GetDefaultProjectID(ctx, common.GetWorkspaceIDFromContext(ctx))
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get default project ID"))
 			}
+			moveDatabasesToProjectID = &defaultProjectID
 		} else {
+			databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: &instance.ResourceID})
+			if err != nil {
+				return nil, err
+			}
 			var databaseNames []string
 			for _, database := range databases {
 				if !common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), database.ProjectID) {
@@ -931,9 +925,10 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	}
 
 	patch := &store.UpdateInstanceMessage{
-		ResourceID: &instance.ResourceID,
-		Workspace:  instance.Workspace,
-		Deleted:    &deletePatch,
+		ResourceID:               &instance.ResourceID,
+		Workspace:                instance.Workspace,
+		Deleted:                  &deletePatch,
+		MoveDatabasesToProjectID: moveDatabasesToProjectID,
 	}
 	if instance.ProjectID == nil {
 		metadata := proto.CloneOf(instance.Metadata)
@@ -941,11 +936,14 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 		patch.Metadata = metadata
 	}
 	if _, err := s.store.UpdateInstance(ctx, patch); err != nil {
+		if common.ErrorCode(err) == common.Conflict {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	// Handle sample instance deletion if applicable
-	if s.sampleInstanceManager != nil {
+	if !alreadyDeleted && s.sampleInstanceManager != nil {
 		if err := s.sampleInstanceManager.HandleInstanceDeletion(ctx, common.GetWorkspaceIDFromContext(ctx), instance.ResourceID); err != nil {
 			slog.Warn("failed to handle sample instance deletion", log.BBError(err), slog.String("instance", instance.ResourceID))
 		}
@@ -965,6 +963,13 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 		result := s.convertToV1Instance(ctx, instance)
 		return connect.NewResponse(result), nil
 	}
+	activeTaskRunCount, err := s.store.GetActiveTaskRunCountForInstance(ctx, instance.ResourceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if activeTaskRunCount > 0 {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("instance %s has %d active task run(s); cancel them or wait for them to finish before restoring", instance.ResourceID, activeTaskRunCount))
+	}
 	if err := s.instanceCountGuard(ctx); err != nil {
 		return nil, err
 	}
@@ -978,6 +983,9 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 		Deleted:    &undeletePatch,
 	})
 	if err != nil {
+		if common.ErrorCode(err) == common.Conflict {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 

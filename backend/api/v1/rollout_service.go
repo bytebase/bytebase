@@ -891,6 +891,9 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	}
 
 	if err := s.store.CreatePendingTaskRuns(ctx, user.Email, taskRunCreates...); err != nil {
+		if common.ErrorCode(err) == common.Conflict {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pending task runs, error %v", err))
 	}
 

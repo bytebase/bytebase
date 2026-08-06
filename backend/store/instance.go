@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/google/cel-go/cel"
@@ -40,6 +41,10 @@ type UpdateInstanceMessage struct {
 	Deleted       *bool
 	EnvironmentID *string
 	Metadata      *storepb.Instance
+	// MoveDatabasesToProjectID atomically transfers all databases while changing
+	// the instance lifecycle. It is only valid when archiving a resource-scoped
+	// workspace instance.
+	MoveDatabasesToProjectID *string
 }
 
 // FindInstanceMessage is the message for finding instances.
@@ -280,6 +285,9 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 
 // UpdateInstance updates an instance.
 func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage) (*InstanceMessage, error) {
+	if patch.MoveDatabasesToProjectID != nil && (patch.ResourceID == nil || patch.Deleted == nil || !*patch.Deleted) {
+		return nil, errors.New("moving instance databases is only supported while archiving a resource-scoped instance")
+	}
 	set := qb.Q()
 
 	if v := patch.EnvironmentID; v != nil {
@@ -328,6 +336,9 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 		Space("WHERE ?", where)
 
 	if v := patch.ResourceID; v != nil {
+		if patch.Deleted != nil {
+			return s.updateInstanceLifecycle(ctx, patch, q)
+		}
 		q.Space("RETURNING workspace, project")
 		query, args, err := q.ToSQL()
 		if err != nil {
@@ -357,6 +368,220 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 	}
 
 	return nil, nil
+}
+
+func (s *Store) updateInstanceLifecycle(ctx context.Context, patch *UpdateInstanceMessage, q *qb.Query) (*InstanceMessage, error) {
+	resourceID := *patch.ResourceID
+	var projectFences []string
+	if destinationProjectID := patch.MoveDatabasesToProjectID; destinationProjectID != nil {
+		var err error
+		projectFences, err = s.listInstanceDatabaseProjects(ctx, resourceID)
+		if err != nil {
+			return nil, err
+		}
+		projectFences = append(projectFences, *destinationProjectID)
+		slices.Sort(projectFences)
+		projectFences = slices.Compact(projectFences)
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin instance lifecycle transaction")
+	}
+	defer tx.Rollback()
+	for _, projectID := range projectFences {
+		if err := acquireProjectPurgeLock(ctx, tx, projectID); err != nil {
+			return nil, errors.Wrapf(err, "failed to lock project purge fence for %s", projectID)
+		}
+	}
+	if err := acquireInstancePurgeLock(ctx, tx, resourceID); err != nil {
+		return nil, errors.Wrapf(err, "failed to lock instance lifecycle fence for %s", resourceID)
+	}
+
+	activeTaskRunCount, err := lockActiveTaskRunsForInstance(ctx, tx, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	if activeTaskRunCount > 0 {
+		operation := "archiving"
+		if !*patch.Deleted {
+			operation = "restoring"
+		}
+		return nil, common.Errorf(common.Conflict, "instance %s has %d active task run(s); cancel them or wait for them to finish before %s", resourceID, activeTaskRunCount, operation)
+	}
+
+	var movedDatabases []instanceDatabaseTarget
+	if destinationProjectID := patch.MoveDatabasesToProjectID; destinationProjectID != nil {
+		movedDatabases, err = lockInstanceDatabases(ctx, tx, resourceID)
+		if err != nil {
+			return nil, err
+		}
+		for _, database := range movedDatabases {
+			if !slices.Contains(projectFences, database.projectID) {
+				return nil, common.Errorf(common.Conflict, "database ownership changed to project %s for %s; retry", database.projectID, common.FormatDatabase(resourceID, database.name))
+			}
+		}
+
+		var instanceProject sql.NullString
+		if err := tx.QueryRowContext(ctx, `
+			SELECT project FROM instance WHERE resource_id = $1 FOR NO KEY UPDATE
+		`, resourceID).Scan(&instanceProject); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, common.Errorf(common.NotFound, "instance %s not found", resourceID)
+			}
+			return nil, errors.Wrapf(err, "failed to lock instance %s", resourceID)
+		}
+		if instanceProject.Valid {
+			return nil, common.Errorf(common.Invalid, "cannot transfer databases while archiving project instance %s", resourceID)
+		}
+
+		projectIDs := append([]string(nil), *destinationProjectID)
+		for _, database := range movedDatabases {
+			projectIDs = append(projectIDs, database.projectID)
+		}
+		slices.Sort(projectIDs)
+		projectIDs = slices.Compact(projectIDs)
+		for _, projectID := range projectIDs {
+			var foundProjectID string
+			if err := tx.QueryRowContext(ctx, "SELECT resource_id FROM project WHERE resource_id = $1 FOR UPDATE", projectID).Scan(&foundProjectID); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return nil, common.Errorf(common.NotFound, "project %s not found", projectID)
+				}
+				return nil, errors.Wrapf(err, "failed to lock project %s", projectID)
+			}
+		}
+		if _, err := tx.ExecContext(ctx, "UPDATE db SET project = $1 WHERE instance = $2", *destinationProjectID, resourceID); err != nil {
+			return nil, errors.Wrapf(err, "failed to transfer databases for instance %s", resourceID)
+		}
+	}
+
+	q.Space("RETURNING workspace, project")
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build instance lifecycle query")
+	}
+	var workspace string
+	var project sql.NullString
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&workspace, &project); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit instance lifecycle transaction")
+	}
+
+	s.instanceCache.Remove(getInstanceCacheKey(resourceID))
+	for _, database := range movedDatabases {
+		s.removeDatabaseCache(ctx, resourceID, database.name)
+	}
+	find := &FindInstanceMessage{Workspace: workspace, ResourceID: patch.ResourceID}
+	if project.Valid {
+		find.ProjectID = &project.String
+	} else {
+		find.WorkspaceOnly = true
+	}
+	return s.GetInstance(ctx, find)
+}
+
+func (s *Store) listInstanceDatabaseProjects(ctx context.Context, resourceID string) ([]string, error) {
+	rows, err := s.GetDB().QueryContext(ctx, `
+		SELECT DISTINCT project FROM db WHERE instance = $1 ORDER BY project
+	`, resourceID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find database projects for instance %s", resourceID)
+	}
+	defer rows.Close()
+	var projects []string
+	for rows.Next() {
+		var projectID string
+		if err := rows.Scan(&projectID); err != nil {
+			return nil, errors.Wrap(err, "failed to scan instance database project")
+		}
+		projects = append(projects, projectID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read instance database projects")
+	}
+	return projects, nil
+}
+
+type instanceDatabaseTarget struct {
+	name      string
+	projectID string
+}
+
+func lockInstanceDatabases(ctx context.Context, tx *sql.Tx, resourceID string) ([]instanceDatabaseTarget, error) {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT name, project
+		FROM db
+		WHERE instance = $1
+		ORDER BY instance, name
+		FOR UPDATE
+	`, resourceID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to lock databases for instance %s", resourceID)
+	}
+	defer rows.Close()
+	var databases []instanceDatabaseTarget
+	for rows.Next() {
+		var database instanceDatabaseTarget
+		if err := rows.Scan(&database.name, &database.projectID); err != nil {
+			return nil, errors.Wrap(err, "failed to scan instance database")
+		}
+		databases = append(databases, database)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read instance databases")
+	}
+	return databases, nil
+}
+
+// GetActiveTaskRunCountForInstance returns the number of task runs that would
+// block a direct instance archive or restore.
+func (s *Store) GetActiveTaskRunCountForInstance(ctx context.Context, resourceID string) (int, error) {
+	var count int
+	if err := s.GetDB().QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM task_run
+		JOIN task
+		  ON task.project = task_run.project
+		 AND task.id = task_run.task_id
+		WHERE task.instance = $1
+		  AND task_run.status IN ('PENDING', 'AVAILABLE', 'RUNNING')
+	`, resourceID).Scan(&count); err != nil {
+		return 0, errors.Wrapf(err, "failed to count active task runs for instance %s", resourceID)
+	}
+	return count, nil
+}
+
+func lockActiveTaskRunsForInstance(ctx context.Context, tx *sql.Tx, resourceID string) (int, error) {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT task_run.project, task_run.id
+		FROM task_run
+		JOIN task
+		  ON task.project = task_run.project
+		 AND task.id = task_run.task_id
+		WHERE task.instance = $1
+		  AND task_run.status IN ('PENDING', 'AVAILABLE', 'RUNNING')
+		ORDER BY task_run.project, task_run.id
+		FOR UPDATE OF task_run
+	`, resourceID)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to lock active task runs for instance %s", resourceID)
+	}
+	defer rows.Close()
+	activeTaskRunCount := 0
+	for rows.Next() {
+		var projectID string
+		var taskRunID int64
+		if err := rows.Scan(&projectID, &taskRunID); err != nil {
+			return 0, errors.Wrap(err, "failed to scan active task run")
+		}
+		activeTaskRunCount++
+	}
+	if err := rows.Err(); err != nil {
+		return 0, errors.Wrap(err, "failed to read active task runs")
+	}
+	return activeTaskRunCount, nil
 }
 
 // GetActivatedInstanceCount gets the number of activated instances.

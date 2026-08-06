@@ -235,15 +235,16 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager, profile)
 	oauth2Service := oauth2.NewService(stores, profile, secret)
-	mcpServer, err := mcp.NewServer(stores, profile, secret)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create MCP server")
-	}
 
 	stripeWebhookHandler := stripeapi.NewWebhookHandler(s.store, s.licenseService, profile.StripeWebhookSecret)
 
-	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.bus, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {
+	internalMCPHandler, err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.bus, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager)
+	if err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
+	}
+	mcpServer, err := mcp.NewServer(stores, profile, secret, internalMCPHandler)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create MCP server")
 	}
 	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, oauth2Service, mcpServer, stripeWebhookHandler, s.store, s.licenseService, profile)
 

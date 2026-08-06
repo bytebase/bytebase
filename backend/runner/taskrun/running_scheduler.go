@@ -238,9 +238,23 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 }
 
 // validateTaskFreshness checks for state drift between task creation and execution time.
-// Returns an error if the target database has been deleted, its project has changed,
-// or its environment has changed since the task was created.
+// Returns an error if the target instance has been archived or deleted, the target
+// database has been deleted, its project has changed, or its environment has
+// changed since the task was created.
 func (s *Scheduler) validateTaskFreshness(ctx context.Context, task *store.TaskMessage) error {
+	// Every task targets an instance; a task run must not newly start while its
+	// target instance is archived. Already-started task runs are not affected.
+	instance, err := s.store.GetInstanceByResourceID(ctx, task.InstanceID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get instance for drift validation")
+	}
+	if instance == nil {
+		return errors.Errorf("target instance %q has been deleted", task.InstanceID)
+	}
+	if instance.Deleted {
+		return errors.Errorf("target instance %q has been archived", task.InstanceID)
+	}
+
 	// DATABASE_CREATE tasks have DatabaseName = nil — the database doesn't exist yet.
 	if task.Type == storepb.Task_DATABASE_CREATE {
 		return nil

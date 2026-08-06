@@ -78,6 +78,8 @@ service InstanceService {
   }
 
   // Deletes or soft-deletes a database instance.
+  // Soft-delete requests fail with FAILED_PRECONDITION while any task run
+  // targeting the instance is pending, available, or running.
   // Permissions required: bb.instances.delete
   rpc DeleteInstance(DeleteInstanceRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
@@ -91,6 +93,8 @@ service InstanceService {
   }
 
   // Restores a soft-deleted database instance.
+  // Restore requests fail with FAILED_PRECONDITION while any task run targeting
+  // the instance is pending, available, or running.
   // Permissions required: bb.instances.undelete
   rpc UndeleteInstance(UndeleteInstanceRequest) returns (Instance) {
     option (google.api.http) = {

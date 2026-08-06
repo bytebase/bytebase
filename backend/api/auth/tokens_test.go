@@ -20,7 +20,7 @@ const (
 // API interceptor can recognize it without knowing every deployment's resource
 // URI.
 func TestGenerateOAuth2AccessTokenClaims(t *testing.T) {
-	tokenStr, err := GenerateOAuth2AccessToken("demo@example.com", "client-A", "ws-test", testResource, testSecret, time.Hour)
+	tokenStr, err := GenerateOAuth2AccessToken("demo@example.com", "client-A", "ws-test", testResource, "", testSecret, time.Hour)
 	require.NoError(t, err)
 
 	claims := jwt.MapClaims{}
@@ -58,7 +58,7 @@ func TestWebTokensCarryNoTokenUse(t *testing.T) {
 // no longer key on the fixed bb.oauth2.access audience once tokens carry a
 // per-deployment resource URI instead.
 func TestExtractClaimsFromExpiredTokenTokenUse(t *testing.T) {
-	tokenStr, err := GenerateOAuth2AccessToken("demo@example.com", "client-A", "ws-test", testResource, testSecret, -time.Minute)
+	tokenStr, err := GenerateOAuth2AccessToken("demo@example.com", "client-A", "ws-test", testResource, "", testSecret, -time.Minute)
 	require.NoError(t, err)
 
 	claims, err := ExtractClaimsFromExpiredToken(tokenStr, testSecret)

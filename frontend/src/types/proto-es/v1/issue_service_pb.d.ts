@@ -185,7 +185,10 @@ export declare type SearchIssuesRequest = Message<"bytebase.v1.SearchIssuesReque
   /**
    * The parent, which owns this collection of issues.
    * Format: projects/{project}
-   * Use "projects/-" to list all issues from all projects.
+   * Use the wildcard "projects/-" to search across collections (AIP-159); the
+   * result is restricted to the projects where the caller holds
+   * bb.issues.get. For a concrete project, the caller must hold bb.issues.get
+   * on that project or the request is denied.
    *
    * @generated from field: string parent = 1;
    */

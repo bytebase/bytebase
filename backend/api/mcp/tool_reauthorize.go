@@ -35,6 +35,12 @@ func (s *Server) handleReauthorize(ctx context.Context, _ *mcp.CallToolRequest, 
 	if err := s.store.DeleteOAuth2RefreshTokensByUserAndClient(ctx, userEmail, clientID); err != nil {
 		return formatToolError(errors.Wrap(err, "failed to revoke OAuth refresh tokens")), nil, nil
 	}
+	// This is the bearer on the request being served, not the one the session
+	// was opened with (liveRequestMetadata overlays it), so a caller that
+	// refreshed mid-session revokes the token it actually holds. Tokens minted
+	// earlier for the same grant are not listed here; they expire on their own,
+	// and the refresh grants deleted above stop any more being issued.
+	//
 	// MCP sessions are currently process-local and already require requests to
 	// stay on the same replica. This marker follows that constraint. If MCP gains
 	// multi-replica session support, move the reauthorization state to shared storage.

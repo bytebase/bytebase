@@ -490,7 +490,10 @@ type SearchIssuesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent, which owns this collection of issues.
 	// Format: projects/{project}
-	// Use "projects/-" to list all issues from all projects.
+	// Use the wildcard "projects/-" to search across collections (AIP-159); the
+	// result is restricted to the projects where the caller holds
+	// bb.issues.get. For a concrete project, the caller must hold bb.issues.get
+	// on that project or the request is denied.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of issues to return. The service may return fewer than
 	// this value.

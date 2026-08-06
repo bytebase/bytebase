@@ -185,7 +185,7 @@ describe("sheet context", () => {
     expect(container.textContent).toContain("Created worksheet");
   });
 
-  test("does not restore worksheet search keyword from localStorage", async () => {
+  test("does not restore worksheet filter from localStorage", async () => {
     window.localStorage.setItem(
       storageKeySqlEditorWorksheetFilter(
         "",
@@ -215,12 +215,16 @@ describe("sheet context", () => {
       root.render(<Probe />);
     });
 
-    expect(sheetContext!.filter.keyword).toBe("");
-    expect(sheetContext!.filter.onlyShowStarred).toBe(true);
-    expect(sheetContext!.filter.showShared).toBe(false);
+    expect(sheetContext!.filter).toEqual({
+      keyword: "",
+      showMine: true,
+      showShared: true,
+      showDraft: true,
+      onlyShowStarred: false,
+    });
   });
 
-  test("persists worksheet filter without deprecated keyword", async () => {
+  test("does not persist worksheet filter to localStorage", async () => {
     const key = storageKeySqlEditorWorksheetFilter(
       "",
       "projects/proj1",
@@ -249,13 +253,7 @@ describe("sheet context", () => {
       });
     });
 
-    const stored = JSON.parse(window.localStorage.getItem(key)!);
-    expect(stored).toEqual({
-      showMine: true,
-      showShared: true,
-      showDraft: true,
-      onlyShowStarred: true,
-    });
+    expect(window.localStorage.getItem(key)).toBeNull();
   });
 
   test("uses a collision-free key for load-more rows", async () => {

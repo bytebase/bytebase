@@ -43,6 +43,7 @@ const mocks = vi.hoisted(() => ({
   batchSyncDatabases: vi.fn(),
   batchUpdateDatabases: vi.fn(),
   pushNotification: vi.fn(),
+  routerPush: vi.fn(),
   actionProps: undefined as Record<string, unknown> | undefined,
   syncProps: undefined as Record<string, unknown> | undefined,
   providerProps: undefined as Record<string, unknown> | undefined,
@@ -52,6 +53,13 @@ const mocks = vi.hoisted(() => ({
 vi.mock("react-router", () => ({
   useLocation: () => mocks.location,
   useNavigate: () => mocks.navigate,
+}));
+
+vi.mock("@/app/router", () => ({
+  router: {
+    beforeEach: () => () => {},
+    push: mocks.routerPush,
+  },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -104,11 +112,16 @@ vi.mock("@/stores", () => ({
 }));
 
 vi.mock("@/utils", () => ({
+  extractDatabaseResourceName: (name: string) => {
+    const [, instanceName, , databaseName] = name.split("/");
+    return { instanceName, databaseName };
+  },
   extractInstanceResourceName: (name: string) => name.split("/").pop() ?? "",
   extractProjectResourceName: (name: string) => name.split("/").pop() ?? "",
   getDefaultPagination: () => 10,
   hasWorkspacePermissionV2: () => true,
   instanceV1Name: (instance: Instance) => instance.title,
+  isNullOrUndefined: (value: unknown) => value === null || value === undefined,
   isValidDatabaseName: (name: string) =>
     /^instances\/[^/]+\/databases\/[^/]+$/.test(name),
   setDocumentTitle: vi.fn(),
@@ -187,7 +200,24 @@ vi.mock("@/components/database", () => ({
     );
   },
   LabelEditorSheet: () => null,
-  TransferProjectSheet: () => <div data-testid="transfer-project-sheet" />,
+  TransferProjectSheet: ({
+    open,
+    onTransfer,
+  }: {
+    open: boolean;
+    onTransfer: (projectName: string) => Promise<void>;
+  }) =>
+    open ? (
+      <button
+        type="button"
+        data-testid="transfer-project-sheet"
+        onClick={() => {
+          void onTransfer("projects/app");
+        }}
+      >
+        transfer
+      </button>
+    ) : null,
 }));
 
 vi.mock("@/lib/productIntro", () => ({
@@ -291,6 +321,40 @@ describe("InstanceDetailView", () => {
         .querySelector("[data-selection-column-intro-target]")
         ?.getAttribute("data-selection-column-intro-target")
     ).toBe("prepare-database");
+  });
+
+  it("redirects to the target project databases page after transferring from the instance database list", async () => {
+    mocks.projects = [
+      { name: "projects/default" },
+      { name: "projects/app" },
+    ] as Project[];
+
+    await render(<InstanceDetailView instanceName="instances/prod" />);
+
+    const transferSyncedButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) =>
+      button.textContent?.includes("db.instance-databases-synced-action")
+    ) as HTMLButtonElement;
+    await act(async () => {
+      transferSyncedButton.click();
+      await Promise.resolve();
+    });
+
+    const transferSheet = container.querySelector(
+      '[data-testid="transfer-project-sheet"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      transferSheet.click();
+      await Promise.resolve();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.project.database",
+      params: {
+        projectId: "app",
+      },
+    });
   });
 
   it("uses project ownership and hides workspace-only database actions", async () => {

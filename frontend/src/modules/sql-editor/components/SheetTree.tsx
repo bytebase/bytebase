@@ -194,7 +194,7 @@ function WorksheetTreeLoadMoreButton({
         type="button"
         appearance="secondary"
         size="xs"
-        className="tree-label cursor-pointer text-xs font-medium text-accent hover:text-accent-hover"
+        className="tree-label cursor-pointer pb-1 text-xs font-medium text-accent hover:text-accent-hover"
         onClick={onClick}
       >
         <span aria-hidden="true">···</span>

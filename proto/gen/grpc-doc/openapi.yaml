@@ -1864,6 +1864,8 @@ paths:
       summary: DeleteInstance
       description: |-
         Deletes or soft-deletes a database instance.
+         Soft-delete requests fail with FAILED_PRECONDITION while any task run
+         targeting the instance is pending, available, or running.
          Permissions required: bb.instances.delete
       operationId: InstanceService_DeleteInstance
       parameters:
@@ -5115,6 +5117,8 @@ paths:
       summary: UndeleteInstance
       description: |-
         Restores a soft-deleted database instance.
+         Restore requests fail with FAILED_PRECONDITION while any task run targeting
+         the instance is pending, available, or running.
          Permissions required: bb.instances.undelete
       operationId: InstanceService_UndeleteInstance
       parameters:
@@ -6920,6 +6924,8 @@ paths:
       summary: DeleteInstance
       description: |-
         Deletes or soft-deletes a database instance.
+         Soft-delete requests fail with FAILED_PRECONDITION while any task run
+         targeting the instance is pending, available, or running.
          Permissions required: bb.instances.delete
       operationId: InstanceService_DeleteInstance2
       parameters:
@@ -10180,6 +10186,8 @@ paths:
       summary: UndeleteInstance
       description: |-
         Restores a soft-deleted database instance.
+         Restore requests fail with FAILED_PRECONDITION while any task run targeting
+         the instance is pending, available, or running.
          Permissions required: bb.instances.undelete
       operationId: InstanceService_UndeleteInstance2
       parameters:
@@ -29099,7 +29107,10 @@ components:
           description: |-
             The parent, which owns this collection of issues.
              Format: projects/{project}
-             Use "projects/-" to list all issues from all projects.
+             Use the wildcard "projects/-" to search across collections (AIP-159); the
+             result is restricted to the projects where the caller holds
+             bb.issues.get. For a concrete project, the caller must hold bb.issues.get
+             on that project or the request is denied.
         pageSize:
           type: integer
           title: page_size

@@ -621,7 +621,7 @@ func errorDescription(t *testing.T, rec *httptest.ResponseRecorder) string {
 // got through to the MCP handler.
 func mcpStatus(t *testing.T, st *store.Store, externalURL, accessToken string) int {
 	t.Helper()
-	srv, err := mcp.NewServer(st, &config.Profile{ExternalURL: externalURL}, testSecret)
+	srv, err := mcp.NewServer(st, &config.Profile{ExternalURL: externalURL}, testSecret, nil)
 	require.NoError(t, err)
 	e := echo.New()
 	srv.RegisterRoutes(e)

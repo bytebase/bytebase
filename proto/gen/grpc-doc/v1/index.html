@@ -10760,7 +10760,10 @@ Format: users/{email}. </p></td>
                   <td></td>
                   <td><p>The parent, which owns this collection of issues.
 Format: projects/{project}
-Use &#34;projects/-&#34; to list all issues from all projects. </p></td>
+Use the wildcard &#34;projects/-&#34; to search across collections (AIP-159); the
+result is restricted to the projects where the caller holds
+bb.issues.get. For a concrete project, the caller must hold bb.issues.get
+on that project or the request is denied. </p></td>
                 </tr>
               
                 <tr>
@@ -20317,6 +20320,8 @@ Permissions required: bb.instances.update</p></td>
                 <td><a href="#bytebase.v1.DeleteInstanceRequest">DeleteInstanceRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><p>Deletes or soft-deletes a database instance.
+Soft-delete requests fail with FAILED_PRECONDITION while any task run
+targeting the instance is pending, available, or running.
 Permissions required: bb.instances.delete</p></td>
               </tr>
             
@@ -20325,6 +20330,8 @@ Permissions required: bb.instances.delete</p></td>
                 <td><a href="#bytebase.v1.UndeleteInstanceRequest">UndeleteInstanceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
                 <td><p>Restores a soft-deleted database instance.
+Restore requests fail with FAILED_PRECONDITION while any task run targeting
+the instance is pending, available, or running.
 Permissions required: bb.instances.undelete</p></td>
               </tr>
             
