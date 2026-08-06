@@ -100,6 +100,7 @@ func TestGetDatabaseResourceNameWithSuffix(t *testing.T) {
 		wantInstanceID string
 		wantDatabaseID string
 		wantErr        bool
+		wantErrMsg     string
 	}{
 		{
 			name:           "instances/instance-1/databases/database-1/metadata",
@@ -115,14 +116,113 @@ func TestGetDatabaseResourceNameWithSuffix(t *testing.T) {
 			wantDatabaseID: "database-1",
 		},
 		{
-			name:    "instances/instance-1/databases/database-1/metadata",
-			suffix:  "/schema",
-			wantErr: true,
+			name:           "instances/instance-1/databases/database-1/schema",
+			suffix:         SchemaSuffix,
+			wantInstanceID: "instance-1",
+			wantDatabaseID: "database-1",
+		},
+		{
+			name:           "instances/instance-1/databases/database-1/sdlSchema",
+			suffix:         SDLSchemaSuffix,
+			wantInstanceID: "instance-1",
+			wantDatabaseID: "database-1",
+		},
+		{
+			name:           "instances/instance-1/databases/database-1/schemaString",
+			suffix:         SchemaStringSuffix,
+			wantInstanceID: "instance-1",
+			wantDatabaseID: "database-1",
+		},
+		{
+			name:           "instances/instance-1/databases/database-1/catalog",
+			suffix:         CatalogSuffix,
+			wantInstanceID: "instance-1",
+			wantDatabaseID: "database-1",
+		},
+		{
+			name:           "projects/project-1/instances/instance-1/databases/database-1/schema",
+			suffix:         SchemaSuffix,
+			wantProjectID:  new("project-1"),
+			wantInstanceID: "instance-1",
+			wantDatabaseID: "database-1",
+		},
+		{
+			name:           "projects/project-1/instances/instance-1/databases/database-1/sdlSchema",
+			suffix:         SDLSchemaSuffix,
+			wantProjectID:  new("project-1"),
+			wantInstanceID: "instance-1",
+			wantDatabaseID: "database-1",
+		},
+		{
+			name:           "projects/project-1/instances/instance-1/databases/database-1/schemaString",
+			suffix:         SchemaStringSuffix,
+			wantProjectID:  new("project-1"),
+			wantInstanceID: "instance-1",
+			wantDatabaseID: "database-1",
+		},
+		{
+			name:           "projects/project-1/instances/instance-1/databases/database-1/catalog",
+			suffix:         CatalogSuffix,
+			wantProjectID:  new("project-1"),
+			wantInstanceID: "instance-1",
+			wantDatabaseID: "database-1",
+		},
+		{
+			name:       "instances/instance-1/databases/database-1/metadata",
+			suffix:     "/schema",
+			wantErr:    true,
+			wantErrMsg: `invalid request "instances/instance-1/databases/database-1/metadata" with suffix "/schema"`,
+		},
+		{
+			name:       "instances/instance-1/databases/database-1/schema",
+			suffix:     MetadataSuffix,
+			wantErr:    true,
+			wantErrMsg: `invalid request "instances/instance-1/databases/database-1/schema" with suffix "/metadata"`,
+		},
+		{
+			name:       "projects/project-1/instances/instance-1/databases/database-1/sdlSchema",
+			suffix:     SchemaSuffix,
+			wantErr:    true,
+			wantErrMsg: `invalid request "projects/project-1/instances/instance-1/databases/database-1/sdlSchema" with suffix "/schema"`,
+		},
+		{
+			name:       "instances/instance-1/databases/database-1",
+			suffix:     SchemaSuffix,
+			wantErr:    true,
+			wantErrMsg: `invalid request "instances/instance-1/databases/database-1" with suffix "/schema"`,
+		},
+		{
+			name:       "projects/project-1/instances/instance-1/databases/database-1",
+			suffix:     SchemaSuffix,
+			wantErr:    true,
+			wantErrMsg: `invalid request "projects/project-1/instances/instance-1/databases/database-1" with suffix "/schema"`,
+		},
+		{
+			name:       "instances/instance-1/database-1/schema",
+			suffix:     SchemaSuffix,
+			wantErr:    true,
+			wantErrMsg: `invalid request "instances/instance-1/database-1"`,
+		},
+		{
+			name:       "projects/project-1/databases/database-1/schema",
+			suffix:     SchemaSuffix,
+			wantErr:    true,
+			wantErrMsg: `invalid request "projects/project-1/databases/database-1"`,
+		},
+		{
+			name:       "projects/project-1/instances/instance-1/schema",
+			suffix:     SchemaSuffix,
+			wantErr:    true,
+			wantErrMsg: `invalid request "projects/project-1/instances/instance-1"`,
 		},
 	} {
 		t.Run(test.name+test.suffix, func(t *testing.T) {
 			projectID, instanceID, databaseID, err := GetDatabaseResourceNameWithSuffix(test.name, test.suffix)
 			if test.wantErr {
+				if test.wantErrMsg != "" {
+					require.EqualError(t, err, test.wantErrMsg)
+					return
+				}
 				require.Error(t, err)
 				return
 			}

@@ -23,6 +23,9 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for instance %q and database %q", gCtx.InstanceID, database)
 	}
+	if meta == nil {
+		return nil, errors.Errorf("database metadata for database %q not found (database not synced)", database)
+	}
 	searchPath := meta.GetSearchPath()
 	if schema != "" {
 		searchPath = searchPathForSelectedSchema(schema, searchPath)

@@ -70,6 +70,19 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 }
 
+// TestGetQuerySpanNilMetadata ensures a never-synced database (nil metadata)
+// returns an error instead of panicking. Access Grant approval evaluation
+// calls GetQuerySpan for databases that may not have been schema-synced yet.
+func TestGetQuerySpanNilMetadata(t *testing.T) {
+	_, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
+			return "", nil, nil
+		},
+	}, base.Statement{Text: "SELECT 1;"}, "unsynced-db", "", false)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "database metadata for database \"unsynced-db\" not found")
+}
+
 func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)

@@ -114,7 +114,7 @@ func IsMCPOriginatedToken(tokenStr, secret string) bool {
 	if err != nil {
 		return false
 	}
-	return claims.TokenUse == TokenUseMCP || audienceContains(claims.Audience, OAuth2AccessTokenAudience)
+	return isMCPProvenance(claims.TokenUse, claims.Audience)
 }
 
 // VerifyInternalMCPToken validates a delegated credential and returns its
