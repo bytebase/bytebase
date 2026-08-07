@@ -219,6 +219,13 @@ Three constraints together close it:
   single release has not identified anything, and `EXISTS` would accept whichever duplicate happens
   to predate the revision and carry the hash. This is the composite-PK identification rule in
   `AGENTS.md` applied to an alternate key that turns out not to be one.
+
+  **A release is resolved in two places, and both need the same test.** Directly, from the
+  revision's own `release`; and indirectly, when a corroborating task's `payload.release` names one.
+  The indirect path is easy to leave on a bare `EXISTS` — it sits nested inside the task branch and
+  reads like a lookup rather than a corroboration — but a duplicate release carrying the hash would
+  corroborate a task whose intended release did not, which is the same over-grant by a longer route.
+  Exactly-one, age, and hash apply wherever `(project, release_id)` is resolved.
 - **Temporal.** Require the corroborating row's `created_at` to be no later than the revision's.
   A revision is written after the task run it records completes, so a genuine reference always
   predates it, whereas a row that reused the ID after a purge is necessarily newer — the purge, the
@@ -518,12 +525,19 @@ WHERE r.payload->>'sheetSha256' IS NOT NULL
       AND (
         -- task.payload.source is a oneof: a sheet hash, or a release naming one
         t.payload->>'sheetSha256' = r.payload->>'sheetSha256'
-        OR EXISTS (
-          SELECT 1 FROM release rel2
-          CROSS JOIN LATERAL jsonb_array_elements(COALESCE(rel2.payload->'files', '[]'::jsonb)) AS f2
-          WHERE rel2.project      = (regexp_match(t.payload->>'release', 'projects/([^/]+)/'))[1]
-            AND rel2.release_id   = (regexp_match(t.payload->>'release', 'releases/([^/]+)'))[1]
-            AND f2->>'sheetSha256' = r.payload->>'sheetSha256'
+        OR (
+          -- same exactly-one / age / hash test as the direct release branch
+          (SELECT count(*) FROM release rel2
+            WHERE rel2.project    = (regexp_match(t.payload->>'release', 'projects/([^/]+)/'))[1]
+              AND rel2.release_id = (regexp_match(t.payload->>'release', 'releases/([^/]+)'))[1]) = 1
+          AND EXISTS (
+            SELECT 1 FROM release rel2
+            CROSS JOIN LATERAL jsonb_array_elements(COALESCE(rel2.payload->'files', '[]'::jsonb)) AS f2
+            WHERE rel2.project      = (regexp_match(t.payload->>'release', 'projects/([^/]+)/'))[1]
+              AND rel2.release_id   = (regexp_match(t.payload->>'release', 'releases/([^/]+)'))[1]
+              AND rel2.created_at  <= r.created_at
+              AND f2->>'sheetSha256' = r.payload->>'sheetSha256'
+          )
         )
       )
   );
