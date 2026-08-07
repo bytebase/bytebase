@@ -315,6 +315,8 @@ func createConnectionWithTracer(ctx context.Context, pgURL string) (*metadataDBC
 		maxOpenConns = 50
 	}
 	db.SetMaxOpenConns(maxOpenConns)
+	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetMaxIdleConns(10)
 
 	return &metadataDBConnection{db: db, cleanup: cleanup}, nil
 }
