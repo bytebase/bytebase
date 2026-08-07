@@ -616,6 +616,9 @@ No schema needed; worth landing separately and first.
   test passes just as happily against an N+1.
 - **Backfill** — exercise all five sources; every referenced hash resolves under its project and no
   unreferenced hash does.
+- **Missing-ref audit** — create a plan in project B referencing a pre-existing hash owned by A
+  *after* the backfill has run, and assert the source-level audit reports it. This is the case the
+  shadow log cannot see, because no `CreateSheets` runs and nothing revalidates the plan.
 - **Multi-project hashes** — seed a plan in project B referencing a hash created in project A, run
   the backfill, assert the audit query reports it. The point is that it is detected, not blessed.
 - **Project purge** — purge a project holding sheet refs and assert it succeeds. Direct regression
@@ -632,11 +635,12 @@ No schema needed; worth landing separately and first.
 1. The five independent fixes, T6 first.
 2. Create `sheet_blob_ref` and land the ref *writers* — the transactional `CreateSheets` and the
    purge delete. No scope check reads the table yet.
-3. Run the backfill once the writers are live everywhere, then the verification queries; review the
-   multi-project list and the ambiguous-provenance list.
-4. Land the scope checks — the read gate and the scoped validators — both in shadow mode.
-5. Review the shadow-miss log and top up refs deliberately; re-run the audits; then flip to
-   enforcing, one release after step 4.
+3. Ship the backfill **and** the shadow-mode scope checks in the same release, so the migration runs
+   at startup and the binary that then serves traffic is already instrumented. Run the verification
+   queries.
+4. Before flipping: run the **missing-ref audit** below, review the shadow-miss log, and top up refs
+   deliberately. Re-run the multi-project and ambiguous-provenance audits afterwards.
+5. Flip to enforcing, one release after step 3.
 
 **Writers must precede the backfill, or new sheets fall into the gap.** A one-shot backfill scans
 history; it cannot cover a sheet created after it runs. If the migration ships before `CreateSheets`
@@ -660,5 +664,36 @@ enforcement.
 
 Instead, close the window deliberately: review the shadow-miss log, grant the entries that are
 legitimate, and re-run the multi-project and ambiguous-provenance audits afterwards so anything
-added since step 3 is seen before the flip. This is the same posture taken for provenance-less
-revisions — an operator confirms, rather than a query inferring.
+added since the backfill is seen before the flip. This is the same posture taken for
+provenance-less revisions — an operator confirms, rather than a query inferring.
+
+**The shadow log is not sufficient on its own, because it only sees traffic.** A reference created
+while the check was not yet instrumented — or created once and never revalidated — produces no log
+line, so relying on shadow alone reproduces exactly the silent NotFound R4 forbids. Concretely: a
+plan or release in project B can reference a *pre-existing* hash owned by project A, which invokes
+no `CreateSheets` and therefore writes no ref, and which the multi-project audit cannot see because
+that audit reads `sheet_blob_ref` and no row was ever created.
+
+So audit the sources directly rather than inferring from refs. For each of the four project-scoped
+sources, find `(project, hash)` pairs with no matching ref:
+
+```sql
+SELECT DISTINCT pl.project, spec->'changeDatabaseConfig'->>'sheetSha256' AS sha
+FROM plan pl
+CROSS JOIN LATERAL jsonb_array_elements(COALESCE(pl.config->'specs', '[]'::jsonb)) AS spec
+WHERE spec->'changeDatabaseConfig'->>'sheetSha256' IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM sheet_blob_ref r
+    WHERE r.project = pl.project
+      AND r.sha256  = decode(spec->'changeDatabaseConfig'->>'sheetSha256', 'hex')
+  )
+-- UNION ALL the same shape for task, release, plan_check_run
+;
+```
+
+Every row is something that will 404 at enforcement. It is exhaustive rather than traffic-dependent,
+so it strictly dominates the shadow log for these four sources, and it needs no assumption about
+when a reference was created or whether anything has revalidated it since.
+
+`revision` is deliberately excluded: uncorroborated revisions produce no ref *by design*, so they
+would flood this query with expected rows. They have their own list above.
