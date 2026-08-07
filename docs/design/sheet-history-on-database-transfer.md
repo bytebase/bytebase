@@ -93,6 +93,8 @@ Change history follows the database; statement content does not.
 - When a revision's sheet is not readable by the current project, the statement is withheld and the
   response says so explicitly — naming the owning project where that can be verified — rather than
   returning NotFound for the sheet.
+- The sheet *name* is formatted from that same resolved owner, not from the database's current
+  project. A name is emitted only when it is true.
 - No sheet references are carried between projects. A database transfer grants no new read access,
   and the four reassignment paths above need no changes.
 
@@ -223,8 +225,13 @@ corruption outweighs the modelling improvement.
 ## Implementation
 
 - A field on the revision response carrying the withheld-content reason and the owning project,
-  populated by the resolution order above — provenance first, `sheet_blob_ref` second, unknown last
-  — and distinguishing a live owning project from a purged one.
+  populated by the resolution order above — provenance first, `sheet_blob_ref` second, unknown last.
+- `convertToRevision` formats `Revision.sheet` from the resolved owner rather than from
+  `database.ProjectID` (`backend/api/v1/revision_service.go:304`), and emits no sheet name when the
+  owner does not resolve. Leaving it built from the current project would keep exactly the false
+  resource name R7 exists to eliminate — a response asserting that project A owns the statement while
+  handing the client `projects/B/sheets/{sha}` to follow, which then 404s. The owner is already
+  computed for the withheld-content field, so this costs nothing extra.
 - A UI affordance for the withheld state that names the owning project rather than rendering an
   error, and says the project no longer exists when that is the case.
 - No *carry* logic in `UpdateDatabase`, `BatchUpdateDatabases`, `updateInstanceLifecycle`, or
@@ -254,15 +261,16 @@ Tests:
   is a regression test rather than a contrived one.
 - Ambiguity: two projects in the caller's own workspace holding refs for one hash resolves to
   unknown, not to whichever row comes back first.
+- Sheet name: after a transfer, `Revision.sheet` names the resolved owner and resolves to that
+  project's readable sheet for a caller who holds rights there; when the owner is unknown, no sheet
+  name is emitted rather than one pointing at the current project.
 
 ## Open items
 
-**Sheet name attribution.** `convertToRevision` formats the sheet name with the database's current
-project, which is incorrect after a transfer: it names the destination as owner of a sheet the source
-authored. The withheld-content response resolves this through provenance, but the `name` field itself
-is still built from `db.project` and stays wrong. Fixing it means formatting the name from the same
-provenance chain — which works for revisions carrying `release` or `taskRun` and leaves the rest
-without a correct name, so it is a partial fix rather than a clean one.
+**Revisions with no resolvable owner have no sheet name.** Where the owner resolves, the name is
+correct and unchanged for every database that never moved. Where it does not, the response carries
+no sheet name at all — a behavior change for clients that assume the field is always populated, and
+the residual cost of refusing to emit a name that is not true.
 
 **Workspace-level roles have no escape hatch.** The gate checks the ref table for the named project,
 so workspace admins and DBAs are refused as well, despite holding `bb.sheets.get` broadly. Whether
