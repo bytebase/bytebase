@@ -145,7 +145,7 @@ inside its message (not always top-level). `protojson` camelCases keys.
 | `task` | `payload` | `sheetSha256` | `task.project` |
 | `release` | `payload` | `files[].sheetSha256` | `release.project` |
 | `plan_check_run` | `result` | `results[].sheetSha256` | `plan_check_run.project` |
-| `revision` | `payload` | `sheetSha256` | `release` → else `taskRun` → else `db.project` (see below) |
+| `revision` | `payload` | `sheetSha256` | corroborated `release` → else corroborated `taskRun` → else **no ref** (see below) |
 
 `plan_check_run` punishes assumption: the column is `result`, not `payload`, and the hash sits on
 `PlanCheckRunResult.Result` inside the repeated `results` array.
@@ -164,46 +164,56 @@ Derive the authoring project from the revision's own provenance instead. `Revisi
 name. Parse it out, preferring `release` and falling back to `taskRun`; `backend/store/changelog.go:163-168`
 already does exactly this with `regexp_match(payload->>'taskRun', 'projects/([^/]+)/')`.
 
-**Provenance is usable only if it is corroborated**: the `release` or `task_run` row it names must
-still exist under the project it names. Existence of the *project* is not enough. The disposition is
-three-way, not a fallback chain, and conflating the middle case with the last one is the trap:
+**A revision produces a ref only when its provenance is corroborated**: the `release` or `task_run`
+row it names must still exist under the project it names. There is no fallback — not to
+`db.project`, not to anything. Revisions with absent or uncorroborated provenance get no ref, and
+their content is unreadable until an operator grants it deliberately.
 
 | Provenance | Action |
 |---|---|
 | Corroborated — the named `release` or `task_run` row still exists under that project | Insert `(that project, sha)` |
-| Present but not corroborated | **Insert nothing.** The string stays for attribution |
-| Absent — both fields empty | Fall back to `db.project`, and add to the review list |
+| Present but not corroborated | No ref |
+| Absent — both fields empty | No ref |
 
-**Uncorroborated provenance must not fall through to `db.project`.** `revision` is the only source
-that survives a purge of its authoring project: `plan`, `task`, `release` and `plan_check_run` rows
-are all deleted with the project (`backend/store/project.go:578`, `:641`, `:651`, `:671`), but a
+**There is no `db.project` fallback because shadow mode cannot see an over-grant.** Falling back
+would be correct for every database that never moved, which is most of them, and wrong only for
+transferred ones — a tempting trade until you notice the asymmetry in how the two errors surface.
+Under-granting produces a shadow miss: a log line, during a full release in which content is still
+returned, with the requesting project right there in the log. Over-granting produces nothing at all,
+because the ref exists and the gate is satisfied. A guess that fails loudly and correctably beats a
+guess that fails silently and permanently.
+
+So the operational path for these rows is: no ref, shadow misses during the enforcement-deferred
+release, operator reviews the log, and tops up `(requesting project, sha)` for the ones they confirm.
+That is an informed grant rather than an inferred one, and the operator has context the migration
+does not — whether a database was transferred, and who should see its history.
+
+**Corroboration is checked on the referenced row, not on the project.** `DeleteProject` hard-deletes
+the `project` row and `CreateProject` accepts a caller-supplied `ProjectId`
+(`backend/api/v1/project_service.go:210`), so a purged ID can be reused; a surviving revision naming
+the *old* project would otherwise resolve to an unrelated *new* project of the same name and grant it
+the purged project's SQL. Checking the referenced row distinguishes the cases, because ordinary
+release deletion is soft (`backend/store/release.go:223`) and leaves the row, while purge
+hard-deletes it along with `plan`, `task` and `plan_check_run`
+(`backend/store/project.go:578`, `:641`, `:651`, `:671`).
+
+`revision` is the only source that survives a purge of its authoring project at all: a
 workspace-instance database is reassigned to the default project and keeps its revisions, whose
-`release` and `taskRun` strings still name the deleted project. Inserting that ref would violate
-`sheet_blob_ref`'s foreign key and abort the migration; joining only to live projects and then
-falling back would hand the default project SQL the purged project authored — the grant this design
-refuses.
-
-**Checking that the project exists is not sufficient**, which is why the guard is on the referenced
-row. `DeleteProject` hard-deletes the `project` row and `CreateProject` accepts a caller-supplied
-`ProjectId` (`backend/api/v1/project_service.go:210`), so a purged ID can be reused. A surviving
-revision naming the *old* project would then resolve to an unrelated *new* project of the same name
-and grant it the purged project's SQL — a worse outcome than the foreign-key abort, because it is
-silent. Corroborating the referenced row distinguishes the cases: ordinary release deletion is soft
-(`backend/store/release.go:223`), so the row persists, while purge hard-deletes it.
+`release` and `taskRun` strings still name the deleted project.
 
 Residual risk: a reused project ID whose new releases happen to collide with the old release or task
 IDs would still corroborate. Release IDs are deterministic (`train` plus iteration) and task IDs
 restart per project, so this is possible rather than impossible. It is not detectable from the data,
-so it goes on the review list alongside the other ambiguous rows rather than being silently trusted.
+so it goes on the review list rather than being silently trusted.
 
 Their content then becomes unreadable, which is the intended outcome: the authoring project is gone,
 so there is nobody left to ask. The immutable `release`/`taskRun` string still identifies it, so the
 withheld-statement response can name it as purged — see
 [naming the owner](sheet-history-on-database-transfer.md#naming-the-owner).
 
-A revision with no provenance at all falls back to `db.project`, correct for every database that
-never moved, which is the common case. Those rows go on the review list in [Rollout](#rollout)
-rather than being trusted silently.
+A revision with no provenance at all is treated the same way: no ref, surfaced as a shadow miss, and
+granted only if an operator confirms it. Both populations appear together on the review list in
+[Rollout](#rollout).
 
 Two tables that look like sources are not. `ChangelogPayload` carries only `task_run` and
 `git_commit`, and the v1 `Changelog` message exposes no statement or sheet field. `issue_comment`
@@ -396,31 +406,38 @@ A long list means cross-project references are already widespread and the plan n
 since the backfill would make them permanent. Capture it at a known-good point: this design is
 public, including the rule that turns a reference into an ownership edge.
 
-**Review ambiguous revision provenance too.** Two populations, both of which the backfill had to
-guess at. Rows with no provenance fell back to `db.project`, so a database transferred before the
-migration would have granted its destination project a source project's SQL:
+**Review revisions that produced no ref.** These are the rows whose statements are now unreadable —
+absent provenance, or provenance the backfill could not corroborate. They will appear as shadow
+misses during the deferred-enforcement release; this query is the same population identified up
+front, so a top-up can be prepared before the log accumulates.
 
-```sql
-SELECT r.instance, r.db_name, d.project
-FROM revision r JOIN db d ON d.instance = r.instance AND d.name = r.db_name
-WHERE r.payload->>'sheetSha256' IS NOT NULL
-  AND COALESCE(r.payload->>'release', '') = ''
-  AND COALESCE(r.payload->>'taskRun', '') = '';
-```
-
-Rows whose provenance named a project that no longer corroborates it produced no ref, so their
-content is now unreadable. A large count here means either widespread project purges or reused
-project IDs, and is worth understanding before enforcing:
+The test must repeat the corroboration check rather than asking whether the hash has any ref at all.
+The design expects hashes to be shared, so a revision whose own provenance failed may still have a
+ref from an unrelated project that authored identical SQL — and a ref-existence proxy would silently
+drop exactly the rows this list exists to surface.
 
 ```sql
 SELECT r.instance, r.db_name,
-       (regexp_match(r.payload->>'release', 'projects/([^/]+)/'))[1] AS named_project
+       (regexp_match(COALESCE(NULLIF(r.payload->>'release', ''),
+                              r.payload->>'taskRun'), 'projects/([^/]+)/'))[1] AS named_project
 FROM revision r
 WHERE r.payload->>'sheetSha256' IS NOT NULL
-  AND COALESCE(r.payload->>'release', '') <> ''
-  AND NOT EXISTS (SELECT 1 FROM sheet_blob_ref b
-                  WHERE b.sha256 = decode(r.payload->>'sheetSha256', 'hex'));
+  AND NOT EXISTS (
+    -- the corroboration test from the backfill, repeated verbatim
+    SELECT 1 FROM release rel
+    WHERE rel.project = (regexp_match(r.payload->>'release', 'projects/([^/]+)/'))[1]
+      AND rel.release_id = (regexp_match(r.payload->>'release', 'releases/([^/]+)'))[1]
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM task t
+    WHERE t.project = (regexp_match(r.payload->>'taskRun', 'projects/([^/]+)/'))[1]
+      AND t.id = (regexp_match(r.payload->>'taskRun', 'tasks/(\d+)/'))[1]::int
+  );
 ```
+
+A large count means either widespread project purges, reused project IDs, or a population of
+revisions created without provenance — each worth understanding before enforcing, since all of them
+end in unreadable statements.
 
 ## Transaction lock ordering
 
