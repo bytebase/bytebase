@@ -94,6 +94,12 @@
     },
     "export-finished": "Xuất hoàn tất",
     "export-tooltip": "Phải chọn thời gian bắt đầu và kết thúc trong vòng 30 ngày",
+    "mcp": {
+      "badge": "MCP",
+      "client-id": "ID máy khách",
+      "correlation-id": "ID tương quan",
+      "origin": "Bắt nguồn từ một máy khách MCP (Model Context Protocol)"
+    },
     "table": {
       "actor": "Người thực hiện",
       "created-ts": "Thời gian",
