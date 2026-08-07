@@ -245,8 +245,9 @@ match defeats laundering. Residual risk after all three is limited to clock anom
 uncorroborated rows fail closed to no ref — an unreadable statement rather than a wrong grant.
 
 Their content then becomes unreadable, which is the intended outcome: the authoring project is gone,
-so there is nobody left to ask. The immutable `release`/`taskRun` string still identifies it, so the
-withheld-statement response can name it as purged — see
+so there is nobody left to ask. The withheld-statement response reports the owner as unknown rather
+than echoing the parsed ID — an ID that failed corroboration cannot be verified against any
+workspace, so it is not safe to surface. See
 [naming the owner](sheet-history-on-database-transfer.md#naming-the-owner).
 
 A revision with no provenance at all is treated the same way: no ref, surfaced as a shadow miss, and

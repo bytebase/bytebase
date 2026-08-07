@@ -112,34 +112,39 @@ The owning project is derivable without new storage, from the revision's own pro
 resource name; `backend/store/changelog.go:163-168` already parses a project out of a stored
 `taskRun` this way. Resolution order:
 
-1. The revision's `release`, else its `taskRun` — **verified against the caller's workspace before
-   it is echoed**, per below. Correct even after the database has moved, because the string is
-   immutable.
+1. The revision's `release`, else its `taskRun` — **corroborated by exactly the rule the backfill
+   uses**, and resolving to a project in the caller's workspace.
 2. `sheet_blob_ref` — which projects currently hold a ref for that hash, **joined through `project`
    and constrained to the caller's workspace**, and only when that leaves exactly one candidate.
    Useful when the revision carries no provenance, both fields being optional.
-3. Neither, or more than one candidate — report that the authoring project is unknown.
+3. Anything else — report the owner as unknown, and never echo a project ID that failed either test.
 
-**Provenance is a hint, not an assertion, and must be verified before it is echoed.** Both fields
-are stored verbatim from the caller: `convertRevision` writes `Release: revision.Release` and
-`TaskRun: revision.TaskRun` straight through (`backend/api/v1/revision_service.go:352-364`). Until
-the T6 fix lands, `createRevisions` resolves `revision.Release` with `GetRelease` and no workspace or
-database-project comparison (`:207-223`), so revisions already in the database can carry provenance
-naming a project in another tenant. Echoing the parsed string unchecked would leak a foreign
-workspace's project name — the same disclosure step 2 is guarded against, arrived at by a different
-route.
+**Provenance is a hint, not an assertion.** Both fields are stored verbatim from the caller:
+`convertRevision` writes `Release: revision.Release` and `TaskRun: revision.TaskRun` straight through
+(`backend/api/v1/revision_service.go:352-364`). Until the T6 fix lands, `createRevisions` resolves
+`revision.Release` with no workspace or database-project comparison (`:207-223`), and it never
+compares a `taskRun`'s task to `revision.Sheet` at all — so a revision can carry provenance naming
+another tenant's project, or naming a perfectly real project in the caller's own workspace that had
+nothing to do with the sheet.
 
-So resolve the parsed project and branch on what it turns out to be:
+**Naming therefore uses the same corroboration rule as the backfill, not a weaker one.** Identity,
+age, and hash match, exactly as specified in
+[the backfill section](sheet-blob-scoping.md#backfill). A design in which the backfill trusts
+corroborated provenance while the response trusts raw provenance has two different notions of
+provenance in it, and the weaker one would be the user-visible one.
 
-| Parsed project | Response |
+| Provenance | Response |
 |---|---|
-| Exists, in the caller's workspace | Name it |
-| Exists, in a different workspace | Unknown — do not echo the string |
-| Does not exist | Authoring project no longer exists — say so **without naming it**, since its workspace can no longer be verified |
+| Corroborated, project in the caller's workspace | Name it |
+| Corroborated, project in another workspace | Owner unknown |
+| Present but not corroborated — stale, purged, or fabricated | Owner unknown |
+| Absent | Fall through to step 2 |
 
-The third row still delivers what the user needs: the statement is permanently unavailable and there
-is nobody to ask. Withholding the name costs a little diagnostic value and removes an unverifiable
-string from the response.
+The response may still distinguish *why* it is unavailable — no provenance, provenance that cannot
+be verified, an owner outside the caller's workspace — since a reason is not an identifier. What it
+must never do is echo a project ID that failed a check. Misattribution is not a harmless default: a
+user told that project `payments-core` owns a statement it never authored will go and ask them for
+it, and may be granted access on a false premise.
 
 This applies to *naming*, not to the backfill's use of the same fields. Granting a ref to the project
 that genuinely authored a sheet is correct regardless of which workspace the referencing revision
@@ -163,16 +168,16 @@ WHERE r.sha256 = ? AND p.workspace = ?
 Ambiguity resolves to unknown rather than to a guess. Two projects in the same workspace holding
 refs for one hash is honest dedup, and neither is more the author than the other.
 
-Purge is why step 1 has to come first. `DeleteProject` removes `sheet_blob_ref WHERE project = A`
-before deleting project A, while a workspace-instance database that belonged to A is reassigned to
-the default project and keeps its revisions. Relying on the ref table alone would leave those
-revisions with nothing to report at exactly the moment a user most needs to know where the SQL came
-from — step 1 can still tell them the authoring project is gone, which step 2 cannot.
+A purged authoring project resolves to unknown, not to a name. `DeleteProject` hard-deletes the
+`release`, `task` and `plan` rows along with the project, so provenance naming it can no longer
+corroborate, and `sheet_blob_ref WHERE project = A` is deleted too, so step 2 finds nothing either.
+That is the correct outcome rather than a gap: the statement is permanently unavailable, there is
+nobody left to ask, and the only thing withheld beyond the content is an ID that can no longer be
+verified against any workspace.
 
 Step 1 is attribution only and never implies access. A purged project holds no refs and cannot be
 granted any, since `sheet_blob_ref.project` has a live foreign key, and the backfill skips
-uncorroborated provenance for the same reason. So a revision whose authoring project was purged
-withholds its statement permanently, which is correct: there is nobody left to ask.
+uncorroborated provenance for the same reason.
 
 The response should distinguish the two outcomes rather than flattening them: a live project the
 caller can ask, versus an authoring project that no longer exists and whose content is now
@@ -228,10 +233,11 @@ corruption outweighs the modelling improvement.
 Tests:
 
 - Create a revision under project A, move the database to project B, assert the revision list is
-  complete under B while the statement is withheld with A named.
+  complete under B while the statement is withheld with A named — A's provenance corroborates, and A
+  is in the caller's workspace.
 - Purge path: put a database on a *workspace* instance in project A, create a revision, purge A, then
   assert that under the default project the list is still complete, the statement is withheld, and
-  the response reports the authoring project as gone rather than naming it or reporting unknown.
+  the response reports the owner as unknown and names no project.
   This is the case most likely to regress — it is not a user-facing transfer, and it is the one
   where `sheet_blob_ref` has already been deleted, so it exercises the provenance path specifically.
 - A revision carrying neither `release` nor `taskRun` falls through to `sheet_blob_ref`, and to
@@ -240,7 +246,8 @@ Tests:
   refs from both, then request a withheld statement from one and assert the response never names the
   other workspace's project; (b) seed a revision whose `release` provenance names a project in
   another workspace — the state T6 permits — and assert the response reports unknown rather than
-  echoing it. Generated `CREATE DATABASE` boilerplate makes this collision realistic, so it
+  echoing it; (c) seed a revision naming a real project in the caller's *own* workspace that never
+  authored the sheet, and assert the response reports unknown rather than misattributing it. Generated `CREATE DATABASE` boilerplate makes this collision realistic, so it
   is a regression test rather than a contrived one.
 - Ambiguity: two projects in the caller's own workspace holding refs for one hash resolves to
   unknown, not to whichever row comes back first.
