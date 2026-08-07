@@ -228,7 +228,7 @@ describe("ProjectSyncSchemaPage target database search", () => {
 
     expect(mocks.fetchDatabases).toHaveBeenCalledWith({
       parent: "projects/project",
-      pageSize: 1,
+      pageSize: 50,
       filter: { engines: [1], query: "Payroll" },
     });
 
@@ -240,7 +240,7 @@ describe("ProjectSyncSchemaPage target database search", () => {
 
     expect(mocks.fetchDatabases).toHaveBeenCalledWith({
       parent: "projects/project",
-      pageSize: 1,
+      pageSize: 50,
       pageToken: "filtered-page-2",
       filter: { engines: [1], query: "Payroll" },
     });
