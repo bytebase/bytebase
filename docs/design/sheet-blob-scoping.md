@@ -164,24 +164,37 @@ Derive the authoring project from the revision's own provenance instead. `Revisi
 name. Parse it out, preferring `release` and falling back to `taskRun`; `backend/store/changelog.go:163-168`
 already does exactly this with `regexp_match(payload->>'taskRun', 'projects/([^/]+)/')`.
 
-The disposition is three-way, not a fallback chain, and conflating the middle case with the last one
-is the trap:
+**Provenance is usable only if it is corroborated**: the `release` or `task_run` row it names must
+still exist under the project it names. Existence of the *project* is not enough. The disposition is
+three-way, not a fallback chain, and conflating the middle case with the last one is the trap:
 
 | Provenance | Action |
 |---|---|
-| Names a project that still exists | Insert `(that project, sha)` |
-| Names a project that has been purged | **Insert nothing.** The string stays for attribution |
+| Corroborated — the named `release` or `task_run` row still exists under that project | Insert `(that project, sha)` |
+| Present but not corroborated | **Insert nothing.** The string stays for attribution |
 | Absent — both fields empty | Fall back to `db.project`, and add to the review list |
 
-**Purged provenance must not fall through to `db.project`.** `revision` is the only source that
-survives a purge of its authoring project: `plan`, `task`, `release` and `plan_check_run` rows are
-all deleted with the project (`backend/store/project.go:578`, `:641`, `:651`, `:671`), but a
+**Uncorroborated provenance must not fall through to `db.project`.** `revision` is the only source
+that survives a purge of its authoring project: `plan`, `task`, `release` and `plan_check_run` rows
+are all deleted with the project (`backend/store/project.go:578`, `:641`, `:651`, `:671`), but a
 workspace-instance database is reassigned to the default project and keeps its revisions, whose
 `release` and `taskRun` strings still name the deleted project. Inserting that ref would violate
 `sheet_blob_ref`'s foreign key and abort the migration; joining only to live projects and then
 falling back would hand the default project SQL the purged project authored — the grant this design
-refuses. Guard the provenance branch with `EXISTS (SELECT 1 FROM project …)` and let those rows
-produce no ref at all.
+refuses.
+
+**Checking that the project exists is not sufficient**, which is why the guard is on the referenced
+row. `DeleteProject` hard-deletes the `project` row and `CreateProject` accepts a caller-supplied
+`ProjectId` (`backend/api/v1/project_service.go:210`), so a purged ID can be reused. A surviving
+revision naming the *old* project would then resolve to an unrelated *new* project of the same name
+and grant it the purged project's SQL — a worse outcome than the foreign-key abort, because it is
+silent. Corroborating the referenced row distinguishes the cases: ordinary release deletion is soft
+(`backend/store/release.go:223`), so the row persists, while purge hard-deletes it.
+
+Residual risk: a reused project ID whose new releases happen to collide with the old release or task
+IDs would still corroborate. Release IDs are deterministic (`train` plus iteration) and task IDs
+restart per project, so this is possible rather than impossible. It is not detectable from the data,
+so it goes on the review list alongside the other ambiguous rows rather than being silently trusted.
 
 Their content then becomes unreadable, which is the intended outcome: the authoring project is gone,
 so there is nobody left to ask. The immutable `release`/`taskRun` string still identifies it, so the
@@ -383,9 +396,9 @@ A long list means cross-project references are already widespread and the plan n
 since the backfill would make them permanent. Capture it at a known-good point: this design is
 public, including the rule that turns a reference into an ownership edge.
 
-**Review provenance-less revisions too.** These are the rows that fell back to `db.project`, so a
-database transferred before the migration would have granted its destination project a source
-project's SQL:
+**Review ambiguous revision provenance too.** Two populations, both of which the backfill had to
+guess at. Rows with no provenance fell back to `db.project`, so a database transferred before the
+migration would have granted its destination project a source project's SQL:
 
 ```sql
 SELECT r.instance, r.db_name, d.project
@@ -393,6 +406,20 @@ FROM revision r JOIN db d ON d.instance = r.instance AND d.name = r.db_name
 WHERE r.payload->>'sheetSha256' IS NOT NULL
   AND COALESCE(r.payload->>'release', '') = ''
   AND COALESCE(r.payload->>'taskRun', '') = '';
+```
+
+Rows whose provenance named a project that no longer corroborates it produced no ref, so their
+content is now unreadable. A large count here means either widespread project purges or reused
+project IDs, and is worth understanding before enforcing:
+
+```sql
+SELECT r.instance, r.db_name,
+       (regexp_match(r.payload->>'release', 'projects/([^/]+)/'))[1] AS named_project
+FROM revision r
+WHERE r.payload->>'sheetSha256' IS NOT NULL
+  AND COALESCE(r.payload->>'release', '') <> ''
+  AND NOT EXISTS (SELECT 1 FROM sheet_blob_ref b
+                  WHERE b.sha256 = decode(r.payload->>'sheetSha256', 'hex'));
 ```
 
 ## Transaction lock ordering
@@ -478,6 +505,21 @@ No schema needed; worth landing separately and first.
 ## Order
 
 1. The five independent fixes, T6 first.
-2. Migration and backfill; run both verification queries and review the multi-project list.
-3. Store API, gate, call sites, purge delete, tests — gate shipping in shadow mode.
-4. Flip to enforcing one release later, once shadow logs are clean.
+2. Create `sheet_blob_ref` and land the ref *writers* — the transactional `CreateSheets` and the
+   purge delete — **before** any backfill.
+3. Store API, gate, call sites, tests — gate shipping in shadow mode.
+4. Run the backfill once the writers are live everywhere, then the verification queries; review the
+   multi-project list and the ambiguous-provenance list.
+5. Flip to enforcing one release later, once shadow logs are clean.
+
+**Writers must precede the backfill, or new sheets fall into the gap.** A one-shot backfill scans
+history; it cannot cover a sheet created after it runs. If the migration ships before `CreateSheets`
+writes refs, every sheet created in between lands in `sheet_blob` with no ref and appears in no
+historical source, so it becomes a zero-ref miss and a NotFound at enforcement. A rolling upgrade
+widens the same gap even when both ship together, since old replicas keep serving the old
+`CreateSheets` against the new schema until the rollout completes.
+
+The backfill is idempotent (`ON CONFLICT DO NOTHING`), so the safe pattern is to run it after the
+rollout has fully converged and to re-run it immediately before flipping to enforcing. Shadow-mode
+misses are the backstop: anything the backfill missed shows up there as a log line rather than as a
+production NotFound.
