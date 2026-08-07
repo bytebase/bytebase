@@ -54,7 +54,7 @@ func (in *InternalMCPAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.
 			return nil, connect.NewError(connect.CodeUnauthenticated, err)
 		}
 
-		authContext, err := getAuthContext(req.Spec().Procedure)
+		authContext, err := GetAuthContext(req.Spec().Procedure)
 		if err != nil {
 			return nil, err
 		}

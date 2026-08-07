@@ -20,6 +20,7 @@ import (
 	errs "github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -101,7 +102,7 @@ func (in *APIAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 			return nil, connect.NewError(connect.CodeUnauthenticated, err)
 		}
 
-		authContext, err := getAuthContext(req.Spec().Procedure)
+		authContext, err := GetAuthContext(req.Spec().Procedure)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +137,7 @@ func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandler
 			return connect.NewError(connect.CodeUnauthenticated, err)
 		}
 
-		authContext, err := getAuthContext(conn.Spec().Procedure)
+		authContext, err := GetAuthContext(conn.Spec().Procedure)
 		if err != nil {
 			return err
 		}
@@ -436,7 +437,65 @@ func audienceContains(audience jwt.ClaimStrings, token string) bool {
 	return slices.Contains(audience, token)
 }
 
-func getAuthContext(fullMethod string) (*common.AuthContext, error) {
+// PermissionForRequest returns the permission a request actually requires,
+// which for a few methods depends on the request payload rather than on the
+// method alone. Callers that reason about a method's requirement — the ACL
+// check and the AI capability resolver — must go through here so both see the
+// same raise.
+func PermissionForRequest(request any, defaultPermission permission.Permission) permission.Permission {
+	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
+		return permission.InstancesCreate
+	}
+	return defaultPermission
+}
+
+// HasAllowMissingEnabled reports whether the request sets allow_missing, which
+// turns an update method into one that can create the resource. Uses proto
+// reflection to handle different request types generically.
+func HasAllowMissingEnabled(request any) bool {
+	if request == nil {
+		return false
+	}
+	if r, ok := request.(*v1pb.BatchUpdateInstancesRequest); ok {
+		for _, updateRequest := range r.GetRequests() {
+			if updateRequest.GetAllowMissing() {
+				return true
+			}
+		}
+	}
+
+	pm, ok := request.(proto.Message)
+	if !ok {
+		return false
+	}
+
+	mr := pm.ProtoReflect()
+	fd := mr.Descriptor().Fields().ByName("allow_missing")
+	if fd == nil {
+		return false
+	}
+
+	// Check if field is a bool and get its value
+	if fd.Kind() != protoreflect.BoolKind {
+		return false
+	}
+
+	return mr.Get(fd).Bool()
+}
+
+// AllowMissingCreatePermission returns the create permission implied by an
+// update permission when allow_missing is set, e.g. "bb.roles.update" ->
+// "bb.roles.create". Paired with HasAllowMissingEnabled it describes the ACL's
+// second per-request raise, so the AI capability resolver derives it from the
+// same place rather than restating the rule.
+func AllowMissingCreatePermission(updatePermission permission.Permission) permission.Permission {
+	return strings.Replace(string(updatePermission), ".update", ".create", 1)
+}
+
+// GetAuthContext resolves a connect procedure name to its declared auth context
+// by reading the method options off the proto registry. This is the single
+// source the ACL layer and the AI capability resolver both derive from.
+func GetAuthContext(fullMethod string) (*common.AuthContext, error) {
 	methodTokens := strings.Split(fullMethod, "/")
 	if len(methodTokens) != 3 {
 		return nil, errs.Errorf("invalid full method name %q", fullMethod)

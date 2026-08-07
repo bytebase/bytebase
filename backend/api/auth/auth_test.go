@@ -5,6 +5,9 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/common/permission"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // TestCheckTokenAudience pins the general-API audience policy for P1a PR 5:
@@ -57,4 +60,124 @@ func TestCheckTokenAudience(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "audience mismatch")
 	})
+}
+
+func TestPermissionForRequest(t *testing.T) {
+	tests := []struct {
+		name              string
+		request           any
+		defaultPermission permission.Permission
+		want              permission.Permission
+	}{
+		{
+			name: "keeps default permission for existing instance database listing",
+			request: &v1pb.ListInstanceDatabaseRequest{
+				Name: "instances/hello",
+			},
+			defaultPermission: permission.InstancesGet,
+			want:              permission.InstancesGet,
+		},
+		{
+			name: "requires create permission for inline instance database preview",
+			request: &v1pb.ListInstanceDatabaseRequest{
+				Name:     "instances/hello",
+				Instance: &v1pb.Instance{},
+			},
+			defaultPermission: permission.InstancesGet,
+			want:              permission.InstancesCreate,
+		},
+		{
+			name:              "keeps default permission for other requests",
+			request:           &v1pb.SyncInstanceRequest{Name: "instances/hello"},
+			defaultPermission: permission.InstancesSync,
+			want:              permission.InstancesSync,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := PermissionForRequest(tt.request, tt.defaultPermission)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestHasAllowMissingEnabled(t *testing.T) {
+	tests := []struct {
+		name    string
+		request any
+		want    bool
+	}{
+		{
+			name: "AllowMissing true",
+			request: &v1pb.UpdateRoleRequest{
+				AllowMissing: true,
+			},
+			want: true,
+		},
+		{
+			name: "AllowMissing false",
+			request: &v1pb.UpdateRoleRequest{
+				AllowMissing: false,
+			},
+			want: false,
+		},
+		{
+			name: "No AllowMissing field",
+			request: &v1pb.GetRoleRequest{
+				Name: "roles/test",
+			},
+			want: false,
+		},
+		{
+			name:    "Nil request",
+			request: nil,
+			want:    false,
+		},
+		{
+			name: "UpdateGroupRequest with AllowMissing true",
+			request: &v1pb.UpdateGroupRequest{
+				AllowMissing: true,
+			},
+			want: true,
+		},
+		{
+			name: "UpdateReviewConfigRequest with AllowMissing true",
+			request: &v1pb.UpdateReviewConfigRequest{
+				AllowMissing: true,
+			},
+			want: true,
+		},
+		{
+			name: "UpdateIdentityProviderRequest with AllowMissing false",
+			request: &v1pb.UpdateIdentityProviderRequest{
+				AllowMissing: false,
+			},
+			want: false,
+		},
+		{
+			name: "BatchUpdateInstancesRequest with nested AllowMissing true",
+			request: &v1pb.BatchUpdateInstancesRequest{
+				Requests: []*v1pb.UpdateInstanceRequest{
+					{AllowMissing: false},
+					{AllowMissing: true},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "BatchUpdateInstancesRequest with nested AllowMissing false",
+			request: &v1pb.BatchUpdateInstancesRequest{
+				Requests: []*v1pb.UpdateInstanceRequest{{AllowMissing: false}},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := HasAllowMissingEnabled(tt.request)
+			require.Equal(t, tt.want, got)
+		})
+	}
 }

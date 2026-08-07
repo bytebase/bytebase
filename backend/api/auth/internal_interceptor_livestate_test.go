@@ -27,7 +27,7 @@ const (
 )
 
 // procedureRequest overrides a request's Spec so the interceptor sees a real
-// registered procedure — getAuthContext resolves it through the proto registry,
+// registered procedure — GetAuthContext resolves it through the proto registry,
 // which connect.NewRequest alone leaves empty.
 type procedureRequest struct {
 	connect.AnyRequest

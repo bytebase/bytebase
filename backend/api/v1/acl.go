@@ -84,46 +84,13 @@ func (c *aclStreamingConn) Receive(msg any) error {
 	return c.interceptor.doACLCheck(c.ctx, msg, c.fullMethod)
 }
 
-// hasAllowMissingEnabled checks if the request has allow_missing field set to true.
-// Uses proto reflection to handle different request types generically.
-func hasAllowMissingEnabled(request any) bool {
-	if request == nil {
-		return false
-	}
-	if r, ok := request.(*v1pb.BatchUpdateInstancesRequest); ok {
-		for _, updateRequest := range r.GetRequests() {
-			if updateRequest.GetAllowMissing() {
-				return true
-			}
-		}
-	}
-
-	pm, ok := request.(proto.Message)
-	if !ok {
-		return false
-	}
-
-	mr := pm.ProtoReflect()
-	fd := mr.Descriptor().Fields().ByName("allow_missing")
-	if fd == nil {
-		return false
-	}
-
-	// Check if field is a bool and get its value
-	if fd.Kind() != protoreflect.BoolKind {
-		return false
-	}
-
-	return mr.Get(fd).Bool()
-}
-
 func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMethod string) error {
 	authContextAny := ctx.Value(common.AuthContextKey)
 	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
 		return connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
 	}
-	authContext.Permission = getPermissionForRequest(request, authContext.Permission)
+	authContext.Permission = auth.PermissionForRequest(request, authContext.Permission)
 
 	if auth.IsAuthenticationSkipped(fullMethod, authContext) {
 		return nil
@@ -188,10 +155,10 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	// Check allow_missing secondary permission if applicable
 	// This handles Update methods that can create resources via allow_missing=true
 	// When allow_missing is set, we additionally require create permission
-	if hasAllowMissingEnabled(request) {
+	if auth.HasAllowMissingEnabled(request) {
 		// Derive create permission by replacing ".update" with ".create"
 		// Example: "bb.roles.update" -> "bb.roles.create"
-		createPerm := strings.Replace(string(authContext.Permission), ".update", ".create", 1)
+		createPerm := auth.AllowMissingCreatePermission(authContext.Permission)
 
 		// Create a new auth context for create permission check. It must keep
 		// carrying the delegated grant state: this secondary check is the same
@@ -229,13 +196,6 @@ func resourceResolutionConnectError(err error) error {
 		return err
 	}
 	return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to populate raw resources"))
-}
-
-func getPermissionForRequest(request any, defaultPermission permission.Permission) permission.Permission {
-	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
-		return permission.InstancesCreate
-	}
-	return defaultPermission
 }
 
 func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {
