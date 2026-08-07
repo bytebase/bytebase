@@ -127,10 +127,28 @@ inside its message (not always top-level). `protojson` camelCases keys.
 | `task` | `payload` | `sheetSha256` | `task.project` |
 | `release` | `payload` | `files[].sheetSha256` | `release.project` |
 | `plan_check_run` | `result` | `results[].sheetSha256` | `plan_check_run.project` |
-| `revision` | `payload` | `sheetSha256` | `db(instance, db_name)` → `db.project` |
+| `revision` | `payload` | `sheetSha256` | `release` → else `taskRun` → else `db.project` (see below) |
 
 `plan_check_run` punishes assumption: the column is `result`, not `payload`, and the hash sits on
 `PlanCheckRunResult.Result` inside the repeated `results` array.
+
+**`revision` must not route through `db.project`.** The first four sources are project-scoped rows
+that never move, so their `project` column is the authoring project. `revision` is not: it has no
+project column and inherits one through `db.project`, which is the database's *current* project. A
+database transferred before this migration would backfill its revisions to the destination, granting
+that project's members access to SQL the source authored — precisely the grant
+[the transfer decision](sheet-history-on-database-transfer.md) refuses, and invisible to shadow mode
+because the ref row exists.
+
+Derive the authoring project from the revision's own provenance instead. `RevisionPayload` carries
+`release` (`projects/{project}/releases/{release}`) and `task_run`
+(`projects/{project}/plans/…/taskRuns/{taskRun}`), both with the project embedded in the resource
+name. Parse it out, preferring `release` and falling back to `taskRun`; `backend/store/changelog.go:163-168`
+already does exactly this with `regexp_match(payload->>'taskRun', 'projects/([^/]+)/')`.
+
+Both fields are optional, so a revision created with neither has no recoverable provenance. For
+those, fall back to `db.project` — correct for every database that never moved, which is the common
+case — and add them to the review list in [Rollout](#rollout) rather than trusting them silently.
 
 Two tables that look like sources are not. `ChangelogPayload` carries only `task_run` and
 `git_commit`, and the v1 `Changelog` message exposes no statement or sheet field. `issue_comment`
@@ -322,6 +340,18 @@ FROM sheet_blob_ref GROUP BY sha256 HAVING count(DISTINCT project) > 1;
 A long list means cross-project references are already widespread and the plan needs revisiting,
 since the backfill would make them permanent. Capture it at a known-good point: this design is
 public, including the rule that turns a reference into an ownership edge.
+
+**Review provenance-less revisions too.** These are the rows that fell back to `db.project`, so a
+database transferred before the migration would have granted its destination project a source
+project's SQL:
+
+```sql
+SELECT r.instance, r.db_name, d.project
+FROM revision r JOIN db d ON d.instance = r.instance AND d.name = r.db_name
+WHERE r.payload->>'sheetSha256' IS NOT NULL
+  AND COALESCE(r.payload->>'release', '') = ''
+  AND COALESCE(r.payload->>'taskRun', '') = '';
+```
 
 ## Transaction lock ordering
 
