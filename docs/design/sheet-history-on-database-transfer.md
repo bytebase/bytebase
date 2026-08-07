@@ -127,10 +127,7 @@ resource name; `backend/store/changelog.go:163-168` already parses a project out
 
 1. The revision's `release`, else its `taskRun` — **corroborated by exactly the rule the backfill
    uses**, and resolving to a project in the caller's workspace.
-2. `sheet_blob_ref` — which projects currently hold a ref for that hash, **joined through `project`
-   and constrained to the caller's workspace**, and only when that leaves exactly one candidate.
-   Useful when the revision carries no provenance, both fields being optional.
-3. Anything else — report the owner as unknown, and never echo a project ID that failed either test.
+2. Anything else — report the owner as unknown, and never echo a project ID that failed the test.
 
 **Provenance is a hint, not an assertion.** Both fields are stored verbatim from the caller:
 `convertRevision` writes `Release: revision.Release` and `TaskRun: revision.TaskRun` straight through
@@ -151,7 +148,7 @@ provenance in it, and the weaker one would be the user-visible one.
 | Corroborated, project in the caller's workspace | Name it |
 | Corroborated, project in another workspace | Owner unknown |
 | Present but not corroborated — stale, purged, or fabricated | Owner unknown |
-| Absent | Fall through to step 2 |
+| Absent | Owner unknown |
 
 The response may still distinguish *why* it is unavailable — no provenance, provenance that cannot
 be verified, an owner outside the caller's workspace — since a reason is not an identifier. What it
@@ -164,31 +161,29 @@ that genuinely authored a sheet is correct regardless of which workspace the ref
 sits in — the backfill's corroboration check is about attributing ownership, while this is about what
 a caller is allowed to be told.
 
-Step 2 must not read the ref table unqualified. `sheet_blob_ref` has no workspace column, and
-content-addressed dedup means one blob is shared by every project that authored identical SQL —
-across tenants. Generated boilerplate makes that routine rather than rare: `getCreateDatabaseStatement`
-emits `CREATE DATABASE %s;` for several engines, so a common statement will carry refs from many
-workspaces. Naming an arbitrary one would leak a foreign tenant's project name from a design whose
-purpose is closing cross-tenant leakage.
+**`sheet_blob_ref` is not a fallback for authorship.** An earlier draft resolved a provenance-less
+revision by finding which projects hold a ref for its hash and naming the one candidate in the
+caller's workspace. That is not evidence about *this revision*: a ref proves only that some project
+authored identical content. Content-addressed dedup makes identical content the normal case rather
+than a coincidence — `getCreateDatabaseStatement` emits `CREATE DATABASE %s;` for several engines,
+so exactly-one collisions on boilerplate are plausible rather than contrived, and the answer would
+be a project that had nothing to do with the revision.
 
-```sql
-SELECT r.project
-FROM sheet_blob_ref r
-JOIN project p ON p.resource_id = r.project
-WHERE r.sha256 = ? AND p.workspace = ?
-```
+Naming it would send the user to request access from a project that never authored the statement,
+which is the misattribution this section already rejects for uncorroborated provenance. Applying the
+corroboration standard to provenance and a weaker inference to the ref table would be the same
+inconsistency in a different place.
 
-Ambiguity resolves to unknown rather than to a guess. Two projects in the same workspace holding
-refs for one hash is honest dedup, and neither is more the author than the other.
+So there is no ref-table fallback. A revision names an owner when its own provenance corroborates
+one, and reports unknown otherwise.
 
 A purged authoring project resolves to unknown, not to a name. `DeleteProject` hard-deletes the
 `release`, `task` and `plan` rows along with the project, so provenance naming it can no longer
-corroborate, and `sheet_blob_ref WHERE project = A` is deleted too, so step 2 finds nothing either.
-That is the correct outcome rather than a gap: the statement is permanently unavailable, there is
-nobody left to ask, and the only thing withheld beyond the content is an ID that can no longer be
-verified against any workspace.
+corroborate. That is the correct outcome rather than a gap: the statement is permanently
+unavailable, there is nobody left to ask, and the only thing withheld beyond the content is an ID
+that can no longer be verified against any workspace.
 
-Step 1 is attribution only and never implies access. A purged project holds no refs and cannot be
+Provenance resolution is attribution only and never implies access. A purged project holds no refs and cannot be
 granted any, since `sheet_blob_ref.project` has a live foreign key, and the backfill skips
 uncorroborated provenance for the same reason.
 
@@ -236,7 +231,7 @@ corruption outweighs the modelling improvement.
 ## Implementation
 
 - A field on the revision response carrying the withheld-content reason and the owning project,
-  populated by the resolution order above — provenance first, `sheet_blob_ref` second, unknown last.
+  populated by the resolution above — corroborated provenance, else unknown.
 - `convertToRevision` formats `Revision.sheet` from the resolved owner rather than from
   `database.ProjectID` (`backend/api/v1/revision_service.go:304`), and emits no sheet name when the
   owner does not resolve. Leaving it built from the current project would keep exactly the false
@@ -266,8 +261,9 @@ Tests:
   is complete under B while the statement is withheld with A named. Archiving a *project* instance is
   the wrong path — `backend/store/instance.go:434` rejects it — so a test written that way would pass
   vacuously without exercising any transfer.
-- A revision carrying neither `release` nor `taskRun` falls through to `sheet_blob_ref`, and to
-  unknown when that is empty too.
+- A revision carrying neither `release` nor `taskRun` reports unknown, even when exactly one project
+  in the caller's workspace holds a ref for that hash — that ref proves identical content, not
+  authorship.
 - Cross-tenant leak guard, both paths: (a) seed identical SQL in two workspaces so one blob carries
   refs from both, then request a withheld statement from one and assert the response never names the
   other workspace's project; (b) seed a revision whose `release` provenance names a project in
@@ -275,8 +271,6 @@ Tests:
   echoing it; (c) seed a revision naming a real project in the caller's *own* workspace that never
   authored the sheet, and assert the response reports unknown rather than misattributing it. Generated `CREATE DATABASE` boilerplate makes this collision realistic, so it
   is a regression test rather than a contrived one.
-- Ambiguity: two projects in the caller's own workspace holding refs for one hash resolves to
-  unknown, not to whichever row comes back first.
 - Sheet name: after a transfer, `Revision.sheet` names the resolved owner and resolves to that
   project's readable sheet for a caller who holds rights there; when the owner is unknown, no sheet
   name is emitted rather than one pointing at the current project.
