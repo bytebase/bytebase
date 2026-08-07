@@ -117,17 +117,16 @@ CREATE INDEX idx_sheet_blob_ref_sha256 ON sheet_blob_ref(sha256);
 so project IDs are one global namespace across every workspace, and a project resolves to exactly
 one workspace through `project.workspace`.
 
-The gate and `HasSheets` both query `WHERE project = ? AND sha256 IN (…)`, which the
-project-leading primary key serves directly. The secondary index exists for the two paths that
-start from a hash with no project in hand: the owner lookup for a withheld statement
-([naming the owner](sheet-history-on-database-transfer.md#naming-the-owner)) and the zero-ref
-verification query in [Rollout](#rollout). PostgreSQL can only full-scan a `(project, sha256)` btree
-for a `sha256`-only predicate, so both would degrade as the table grows.
+The gate, `HasSheets` and the source-level missing-ref audit all query
+`WHERE project = ? AND sha256 …`, which the project-leading primary key serves directly. The
+secondary index exists for the one query that starts from a hash with no project in hand: the
+zero-ref verification in [Rollout](#rollout), which PostgreSQL can only satisfy by full-scanning a
+`(project, sha256)` btree. That is an operator query rather than a hot path, but it runs over the
+whole table and a future `sheet_blob` GC would need the same access shape.
 
-Those hash-first queries are a deliberate exception to the composite-PK predicate rule in
-`AGENTS.md`: their whole purpose is to discover *which* project holds a hash, so the scope column
-cannot be supplied. They are made safe by joining through `project` and constraining to the caller's
-workspace instead — never by omitting scope entirely.
+That query is a deliberate exception to the composite-PK predicate rule in `AGENTS.md`: it asks
+which blobs have no ref at all, so there is no scope column to supply. It is an offline audit, not a
+request-path read, which is what makes the exception acceptable — no request-path query omits scope.
 
 Migration slot `backend/migrator/migration/3.22/0005##scope_sheet_blob.sql`; `TestLatestVersion` in
 `backend/migrator/migrator_test.go` needs updating, and `LATEST.sql` mirrored.
@@ -413,8 +412,22 @@ after enforcement, still have A's SQL parsed and summarized by plan checks or ex
 database of their own — through the front door, with the gate untouched. Plan-check advices quote
 object names and statement fragments, so this is a disclosure path as well as an execution one.
 
-Each of the three revalidates the plan's sheets against the plan's project, using the same scoped
-`HasSheets` as `CreatePlan`, and is shadow-gated on the same switch as everything else. Shadow mode
+Each of the three revalidates the plan's sheets against the plan's project, and is shadow-gated on
+the same switch as everything else.
+
+**Revalidation must expand releases; reusing `CreatePlan`'s check is not enough.** `validateSpecs`
+collects only the direct `ChangeDatabaseConfig.Sheet` hashes into `HasSheets`, and for a release it
+verifies the project matches and the row exists — it never touches `release.Payload.Files[]`
+(`backend/api/v1/plan_service.go:755-774`). The release runners then read every file's hash by bare
+`GetSheetFull` (`backend/runner/taskrun/database_migrate_executor.go:543`, `:654`). So a release in
+project B whose files reference project A's hash — creatable today, since
+`validateAndSanitizeReleaseFiles` discards the project and `HasSheets` is deployment-wide — passes a
+`CreatePlan`-shaped check with nothing to test, and the runner still executes A's SQL.
+
+Revalidation therefore expands each referenced release and checks every `files[].sheetSha256`
+against the plan's project, not just the spec's direct sheet. `validateSpecs` gains the same
+expansion so the two agree: new releases cannot carry foreign hashes once `CreateRelease` uses
+scoped `HasSheets`, but plans may reference releases created before that. Shadow mode
 matters here more than elsewhere: these are *stored* objects, so a miss identifies a plan that will
 stop working at enforcement, and the operator needs that list while content is still being served.
 
@@ -650,7 +663,9 @@ No schema needed; worth landing separately and first.
   gate.
 - **Stored-plan revalidation** — create a plan in project B referencing project A's hash while
   `HasSheets` is unscoped, then enforce, then assert each of `CreateRollout`, `RunPlanChecks` and
-  `BatchRunTasks` refuses it. Without this the runner exemption is a bypass: the runners read by bare
+  `BatchRunTasks` refuses it. Run it twice: once with the hash on the spec directly, and once with
+  the hash inside a referenced release's `files[]`, which is the shape a `CreatePlan`-style check
+  does not look at. Without this the runner exemption is a bypass: the runners read by bare
   hash, so anything these three admit is executed or summarized outside the gate.
 - **Query count** — a release with many files must issue a bounded number of queries. A correctness
   test passes just as happily against an N+1.
