@@ -227,8 +227,11 @@ corruption outweighs the modelling improvement.
   — and distinguishing a live owning project from a purged one.
 - A UI affordance for the withheld state that names the owning project rather than rendering an
   error, and says the project no longer exists when that is the case.
-- No changes to `UpdateDatabase`, `BatchUpdateDatabases`, `updateInstanceLifecycle`, or
-  `DeleteProject`.
+- No *carry* logic in `UpdateDatabase`, `BatchUpdateDatabases`, `updateInstanceLifecycle`, or
+  `DeleteProject` — nothing moves refs between projects. `DeleteProject` still needs its
+  `DELETE FROM sheet_blob_ref WHERE project = ?` from the scoping doc: `sheet_blob_ref(project)` has
+  a plain foreign key with no `ON DELETE CASCADE`, so purging a project that owns refs fails without
+  it. "No changes" here means no transfer behavior, not no purge cleanup.
 
 Tests:
 
