@@ -302,6 +302,13 @@ separate operations. The runners are why that distinction is real rather than co
 not making an access decision. Threading a project through it to satisfy a signature would be
 authorization theater.
 
+**That exemption is conditional, and the condition is not free.** It holds only if the stored plan
+was authorized against the same rule the gate enforces. Plans created before enforcement were not:
+`HasSheets` was deployment-wide, so a plan in project B can reference a hash owned by project A, and
+`validateSpecs` runs only at `CreatePlan` (`backend/api/v1/plan_service.go:196`) and `UpdatePlan`
+(`:325`) — never again. Every path that turns stored plan state into runner work therefore
+revalidates; see [Revalidating stored plans](#revalidating-stored-plans).
+
 Every primitive is set-shaped (R5).
 
 ```go
@@ -385,6 +392,35 @@ Three of these call sites also need reshaping for batching, which is a separate 
 per-file scope check would double. `rollout_service_task.go:214` fetches a loop-invariant hash once
 per target database, masked today only by the LRU. `plan_service.go:746` is already correct and
 worth copying: it collects across every spec and makes one call.
+
+### Revalidating stored plans
+
+The runner exemption assumes creation-time authorization. Historical data does not satisfy it, so
+the assumption has to be re-established at the point a user asks to act on a stored plan rather than
+assumed from the fact that the plan exists.
+
+Three API entry points materialize stored plan state into runner work, and none of them re-runs
+`validateSpecs`:
+
+| Entry point | Location | Produces |
+|---|---|---|
+| `CreateRollout` | `backend/api/v1/rollout_service.go:238` | tasks, via `GetPipelineCreate` from the stored specs |
+| `RunPlanChecks` | `backend/api/v1/plan_service.go:442` | plan check runs, which read the sheet at `backend/runner/plancheck/derive.go:49` |
+| `BatchRunTasks` | `backend/api/v1/rollout_service.go:746` | task runs — this is where the SQL actually executes |
+
+Without revalidation, a project-B user can take an old plan that references project A's hash and,
+after enforcement, still have A's SQL parsed and summarized by plan checks or executed against a
+database of their own — through the front door, with the gate untouched. Plan-check advices quote
+object names and statement fragments, so this is a disclosure path as well as an execution one.
+
+Each of the three revalidates the plan's sheets against the plan's project, using the same scoped
+`HasSheets` as `CreatePlan`, and is shadow-gated on the same switch as everything else. Shadow mode
+matters here more than elsewhere: these are *stored* objects, so a miss identifies a plan that will
+stop working at enforcement, and the operator needs that list while content is still being served.
+
+`BatchRunTasks` is the one to get right even though it never mentions sheets — it resolves a project
+and creates task runs from tasks whose payloads already carry the hash, so it is the last gate
+before execution and the easiest to overlook.
 
 ### Project purge
 
@@ -612,6 +648,10 @@ No schema needed; worth landing separately and first.
   cache read.
 - **Gate confinement** — nothing under `backend/api/v1/` calls a store content getter outside the
   gate.
+- **Stored-plan revalidation** — create a plan in project B referencing project A's hash while
+  `HasSheets` is unscoped, then enforce, then assert each of `CreateRollout`, `RunPlanChecks` and
+  `BatchRunTasks` refuses it. Without this the runner exemption is a bypass: the runners read by bare
+  hash, so anything these three admit is executed or summarized outside the gate.
 - **Query count** — a release with many files must issue a bounded number of queries. A correctness
   test passes just as happily against an N+1.
 - **Backfill** — exercise all five sources; every referenced hash resolves under its project and no
