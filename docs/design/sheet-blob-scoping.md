@@ -2,6 +2,14 @@
 
 Fixes T5 in `docs/design/v1-api-audit-2026-08.md`.
 
+**In short.** Sheet content is fetched by SHA256 with no scope predicate, so anyone holding
+`bb.sheets.get` on any one project can read any sheet in the deployment — across projects and
+across tenants — if they know the hash. The fix adds a `sheet_blob_ref(project, sha256)` edge
+table, keeps enforcement at the API layer behind a single batched gate, and backfills ownership
+from existing references. The two things most likely to go wrong are backfill completeness
+(a missed source is a silent NotFound in production) and the fact that a backfilled reference
+records what a project *touched*, not what it was *entitled* to. Both have explicit sections.
+
 ## Problem
 
 `sheet_blob` is `(sha256 PRIMARY KEY, content)` — no project column, no workspace column.
@@ -52,7 +60,9 @@ projects may read a given hash. Two projects that independently author identical
 blob and hold one ref row each. Dedup survives; "who can read this hash" becomes an explicit
 stored fact rather than an implicit one.
 
-### Schema
+## Schema and migration
+
+### Table
 
 `backend/migrator/migration/3.22/0005##scope_sheet_blob.sql` (current head is 3.22.4;
 `TestLatestVersion` in `backend/migrator/migrator_test.go` needs updating).
@@ -80,6 +90,11 @@ DELETE FROM sheet_blob_ref WHERE project = ?
 to that sequence at the position established under transaction lock ordering below — after the
 `db` delete (`:704`) and before `project_webhook` (`:739`). Without it, purging any project fails
 on the foreign key, a hard breakage of a shipped path.
+
+This delete is not sufficient on its own. Purge also reassigns workspace-instance databases to
+the default project, and their revisions survive with their hashes, so the refs must be carried
+to the destination *before* this delete runs or that history becomes unreadable. See "Purge is
+the ordering trap" under database project reassignment.
 
 Blobs whose only ref belonged to the purged project are left behind with zero refs. That is
 consistent with today's behavior (nothing has ever deleted from `sheet_blob`) and is the state
@@ -177,6 +192,8 @@ One timing note: this design is public on the PR, including the rule that a refe
 ownership edge. Between publication and the migration there is a window in which references could
 be planted deliberately. Capture the multi-project list at a known-good point rather than only
 after upgrade.
+
+## Store and API surface
 
 ### Store API
 
@@ -331,53 +348,47 @@ Three existing call patterns need reshaping to feed it:
   across every spec and makes one `HasSheets` call.
 
 The write paths are already set-shaped and stay that way: `CreateSheets` uses array `unnest` for
-both inserts, the backfill is `INSERT ... SELECT`, and the transfer handler below is a single
+both inserts, the backfill is `INSERT ... SELECT`, and the reassignment helper below is a single
 `INSERT ... SELECT` rather than a per-revision loop.
 
-## Rollout safety
+## Database project reassignment
 
-This is a read-path change to a shipped multi-tenant product whose correctness rests entirely
-on backfill completeness, and completeness cannot be established by construction. A missed
-source means sheets silently return NotFound in production with no signal.
+The case where a hash legitimately needs to become readable under a second project — and the
+easiest part of this design to get wrong, because it happens in more places than it looks.
 
-Treat that as a live risk rather than a hypothetical: the first draft of the source table above
-listed seven sources, two of which do not exist. The list is now verified, but the failure mode
-it illustrates is the one to design against.
+`revision` has no project column: it keys on `(instance, db_name)` and inherits its project
+through `db`. So whenever a database's `project` changes, its revision history silently changes
+project too, and `convertToRevision` then formats the sheet name with the *new* project
+(`backend/api/v1/revision_service.go:304`). Under a strict check, reads that worked before the
+move start returning NotFound.
 
-**Ship the gate in shadow mode.** It evaluates the ref check and logs a miss — project, hash,
-call site — but still returns the content. Run it for a full release. Flip to denying only once
-the log is clean.
+Revisions are the only row type affected. `changelog` also keys on `(instance, db_name)` but
+carries no sheet reference at all, so it moves without implicating any hash.
 
-**Verify the backfill before that.** After the migration, for each of the five sources, compare
-the count of distinct `(project, sha256)` pairs derivable from it against the ref rows present,
-and count blobs with zero refs:
+### The invariant
 
-```sql
-SELECT count(*) FROM sheet_blob b
-WHERE NOT EXISTS (SELECT 1 FROM sheet_blob_ref r WHERE r.sha256 = b.sha256);
-```
+**Whenever a database's project changes, carry its revision sheet refs to the destination project
+in the same transaction, before the change commits.**
 
-A non-zero result is expected — it is the orphan-draft population noted under the backfill — but
-it should be small and should not grow once the shadow period begins. A large number means a
-source was missed.
+State it as an invariant rather than patching call sites, because there are four of them and a
+fifth is easy to add later without noticing:
 
-## Database project transfer
+| Path | Location | What moves |
+|---|---|---|
+| `UpdateDatabase` | `backend/store/database.go:332-380` | one database |
+| `BatchUpdateDatabases` | `backend/store/database.go:397-560` | a batch of databases |
+| `updateInstanceLifecycle` | `backend/store/instance.go:438-455` | every database of an instance, when a project instance is archived |
+| `DeleteProject` | `backend/store/project.go:722-729` | workspace-instance databases, reassigned to the default project |
 
-The one case where a hash legitimately needs to become readable under a second project.
+Only the second is an explicit user-facing "transfer". The other three are consequences of other
+operations, which is precisely why enumerating them matters — an earlier draft of this section
+covered `BatchUpdateDatabases` alone and would have broken revision history on the other three.
 
-`revision` has no project column — it keys on `(instance, db_name)` and inherits its project
-through `db`. When `BatchUpdateDatabases` sets `project = ?` (`backend/store/database.go:403`),
-a database's revision history follows it, and `convertToRevision` then formats the sheet name
-with the *new* project (`backend/api/v1/revision_service.go:304`). Under a strict check those
-reads would start returning NotFound for history that was readable before the transfer.
+### One helper, four callers
 
-Revisions are the only case. `changelog` also keys on `(instance, db_name)`, but carries no
-sheet reference at all, so it moves without implicating any hash.
-
-Handle it in the transfer path: when a database changes project, insert ref rows for the
-destination project covering every hash in that database's revisions, inside the transaction
-that already locks the project (`backend/store/database.go:512`). One statement, not a loop over
-revisions, and it stays one statement for a batch transfer of many databases:
+Extract a single store-internal helper — `carryRevisionSheetRefs(ctx, tx, destProject, databases)`
+— and call it from all four. One statement, no loop over revisions, and it stays one statement
+for a batch:
 
 ```sql
 INSERT INTO sheet_blob_ref (project, sha256)
@@ -393,11 +404,48 @@ ON CONFLICT DO NOTHING
 ```
 
 The `EXISTS` guard is the same one the backfill uses, and it matters more here. A revision naming
-a hash with no blob would otherwise violate the new foreign key and abort the whole
-`BatchUpdateDatabases` call — turning a scoping change into a regression on database transfer,
-a path that reads no sheet blobs today and has no reason to start failing.
+a hash with no blob would otherwise violate the new foreign key and abort the entire enclosing
+operation — turning a scoping change into a regression on database transfer, instance archive,
+and project purge, none of which read sheet blobs today or have any reason to start failing.
 
 Ref rows for the source project stay — the content was genuinely authored there.
+
+### Purge is the ordering trap
+
+`DeleteProject` both reassigns databases *and* deletes the purged project's refs, so the two
+steps interact. The reassignment (`project.go:722-729`) moves only workspace-instance databases
+to the default project; project-instance databases were already deleted with their instance, and
+the `revision` delete at `:702` only covers project instances — so revisions on workspace
+instances survive the purge with their hashes intact.
+
+If the ref delete runs first, those surviving revisions lose their only ref and never gain a
+replacement: listing revision history for a database that outlived its project returns NotFound
+for sheets that read fine a moment earlier. **Carry the refs, then delete.**
+
+Fusing the two into one statement removes the chance of the predicates drifting apart:
+
+```sql
+WITH moved AS (
+  UPDATE db SET project = ?
+  FROM instance
+  WHERE db.instance = instance.resource_id
+    AND db.project = ?
+    AND instance.project IS NULL
+  RETURNING db.instance, db.name
+)
+INSERT INTO sheet_blob_ref (project, sha256)
+SELECT ?, decode(r.payload->>'sheetSha256', 'hex')
+FROM revision r
+JOIN moved m ON m.instance = r.instance AND m.name = r.db_name
+WHERE r.payload->>'sheetSha256' IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM sheet_blob b
+    WHERE b.sha256 = decode(r.payload->>'sheetSha256', 'hex')
+  )
+ON CONFLICT DO NOTHING;
+```
+
+Then `DELETE FROM sheet_blob_ref WHERE project = ?` for the purged project.
 
 This keeps the resource name honest rather than weakening the predicate to match the looser
 behavior.
@@ -438,27 +486,68 @@ the insert would surface as a raw foreign-key violation rather than a controlled
 `CreateSheets` takes the same transaction-scoped purge fence before any row lock that database
 creation, batch database updates, and task-run creation already take.
 
-The transfer path needs nothing extra here: `BatchUpdateDatabases` already locks every involved
-project `FOR UPDATE` (`backend/store/database.go:509-517`) and fails NotFound on a missing one.
+There is a precedent to mirror rather than invent: `withDatabasePurgeFence`
+(`backend/store/database.go:798-820`) is exactly this pattern for database writers — it resolves
+ownership, locks every project fence `FOR UPDATE`, and only then runs the write.
 
-### Ordering of the two paths
+The reassignment paths need nothing extra, because all four already hold that lock before any ref
+insert would run:
+
+| Path | Project lock |
+|---|---|
+| `UpdateDatabase` | `withDatabasePurgeFence` (`database.go:808-816`) |
+| `BatchUpdateDatabases` | `database.go:509-517` |
+| `updateInstanceLifecycle` | `instance.go:444-451` |
+| `DeleteProject` | the purge transaction itself |
+
+Each fails NotFound on a missing project, so the controlled outcome is already in place.
+
+### Ordering of the write paths
 
 - **`CreateSheets`** spans `sheet_blob` and `sheet_blob_ref`. Insert the blob first, then the
   ref: the ref's foreign key requires the blob to exist, so the order is forced. Both are
   `ON CONFLICT DO NOTHING` — new-row-only inserts, not upserts that can update an existing row,
   so the README's rule 4 upsert clause does not apply to them. The foreign-key checks on
   `project` and `sheet_blob` do count as locks and are covered by the purge fence above.
-- **The transfer path** inserts refs inside the existing `BatchUpdateDatabases` transaction,
-  which has already taken `FOR UPDATE` on every involved project. Note this is *not* an instance
-  of the child-to-parent rule — that rule governs locking **existing** rows, and these refs are
-  new rows with nothing to lock beforehand. The insert is safe here because the transaction
-  already holds a stronger lock on the parent than the foreign-key check needs, not because
-  parent-then-child is the required order. It is not; an earlier draft of this doc claimed
-  otherwise.
+- **The reassignment paths** insert refs inside a transaction that has already taken
+  `FOR UPDATE` on every involved project. Note this is *not* an instance of the child-to-parent
+  rule — that rule governs locking **existing** rows, and these refs are new rows with nothing to
+  lock beforehand. The insert is safe because the transaction already holds a stronger lock on the
+  parent than the foreign-key check needs, not because parent-then-child is the required order. It
+  is not; an earlier draft of this doc claimed otherwise.
 
 Both need the deterministic real-PostgreSQL regression tests that section mandates, asserting
 terminal outcomes in both lock-acquisition directions rather than merely the absence of
 SQLSTATE `40P01`, and covering the create-versus-purge race named above.
+
+## Rollout safety
+
+This is a read-path change to a shipped multi-tenant product whose correctness rests entirely on
+backfill completeness, and completeness cannot be established by construction. A missed source
+means sheets silently return NotFound in production with no signal.
+
+Treat that as a live risk rather than a hypothetical. Two drafts of this document got the source
+list wrong — the first invented two sources that do not exist, the second named the wrong column
+and nesting for `plan_check_run` — and a draft of the reassignment section covered one of its
+four paths. Each would have shipped as silent NotFounds. The list is now verified; the failure
+mode it illustrates is the one to design against.
+
+**Ship the gate in shadow mode.** It evaluates the ref check and logs a miss — project, hash,
+call site — but still returns the content. Run it for a full release. Flip to denying only once
+the log is clean.
+
+**Verify the backfill before that.** After the migration, for each of the five sources, compare
+the count of distinct `(project, sha256)` pairs derivable from it against the ref rows present,
+and count blobs with zero refs:
+
+```sql
+SELECT count(*) FROM sheet_blob b
+WHERE NOT EXISTS (SELECT 1 FROM sheet_blob_ref r WHERE r.sha256 = b.sha256);
+```
+
+A non-zero result is expected — it is the orphan-draft population noted under the backfill — but
+it should be small and should not grow once the shadow period begins. A large number means a
+source was missed.
 
 ## Independent fixes, no schema needed
 
@@ -502,9 +591,18 @@ These are worth landing separately and first — none needs a migration.
   does.
 - **Project purge** — purge a project that owns sheet refs and assert it succeeds. This is the
   direct regression test for the new foreign key.
-- **Transfer** — create a revision under project A, move the database to project B, assert the
-  statement is still readable under B. Add a variant where a revision names a hash with no blob
-  and assert the transfer still succeeds, covering the `EXISTS` guard.
+- **Reassignment, one case per path** — the invariant has four callers and each needs its own
+  test, since the failure is silent and only shows up on a later read:
+  - `UpdateDatabase` and `BatchUpdateDatabases` — create a revision under project A, move the
+    database to project B, assert the statement is still readable under B.
+  - `updateInstanceLifecycle` — archive a project instance with a destination project, assert
+    revision history stays readable under the destination.
+  - `DeleteProject` — put a database on a *workspace* instance in project A, create a revision,
+    purge project A, then assert the statement is still readable under the default project the
+    database was reassigned to. This is the ordering trap: it passes if refs are carried before
+    the source delete and fails if they are not.
+- **Blobless revision** — a revision naming a hash with no blob must not abort any of the four
+  reassignment paths, covering the `EXISTS` guard.
 - **Create versus purge** — the deterministic race required by the lifecycle policy: a
   `CreateSheets` concurrent with a purge of its project must end in a controlled NotFound, not a
   foreign-key error, in both lock-acquisition directions.
@@ -516,7 +614,7 @@ These are worth landing separately and first — none needs a migration.
   Note that the shared `setupCollidingProjects` fixture and `assertProjectUnchanged` helper do
   not currently cover sheets — extend them first rather than writing a table-specific variant.
 - **Lock ordering** — the deterministic real-PostgreSQL tests required by the section above, for
-  `CreateSheets` and for the transfer path.
+  `CreateSheets` and for the reassignment paths.
 
 ## Order
 
@@ -525,6 +623,6 @@ These are worth landing separately and first — none needs a migration.
 3. Run the multi-project audit query and review its output. This is a gate, not a report: a long
    list means cross-project references are already widespread and the plan needs revisiting
    before enforcement, since the backfill would otherwise make them permanent.
-4. Store API split, gate helper, call sites, transfer handling, tests — gate shipping in shadow
-   mode.
+4. Store API split, gate helper, call sites, the reassignment helper and all four of its callers,
+   tests — gate shipping in shadow mode.
 5. Flip the gate to denying, one release later, once the shadow log is clean.
