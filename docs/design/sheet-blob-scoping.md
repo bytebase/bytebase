@@ -146,9 +146,33 @@ Derive the authoring project from the revision's own provenance instead. `Revisi
 name. Parse it out, preferring `release` and falling back to `taskRun`; `backend/store/changelog.go:163-168`
 already does exactly this with `regexp_match(payload->>'taskRun', 'projects/([^/]+)/')`.
 
-Both fields are optional, so a revision created with neither has no recoverable provenance. For
-those, fall back to `db.project` — correct for every database that never moved, which is the common
-case — and add them to the review list in [Rollout](#rollout) rather than trusting them silently.
+The disposition is three-way, not a fallback chain, and conflating the middle case with the last one
+is the trap:
+
+| Provenance | Action |
+|---|---|
+| Names a project that still exists | Insert `(that project, sha)` |
+| Names a project that has been purged | **Insert nothing.** The string stays for attribution |
+| Absent — both fields empty | Fall back to `db.project`, and add to the review list |
+
+**Purged provenance must not fall through to `db.project`.** `revision` is the only source that
+survives a purge of its authoring project: `plan`, `task`, `release` and `plan_check_run` rows are
+all deleted with the project (`backend/store/project.go:578`, `:641`, `:651`, `:671`), but a
+workspace-instance database is reassigned to the default project and keeps its revisions, whose
+`release` and `taskRun` strings still name the deleted project. Inserting that ref would violate
+`sheet_blob_ref`'s foreign key and abort the migration; joining only to live projects and then
+falling back would hand the default project SQL the purged project authored — the grant this design
+refuses. Guard the provenance branch with `EXISTS (SELECT 1 FROM project …)` and let those rows
+produce no ref at all.
+
+Their content then becomes unreadable, which is the intended outcome: the authoring project is gone,
+so there is nobody left to ask. The immutable `release`/`taskRun` string still identifies it, so the
+withheld-statement response can name it as purged — see
+[naming the owner](sheet-history-on-database-transfer.md#naming-the-owner).
+
+A revision with no provenance at all falls back to `db.project`, correct for every database that
+never moved, which is the common case. Those rows go on the review list in [Rollout](#rollout)
+rather than being trusted silently.
 
 Two tables that look like sources are not. `ChangelogPayload` carries only `task_run` and
 `git_commit`, and the v1 `Changelog` message exposes no statement or sheet field. `issue_comment`
