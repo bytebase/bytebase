@@ -124,6 +124,12 @@ the default project and keeps its revisions. Relying on the ref table alone woul
 revisions with no owner to name at exactly the moment a user most needs to know where the SQL came
 from. Parsing the revision's own `release` or `taskRun` still yields A.
 
+Step 1 is therefore attribution only — it never implies access. A purged project holds no refs and
+cannot be granted any, since `sheet_blob_ref.project` has a live foreign key; the backfill skips
+provenance naming a project that no longer exists for the same reason. So a revision whose authoring
+project was purged names A and withholds the statement permanently, which is correct: there is
+nobody left to ask.
+
 The response should distinguish the two outcomes rather than flattening them: a live project the
 caller can ask, versus an authoring project that no longer exists and whose content is now
 unreadable by anyone. The second is a permanent consequence of purging a project, consistent with
