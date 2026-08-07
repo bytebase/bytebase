@@ -114,9 +114,27 @@ resource name; `backend/store/changelog.go:163-168` already parses a project out
 
 1. The revision's `release`, else its `taskRun` — the authoring project, and correct even after the
    database has moved or the project has been purged, because the string is immutable.
-2. `sheet_blob_ref` — which projects currently hold a ref for that hash. Useful when the revision
-   carries no provenance, both fields being optional.
-3. Neither — report that the authoring project is unknown.
+2. `sheet_blob_ref` — which projects currently hold a ref for that hash, **joined through `project`
+   and constrained to the caller's workspace**, and only when that leaves exactly one candidate.
+   Useful when the revision carries no provenance, both fields being optional.
+3. Neither, or more than one candidate — report that the authoring project is unknown.
+
+Step 2 must not read the ref table unqualified. `sheet_blob_ref` has no workspace column, and
+content-addressed dedup means one blob is shared by every project that authored identical SQL —
+across tenants. Generated boilerplate makes that routine rather than rare: `getCreateDatabaseStatement`
+emits `CREATE DATABASE %s;` for several engines, so a common statement will carry refs from many
+workspaces. Naming an arbitrary one would leak a foreign tenant's project name from a design whose
+purpose is closing cross-tenant leakage.
+
+```sql
+SELECT r.project
+FROM sheet_blob_ref r
+JOIN project p ON p.resource_id = r.project
+WHERE r.sha256 = ? AND p.workspace = ?
+```
+
+Ambiguity resolves to unknown rather than to a guess. Two projects in the same workspace holding
+refs for one hash is honest dedup, and neither is more the author than the other.
 
 Purge is why step 1 has to come first. `DeleteProject` removes `sheet_blob_ref WHERE project = A`
 before deleting project A, while a workspace-instance database that belonged to A is reassigned to
@@ -192,6 +210,12 @@ Tests:
   been deleted, so it exercises the provenance path specifically.
 - A revision carrying neither `release` nor `taskRun` falls through to `sheet_blob_ref`, and to
   unknown when that is empty too.
+- Cross-tenant leak guard: seed identical SQL in two workspaces so one blob carries refs from both,
+  then request a withheld statement from one of them and assert the response never names the other
+  workspace's project. Generated `CREATE DATABASE` boilerplate makes this collision realistic, so it
+  is a regression test rather than a contrived one.
+- Ambiguity: two projects in the caller's own workspace holding refs for one hash resolves to
+  unknown, not to whichever row comes back first.
 
 ## Open items
 

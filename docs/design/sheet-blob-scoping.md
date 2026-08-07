@@ -109,7 +109,25 @@ CREATE TABLE sheet_blob_ref (
     sha256  bytea NOT NULL REFERENCES sheet_blob(sha256),
     PRIMARY KEY (project, sha256)
 );
+
+CREATE INDEX idx_sheet_blob_ref_sha256 ON sheet_blob_ref(sha256);
 ```
+
+`project` alone is a sufficient scope column: `project.resource_id` is a single-column primary key,
+so project IDs are one global namespace across every workspace, and a project resolves to exactly
+one workspace through `project.workspace`.
+
+The gate and `HasSheets` both query `WHERE project = ? AND sha256 IN (…)`, which the
+project-leading primary key serves directly. The secondary index exists for the two paths that
+start from a hash with no project in hand: the owner lookup for a withheld statement
+([naming the owner](sheet-history-on-database-transfer.md#naming-the-owner)) and the zero-ref
+verification query in [Rollout](#rollout). PostgreSQL can only full-scan a `(project, sha256)` btree
+for a `sha256`-only predicate, so both would degrade as the table grows.
+
+Those hash-first queries are a deliberate exception to the composite-PK predicate rule in
+`AGENTS.md`: their whole purpose is to discover *which* project holds a hash, so the scope column
+cannot be supplied. They are made safe by joining through `project` and constraining to the caller's
+workspace instead — never by omitting scope entirely.
 
 Migration slot `backend/migrator/migration/3.22/0005##scope_sheet_blob.sql`; `TestLatestVersion` in
 `backend/migrator/migrator_test.go` needs updating, and `LATEST.sql` mirrored.
