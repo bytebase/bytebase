@@ -201,10 +201,27 @@ hard-deletes it along with `plan`, `task` and `plan_check_run`
 workspace-instance database is reassigned to the default project and keeps its revisions, whose
 `release` and `taskRun` strings still name the deleted project.
 
-Residual risk: a reused project ID whose new releases happen to collide with the old release or task
-IDs would still corroborate. Release IDs are deterministic (`train` plus iteration) and task IDs
-restart per project, so this is possible rather than impossible. It is not detectable from the data,
-so it goes on the review list rather than being silently trusted.
+**Match the whole reference, and require it to predate the revision.** Row identity alone is not
+enough, because every ID in these names restarts per project. `task_run` is
+`PRIMARY KEY (project, id)` and `task` is `(project, id)`, so a reused project ID whose first
+rollout allocates low IDs reproduces exactly the IDs an old revision names — and the first rollout
+in a fresh project is precisely when those low IDs get allocated. Checking only the `task` row from
+a `taskRun` name is the weakest version of this and would pass routinely.
+
+Two constraints together close it:
+
+- **Full chain.** For `taskRun`, match the `task_run` row on `(project, id)` *and* require its
+  `task_id` to equal the task ID in the name. For `release`, match `(project, release_id)`.
+- **Temporal.** Require the corroborating row's `created_at` to be no later than the revision's.
+  A revision is written after the task run it records completes, so a genuine reference always
+  predates it, whereas a row that reused the ID after a purge is necessarily newer — the purge, the
+  new project, and its rollout all happen after the old revision was written. `task_run`, `release`
+  and `revision` all carry `created_at`, and `DEFAULT now()` means it cannot be backdated.
+
+The temporal test is what actually defeats ID reuse; the full chain narrows the window it has to
+cover. Residual risk after both is limited to clock anomalies rather than ordinary ID collision, and
+uncorroborated rows fail closed to no ref, so the failure mode is an unreadable statement rather than
+a wrong grant.
 
 Their content then becomes unreadable, which is the intended outcome: the authoring project is gone,
 so there is nobody left to ask. The immutable `release`/`taskRun` string still identifies it, so the
@@ -425,13 +442,16 @@ WHERE r.payload->>'sheetSha256' IS NOT NULL
   AND NOT EXISTS (
     -- the corroboration test from the backfill, repeated verbatim
     SELECT 1 FROM release rel
-    WHERE rel.project = (regexp_match(r.payload->>'release', 'projects/([^/]+)/'))[1]
+    WHERE rel.project    = (regexp_match(r.payload->>'release', 'projects/([^/]+)/'))[1]
       AND rel.release_id = (regexp_match(r.payload->>'release', 'releases/([^/]+)'))[1]
+      AND rel.created_at <= r.created_at
   )
   AND NOT EXISTS (
-    SELECT 1 FROM task t
-    WHERE t.project = (regexp_match(r.payload->>'taskRun', 'projects/([^/]+)/'))[1]
-      AND t.id = (regexp_match(r.payload->>'taskRun', 'tasks/(\d+)/'))[1]::int
+    SELECT 1 FROM task_run tr
+    WHERE tr.project    = (regexp_match(r.payload->>'taskRun', 'projects/([^/]+)/'))[1]
+      AND tr.id         = (regexp_match(r.payload->>'taskRun', 'taskRuns/(\d+)$'))[1]::bigint
+      AND tr.task_id    = (regexp_match(r.payload->>'taskRun', 'tasks/(\d+)/'))[1]::int
+      AND tr.created_at <= r.created_at
   );
 ```
 
