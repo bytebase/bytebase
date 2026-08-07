@@ -355,7 +355,25 @@ arrangement a cache hit can skip.
 A test asserts nothing under `backend/api/v1/` calls a store content getter outside the gate.
 Runner and component call sites keep the unscoped getters.
 
-Three existing call patterns need reshaping to feed it. `validateAndSanitizeReleaseFiles`
+**Every v1 call site, enumerated.** `git grep -n 'GetSheetFull\|GetSheetTruncated\|HasSheets' -- backend/api/v1`
+returns exactly these seven on `main`; re-run it before implementing, since a route added since this
+was written would otherwise slip past the gate:
+
+| Call site | Path | Routes to |
+|---|---|---|
+| `sheet_service.go:136,138` | `GetSheet` | gate |
+| `release_service.go:398` | `validateAndSanitizeReleaseFiles`, via `CreateRelease` and `CheckRelease` | gate |
+| `rollout_service.go:1233` | `PreviewTaskRunRollback` | gate |
+| `rollout_service_task.go:463` | `getSheetContentBySha256` | gate |
+| `release_service.go:144` | `CreateRelease` validation | scoped `HasSheets` |
+| `revision_service.go:158` | `BatchCreateRevisions` validation | scoped `HasSheets` |
+| `plan_service.go:746` | `validateSpecs` | scoped `HasSheets` |
+
+`PreviewTaskRunRollback` is the one most easily missed — it is a content read that does not look
+like one, reached through a rollback-preview route rather than through anything named for sheets.
+The confinement test is what keeps this table from going stale.
+
+Three of these call sites also need reshaping for batching, which is a separate concern from routing. `validateAndSanitizeReleaseFiles`
 (`release_service.go:377-413`) fetches once per file inside its loop — a pre-existing N+1 that a
 per-file scope check would double. `rollout_service_task.go:214` fetches a loop-invariant hash once
 per target database, masked today only by the LRU. `plan_service.go:746` is already correct and
@@ -603,7 +621,8 @@ No schema needed; worth landing separately and first.
 3. Run the backfill once the writers are live everywhere, then the verification queries; review the
    multi-project list and the ambiguous-provenance list.
 4. Land the scope checks — the read gate and the scoped validators — both in shadow mode.
-5. Re-run the backfill, then flip to enforcing one release later, once shadow logs are clean.
+5. Review the shadow-miss log and top up refs deliberately; re-run the audits; then flip to
+   enforcing, one release after step 4.
 
 **Writers must precede the backfill, or new sheets fall into the gap.** A one-shot backfill scans
 history; it cannot cover a sheet created after it runs. If the migration ships before `CreateSheets`
@@ -612,7 +631,20 @@ historical source, so it becomes a zero-ref miss and a NotFound at enforcement. 
 widens the same gap even when both ship together, since old replicas keep serving the old
 `CreateSheets` against the new schema until the rollout completes.
 
-The backfill is idempotent (`ON CONFLICT DO NOTHING`), so the safe pattern is to run it after the
-rollout has fully converged and to re-run it immediately before flipping to enforcing. Shadow-mode
-misses are the backstop: anything the backfill missed shows up there as a log line rather than as a
-production NotFound.
+The backfill is idempotent (`ON CONFLICT DO NOTHING`), so run it once the rollout has fully
+converged. Shadow-mode misses are the backstop: anything it missed shows up as a log line rather
+than a production NotFound.
+
+**Do not re-run the backfill blindly before enforcing.** By step 5 the writers have been live for a
+release, so every genuinely new sheet already has a ref from `CreateSheets`. The only rows a second
+backfill would add are references made to *pre-existing* blobs during the shadow window — which is
+exactly the unscoped-reference shape this design exists to close. Shadow-mode `HasSheets` falls back
+to the deployment-wide existence check, so a plan or release written during that window can
+reference a foreign hash and succeed with only a log line; a blind re-run would then mint
+`(that project, sha)`, clean the subsequent shadow logs, and carry an unreviewed grant into
+enforcement.
+
+Instead, close the window deliberately: review the shadow-miss log, grant the entries that are
+legitimate, and re-run the multi-project and ambiguous-provenance audits afterwards so anything
+added since step 3 is seen before the flip. This is the same posture taken for provenance-less
+revisions — an operator confirms, rather than a query inferring.
