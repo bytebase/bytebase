@@ -208,7 +208,7 @@ rollout allocates low IDs reproduces exactly the IDs an old revision names — a
 in a fresh project is precisely when those low IDs get allocated. Checking only the `task` row from
 a `taskRun` name is the weakest version of this and would pass routinely.
 
-Two constraints together close it:
+Three constraints together close it:
 
 - **Full chain.** For `taskRun`, match the `task_run` row on `(project, id)` *and* require its
   `task_id` to equal the task ID in the name. For `release`, match `(project, release_id)`.
@@ -217,11 +217,32 @@ Two constraints together close it:
   predates it, whereas a row that reused the ID after a purge is necessarily newer — the purge, the
   new project, and its rollout all happen after the old revision was written. `task_run`, `release`
   and `revision` all carry `created_at`, and `DEFAULT now()` means it cannot be backdated.
+- **Hash match.** Require the corroborating row to actually reference *this* revision's
+  `sheetSha256`. Identity and age establish that the row is the one the string names; only this
+  establishes that the row has anything to do with the sheet being attributed to it.
 
-The temporal test is what actually defeats ID reuse; the full chain narrows the window it has to
-cover. Residual risk after both is limited to clock anomalies rather than ordinary ID collision, and
-uncorroborated rows fail closed to no ref, so the failure mode is an unreadable statement rather than
-a wrong grant.
+**The hash match is what makes provenance mean something.** Without it, corroboration proves a task
+run exists and is old enough, and nothing more. `createRevisions` validates a `taskRun` thoroughly —
+project, plan, environment and task all have to line up, and `:173` even requires the task run to
+belong to the database's own project — but it never compares the task's sheet to `revision.Sheet`
+(`backend/api/v1/revision_service.go:167-192`), while `HasSheets` at `:158` is still deployment-wide.
+So a revision in project B can name a genuine B task run alongside an unrelated project A hash, and
+a corroboration that only checks identity would insert `(B, shaA)` — a laundered grant, permanent,
+and invisible to shadow mode because the ref exists.
+
+Matching the hash costs one more join and closes it. `task.payload` is a oneof
+(`proto/store/store/task.proto:27-36`), so the task branch has two shapes: `sheetSha256` equal to
+the revision's hash, or `release` naming a release whose `payload.files[]` contains it. The release
+branch is the single-hop form of the same test.
+
+Apply it to the release branch too, even though `createRevisions` already enforces
+`fileSheet == revision.Sheet` there (`:222`). Uniformity is worth more than the saved join: it
+removes any need to reason about which creation-time validation happened to run, on a path where T6
+shows those validations can be steered.
+
+The temporal test defeats ID reuse, the full chain narrows the window it must cover, and the hash
+match defeats laundering. Residual risk after all three is limited to clock anomalies, and
+uncorroborated rows fail closed to no ref — an unreadable statement rather than a wrong grant.
 
 Their content then becomes unreadable, which is the intended outcome: the authoring project is gone,
 so there is nobody left to ask. The immutable `release`/`taskRun` string still identifies it, so the
@@ -440,18 +461,33 @@ SELECT r.instance, r.db_name,
 FROM revision r
 WHERE r.payload->>'sheetSha256' IS NOT NULL
   AND NOT EXISTS (
-    -- the corroboration test from the backfill, repeated verbatim
+    -- the corroboration test from the backfill, repeated verbatim:
+    -- identity, age, and the hash the row actually references
     SELECT 1 FROM release rel
-    WHERE rel.project    = (regexp_match(r.payload->>'release', 'projects/([^/]+)/'))[1]
-      AND rel.release_id = (regexp_match(r.payload->>'release', 'releases/([^/]+)'))[1]
-      AND rel.created_at <= r.created_at
+    CROSS JOIN LATERAL jsonb_array_elements(COALESCE(rel.payload->'files', '[]'::jsonb)) AS f
+    WHERE rel.project      = (regexp_match(r.payload->>'release', 'projects/([^/]+)/'))[1]
+      AND rel.release_id   = (regexp_match(r.payload->>'release', 'releases/([^/]+)'))[1]
+      AND rel.created_at  <= r.created_at
+      AND f->>'sheetSha256' = r.payload->>'sheetSha256'
   )
   AND NOT EXISTS (
     SELECT 1 FROM task_run tr
-    WHERE tr.project    = (regexp_match(r.payload->>'taskRun', 'projects/([^/]+)/'))[1]
-      AND tr.id         = (regexp_match(r.payload->>'taskRun', 'taskRuns/(\d+)$'))[1]::bigint
-      AND tr.task_id    = (regexp_match(r.payload->>'taskRun', 'tasks/(\d+)/'))[1]::int
+    JOIN task t ON t.project = tr.project AND t.id = tr.task_id
+    WHERE tr.project     = (regexp_match(r.payload->>'taskRun', 'projects/([^/]+)/'))[1]
+      AND tr.id          = (regexp_match(r.payload->>'taskRun', 'taskRuns/(\d+)$'))[1]::bigint
+      AND tr.task_id     = (regexp_match(r.payload->>'taskRun', 'tasks/(\d+)/'))[1]::int
       AND tr.created_at <= r.created_at
+      AND (
+        -- task.payload.source is a oneof: a sheet hash, or a release naming one
+        t.payload->>'sheetSha256' = r.payload->>'sheetSha256'
+        OR EXISTS (
+          SELECT 1 FROM release rel2
+          CROSS JOIN LATERAL jsonb_array_elements(COALESCE(rel2.payload->'files', '[]'::jsonb)) AS f2
+          WHERE rel2.project      = (regexp_match(t.payload->>'release', 'projects/([^/]+)/'))[1]
+            AND rel2.release_id   = (regexp_match(t.payload->>'release', 'releases/([^/]+)'))[1]
+            AND f2->>'sheetSha256' = r.payload->>'sheetSha256'
+        )
+      )
   );
 ```
 
