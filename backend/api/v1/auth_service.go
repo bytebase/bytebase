@@ -1214,15 +1214,8 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only end users can switch workspaces"))
 	}
 
-	// Reject MCP-originated calls — an MCP session is bound to a specific
-	// workspace via the OAuth grant and must not be able to mint plain user
-	// tokens, for its own workspace or any other. Since P1a PR 4 tool traffic
-	// arrives on the internal transport carrying the delegated credential, so
-	// this asks auth (which recognizes both that credential and an external MCP
-	// token) rather than extracting claims itself.
-	accessTokenStr, _ := auth.GetTokenFromHeaders(req.Header())
-	if auth.IsMCPOriginatedToken(accessTokenStr, s.secret) {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("OAuth2 tokens cannot be used to switch workspaces"))
+	if err := s.rejectMCPOriginatedTokenMint(req.Header(), "switch workspaces"); err != nil {
+		return nil, err
 	}
 
 	// Verify the user is a member of the target workspace.
@@ -1284,10 +1277,44 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 	return s.switchWorkspaceInternal(ctx, user, workspaceID, request.Web, req.Header())
 }
 
+// rejectMCPOriginatedTokenMint refuses a request whose bearer identifies
+// MCP-originated traffic. Every path into switchWorkspaceInternal hands the
+// caller a plain bb.user.access token in the response body when there is no
+// refresh cookie — and an MCP session never has one. That token is not
+// audience-bound to the MCP resource, survives revocation of the OAuth grant,
+// and ignores the workspace MCP kill switch, so an MCP session must not be
+// able to obtain one, for its own workspace or any other. An MCP session is
+// also bound to a specific workspace via the grant.
+//
+// It asks auth rather than extracting claims itself: since P1a PR 4 tool
+// traffic arrives on the internal transport carrying the delegated credential,
+// which is signed with a derived key and therefore invisible to
+// ExtractClaimsFromExpiredToken. auth recognizes both that credential and an
+// external MCP token.
+//
+// Callers must run this BEFORE any mutation — leaving or deleting a workspace
+// and only then refusing the token would strand the caller.
+func (s *AuthService) rejectMCPOriginatedTokenMint(reqHeaders http.Header, action string) error {
+	accessTokenStr, _ := auth.GetTokenFromHeaders(reqHeaders)
+	if auth.IsMCPOriginatedToken(accessTokenStr, s.secret) {
+		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("OAuth2 tokens cannot be used to %s", action))
+	}
+	return nil
+}
+
 // switchWorkspaceInternal generates new tokens for the target workspace and
 // returns a LoginResponse with cookies set. Used by SwitchWorkspace,
 // LeaveWorkspace, and DeleteWorkspace.
 func (s *AuthService) switchWorkspaceInternal(ctx context.Context, user *store.UserMessage, workspaceID string, web bool, reqHeaders http.Header) (*connect.Response[v1pb.LoginResponse], error) {
+	// Each caller already refuses MCP-originated requests up front, where the
+	// refusal still precedes that caller's mutations. Repeating it at the mint
+	// costs nothing and makes the boundary structural: a future caller that
+	// forgets cannot reopen the escape. This function acquired two unguarded
+	// callers once already.
+	if err := s.rejectMCPOriginatedTokenMint(reqHeaders, "obtain a workspace token"); err != nil {
+		return nil, err
+	}
+
 	token, err := s.generateLoginToken(ctx, user, workspaceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate token"))

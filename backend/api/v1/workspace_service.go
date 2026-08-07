@@ -259,6 +259,10 @@ func (s *WorkspaceService) GetIamPolicy(ctx context.Context, _ *connect.Request[
 // Cancels any active Stripe subscription before deleting, then switches
 // to the next available workspace and returns new auth tokens.
 func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, req *connect.Request[v1pb.DeleteWorkspaceRequest]) (*connect.Response[v1pb.LoginResponse], error) {
+	if err := s.authService.rejectMCPOriginatedTokenMint(req.Header(), "delete workspaces"); err != nil {
+		return nil, err
+	}
+
 	if !s.profile.SaaS {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace deletion is only supported in SaaS mode"))
 	}
@@ -316,6 +320,10 @@ func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, req *connect.Req
 // LeaveWorkspace removes the calling user from a workspace's IAM bindings,
 // then switches to the next available workspace.
 func (s *WorkspaceService) LeaveWorkspace(ctx context.Context, req *connect.Request[v1pb.LeaveWorkspaceRequest]) (*connect.Response[v1pb.LoginResponse], error) {
+	if err := s.authService.rejectMCPOriginatedTokenMint(req.Header(), "leave workspaces"); err != nil {
+		return nil, err
+	}
+
 	user, ok := GetUserFromContext(ctx)
 	if !ok || user == nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
