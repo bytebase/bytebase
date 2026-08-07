@@ -210,8 +210,15 @@ a `taskRun` name is the weakest version of this and would pass routinely.
 
 Three constraints together close it:
 
-- **Full chain.** For `taskRun`, match the `task_run` row on `(project, id)` *and* require its
-  `task_id` to equal the task ID in the name. For `release`, match `(project, release_id)`.
+- **Full chain, on a key that identifies one row.** For `taskRun`, match the `task_run` row on
+  `(project, id)` — its primary key — *and* require its `task_id` to equal the task ID in the name.
+  For `release`, `(project, release_id)` is **not** a declared unique key: `release` is
+  `PRIMARY KEY (project, train, iteration)` and `idx_release_project_release_id` is a plain
+  `CREATE INDEX`, not a unique one. Corroboration must therefore require `(project, release_id)` to
+  match *exactly one* row rather than merely to match some row; provenance that does not identify a
+  single release has not identified anything, and `EXISTS` would accept whichever duplicate happens
+  to predate the revision and carry the hash. This is the composite-PK identification rule in
+  `AGENTS.md` applied to an alternate key that turns out not to be one.
 - **Temporal.** Require the corroborating row's `created_at` to be no later than the revision's.
   A revision is written after the task run it records completes, so a genuine reference always
   predates it, whereas a row that reused the ID after a purge is necessarily newer — the purge, the
@@ -423,8 +430,14 @@ source is a silent NotFound (R4). Treat that as demonstrated risk rather than hy
 drafts of this document got the source list wrong, first inventing two sources that do not exist,
 then naming the wrong column and nesting for `plan_check_run`.
 
-**Ship the gate in shadow mode.** It evaluates the scope check and logs a miss — project, hash, call
-site — but still returns content. Run one full release; flip to enforcing only once logs are clean.
+**Ship every scope check in shadow mode, not just the read gate.** The gate evaluates the check and
+logs a miss — project, hash, call site — but still returns content. `HasSheets` needs the same
+treatment and is easy to overlook, because it is a *validation* predicate rather than a read: it
+backs plan, release and revision validation and fails the request outright with "some sheets are not
+found". Left unshadowed, any pre-existing blob without a ref would turn into a spurious validation
+error on a write path — a worse failure than a withheld read, since it blocks work rather than
+hiding content. In shadow mode it falls back to the deployment-wide existence check and logs the
+miss. Run one full release; flip to enforcing only once logs are clean.
 
 **Verify the backfill first.** Blobs with zero refs should be a small, non-growing population:
 
@@ -461,15 +474,21 @@ SELECT r.instance, r.db_name,
                               r.payload->>'taskRun'), 'projects/([^/]+)/'))[1] AS named_project
 FROM revision r
 WHERE r.payload->>'sheetSha256' IS NOT NULL
-  AND NOT EXISTS (
-    -- the corroboration test from the backfill, repeated verbatim:
-    -- identity, age, and the hash the row actually references
-    SELECT 1 FROM release rel
-    CROSS JOIN LATERAL jsonb_array_elements(COALESCE(rel.payload->'files', '[]'::jsonb)) AS f
-    WHERE rel.project      = (regexp_match(r.payload->>'release', 'projects/([^/]+)/'))[1]
-      AND rel.release_id   = (regexp_match(r.payload->>'release', 'releases/([^/]+)'))[1]
-      AND rel.created_at  <= r.created_at
-      AND f->>'sheetSha256' = r.payload->>'sheetSha256'
+  -- the corroboration test from the backfill, repeated verbatim:
+  -- single-row identity, age, and the hash the row actually references.
+  -- (project, release_id) is not a declared unique key, so require exactly one match.
+  AND NOT (
+    (SELECT count(*) FROM release rel
+      WHERE rel.project    = (regexp_match(r.payload->>'release', 'projects/([^/]+)/'))[1]
+        AND rel.release_id = (regexp_match(r.payload->>'release', 'releases/([^/]+)'))[1]) = 1
+    AND EXISTS (
+      SELECT 1 FROM release rel
+      CROSS JOIN LATERAL jsonb_array_elements(COALESCE(rel.payload->'files', '[]'::jsonb)) AS f
+      WHERE rel.project      = (regexp_match(r.payload->>'release', 'projects/([^/]+)/'))[1]
+        AND rel.release_id   = (regexp_match(r.payload->>'release', 'releases/([^/]+)'))[1]
+        AND rel.created_at  <= r.created_at
+        AND f->>'sheetSha256' = r.payload->>'sheetSha256'
+    )
   )
   AND NOT EXISTS (
     SELECT 1 FROM task_run tr
@@ -580,11 +599,11 @@ No schema needed; worth landing separately and first.
 
 1. The five independent fixes, T6 first.
 2. Create `sheet_blob_ref` and land the ref *writers* — the transactional `CreateSheets` and the
-   purge delete — **before** any backfill.
-3. Store API, gate, call sites, tests — gate shipping in shadow mode.
-4. Run the backfill once the writers are live everywhere, then the verification queries; review the
+   purge delete. No scope check reads the table yet.
+3. Run the backfill once the writers are live everywhere, then the verification queries; review the
    multi-project list and the ambiguous-provenance list.
-5. Flip to enforcing one release later, once shadow logs are clean.
+4. Land the scope checks — the read gate and the scoped validators — both in shadow mode.
+5. Re-run the backfill, then flip to enforcing one release later, once shadow logs are clean.
 
 **Writers must precede the backfill, or new sheets fall into the gap.** A one-shot backfill scans
 history; it cannot cover a sheet created after it runs. If the migration ships before `CreateSheets`
