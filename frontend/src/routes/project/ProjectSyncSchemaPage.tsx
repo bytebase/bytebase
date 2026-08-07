@@ -58,7 +58,6 @@ import { projectNamePrefix } from "@/stores/modules/v1/common";
 import {
   getDateForPbTimestampProtoEs,
   isValidDatabaseName,
-  isValidEnvironmentName,
   type Language,
   languageOfEngineV1,
 } from "@/types";
@@ -334,7 +333,6 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     if (currentStep === Step.SELECT_SOURCE_SCHEMA) {
       if (sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION) {
         return (
-          isValidEnvironmentName(changelogSource.environmentName) &&
           isValidDatabaseName(changelogSource.databaseName) &&
           !!changelogSource.changelogName
         );
@@ -1926,57 +1924,56 @@ function TargetDatabasesSelectPanel({
   const [databases, setDatabases] = useState<Database[]>([]);
   const [loading, setLoading] = useState(true);
   const [dbNextPageToken, setDbNextPageToken] = useState("");
-  const [loadingMoreDbs, setLoadingMoreDbs] = useState(false);
+  const requestGenerationRef = useRef(0);
 
   useEscapeKey(true, onClose);
 
+  const fetchDatabasePage = useCallback(
+    async (pageToken?: string) => {
+      const generation = pageToken
+        ? requestGenerationRef.current
+        : ++requestGenerationRef.current;
+      if (!pageToken) {
+        setDatabases([]);
+        setDbNextPageToken("");
+      }
+      setLoading(true);
+      try {
+        const { databases: fetched, nextPageToken: token } = await useAppStore
+          .getState()
+          .fetchDatabases({
+            parent: project,
+            pageSize: getDefaultPagination(),
+            ...(pageToken ? { pageToken } : {}),
+            filter: {
+              query: searchQuery,
+              engines:
+                engine === Engine.ENGINE_UNSPECIFIED ? undefined : [engine],
+            },
+          });
+        if (generation !== requestGenerationRef.current) return;
+        setDatabases((current) =>
+          pageToken ? [...current, ...fetched] : fetched
+        );
+        setDbNextPageToken(token);
+      } finally {
+        if (generation === requestGenerationRef.current) {
+          setLoading(false);
+        }
+      }
+    },
+    [engine, project, searchQuery]
+  );
+
   // Fetch first page of databases
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const { databases: fetched, nextPageToken: token } = await useAppStore
-        .getState()
-        .fetchDatabases({
-          parent: project,
-          pageSize: getDefaultPagination(),
-        });
-      setDatabases(fetched);
-      setDbNextPageToken(token);
-      setLoading(false);
-    })();
-  }, [project]);
+    void fetchDatabasePage();
+  }, [fetchDatabasePage]);
 
-  const loadMoreDatabases = useCallback(async () => {
-    if (!dbNextPageToken || loadingMoreDbs) return;
-    setLoadingMoreDbs(true);
-    const { databases: more, nextPageToken: token } = await useAppStore
-      .getState()
-      .fetchDatabases({
-        parent: project,
-        pageSize: getDefaultPagination(),
-        pageToken: dbNextPageToken,
-      });
-    setDatabases((prev) => [...prev, ...more]);
-    setDbNextPageToken(token);
-    setLoadingMoreDbs(false);
-  }, [dbNextPageToken, loadingMoreDbs, project]);
-
-  const filteredDatabases = useMemo(() => {
-    const q = searchQuery.toLowerCase();
-    return databases.filter((db) => {
-      const dbName = extractDatabaseResourceName(
-        db.name
-      ).databaseName.toLowerCase();
-      const envName = getDatabaseEnvironment(db).title.toLowerCase();
-      const instName = getInstanceResource(db).title.toLowerCase();
-      const matchesQuery =
-        !q || dbName.includes(q) || envName.includes(q) || instName.includes(q);
-      const matchesEngine =
-        engine === Engine.ENGINE_UNSPECIFIED ||
-        getInstanceResource(db).engine === engine;
-      return matchesQuery && matchesEngine;
-    });
-  }, [databases, searchQuery, engine]);
+  const loadMoreDatabases = useCallback(() => {
+    if (!dbNextPageToken || loading) return;
+    void fetchDatabasePage(dbNextPageToken);
+  }, [dbNextPageToken, fetchDatabasePage, loading]);
 
   const toggleDatabase = useCallback((name: string) => {
     setSelected((prev) => {
@@ -1991,18 +1988,18 @@ function TargetDatabasesSelectPanel({
   }, []);
 
   const toggleAll = useCallback(() => {
-    const allFilteredNames = filteredDatabases.map((db) => db.name);
+    const allDatabaseNames = databases.map((db) => db.name);
     setSelected((prev) => {
-      const allSelected = allFilteredNames.every((name) => prev.has(name));
+      const allSelected = allDatabaseNames.every((name) => prev.has(name));
       const next = new Set(prev);
       if (allSelected) {
-        allFilteredNames.forEach((name) => next.delete(name));
+        allDatabaseNames.forEach((name) => next.delete(name));
       } else {
-        allFilteredNames.forEach((name) => next.add(name));
+        allDatabaseNames.forEach((name) => next.add(name));
       }
       return next;
     });
-  }, [filteredDatabases]);
+  }, [databases]);
 
   const handleConfirm = useCallback(() => {
     onUpdate(Array.from(selected));
@@ -2027,7 +2024,7 @@ function TargetDatabasesSelectPanel({
 
         {/* Database list */}
         <SheetBody className="px-6 py-2">
-          {loading ? (
+          {loading && databases.length === 0 ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full size-6 border-b-2 border-control-placeholder" />
             </div>
@@ -2039,8 +2036,8 @@ function TargetDatabasesSelectPanel({
                     <th className="py-2 px-2 w-8 text-left">
                       <Checkbox
                         checked={
-                          filteredDatabases.length > 0 &&
-                          filteredDatabases.every((db) => selected.has(db.name))
+                          databases.length > 0 &&
+                          databases.every((db) => selected.has(db.name))
                         }
                         onCheckedChange={toggleAll}
                       />
@@ -2057,7 +2054,7 @@ function TargetDatabasesSelectPanel({
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredDatabases.map((db) => (
+                  {databases.map((db) => (
                     <tr
                       key={db.name}
                       className="border-b hover:bg-control-bg cursor-pointer"
@@ -2096,12 +2093,10 @@ function TargetDatabasesSelectPanel({
                   <Button
                     appearance="secondary"
                     size="sm"
-                    disabled={loadingMoreDbs}
+                    disabled={loading}
                     onClick={loadMoreDatabases}
                   >
-                    {loadingMoreDbs
-                      ? t("common.loading")
-                      : t("common.load-more")}
+                    {loading ? t("common.loading") : t("common.load-more")}
                   </Button>
                 </div>
               )}

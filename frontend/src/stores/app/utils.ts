@@ -17,6 +17,7 @@ import {
 } from "@/types/v1/environment";
 import { isValidInstanceName } from "@/types/v1/instance";
 import { workspaceCacheScope } from "@/utils/storage-keys";
+import { escapeCELStringLiteral } from "@/utils/v1/cel";
 import type { AppStoreState } from "./types";
 
 export const MAX_RECENT_PROJECT = 5;
@@ -133,7 +134,7 @@ export function buildDatabaseFilter(filter: DatabaseFilter): string {
   }
   const keyword = filter.query?.trim()?.toLowerCase();
   if (keyword) {
-    params.push(`name.contains("${keyword}")`);
+    params.push(`name.contains("${escapeCELStringLiteral(keyword)}")`);
   }
   if (filter.labels) {
     params.push(...getLabelFilter(filter.labels));
