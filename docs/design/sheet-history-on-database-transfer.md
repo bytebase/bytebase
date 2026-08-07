@@ -20,12 +20,23 @@ Four code paths move a database between projects, only one of which is a user-fa
 |---|---|---|
 | `UpdateDatabase` | `backend/store/database.go:332-380` | one database |
 | `BatchUpdateDatabases` | `backend/store/database.go:397-560` | a batch |
-| `updateInstanceLifecycle` | `backend/store/instance.go:438-455` | every database of an instance, on project-instance archive |
+| `updateInstanceLifecycle` | `backend/store/instance.go:373-455` | every database of a **workspace** instance, on archive |
 | `DeleteProject` | `backend/store/project.go:722-729` | workspace-instance databases, reassigned to the default project |
 
-The last is easy to miss: purge does not delete workspace-instance databases, it reassigns them to
-the default project, and the `revision` delete at `:702` covers only project instances — so those
-revisions survive a purge with their hashes intact.
+Both instance-related paths concern **workspace** instances specifically, and for the same reason:
+those instances are shared infrastructure, so their databases cannot simply be deleted along with a
+project and must be reassigned somewhere.
+
+`updateInstanceLifecycle` transfers databases only when archiving a workspace instance —
+`MoveDatabasesToProjectID` is documented as "only valid when archiving a resource-scoped workspace
+instance" (`backend/store/instance.go:44-46`), and `:434` rejects the project-instance case outright
+with *cannot transfer databases while archiving project instance*. It also requires `Deleted` to be
+set (`:288`), so it is an archive path rather than an ordinary update.
+
+`DeleteProject` is the same shape and the one most easily missed: purge does not delete
+workspace-instance databases, it reassigns them to the default project, and the `revision` delete at
+`:702` covers only project instances — so those revisions survive a purge with their hashes intact.
+Project-instance databases are deleted with their instance in both paths and raise no question.
 
 ## Requirements
 
@@ -250,6 +261,11 @@ Tests:
   the response reports the owner as unknown and names no project.
   This is the case most likely to regress — it is not a user-facing transfer, and it is the one
   where `sheet_blob_ref` has already been deleted, so it exercises the provenance path specifically.
+- Instance archive: put a database on a **workspace** instance in project A, create a revision, then
+  archive the instance with `MoveDatabasesToProjectID` set to project B, and assert the revision list
+  is complete under B while the statement is withheld with A named. Archiving a *project* instance is
+  the wrong path — `backend/store/instance.go:434` rejects it — so a test written that way would pass
+  vacuously without exercising any transfer.
 - A revision carrying neither `release` nor `taskRun` falls through to `sheet_blob_ref`, and to
   unknown when that is empty too.
 - Cross-tenant leak guard, both paths: (a) seed identical SQL in two workspaces so one blob carries
