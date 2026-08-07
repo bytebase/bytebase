@@ -104,10 +104,33 @@ The explicit withholding matters as much as the withholding itself. A destinatio
 "statement owned by project `payments-core`" can make an informed request to the right owner. A team
 that sees a list of failed content loads sees a broken product.
 
-The owning project is derivable without new storage: `sheet_blob_ref` records which projects hold a
-ref for a hash, so the withheld response can name them. This discloses that some other project holds
-SQL with that hash, which is acceptable within a workspace and is strictly less than the content
-itself.
+### Naming the owner
+
+The owning project is derivable without new storage, from the revision's own provenance.
+`RevisionPayload` carries `release` (`projects/{project}/releases/{release}`) and `task_run`
+(`projects/{project}/plans/…/taskRuns/{taskRun}`), both embedding the authoring project in the
+resource name; `backend/store/changelog.go:163-168` already parses a project out of a stored
+`taskRun` this way. Resolution order:
+
+1. The revision's `release`, else its `taskRun` — the authoring project, and correct even after the
+   database has moved or the project has been purged, because the string is immutable.
+2. `sheet_blob_ref` — which projects currently hold a ref for that hash. Useful when the revision
+   carries no provenance, both fields being optional.
+3. Neither — report that the authoring project is unknown.
+
+Purge is why step 1 has to come first. `DeleteProject` removes `sheet_blob_ref WHERE project = A`
+before deleting project A, while a workspace-instance database that belonged to A is reassigned to
+the default project and keeps its revisions. Relying on the ref table alone would leave those
+revisions with no owner to name at exactly the moment a user most needs to know where the SQL came
+from. Parsing the revision's own `release` or `taskRun` still yields A.
+
+The response should distinguish the two outcomes rather than flattening them: a live project the
+caller can ask, versus an authoring project that no longer exists and whose content is now
+unreadable by anyone. The second is a permanent consequence of purging a project, consistent with
+the zero-ref blobs described in the scoping doc.
+
+Naming the owner discloses that some other project holds SQL with that hash. That is acceptable
+within a workspace and strictly less than the content itself.
 
 ## Alternatives considered
 
@@ -144,25 +167,34 @@ corruption outweighs the modelling improvement.
 
 ## Implementation
 
-- A field on the revision response carrying the withheld-content reason and the owning project, plus
-  the handler change to populate it from `sheet_blob_ref`.
+- A field on the revision response carrying the withheld-content reason and the owning project,
+  populated by the resolution order above — provenance first, `sheet_blob_ref` second, unknown last
+  — and distinguishing a live owning project from a purged one.
 - A UI affordance for the withheld state that names the owning project rather than rendering an
-  error.
+  error, and says the project no longer exists when that is the case.
 - No changes to `UpdateDatabase`, `BatchUpdateDatabases`, `updateInstanceLifecycle`, or
   `DeleteProject`.
 
-Tests: create a revision under project A, move the database to project B, then assert the revision
-list is complete under B while the statement is withheld with A named. Repeat for the purge path,
-where a workspace-instance database is reassigned to the default project — the case most likely to
-regress, since it is not a user-facing transfer.
+Tests:
+
+- Create a revision under project A, move the database to project B, assert the revision list is
+  complete under B while the statement is withheld with A named.
+- Purge path: put a database on a *workspace* instance in project A, create a revision, purge A, then
+  assert that under the default project the list is still complete, the statement is withheld, and
+  the response names A as purged rather than reporting an unknown owner. This is the case most likely
+  to regress — it is not a user-facing transfer, and it is the one where `sheet_blob_ref` has already
+  been deleted, so it exercises the provenance path specifically.
+- A revision carrying neither `release` nor `taskRun` falls through to `sheet_blob_ref`, and to
+  unknown when that is empty too.
 
 ## Open items
 
 **Sheet name attribution.** `convertToRevision` formats the sheet name with the database's current
 project, which is incorrect after a transfer: it names the destination as owner of a sheet the source
-authored. Deriving the owner from `sheet_blob_ref` covers the withheld-content response, but the
-`name` field itself remains wrong. Recording the authoring project on the revision at creation would
-fix it for new rows; rows predating the migration cannot recover it.
+authored. The withheld-content response resolves this through provenance, but the `name` field itself
+is still built from `db.project` and stays wrong. Fixing it means formatting the name from the same
+provenance chain — which works for revisions carrying `release` or `taskRun` and leaves the rest
+without a correct name, so it is a partial fix rather than a clean one.
 
 **Workspace-level roles have no escape hatch.** The gate checks the ref table for the named project,
 so workspace admins and DBAs are refused as well, despite holding `bb.sheets.get` broadly. Whether
