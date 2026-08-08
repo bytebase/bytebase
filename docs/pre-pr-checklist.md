@@ -60,6 +60,7 @@ Read `backend/migrator/migration/LATEST.sql` and find every table with a multi-c
 - `task_run (project, id)`
 - `db_group (project, resource_id)`
 - `release (project, train, iteration)`
+- `sheet_blob_ref (project, sha256)`
 
 `task_run_log` deliberately has no primary key (append-only log; entries for one
 task run can share a `created_at` microsecond — BYT-10035), but it is equally
@@ -93,13 +94,15 @@ If the diff adds or modifies a store method that touches a composite-PK table:
 1. Check if a corresponding `TestCollision*` or `TestClaim*` test exists in `backend/tests/`
 2. If not, add one using `setupCollidingProjects` and `assertProjectUnchanged` from
    `backend/tests/collision_helper_test.go`. The shared snapshot covers `plan`,
-   `issue`, `task`, `task_run`, `plan_check_run`, `task_run_log`, `db_group`, and
-   `release` (public APIs where one exists). `plan_webhook_delivery` has no public
-   read API and uses a table-specific raw metadata-DB read; its rows are claimed
+   `issue`, `task`, `task_run`, `plan_check_run`, `task_run_log`, `db_group`,
+   `release`, and `sheet_blob_ref` (public APIs where one exists). `plan_webhook_delivery`
+   has no public read API and uses a table-specific raw metadata-DB read; its rows are claimed
    asynchronously after rollout completion, so raw-read tests must stabilize the
    row set before snapshotting and compare the table separately —
    `assertProjectUnchanged` does not compare `PlanWebhookDeliveries`. See
-   `backend/tests/README.md` for the pattern. For methods touching any future
+   `backend/tests/README.md` for the pattern. `sheet_blob_ref` is also read raw
+   (no public API) but written synchronously, so `assertProjectUnchanged`
+   compares it directly. For methods touching any future
    table outside that set, add table-specific assertions inline — or extend the
    shared helper first
 3. If your test needs project B rolled out (to create task/task_run/plan_check_run

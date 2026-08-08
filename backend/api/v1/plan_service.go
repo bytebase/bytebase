@@ -741,17 +741,6 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 		}
 	}
 
-	// Validate sheets existence.
-	if len(sheetSha256s) > 0 {
-		exist, err := s.HasSheets(ctx, sheetSha256s...)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check sheets: %v", err))
-		}
-		if !exist {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("some sheets are not found"))
-		}
-	}
-
 	// Validate release existence.
 	if releaseString != "" {
 		releaseProjectID, releaseID, err := common.GetProjectReleaseID(releaseString)
@@ -770,6 +759,21 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 		}
 		if release == nil {
 			return nil, errors.Errorf("release %s not found", releaseID)
+		}
+		// The release's files were validated against this project when the
+		// release was created (releases are immutable — UpdateRelease is
+		// Unimplemented), and refs are deleted only by project purge, which
+		// deletes the release too. No per-use recheck of its files.
+	}
+
+	// Validate sheets existence.
+	if len(sheetSha256s) > 0 {
+		missing, err := s.MissingSheetsForProject(ctx, projectID, sheetSha256s...)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check sheets: %v", err))
+		}
+		if len(missing) > 0 {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %q not found", common.FormatSheet(projectID, missing[0])))
 		}
 	}
 	return databaseGroup, nil

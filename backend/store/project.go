@@ -735,6 +735,18 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrapf(err, "failed to move workspace databases to default project for project %s", resourceID)
 	}
 
+	// Delete sheet refs owned by this project. Blobs stay: content-addressed
+	// rows may be shared with other projects, and unreferenced blobs are a
+	// future GC's concern (see the sheet_blob comment in LATEST.sql).
+	q = qb.Q().Space("DELETE FROM sheet_blob_ref WHERE project = ?", resourceID)
+	sql, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrap(err, "failed to build sheet_blob_ref delete query")
+	}
+	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+		return errors.Wrapf(err, "failed to delete sheet_blob_ref for project %s", resourceID)
+	}
+
 	// Delete project webhooks
 	q = qb.Q().Space("DELETE FROM project_webhook WHERE project = ?", resourceID)
 	sql, args, err = q.ToSQL()

@@ -157,12 +157,16 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	}
 
 	// Validate and sanitize release files.
-	sanitizedFiles, err := validateAndSanitizeReleaseFiles(ctx, s.store, request.Release.Files, request.Release.Type)
+	sanitizedFiles, err := validateAndSanitizeReleaseFiles(request.Release.Files, request.Release.Type)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid release files"))
 	}
 	if len(sanitizedFiles) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("release files cannot be empty"))
+	}
+	// The checks below run over the SQL itself, so load sheet content here.
+	if err := loadReleaseFileStatements(ctx, s.store, projectID, sanitizedFiles); err != nil {
+		return nil, err
 	}
 
 	if err := s.touchVCSProviderUser(ctx, workspaceID, request.GetVcsUser()); err != nil {
@@ -188,6 +192,37 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	}
 
 	return connect.NewResponse(response), nil
+}
+
+// loadReleaseFileStatements populates Statement for files that reference a
+// sheet, reading full content through the project-scoped accessor. The scoped
+// read is also what scopes CheckRelease: a sheet without this project's ref
+// comes back absent and errors as not found.
+func loadReleaseFileStatements(ctx context.Context, s *store.Store, projectID string, files []*v1pb.Release_File) error {
+	var sheetSha256s []string
+	for _, f := range files {
+		if f.Sheet != "" {
+			sheetSha256s = append(sheetSha256s, f.SheetSha256)
+		}
+	}
+	if len(sheetSha256s) == 0 {
+		return nil
+	}
+	sheets, err := s.GetSheetsForProject(ctx, projectID, sheetSha256s, true)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheets"))
+	}
+	for _, f := range files {
+		if f.Sheet == "" {
+			continue
+		}
+		sheet, ok := sheets[f.SheetSha256]
+		if !ok {
+			return connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %q not found", f.Sheet))
+		}
+		f.Statement = []byte(sheet.Statement)
+	}
+	return nil
 }
 
 func (s *ReleaseService) touchVCSProviderUser(ctx context.Context, workspaceID string, vcsUser *v1pb.VCSUser) error {
@@ -372,7 +407,7 @@ loop:
 					File:   file.Path,
 					Target: target.name,
 				}
-				// statement is guaranteed to be populated by validateAndSanitizeReleaseFiles
+				// statement is guaranteed to be populated by loadReleaseFileStatements
 				statement := string(file.Statement)
 				// Check if any syntax error in the statement.
 				if common.EngineSupportSyntaxCheck(engine) {
@@ -617,7 +652,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 				Target: target.name,
 			}
 
-			// statement is guaranteed to be populated by validateAndSanitizeReleaseFiles
+			// statement is guaranteed to be populated by loadReleaseFileStatements
 			statement := string(file.Statement)
 
 			// Check if any syntax error in the statement.

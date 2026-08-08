@@ -2,6 +2,10 @@ package migrator
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,8 +21,8 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.22.4"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.22/0004##drop_task_run_log_pkey.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.22.5"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.22/0005##scope_sheet_blob.sql", files[len(files)-1].path)
 }
 
 func TestVersionUnique(t *testing.T) {
@@ -816,4 +820,362 @@ func TestMigration3_7_20_ScalarTaskUpdateTasks(t *testing.T) {
 	err = db.QueryRowContext(ctx, `SELECT payload::text FROM issue_comment WHERE id = 3`).Scan(&nullPayload)
 	require.NoError(t, err)
 	assert.Contains(t, nullPayload, "null", "null row should be unchanged")
+}
+
+// TestMigration3_22_5_ScopeSheetBlob verifies the sheet_blob_ref backfill.
+//
+// The four project-scoped sources (plan, task, release, plan_check_run) each
+// yield one (project, hash) ref; references naming a hash with no blob are
+// skipped; unreferenced blobs end with zero refs; and a hash claimed by more
+// than one project is recorded per project so the multi-project audit reports
+// it — detected, not silently merged.
+//
+// The revision branch derives the authoring project from corroborated
+// provenance (never db.project). A corroborating row is almost always itself
+// a source granting the same (project, hash), so the observable probe for
+// each corroboration rule is the one additive shape: task-run provenance
+// whose task routes its hash through a release in a DIFFERENT project. There
+// the revision branch grants (task-run project, hash), which no source scan
+// produces, so a rule failure is visible as that ref's absence.
+func TestMigration3_22_5_ScopeSheetBlob(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+	db := container.GetDB()
+
+	_, err := db.ExecContext(ctx, `
+		CREATE TABLE project (resource_id TEXT PRIMARY KEY);
+		CREATE TABLE sheet_blob (sha256 BYTEA NOT NULL PRIMARY KEY, content TEXT NOT NULL);
+		CREATE TABLE plan (project TEXT NOT NULL, config JSONB NOT NULL DEFAULT '{}');
+		CREATE TABLE task (project TEXT NOT NULL, id BIGINT NOT NULL, payload JSONB NOT NULL DEFAULT '{}');
+		CREATE TABLE task_run (project TEXT NOT NULL, id BIGINT NOT NULL, task_id INTEGER NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+		CREATE TABLE release (project TEXT NOT NULL, release_id TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT now(), payload JSONB NOT NULL DEFAULT '{}');
+		CREATE TABLE plan_check_run (project TEXT NOT NULL, result JSONB NOT NULL DEFAULT '{}');
+		CREATE TABLE revision (resource_id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text, instance TEXT NOT NULL, db_name TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), payload JSONB NOT NULL DEFAULT '{}');
+		INSERT INTO project VALUES
+			('p1'), ('p2'), ('p3'), ('p4'),
+			('rel-ok'), ('tr-ok'), ('rel-old'), ('tr-late'), ('rel-mismatch'), ('tr-mismatch'),
+			('rel-dup'), ('tr-dup'), ('rel-task'), ('rel-taskid'), ('tr-taskid'), ('tr-direct'),
+			('rel-prefer'), ('rel-nest-prefer'), ('tr-prefer'),
+			('rel-newer'), ('rel-nest-fb'), ('tr-fb');
+	`)
+	require.NoError(t, err)
+
+	sheetHex := func(content string) string {
+		h := sha256.Sum256([]byte(content))
+		return hex.EncodeToString(h[:])
+	}
+	blobs := map[string]string{}
+	for _, name := range []string{
+		"plan", "task", "release", "pcr", "shared", "orphan",
+		"rev-rel", "rev-nest", "rev-late", "rev-mismatch", "rev-other",
+		"rev-dup", "rev-taskid", "rev-direct", "rev-prefer", "rev-fb", "rev-ghost", "rev-bare",
+		"rev-overflow", "rev-stale-stamp", "rev-empty-stamp",
+	} {
+		content := "SELECT '" + name + "';"
+		blobs[name] = sheetHex(content)
+		_, err := db.ExecContext(ctx,
+			"INSERT INTO sheet_blob VALUES (decode($1, 'hex'), $2)", blobs[name], content)
+		require.NoError(t, err)
+	}
+	missingBlob := strings.Repeat("f", 64)
+
+	const (
+		older = "2026-01-01 00:00:00+00" // predates every revision
+		rev   = "2026-02-01 00:00:00+00" // every revision's created_at
+		newer = "2026-03-01 00:00:00+00" // postdates every revision
+	)
+	taskRunName := func(project string, taskID, taskRunID int) string {
+		return fmt.Sprintf("projects/%s/plans/1/rollout/stages/prod/tasks/%d/taskRuns/%d", project, taskID, taskRunID)
+	}
+
+	type seed struct {
+		query string
+		args  []any
+	}
+	seeds := []seed{
+		// The four project-scoped sources.
+		{"INSERT INTO plan (project, config) VALUES ('p1', $1::jsonb)",
+			[]any{fmt.Sprintf(`{"specs":[{"changeDatabaseConfig":{"sheetSha256":%q}},{"createDatabaseConfig":{}}]}`, blobs["plan"])}},
+		// The same hash referenced from two projects: honest dedup or a
+		// laundered reference — indistinguishable, so both refs are
+		// backfilled and the multi-project audit reports the hash.
+		{"INSERT INTO plan (project, config) VALUES ('p1', $1::jsonb)",
+			[]any{fmt.Sprintf(`{"specs":[{"changeDatabaseConfig":{"sheetSha256":%q}}]}`, blobs["shared"])}},
+		{"INSERT INTO task (project, id, payload) VALUES ('p2', 1, $1::jsonb)",
+			[]any{fmt.Sprintf(`{"sheetSha256":%q}`, blobs["task"])}},
+		{"INSERT INTO task (project, id, payload) VALUES ('p2', 2, $1::jsonb)",
+			[]any{fmt.Sprintf(`{"sheetSha256":%q}`, blobs["shared"])}},
+		// A reference naming a hash with no blob is skipped by the EXISTS
+		// guard, not a foreign-key abort.
+		{"INSERT INTO task (project, id, payload) VALUES ('p2', 3, $1::jsonb)",
+			[]any{fmt.Sprintf(`{"sheetSha256":%q}`, missingBlob)}},
+		{"INSERT INTO task (project, id, payload) VALUES ('p2', 4, '{}')", nil},
+		{"INSERT INTO release (project, release_id, payload) VALUES ('p3', 'r1', $1::jsonb)",
+			[]any{fmt.Sprintf(`{"files":[{"path":"a.sql","sheetSha256":%q},{"path":"no-sheet.sql"}]}`, blobs["release"])}},
+		{"INSERT INTO plan_check_run (project, result) VALUES ('p4', $1::jsonb)",
+			[]any{fmt.Sprintf(`{"results":[{"sheetSha256":%q},{"title":"no sheet"}]}`, blobs["pcr"])}},
+
+		// Null and malformed shapes: every one must expand to nothing, not
+		// abort. JSON null in place of an array is the case COALESCE alone
+		// would pass through to jsonb_array_elements.
+		{"INSERT INTO plan (project, config) VALUES ('p1', '{}')", nil},
+		{`INSERT INTO plan (project, config) VALUES ('p1', '{"specs": null}')`, nil},
+		{`INSERT INTO plan (project, config) VALUES ('p1', '{"specs": []}')`, nil},
+		{`INSERT INTO plan (project, config) VALUES ('p1', '{"specs": ["garbage", null]}')`, nil},
+		{"INSERT INTO task (project, id, payload) VALUES ('p2', 5, 'null'::jsonb)", nil},
+		{`INSERT INTO release (project, release_id, payload) VALUES ('p3', 'r-null', '{"files": null}')`, nil},
+		{`INSERT INTO release (project, release_id, payload) VALUES ('p3', 'r-nullelem', '{"files": [null]}')`, nil},
+		{`INSERT INTO plan_check_run (project, result) VALUES ('p4', '{"results": null}')`, nil},
+
+		// Revision: release provenance corroborates (exactly one row, older,
+		// carries the hash) → (rel-ok, rev-rel). Redundant with the release
+		// source, so presence-only.
+		{"INSERT INTO release (project, release_id, created_at, payload) VALUES ('rel-ok', 'r', $1, $2::jsonb)",
+			[]any{older, fmt.Sprintf(`{"files":[{"sheetSha256":%q}]}`, blobs["rev-rel"])}},
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"release":"projects/rel-ok/releases/r"}`, blobs["rev-rel"])}},
+
+		// Observable probe, all constraints satisfied: task-run provenance in
+		// tr-ok whose task routes the hash through a release in rel-task.
+		// Expect the additive (tr-ok, rev-nest) alongside the source-derived
+		// (rel-task, rev-nest).
+		{"INSERT INTO release (project, release_id, created_at, payload) VALUES ('rel-task', 'nest', $1, $2::jsonb)",
+			[]any{older, fmt.Sprintf(`{"files":[{"sheetSha256":%q}]}`, blobs["rev-nest"])}},
+		{"INSERT INTO task (project, id, payload) VALUES ('tr-ok', 10, $1::jsonb)",
+			[]any{`{"release":"projects/rel-task/releases/nest"}`}},
+		{"INSERT INTO task_run (project, id, task_id, created_at) VALUES ('tr-ok', 100, 10, $1)", []any{older}},
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"taskRun":%q}`, blobs["rev-nest"], taskRunName("tr-ok", 10, 100))}},
+
+		// Temporal violation: the task run postdates the revision (the ID-reuse
+		// shape after a purge). No (tr-late, rev-late).
+		{"INSERT INTO release (project, release_id, created_at, payload) VALUES ('rel-old', 'nest', $1, $2::jsonb)",
+			[]any{older, fmt.Sprintf(`{"files":[{"sheetSha256":%q}]}`, blobs["rev-late"])}},
+		{"INSERT INTO task (project, id, payload) VALUES ('tr-late', 10, $1::jsonb)",
+			[]any{`{"release":"projects/rel-old/releases/nest"}`}},
+		{"INSERT INTO task_run (project, id, task_id, created_at) VALUES ('tr-late', 100, 10, $1)", []any{newer}},
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"taskRun":%q}`, blobs["rev-late"], taskRunName("tr-late", 10, 100))}},
+
+		// Hash mismatch: the nested release carries a different hash than the
+		// revision claims (laundered provenance). No (tr-mismatch, rev-mismatch).
+		{"INSERT INTO release (project, release_id, created_at, payload) VALUES ('rel-mismatch', 'nest', $1, $2::jsonb)",
+			[]any{older, fmt.Sprintf(`{"files":[{"sheetSha256":%q}]}`, blobs["rev-other"])}},
+		{"INSERT INTO task (project, id, payload) VALUES ('tr-mismatch', 10, $1::jsonb)",
+			[]any{`{"release":"projects/rel-mismatch/releases/nest"}`}},
+		{"INSERT INTO task_run (project, id, task_id, created_at) VALUES ('tr-mismatch', 100, 10, $1)", []any{older}},
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"taskRun":%q}`, blobs["rev-mismatch"], taskRunName("tr-mismatch", 10, 100))}},
+
+		// (project, release_id) matching two rows: not a unique key, so
+		// exactly-one fails even though both rows carry the hash and predate
+		// the revision. No (tr-dup, rev-dup).
+		{"INSERT INTO release (project, release_id, created_at, payload) VALUES ('rel-dup', 'nest', $1, $2::jsonb)",
+			[]any{older, fmt.Sprintf(`{"files":[{"sheetSha256":%q}]}`, blobs["rev-dup"])}},
+		{"INSERT INTO release (project, release_id, created_at, payload) VALUES ('rel-dup', 'nest', $1, $2::jsonb)",
+			[]any{older, fmt.Sprintf(`{"files":[{"sheetSha256":%q}]}`, blobs["rev-dup"])}},
+		{"INSERT INTO task (project, id, payload) VALUES ('tr-dup', 10, $1::jsonb)",
+			[]any{`{"release":"projects/rel-dup/releases/nest"}`}},
+		{"INSERT INTO task_run (project, id, task_id, created_at) VALUES ('tr-dup', 100, 10, $1)", []any{older}},
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"taskRun":%q}`, blobs["rev-dup"], taskRunName("tr-dup", 10, 100))}},
+
+		// Task-ID mismatch: the task run exists on (project, id) but belongs
+		// to a different task than the name claims. No (tr-taskid, rev-taskid).
+		{"INSERT INTO release (project, release_id, created_at, payload) VALUES ('rel-taskid', 'nest', $1, $2::jsonb)",
+			[]any{older, fmt.Sprintf(`{"files":[{"sheetSha256":%q}]}`, blobs["rev-taskid"])}},
+		{"INSERT INTO task (project, id, payload) VALUES ('tr-taskid', 11, $1::jsonb)",
+			[]any{`{"release":"projects/rel-taskid/releases/nest"}`}},
+		{"INSERT INTO task_run (project, id, task_id, created_at) VALUES ('tr-taskid', 100, 11, $1)", []any{older}},
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"taskRun":%q}`, blobs["rev-taskid"], taskRunName("tr-taskid", 10, 100))}},
+
+		// Direct task hash: corroborates through task.payload.sheetSha256.
+		// Redundant with the task source, so presence-only.
+		{"INSERT INTO task (project, id, payload) VALUES ('tr-direct', 10, $1::jsonb)",
+			[]any{fmt.Sprintf(`{"sheetSha256":%q}`, blobs["rev-direct"])}},
+		{"INSERT INTO task_run (project, id, task_id, created_at) VALUES ('tr-direct', 100, 10, $1)", []any{older}},
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"taskRun":%q}`, blobs["rev-direct"], taskRunName("tr-direct", 10, 100))}},
+
+		// Preference: both release and task-run provenance corroborate. The
+		// release wins, so the task-run fallback's additive grant
+		// (tr-prefer, rev-prefer) must NOT appear.
+		{"INSERT INTO release (project, release_id, created_at, payload) VALUES ('rel-prefer', 'r', $1, $2::jsonb)",
+			[]any{older, fmt.Sprintf(`{"files":[{"sheetSha256":%q}]}`, blobs["rev-prefer"])}},
+		{"INSERT INTO release (project, release_id, created_at, payload) VALUES ('rel-nest-prefer', 'nest', $1, $2::jsonb)",
+			[]any{older, fmt.Sprintf(`{"files":[{"sheetSha256":%q}]}`, blobs["rev-prefer"])}},
+		{"INSERT INTO task (project, id, payload) VALUES ('tr-prefer', 10, $1::jsonb)",
+			[]any{`{"release":"projects/rel-nest-prefer/releases/nest"}`}},
+		{"INSERT INTO task_run (project, id, task_id, created_at) VALUES ('tr-prefer', 100, 10, $1)", []any{older}},
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"release":"projects/rel-prefer/releases/r","taskRun":%q}`,
+				blobs["rev-prefer"], taskRunName("tr-prefer", 10, 100))}},
+
+		// Fallback: the release provenance fails on age (the release postdates
+		// the revision), so the corroborated task run supplies the grant —
+		// (tr-fb, rev-fb) must appear.
+		{"INSERT INTO release (project, release_id, created_at, payload) VALUES ('rel-newer', 'r', $1, $2::jsonb)",
+			[]any{newer, fmt.Sprintf(`{"files":[{"sheetSha256":%q}]}`, blobs["rev-fb"])}},
+		{"INSERT INTO release (project, release_id, created_at, payload) VALUES ('rel-nest-fb', 'nest', $1, $2::jsonb)",
+			[]any{older, fmt.Sprintf(`{"files":[{"sheetSha256":%q}]}`, blobs["rev-fb"])}},
+		{"INSERT INTO task (project, id, payload) VALUES ('tr-fb', 10, $1::jsonb)",
+			[]any{`{"release":"projects/rel-nest-fb/releases/nest"}`}},
+		{"INSERT INTO task_run (project, id, task_id, created_at) VALUES ('tr-fb', 100, 10, $1)", []any{older}},
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"release":"projects/rel-newer/releases/r","taskRun":%q}`,
+				blobs["rev-fb"], taskRunName("tr-fb", 10, 100))}},
+
+		// Provenance naming rows that no longer exist (purged authoring
+		// project): no ref at all, the hash stays zero-ref.
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"release":"projects/ghost/releases/r","taskRun":%q}`,
+				blobs["rev-ghost"], taskRunName("ghost", 10, 100))}},
+
+		// No provenance at all: no ref, the hash stays zero-ref.
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q}`, blobs["rev-bare"])}},
+
+		// Abort hazards: neither row may fail the migration.
+		// A taskRun name whose IDs overflow bigint fails the bounded digit
+		// match and stays uncorroborated instead of erroring the cast.
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"taskRun":"projects/tr-ok/plans/1/rollout/stages/prod/tasks/99999999999999999999999/taskRuns/99999999999999999999999"}`,
+				blobs["rev-overflow"])}},
+		// A pre-existing payload.project naming no live project row is kept
+		// as-is but granted no ref: the project EXISTS guard skips it instead
+		// of aborting on the foreign key.
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"project":"stale-ghost"}`, blobs["rev-stale-stamp"])}},
+		// Same for the empty string, which survives the IS NOT NULL filter.
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"project":""}`, blobs["rev-empty-stamp"])}},
+	}
+	for _, s := range seeds {
+		_, err := db.ExecContext(ctx, s.query, s.args...)
+		require.NoError(t, err, s.query)
+	}
+
+	statement, err := migrationFS.ReadFile("migration/3.22/0005##scope_sheet_blob.sql")
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, string(statement))
+	require.NoError(t, err)
+
+	rows, err := db.QueryContext(ctx,
+		"SELECT project, encode(sha256, 'hex') FROM sheet_blob_ref ORDER BY project, sha256")
+	require.NoError(t, err)
+	defer rows.Close()
+	var got []string
+	for rows.Next() {
+		var project, sha string
+		require.NoError(t, rows.Scan(&project, &sha))
+		got = append(got, project+"|"+sha)
+	}
+	require.NoError(t, rows.Err())
+	require.ElementsMatch(t, []string{
+		// The four project-scoped sources.
+		"p1|" + blobs["plan"],
+		"p1|" + blobs["shared"],
+		"p2|" + blobs["task"],
+		"p2|" + blobs["shared"],
+		"p3|" + blobs["release"],
+		"p4|" + blobs["pcr"],
+		// Release rows seeded as corroboration targets are sources themselves.
+		"rel-ok|" + blobs["rev-rel"],
+		"rel-task|" + blobs["rev-nest"],
+		"rel-old|" + blobs["rev-late"],
+		"rel-mismatch|" + blobs["rev-other"],
+		"rel-dup|" + blobs["rev-dup"],
+		"rel-taskid|" + blobs["rev-taskid"],
+		"tr-direct|" + blobs["rev-direct"],
+		"rel-prefer|" + blobs["rev-prefer"],
+		"rel-nest-prefer|" + blobs["rev-prefer"],
+		"rel-newer|" + blobs["rev-fb"],
+		"rel-nest-fb|" + blobs["rev-fb"],
+		// The revision branch's observable grants: corroborated task-run
+		// provenance routing through another project's release, and the
+		// age-based fallback. Every negative scenario is covered by this
+		// list's exactness: tr-late, tr-mismatch, tr-dup, tr-taskid and
+		// tr-prefer hold no refs.
+		"tr-ok|" + blobs["rev-nest"],
+		"tr-fb|" + blobs["rev-fb"],
+	}, got)
+
+	// Corroboration also stamps payload.project — the stored fact new
+	// revision writers set at creation. Each scenario's revision is
+	// identified by its unique hash; an empty stamp means the provenance did
+	// not corroborate. rev-prefer pins the release-over-taskRun preference
+	// directly: both branches corroborate and the release's project wins.
+	for sha, want := range map[string]string{
+		blobs["rev-rel"]:         "rel-ok",
+		blobs["rev-nest"]:        "tr-ok",
+		blobs["rev-late"]:        "",
+		blobs["rev-mismatch"]:    "",
+		blobs["rev-dup"]:         "",
+		blobs["rev-taskid"]:      "",
+		blobs["rev-direct"]:      "tr-direct",
+		blobs["rev-prefer"]:      "rel-prefer",
+		blobs["rev-fb"]:          "tr-fb",
+		blobs["rev-ghost"]:       "",
+		blobs["rev-bare"]:        "",
+		blobs["rev-overflow"]:    "",
+		blobs["rev-stale-stamp"]: "stale-ghost",
+		blobs["rev-empty-stamp"]: "",
+	} {
+		var got string
+		require.NoError(t, db.QueryRowContext(ctx,
+			"SELECT COALESCE(payload->>'project', '') FROM revision WHERE payload->>'sheetSha256' = $1", sha).Scan(&got))
+		require.Equal(t, want, got, "stamped project for hash %s", sha)
+	}
+
+	// The zero-ref audit counts the never-referenced blob plus the revisions
+	// whose provenance was absent or uncorroborated with no other source.
+	var zeroRefBlobs int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT count(*) FROM sheet_blob b
+		WHERE NOT EXISTS (SELECT 1 FROM sheet_blob_ref r WHERE r.sha256 = b.sha256)
+	`).Scan(&zeroRefBlobs))
+	require.Equal(t, 7, zeroRefBlobs, "orphan, rev-mismatch, rev-ghost, rev-bare, rev-overflow, rev-stale-stamp, and rev-empty-stamp have zero refs")
+
+	// The multi-project audit reports every hash claimed by more than one
+	// project, including the deliberately shared one.
+	auditRows, err := db.QueryContext(ctx, `
+		SELECT encode(sha256, 'hex')
+		FROM sheet_blob_ref
+		GROUP BY sha256
+		HAVING count(DISTINCT project) > 1
+	`)
+	require.NoError(t, err)
+	defer auditRows.Close()
+	multiProject := map[string]bool{}
+	for auditRows.Next() {
+		var sha string
+		require.NoError(t, auditRows.Scan(&sha))
+		multiProject[sha] = true
+	}
+	require.NoError(t, auditRows.Err())
+	require.True(t, multiProject[blobs["shared"]], "the cross-project reference must be reported, not blessed")
+
+	// The source-level missing-ref audit from the design doc: a plan that
+	// references a pre-existing foreign hash AFTER the backfill invokes no
+	// CreateSheets and writes no ref, so only this query can see it.
+	_, err = db.ExecContext(ctx, "INSERT INTO plan (project, config) VALUES ('p1', $1::jsonb)",
+		fmt.Sprintf(`{"specs":[{"changeDatabaseConfig":{"sheetSha256":%q}}]}`, blobs["pcr"]))
+	require.NoError(t, err)
+	var missingProject, missingSha string
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT DISTINCT pl.project, spec->'changeDatabaseConfig'->>'sheetSha256' AS sha
+		FROM plan pl
+		CROSS JOIN LATERAL jsonb_array_elements(
+			CASE WHEN jsonb_typeof(pl.config->'specs') = 'array' THEN pl.config->'specs' ELSE '[]'::jsonb END) AS spec
+		WHERE spec->'changeDatabaseConfig'->>'sheetSha256' ~ '^[0-9a-fA-F]{64}$'
+			AND NOT EXISTS (
+				SELECT 1 FROM sheet_blob_ref r
+				WHERE r.project = pl.project
+					AND r.sha256 = decode(spec->'changeDatabaseConfig'->>'sheetSha256', 'hex')
+			)
+	`).Scan(&missingProject, &missingSha))
+	require.Equal(t, "p1", missingProject)
+	require.Equal(t, blobs["pcr"], missingSha)
 }

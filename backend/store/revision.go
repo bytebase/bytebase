@@ -139,7 +139,7 @@ func (s *Store) GetRevision(ctx context.Context, resourceID, instanceID, databas
 		return nil, err
 	}
 	if len(revisions) == 0 {
-		return nil, errors.Errorf("revision not found: %s", resourceID)
+		return nil, common.Errorf(common.NotFound, "revision not found: %s", resourceID)
 	}
 	if len(revisions) > 1 {
 		return nil, errors.Errorf("found multiple revisions for resource_id: %s", resourceID)

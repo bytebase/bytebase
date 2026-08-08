@@ -1230,9 +1230,12 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connec
 	if sheetSha256 == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task %v has no sheet", task.ID))
 	}
-	sheet, err := s.store.GetSheetFull(ctx, sheetSha256)
+	sheet, err := s.store.GetSheetForProject(ctx, projectID, sheetSha256, true)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheet statements"))
+	}
+	if sheet == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sheet not found for task %v", task.ID))
 	}
 	statements := sheet.Statement
 
@@ -1276,7 +1279,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, specs []*storepb.Pla
 	// Step 2 - convert all task creates.
 	var taskCreates []*store.TaskMessage
 	for _, spec := range transformedSpecs {
-		tcs, err := getTaskCreatesFromSpec(ctx, s, spec)
+		tcs, err := getTaskCreatesFromSpec(ctx, s, spec, projectID)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get task creates from spec")
 		}

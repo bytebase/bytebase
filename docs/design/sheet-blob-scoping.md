@@ -5,7 +5,7 @@ Fixes T5 in `docs/design/v1-api-audit-2026-08.md`.
 Sheet content is fetched by SHA256 with no scope predicate, so any principal holding
 `bb.sheets.get` on any one project can read any sheet in the deployment — across projects and
 across tenants — given the hash. A `sheet_blob_ref(project, sha256)` edge table makes ownership an
-explicit stored fact, and an API-layer gate enforces it.
+explicit stored fact, and the store's project-scoped sheet accessors enforce it.
 
 ## Background
 
@@ -19,9 +19,9 @@ This is a regression, not an oversight. Commit `bee2080737` (#18552, Dec 2025) d
 project-scoped `sheet` table — which carried `project text NOT NULL REFERENCES
 project(resource_id)` and `idx_sheet_project` — and promoted the `sheet_blob` dedup side-table to
 primary store. Its design doc recorded "Change authorization model (already project-scoped, no
-changes needed)" as a non-goal, true before the cutover and false after. The assumption survives in
-the tree as a justification for skipping checks, at `backend/api/v1/release_service.go:331` and
-`:405`.
+changes needed)" as a non-goal, true before the cutover and false after. The assumption survived in
+the tree as stale comments justifying skipped checks in `release_service.go` until this work
+deleted them.
 
 ## Requirements
 
@@ -117,12 +117,13 @@ CREATE INDEX idx_sheet_blob_ref_sha256 ON sheet_blob_ref(sha256);
 so project IDs are one global namespace across every workspace, and a project resolves to exactly
 one workspace through `project.workspace`.
 
-The gate, `HasSheets` and the source-level missing-ref audit all query
+The scoped accessors, `MissingSheetsForProject` and the source-level missing-ref audit all query
 `WHERE project = ? AND sha256 …`, which the project-leading primary key serves directly. The
 secondary index exists for the one query that starts from a hash with no project in hand: the
-zero-ref verification in [Rollout](#rollout), which PostgreSQL can only satisfy by full-scanning a
-`(project, sha256)` btree. That is an operator query rather than a hot path, but it runs over the
-whole table and a future `sheet_blob` GC would need the same access shape.
+zero-ref verification in [Post-upgrade audits](#post-upgrade-audits), which PostgreSQL can only
+satisfy by full-scanning a `(project, sha256)` btree. That is an operator query rather than a hot
+path, but it runs over the whole table and a future `sheet_blob` GC would need the same access
+shape.
 
 That query is a deliberate exception to the composite-PK predicate rule in `AGENTS.md`: it asks
 which blobs have no ref at all, so there is no scope column to supply. It is an offline audit, not a
@@ -154,7 +155,7 @@ that never move, so their `project` column is the authoring project. `revision` 
 project column and inherits one through `db.project`, which is the database's *current* project. A
 database transferred before this migration would backfill its revisions to the destination, granting
 that project's members access to SQL the source authored — precisely the grant
-[the transfer decision](sheet-history-on-database-transfer.md) refuses, and invisible to shadow mode
+[the transfer decision](sheet-history-on-database-transfer.md) refuses, and invisible to any audit
 because the ref row exists.
 
 Derive the authoring project from the revision's own provenance instead. `RevisionPayload` carries
@@ -170,22 +171,29 @@ their content is unreadable until an operator grants it deliberately.
 
 | Provenance | Action |
 |---|---|
-| Corroborated — the named `release` or `task_run` row still exists under that project | Insert `(that project, sha)` |
-| Present but not corroborated | No ref |
-| Absent — both fields empty | No ref |
+| Corroborated — the named `release` or `task_run` row still exists under that project | Stamp `payload.project`, insert `(that project, sha)` |
+| Present but not corroborated | No stamp, no ref |
+| Absent — both fields empty | No stamp, no ref |
 
-**There is no `db.project` fallback because shadow mode cannot see an over-grant.** Falling back
-would be correct for every database that never moved, which is most of them, and wrong only for
-transferred ones — a tempting trade until you notice the asymmetry in how the two errors surface.
-Under-granting produces a shadow miss: a log line, during a full release in which content is still
-returned, with the requesting project right there in the log. Over-granting produces nothing at all,
-because the ref exists and the gate is satisfied. A guess that fails loudly and correctably beats a
-guess that fails silently and permanently.
+**Corroboration is a one-time event, and its result is stored.** The migration stamps each
+corroborated revision's `payload.project` — the same field new revision writers set at creation
+from the database's then-current project — and derives the ref from the stamp. Read time never
+re-corroborates: `convertToRevision` formats the sheet name from the stamp, and an empty stamp
+means no name. The stored fact is what keeps naming and access consistent after transfers; see
+[naming the owner](sheet-history-on-database-transfer.md#naming-the-owner).
 
-So the operational path for these rows is: no ref, shadow misses during the enforcement-deferred
-release, operator reviews the log, and tops up `(requesting project, sha)` for the ones they confirm.
-That is an informed grant rather than an inferred one, and the operator has context the migration
-does not — whether a database was transferred, and who should see its history.
+**There is no `db.project` fallback because an over-grant is invisible.** Falling back would be
+correct for every database that never moved, which is most of them, and wrong only for transferred
+ones — a tempting trade until you notice the asymmetry in how the two errors surface.
+Under-granting produces a NotFound and a row on the ambiguous-provenance audit, with the affected
+revision right there in the list. Over-granting produces nothing at all, because the ref exists and
+the gate is satisfied, and no audit could flag it — the ref row looks legitimate. A guess that
+fails loudly and correctably beats a guess that fails silently and permanently.
+
+So the operational path for these rows is: no ref, a row on the ambiguous-provenance audit, and an
+operator who tops up `(requesting project, sha)` for the ones they confirm. That is an informed
+grant rather than an inferred one, and the operator has context the migration does not — whether a
+database was transferred, and who should see its history.
 
 **Corroboration is checked on the referenced row, not on the project.** `DeleteProject` hard-deletes
 the `project` row and `CreateProject` accepts a caller-supplied `ProjectId`
@@ -235,13 +243,12 @@ Three constraints together close it:
   establishes that the row has anything to do with the sheet being attributed to it.
 
 **The hash match is what makes provenance mean something.** Without it, corroboration proves a task
-run exists and is old enough, and nothing more. `createRevisions` validates a `taskRun` thoroughly —
-project, plan, environment and task all have to line up, and `:173` even requires the task run to
-belong to the database's own project — but it never compares the task's sheet to `revision.Sheet`
-(`backend/api/v1/revision_service.go:167-192`), while `HasSheets` at `:158` is still deployment-wide.
-So a revision in project B can name a genuine B task run alongside an unrelated project A hash, and
-a corroboration that only checks identity would insert `(B, shaA)` — a laundered grant, permanent,
-and invisible to shadow mode because the ref exists.
+run exists and is old enough, and nothing more. Pre-fix `createRevisions` validated a `taskRun`'s
+identity — project, plan, environment and task all had to line up — but it never compared the
+task's sheet to `revision.Sheet`, and its sheet-existence check was deployment-wide. So a
+historical revision in project B can name a genuine B task run alongside an unrelated project A
+hash, and a corroboration that only checks identity would insert `(B, shaA)` — a laundered grant,
+permanent, and invisible to any audit because the ref exists.
 
 Matching the hash costs one more join and closes it. `task.payload` is a oneof
 (`proto/store/store/task.proto:27-36`), so the task branch has two shapes: `sheetSha256` equal to
@@ -249,30 +256,48 @@ the revision's hash, or `release` naming a release whose `payload.files[]` conta
 branch is the single-hop form of the same test.
 
 Apply it to the release branch too, even though `createRevisions` already enforces
-`fileSheet == revision.Sheet` there (`:222`). Uniformity is worth more than the saved join: it
-removes any need to reason about which creation-time validation happened to run, on a path where T6
-shows those validations can be steered.
+`fileSheet == revision.Sheet` there. Uniformity is worth more than the saved join: it removes any
+need to reason about which creation-time validation happened to run, on a path where T6 shows those
+validations can be steered.
 
 The temporal test defeats ID reuse, the full chain narrows the window it must cover, and the hash
 match defeats laundering. Residual risk after all three is limited to clock anomalies, and
 uncorroborated rows fail closed to no ref — an unreadable statement rather than a wrong grant.
 
 Their content then becomes unreadable, which is the intended outcome: the authoring project is gone,
-so there is nobody left to ask. The withheld-statement response reports the owner as unknown rather
-than echoing the parsed ID — an ID that failed corroboration cannot be verified against any
-workspace, so it is not safe to surface. See
+so there is nobody left to ask. An unstamped revision carries no sheet name rather than one that
+echoes the parsed ID — an ID that failed corroboration cannot be verified against any workspace, so
+it is not safe to surface. See
 [naming the owner](sheet-history-on-database-transfer.md#naming-the-owner).
 
-A revision with no provenance at all is treated the same way: no ref, surfaced as a shadow miss, and
-granted only if an operator confirms it. Both populations appear together on the review list in
-[Rollout](#rollout).
+A revision with no provenance at all is treated the same way: no stamp, no ref, and a grant only if
+an operator confirms it. Both populations appear together on the ambiguous-provenance list in
+[Post-upgrade audits](#post-upgrade-audits).
 
 Two tables that look like sources are not. `ChangelogPayload` carries only `task_run` and
 `git_commit`, and the v1 `Changelog` message exposes no statement or sheet field. `issue_comment`
-has no sheet reference of any kind.
+has no sheet reference of any kind. Four *historical* locations also held hashes and are all dead:
+`task_run.sheet_sha256` (column added and dropped within 3.14), `plan_check_run.config` (column
+gone), and `changelog.payload.sheetSha256` / `issue_comment.planSpecUpdate.*SheetSha256` (proto
+fields removed; the JSONB keys linger in old rows, invisible under `DiscardUnknown` unmarshaling,
+with zero readers).
 
-Guard every derivation with `EXISTS (SELECT 1 FROM sheet_blob …)` so a payload naming a hash with no
-blob cannot violate the foreign key.
+**The migration must not abort on data, whatever is stored.** Every data-dependent hazard is
+guarded: hex-shape fences ahead of every `decode()`; `jsonb_typeof` checks ahead of every
+`jsonb_array_elements` (COALESCE alone passes a stored JSON `null` through); `EXISTS` against
+`sheet_blob` so a payload naming a hash with no blob cannot violate the foreign key; `EXISTS`
+against `project` on the stamped-refs insert so a pre-existing bogus `payload.project` cannot
+either; and bounded digit matches (`\d{1,18}`) so a malformed name cannot overflow the bigint
+casts. Each guard has a migration-test probe seeding the hostile shape. The migration runs as one
+transaction under the migrator's advisory lock, so any environmental failure rolls back completely
+and retries at next startup — fail-stop, never fail-corrupt.
+
+**Scale is addressed with indexed temp tables, not CTEs.** The corroboration intermediates are
+`CREATE TEMP TABLE … ON COMMIT DROP`, indexed and `ANALYZE`d before use. CTE materializations carry
+no statistics and no indexes, which sent the planner into nested loops — measured at ~15 minutes
+over a ~1M-row synthetic deployment as CTEs, 19.5 seconds total as temp tables, with every
+statement linear in table size. `ON COMMIT DROP` keeps the intermediates inside the migration
+transaction, so atomicity is unchanged.
 
 **Unreferenced blobs become unreadable.** A blob referenced by nothing has no derivable project. In
 practice this is a sheet created but never attached to a plan or release; the UI attaches
@@ -282,158 +307,128 @@ gap is accepted and noted in the migration comment.
 
 **Observed references are not authorization.** The backfill reconstructs which project *referenced*
 a hash, which is not the same as which project was *entitled* to it.
-`convertPlanSpecChangeDatabaseConfig` (`backend/api/v1/plan_service.go:1157`) parses a
-caller-supplied `projects/{project}/sheets/{sha}` and stores only the hash, and `HasSheets`
-currently validates existence with no scope — so a plan in project B may already reference a hash
-owned by project A, indistinguishable after the write from a legitimate one. Backfilling `(B, sha)`
-would mint a permanent grant out of the access being closed, and shadow mode cannot see it because
-the ref row exists.
+`convertPlanSpecChangeDatabaseConfig` parses a caller-supplied `projects/{project}/sheets/{sha}`
+and stores only the hash, and the pre-fix existence check had no scope — so a historical plan in
+project B may reference a hash owned by project A, indistinguishable after the write from a
+legitimate one. Backfilling `(B, sha)` mints a permanent grant out of the access being closed, and
+no audit can prove it wrong because the ref row exists.
 
 No ground truth survives: the refactor that caused this bug deleted the sheet's creator and project
 metadata. The population is therefore sized and reviewed rather than filtered — see
-[Rollout](#rollout).
+[Post-upgrade audits](#post-upgrade-audits).
 
 ### Store API
 
-`sheet_blob_ref` is an ACL fact enforced at the API layer; content retrieval and access control stay
-separate operations. The runners are why that distinction is real rather than cosmetic: when
-`database_migrate_executor` reads a sheet it is executing work authorized when the plan was created,
-not making an access decision. Threading a project through it to satisfy a signature would be
-authorization theater.
+`sheet_blob_ref` is an ACL fact enforced by the store's scoped accessors; content retrieval and
+access control stay separate steps inside them. The runners are why the split is real rather than
+cosmetic: when `database_migrate_executor` reads a sheet it is executing work authorized when the
+plan or release was created, not making an access decision. Threading a project through it to
+satisfy a signature would be authorization theater, so the unscoped getter stays — exported,
+documented as runner-only, and confined out of `backend/api/v1` by a static test.
 
-**That exemption is conditional, and the condition is not free.** It holds only if the stored plan
-was authorized against the same rule the gate enforces. Plans created before enforcement were not:
-`HasSheets` was deployment-wide, so a plan in project B can reference a hash owned by project A, and
-`validateSpecs` runs only at `CreatePlan` (`backend/api/v1/plan_service.go:196`) and `UpdatePlan`
-(`:325`) — never again. Every path that turns stored plan state into runner work therefore
-revalidates; see [Revalidating stored plans](#revalidating-stored-plans).
-
-Every primitive is set-shaped (R5).
+Every primitive is set-shaped (R5), and everything else is unexported so the compiler enforces the
+split:
 
 ```go
-// Content only. A hash fully determines content, so no scope is involved.
-func (s *Store) GetSheetsFull(ctx, sha256Hexes ...string) (map[string]*SheetMessage, error)
-func (s *Store) GetSheetsTruncated(ctx, sha256Hexes ...string) (map[string]*SheetMessage, error)
+// Unscoped, runners and components only. A hash fully determines content.
+func (s *Store) GetSheetFull(ctx, sha256Hex string) (*SheetMessage, error)
 
-// Scoped: which of these hashes may this project read? One query.
-func (s *Store) FilterSheetsForProject(ctx, projectID string, sha256Hexes ...string) (map[string]bool, error)
+// Scoped reads: filter the hashes through the project's refs, then fetch
+// content only for the survivors. Two queries whatever the input size.
+func (s *Store) GetSheetsForProject(ctx, projectID string, sha256Hexes []string, raw bool) (map[string]*SheetMessage, error)
+func (s *Store) GetSheetForProject(ctx, projectID, sha256Hex string, raw bool) (*SheetMessage, error)
 
-// Scoped: validation predicate, not a content read.
-func (s *Store) HasSheets(ctx, projectID string, sha256Hexes ...string) (bool, error)
+// Scoped validation predicate, not a content read: the hashes, in input
+// order, for which the project holds no ref. Callers name the first missing
+// sheet in their error.
+func (s *Store) MissingSheetsForProject(ctx, projectID string, sha256Hexes ...string) ([]string, error)
 
-// Scoped: writes blobs and ref rows, both as set inserts, in one transaction.
+// Scoped creation: writes blobs and ref rows, both as set inserts, in one
+// transaction behind the project purge fence.
 func (s *Store) CreateSheets(ctx, projectID string, creates ...*SheetMessage) ([]*SheetMessage, error)
+
+// Unexported internals: filterSheetsForProject (the ref query),
+// getSheetsFull (cache-aware batch fetch), getSheets (single content query).
 ```
 
-`CreateSheets` needs a transaction so a blob cannot land without its ref; it currently issues a bare
-`ExecContext`. The ref insert mirrors the blob insert's array shape rather than looping.
-
-Three of its four call sites have a project to hand — `sheet_service.go:54` and `:97`, and
-`release_service.go:96`. The fourth does not: `rollout_service_task.go:143` stores generated
-`CREATE DATABASE` boilerplate from inside `getTaskCreatesFromCreateDatabaseConfig`, which takes no
-project, and neither does its caller `getTaskCreatesFromSpec`. Thread it down from
-`rollout_service.go:1279`, which has the plan's project.
+A malformed hash is filtered before any SQL runs — it can never match a blob, so it is treated as
+absent rather than becoming a decode error. `CreateSheets` is a transaction so a blob cannot land
+without its ref, with the blob inserted first because the ref's foreign key requires it; both
+inserts are set-shaped `ON CONFLICT DO NOTHING`. Its four call sites all pass the owning project:
+the sheet service's two create RPCs, `CreateRelease` for statement-carrying files, and the
+create-database task path, which threads the plan's project down from `GetPipelineCreate`.
 
 ### Cache ordering
 
-`sheetFullCache` stays keyed by hex hash alone (`backend/store/store.go:51,82,110`, a 10-entry LRU).
+`sheetFullCache` stays keyed by hex hash alone (a 10-entry LRU in `backend/store/store.go`).
 Content is a pure function of the hash, so a hash-keyed content cache is always correct, and the
 dominant consumer — a runner reading the same sheet repeatedly — keeps full hit rate.
 
-This is safe **only** because the scope check is a separate step that runs first. The cache read at
-`backend/store/sheet.go:43` returns before any query executes, so a scope predicate placed inside
-`getSheet` would be skipped on a cache hit. Enforcement must not live there, and the check and the
-fetch must not be fused into one join.
+This is safe **only** because the ref check is a separate step that runs first, inside
+`GetSheetsForProject`, ahead of the cache-aware fetch. A cache hit returns before any query
+executes, so a scope predicate placed with the content fetch would be skipped. The check and the
+fetch must not be fused into one join, and must not be reordered; the store method carries that
+warning, and the cache-ordering integration test fails if it ever regresses.
 
 Ten entries is sized for the runner pattern, not for batch reads, and a release with hundreds of
 files will miss on nearly all of them. That is not a reason to grow it: the batch path collapses
 those misses into a single query.
 
-### API-layer gate
+### The gate lives in the store
 
-Moving enforcement out of the store means the compiler no longer finds missed call sites, and a
-forgotten check is exactly how `release_service.go:398` and `plan_service.go:642` ended up unscoped.
-Structure replaces the compiler: one package-level helper doing check-then-fetch — package-level
-because most routed call sites live in `ReleaseService` and `RolloutService`, not `SheetService` —
-taking a set and costing two queries whatever the input size.
+Enforcement sits in the scoped store accessors, and the compiler does most of the confinement: the
+raw batch getters and the ref filter are unexported, so nothing outside the store can fetch content
+around the check. The one exported unscoped getter, `GetSheetFull`, exists for the runners, and a
+static AST test asserts nothing under `backend/api/v1/` calls it — the single boundary the compiler
+cannot enforce, since runners live in other packages.
 
-1. One ref query returning the subset of requested hashes the project may read.
-2. Cache lookups for survivors, then one content query for the misses.
+A hash the project may not read yields NotFound rather than PermissionDenied, so the response does
+not confirm the hash exists in another project.
 
-A hash that does not survive yields NotFound rather than PermissionDenied, so the response does not
-confirm the hash exists in another project. Fusing the two steps into a single join is rejected: it
-would put the content read in the same statement as the permission check, which is exactly the
-arrangement a cache hit can skip.
-
-A test asserts nothing under `backend/api/v1/` calls a store content getter outside the gate.
-Runner and component call sites keep the unscoped getters.
-
-**Every v1 call site, enumerated.** `git grep -n 'GetSheetFull\|GetSheetTruncated\|HasSheets' -- backend/api/v1`
-returns exactly these seven on `main`; re-run it before implementing, since a route added since this
-was written would otherwise slip past the gate:
+**Every v1 consumer, enumerated.** All user-facing paths route through the scoped accessors:
 
 | Call site | Path | Routes to |
 |---|---|---|
-| `sheet_service.go:136,138` | `GetSheet` | gate |
-| `release_service.go:398` | `validateAndSanitizeReleaseFiles`, via `CreateRelease` and `CheckRelease` | gate |
-| `rollout_service.go:1233` | `PreviewTaskRunRollback` | gate |
-| `rollout_service_task.go:463` | `getSheetContentBySha256` | gate |
-| `release_service.go:144` | `CreateRelease` validation | scoped `HasSheets` |
-| `revision_service.go:158` | `BatchCreateRevisions` validation | scoped `HasSheets` |
-| `plan_service.go:746` | `validateSpecs` | scoped `HasSheets` |
+| `sheet_service.go` | `GetSheet` | `GetSheetForProject` |
+| `release_service_check.go` | `loadReleaseFileStatements`, via `CheckRelease` | `GetSheetsForProject` |
+| `rollout_service.go` | `PreviewTaskRunRollback` | `GetSheetForProject` |
+| `rollout_service_task.go` | `getSheetContentBySha256` (ghost directive) | `GetSheetForProject` |
+| `release_service.go` | `CreateRelease` validation | `MissingSheetsForProject` |
+| `revision_service.go` | `BatchCreateRevisions` validation | `MissingSheetsForProject` |
+| `plan_service.go` | `validateSpecs` | `MissingSheetsForProject` |
 
 `PreviewTaskRunRollback` is the one most easily missed — it is a content read that does not look
 like one, reached through a rollback-preview route rather than through anything named for sheets.
-The confinement test is what keeps this table from going stale.
 
-Three of these call sites also need reshaping for batching, which is a separate concern from routing. `validateAndSanitizeReleaseFiles`
-(`release_service.go:377-413`) fetches once per file inside its loop — a pre-existing N+1 that a
-per-file scope check would double. `rollout_service_task.go:214` fetches a loop-invariant hash once
-per target database, masked today only by the LRU. `plan_service.go:746` is already correct and
-worth copying: it collects across every spec and makes one call.
+Two batching notes that fell out of the rewiring: `validateAndSanitizeReleaseFiles` is now a pure
+function — `CreateRelease` persists only hashes, so its old full-content prefetch (potentially
+megabytes per file) is gone entirely, replaced by one ref check; only `CheckRelease`, which runs
+advisors over the SQL, hydrates statements, in one batched scoped read. The ghost-directive check
+fetches its loop-invariant hash once instead of once per target database.
 
-### Revalidating stored plans
+### Creation-time validation only
 
-The runner exemption assumes creation-time authorization. Historical data does not satisfy it, so
-the assumption has to be re-established at the point a user asks to act on a stored plan rather than
-assumed from the fact that the plan exists.
+References are validated when the referencing object is created, and never re-checked per use:
 
-Three API entry points materialize stored plan state into runner work, and none of them re-runs
-`validateSpecs`:
+- `CreateRelease` checks every referenced sheet against the project's refs before persisting, and
+  creates sheets (with refs) for inline statements. Releases are immutable — `UpdateRelease` is
+  `Unimplemented` — so the check cannot go stale.
+- `validateSpecs` runs at `CreatePlan` and `UpdatePlan` and checks the specs' direct hashes; for a
+  release reference it verifies the release exists in the same project, whose files were themselves
+  validated at `CreateRelease`.
+- `BatchCreateRevisions` checks the revision's hash against the database's project.
 
-| Entry point | Location | Produces |
-|---|---|---|
-| `CreateRollout` | `backend/api/v1/rollout_service.go:238` | tasks, via `GetPipelineCreate` from the stored specs |
-| `RunPlanChecks` | `backend/api/v1/plan_service.go:442` | plan check runs, which read the sheet at `backend/runner/plancheck/derive.go:49` |
-| `BatchRunTasks` | `backend/api/v1/rollout_service.go:746` | task runs — this is where the SQL actually executes |
+What makes one-time checks durable is the deletion story: sheets are never deleted, and refs are
+deleted only by project purge, which deletes every referencing row — plan, task, release,
+plan_check_run — in the same transaction. There is no state in which a previously-valid stored
+reference silently loses its ref while the referencing object survives.
 
-Without revalidation, a project-B user can take an old plan that references project A's hash and,
-after enforcement, still have A's SQL parsed and summarized by plan checks or executed against a
-database of their own — through the front door, with the gate untouched. Plan-check advices quote
-object names and statement fragments, so this is a disclosure path as well as an execution one.
-
-Each of the three revalidates the plan's sheets against the plan's project, and is shadow-gated on
-the same switch as everything else.
-
-**Revalidation must expand releases; reusing `CreatePlan`'s check is not enough.** `validateSpecs`
-collects only the direct `ChangeDatabaseConfig.Sheet` hashes into `HasSheets`, and for a release it
-verifies the project matches and the row exists — it never touches `release.Payload.Files[]`
-(`backend/api/v1/plan_service.go:755-774`). The release runners then read every file's hash by bare
-`GetSheetFull` (`backend/runner/taskrun/database_migrate_executor.go:543`, `:654`). So a release in
-project B whose files reference project A's hash — creatable today, since
-`validateAndSanitizeReleaseFiles` discards the project and `HasSheets` is deployment-wide — passes a
-`CreatePlan`-shaped check with nothing to test, and the runner still executes A's SQL.
-
-Revalidation therefore expands each referenced release and checks every `files[].sheetSha256`
-against the plan's project, not just the spec's direct sheet. `validateSpecs` gains the same
-expansion so the two agree: new releases cannot carry foreign hashes once `CreateRelease` uses
-scoped `HasSheets`, but plans may reference releases created before that. Shadow mode
-matters here more than elsewhere: these are *stored* objects, so a miss identifies a plan that will
-stop working at enforcement, and the operator needs that list while content is still being served.
-
-`BatchRunTasks` is the one to get right even though it never mentions sheets — it resolves a project
-and creates task runs from tasks whose payloads already carry the hash, so it is the last gate
-before execution and the easiest to overlook.
+Historical objects created before enforcement need no revalidation either, because the backfill
+resolves them: every stored `(project, hash)` reference in the four sources received a ref, so
+pre-existing plans and releases keep working, and any cross-project reference among them is a ref
+row the multi-project audit surfaces for review rather than a runtime failure. A stored reference
+that got no ref (a hash whose blob never existed) fails closed at the scoped reads on the rollout
+path.
 
 ### Project purge
 
@@ -491,27 +486,35 @@ asked. That is the decorative prefix the audit named, preserved deliberately.
 **A `project` column on `sheet_blob`.** Fails R3. The same statement in two projects would need two
 rows, and the migration would have to split existing shared rows.
 
-**Enforcement inside the store.** Attractive because a required parameter is compiler-checked at
-every call site, which is stronger than a convention. Rejected because the content cache is keyed by
-hash and returns before any query runs, so a predicate inside `getSheet` is skipped on a cache hit —
-and because the runners would be forced to supply a project purely to satisfy a signature, when they
-are executing already-authorized work rather than making an access decision.
+**Enforcement as a predicate inside the content getter.** Rejected, though store-level enforcement
+was ultimately adopted in a different shape. The rejected form puts the scope predicate in the
+content query itself, which the hash-keyed cache skips on a hit; the adopted form keeps the ref
+check a separate first step inside the scoped accessors, ahead of the cache, which preserves the
+compiler-checked-parameter advantage without the cache hazard. The runners are not forced to supply
+a project to satisfy a signature: the unscoped getter remains for them, confined out of the API
+layer by a static test rather than by threading authorization theater through executors.
 
-## Rollout
+## Post-upgrade audits
 
 Correctness rests on backfill completeness, which cannot be established by construction; a missed
 source is a silent NotFound (R4). Treat that as demonstrated risk rather than hypothesis — two
 drafts of this document got the source list wrong, first inventing two sources that do not exist,
 then naming the wrong column and nesting for `plan_check_run`.
 
-**Ship every scope check in shadow mode, not just the read gate.** The gate evaluates the check and
-logs a miss — project, hash, call site — but still returns content. `HasSheets` needs the same
-treatment and is easy to overlook, because it is a *validation* predicate rather than a read: it
-backs plan, release and revision validation and fails the request outright with "some sheets are not
-found". Left unshadowed, any pre-existing blob without a ref would turn into a spurious validation
-error on a write path — a worse failure than a withheld read, since it blocks work rather than
-hiding content. In shadow mode it falls back to the deployment-wide existence check and logs the
-miss. Run one full release; flip to enforcing only once logs are clean.
+**Enforcement ships on, with no shadow mode.** An earlier draft staged enforcement behind a
+shadow-logging release. That staging was dropped along with the per-use checks it instrumented:
+with creation-time-only validation there is no per-request check to shadow, and the risk it hedged
+is addressed directly instead. Completeness is proven rather than observed — the proto sweep pins
+exactly five live hash locations, all covered; the four historical locations are verified dead
+(columns dropped or fields removed, zero readers); and the migration's output is asserted exactly,
+scenario by scenario, in `TestMigration3_22_5_ScopeSheetBlob`. What remains after that proof is the
+designed-unreadable population — orphan drafts and uncorroborated revisions — which shadow logging
+would only have observed at request time anyway. The audits below identify it exhaustively up
+front, which strictly dominates a traffic-dependent log.
+
+The queries carry the same robustness guards as the migration — `jsonb_typeof` ahead of every array
+expansion, a hex-shape test ahead of every `decode()`, bounded digit matches — so they cannot error
+on a malformed stored payload.
 
 **Verify the backfill first.** Blobs with zero refs should be a small, non-growing population:
 
@@ -533,68 +536,27 @@ since the backfill would make them permanent. Capture it at a known-good point: 
 public, including the rule that turns a reference into an ownership edge.
 
 **Review revisions that produced no ref.** These are the rows whose statements are now unreadable —
-absent provenance, or provenance the backfill could not corroborate. They will appear as shadow
-misses during the deferred-enforcement release; this query is the same population identified up
-front, so a top-up can be prepared before the log accumulates.
-
-The test must repeat the corroboration check rather than asking whether the hash has any ref at all.
-The design expects hashes to be shared, so a revision whose own provenance failed may still have a
-ref from an unrelated project that authored identical SQL — and a ref-existence proxy would silently
-drop exactly the rows this list exists to surface.
+absent provenance, or provenance the backfill could not corroborate. The migration stamped every
+corroborated row's `payload.project`, so the population is simply the unstamped rows that carry a
+hash — no need to repeat the corroboration test, since its outcome is stored:
 
 ```sql
-SELECT r.instance, r.db_name,
+SELECT r.instance, r.db_name, r.resource_id,
        (regexp_match(COALESCE(NULLIF(r.payload->>'release', ''),
                               r.payload->>'taskRun'), 'projects/([^/]+)/'))[1] AS named_project
 FROM revision r
-WHERE r.payload->>'sheetSha256' IS NOT NULL
-  -- the corroboration test from the backfill, repeated verbatim:
-  -- single-row identity, age, and the hash the row actually references.
-  -- (project, release_id) is not a declared unique key, so require exactly one match.
-  AND NOT (
-    (SELECT count(*) FROM release rel
-      WHERE rel.project    = (regexp_match(r.payload->>'release', 'projects/([^/]+)/'))[1]
-        AND rel.release_id = (regexp_match(r.payload->>'release', 'releases/([^/]+)'))[1]) = 1
-    AND EXISTS (
-      SELECT 1 FROM release rel
-      CROSS JOIN LATERAL jsonb_array_elements(COALESCE(rel.payload->'files', '[]'::jsonb)) AS f
-      WHERE rel.project      = (regexp_match(r.payload->>'release', 'projects/([^/]+)/'))[1]
-        AND rel.release_id   = (regexp_match(r.payload->>'release', 'releases/([^/]+)'))[1]
-        AND rel.created_at  <= r.created_at
-        AND f->>'sheetSha256' = r.payload->>'sheetSha256'
-    )
-  )
-  AND NOT EXISTS (
-    SELECT 1 FROM task_run tr
-    JOIN task t ON t.project = tr.project AND t.id = tr.task_id
-    WHERE tr.project     = (regexp_match(r.payload->>'taskRun', 'projects/([^/]+)/'))[1]
-      AND tr.id          = (regexp_match(r.payload->>'taskRun', 'taskRuns/(\d+)$'))[1]::bigint
-      AND tr.task_id     = (regexp_match(r.payload->>'taskRun', 'tasks/(\d+)/'))[1]::int
-      AND tr.created_at <= r.created_at
-      AND (
-        -- task.payload.source is a oneof: a sheet hash, or a release naming one
-        t.payload->>'sheetSha256' = r.payload->>'sheetSha256'
-        OR (
-          -- same exactly-one / age / hash test as the direct release branch
-          (SELECT count(*) FROM release rel2
-            WHERE rel2.project    = (regexp_match(t.payload->>'release', 'projects/([^/]+)/'))[1]
-              AND rel2.release_id = (regexp_match(t.payload->>'release', 'releases/([^/]+)'))[1]) = 1
-          AND EXISTS (
-            SELECT 1 FROM release rel2
-            CROSS JOIN LATERAL jsonb_array_elements(COALESCE(rel2.payload->'files', '[]'::jsonb)) AS f2
-            WHERE rel2.project      = (regexp_match(t.payload->>'release', 'projects/([^/]+)/'))[1]
-              AND rel2.release_id   = (regexp_match(t.payload->>'release', 'releases/([^/]+)'))[1]
-              AND rel2.created_at  <= r.created_at
-              AND f2->>'sheetSha256' = r.payload->>'sheetSha256'
-          )
-        )
-      )
-  );
+WHERE r.payload->>'sheetSha256' ~ '^[0-9a-fA-F]{64}$'
+  AND r.payload->>'project' IS NULL;
 ```
 
+`named_project` is the project the provenance *claims*, surfaced for the operator's investigation
+only — it failed corroboration, so it must not be granted (or shown to end users) on the query's
+say-so. To grant one after review: stamp `payload.project` and insert the ref in one transaction,
+which is exactly what the migration does for corroborated rows.
+
 A large count means either widespread project purges, reused project IDs, or a population of
-revisions created without provenance — each worth understanding before enforcing, since all of them
-end in unreadable statements.
+revisions created without provenance — each worth understanding, since all of them end in
+unreadable statements.
 
 ## Transaction lock ordering
 
@@ -628,7 +590,7 @@ terminal outcomes in both lock-acquisition directions rather than merely the abs
 
 ## Independent fixes
 
-No schema needed; worth landing separately and first.
+No schema needed; landed with the change.
 
 1. **The T6 hash echo.** `backend/api/v1/revision_service.go:203` takes `projectID` from the
    attacker-supplied `revision.File` and uses it as a store key without comparing it to
@@ -640,8 +602,10 @@ No schema needed; worth landing separately and first.
 2. **Delete the stale comments** at `release_service.go:331` and `:405`
    (`// Sheets are now project-agnostic, no need to check projectID`) — the original wrong assumption,
    sitting where it will talk the next reader into repeating it.
-3. **Add audit annotations** to `proto/v1/v1/sheet_service.proto`, which declares none while 20 other
-   v1 services do, leaving sheet reads and enumeration unlogged.
+3. **Add audit annotations** to `proto/v1/v1/sheet_service.proto`'s create RPCs, which declare none
+   while 20 other v1 services do, leaving sheet authoring unlogged. `GetSheet` stays unaudited
+   deliberately: it is a high-volume content fetch, and the convention across the API audits
+   mutations plus the SQL query/export paths, not plain Gets.
 4. **Drop `bb.sheets.update`** — granted to four roles, declared by no RPC, dead since sheets became
    immutable.
 5. **Comment the GC hazard on `sheet_blob`.** Nothing deletes from it; the only foreign key that ever
@@ -650,93 +614,17 @@ No schema needed; worth landing separately and first.
    obvious way — delete blobs no FK points at — would empty the table. `sheet_blob_ref` makes a
    correct GC possible later.
 
-## Tests
-
-- **Cross-tenant read** — seed a blob in workspace W1, request it under a project in W2, expect
-  NotFound. The regression test for the severe half.
-- **Cross-project read** — same workspace, different project, expect NotFound. The regression test
-  for R6.
-- **Cache ordering** — warm the cache under the owning project, then request the same hash under a
-  foreign project and assert NotFound. Fails if enforcement ever migrates into `getSheet` behind the
-  cache read.
-- **Gate confinement** — nothing under `backend/api/v1/` calls a store content getter outside the
-  gate.
-- **Stored-plan revalidation** — create a plan in project B referencing project A's hash while
-  `HasSheets` is unscoped, then enforce, then assert each of `CreateRollout`, `RunPlanChecks` and
-  `BatchRunTasks` refuses it. Run it twice: once with the hash on the spec directly, and once with
-  the hash inside a referenced release's `files[]`, which is the shape a `CreatePlan`-style check
-  does not look at. Without this the runner exemption is a bypass: the runners read by bare
-  hash, so anything these three admit is executed or summarized outside the gate.
-- **Query count** — a release with many files must issue a bounded number of queries. A correctness
-  test passes just as happily against an N+1.
-- **Backfill** — exercise all five sources; every referenced hash resolves under its project and no
-  unreferenced hash does.
-- **Missing-ref audit** — create a plan in project B referencing a pre-existing hash owned by A
-  *after* the backfill has run, and assert the source-level audit reports it. This is the case the
-  shadow log cannot see, because no `CreateSheets` runs and nothing revalidates the plan.
-- **Multi-project hashes** — seed a plan in project B referencing a hash created in project A, run
-  the backfill, assert the audit query reports it. The point is that it is detected, not blessed.
-- **Project purge** — purge a project holding sheet refs and assert it succeeds. Direct regression
-  test for the new foreign key.
-- **Create versus purge** — `CreateSheets` concurrent with a purge of its project ends in a
-  controlled NotFound, not a foreign-key error, in both lock-acquisition directions.
-- **`HasSheets`** no longer answers for a foreign project's hash.
-- **`TestCollision_Sheet`** per the composite-PK convention in `AGENTS.md`. The shared
-  `setupCollidingProjects` fixture and `assertProjectUnchanged` helper do not currently cover sheets;
-  extend them rather than writing a table-specific variant.
-
-## Order
-
-1. The five independent fixes, T6 first.
-2. Create `sheet_blob_ref` and land the ref *writers* — the transactional `CreateSheets` and the
-   purge delete. No scope check reads the table yet.
-3. Ship the backfill **and** the shadow-mode scope checks in the same release, so the migration runs
-   at startup and the binary that then serves traffic is already instrumented. Run the verification
-   queries.
-4. Before flipping: run the **missing-ref audit** below, review the shadow-miss log, and top up refs
-   deliberately. Re-run the multi-project and ambiguous-provenance audits afterwards.
-5. Flip to enforcing, one release after step 3.
-
-**Writers must precede the backfill, or new sheets fall into the gap.** A one-shot backfill scans
-history; it cannot cover a sheet created after it runs. If the migration ships before `CreateSheets`
-writes refs, every sheet created in between lands in `sheet_blob` with no ref and appears in no
-historical source, so it becomes a zero-ref miss and a NotFound at enforcement. A rolling upgrade
-widens the same gap even when both ship together, since old replicas keep serving the old
-`CreateSheets` against the new schema until the rollout completes.
-
-The backfill is idempotent (`ON CONFLICT DO NOTHING`), so run it once the rollout has fully
-converged. Shadow-mode misses are the backstop: anything it missed shows up as a log line rather
-than a production NotFound.
-
-**Do not re-run the backfill blindly before enforcing.** By step 5 the writers have been live for a
-release, so every genuinely new sheet already has a ref from `CreateSheets`. The only rows a second
-backfill would add are references made to *pre-existing* blobs during the shadow window — which is
-exactly the unscoped-reference shape this design exists to close. Shadow-mode `HasSheets` falls back
-to the deployment-wide existence check, so a plan or release written during that window can
-reference a foreign hash and succeed with only a log line; a blind re-run would then mint
-`(that project, sha)`, clean the subsequent shadow logs, and carry an unreviewed grant into
-enforcement.
-
-Instead, close the window deliberately: review the shadow-miss log, grant the entries that are
-legitimate, and re-run the multi-project and ambiguous-provenance audits afterwards so anything
-added since the backfill is seen before the flip. This is the same posture taken for
-provenance-less revisions — an operator confirms, rather than a query inferring.
-
-**The shadow log is not sufficient on its own, because it only sees traffic.** A reference created
-while the check was not yet instrumented — or created once and never revalidated — produces no log
-line, so relying on shadow alone reproduces exactly the silent NotFound R4 forbids. Concretely: a
-plan or release in project B can reference a *pre-existing* hash owned by project A, which invokes
-no `CreateSheets` and therefore writes no ref, and which the multi-project audit cannot see because
-that audit reads `sheet_blob_ref` and no row was ever created.
-
-So audit the sources directly rather than inferring from refs. For each of the four project-scoped
-sources, find `(project, hash)` pairs with no matching ref:
+**Audit the sources directly rather than inferring from refs.** A reference to a *pre-existing*
+blob made through a stored payload invokes no `CreateSheets` and writes no ref, and the
+multi-project audit cannot see it because that audit reads `sheet_blob_ref`. For each of the four
+project-scoped sources, find `(project, hash)` pairs with no matching ref:
 
 ```sql
 SELECT DISTINCT pl.project, spec->'changeDatabaseConfig'->>'sheetSha256' AS sha
 FROM plan pl
-CROSS JOIN LATERAL jsonb_array_elements(COALESCE(pl.config->'specs', '[]'::jsonb)) AS spec
-WHERE spec->'changeDatabaseConfig'->>'sheetSha256' IS NOT NULL
+CROSS JOIN LATERAL jsonb_array_elements(
+    CASE WHEN jsonb_typeof(pl.config->'specs') = 'array' THEN pl.config->'specs' ELSE '[]'::jsonb END) AS spec
+WHERE spec->'changeDatabaseConfig'->>'sheetSha256' ~ '^[0-9a-fA-F]{64}$'
   AND NOT EXISTS (
     SELECT 1 FROM sheet_blob_ref r
     WHERE r.project = pl.project
@@ -746,9 +634,69 @@ WHERE spec->'changeDatabaseConfig'->>'sheetSha256' IS NOT NULL
 ;
 ```
 
-Every row is something that will 404 at enforcement. It is exhaustive rather than traffic-dependent,
-so it strictly dominates the shadow log for these four sources, and it needs no assumption about
-when a reference was created or whether anything has revalidated it since.
+Every row is something that will 404 on a scoped read. Immediately after the upgrade this should
+return only references whose blob never existed — the backfill covers everything else — and it is
+exhaustive rather than traffic-dependent, needing no assumption about when a reference was created.
 
 `revision` is deliberately excluded: uncorroborated revisions produce no ref *by design*, so they
 would flood this query with expected rows. They have their own list above.
+
+## Tests
+
+Integration coverage is four tests in `backend/tests/sheet_scope_test.go`, one per independent
+decision, plus the migration matrix and the lock-order pair:
+
+- **Cross-project read and cache ordering** — `TestSheetProjectScope`: a sheet created in project A
+  is readable there (raw and truncated), NotFound under project B — with the raw foreign read
+  running *after* the owner's raw read warmed the hash-keyed content cache, so the test fails if
+  enforcement ever moves behind the cache. The same test pins the CreateRelease minting gate
+  (naming A's sheet from B is refused), the owning project's own reference succeeding, and
+  CheckRelease hydrating real content (a sheet holding broken SQL must surface a syntax-error
+  advice — only hydrated content can). Cross-*tenant* reads are subsumed mechanically: refs are
+  per-project and the scoped accessors consult nothing else, so there is no workspace-dependent
+  code path to test separately.
+- **Transfer semantics** — `TestSheetHistoryOnDatabaseTransfer`: the runtime half of the companion
+  doc's decision. History follows the database; the sheet stays named under the stamped authoring
+  project; the destination gains no read access.
+- **Purge semantics** — `TestSheetHistoryAfterOwnerPurge`: after the authoring project is purged,
+  the revision list survives, the dangling sheet name still renders, and reading it 404s — the
+  contract the frontend's withheld-statement panel is built on.
+- **Write non-interference** — `TestCollision_SheetWrite` per the composite-PK convention in
+  `AGENTS.md`, through the shared `setupCollidingProjects` fixture: a sheet write in one project
+  whose content (and therefore sha256) equals another project's leaves that project's refs
+  bit-identical.
+- **Backfill** — `TestMigration3_22_5_ScopeSheetBlob`: all five sources, the full corroboration
+  matrix (identity, exactly-one, age, hash, preference, fallback — every negative asserted by an
+  exact ref-set match), the stamp outcomes per scenario, the three audits, and a probe per
+  abort-hazard guard (dangling blob, ghost project, bigint overflow, stale stamp, JSON null and
+  malformed array shapes).
+- **Create versus purge** — the deterministic lock-order pair mandated by
+  `backend/store/README.md`: `CreateSheets` concurrent with a purge of its project ends in a
+  controlled NotFound, not a foreign-key error, in both lock-acquisition directions.
+- **Gate confinement** — a static AST test asserts nothing under `backend/api/v1/` calls
+  `GetSheetFull`; the rest of the split is compiler-enforced by unexported store internals.
+
+## Order
+
+Everything ships in one release: the independent fixes, the schema, the ref writers, the backfill,
+and enforcement. The migration creates the table, backfills, and stamps atomically at startup
+before the binary serves traffic, and every scoped code path is live from the first request. The
+staging that an earlier draft spread across three releases collapsed along with shadow mode — with
+creation-time-only validation and a proven-complete backfill there is no instrumentation period to
+stage.
+
+Two windows remain, both narrow and both documented:
+
+- **Rolling upgrade.** Old replicas keep serving the pre-fix writers while the first new replica
+  migrates. A sheet created by an old replica in that window lands in `sheet_blob` with no ref (an
+  orphan draft — readable again the moment anything references it through a new-binary create
+  path, since `CreateSheets` upserts), and a revision written by an old replica lands unstamped —
+  its content stays readable through the release/task-source refs, and it appears on the
+  ambiguous-provenance audit for a manual stamp. Neither corrupts anything; both self-identify.
+- **Re-running the backfill.** It is idempotent (`ON CONFLICT DO NOTHING`, stamp merge writes the
+  same value), but do not re-run it blindly to "top up": any reference created *after* enforcement
+  went live was validated by the creation-time gates, so a re-run adds nothing legitimate — and
+  the migration's version tracking prevents accidental re-execution anyway.
+
+Run the three audits after the upgrade; grant survivors deliberately, per
+[Post-upgrade audits](#post-upgrade-audits).

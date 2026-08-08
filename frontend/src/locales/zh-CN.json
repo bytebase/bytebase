@@ -2062,6 +2062,12 @@
       "pattern": "{{resource}} ID 可以具有小写字母，数字或连字符。\n它必须从小写字母开始，并以字母或数字结尾。"
     }
   },
+  "revision": {
+    "statement-withheld": {
+      "owned-by-project": "该语句由项目 {{project}} 所有。请向该项目申请访问权限后查看。",
+      "unknown-owner": "该语句不可用：无法确定创建它的项目。"
+    }
+  },
   "role": {
     "custom-roles": {
       "self": "自定义角色"

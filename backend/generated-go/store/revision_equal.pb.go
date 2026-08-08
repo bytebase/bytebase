@@ -25,5 +25,8 @@ func (x *RevisionPayload) Equal(y *RevisionPayload) bool {
 	if x.Type != y.Type {
 		return false
 	}
+	if x.Project != y.Project {
+		return false
+	}
 	return true
 }

@@ -463,6 +463,10 @@ func getRequestResource(request any) string {
 		return r.Name
 	case *v1pb.ExportRequest:
 		return r.Name
+	case *v1pb.CreateSheetRequest:
+		return r.GetParent()
+	case *v1pb.BatchCreateSheetsRequest:
+		return r.GetParent()
 	case *v1pb.UpdateDatabaseRequest:
 		return r.Database.Name
 	case *v1pb.BatchUpdateDatabasesRequest:
@@ -560,6 +564,22 @@ func getRequestString(request any) (string, error) {
 			r = proto.CloneOf(r)
 			r.IdentityProvider = redactIdentityProvider(r.IdentityProvider)
 			return r
+		case *v1pb.CreateSheetRequest:
+			// The clone is already private; drop the content in place instead
+			// of cloning the potentially large sheet a second time.
+			r = proto.CloneOf(r)
+			if r.Sheet != nil {
+				r.Sheet.Content = nil
+			}
+			return r
+		case *v1pb.BatchCreateSheetsRequest:
+			r = proto.CloneOf(r)
+			for _, cr := range r.Requests {
+				if cr.Sheet != nil {
+					cr.Sheet.Content = nil
+				}
+			}
+			return r
 		case *v1pb.UpdateIdentityProviderRequest:
 			r = proto.CloneOf(r)
 			r.IdentityProvider = redactIdentityProvider(r.IdentityProvider)
@@ -610,6 +630,14 @@ func getResponseString(response any) (string, error) {
 			return redactUser(r)
 		case *v1pb.Instance:
 			return redactInstance(r)
+		case *v1pb.Sheet:
+			return redactSheet(r)
+		case *v1pb.BatchCreateSheetsResponse:
+			n := &v1pb.BatchCreateSheetsResponse{}
+			for _, sheet := range r.Sheets {
+				n.Sheets = append(n.Sheets, redactSheet(sheet))
+			}
+			return n
 		default:
 			if p, ok := r.(protoreflect.ProtoMessage); ok {
 				return p
@@ -848,6 +876,18 @@ func redactUser(r *v1pb.User) *v1pb.User {
 		Email: r.Email,
 		Title: r.Title,
 	}
+}
+
+// redactSheet strips the sheet content from audit payloads. Sheets carry full
+// SQL statements (potentially megabytes); the audit record keeps the resource
+// name and content size.
+func redactSheet(s *v1pb.Sheet) *v1pb.Sheet {
+	if s == nil {
+		return nil
+	}
+	cloned := proto.CloneOf(s)
+	cloned.Content = nil
+	return cloned
 }
 
 func redactInstance(i *v1pb.Instance) *v1pb.Instance {

@@ -123,7 +123,6 @@ const (
 	WorkspaceProfileSettingsSet          Permission = "bb.settings.setWorkspaceProfile"
 	SheetsCreate                         Permission = "bb.sheets.create"
 	SheetsGet                            Permission = "bb.sheets.get"
-	SheetsUpdate                         Permission = "bb.sheets.update"
 	SQLSelect                            Permission = "bb.sql.select"
 	SQLDdl                               Permission = "bb.sql.ddl"
 	SQLDml                               Permission = "bb.sql.dml"

@@ -23,7 +23,7 @@ func batchMoveDatabaseIntoProjectA(fixture *projectDeletionLockOrderFixture) err
 
 func requireProjectPurgeTerminalState(t *testing.T, fixture *projectDeletionLockOrderFixture) {
 	t.Helper()
-	var projectCount, orphanCount, databaseCount int
+	var projectCount, orphanCount, databaseCount, sheetRefCount int
 	var project string
 	require.NoError(t, fixture.db.QueryRowContext(fixture.ctx,
 		"SELECT COUNT(*) FROM project WHERE resource_id = 'project-a'").Scan(&projectCount))
@@ -33,20 +33,27 @@ func requireProjectPurgeTerminalState(t *testing.T, fixture *projectDeletionLock
 		"SELECT COUNT(*) FROM db WHERE instance = 'instance-a' AND name = 'db-a'").Scan(&databaseCount))
 	require.NoError(t, fixture.db.QueryRowContext(fixture.ctx,
 		"SELECT project FROM db WHERE instance = 'instance-a' AND name = 'db-a'").Scan(&project))
+	require.NoError(t, fixture.db.QueryRowContext(fixture.ctx,
+		"SELECT COUNT(*) FROM sheet_blob_ref WHERE project = 'project-a'").Scan(&sheetRefCount))
 	require.Zero(t, projectCount, "project purge must remove the archived project")
 	require.Zero(t, orphanCount, "no database row may reference the purged project")
 	require.Equal(t, 1, databaseCount, "the workspace-instance database must survive")
 	require.Equal(t, "default", project, "the workspace-instance database must be reassigned to the default project")
+	require.Zero(t, sheetRefCount, "no sheet ref may reference the purged project")
 }
 
 func TestBatchUpdateDatabasesAndDeleteProjectSerialize(t *testing.T) {
 	// The batch moves a workspace-instance database into the archived project
 	// while that project is being purged. Without purge fencing the terminal
-	// project deletion fails on db.project's foreign key.
+	// project deletion fails on db.project's foreign key. The archived project
+	// also owns a sheet ref, so the purge must clear sheet_blob_ref or fail on
+	// its foreign key.
 	const seedSQL = `
 		INSERT INTO instance (resource_id, workspace, project)
 			VALUES ('instance-a', 'default', NULL);
 		INSERT INTO db (instance, name, project) VALUES ('instance-a', 'db-a', 'default');
+		INSERT INTO sheet_blob (sha256, content) VALUES (sha256('SELECT transfer;'::bytea), 'SELECT transfer;');
+		INSERT INTO sheet_blob_ref (project, sha256) VALUES ('project-a', sha256('SELECT transfer;'::bytea));
 	`
 	purgeProjectA := func(fixture *projectDeletionLockOrderFixture) error {
 		return fixture.store.DeleteProject(fixture.ctx, "default", "project-a")

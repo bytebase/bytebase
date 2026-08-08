@@ -212,12 +212,14 @@ When writing or modifying queries on these tables:
 - When adding a new store method touching a composite-PK table, add a corresponding
   `TestCollision_*` test in `backend/tests/`. The existing `setupCollidingProjects`
   fixture and `assertProjectUnchanged` helper cover `plan`, `issue`, `task`, `task_run`,
-  `plan_check_run`, `task_run_log`, `db_group`, and `release` (the snapshot reads the
-  last three through public APIs where one exists). `plan_webhook_delivery` has no
-  public read API and uses a table-specific raw metadata-DB read; its rows are
+  `plan_check_run`, `task_run_log`, `db_group`, `release`, and `sheet_blob_ref` (the
+  snapshot reads the last four through public APIs where one exists). `plan_webhook_delivery`
+  has no public read API and uses a table-specific raw metadata-DB read; its rows are
   claimed asynchronously after rollout completion, so raw-read collision tests
   must stabilize before snapshotting and compare the table separately (see
-  `backend/tests/README.md`). For any future composite-PK table outside that set,
+  `backend/tests/README.md`). `sheet_blob_ref` also has no public read API and is
+  read raw, but its rows are written synchronously, so `assertProjectUnchanged`
+  compares them directly. For any future composite-PK table outside that set,
   write table-specific seed and assertion helpers — or extend the shared helper
   first
 - Collision tests use `setupCollidingProjects` + `fixture.completeRolloutB` for setup
