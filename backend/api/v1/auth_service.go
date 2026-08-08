@@ -1214,7 +1214,7 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only end users can switch workspaces"))
 	}
 
-	if err := s.rejectMCPOriginatedTokenMint(req.Header(), "switch workspaces"); err != nil {
+	if err := s.rejectMCPOriginatedTokenMint(ctx, req.Header(), "switch workspaces"); err != nil {
 		return nil, err
 	}
 
@@ -1286,15 +1286,24 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 // able to obtain one, for its own workspace or any other. An MCP session is
 // also bound to a specific workspace via the grant.
 //
-// It asks auth rather than extracting claims itself: since P1a PR 4 tool
-// traffic arrives on the internal transport carrying the delegated credential,
-// which is signed with a derived key and therefore invisible to
-// ExtractClaimsFromExpiredToken. auth recognizes both that credential and an
-// external MCP token.
+// It recognizes MCP origin two independent ways. The AuthContext is the
+// structural one: the internal interceptor stamps the delegated grant on every
+// request arriving on the internal MCP transport, and presence alone marks the
+// request (see common.DelegatedGrant), so this holds even for a caller that
+// forwards no headers. The bearer check then covers the public chain, where
+// the AuthContext carries no grant.
+//
+// The bearer half asks auth rather than extracting claims itself: since P1a PR
+// 4 tool traffic carries the delegated credential, which is signed with a
+// derived key and therefore invisible to ExtractClaimsFromExpiredToken. auth
+// recognizes both that credential and an external MCP token.
 //
 // Callers must run this BEFORE any mutation — leaving or deleting a workspace
 // and only then refusing the token would strand the caller.
-func (s *AuthService) rejectMCPOriginatedTokenMint(reqHeaders http.Header, action string) error {
+func (s *AuthService) rejectMCPOriginatedTokenMint(ctx context.Context, reqHeaders http.Header, action string) error {
+	if authCtx, ok := common.GetAuthContextFromContext(ctx); ok && authCtx.DelegatedGrant != nil {
+		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("OAuth2 tokens cannot be used to %s", action))
+	}
 	accessTokenStr, _ := auth.GetTokenFromHeaders(reqHeaders)
 	if auth.IsMCPOriginatedToken(accessTokenStr, s.secret) {
 		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("OAuth2 tokens cannot be used to %s", action))
@@ -1311,7 +1320,7 @@ func (s *AuthService) switchWorkspaceInternal(ctx context.Context, user *store.U
 	// costs nothing and makes the boundary structural: a future caller that
 	// forgets cannot reopen the escape. This function acquired two unguarded
 	// callers once already.
-	if err := s.rejectMCPOriginatedTokenMint(reqHeaders, "obtain a workspace token"); err != nil {
+	if err := s.rejectMCPOriginatedTokenMint(ctx, reqHeaders, "obtain a workspace token"); err != nil {
 		return nil, err
 	}
 

@@ -1,14 +1,19 @@
 package v1
 
 import (
+	"context"
+	"net/http"
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestExtractDomain(t *testing.T) {
@@ -181,4 +186,51 @@ func TestLegacyMFATempTokenDefaultsToPasswordLoginAuthMethod(t *testing.T) {
 	require.Equal(t, "user@example.com", email)
 	require.Equal(t, loginAuthMethodPassword, method)
 	require.True(t, method.requiresPasswordReset())
+}
+
+// TestSwitchWorkspaceInternalRefusesMCPCaller pins the refusal at the mint.
+// The three handlers that reach switchWorkspaceInternal each refuse
+// MCP-originated callers up front, where the refusal still precedes their
+// mutations; the check inside switchWorkspaceInternal is the one that keeps a
+// future caller from reopening the escape the way LeaveWorkspace and
+// DeleteWorkspace did. Because the handlers refuse first, no e2e reaches it,
+// so it needs its own pin.
+//
+// The AuthService here deliberately carries a nil store: the guard has to
+// return before generateLoginToken touches it, so a regression panics rather
+// than quietly minting a token.
+func TestSwitchWorkspaceInternalRefusesMCPCaller(t *testing.T) {
+	const secret = "test-secret"
+	s := &AuthService{secret: secret}
+	user := &store.UserMessage{Email: "demo@example.com"}
+
+	delegated, err := auth.GenerateInternalMCPToken(auth.DelegatedMCPCredential{
+		Principal:   "demo@example.com",
+		WorkspaceID: "ws-test",
+		ClientID:    "client-A",
+	}, secret)
+	require.NoError(t, err)
+	mcpHeaders := http.Header{}
+	mcpHeaders.Set("Authorization", "Bearer "+delegated)
+
+	resp, err := s.switchWorkspaceInternal(context.Background(), user, "ws-test", false, mcpHeaders)
+	require.Nil(t, resp, "an MCP-originated caller must never reach the mint")
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+
+	// A caller that forwards no headers must be refused just the same: on the
+	// internal transport the AuthContext carries the delegated grant, and its
+	// presence — not any field value — marks the request MCP-originated.
+	ctx := context.WithValue(context.Background(), common.AuthContextKey,
+		&common.AuthContext{DelegatedGrant: &common.DelegatedGrant{}})
+	resp, err = s.switchWorkspaceInternal(ctx, user, "ws-test", false, http.Header{})
+	require.Nil(t, resp, "the grant in the AuthContext must refuse on its own")
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+
+	// Control: a plain web session on the public chain carries no grant and is
+	// not MCP-originated, so the guard lets it through to the mint.
+	webToken, err := auth.GenerateAccessToken("demo@example.com", "ws-test", secret, time.Hour)
+	require.NoError(t, err)
+	webHeaders := http.Header{}
+	webHeaders.Set("Authorization", "Bearer "+webToken)
+	require.NoError(t, s.rejectMCPOriginatedTokenMint(context.Background(), webHeaders, "obtain a workspace token"))
 }
