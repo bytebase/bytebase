@@ -854,7 +854,7 @@ func TestMigration3_22_5_ScopeSheetBlob(t *testing.T) {
 		CREATE TABLE revision (resource_id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text, instance TEXT NOT NULL, db_name TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), payload JSONB NOT NULL DEFAULT '{}');
 		INSERT INTO project VALUES
 			('p1'), ('p2'), ('p3'), ('p4'),
-			('rel-ok'), ('tr-ok'), ('rel-old'), ('tr-late'), ('rel-mismatch'), ('tr-mismatch'),
+			('rel-ok'), ('rel-upper'), ('tr-ok'), ('rel-old'), ('tr-late'), ('rel-mismatch'), ('tr-mismatch'),
 			('rel-dup'), ('tr-dup'), ('rel-task'), ('rel-taskid'), ('tr-taskid'), ('tr-direct'),
 			('rel-prefer'), ('rel-nest-prefer'), ('tr-prefer'),
 			('rel-newer'), ('rel-nest-fb'), ('tr-fb');
@@ -868,7 +868,7 @@ func TestMigration3_22_5_ScopeSheetBlob(t *testing.T) {
 	blobs := map[string]string{}
 	for _, name := range []string{
 		"plan", "task", "release", "pcr", "shared", "orphan",
-		"rev-rel", "rev-nest", "rev-late", "rev-mismatch", "rev-other",
+		"rev-rel", "rev-upper", "rev-nest", "rev-late", "rev-mismatch", "rev-other",
 		"rev-dup", "rev-taskid", "rev-direct", "rev-prefer", "rev-fb", "rev-ghost", "rev-bare",
 		"rev-overflow", "rev-stale-stamp", "rev-empty-stamp",
 	} {
@@ -935,6 +935,14 @@ func TestMigration3_22_5_ScopeSheetBlob(t *testing.T) {
 			[]any{older, fmt.Sprintf(`{"files":[{"sheetSha256":%q}]}`, blobs["rev-rel"])}},
 		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
 			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"release":"projects/rel-ok/releases/r"}`, blobs["rev-rel"])}},
+
+		// Legacy uppercase hex: the revision stores the hash in uppercase
+		// while the release file carries lowercase. Text comparisons are
+		// lowered, so this corroborates → (rel-upper, rev-upper).
+		{"INSERT INTO release (project, release_id, created_at, payload) VALUES ('rel-upper', 'r', $1, $2::jsonb)",
+			[]any{older, fmt.Sprintf(`{"files":[{"sheetSha256":%q}]}`, blobs["rev-upper"])}},
+		{"INSERT INTO revision (instance, db_name, created_at, payload) VALUES ('i', 'd', $1, $2::jsonb)",
+			[]any{rev, fmt.Sprintf(`{"sheetSha256":%q,"release":"projects/rel-upper/releases/r"}`, strings.ToUpper(blobs["rev-upper"]))}},
 
 		// Observable probe, all constraints satisfied: task-run provenance in
 		// tr-ok whose task routes the hash through a release in rel-task.
@@ -1083,6 +1091,7 @@ func TestMigration3_22_5_ScopeSheetBlob(t *testing.T) {
 		"p4|" + blobs["pcr"],
 		// Release rows seeded as corroboration targets are sources themselves.
 		"rel-ok|" + blobs["rev-rel"],
+		"rel-upper|" + blobs["rev-upper"],
 		"rel-task|" + blobs["rev-nest"],
 		"rel-old|" + blobs["rev-late"],
 		"rel-mismatch|" + blobs["rev-other"],
@@ -1109,6 +1118,7 @@ func TestMigration3_22_5_ScopeSheetBlob(t *testing.T) {
 	// directly: both branches corroborate and the release's project wins.
 	for sha, want := range map[string]string{
 		blobs["rev-rel"]:         "rel-ok",
+		blobs["rev-upper"]:       "rel-upper",
 		blobs["rev-nest"]:        "tr-ok",
 		blobs["rev-late"]:        "",
 		blobs["rev-mismatch"]:    "",
@@ -1125,7 +1135,7 @@ func TestMigration3_22_5_ScopeSheetBlob(t *testing.T) {
 	} {
 		var got string
 		require.NoError(t, db.QueryRowContext(ctx,
-			"SELECT COALESCE(payload->>'project', '') FROM revision WHERE payload->>'sheetSha256' = $1", sha).Scan(&got))
+			"SELECT COALESCE(payload->>'project', '') FROM revision WHERE lower(payload->>'sheetSha256') = $1", sha).Scan(&got))
 		require.Equal(t, want, got, "stamped project for hash %s", sha)
 	}
 

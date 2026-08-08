@@ -521,7 +521,9 @@ func GetProjectResourceIDSheetSha256(name string) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	return tokens[0], tokens[1], nil
+	// The hash segment is hex: canonicalize to lowercase so it matches the
+	// form the store keys by and the payloads persist.
+	return tokens[0], strings.ToLower(tokens[1]), nil
 }
 
 // GetProjectIDWorksheetID returns the project ID and worksheet ID (resource_id) from a resource name.
