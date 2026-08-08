@@ -215,3 +215,50 @@ func TestMCPCannotDeleteWorkspace(t *testing.T) {
 	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err),
 		"a normal session must reach the handler, not the MCP guard")
 }
+
+// TestMCPOAuthSessionCannotLeaveOrDeleteWorkspace covers the other admission
+// path. The two tests above ride the legacy admission — a plain web-session
+// token pasted into an MCP client — while this one runs the flow a real MCP
+// client performs: RFC 7591 dynamic client registration, PKCE consent, code
+// exchange. Both admissions reach these handlers, so both have to be refused.
+//
+// The grant here consents to mcp:read-only and still reaches two mutating
+// handlers, because nothing enforces the consented scope yet (see
+// common.DelegatedGrant — P1b's capability gate is the intended consumer). A
+// read-only grant is therefore no substitute for this guard.
+func TestMCPOAuthSessionCannotLeaveOrDeleteWorkspace(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
+		Name: "workspaces/-",
+	}))
+	a.NoError(err)
+
+	oauthToken, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
+
+	for _, tc := range []struct {
+		operation string
+		refusal   string
+	}{
+		{"WorkspaceService/LeaveWorkspace", "OAuth2 tokens cannot be used to leave workspaces"},
+		{"WorkspaceService/DeleteWorkspace", "OAuth2 tokens cannot be used to delete workspaces"},
+	} {
+		out := callAPIViaMCP(ctx, t, ctl, oauthToken, tc.operation,
+			map[string]any{"name": workspace.Msg.Name})
+		t.Logf("MCP OAuth %s → status=%d error=%q", tc.operation, out.Status, out.Error)
+
+		a.Equal(http.StatusForbidden, out.Status,
+			"a real MCP OAuth session must be refused by %s", tc.operation)
+		a.Contains(out.Error, tc.refusal,
+			"the refusal must come from the MCP guard")
+		a.Empty(out.Response.Token,
+			"an MCP session must never receive a plain user access token")
+	}
+}
