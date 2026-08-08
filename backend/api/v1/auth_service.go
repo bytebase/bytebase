@@ -1277,8 +1277,8 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 	return s.switchWorkspaceInternal(ctx, user, workspaceID, request.Web, req.Header())
 }
 
-// rejectMCPOriginatedTokenMint refuses a request whose bearer identifies
-// MCP-originated traffic. Every path into switchWorkspaceInternal hands the
+// rejectMCPOriginatedTokenMint refuses a request that originated from an MCP
+// session. Every path into switchWorkspaceInternal hands the
 // caller a plain bb.user.access token in the response body when there is no
 // refresh cookie — and an MCP session never has one. That token is not
 // audience-bound to the MCP resource, survives revocation of the OAuth grant,
@@ -1293,20 +1293,25 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 // forwards no headers. The bearer check then covers the public chain, where
 // the AuthContext carries no grant.
 //
-// The bearer half asks auth rather than extracting claims itself: since P1a PR
-// 4 tool traffic carries the delegated credential, which is signed with a
-// derived key and therefore invisible to ExtractClaimsFromExpiredToken. auth
-// recognizes both that credential and an external MCP token.
+// The bearer half asks auth rather than reading an audience itself. Audience
+// stopped being the recognizer: the delegated credential is signed with a
+// derived key, so its claims do not verify under the raw secret at all
+// (TestSwitchWorkspaceMCPRecognition pins that), and since P1a PR 3 an
+// external MCP token's audience is a per-deployment resource URI that cannot
+// be matched by value, leaving token_use to identify it. auth.IsMCPOriginatedToken
+// holds both recognizers.
 //
 // Callers must run this BEFORE any mutation — leaving or deleting a workspace
 // and only then refusing the token would strand the caller.
 func (s *AuthService) rejectMCPOriginatedTokenMint(ctx context.Context, reqHeaders http.Header, action string) error {
-	if authCtx, ok := common.GetAuthContextFromContext(ctx); ok && authCtx.DelegatedGrant != nil {
-		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("OAuth2 tokens cannot be used to %s", action))
+	authCtx, ok := common.GetAuthContextFromContext(ctx)
+	mcpOriginated := ok && authCtx.DelegatedGrant != nil
+	if !mcpOriginated {
+		accessTokenStr, _ := auth.GetTokenFromHeaders(reqHeaders)
+		mcpOriginated = auth.IsMCPOriginatedToken(accessTokenStr, s.secret)
 	}
-	accessTokenStr, _ := auth.GetTokenFromHeaders(reqHeaders)
-	if auth.IsMCPOriginatedToken(accessTokenStr, s.secret) {
-		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("OAuth2 tokens cannot be used to %s", action))
+	if mcpOriginated {
+		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("MCP sessions cannot %s", action))
 	}
 	return nil
 }

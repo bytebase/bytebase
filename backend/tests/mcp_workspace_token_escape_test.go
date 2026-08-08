@@ -147,7 +147,7 @@ func TestMCPCannotLeaveWorkspace(t *testing.T) {
 
 	a.Equal(http.StatusForbidden, out.Status,
 		"an MCP session must be refused before it can leave a workspace")
-	a.Contains(out.Error, "OAuth2 tokens cannot be used to leave workspaces",
+	a.Contains(out.Error, "MCP sessions cannot leave workspaces",
 		"the refusal must come from the MCP guard, not from some other precondition")
 	// This fixture has a single workspace, so switchWorkspaceInternal's nextWS
 	// is always nil and the mint is out of reach even unguarded: the assertion
@@ -199,7 +199,7 @@ func TestMCPCannotDeleteWorkspace(t *testing.T) {
 
 	a.Equal(http.StatusForbidden, out.Status,
 		"an MCP session must be refused before any deletion work happens")
-	a.Contains(out.Error, "OAuth2 tokens cannot be used to delete workspaces",
+	a.Contains(out.Error, "MCP sessions cannot delete workspaces",
 		"the refusal must come from the MCP guard, ahead of the SaaS precondition")
 	// As in the leave test, the mint is unreachable on a self-hosted fixture,
 	// so this states the invariant rather than discriminating on it.
@@ -247,8 +247,8 @@ func TestMCPOAuthSessionCannotLeaveOrDeleteWorkspace(t *testing.T) {
 		operation string
 		refusal   string
 	}{
-		{"WorkspaceService/LeaveWorkspace", "OAuth2 tokens cannot be used to leave workspaces"},
-		{"WorkspaceService/DeleteWorkspace", "OAuth2 tokens cannot be used to delete workspaces"},
+		{"WorkspaceService/LeaveWorkspace", "MCP sessions cannot leave workspaces"},
+		{"WorkspaceService/DeleteWorkspace", "MCP sessions cannot delete workspaces"},
 	} {
 		out := callAPIViaMCP(ctx, t, ctl, oauthToken, tc.operation,
 			map[string]any{"name": workspace.Msg.Name})
