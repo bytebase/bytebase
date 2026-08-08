@@ -169,6 +169,10 @@ func setupInstanceDescendantServiceTest(t *testing.T, instanceProjectID *string)
 		Payload: &storepb.RevisionPayload{
 			SheetSha256: "sheet-a",
 			Type:        storepb.SchemaChangeType_VERSIONED,
+			// The authoring-project stamp every runtime writer sets; the
+			// sheet name in responses is derived from it, so an unstamped
+			// revision carries no sheet name at all.
+			Project: databaseProjectID,
 		},
 	})
 	require.NoError(t, err)
