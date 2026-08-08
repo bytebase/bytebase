@@ -22,38 +22,6 @@ to it. `DiffSchema` (fix already written, patch `04`) was one instance; these ar
 The related CUSTOM-auth variant — the interceptor checks nothing at all, so the handler must
 authorize every branch itself — was T4 (`SearchIssues`), now fixed.
 
-### T5 ✅ HIGH — sheet content is globally readable by SHA256
-
-`sheet_blob`'s primary key is `sha256` alone (`backend/migrator/migration/LATEST.sql:237-240`),
-and `getSheet` selects `WHERE sha256 = decode(?, 'hex')` with no project or workspace predicate
-(`backend/store/sheet.go:60-71`). `GetSheet` validates only that the **caller-named** project
-exists and is readable, then fetches by hash (`backend/api/v1/sheet_service.go:111-147`).
-
-The `projects/{project}/sheets/{sha}` prefix is decorative. Anyone who learns a SHA256 reads that
-SQL by requesting it under a project they control. This is a boundary failure in its own right
-and the amplifier for T6.
-
-### T6 ✅ HIGH — `BatchCreateRevisions` reads another project's — and another *workspace's* — release, and leaks the sheet hash
-
-`backend/api/v1/revision_service.go:203-210` takes `projectID` from the attacker-supplied
-`revision.file` and uses it directly as the store key, never comparing it to the authorized
-database's project. The mismatch error then echoes the hash (`:221-223`):
-
-```go
-fileSheet := common.FormatSheet(release.ProjectID, f.SheetSha256)
-if fileSheet != revision.Sheet {
-    return nil, ...errors.Errorf("The sheet in file %q is %q which is different from revision.sheet %q", ...)
-}
-```
-
-Amplifiers, all verified: `FindReleaseMessage` has **no `Workspace` field**
-(`backend/store/release.go:30-37`) and `ListReleases` emits no workspace predicate (`:150-154`),
-so this crosses tenants; release IDs are deterministic and enumerable
-(`fmt.Sprintf("%s%02d", train, nextIteration)`, `release.go:80`); and T5 turns the leaked hash
-into content.
-
-Chain: `bb.revisions.create` on one database → another team's (or another tenant's) migration SQL.
-
 ### T7 ✅ HIGH — `CheckRelease.targets` reaches arbitrary databases, including a live admin connection
 
 `backend/api/v1/release_service_check.go:70-86` resolves database targets workspace-wide with no
@@ -215,13 +183,16 @@ comment; 22 files have string fields and zero protovalidate constraints despite
 # What I'd do, in order
 
 1. **Runtime-confirm T9.** Eleven bad logins. If the eleventh is accepted, there is no lockout and that outranks everything else here.
-2. **Close the multi-resource ACL class, not the instances** (T6–T7 + the pending `DiffSchema` patch): teach `getResourceFromRequest` to collect *every* `resource_reference`d field including oneof and repeated members, then annotate `DiffSchemaRequest.changelog`, `CheckReleaseRequest.targets`, `Revision.release/file/task_run`. `UpdateDatabase`'s project-transfer case (`acl.go:604-624`) is the in-repo precedent.
-3. **Give sheets an ownership model** (T5), or at minimum scope the blob fetch by the owning project/workspace. Until then the sheet namespace is workspace-global by design, and should be documented as such.
-4. **Fail closed**: reject `AUTH_METHOD_UNSPECIFIED` at startup; make `permission` on a CUSTOM RPC either enforced or a build error, since 20 of them are currently decorative.
-5. **Wire api-linter into CI** at the 474-finding baseline. None of Tier 5 was visible to `buf lint`'s `BASIC` profile, which is why it accumulated.
+2. **Close the multi-resource ACL class, not the instances** (T7 + the pending `DiffSchema` patch): teach `getResourceFromRequest` to collect *every* `resource_reference`d field including oneof and repeated members, then annotate `DiffSchemaRequest.changelog`, `CheckReleaseRequest.targets`. The class's other instance, `Revision.release/file/task_run`, is closed handler-side (provenance must name the authorized database's own project), but the interceptor-level generalization still applies. `UpdateDatabase`'s project-transfer case (`acl.go:604-624`) is the in-repo precedent.
+3. **Fail closed**: reject `AUTH_METHOD_UNSPECIFIED` at startup; make `permission` on a CUSTOM RPC either enforced or a build error, since 20 of them are currently decorative.
+4. **Wire api-linter into CI** at the 474-finding baseline. None of Tier 5 was visible to `buf lint`'s `BASIC` profile, which is why it accumulated.
 
 **Note on scope.** Tier 2–3 are security issues in a shipped product, and everything here is
 still a report — untouched. Resolved findings are removed from this document (T1/T3 earlier;
-T2 via the INPUT_ONLY read-path fix). The three patches from earlier in the session
-(`SearchProjects` proto comment, `SearchProjects` pagination, `DiffSchema` ACL) remain parked
-and still apply cleanly.
+T2 via the INPUT_ONLY read-path fix; T5/T6 via the sheet-blob scoping PR
+[#21143](https://github.com/bytebase/bytebase/pull/21143) — `sheet_blob_ref` gives sheets a
+per-project ownership model enforced by the store's scoped accessors, and `BatchCreateRevisions`
+now rejects provenance naming any project but the authorized database's own, without echoing the
+hash; design in `sheet-blob-scoping.md` and `sheet-history-on-database-transfer.md`). The three
+patches from earlier in the session (`SearchProjects` proto comment, `SearchProjects` pagination,
+`DiffSchema` ACL) remain parked and still apply cleanly.
