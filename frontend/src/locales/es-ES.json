@@ -2068,6 +2068,12 @@
       "pattern": "La identificación {{resource}} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número."
     }
   },
+  "revision": {
+    "statement-withheld": {
+      "owned-by-project": "La sentencia pertenece al proyecto {{project}}. Solicita acceso allí para verla.",
+      "unknown-owner": "La sentencia no está disponible: ya no se puede determinar el proyecto que la creó."
+    }
+  },
   "role": {
     "custom-roles": {
       "self": "Roles personalizados"

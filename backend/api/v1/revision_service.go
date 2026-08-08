@@ -73,7 +73,7 @@ func (s *RevisionService) ListRevisions(
 		revisions = revisions[:offset.limit]
 	}
 
-	converted := convertToRevisions(formatDatabaseParent(instance, database), database.ProjectID, revisions)
+	converted := convertToRevisions(formatDatabaseParent(instance, database), revisions)
 
 	return connect.NewResponse(&v1pb.ListRevisionsResponse{
 		Revisions:     converted,
@@ -97,9 +97,12 @@ func (s *RevisionService) GetRevision(
 
 	revision, err := s.store.GetRevision(ctx, revisionID, database.InstanceID, database.DatabaseName)
 	if err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Wrapf(err, "revision %v not found", request.Name))
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get revision %v", request.Name))
 	}
-	converted := convertToRevision(formatDatabaseParent(instance, database), database.ProjectID, revision)
+	converted := convertToRevision(formatDatabaseParent(instance, database), revision)
 	return connect.NewResponse(converted), nil
 }
 
@@ -155,12 +158,12 @@ func (s *RevisionService) createRevisions(
 		sheetSha256s = append(sheetSha256s, sha)
 	}
 
-	exist, err := s.store.HasSheets(ctx, sheetSha256s...)
+	missing, err := s.store.MissingSheetsForProject(ctx, database.ProjectID, sheetSha256s...)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check sheets: %v", err))
 	}
-	if !exist {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("some sheets are not found"))
+	if len(missing) > 0 {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %q not found", common.FormatSheet(database.ProjectID, missing[0])))
 	}
 
 	var createdRevisions []*v1pb.Revision
@@ -169,6 +172,9 @@ func (s *RevisionService) createRevisions(
 			projectID, planID, stageID, taskID, taskRunID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(revision.TaskRun)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get taskRun from %q", revision.TaskRun))
+			}
+			if projectID != database.ProjectID {
+				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", revision.TaskRun))
 			}
 			taskRun, err := s.store.GetTaskRunV1(ctx, &store.FindTaskRunMessage{
 				Workspace: common.GetWorkspaceIDFromContext(ctx),
@@ -204,6 +210,9 @@ func (s *RevisionService) createRevisions(
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get release and file from %q", revision.File))
 			}
+			if projectID != database.ProjectID {
+				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %q not found", revision.Release))
+			}
 			release, err := s.store.GetRelease(ctx, &store.FindReleaseMessage{
 				ProjectID: &projectID,
 				ReleaseID: &releaseID,
@@ -220,7 +229,9 @@ func (s *RevisionService) createRevisions(
 					foundFile = true
 					fileSheet := common.FormatSheet(release.ProjectID, f.SheetSha256)
 					if fileSheet != revision.Sheet {
-						return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("The sheet in file %q is %q which is different from revision.sheet %q", fileID, fileSheet, revision.Sheet))
+						// Do not echo fileSheet: it embeds the real hash and would
+						// turn this validation into a hash oracle.
+						return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the sheet in file %q is different from revision.sheet %q", fileID, revision.Sheet))
 					}
 					break
 				}
@@ -235,8 +246,7 @@ func (s *RevisionService) createRevisions(
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create revision"))
 		}
-		converted := convertToRevision(parent, database.ProjectID, revisionM)
-		createdRevisions = append(createdRevisions, converted)
+		createdRevisions = append(createdRevisions, convertToRevision(parent, revisionM))
 	}
 	return createdRevisions, nil
 }
@@ -282,26 +292,35 @@ func formatDatabaseParent(instance *store.InstanceMessage, database *store.Datab
 	return common.FormatDatabase(database.InstanceID, database.DatabaseName)
 }
 
-func convertToRevisions(parent string, projectID string, revisions []*store.RevisionMessage) []*v1pb.Revision {
+func convertToRevisions(parent string, revisions []*store.RevisionMessage) []*v1pb.Revision {
 	var rs []*v1pb.Revision
 	for _, revision := range revisions {
-		r := convertToRevision(parent, projectID, revision)
+		r := convertToRevision(parent, revision)
 		rs = append(rs, r)
 	}
 	return rs
 }
 
-func convertToRevision(parent string, projectID string, revision *store.RevisionMessage) *v1pb.Revision {
+func convertToRevision(parent string, revision *store.RevisionMessage) *v1pb.Revision {
 	taskRunName := revision.Payload.TaskRun
 	file := revision.Payload.File
 	if file != "" && revision.Payload.Release != "" {
 		file = common.FormatReleaseFile(revision.Payload.Release, file)
 	}
+	// The sheet is named under the authoring project stamped in the payload,
+	// which may differ from the database's current project after a transfer —
+	// never under the current project, where the name would 404. A revision
+	// with no stamp (pre-migration provenance that did not corroborate)
+	// carries no sheet name.
+	sheetName := ""
+	if projectID := revision.Payload.GetProject(); projectID != "" {
+		sheetName = common.FormatSheet(projectID, revision.Payload.SheetSha256)
+	}
 	r := &v1pb.Revision{
 		Name:        fmt.Sprintf("%s/%s%s", parent, common.RevisionNamePrefix, revision.ResourceID),
 		Release:     revision.Payload.Release,
 		CreateTime:  timestamppb.New(revision.CreatedAt),
-		Sheet:       common.FormatSheet(projectID, revision.Payload.SheetSha256),
+		Sheet:       sheetName,
 		SheetSha256: revision.Payload.SheetSha256,
 		Version:     revision.Version,
 		File:        file,
@@ -351,6 +370,11 @@ func convertRevision(revision *v1pb.Revision, database *store.DatabaseMessage, s
 			SheetSha256: sheetSha256,
 			TaskRun:     revision.TaskRun,
 			Type:        convertRevisionType(revision.Type),
+			// The authoring project, stamped by the server: validation above
+			// checked the sheet is readable by this project. History follows
+			// the database on transfer; this stamp is what keeps the
+			// statement's sheet name pointing at the project that ran it.
+			Project: database.ProjectID,
 		},
 	}
 	return r

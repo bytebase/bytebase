@@ -2068,6 +2068,12 @@
       "pattern": "The {{resource}} ID can have lowercase letters, digits, or hyphens. It must start with a lowercase letter and end with a letter or number."
     }
   },
+  "revision": {
+    "statement-withheld": {
+      "owned-by-project": "The statement is owned by project {{project}}. Request access there to view it.",
+      "unknown-owner": "The statement is unavailable: the project that authored it can no longer be determined."
+    }
+  },
   "role": {
     "custom-roles": {
       "self": "Custom roles"

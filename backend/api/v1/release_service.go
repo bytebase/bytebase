@@ -72,38 +72,33 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", projectID))
 	}
 
-	sanitizedFiles, err := validateAndSanitizeReleaseFiles(ctx, s.store, req.Msg.Release.Files, req.Msg.Release.Type)
+	sanitizedFiles, err := validateAndSanitizeReleaseFiles(req.Msg.Release.Files, req.Msg.Release.Type)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid release files"))
 	}
-	sheetsToCreate := []*store.SheetMessage{}
-	var filesWithoutSheet []*v1pb.Release_File
-	// Prepare sheets to create for files with missing sheets.
-	// Check versions.
+	var sheetsToCreate []*store.SheetMessage
+	var referencedSheetSha256s []string
 	for _, file := range sanitizedFiles {
 		if file.Sheet == "" {
 			// statement must be present due to validation in validateAndSanitizeReleaseFiles
-			sheet := &store.SheetMessage{
+			sheetsToCreate = append(sheetsToCreate, &store.SheetMessage{
 				Statement: string(file.Statement),
-			}
-			sheetsToCreate = append(sheetsToCreate, sheet)
-			filesWithoutSheet = append(filesWithoutSheet, file)
+			})
+		} else {
+			referencedSheetSha256s = append(referencedSheetSha256s, file.SheetSha256)
 		}
 	}
 
-	// Batch create sheets if needed.
-	if len(sheetsToCreate) > 0 {
-		createdSheets, err := s.store.CreateSheets(ctx, sheetsToCreate...)
+	// Referenced sheets must carry this project's ref. This is the only gate:
+	// releases are immutable, so nothing rechecks the files after creation.
+	// One batched ref check, no content read.
+	if len(referencedSheetSha256s) > 0 {
+		missing, err := s.store.MissingSheetsForProject(ctx, project.ResourceID, referencedSheetSha256s...)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheets"))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check sheets"))
 		}
-		if len(createdSheets) != len(sheetsToCreate) {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create all sheets, expected %d but got %d", len(sheetsToCreate), len(createdSheets)))
-		}
-
-		// Map created sheets back to files.
-		for i, sheet := range createdSheets {
-			filesWithoutSheet[i].Sheet = common.FormatSheet(project.ResourceID, sheet.Sha256)
+		if len(missing) > 0 {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %q not found", common.FormatSheet(project.ResourceID, missing[0])))
 		}
 	}
 
@@ -117,10 +112,20 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		releaseIDTimezone = "UTC"
 	}
 
-	// Compute train from template and timezone.
+	// Compute train from template and timezone. Rendering can reject the
+	// template, so it runs before any write.
 	train, err := renderTrain(releaseIDTemplate, releaseIDTimezone, time.Now())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to render train"))
+	}
+
+	// Create sheets for files that carried inline statements. The hashes were
+	// already computed by validateAndSanitizeReleaseFiles; CreateSheets stamps
+	// the same content hash and mints this project's refs.
+	if len(sheetsToCreate) > 0 {
+		if _, err := s.store.CreateSheets(ctx, project.ResourceID, sheetsToCreate...); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheets"))
+		}
 	}
 
 	releaseMessage := &store.ReleaseMessage{
@@ -133,26 +138,13 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		},
 	}
 
-	var sheetSha256s []string
+	// Every file's SheetSha256 is populated and project-scoped by now — ref
+	// checked above or computed for a sheet created under this project — so
+	// the payload builds from it directly.
 	for _, f := range sanitizedFiles {
-		_, sheetSha256, err := common.GetProjectResourceIDSheetSha256(f.Sheet)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheetSha256 from %q", f.Sheet)
-		}
-		sheetSha256s = append(sheetSha256s, sheetSha256)
-	}
-	exist, err := s.store.HasSheets(ctx, sheetSha256s...)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to check sheets")
-	}
-	if !exist {
-		return nil, errors.Errorf("some sheets are not found")
-	}
-
-	for i, f := range sanitizedFiles {
 		releaseMessage.Payload.Files = append(releaseMessage.Payload.Files, &storepb.ReleasePayload_File{
 			Path:        f.Path,
-			SheetSha256: sheetSha256s[i],
+			SheetSha256: f.SheetSha256,
 			Version:     f.Version,
 		})
 	}
@@ -329,7 +321,6 @@ func convertToRelease(release *store.ReleaseMessage) *v1pb.Release {
 	}
 
 	for _, f := range release.Payload.Files {
-		// Sheets are now project-agnostic, no need to check projectID
 		r.Files = append(r.Files, &v1pb.Release_File{
 			Path:        f.Path,
 			Sheet:       common.FormatSheet(release.ProjectID, f.SheetSha256),
@@ -360,14 +351,15 @@ func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload
 	}
 }
 
-// validateAndSanitizeReleaseFiles validates and sanitizes the release files inputs.
-// It ensures that each file has either a sheet or a statement, and that the sheet is valid.
-// It also checks for duplicate versions in versioned releases and sorts the files by version.
+// validateAndSanitizeReleaseFiles validates and sanitizes the release files
+// inputs: each file has either a sheet or a statement, versions are unique for
+// versioned releases, and files come back sorted by version. SheetSha256 is
+// populated in place from the sheet name or computed from the statement.
 //
-// The input files are modified in place.
-// If a sheet is provided, it populates the statement from the sheet.
-// If a statement is provided, it computes the sheetSha256 from the statement.
-func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File, releaseType v1pb.Release_Type) ([]*v1pb.Release_File, error) {
+// No store reads happen here. Callers enforce sheet scope themselves:
+// CreateRelease checks the project's refs with MissingSheetsForProject before
+// persisting; CheckRelease reads content through the project-scoped accessor.
+func validateAndSanitizeReleaseFiles(files []*v1pb.Release_File, releaseType v1pb.Release_Type) ([]*v1pb.Release_File, error) {
 	if len(files) == 0 {
 		return nil, errors.Errorf("release files cannot be empty")
 	}
@@ -388,23 +380,12 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 			f.SheetSha256 = hex.EncodeToString(h[:])
 		case f.Sheet != "" && len(f.Statement) > 0:
 			return nil, errors.Errorf("cannot set both sheet and statement for file %q", f.Path)
-
-		// If sheet is provided but statement is not, populate statement from sheet
 		case f.Sheet != "":
 			_, sheetSha256, err := common.GetProjectResourceIDSheetSha256(f.Sheet)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get sheet SHA256 from %q", f.Sheet)
 			}
-			sheet, err := s.GetSheetFull(ctx, sheetSha256)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
-			}
-			if sheet == nil {
-				return nil, errors.Errorf("sheet %q not found", f.Sheet)
-			}
-			// Sheets are now project-agnostic, no need to check projectID
-			f.Statement = []byte(sheet.Statement)
-			f.SheetSha256 = sheet.Sha256
+			f.SheetSha256 = sheetSha256
 		case len(f.Statement) > 0:
 			// populate sheetSha256 from statement
 			h := sha256.Sum256(f.Statement)

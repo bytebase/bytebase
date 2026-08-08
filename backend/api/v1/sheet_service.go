@@ -51,7 +51,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request
 	}
 
 	storeSheetCreate := convertToStoreSheetMessage(request.Msg.Sheet)
-	sheets, err := s.store.CreateSheets(ctx, storeSheetCreate)
+	sheets, err := s.store.CreateSheets(ctx, project.ResourceID, storeSheetCreate)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
 	}
@@ -94,7 +94,7 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.R
 		sheetCreates = append(sheetCreates, storeSheetCreate)
 	}
 
-	sheets, err := s.store.CreateSheets(ctx, sheetCreates...)
+	sheets, err := s.store.CreateSheets(ctx, project.ResourceID, sheetCreates...)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
 	}
@@ -130,15 +130,9 @@ func (s *SheetService) GetSheet(ctx context.Context, request *connect.Request[v1
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	var sheet *store.SheetMessage
-	var sheetErr error
-	if request.Msg.Raw {
-		sheet, sheetErr = s.store.GetSheetFull(ctx, sheetSha256)
-	} else {
-		sheet, sheetErr = s.store.GetSheetTruncated(ctx, sheetSha256)
-	}
-	if sheetErr != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(sheetErr, "failed to get sheet"))
+	sheet, err := s.store.GetSheetForProject(ctx, project.ResourceID, sheetSha256, request.Msg.Raw)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheet"))
 	}
 	if sheet == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the sheet"))

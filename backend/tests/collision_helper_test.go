@@ -541,13 +541,20 @@ type projectSnapshot struct {
 	IssueComments  []*v1pb.IssueComment
 	Releases       []*v1pb.Release
 	DatabaseGroups []*v1pb.DatabaseGroup
-	// PlanWebhookDeliveries is the only snapshot field read directly from
-	// the metadata DB — plan_webhook_delivery has no public gRPC read API.
+	// PlanWebhookDeliveries is read directly from the metadata DB —
+	// plan_webhook_delivery has no public gRPC read API.
 	// It is NOT compared in assertProjectUnchanged: delivery rows are
 	// claimed asynchronously after rollout completion, so only the dedicated
 	// webhook collision test compares them, after explicitly waiting for the
 	// row set to stabilize.
 	PlanWebhookDeliveries []*planWebhookDelivery
+	// SheetBlobRefs is also read directly from the metadata DB —
+	// sheet_blob_ref has no public gRPC read API (sheets are content-
+	// addressed; nothing enumerates them). Unlike webhook deliveries, refs
+	// are written synchronously on the create paths, so
+	// assertProjectUnchanged compares them directly. Each entry is a hex
+	// hash the project may read.
+	SheetBlobRefs []string
 }
 
 // planWebhookDelivery is one row of the plan_webhook_delivery table, which
@@ -585,6 +592,35 @@ func listPlanWebhookDeliveries(ctx context.Context, t *testing.T, ctl *controlle
 		var d planWebhookDelivery
 		a.NoError(rows.Scan(&d.PlanID, &d.EventType, &d.DeliveredAt))
 		out = append(out, &d)
+	}
+	a.NoError(rows.Err())
+	return out
+}
+
+// listSheetBlobRefs reads every sheet_blob_ref hash for the project directly
+// from the test metadata database, following the same raw-read allowance as
+// listPlanWebhookDeliveries.
+func listSheetBlobRefs(ctx context.Context, t *testing.T, ctl *controller, projectID string) []string {
+	t.Helper()
+	a := require.New(t)
+	db, err := sql.Open("pgx", ctl.profile.PgURL)
+	a.NoError(err, "open metadata DB")
+	defer db.Close()
+
+	rows, err := db.QueryContext(ctx, `
+		SELECT encode(sha256, 'hex')
+		FROM sheet_blob_ref
+		WHERE project = $1
+		ORDER BY sha256
+	`, projectID)
+	a.NoError(err, "query sheet_blob_ref for project %s", projectID)
+	defer rows.Close()
+
+	var out []string
+	for rows.Next() {
+		var sha256Hex string
+		a.NoError(rows.Scan(&sha256Hex))
+		out = append(out, sha256Hex)
 	}
 	a.NoError(rows.Err())
 	return out
@@ -721,6 +757,7 @@ func snapshotProject(
 		Releases:              releasesResp.Msg.Releases,
 		DatabaseGroups:        groupsResp.Msg.DatabaseGroups,
 		PlanWebhookDeliveries: listPlanWebhookDeliveries(ctx, t, ctl, projectID),
+		SheetBlobRefs:         listSheetBlobRefs(ctx, t, ctl, projectID),
 	}
 }
 
@@ -803,6 +840,14 @@ func assertProjectUnchanged(
 			a.True(proto.Equal(b.DatabaseExpr, af.DatabaseExpr), "%s: database group %s expression changed", label, b.Name)
 		},
 		label, "db_group")
+
+	// sheet_blob_ref is keyed by composite (project, sha256) and written
+	// synchronously by the create paths; a delta here means a sheet write in
+	// one project leaked a ref into (or removed one from) another.
+	assertNoChange(t, before.SheetBlobRefs, after.SheetBlobRefs,
+		func(sha256Hex string) string { return sha256Hex },
+		func(_, _ string) {},
+		label, "sheet_blob_ref")
 }
 
 // assertNoChange compares two row slices keyed by name, fails if any

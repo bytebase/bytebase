@@ -589,6 +589,8 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 				SheetSha256: file.SheetSha256,
 				TaskRun:     taskRunName,
 				Type:        storepb.SchemaChangeType_VERSIONED,
+				// The authoring project: where this rollout ran.
+				Project: task.ProjectID,
 			},
 		}
 

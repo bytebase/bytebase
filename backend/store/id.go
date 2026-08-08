@@ -15,22 +15,34 @@ import (
 // reserving IDs below 101 for seed/test data.
 const idMinValue int64 = 101
 
+// lockActiveProject locks the project row and requires it to be active,
+// serializing the caller with project deletion. Creation is rejected with
+// NotFound when the project is missing or deleted. This is the "requires an
+// active project" lifecycle policy from backend/store/README.md; call it
+// after locking any existing child rows.
+func lockActiveProject(ctx context.Context, tx *sql.Tx, projectID string) error {
+	var deleted bool
+	if err := tx.QueryRowContext(ctx,
+		"SELECT deleted FROM project WHERE resource_id = $1 FOR UPDATE", projectID).Scan(&deleted); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return common.Errorf(common.NotFound, "project %s not found", projectID)
+		}
+		return errors.Wrapf(err, "failed to lock project %s", projectID)
+	}
+	if deleted {
+		return common.Errorf(common.NotFound, "project %s is deleted", projectID)
+	}
+	return nil
+}
+
 // nextProjectID returns the next per-project auto-increment ID for the given table.
 // Must be called within a transaction. Locks and validates the active project row to
 // serialize concurrent inserts with project deletion.
 // Callers must first lock existing child rows as described in backend/store/README.md.
 // Returns at least idMinValue (101) for new projects.
 func nextProjectID(ctx context.Context, tx *sql.Tx, table, projectID string) (int64, error) {
-	var deleted bool
-	if err := tx.QueryRowContext(ctx,
-		"SELECT deleted FROM project WHERE resource_id = $1 FOR UPDATE", projectID).Scan(&deleted); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return 0, common.Errorf(common.NotFound, "project %s not found", projectID)
-		}
-		return 0, errors.Wrapf(err, "failed to lock project %s", projectID)
-	}
-	if deleted {
-		return 0, common.Errorf(common.NotFound, "project %s is deleted", projectID)
+	if err := lockActiveProject(ctx, tx, projectID); err != nil {
+		return 0, err
 	}
 	var maxID int64
 

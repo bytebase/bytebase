@@ -234,10 +234,33 @@ CREATE TABLE project_webhook (
 
 CREATE INDEX idx_project_webhook_project ON project_webhook(project);
 
+-- sheet_blob is content-addressed shared storage; nothing deletes from it and
+-- every reference lives inside JSONB payloads (plan.config, task.payload,
+-- release.payload, plan_check_run.result, revision.payload), invisible to
+-- referential integrity. A GC written as "delete blobs no FK points at" would
+-- empty the table; a correct GC must consult sheet_blob_ref and the JSONB
+-- references.
 CREATE TABLE sheet_blob (
     sha256 bytea NOT NULL PRIMARY KEY,
     content text NOT NULL
 );
+
+-- Records which projects may read a hash. Two projects that independently
+-- author identical SQL share one blob and hold one ref row each. Written by
+-- sheet creation, deleted by project purge, and enforced by the store's
+-- project-scoped sheet accessors. A database transfer carries no refs:
+-- change history follows
+-- the database, statement content stays with the authoring project
+-- (docs/design/sheet-history-on-database-transfer.md).
+CREATE TABLE sheet_blob_ref (
+    project text NOT NULL REFERENCES project(resource_id),
+    sha256 bytea NOT NULL REFERENCES sheet_blob(sha256),
+    PRIMARY KEY (project, sha256)
+);
+
+-- For the zero-ref audit and a future GC, which start from a hash with no
+-- project in hand. Request-path queries lead with project and use the PK.
+CREATE INDEX idx_sheet_blob_ref_sha256 ON sheet_blob_ref(sha256);
 
 -- plan table stores the plan for a project
 CREATE TABLE plan (

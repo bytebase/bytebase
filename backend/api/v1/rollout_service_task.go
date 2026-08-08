@@ -61,18 +61,18 @@ func applyDatabaseGroupSpecTransformations(ctx context.Context, s *store.Store, 
 	return result, nil
 }
 
-func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, projectID string) ([]*store.TaskMessage, error) {
 	switch config := spec.Config.(type) {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, spec, config.CreateDatabaseConfig)
+		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, spec, config.CreateDatabaseConfig, projectID)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig)
+		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig, projectID)
 	}
 
 	return nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
-func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, projectID string) ([]*store.TaskMessage, error) {
 	if c.Database == "" {
 		return nil, errors.Errorf("database name is required")
 	}
@@ -140,7 +140,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, err
 		}
-		sheets, err := s.CreateSheets(ctx, &store.SheetMessage{
+		sheets, err := s.CreateSheets(ctx, projectID, &store.SheetMessage{
 			Statement: statement,
 		})
 		if err != nil {
@@ -176,10 +176,31 @@ func getTaskCreatesFromChangeDatabaseConfig(
 	s *store.Store,
 	spec *storepb.PlanConfig_Spec,
 	c *storepb.PlanConfig_ChangeDatabaseConfig,
+	projectID string,
 ) ([]*store.TaskMessage, error) {
 	databases, err := getDatabaseMessagesByTargets(ctx, s, c.Targets)
 	if err != nil {
 		return nil, err
+	}
+
+	// Validate ghost directive at task creation time (parsed at execution
+	// time). c.SheetSha256 is loop-invariant: fetch it once, not once per
+	// target database.
+	if c.SheetSha256 != "" {
+		sheetContent, err := getSheetContentBySha256(ctx, s, projectID, c.SheetSha256)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet content")
+		}
+
+		if ghost.IsGhostEnabled(sheetContent) {
+			ghostFlags, err := ghost.ParseGhostDirective(sheetContent)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to parse ghost directive")
+			}
+			if _, err := ghost.GetUserFlags(ghostFlags); err != nil {
+				return nil, errors.Wrapf(err, "invalid ghost flags %q", ghostFlags)
+			}
+		}
 	}
 
 	var tasks []*store.TaskMessage
@@ -206,24 +227,6 @@ func getTaskCreatesFromChangeDatabaseConfig(
 		} else {
 			payload.Source = &storepb.Task_SheetSha256{
 				SheetSha256: c.SheetSha256,
-			}
-		}
-
-		// Validate ghost directive at task creation time (parsed at execution time)
-		if c.SheetSha256 != "" {
-			sheetContent, err := getSheetContentBySha256(ctx, s, c.SheetSha256)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get sheet content")
-			}
-
-			if ghost.IsGhostEnabled(sheetContent) {
-				ghostFlags, err := ghost.ParseGhostDirective(sheetContent)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to parse ghost directive")
-				}
-				if _, err := ghost.GetUserFlags(ghostFlags); err != nil {
-					return nil, errors.Wrapf(err, "invalid ghost flags %q", ghostFlags)
-				}
 			}
 		}
 
@@ -459,8 +462,8 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 	}
 }
 
-func getSheetContentBySha256(ctx context.Context, s *store.Store, sha256 string) (string, error) {
-	sheet, err := s.GetSheetFull(ctx, sha256)
+func getSheetContentBySha256(ctx context.Context, s *store.Store, projectID, sha256 string) (string, error) {
+	sheet, err := s.GetSheetForProject(ctx, projectID, sha256, true)
 	if err != nil {
 		return "", err
 	}

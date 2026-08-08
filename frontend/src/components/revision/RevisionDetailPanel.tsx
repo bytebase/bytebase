@@ -5,15 +5,26 @@ import { sheetServiceClientConnect } from "@/api";
 import { ReadonlyMonaco } from "@/components/monaco";
 import { RouterLink } from "@/components/RouterLink";
 import { TaskRunLogViewer } from "@/components/task-run-log";
+import { Alert } from "@/components/ui/alert";
 import { CopyButton } from "@/components/ui/copy-button";
 import { useRevisionByName } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { bytesToString, formatAbsoluteDateTime } from "@/utils";
+import { extractProjectResourceName } from "@/utils/v1/project";
 import { extractTaskLink, getRevisionType } from "@/utils/v1/revision";
 
 export interface RevisionDetailPanelProps {
   revisionName: string;
+}
+
+// The statement behind a revision stays with the project that authored it
+// when a database moves between projects, so it can be unavailable here:
+// either the sheet names an owner the caller lacks access to (request it
+// there), or the revision carries no sheet name because the owner can no
+// longer be determined.
+interface WithheldStatement {
+  ownerProject?: string;
 }
 
 export function RevisionDetailPanel({
@@ -24,11 +35,13 @@ export function RevisionDetailPanel({
   const revision = useRevisionByName(revisionName);
   const [loading, setLoading] = useState(false);
   const [statement, setStatement] = useState("");
+  const [withheld, setWithheld] = useState<WithheldStatement | null>(null);
 
   useEffect(() => {
     if (!revisionName) {
       setLoading(false);
       setStatement("");
+      setWithheld(null);
       return;
     }
 
@@ -36,10 +49,19 @@ export function RevisionDetailPanel({
 
     setLoading(true);
     setStatement("");
+    setWithheld(null);
 
     void fetchRevision(revisionName)
       .then(async (rev) => {
-        if (!rev?.sheet) {
+        if (!rev) {
+          return;
+        }
+        if (!rev.sheet) {
+          // No sheet name is emitted when the revision carries no authoring
+          // project (pre-migration provenance that did not corroborate).
+          if (rev.sheetSha256 && !cancelled) {
+            setWithheld({});
+          }
           return;
         }
 
@@ -53,6 +75,12 @@ export function RevisionDetailPanel({
           }
         } catch (error) {
           console.error("Failed to fetch sheet content", error);
+          if (!cancelled) {
+            // The owner is named but this caller has no read access there.
+            setWithheld({
+              ownerProject: extractProjectResourceName(rev.sheet),
+            });
+          }
         }
       })
       .catch((error) => {
@@ -68,6 +96,18 @@ export function RevisionDetailPanel({
       cancelled = true;
     };
   }, [fetchRevision, revisionName]);
+
+  const withheldMessage = (() => {
+    if (!withheld) {
+      return "";
+    }
+    if (withheld.ownerProject) {
+      return t("revision.statement-withheld.owned-by-project", {
+        project: withheld.ownerProject,
+      });
+    }
+    return t("revision.statement-withheld.unknown-owner");
+  })();
 
   const taskFullLink = revision?.taskRun
     ? extractTaskLink(revision.taskRun)
@@ -132,14 +172,18 @@ export function RevisionDetailPanel({
                   ({formattedStatementSize})
                 </span>
               ) : null}
-              <CopyButton content={statement} />
+              {statement ? <CopyButton content={statement} /> : null}
             </p>
-            <div className="overflow-hidden rounded-sm border border-control-border bg-white">
-              <ReadonlyMonaco
-                content={statement}
-                className="relative h-auto max-h-[600px] min-h-[120px]"
-              />
-            </div>
+            {withheld && !statement ? (
+              <Alert variant="info" description={withheldMessage} />
+            ) : (
+              <div className="overflow-hidden rounded-sm border border-control-border bg-white">
+                <ReadonlyMonaco
+                  content={statement}
+                  className="relative h-auto max-h-[600px] min-h-[120px]"
+                />
+              </div>
+            )}
           </div>
         </div>
       </main>

@@ -320,10 +320,10 @@ const file_v1_sheet_service_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x1d\n" +
 	"\acontent\x18\x02 \x01(\fB\x03\xe0A\x02R\acontent\x12&\n" +
 	"\fcontent_size\x18\x03 \x01(\x03B\x03\xe0A\x03R\vcontentSize::\xeaA7\n" +
-	"\x12bytebase.com/Sheet\x12!projects/{project}/sheets/{sheet}2\xe0\x03\n" +
-	"\fSheetService\x12\x98\x01\n" +
-	"\vCreateSheet\x12\x1f.bytebase.v1.CreateSheetRequest\x1a\x12.bytebase.v1.Sheet\"T\xdaA\fparent,sheet\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02':\x05sheet\"\x1e/v1/{parent=projects/*}/sheets\x12\xb1\x01\n" +
-	"\x11BatchCreateSheets\x12%.bytebase.v1.BatchCreateSheetsRequest\x1a&.bytebase.v1.BatchCreateSheetsResponse\"M\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02/:\x01*\"*/v1/{parent=projects/*}/sheets:batchCreate\x12\x80\x01\n" +
+	"\x12bytebase.com/Sheet\x12!projects/{project}/sheets/{sheet}2\xe8\x03\n" +
+	"\fSheetService\x12\x9c\x01\n" +
+	"\vCreateSheet\x12\x1f.bytebase.v1.CreateSheetRequest\x1a\x12.bytebase.v1.Sheet\"X\xdaA\fparent,sheet\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02':\x05sheet\"\x1e/v1/{parent=projects/*}/sheets\x12\xb5\x01\n" +
+	"\x11BatchCreateSheets\x12%.bytebase.v1.BatchCreateSheetsRequest\x1a&.bytebase.v1.BatchCreateSheetsResponse\"Q\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02/:\x01*\"*/v1/{parent=projects/*}/sheets:batchCreate\x12\x80\x01\n" +
 	"\bGetSheet\x12\x1c.bytebase.v1.GetSheetRequest\x1a\x12.bytebase.v1.Sheet\"B\xdaA\x04name\x8a\xea0\rbb.sheets.get\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/sheets/*}B\xa7\x01\n" +
 	"\x0fcom.bytebase.v1B\x11SheetServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 

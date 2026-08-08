@@ -37,7 +37,16 @@ type RevisionPayload struct {
 	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
 	TaskRun string `protobuf:"bytes,5,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
 	// The type of the revision.
-	Type          SchemaChangeType `protobuf:"varint,6,opt,name=type,proto3,enum=bytebase.store.SchemaChangeType" json:"type,omitempty"`
+	Type SchemaChangeType `protobuf:"varint,6,opt,name=type,proto3,enum=bytebase.store.SchemaChangeType" json:"type,omitempty"`
+	// The project that authored this revision's change — where the plan or
+	// release that produced it ran. Stamped by the server at creation from the
+	// database's then-current project; rows predating the field are backfilled
+	// from corroborated provenance (migration 3.22.5). Not a scope: revisions
+	// stay keyed by (instance, db_name) and follow the database across project
+	// transfers, while the statement's sheet stays readable under this project.
+	// Can be empty when no owner could be corroborated; such statements are
+	// unreadable and the revision carries no sheet name.
+	Project       string `protobuf:"bytes,7,opt,name=project,proto3" json:"project,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -107,11 +116,18 @@ func (x *RevisionPayload) GetType() SchemaChangeType {
 	return SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED
 }
 
+func (x *RevisionPayload) GetProject() string {
+	if x != nil {
+		return x.Project
+	}
+	return ""
+}
+
 var File_store_revision_proto protoreflect.FileDescriptor
 
 const file_store_revision_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/revision.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\xef\x01\n" +
+	"\x14store/revision.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\x89\x02\n" +
 	"\x0fRevisionPayload\x123\n" +
 	"\arelease\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\arelease\x12\x12\n" +
@@ -119,7 +135,8 @@ const file_store_revision_proto_rawDesc = "" +
 	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x124\n" +
 	"\btask_run\x18\x05 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/TaskRunR\ataskRun\x124\n" +
-	"\x04type\x18\x06 \x01(\x0e2 .bytebase.store.SchemaChangeTypeR\x04typeJ\x04\b\x03\x10\x04B\x90\x01\n" +
+	"\x04type\x18\x06 \x01(\x0e2 .bytebase.store.SchemaChangeTypeR\x04type\x12\x18\n" +
+	"\aproject\x18\a \x01(\tR\aprojectJ\x04\b\x03\x10\x04B\x90\x01\n" +
 	"\x12com.bytebase.storeB\rRevisionProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

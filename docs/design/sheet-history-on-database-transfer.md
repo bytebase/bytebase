@@ -101,10 +101,11 @@ Change history follows the database; statement content does not.
 - Revision and changelog lists are returned in full after a transfer, including entries created under
   a previous project. Versions, timestamps, authors, status, schema snapshots, and the sheet *name*
   are all present.
-- When a revision's sheet is not readable by the current project, the statement is withheld and the
-  response says so explicitly — naming the owning project where that can be verified — rather than
-  returning NotFound for the sheet.
-- The sheet *name* is formatted from that same resolved owner, not from the database's current
+- When a revision's sheet is not readable by the caller, the statement is withheld and the UI says
+  so explicitly — naming the owning project when the revision carries one — rather than rendering a
+  failed content load. The sheet read itself still returns NotFound, per the scoping doc's
+  no-existence-confirmation rule; the *revision* response is what carries the truthful owner.
+- The sheet *name* is formatted from the stored authoring project, not from the database's current
   project. A name is emitted only when it is true.
 - No sheet references are carried between projects. A database transfer grants no new read access,
   and the four reassignment paths above need no changes.
@@ -119,47 +120,39 @@ that sees a list of failed content loads sees a broken product.
 
 ### Naming the owner
 
-The owning project is derivable without new storage, from the revision's own provenance.
-`RevisionPayload` carries `release` (`projects/{project}/releases/{release}`) and `task_run`
-(`projects/{project}/plans/…/taskRuns/{taskRun}`), both embedding the authoring project in the
-resource name; `backend/store/changelog.go:163-168` already parses a project out of a stored
-`taskRun` this way. Resolution order:
+The owner is a stored fact, not a read-time derivation. `RevisionPayload.project` carries the
+authoring project: the server stamps it at creation from the database's then-current project —
+after validating that the project holds a ref for the revision's hash — and the runners stamp it
+the same way when recording completed task runs. `convertToRevision` formats `Revision.sheet` from
+the stamp and nothing else; an empty stamp means no sheet name.
 
-1. The revision's `release`, else its `taskRun` — **corroborated by exactly the rule the backfill
-   uses**, and resolving to a project in the caller's workspace.
-2. Anything else — report the owner as unknown, and never echo a project ID that failed the test.
+Rows predating the field are backfilled once, by migration, from the revision's own provenance —
+`release` (`projects/{project}/releases/{release}`), else `taskRun`
+(`projects/{project}/plans/…/taskRuns/{taskRun}`) — **corroborated by exactly the rule the backfill
+uses**: single-row identity, age, and hash match, as specified in
+[the backfill section](sheet-blob-scoping.md#backfill). Corroborated rows get the stamp and a ref;
+everything else stays unstamped.
 
-**Provenance is a hint, not an assertion.** Both fields are stored verbatim from the caller:
-`convertRevision` writes `Release: revision.Release` and `TaskRun: revision.TaskRun` straight through
-(`backend/api/v1/revision_service.go:352-364`). Until the T6 fix lands, `createRevisions` resolves
-`revision.Release` with no workspace or database-project comparison (`:207-223`), and it never
-compares a `taskRun`'s task to `revision.Sheet` at all — so a revision can carry provenance naming
-another tenant's project, or naming a perfectly real project in the caller's own workspace that had
-nothing to do with the sheet.
+**Provenance is a hint, not an assertion, which is why the backfill corroborates it.** Both fields
+are stored verbatim from the caller. Before the T6 fix, `createRevisions` resolved a
+`revision.Release` with no database-project comparison and never compared a `taskRun`'s task to
+`revision.Sheet` — so a historical revision can carry provenance naming another tenant's project,
+or naming a perfectly real project in the caller's own workspace that had nothing to do with the
+sheet. A backfill that trusted raw provenance would turn either into a stamp; corroboration is what
+makes the stored fact trustworthy. New writers need no corroboration because the server stamps from
+its own knowledge, and the T6 checks now reject cross-project provenance at creation.
 
-**Naming therefore uses the same corroboration rule as the backfill, not a weaker one.** Identity,
-age, and hash match, exactly as specified in
-[the backfill section](sheet-blob-scoping.md#backfill). A design in which the backfill trusts
-corroborated provenance while the response trusts raw provenance has two different notions of
-provenance in it, and the weaker one would be the user-visible one.
-
-| Provenance | Response |
+| Row | Sheet name in the response |
 |---|---|
-| Corroborated, project in the caller's workspace | Name it |
-| Corroborated, project in another workspace | Owner unknown |
-| Present but not corroborated — stale, purged, or fabricated | Owner unknown |
-| Absent | Owner unknown |
+| Stamped at creation, or backfill-corroborated | Named under the stamp |
+| Backfill could not corroborate — stale, purged, or fabricated provenance | No name |
+| No provenance to corroborate | No name |
 
-The response may still distinguish *why* it is unavailable — no provenance, provenance that cannot
-be verified, an owner outside the caller's workspace — since a reason is not an identifier. What it
-must never do is echo a project ID that failed a check. Misattribution is not a harmless default: a
-user told that project `payments-core` owns a statement it never authored will go and ask them for
-it, and may be granted access on a false premise.
-
-This applies to *naming*, not to the backfill's use of the same fields. Granting a ref to the project
-that genuinely authored a sheet is correct regardless of which workspace the referencing revision
-sits in — the backfill's corroboration check is about attributing ownership, while this is about what
-a caller is allowed to be told.
+An unstamped row's response must never echo a project ID that failed the check — a reason is not an
+identifier, and misattribution is not a harmless default: a user told that project `payments-core`
+owns a statement it never authored will go and ask them for it, and may be granted access on a
+false premise. The stamp makes this cheap to honor: naming reads a stored field rather than
+re-running a resolution that could disagree with the one that granted refs.
 
 **`sheet_blob_ref` is not a fallback for authorship.** An earlier draft resolved a provenance-less
 revision by finding which projects hold a ref for its hash and naming the one candidate in the
@@ -174,23 +167,22 @@ which is the misattribution this section already rejects for uncorroborated prov
 corroboration standard to provenance and a weaker inference to the ref table would be the same
 inconsistency in a different place.
 
-So there is no ref-table fallback. A revision names an owner when its own provenance corroborates
-one, and reports unknown otherwise.
+So there is no ref-table fallback. A revision names an owner when it carries a stamp, and carries a
+stamp only when the server knew the owner at creation or the backfill corroborated one.
 
-A purged authoring project resolves to unknown, not to a name. `DeleteProject` hard-deletes the
-`release`, `task` and `plan` rows along with the project, so provenance naming it can no longer
-corroborate. That is the correct outcome rather than a gap: the statement is permanently
-unavailable, there is nobody left to ask, and the only thing withheld beyond the content is an ID
-that can no longer be verified against any workspace.
+**Purge timing splits into two outcomes, deliberately.** A project purged *before* the migration
+leaves its surviving revisions unstampable — provenance naming it can no longer corroborate, since
+`DeleteProject` hard-deletes the `release`, `task` and `plan` rows — so those rows carry no name.
+A project purged *after* its revisions were stamped leaves the stamp behind: the revision keeps
+naming the purged project, the name 404s on read (purge deleted the refs), and the UI reports the
+statement as owned by a project the caller cannot read. The dangling name is accepted rather than
+scrubbed — purge does not rewrite revision payloads, the name was true when stamped, and access
+fails closed regardless. The residual is misattribution-by-reuse: a new project created under the
+purged ID inherits the dangling names' *labels* (never their content — it holds no refs for those
+hashes). The corroboration age test keeps the same reuse from minting stamps in the backfill.
 
-Provenance resolution is attribution only and never implies access. A purged project holds no refs and cannot be
-granted any, since `sheet_blob_ref.project` has a live foreign key, and the backfill skips
-uncorroborated provenance for the same reason.
-
-The response should distinguish the two outcomes rather than flattening them: a live project the
-caller can ask, versus an authoring project that no longer exists and whose content is now
-unreadable by anyone. The second is a permanent consequence of purging a project, consistent with
-the zero-ref blobs described in the scoping doc.
+Attribution never implies access. A purged project holds no refs and cannot be granted any, since
+`sheet_blob_ref.project` has a live foreign key.
 
 Naming the owner discloses that some other project holds SQL with that hash. That is acceptable
 within a workspace and strictly less than the content itself.
@@ -230,57 +222,51 @@ corruption outweighs the modelling improvement.
 
 ## Implementation
 
-- A field on the revision response carrying the withheld-content reason and the owning project,
-  populated by the resolution above — corroborated provenance, else unknown.
-- `convertToRevision` formats `Revision.sheet` from the resolved owner rather than from
-  `database.ProjectID` (`backend/api/v1/revision_service.go:304`), and emits no sheet name when the
-  owner does not resolve. Leaving it built from the current project would keep exactly the false
-  resource name R7 exists to eliminate — a response asserting that project A owns the statement while
-  handing the client `projects/B/sheets/{sha}` to follow, which then 404s. The owner is already
-  computed for the withheld-content field, so this costs nothing extra.
-- A UI affordance for the withheld state that names the owning project rather than rendering an
-  error, and says the project no longer exists when that is the case.
+- No new response field. The withheld state is derivable client-side from fields that already
+  exist: a revision with `sheet_sha256` but no `sheet` name has no known owner, and a named sheet
+  whose `GetSheet` fails is owned by the named project. `RevisionDetailPanel` renders each as an
+  informational alert — naming the owning project in the second case — rather than an error.
+- `RevisionPayload.project` (`proto/store/store/revision.proto`) stores the authoring project.
+  `convertRevision` and the task-run executor stamp it at creation; migration 3.22.5 backfills
+  corroborated rows.
+- `convertToRevision` formats `Revision.sheet` from the stamp rather than from
+  `database.ProjectID`, and emits no sheet name when the stamp is empty. Leaving it built from the
+  current project would keep exactly the false resource name the scoping doc's R7 exists to
+  eliminate — a response handing the client `projects/B/sheets/{sha}` to follow, which then 404s.
 - No *carry* logic in `UpdateDatabase`, `BatchUpdateDatabases`, `updateInstanceLifecycle`, or
   `DeleteProject` — nothing moves refs between projects. `DeleteProject` still needs its
   `DELETE FROM sheet_blob_ref WHERE project = ?` from the scoping doc: `sheet_blob_ref(project)` has
   a plain foreign key with no `ON DELETE CASCADE`, so purging a project that owns refs fails without
   it. "No changes" here means no transfer behavior, not no purge cleanup.
 
-Tests:
+Tests, as implemented:
 
-- Create a revision under project A, move the database to project B, assert the revision list is
-  complete under B while the statement is withheld with A named — A's provenance corroborates, and A
-  is in the caller's workspace.
-- Purge path: put a database on a *workspace* instance in project A, create a revision, purge A, then
-  assert that under the default project the list is still complete, the statement is withheld, and
-  the response reports the owner as unknown and names no project.
-  This is the case most likely to regress — it is not a user-facing transfer, and it is the one
-  where `sheet_blob_ref` has already been deleted, so it exercises the provenance path specifically.
-- Instance archive: put a database on a **workspace** instance in project A, create a revision, then
-  archive the instance with `MoveDatabasesToProjectID` set to project B, and assert the revision list
-  is complete under B while the statement is withheld with A named. Archiving a *project* instance is
-  the wrong path — `backend/store/instance.go:434` rejects it — so a test written that way would pass
-  vacuously without exercising any transfer.
-- A revision carrying neither `release` nor `taskRun` reports unknown, even when exactly one project
-  in the caller's workspace holds a ref for that hash — that ref proves identical content, not
-  authorship.
-- Cross-tenant leak guard, both paths: (a) seed identical SQL in two workspaces so one blob carries
-  refs from both, then request a withheld statement from one and assert the response never names the
-  other workspace's project; (b) seed a revision whose `release` provenance names a project in
-  another workspace — the state T6 permits — and assert the response reports unknown rather than
-  echoing it; (c) seed a revision naming a real project in the caller's *own* workspace that never
-  authored the sheet, and assert the response reports unknown rather than misattributing it. Generated `CREATE DATABASE` boilerplate makes this collision realistic, so it
-  is a regression test rather than a contrived one.
-- Sheet name: after a transfer, `Revision.sheet` names the resolved owner and resolves to that
-  project's readable sheet for a caller who holds rights there; when the owner is unknown, no sheet
-  name is emitted rather than one pointing at the current project.
+- `TestSheetHistoryOnDatabaseTransfer` — a revision authored under project A, database moved to B:
+  the list is complete under B, the sheet stays named under A, a caller with rights on A reads the
+  statement through that name, and B gains no read access of its own.
+- `TestSheetHistoryAfterOwnerPurge` — the authoring project is purged after stamping, the database
+  lands in the default project: the list is complete, the dangling name still renders, and reading
+  it returns NotFound. This is the case most likely to regress — not a user-facing transfer, and
+  the one where `sheet_blob_ref` has already been deleted.
+- The backfill matrix (`TestMigration3_22_5_ScopeSheetBlob`) carries the naming negatives that were
+  previously listed as read-path tests, since naming is now decided where the stamp is written: a
+  revision with no provenance stays unstamped even when another project holds a ref for the
+  identical hash; provenance naming a ghost project, a project that never authored the hash, or a
+  reused ID (the age test) stays unstamped rather than misattributed. The instance-archive transfer
+  path needs no dedicated test because no per-path logic exists — naming reads the stamp and no
+  path carries refs, so all four reassignment paths share one behavior by construction.
 
 ## Open items
 
-**Revisions with no resolvable owner have no sheet name.** Where the owner resolves, the name is
-correct and unchanged for every database that never moved. Where it does not, the response carries
-no sheet name at all — a behavior change for clients that assume the field is always populated, and
-the residual cost of refusing to emit a name that is not true.
+**Revisions with no stamp have no sheet name.** Where the stamp exists, the name is correct and
+unchanged for every database that never moved. Where it does not, the response carries no sheet
+name at all — a behavior change for clients that assume the field is always populated, and the
+residual cost of refusing to emit a name that is not true.
+
+**Stamped names can dangle after a purge.** A post-migration purge leaves stamped revisions naming
+a project that no longer exists; the name 404s and the UI reports an owner the caller cannot read.
+Accepted deliberately — see [Naming the owner](#naming-the-owner) — with ID reuse inheriting labels
+but never content.
 
 **Workspace-level roles have no escape hatch.** The gate checks the ref table for the named project,
 so workspace admins and DBAs are refused as well, despite holding `bb.sheets.get` broadly. Whether

@@ -117,7 +117,6 @@ export type Permission =
   | "bb.settings.setWorkspaceProfile"
   | "bb.sheets.create"
   | "bb.sheets.get"
-  | "bb.sheets.update"
   | "bb.subscription.manage"
   | "bb.sql.select"
   | "bb.sql.ddl"

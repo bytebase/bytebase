@@ -27,9 +27,9 @@ writers that call it; it is not a repository-wide purge fence because other
 writers bypass `nextProjectID`.
 
 Database creation, database-sync, batch database updates, task-run creation,
-and Query History writers, together with direct instance archive and direct
-project/instance purge, additionally take the matching transaction-scoped purge
-fence before any row lock. This closes absent-descendant gaps; writers then
+sheet creation, and Query History writers, together with direct instance
+archive and direct project/instance purge, additionally take the matching
+transaction-scoped purge fence before any row lock. This closes absent-descendant gaps; writers then
 retain the normal child-to-parent row-lock order. Database sync may continue for
 an archived project while its row exists, but never through a soft-deleted
 instance. Direct instance archive and restore fail while any targeting task run
@@ -47,7 +47,7 @@ query_history -> policy -> worksheet_organizer -> worksheet
 -> issue_comment -> issue -> plan_webhook_delivery -> plan_check_run
 -> task_run_log -> task_run -> task -> plan -> access_grant -> release
 -> db_group -> changelog -> sync_history -> revision -> db_schema -> db
--> project_webhook -> service_account -> workload_identity -> instance -> project
+-> sheet_blob_ref -> project_webhook -> service_account -> workload_identity -> instance -> project
 ```
 
 Update this list, `DeleteProject`, and `DeleteInstance` together. A transaction that needs another sibling branch must establish its position here before implementation. When one table is touched by multiple predicates, keep those mutations contiguous at that table's position. Keep transactions short and preserve this order whether locks are acquired explicitly or by `UPDATE` and `DELETE` statements.
