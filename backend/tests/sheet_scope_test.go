@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -56,6 +57,17 @@ func TestSheetProjectScope(t *testing.T) {
 		a.NoError(err, "GetSheet raw=%v under the owning project", raw)
 		a.Equal(content, resp.Msg.Content)
 	}
+
+	// Uppercase hex in the name resolves to the same sheet: hashes are
+	// canonicalized to lowercase at the parse and store boundaries, so case
+	// must affect neither the ref check nor the content-cache key.
+	upperName := fmt.Sprintf("%s/sheets/%s", projectA.Name, strings.ToUpper(sheetSha256))
+	upperResp, err := ctl.sheetServiceClient.GetSheet(ctx, connect.NewRequest(&v1pb.GetSheetRequest{
+		Name: upperName,
+		Raw:  true,
+	}))
+	a.NoError(err, "GetSheet with uppercase hex under the owning project")
+	a.Equal(content, upperResp.Msg.Content)
 
 	// The same hash under project B is NotFound. The raw variant is the
 	// cache-ordering case: the content cache was warmed above, so this fails

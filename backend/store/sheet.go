@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -24,10 +25,12 @@ type SheetMessage struct {
 	Size int64
 }
 
-// validSheetSha256Hexes filters to well-formed 32-byte hex hashes. Stored
-// payloads are not trusted to carry valid hex; a malformed value can never
-// match a blob, so callers treat it as absent rather than letting decode()
-// turn it into a SQL error.
+// validSheetSha256Hexes filters to well-formed 32-byte hex hashes and
+// canonicalizes them to lowercase — the form encode(sha256, 'hex') returns —
+// so result maps and the content cache key consistently no matter the case a
+// caller or a legacy stored payload used. Stored payloads are not trusted to
+// carry valid hex; a malformed value can never match a blob, so callers treat
+// it as absent rather than letting decode() turn it into a SQL error.
 func validSheetSha256Hexes(sha256Hexes []string) []string {
 	valid := make([]string, 0, len(sha256Hexes))
 	for _, sha256Hex := range sha256Hexes {
@@ -37,7 +40,7 @@ func validSheetSha256Hexes(sha256Hexes []string) []string {
 		if _, err := hex.DecodeString(sha256Hex); err != nil {
 			continue
 		}
-		valid = append(valid, sha256Hex)
+		valid = append(valid, strings.ToLower(sha256Hex))
 	}
 	return valid
 }
@@ -51,7 +54,7 @@ func (s *Store) GetSheetFull(ctx context.Context, sha256Hex string) (*SheetMessa
 	if err != nil {
 		return nil, err
 	}
-	return sheets[sha256Hex], nil
+	return sheets[strings.ToLower(sha256Hex)], nil
 }
 
 // GetSheetsForProject is the sheet gate: a project may access a sheet only
@@ -89,7 +92,7 @@ func (s *Store) GetSheetForProject(ctx context.Context, projectID, sha256Hex str
 	if err != nil {
 		return nil, err
 	}
-	return sheets[sha256Hex], nil
+	return sheets[strings.ToLower(sha256Hex)], nil
 }
 
 // MissingSheetsForProject returns the hashes, in input order, for which the
@@ -104,9 +107,12 @@ func (s *Store) MissingSheetsForProject(ctx context.Context, projectID string, s
 	if err != nil {
 		return nil, err
 	}
+	// Look up by the canonical lowercase form, but do NOT pre-filter the
+	// inputs through validSheetSha256Hexes here: a malformed hash must be
+	// reported missing, not silently dropped from the result.
 	var missing []string
 	for _, sha256Hex := range sha256Hexes {
-		if !allowed[sha256Hex] {
+		if !allowed[strings.ToLower(sha256Hex)] {
 			missing = append(missing, sha256Hex)
 		}
 	}
@@ -119,7 +125,9 @@ func (s *Store) MissingSheetsForProject(ctx context.Context, projectID string, s
 // keyed by hex hash alone; scoping runs before content retrieval (a cache hit
 // issues no query).
 func (s *Store) getSheetsFull(ctx context.Context, sha256Hexes ...string) (map[string]*SheetMessage, error) {
-	sha256Hexes = common.Uniq(sha256Hexes)
+	// Canonicalize before the cache loop so cache keys, result keys, and the
+	// keys encode() produces all agree, and mixed-case duplicates collapse.
+	sha256Hexes = common.Uniq(validSheetSha256Hexes(sha256Hexes))
 	result := make(map[string]*SheetMessage, len(sha256Hexes))
 	misses := sha256Hexes
 	if s.enableCache {

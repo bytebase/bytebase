@@ -91,10 +91,13 @@ ON CONFLICT DO NOTHING;
 -- hundreds of thousands of rows (measured: minutes-to-hours as CTEs, seconds
 -- as temp tables). ON COMMIT DROP keeps them inside the migration
 -- transaction, so atomicity and retry-on-failure are unchanged.
+-- Hex hashes are compared as text below, and legacy payloads may carry
+-- uppercase hex (old callers could name sheets in either case), so every
+-- extracted hash is lowered to the canonical encode() form first.
 CREATE TEMP TABLE _sheet_scope_rev ON COMMIT DROP AS
 SELECT r.resource_id,
        r.created_at,
-       r.payload->>'sheetSha256' AS sha,
+       lower(r.payload->>'sheetSha256') AS sha,
        (regexp_match(r.payload->>'release', 'projects/([^/]+)/'))[1] AS rel_project,
        (regexp_match(r.payload->>'release', 'releases/([^/]+)'))[1] AS rel_id,
        -- The digit bound keeps the bigint casts total: a malformed name
@@ -117,7 +120,7 @@ ANALYZE _sheet_scope_rev;
 -- single-row identity, release no newer than the revision, file carrying
 -- the revision's hash.
 CREATE TEMP TABLE _sheet_scope_srf ON COMMIT DROP AS
-SELECT rel.project, rel.release_id, rel.created_at, f->>'sheetSha256' AS sha
+SELECT rel.project, rel.release_id, rel.created_at, lower(f->>'sheetSha256') AS sha
 FROM release rel
 JOIN (
     SELECT project, release_id
@@ -166,7 +169,7 @@ LEFT JOIN _sheet_scope_srf srf
     AND srf.sha = rev.sha
 WHERE rev.tr_project IS NOT NULL AND rev.tr_id IS NOT NULL AND rev.task_id IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM _sheet_scope_corroborated c WHERE c.resource_id = rev.resource_id)
-  AND (t.payload->>'sheetSha256' = rev.sha OR srf.project IS NOT NULL);
+  AND (lower(t.payload->>'sheetSha256') = rev.sha OR srf.project IS NOT NULL);
 
 ANALYZE _sheet_scope_corroborated;
 
@@ -183,7 +186,7 @@ WHERE r.resource_id = c.resource_id;
 -- foreign key (corroborated stamps always pass it - they came from FK-backed
 -- release/task_run rows).
 WITH stamped AS MATERIALIZED (
-    SELECT r.payload->>'project' AS project, r.payload->>'sheetSha256' AS sha
+    SELECT r.payload->>'project' AS project, lower(r.payload->>'sheetSha256') AS sha
     FROM revision r
     WHERE r.payload->>'project' IS NOT NULL
       AND r.payload->>'sheetSha256' ~ '^[0-9a-fA-F]{64}$'
