@@ -282,13 +282,19 @@ discovery and run gates instead.
 immediately (workspace-wide roles aside — those reach every project by
 design). Explicitly granted content access — and the creator's access
 to their own queries — persists until revoked, and the revocation surface
-is explicit: bindings are enumerable (`ListSavedQueries`, filter by
-`member` or `creator`), strippable via `SetIamPolicy` by the creator or an
-admin, and content reads are audited; an admin can delete a departed
-creator's queries, and workspace deactivation ends everything. This is
-precisely BigQuery's behavior. The audit's Problem-1 complaint was never
-retention itself but *implicit* retention — flag-derived access with no
-grant to see, audit, or revoke.
+is explicit: bindings are enumerable via `ListSavedQueries` with a
+`member` filter that, given a `user:` principal, **expands the target's
+group memberships server-side** — the same `principals(u)` expansion the
+read path uses — so the review lists rows granted directly *and* via any
+of the user's groups (a `group:` principal matches that group's rows).
+Direct grants are strippable via `SetIamPolicy` by the creator or an
+admin; group-held access is revoked at the group (leave or edit it), not
+per-query — a group grant's audience is deliberately the live group.
+Content reads are audited; an admin can delete a departed creator's
+queries, and workspace deactivation ends everything. This is precisely
+BigQuery's behavior. The audit's Problem-1 complaint was never retention
+itself but *implicit* retention — flag-derived access with no grant to
+see, audit, or revoke.
 
 **Share-with-project is a snapshot.** There is deliberately no derived
 "everyone in the project" principal (see Alternatives); the share dialog's
