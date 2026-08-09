@@ -49,7 +49,7 @@
     "crypto-js": "^4.2.0",
     "d3-shape": "^3.2.0",
     "dayjs": "1.11.21",
-    "dompurify": "3.4.13",
+    "dompurify": "catalog:",
     "downloadjs": "1.4.7",
     "elkjs": "^0.12.0",
     "emittery": "^2.0.0",

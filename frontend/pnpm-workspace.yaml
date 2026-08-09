@@ -2,6 +2,17 @@ peerDependencyRules:
   allowedVersions:
     typescript: '6'
 
+catalog:
+  dompurify: 3.4.13
+
+overrides:
+  # `@codingame/monaco-vscode-api` pins an exact dompurify version that lags
+  # behind security patches (GHSA-55q2-fjhq-7xh7, fixed in 3.4.13), shipping a
+  # second vulnerable copy in the Monaco bundle. The override forces every
+  # transitive copy to the catalog version, which the direct dependency also
+  # references, so the two can't drift apart again.
+  dompurify: 'catalog:'
+
 allowBuilds:
   # code-inspector-plugin v2 adds an optional "terminal mode" backed by the
   # node-pty native module (optionalDependency of @code-inspector/core).
