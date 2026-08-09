@@ -280,21 +280,23 @@ discovery and run gates instead.
 
 **Offboarding.** Removing a user from a project ends discovery and run
 immediately (workspace-wide roles aside — those reach every project by
-design). Explicitly granted content access — and the creator's access
-to their own queries — persists until revoked, and the revocation surface
-is explicit: bindings are enumerable via `ListSavedQueries` with a
-`member` filter that, given a `user:` principal, **expands the target's
-group memberships server-side** — the same `principals(u)` expansion the
-read path uses — so the review lists rows granted directly *and* via any
-of the user's groups (a `group:` principal matches that group's rows).
-Direct grants are strippable via `SetIamPolicy` by the creator or an
-admin; group-held access is revoked at the group (leave or edit it), not
-per-query — a group grant's audience is deliberately the live group.
-Content reads are audited; an admin can delete a departed creator's
-queries, and workspace deactivation ends everything. This is precisely
-BigQuery's behavior. The audit's Problem-1 complaint was never retention
-itself but *implicit* retention — flag-derived access with no grant to
-see, audit, or revoke.
+design). Explicitly granted content access — and the creator's access to
+their own queries — persists until revoked, and the revocation surface is
+explicit: an offboarding review is **two `ListSavedQueries` filters** over
+the target. `creator == target` lists the rows they own — no binding
+exists for these, so no member filter can find them (remediation: an
+admin deletes them, or deliberately leaves the departed user their own
+drafts). `member == target`, given a `user:` principal, **expands the
+target's group memberships server-side** — the same `principals(u)`
+expansion the read path uses — listing rows granted directly *and* via
+any of the user's groups (a `group:` principal matches that group's
+rows); direct grants strip via `SetIamPolicy`, while group-held access is
+revoked at the group (leave or edit it), not per-query — a group grant's
+audience is deliberately the live group. Content reads are audited, and
+workspace deactivation ends everything. This is precisely BigQuery's
+behavior. The audit's Problem-1 complaint was never retention itself but
+*implicit* retention — flag-derived access with no grant to see, audit,
+or revoke.
 
 **Share-with-project is a snapshot.** There is deliberately no derived
 "everyone in the project" principal (see Alternatives); the share dialog's
