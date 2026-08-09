@@ -22,54 +22,6 @@ to it. `DiffSchema` (fix already written, patch `04`) was one instance; these ar
 The related CUSTOM-auth variant — the interceptor checks nothing at all, so the handler must
 authorize every branch itself — was T4 (`SearchIssues`), now fixed.
 
-### T5 ✅ HIGH — sheet content is globally readable by SHA256
-
-`sheet_blob`'s primary key is `sha256` alone (`backend/migrator/migration/LATEST.sql:237-240`),
-and `getSheet` selects `WHERE sha256 = decode(?, 'hex')` with no project or workspace predicate
-(`backend/store/sheet.go:60-71`). `GetSheet` validates only that the **caller-named** project
-exists and is readable, then fetches by hash (`backend/api/v1/sheet_service.go:111-147`).
-
-The `projects/{project}/sheets/{sha}` prefix is decorative. Anyone who learns a SHA256 reads that
-SQL by requesting it under a project they control. This is a boundary failure in its own right
-and the amplifier for T6.
-
-### T6 ✅ HIGH — `BatchCreateRevisions` reads another project's — and another *workspace's* — release, and leaks the sheet hash
-
-`backend/api/v1/revision_service.go:203-210` takes `projectID` from the attacker-supplied
-`revision.file` and uses it directly as the store key, never comparing it to the authorized
-database's project. The mismatch error then echoes the hash (`:221-223`):
-
-```go
-fileSheet := common.FormatSheet(release.ProjectID, f.SheetSha256)
-if fileSheet != revision.Sheet {
-    return nil, ...errors.Errorf("The sheet in file %q is %q which is different from revision.sheet %q", ...)
-}
-```
-
-Amplifiers, all verified: `FindReleaseMessage` has **no `Workspace` field**
-(`backend/store/release.go:30-37`) and `ListReleases` emits no workspace predicate (`:150-154`),
-so this crosses tenants; release IDs are deterministic and enumerable
-(`fmt.Sprintf("%s%02d", train, nextIteration)`, `release.go:80`); and T5 turns the leaked hash
-into content.
-
-Chain: `bb.revisions.create` on one database → another team's (or another tenant's) migration SQL.
-
-### T7 ✅ HIGH — `CheckRelease.targets` reaches arbitrary databases, including a live admin connection
-
-`backend/api/v1/release_service_check.go:70-86` resolves database targets workspace-wide with no
-comparison to the parent project. The databaseGroup branch (`:87-125`) is worse — it takes
-`projectResourceID` straight from the target string and calls
-`ListDatabases(ProjectID: projectResourceID)` on that other project, expanding to every match.
-`grep CheckPermission release_service_check.go release_service.go` → **no matches**.
-
-Those databases flow into stored-schema reads (`:257`, `:551`, `:747`) and
-`plancheck.GetSQLSummaryReport` (`:366`), which opens a real admin driver to the target database
-(`backend/runner/plancheck/statement_report_executor.go:175`) and runs EXPLAIN.
-
-A user with only `bb.releases.check` on a throwaway project gets SQL-review advice derived from
-production schemas they cannot read, plus affected-row counts computed over a live admin
-connection to those databases.
-
 ### T8 ◐ HIGH — two RPCs enforce nothing at all
 
 - **`CreateWorksheet`** (`worksheet_service.go:39-103`) — resolves the caller, checks the project exists, optionally checks the database belongs to it, then writes. No `CheckPermission`, no membership test; `parent` has no `resource_reference` so the interceptor contributes nothing. A bare member plants arbitrary SQL into any project's shared worksheet list, where legitimate members may open and run it.
@@ -184,6 +136,7 @@ filter only narrows an already-authorized list).
 
 ### T18 ◐ MED — other
 
+- **`CheckRelease` target rejection is an existence oracle** ✅ — a target database that exists in another project returns `InvalidArgument` ("does not belong to project", `release_service_check.go:95-97`, emitted after the row fetch), while a nonexistent one returns `NotFound` — so `bb.releases.check` on any one project distinguishes which `instances/{i}/databases/{d}` names exist workspace-wide. Contrast the `NotFound` convention the `BatchCreateRevisions` fix adopted for the same shape. Introduced alongside the otherwise-correct target scoping in [#21102](https://github.com/bytebase/bytebase/pull/21102); the fix should land with a regression test asserting `NotFound` for both existing and nonexistent foreign targets.
 - **`BatchDeleteProjects` partial purge** (`project_service.go:504-508`): soft-delete is one statement, hard-delete is a loop; a mid-loop failure leaves some projects irreversibly purged and the rest soft-deleted, with no indication which.
 - **`BatchCancelTaskRuns`** authorizes a caller-asserted stage but cancels by UID without `PlanUID`/`Environment` predicates (`rollout_service.go:1073-1110`), so test-environment rights can cancel in-flight production migrations. Sibling handlers derive the environment from real rows.
 - **`SearchQueryHistories` `instance ==` filter always matches zero rows** — `store/query_history.go:247` uses `LIKE` with no `%` against a longer stored string; the proto documents the broken form (`query_history_service.proto:68,75`).
@@ -215,13 +168,21 @@ comment; 22 files have string fields and zero protovalidate constraints despite
 # What I'd do, in order
 
 1. **Runtime-confirm T9.** Eleven bad logins. If the eleventh is accepted, there is no lockout and that outranks everything else here.
-2. **Close the multi-resource ACL class, not the instances** (T6–T7 + the pending `DiffSchema` patch): teach `getResourceFromRequest` to collect *every* `resource_reference`d field including oneof and repeated members, then annotate `DiffSchemaRequest.changelog`, `CheckReleaseRequest.targets`, `Revision.release/file/task_run`. `UpdateDatabase`'s project-transfer case (`acl.go:604-624`) is the in-repo precedent.
-3. **Give sheets an ownership model** (T5), or at minimum scope the blob fetch by the owning project/workspace. Until then the sheet namespace is workspace-global by design, and should be documented as such.
-4. **Fail closed**: reject `AUTH_METHOD_UNSPECIFIED` at startup; make `permission` on a CUSTOM RPC either enforced or a build error, since 20 of them are currently decorative.
-5. **Wire api-linter into CI** at the 474-finding baseline. None of Tier 5 was visible to `buf lint`'s `BASIC` profile, which is why it accumulated.
+2. **Close the multi-resource ACL class, not the instances** (the pending `DiffSchema` patch): teach `getResourceFromRequest` to collect *every* `resource_reference`d field including oneof and repeated members, then annotate `DiffSchemaRequest.changelog`. Every known instance is now closed handler-side — `Revision.release/file/task_run` (provenance must name the authorized database's own project) and `CheckReleaseRequest.targets` (targets validated against the parent project) — but the interceptor-level generalization is what keeps the next second-resource field from reopening the class. `UpdateDatabase`'s project-transfer case (`acl.go:604-624`) is the in-repo precedent.
+3. **Fail closed**: reject `AUTH_METHOD_UNSPECIFIED` at startup; make `permission` on a CUSTOM RPC either enforced or a build error, since 20 of them are currently decorative.
+4. **Wire api-linter into CI** at the 474-finding baseline. None of Tier 5 was visible to `buf lint`'s `BASIC` profile, which is why it accumulated.
 
 **Note on scope.** Tier 2–3 are security issues in a shipped product, and everything here is
 still a report — untouched. Resolved findings are removed from this document (T1/T3 earlier;
-T2 via the INPUT_ONLY read-path fix). The three patches from earlier in the session
+T2 via the INPUT_ONLY read-path fix; T5/T6 via the sheet-blob scoping PR
+[#21143](https://github.com/bytebase/bytebase/pull/21143) — `sheet_blob_ref` gives sheets a
+per-project ownership model enforced by the store's scoped accessors, and `BatchCreateRevisions`
+now rejects provenance naming any project but the authorized database's own, without echoing the
+hash; design in `sheet-blob-scoping.md` and `sheet-history-on-database-transfer.md`. T7 via the
+project-instances integration [#21102](https://github.com/bytebase/bytebase/pull/21102), which
+landed after this audit's baseline: every `CheckRelease` target — database, project-form, or
+database group — is validated against the request's parent project before any schema read or
+check runs, so `bb.releases.check` covers everything the RPC touches. Its rejection error
+code carries a residual existence oracle, tracked as a T18 item). The three patches from earlier in the session
 (`SearchProjects` proto comment, `SearchProjects` pagination, `DiffSchema` ACL) remain parked
 and still apply cleanly.
