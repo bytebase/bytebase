@@ -398,9 +398,14 @@ Honest per-tab costs (G7):
 
 - **My** (`creator = me`): btree `(creator, project, updated_at DESC,
   resource_id DESC)` — equality on the leading columns plus an
-  index-ordered keyset scan → true `O(page)` at any scale. The same index serves the
-  auditor's cross-project `creator` filter (creator leads; the audit list
-  needs no binding test at all).
+  index-ordered keyset scan → true `O(page)` at any scale. The index's
+  `creator` prefix also serves the auditor's cross-project `creator`
+  filter (no binding test needed there) — but not its ordering: with
+  `projects/-` there is no `project` equality, so the audit list top-N
+  sorts that one creator's rows. Bounded and cold, so no dedicated index;
+  and because completeness matters more than recency on a governance
+  surface, the audit list keysets on an immutable key (`created_at`,
+  `resource_id`), immune to the autosave skips below.
 - **Starred**: my rows in `saved_query_star` via its `principal` btree —
   row existence is the star. Fetch the (naturally small) set, join, drop
   rows I can no longer read (lazily deleting stale stars), sort.
@@ -413,8 +418,12 @@ Honest per-tab costs (G7):
 
 Pagination is **keyset, never OFFSET**, on every tab: where the plan is
 index-ordered (My) pages are `O(page)`; where it is bitmap-based (Shared)
-the cursor still keeps pages stable under concurrent writes — no
-skips/duplicates — and caps the sort at top-N. And the expensive move —
+the cursor still avoids OFFSET's re-scan and caps the sort at top-N. One
+honest limit of the mutable sort key: `updated_at` only moves forward, so
+already-returned rows never repeat, but a row autosaved mid-scroll jumps
+ahead of the cursor and drops out of the remaining pages — it surfaces at
+the top of the next refresh. Acceptable for a scratchpad list; the auditor
+view keysets on an immutable key instead (above). And the expensive move —
 expanding a *group's members* — never happens on any path: policies store
 group references, so a 1,000-member group costs the same as a 3-member one
 and membership changes rewrite nothing.
