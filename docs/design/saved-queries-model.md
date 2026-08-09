@@ -216,8 +216,14 @@ Principals:    user:{email} | group:{email}
 The whole model (G1); every RPC gate derives from these. Notation: `u` is
 the caller, `P` a project, `s` a saved query, `s.project` its owning
 project; "holds" means any of `u`'s role bindings — project-level (direct
-or via a group) or workspace-level, with CEL conditions satisfied — grants
-the permission:
+or via a group) or workspace-level — grants the permission. Binding
+conditions are handled precisely: expiry (`request.time`) is honored, but
+a binding whose condition scopes *resources* (databases, environments)
+confers **no** `bb.savedQueries.*` permission at all — saved-query
+surfaces are project-wide, and a data-slice grant must not silently widen
+to them (the platform otherwise treats residual resource conditions as
+passing in plain permission checks; the same narrowing stance as the
+share-with-project snapshot's condition skip):
 
 ```
 admin(u, P)    = u holds bb.savedQueries.manage on P          -- the dataform.admin backstop
@@ -312,7 +318,11 @@ Sharing is a policy on the resource, managed via a
 Snowflake likewise keep permissions on a dedicated surface. Because Bytebase
 has no resource-level role store below the project, the policy carries
 capability **levels** grouped by member list, evaluated by the saved-query
-handlers, not central `CheckPermission` (decision 6).
+handlers, not central `CheckPermission` (decision 6). `SetIamPolicy` is
+**compare-and-swap**: `GetIamPolicy` returns an `etag`, `SetIamPolicy`
+must present it, and a mismatch aborts for refetch — a full-replacement
+write may never silently overwrite a concurrent revocation (the
+offboarding race).
 
 **Auth split.** `CreateSavedQuery`, `SearchSavedQueries`,
 `ListSavedQueries`, and `ListSavedQueryFolders` authorize on a single
@@ -330,7 +340,7 @@ view, which is why only it may wildcard `projects/-`.
 | `ListSavedQueries` | `bb.savedQueries.list` (IAM) → all rows matching `filter`; `projects/-` allowed |
 | `GetSavedQuery` | `read(s,u)`; NotFound (not PermissionDenied) when unreadable |
 | `UpdateSavedQuery` | title/content/database: `write(s,u)`; `folder`: creator or admin only |
-| `GetIamPolicy` / `SetIamPolicy` | `read(s,u)` / `share(s,u)` |
+| `GetIamPolicy` / `SetIamPolicy` | `read(s,u)` / `share(s,u)` + etag CAS |
 | `DeleteSavedQuery` | `delete(s,u)` |
 | `UpdateSavedQueryStar` | `read(s,u)` — star any readable saved query |
 | `BatchUpdateSavedQueries` | rows the caller may re-file (creator; admin: any); mask limited to `folder` |
