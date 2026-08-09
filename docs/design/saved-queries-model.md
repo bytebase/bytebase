@@ -341,16 +341,24 @@ Duplicate/fork needs no RPC: read what you can already see, then
 
 **Audit events.** Today's `WorksheetService` carries **no**
 `bytebase.v1.audit` annotations at all (sheet and database services do) —
-this design closes that gap. Audited: `CreateSavedQuery`, `GetSavedQuery`
-(content reads — what makes admin access to others' private queries
-*attributable*, the accountability half of decision 5), `DeleteSavedQuery`,
-`SetIamPolicy` (the share event), `BatchUpdateSavedQueries`, and the
-grant-bypassing `ListSavedQueries`. Deliberately **not** audited:
-`UpdateSavedQuery` — the editor autosaves through it, and per-keystroke
-audit rows drown signal. The accepted cost: content edits are attributed
-only via `creator`/`update_time`, not per-edit events; revisit with
-debounced audit or version history if that ever matters. Search, star,
-folder listing, and `GetIamPolicy` are unaudited read/organization noise.
+this design closes that gap, under one invariant: **every path to another
+user's private content is audited.** By annotation: `CreateSavedQuery`,
+`GetSavedQuery` (content reads — what makes admin access attributable, the
+accountability half of decision 5), `DeleteSavedQuery`, `SetIamPolicy`
+(the share event), `BatchUpdateSavedQueries`, and the grant-bypassing
+`ListSavedQueries`. The two unaudited RPCs that could return content are
+closed differently: `SearchSavedQueries` — the hot list path — returns
+**metadata only, no content preview, for rows the caller reaches solely
+via the admin override** (neither creator nor grantee), funneling their
+content through the audited `GetSavedQuery`; `UpdateSavedQuery` — the
+autosave path, where per-keystroke audit rows drown signal — carries no
+annotation, but the handler **emits an audit event when the write
+exercises the admin override**, which also covers reading content via a
+no-op update's response. Self and granted traffic through Search and
+Update stays unaudited; the accepted cost is that a grantee's edits are
+attributed only via `creator`/`update_time` — revisit with debounced audit
+or version history if that ever matters. Star, folder listing, and
+`GetIamPolicy` return no content and are unaudited.
 
 **Compatibility: hard cutover, no shim** (decision 8). `WorksheetService`
 and the `visibility` field are removed in the release that ships
