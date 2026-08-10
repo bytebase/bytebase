@@ -114,9 +114,9 @@ enum, the model closest to Bytebase's current shape — is **deprecated**
 **resource-level IAM** (`dataform.codeViewer/Editor/Owner` on the query) are
 the only path forward. The modern model has no project-members principal, so
 Google's own migration turns Project-visibility queries owner-private for
-manual re-grant. This design accepts the same class of tradeoff — the
-share-with-project snapshot (see Model) — rather than inventing a
-project-derived principal.
+manual re-grant. This design makes the same call at cutover — existing
+shared worksheets migrate owner-private and owners re-share (see
+Compatibility) — rather than inventing a project-derived principal.
 
 ### Consensus
 
@@ -408,10 +408,24 @@ or version history if that ever matters. Star, folder listing, and
 **Compatibility: hard cutover, no shim** (decision 8). `WorksheetService`
 and the `visibility` field are removed in the release that ships
 `SavedQueryService`; the in-repo frontend ships against the new API in the
-same release. Post-rename,
-a shim is not a deprecated field but an entire second service to maintain
-and secure — for a UI-owned feature. Cost: external worksheet scripts break
-loudly at upgrade, documented in the changelog. Historical audit-log
+same release. Post-rename, a shim is not a deprecated field but an entire
+second service to maintain and secure — for a UI-owned feature. Cost:
+external worksheet scripts break loudly at upgrade, documented in the
+changelog.
+
+**Existing data migrates owner-private** — a deliberate, one-time breaking
+change. Every existing row keeps its `creator`, `title`, and `content`;
+`visibility` is dropped and `bindings` starts empty, so `PRIVATE`,
+`PROJECT_READ`, and `PROJECT_WRITE` alike become creator-only. Previously
+shared worksheets lose their sharing at upgrade; owners re-share from the
+new dialog (Share-with-project reproduces the old project-wide audience in
+one click). There is deliberately no automatic mapping: the old flag
+carries no per-user grant to preserve, and snapshotting project IAM into
+every shared row would widen or persist access differently — exactly the
+project-derived-principal hack rejected in Alternatives. This is BigQuery's
+own classic→modern path (migrate owner-private, owners re-grant), and the
+blast radius is small — sharing was a coarse, little-used flag. Called out
+in the release notes. Historical audit-log
 entries keep old names as records.
 
 ### Storage and query scalability
