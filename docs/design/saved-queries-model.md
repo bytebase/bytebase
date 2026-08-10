@@ -226,10 +226,10 @@ confers **no** `bb.savedQueries.*` permission at all — saved-query
 surfaces are project-wide, and a data-slice grant must not silently widen
 to them. The generic interceptor cannot enforce this (it evaluates
 `request.time` only and passes residual resource conditions), so the rule
-lives where saved-query code evaluates permissions: the CUSTOM gates and
-`list`'s handler re-check — `create` alone rides the generic evaluation,
-exposing no content (see Per-RPC access). Same narrowing stance as the
-snapshot's condition skip:
+lives where saved-query code evaluates permissions: the CUSTOM gates, and
+an in-handler source re-check on **both** IAM methods (`create`, `list`)
+that rejects resource-conditioned bindings (see Per-RPC access). Same
+narrowing stance as the snapshot's condition skip:
 
 ```
 admin(u, P)    = u holds bb.savedQueries.manage on P          -- the dataform.admin backstop
@@ -355,12 +355,13 @@ write may never silently overwrite a concurrent revocation (the
 offboarding race).
 
 **Per-RPC access.** `CreateSavedQuery` and `ListSavedQueries` are IAM — a
-single family permission checked at the interceptor. The platform's
-generic check evaluates conditions with `request.time` only, which is
-acceptable for `create` (it exposes no one's content) but not for the
-content-bearing `list`: its handler **re-checks the permission source and
-rejects resource-conditioned bindings**, enforcing the family condition
-rule. The search family (`SearchSavedQueries`, `ListSavedQueryFolders`)
+single family permission checked at the interceptor. Because the platform's
+generic check evaluates conditions with `request.time` only and passes
+residual resource conditions, **both re-check the permission source
+in-handler and reject resource-conditioned bindings**, enforcing the family
+condition rule uniformly: a database- or environment-scoped role confers
+neither `list`'s content read nor `create`'s project-wide row. The search
+family (`SearchSavedQueries`, `ListSavedQueryFolders`)
 is CUSTOM — its gate is `discover(u, P) ∨ admin(u, P)`, an OR the
 single-permission interceptor cannot express — and every object method is
 a CUSTOM per-row predicate. `SearchSavedQueries` is the per-member view
@@ -369,7 +370,7 @@ why only it may wildcard `projects/-`.
 
 | RPC | Auth | Gate | Content / audit |
 |---|---|---|---|
-| `CreateSavedQuery` | IAM `create` | creator becomes owner | writes own; audited |
+| `CreateSavedQuery` | IAM `create` + handler source re-check | creator becomes owner | writes own; audited |
 | `SearchSavedQueries` | CUSTOM | `discover ∨ admin` → rows where `read(s,u)`; admin: all | previews, metadata-only on override rows; unaudited |
 | `ListSavedQueries` | IAM `list` + handler source re-check | all rows matching `filter`; `projects/-` allowed | full content (FULL); audited |
 | `GetSavedQuery` | CUSTOM | `read(s,u)`; NotFound when unreadable | full content; audited |
