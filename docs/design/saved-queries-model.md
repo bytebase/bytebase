@@ -410,9 +410,22 @@ neither `list`'s content read nor `create`'s project-wide row. The search
 family (`SearchSavedQueries`, `ListSavedQueryFolders`)
 is CUSTOM — its gate is `discover(u, P) ∨ admin(u, P)`, an OR the
 single-permission interceptor cannot express — and every object method is
-a CUSTOM per-row predicate. `SearchSavedQueries` is the per-member view
-(concrete project only); `ListSavedQueries` is the auditor view, which is
-why only it may wildcard `projects/-`.
+a CUSTOM per-row predicate.
+
+`SearchSavedQueries` and `ListSavedQueries` are **two enumeration surfaces
+for two use cases**, not redundant: Search is the **SQL Editor** — a member
+browsing what they can use *in one project* (My / Shared / Starred),
+grant-respecting, preview-only, on the hot path; List is **governance** — an
+auditor or service account enumerating by `creator` (or other metadata)
+*across projects* (`projects/-`), grant-independent, full content, audited,
+`bb.savedQueries.list`-gated. They overlap only for an admin within a single
+project (both can surface every row), by different lenses. One boundary is
+deliberately left out: a member has **no cross-project "all my own queries"
+view** — discovery is per-project (peer-consistent with BigQuery/Databricks),
+and the only `projects/-` path is the privileged audit List. If a
+self-scoped cross-project view is later wanted, it is safe to add without
+`list` — a `creator == me` query exposes only the caller's own rows, an
+additive relaxation, not a new surface.
 
 | RPC | Auth | Gate | Content / audit |
 |---|---|---|---|
