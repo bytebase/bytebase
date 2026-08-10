@@ -357,7 +357,24 @@ handlers, not central `CheckPermission` (decision 6). `SetIamPolicy` is
 **compare-and-swap**: `GetIamPolicy` returns an `etag`, `SetIamPolicy`
 must present it, and a mismatch aborts for refetch — a full-replacement
 write may never silently overwrite a concurrent revocation (the
-offboarding race).
+offboarding race). **`GetIamPolicy` is gated on `share(s,u)`, not
+`read(s,u)`** — reading the full member list is a sharer/admin operation,
+as in GCP (`getIamPolicy` is its own privileged permission) and Bytebase's
+project policy. An ordinary VIEWER/EDITOR never needs the roster: their own
+capability arrives as `effective_level` on every row, so a query shared
+with a contractor or a narrow partner group does not leak the rest of the
+ACL to them.
+
+**Database is project-scoped.** `database` is an ordinary `write(s,u)`
+field, but with one invariant `CreateSavedQuery`/`UpdateSavedQuery` enforce
+(carried over from today's `getWorksheetDatabase`): a set database must
+belong to the saved query's **own project**, and is stored canonically. A
+project-A editor cannot pin a project-B database onto a project-A query —
+otherwise Get/Search responses and the deep link would become a
+cross-project metadata surface even though running still needs that
+database's own grants. Empty is allowed (no connected database); the
+reference stays soft (nullable, no FK) and may dangle after the database is
+deleted or transferred, degrading to "no database" in the UI.
 
 **Per-RPC access.** `CreateSavedQuery` and `ListSavedQueries` are IAM — a
 single family permission checked at the interceptor. Because the platform's
@@ -381,7 +398,7 @@ why only it may wildcard `projects/-`.
 | `GetSavedQuery` | CUSTOM | `read(s,u)`; NotFound when unreadable | full content; audited |
 | `UpdateSavedQuery` | CUSTOM | title/content/database `write(s,u)`; `folder` creator/admin | returns content; override write emits audit event |
 | `DeleteSavedQuery` | CUSTOM | `delete(s,u)` | — ; audited |
-| `GetIamPolicy` | CUSTOM | `read(s,u)` | policy only; unaudited |
+| `GetIamPolicy` | CUSTOM | `share(s,u)` — sharer/admin only (see below) | policy only; unaudited |
 | `SetIamPolicy` | CUSTOM | `share(s,u)` + etag CAS | policy only; audited |
 | `UpdateSavedQueryStar` | CUSTOM | `read(s,u)` — star any readable query | — ; unaudited |
 | `BatchUpdateSavedQueries` | CUSTOM | rows the caller may re-file (creator; admin: any); mask limited to `folder` | count only; audited |
@@ -422,10 +439,15 @@ changelog.
 **Existing data migrates owner-private** — a deliberate, one-time breaking
 change. Every existing row keeps its `creator`, `title`, and `content`;
 `visibility` is dropped and `bindings` starts empty, so `PRIVATE`,
-`PROJECT_READ`, and `PROJECT_WRITE` alike become creator-only. Previously
-shared worksheets lose their sharing at upgrade; owners re-share from the
-new dialog (Share-with-project reproduces the old project-wide audience in
-one click). There is deliberately no automatic mapping: the old flag
+`PROJECT_READ`, and `PROJECT_WRITE` alike become creator-only. **Owner
+organization is preserved**: the creator's own `worksheet_organizer` row
+migrates — its folder placement into `saved_query.folder`, its `starred`
+flag into a `saved_query_star` row — so owners keep their tree and
+favorites; only *sharing* resets. Non-creator organizer rows are dropped
+(their owners lose access to the now-private query anyway, so their star
+or folder on it is moot). Previously shared worksheets lose their sharing
+at upgrade; owners re-share from the new dialog (Share-with-project
+reproduces the old project-wide audience in one click). There is deliberately no automatic mapping: the old flag
 carries no per-user grant to preserve, and snapshotting project IAM into
 every shared row would widen or persist access differently — exactly the
 project-derived-principal hack rejected in Alternatives. This is BigQuery's
