@@ -460,9 +460,13 @@ autosave path, where per-keystroke audit rows drown signal — carries no
 annotation, but the handler **emits an audit event when the write
 exercises the admin override**, which also covers reading content via a
 no-op update's response. Self and granted traffic through Search and
-Update stays unaudited; the accepted cost is that a grantee's edits are
-attributed only via `creator`/`update_time` — revisit with debounced audit
-or version history if that ever matters. Star, folder listing, and
+Update stays unaudited: a granted EDITOR reading or rewriting a query
+*shared with them* is ordinary collaboration, not access to another user's
+*private* content, so the invariant does not cover it. The accepted cost is
+attribution, not exposure — a shared query keeps no per-editor trail (the
+fixed `creator` names the owner, not whoever last edited), so multi-editor
+changes are last-write-wins with no updater identity; add version history
+if that ever matters. Star, folder listing, and
 `GetIamPolicy` return no content and are unaudited.
 
 **Compatibility: hard cutover, no shim** (decision 8). `WorksheetService`
@@ -506,6 +510,13 @@ table. The **stored shape is pinned**: the protojson *array* of
 `{"bindings": [...]}` would force expression indexes). This deviates from
 the store-a-whole-message payload convention, deliberately; the store layer
 gets its own `SavedQueryBinding` message (store protos never import v1).
+
+**Creator storage.** `saved_query.creator` stores the raw principal email
+(exactly as `worksheet.creator` does today), and the API projects it to the
+typed resource name — `users/{email}` or `serviceAccounts/{email}` — by the
+principal's type. So the rename carries the email over unchanged (no owner
+rewrite, no lost access), and `u == s.creator` stays an email comparison
+that holds for any principal type.
 
 **Principal renames.** Principals are email-keyed by repo convention, so
 a user- or group-email change must, in the same transaction, rewrite
