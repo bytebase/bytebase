@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import { usePaginatedSelect } from "@/components/usePaginatedSelect";
+import { usePaginatedSelect } from "@/hooks/usePaginatedSelect";
 import { useAppStore } from "@/stores/app";
 import { userNamePrefix } from "@/stores/modules/v1/common";
 import { ALL_USERS_USER_EMAIL } from "@/types";

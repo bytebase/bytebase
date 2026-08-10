@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import { usePaginatedSelect } from "@/components/usePaginatedSelect";
+import { usePaginatedSelect } from "@/hooks/usePaginatedSelect";
 import { useAppStore } from "@/stores/app";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";

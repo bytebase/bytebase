@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Combobox } from "@/components/ui/combobox";
-import { usePaginatedSelect } from "@/components/usePaginatedSelect";
+import { usePaginatedSelect } from "@/hooks/usePaginatedSelect";
 import { useAppStore } from "@/stores/app";
 import { isValidProjectName } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import { usePaginatedSelect } from "@/components/usePaginatedSelect";
+import { usePaginatedSelect } from "@/hooks/usePaginatedSelect";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";

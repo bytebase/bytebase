@@ -4,7 +4,7 @@ import { EngineIcon } from "@/components/EngineIcon";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { Combobox } from "@/components/ui/combobox";
-import { usePaginatedSelect } from "@/components/usePaginatedSelect";
+import { usePaginatedSelect } from "@/hooks/usePaginatedSelect";
 import { useAppStore } from "@/stores/app";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
