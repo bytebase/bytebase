@@ -314,8 +314,13 @@ or revoke.
 **Share-with-project is a snapshot.** There is deliberately no derived
 "everyone in the project" principal (see Alternatives); the share dialog's
 *Share with project* shortcut writes the project's current IAM principals —
-its `group:` and `user:` bindings, not an expansion of members — into the
-policy at the chosen level. Only bindings **whose role carries
+`group:` and `user:` bindings, not an expansion of members — into the
+policy at the chosen level. The source is the project's **effective**
+role bindings, not just its own policy row: a project role granted from
+the *workspace* IAM policy applies to every project, so those bindings are
+folded in too (the same "holds on P" the `discover` gate uses) — otherwise
+a workspace-level project member would pass discovery yet be silently
+omitted from the share. Only bindings **whose role carries
 `bb.savedQueries.search`** are included: a role deliberately kept off the
 saved-query surface (a CI releaser, say) must not be swept into content
 grants that outlive its project role. `allUsers` members — which
