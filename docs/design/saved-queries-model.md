@@ -265,7 +265,9 @@ carry `create` and `search`; the automation roles (`projectReleaser`,
 saved-query surface entirely — which is what makes the share-with-project
 snapshot's role filter meaningful for them. `projectOwner` carries
 project-scoped `list` + `manage`; `workspaceAdmin`/`workspaceDBA` carry
-them workspace-scoped. `manage` implies the Search gate — Search evaluates
+**all four** workspace-scoped — they are human operator roles, and an
+admin who could manage everyone's queries yet not draft their own (or
+list their own folders, `search`-gated) would be absurd. `manage` implies the Search gate — Search evaluates
 `discover ∨ admin` in the handler — so a manage-only custom role can
 still enumerate what it manages; there is no hidden permission
 coupling.
