@@ -224,9 +224,12 @@ conditions are handled precisely: expiry (`request.time`) is honored, but
 a binding whose condition scopes *resources* (databases, environments)
 confers **no** `bb.savedQueries.*` permission at all — saved-query
 surfaces are project-wide, and a data-slice grant must not silently widen
-to them (the platform otherwise treats residual resource conditions as
-passing in plain permission checks; the same narrowing stance as the
-share-with-project snapshot's condition skip):
+to them. The generic interceptor cannot enforce this (it evaluates
+`request.time` only and passes residual resource conditions), so the rule
+lives where saved-query code evaluates permissions: the CUSTOM gates and
+`list`'s handler re-check — `create` alone rides the generic evaluation,
+exposing no content (see Per-RPC access). Same narrowing stance as the
+snapshot's condition skip:
 
 ```
 admin(u, P)    = u holds bb.savedQueries.manage on P          -- the dataform.admin backstop
@@ -266,8 +269,8 @@ saved-query surface entirely — which is what makes the share-with-project
 snapshot's role filter meaningful for them. `projectOwner` carries
 project-scoped `list` + `manage`; `workspaceAdmin`/`workspaceDBA` carry
 **all four** workspace-scoped — they are human operator roles, and an
-admin who could manage everyone's queries yet not draft their own (or
-list their own folders, `search`-gated) would be absurd. `manage` implies the Search gate — Search evaluates
+admin who could manage everyone's queries yet not draft their own would
+be absurd. `manage` implies the Search gate — Search evaluates
 `discover ∨ admin` in the handler — so a manage-only custom role can
 still enumerate what it manages; there is no hidden permission
 coupling.
@@ -345,28 +348,32 @@ must present it, and a mismatch aborts for refetch — a full-replacement
 write may never silently overwrite a concurrent revocation (the
 offboarding race).
 
-**Auth split.** `CreateSavedQuery`, `ListSavedQueries`, and
-`ListSavedQueryFolders` authorize on a single family permission checkable
-at the interceptor (`create`, `list`, `search`), so they are IAM.
-Everything else is CUSTOM: the handler runs the access rules —
-per-row predicates for the object methods, and for `SearchSavedQueries`
-the gate `discover(u, P) ∨ admin(u, P)`, an OR the single-permission
-interceptor cannot express. `SearchSavedQueries` is the per-member view
+**Per-RPC access.** `CreateSavedQuery` and `ListSavedQueries` are IAM — a
+single family permission checked at the interceptor. The platform's
+generic check evaluates conditions with `request.time` only, which is
+acceptable for `create` (it exposes no one's content) but not for the
+content-bearing `list`: its handler **re-checks the permission source and
+rejects resource-conditioned bindings**, enforcing the family condition
+rule. The search family (`SearchSavedQueries`, `ListSavedQueryFolders`)
+is CUSTOM — its gate is `discover(u, P) ∨ admin(u, P)`, an OR the
+single-permission interceptor cannot express — and every object method is
+a CUSTOM per-row predicate. `SearchSavedQueries` is the per-member view
 (concrete project only); `ListSavedQueries` is the auditor view, which is
 why only it may wildcard `projects/-`.
 
-| Method | Gate |
-|---|---|
-| `CreateSavedQuery` | `bb.savedQueries.create` on project (IAM); creator becomes owner |
-| `SearchSavedQueries` | `discover(u,P)` ∨ `admin(u,P)` (CUSTOM) → rows where `read(s,u)`; admin: all |
-| `ListSavedQueries` | `bb.savedQueries.list` (IAM) → all rows matching `filter`; `projects/-` allowed |
-| `GetSavedQuery` | `read(s,u)`; NotFound (not PermissionDenied) when unreadable |
-| `UpdateSavedQuery` | title/content/database: `write(s,u)`; `folder`: creator or admin only |
-| `GetIamPolicy` / `SetIamPolicy` | `read(s,u)` / `share(s,u)` + etag CAS |
-| `DeleteSavedQuery` | `delete(s,u)` |
-| `UpdateSavedQueryStar` | `read(s,u)` — star any readable saved query |
-| `BatchUpdateSavedQueries` | rows the caller may re-file (creator; admin: any); mask limited to `folder` |
-| `ListSavedQueryFolders` | `bb.savedQueries.search` (IAM) → distinct folders of the caller's own rows |
+| RPC | Auth | Gate | Content / audit |
+|---|---|---|---|
+| `CreateSavedQuery` | IAM `create` | creator becomes owner | writes own; audited |
+| `SearchSavedQueries` | CUSTOM | `discover ∨ admin` → rows where `read(s,u)`; admin: all | previews, metadata-only on override rows; unaudited |
+| `ListSavedQueries` | IAM `list` + handler source re-check | all rows matching `filter`; `projects/-` allowed | full content (FULL); audited |
+| `GetSavedQuery` | CUSTOM | `read(s,u)`; NotFound when unreadable | full content; audited |
+| `UpdateSavedQuery` | CUSTOM | title/content/database `write(s,u)`; `folder` creator/admin | returns content; override write emits audit event |
+| `DeleteSavedQuery` | CUSTOM | `delete(s,u)` | — ; audited |
+| `GetIamPolicy` | CUSTOM | `read(s,u)` | policy only; unaudited |
+| `SetIamPolicy` | CUSTOM | `share(s,u)` + etag CAS | policy only; audited |
+| `UpdateSavedQueryStar` | CUSTOM | `read(s,u)` — star any readable query | — ; unaudited |
+| `BatchUpdateSavedQueries` | CUSTOM | rows the caller may re-file (creator; admin: any); mask limited to `folder` | count only; audited |
+| `ListSavedQueryFolders` | CUSTOM | `discover ∨ admin` → the caller's own folder paths | paths only; unaudited |
 
 Duplicate/fork needs no RPC: read what you can already see, then
 `CreateSavedQuery` — the copy is yours and private.
@@ -411,6 +418,15 @@ table. The **stored shape is pinned**: the protojson *array* of
 `{"bindings": [...]}` would force expression indexes). This deviates from
 the store-a-whole-message payload convention, deliberately; the store layer
 gets its own `SavedQueryBinding` message (store protos never import v1).
+
+**Principal renames.** Principals are email-keyed by repo convention, so
+a user- or group-email change must, in the same transaction, rewrite
+`saved_query.creator`, `saved_query_star.principal`, and the
+`user:`/`group:` members inside `saved_query.bindings` — exactly as
+`UpdateUserEmail` rewrites `worksheet.creator` today. Without the jsonb
+rewrite, grants, ownership, and stars silently orphan on rename. Stable
+numeric principal IDs would avoid rewrites entirely but are a
+platform-wide convention change outside this design's scope.
 
 The caller's principal set expands cheaply — groups are flat (members are
 users, one hop) and `GetUserGroupsSnapshot` is cached in
