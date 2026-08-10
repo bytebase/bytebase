@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { Button } from "@/components/ui/button";
 import type { ComboboxOption } from "@/components/ui/combobox";
 import {
@@ -209,7 +210,7 @@ export function ConnectChooser({
                     isSelected && "text-accent font-medium"
                   )}
                 >
-                  {option.label}
+                  <HighlightLabelText text={option.label} keyword={search} />
                 </span>
                 {isSelected && (
                   <Check className="size-4 text-accent shrink-0" />

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/components/FeatureBadge";
+import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { Combobox, type ComboboxGroup } from "@/components/ui/combobox";
 import {
   displayRoleDescriptionFromList,
@@ -73,9 +74,12 @@ export function RoleSelect({
         label: displayRoleTitleFromList(r.name, roleList),
         description: displayRoleDescriptionFromList(r.name, roleList),
         disabled: !hasCustomRoleFeature,
-        render: () => (
+        render: (keyword: string) => (
           <div className="flex items-center gap-x-1">
-            <span>{displayRoleTitleFromList(r.name, roleList)}</span>
+            <HighlightLabelText
+              text={displayRoleTitleFromList(r.name, roleList)}
+              keyword={keyword}
+            />
             {isCustomRole(r.name) && !hasCustomRoleFeature && (
               <FeatureBadge
                 feature={PlanFeature.FEATURE_CUSTOM_ROLES}

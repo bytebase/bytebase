@@ -38,6 +38,16 @@ vi.mock("@/components/ui/search-input", () => ({
   }) => <input data-testid="search" value={value} onChange={onChange} />,
 }));
 
+vi.mock("@/components/HighlightLabelText", () => ({
+  HighlightLabelText: ({
+    keyword,
+    text,
+  }: {
+    keyword?: string;
+    text: string;
+  }) => <b data-keyword={keyword}>{text}</b>,
+}));
+
 let ConnectChooser: typeof import("./ConnectChooser").ConnectChooser;
 
 const renderIntoContainer = (element: ReactElement) => {
@@ -232,6 +242,38 @@ describe("ConnectChooser", () => {
       (optionButtons[0] as HTMLButtonElement)?.click();
     });
     expect(onChange).toHaveBeenCalled();
+    unmount();
+  });
+
+  test("highlights matching option text", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <ConnectChooser
+        value=""
+        onChange={vi.fn()}
+        options={defaultOptions}
+        isChosen={false}
+        placeholder="Select schema"
+      />
+    );
+    render();
+    act(() => container.querySelector("button")?.click());
+
+    const input = document.body.querySelector(
+      '[data-testid="search"]'
+    ) as HTMLInputElement;
+    act(() => {
+      const valueSetter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value"
+      )?.set;
+      valueSetter?.call(input, "pub");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    const highlight = Array.from(document.body.querySelectorAll("b")).find(
+      (element) => element.textContent === "public"
+    );
+    expect(highlight?.dataset.keyword).toBe("pub");
     unmount();
   });
 

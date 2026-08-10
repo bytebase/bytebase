@@ -98,13 +98,19 @@ vi.mock("@/components/EnvironmentLabel", () => ({
 vi.mock("@/components/DatabaseTargetDisplay", () => ({
   DatabaseTargetDisplay: ({
     database,
+    keyword,
     target,
   }: {
     database?: { name: string };
+    keyword?: string;
     target?: string;
   }) => {
     const name = database?.name ?? target ?? "";
-    return <span>{name.split("/databases/").at(-1) ?? name}</span>;
+    return (
+      <span data-keyword={keyword}>
+        {name.split("/databases/").at(-1) ?? name}
+      </span>
+    );
   },
 }));
 
@@ -293,6 +299,21 @@ describe("DatabaseResourceSelector", () => {
       })
     );
 
+    unmount();
+  });
+
+  test("passes the free-text query to database result highlighting", async () => {
+    const { container, unmount } = renderIntoContainer(<Harness />);
+    await flushPromises();
+    await waitForText(container, "advanced-search:");
+
+    clickFirstButtonInRow(container, "advanced-search:");
+    await flushPromises();
+
+    const databaseLabel = Array.from(
+      container.querySelectorAll("[data-keyword]")
+    ).find((element) => element.textContent === "hr") as HTMLElement;
+    expect(databaseLabel.dataset.keyword).toBe("salary");
     unmount();
   });
 

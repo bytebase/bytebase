@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/components/EngineIcon";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
+import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { Combobox } from "@/components/ui/combobox";
+import { usePaginatedSelect } from "@/components/usePaginatedSelect";
 import { useAppStore } from "@/stores/app";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
@@ -29,8 +31,6 @@ export function InstanceSelect({
   engines,
 }: InstanceSelectProps) {
   const { t } = useTranslation();
-  const [instances, setInstances] = useState<Instance[]>([]);
-
   // Stabilize engines array to avoid re-fetching on every render
   const enginesRef = useRef(engines);
   const stableEngines = useMemo(() => {
@@ -47,22 +47,31 @@ export function InstanceSelect({
     return engines;
   }, [engines]);
 
-  const fetchInstances = useCallback(
-    (query: string) => {
-      useAppStore
-        .getState()
-        .fetchInstanceList({
-          pageSize: getDefaultPagination(),
-          filter: { query, engines: stableEngines },
-        })
-        .then((result) => setInstances(result.instances));
+  const fetchPage = useCallback(
+    async (query: string, pageToken: string) => {
+      const result = await useAppStore.getState().fetchInstanceList({
+        pageSize: getDefaultPagination(),
+        pageToken,
+        filter: { query, engines: stableEngines },
+      });
+      return {
+        items: result.instances,
+        nextPageToken: result.nextPageToken,
+      };
     },
     [stableEngines]
   );
+  const {
+    items: instances,
+    search,
+    hasMore,
+    loadingMore,
+    loadMore,
+  } = usePaginatedSelect({ fetchPage });
 
   useEffect(() => {
-    fetchInstances("");
-  }, [fetchInstances]);
+    search("");
+  }, [search]);
 
   const handleChange = useCallback(
     (name: string) => {
@@ -78,7 +87,10 @@ export function InstanceSelect({
       onChange={handleChange}
       placeholder={placeholder ?? t("common.instance")}
       noResultsText={t("common.no-data")}
-      onSearch={fetchInstances}
+      onSearch={search}
+      hasMore={hasMore}
+      loadingMore={loadingMore}
+      onLoadMore={loadMore}
       disabled={disabled}
       className={className}
       portal={portal}
@@ -96,18 +108,20 @@ export function InstanceSelect({
         value: inst.name,
         label: inst.title,
         description: extractInstanceResourceName(inst.name),
-        render: () => (
+        render: (keyword) => (
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-1.5">
               {inst.environment && (
                 <EnvironmentLabel environmentName={inst.environment} />
               )}
               <EngineIcon engine={inst.engine} className="h-4 w-4" />
-              <span>{inst.title}</span>
+              <HighlightLabelText text={inst.title} keyword={keyword} />
             </div>
-            <span className="text-xs text-control-placeholder">
-              {extractInstanceResourceName(inst.name)}
-            </span>
+            <HighlightLabelText
+              text={extractInstanceResourceName(inst.name)}
+              keyword={keyword}
+              className="text-xs text-control-placeholder"
+            />
           </div>
         ),
       }))}

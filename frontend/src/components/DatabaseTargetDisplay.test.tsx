@@ -175,6 +175,29 @@ describe("DatabaseTargetDisplay", () => {
     ).toBeTruthy();
   });
 
+  it("highlights the search keyword in the database name", () => {
+    act(() => {
+      root.render(
+        <DatabaseTargetDisplay
+          database={{
+            name: "projects/p/instances/bbdev/databases/bytebase",
+            instanceResource: {
+              engine: Engine.POSTGRES,
+              title: "bbdev",
+            },
+          } as Database}
+          keyword="byte"
+        />
+      );
+    });
+
+    const highlight = container.querySelector(
+      '[data-testid="ellipsis-bytebase"] b'
+    );
+    expect(highlight?.textContent).toBe("byte");
+    expect(highlight?.className).toContain("text-accent");
+  });
+
   it("falls back to target path context while the database cache is missing", () => {
     mocks.databasesByName = {};
 

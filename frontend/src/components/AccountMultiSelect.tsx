@@ -1,6 +1,7 @@
 import { Check, ChevronDown, KeyRound, Shield, Users, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { SearchInput } from "@/components/ui/search-input";
 import { useCurrentUser } from "@/hooks/useAppState";
@@ -130,10 +131,12 @@ function SelectionCheckbox({ selected }: { selected: boolean }) {
 }
 
 function SpecialAccountOption({
+  keyword,
   match,
   selected,
   onToggle,
 }: {
+  keyword: string;
   match: { type: SpecialAccountType; email: string };
   selected: boolean;
   onToggle: () => void;
@@ -162,16 +165,20 @@ function SpecialAccountOption({
       </div>
       <div className="flex flex-col min-w-0">
         <div className="flex items-center gap-x-1">
-          <span className="text-sm font-medium truncate">
-            {match.email.split("@")[0]}
-          </span>
+          <HighlightLabelText
+            text={match.email.split("@")[0]}
+            keyword={keyword}
+            className="text-sm font-medium truncate"
+          />
           <span className="text-xs text-control-light bg-control-bg rounded-xs px-1">
             {label}
           </span>
         </div>
-        <span className="text-xs text-control-light truncate">
-          {match.email}
-        </span>
+        <HighlightLabelText
+          text={match.email}
+          keyword={keyword}
+          className="text-xs text-control-light truncate"
+        />
       </div>
     </div>
   );
@@ -393,9 +400,11 @@ export function AccountMultiSelect({
                 >
                   <Users className="h-4 w-4" />
                 </div>
-                <span className="text-sm font-medium">
-                  {t("settings.members.all-users")}
-                </span>
+                <HighlightLabelText
+                  text={t("settings.members.all-users")}
+                  keyword={search}
+                  className="text-sm font-medium"
+                />
               </div>
             )}
 
@@ -431,9 +440,11 @@ export function AccountMultiSelect({
                       </div>
                       <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-x-1">
-                          <span className="text-sm font-medium truncate">
-                            {displayName}
-                          </span>
+                          <HighlightLabelText
+                            text={displayName}
+                            keyword={search}
+                            className="text-sm font-medium truncate"
+                          />
                           {isCurrentUser && (
                             <span className="text-xs text-control-light bg-control-bg rounded-xs px-1">
                               {t("common.you")}
@@ -441,9 +452,11 @@ export function AccountMultiSelect({
                           )}
                         </div>
                         {user.title && (
-                          <span className="text-xs text-control-light truncate">
-                            {user.email}
-                          </span>
+                          <HighlightLabelText
+                            text={user.email}
+                            keyword={search}
+                            className="text-xs text-control-light truncate"
+                          />
                         )}
                       </div>
                     </div>
@@ -475,9 +488,11 @@ export function AccountMultiSelect({
                       </div>
                       <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-x-1.5">
-                          <span className="text-sm font-medium truncate">
-                            {group.title || group.email}
-                          </span>
+                          <HighlightLabelText
+                            text={group.title || group.email}
+                            keyword={search}
+                            className="text-sm font-medium truncate"
+                          />
                           <span className="text-xs text-control-light">
                             ({group.members.length}{" "}
                             {t("common.members", {
@@ -486,9 +501,11 @@ export function AccountMultiSelect({
                             )
                           </span>
                         </div>
-                        <span className="text-xs text-control-light truncate">
-                          {group.email}
-                        </span>
+                        <HighlightLabelText
+                          text={group.email}
+                          keyword={search}
+                          className="text-xs text-control-light truncate"
+                        />
                       </div>
                     </div>
                   );
@@ -499,6 +516,7 @@ export function AccountMultiSelect({
             {/* Service account / workload identity match */}
             {specialAccountMatch && (
               <SpecialAccountOption
+                keyword={search}
                 match={specialAccountMatch}
                 selected={selectedFullnames.has(specialAccountMatch.fullname)}
                 onToggle={() => toggle(specialAccountMatch.fullname)}
@@ -529,9 +547,11 @@ export function AccountMultiSelect({
                   {getInitials(arbitraryEmailMatch.split("@")[0])}
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-medium truncate">
-                    {arbitraryEmailMatch}
-                  </span>
+                  <HighlightLabelText
+                    text={arbitraryEmailMatch}
+                    keyword={search}
+                    className="text-sm font-medium truncate"
+                  />
                 </div>
               </div>
             )}

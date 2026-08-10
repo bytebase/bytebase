@@ -918,6 +918,7 @@ export function DatabaseResourceSelector({
                     />
                     <DatabaseTargetDisplay
                       database={db}
+                      keyword={searchParams.query}
                       showEnvironment
                       className="min-w-0"
                     />
