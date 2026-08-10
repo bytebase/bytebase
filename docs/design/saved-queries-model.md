@@ -598,16 +598,23 @@ lock-ordering):
   before `project` (as it deletes `worksheet` today) — locking existing
   child rows ahead of their parents, per the rule.
 
-The invariant: existing-row writes and deletes go **child before parent**;
-the **only** parent-first step is a new-child *insert* (create → lock
-`project`; first star → lock `saved_query`), which is safe precisely because
-its key is new and cannot be locked in advance — the AGENTS.md missing-child
-carve-out; batch updates lock in primary-key order. Required before
+Two invariants cover every writer. **(1) Child before parent** for
+existing-row writes/deletes; the *only* parent-first step is a new-child
+*insert* (create → lock `project`; first star → lock `saved_query`), safe
+because its key cannot be locked in advance — the AGENTS.md missing-child
+carve-out. **(2) Any multi-row lock/update/delete acquires its rows in full
+primary-key order** — `saved_query` by `resource_id`, `saved_query_star` by
+`(saved_query, principal)` — so two operations over an overlapping set
+(delete vs. purge deleting the same query's stars; two batch folder moves;
+purge's own `saved_query` batch) can never lock in opposing orders. A plain
+`DELETE … WHERE` does not guarantee that order, so these paths take their
+row locks through an ordered `… ORDER BY <pk> FOR UPDATE` (or an ordered
+delete) before mutating. Required before
 implementation: deterministic real-PostgreSQL regression tests for **both**
 acquisition orders of each contending pair — create↔purge,
-first-star↔purge, delete↔star-toggle, and two overlapping
-`BatchUpdateSavedQueries` with intersecting, reverse-ordered targets —
-asserting the terminal outcomes — project (or query) deleted, no orphaned
+first-star↔purge, delete↔star-toggle, delete↔purge over a query with
+multiple stars, and two overlapping `BatchUpdateSavedQueries` with
+intersecting, reverse-ordered targets — asserting the terminal outcomes — project (or query) deleted, no orphaned
 saved query or star, and **no** FK failure or deadlock (`40P01`) in either
 direction (absence of `40P01` alone is insufficient).
 
