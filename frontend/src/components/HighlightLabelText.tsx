@@ -1,4 +1,4 @@
-import { getHighlightHTMLByRegExp } from "@/utils/util";
+import { escapeRegExp } from "lodash-es";
 
 interface HighlightLabelTextProps {
   text: string;
@@ -11,23 +11,29 @@ export function HighlightLabelText({
   keyword,
   className,
 }: HighlightLabelTextProps) {
-  const pattern: string | string[] =
+  const keywords =
     typeof keyword === "string"
-      ? keyword.trim()
+      ? [keyword.trim()].filter(Boolean)
       : (keyword ?? []).map((k) => k.trim()).filter(Boolean);
-  const isEmpty =
-    typeof pattern === "string" ? pattern === "" : pattern.length === 0;
-  if (isEmpty) {
+  if (keywords.length === 0) {
     return <span className={className}>{text}</span>;
   }
+
+  const pattern = keywords.map(escapeRegExp).join("|");
+  const parts = text.split(new RegExp(`(${pattern})`, "gi"));
+  const isMatch = new RegExp(`^(?:${pattern})$`, "i");
+
   return (
-    <span
-      className={className}
-      // getHighlightHTMLByRegExp escapes the input and sanitizes with
-      // DOMPurify, so the returned string is safe to inject.
-      dangerouslySetInnerHTML={{
-        __html: getHighlightHTMLByRegExp(text, pattern),
-      }}
-    />
+    <span className={className}>
+      {parts.map((part, index) =>
+        isMatch.test(part) ? (
+          <b key={index} className="text-accent">
+            {part}
+          </b>
+        ) : (
+          part
+        )
+      )}
+    </span>
   );
 }
