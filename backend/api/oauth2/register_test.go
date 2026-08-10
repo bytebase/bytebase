@@ -1,6 +1,7 @@
 package oauth2
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,6 +12,26 @@ import (
 
 	"github.com/bytebase/bytebase/backend/component/config"
 )
+
+func TestRegisterRejectsConfidentialClient(t *testing.T) {
+	s := &Service{profile: &config.Profile{ExternalURL: "https://bb.example.com"}}
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/oauth2/register", strings.NewReader(`{
+		"client_name":"test client",
+		"redirect_uris":["http://localhost/callback"],
+		"grant_types":["authorization_code"],
+		"token_endpoint_auth_method":"client_secret_basic"
+	}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	require.NoError(t, s.handleRegister(c))
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	var body map[string]string
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+	require.Equal(t, "invalid_client_metadata", body["error"])
+}
 
 // TestRegisterBodyLimit verifies that oversized request bodies are rejected
 // before JSON binding. Echo's default JSON deserializer buffers the whole

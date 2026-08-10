@@ -20,6 +20,7 @@ import (
 func newTestServerWithMock(t *testing.T, handler http.Handler) *Server {
 	t.Helper()
 	return &Server{
+		store:          newTestServerStore(),
 		profile:        &config.Profile{},
 		internalClient: newInternalAPIClient(handler),
 	}

@@ -31,7 +31,7 @@ import (
 type Server struct {
 	mcpServer    *mcp.Server
 	httpHandler  http.Handler
-	store        *store.Store
+	store        serverStore
 	profile      *config.Profile
 	secret       string
 	openAPIIndex *OpenAPIIndex
@@ -48,9 +48,23 @@ type Server struct {
 	planCheckPollBudgetOverride time.Duration
 }
 
+type serverStore interface {
+	GetWorkspaceID(context.Context) (string, error)
+	GetWorkspaceProfileSetting(context.Context, string) (*storepb.WorkspaceProfileSetting, error)
+	GetSettingUncached(context.Context, string, storepb.SettingName) (*store.SettingMessage, error)
+	DeleteOAuth2RefreshTokensByUserAndClient(context.Context, string, string) error
+}
+
 // NewServer creates a new MCP server. internalAPI is the internal API handler
 // chain tool calls dispatch to in memory; it is never bound to a listener.
-func NewServer(store *store.Store, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
+func NewServer(stores *store.Store, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
+	if stores == nil {
+		return nil, errors.New("store is required")
+	}
+	return newServerWithStore(stores, profile, secret, internalAPI)
+}
+
+func newServerWithStore(stores serverStore, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
 	mcpServer := mcp.NewServer(&mcp.Implementation{
 		Name:    "bytebase",
 		Version: profile.Version,
@@ -64,7 +78,7 @@ func NewServer(store *store.Store, profile *config.Profile, secret string, inter
 
 	s := &Server{
 		mcpServer:      mcpServer,
-		store:          store,
+		store:          stores,
 		profile:        profile,
 		secret:         secret,
 		openAPIIndex:   openAPIIndex,
@@ -326,11 +340,6 @@ func decideAudience(aud any, expected string, resolveErr error) (bool, error) {
 // /mcp path. Request-derived values must never feed this — a Host header is
 // attacker-controlled and would let anyone mint a matching binding.
 func (s *Server) expectedMCPAudience(ctx context.Context, workspaceID string) (string, error) {
-	if workspaceID == "" && !s.profile.SaaS {
-		if id, err := s.store.GetWorkspaceID(ctx); err == nil {
-			workspaceID = id
-		}
-	}
 	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
 	if err != nil {
 		return "", err
@@ -447,7 +456,7 @@ func (*Server) verifySessionBinding(_ context.Context, _ string, req *http.Reque
 }
 
 // tokenIdentity is the identity material authMiddleware works with after a
-// token verifies: subject, optional client and workspace, and the audience.
+// token verifies: subject, workspace, audience, and an optional client.
 // The workspace is extracted before the audience check because resolving the
 // expected audience needs it to look up the trusted external URL.
 type tokenIdentity struct {
@@ -459,7 +468,7 @@ type tokenIdentity struct {
 
 // extractTokenIdentity pulls the identity claims out of a verified token. A
 // missing subject or audience is a token defect (non-empty error message);
-// client_id and workspace_id are optional.
+// client_id is optional; workspace_id is required for every access token.
 func extractTokenIdentity(claims jwt.MapClaims) (*tokenIdentity, string) {
 	sub, ok := claims["sub"].(string)
 	if !ok || sub == "" {
@@ -473,9 +482,11 @@ func extractTokenIdentity(claims jwt.MapClaims) (*tokenIdentity, string) {
 	if clientID, ok := claims["client_id"].(string); ok {
 		identity.clientID = clientID
 	}
-	if workspaceID, ok := claims["workspace_id"].(string); ok {
-		identity.workspaceID = workspaceID
+	workspaceID, ok := claims["workspace_id"].(string)
+	if !ok || workspaceID == "" {
+		return nil, "invalid token: missing workspace"
 	}
+	identity.workspaceID = workspaceID
 	return identity, ""
 }
 
@@ -544,7 +555,11 @@ func audienceMatches(aud any, want string) bool {
 // authorization server. The header references the host-global protected
 // resource metadata endpoint (served by the oauth2 package).
 func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
-	resourceMetadataURL := s.buildResourceMetadataURL(c)
+	resourceMetadataURL, err := s.buildResourceMetadataURL(c)
+	if err != nil {
+		slog.Error("failed to resolve external URL for MCP discovery", log.BBError(err))
+		return echo.NewHTTPError(http.StatusServiceUnavailable, "OAuth2 discovery is unavailable").Wrap(err)
+	}
 	c.Response().Header().Set(
 		"WWW-Authenticate",
 		fmt.Sprintf(
@@ -584,14 +599,6 @@ func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapabili
 // out-of-band admin path (direct SQL, another process). A kill switch must
 // observe the stored truth on the next request.
 func (s *Server) mcpCapability(ctx context.Context, workspaceID string) storepb.WorkspaceProfileSetting_MCPCapability {
-	if s.store == nil {
-		return storepb.WorkspaceProfileSetting_READ_WRITE
-	}
-	if workspaceID == "" && !s.profile.SaaS {
-		if id, err := s.store.GetWorkspaceID(ctx); err == nil {
-			workspaceID = id
-		}
-	}
 	setting, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE)
 	if err != nil {
 		slog.Warn("failed to read MCP capability policy; failing closed",
@@ -616,40 +623,11 @@ func (s *Server) mcpCapability(ctx context.Context, workspaceID string) storepb.
 // RFC 9728 §3.3 requires the document's `resource` field to match the resource
 // the client is accessing, and the path-suffixed well-known URL is how the
 // metadata handler in the oauth2 package knows to publish `resource=<host>/mcp`.
-//
-// The configured effective external URL is preferred over request-derived
-// host/proto so that proxied deployments (where the inbound Host can differ
-// from the public endpoint) emit the correct public URL to MCP clients.
-// Request-derived values are the last-resort fallback only.
-//
-// The --external-url CLI flag (profile.ExternalURL) short-circuits the lookup;
-// otherwise on self-hosted we resolve the singleton workspace ID first so the
-// DB-backed workspace_profile.external_url setting in GetEffectiveExternalURL
-// can be found. On SaaS there is no singleton — the CLI flag is required.
-func (s *Server) buildResourceMetadataURL(c *echo.Context) string {
+func (s *Server) buildResourceMetadataURL(c *echo.Context) (string, error) {
 	const resourceMetadataPath = "/.well-known/oauth-protected-resource/mcp"
-
-	ctx := c.Request().Context()
-	if s.profile.ExternalURL != "" {
-		return s.profile.ExternalURL + resourceMetadataPath
+	externalURL, err := utils.GetDiscoveryExternalURL(c.Request().Context(), s.store, s.profile)
+	if err != nil {
+		return "", err
 	}
-	workspaceID := ""
-	if !s.profile.SaaS {
-		if ws, err := s.store.GetWorkspaceID(ctx); err == nil {
-			workspaceID = ws
-		}
-	}
-	if externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID); err == nil {
-		return externalURL + resourceMetadataPath
-	}
-
-	req := c.Request()
-	scheme := "https"
-	if req.TLS == nil {
-		scheme = "http"
-	}
-	if proto := req.Header.Get("X-Forwarded-Proto"); proto != "" {
-		scheme = proto
-	}
-	return fmt.Sprintf("%s://%s%s", scheme, req.Host, resourceMetadataPath)
+	return externalURL + resourceMetadataPath, nil
 }

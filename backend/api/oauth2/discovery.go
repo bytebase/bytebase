@@ -34,47 +34,20 @@ type protectedResourceMetadata struct {
 }
 
 // getBaseURL returns the base URL to use for OAuth2 endpoints.
-// It uses externalURL from profile/setting if configured, otherwise derives from the request.
-func (s *Service) getBaseURL(c *echo.Context) string {
-	ctx := c.Request().Context()
-
-	// The --external-url CLI flag (profile.ExternalURL) short-circuits the
-	// lookup. Otherwise on self-hosted we resolve the singleton workspace ID
-	// first so GetEffectiveExternalURL can find the DB-backed
-	// workspace_profile.external_url setting. On SaaS there is no singleton
-	// — the CLI flag is required.
-	if s.profile.ExternalURL != "" {
-		return strings.TrimSuffix(s.profile.ExternalURL, "/")
-	}
-	workspaceID := ""
-	if !s.profile.SaaS {
-		if ws, err := s.store.GetWorkspaceID(ctx); err == nil {
-			workspaceID = ws
-		}
-	}
-	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
+func (s *Service) getBaseURL(c *echo.Context) (string, error) {
+	externalURL, err := utils.GetDiscoveryExternalURL(c.Request().Context(), s.store, s.profile)
 	if err != nil {
-		slog.Warn("failed to get external url for OAuth2", log.BBError(err))
+		slog.Error("failed to resolve external URL for OAuth2 discovery", log.BBError(err))
+		return "", echo.NewHTTPError(http.StatusServiceUnavailable, "OAuth2 discovery is unavailable").Wrap(err)
 	}
-	if externalURL != "" {
-		return strings.TrimSuffix(externalURL, "/")
-	}
-
-	// Derive from request as fallback
-	req := c.Request()
-	scheme := "https"
-	if req.TLS == nil {
-		scheme = "http"
-	}
-	// Check X-Forwarded-Proto header for reverse proxy setups
-	if proto := req.Header.Get("X-Forwarded-Proto"); proto != "" {
-		scheme = proto
-	}
-	return fmt.Sprintf("%s://%s", scheme, req.Host)
+	return externalURL, nil
 }
 
 func (s *Service) handleDiscovery(c *echo.Context) error {
-	baseURL := s.getBaseURL(c)
+	baseURL, err := s.getBaseURL(c)
+	if err != nil {
+		return err
+	}
 	oauthBase := fmt.Sprintf("%s/api/oauth2", baseURL)
 	metadata := &authorizationServerMetadata{
 		Issuer:                            baseURL,
@@ -101,7 +74,10 @@ func (s *Service) handleDiscovery(c *echo.Context) error {
 // The path-suffixed form lets the `/mcp` endpoint advertise metadata that
 // strict clients validate against the resource URL they actually requested.
 func (s *Service) handleProtectedResourceMetadata(c *echo.Context) error {
-	baseURL := s.getBaseURL(c)
+	baseURL, err := s.getBaseURL(c)
+	if err != nil {
+		return err
+	}
 
 	const wellKnownPrefix = "/.well-known/oauth-protected-resource"
 	resource := baseURL

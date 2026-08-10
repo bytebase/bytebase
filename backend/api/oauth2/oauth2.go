@@ -26,7 +26,6 @@ import (
 
 const (
 	clientIDPrefix     = "bb_oauth_"
-	clientSecretPrefix = "bb_secret_"
 	refreshTokenPrefix = "bb_refresh_"
 	authCodePrefix     = "bb_code_"
 
@@ -121,14 +120,6 @@ func generateClientID() (string, error) {
 	return clientIDPrefix + base64.RawURLEncoding.EncodeToString(bytes), nil
 }
 
-func generateClientSecret() (string, error) {
-	token, err := auth.GenerateOpaqueToken()
-	if err != nil {
-		return "", err
-	}
-	return clientSecretPrefix + token, nil
-}
-
 func generateAuthCode() (string, error) {
 	token, err := auth.GenerateOpaqueToken()
 	if err != nil {
@@ -143,14 +134,6 @@ func generateRefreshToken() (string, error) {
 		return "", err
 	}
 	return refreshTokenPrefix + token, nil
-}
-
-func hashSecret(secret string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hash), nil
 }
 
 func verifySecret(hash, secret string) bool {

@@ -51,7 +51,7 @@ func TestBoundaryRevalidatesEveryRequest(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, `{}`)
 		})
-		s, err := NewServer(nil, profile, revalidationSecret, stub)
+		s, err := newServerWithStore(newTestServerStore(), profile, revalidationSecret, stub)
 		require.NoError(t, err)
 
 		e := echo.New()
@@ -246,7 +246,7 @@ func TestInternalRequestUsesLiveCallerIP(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{}`)
 	})
-	s, err := NewServer(nil, profile, revalidationSecret, stub)
+	s, err := newServerWithStore(newTestServerStore(), profile, revalidationSecret, stub)
 	require.NoError(t, err)
 
 	e := echo.New()

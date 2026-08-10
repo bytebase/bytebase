@@ -78,8 +78,8 @@ func (s *Service) handleToken(c *echo.Context) error {
 		return oauth2Error(c, http.StatusUnauthorized, "invalid_client", "client not found")
 	}
 
-	// Verify client credentials based on token_endpoint_auth_method
-	// Public clients (token_endpoint_auth_method: none) don't have secrets
+	// Dynamic registration creates only public clients. Keep secret verification
+	// for confidential clients registered before that restriction.
 	if client.Config.TokenEndpointAuthMethod != "none" {
 		if !verifySecret(client.ClientSecretHash, clientSecret) {
 			return oauth2Error(c, http.StatusUnauthorized, "invalid_client", "invalid client credentials")
@@ -147,9 +147,8 @@ func (s *Service) handleAuthorizationCodeGrant(c *echo.Context, client *store.OA
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "user not found")
 	}
 
-	// Resolve the workspace bound at consent time. Auth codes created before
-	// the 3.18.2 migration may have an empty workspace; fall back to the
-	// client's legacy workspace, then to the singleton workspace.
+	// Auth codes created before migration 3.18/0002 have no issued workspace,
+	// but their legacy OAuth client workspace was backfilled by 3.17/0009.
 	workspaceID, err := s.resolveBoundWorkspace(ctx, authCode.Workspace, client.Workspace, user.Email)
 	if err != nil {
 		return workspaceResolutionError(c, err)
@@ -280,8 +279,8 @@ func (s *Service) handleRefreshTokenGrant(c *echo.Context, client *store.OAuth2C
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "user not found")
 	}
 
-	// Preserve the workspace binding from the refresh token. Fall back paths
-	// mirror the auth-code grant for pre-migration tokens. Membership is
+	// Preserve the workspace binding from the refresh token. Legacy tokens fall
+	// back to their client's backfilled workspace. Membership is
 	// re-checked on every refresh so a user removed from the workspace
 	// after consent loses access at most one access-token lifetime later
 	// rather than waiting out the refresh token's 30-day expiry.
@@ -349,10 +348,13 @@ func (s *Service) validateRefreshTokenGrant(ctx context.Context, client *store.O
 }
 
 // workspaceResolutionError maps the typed errors from resolveBoundWorkspace
-// onto RFC 6749 OAuth2 error responses. Membership failure is invalid_grant
-// (400); everything else is an internal failure surfaced as server_error
+// onto RFC 6749 OAuth2 error responses. Invalid grant state and membership
+// failure are invalid_grant (400); infrastructure failures are server_error
 // (500) with the wrapped detail logged server-side, not leaked to the client.
 func workspaceResolutionError(c *echo.Context, err error) error {
+	if errors.Is(err, errWorkspaceNotBound) {
+		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "grant is not bound to a workspace; re-authorize")
+	}
 	if errors.Is(err, errWorkspaceNotMember) {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "user is no longer a member of the workspace")
 	}
@@ -362,25 +364,28 @@ func workspaceResolutionError(c *echo.Context, err error) error {
 
 // errWorkspaceNotMember signals that the user has been removed from the
 // workspace their OAuth grant was issued for. Mapped to RFC 6749 `invalid_grant`
-// at the call site. All other errors from resolveBoundWorkspace are internal
-// failures that should produce 500/server_error instead.
+// at the call site.
 var errWorkspaceNotMember = errors.New("user is no longer a member of the consented workspace")
+
+// errWorkspaceNotBound signals an invalid grant with neither a consent-time
+// workspace nor the backfilled workspace on its legacy OAuth client.
+var errWorkspaceNotBound = errors.New("no workspace bound to this grant")
 
 // workspaceResolver is the slice of store methods resolveBoundWorkspace needs.
 // Defining it as an interface keeps the helper independently unit-testable.
 type workspaceResolver interface {
-	GetWorkspaceID(ctx context.Context) (string, error)
 	FindWorkspace(ctx context.Context, find *store.FindWorkspaceMessage) (*store.WorkspaceMessage, error)
 }
 
 // resolveBoundWorkspace returns the workspace the issued token should bind to,
-// applying the legacy fallback chain (issued.Workspace → client.Workspace →
-// singleton) and then verifying current IAM membership before returning. The
-// membership check is the defense-in-depth guard against issuing a usable
-// token to a user who has been removed from the workspace since consent.
+// falling back to the legacy OAuth client workspace when the grant predates
+// migration 3.18/0002. Migration 3.17/0009 backfilled that client workspace and
+// kept it non-null, so a grant with neither binding is invalid. The membership
+// check is the defense-in-depth guard against issuing a usable token to a user
+// who has been removed from the workspace since consent.
 //
-// On SaaS only: returns errWorkspaceNotMember if the user is not currently a
-// member of the resolved workspace. All other errors are internal failures.
+// On SaaS only, it returns errWorkspaceNotMember when the user is no longer a
+// member of the resolved workspace; membership lookup failures remain internal.
 func (s *Service) resolveBoundWorkspace(ctx context.Context, issuedWorkspace, clientWorkspace, userEmail string) (string, error) {
 	return resolveBoundWorkspace(ctx, s.store, s.profile.SaaS, issuedWorkspace, clientWorkspace, userEmail)
 }
@@ -391,14 +396,7 @@ func resolveBoundWorkspace(ctx context.Context, resolver workspaceResolver, saas
 		workspaceID = clientWorkspace
 	}
 	if workspaceID == "" {
-		singleton, err := resolver.GetWorkspaceID(ctx)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to resolve workspace")
-		}
-		workspaceID = singleton
-	}
-	if workspaceID == "" {
-		return "", errors.New("no workspace bound to this grant")
+		return "", errWorkspaceNotBound
 	}
 
 	// Self-hosted: every user belongs to the singleton workspace implicitly,

@@ -77,7 +77,7 @@ func TestMCPAuthMiddleware(t *testing.T) {
 			c := e.NewContext(req, rec)
 
 			// Create server with auth
-			s, err := NewServer(nil, profile, secret, nil)
+			s, err := newServerWithStore(newTestServerStore(), profile, secret, nil)
 			require.NoError(t, err)
 			handler := s.authMiddleware(func(c *echo.Context) error {
 				return c.String(http.StatusOK, "success")
@@ -122,6 +122,38 @@ func TestMCPAuthMiddleware(t *testing.T) {
 	}
 }
 
+func TestNewServerRequiresStore(t *testing.T) {
+	_, err := NewServer(nil, &config.Profile{}, "test-secret", nil)
+	require.Error(t, err)
+}
+
+func TestMCPAuthFailsExplicitlyWithoutExternalURL(t *testing.T) {
+	s := &Server{
+		store:   newTestServerStore(),
+		profile: &config.Profile{SaaS: true},
+	}
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	err := s.authMiddleware(func(*echo.Context) error { return nil })(c)
+	require.Error(t, err)
+	var httpErr *echo.HTTPError
+	require.ErrorAs(t, err, &httpErr)
+	require.Equal(t, http.StatusServiceUnavailable, httpErr.Code)
+}
+
+func TestExtractTokenIdentityRequiresWorkspace(t *testing.T) {
+	identity, errMsg := extractTokenIdentity(jwt.MapClaims{
+		"sub": "test@example.com",
+		"aud": "https://bb.example.com/mcp",
+	})
+
+	require.Nil(t, identity)
+	require.Equal(t, "invalid token: missing workspace", errMsg)
+}
+
 func TestMCPAuthMiddlewareValidToken(t *testing.T) {
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
@@ -133,9 +165,8 @@ func TestMCPAuthMiddlewareValidToken(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	// Create server with auth - note: we pass nil store since we're testing middleware only
-	// A full integration test would require a real store
-	s, err := NewServer(nil, profile, secret, nil)
+	// Use a lightweight store double; production requires the real dependency.
+	s, err := newServerWithStore(newTestServerStore(), profile, secret, nil)
 	require.NoError(t, err)
 	handler := s.authMiddleware(func(c *echo.Context) error {
 		// Verify access token is set in request context
@@ -161,7 +192,7 @@ func TestMCPAuthMiddlewareOAuthContext(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	s, err := NewServer(nil, profile, secret, nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, secret, nil)
 	require.NoError(t, err)
 	handler := s.authMiddleware(func(c *echo.Context) error {
 		ctx := c.Request().Context()
@@ -192,7 +223,7 @@ func TestMCPProxiedPublicHostNotRejected(t *testing.T) {
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 
-	s, err := NewServer(nil, profile, secret, nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, secret, nil)
 	require.NoError(t, err)
 
 	e := echo.New()
@@ -231,7 +262,7 @@ func TestMCPUnauthenticatedRejectedEndToEnd(t *testing.T) {
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 
-	s, err := NewServer(nil, profile, secret, nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, secret, nil)
 	require.NoError(t, err)
 
 	e := echo.New()
@@ -321,7 +352,7 @@ func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: tc.externalURL}
-			s, err := NewServer(nil, profile, secret, nil)
+			s, err := newServerWithStore(newTestServerStore(), profile, secret, nil)
 			require.NoError(t, err)
 
 			e := echo.New()
