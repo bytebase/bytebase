@@ -46,8 +46,9 @@ Cited throughout as G1–G8.
    and `group:` principals. No grantable owner tier.
 3. **BigQuery-layered gates**: a per-object grant carries content access;
    *discovery* (Search, always per-project) is gated by a dedicated
-   `bb.savedQueries.search` permission carried by every project role
-   (`manage` passes too — the admin backstop);
+   `bb.savedQueries.search` permission carried by the human project roles —
+   automation roles stay off the surface (`manage` passes too — the admin
+   backstop);
    *running* is gated by the SQL Editor's own database permissions. Leaving
    a project ends discovery and run; explicit grants persist until
    revoked.
@@ -255,12 +256,16 @@ is dropped, not renamed). `search` is a dedicated permission rather than a
 ride on `bb.projects.get` (see Alternatives) so custom roles can control
 the saved-query surface independently of project visibility; the decoupled
 combos are API-level shapes — the UI needs `bb.projects.get` to render
-project context, and every predefined role carries both. `list` and
+project context, and every search-carrying role also holds it. `list` and
 `manage` can read content in scope — that is their purpose — so neither
-belongs in default member roles (decision 7). Role mapping: every project
-role carries `create` and `search`; `projectOwner` carries project-scoped
-`list` + `manage`; `workspaceAdmin`/`workspaceDBA` carry them
-workspace-scoped. `manage` implies the Search gate — Search evaluates
+belongs in default member roles (decision 7). Role mapping: the human project roles — `projectOwner`,
+`projectDeveloper`, `sqlEditorUser`, `sqlEditorReadUser`, `projectViewer` —
+carry `create` and `search`; the automation roles (`projectReleaser`,
+`gitopsServiceAgent`) carry **neither**, keeping CI principals off the
+saved-query surface entirely — which is what makes the share-with-project
+snapshot's role filter meaningful for them. `projectOwner` carries
+project-scoped `list` + `manage`; `workspaceAdmin`/`workspaceDBA` carry
+them workspace-scoped. `manage` implies the Search gate — Search evaluates
 `discover ∨ admin` in the handler — so a manage-only custom role can
 still enumerate what it manages; there is no hidden permission
 coupling.
