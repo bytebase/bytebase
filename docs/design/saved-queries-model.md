@@ -318,7 +318,13 @@ its `group:` and `user:` bindings, not an expansion of members — into the
 policy at the chosen level. Only bindings **whose role carries
 `bb.savedQueries.search`** are included: a role deliberately kept off the
 saved-query surface (a CI releaser, say) must not be swept into content
-grants that outlive its project role. Snapshots keep group dynamism (a group
+grants that outlive its project role. `allUsers` members — which
+self-hosted project IAM permits — are **skipped, never expanded**: the
+per-object policy accepts only `user:` and `group:` principals
+(`SetIamPolicy` rejects anything else), and freezing a workspace-wide
+audience into per-user grants would be exactly the member explosion the
+snapshot avoids. The dialog surfaces the skip so the sharer can grant a
+group instead. Snapshots keep group dynamism (a group
 gaining a member propagates, since the entry stores the group reference) but
 not membership dynamism (a principal added to the project later is re-shared
 by the owner, as in every group-based peer). Project bindings carrying a CEL
