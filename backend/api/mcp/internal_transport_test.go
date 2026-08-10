@@ -53,7 +53,7 @@ func runAuthMiddleware(t *testing.T, s *Server, bearer string) (credential strin
 func TestMCPAuthMiddlewareMintsDelegatedCredential(t *testing.T) {
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
-	s, err := NewServer(nil, profile, secret, nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, secret, nil)
 	require.NoError(t, err)
 
 	inbound, err := auth.GenerateOAuth2AccessToken("test@example.com", "client-A", "ws-test", "https://bb.example.com/mcp", "mcp:read-only", secret, time.Hour)
@@ -90,7 +90,7 @@ func TestMCPAuthMiddlewareMintsDelegatedCredential(t *testing.T) {
 func TestMCPAuthMiddlewareLegacySessionEmptyGrantState(t *testing.T) {
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
-	s, err := NewServer(nil, profile, secret, nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, secret, nil)
 	require.NoError(t, err)
 
 	for name, bearer := range map[string]string{
@@ -211,7 +211,7 @@ func TestInternalRequestCarriesCallerIP(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				fmt.Fprint(w, `{}`)
 			})
-			s, err := NewServer(nil, profile, secret, stub)
+			s, err := newServerWithStore(newTestServerStore(), profile, secret, stub)
 			require.NoError(t, err)
 
 			inbound, err := auth.GenerateOAuth2AccessToken("test@example.com", "client-A", "ws-test", "https://bb.example.com/mcp", "mcp:read-only", secret, time.Hour)
@@ -242,7 +242,7 @@ func TestInternalRequestCarriesCallerIP(t *testing.T) {
 func TestMCPAuthMiddlewareRejectsInternalCredential(t *testing.T) {
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
-	s, err := NewServer(nil, profile, secret, nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, secret, nil)
 	require.NoError(t, err)
 
 	internal, err := auth.GenerateInternalMCPToken(auth.DelegatedMCPCredential{

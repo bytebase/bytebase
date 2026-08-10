@@ -14,7 +14,7 @@ import (
 
 func TestSearchAPIListServices(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret", nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test listing all services (no parameters)
@@ -32,7 +32,7 @@ func TestSearchAPIListServices(t *testing.T) {
 
 func TestSearchAPIByService(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret", nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test browsing a specific service
@@ -52,7 +52,7 @@ func TestSearchAPIByService(t *testing.T) {
 
 func TestSearchAPIByServiceNotFound(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret", nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test browsing a non-existent service
@@ -70,7 +70,7 @@ func TestSearchAPIByServiceNotFound(t *testing.T) {
 
 func TestSearchAPIDetailMode(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret", nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test detail mode with full operationId
@@ -89,7 +89,7 @@ func TestSearchAPIDetailMode(t *testing.T) {
 
 func TestSearchAPIDetailModeShortFormat(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret", nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test detail mode with short operationId format (Service/Method)
@@ -108,7 +108,7 @@ func TestSearchAPIDetailModeShortFormat(t *testing.T) {
 
 func TestSearchAPIDetailModeWithResponse(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret", nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test detail mode shows response schema
@@ -125,7 +125,7 @@ func TestSearchAPIDetailModeWithResponse(t *testing.T) {
 
 func TestSearchAPIDetailModeNotFound(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret", nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test detail mode with unknown operationId
@@ -142,7 +142,7 @@ func TestSearchAPIDetailModeNotFound(t *testing.T) {
 
 func TestSearchAPIServiceShowsAll(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret", nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test browsing a service shows all endpoints (no limit)
@@ -161,7 +161,7 @@ func TestSearchAPIServiceShowsAll(t *testing.T) {
 
 func TestSearchAPISchemaLookup(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret", nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test schema lookup with full name
@@ -180,7 +180,7 @@ func TestSearchAPISchemaLookup(t *testing.T) {
 
 func TestSearchAPISchemaLookupShortName(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret", nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test schema lookup with short name
@@ -198,7 +198,7 @@ func TestSearchAPISchemaLookupShortName(t *testing.T) {
 
 func TestSearchAPISchemaLookupNotFound(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret", nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test schema lookup with unknown name
@@ -215,7 +215,7 @@ func TestSearchAPISchemaLookupNotFound(t *testing.T) {
 
 func TestSearchAPISchemaLookupEnum(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret", nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test enum schema lookup
@@ -232,7 +232,7 @@ func TestSearchAPISchemaLookupEnum(t *testing.T) {
 
 func TestSearchAPIProtobufDescriptionTruncation(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret", nil)
+	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
 	require.NoError(t, err)
 
 	// Test that protobuf types have short descriptions

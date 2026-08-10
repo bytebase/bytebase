@@ -41,6 +41,15 @@ const (
 	testResource     = "https://bb.example.com/mcp"
 )
 
+func TestConsentWorkspaceRequiresSessionClaim(t *testing.T) {
+	s := &Service{profile: &config.Profile{}}
+
+	workspaceID, failure := s.consentWorkspace(&sessionClaims{}, &store.OAuth2ClientMessage{})
+
+	require.Empty(t, workspaceID)
+	require.Equal(t, &oauth2Failure{code: "access_denied", description: "session is missing workspace claim"}, failure)
+}
+
 // TestResourceScopeGrantLifecycle drives the whole consent → token → refresh
 // path against a real store. The pure rule space lives in resource_test.go;
 // what this pins is the wiring, which is where a resource/scope binding

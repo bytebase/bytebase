@@ -11,6 +11,8 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 const (
@@ -259,6 +261,7 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 	}
 
 	// Step 10: Build response.
+	externalURL, _ := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, getWorkspaceID(ctx))
 	output := &ChangeOutput{
 		Database:              resolved.resourceName,
 		Project:               project,
@@ -273,12 +276,12 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 		RolloutDeferredReason: rolloutDeferredReason,
 		NextAction:            nextAction,
 		Links: ChangeLinks{
-			Issue: s.buildResourceURL(issueName),
-			Plan:  s.buildResourceURL(planName),
+			Issue: buildResourceURL(externalURL, issueName),
+			Plan:  buildResourceURL(externalURL, planName),
 		},
 	}
 	if rolloutCreated {
-		output.Links.Rollout = s.buildResourceURL(rolloutName)
+		output.Links.Rollout = buildResourceURL(externalURL, rolloutName)
 	}
 
 	text := formatChangeOutput(output, warnings)
@@ -503,12 +506,11 @@ func planChecksHaveErrors(info *PlanCheckInfo) bool {
 }
 
 // buildResourceURL constructs a URL from externalURL and resource name.
-func (s *Server) buildResourceURL(resourceName string) string {
-	base := strings.TrimRight(s.profile.ExternalURL, "/")
-	if base == "" {
+func buildResourceURL(externalURL, resourceName string) string {
+	if externalURL == "" {
 		return resourceName
 	}
-	return base + "/" + resourceName
+	return strings.TrimSuffix(externalURL, "/") + "/" + resourceName
 }
 
 // formatChangeOutput produces a text header + JSON body.

@@ -103,3 +103,18 @@ func TestDiscoveryOmitsScopesSupported(t *testing.T) {
 	require.NotContains(t, rec.Body.String(), "mcp:read",
 		"no scope token may leak into discovery through any other field")
 }
+
+func TestDiscoveryFailsWithoutExternalURL(t *testing.T) {
+	s := &Service{profile: &config.Profile{SaaS: true}}
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/.well-known/oauth-authorization-server", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	err := s.handleDiscovery(c)
+	require.Error(t, err)
+	var httpErr *echo.HTTPError
+	require.ErrorAs(t, err, &httpErr)
+	require.Equal(t, http.StatusServiceUnavailable, httpErr.Code)
+}

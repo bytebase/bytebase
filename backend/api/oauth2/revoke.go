@@ -41,8 +41,8 @@ func (s *Service) handleRevoke(c *echo.Context) error {
 		return oauth2Error(c, http.StatusUnauthorized, "invalid_client", "client not found")
 	}
 
-	// Verify client credentials based on token_endpoint_auth_method
-	// Public clients (token_endpoint_auth_method: none) don't have secrets
+	// Dynamic registration creates only public clients. Keep secret verification
+	// for confidential clients registered before that restriction.
 	if client.Config.TokenEndpointAuthMethod != "none" {
 		if !verifySecret(client.ClientSecretHash, clientSecret) {
 			return oauth2Error(c, http.StatusUnauthorized, "invalid_client", "invalid client credentials")

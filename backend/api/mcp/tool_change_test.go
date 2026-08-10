@@ -11,6 +11,8 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // --- Change tool test infrastructure ---
@@ -1023,10 +1025,13 @@ func TestChange_Links_Constructed(t *testing.T) {
 	require.Equal(t, "https://bytebase.example.com/projects/hr-system/rollouts/4004", output.Links.Rollout)
 }
 
-func TestChange_Links_TrailingSlash(t *testing.T) {
+func TestChange_Links_UseWorkspaceExternalURL(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	s := newChangeTestServer(t, mock)
-	s.profile.ExternalURL = "https://bytebase.example.com/"
+	s.profile.ExternalURL = ""
+	s.store = &testServerStore{
+		workspaceProfile: &storepb.WorkspaceProfileSetting{ExternalUrl: "https://workspace.example.com"},
+	}
 
 	_, structured, err := s.handleChange(testContext(), nil, ChangeInput{
 		Database: "employee_db",
@@ -1037,8 +1042,7 @@ func TestChange_Links_TrailingSlash(t *testing.T) {
 
 	output, ok := structured.(*ChangeOutput)
 	require.True(t, ok)
-	// No double slash.
-	require.Equal(t, "https://bytebase.example.com/projects/hr-system/issues/3003", output.Links.Issue)
+	require.Equal(t, "https://workspace.example.com/projects/hr-system/issues/3003", output.Links.Issue)
 }
 
 func TestChange_Links_RolloutOmitted(t *testing.T) {

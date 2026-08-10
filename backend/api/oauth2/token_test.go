@@ -2,12 +2,15 @@ package oauth2
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	pkgerrors "github.com/pkg/errors"
+	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -17,16 +20,10 @@ import (
 // fakeWorkspaceResolver implements workspaceResolver for unit tests so we can
 // exercise resolveBoundWorkspace without standing up a real Postgres store.
 type fakeWorkspaceResolver struct {
-	singleton     string
-	singletonErr  error
 	findResult    *store.WorkspaceMessage
 	findErr       error
 	findCallCount int
 	lastFind      *store.FindWorkspaceMessage
-}
-
-func (r *fakeWorkspaceResolver) GetWorkspaceID(_ context.Context) (string, error) {
-	return r.singleton, r.singletonErr
 }
 
 func (r *fakeWorkspaceResolver) FindWorkspace(_ context.Context, find *store.FindWorkspaceMessage) (*store.WorkspaceMessage, error) {
@@ -46,26 +43,18 @@ func TestResolveBoundWorkspace(t *testing.T) {
 		require.Zero(t, r.findCallCount, "self-hosted must not call FindWorkspace")
 	})
 
-	t.Run("self-hosted falls back to singleton when both issued and client workspace are empty", func(t *testing.T) {
-		r := &fakeWorkspaceResolver{singleton: "ws-singleton"}
-		got, err := resolveBoundWorkspace(ctx, r, false, "", "", "user@example.com")
-		require.NoError(t, err)
-		require.Equal(t, "ws-singleton", got)
+	t.Run("returns invalid grant when neither issued nor client workspace is bound", func(t *testing.T) {
+		r := &fakeWorkspaceResolver{}
+		_, err := resolveBoundWorkspace(ctx, r, false, "", "", "user@example.com")
+		require.ErrorIs(t, err, errWorkspaceNotBound)
+		require.Zero(t, r.findCallCount)
 	})
 
-	t.Run("falls back from issued to client workspace before singleton", func(t *testing.T) {
-		r := &fakeWorkspaceResolver{singleton: "ws-singleton"}
+	t.Run("falls back from issued to legacy client workspace", func(t *testing.T) {
+		r := &fakeWorkspaceResolver{}
 		got, err := resolveBoundWorkspace(ctx, r, false, "", "ws-client", "user@example.com")
 		require.NoError(t, err)
-		require.Equal(t, "ws-client", got, "client workspace should win over singleton fallback")
-	})
-
-	t.Run("returns error when no workspace is resolvable", func(t *testing.T) {
-		r := &fakeWorkspaceResolver{singleton: ""}
-		_, err := resolveBoundWorkspace(ctx, r, false, "", "", "user@example.com")
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "no workspace bound")
-		require.NotErrorIs(t, err, errWorkspaceNotMember, "missing workspace is not a membership failure")
+		require.Equal(t, "ws-client", got)
 	})
 
 	t.Run("SaaS member returns workspace", func(t *testing.T) {
@@ -94,14 +83,18 @@ func TestResolveBoundWorkspace(t *testing.T) {
 		require.NotErrorIs(t, err, errWorkspaceNotMember,
 			"internal errors must not be misclassified as membership failure (would 400 instead of 500)")
 	})
+}
 
-	t.Run("SaaS singleton-lookup error is wrapped and not membership failure", func(t *testing.T) {
-		r := &fakeWorkspaceResolver{singletonErr: pkgerrors.New("db down")}
-		_, err := resolveBoundWorkspace(ctx, r, true, "", "", "user@example.com")
-		require.Error(t, err)
-		require.NotErrorIs(t, err, errWorkspaceNotMember)
-		require.Contains(t, err.Error(), "failed to resolve workspace")
-	})
+func TestWorkspaceResolutionErrorForUnboundGrant(t *testing.T) {
+	e := echo.New()
+	rec := httptest.NewRecorder()
+	c := e.NewContext(httptest.NewRequest(http.MethodPost, "/api/oauth2/token", nil), rec)
+
+	require.NoError(t, workspaceResolutionError(c, errWorkspaceNotBound))
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	var body map[string]string
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+	require.Equal(t, "invalid_grant", body["error"])
 }
 
 // TestIssueTokensPlacesWorkspaceInJWT verifies the in-memory propagation of

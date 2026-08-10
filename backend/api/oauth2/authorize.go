@@ -1,7 +1,6 @@
 package oauth2
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -201,7 +200,7 @@ func (s *Service) resolveConsentingUser(c *echo.Context, client *store.OAuth2Cli
 	if failure != nil {
 		return consentingUser{}, failure
 	}
-	workspaceID, failure := s.consentWorkspace(ctx, claims, client)
+	workspaceID, failure := s.consentWorkspace(claims, client)
 	if failure != nil {
 		return consentingUser{}, failure
 	}
@@ -241,25 +240,10 @@ func (s *Service) parseSessionClaims(accessToken string) (*sessionClaims, *oauth
 }
 
 // consentWorkspace resolves the workspace to bind a consent to.
-//
-// On SaaS the session always carries workspace_id; if it's missing we fail closed
-// rather than fall back to GetWorkspaceID(), which would otherwise pick an
-// arbitrary non-deleted workspace and silently bind the token there.
-func (s *Service) consentWorkspace(ctx context.Context, claims *sessionClaims, client *store.OAuth2ClientMessage) (string, *oauth2Failure) {
+func (*Service) consentWorkspace(claims *sessionClaims, client *store.OAuth2ClientMessage) (string, *oauth2Failure) {
 	workspaceID := claims.WorkspaceID
 	if workspaceID == "" {
-		if s.profile.SaaS {
-			return "", &oauth2Failure{code: "access_denied", description: "session is missing workspace claim"}
-		}
-		// Self-hosted: there's exactly one workspace.
-		singleton, err := s.store.GetWorkspaceID(ctx)
-		if err != nil {
-			return "", &oauth2Failure{code: "server_error", description: "failed to resolve workspace"}
-		}
-		workspaceID = singleton
-	}
-	if workspaceID == "" {
-		return "", &oauth2Failure{code: "access_denied", description: "no workspace in session"}
+		return "", &oauth2Failure{code: "access_denied", description: "session is missing workspace claim"}
 	}
 
 	// Legacy clients registered before the 3.18.2 migration are pinned to a
