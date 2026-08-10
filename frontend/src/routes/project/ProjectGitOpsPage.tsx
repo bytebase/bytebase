@@ -13,7 +13,6 @@ import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
-import { WorkloadIdentitySelect } from "@/components/WorkloadIdentitySelect";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
@@ -27,6 +26,7 @@ import {
   hasProjectPermissionV2,
   parseWorkloadIdentitySubjectPattern,
 } from "@/utils";
+import { WorkloadIdentitySelect } from "./WorkloadIdentitySelect";
 
 export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
