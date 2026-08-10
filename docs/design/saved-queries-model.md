@@ -581,9 +581,13 @@ lock-ordering):
   `NotFound` if gone), the same missing-child carve-out `CreateSavedQuery`
   uses for `project`. Its inserted key is novel, so it never contends with
   purge's existing-child locks — no cross-order deadlock.
-  (`BatchUpdateSavedQueries` only *updates* existing `saved_query` rows, so
-  its row locks give the same guarantee with no new child; folder moves
-  affecting a purged row simply touch zero rows.)
+- **Batch folder moves lock rows in primary-key order.**
+  `BatchUpdateSavedQueries` only *updates* existing `saved_query` rows (no
+  new child), but "existing" is not enough on its own: two overlapping
+  batches could grab their target rows in different scan orders and
+  deadlock. So it locks its selected rows in full primary-key order
+  (`resource_id`) — the AGENTS.md batch rule — and a folder move touching a
+  row mid-purge simply updates zero rows.
 - **Delete is child-before-parent, explicitly.** `DeleteSavedQuery` removes
   the query's `saved_query_star` rows before the `saved_query` row itself —
   **not** via the FK cascade, which would lock the parent first — matching
@@ -598,12 +602,14 @@ The invariant: existing-row writes and deletes go **child before parent**;
 the **only** parent-first step is a new-child *insert* (create → lock
 `project`; first star → lock `saved_query`), which is safe precisely because
 its key is new and cannot be locked in advance — the AGENTS.md missing-child
-carve-out. Required before implementation: deterministic real-PostgreSQL
-regression tests for **both** acquisition orders of each contending pair —
-create↔purge, first-star↔purge, and delete↔star-toggle — asserting the
-terminal outcomes — project (or query) deleted, no orphaned saved query or
-star, and **no** FK failure or deadlock (`40P01`) in either direction
-(absence of `40P01` alone is insufficient).
+carve-out; batch updates lock in primary-key order. Required before
+implementation: deterministic real-PostgreSQL regression tests for **both**
+acquisition orders of each contending pair — create↔purge,
+first-star↔purge, delete↔star-toggle, and two overlapping
+`BatchUpdateSavedQueries` with intersecting, reverse-ordered targets —
+asserting the terminal outcomes — project (or query) deleted, no orphaned
+saved query or star, and **no** FK failure or deadlock (`40P01`) in either
+direction (absence of `40P01` alone is insufficient).
 
 ### Sharing and organization UX
 
