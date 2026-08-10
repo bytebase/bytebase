@@ -510,7 +510,7 @@ func buildResourceURL(externalURL, resourceName string) string {
 	if externalURL == "" {
 		return resourceName
 	}
-	return externalURL + "/" + resourceName
+	return strings.TrimSuffix(externalURL, "/") + "/" + resourceName
 }
 
 // formatChangeOutput produces a text header + JSON body.
