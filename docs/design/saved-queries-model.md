@@ -209,7 +209,14 @@ Alternatives the rejected options.
 ### Model and access rules
 
 A saved query carries a policy of per-object grants; the `creator` is the
-immutable owner; a private saved query has no bindings.
+immutable owner; a private saved query has no bindings. **Ownership is a
+typed principal** — following BigQuery, whoever holds `create` owns what
+they create, so `creator` may be a user (`users/{email}`) or a service
+account / workload identity (`serviceAccounts/{email}`, …); `read/write/
+share/delete`'s `u == s.creator` compares by principal identity, any type.
+Only *sharing* is narrower: binding members stay `user:`/`group:` (below),
+so a service account can own and run its own automation queries but is
+never a grantee — its access comes from being the creator (or an admin).
 
 ```
 Grant levels:  VIEWER (open, read)  <  EDITOR (+ write content/title/database)
@@ -505,8 +512,10 @@ resource-name-style (`GroupMember.member = users/{email}`):
 `GetUserGroupsSnapshot`'s reverse index matches `users/{u}` to find the
 caller's groups, then emits each as `group:{email}` for the probe — exactly
 the conversion the existing IAM group-expansion already performs. (`creator`
-is a separate field in user-resource form `users/{email}`, not a binding
-member: the `creator ==` filter uses that form, `member ==` uses `user:`.)
+is a typed **principal** resource name — `users/{email}` or
+`serviceAccounts/{email}` — not a binding member: the `creator ==` filter
+matches that principal form, `member ==` matches the `user:`/`group:`
+binding form.)
 The list query filters the table directly, one GIN probe per principal:
 
 ```sql
