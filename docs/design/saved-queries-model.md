@@ -437,7 +437,10 @@ external worksheet scripts break loudly at upgrade, documented in the
 changelog.
 
 **Existing data migrates owner-private** — a deliberate, one-time breaking
-change. Every existing row keeps its `creator`, `title`, and `content`;
+change. Every existing row keeps its `creator`, `title`, `content`, and its
+connected-database reference (`instance`/`db_name` — retained columns, not
+dropped — so run context survives; cleared only if that database no longer
+belongs to the query's project, per the same-project invariant);
 `visibility` is dropped and `bindings` starts empty, so `PRIVATE`,
 `PROJECT_READ`, and `PROJECT_WRITE` alike become creator-only. **Owner
 organization is preserved**: the creator's own `worksheet_organizer` row
@@ -479,8 +482,18 @@ platform-wide convention change outside this design's scope.
 The caller's principal set expands cheaply — groups are flat (members are
 users, one hop) and `GetUserGroupsSnapshot` is cached in
 `memberGroupsCache`: `principals(u) = {user:u} ∪ {group:g …}`, typically a
-handful. The list query filters the table directly, one GIN probe per
-principal:
+handful. **Member format:** bindings use the IAM **binding** prefixes
+`user:{email}` / `group:{email}` (`common.UserBindingPrefix` /
+`GroupBindingPrefix`) — identical to project/workspace `IamPolicy`, so a
+share-with-project snapshot copies those members verbatim, no conversion.
+The one boundary: group *membership* is stored resource-name-style
+(`GroupMember.member = users/{email}`), so `GetUserGroupsSnapshot`'s reverse
+index matches `users/{u}` to find the caller's groups, then emits each as
+`group:{email}` for the probe — exactly the conversion the existing IAM
+group-expansion already does. (`creator` is a distinct field in user-
+resource form `users/{email}`, not a binding member — the `creator ==`
+filter uses that form, the `member ==` filter uses `user:`.) The list query
+filters the table directly, one GIN probe per principal:
 
 ```sql
 -- The search gate already passed at the interceptor. An admin drops the
