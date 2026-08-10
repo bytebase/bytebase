@@ -521,6 +521,27 @@ saved_query)` — still group references — indexed
 per-principal *ordered* seeks (`O(K · page)`) and isolating the ACL index
 from content churn. A pure storage change behind the same API.
 
+**Lifecycle vs. project deletion.** `saved_query.project` is an FK with no
+cascade, so the two directions are fenced explicitly (AGENTS.md transaction
+lock-ordering):
+
+- **Create requires an *active* project.** `CreateSavedQuery` does not go
+  through `nextProjectID` (IDs are `gen_random_uuid()`, not a project-scoped
+  sequence), so it must itself, in the insert transaction, lock the project
+  row and reject the write unless the project is active — a create racing a
+  purge fails cleanly (`FAILED_PRECONDITION`), never as an FK violation and
+  never leaving a row in a project mid-deletion.
+- **Purge deletes saved queries explicitly.** `BatchDeleteProjects`'
+  hard-delete path lists `saved_query` (as it lists `worksheet` today);
+  `saved_query_star` then cascades from it.
+
+Both paths take the project lock in the same order, so create and purge
+serialize rather than deadlock. Required before implementation: deterministic
+real-PostgreSQL regression tests for **both** acquisition orders
+(create-then-purge, purge-then-create), asserting the terminal outcomes —
+project deleted, no orphaned saved query, and **no** FK failure in either
+direction (absence of SQLSTATE `40P01` alone is insufficient).
+
 ### Sharing and organization UX
 
 - Views, all within the current project: **My** (`creator == me`, organized
