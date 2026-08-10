@@ -46,7 +46,8 @@ Cited throughout as G1–G8.
    and `group:` principals. No grantable owner tier.
 3. **BigQuery-layered gates**: a per-object grant carries content access;
    *discovery* (Search, always per-project) is gated by a dedicated
-   `bb.savedQueries.search` permission carried by every project role;
+   `bb.savedQueries.search` permission carried by every project role
+   (`manage` passes too — the admin backstop);
    *running* is gated by the SQL Editor's own database permissions. Leaving
    a project ends discovery and run; explicit grants persist until
    revoked.
@@ -165,8 +166,9 @@ Alternatives the rejected options.
    Exactly new BigQuery's enforcement — `codeViewer` reads the asset while
    `dataform.repositories.list` gates listing and `bigquery.jobUser` gates
    running; here, a VIEWER/EDITOR binding reads/edits,
-   `bb.savedQueries.search` gates `SearchSavedQueries` (per-project), and
-   running always passes the SQL Editor's database grants. The real cost:
+   `bb.savedQueries.search` — or `manage`, the admin backstop — gates
+   `SearchSavedQueries` (per-project), and running always passes the SQL
+   Editor's database grants. The real cost:
    removing a user from a project ends discovery and run but not
    explicitly granted content access — the grants themselves are the
    revocation surface (see Model: Offboarding). The stricter
@@ -258,17 +260,18 @@ project context, and every predefined role carries both. `list` and
 belongs in default member roles (decision 7). Role mapping: every project
 role carries `create` and `search`; `projectOwner` carries project-scoped
 `list` + `manage`; `workspaceAdmin`/`workspaceDBA` carry them
-workspace-scoped. A role granting `manage` must also grant `search` (every
-predefined one does): the IAM-gated `SearchSavedQueries` checks it at the
-interceptor, so a manage-only custom role would pass the CUSTOM handlers
-yet be denied there.
+workspace-scoped. `manage` implies the Search gate — Search evaluates
+`discover ∨ admin` in the handler — so a manage-only custom role can
+still enumerate what it manages; there is no hidden permission
+coupling.
 
 The gates are **layered, exactly as new BigQuery enforces them** (G3): the
 per-object grant carries content access (`codeViewer/Editor` on the asset);
 a dedicated permission gates **discovery** — `SearchSavedQueries`
-requires `bb.savedQueries.search`, the exact `dataform.repositories.list`
-analog (likewise a dedicated listing permission), always per-project (no
-cross-project "shared with me"; no peer has one); and
+requires `bb.savedQueries.search` or `manage` (the backstop must be able
+to enumerate what it manages), the exact `dataform.repositories.list`
+analog, always per-project (no cross-project "shared with me"; no peer
+has one); and
 **running** always passes the SQL Editor's own database grants, the
 `bigquery.jobUser` analog. A grantee who is not a project member opens the
 saved query by its link — BigQuery's own sharing flow, "grant the role,
@@ -302,7 +305,10 @@ or revoke.
 "everyone in the project" principal (see Alternatives); the share dialog's
 *Share with project* shortcut writes the project's current IAM principals —
 its `group:` and `user:` bindings, not an expansion of members — into the
-policy at the chosen level. Snapshots keep group dynamism (a group
+policy at the chosen level. Only bindings **whose role carries
+`bb.savedQueries.search`** are included: a role deliberately kept off the
+saved-query surface (a CI releaser, say) must not be swept into content
+grants that outlive its project role. Snapshots keep group dynamism (a group
 gaining a member propagates, since the entry stores the group reference) but
 not membership dynamism (a principal added to the project later is re-shared
 by the owner, as in every group-based peer). Project bindings carrying a CEL
@@ -332,19 +338,20 @@ must present it, and a mismatch aborts for refetch — a full-replacement
 write may never silently overwrite a concurrent revocation (the
 offboarding race).
 
-**Auth split.** `CreateSavedQuery`, `SearchSavedQueries`,
-`ListSavedQueries`, and `ListSavedQueryFolders` authorize on a single
-family permission checkable at the interceptor (`create`, `search`,
-`list`, `search`), so they are IAM. Everything else
-decides on the specific query's policy — a per-row predicate — so it is
-CUSTOM and the handler runs the access rules. `SearchSavedQueries` is the
-per-member view (concrete project only); `ListSavedQueries` is the auditor
-view, which is why only it may wildcard `projects/-`.
+**Auth split.** `CreateSavedQuery`, `ListSavedQueries`, and
+`ListSavedQueryFolders` authorize on a single family permission checkable
+at the interceptor (`create`, `list`, `search`), so they are IAM.
+Everything else is CUSTOM: the handler runs the access rules —
+per-row predicates for the object methods, and for `SearchSavedQueries`
+the gate `discover(u, P) ∨ admin(u, P)`, an OR the single-permission
+interceptor cannot express. `SearchSavedQueries` is the per-member view
+(concrete project only); `ListSavedQueries` is the auditor view, which is
+why only it may wildcard `projects/-`.
 
 | Method | Gate |
 |---|---|
 | `CreateSavedQuery` | `bb.savedQueries.create` on project (IAM); creator becomes owner |
-| `SearchSavedQueries` | `bb.savedQueries.search` (IAM) → rows where `read(s,u)`; admin: all |
+| `SearchSavedQueries` | `discover(u,P)` ∨ `admin(u,P)` (CUSTOM) → rows where `read(s,u)`; admin: all |
 | `ListSavedQueries` | `bb.savedQueries.list` (IAM) → all rows matching `filter`; `projects/-` allowed |
 | `GetSavedQuery` | `read(s,u)`; NotFound (not PermissionDenied) when unreadable |
 | `UpdateSavedQuery` | title/content/database: `write(s,u)`; `folder`: creator or admin only |
