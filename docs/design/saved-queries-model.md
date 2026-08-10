@@ -553,26 +553,33 @@ lock-ordering):
   row and reject the write unless the project is active — a create racing a
   purge fails cleanly (`FAILED_PRECONDITION`), never as an FK violation and
   never leaving a row in a project mid-deletion.
-- **Star upserts require an *existing* saved query.**
-  `UpdateSavedQueryStar` inserts a `saved_query_star` child, so it locks the
-  target `saved_query` row before the upsert and proceeds only if it still
-  exists — a star racing the query's purge either no-ops as `NotFound` (the
-  row is already gone) or is removed by the cascade, never a raw FK failure.
+- **Star writes are child-before-parent; the parent fence covers only the
+  first star.** The lock rule treats an upsert as an existing-row lock, so
+  toggling or removing an **existing** `saved_query_star` row locks that
+  child row directly — no parent lock. Only the **first** star for a
+  (query, caller) inserts a child that cannot be locked in advance; that
+  case alone takes the parent fence (lock the `saved_query` row, reject as
+  `NotFound` if gone), the same missing-child carve-out `CreateSavedQuery`
+  uses for `project`. Its inserted key is novel, so it never contends with
+  purge's existing-child locks — no cross-order deadlock.
   (`BatchUpdateSavedQueries` only *updates* existing `saved_query` rows, so
   its row locks give the same guarantee with no new child; folder moves
   affecting a purged row simply touch zero rows.)
-- **Purge deletes saved queries explicitly.** `BatchDeleteProjects`'
-  hard-delete path lists `saved_query` (as it lists `worksheet` today);
-  `saved_query_star` then cascades from it.
+- **Purge is child-before-parent.** `BatchDeleteProjects`' hard-delete path
+  deletes `saved_query_star` (child) before `saved_query`, and `saved_query`
+  before `project` (as it deletes `worksheet` today) — locking existing
+  child rows ahead of their parents, per the rule.
 
-Every writer locks its FK parent before inserting (create → the `project`
-row; star → the `saved_query` row) in that fixed order, so writers and
-purge serialize rather than deadlock. Required before implementation:
-deterministic real-PostgreSQL regression tests for **both** acquisition
-orders of each writer against purge (create↔purge and star↔purge),
-asserting the terminal outcomes — project deleted, no orphaned saved query
-or star, and **no** FK failure in either direction (absence of SQLSTATE
-`40P01` alone is insufficient).
+The invariant: existing-row writes and deletes go **child before parent**;
+the **only** parent-first step is a new-child *insert* (create → lock
+`project`; first star → lock `saved_query`), which is safe precisely because
+its key is new and cannot be locked in advance — the AGENTS.md missing-child
+carve-out. Required before implementation: deterministic real-PostgreSQL
+regression tests for **both** acquisition orders of each insert against
+purge (create↔purge and first-star↔purge), asserting the terminal
+outcomes — project deleted, no orphaned saved query or star, and **no** FK
+failure or deadlock (`40P01`) in either direction (absence of `40P01` alone
+is insufficient).
 
 ### Sharing and organization UX
 
