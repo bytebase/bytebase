@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/components/EngineIcon";
 import { TableSchemaViewer } from "@/components/TableSchemaViewer";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Tree, type TreeDataNode } from "@/components/ui/tree";
 import { countVisibleRows } from "@/components/ui/tree-utils";
 import { cn } from "@/lib/utils";
@@ -55,7 +55,6 @@ import { Label } from "./TreeNode/Label";
 const ROW_HEIGHT = 21;
 const TREE_FALLBACK_HEIGHT = 360;
 const FLAT_TABLE_THRESHOLD = 1000;
-const SEARCH_DEBOUNCE_MS = 200;
 // Stable empty array reference used by the expandedKeys selector — a
 // fresh `[]` per call would re-trigger Zustand subscribers on every
 // store mutation.
@@ -108,7 +107,6 @@ function SchemaPaneInner() {
   const panelViewState = currentTab?.viewState;
 
   const [searchPattern, setSearchPattern] = useState("");
-  const debouncedSearch = useDebouncedValue(searchPattern, SEARCH_DEBOUNCE_MS);
 
   // Reset the search box on every tab switch — matches Vue's
   // `watch(() => currentTab.value?.id, ...)`.
@@ -276,7 +274,7 @@ function SchemaPaneInner() {
   }, [tree]);
 
   const expandedKeySet = useMemo(() => new Set(expandedKeys), [expandedKeys]);
-  const searchKeyword = debouncedSearch.trim();
+  const searchKeyword = searchPattern.trim();
   const visibleRowCount = useMemo(() => {
     if (!tree) return 0;
     return tree.reduce(
@@ -428,7 +426,7 @@ function SchemaPaneInner() {
     >
       <div className="px-1 flex flex-row gap-1">
         <div className="flex-1 overflow-hidden">
-          <Input
+          <SearchInput
             size="sm"
             value={searchPattern}
             placeholder={t("common.search")}
@@ -451,7 +449,7 @@ function SchemaPaneInner() {
           totalTableCount > FLAT_TABLE_THRESHOLD ? (
             <FlatTableList
               metadata={metadata}
-              search={debouncedSearch}
+              search={searchPattern}
               database={database.name}
               onSelect={onFlatSelect}
               onSelectAll={onFlatSelectAll}
@@ -592,15 +590,6 @@ function defaultExpandedKeys(tree: SchemaTreeNode[]): string[] {
   };
   walk(tree[0]);
   return keys;
-}
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(id);
-  }, [value, delayMs]);
-  return debounced;
 }
 
 /**

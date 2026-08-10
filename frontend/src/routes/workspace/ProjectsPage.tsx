@@ -418,21 +418,15 @@ export function ProjectsPage() {
     [isLoggedIn, pageSize, searchText, selectedState, selectedLabels, orderBy]
   );
 
-  // Fetch on mount + re-fetch on filter/sort/pageSize changes (debounced after first load)
+  // AdvancedSearch owns text debounce; settled filter and table changes fetch immediately.
   const prevDepsRef = useRef<string>("");
-  const isFirstLoad = useRef(true);
   useEffect(() => {
     const depsKey = `${searchText}|${stateFilter}|${selectedLabels.join(",")}|${pageSize}|${orderBy}`;
     if (prevDepsRef.current === depsKey) return;
     prevDepsRef.current = depsKey;
 
-    if (isFirstLoad.current) {
-      isFirstLoad.current = false;
-      fetchProjects(true);
-      return () => abortRef.current?.abort();
-    }
-    const timer = setTimeout(() => fetchProjects(true), 300);
-    return () => clearTimeout(timer);
+    fetchProjects(true);
+    return () => abortRef.current?.abort();
   }, [
     searchText,
     stateFilter,

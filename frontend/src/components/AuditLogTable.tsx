@@ -677,18 +677,11 @@ export function AuditLogTable({
         }
       }
     },
-    [hasAuditLogFeature, parent, filter, orderBy, pageSize, t]
+    [hasAuditLogFeature, parent, filter, orderBy, pageSize]
   );
 
-  const isFirstLoad = useRef(true);
   useEffect(() => {
-    if (isFirstLoad.current) {
-      isFirstLoad.current = false;
-      fetchAuditLogs(true);
-      return;
-    }
-    const timer = setTimeout(() => fetchAuditLogs(true), 300);
-    return () => clearTimeout(timer);
+    fetchAuditLogs(true);
   }, [fetchAuditLogs]);
 
   const loadMore = useCallback(() => {

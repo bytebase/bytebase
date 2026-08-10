@@ -201,9 +201,10 @@ describe("ProjectSyncSchemaPage target database search", () => {
   afterEach(() => {
     act(() => root.unmount());
     container.remove();
+    vi.useRealTimers();
   });
 
-  test("uses the database name query for the first page and load more", async () => {
+  test("debounces the database name query and reuses it for load more", async () => {
     act(() => {
       root.render(<ProjectSyncSchemaPage projectId="project" />);
     });
@@ -217,6 +218,8 @@ describe("ProjectSyncSchemaPage target database search", () => {
 
     const searchInput = container.querySelector("input");
     expect(searchInput).not.toBeNull();
+    const initialRequestCount = mocks.fetchDatabases.mock.calls.length;
+    vi.useFakeTimers();
     act(() => {
       Object.getOwnPropertyDescriptor(
         HTMLInputElement.prototype,
@@ -224,13 +227,22 @@ describe("ProjectSyncSchemaPage target database search", () => {
       )?.set?.call(searchInput, "Payroll");
       searchInput!.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    await flush();
+
+    expect(mocks.fetchDatabases).toHaveBeenCalledTimes(initialRequestCount);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(299);
+    });
+    expect(mocks.fetchDatabases).toHaveBeenCalledTimes(initialRequestCount);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
 
     expect(mocks.fetchDatabases).toHaveBeenCalledWith({
       parent: "projects/project",
       pageSize: 50,
       filter: { engines: [1], query: "Payroll" },
     });
+    vi.useRealTimers();
 
     const loadMoreButton = Array.from(
       container.querySelectorAll("button")

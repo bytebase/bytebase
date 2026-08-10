@@ -1,5 +1,4 @@
 import { create } from "@bufbuild/protobuf";
-import { debounce } from "lodash-es";
 import {
   ChevronDown,
   ChevronRight,
@@ -87,11 +86,6 @@ export function AsideTree() {
   );
 
   const arboristData = useMemo(() => convertToArboristData(tree), [tree]);
-
-  const handleSearchChange = useMemo(
-    () => debounce((value: string) => setSearchPattern(value), 200),
-    []
-  );
 
   // Context menu
   const { menuState, menuOptions, showMenu, hideMenu } =
@@ -575,7 +569,7 @@ export function AsideTree() {
       <div className="sticky top-0 flex items-center gap-x-1 px-1 pt-1">
         <SearchInput
           placeholder={t("common.search")}
-          onChange={(e) => handleSearchChange(e.target.value)}
+          onChange={(e) => setSearchPattern(e.target.value)}
           className="h-7 flex-1"
         />
         {createActions.length > 0 && (

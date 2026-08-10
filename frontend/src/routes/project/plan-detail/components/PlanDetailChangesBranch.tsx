@@ -1773,8 +1773,7 @@ function DatabaseSelector({
   );
 
   useEffect(() => {
-    const timer = setTimeout(() => void doFetch(true), 300);
-    return () => clearTimeout(timer);
+    void doFetch(true);
   }, [doFetch]);
 
   const toggleDatabase = (name: string) => {

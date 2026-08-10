@@ -143,11 +143,10 @@ export function Combobox(props: ComboboxProps) {
     [allOptions, selectedValues]
   );
 
-  // Debounced server-side search
+  // SearchInput owns the debounce.
   useEffect(() => {
     if (!onSearch || !open) return;
-    const timer = setTimeout(() => onSearch(search), 300);
-    return () => clearTimeout(timer);
+    void onSearch(search);
   }, [search, onSearch, open]);
 
   // Filter options

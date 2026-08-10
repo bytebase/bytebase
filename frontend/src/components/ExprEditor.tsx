@@ -270,13 +270,11 @@ function SearchableSelect({
   onChange: (value: string) => void;
 }) {
   const { t } = useTranslation();
-  const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<SearchableSelectOption[]>([]);
   const [loading, setLoading] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectedLabel = useMemo(() => {
     const found = options.find((o) => o.value === value);
@@ -320,19 +318,12 @@ function SearchableSelect({
 
   const handleOpen = () => {
     setOpen(true);
-    doSearch(search);
-  };
-
-  const handleSearchChange = (q: string) => {
-    setSearch(q);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(q), 300);
+    doSearch("");
   };
 
   const handleSelect = (v: string) => {
     onChange(v);
     setOpen(false);
-    setSearch("");
   };
 
   const close = useCallback(() => setOpen(false), []);
@@ -396,8 +387,7 @@ function SearchableSelect({
               autoFocus
               size="sm"
               placeholder={t("common.filter-by-name")}
-              value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
+              onChange={(e) => void doSearch(e.target.value)}
             />
           </div>
           <ul className="max-h-48 overflow-y-auto py-1">
@@ -447,7 +437,6 @@ function MultiSearchableSelect({
   onChange: (value: string[]) => void;
 }) {
   const { t } = useTranslation();
-  const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [searchOptions, setSearchOptions] = useState<SearchableSelectOption[]>(
     []
@@ -455,7 +444,6 @@ function MultiSearchableSelect({
   const [loading, setLoading] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [knownOptions, setKnownOptions] = useState<SearchableSelectOption[]>(
     []
   );
@@ -514,13 +502,7 @@ function MultiSearchableSelect({
 
   const handleOpen = () => {
     setOpen(true);
-    doSearch(search);
-  };
-
-  const handleSearchChange = (q: string) => {
-    setSearch(q);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(q), 300);
+    doSearch("");
   };
 
   const toggleValue = (v: string) => {
@@ -596,8 +578,7 @@ function MultiSearchableSelect({
               autoFocus
               size="sm"
               placeholder={t("common.filter-by-name")}
-              value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
+              onChange={(e) => void doSearch(e.target.value)}
             />
           </div>
           <ul className="max-h-48 overflow-y-auto py-1">

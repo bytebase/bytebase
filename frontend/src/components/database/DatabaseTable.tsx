@@ -140,15 +140,8 @@ export function DatabaseTable({
     [pageSize, filterKey, orderBy, parent, workspaceResourceName]
   );
 
-  const isFirstLoad = useRef(true);
   useEffect(() => {
-    if (isFirstLoad.current) {
-      isFirstLoad.current = false;
-      fetchDatabases(true);
-      return;
-    }
-    const timer = setTimeout(() => fetchDatabases(true), 300);
-    return () => clearTimeout(timer);
+    fetchDatabases(true);
   }, [fetchDatabases]);
 
   // Support external refresh trigger

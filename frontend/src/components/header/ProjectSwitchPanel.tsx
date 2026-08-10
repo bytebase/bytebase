@@ -15,7 +15,7 @@ import {
 } from "@/app/router";
 import { ProjectTable } from "@/components/ProjectTable";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import {
   Select,
   SelectContent,
@@ -162,7 +162,9 @@ export function ProjectSwitchPanel({
     pageSize,
     pageSizeOptions,
     onPageSizeChange,
-  } = useProjectList(searchText, { excludeDefault: excludeDefaultProject });
+  } = useProjectList(searchText, {
+    excludeDefault: excludeDefaultProject,
+  });
 
   const handleProjectSelect = useCallback(
     (project: Project, event: ReactMouseEvent<HTMLElement>) => {
@@ -238,9 +240,9 @@ export function ProjectSwitchPanel({
           </TabsList>
 
           <div className="flex items-center gap-x-1.5">
-            <Input
+            <SearchInput
               size="sm"
-              className="w-36"
+              wrapperClassName="flex-none w-36"
               value={searchText}
               placeholder={t("common.filter-by-name")}
               onChange={(event) => setSearchText(event.target.value)}

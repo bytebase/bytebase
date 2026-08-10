@@ -937,17 +937,6 @@ const fetchSheetListFor = async (view: SheetViewMode) => {
   }
 };
 
-const fetchSheetListDebounced: Partial<Record<SheetViewMode, () => void>> = {};
-const getFetchSheetListFn = (view: SheetViewMode): (() => void) => {
-  const existed = fetchSheetListDebounced[view];
-  if (existed) return existed;
-  const debounced = debounce(() => {
-    void fetchSheetListFor(view);
-  }, DEBOUNCE_SEARCH_DELAY);
-  fetchSheetListDebounced[view] = debounced;
-  return debounced;
-};
-
 const fetchNextSheetPageFor = async (
   view: SheetViewMode,
   folderKey?: string
@@ -1364,7 +1353,7 @@ const bindWatchers = () => {
     ) {
       for (const view of ["my", "shared"] as const) {
         if (state.viewStates[view].isInitialized) {
-          getFetchSheetListFn(view)();
+          void fetchSheetListFor(view);
         }
       }
     }

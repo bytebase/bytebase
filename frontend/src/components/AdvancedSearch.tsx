@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { cn } from "@/lib/utils";
+import { DEBOUNCE_SEARCH_DELAY } from "@/types/common";
 
 // ============================================================
 // Types
@@ -312,7 +313,7 @@ export function AdvancedSearch({
           if (asyncRequestRef.current !== requestID) return;
           setAsyncLoading(false);
         });
-    }, 300);
+    }, DEBOUNCE_SEARCH_DELAY);
     return () => {
       clearTimeout(asyncSearchRef.current);
     };
@@ -446,7 +447,7 @@ export function AdvancedSearch({
         if (text !== params.query) {
           onParamsChange({ ...params, query: text });
         }
-      }, 300);
+      }, DEBOUNCE_SEARCH_DELAY);
     },
     [currentScope, params, onParamsChange]
   );
