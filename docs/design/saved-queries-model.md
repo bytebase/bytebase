@@ -330,9 +330,17 @@ the *workspace* IAM policy applies to every project, so those bindings are
 folded in too (the same "holds on P" the `discover` gate uses) — otherwise
 a workspace-level project member would pass discovery yet be silently
 omitted from the share. Only bindings **whose role carries
-`bb.savedQueries.search`** are included: a role deliberately kept off the
-saved-query surface (a CI releaser, say) must not be swept into content
-grants that outlive its project role. `allUsers` members — which
+`bb.savedQueries.search` but *not* `bb.savedQueries.manage`** are included.
+Two exclusions, one rule — snapshot only principals whose sole path to the
+query *is* a per-object grant: a role kept off the saved-query surface (a
+CI releaser) has no `search` and must not be swept in; an admin role
+(`workspaceAdmin`/`workspaceDBA`, or `projectOwner`) reaches the query
+through the `manage` **backstop**, not a grant, so freezing it into a
+VIEWER/EDITOR binding is both redundant *and* a residual-access bug —
+the grant would outlive the admin role and leave a former operator
+deep-link access. That leaves the pure project audience
+(`projectDeveloper`, `sqlEditorUser`, `sqlEditorReadUser`, `projectViewer`),
+which is exactly who "share with everyone here" means. `allUsers` members — which
 self-hosted project IAM permits — are **skipped, never expanded**: the
 per-object policy accepts only `user:` and `group:` principals
 (`SetIamPolicy` rejects anything else), and freezing a workspace-wide
