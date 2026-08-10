@@ -216,6 +216,15 @@ Grant levels:  VIEWER (open, read)  <  EDITOR (+ write content/title/database)
 Principals:    user:{email} | group:{email}
 ```
 
+**Member format follows `bytebase.v1.IamPolicy` exactly** — the same
+`user:`/`group:` binding prefixes (`common.UserBindingPrefix` /
+`GroupBindingPrefix`) the project and workspace policies use, restricted to
+the `user:` and `group:` types (no `allUsers`, `serviceAccount:`, or
+`workloadIdentity:`). This is a deliberate invariant: principal parsing,
+group expansion, and the share-with-project snapshot all reuse the existing
+IAM machinery unchanged, and a project binding copies into a saved-query
+binding verbatim.
+
 The whole model (G1); every RPC gate derives from these. Notation: `u` is
 the caller, `P` a project, `s` a saved query, `s.project` its owning
 project; "holds" means any of `u`'s role bindings — project-level (direct
@@ -482,18 +491,15 @@ platform-wide convention change outside this design's scope.
 The caller's principal set expands cheaply — groups are flat (members are
 users, one hop) and `GetUserGroupsSnapshot` is cached in
 `memberGroupsCache`: `principals(u) = {user:u} ∪ {group:g …}`, typically a
-handful. **Member format:** bindings use the IAM **binding** prefixes
-`user:{email}` / `group:{email}` (`common.UserBindingPrefix` /
-`GroupBindingPrefix`) — identical to project/workspace `IamPolicy`, so a
-share-with-project snapshot copies those members verbatim, no conversion.
-The one boundary: group *membership* is stored resource-name-style
-(`GroupMember.member = users/{email}`), so `GetUserGroupsSnapshot`'s reverse
-index matches `users/{u}` to find the caller's groups, then emits each as
-`group:{email}` for the probe — exactly the conversion the existing IAM
-group-expansion already does. (`creator` is a distinct field in user-
-resource form `users/{email}`, not a binding member — the `creator ==`
-filter uses that form, the `member ==` filter uses `user:`.) The list query
-filters the table directly, one GIN probe per principal:
+handful. Bindings carry `user:`/`group:` members (the IamPolicy invariant
+above), so the only format boundary is group *membership*, stored
+resource-name-style (`GroupMember.member = users/{email}`):
+`GetUserGroupsSnapshot`'s reverse index matches `users/{u}` to find the
+caller's groups, then emits each as `group:{email}` for the probe — exactly
+the conversion the existing IAM group-expansion already performs. (`creator`
+is a separate field in user-resource form `users/{email}`, not a binding
+member: the `creator ==` filter uses that form, `member ==` uses `user:`.)
+The list query filters the table directly, one GIN probe per principal:
 
 ```sql
 -- The search gate already passed at the interceptor. An admin drops the
