@@ -714,15 +714,8 @@ export function InstanceDashboard({
   );
 
   // Fetch on mount + re-fetch on filter/sort/pageSize changes
-  const isFirstLoad = useRef(true);
   useEffect(() => {
-    if (isFirstLoad.current) {
-      isFirstLoad.current = false;
-      fetchInstances(true);
-      return;
-    }
-    const timer = setTimeout(() => fetchInstances(true), 300);
-    return () => clearTimeout(timer);
+    fetchInstances(true);
   }, [fetchInstances]);
 
   const loadMore = useCallback(() => {

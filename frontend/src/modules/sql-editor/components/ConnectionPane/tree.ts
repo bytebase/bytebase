@@ -10,7 +10,6 @@ import type {
   SQLEditorTreeNode,
   StatefulSQLEditorTreeFactor as StatefulFactor,
 } from "@/types";
-import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   getDefaultPagination,
@@ -130,19 +129,6 @@ export function useSQLEditorTreeByEnvironment(
     [storageKey]
   );
 
-  // Debounced fetch — mirror the Vue `useDebounceFn(..., DEBOUNCE_SEARCH_DELAY)` wrapper.
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (debounceTimerRef.current !== null) {
-        clearTimeout(debounceTimerRef.current);
-        debounceTimerRef.current = null;
-      }
-    },
-    []
-  );
-
   const fetchDatabasesImpl = useCallback(
     async (filter?: DatabaseFilter) => {
       setFetchDataState((prev) => ({ ...prev, loading: true }));
@@ -169,25 +155,13 @@ export function useSQLEditorTreeByEnvironment(
     [fetchDatabaseList, project, environment]
   );
 
-  // Keep a ref to the latest fetchDataState so the debounced fn can read it
-  // without resubscribing.
+  // Keep a ref to the latest page token for refresh and load-more requests.
   const fetchDataStateRef = useRef(fetchDataState);
   useEffect(() => {
     fetchDataStateRef.current = fetchDataState;
   }, [fetchDataState]);
 
-  const fetchDatabases = useCallback(
-    (filter?: DatabaseFilter): Promise<void> =>
-      new Promise((resolve) => {
-        if (debounceTimerRef.current !== null) {
-          clearTimeout(debounceTimerRef.current);
-        }
-        debounceTimerRef.current = setTimeout(() => {
-          void fetchDatabasesImpl(filter).finally(() => resolve());
-        }, DEBOUNCE_SEARCH_DELAY);
-      }),
-    [fetchDatabasesImpl]
-  );
+  const fetchDatabases = fetchDatabasesImpl;
 
   const prepareDatabases = useCallback(
     async (filter?: DatabaseFilter) => {

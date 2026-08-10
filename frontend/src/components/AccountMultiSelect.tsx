@@ -209,25 +209,17 @@ export function AccountMultiSelect({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Cache display labels for selected items so they persist across search changes
   const labelCacheRef = useRef<Map<string, string>>(new Map());
 
-  // Fetch on search change (debounced 300ms)
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      const query = search.trim();
-      listUsers({ pageSize: getDefaultPagination(), filter: { query } }).then(
-        ({ users: fetched }) => setUsers(fetched)
-      );
-      listGroups({ pageSize: getDefaultPagination(), filter: { query } }).then(
-        ({ groups: fetched }) => setGroups(fetched)
-      );
-    }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    const query = search.trim();
+    listUsers({ pageSize: getDefaultPagination(), filter: { query } }).then(
+      ({ users: fetched }) => setUsers(fetched)
+    );
+    listGroups({ pageSize: getDefaultPagination(), filter: { query } }).then(
+      ({ groups: fetched }) => setGroups(fetched)
+    );
   }, [search, listUsers, listGroups]);
 
   const handleClickOutside = useCallback(() => {

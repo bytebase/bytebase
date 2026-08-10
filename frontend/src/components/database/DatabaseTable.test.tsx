@@ -169,6 +169,34 @@ describe("DatabaseTable", () => {
     ).toBe(`${db1.name},${db2.name}`);
   });
 
+  test("refreshes immediately when the filter changes", async () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [],
+      nextPageToken: "",
+    });
+
+    await act(async () => {
+      root!.render(
+        <DatabaseTable filter={{ query: "" }} parent="instances/i" />
+      );
+      await Promise.resolve();
+    });
+    await act(async () => {
+      root!.render(
+        <DatabaseTable filter={{ query: "payroll" }} parent="instances/i" />
+      );
+      await Promise.resolve();
+    });
+
+    expect(mocks.fetchDatabases).toHaveBeenLastCalledWith(
+      expect.objectContaining({ filter: { query: "payroll" } })
+    );
+  });
+
   test("forwards empty placeholder only after a truly empty page loads", async () => {
     container = document.createElement("div");
     document.body.appendChild(container);

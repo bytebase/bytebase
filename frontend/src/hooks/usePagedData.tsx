@@ -313,15 +313,7 @@ export function usePagedData<T extends { name: string }>({
       doFetch(true);
       return;
     }
-    fetchIdRef.current++;
-    abortRef.current?.abort();
-    dispatch({
-      type: "fetch-start",
-      mode: "refresh",
-      cacheKey: activeCacheKeyRef.current,
-    });
-    const timer = setTimeout(() => doFetch(true), 300);
-    return () => clearTimeout(timer);
+    doFetch(true);
   }, [cacheRestoreToken, doFetch, enabled, resolvedCacheKey]);
 
   useEffect(() => {

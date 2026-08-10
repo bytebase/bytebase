@@ -397,10 +397,7 @@ export function useProjectList(
   );
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void fetchPage("refresh");
-    }, 200);
-    return () => window.clearTimeout(timer);
+    void fetchPage("refresh");
   }, [fetchPage]);
 
   const onPageSizeChange = useCallback((next: number) => {

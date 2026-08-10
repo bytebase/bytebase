@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   loadCurrentUser: vi.fn(),
   loadServerInfo: vi.fn(),
   projectsByName: {} as Record<string, Project>,
+  searchProjects: vi.fn(),
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -30,11 +31,12 @@ vi.mock("@/stores/app", () => ({
       loadCurrentUser: mocks.loadCurrentUser,
       loadServerInfo: mocks.loadServerInfo,
       projectsByName: mocks.projectsByName,
+      searchProjects: mocks.searchProjects,
       serverInfo: { saas: false },
     }),
 }));
 
-import { useRecentProjects } from "./useAppState";
+import { useProjectList, useRecentProjects } from "./useAppState";
 
 const recentProjectsKey = storageKeyRecentProjects(
   workspaceCacheScope(false, "workspaces/default"),
@@ -50,6 +52,32 @@ describe("useRecentProjects", () => {
     mocks.getProjectByName.mockImplementation((name: string) => ({
       name: name === "projects/default" ? name : "projects/-1",
     }));
+    mocks.searchProjects.mockResolvedValue({
+      projects: [],
+      nextPageToken: "",
+    });
+  });
+
+  test("fetches an already-settled project query immediately", () => {
+    const { rerender } = renderHook(
+      ({ query }: { query: string }) => useProjectList(query),
+      { initialProps: { query: "alpha" } }
+    );
+
+    expect(mocks.searchProjects).toHaveBeenLastCalledWith({
+      pageSize: 50,
+      pageToken: "",
+      query: "alpha",
+      excludeDefault: true,
+    });
+
+    rerender({ query: "beta" });
+    expect(mocks.searchProjects).toHaveBeenLastCalledWith({
+      pageSize: 50,
+      pageToken: "",
+      query: "beta",
+      excludeDefault: true,
+    });
   });
 
   test("does not expose the unknown project placeholder for uncached recent projects", async () => {

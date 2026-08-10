@@ -19,6 +19,7 @@ vi.mock("react-i18next", () => ({
 
 describe("Combobox", () => {
   afterEach(() => {
+    vi.useRealTimers();
     document.body.innerHTML = "";
   });
 
@@ -123,6 +124,7 @@ describe("Combobox", () => {
   });
 
   test("passes the search query to custom option renderers", () => {
+    vi.useFakeTimers();
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -158,6 +160,7 @@ describe("Combobox", () => {
       )?.set;
       valueSetter?.call(input, "byte");
       input.dispatchEvent(new Event("input", { bubbles: true }));
+      vi.advanceTimersByTime(300);
     });
 
     expect(

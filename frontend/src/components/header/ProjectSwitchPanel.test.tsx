@@ -1,7 +1,7 @@
 import type { ChangeEvent, InputHTMLAttributes, ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router";
 
 (
@@ -50,6 +50,7 @@ const mocks = vi.hoisted(() => ({
   allProjects: [] as Array<typeof allProject>,
   recentOptions: undefined as { excludeDefault?: boolean } | undefined,
   projectListOptions: undefined as { excludeDefault?: boolean } | undefined,
+  projectListQueries: [] as string[],
   hasMore: false,
   loadMore: vi.fn(),
   onPageSizeChange: vi.fn(),
@@ -89,9 +90,10 @@ vi.mock("@/hooks/useAppState", () => ({
     };
   },
   useProjectList: (
-    _query: string,
+    query: string,
     options?: { excludeDefault?: boolean }
   ) => {
+    mocks.projectListQueries.push(query);
     mocks.projectListOptions = options;
     return {
       projects: mocks.allProjects,
@@ -177,13 +179,48 @@ beforeEach(async () => {
   mocks.allProjects = [allProject];
   mocks.recentOptions = undefined;
   mocks.projectListOptions = undefined;
+  mocks.projectListQueries = [];
   mocks.hasMore = false;
   mocks.inputOnChange = undefined;
   window.open = vi.fn();
   ({ ProjectSwitchPanel } = await import("./ProjectSwitchPanel"));
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("ProjectSwitchPanel", () => {
+  test("debounces the backend project query at the input owner", () => {
+    vi.useFakeTimers();
+    const { render, unmount } = renderIntoContainer(
+      <ProjectSwitchPanel
+        onClose={mocks.close}
+        onRequestCreate={mocks.requestCreate}
+      />
+    );
+
+    render();
+    expect(mocks.projectListQueries.at(-1)).toBe("");
+
+    act(() => {
+      mocks.inputOnChange?.({
+        target: { value: "payroll" },
+      } as ChangeEvent<HTMLInputElement>);
+    });
+    act(() => {
+      vi.advanceTimersByTime(299);
+    });
+    expect(mocks.projectListQueries.at(-1)).toBe("");
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(mocks.projectListQueries.at(-1)).toBe("payroll");
+
+    unmount();
+  });
+
   test("records and navigates when selecting a project", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ProjectSwitchPanel
@@ -258,6 +295,7 @@ describe("ProjectSwitchPanel", () => {
   });
 
   test("filters recent projects by keyword", () => {
+    vi.useFakeTimers();
     mocks.recentProjects = [recentProject, otherRecentProject];
     mocks.allProjects = [];
     const { container, render, unmount } = renderIntoContainer(
@@ -273,6 +311,9 @@ describe("ProjectSwitchPanel", () => {
       mocks.inputOnChange?.({
         target: { value: "recent project" },
       } as ChangeEvent<HTMLInputElement>);
+    });
+    act(() => {
+      vi.advanceTimersByTime(300);
     });
 
     expect(container.textContent).toContain("Recent Project");

@@ -92,8 +92,7 @@ describe("usePagedData", () => {
     document.body.innerHTML = "";
   });
 
-  test("keeps loading while a debounced refresh is pending", async () => {
-    vi.useFakeTimers();
+  test("refreshes immediately when the fetch function changes", async () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -115,16 +114,7 @@ describe("usePagedData", () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector("[data-state]")?.textContent).toBe(
-      "loading"
-    );
-    expect(dataFetch).not.toHaveBeenCalled();
-
-    await act(async () => {
-      vi.advanceTimersByTime(300);
-      await Promise.resolve();
-    });
-
+    expect(dataFetch).toHaveBeenCalledOnce();
     expect(container.querySelector("[data-state]")?.textContent).toBe(
       "items/1"
     );
@@ -332,7 +322,7 @@ describe("usePagedData", () => {
     expect(container.querySelector("[data-state]")?.textContent).toBe(
       "items/entry-1"
     );
-    expect(fetchList).toHaveBeenCalledOnce();
+    expect(fetchList).toHaveBeenCalledTimes(2);
   });
 
   test("consumes cache restoration once per history entry", async () => {
@@ -382,10 +372,6 @@ describe("usePagedData", () => {
       "items/cached-100"
     );
 
-    await act(async () => {
-      vi.advanceTimersByTime(300);
-      await Promise.resolve();
-    });
     expect(fetchList).toHaveBeenCalledWith({ pageSize: 100, pageToken: "" });
     expect(container.querySelector("[data-state]")?.textContent).toBe(
       "items/current-100"
