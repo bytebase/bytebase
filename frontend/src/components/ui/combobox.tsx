@@ -9,8 +9,10 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { HighlightLabelText } from "../HighlightLabelText";
+import { Button } from "./button";
 import {
   getPortalDropdownStyle,
   isPortalDropdownStyleEqual,
@@ -32,7 +34,7 @@ export interface ComboboxOption {
   /** Secondary text shown below the label */
   description?: string;
   /** Custom render for the option row */
-  render?: () => React.ReactNode;
+  render?: (keyword: string) => React.ReactNode;
   /** Whether this option is disabled (shown but not selectable) */
   disabled?: boolean;
 }
@@ -69,7 +71,11 @@ type ComboboxBaseProps = {
    *  the empty state needs links or conditional copy beyond a flat string. */
   noResultsContent?: React.ReactNode;
   /** Server-side search callback. When provided, filters via this instead of client-side. */
-  onSearch?: (query: string) => void;
+  onSearch?: (query: string) => void | Promise<void>;
+  /** Whether another page of server-side options is available. */
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void | Promise<void>;
   className?: string;
   disabled?: boolean;
   clearable?: boolean;
@@ -105,12 +111,16 @@ export function Combobox(props: ComboboxProps) {
     noResultsText,
     noResultsContent,
     onSearch,
+    hasMore,
+    loadingMore,
+    onLoadMore,
     className,
     disabled,
     clearable = true,
     size = "md",
     portal,
   } = props;
+  const { t } = useTranslation();
   const multiple = props.multiple === true;
 
   const [open, setOpen] = useState(false);
@@ -356,7 +366,7 @@ export function Combobox(props: ComboboxProps) {
         )}
         <div className="flex flex-col min-w-0 flex-1">
           {option.render ? (
-            option.render()
+            option.render(search)
           ) : (
             <>
               <HighlightLabelText
@@ -424,6 +434,18 @@ export function Combobox(props: ComboboxProps) {
               {group.options.map(renderOptionRow)}
             </div>
           ))
+        )}
+        {hasMore && onLoadMore && (
+          <Button
+            type="button"
+            appearance="secondary"
+            size="sm"
+            className="w-full mt-1"
+            disabled={loadingMore}
+            onClick={onLoadMore}
+          >
+            {loadingMore ? t("common.loading") : t("common.load-more")}
+          </Button>
         )}
       </div>
     </div>

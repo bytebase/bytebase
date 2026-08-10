@@ -1,4 +1,4 @@
-import { act, type ReactElement } from "react";
+import { act, type ReactElement, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -12,8 +12,15 @@ type ComboProps = {
   multiple?: boolean;
   value: string | string[];
   onChange: (v: string | string[]) => void;
-  onSearch?: (q: string) => void;
-  options: { value: string; label: string }[];
+  onSearch?: (q: string) => void | Promise<void>;
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void | Promise<void>;
+  options: {
+    value: string;
+    label: string;
+    render?: (keyword: string) => ReactNode;
+  }[];
   renderValue?: (opt: { value: string; label: string }) => unknown;
 };
 const combo: { props?: ComboProps } = {};
@@ -63,9 +70,11 @@ vi.mock("@/components/ui/combobox", () => ({
 vi.mock("@/components/DatabaseTargetDisplay", () => ({
   DatabaseTargetDisplay: ({
     database,
+    keyword,
     target,
   }: {
     database?: { name: string };
+    keyword?: string;
     target?: string;
   }) => {
     const name = database?.name ?? target ?? "";
@@ -73,8 +82,27 @@ vi.mock("@/components/DatabaseTargetDisplay", () => ({
       /(?:^|\/)instances\/(?<instanceName>[^/]+)\/databases\/(?<databaseName>[^/]+)(?:$|\/)/
     );
     const { instanceName = "", databaseName = name } = matches?.groups ?? {};
-    return <span>{`${instanceName} / ${databaseName}`}</span>;
+    return (
+      <span>{`${instanceName} / ${databaseName}${keyword ? ` [${keyword}]` : ""}`}</span>
+    );
   },
+}));
+
+vi.mock("@/components/HighlightLabelText", () => ({
+  HighlightLabelText: ({
+    className,
+    keyword,
+    text,
+  }: {
+    className?: string;
+    keyword?: string;
+    text: string;
+  }) => (
+    <span className={className}>
+      {text}
+      {keyword ? ` [${keyword}]` : ""}
+    </span>
+  ),
 }));
 
 vi.mock("@/utils", () => ({
@@ -196,13 +224,75 @@ describe("DatabaseSelect — multi mode", () => {
     await flush();
 
     expect(combo.props?.onSearch).toBeTypeOf("function");
-    act(() => combo.props?.onSearch?.("orders"));
+    await act(async () => {
+      await combo.props?.onSearch?.("orders");
+    });
     expect(mocks.fetchDatabases).toHaveBeenCalledWith(
       expect.objectContaining({
         parent: "projects/p",
         filter: expect.objectContaining({ query: "orders" }),
       })
     );
+    unmount();
+  });
+
+  test("loads and appends the next database page", async () => {
+    mocks.fetchDatabases
+      .mockResolvedValueOnce({
+        databases: [db("instances/i/databases/one")],
+        nextPageToken: "page-2",
+      })
+      .mockResolvedValueOnce({
+        databases: [db("instances/i/databases/two")],
+        nextPageToken: "",
+      });
+    const { unmount } = render(
+      <DatabaseSelect
+        multiple
+        value={[]}
+        onChange={vi.fn()}
+        projectName="projects/p"
+      />
+    );
+    await flush();
+
+    expect(combo.props?.hasMore).toBe(true);
+    await act(async () => {
+      await combo.props?.onLoadMore?.();
+    });
+
+    expect(mocks.fetchDatabases).toHaveBeenLastCalledWith(
+      expect.objectContaining({ pageToken: "page-2" })
+    );
+    expect(combo.props?.options.map((option) => option.value)).toEqual([
+      "instances/i/databases/one",
+      "instances/i/databases/two",
+    ]);
+    expect(combo.props?.hasMore).toBe(false);
+    unmount();
+  });
+
+  test("forwards the active search query to the database row renderer", async () => {
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [db("instances/i/databases/bytebase")],
+      nextPageToken: "",
+    });
+    const { unmount } = render(
+      <DatabaseSelect
+        multiple
+        value={[]}
+        onChange={vi.fn()}
+        projectName="projects/p"
+      />
+    );
+    await flush();
+
+    const option = combo.props?.options.find(
+      (item) => item.value === "instances/i/databases/bytebase"
+    );
+    const rendered = render(option?.render?.("byte") as ReactElement);
+    expect(rendered.container.textContent).toContain("[byte]");
+    rendered.unmount();
     unmount();
   });
 
@@ -278,7 +368,9 @@ describe("DatabaseSelect — multi mode", () => {
       />
     );
     // Mount fetch (call 1) is in flight; fire a search (call 2).
-    act(() => combo.props?.onSearch?.("q"));
+    act(() => {
+      void combo.props?.onSearch?.("q");
+    });
 
     // Resolve the NEWER search first, then the OLDER mount fetch.
     await act(async () => {
@@ -346,8 +438,9 @@ describe("DatabaseSelect — single mode (regression guard for Sync Schema)", ()
       databases: [db("instances/i/databases/zzz")],
       nextPageToken: "",
     });
-    act(() => combo.props?.onSearch?.("zzz"));
-    await flush();
+    await act(async () => {
+      await combo.props?.onSearch?.("zzz");
+    });
 
     // The selected value must still be resolvable as an option/label.
     const opt = combo.props?.options.find(

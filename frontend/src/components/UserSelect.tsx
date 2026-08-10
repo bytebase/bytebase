@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import { usePaginatedSelect } from "@/components/usePaginatedSelect";
 import { useAppStore } from "@/stores/app";
 import { userNamePrefix } from "@/stores/modules/v1/common";
 import { ALL_USERS_USER_EMAIL } from "@/types";
@@ -38,12 +39,8 @@ export function UserSelect({
   const getOrFetchUserByIdentifier = useAppStore(
     (state) => state.getOrFetchUserByIdentifier
   );
-  const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
   const [search, setSearch] = useState("");
-  // Track the latest in-flight request to ignore stale responses when the
-  // user types quickly (a slow A can arrive after a fast B).
-  const searchSeqRef = useRef(0);
 
   // Hydrate the selected user so its label renders even when it isn't in
   // the current search results.
@@ -61,18 +58,33 @@ export function UserSelect({
     };
   }, [value, getOrFetchUserByIdentifier]);
 
+  const fetchPage = useCallback(
+    async (query: string, pageToken: string) => {
+      const response = await listUsers({
+        pageSize: getDefaultPagination(),
+        pageToken,
+        filter: { query },
+      });
+      return {
+        items: response.users,
+        nextPageToken: response.nextPageToken,
+      };
+    },
+    [listUsers]
+  );
+  const {
+    items: users,
+    search: searchUsers,
+    hasMore,
+    loadingMore,
+    loadMore,
+  } = usePaginatedSelect({ fetchPage });
   const handleSearch = useCallback(
     (query: string) => {
       setSearch(query);
-      const seq = ++searchSeqRef.current;
-      listUsers({
-        pageSize: getDefaultPagination(),
-        filter: { query: query.trim() },
-      }).then(({ users: fetched }) => {
-        if (seq === searchSeqRef.current) setUsers(fetched);
-      });
+      void searchUsers(query.trim());
     },
-    [listUsers]
+    [searchUsers]
   );
 
   const options: ComboboxOption[] = useMemo(() => {
@@ -113,6 +125,9 @@ export function UserSelect({
       onChange={onChange}
       options={options}
       onSearch={handleSearch}
+      hasMore={hasMore}
+      loadingMore={loadingMore}
+      onLoadMore={loadMore}
       placeholder={placeholder}
       disabled={disabled}
       className={className}

@@ -635,7 +635,12 @@ function CreateDatabaseForm({
               options={environments.map((env) => ({
                 value: env.name,
                 label: env.title,
-                render: () => <EnvironmentLabel environmentName={env.name} />,
+                render: (keyword) => (
+                  <EnvironmentLabel
+                    environmentName={env.name}
+                    keyword={keyword}
+                  />
+                ),
               }))}
               portal
             />

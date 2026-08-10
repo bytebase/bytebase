@@ -100,4 +100,19 @@ describe("EnvironmentBadge", () => {
     const badge = rendered.container.querySelector("span");
     expect(badge?.style.color).toBe("rgb(129, 140, 248)");
   });
+
+  test("highlights the environment title", async () => {
+    const rendered = await render(
+      <EnvironmentBadge
+        environment={environment}
+        hasEnvTierFeature={false}
+        keyword="duct"
+      />
+    );
+    root = rendered.root;
+
+    const highlight = rendered.container.querySelector("b");
+    expect(highlight?.textContent).toBe("duct");
+    expect(highlight?.className).toContain("text-accent");
+  });
 });

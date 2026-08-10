@@ -1,6 +1,7 @@
 import { ShieldAlert } from "lucide-react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
+import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { RouterLink } from "@/components/RouterLink";
 import { useEnvironment, usePlanFeature } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
@@ -29,12 +30,14 @@ export const EnvironmentBadge = memo(function EnvironmentBadge({
   environment,
   hasEnvTierFeature,
   className,
+  keyword,
   link,
   styleOptions,
 }: {
   environment: Environment;
   hasEnvTierFeature: boolean;
   className?: string;
+  keyword?: string | readonly string[];
   link?: boolean;
   styleOptions?: {
     defaultColorTextColor?: string;
@@ -78,7 +81,7 @@ export const EnvironmentBadge = memo(function EnvironmentBadge({
             {t("common.unassigned")}
           </span>
         ) : (
-          environment.title
+          <HighlightLabelText text={environment.title} keyword={keyword} />
         )}
       </span>
       {isProtected && !isUnset && (
@@ -119,12 +122,14 @@ export function EnvironmentLabel({
   environment: envProp,
   environmentName,
   className,
+  keyword,
   link,
   styleOptions,
 }: {
   environment?: Environment;
   environmentName?: string;
   className?: string;
+  keyword?: string | readonly string[];
   link?: boolean;
   styleOptions?: {
     defaultColorTextColor?: string;
@@ -142,6 +147,7 @@ export function EnvironmentLabel({
       environment={environment}
       hasEnvTierFeature={hasEnvTierFeature}
       className={className}
+      keyword={keyword}
       link={link}
       styleOptions={styleOptions}
     />

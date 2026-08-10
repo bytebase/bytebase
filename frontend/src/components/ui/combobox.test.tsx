@@ -1,6 +1,6 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { Combobox } from "./combobox";
 import { Dialog, DialogContent } from "./dialog";
 import { LAYER_BACKDROP_CLASS, LAYER_SURFACE_CLASS } from "./layer";
@@ -77,5 +77,86 @@ describe("Combobox", () => {
     act(() => {
       root.unmount();
     });
+  });
+
+  test("renders and invokes the load-more action", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const onLoadMore = vi.fn();
+
+    act(() => {
+      root.render(
+        <Combobox
+          value=""
+          onChange={() => {}}
+          options={[{ value: "alpha", label: "Alpha" }]}
+          hasMore
+          onLoadMore={onLoadMore}
+        />
+      );
+    });
+
+    act(() => {
+      container.firstElementChild?.firstElementChild
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(container.textContent).toContain("Load more");
+
+    const loadMoreButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "Load more"
+    );
+    act(() => loadMoreButton?.click());
+    expect(onLoadMore).toHaveBeenCalledOnce();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("passes the search query to custom option renderers", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <Combobox
+          value=""
+          onChange={() => {}}
+          options={[
+            {
+              value: "bytebase",
+              label: "bytebase",
+              render: (keyword) => (
+                <span data-testid="custom-option">{keyword}</span>
+              ),
+            },
+          ]}
+        />
+      );
+    });
+
+    act(() => {
+      container.firstElementChild?.firstElementChild
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const input = container.querySelector("input");
+    act(() => {
+      if (!input) return;
+      const valueSetter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value"
+      )?.set;
+      valueSetter?.call(input, "byte");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    expect(
+      container.querySelector('[data-testid="custom-option"]')?.textContent
+    ).toBe("byte");
+
+    act(() => root.unmount());
   });
 });

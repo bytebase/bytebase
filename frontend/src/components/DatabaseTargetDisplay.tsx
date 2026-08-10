@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { EngineIcon } from "@/components/EngineIcon";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
+import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
@@ -42,6 +43,7 @@ type DatabaseTargetDisplayProps = {
   showEnvironment?: boolean;
   showInstance?: boolean;
   size?: DatabaseTargetDisplaySize;
+  keyword?: string | readonly string[];
 } & (
   | {
       database?: Database;
@@ -56,6 +58,7 @@ type DatabaseTargetDisplayProps = {
 export function DatabaseTargetDisplay({
   className,
   database: databaseProp,
+  keyword,
   showEngine = true,
   showEnvironment = false,
   showInstance = true,
@@ -88,7 +91,9 @@ export function DatabaseTargetDisplay({
           classes.root,
           className
         )}
-      />
+      >
+        <HighlightLabelText text={targetName} keyword={keyword} />
+      </EllipsisText>
     );
   }
 
@@ -137,7 +142,9 @@ export function DatabaseTargetDisplay({
       <EllipsisText
         text={databaseName}
         className={cn("flex-1 truncate text-control", classes.database)}
-      />
+      >
+        <HighlightLabelText text={databaseName} keyword={keyword} />
+      </EllipsisText>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
+import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { Combobox } from "@/components/ui/combobox";
 import { useEnvironmentList } from "@/hooks/useAppState";
 import { formatEnvironmentName } from "@/types";
@@ -38,15 +39,17 @@ export function EnvironmentSelect(props: EnvironmentSelectProps) {
       environments.map((env) => ({
         value: formatEnvironmentName(env.id),
         label: env.title,
-        render: () => (
+        render: (keyword: string) => (
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-x-1">
-              <EnvironmentLabel environment={env} />
+              <EnvironmentLabel environment={env} keyword={keyword} />
               {renderSuffix?.(env)}
             </div>
-            <span className="text-xs text-control-placeholder">
-              {formatEnvironmentName(env.id)}
-            </span>
+            <HighlightLabelText
+              text={formatEnvironmentName(env.id)}
+              keyword={keyword}
+              className="text-xs text-control-placeholder"
+            />
           </div>
         ),
       })),

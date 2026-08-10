@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Combobox } from "@/components/ui/combobox";
+import { usePaginatedSelect } from "@/components/usePaginatedSelect";
 import { useAppStore } from "@/stores/app";
 import { isValidProjectName } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -37,7 +38,6 @@ export function ProjectSelect({
   portal,
 }: ProjectSelectProps) {
   const { t } = useTranslation();
-  const [projects, setProjects] = useState<Project[]>([]);
   // Projects referenced by `value` that aren't in the paged fetch.
   // Mirrors Vue's `additionalOptions` so deep-linked URLs (e.g.
   // `/sql-editor/projects/foo/...`) show the correct project label
@@ -56,23 +56,32 @@ export function ProjectSelect({
   const excludeDefaultRef = useRef(excludeDefault);
   excludeDefaultRef.current = excludeDefault;
 
-  const fetchProjects = useCallback((query: string) => {
-    useAppStore
-      .getState()
-      .fetchProjectList({
-        filter: { query, excludeDefault: excludeDefaultRef.current },
-        pageSize: getDefaultPagination(),
-      })
-      .then(({ projects: result }) => setProjects(result));
+  const fetchPage = useCallback(async (query: string, pageToken: string) => {
+    const result = await useAppStore.getState().fetchProjectList({
+      filter: { query, excludeDefault: excludeDefaultRef.current },
+      pageSize: getDefaultPagination(),
+      pageToken,
+    });
+    return {
+      items: result.projects,
+      nextPageToken: result.nextPageToken,
+    };
   }, []);
+  const {
+    items: projects,
+    search,
+    hasMore,
+    loadingMore,
+    loadMore,
+  } = usePaginatedSelect({ fetchPage });
 
   // Fetch the first page on mount, and re-fetch only when
   // `excludeDefault` actually flips (rare — typically once after
-  // permissions hydrate). `fetchProjects` is stable so this effect
+  // permissions hydrate). `search` is stable so this effect
   // never re-fires from parent re-renders alone.
   useEffect(() => {
-    fetchProjects("");
-  }, [excludeDefault, fetchProjects]);
+    search("");
+  }, [excludeDefault, search]);
 
   // Hydrate the selected project so the trigger always renders its
   // label, even before the paged list loads or when the project is
@@ -123,7 +132,10 @@ export function ProjectSelect({
       placeholder={placeholder ?? t("common.project")}
       noResultsText={t("common.no-data")}
       noResultsContent={emptyContent}
-      onSearch={fetchProjects}
+      onSearch={search}
+      hasMore={hasMore}
+      loadingMore={loadingMore}
+      onLoadMore={loadMore}
       disabled={disabled}
       className={className}
       portal={portal}
