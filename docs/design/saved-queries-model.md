@@ -565,6 +565,11 @@ lock-ordering):
   (`BatchUpdateSavedQueries` only *updates* existing `saved_query` rows, so
   its row locks give the same guarantee with no new child; folder moves
   affecting a purged row simply touch zero rows.)
+- **Delete is child-before-parent, explicitly.** `DeleteSavedQuery` removes
+  the query's `saved_query_star` rows before the `saved_query` row itself —
+  **not** via the FK cascade, which would lock the parent first — matching
+  the star and purge order so a delete racing a star toggle or a purge
+  cannot deadlock.
 - **Purge is child-before-parent.** `BatchDeleteProjects`' hard-delete path
   deletes `saved_query_star` (child) before `saved_query`, and `saved_query`
   before `project` (as it deletes `worksheet` today) — locking existing
@@ -575,11 +580,11 @@ the **only** parent-first step is a new-child *insert* (create → lock
 `project`; first star → lock `saved_query`), which is safe precisely because
 its key is new and cannot be locked in advance — the AGENTS.md missing-child
 carve-out. Required before implementation: deterministic real-PostgreSQL
-regression tests for **both** acquisition orders of each insert against
-purge (create↔purge and first-star↔purge), asserting the terminal
-outcomes — project deleted, no orphaned saved query or star, and **no** FK
-failure or deadlock (`40P01`) in either direction (absence of `40P01` alone
-is insufficient).
+regression tests for **both** acquisition orders of each contending pair —
+create↔purge, first-star↔purge, and delete↔star-toggle — asserting the
+terminal outcomes — project (or query) deleted, no orphaned saved query or
+star, and **no** FK failure or deadlock (`40P01`) in either direction
+(absence of `40P01` alone is insufficient).
 
 ### Sharing and organization UX
 
