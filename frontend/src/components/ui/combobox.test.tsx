@@ -6,6 +6,13 @@ import { Dialog, DialogContent } from "./dialog";
 import { LAYER_BACKDROP_CLASS, LAYER_SURFACE_CLASS } from "./layer";
 import { overlaySurfaceClassName } from "./styles.stylex";
 
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) =>
+      key === "common.load-more" ? "Load more" : key,
+  }),
+}));
+
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
