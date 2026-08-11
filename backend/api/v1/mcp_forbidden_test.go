@@ -2,39 +2,54 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
-// TestInternalMCPForbiddenInterceptor pins the two halves of the gate: every
-// member of the FORBIDDEN class is refused before dispatch with a message that
-// names why, and nothing outside the class is touched.
-func TestInternalMCPForbiddenInterceptor(t *testing.T) {
-	interceptor := NewInternalMCPForbiddenInterceptor()
-
-	invoke := func(procedure string) (bool, error) {
-		dispatched := false
-		next := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
-			dispatched = true
-			return connect.NewResponse(&v1pb.User{}), nil
+// forbiddenProceduresFromDescriptors reads the FORBIDDEN class straight off
+// the compiled descriptors — the same place getAuthContext reads it — so the
+// assertions below are against the annotations themselves, not against a Go
+// copy of them that could agree with itself while the protos say otherwise.
+func forbiddenProceduresFromDescriptors(t *testing.T) map[string]bool {
+	t.Helper()
+	found := map[string]bool{}
+	protoregistry.GlobalFiles.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		if fd.Package() != "bytebase.v1" {
+			return true
 		}
-		req := &specRequest{
-			AnyRequest: connect.NewRequest(&v1pb.GetUserRequest{}),
-			procedure:  procedure,
+		services := fd.Services()
+		for i := range services.Len() {
+			sd := services.Get(i)
+			methods := sd.Methods()
+			for j := range methods.Len() {
+				md := methods.Get(j)
+				class, ok := proto.GetExtension(md.Options(), v1pb.E_McpMethodClass).(v1pb.MCPMethodClass)
+				require.True(t, ok, "method %s carries a malformed mcp_method_class", md.FullName())
+				if class == v1pb.MCPMethodClass_FORBIDDEN {
+					found[fmt.Sprintf("/%s/%s", sd.FullName(), md.Name())] = true
+				}
+			}
 		}
-		_, err := interceptor.WrapUnary(next)(context.Background(), req)
-		return dispatched, err
-	}
+		return true
+	})
+	return found
+}
 
-	// Spelled out rather than ranged over: iterating mcpForbiddenProcedures
-	// would make the test agree with the map by construction, so dropping an
-	// entry would drop its own coverage with it. This list is the assertion.
-	forbidden := []string{
+// TestForbiddenClassMembership pins which RPCs are annotated FORBIDDEN.
+// Membership is a security decision, so adding or removing one has to be
+// deliberate: this list is the second signature on that decision.
+func TestForbiddenClassMembership(t *testing.T) {
+	want := []string{
 		v1connect.AuthServiceLoginProcedure,
 		v1connect.AuthServiceSignupProcedure,
 		v1connect.AuthServiceExchangeTokenProcedure,
@@ -48,53 +63,88 @@ func TestInternalMCPForbiddenInterceptor(t *testing.T) {
 		v1connect.WorkspaceServiceLeaveWorkspaceProcedure,
 		v1connect.WorkspaceServiceDeleteWorkspaceProcedure,
 	}
-	require.Len(t, mcpForbiddenProcedures, len(forbidden),
-		"a method added to or removed from the class must be an explicit decision, made here too")
+	got := forbiddenProceduresFromDescriptors(t)
 
-	for _, procedure := range forbidden {
-		t.Run(procedure, func(t *testing.T) {
-			reason, listed := mcpForbiddenProcedures[procedure]
-			require.True(t, listed, "%s must be in the FORBIDDEN class", procedure)
-
-			dispatched, err := invoke(procedure)
-			require.Error(t, err, "a FORBIDDEN method must never reach its handler")
-			require.False(t, dispatched, "the denial must happen before dispatch, so no handler side effect can land")
-			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
-			require.Contains(t, err.Error(), procedure, "the message must name the method the agent called")
-			require.Contains(t, err.Error(), reason, "the message must name why, so the agent can act on it")
-		})
+	for _, procedure := range want {
+		require.True(t, got[procedure], "%s must be annotated mcp_method_class = FORBIDDEN", procedure)
 	}
+	require.Len(t, got, len(want),
+		"an RPC was annotated FORBIDDEN without being added here; membership must be an explicit decision")
+
+	// Every member should also carry wording an agent can act on. A missing
+	// row is a UX regression, not a security one — the annotation is what
+	// denies — so this is asserted separately from membership.
+	for _, procedure := range want {
+		require.Contains(t, mcpForbiddenReasons, procedure,
+			"%s has no actionable denial reason", procedure)
+	}
+	require.Len(t, mcpForbiddenReasons, len(want), "a reason row outlived its method")
 
 	// The reason has to describe what the method does, not merely be present:
 	// Logout destroys a session rather than issuing a credential, and a denial
 	// that says otherwise teaches the next reader something false.
-	require.Equal(t, reasonEndsSession, mcpForbiddenProcedures[v1connect.AuthServiceLogoutProcedure],
+	require.Equal(t, reasonEndsSession, mcpForbiddenReasons[v1connect.AuthServiceLogoutProcedure],
 		"Logout mints nothing — it deletes the refresh token and expires the cookies")
-	require.Equal(t, reasonMintsCredential, mcpForbiddenProcedures[v1connect.AuthServiceLoginProcedure])
-	require.Equal(t, reasonResetsCredential, mcpForbiddenProcedures[v1connect.AuthServiceResetPasswordProcedure])
-	require.Equal(t, reasonTakesOverAccount, mcpForbiddenProcedures[v1connect.UserServiceUpdateUserProcedure])
-	require.Equal(t, reasonEndsMembership, mcpForbiddenProcedures[v1connect.WorkspaceServiceDeleteWorkspaceProcedure])
+	require.Equal(t, reasonMintsCredential, mcpForbiddenReasons[v1connect.AuthServiceLoginProcedure])
+	require.Equal(t, reasonResetsCredential, mcpForbiddenReasons[v1connect.AuthServiceResetPasswordProcedure])
+	require.Equal(t, reasonTakesOverAccount, mcpForbiddenReasons[v1connect.UserServiceUpdateUserProcedure])
+	require.Equal(t, reasonEndsMembership, mcpForbiddenReasons[v1connect.WorkspaceServiceDeleteWorkspaceProcedure])
+}
 
-	t.Run("an unlisted method is dispatched untouched", func(t *testing.T) {
-		dispatched, err := invoke(v1connect.UserServiceGetUserProcedure)
-		require.NoError(t, err)
-		require.True(t, dispatched)
-	})
+// TestInternalMCPForbiddenInterceptor pins what the interceptor does with a
+// classification once the auth interceptor has resolved one.
+func TestInternalMCPForbiddenInterceptor(t *testing.T) {
+	interceptor := NewInternalMCPForbiddenInterceptor()
 
-	// Sibling methods on the same services that deliberately stay reachable.
-	// The class is credential and account-lifecycle escape, not "anything
-	// touching users or workspaces" — pinning these keeps a later widening of
-	// the list an explicit decision rather than a drift.
-	for _, procedure := range []string{
-		v1connect.UserServiceGetCurrentUserProcedure,
-		v1connect.UserServiceListUsersProcedure,
-		v1connect.WorkspaceServiceGetWorkspaceProcedure,
-		v1connect.WorkspaceServiceGetIamPolicyProcedure,
+	invoke := func(ctx context.Context, procedure string) (bool, error) {
+		dispatched := false
+		next := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
+			dispatched = true
+			return connect.NewResponse(&v1pb.User{}), nil
+		}
+		req := &specRequest{
+			AnyRequest: connect.NewRequest(&v1pb.GetUserRequest{}),
+			procedure:  procedure,
+		}
+		_, err := interceptor.WrapUnary(next)(ctx, req)
+		return dispatched, err
+	}
+	withClass := func(class common.MCPMethodClass) context.Context {
+		return context.WithValue(context.Background(), common.AuthContextKey,
+			&common.AuthContext{MCPMethodClass: class})
+	}
+
+	for procedure := range forbiddenProceduresFromDescriptors(t) {
+		t.Run(procedure, func(t *testing.T) {
+			dispatched, err := invoke(withClass(common.MCPMethodClassForbidden), procedure)
+			require.Error(t, err, "a FORBIDDEN method must never reach its handler")
+			require.False(t, dispatched, "the denial must happen before dispatch, so no handler side effect can land")
+			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+			require.Contains(t, err.Error(), procedure, "the message must name the method the agent called")
+			require.Contains(t, err.Error(), mcpForbiddenReasons[procedure],
+				"the message must name why, so the agent can act on it")
+		})
+	}
+
+	// Only FORBIDDEN is enforced in this phase: an unclassified method is
+	// served exactly as before, and the serving classes 1b-2 will select
+	// between are not gated here yet.
+	for name, class := range map[string]common.MCPMethodClass{
+		"unclassified": common.MCPMethodClassUnspecified,
+		"read":         common.MCPMethodClassRead,
+		"write":        common.MCPMethodClassWrite,
 	} {
-		t.Run("reachable: "+procedure, func(t *testing.T) {
-			dispatched, err := invoke(procedure)
+		t.Run("dispatched: "+name, func(t *testing.T) {
+			dispatched, err := invoke(withClass(class), v1connect.UserServiceGetUserProcedure)
 			require.NoError(t, err)
 			require.True(t, dispatched)
 		})
 	}
+
+	t.Run("no auth context fails closed", func(t *testing.T) {
+		dispatched, err := invoke(context.Background(), v1connect.AuthServiceLoginProcedure)
+		require.Error(t, err, "without a resolved classification the interceptor must not guess")
+		require.False(t, dispatched)
+		require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+	})
 }

@@ -183,6 +183,14 @@
                   <a href="#bytebase.v1.AuthMethod"><span class="badge">E</span>AuthMethod</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.MCPMethodClass"><span class="badge">E</span>MCPMethodClass</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#v1%2fannotation.proto-extensions"><span class="badge">X</span>File-level Extensions</a>
+                </li>
               
                 <li>
                   <a href="#v1%2fannotation.proto-extensions"><span class="badge">X</span>File-level Extensions</a>
@@ -3172,6 +3180,46 @@
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.MCPMethodClass">MCPMethodClass</h3>
+        <p>Classification of an RPC for MCP (AI agent) sessions. The effective</p><p>authorization of an MCP session is this classification intersected with the</p><p>caller's own RBAC: it can only ever narrow what the human could do, never</p><p>widen it.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MCP_METHOD_CLASS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Not yet classified. Reaches its handler, subject to RBAC as usual —
+the classification is being rolled out method by method, and only
+FORBIDDEN is enforced today.</p></td>
+              </tr>
+            
+              <tr>
+                <td>READ</td>
+                <td>1</td>
+                <td><p>Served to a read-only MCP session and above.</p></td>
+              </tr>
+            
+              <tr>
+                <td>WRITE</td>
+                <td>2</td>
+                <td><p>Served to a read-write MCP session only.</p></td>
+              </tr>
+            
+              <tr>
+                <td>FORBIDDEN</td>
+                <td>3</td>
+                <td><p>Never reachable by an MCP session, whatever the caller&#39;s own
+permissions are. These methods escape the MCP boundary rather than
+merely exercising a permission: a human with the permission uses the
+console; an agent acting for them does not get to.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
         <h3 id="v1/annotation.proto-extensions">File-level Extensions</h3>
@@ -3203,6 +3251,14 @@
                 <td><a href="#google.protobuf.MethodOptions">.google.protobuf.MethodOptions</a></td>
                 <td>100002</td>
                 <td><p>The authorization method to use for this RPC.</p></td>
+              </tr>
+            
+              <tr>
+                <td>mcp_method_class</td>
+                <td><a href="#bytebase.v1.MCPMethodClass">MCPMethodClass</a></td>
+                <td><a href="#google.protobuf.MethodOptions">.google.protobuf.MethodOptions</a></td>
+                <td>100004</td>
+                <td><p>How the method is classified for MCP (AI agent) sessions.</p></td>
               </tr>
             
               <tr>
@@ -3343,14 +3399,14 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td></td>
                   <td><p>The default schema to execute the query. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>container</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The container name to execute the query against, used for CosmosDB only. </p></td>
                 </tr>
-
+              
             </tbody>
           </table>
 

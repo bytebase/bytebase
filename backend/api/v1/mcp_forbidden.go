@@ -6,6 +6,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
@@ -31,7 +32,7 @@ const (
 	// on caller == subject alone, with no permission check and no proof of the
 	// old password, so an MCP session can rewrite its own user's credentials
 	// and then log in with them. The whole method is refused, not just those
-	// branches — the class is method-keyed (see mcpForbiddenProcedures).
+	// branches — the classification is per method.
 	reasonTakesOverAccount = "it can rewrite the account's own credentials, which would let the session take the account over"
 	// reasonEndsSession: Logout deletes the web refresh token and expires the
 	// session cookies. It mints nothing; it destroys the human's own login
@@ -42,46 +43,20 @@ const (
 	// whenever the caller has no refresh cookie — and an MCP session never has
 	// one — after having already destroyed the caller's membership.
 	reasonEndsMembership = "it destroys the caller's own workspace membership and mints a plain workspace token"
+	// reasonForbiddenClass is the fallback for a method annotated FORBIDDEN
+	// that has no entry below. Adding the annotation is what denies the
+	// method; the table only supplies better wording.
+	reasonForbiddenClass = "it is not reachable by an AI agent session"
 )
 
-// mcpForbiddenProcedures holds the credential and account-lifecycle members of
-// the FORBIDDEN class: v1 methods an MCP session must never reach, whatever
-// the caller's own RBAC says. Every entry escapes the MCP boundary rather than
-// merely exercising a permission — a human with these permissions uses the
-// console; an agent acting for them does not get to.
-//
-// It is a SUBSET of the class, deliberately. P1b classifies every v1 RPC
-// READ / WRITE / FORBIDDEN (1b-1) and 1b-2's gate replaces this lookup with
-// the FORBIDDEN rows of that table, in this same interceptor slot — growing
-// the table is the migration; nothing else here has to move. Shipped early
-// because these members are the ones an MCP session can reach today with no
-// permission at all. Known to be classified FORBIDDEN and NOT yet enforced
-// here:
-//
-//   - the four approval operations (ApproveIssue, RejectIssue, RequestIssue,
-//     RetryIssueApproval) — the self-approval guard;
-//   - the admin-class credential mints that hand a plaintext bearer straight
-//     back in the response body: ServiceAccountService/{Create,Update}
-//     ServiceAccount, WorkspaceService/RotateDirectorySyncToken,
-//     WorkloadIdentityService and IdentityProviderService writes, and
-//     UserService/CreateUser (a caller-chosen password on a fresh principal).
-//
-// Those are gated on IAM permissions a workspace admin nonetheless holds, so
-// they are open until 1b-1 classifies them. Do not read this list as "the
-// boundary is closed"; read it as "these twelve are shut".
-//
-// The classification lives in Go rather than as a proto annotation on purpose:
-// the ceiling is private data, with no public vocabulary and nothing an admin
-// authors or reads (P1b proposal v2). A method option would publish it in the
-// descriptor and OpenAPI surface.
-//
-// Handler-level guards for three of these (rejectMCPOriginatedTokenMint on
-// SwitchWorkspace, LeaveWorkspace and DeleteWorkspace) stay in place as
-// defense in depth. Not because an external MCP token could reach them on the
-// public chain — checkTokenAudience refuses MCP-provenance bearers there
-// during authentication — but because switchWorkspaceInternal is a shared
-// mint point that acquired two unguarded callers once already.
-var mcpForbiddenProcedures = map[string]string{
+// mcpForbiddenReasons is UX copy, NOT the classification. What a method is
+// classified as lives on the RPC itself, as the bytebase.v1.mcp_method_class
+// annotation, beside permission / audit / auth_method — one source of truth,
+// visible where the RPC is defined, and read here off the AuthContext the auth
+// interceptor already resolves. This table only turns that classification into
+// a sentence the agent can act on, and a missing row costs wording, never
+// enforcement.
+var mcpForbiddenReasons = map[string]string{
 	// Methods that put a token in the response body.
 	v1connect.AuthServiceLoginProcedure:           reasonMintsCredential,
 	v1connect.AuthServiceSignupProcedure:          reasonMintsCredential,
@@ -105,26 +80,45 @@ var mcpForbiddenProcedures = map[string]string{
 	v1connect.WorkspaceServiceDeleteWorkspaceProcedure: reasonEndsMembership,
 }
 
-// NewInternalMCPForbiddenInterceptor denies mcpForbiddenProcedures before
-// dispatch. It belongs to the internal MCP chain only — every request there
-// originates at /mcp — and sits inside the audit interceptor, outside ACL:
-// the class is refused regardless of what RBAC would have said.
+// NewInternalMCPForbiddenInterceptor denies every method annotated
+// mcp_method_class = FORBIDDEN before dispatch. It belongs to the internal MCP
+// chain only — every request there originates at /mcp — and sits inside the
+// audit interceptor, outside ACL: the class is refused regardless of what RBAC
+// would have said.
+//
+// Only FORBIDDEN is enforced. READ and WRITE are the serving classes P1b's
+// ceiling modes select between, and until every RPC carries a classification
+// an unannotated method is served exactly as before — the rollout is method by
+// method, and this interceptor grows with the annotations rather than with a
+// list kept here.
 //
 // Sitting inside audit gets the denial a row for the methods that carry the
-// audit annotation, which is all twelve here bar SwitchWorkspace, Refresh,
-// RequestPasswordReset and ResetPassword: needAudit reads that annotation and
-// nothing else, so those four are denied silently until 1b-2 lands the typed
-// policy-denial record that bypasses it.
+// audit annotation, which is all twelve currently annotated FORBIDDEN bar
+// SwitchWorkspace, Refresh, RequestPasswordReset and ResetPassword: needAudit
+// reads that annotation and nothing else, so those four are denied silently
+// until 1b-2 lands the typed policy-denial record that bypasses it.
 func NewInternalMCPForbiddenInterceptor() connect.Interceptor {
 	return connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-			procedure := req.Spec().Procedure
-			if reason, forbidden := mcpForbiddenProcedures[procedure]; forbidden {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-					"%s is not available to MCP sessions because %s. Perform this action signed in to the Bytebase console instead",
-					procedure, reason))
+			authCtx, ok := common.GetAuthContextFromContext(ctx)
+			if !ok {
+				// The auth interceptor runs first and always sets this. Its
+				// absence means the chain was reordered, and guessing which
+				// class a method is in is exactly the wrong response.
+				return nil, connect.NewError(connect.CodeInternal,
+					errors.New("MCP method classification unavailable: no auth context"))
 			}
-			return next(ctx, req)
+			if authCtx.MCPMethodClass != common.MCPMethodClassForbidden {
+				return next(ctx, req)
+			}
+			procedure := req.Spec().Procedure
+			reason, ok := mcpForbiddenReasons[procedure]
+			if !ok {
+				reason = reasonForbiddenClass
+			}
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+				"%s is not available to MCP sessions because %s. Perform this action signed in to the Bytebase console instead",
+				procedure, reason))
 		}
 	})
 }
