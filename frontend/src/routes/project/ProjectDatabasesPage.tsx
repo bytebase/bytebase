@@ -9,7 +9,6 @@ import { router, useCurrentRoute } from "@/app/router";
 import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_INSTANCE_CREATE,
-  SQL_EDITOR_DATABASE_MODULE,
 } from "@/app/router/handles";
 import { markListScrollRestorationEntry } from "@/app/router/NavigationScrollRestoration";
 import {
@@ -72,8 +71,8 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import { unknownDatabase } from "@/types/v1/database";
 import {
+  autoSQLEditorDatabaseRoute,
   engineNameV1,
-  extractDatabaseResourceName,
   extractInstanceResourceName,
   getDefaultPagination,
   hasProjectPermissionV2,
@@ -539,18 +538,8 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         resource: projectName,
       })
     );
-    const { instanceName, databaseName } = extractDatabaseResourceName(
-      firstDatabase.name
-    );
-    router.push({
-      name: SQL_EDITOR_DATABASE_MODULE,
-      params: {
-        project: projectId,
-        instance: instanceName,
-        database: databaseName,
-      },
-    });
-  }, [projectId, projectName, visibleDatabases]);
+    router.push(autoSQLEditorDatabaseRoute(firstDatabase));
+  }, [projectName, visibleDatabases]);
 
   useProductIntro({
     id: CONNECT_DATABASE_PRODUCT_INTRO,

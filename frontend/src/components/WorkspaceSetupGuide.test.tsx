@@ -131,6 +131,22 @@ vi.mock("@/api", () => ({
 }));
 
 vi.mock("@/utils", () => ({
+  autoSQLEditorDatabaseRoute: (database: {
+    name: string;
+    project: string;
+  }) => {
+    const match = database.name.match(
+      /^(?:projects\/[^/]+\/)?instances\/(?<instance>[^/]+)\/databases\/(?<database>[^/]+)$/
+    );
+    return {
+      name: "sql-editor.database",
+      params: {
+        project: database.project.replace(/^projects\//, ""),
+        instance: match?.groups?.instance ?? "",
+        database: match?.groups?.database ?? "",
+      },
+    };
+  },
   extractDatabaseResourceName: (name: string) => {
     const match = name.match(/^instances\/([^/]+)\/databases\/([^/]+)$/);
     return {

@@ -2,25 +2,10 @@ import { SquareTerminal } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
-import { SQL_EDITOR_DATABASE_MODULE } from "@/app/router/handles";
 import { useAppStore } from "@/stores/app";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { defaultProject, isDefaultProject } from "@/types/v1/project";
-
-const extractDatabaseParts = (resource: string) => {
-  const matches = resource.match(
-    /(?:^|\/)instances\/(?<instanceName>[^/]+)\/databases\/(?<databaseName>[^/]+)(?:$|\/)/
-  );
-  return {
-    instanceName: matches?.groups?.instanceName ?? "",
-    databaseName: matches?.groups?.databaseName ?? "",
-  };
-};
-
-const extractProjectId = (resource: string) => {
-  const matches = resource.match(/(?:^|\/)projects\/([^/]+)(?:$|\/)/);
-  return matches?.[1] ?? "";
-};
+import { autoSQLEditorDatabaseRoute } from "@/utils";
 
 export function DatabaseSQLEditorButton({
   database,
@@ -57,15 +42,7 @@ export function DatabaseSQLEditorButton({
       }
     }
 
-    const { instanceName, databaseName } = extractDatabaseParts(database.name);
-    const route = router.resolve({
-      name: SQL_EDITOR_DATABASE_MODULE,
-      params: {
-        project: extractProjectId(database.project),
-        instance: instanceName,
-        database: databaseName,
-      },
-    });
+    const route = router.resolve(autoSQLEditorDatabaseRoute(database));
 
     if (router.currentRoute.value.name?.toString().startsWith("sql-editor")) {
       void router.push(route);

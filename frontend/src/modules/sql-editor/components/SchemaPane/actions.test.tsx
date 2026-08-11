@@ -9,6 +9,7 @@ import type { NodeTarget, NodeType, TreeNode } from "./schemaTree";
 
 const mocks = vi.hoisted(() => {
   return {
+    resolve: vi.fn(() => ({ href: "/sql-editor/db" })),
     getDatabaseByName: vi.fn(() => ({
       name: "instances/i/databases/db",
       project: "projects/p",
@@ -87,6 +88,14 @@ vi.mock("@/utils", () => ({
   // Stub everything actions.tsx imports. We don't `importOriginal` here
   // because the real `@/utils` transitively pulls in monaco / vue
   // surfaces that vitest can't load.
+  autoSQLEditorDatabaseRoute: () => ({
+    name: "sql-editor.database",
+    params: {
+      project: "p",
+      instance: "i",
+      database: "db",
+    },
+  }),
   defaultSQLEditorTab: () => ({
     id: "new",
     title: "Untitled",
@@ -133,7 +142,7 @@ vi.mock("@/types/proto-es/v1/database_service_pb", () => ({
 vi.mock("@/app/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router")>()),
   router: {
-    resolve: () => ({ href: "/sql-editor/db" }),
+    resolve: mocks.resolve,
   },
 }));
 
@@ -240,6 +249,19 @@ describe("useSchemaPaneContextMenu", () => {
       "generate-sql--update",
       "generate-sql--delete",
     ]);
+    items.find((item) => item.key === "copy-url")?.onSelect?.();
+    expect(mocks.resolve).toHaveBeenCalledWith({
+      name: "sql-editor.database",
+      params: {
+        project: "p",
+        instance: "i",
+        database: "db",
+      },
+      query: {
+        table: "users",
+        schema: "public",
+      },
+    });
   });
 
   test("view node yields copy-name + view-schema-text + preview-table + generate-sql(SELECT only) + view-detail", () => {

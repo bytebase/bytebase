@@ -19,15 +19,13 @@ import { appStoreUtilBridge } from "@/utils/app-store-bridge";
 import { hasWorkspacePermissionV2 } from "../iam";
 import { checkQuerierPermission } from "./iam";
 
-// Extracts the database resource parts while preserving the complete parent.
-// For example, "projects/p/instances/i/databases/d" has parent
-// "projects/p/instances/i", while "instances/i/databases/d" has parent
+// Extracts database resource parts while preserving the canonical instance.
+// For example, "projects/p/instances/i/databases/d" has instance
+// "projects/p/instances/i", while "instances/i/databases/d" has instance
 // "instances/i".
 export const extractDatabaseResourceName = (
   resource: string
 ): {
-  // database parent preserving its full scope
-  parent: string;
   // instance full name
   instance: string;
   // database full name preserving its project parent
@@ -40,15 +38,14 @@ export const extractDatabaseResourceName = (
   const matches = resource.match(pattern);
 
   const {
-    matchedParent = "",
+    parent: matchedParent,
     databaseName = String(UNKNOWN_ID),
     instanceName = String(UNKNOWN_ID),
   } = matches?.groups ?? {};
-  const instance = `${instanceNamePrefix}${instanceName}`;
-  const parent = matchedParent ?? instance;
-  const database = `${parent}/${databaseNamePrefix}${databaseName}`;
+  const workspaceInstance = `${instanceNamePrefix}${instanceName}`;
+  const instance = matchedParent || workspaceInstance;
+  const database = `${instance}/${databaseNamePrefix}${databaseName}`;
   return {
-    parent,
     instance,
     instanceName,
     database,

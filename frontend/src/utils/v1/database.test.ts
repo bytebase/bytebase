@@ -9,8 +9,8 @@ describe("extractDatabaseResourceName", () => {
   } as Database;
 
   test("extracts the canonical database parent with the resource parts", () => {
-    expect(extractDatabaseResourceName(database.name)).toMatchObject({
-      parent: "projects/proj1/instances/inst1",
+    expect(extractDatabaseResourceName(database.name)).toEqual({
+      instance: "projects/proj1/instances/inst1",
       database: "projects/proj1/instances/inst1/databases/db1",
       instanceName: "inst1",
       databaseName: "db1",
@@ -20,8 +20,8 @@ describe("extractDatabaseResourceName", () => {
   test("extracts a workspace instance parent", () => {
     expect(
       extractDatabaseResourceName("instances/inst1/databases/db1")
-    ).toMatchObject({
-      parent: "instances/inst1",
+    ).toEqual({
+      instance: "instances/inst1",
       database: "instances/inst1/databases/db1",
       instanceName: "inst1",
       databaseName: "db1",

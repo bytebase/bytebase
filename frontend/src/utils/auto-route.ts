@@ -4,6 +4,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
+  SQL_EDITOR_DATABASE_MODULE,
 } from "@/app/router/handles";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -15,7 +16,7 @@ export const autoDatabaseRoute = (database: Database) => {
 
   const projectId = extractProjectResourceName(database.project);
   const {
-    parent,
+    instance,
     instanceName: instanceId,
     databaseName,
   } = extractDatabaseResourceName(database.name);
@@ -27,7 +28,7 @@ export const autoDatabaseRoute = (database: Database) => {
       databaseName,
     },
     query: {
-      parent,
+      parent: instance,
     },
   };
 };
@@ -58,6 +59,22 @@ export const autoDatabaseRevisionRoute = (
     params: {
       ...route.params,
       revisionId,
+    },
+  };
+};
+
+export const autoSQLEditorDatabaseRoute = (
+  database: Pick<Database, "name" | "project">
+) => {
+  const { instanceName, databaseName } = extractDatabaseResourceName(
+    database.name
+  );
+  return {
+    name: SQL_EDITOR_DATABASE_MODULE,
+    params: {
+      project: extractProjectResourceName(database.project),
+      instance: instanceName,
+      database: databaseName,
     },
   };
 };

@@ -16,7 +16,6 @@ import type { ReactNode } from "react";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
-import { SQL_EDITOR_DATABASE_MODULE } from "@/app/router/handles";
 import { formatSQL } from "@/components/monaco/sqlFormatter";
 import { useExecuteSQL } from "@/hooks/useExecuteSQL";
 import { writeTextToClipboard } from "@/lib/clipboard";
@@ -41,10 +40,9 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import { defaultViewState } from "@/types/sqlEditor/tabViewState";
 import {
+  autoSQLEditorDatabaseRoute,
   defaultSQLEditorTab,
   extractDatabaseResourceName,
-  extractInstanceResourceName,
-  extractProjectResourceName,
   generateSimpleDeleteStatement,
   generateSimpleInsertStatement,
   generateSimpleSelectAllStatement,
@@ -523,16 +521,9 @@ export function useSchemaPaneContextMenu(
           label: t("sql-editor.copy-url"),
           icon: <LinkIcon className="size-4" />,
           onSelect: () => {
-            const { instance, databaseName } = extractDatabaseResourceName(
-              db.name
-            );
+            const databaseRoute = autoSQLEditorDatabaseRoute(db);
             const route = router.resolve({
-              name: SQL_EDITOR_DATABASE_MODULE,
-              params: {
-                project: extractProjectResourceName(db.project),
-                instance: extractInstanceResourceName(instance),
-                database: databaseName,
-              },
+              ...databaseRoute,
               query: { table, schema },
             });
             const url = new URL(route.href, window.location.origin).href;

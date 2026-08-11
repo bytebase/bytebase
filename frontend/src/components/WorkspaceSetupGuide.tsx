@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import { SearchQueryHistoriesRequestSchema } from "@/types/proto-es/v1/query_history_service_pb";
 import {
-  extractDatabaseResourceName,
+  autoSQLEditorDatabaseRoute,
   extractProjectResourceName,
   hasWorkspacePermissionV2,
 } from "@/utils";
@@ -225,25 +225,15 @@ export function WorkspaceSetupGuide() {
     currentRoute.name,
   ]);
 
-  const projectId = setupState.projectName
-    ? extractProjectResourceName(setupState.projectName)
-    : "";
-  const databaseRouteParams = useMemo(() => {
-    if (!setupState.databaseName || !projectId) {
+  const databaseRoute = useMemo(() => {
+    if (!setupState.databaseName || !setupState.projectName) {
       return undefined;
     }
-    const { instanceName, databaseName } = extractDatabaseResourceName(
-      setupState.databaseName
-    );
-    if (!instanceName || !databaseName) {
-      return undefined;
-    }
-    return {
-      project: projectId,
-      instance: instanceName,
-      database: databaseName,
-    };
-  }, [projectId, setupState.databaseName]);
+    return autoSQLEditorDatabaseRoute({
+      name: setupState.databaseName,
+      project: setupState.projectName,
+    });
+  }, [setupState.databaseName, setupState.projectName]);
 
   const steps = useMemo<SetupStep[]>(
     () => [
@@ -422,13 +412,10 @@ export function WorkspaceSetupGuide() {
               {t("workspace-setup-guide.actions.change")}
             </Button>
           )}
-        {actionStep.key === "hasFirstQuery" && (
+        {actionStep.key === "hasFirstQuery" && databaseRoute && (
           <RouterLink
             data-testid="active-action"
-            to={{
-              name: SQL_EDITOR_DATABASE_MODULE,
-              params: databaseRouteParams,
-            }}
+            to={databaseRoute}
             className={buttonVariants({ size: "sm" })}
           >
             {t("workspace-setup-guide.actions.query")}
