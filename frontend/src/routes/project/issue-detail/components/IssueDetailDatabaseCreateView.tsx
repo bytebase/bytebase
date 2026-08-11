@@ -17,7 +17,7 @@ import type { Plan_CreateDatabaseConfig } from "@/types/proto-es/v1/plan_service
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { unknownInstance } from "@/types/v1/instance";
 import {
-  databaseV1Url,
+  autoDatabaseRoute,
   extractCoreDatabaseInfoFromDatabaseCreateTask,
   extractDatabaseResourceName,
 } from "@/utils";
@@ -152,7 +152,7 @@ export function IssueDetailDatabaseCreateView() {
               <>
                 <RouterLink
                   className="normal-link"
-                  to={databaseV1Url(createdDatabase)}
+                  to={autoDatabaseRoute(createdDatabase)}
                 >
                   {
                     extractDatabaseResourceName(createdDatabase.name)

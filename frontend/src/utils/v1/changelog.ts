@@ -1,10 +1,11 @@
 import { create } from "@bufbuild/protobuf";
+import { router } from "@/app/router";
 import { getDatabaseByName } from "@/stores/app/databaseAccess";
 import { UNKNOWN_ID } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/changelog_service_pb";
 import { ChangelogSchema } from "@/types/proto-es/v1/changelog_service_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { databaseV1Url, extractDatabaseResourceName } from "./database";
+import { autoDatabaseChangelogRoute } from "../auto-route";
 
 export const extractChangelogUID = (name: string) => {
   const pattern = /(?:^|\/)changelogs\/([^/]+)(?:$|\/)/;
@@ -32,12 +33,13 @@ export const isValidChangelogName = (name: string | undefined) => {
 };
 
 export const changelogLink = (changelog: Changelog): string => {
-  const { changelogUID } = extractDatabaseNameAndChangelogUID(changelog.name);
-  const { database } = extractDatabaseResourceName(changelog.name);
-  const composedDatabase = getDatabaseByName(database);
-  return [databaseV1Url(composedDatabase), "changelogs", changelogUID].join(
-    "/"
+  const { changelogUID, databaseName } = extractDatabaseNameAndChangelogUID(
+    changelog.name
   );
+  const composedDatabase = getDatabaseByName(databaseName);
+  return router.resolve(
+    autoDatabaseChangelogRoute(composedDatabase, changelogUID)
+  ).href;
 };
 
 export const mockLatestChangelog = (

@@ -8,7 +8,7 @@ import { preCreateIssue } from "@/lib/plan/issue";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  visibleDatabases: [] as { name: string }[],
+  visibleDatabases: [] as { name: string; project?: string }[],
   databasesByName: {} as Record<string, { name: string }>,
   instancesByName: {} as Record<string, { name: string; title: string }>,
   routerCurrentName: "workspace.project.database",
@@ -516,9 +516,14 @@ describe("ProjectDatabasesPage", () => {
     vi.useRealTimers();
   });
 
-  test("shows next action after redirected instance databases finish syncing", async () => {
+  test("opens a synced project instance database in SQL Editor", async () => {
     mocks.routerCurrentQuery = { syncingInstance: "prod" };
-    mocks.visibleDatabases = [{ name: "instances/prod/databases/app" }];
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
     const container = document.createElement("div");
     const root = createRoot(container);
 
@@ -561,7 +566,7 @@ describe("ProjectDatabasesPage", () => {
     });
 
     expect(preCreateIssue).toHaveBeenCalledWith("projects/demo", [
-      "instances/prod/databases/app",
+      "projects/demo/instances/prod/databases/app",
     ]);
 
     const sqlEditorButton = Array.from(

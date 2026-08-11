@@ -18,41 +18,37 @@ import { type Environment, unknownEnvironment } from "@/types/v1/environment";
 import { appStoreUtilBridge } from "@/utils/app-store-bridge";
 import { hasWorkspacePermissionV2 } from "../iam";
 import { checkQuerierPermission } from "./iam";
-import { extractProjectResourceName } from "./project";
 
-export const databaseV1Url = (db: Database) => {
-  return databaseV1UrlWithProject(db.project, db.name);
-};
-
-const databaseV1UrlWithProject = (project: string, database: string) => {
-  const projectId = extractProjectResourceName(project);
-  const { databaseName, instanceName } = extractDatabaseResourceName(database);
-
-  return `/projects/${encodeURIComponent(projectId)}/${instanceNamePrefix}${encodeURIComponent(instanceName)}/${databaseNamePrefix}${encodeURIComponent(databaseName)}`;
-};
-
+// Extracts database resource parts while preserving the canonical instance.
+// For example, "projects/p/instances/i/databases/d" has instance
+// "projects/p/instances/i", while "instances/i/databases/d" has instance
+// "instances/i".
 export const extractDatabaseResourceName = (
   resource: string
 ): {
   // instance full name
   instance: string;
-  // database full name
+  // database full name preserving its project parent
   database: string;
   databaseName: string;
   instanceName: string;
 } => {
   const pattern =
-    /(?:^|\/)instances\/(?<instanceName>[^/]+)\/databases\/(?<databaseName>[^/]+)(?:$|\/)/;
+    /(?:^|\/)(?<parent>(?:projects\/[^/]+\/)?instances\/(?<instanceName>[^/]+))\/databases\/(?<databaseName>[^/]+)(?:$|\/)/;
   const matches = resource.match(pattern);
 
   const {
+    parent: matchedParent,
     databaseName = String(UNKNOWN_ID),
     instanceName = String(UNKNOWN_ID),
   } = matches?.groups ?? {};
+  const workspaceInstance = `${instanceNamePrefix}${instanceName}`;
+  const instance = matchedParent || workspaceInstance;
+  const database = `${instance}/${databaseNamePrefix}${databaseName}`;
   return {
-    instance: `${instanceNamePrefix}${instanceName}`,
+    instance,
     instanceName,
-    database: `${instanceNamePrefix}${instanceName}/${databaseNamePrefix}${databaseName}`,
+    database,
     databaseName,
   };
 };

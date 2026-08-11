@@ -610,8 +610,8 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        hash: `#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`,
-        query: { foo: "bar", page: "2" },
+        routeHash: `#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`,
+        routeQuery: { foo: "bar", page: "2" },
       })
     );
 
@@ -623,11 +623,10 @@ describe("ProjectDatabaseDetailPage", () => {
     });
 
     expect(mocks.useProjectDatabaseDetail).toHaveBeenCalledWith({
+      parent: "instances/inst1",
       projectId: "proj1",
       instanceId: "inst1",
       databaseName: "db1",
-      hash: `#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`,
-      query: { foo: "bar", page: "2" },
     });
     expect(container.querySelector('[data-testid="tabs"]')).not.toBeNull();
     expect(
@@ -668,7 +667,7 @@ describe("ProjectDatabaseDetailPage", () => {
         databaseName: "db1",
       },
       hash: "#changelog",
-      query: { foo: "bar", page: "2" },
+      query: { foo: "bar", page: "2", parent: "instances/inst1" },
     });
     expect(
       container
@@ -705,7 +704,7 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        hash: "#not-a-real-tab",
+        routeHash: "#not-a-real-tab",
       })
     );
 
@@ -755,7 +754,7 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        query: { foo: "bar" },
+        routeQuery: { foo: "bar" },
       })
     );
 
@@ -793,7 +792,7 @@ describe("ProjectDatabaseDetailPage", () => {
         databaseName: "db1",
       },
       hash: `#${PROJECT_DATABASE_DETAIL_TAB_SETTING}`,
-      query: { foo: "bar" },
+      query: { foo: "bar", parent: "instances/inst1" },
     });
 
     unmount();
@@ -891,7 +890,7 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        hash: "#changelog",
+        routeHash: "#changelog",
       })
     );
 
@@ -931,7 +930,7 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        hash: "#changelog",
+        routeHash: "#changelog",
       })
     );
 
@@ -971,7 +970,7 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        hash: "#revision",
+        routeHash: "#revision",
       })
     );
 
@@ -1011,7 +1010,7 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        hash: "#catalog",
+        routeHash: "#catalog",
       })
     );
 
@@ -1146,8 +1145,8 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        hash: `#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`,
-        query: { foo: "bar", page: "2" },
+        routeHash: `#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`,
+        routeQuery: { foo: "bar", page: "2" },
       })
     );
 
@@ -1197,7 +1196,7 @@ describe("ProjectDatabaseDetailPage", () => {
         databaseName: "db1",
       },
       hash: `#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`,
-      query: { foo: "bar", page: "2" },
+      query: { foo: "bar", page: "2", parent: "instances/inst1" },
     });
 
     unmount();

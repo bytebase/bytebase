@@ -1093,8 +1093,23 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 		return errors.Wrap(err, "failed to commit transaction")
 	}
 
-	// Clear the instance from cache
+	// Publish cache invalidation only after the purge commits. Descendant cache
+	// keys carry the instance ID, so invalidation does not need to read every
+	// database row before deleting it.
 	s.instanceCache.Remove(getInstanceCacheKey(resourceID))
+	unscopedDatabaseCachePrefix := getDatabaseCacheKey("", resourceID, "")
+	workspaceDatabaseCachePrefix := getDatabaseCacheKey(workspace, resourceID, "")
+	for _, key := range s.databaseCache.Keys() {
+		if strings.HasPrefix(key, unscopedDatabaseCachePrefix) || strings.HasPrefix(key, workspaceDatabaseCachePrefix) {
+			s.databaseCache.Remove(key)
+		}
+	}
+	dbSchemaCachePrefix := getDBSchemaCacheKey(resourceID, "")
+	for _, key := range s.dbSchemaCache.Keys() {
+		if strings.HasPrefix(key, dbSchemaCachePrefix) {
+			s.dbSchemaCache.Remove(key)
+		}
+	}
 
 	return nil
 }

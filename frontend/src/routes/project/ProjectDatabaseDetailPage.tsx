@@ -1,10 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { LoaderCircle } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
-import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/app/router/handles";
 import { ComponentPermissionGuard } from "@/components/ComponentPermissionGuard";
 import { TransferProjectSheet } from "@/components/database";
 import { Alert } from "@/components/ui/alert";
@@ -18,7 +17,7 @@ import {
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import { getDatabaseProject } from "@/utils";
+import { autoDatabaseRoute, getDatabaseProject } from "@/utils";
 import { DatabaseDetailActions } from "./database-detail/DatabaseDetailActions";
 import { DatabaseDetailHeader } from "./database-detail/DatabaseDetailHeader";
 import { DatabaseCatalogPanel } from "./database-detail/panels/DatabaseCatalogPanel";
@@ -37,57 +36,32 @@ import {
 } from "./database-detail/tabs";
 import { useProjectDatabaseDetail } from "./database-detail/useProjectDatabaseDetail";
 
-const buildDatabaseDetailRoute = (
-  database: {
-    name: string;
-    project: string;
-  },
-  options?: {
-    hash?: string;
-    query?: Record<string, string | undefined>;
-  }
-) => {
-  const databaseMatches = database.name.match(
-    /(?:^|\/)instances\/(?<instanceId>[^/]+)\/databases\/(?<databaseName>[^/]+)(?:$|\/)/
-  );
-  const projectMatches = database.project.match(
-    /(?:^|\/)projects\/(?<projectId>[^/]+)(?:$|\/)/
-  );
-
-  return {
-    name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-    params: {
-      projectId: projectMatches?.groups?.projectId ?? "",
-      instanceId: databaseMatches?.groups?.instanceId ?? "",
-      databaseName: databaseMatches?.groups?.databaseName ?? "",
-    },
-    hash: options?.hash,
-    query: options?.query,
-  };
-};
-
 export interface ProjectDatabaseDetailPageProps {
   projectId: string;
   instanceId: string;
   databaseName: string;
-  hash?: string;
-  query?: Record<string, string | undefined>;
+  routeHash?: string;
+  routeQuery?: Record<string, string | undefined>;
 }
 
 export function ProjectDatabaseDetailPage({
   projectId,
   instanceId,
   databaseName,
-  hash,
-  query,
+  routeHash: hash,
+  routeQuery: query,
 }: ProjectDatabaseDetailPageProps) {
   const { t } = useTranslation();
+  const parent = query?.parent ?? `instances/${instanceId}`;
+  const databaseRouteQuery = useMemo(
+    () => ({ ...query, parent }),
+    [parent, query]
+  );
   const detail = useProjectDatabaseDetail({
+    parent,
     projectId,
     instanceId,
     databaseName,
-    hash,
-    query,
   });
   const [selectedTab, setSelectedTab] = useState<ProjectDatabaseDetailTab>(() =>
     parseProjectDatabaseDetailTabHash(hash)
@@ -104,18 +78,17 @@ export function ProjectDatabaseDetailPage({
 
       const nextTab = parseProjectDatabaseDetailTabHash(tab);
       setSelectedTab(nextTab);
+      const databaseRoute = autoDatabaseRoute(detail.database);
       void router.replace({
-        name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-        params: {
-          projectId,
-          instanceId,
-          databaseName,
-        },
+        ...databaseRoute,
         hash: `#${nextTab}`,
-        query: query ?? {},
+        query: {
+          ...databaseRouteQuery,
+          ...databaseRoute.query,
+        },
       });
     },
-    [databaseName, instanceId, projectId, query]
+    [databaseRouteQuery, detail.database]
   );
 
   useEffect(() => {
@@ -158,12 +131,15 @@ export function ProjectDatabaseDetailPage({
           title: t("database.successfully-transferred-databases"),
         });
         setShowTransferDrawer(false);
-        void router.replace(
-          buildDatabaseDetailRoute(updatedDatabase, {
-            hash: `#${selectedTab}`,
-            query: query ?? {},
-          })
-        );
+        const databaseRoute = autoDatabaseRoute(updatedDatabase);
+        void router.replace({
+          ...databaseRoute,
+          hash: `#${selectedTab}`,
+          query: {
+            ...databaseRouteQuery,
+            ...databaseRoute.query,
+          },
+        });
       } catch {
         pushNotification({
           module: "bytebase",
@@ -172,7 +148,7 @@ export function ProjectDatabaseDetailPage({
         });
       }
     },
-    [detail.database, query, selectedTab, t]
+    [databaseRouteQuery, detail.database, selectedTab, t]
   );
 
   if (!detail.ready) {

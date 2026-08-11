@@ -49,6 +49,9 @@ const mocks = vi.hoisted(() => {
       name,
       project: "projects/proj1",
     })),
+    fetchInstance: vi.fn<
+      (name: string) => Promise<{ name: string } | undefined>
+    >(async (name: string) => ({ name })),
     getWorksheetByName: vi.fn(),
     getOrFetchWorksheetByName: vi.fn(),
     searchProjects: vi.fn(),
@@ -140,6 +143,7 @@ vi.mock("@/stores/app", () => ({
   useAppStore: {
     getState: () => ({
       getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
+      fetchInstance: mocks.fetchInstance,
       getWorksheetByName: mocks.getWorksheetByName,
       getOrFetchWorksheetByName: mocks.getOrFetchWorksheetByName,
       searchProjects: mocks.searchProjects,
@@ -234,6 +238,7 @@ beforeEach(() => {
     name,
     project: "projects/proj1",
   }));
+  mocks.fetchInstance.mockImplementation(async (name: string) => ({ name }));
   mocks.getWorksheetByName.mockImplementation((name: string) => ({
     name,
     project: "projects/proj1",
@@ -380,6 +385,114 @@ describe("SQLEditorRouteShell", () => {
         table: "users",
       },
       mode: "WORKSHEET",
+    });
+
+    unmount();
+  });
+
+  test("resolves a project instance database without a parent query", async () => {
+    const parent = "projects/proj1/instances/inst1";
+    mocks.getOrFetchDatabaseByName.mockImplementation(async (name: string) =>
+      name.startsWith("projects/")
+        ? { name, project: "projects/proj1" }
+        : {
+            name: "instances/-1/databases/-1",
+            project: "projects/-1",
+          }
+    );
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.getOrFetchDatabaseByName).toHaveBeenNthCalledWith(
+      1,
+      "instances/inst1/databases/db1"
+    );
+    expect(mocks.getOrFetchDatabaseByName).toHaveBeenNthCalledWith(
+      2,
+      `${parent}/databases/db1`
+    );
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: parent,
+        database: `${parent}/databases/db1`,
+        schema: "public",
+        table: "users",
+      },
+      mode: "WORKSHEET",
+    });
+    expect(mocks.navigateReplace).toHaveBeenCalledWith({
+      name: "sql-editor.database",
+      params: {
+        project: "proj1",
+        instance: "inst1",
+        database: "db1",
+      },
+      query: {
+        table: "users",
+        schema: "public",
+      },
+    });
+
+    unmount();
+  });
+
+  test("restores a project instance connection without a parent query", async () => {
+    const parent = "projects/proj1/instances/inst1";
+    mocks.fetchInstance.mockImplementation(async (name: string) =>
+      name.startsWith("projects/") ? { name } : undefined
+    );
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.instance",
+      params: {
+        project: "proj1",
+        instance: "inst1",
+      },
+      query: {},
+    };
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor.instance",
+      params: {
+        project: "proj1",
+        instance: "inst1",
+      },
+      query: {},
+    };
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.fetchInstance).toHaveBeenNthCalledWith(
+      1,
+      "instances/inst1"
+    );
+    expect(mocks.fetchInstance).toHaveBeenNthCalledWith(2, parent);
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: parent,
+        database: "",
+      },
+      mode: "WORKSHEET",
+    });
+    expect(mocks.navigateReplace).toHaveBeenCalledWith({
+      name: "sql-editor.instance",
+      params: {
+        project: "proj1",
+        instance: "inst1",
+      },
+      query: {},
     });
 
     unmount();

@@ -101,8 +101,13 @@ vi.mock("@/types", () => ({
 }));
 
 vi.mock("@/utils", () => ({
-  extractDatabaseResourceName: () => ({ databaseName: "db" }),
-  extractInstanceResourceName: () => "instance",
+  extractDatabaseResourceName: (name: string) => ({
+    databaseName: name.match(/\/databases\/([^/]+)/)?.[1] ?? "",
+  }),
+  extractInstanceResourceName: (name: string) =>
+    name.match(/\/instances\/([^/]+)/)?.[1] ??
+    name.match(/^instances\/([^/]+)/)?.[1] ??
+    "",
   formatAbsoluteDateTime: () => "2024-04-25 12:26:40",
   isDev: () => true,
 }));
@@ -351,6 +356,35 @@ describe("MonacoEditor", () => {
           instanceId: "instances/prod",
           scene: "query",
           schema: "public",
+        }),
+      ]
+    );
+
+    unmount();
+  });
+
+  test("normalizes project instance names in LSP metadata", async () => {
+    const { executeCommand } = await import("./lsp-client");
+
+    const { unmount } = await renderIntoContainer(
+      createElement(MonacoEditor, {
+        autoCompleteContext: {
+          database: "projects/project/instances/instance/databases/db",
+          instance: "projects/project/instances/instance",
+        },
+        content: "select 1",
+      })
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    expect(executeCommand).toHaveBeenCalledWith(
+      expect.anything(),
+      "setMetadata",
+      [
+        expect.objectContaining({
+          databaseName: "db",
+          instanceId: "instances/instance",
         }),
       ]
     );

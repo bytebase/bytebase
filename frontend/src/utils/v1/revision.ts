@@ -1,8 +1,9 @@
+import { router } from "@/app/router";
 import i18n from "@/lib/i18n";
 import { getDatabaseByName } from "@/stores/app/databaseAccess";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import { Revision_Type } from "@/types/proto-es/v1/revision_service_pb";
-import { databaseV1Url, extractDatabaseResourceName } from "./database";
+import { autoDatabaseRevisionRoute } from "../auto-route";
 
 export const extractRevisionUID = (name: string): string => {
   const pattern = /(?:^|\/)revisions\/([^/]+)(?:$|\/)/;
@@ -15,9 +16,9 @@ export const revisionLink = (revision: Revision): string => {
   if (parts.length !== 2) {
     return "";
   }
-  const { database } = extractDatabaseResourceName(revision.name);
-  const composedDatabase = getDatabaseByName(database);
-  return `${databaseV1Url(composedDatabase)}/revisions/${parts[1]}`;
+  const composedDatabase = getDatabaseByName(parts[0]);
+  return router.resolve(autoDatabaseRevisionRoute(composedDatabase, parts[1]))
+    .href;
 };
 
 export const getRevisionType = (type: Revision_Type): string => {

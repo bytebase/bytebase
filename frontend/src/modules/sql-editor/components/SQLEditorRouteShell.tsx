@@ -41,6 +41,7 @@ import {
   type SQLEditorConnection,
 } from "@/types";
 import {
+  autoSQLEditorDatabaseRoute,
   extractDatabaseResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
@@ -258,16 +259,45 @@ export function SQLEditorRouteShell() {
     ) {
       return false;
     }
-    const databaseName = `instances/${route.params.instance}/databases/${route.params.database}`;
-    if (!isValidDatabaseName(databaseName)) return false;
-    const database = await useAppStore
+    const instanceId = route.params.instance;
+    if (typeof instanceId !== "string" || !instanceId) return false;
+    const projectId = route.params.project;
+    if (typeof projectId !== "string" || !projectId) return false;
+
+    if (route.name === SQL_EDITOR_INSTANCE_MODULE) {
+      let instance = await useAppStore
+        .getState()
+        .fetchInstance(`instances/${instanceId}`);
+      if (!instance || !isValidInstanceName(instance.name)) {
+        instance = await useAppStore
+          .getState()
+          .fetchInstance(`projects/${projectId}/instances/${instanceId}`);
+      }
+      if (!instance || !isValidInstanceName(instance.name)) return false;
+      getSQLEditorTabsState().addTab({
+        connection: {
+          instance: instance.name,
+          database: "",
+        },
+        mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+      });
+      return true;
+    }
+
+    const databaseId = route.params.database;
+    if (typeof databaseId !== "string" || !databaseId) return false;
+    let database = await useAppStore
       .getState()
-      .getOrFetchDatabaseByName(databaseName);
-    // The app-store getter returns the `unknownDatabase` fallback (rather
-    // than throwing) when the database can't be resolved — e.g. a bookmarked
-    // URL to a deleted or no-longer-readable database. Bail so bootstrap
-    // falls back to the default project instead of opening a bogus
-    // `instances/-1/databases/-1` connection.
+      .getOrFetchDatabaseByName(
+        `instances/${instanceId}/databases/${databaseId}`
+      );
+    if (!isValidDatabaseName(database.name)) {
+      database = await useAppStore
+        .getState()
+        .getOrFetchDatabaseByName(
+          `projects/${projectId}/instances/${instanceId}/databases/${databaseId}`
+        );
+    }
     if (!isValidDatabaseName(database.name)) return false;
     if (
       getSQLEditorEditorState().project !== database.project &&
@@ -436,6 +466,7 @@ export function SQLEditorRouteShell() {
     const query = omit(
       currentRoute.query,
       "filter",
+      "parent",
       "project",
       "schema",
       "database",
@@ -494,14 +525,9 @@ export function SQLEditorRouteShell() {
           query.table = vals.table;
           query.schema = vals.schema ?? "";
         }
-        const dbResource = extractDatabaseResourceName(database.name);
+        const route = autoSQLEditorDatabaseRoute(database);
         await navigate.replace({
-          name: SQL_EDITOR_DATABASE_MODULE,
-          params: {
-            project: extractProjectResourceName(database.project),
-            instance: extractInstanceResourceName(dbResource.instance),
-            database: dbResource.databaseName,
-          },
+          ...route,
           query,
         });
         return;

@@ -7,7 +7,6 @@ import {
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
-import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/app/router/handles";
 import { useSQLEditorAllowAdmin } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
@@ -25,9 +24,8 @@ import {
 } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
+  autoDatabaseRoute,
   extractDatabaseResourceName,
-  extractInstanceResourceName,
-  extractProjectResourceName,
   getInstanceResource,
   instanceV1HasAlterSchema,
   instanceV1HasReadonlyMode,
@@ -159,22 +157,12 @@ export function useConnectionMenu(node: SQLEditorTreeNode | null) {
 
     if (type === "database") {
       const database = target as Database;
-      const { instance, databaseName } = extractDatabaseResourceName(
-        database.name
-      );
       out.push({
         key: "view-database-detail",
         label: t("sql-editor.view-database-detail"),
         icon: <ExternalLink className="size-4" />,
         onSelect: () => {
-          const route = router.resolve({
-            name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-            params: {
-              projectId: extractProjectResourceName(database.project),
-              instanceId: extractInstanceResourceName(instance),
-              databaseName,
-            },
-          });
+          const route = router.resolve(autoDatabaseRoute(database));
           window.open(route.href, "_blank");
         },
       });
