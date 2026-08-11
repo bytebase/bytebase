@@ -12,6 +12,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { Tooltip } from "@/components/ui/tooltip";
+import { instanceNamePrefix } from "@/lib/resourceName";
 import { cn } from "@/lib/utils";
 import type { Language, SQLDialect } from "@/types";
 import { UNKNOWN_ID } from "@/types";
@@ -624,7 +625,7 @@ export function MonacoEditor({
     };
     const instance = extractInstanceResourceName(ctx.instance);
     if (instance && instance !== String(UNKNOWN_ID)) {
-      params.instanceId = ctx.instance;
+      params.instanceId = `${instanceNamePrefix}${instance}`;
     }
     const { databaseName } = extractDatabaseResourceName(ctx.database ?? "");
     if (databaseName && databaseName !== String(UNKNOWN_ID)) {
