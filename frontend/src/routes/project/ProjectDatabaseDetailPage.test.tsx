@@ -610,8 +610,8 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        hash: `#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`,
-        query: { foo: "bar", page: "2" },
+        routeHash: `#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`,
+        routeQuery: { foo: "bar", page: "2" },
       })
     );
 
@@ -704,7 +704,7 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        hash: "#not-a-real-tab",
+        routeHash: "#not-a-real-tab",
       })
     );
 
@@ -754,7 +754,7 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        query: { foo: "bar" },
+        routeQuery: { foo: "bar" },
       })
     );
 
@@ -890,7 +890,7 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        hash: "#changelog",
+        routeHash: "#changelog",
       })
     );
 
@@ -930,7 +930,7 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        hash: "#changelog",
+        routeHash: "#changelog",
       })
     );
 
@@ -970,7 +970,7 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        hash: "#revision",
+        routeHash: "#revision",
       })
     );
 
@@ -1010,7 +1010,7 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        hash: "#catalog",
+        routeHash: "#catalog",
       })
     );
 
@@ -1145,8 +1145,8 @@ describe("ProjectDatabaseDetailPage", () => {
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        hash: `#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`,
-        query: { foo: "bar", page: "2" },
+        routeHash: `#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`,
+        routeQuery: { foo: "bar", page: "2" },
       })
     );
 

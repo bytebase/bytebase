@@ -40,8 +40,6 @@ export interface ProjectDatabaseDetailPageProps {
   projectId: string;
   instanceId: string;
   databaseName: string;
-  hash?: string;
-  query?: Record<string, string | undefined>;
   routeHash?: string;
   routeQuery?: Record<string, string | undefined>;
 }
@@ -50,14 +48,10 @@ export function ProjectDatabaseDetailPage({
   projectId,
   instanceId,
   databaseName,
-  hash: hashProp,
-  query: queryProp,
-  routeHash,
-  routeQuery,
+  routeHash: hash,
+  routeQuery: query,
 }: ProjectDatabaseDetailPageProps) {
   const { t } = useTranslation();
-  const hash = routeHash ?? hashProp;
-  const query = routeQuery ?? queryProp;
   const parent = query?.parent ?? `instances/${instanceId}`;
   const databaseRouteQuery = useMemo(
     () => ({ ...query, parent }),
