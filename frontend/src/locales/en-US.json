@@ -1037,6 +1037,7 @@
     },
     "create-gcp-credentials": "To create credentials, see",
     "database-region": "Database Region",
+    "database-region-placeholder": "database region, for example, us-east-1",
     "default-role": "Default role",
     "delete-active-confirmation": "Instance \"{{name}}\" is active. Bytebase will archive it first, then permanently delete it. This action cannot be undone. Type the instance ID \"{{id}}\" to confirm.",
     "delete-confirmation": "This will permanently delete instance \"{{name}}\". This action cannot be undone. Type the instance ID \"{{id}}\" to confirm.",

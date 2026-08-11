@@ -1037,6 +1037,7 @@
     },
     "create-gcp-credentials": "创建凭据的方法见",
     "database-region": "数据库区域",
+    "database-region-placeholder": "数据库区域，例如 us-east-1",
     "default-role": "默认角色",
     "delete-active-confirmation": "实例“{{name}}”当前处于活动状态。Bytebase 将先归档该实例，然后永久删除它。此操作无法撤销。请输入实例 ID “{{id}}” 以确认。",
     "delete-confirmation": "这将永久删除实例“{{name}}”。此操作无法撤销。请输入实例 ID “{{id}}” 以确认。",
