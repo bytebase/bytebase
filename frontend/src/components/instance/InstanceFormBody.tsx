@@ -722,6 +722,14 @@ interface InstanceFormBodyProps {
   onOpenInfoPanel?: (section: InfoSection) => void;
 }
 
+// Engines without a host field (or with a non-local default) drop the local
+// development placeholder host when the user switches to them.
+const clearLocalPlaceholderHost = (ds: EditDataSource) => {
+  if (ds.host === "127.0.0.1" || ds.host === "host.docker.internal") {
+    ds.host = "";
+  }
+};
+
 export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
   const { t } = useTranslation();
   const ctx = useInstanceFormContext();
@@ -992,35 +1000,20 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
           const updated = { ...ds };
           switch (engine) {
             case Engine.SNOWFLAKE: {
-              if (
-                updated.host === "127.0.0.1" ||
-                updated.host === "host.docker.internal"
-              ) {
-                updated.host = "";
-              }
+              clearLocalPlaceholderHost(updated);
               break;
             }
             case Engine.DYNAMODB: {
               updated.authenticationType =
                 DataSource_AuthenticationType.AWS_RDS_IAM;
-              if (
-                updated.host === "127.0.0.1" ||
-                updated.host === "host.docker.internal"
-              ) {
-                updated.host = "";
-              }
+              clearLocalPlaceholderHost(updated);
               break;
             }
             case Engine.SPANNER:
             case Engine.BIGQUERY: {
               updated.authenticationType =
                 DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM;
-              if (
-                updated.host === "127.0.0.1" ||
-                updated.host === "host.docker.internal"
-              ) {
-                updated.host = "";
-              }
+              clearLocalPlaceholderHost(updated);
               break;
             }
             case Engine.COSMOSDB: {
@@ -1790,21 +1783,17 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
           <DataSourceSection hideOptions onOpenInfoPanel={onOpenInfoPanel} />
 
           {basicInfo.engine !== Engine.DYNAMODB && (
-            <>
-              <div className="mt-6">
-                <SyncDatabases
-                  isCreating={isCreating}
-                  showLabel
-                  allowEdit={
-                    isCreating ? allowEdit && !!allowCreate : allowEdit
-                  }
-                  projectName={routeProjectName}
-                  onOpenInfoPanel={onOpenInfoPanel}
-                  syncDatabases={basicInfo.syncDatabases}
-                  onSyncDatabasesChange={handleChangeSyncDatabases}
-                />
-              </div>
-            </>
+            <div className="mt-6">
+              <SyncDatabases
+                isCreating={isCreating}
+                showLabel
+                allowEdit={isCreating ? allowEdit && !!allowCreate : allowEdit}
+                projectName={routeProjectName}
+                onOpenInfoPanel={onOpenInfoPanel}
+                syncDatabases={basicInfo.syncDatabases}
+                onSyncDatabasesChange={handleChangeSyncDatabases}
+              />
+            </div>
           )}
         </div>
 

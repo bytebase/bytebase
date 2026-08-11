@@ -5,12 +5,15 @@ import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import {
+  DataSource_AuthenticationType,
+  DataSource_AWSCredentialSchema,
   DataSourceSchema,
   DataSourceType,
   InstanceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { unknownInstance } from "@/types/v1/instance";
+import { wrapEditDataSource } from "./common";
 import {
   InstanceFormProvider,
   useInstanceFormContext,
@@ -337,5 +340,87 @@ describe("InstanceFormProvider", () => {
     ).toBeNull();
 
     harness.unmount();
+  });
+
+  describe("checkDataSource AWS region requirement", () => {
+    const awsDataSource = (region: string, withCredential: boolean) => {
+      const ds = wrapEditDataSource(
+        create(DataSourceSchema, {
+          id: "admin",
+          type: DataSourceType.ADMIN,
+          authenticationType: DataSource_AuthenticationType.AWS_RDS_IAM,
+          region,
+        })
+      );
+      if (withCredential) {
+        ds.iamExtension = {
+          case: "awsCredential",
+          value: create(DataSource_AWSCredentialSchema, {}),
+        };
+      }
+      return ds;
+    };
+
+    const CheckDataSourceProbe = () => {
+      const ctx = useInstanceFormContext();
+      return (
+        <div
+          data-credential-no-region={String(
+            ctx.checkDataSource([awsDataSource("", true)])
+          )}
+          data-credential-with-region={String(
+            ctx.checkDataSource([awsDataSource("us-east-1", true)])
+          )}
+          data-default-chain-no-region={String(
+            ctx.checkDataSource([awsDataSource("", false)])
+          )}
+        />
+      );
+    };
+
+    const instanceOfEngine = (engine: Engine) =>
+      create(InstanceSchema, {
+        name: "instances/aws-check",
+        title: "AWS check",
+        engine,
+        environment: "environments/prod",
+        dataSources: [
+          create(DataSourceSchema, { id: "admin", type: DataSourceType.ADMIN }),
+        ],
+      });
+
+    test("DynamoDB requires a region only with a specific credential", async () => {
+      const harness = renderIntoContainer();
+
+      await harness.render(
+        <InstanceFormProvider instance={instanceOfEngine(Engine.DYNAMODB)}>
+          <CheckDataSourceProbe />
+        </InstanceFormProvider>
+      );
+
+      const probe = harness.container.firstElementChild as HTMLElement;
+      expect(probe.dataset.credentialNoRegion).toBe("false");
+      expect(probe.dataset.credentialWithRegion).toBe("true");
+      expect(probe.dataset.defaultChainNoRegion).toBe("true");
+
+      harness.unmount();
+    });
+
+    test("other engines require a region for AWS IAM even on the default credential chain", async () => {
+      const harness = renderIntoContainer();
+
+      await harness.render(
+        <InstanceFormProvider instance={instanceOfEngine(Engine.POSTGRES)}>
+          <CheckDataSourceProbe />
+        </InstanceFormProvider>
+      );
+
+      const probe = harness.container.firstElementChild as HTMLElement;
+      expect(probe.dataset.credentialNoRegion).toBe("false");
+      expect(probe.dataset.credentialWithRegion).toBe("true");
+      expect(probe.dataset.defaultChainNoRegion).toBe("false");
+
+      harness.unmount();
+    });
   });
 });

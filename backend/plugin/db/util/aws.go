@@ -45,8 +45,10 @@ func AssumeRoleIfNeeded(ctx context.Context, awsCfg *aws.Config, connectionCtx d
 			}
 		})
 
-	// Update config with assumed role credentials
-	awsCfg.Credentials = assumeRoleProvider
+	// Update config with assumed role credentials. The cache refreshes the
+	// temporary credentials before expiry instead of calling STS AssumeRole on
+	// every AWS API request.
+	awsCfg.Credentials = aws.NewCredentialsCache(assumeRoleProvider)
 
 	// Test credentials retrieval and provide context-specific error messages
 	_, err := awsCfg.Credentials.Retrieve(ctx)

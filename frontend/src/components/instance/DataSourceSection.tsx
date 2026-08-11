@@ -106,9 +106,12 @@ export function DataSourceSection({
     [setDataSourceEditState]
   );
 
-  // DynamoDB has a single admin data source: no read-only tabs or tips.
+  // DynamoDB normally has a single admin data source, so the read-only
+  // tabs/tips are hidden — unless a read-only data source already exists
+  // (creatable via the API), which must stay reachable.
   const showDataSourceTabs =
-    !isCreating && basicInfo.engine !== Engine.DYNAMODB;
+    !isCreating &&
+    (basicInfo.engine !== Engine.DYNAMODB || hasReadOnlyDataSource);
 
   // Show RO tips when not creating and no RO data source
   const showROTips = showDataSourceTabs && !hasReadOnlyDataSource;

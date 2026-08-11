@@ -276,6 +276,9 @@ export function DataSourceForm({
   // before the form exposed credentials still carry PASSWORD. Render those in
   // the AWS IAM mode and stamp the real authentication type only when a
   // credential field is edited, so opening an old instance stays pristine.
+  // (In SaaS mode the shared CredentialSourceForm instead forces
+  // specific-credential mode on open — the policy every IAM engine inherits
+  // there, since the default credential chain is the host's own identity.)
   const dynamoDBDataSource = useMemo(
     () => ({
       ...dataSource,
@@ -2182,7 +2185,7 @@ function AwsRegionField({
         value={region}
         className="w-full"
         disabled={!allowEdit}
-        placeholder="database region, for example, us-east-1"
+        placeholder={t("instance.database-region-placeholder")}
         onChange={(e) => onChange(e.target.value)}
       />
     </FormField>

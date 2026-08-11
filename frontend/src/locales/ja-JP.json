@@ -1030,6 +1030,7 @@
     },
     "create-gcp-credentials": "認証情報の作成方法については、を参照してください",
     "database-region": "データベース領域",
+    "database-region-placeholder": "データベースのリージョン（例: us-east-1）",
     "default-role": "デフォルトロール",
     "delete-active-confirmation": "インスタンス「{{name}}」はアクティブです。Bytebase はまずアーカイブしてから完全に削除します。この操作は元に戻せません。確認するにはインスタンス ID「{{id}}」を入力してください。",
     "delete-confirmation": "インスタンス「{{name}}」を完全に削除します。この操作は元に戻せません。確認するにはインスタンス ID「{{id}}」を入力してください。",
