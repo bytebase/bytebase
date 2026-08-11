@@ -18,27 +18,16 @@ import { type Environment, unknownEnvironment } from "@/types/v1/environment";
 import { appStoreUtilBridge } from "@/utils/app-store-bridge";
 import { hasWorkspacePermissionV2 } from "../iam";
 import { checkQuerierPermission } from "./iam";
-import { extractProjectResourceName } from "./project";
 
-export const databaseV1UrlWithSuffix = (db: Database, suffix: string) => {
-  return databaseV1UrlWithProject(db.project, db.name, suffix);
-};
-
-const databaseV1UrlWithProject = (
-  project: string,
-  database: string,
-  suffix = ""
-) => {
-  const projectId = extractProjectResourceName(project);
-  const { databaseName, instanceName } = extractDatabaseResourceName(database);
-  const parent = extractDatabaseParentResourceName(database);
-
-  return `/projects/${encodeURIComponent(projectId)}/${instanceNamePrefix}${encodeURIComponent(instanceName)}/${databaseNamePrefix}${encodeURIComponent(databaseName)}${suffix}?parent=${encodeURIComponent(parent)}`;
-};
-
+// Extracts the database resource parts while preserving the complete parent.
+// For example, "projects/p/instances/i/databases/d" has parent
+// "projects/p/instances/i", while "instances/i/databases/d" has parent
+// "instances/i".
 export const extractDatabaseResourceName = (
   resource: string
 ): {
+  // database parent preserving its full scope
+  parent: string;
   // instance full name
   instance: string;
   // database full name
@@ -47,28 +36,21 @@ export const extractDatabaseResourceName = (
   instanceName: string;
 } => {
   const pattern =
-    /(?:^|\/)instances\/(?<instanceName>[^/]+)\/databases\/(?<databaseName>[^/]+)(?:$|\/)/;
+    /(?:^|\/)(?<parent>(?:projects\/[^/]+\/)?instances\/(?<instanceName>[^/]+))\/databases\/(?<databaseName>[^/]+)(?:$|\/)/;
   const matches = resource.match(pattern);
 
   const {
+    parent = "",
     databaseName = String(UNKNOWN_ID),
     instanceName = String(UNKNOWN_ID),
   } = matches?.groups ?? {};
   return {
+    parent,
     instance: `${instanceNamePrefix}${instanceName}`,
     instanceName,
     database: `${instanceNamePrefix}${instanceName}/${databaseNamePrefix}${databaseName}`,
     databaseName,
   };
-};
-
-// Extracts the database parent while preserving its full scope.
-// For example, "projects/p/instances/i/databases/d" returns
-// "projects/p/instances/i".
-export const extractDatabaseParentResourceName = (resource: string): string => {
-  const marker = "/databases/";
-  const index = resource.indexOf(marker);
-  return index < 0 ? "" : resource.slice(0, index);
 };
 
 // isDatabaseV1Queryable checks if database allowed to query in SQL Editor.

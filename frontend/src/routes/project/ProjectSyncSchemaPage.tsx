@@ -70,8 +70,8 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { DiffSchemaRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
+  autoDatabaseChangelogRoute,
   autoDatabaseRoute,
-  databaseV1UrlWithSuffix,
   engineNameV1,
   extractChangelogUID,
   extractDatabaseResourceName,
@@ -1047,10 +1047,9 @@ function SourceSchemaInfo({
   const gotoChangelog = useCallback(() => {
     if (isValidChangelogName(changelogSourceSchema?.changelogName || "")) {
       window.open(
-        databaseV1UrlWithSuffix(
-          databaseFromChangelog,
-          `/changelogs/${changelogUID}`
-        )
+        router.resolve(
+          autoDatabaseChangelogRoute(databaseFromChangelog, changelogUID ?? "")
+        ).href
       );
     }
   }, [databaseFromChangelog, changelogUID, changelogSourceSchema]);
