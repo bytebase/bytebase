@@ -20,15 +20,20 @@ import { hasWorkspacePermissionV2 } from "../iam";
 import { checkQuerierPermission } from "./iam";
 import { extractProjectResourceName } from "./project";
 
-export const databaseV1Url = (db: Database) => {
-  return databaseV1UrlWithProject(db.project, db.name);
+export const databaseV1UrlWithSuffix = (db: Database, suffix: string) => {
+  return databaseV1UrlWithProject(db.project, db.name, suffix);
 };
 
-const databaseV1UrlWithProject = (project: string, database: string) => {
+const databaseV1UrlWithProject = (
+  project: string,
+  database: string,
+  suffix = ""
+) => {
   const projectId = extractProjectResourceName(project);
   const { databaseName, instanceName } = extractDatabaseResourceName(database);
+  const parent = extractDatabaseParentResourceName(database);
 
-  return `/projects/${encodeURIComponent(projectId)}/${instanceNamePrefix}${encodeURIComponent(instanceName)}/${databaseNamePrefix}${encodeURIComponent(databaseName)}`;
+  return `/projects/${encodeURIComponent(projectId)}/${instanceNamePrefix}${encodeURIComponent(instanceName)}/${databaseNamePrefix}${encodeURIComponent(databaseName)}${suffix}?parent=${encodeURIComponent(parent)}`;
 };
 
 export const extractDatabaseResourceName = (
@@ -55,6 +60,15 @@ export const extractDatabaseResourceName = (
     database: `${instanceNamePrefix}${instanceName}/${databaseNamePrefix}${databaseName}`,
     databaseName,
   };
+};
+
+// Extracts the database parent while preserving its full scope.
+// For example, "projects/p/instances/i/databases/d" returns
+// "projects/p/instances/i".
+export const extractDatabaseParentResourceName = (resource: string): string => {
+  const marker = "/databases/";
+  const index = resource.indexOf(marker);
+  return index < 0 ? "" : resource.slice(0, index);
 };
 
 // isDatabaseV1Queryable checks if database allowed to query in SQL Editor.

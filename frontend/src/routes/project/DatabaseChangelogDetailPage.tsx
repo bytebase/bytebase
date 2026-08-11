@@ -5,8 +5,6 @@ import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import {
-  PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
-  PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
 } from "@/app/router/handles";
@@ -29,6 +27,7 @@ import {
   TaskRunLogEntry_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  autoDatabaseRoute,
   bytesToString,
   extractDatabaseResourceName,
   formatAbsoluteDateTime,
@@ -43,6 +42,7 @@ export interface DatabaseChangelogDetailPageProps {
   instanceId: string;
   databaseName: string;
   changelogId: string;
+  routeQuery?: Record<string, string | undefined>;
 }
 
 function ChangelogStatusIndicator({ status }: { status: Changelog_Status }) {
@@ -129,8 +129,14 @@ export function DatabaseChangelogDetailPage({
   instanceId,
   databaseName,
   changelogId,
+  routeQuery,
 }: DatabaseChangelogDetailPageProps) {
   const { t } = useTranslation();
+  const parent = routeQuery?.parent ?? `instances/${instanceId}`;
+  const databaseRouteQuery = useMemo(
+    () => ({ ...routeQuery, parent }),
+    [parent, routeQuery]
+  );
   const getOrFetchChangelogByName = useAppStore(
     (state) => state.getOrFetchChangelogByName
   );
@@ -146,11 +152,10 @@ export function DatabaseChangelogDetailPage({
   >(undefined);
 
   const detail = useProjectDatabaseDetail({
+    parent,
     projectId,
     instanceId,
     databaseName,
-    routeName: PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
-    changelogId,
   });
   const changelogName = `${detail.databaseName}/changelogs/${changelogId}`;
 
@@ -343,6 +348,15 @@ export function DatabaseChangelogDetailPage({
     return null;
   }
 
+  const baseDatabaseRoute = autoDatabaseRoute(detail.database);
+  const databaseRoute = {
+    ...baseDatabaseRoute,
+    query: {
+      ...databaseRouteQuery,
+      ...baseDatabaseRoute.query,
+    },
+  };
+
   return (
     <div className="flex min-h-full flex-col gap-y-4 p-4">
       <nav aria-label="Breadcrumb" className="mb-4">
@@ -361,14 +375,7 @@ export function DatabaseChangelogDetailPage({
           <li aria-hidden="true">/</li>
           <li>
             <RouterLink
-              to={{
-                name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-                params: {
-                  projectId,
-                  instanceId,
-                  databaseName,
-                },
-              }}
+              to={databaseRoute}
               className="transition-colors hover:text-accent"
             >
               {databaseDisplayName}
@@ -378,12 +385,7 @@ export function DatabaseChangelogDetailPage({
           <li>
             <RouterLink
               to={{
-                name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-                params: {
-                  projectId,
-                  instanceId,
-                  databaseName,
-                },
+                ...databaseRoute,
                 hash: "#changelog",
               }}
               className="transition-colors hover:text-accent"

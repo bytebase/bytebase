@@ -623,11 +623,10 @@ describe("ProjectDatabaseDetailPage", () => {
     });
 
     expect(mocks.useProjectDatabaseDetail).toHaveBeenCalledWith({
+      parent: "instances/inst1",
       projectId: "proj1",
       instanceId: "inst1",
       databaseName: "db1",
-      hash: `#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`,
-      query: { foo: "bar", page: "2" },
     });
     expect(container.querySelector('[data-testid="tabs"]')).not.toBeNull();
     expect(
@@ -668,7 +667,7 @@ describe("ProjectDatabaseDetailPage", () => {
         databaseName: "db1",
       },
       hash: "#changelog",
-      query: { foo: "bar", page: "2" },
+      query: { foo: "bar", page: "2", parent: "instances/inst1" },
     });
     expect(
       container
@@ -793,7 +792,7 @@ describe("ProjectDatabaseDetailPage", () => {
         databaseName: "db1",
       },
       hash: `#${PROJECT_DATABASE_DETAIL_TAB_SETTING}`,
-      query: { foo: "bar" },
+      query: { foo: "bar", parent: "instances/inst1" },
     });
 
     unmount();
@@ -1197,7 +1196,7 @@ describe("ProjectDatabaseDetailPage", () => {
         databaseName: "db1",
       },
       hash: `#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`,
-      query: { foo: "bar", page: "2" },
+      query: { foo: "bar", page: "2", parent: "instances/inst1" },
     });
 
     unmount();

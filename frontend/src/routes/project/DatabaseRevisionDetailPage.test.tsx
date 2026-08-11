@@ -74,6 +74,21 @@ vi.mock("./database-detail/useProjectDatabaseDetail", () => ({
   useProjectDatabaseDetail: mocks.useProjectDatabaseDetail,
 }));
 
+vi.mock("@/utils", () => ({
+  autoDatabaseRoute: (database: { name: string; project: string }) => {
+    const parent = database.name.split("/databases/")[0];
+    return {
+      name: mocks.routeNames.databaseDetail,
+      params: {
+        projectId: database.project.split("/").at(-1),
+        instanceId: parent.split("/instances/").at(-1),
+        databaseName: database.name.split("/databases/").at(-1),
+      },
+      query: { parent },
+    };
+  },
+}));
+
 vi.mock("@/utils/v1/database", () => ({
   extractDatabaseResourceName: mocks.extractDatabaseResourceName,
 }));
@@ -180,10 +195,11 @@ describe("DatabaseRevisionDetailPage", () => {
   test("builds the revision name from the resolved database detail", async () => {
     mocks.useProjectDatabaseDetail.mockReturnValue({
       database: {
-        name: "instances/inst1/databases/db-from-hook",
+        name: "projects/proj1/instances/inst1/databases/db-from-hook",
         project: "projects/proj1",
       },
-      databaseName: "instances/inst1/databases/db-from-hook",
+      databaseName:
+        "projects/proj1/instances/inst1/databases/db-from-hook",
       loading: false,
       ready: true,
       allowAlterSchema: true,
@@ -195,6 +211,9 @@ describe("DatabaseRevisionDetailPage", () => {
         instanceId: "inst1",
         databaseName: "db-from-prop",
         revisionId: "7",
+        routeQuery: {
+          parent: "projects/proj1/instances/inst1",
+        },
       })
     );
 
@@ -206,19 +225,19 @@ describe("DatabaseRevisionDetailPage", () => {
     });
 
     expect(mocks.useProjectDatabaseDetail).toHaveBeenCalledWith({
+      parent: "projects/proj1/instances/inst1",
       projectId: "proj1",
       instanceId: "inst1",
       databaseName: "db-from-prop",
-      routeName: mocks.routeNames.databaseRevisionDetail,
-      revisionId: "7",
     });
     expect(mocks.RevisionDetailPanel).toHaveBeenCalled();
     expect(mocks.RevisionDetailPanel.mock.calls[0]?.[0]).toEqual({
-      revisionName: "instances/inst1/databases/db-from-hook/revisions/7",
+      revisionName:
+        "projects/proj1/instances/inst1/databases/db-from-hook/revisions/7",
     });
 
     expect(container.textContent).toContain(
-      "instances/inst1/databases/db-from-hook/revisions/7"
+      "projects/proj1/instances/inst1/databases/db-from-hook/revisions/7"
     );
 
     const clickBreadcrumb = async (label: string) => {
@@ -247,8 +266,9 @@ describe("DatabaseRevisionDetailPage", () => {
       params: {
         projectId: "proj1",
         instanceId: "inst1",
-        databaseName: "db-from-prop",
+        databaseName: "db-from-hook",
       },
+      query: { parent: "projects/proj1/instances/inst1" },
     });
 
     await clickBreadcrumb("database.revision.self");
@@ -257,9 +277,10 @@ describe("DatabaseRevisionDetailPage", () => {
       params: {
         projectId: "proj1",
         instanceId: "inst1",
-        databaseName: "db-from-prop",
+        databaseName: "db-from-hook",
       },
       hash: "#revision",
+      query: { parent: "projects/proj1/instances/inst1" },
     });
 
     const databaseBreadcrumb = Array.from(container.querySelectorAll("a")).find(

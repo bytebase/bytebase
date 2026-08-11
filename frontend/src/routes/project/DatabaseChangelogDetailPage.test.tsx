@@ -212,6 +212,18 @@ vi.mock("@/utils/v1/project", () => ({
 }));
 
 vi.mock("@/utils", () => ({
+  autoDatabaseRoute: (database: { name: string; project: string }) => {
+    const parent = database.name.split("/databases/")[0];
+    return {
+      name: mocks.projectRouteNames.databaseDetail,
+      params: {
+        projectId: database.project.split("/").at(-1),
+        instanceId: parent.split("/instances/").at(-1),
+        databaseName: database.name.split("/databases/").at(-1),
+      },
+      query: { parent },
+    };
+  },
   bytesToString: (size: number) => `${size} B`,
   formatAbsoluteDateTime: () => "formatted time",
   extractDatabaseResourceName: (name: string) => ({

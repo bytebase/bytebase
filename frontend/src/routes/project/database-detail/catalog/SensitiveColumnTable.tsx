@@ -199,6 +199,7 @@ export function SensitiveColumnTable({
           ) : (
             columnList.map((item) => {
               const key = itemKey(item);
+              const databaseRoute = autoDatabaseRoute(database);
               const isChecked = checkedKeySet.has(key);
               const semanticTypeDisabled =
                 !canEdit || !!item.disableSemanticType;
@@ -223,8 +224,9 @@ export function SensitiveColumnTable({
                     <RouterLink
                       className="normal-link"
                       to={{
-                        ...autoDatabaseRoute(database),
+                        ...databaseRoute,
                         query: {
+                          ...databaseRoute.query,
                           schema: item.schema,
                           table: item.table,
                         },

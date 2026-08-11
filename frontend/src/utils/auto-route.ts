@@ -5,7 +5,11 @@ import {
 } from "@/app/router/handles";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { extractDatabaseResourceName, extractProjectResourceName } from "./v1";
+import {
+  extractDatabaseParentResourceName,
+  extractDatabaseResourceName,
+  extractProjectResourceName,
+} from "./v1";
 
 export const autoDatabaseRoute = (database: Database) => {
   const name = PROJECT_V1_ROUTE_DATABASE_DETAIL;
@@ -19,6 +23,9 @@ export const autoDatabaseRoute = (database: Database) => {
       projectId,
       instanceId,
       databaseName,
+    },
+    query: {
+      parent: extractDatabaseParentResourceName(database.name),
     },
   };
 };

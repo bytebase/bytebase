@@ -1,42 +1,33 @@
 import { useEffect, useMemo, useState } from "react";
 import { router } from "@/app/router";
-import {
-  PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
-  PROJECT_V1_ROUTE_DATABASE_DETAIL,
-  PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
-} from "@/app/router/handles";
 import { useAppStore } from "@/stores/app";
 import { unknownDatabase } from "@/types/v1/database";
 import { isDefaultProject } from "@/types/v1/project";
-import { getInstanceResource, instanceV1HasAlterSchema } from "@/utils";
+import {
+  autoDatabaseRoute,
+  getInstanceResource,
+  instanceV1HasAlterSchema,
+} from "@/utils";
 import { extractProjectResourceName } from "@/utils/v1/project";
 
 export interface UseProjectDatabaseDetailOptions {
+  parent: string;
   projectId: string;
   instanceId: string;
   databaseName: string;
-  routeName?: string;
-  hash?: string;
-  query?: Record<string, string | undefined>;
-  changelogId?: string;
-  revisionId?: string;
 }
 
 export function useProjectDatabaseDetail({
+  parent,
   projectId,
   instanceId,
   databaseName,
-  routeName,
-  hash,
-  query,
-  changelogId,
-  revisionId,
 }: UseProjectDatabaseDetailOptions) {
   const getOrFetchDatabaseMetadata = useAppStore(
     (s) => s.getOrFetchDatabaseMetadata
   );
   const databasesByName = useAppStore((s) => s.databasesByName);
-  const fullDatabaseName = `instances/${instanceId}/databases/${databaseName}`;
+  const fullDatabaseName = `${parent}/databases/${databaseName}`;
   const database = useMemo(
     () => databasesByName[fullDatabaseName] ?? unknownDatabase(),
     [databasesByName, fullDatabaseName]
@@ -62,24 +53,7 @@ export function useProjectDatabaseDetail({
 
         const canonicalProjectId = extractProjectResourceName(db.project);
         if (canonicalProjectId !== projectId) {
-          const name =
-            routeName === PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL
-              ? PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL
-              : routeName === PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL
-                ? PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL
-                : PROJECT_V1_ROUTE_DATABASE_DETAIL;
-          void router.replace({
-            name,
-            params: {
-              projectId: canonicalProjectId,
-              instanceId,
-              databaseName,
-              ...(changelogId ? { changelogId } : {}),
-              ...(revisionId ? { revisionId } : {}),
-            },
-            hash,
-            query,
-          });
+          void router.replace(autoDatabaseRoute(db));
         }
       })
       .finally(() => {
@@ -91,16 +65,7 @@ export function useProjectDatabaseDetail({
     return () => {
       cancelled = true;
     };
-  }, [
-    changelogId,
-    databaseName,
-    getOrFetchDatabaseMetadata,
-    fullDatabaseName,
-    instanceId,
-    projectId,
-    revisionId,
-    routeName,
-  ]);
+  }, [fullDatabaseName, getOrFetchDatabaseMetadata, projectId]);
 
   const allowAlterSchema = useMemo(() => {
     return database

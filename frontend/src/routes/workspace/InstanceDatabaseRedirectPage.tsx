@@ -1,17 +1,14 @@
 import { useEffect } from "react";
 import { router } from "@/app/router";
-import {
-  INSTANCE_ROUTE_DETAIL,
-  PROJECT_V1_ROUTE_DATABASE_DETAIL,
-} from "@/app/router/handles";
+import { INSTANCE_ROUTE_DETAIL } from "@/app/router/handles";
 import {
   databaseNamePrefix,
-  getProjectName,
   instanceNamePrefix,
   isValidProjectName,
 } from "@/lib/resourceName";
 import { pushNotification } from "@/stores";
 import { getOrFetchDatabaseByName } from "@/stores/app/databaseAccess";
+import { autoDatabaseRoute } from "@/utils";
 
 export function InstanceDatabaseRedirectPage({
   instanceId,
@@ -32,14 +29,7 @@ export function InstanceDatabaseRedirectPage({
           return;
         }
         if (isValidProjectName(database.project)) {
-          void router.replace({
-            name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-            params: {
-              projectId: getProjectName(database.project),
-              instanceId,
-              databaseName,
-            },
-          });
+          void router.replace(autoDatabaseRoute(database));
           return;
         }
         pushNotification({

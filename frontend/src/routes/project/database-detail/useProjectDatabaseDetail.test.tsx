@@ -53,7 +53,9 @@ vi.mock("@/app/router", async (importOriginal) => ({
   router: { replace: mocks.replace },
 }));
 
-vi.mock("@/stores", () => ({}));
+vi.mock("@/stores", () => ({
+  environmentNamePrefix: "environments/",
+}));
 
 // Build the `databasesByName` cache the hook subscribes to from the mocked
 // `getDatabaseByName` return value, keyed by its `name`.
@@ -82,6 +84,18 @@ vi.mock("@/stores/app", () => {
 });
 
 vi.mock("@/utils", () => ({
+  autoDatabaseRoute: (database: { name: string; project: string }) => {
+    const parent = database.name.split("/databases/")[0];
+    return {
+      name: mocks.routeNames.databaseDetail,
+      params: {
+        projectId: database.project.split("/").at(-1),
+        instanceId: parent.split("/instances/").at(-1),
+        databaseName: database.name.split("/databases/").at(-1),
+      },
+      query: { parent },
+    };
+  },
   getInstanceResource: mocks.getInstanceResource,
   instanceV1HasAlterSchema: mocks.instanceV1HasAlterSchema,
 }));
@@ -186,6 +200,88 @@ afterEach(() => {
 });
 
 describe("useProjectDatabaseDetail", () => {
+  test("loads a project instance database by its nested resource name", async () => {
+    const database = {
+      name: "projects/proj1/instances/inst1/databases/db1",
+      project: "projects/proj1",
+    };
+    mocks.getDatabaseByName.mockReturnValue(database);
+    mocks.getOrFetchDatabaseByName.mockResolvedValue(database);
+    mocks.getOrFetchDatabaseMetadata.mockResolvedValue({});
+
+    let latest: ReturnType<typeof useProjectDatabaseDetail> | undefined;
+
+    const { render, unmount } = renderIntoContainer(
+      createElement(HookProbe, {
+        parent: "projects/proj1/instances/inst1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
+        onValue: (value) => {
+          latest = value;
+        },
+      })
+    );
+
+    act(() => {
+      render();
+    });
+    await waitFor(() => latest?.ready === true);
+
+    expect(mocks.getOrFetchDatabaseByName).toHaveBeenCalledWith(
+      "projects/proj1/instances/inst1/databases/db1"
+    );
+    expect(mocks.getOrFetchDatabaseMetadata).toHaveBeenCalledWith({
+      database: "projects/proj1/instances/inst1/databases/db1",
+      silent: true,
+    });
+    expect(latest?.databaseName).toBe(
+      "projects/proj1/instances/inst1/databases/db1"
+    );
+    expect(mocks.replace).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("loads the database from the explicit parent on a direct visit", async () => {
+    const database = {
+      name: "projects/proj1/instances/inst1/databases/db1",
+      project: "projects/proj1",
+    };
+    mocks.getDatabaseByName.mockReturnValue(undefined);
+    mocks.getOrFetchDatabaseByName.mockImplementation(async () => {
+      mocks.getDatabaseByName.mockReturnValue(database);
+      return database;
+    });
+    mocks.getOrFetchDatabaseMetadata.mockResolvedValue({});
+
+    let latest: ReturnType<typeof useProjectDatabaseDetail> | undefined;
+
+    const { render, unmount } = renderIntoContainer(
+      createElement(HookProbe, {
+        parent: "projects/proj1/instances/inst1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
+        onValue: (value) => {
+          latest = value;
+        },
+      })
+    );
+
+    act(() => {
+      render();
+    });
+    await waitFor(() => latest?.ready === true);
+
+    expect(mocks.getOrFetchDatabaseByName).toHaveBeenCalledOnce();
+    expect(mocks.getOrFetchDatabaseByName).toHaveBeenCalledWith(database.name);
+    expect(latest?.databaseName).toBe(database.name);
+    expect(mocks.replace).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
   test("loads the database and warms metadata", async () => {
     const database = {
       name: "instances/inst1/databases/db1",
@@ -199,6 +295,7 @@ describe("useProjectDatabaseDetail", () => {
 
     const { render, unmount } = renderIntoContainer(
       createElement(HookProbe, {
+        parent: "instances/inst1",
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
@@ -243,6 +340,7 @@ describe("useProjectDatabaseDetail", () => {
 
     const { render, unmount } = renderIntoContainer(
       createElement(HookProbe, {
+        parent: "instances/inst1",
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
@@ -265,22 +363,18 @@ describe("useProjectDatabaseDetail", () => {
 
   test("redirects to the canonical project route", async () => {
     const database = {
-      name: "instances/inst1/databases/db1",
+      name: "projects/proj2/instances/inst1/databases/db1",
       project: "projects/proj2",
     };
     mocks.getDatabaseByName.mockReturnValue(database);
     mocks.getOrFetchDatabaseByName.mockResolvedValue(database);
     mocks.getOrFetchDatabaseMetadata.mockResolvedValue({});
-
     const { render, unmount } = renderIntoContainer(
       createElement(HookProbe, {
+        parent: "projects/proj2/instances/inst1",
         projectId: "proj1",
         instanceId: "inst1",
         databaseName: "db1",
-        routeName: mocks.routeNames.databaseRevisionDetail,
-        revisionId: "123",
-        hash: "#revision",
-        query: { foo: "bar" },
         onValue: () => {},
       })
     );
@@ -291,80 +385,14 @@ describe("useProjectDatabaseDetail", () => {
     await waitFor(() => mocks.replace.mock.calls.length > 0);
 
     expect(mocks.replace).toHaveBeenCalledWith({
-      name: mocks.routeNames.databaseRevisionDetail,
+      name: mocks.routeNames.databaseDetail,
       params: {
         projectId: "proj2",
         instanceId: "inst1",
         databaseName: "db1",
-        revisionId: "123",
       },
-      hash: "#revision",
-      query: { foo: "bar" },
+      query: { parent: "projects/proj2/instances/inst1" },
     });
-
-    unmount();
-  });
-
-  test("does not refetch database detail when only hash or query changes", async () => {
-    const database = {
-      name: "instances/inst1/databases/db1",
-      project: "projects/proj1",
-    };
-    mocks.getDatabaseByName.mockReturnValue(database);
-    mocks.getOrFetchDatabaseByName.mockResolvedValue(database);
-    mocks.getOrFetchDatabaseMetadata.mockResolvedValue({});
-
-    let latest: ReturnType<typeof useProjectDatabaseDetail> | undefined;
-
-    const initialElement = createElement(HookProbe, {
-      projectId: "proj1",
-      instanceId: "inst1",
-      databaseName: "db1",
-      hash: "#overview",
-      query: { schema: "public" },
-      onValue: (value) => {
-        latest = value;
-      },
-    });
-    const { render, unmount } = renderIntoContainer(initialElement);
-
-    act(() => {
-      render();
-    });
-    await waitFor(() => mocks.getOrFetchDatabaseByName.mock.calls.length > 0);
-    await waitFor(() => mocks.getOrFetchDatabaseMetadata.mock.calls.length > 0);
-    await Promise.resolve();
-    await Promise.resolve();
-
-    const initialDatabaseFetchCount =
-      mocks.getOrFetchDatabaseByName.mock.calls.length;
-    const initialMetadataFetchCount =
-      mocks.getOrFetchDatabaseMetadata.mock.calls.length;
-
-    act(() => {
-      render(
-        createElement(HookProbe, {
-          projectId: "proj1",
-          instanceId: "inst1",
-          databaseName: "db1",
-          hash: "#revision",
-          query: { schema: "archive" },
-          onValue: (value) => {
-            latest = value;
-          },
-        })
-      );
-    });
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(mocks.getOrFetchDatabaseByName).toHaveBeenCalledTimes(
-      initialDatabaseFetchCount
-    );
-    expect(mocks.getOrFetchDatabaseMetadata).toHaveBeenCalledTimes(
-      initialMetadataFetchCount
-    );
-    expect(latest?.databaseName).toBe("instances/inst1/databases/db1");
 
     unmount();
   });
