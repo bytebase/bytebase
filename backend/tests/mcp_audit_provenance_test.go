@@ -82,10 +82,13 @@ func TestMCPAuditProvenance(t *testing.T) {
 		return out.Status
 	}
 
-	// Permitted audited call: the member updates their own title.
-	a.Equal(http.StatusOK, callAPI("UserService/UpdateUser", map[string]any{
-		"user":       map[string]any{"name": "users/" + memberEmail, "title": "agent driver (updated)"},
-		"updateMask": "title",
+	// Permitted audited call: creating a group needs bb.groups.create, which a
+	// workspace member does hold. (Self-updating the member's own title would
+	// read more naturally, but UpdateUser is FORBIDDEN to MCP sessions as a
+	// whole method — see backend/api/v1/mcp_forbidden.go.)
+	a.Equal(http.StatusOK, callAPI("GroupService/CreateGroup", map[string]any{
+		"group":      map[string]any{"title": "agent driver group"},
+		"groupEmail": "agent-driver-group@example.com",
 	}))
 
 	// Denied audited call: creating a user needs bb.users.create, which a
@@ -112,7 +115,7 @@ func TestMCPAuditProvenance(t *testing.T) {
 		return rows
 	}
 
-	permittedRows := searchMemberRows("/bytebase.v1.UserService/UpdateUser")
+	permittedRows := searchMemberRows("/bytebase.v1.GroupService/CreateGroup")
 	a.Len(permittedRows, 1, "the permitted MCP call must produce exactly one audit row")
 	permitted := permittedRows[0]
 	a.Nil(permitted.Status, "the permitted call's row keeps its success status")
