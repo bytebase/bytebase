@@ -1,5 +1,6 @@
 import type { ReactRoute } from "@/app/router";
 import { useAppStore } from "@/stores/app";
+import { isValidDatabaseName } from "@/types";
 import { Engine, IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 
@@ -56,10 +57,19 @@ export async function extractRouteContext(
   // Database context
   if (instanceId && databaseName) {
     try {
-      const db = useAppStore
+      let db = await useAppStore
         .getState()
-        .getDatabaseByName(`instances/${instanceId}/databases/${databaseName}`);
-      if (db?.name) {
+        .getOrFetchDatabaseByName(
+          `instances/${instanceId}/databases/${databaseName}`
+        );
+      if (!isValidDatabaseName(db.name) && projectId) {
+        db = await useAppStore
+          .getState()
+          .getOrFetchDatabaseByName(
+            `projects/${projectId}/instances/${instanceId}/databases/${databaseName}`
+          );
+      }
+      if (isValidDatabaseName(db.name)) {
         ctx.database = {
           name: db.name,
           engine: db.instanceResource
