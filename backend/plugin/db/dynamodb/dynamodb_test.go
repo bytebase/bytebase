@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -68,6 +69,16 @@ func setHermeticAWSEnv(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
 	t.Setenv("AWS_SESSION_TOKEN", "")
 	t.Setenv("AWS_ENDPOINT_URL_STS", "http://127.0.0.1:1")
+	// Single attempt: the SDK's default retryer would otherwise retry the
+	// refused connection with backoff, slowing the failure to several seconds.
+	t.Setenv("AWS_MAX_ATTEMPTS", "1")
+	// Shield the tests from ambient AWS configuration on the host: a set
+	// AWS_PROFILE or shared config file would otherwise leak into
+	// config.LoadDefaultConfig.
+	t.Setenv("AWS_PROFILE", "")
+	missing := filepath.Join(t.TempDir(), "nonexistent")
+	t.Setenv("AWS_CONFIG_FILE", missing)
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", missing)
 }
 
 func TestOpenAssumesRoleWhenRoleArnSet(t *testing.T) {
