@@ -272,6 +272,27 @@ export function DataSourceForm({
     }
   }, [basicInfo.engine, t]);
 
+  // DynamoDB always authenticates with AWS IAM, but data sources created
+  // before the form exposed credentials still carry PASSWORD. Render those in
+  // the AWS IAM mode and stamp the real authentication type only when a
+  // credential field is edited, so opening an old instance stays pristine.
+  const dynamoDBDataSource = useMemo(
+    () => ({
+      ...dataSource,
+      authenticationType: DataSource_AuthenticationType.AWS_RDS_IAM,
+    }),
+    [dataSource]
+  );
+  const updateDynamoDB = useCallback(
+    (updates: Partial<EditDataSource>) => {
+      update({
+        authenticationType: DataSource_AuthenticationType.AWS_RDS_IAM,
+        ...updates,
+      });
+    },
+    [update]
+  );
+
   const extraConnectionParamsList = useMemo(() => {
     const params = dataSource.extraConnectionParameters || {};
     return Object.entries(params).map(([key, value]) => ({ key, value }));
@@ -874,23 +895,12 @@ export function DataSourceForm({
 
               {/* AWS Region */}
               {isAwsIAM && (
-                <FormField
-                  className="sm:col-span-3 sm:col-start-1"
-                  title={
-                    <>
-                      {t("instance.database-region")}{" "}
-                      <span className="text-error">*</span>
-                    </>
-                  }
-                >
-                  <Input
-                    value={dataSource.region ?? ""}
-                    className="w-full"
-                    disabled={!allowEdit}
-                    placeholder="database region, for example, us-east-1"
-                    onChange={(e) => update({ region: e.target.value })}
-                  />
-                </FormField>
+                <AwsRegionField
+                  region={dataSource.region ?? ""}
+                  required
+                  allowEdit={allowEdit}
+                  onChange={(region) => update({ region })}
+                />
               )}
 
               {/* Password / External Secret */}
@@ -1673,6 +1683,24 @@ export function DataSourceForm({
             </>
           )}
 
+          {/* DynamoDB AWS IAM credentials */}
+          {basicInfo.engine === Engine.DYNAMODB && (
+            <>
+              <CredentialSourceForm
+                dataSource={dynamoDBDataSource}
+                engine={basicInfo.engine}
+                allowEdit={allowEdit}
+                onDataSourceChange={updateDynamoDB}
+              />
+              <AwsRegionField
+                region={dataSource.region ?? ""}
+                required={dataSource.iamExtension?.case === "awsCredential"}
+                allowEdit={allowEdit}
+                onChange={(region) => updateDynamoDB({ region })}
+              />
+            </>
+          )}
+
           {/* Oracle SID/Service Name */}
           {basicInfo.engine === Engine.ORACLE && (
             <OracleSIDServiceNameInput
@@ -2144,5 +2172,38 @@ function OracleSIDServiceNameInput({
         }}
       />
     </div>
+  );
+}
+
+function AwsRegionField({
+  region,
+  required,
+  allowEdit,
+  onChange,
+}: Readonly<{
+  region: string;
+  required: boolean;
+  allowEdit: boolean;
+  onChange: (region: string) => void;
+}>) {
+  const { t } = useTranslation();
+  return (
+    <FormField
+      className="sm:col-span-3 sm:col-start-1"
+      title={
+        <>
+          {t("instance.database-region")}
+          {required && <span className="text-error"> *</span>}
+        </>
+      }
+    >
+      <Input
+        value={region}
+        className="w-full"
+        disabled={!allowEdit}
+        placeholder="database region, for example, us-east-1"
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </FormField>
   );
 }

@@ -106,8 +106,12 @@ export function DataSourceSection({
     [setDataSourceEditState]
   );
 
+  // DynamoDB has a single admin data source: no read-only tabs or tips.
+  const showDataSourceTabs =
+    !isCreating && basicInfo.engine !== Engine.DYNAMODB;
+
   // Show RO tips when not creating and no RO data source
-  const showROTips = !isCreating && !hasReadOnlyDataSource;
+  const showROTips = showDataSourceTabs && !hasReadOnlyDataSource;
 
   return (
     <>
@@ -132,7 +136,7 @@ export function DataSourceSection({
 
       <div className="mt-2 gap-y-2 gap-x-4 border-none">
         {/* Data source tabs */}
-        {!isCreating && (
+        {showDataSourceTabs && (
           <div className="mb-4 flex items-center gap-x-2 border-b border-block-border">
             <button
               type="button"
