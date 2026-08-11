@@ -102,11 +102,12 @@ func workspaceHasMember(ctx context.Context, t *testing.T, ctl *controller, bear
 // membership.
 //
 // Since the FORBIDDEN gate landed, the refusal an MCP session actually meets
-// comes from the interceptor, ahead of the handler. The handler guard stays as
-// defense in depth — it also covers an external MCP token replayed against the
-// public chain, which the internal-chain interceptor never sees — and keeps its
-// own coverage in backend/api/v1/auth_service_test.go
-// (TestSwitchWorkspaceMCPRecognition, TestSwitchWorkspaceInternalRefusesMCPCaller).
+// comes from the interceptor, ahead of the handler — so this test no longer
+// discriminates on WHICH layer refused, only that the session is refused and
+// the membership survives. The handler guard keeps its own coverage in
+// backend/api/v1: TestLeaveAndDeleteWorkspaceRefuseMCPCaller pins that each
+// handler refuses before it touches the store, and
+// TestSwitchWorkspaceInternalRefusesMCPCaller pins the shared mint point.
 func TestMCPCannotLeaveWorkspace(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)

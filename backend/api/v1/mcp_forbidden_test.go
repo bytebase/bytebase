@@ -31,8 +31,31 @@ func TestInternalMCPForbiddenInterceptor(t *testing.T) {
 		return dispatched, err
 	}
 
-	for procedure, reason := range mcpForbiddenProcedures {
+	// Spelled out rather than ranged over: iterating mcpForbiddenProcedures
+	// would make the test agree with the map by construction, so dropping an
+	// entry would drop its own coverage with it. This list is the assertion.
+	forbidden := []string{
+		v1connect.AuthServiceLoginProcedure,
+		v1connect.AuthServiceSignupProcedure,
+		v1connect.AuthServiceExchangeTokenProcedure,
+		v1connect.AuthServiceRefreshProcedure,
+		v1connect.AuthServiceLogoutProcedure,
+		v1connect.AuthServiceRequestPasswordResetProcedure,
+		v1connect.AuthServiceResetPasswordProcedure,
+		v1connect.AuthServiceSendEmailLoginCodeProcedure,
+		v1connect.AuthServiceSwitchWorkspaceProcedure,
+		v1connect.UserServiceUpdateUserProcedure,
+		v1connect.WorkspaceServiceLeaveWorkspaceProcedure,
+		v1connect.WorkspaceServiceDeleteWorkspaceProcedure,
+	}
+	require.Len(t, mcpForbiddenProcedures, len(forbidden),
+		"a method added to or removed from the class must be an explicit decision, made here too")
+
+	for _, procedure := range forbidden {
 		t.Run(procedure, func(t *testing.T) {
+			reason, listed := mcpForbiddenProcedures[procedure]
+			require.True(t, listed, "%s must be in the FORBIDDEN class", procedure)
+
 			dispatched, err := invoke(procedure)
 			require.Error(t, err, "a FORBIDDEN method must never reach its handler")
 			require.False(t, dispatched, "the denial must happen before dispatch, so no handler side effect can land")
@@ -41,6 +64,16 @@ func TestInternalMCPForbiddenInterceptor(t *testing.T) {
 			require.Contains(t, err.Error(), reason, "the message must name why, so the agent can act on it")
 		})
 	}
+
+	// The reason has to describe what the method does, not merely be present:
+	// Logout destroys a session rather than issuing a credential, and a denial
+	// that says otherwise teaches the next reader something false.
+	require.Equal(t, reasonEndsSession, mcpForbiddenProcedures[v1connect.AuthServiceLogoutProcedure],
+		"Logout mints nothing — it deletes the refresh token and expires the cookies")
+	require.Equal(t, reasonMintsCredential, mcpForbiddenProcedures[v1connect.AuthServiceLoginProcedure])
+	require.Equal(t, reasonResetsCredential, mcpForbiddenProcedures[v1connect.AuthServiceResetPasswordProcedure])
+	require.Equal(t, reasonTakesOverAccount, mcpForbiddenProcedures[v1connect.UserServiceUpdateUserProcedure])
+	require.Equal(t, reasonEndsMembership, mcpForbiddenProcedures[v1connect.WorkspaceServiceDeleteWorkspaceProcedure])
 
 	t.Run("an unlisted method is dispatched untouched", func(t *testing.T) {
 		dispatched, err := invoke(v1connect.UserServiceGetUserProcedure)
