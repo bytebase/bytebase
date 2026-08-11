@@ -272,6 +272,12 @@ export function InstanceFormProvider({
         if (
           ds.authenticationType === DataSource_AuthenticationType.AWS_RDS_IAM
         ) {
+          // DynamoDB can run on the deployment's default credential chain,
+          // where the region may also come from the environment. A specific
+          // credential must pin its region.
+          if (basicInfo.engine === Engine.DYNAMODB) {
+            return ds.iamExtension?.case !== "awsCredential" || !!ds.region;
+          }
           return !!ds.region;
         }
         if (basicInfo.engine === Engine.ORACLE) {

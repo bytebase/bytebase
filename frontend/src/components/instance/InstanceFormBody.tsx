@@ -991,8 +991,18 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
           if (ds.type !== DataSourceType.ADMIN) return ds;
           const updated = { ...ds };
           switch (engine) {
-            case Engine.SNOWFLAKE:
+            case Engine.SNOWFLAKE: {
+              if (
+                updated.host === "127.0.0.1" ||
+                updated.host === "host.docker.internal"
+              ) {
+                updated.host = "";
+              }
+              break;
+            }
             case Engine.DYNAMODB: {
+              updated.authenticationType =
+                DataSource_AuthenticationType.AWS_RDS_IAM;
               if (
                 updated.host === "127.0.0.1" ||
                 updated.host === "host.docker.internal"
@@ -1777,13 +1787,10 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
           </div>
 
           {/* Credentials (auth method, username, password) */}
+          <DataSourceSection hideOptions onOpenInfoPanel={onOpenInfoPanel} />
+
           {basicInfo.engine !== Engine.DYNAMODB && (
             <>
-              <DataSourceSection
-                hideOptions
-                onOpenInfoPanel={onOpenInfoPanel}
-              />
-
               <div className="mt-6">
                 <SyncDatabases
                   isCreating={isCreating}
