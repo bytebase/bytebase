@@ -122,7 +122,7 @@ function getValueFromScopes(params: SearchParams, id: string): string {
 }
 
 function mapDatabase(db: Database) {
-  const { database: dbName } = extractDatabaseResourceName(db.name);
+  const { databaseName: dbName } = extractDatabaseResourceName(db.name);
   const inst = db.instanceResource;
   const envId = (db.effectiveEnvironment ?? db.environment ?? "")
     .split("/")

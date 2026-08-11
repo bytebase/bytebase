@@ -30,7 +30,7 @@ export const extractDatabaseResourceName = (
   parent: string;
   // instance full name
   instance: string;
-  // database full name
+  // database full name preserving its project parent
   database: string;
   databaseName: string;
   instanceName: string;
@@ -40,15 +40,18 @@ export const extractDatabaseResourceName = (
   const matches = resource.match(pattern);
 
   const {
-    parent = "",
+    matchedParent = "",
     databaseName = String(UNKNOWN_ID),
     instanceName = String(UNKNOWN_ID),
   } = matches?.groups ?? {};
+  const instance = `${instanceNamePrefix}${instanceName}`;
+  const parent = matchedParent ?? instance;
+  const database = `${parent}/${databaseNamePrefix}${databaseName}`;
   return {
     parent,
-    instance: `${instanceNamePrefix}${instanceName}`,
+    instance,
     instanceName,
-    database: `${instanceNamePrefix}${instanceName}/${databaseNamePrefix}${databaseName}`,
+    database,
     databaseName,
   };
 };

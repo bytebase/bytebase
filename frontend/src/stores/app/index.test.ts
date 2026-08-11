@@ -136,6 +136,8 @@ const mocks = vi.hoisted(() => ({
   listChangelogs: vi.fn(),
   getChangelog: vi.fn(),
   getDatabaseMetadata: vi.fn(),
+  getDatabaseCatalog: vi.fn(),
+  updateDatabaseCatalog: vi.fn(),
   getDatabaseGroup: vi.fn(),
   listDatabaseGroups: vi.fn(),
   getSheet: vi.fn(),
@@ -226,6 +228,10 @@ vi.mock("@/api", () => ({
     batchGetDatabases: mocks.batchGetDatabases,
     listDatabases: mocks.listDatabases,
     getDatabaseMetadata: mocks.getDatabaseMetadata,
+  },
+  databaseCatalogServiceClientConnect: {
+    getDatabaseCatalog: mocks.getDatabaseCatalog,
+    updateDatabaseCatalog: mocks.updateDatabaseCatalog,
   },
   databaseGroupServiceClientConnect: {
     getDatabaseGroup: mocks.getDatabaseGroup,
@@ -2348,6 +2354,99 @@ describe("useAppStore", () => {
     });
 
     expect(mocks.getDatabaseMetadata).toHaveBeenCalledTimes(2);
+  });
+
+  test("keeps project-instance metadata requests and caches isolated", async () => {
+    const { DatabaseMetadataSchema } = await import(
+      "@/types/proto-es/v1/database_service_pb"
+    );
+    const databaseA = "projects/a/instances/shared/databases/db";
+    const databaseB = "projects/b/instances/shared/databases/db";
+    mocks.getDatabaseMetadata.mockImplementation(async ({ name }) =>
+      createProto(DatabaseMetadataSchema, { name })
+    );
+    const store = createAppStore();
+
+    await Promise.all([
+      store.getState().getOrFetchDatabaseMetadata({ database: databaseA }),
+      store.getState().getOrFetchDatabaseMetadata({ database: databaseB }),
+    ]);
+
+    expect(
+      mocks.getDatabaseMetadata.mock.calls.map(([request]) => request.name)
+    ).toEqual([`${databaseA}/metadata`, `${databaseB}/metadata`]);
+    expect(store.getState().getCachedDatabaseMetadata(databaseA)?.name).toBe(
+      `${databaseA}/metadata`
+    );
+    expect(store.getState().getCachedDatabaseMetadata(databaseB)?.name).toBe(
+      `${databaseB}/metadata`
+    );
+
+    store.getState().removeDatabaseMetadataCache(databaseA);
+
+    expect(
+      store.getState().getCachedDatabaseMetadata(databaseA)
+    ).toBeUndefined();
+    expect(store.getState().getCachedDatabaseMetadata(databaseB)?.name).toBe(
+      `${databaseB}/metadata`
+    );
+  });
+
+  test("keeps project-instance catalog requests and caches isolated", async () => {
+    const { DatabaseCatalogSchema } = await import(
+      "@/types/proto-es/v1/database_catalog_service_pb"
+    );
+    const databaseA = "projects/a/instances/shared/databases/db";
+    const databaseB = "projects/b/instances/shared/databases/db";
+    mocks.getDatabaseCatalog.mockImplementation(async ({ name }) =>
+      createProto(DatabaseCatalogSchema, { name })
+    );
+    const store = createAppStore();
+
+    await Promise.all([
+      store.getState().getOrFetchDatabaseCatalog({ database: databaseA }),
+      store.getState().getOrFetchDatabaseCatalog({ database: databaseB }),
+    ]);
+
+    expect(
+      mocks.getDatabaseCatalog.mock.calls.map(([request]) => request.name)
+    ).toEqual([`${databaseA}/catalog`, `${databaseB}/catalog`]);
+    expect(store.getState().getDatabaseCatalog(databaseA).name).toBe(
+      `${databaseA}/catalog`
+    );
+    expect(store.getState().getDatabaseCatalog(databaseB).name).toBe(
+      `${databaseB}/catalog`
+    );
+  });
+
+  test("loads project-instance metadata when updating its catalog", async () => {
+    const { DatabaseCatalogSchema } = await import(
+      "@/types/proto-es/v1/database_catalog_service_pb"
+    );
+    const { DatabaseMetadataSchema } = await import(
+      "@/types/proto-es/v1/database_service_pb"
+    );
+    const database = "projects/a/instances/shared/databases/db";
+    const catalog = createProto(DatabaseCatalogSchema, {
+      name: `${database}/catalog`,
+    });
+    mocks.getDatabaseMetadata.mockResolvedValue(
+      createProto(DatabaseMetadataSchema, { name: `${database}/metadata` })
+    );
+    mocks.updateDatabaseCatalog.mockResolvedValue(catalog);
+    const store = createAppStore();
+
+    await store.getState().updateDatabaseCatalog(catalog);
+
+    expect(mocks.getDatabaseMetadata).toHaveBeenCalledWith(
+      expect.objectContaining({ name: `${database}/metadata` }),
+      expect.anything()
+    );
+    expect(mocks.updateDatabaseCatalog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        catalog: expect.objectContaining({ name: `${database}/catalog` }),
+      })
+    );
   });
 
   describe("getDBGroupByName / getOrFetchDBGroupByName cache semantics", () => {

@@ -274,7 +274,7 @@ export function ProjectMaskingExemptionPage({
         filter: keyword ? { query: keyword } : undefined,
       });
       return result.databases.map((db) => {
-        const { database: dbName } = extractDatabaseResourceName(db.name);
+        const { databaseName: dbName } = extractDatabaseResourceName(db.name);
         return {
           value: db.name,
           keywords: [dbName, db.name],
