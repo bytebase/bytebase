@@ -46,8 +46,8 @@ vi.mock("@/modules/sql-editor/store", () => ({
     {
       getState: () => ({
         setAsidePanelTab: mocks.setAsidePanelTab,
-        createWorksheet: vi.fn().mockResolvedValue(undefined),
-        maybeUpdateWorksheet: vi.fn().mockResolvedValue(undefined),
+        createSavedQuery: vi.fn().mockResolvedValue(undefined),
+        maybeUpdateSavedQuery: vi.fn().mockResolvedValue(undefined),
       }),
     }
   ),
@@ -81,7 +81,7 @@ vi.mock("@/types", async () => {
   };
 });
 
-// The SQL-editor tab/worksheet stores now transitively load the Zustand
+// The SQL-editor tab/saved query stores now transitively load the Zustand
 // app store (eagerly created). Stub it so the real `createAppStore()`
 // (which reads `@/types` exports this test doesn't mock) never runs.
 vi.mock("@/stores/app", () => {

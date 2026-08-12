@@ -55,12 +55,12 @@ type PendingClose = {
 /**
  * Replaces frontend/src/views/sql-editor/TabList/TabList.vue.
  * Horizontal tab bar at the top of the SQL editor. Drag-reorder via
- * @dnd-kit, overflow-x scroll, "+" button to add a new worksheet, and
+ * @dnd-kit, overflow-x scroll, "+" button to add a new saved query, and
  * right-click context menu delegated to TabContextMenu.
  */
 export function TabList() {
   const { t } = useTranslation();
-  const createWorksheet = useSQLEditorStore((s) => s.createWorksheet);
+  const createSavedQuery = useSQLEditorStore((s) => s.createSavedQuery);
 
   // Zustand's selector subscribes to in-place tab mutations because
   // `updateTab` reassigns / triggers an immer produce on `tabsById`,
@@ -142,7 +142,7 @@ export function TabList() {
   const removeTab = useCallback(
     async (tab: SQLEditorTab, focusWhenConfirm = false) => {
       const tabsState = getSQLEditorTabsState();
-      if (tab.mode === "WORKSHEET" && tab.status !== "CLEAN") {
+      if (tab.mode === "SAVED_QUERY" && tab.status !== "CLEAN") {
         if (focusWhenConfirm) {
           tabsState.setCurrentTabId(tab.id);
         }
@@ -160,7 +160,7 @@ export function TabList() {
     if (loading) return;
     setLoading(true);
     try {
-      await createWorksheet({});
+      await createSavedQuery({});
       requestAnimationFrame(() => {
         const el = scrollRef.current;
         if (el) el.scrollTo(el.scrollWidth, 0);
@@ -205,7 +205,7 @@ export function TabList() {
     getSQLEditorTabsState().setOpenTabListOrder(
       next.map((tab) => ({
         id: tab.id,
-        worksheet: tab.worksheet,
+        savedQuery: tab.savedQuery,
         mode: tab.mode,
         batchQueryContext: tab.batchQueryContext,
         treeState: tab.treeState,
@@ -321,7 +321,7 @@ export function TabList() {
       <AlertDialog
         open={pendingClose !== null}
         // Vue's confirm dialog used `closeOnEsc: false`, `maskClosable: false`,
-        // `closable: false` — the user MUST click Cancel or "Close sheet".
+        // `closable: false` — the user MUST click Cancel or "Close tab".
         // Cancel Base UI's close when the reason is Esc / outside-click so
         // the dialog stays open and forces an explicit choice.
         onOpenChange={(

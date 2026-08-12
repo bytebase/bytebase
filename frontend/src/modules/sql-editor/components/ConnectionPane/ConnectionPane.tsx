@@ -435,7 +435,7 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
         ) {
           setConnection({
             database: queryable,
-            mode: "WORKSHEET",
+            mode: "SAVED_QUERY",
             newTab: false,
             batchQueryContext: ctx,
           });

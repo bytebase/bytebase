@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import type { WorksheetFolderNode } from "@/modules/sql-editor/model/Sheet";
+import type { SavedQueryFolderNode } from "@/modules/sql-editor/model/Sheet";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -39,7 +39,7 @@ vi.mock("@/hooks/useClickOutside", () => ({
 
 type TreeDataNodeLike = {
   id: string;
-  data: WorksheetFolderNode;
+  data: SavedQueryFolderNode;
   children?: TreeDataNodeLike[];
 };
 
@@ -155,8 +155,8 @@ vi.mock("./TreeNodePrefix", () => ({
 
 const makeFolderNode = (
   key: string,
-  children: WorksheetFolderNode[] = []
-): WorksheetFolderNode => ({
+  children: SavedQueryFolderNode[] = []
+): SavedQueryFolderNode => ({
   key,
   label: key.split("/").slice(-1)[0],
   editable: true,
@@ -164,7 +164,7 @@ const makeFolderNode = (
   empty: children.length === 0,
 });
 
-const makeLoadMoreNode = (key: string): WorksheetFolderNode => ({
+const makeLoadMoreNode = (key: string): SavedQueryFolderNode => ({
   key,
   label: "Load more",
   editable: false,
@@ -183,7 +183,7 @@ const setupDefaultMocks = () => {
   ]);
 
   // The migrated `useSheetContextByView` returns plain values:
-  // `folderTree` is a WorksheetFolderNode (not a Vue ref) and
+  // `folderTree` is a SavedQueryFolderNode (not a Vue ref) and
   // `folderContext.rootPath` is a plain string.
   const viewContext = {
     folderTree: rootNode,

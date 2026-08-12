@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { tabListEvents } from "@/modules/sql-editor/model/TabList/events";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
-import { WorksheetSchema } from "@/types/proto-es/v1/worksheet_service_pb";
+import { SavedQuerySchema } from "@/types/proto-es/v1/saved_query_service_pb";
 import type { SQLEditorTab } from "@/types/sqlEditor/tab";
 
 type Props = {
@@ -53,10 +53,10 @@ export function Label({ tab }: Props) {
   const confirmEdit = () => {
     const title = draft.trim();
     getSQLEditorTabsState().updateTab(tab.id, { title });
-    if (tab.worksheet) {
-      void useAppStore.getState().patchWorksheet(
-        create(WorksheetSchema, {
-          name: tab.worksheet,
+    if (tab.savedQuery) {
+      void useAppStore.getState().patchSavedQuery(
+        create(SavedQuerySchema, {
+          name: tab.savedQuery,
           title,
         }),
         ["title"]
@@ -78,7 +78,7 @@ export function Label({ tab }: Props) {
   }, [editing]);
 
   // Keep draft in sync when the tab title updates from elsewhere (auto-save,
-  // worksheet fetch) while not editing.
+  // saved query fetch) while not editing.
   useEffect(() => {
     if (!editing) {
       setDraft(tab.title);

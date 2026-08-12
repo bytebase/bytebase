@@ -1,15 +1,15 @@
 import { create } from "@bufbuild/protobuf";
 import { isUndefined, omit, omitBy } from "lodash-es";
-import { extractWorksheetConnection } from "@/lib/sqlEditorConnection";
+import { extractSavedQueryConnection } from "@/lib/sqlEditorConnection";
 import { useAppStore } from "@/stores/app";
 import { getCurrentUserV1 } from "@/stores/modules/migration-helpers";
 import { extractUserEmail } from "@/stores/modules/v1";
 import type { EditorPanelViewState, SQLEditorTab } from "@/types";
 import { DEFAULT_SQL_EDITOR_TAB_MODE } from "@/types";
 import {
-  Worksheet_Visibility,
-  WorksheetSchema,
-} from "@/types/proto-es/v1/worksheet_service_pb";
+  SavedQuery_Visibility,
+  SavedQuerySchema,
+} from "@/types/proto-es/v1/saved_query_service_pb";
 import { defaultSQLEditorTab, WebStorageHelper } from "@/utils";
 import {
   deleteExtendedTab,
@@ -53,10 +53,12 @@ const writeLegacyStorage = <T>(key: string, value: T): void => {
   localStorage.setItem(key, serializeLegacy(value));
 };
 
+// Legacy tabs were stored before the worksheet → saved query rename, so
+// the persisted shape keeps the historical `worksheet` field name.
 type PersistentTab = Pick<
   SQLEditorTab,
-  "id" | "title" | "connection" | "mode" | "worksheet" | "status"
->;
+  "id" | "title" | "connection" | "mode" | "status"
+> & { worksheet?: string };
 
 type LegacyStoredTab = PersistentTab & { statement?: string };
 
@@ -90,7 +92,12 @@ export const migrateLegacyCache = async () => {
       ...defaultSQLEditorTab(),
       // Ignore extended fields stored in localStorage since they are migrated
       // to extendedTabStore.
-      ...omit(stored, EXTENDED_TAB_FIELDS),
+      ...omit(stored, [...EXTENDED_TAB_FIELDS, "worksheet"]),
+      // Legacy tabs stored the link under `worksheet` in the old name format.
+      savedQuery: (stored.worksheet ?? "").replace(
+        "/worksheets/",
+        "/savedQueries/"
+      ),
       id,
     };
     if (tab.mode !== DEFAULT_SQL_EDITOR_TAB_MODE) {
@@ -160,16 +167,16 @@ export const migrateDraftsFromCache = async (project: string) => {
     if ((!viewState || viewState.view === "CODE") && tab.statement) {
       // only store the draft with content
       try {
-        const connection = await extractWorksheetConnection({
+        const connection = await extractSavedQueryConnection({
           database: tab.connection.database,
         });
-        await useAppStore.getState().createWorksheet(
-          create(WorksheetSchema, {
+        await useAppStore.getState().createSavedQuery(
+          create(SavedQuerySchema, {
             title: tab.title,
             database: connection.database,
             content: new TextEncoder().encode(tab.statement),
             project,
-            visibility: Worksheet_Visibility.PRIVATE,
+            visibility: SavedQuery_Visibility.PRIVATE,
           })
         );
       } catch {}

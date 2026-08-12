@@ -13,12 +13,12 @@ const mocks = vi.hoisted(() => ({
     | { externalUrl: string }
     | undefined,
   useCurrentUser: vi.fn(),
-  patchWorksheet: vi.fn().mockResolvedValue({}),
+  patchSavedQuery: vi.fn().mockResolvedValue({}),
   pushNotification: vi.fn(),
   extractProjectResourceName: vi.fn(
     (name: string) => name.split("/")[1] ?? name
   ),
-  extractWorksheetID: vi.fn((name: string) => name.split("/")[3] ?? name),
+  extractSavedQueryID: vi.fn((name: string) => name.split("/")[3] ?? name),
   routerResolve: vi.fn(() => ({ href: "/sql-editor/projects/proj1/sheets/1" })),
 }));
 
@@ -36,7 +36,7 @@ vi.mock("@/stores/app", () => {
   // from the Pinia helper to the app-store notification slice.
   const state = () => ({
     serverInfo: mocks.serverInfo,
-    patchWorksheet: mocks.patchWorksheet,
+    patchSavedQuery: mocks.patchSavedQuery,
     notify: mocks.pushNotification,
   });
   return {
@@ -49,7 +49,7 @@ vi.mock("@/stores/app", () => {
 
 vi.mock("@/utils", () => ({
   extractProjectResourceName: mocks.extractProjectResourceName,
-  extractWorksheetID: mocks.extractWorksheetID,
+  extractSavedQueryID: mocks.extractSavedQueryID,
 }));
 
 vi.mock("@/app/router", async (importOriginal) => ({
@@ -86,8 +86,8 @@ vi.mock("@/components/ui/tooltip", () => ({
 
 let SharePopoverBody: typeof import("./SharePopoverBody").SharePopoverBody;
 
-const mockWorksheet = {
-  name: "projects/proj1/worksheets/1",
+const mockSavedQuery = {
+  name: "projects/proj1/savedQueries/1",
   project: "projects/proj1",
   creator: "users/test@example.com",
   visibility: 3 /* PRIVATE */,
@@ -124,7 +124,7 @@ beforeEach(async () => {
     email: "test@example.com",
     name: "users/test@example.com",
   });
-  mocks.patchWorksheet.mockResolvedValue({});
+  mocks.patchSavedQuery.mockResolvedValue({});
 
   // Mock clipboard
   Object.defineProperty(navigator, "clipboard", {
@@ -143,7 +143,7 @@ afterEach(() => {
 describe("SharePopoverBody", () => {
   test("renders Share title and link input", () => {
     const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody worksheet={mockWorksheet as never} />
+      <SharePopoverBody savedQuery={mockSavedQuery as never} />
     );
     render();
     expect(container.textContent).toContain("common.share");
@@ -154,7 +154,7 @@ describe("SharePopoverBody", () => {
 
   test("shows 3 visibility options when selector is opened", () => {
     const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody worksheet={mockWorksheet as never} />
+      <SharePopoverBody savedQuery={mockSavedQuery as never} />
     );
     render();
     // The popover-content should contain 3 options
@@ -176,7 +176,7 @@ describe("SharePopoverBody", () => {
     });
 
     const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody worksheet={mockWorksheet as never} />
+      <SharePopoverBody savedQuery={mockSavedQuery as never} />
     );
     render();
     // Trigger should have disabled styling
@@ -185,11 +185,11 @@ describe("SharePopoverBody", () => {
     unmount();
   });
 
-  test("handleChangeAccess calls patchWorksheet and pushNotification but does NOT close the outer popover", async () => {
-    const patchWorksheet = mocks.patchWorksheet;
+  test("handleChangeAccess calls patchSavedQuery and pushNotification but does NOT close the outer popover", async () => {
+    const patchSavedQuery = mocks.patchSavedQuery;
 
     const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody worksheet={mockWorksheet as never} />
+      <SharePopoverBody savedQuery={mockSavedQuery as never} />
     );
     render();
 
@@ -204,7 +204,7 @@ describe("SharePopoverBody", () => {
       (optionRows?.[1] as HTMLElement)?.click();
     });
 
-    expect(patchWorksheet).toHaveBeenCalledTimes(1);
+    expect(patchSavedQuery).toHaveBeenCalledTimes(1);
     expect(mocks.pushNotification).toHaveBeenCalledTimes(1);
     // The SharePopoverBody no longer signals "close me" on access
     // change — the outer share popover stays open so the user can copy
@@ -215,8 +215,8 @@ describe("SharePopoverBody", () => {
   test("copy button writes to clipboard and pushes notification", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <SharePopoverBody
-        worksheet={
-          { ...mockWorksheet, visibility: 1 /* PROJECT_READ */ } as never
+        savedQuery={
+          { ...mockSavedQuery, visibility: 1 /* PROJECT_READ */ } as never
         }
       />
     );
@@ -236,12 +236,12 @@ describe("SharePopoverBody", () => {
     unmount();
   });
 
-  test("copy button disabled when there is no shareable worksheet link", () => {
-    // No worksheet (an unsaved draft) → no link → copy disabled. A saved
-    // worksheet from the tree always has a link, so copy is enabled regardless
-    // of the current tab's status (covered by the private-worksheet test below).
+  test("copy button disabled when there is no shareable saved query link", () => {
+    // No saved query (an unsaved draft) → no link → copy disabled. A saved
+    // saved query from the tree always has a link, so copy is enabled regardless
+    // of the current tab's status (covered by the private-saved-query test below).
     const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody worksheet={undefined as never} />
+      <SharePopoverBody savedQuery={undefined as never} />
     );
     render();
 
@@ -253,11 +253,11 @@ describe("SharePopoverBody", () => {
     unmount();
   });
 
-  test("copy button enabled for a private worksheet (share status ignored)", () => {
-    // mockWorksheet is PRIVATE; the copy button stays enabled regardless of
+  test("copy button enabled for a private saved query (share status ignored)", () => {
+    // mockSavedQuery is PRIVATE; the copy button stays enabled regardless of
     // share status, gated only by the tab's saved state.
     const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody worksheet={mockWorksheet as never} />
+      <SharePopoverBody savedQuery={mockSavedQuery as never} />
     );
     render();
 

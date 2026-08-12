@@ -14,7 +14,7 @@ export const idpNamePrefix = "idps/";
 export const policyNamePrefix = "policies/";
 export const settingNamePrefix = "settings/";
 export const sheetNamePrefix = "sheets/";
-export const worksheetNamePrefix = "worksheets/";
+export const savedQueryNamePrefix = "savedQueries/";
 export const databaseGroupNamePrefix = "databaseGroups/";
 export const logNamePrefix = "logs/";
 export const issueNamePrefix = "issues/";
@@ -163,10 +163,10 @@ export const getProjectIdPlanUidStageUidTaskUidFromRolloutName = (
   return [projectId, planId, suffixParts[2], suffixParts[4]];
 };
 
-export const getWorksheetId = (name: string): string => {
+export const getSavedQueryId = (name: string): string => {
   const tokens = getNameParentTokens(name, [
     projectNamePrefix,
-    worksheetNamePrefix,
+    savedQueryNamePrefix,
   ]);
   return tokens[1] || "";
 };

@@ -22,10 +22,10 @@ const mocks = vi.hoisted(() => ({
   resultRowsLimit: 500,
   updateCurrentTab: vi.fn(),
   useUIStateStore: vi.fn(),
-  getWorksheetByName: vi.fn<(name: string) => unknown>(),
-  useWorksheetAndTab: vi.fn(),
+  getSavedQueryByName: vi.fn<(name: string) => unknown>(),
+  useSavedQueryAndTab: vi.fn(),
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
-  isWorksheetWritableV1: vi.fn(() => true),
+  isSavedQueryWritableV1: vi.fn(() => true),
   keyboardShortcutStr: vi.fn((s: string) => s),
   emit: vi.fn(),
 }));
@@ -41,7 +41,7 @@ vi.mock("@/stores", () => ({
 vi.mock("@/stores/app", () => ({
   useAppStore: {
     getState: () => ({
-      getWorksheetByName: mocks.getWorksheetByName,
+      getSavedQueryByName: mocks.getSavedQueryByName,
       // `EditorAction.handleRunQuery` records the data-query intro flag via
       // the migrated preferences slice. Tests don't assert against this, so a
       // bare noop keeps the call surface satisfied.
@@ -50,8 +50,8 @@ vi.mock("@/stores/app", () => ({
   },
 }));
 
-vi.mock("@/hooks/useWorksheetAndTab", () => ({
-  useWorksheetAndTab: mocks.useWorksheetAndTab,
+vi.mock("@/hooks/useSavedQueryAndTab", () => ({
+  useSavedQueryAndTab: mocks.useSavedQueryAndTab,
 }));
 
 vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
@@ -72,7 +72,7 @@ vi.mock("@/modules/sql-editor/store/editor", () => ({
 }));
 
 vi.mock("@/utils", () => ({
-  isWorksheetWritableV1: mocks.isWorksheetWritableV1,
+  isSavedQueryWritableV1: mocks.isSavedQueryWritableV1,
   keyboardShortcutStr: mocks.keyboardShortcutStr,
   isDev: () => true,
 }));
@@ -172,22 +172,22 @@ const renderIntoContainer = (element: ReactElement) => {
 };
 
 type SetupOptions = {
-  mode?: "WORKSHEET" | "ADMIN";
+  mode?: "SAVED_QUERY" | "ADMIN";
   isDisconnected?: boolean;
   statement?: string;
   status?: "CLEAN" | "DIRTY" | "SAVING";
-  worksheet?: string;
+  savedQuery?: string;
   engine?: Engine;
   table?: string;
 };
 
 const setup = (options: SetupOptions = {}) => {
   const {
-    mode = "WORKSHEET",
+    mode = "SAVED_QUERY",
     isDisconnected = false,
     statement = "SELECT 1",
     status = "DIRTY",
-    worksheet,
+    savedQuery,
     engine = Engine.POSTGRES,
     table,
   } = options;
@@ -198,7 +198,7 @@ const setup = (options: SetupOptions = {}) => {
     statement,
     selectedStatement: "",
     status,
-    worksheet,
+    savedQuery,
     connection: { database: "databases/db1", table },
     editorState: { selection: null },
   };
@@ -215,12 +215,12 @@ const setup = (options: SetupOptions = {}) => {
   const updateCurrentTab = mocks.updateCurrentTab;
 
   mocks.useUIStateStore.mockReturnValue({ saveIntroStateByKey });
-  mocks.getWorksheetByName.mockImplementation(() => ({
-    name: worksheet ?? "",
+  mocks.getSavedQueryByName.mockImplementation(() => ({
+    name: savedQuery ?? "",
     database: "databases/db1",
   }));
-  mocks.useWorksheetAndTab.mockReturnValue({
-    currentSheet: worksheet ? { name: worksheet, title: "sheet" } : undefined,
+  mocks.useSavedQueryAndTab.mockReturnValue({
+    currentSheet: savedQuery ? { name: savedQuery, title: "sheet" } : undefined,
     isCreator: false,
     isReadOnly: false,
   });
@@ -237,7 +237,7 @@ beforeEach(async () => {
   mocks.useTranslation.mockReturnValue({
     t: (key: string, fallback?: string) => fallback ?? key,
   });
-  mocks.isWorksheetWritableV1.mockReturnValue(true);
+  mocks.isSavedQueryWritableV1.mockReturnValue(true);
   ({ EditorAction } = await import("./EditorAction"));
 });
 
@@ -345,7 +345,7 @@ describe("EditorAction", () => {
     act(() => {
       exitBtn?.click();
     });
-    expect(updateCurrentTab).toHaveBeenCalledWith({ mode: "WORKSHEET" });
+    expect(updateCurrentTab).toHaveBeenCalledWith({ mode: "SAVED_QUERY" });
 
     unmount();
   });

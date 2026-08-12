@@ -3,7 +3,7 @@
 // Covers the admin-mode toggle (the wrench button) and the dark-theme
 // terminal it opens: visibility/disabled state of the wrench, entering
 // admin mode, executing a query in the terminal, exiting back to the
-// worksheet, and the result panel's theme harmony (BYT-9496 lock).
+// saved query, and the result panel's theme harmony (BYT-9496 lock).
 
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 import { loadTestEnv, type TestEnv } from "../framework/env";
@@ -81,7 +81,7 @@ test.describe("Vertical display preserves the admin-mode dark theme", () => {
 
     // The admin terminal renders an editable CompactSQLEditor at the
     // bottom of the query stack. There may be other Monaco instances
-    // in the page (the underlying worksheet's editor stays mounted),
+    // in the page (the underlying saved query's editor stays mounted),
     // so we anchor by `.last()` to target the prompt.
     //
     // CompactSQLEditor.tsx:220 wires plain Enter to RunQuery via a
@@ -246,9 +246,9 @@ test.describe("Vertical display preserves the admin-mode dark theme", () => {
   });
 });
 
-test.describe("Wrench button is visible for admin users on a connected worksheet", () => {
+test.describe("Wrench button is visible for admin users on a connected saved query", () => {
   // AdminModeButton renders only when allowAdmin && tab.mode ===
-  // "WORKSHEET" (AdminModeButton.tsx). For the demo admin user with
+  // "SAVED_QUERY" (AdminModeButton.tsx). For the demo admin user with
   // a real DB connection, the button must be present and enabled.
 
   test("admin user on a connected DB sees an enabled wrench", async () => {
@@ -267,7 +267,7 @@ test.describe("Wrench is not clickable when no database is connected", () => {
   // The user contract: you can't enter admin mode without picking a
   // DB first. AdminModeButton.tsx implements this two ways depending
   // on context — it returns `null` when there's no current tab, and
-  // it renders `disabled` when the tab is in WORKSHEET mode but
+  // it renders `disabled` when the tab is in SAVED_QUERY mode but
   // `tabStore.isDisconnected`. Either is a valid "not clickable"
   // state; both satisfy the contract.
 
@@ -291,7 +291,7 @@ test.describe("Wrench is not clickable when no database is connected", () => {
 });
 
 test.describe("Clicking the wrench enters the admin terminal", () => {
-  // After the click, the editor swaps from WORKSHEET to ADMIN mode.
+  // After the click, the editor swaps from SAVED_QUERY to ADMIN mode.
   // TerminalPanel mounts in place of the standard editor — the "SQL>"
   // prompt and the "Exit admin mode" toolbar button are the visible
   // signals, and the shell mounts with its dark surface (asserted via
@@ -351,10 +351,10 @@ test.describe("Running SELECT 42 in the admin terminal returns a 1-row result", 
   });
 });
 
-test.describe("Exit admin mode returns to the worksheet view", () => {
+test.describe("Exit admin mode returns to the saved query view", () => {
   // The "Exit admin mode" button in the admin toolbar swaps the tab
-  // back to WORKSHEET. The dark terminal goes away; the standard
-  // worksheet editor (`role="code"` Monaco) is the visible surface
+  // back to SAVED_QUERY. The dark terminal goes away; the standard
+  // saved query editor (`role="code"` Monaco) is the visible surface
   // again.
 
   test("clicking Exit admin mode dismounts the terminal", async () => {
@@ -380,7 +380,7 @@ test.describe("Exit admin mode returns to the worksheet view", () => {
     // Terminal unmounts: the admin-only "Exit admin mode" button is gone (the
     // canonical "admin mode inactive" signal — the dark shell went with it).
     await expect(exitBtn).toHaveCount(0);
-    // Wrench is back (worksheet mode) and enabled (still connected).
+    // Wrench is back (saved query mode) and enabled (still connected).
     await expect(sqlEditor.adminModeButton).toBeVisible({ timeout: 5000 });
     await expect(sqlEditor.adminModeButton).toBeEnabled();
   });
@@ -388,7 +388,7 @@ test.describe("Exit admin mode returns to the worksheet view", () => {
 
 // Helpers shared by the arrow-key history tests below. Each one drives
 // the LAST role="code" Monaco (the editable prompt — older terminal rows
-// are read-only) the same way `setEditorContent` would on a worksheet,
+// are read-only) the same way `setEditorContent` would on a saved query,
 // but explicitly targets `.last()`.
 async function runInAdminTerminal(statement: string): Promise<void> {
   // The admin terminal's editable prompt is the LAST role="code" Monaco
@@ -453,7 +453,7 @@ test.describe("Up/down arrow keys scroll the admin terminal's query history", ()
 
   test.afterEach(async () => {
     // Leave admin mode so the next test's beforeAll-shared page returns
-    // to a worksheet starting state. (Page is reused across tests in
+    // to a saved query starting state. (Page is reused across tests in
     // this file via the file-level `sharedContext` + `page`.)
     const exitBtn = page.getByRole("button", {
       name: "Exit admin mode",

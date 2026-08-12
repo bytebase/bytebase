@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   },
   // New zustand store.
   state: {
-    asidePanelTab: "WORKSHEET" as string,
+    asidePanelTab: "SAVED_QUERY" as string,
   },
   setAsidePanelTab: vi.fn(),
   routerResolve: vi.fn(() => ({ href: "/project/test-project" })),
@@ -88,7 +88,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   mocks.project = "projects/test";
   mocks.projectData = { allowJustInTimeAccess: false };
-  mocks.state.asidePanelTab = "WORKSHEET";
+  mocks.state.asidePanelTab = "SAVED_QUERY";
   mocks.routerResolve.mockReturnValue({ href: "/workspace/home" });
   ({ GutterBar } = await import("./GutterBar"));
 });
@@ -131,7 +131,7 @@ describe("GutterBar", () => {
     const { render, unmount } = renderIntoContainer(<GutterBar />);
     render();
 
-    expect(mocks.setAsidePanelTab).toHaveBeenCalledWith("WORKSHEET");
+    expect(mocks.setAsidePanelTab).toHaveBeenCalledWith("SAVED_QUERY");
     unmount();
   });
 

@@ -39,39 +39,39 @@ func TestBOT36SQLPrepareRelatedMessageRequiresCanonicalActiveOwner(t *testing.T)
 	require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 }
 
-func TestBOT36WorksheetDatabasesUseCanonicalOwningProjectNames(t *testing.T) {
+func TestBOT36SavedQueryDatabasesUseCanonicalOwningProjectNames(t *testing.T) {
 	ctx, stores, projectID, instanceID, databaseName := setupBOT36ProjectDatabase(t)
-	service := NewWorksheetService(stores, nil)
+	service := NewSavedQueryService(stores, nil)
 
-	_, err := service.getWorksheetDatabase(ctx, projectID, common.FormatDatabase(instanceID, databaseName))
+	_, err := service.getSavedQueryDatabase(ctx, projectID, common.FormatDatabase(instanceID, databaseName))
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 
-	_, err = service.getWorksheetDatabase(ctx, projectID, common.FormatProjectDatabase("other-project", instanceID, databaseName))
+	_, err = service.getSavedQueryDatabase(ctx, projectID, common.FormatProjectDatabase("other-project", instanceID, databaseName))
 	require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 
-	database, err := service.getWorksheetDatabase(ctx, projectID, common.FormatProjectDatabase(projectID, instanceID, databaseName))
+	database, err := service.getSavedQueryDatabase(ctx, projectID, common.FormatProjectDatabase(projectID, instanceID, databaseName))
 	require.NoError(t, err)
 	require.Equal(t, databaseName, database.DatabaseName)
 
-	worksheet, err := service.convertWorksheetToAPI(ctx, &store.WorkSheetMessage{
+	savedQuery, err := service.convertToAPISavedQuery(ctx, &store.WorkSheetMessage{
 		ProjectID:    projectID,
-		ResourceID:   "worksheet-a",
+		ResourceID:   "saved-query-a",
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
 	})
 	require.NoError(t, err)
-	require.Equal(t, common.FormatProjectDatabase(projectID, instanceID, databaseName), worksheet.Database)
+	require.Equal(t, common.FormatProjectDatabase(projectID, instanceID, databaseName), savedQuery.Database)
 
-	workspaceDatabase, err := service.getWorksheetDatabase(ctx, projectID, common.FormatDatabase("workspace-instance", "shared"))
+	workspaceDatabase, err := service.getSavedQueryDatabase(ctx, projectID, common.FormatDatabase("workspace-instance", "shared"))
 	require.NoError(t, err)
-	workspaceWorksheet, err := service.convertWorksheetToAPI(ctx, &store.WorkSheetMessage{
+	workspaceSavedQuery, err := service.convertToAPISavedQuery(ctx, &store.WorkSheetMessage{
 		ProjectID:    projectID,
-		ResourceID:   "worksheet-b",
+		ResourceID:   "saved-query-b",
 		InstanceID:   &workspaceDatabase.InstanceID,
 		DatabaseName: &workspaceDatabase.DatabaseName,
 	})
 	require.NoError(t, err)
-	require.Equal(t, common.FormatDatabase("workspace-instance", "shared"), workspaceWorksheet.Database)
+	require.Equal(t, common.FormatDatabase("workspace-instance", "shared"), workspaceSavedQuery.Database)
 }
 
 func TestBOT36AccessGrantTargetsRequireCanonicalOwningProject(t *testing.T) {

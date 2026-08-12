@@ -78,7 +78,8 @@ export const TabContextMenu = forwardRef<TabContextMenuHandle>(
     };
 
     const showRename =
-      target?.tab.mode === "WORKSHEET" && target?.tab.viewState.view === "CODE";
+      target?.tab.mode === "SAVED_QUERY" &&
+      target?.tab.viewState.view === "CODE";
 
     return (
       <DropdownMenu

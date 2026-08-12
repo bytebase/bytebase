@@ -601,9 +601,9 @@ func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter str
 		return user.Email, nil
 	}
 	getWorksheetID := func(name string) (string, error) {
-		_, worksheetID, err := common.GetProjectIDWorksheetID(name)
+		_, worksheetID, err := common.GetProjectIDSavedQueryID(name)
 		if err != nil {
-			return "", errors.Errorf("invalid worksheet name %q", name)
+			return "", errors.Errorf("invalid saved query name %q", name)
 		}
 		return worksheetID, nil
 	}

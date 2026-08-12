@@ -37,7 +37,7 @@ function SQLEditorThemeRoot({ children }: Readonly<{ children: ReactNode }>) {
  *  - workspace-scope common data via `useEnsureWorkspaceCommonData()` —
  *    the same hook DashboardFrameShell uses. Idempotent loaders make it
  *    safe to call from every top-level shell.
- *  - `useSQLEditorAutoSave()` — the 2-second debounced worksheet
+ *  - `useSQLEditorAutoSave()` — the 2-second debounced saved query
  *    auto-save extracted from the legacy `provideSQLEditorContext()`.
  *  - the `<SQLEditorRouteShell>` once `ready` flips true.
  */

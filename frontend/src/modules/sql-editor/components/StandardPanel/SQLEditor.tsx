@@ -12,7 +12,7 @@ import {
   extensionNameOfLanguage,
   formatEditorContent,
 } from "@/components/monaco/utils";
-import { useWorksheetAndTab } from "@/hooks/useWorksheetAndTab";
+import { useSavedQueryAndTab } from "@/hooks/useSavedQueryAndTab";
 import { aiContextEvents } from "@/modules/ai/logic";
 import * as promptUtils from "@/modules/ai/logic/prompt";
 import type { ChatAction } from "@/modules/ai/types";
@@ -52,7 +52,7 @@ interface SQLEditorProps {
 /**
  * React port of `frontend/src/views/sql-editor/EditorPanel/StandardPanel/SQLEditor.vue`.
  *
- * Worksheet Monaco editor with full keybinding parity:
+ * SavedQuery Monaco editor with full keybinding parity:
  * - Cmd+Enter run / Cmd+Shift+Enter run-in-new-tab
  * - Cmd+S save sheet
  * - Cmd+E explain (or "Dry Run" for BigQuery)
@@ -69,7 +69,7 @@ interface SQLEditorProps {
  * is run from the toolbar.
  */
 export function SQLEditor({ onExecute }: SQLEditorProps) {
-  const { isReadOnly: readonly } = useWorksheetAndTab();
+  const { isReadOnly: readonly } = useSavedQueryAndTab();
   const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
   const setPendingInsertAtCaret = useSQLEditorStore(
     (s) => s.setPendingInsertAtCaret

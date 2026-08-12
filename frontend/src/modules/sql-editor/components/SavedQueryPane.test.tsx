@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import type { WorksheetFolderNode } from "@/modules/sql-editor/model/Sheet";
+import type { SavedQueryFolderNode } from "@/modules/sql-editor/model/Sheet";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -228,14 +228,14 @@ vi.mock("./SheetTree", () => ({
   }: {
     view: string;
     multiSelectMode?: boolean;
-    checkedNodes?: WorksheetFolderNode[];
+    checkedNodes?: SavedQueryFolderNode[];
     onMultiSelectModeChange: (m: boolean) => void;
-    onCheckedNodesChange: (n: WorksheetFolderNode[]) => void;
+    onCheckedNodesChange: (n: SavedQueryFolderNode[]) => void;
     ref?: React.Ref<{
-      handleMultiDelete: (nodes: WorksheetFolderNode[]) => Promise<void>;
+      handleMultiDelete: (nodes: SavedQueryFolderNode[]) => Promise<void>;
     }>;
   }) => {
-    // Expose the imperative handle on the ref so WorksheetPane can call it
+    // Expose the imperative handle on the ref so SavedQueryPane can call it
     if (ref && typeof ref === "object") {
       (ref as { current: unknown }).current = {
         handleMultiDelete: vi.fn().mockResolvedValue(undefined),
@@ -264,13 +264,13 @@ vi.mock("./SheetTree", () => ({
                 editable: false,
                 children: [],
                 empty: true,
-                worksheet: {
-                  name: "worksheets/ws1",
+                savedQuery: {
+                  name: "savedQueries/ws1",
                   title: "ws1",
                   folders: [],
-                  type: "worksheet",
+                  type: "savedQuery",
                 },
-              } as WorksheetFolderNode,
+              } as SavedQueryFolderNode,
             ])
           }
         >
@@ -310,8 +310,8 @@ const setupDefaultMocks = (overrides: Partial<Filter> = {}) => {
   const filterRef = { value: filter };
   const filterChanged = false;
 
-  const batchUpdateWorksheetFolders = vi.fn().mockResolvedValue(undefined);
-  const getFoldersForWorksheet = vi.fn((path: string): string[] =>
+  const batchUpdateSavedQueryFolders = vi.fn().mockResolvedValue(undefined);
+  const getFoldersForSavedQuery = vi.fn((path: string): string[] =>
     !path || path === "/my" ? [] : [path]
   );
   const sheetTree = {
@@ -325,22 +325,22 @@ const setupDefaultMocks = (overrides: Partial<Filter> = {}) => {
         editable: false,
         children: [],
         empty: true,
-        worksheet: {
-          name: "worksheets/ws1",
+        savedQuery: {
+          name: "savedQueries/ws1",
           title: "ws1",
           folders: [],
-          type: "worksheet",
+          type: "savedQuery",
         },
-      } as WorksheetFolderNode,
+      } as SavedQueryFolderNode,
     ],
-  } as WorksheetFolderNode;
+  } as SavedQueryFolderNode;
 
   mocks.useSheetContext.mockReturnValue({
     get filter() {
       return filterRef.value;
     },
     filterChanged,
-    batchUpdateWorksheetFolders,
+    batchUpdateSavedQueryFolders,
     setFilter: vi.fn((next: Filter | ((prev: Filter) => Filter)) => {
       filterRef.value =
         typeof next === "function" ? next(filterRef.value) : next;
@@ -348,11 +348,11 @@ const setupDefaultMocks = (overrides: Partial<Filter> = {}) => {
   });
 
   mocks.useSheetContextByView.mockReturnValue({
-    getFoldersForWorksheet,
+    getFoldersForSavedQuery,
     sheetTree,
   });
 
-  return { filterRef, batchUpdateWorksheetFolders, getFoldersForWorksheet };
+  return { filterRef, batchUpdateSavedQueryFolders, getFoldersForSavedQuery };
 };
 
 const renderIntoContainer = (element: ReactElement) => {
@@ -380,11 +380,11 @@ const renderIntoContainer = (element: ReactElement) => {
   };
 };
 
-let WorksheetPane: typeof import("./WorksheetPane").WorksheetPane;
+let SavedQueryPane: typeof import("./SavedQueryPane").SavedQueryPane;
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  ({ WorksheetPane } = await import("./WorksheetPane"));
+  ({ SavedQueryPane } = await import("./SavedQueryPane"));
 });
 
 afterEach(() => {
@@ -394,11 +394,11 @@ afterEach(() => {
 
 // ---- tests ------------------------------------------------------------------
 
-describe("WorksheetPane", () => {
+describe("SavedQueryPane", () => {
   test("1. Renders SheetTree for each enabled view", () => {
     setupDefaultMocks();
     const { container, render, unmount } = renderIntoContainer(
-      <WorksheetPane />
+      <SavedQueryPane />
     );
     render();
 
@@ -412,7 +412,7 @@ describe("WorksheetPane", () => {
   test("2. Hides 'my' SheetTree when showMine is false", () => {
     setupDefaultMocks({ showMine: false });
     const { container, render, unmount } = renderIntoContainer(
-      <WorksheetPane />
+      <SavedQueryPane />
     );
     render();
 
@@ -426,7 +426,7 @@ describe("WorksheetPane", () => {
   test("3. Filter menu item toggle writes back to filter ref", () => {
     const { filterRef } = setupDefaultMocks();
     const { container, render, unmount } = renderIntoContainer(
-      <WorksheetPane />
+      <SavedQueryPane />
     );
     render();
 
@@ -451,7 +451,7 @@ describe("WorksheetPane", () => {
   test("4. Multi-select toolbar appears when a SheetTree enters multi-select", () => {
     setupDefaultMocks();
     const { container, render, unmount } = renderIntoContainer(
-      <WorksheetPane />
+      <SavedQueryPane />
     );
     render();
 
@@ -473,12 +473,12 @@ describe("WorksheetPane", () => {
     expect(myTree?.getAttribute("data-multi-select-mode")).toBe("true");
 
     // Toolbar buttons rendered — Move + Cancel stay inline; destructive
-    // Delete is tucked into the More menu for the narrow worksheet pane.
+    // Delete is tucked into the More menu for the narrow saved query pane.
     const toolbarButtons = Array.from(
       container.querySelectorAll("[data-testid='button']")
     ).map((el) => el.textContent?.trim());
     expect(toolbarButtons).toEqual(
-      expect.arrayContaining(["sheet.move-worksheets", "common.cancel"])
+      expect.arrayContaining(["sheet.move-saved-queries", "common.cancel"])
     );
     expect(toolbarButtons).not.toContain("common.delete");
     const menuItems = Array.from(
@@ -490,15 +490,15 @@ describe("WorksheetPane", () => {
     unmount();
   });
 
-  test("5. Move modal opens and submit calls batchUpdateWorksheetFolders", async () => {
-    const { batchUpdateWorksheetFolders, getFoldersForWorksheet } =
+  test("5. Move modal opens and submit calls batchUpdateSavedQueryFolders", async () => {
+    const { batchUpdateSavedQueryFolders, getFoldersForSavedQuery } =
       setupDefaultMocks();
     const { container, render, unmount } = renderIntoContainer(
-      <WorksheetPane />
+      <SavedQueryPane />
     );
     render();
 
-    // Step 1: enter multi-select and check a worksheet
+    // Step 1: enter multi-select and check a saved query
     act(() => {
       container
         .querySelector("[data-testid='sheet-tree-my-enter-multi-select']")
@@ -510,10 +510,10 @@ describe("WorksheetPane", () => {
         ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    // Step 2: click the "move-worksheets" toolbar button to open the modal
+    // Step 2: click the "move-saved-queries" toolbar button to open the modal
     const moveButton = Array.from(
       container.querySelectorAll("[data-testid='button']")
-    ).find((el) => el.textContent?.trim() === "sheet.move-worksheets") as
+    ).find((el) => el.textContent?.trim() === "sheet.move-saved-queries") as
       | HTMLButtonElement
       | undefined;
     expect(moveButton).not.toBeUndefined();
@@ -542,19 +542,19 @@ describe("WorksheetPane", () => {
       saveButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(getFoldersForWorksheet).toHaveBeenCalledWith("/some/folder");
-    expect(batchUpdateWorksheetFolders).toHaveBeenCalledWith([
-      { name: "worksheets/ws1", folders: ["/some/folder"] },
+    expect(getFoldersForSavedQuery).toHaveBeenCalledWith("/some/folder");
+    expect(batchUpdateSavedQueryFolders).toHaveBeenCalledWith([
+      { name: "savedQueries/ws1", folders: ["/some/folder"] },
     ]);
 
     unmount();
   });
 
-  test("5b. Move modal can move worksheets to the root folder", async () => {
-    const { batchUpdateWorksheetFolders, getFoldersForWorksheet } =
+  test("5b. Move modal can move saved queries to the root folder", async () => {
+    const { batchUpdateSavedQueryFolders, getFoldersForSavedQuery } =
       setupDefaultMocks();
     const { container, render, unmount } = renderIntoContainer(
-      <WorksheetPane />
+      <SavedQueryPane />
     );
     render();
 
@@ -571,7 +571,7 @@ describe("WorksheetPane", () => {
 
     const moveButton = Array.from(
       container.querySelectorAll("[data-testid='button']")
-    ).find((el) => el.textContent?.trim() === "sheet.move-worksheets");
+    ).find((el) => el.textContent?.trim() === "sheet.move-saved-queries");
     act(() => {
       moveButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
@@ -599,9 +599,9 @@ describe("WorksheetPane", () => {
       saveButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(getFoldersForWorksheet).toHaveBeenCalledWith("/my");
-    expect(batchUpdateWorksheetFolders).toHaveBeenCalledWith([
-      { name: "worksheets/ws1", folders: [] },
+    expect(getFoldersForSavedQuery).toHaveBeenCalledWith("/my");
+    expect(batchUpdateSavedQueryFolders).toHaveBeenCalledWith([
+      { name: "savedQueries/ws1", folders: [] },
     ]);
 
     unmount();

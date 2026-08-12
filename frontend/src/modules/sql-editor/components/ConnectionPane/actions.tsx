@@ -45,11 +45,11 @@ export type ConnectionMenuItem = {
   readonly onSelect: () => void;
 };
 
-const DEFAULT_TAB_MODE: SQLEditorTabMode = "WORKSHEET";
+const DEFAULT_TAB_MODE: SQLEditorTabMode = "SAVED_QUERY";
 
 /**
  * Replaces frontend/src/views/sql-editor/ConnectionPanel/ConnectionPane/actions.tsx's `setConnection`.
- * Connects the current tab or creates a new worksheet, then sets the tab
+ * Connects the current tab or creates a new saved query, then sets the tab
  * mode + batch-query context and flips the aside panel to `SCHEMA`.
  */
 export function setConnection(options: {
@@ -68,7 +68,7 @@ export function setConnection(options: {
 
   const tabsState = getSQLEditorTabsState();
   const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
-  const { maybeUpdateWorksheet, createWorksheet } =
+  const { maybeUpdateSavedQuery, createSavedQuery } =
     useSQLEditorStore.getState();
 
   const batchQueryContext: BatchQueryContext = Object.assign(
@@ -79,15 +79,15 @@ export function setConnection(options: {
 
   const createOrUpdate = () => {
     if (!newTab && currentTab) {
-      return maybeUpdateWorksheet({
+      return maybeUpdateSavedQuery({
         tabId: currentTab.id,
-        worksheet: currentTab.worksheet,
+        savedQuery: currentTab.savedQuery,
         title: currentTab.title,
         database: connection.database,
         statement: currentTab.statement,
       });
     }
-    return createWorksheet({
+    return createSavedQuery({
       database: connection.database,
     });
   };

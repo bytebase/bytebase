@@ -172,10 +172,10 @@ describe("callApi", () => {
 
   test("coerces nested byte fields to base64 before sending the request", async () => {
     mocks.getEndpointPath.mockReturnValue(
-      "/bytebase.v1.WorksheetService/CreateWorksheet"
+      "/bytebase.v1.SavedQueryService/CreateSavedQuery"
     );
     mocks.getRequestSchema.mockReturnValue(
-      schemas["bytebase.v1.CreateWorksheetRequest"]
+      schemas["bytebase.v1.CreateSavedQueryRequest"]
     );
     mocks.getSchema.mockImplementation(
       (schemaName: string) => schemas[schemaName]
@@ -183,15 +183,15 @@ describe("callApi", () => {
     mocks.fetch.mockResolvedValue(
       createResponse({
         status: 200,
-        body: { name: "projects/demo/worksheets/1" },
+        body: { name: "projects/demo/savedQueries/1" },
       })
     );
 
     await callApi({
-      operationId: "WorksheetService/CreateWorksheet",
+      operationId: "SavedQueryService/CreateSavedQuery",
       body: {
         parent: "projects/demo",
-        worksheet: {
+        savedQuery: {
           content: "select 1;",
           title: "demo",
         },
@@ -200,7 +200,7 @@ describe("callApi", () => {
 
     expect(getRequestBody()).toEqual({
       parent: "projects/demo",
-      worksheet: {
+      savedQuery: {
         content: "c2VsZWN0IDE7",
         title: "demo",
       },

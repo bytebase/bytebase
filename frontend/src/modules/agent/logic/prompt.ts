@@ -9,7 +9,7 @@ SQL & Queries:
 - SQLService: execute SQL queries, export query results, SQL check/lint, parse SQL
 - QueryHistoryService: query/export history records of SQL Editor sessions
 - SheetService: internal saved SQL sheets (system use)
-- WorksheetService: user-facing saved SQL worksheets
+- SavedQueryService: user-facing saved SQL queries
 
 Change Management:
 - PlanService: create/update database change plans, plan checks, spec management

@@ -146,12 +146,12 @@ test.afterAll(async () => {
 
 // L6 + H1 — the ACCESS gutter tab only renders when the project has
 // `allowJustInTimeAccess` enabled, so the gutter count flips between
-// 3 (Worksheet/Schema/History) and 4 (+ Access).
+// 3 (SavedQuery/Schema/History) and 4 (+ Access).
 test.describe("ACCESS gutter tab follows the project's allowJustInTimeAccess flag", () => {
   test("with JIT off, the gutter has 3 tabs and no Access tab", async () => {
     await setJIT(false);
 
-    await expect(viewerEditor.gutterWorksheetTab).toBeVisible({ timeout: 10_000 });
+    await expect(viewerEditor.gutterSavedQueryTab).toBeVisible({ timeout: 10_000 });
     await expect(viewerEditor.gutterSchemaTab).toBeVisible();
     await expect(viewerEditor.gutterHistoryTab).toBeVisible();
     // ACCESS tab is conditionally rendered — must be absent here.
@@ -161,7 +161,7 @@ test.describe("ACCESS gutter tab follows the project's allowJustInTimeAccess fla
   test("with JIT on, the gutter exposes an ACCESS tab in addition to the 3 defaults", async () => {
     await setJIT(true);
 
-    await expect(viewerEditor.gutterWorksheetTab).toBeVisible({ timeout: 10_000 });
+    await expect(viewerEditor.gutterSavedQueryTab).toBeVisible({ timeout: 10_000 });
     await expect(viewerEditor.gutterSchemaTab).toBeVisible();
     await expect(viewerEditor.gutterHistoryTab).toBeVisible();
     await expect(viewerEditor.gutterAccessTab).toBeVisible();

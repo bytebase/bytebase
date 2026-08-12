@@ -9,14 +9,16 @@ import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import { useAppStore } from "@/stores/app";
 import type { SQLEditorTab } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { extractWorksheetID } from "@/utils";
+import { extractSavedQueryID } from "@/utils";
 import { FolderForm } from "./FolderForm";
 
 export function SaveSheetModal() {
   const { t } = useTranslation();
   const abortAutoSave = useSQLEditorStore((s) => s.abortAutoSave);
-  const maybeUpdateWorksheet = useSQLEditorStore((s) => s.maybeUpdateWorksheet);
-  const createWorksheet = useSQLEditorStore((s) => s.createWorksheet);
+  const maybeUpdateSavedQuery = useSQLEditorStore(
+    (s) => s.maybeUpdateSavedQuery
+  );
+  const createSavedQuery = useSQLEditorStore((s) => s.createSavedQuery);
   const sheetContext = useSheetContextByView("my");
 
   const [open, setOpen] = useState(false);
@@ -24,12 +26,12 @@ export function SaveSheetModal() {
   const [folder, setFolder] = useState("");
   const [rawTab, setRawTab] = useState<SQLEditorTab | undefined>(undefined);
 
-  // A manual save opens the modal when the worksheet has never been saved
+  // A manual save opens the modal when the saved query has never been saved
   // OR is still untitled, so the user can give it a title rather than
-  // silently persisting an "Untitled" worksheet. Auto-save never reaches
-  // here (it calls `maybeUpdateWorksheet` directly).
+  // silently persisting an "Untitled" savedQuery. Auto-save never reaches
+  // here (it calls `maybeUpdateSavedQuery` directly).
   const needShowModal = (tab: SQLEditorTab) =>
-    !tab.worksheet || !tab.title.trim();
+    !tab.savedQuery || !tab.title.trim();
 
   const doSaveSheet = async (
     tab?: SQLEditorTab,
@@ -49,21 +51,21 @@ export function SaveSheetModal() {
 
     abortAutoSave();
 
-    const { worksheet, connection, statement, id: tabId } = effectiveTab;
-    const folders = sheetContext.getFoldersForWorksheet(effectiveFolder);
+    const { savedQuery, connection, statement, id: tabId } = effectiveTab;
+    const folders = sheetContext.getFoldersForSavedQuery(effectiveFolder);
 
-    const sheetId = extractWorksheetID(worksheet ?? "");
+    const sheetId = extractSavedQueryID(savedQuery ?? "");
     if (sheetId !== String(UNKNOWN_ID)) {
-      await maybeUpdateWorksheet({
+      await maybeUpdateSavedQuery({
         tabId,
-        worksheet,
+        savedQuery,
         title: effectiveTitle,
         database: connection.database,
         statement,
         folders,
       });
     } else {
-      await createWorksheet({
+      await createSavedQuery({
         tabId,
         title: effectiveTitle,
         statement,
@@ -79,17 +81,17 @@ export function SaveSheetModal() {
     setTitle(tab.title);
     setRawTab(tab);
 
-    // Compute the folder synchronously: for an already-saved worksheet, use
+    // Compute the folder synchronously: for an already-saved saved query, use
     // its current pwd; otherwise reset. We then both reflect this in state
     // (for the modal-open path) AND pass it explicitly into doSaveSheet
     // (for the silent path) — bypassing React's async setState batching.
     let nextFolder = "";
-    if (tab.worksheet) {
-      const worksheet = useAppStore
+    if (tab.savedQuery) {
+      const savedQuery = useAppStore
         .getState()
-        .getWorksheetByName(tab.worksheet);
-      if (worksheet) {
-        nextFolder = sheetContext.getPwdForWorksheet(worksheet);
+        .getSavedQueryByName(tab.savedQuery);
+      if (savedQuery) {
+        nextFolder = sheetContext.getPwdForSavedQuery(savedQuery);
       }
     }
     setFolder(nextFolder);

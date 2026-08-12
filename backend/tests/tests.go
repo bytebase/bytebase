@@ -102,7 +102,7 @@ type controller struct {
 	databaseServiceClient         v1connect.DatabaseServiceClient
 	databaseCatalogServiceClient  v1connect.DatabaseCatalogServiceClient
 	sheetServiceClient            v1connect.SheetServiceClient
-	worksheetServiceClient        v1connect.WorksheetServiceClient
+	savedQueryServiceClient       v1connect.SavedQueryServiceClient
 	sqlServiceClient              v1connect.SQLServiceClient
 	queryHistoryServiceClient     v1connect.QueryHistoryServiceClient
 	subscriptionServiceClient     v1connect.SubscriptionServiceClient
@@ -296,7 +296,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.databaseServiceClient = v1connect.NewDatabaseServiceClient(ctl.client, baseURL, interceptors)
 	ctl.databaseCatalogServiceClient = v1connect.NewDatabaseCatalogServiceClient(ctl.client, baseURL, interceptors)
 	ctl.sheetServiceClient = v1connect.NewSheetServiceClient(ctl.client, baseURL, interceptors)
-	ctl.worksheetServiceClient = v1connect.NewWorksheetServiceClient(ctl.client, baseURL, interceptors)
+	ctl.savedQueryServiceClient = v1connect.NewSavedQueryServiceClient(ctl.client, baseURL, interceptors)
 	ctl.sqlServiceClient = v1connect.NewSQLServiceClient(ctl.client, baseURL, interceptors)
 	ctl.queryHistoryServiceClient = v1connect.NewQueryHistoryServiceClient(ctl.client, baseURL, interceptors)
 	ctl.subscriptionServiceClient = v1connect.NewSubscriptionServiceClient(ctl.client, baseURL, interceptors)

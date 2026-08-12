@@ -9,7 +9,7 @@ export * from "./user";
 export * from "./instance";
 export * from "./sql";
 export * from "./sheet";
-export * from "./worksheet";
+export * from "./savedQuery";
 export * from "./queryHistory";
 export * from "./issue";
 export * from "./changelog";

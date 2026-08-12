@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Tooltip } from "@/components/ui/tooltip";
-import { useWorksheetAndTab } from "@/hooks/useWorksheetAndTab";
+import { useSavedQueryAndTab } from "@/hooks/useSavedQueryAndTab";
 import { cn } from "@/lib/utils";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
@@ -22,7 +22,7 @@ import {
 import { useAppStore } from "@/stores/app";
 import type { SQLEditorQueryParams } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
+import { isSavedQueryWritableV1, keyboardShortcutStr } from "@/utils";
 import { AdminModeButton } from "./AdminModeButton";
 import { ChooserGroup } from "./ChooserGroup";
 import { ContainerChooser } from "./ContainerChooser";
@@ -44,7 +44,7 @@ type Props = {
  */
 export function EditorAction({ onExecute }: Props) {
   const { t } = useTranslation();
-  const { currentSheet: currentWorksheet } = useWorksheetAndTab();
+  const { currentSheet: currentSavedQuery } = useSavedQueryAndTab();
   const { instance } = useConnectionOfCurrentSQLEditorTab();
 
   const [shareOpen, setShareOpen] = useState(false);
@@ -63,8 +63,8 @@ export function EditorAction({ onExecute }: Props) {
   const tabMode = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.mode
   );
-  const tabWorksheet = useSQLEditorTabState(
-    (s) => s.tabsById.get(s.currentTabId)?.worksheet ?? ""
+  const tabSavedQuery = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.savedQuery ?? ""
   );
   const tabConnectionTable = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.connection.table ?? ""
@@ -73,7 +73,7 @@ export function EditorAction({ onExecute }: Props) {
   const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
 
   const isAdminMode = tabMode === "ADMIN";
-  const showSheetsFeature = tabMode === "WORKSHEET";
+  const showSheetsFeature = tabMode === "SAVED_QUERY";
   const isEmptyStatement = !currentTab || tabStatement === "";
   const isCosmosDBWithoutContainer =
     instance.engine === Engine.COSMOSDB && !tabConnectionTable;
@@ -86,16 +86,16 @@ export function EditorAction({ onExecute }: Props) {
   })();
 
   const canWriteSheet = (() => {
-    if (!tabWorksheet) return false;
-    const sheet = useAppStore.getState().getWorksheetByName(tabWorksheet);
-    return sheet ? isWorksheetWritableV1(sheet) : false;
+    if (!tabSavedQuery) return false;
+    const sheet = useAppStore.getState().getSavedQueryByName(tabSavedQuery);
+    return sheet ? isSavedQueryWritableV1(sheet) : false;
   })();
 
   const allowSave = (() => {
     if (!showSheetsFeature || !currentTab) return false;
-    if (tabWorksheet) {
+    if (tabSavedQuery) {
       if (!canWriteSheet) return false;
-      const sheet = useAppStore.getState().getWorksheetByName(tabWorksheet);
+      const sheet = useAppStore.getState().getSavedQueryByName(tabSavedQuery);
       if (sheet && sheet.database !== currentTab.connection.database) {
         return true;
       }
@@ -109,7 +109,7 @@ export function EditorAction({ onExecute }: Props) {
     if (!currentTab) return false;
     if (tabStatus !== "CLEAN") return false;
     if (isEmptyStatement || isDisconnected) return false;
-    if (tabWorksheet && !canWriteSheet) return false;
+    if (tabSavedQuery && !canWriteSheet) return false;
     return true;
   })();
 
@@ -135,7 +135,7 @@ export function EditorAction({ onExecute }: Props) {
   const exitAdminMode = () => {
     // Inlined to avoid pulling `@/types` (monaco-editor transitive) into the
     // React bundle. Matches `DEFAULT_SQL_EDITOR_TAB_MODE` in `@/types/sqlEditor/tab`.
-    getSQLEditorTabsState().updateCurrentTab({ mode: "WORKSHEET" });
+    getSQLEditorTabsState().updateCurrentTab({ mode: "SAVED_QUERY" });
   };
 
   const handleClickSave = () => {
@@ -234,7 +234,7 @@ export function EditorAction({ onExecute }: Props) {
                 />
               </Tooltip>
               <PopoverContent align="end" sideOffset={4}>
-                <SharePopoverBody worksheet={currentWorksheet} />
+                <SharePopoverBody savedQuery={currentSavedQuery} />
               </PopoverContent>
             </Popover>
           </>

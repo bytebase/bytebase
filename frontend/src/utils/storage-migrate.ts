@@ -14,6 +14,9 @@ import {
 } from "./storage-keys";
 
 const MIGRATION_MARKER = "bb.storage-migration-v1";
+// v2: worksheet → saved query rename (2026-08). Runs after v1 so Vue-era
+// keys are already at their post-v1 names before values are rewritten.
+const MIGRATION_MARKER_V2 = "bb.storage-migration-v2";
 
 // Static key renames: [oldKey, newKey]
 const STATIC_KEY_RENAMES: [string, string][] = [
@@ -170,21 +173,118 @@ function migrateSqlEditorConnKeys() {
   }
 }
 
+// Pref keys renamed by the worksheet → saved query rename; values move over
+// unchanged.
+const SAVED_QUERY_PREFIX_RENAMES: [string, string][] = [
+  ["bb.sql-editor.worksheet-filter.", "bb.sql-editor.saved-query-filter."],
+  ["bb.sql-editor.worksheet-tree.", "bb.sql-editor.saved-query-tree."],
+  ["bb.sql-editor.worksheet-folder.", "bb.sql-editor.saved-query-folder."],
+];
+
+function migrateSavedQueryPrefixKeys() {
+  for (const [oldPrefix, newPrefix] of SAVED_QUERY_PREFIX_RENAMES) {
+    const keysToMigrate: [string, string][] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(oldPrefix)) {
+        keysToMigrate.push([key, `${newPrefix}${key.slice(oldPrefix.length)}`]);
+      }
+    }
+    for (const [oldKey, newKey] of keysToMigrate) {
+      moveKey(oldKey, newKey);
+    }
+  }
+}
+
+function migrateSavedQueryTabValues() {
+  // Persisted tab entries carried the saved-query link under `worksheet`
+  // (old name format `projects/*/worksheets/*`) and mode "WORKSHEET".
+  // `normalizePersistedTab` in the tab store maps these lazily as well;
+  // this rewrite keeps stored data in the current shape.
+  const TABS_PREFIX = "bb.sql-editor.tabs.";
+  const keys: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith(TABS_PREFIX)) {
+      keys.push(key);
+    }
+  }
+  for (const key of keys) {
+    const raw = localStorage.getItem(key);
+    if (!raw) continue;
+    try {
+      const tabs: unknown = JSON.parse(raw);
+      if (!Array.isArray(tabs)) continue;
+      const migrated = tabs.map((tab) => {
+        if (!tab || typeof tab !== "object") return tab;
+        const { worksheet, savedQuery, mode, ...rest } = tab as Record<
+          string,
+          unknown
+        >;
+        const next: Record<string, unknown> = { ...rest };
+        if (typeof worksheet === "string" || typeof savedQuery === "string") {
+          const name =
+            typeof savedQuery === "string" && savedQuery
+              ? savedQuery
+              : typeof worksheet === "string"
+                ? worksheet
+                : "";
+          next.savedQuery = name.replace("/worksheets/", "/savedQueries/");
+        }
+        if (mode !== undefined) {
+          next.mode = mode === "WORKSHEET" ? "SAVED_QUERY" : mode;
+        }
+        return next;
+      });
+      localStorage.setItem(key, JSON.stringify(migrated));
+    } catch {
+      // Leave malformed values alone; the tab store tolerates them.
+    }
+  }
+}
+
+function migrateSavedQuerySidebarTabValues() {
+  // The aside-panel tab value is a JSON-encoded string; "WORKSHEET" became
+  // "SAVED_QUERY".
+  const PREFIX = "bb.sql-editor.sidebar.last-visited-tab";
+  const keys: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key === PREFIX || key?.startsWith(`${PREFIX}.`)) {
+      keys.push(key);
+    }
+  }
+  for (const key of keys) {
+    if (localStorage.getItem(key) === '"WORKSHEET"') {
+      localStorage.setItem(key, '"SAVED_QUERY"');
+    }
+  }
+}
+
 /**
- * Run all localStorage key migrations. Idempotent — skips if already done.
- * Must be called before any store or composable reads from localStorage.
+ * Run all localStorage key migrations. Idempotent — each stage skips if
+ * already done. Must be called before any store or composable reads from
+ * localStorage.
  */
 export function migrateStorageKeys() {
-  if (localStorage.getItem(MIGRATION_MARKER)) return;
+  if (!localStorage.getItem(MIGRATION_MARKER)) {
+    migrateLanguage();
+    migrateStaticKeys();
+    migratePrefixKeys();
+    migrateUIScopeKeys();
+    migrateSqlEditorTabKeys();
+    migrateSqlEditorConnKeys();
 
-  migrateLanguage();
-  migrateStaticKeys();
-  migratePrefixKeys();
-  migrateUIScopeKeys();
-  migrateSqlEditorTabKeys();
-  migrateSqlEditorConnKeys();
+    localStorage.setItem(MIGRATION_MARKER, "1");
+  }
 
-  localStorage.setItem(MIGRATION_MARKER, "1");
+  if (!localStorage.getItem(MIGRATION_MARKER_V2)) {
+    migrateSavedQueryPrefixKeys();
+    migrateSavedQueryTabValues();
+    migrateSavedQuerySidebarTabValues();
+
+    localStorage.setItem(MIGRATION_MARKER_V2, "1");
+  }
 }
 
 /**

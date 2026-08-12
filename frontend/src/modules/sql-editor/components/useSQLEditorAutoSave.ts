@@ -5,7 +5,7 @@ import {
   useSQLEditorTabState,
 } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
-import { isWorksheetWritableV1 } from "@/utils";
+import { isSavedQueryWritableV1 } from "@/utils";
 
 const AUTO_SAVE_DEBOUNCE_MS = 2000;
 
@@ -14,7 +14,7 @@ const AUTO_SAVE_DEBOUNCE_MS = 2000;
  * `views/sql-editor/context.ts`'s `provideSQLEditorContext()`.
  *
  * Watches the active tab's `statement` and after a 2s debounce calls
- * `maybeUpdateWorksheet` if the tab is dirty + writable. Mirrors the
+ * `maybeUpdateSavedQuery` if the tab is dirty + writable. Mirrors the
  * Vue `watchDebounced` behavior: aborts any in-flight auto-save when a
  * newer one starts, reverts the tab to DIRTY on error (unless aborted),
  * and re-flags DIRTY when the statement keeps changing during the save.
@@ -27,7 +27,9 @@ export function useSQLEditorAutoSave() {
   const setAutoSaveController = useSQLEditorStore(
     (s) => s.setAutoSaveController
   );
-  const maybeUpdateWorksheet = useSQLEditorStore((s) => s.maybeUpdateWorksheet);
+  const maybeUpdateSavedQuery = useSQLEditorStore(
+    (s) => s.maybeUpdateSavedQuery
+  );
 
   const statement = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.statement
@@ -55,10 +57,12 @@ export function useSQLEditorAutoSave() {
   const runAutoSave = async () => {
     const tabsState = getSQLEditorTabsState();
     const tab = tabsState.tabsById.get(tabsState.currentTabId);
-    if (!tab || !tab.worksheet || tab.status === "CLEAN") return;
+    if (!tab || !tab.savedQuery || tab.status === "CLEAN") return;
 
-    const worksheet = useAppStore.getState().getWorksheetByName(tab.worksheet);
-    if (!worksheet || !isWorksheetWritableV1(worksheet)) return;
+    const savedQuery = useAppStore
+      .getState()
+      .getSavedQueryByName(tab.savedQuery);
+    if (!savedQuery || !isSavedQueryWritableV1(savedQuery)) return;
 
     abortAutoSave();
 
@@ -71,9 +75,9 @@ export function useSQLEditorAutoSave() {
 
     let wasAborted = false;
     try {
-      await maybeUpdateWorksheet({
+      await maybeUpdateSavedQuery({
         tabId,
-        worksheet: tab.worksheet,
+        savedQuery: tab.savedQuery,
         database: tab.connection.database,
         statement: statementToSave,
         signal: controller.signal,
