@@ -46,6 +46,13 @@ func TestAuditResponseRedactsCredentials(t *testing.T) {
 				},
 			}},
 		},
+		{
+			name: "project webhook URL",
+			response: &v1pb.Project{Webhooks: []*v1pb.Webhook{{
+				Name: "projects/project-a/webhooks/webhook-a",
+				Url:  secretSentinel,
+			}}},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getResponseString(tt.response)
@@ -98,6 +105,13 @@ func TestAuditRequestRedactsCredentials(t *testing.T) {
 				LdapConfig: &v1pb.LDAPIdentityProviderConfig{BindPassword: secretSentinel},
 			}},
 		}}},
+		{"create project webhook URL", &v1pb.CreateProjectRequest{Project: &v1pb.Project{
+			Webhooks: []*v1pb.Webhook{{Name: "projects/project-a/webhooks/webhook-a", Url: secretSentinel}},
+		}}},
+		{"update project webhook URL", &v1pb.UpdateProjectRequest{Project: &v1pb.Project{
+			Name:     "projects/project-a",
+			Webhooks: []*v1pb.Webhook{{Name: "projects/project-a/webhooks/webhook-a", Url: secretSentinel}},
+		}}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getRequestString(tt.request)
@@ -123,4 +137,51 @@ func TestAuditRedactionDoesNotMutateInput(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, secretSentinel, request.GetSetting().GetValue().GetAi().GetApiKey(),
 		"redaction mutated the request")
+
+	project := &v1pb.Project{Webhooks: []*v1pb.Webhook{{Url: secretSentinel}}}
+	_, err = getResponseString(project)
+	require.NoError(t, err)
+	require.Equal(t, secretSentinel, project.GetWebhooks()[0].GetUrl(), "redaction mutated the project response")
+
+	for _, tt := range []struct {
+		name    string
+		request any
+	}{
+		{
+			name: "create instance request",
+			request: &v1pb.CreateInstanceRequest{Instance: &v1pb.Instance{DataSources: []*v1pb.DataSource{{
+				Password: secretSentinel,
+			}}}},
+		},
+		{
+			name: "update instance request",
+			request: &v1pb.UpdateInstanceRequest{Instance: &v1pb.Instance{DataSources: []*v1pb.DataSource{{
+				Password: secretSentinel,
+			}}}},
+		},
+		{name: "add data source request", request: &v1pb.AddDataSourceRequest{DataSource: &v1pb.DataSource{Password: secretSentinel}}},
+		{name: "update data source request", request: &v1pb.UpdateDataSourceRequest{DataSource: &v1pb.DataSource{Password: secretSentinel}}},
+		{name: "remove data source request", request: &v1pb.RemoveDataSourceRequest{DataSource: &v1pb.DataSource{Password: secretSentinel}}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := getRequestString(tt.request)
+			require.NoError(t, err)
+			var password string
+			switch request := tt.request.(type) {
+			case *v1pb.CreateInstanceRequest:
+				password = request.GetInstance().GetDataSources()[0].GetPassword()
+			case *v1pb.UpdateInstanceRequest:
+				password = request.GetInstance().GetDataSources()[0].GetPassword()
+			case *v1pb.AddDataSourceRequest:
+				password = request.GetDataSource().GetPassword()
+			case *v1pb.UpdateDataSourceRequest:
+				password = request.GetDataSource().GetPassword()
+			case *v1pb.RemoveDataSourceRequest:
+				password = request.GetDataSource().GetPassword()
+			default:
+				t.Fatalf("unexpected request type %T", request)
+			}
+			require.Equal(t, secretSentinel, password, "redaction mutated the request")
+		})
+	}
 }

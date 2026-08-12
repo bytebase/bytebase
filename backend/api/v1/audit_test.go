@@ -289,18 +289,55 @@ func (c *auditRecorderConn) Send(any) error {
 	return nil
 }
 
-func TestProjectLifecycleAuditResource(t *testing.T) {
+func TestLifecycleAuditResource(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		request any
+		method  string
+		want    string
 	}{
-		{name: "create", request: &v1pb.CreateProjectRequest{ProjectId: "project-a", Project: &v1pb.Project{}}},
-		{name: "update", request: &v1pb.UpdateProjectRequest{Project: &v1pb.Project{Name: "projects/project-a"}}},
-		{name: "delete", request: &v1pb.DeleteProjectRequest{Name: "projects/project-a"}},
-		{name: "undelete", request: &v1pb.UndeleteProjectRequest{Name: "projects/project-a"}},
+		{name: "query", request: &v1pb.QueryRequest{Name: "instances/instance-a/databases/database-a"}, method: "/bytebase.v1.SQLService/Query", want: "instances/instance-a/databases/database-a"},
+		{name: "admin execute", request: &v1pb.AdminExecuteRequest{Name: "instances/instance-a/databases/database-a"}, method: "/bytebase.v1.SQLService/AdminExecute", want: "instances/instance-a/databases/database-a"},
+		{name: "export", request: &v1pb.ExportRequest{Name: "instances/instance-a/databases/database-a"}, method: "/bytebase.v1.SQLService/Export", want: "instances/instance-a/databases/database-a"},
+		{name: "create sheet", request: &v1pb.CreateSheetRequest{Parent: "projects/project-a"}, method: "/bytebase.v1.SheetService/CreateSheet", want: "projects/project-a"},
+		{name: "batch create sheets", request: &v1pb.BatchCreateSheetsRequest{Parent: "projects/project-a"}, method: "/bytebase.v1.SheetService/BatchCreateSheets", want: "projects/project-a"},
+		{name: "update database", request: &v1pb.UpdateDatabaseRequest{Database: &v1pb.Database{Name: "instances/instance-a/databases/database-a"}}, method: "/bytebase.v1.DatabaseService/UpdateDatabase", want: "instances/instance-a/databases/database-a"},
+		{name: "batch update databases", request: &v1pb.BatchUpdateDatabasesRequest{Parent: "instances/instance-a"}, method: "/bytebase.v1.DatabaseService/BatchUpdateDatabases", want: "instances/instance-a"},
+		{name: "update database catalog", request: &v1pb.UpdateDatabaseCatalogRequest{Catalog: &v1pb.DatabaseCatalog{Name: "instances/instance-a/databases/database-a/catalog"}}, method: "/bytebase.v1.DatabaseService/UpdateDatabaseCatalog", want: "instances/instance-a/databases/database-a/catalog"},
+		{name: "set IAM policy", request: &v1pb.SetIamPolicyRequest{Resource: "projects/project-a"}, method: "/bytebase.v1.ProjectService/SetIamPolicy", want: "projects/project-a"},
+		{name: "create user", request: &v1pb.CreateUserRequest{User: &v1pb.User{Name: "users/user@example.com"}}, method: "/bytebase.v1.UserService/CreateUser", want: "users/user@example.com"},
+		{name: "update user", request: &v1pb.UpdateUserRequest{User: &v1pb.User{Name: "users/user@example.com"}}, method: "/bytebase.v1.UserService/UpdateUser", want: "users/user@example.com"},
+		{name: "login", request: &v1pb.LoginRequest{Email: "user@example.com"}, method: "/bytebase.v1.AuthService/Login", want: "user@example.com"},
+		{name: "signup", request: &v1pb.SignupRequest{Email: "user@example.com"}, method: "/bytebase.v1.AuthService/Signup", want: "user@example.com"},
+		{name: "exchange token", request: &v1pb.ExchangeTokenRequest{Email: "user@example.com"}, method: "/bytebase.v1.AuthService/ExchangeToken", want: "user@example.com"},
+		{name: "create project", request: &v1pb.CreateProjectRequest{ProjectId: "project-a", Project: &v1pb.Project{}}, method: "/bytebase.v1.ProjectService/CreateProject", want: "projects/project-a"},
+		{name: "create project ignores nested name", request: &v1pb.CreateProjectRequest{ProjectId: "project-a", Project: &v1pb.Project{Name: "projects/wrong-project"}}, method: "/bytebase.v1.ProjectService/CreateProject", want: "projects/project-a"},
+		{name: "update project", request: &v1pb.UpdateProjectRequest{Project: &v1pb.Project{Name: "projects/project-a"}}, method: "/bytebase.v1.ProjectService/UpdateProject", want: "projects/project-a"},
+		{name: "delete project", request: &v1pb.DeleteProjectRequest{Name: "projects/project-a"}, method: "/bytebase.v1.ProjectService/DeleteProject", want: "projects/project-a"},
+		{name: "undelete project", request: &v1pb.UndeleteProjectRequest{Name: "projects/project-a"}, method: "/bytebase.v1.ProjectService/UndeleteProject", want: "projects/project-a"},
+		{name: "run plan checks", request: &v1pb.RunPlanChecksRequest{Name: "projects/project-a/plans/101"}, method: "/bytebase.v1.PlanService/RunPlanChecks", want: "projects/project-a/plans/101"},
+		{name: "cancel plan checks", request: &v1pb.CancelPlanCheckRunRequest{Name: "projects/project-a/plans/101/planCheckRun"}, method: "/bytebase.v1.PlanService/CancelPlanCheckRun", want: "projects/project-a/plans/101/planCheckRun"},
+		{name: "delete release", request: &v1pb.DeleteReleaseRequest{Name: "projects/project-a/releases/release-a"}, method: "/bytebase.v1.ReleaseService/DeleteRelease", want: "projects/project-a/releases/release-a"},
+		{name: "undelete release", request: &v1pb.UndeleteReleaseRequest{Name: "projects/project-a/releases/release-a"}, method: "/bytebase.v1.ReleaseService/UndeleteRelease", want: "projects/project-a/releases/release-a"},
+		{name: "batch create revisions", request: &v1pb.BatchCreateRevisionsRequest{Parent: "instances/instance-a/databases/database-a"}, method: "/bytebase.v1.RevisionService/BatchCreateRevisions", want: "instances/instance-a/databases/database-a"},
+		{name: "delete revision", request: &v1pb.DeleteRevisionRequest{Name: "instances/instance-a/databases/database-a/revisions/101"}, method: "/bytebase.v1.RevisionService/DeleteRevision", want: "instances/instance-a/databases/database-a/revisions/101"},
+		{name: "create workspace instance", request: &v1pb.CreateInstanceRequest{InstanceId: "instance-a", Instance: &v1pb.Instance{Name: "instances/wrong-instance"}}, method: "/bytebase.v1.InstanceService/CreateInstance", want: "instances/instance-a"},
+		{name: "create project instance", request: &v1pb.CreateInstanceRequest{Parent: new("projects/project-a"), InstanceId: "instance-a", Instance: &v1pb.Instance{}}, method: "/bytebase.v1.InstanceService/CreateInstance", want: "projects/project-a/instances/instance-a"},
+		{name: "update instance", request: &v1pb.UpdateInstanceRequest{Instance: &v1pb.Instance{Name: "instances/instance-a"}}, method: "/bytebase.v1.InstanceService/UpdateInstance", want: "instances/instance-a"},
+		{name: "delete instance", request: &v1pb.DeleteInstanceRequest{Name: "instances/instance-a"}, method: "/bytebase.v1.InstanceService/DeleteInstance", want: "instances/instance-a"},
+		{name: "undelete instance", request: &v1pb.UndeleteInstanceRequest{Name: "instances/instance-a"}, method: "/bytebase.v1.InstanceService/UndeleteInstance", want: "instances/instance-a"},
+		{name: "add data source", request: &v1pb.AddDataSourceRequest{Name: "instances/instance-a"}, method: "/bytebase.v1.InstanceService/AddDataSource", want: "instances/instance-a"},
+		{name: "remove data source", request: &v1pb.RemoveDataSourceRequest{Name: "instances/instance-a"}, method: "/bytebase.v1.InstanceService/RemoveDataSource", want: "instances/instance-a"},
+		{name: "update data source", request: &v1pb.UpdateDataSourceRequest{Name: "instances/instance-a"}, method: "/bytebase.v1.InstanceService/UpdateDataSource", want: "instances/instance-a"},
+		{name: "update setting", request: &v1pb.UpdateSettingRequest{Setting: &v1pb.Setting{Name: "settings/AI"}}, method: "/bytebase.v1.SettingService/UpdateSetting", want: "settings/AI"},
+		{name: "create review config", request: &v1pb.CreateReviewConfigRequest{ReviewConfig: &v1pb.ReviewConfig{Name: "reviewConfigs/config-a"}}, method: "/bytebase.v1.ReviewConfigService/CreateReviewConfig", want: "reviewConfigs/config-a"},
+		{name: "update review config", request: &v1pb.UpdateReviewConfigRequest{ReviewConfig: &v1pb.ReviewConfig{Name: "reviewConfigs/config-a"}}, method: "/bytebase.v1.ReviewConfigService/UpdateReviewConfig", want: "reviewConfigs/config-a"},
+		{name: "delete review config", request: &v1pb.DeleteReviewConfigRequest{Name: "reviewConfigs/config-a"}, method: "/bytebase.v1.ReviewConfigService/DeleteReviewConfig", want: "reviewConfigs/config-a"},
+		{name: "test existing identity provider", request: &v1pb.TestIdentityProviderRequest{IdentityProvider: &v1pb.IdentityProvider{Name: "idps/idp-a"}}, method: "/bytebase.v1.IdentityProviderService/TestIdentityProvider", want: "idps/idp-a"},
+		{name: "test uncreated identity provider", request: &v1pb.TestIdentityProviderRequest{IdentityProvider: &v1pb.IdentityProvider{}}, method: "/bytebase.v1.IdentityProviderService/TestIdentityProvider", want: ""},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, "projects/project-a", getRequestResource(test.request))
+			require.Equal(t, test.want, getRequestResource(test.request, test.method))
 		})
 	}
 }

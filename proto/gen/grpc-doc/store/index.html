@@ -1713,14 +1713,14 @@ The server computes expire_time from this value at activation time. </p></td>
                   <td></td>
                   <td><p>The default schema to execute the query. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>container</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The container name to execute the query against, used for CosmosDB only. </p></td>
                 </tr>
-
+              
             </tbody>
           </table>
 
@@ -11629,6 +11629,20 @@ Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/task
                   <td><a href="#bytebase.store.SchemaChangeType">SchemaChangeType</a></td>
                   <td></td>
                   <td><p>The type of the revision. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>project</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The project that authored this revision&#39;s change — where the plan or
+release that produced it ran. Stamped by the server at creation from the
+database&#39;s then-current project; rows predating the field are backfilled
+from corroborated provenance (migration 3.22.5). Not a scope: revisions
+stay keyed by (instance, db_name) and follow the database across project
+transfers, while the statement&#39;s sheet stays readable under this project.
+Can be empty when no owner could be corroborated; such statements are
+unreadable and the revision carries no sheet name. </p></td>
                 </tr>
               
             </tbody>

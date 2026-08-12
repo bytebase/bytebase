@@ -91,6 +91,41 @@ func TestAuditLogFormat(t *testing.T) {
 	a.NotContains(entry.Response, loginResp.Msg.Token,
 		"actual access token must never appear in audit Response")
 
+	// Project creation happens during fixture setup. Select by resource because
+	// setup and future fixtures may create more than one project.
+	createProjectLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: workspace,
+		Filter: `method == "/bytebase.v1.ProjectService/CreateProject"`,
+	}))
+	a.NoError(err)
+	createProjectMatches := 0
+	for _, auditLog := range createProjectLogs.Msg.AuditLogs {
+		if auditLog.Resource == ctl.project.Name {
+			createProjectMatches++
+			a.True(strings.HasPrefix(auditLog.Name, workspace+"/auditLogs/"))
+		}
+	}
+	a.Equal(1, createProjectMatches, "fixture project creation must produce exactly one matching workspace audit row")
+
+	updatedTitle := ctl.project.Title + " updated"
+	updatedProject, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+		Project: &v1pb.Project{
+			Name:  ctl.project.Name,
+			Title: updatedTitle,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title"}},
+	}))
+	a.NoError(err)
+	ctl.project = updatedProject.Msg
+
+	updateProjectLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: ctl.project.Name,
+		Filter: `method == "/bytebase.v1.ProjectService/UpdateProject"`,
+	}))
+	a.NoError(err)
+	a.Len(updateProjectLogs.Msg.AuditLogs, 1)
+	a.Equal(ctl.project.Name, updateProjectLogs.Msg.AuditLogs[0].Resource)
+
 	// --- Part 2: Signup (workspace-scoped, allow_without_credential) ---
 	//
 	// The initial `signupAndLogin` in setup already produced a Signup audit
