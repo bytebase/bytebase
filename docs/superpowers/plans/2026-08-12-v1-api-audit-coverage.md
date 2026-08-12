@@ -18,7 +18,7 @@
 - Keep `TestWebhook` unaudited because it sends a synthetic outbound probe without changing persisted project configuration.
 - Keep POST-based searches, CEL parse/deparse, schema diffs, release checks, instance database discovery, and rollback previews unaudited.
 - Do not add blanket auditing to worksheet reads in the legacy service. The saved-query migration owns metadata-only search and conditional auditing for another user's private content.
-- Run the repository's proto workflow after every proto batch: `buf format -w proto`, `buf lint proto`, then `cd proto && buf generate`.
+- Run the repository's proto workflow after every proto batch: `buf format -w proto`, `buf lint proto`, then `(cd proto && buf generate)` so later commands remain at the repository root.
 - Run `gofmt -w` on modified Go files and the focused Go tests after each task. Run the full Go lint/build gates before completion.
 
 ---
@@ -50,13 +50,14 @@ Audit these 27 RPCs in this plan:
 - Modify: `proto/v1/v1/revision_service.proto`
 - Modify: `backend/api/v1/audit.go`
 - Modify: `backend/api/v1/audit_test.go`
+- Modify: `backend/api/v1/audit_redaction_test.go`
 - Test: `backend/tests/login_audit_test.go`
 - Test: `backend/tests/project_instance_test.go`
 - Generated: `backend/generated-go/v1/`, `frontend/src/types/proto-es/v1/`, `proto/gen/grpc-doc/`, `backend/api/mcp/gen/`
 
 **Interfaces:**
-- Consumes: existing `getRequestResource(any) string` and proto `bytebase.v1.audit` extension.
-- Produces: audited descriptors and canonical resource names for nine low-risk lifecycle RPCs.
+- Consumes: existing `getRequestResource(any) string`, `maskedString`, `proto.CloneOf`, and proto `bytebase.v1.audit` extension.
+- Produces: audited descriptors, canonical resource names, and clone-first project payload redaction for nine lifecycle RPCs.
 
 - [ ] **Step 1: Extend the resource extraction test first**
 
@@ -104,7 +105,61 @@ case *v1pb.DeleteRevisionRequest:
 	return r.GetName()
 ```
 
-- [ ] **Step 4: Annotate the low-risk RPCs**
+- [ ] **Step 4: Add failing project payload redaction tests**
+
+In `backend/api/v1/audit_redaction_test.go`, add request cases for both project mutations with `secretSentinel` in a nested webhook URL:
+
+```go
+{"create project webhook URL", &v1pb.CreateProjectRequest{Project: &v1pb.Project{
+	Webhooks: []*v1pb.Webhook{{Name: "projects/project-a/webhooks/webhook-a", Url: secretSentinel}},
+}}},
+{"update project webhook URL", &v1pb.UpdateProjectRequest{Project: &v1pb.Project{
+	Name: "projects/project-a",
+	Webhooks: []*v1pb.Webhook{{Name: "projects/project-a/webhooks/webhook-a", Url: secretSentinel}},
+}}},
+```
+
+Add a response case for `Project` with the same nested webhook URL. Extend `TestAuditRedactionDoesNotMutateInput` with a project response and assert its original webhook URL remains `secretSentinel` after serialization.
+
+- [ ] **Step 5: Run the redaction tests and verify they fail**
+
+```bash
+go test ./backend/api/v1 -run '^TestAudit(Request|Response)RedactsCredentials$' -count=1
+```
+
+Expected: FAIL because project request and response payloads currently serialize webhook URLs unchanged.
+
+- [ ] **Step 6: Implement clone-first project redaction**
+
+Add the nested webhook and project redactors to `backend/api/v1/audit.go`:
+
+```go
+func redactWebhook(w *v1pb.Webhook) *v1pb.Webhook {
+	if w == nil {
+		return nil
+	}
+	cloned := proto.CloneOf(w)
+	if cloned.Url != "" {
+		cloned.Url = maskedString
+	}
+	return cloned
+}
+
+func redactProject(p *v1pb.Project) *v1pb.Project {
+	if p == nil {
+		return nil
+	}
+	cloned := proto.CloneOf(p)
+	for i, webhook := range cloned.Webhooks {
+		cloned.Webhooks[i] = redactWebhook(webhook)
+	}
+	return cloned
+}
+```
+
+Register `CreateProjectRequest` and `UpdateProjectRequest` in `getRequestString`, cloning the outer request and replacing its nested project with `redactProject`. Register `Project` in `getResponseString`. Preserve project IDs, update masks, names, webhook names/types/titles, and all other non-secret fields.
+
+- [ ] **Step 7: Annotate the low-risk RPCs**
 
 Add this option inside each RPC block for `SetupSample`, `CreateProject`, `UpdateProject`, `RunPlanChecks`, `CancelPlanCheckRun`, `DeleteRelease`, `UndeleteRelease`, `BatchCreateRevisions`, and `DeleteRevision`:
 
@@ -112,29 +167,29 @@ Add this option inside each RPC block for `SetupSample`, `CreateProject`, `Updat
 option (bytebase.v1.audit) = true;
 ```
 
-- [ ] **Step 5: Generate and run focused unit tests**
+- [ ] **Step 8: Generate and run focused unit tests**
 
 Run:
 
 ```bash
 buf format -w proto
 buf lint proto
-cd proto && buf generate
-gofmt -w backend/api/v1/audit.go backend/api/v1/audit_test.go
-go test ./backend/api/v1 -run '^(TestLifecycleAuditResource|TestAuditRedactionDoesNotMutateInput)$' -count=1
+(cd proto && buf generate)
+gofmt -w backend/api/v1/audit.go backend/api/v1/audit_test.go backend/api/v1/audit_redaction_test.go
+go test ./backend/api/v1 -run '^(TestLifecycleAuditResource|TestAudit(Request|Response)RedactsCredentials|TestAuditRedactionDoesNotMutateInput)$' -count=1
 ```
 
 Expected: all commands PASS.
 
-- [ ] **Step 6: Add persistence regression coverage for the original symptom**
+- [ ] **Step 9: Add persistence regression coverage for the original symptom**
 
-In `backend/tests/login_audit_test.go`, create a project, query workspace audit logs with:
+In `backend/tests/login_audit_test.go`, reuse `ctl.project`, which `StartServerWithExternalPg` already created through `ProjectService.CreateProject`. Query workspace audit logs with:
 
 ```go
 Filter: `method == "/bytebase.v1.ProjectService/CreateProject"`,
 ```
 
-Assert exactly one matching row has the workspace parent and the canonical project resource. Update that project, query its project-scoped audit stream for `ProjectService/UpdateProject`, and assert the resource is the same project name.
+Scan the method-matched rows for `Resource == ctl.project.Name` and require exactly one such row; do not assert that the method filter itself returns only one row because setup or future fixtures may create other projects. Assert that row has the workspace parent. Update `ctl.project`, query its project-scoped audit stream for `ProjectService/UpdateProject`, and assert the resource is `ctl.project.Name`.
 
 In `backend/tests/project_instance_test.go`, immediately after the project-scoped instance is created, query its project audit stream for:
 
@@ -144,7 +199,7 @@ Filter: `method == "/bytebase.v1.InstanceService/CreateInstance"`,
 
 Assert a row exists with `Resource == projectInstance.Name`. This pins the distinction between “descriptor is annotated” and “row was actually persisted.”
 
-- [ ] **Step 7: Run the lifecycle integration tests**
+- [ ] **Step 10: Run the lifecycle integration tests**
 
 Run:
 
@@ -154,10 +209,10 @@ go test -v -count=1 ./backend/tests -run '^(TestAuditLogFormat|TestProjectInstan
 
 Expected: PASS, including persisted `CreateProject`, `UpdateProject`, and `CreateInstance` rows.
 
-- [ ] **Step 8: Commit the low-risk batch**
+- [ ] **Step 11: Commit the low-risk batch**
 
 ```bash
-git add proto/v1/v1/actuator_service.proto proto/v1/v1/project_service.proto proto/v1/v1/plan_service.proto proto/v1/v1/release_service.proto proto/v1/v1/revision_service.proto backend/api/v1/audit.go backend/api/v1/audit_test.go backend/tests/login_audit_test.go backend/tests/project_instance_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen
+git add proto/v1/v1/actuator_service.proto proto/v1/v1/project_service.proto proto/v1/v1/plan_service.proto proto/v1/v1/release_service.proto proto/v1/v1/revision_service.proto backend/api/v1/audit.go backend/api/v1/audit_test.go backend/api/v1/audit_redaction_test.go backend/tests/login_audit_test.go backend/tests/project_instance_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen
 git commit -m "feat: audit core lifecycle APIs"
 ```
 
@@ -252,7 +307,7 @@ Extend `TestAuditRedactionDoesNotMutateInput` with a release and worksheet, call
 ```bash
 buf format -w proto
 buf lint proto
-cd proto && buf generate
+(cd proto && buf generate)
 gofmt -w backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/api/v1/audit_test.go
 go test ./backend/api/v1 -run '^(TestAudit(Request|Response)RedactsCredentials|TestAuditRedactionDoesNotMutateInput|TestLifecycleAuditResource)$' -count=1
 ```
@@ -344,7 +399,7 @@ Extend `backend/tests/login_audit_test.go` to assert:
 ```bash
 buf format -w proto
 buf lint proto
-cd proto && buf generate
+(cd proto && buf generate)
 gofmt -w backend/api/v1/auth_service.go backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/tests/login_audit_test.go
 go test ./backend/api/v1 -run '^(TestAudit(Request|Response)RedactsCredentials|TestAuditRedactionDoesNotMutateInput)$' -count=1
 go test -v -count=1 ./backend/tests -run '^TestAuditLogFormat$' -timeout 10m
@@ -408,7 +463,7 @@ Leave `Resource` empty for these workspace-singleton operations; the authenticat
 ```bash
 buf format -w proto
 buf lint proto
-cd proto && buf generate
+(cd proto && buf generate)
 gofmt -w backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go
 go test ./backend/api/v1 -run '^(TestAudit(Request|Response)RedactsCredentials|TestAuditRedactionDoesNotMutateInput)$' -count=1
 ```
@@ -443,7 +498,7 @@ git commit -m "feat: audit subscription management actions"
 
 - [ ] **Step 1: Add failing secret/content tests**
 
-Add cases for webhook URL, OAuth/OIDC authorization code, LDAP password, SMTP password, AI message content/tool arguments/provider metadata, and exported audit-log bytes. Keep safe identifiers such as project name, webhook name/title, recipient email, IdP name, AI token usage, and export page token.
+Add cases for OAuth/OIDC authorization code, LDAP password, SMTP password, AI message content/tool arguments/provider metadata, exported audit-log bytes, and identity-provider response claims/user info. The shared project redactor from Task 1 already covers webhook URLs in webhook requests and returned `Project` responses. Keep safe identifiers such as project name, webhook name/title, recipient email, IdP name, AI token usage, and export page token.
 
 - [ ] **Step 2: Extract a reusable email-setting redactor**
 
@@ -454,11 +509,11 @@ Create `redactEmailSetting(*v1pb.EmailSetting) *v1pb.EmailSetting` by moving the
 Implement these exact contracts:
 
 ```go
-func redactWebhook(w *v1pb.Webhook) *v1pb.Webhook
-// Clone; replace a non-empty URL with maskedString; keep name, type, title, and direct-message metadata.
-
 func redactTestIdentityProviderRequest(r *v1pb.TestIdentityProviderRequest) *v1pb.TestIdentityProviderRequest
 // Clone; call redactIdentityProvider; mask OAuth/OIDC code and LDAP password.
+
+func redactTestIdentityProviderResponse(r *v1pb.TestIdentityProviderResponse) *v1pb.TestIdentityProviderResponse
+// Return an empty response; provider claims and mapped email, title, and phone are identity data, not audit metadata.
 
 func redactAIChatRequest(r *v1pb.AIChatRequest) *v1pb.AIChatRequest
 // Return an empty AIChatRequest so prompts, tool schemas, tool arguments, and provider metadata are never logged.
@@ -470,7 +525,7 @@ func redactExportAuditLogsResponse(r *v1pb.ExportAuditLogsResponse) *v1pb.Export
 // Return only NextPageToken; drop Content.
 ```
 
-Register Add/Update/Remove webhook requests, `TestIdentityProviderRequest`, `TestEmailSettingRequest`, `AIChatRequest`, `AIChatResponse`, and `ExportAuditLogsResponse` in the serializer switches.
+Register Add/Update/Remove webhook requests using Task 1's `redactWebhook`, and register `TestIdentityProviderRequest`, `TestIdentityProviderResponse`, `TestEmailSettingRequest`, `AIChatRequest`, `AIChatResponse`, and `ExportAuditLogsResponse` in the serializer switches. Add response-side sentinel cases for both `TestIdentityProviderResponse.Claims` and `TestIdentityProviderResponse.UserInfo`, and assert the serialized response is empty.
 
 - [ ] **Step 4: Add canonical resource extraction**
 
@@ -498,7 +553,7 @@ Add `audit = true` to `AddWebhook`, `UpdateWebhook`, `RemoveWebhook`, `TestIdent
 ```bash
 buf format -w proto
 buf lint proto
-cd proto && buf generate
+(cd proto && buf generate)
 gofmt -w backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/api/v1/audit_test.go
 go test ./backend/api/v1 -run '^(TestAudit(Request|Response)RedactsCredentials|TestAuditRedactionDoesNotMutateInput|TestLifecycleAuditResource)$' -count=1
 ```
@@ -647,7 +702,7 @@ Add an “Audit annotation coverage” section to `docs/design/v1-api-audit-2026
 ```bash
 buf format -w proto
 buf lint proto
-cd proto && buf generate
+(cd proto && buf generate)
 gofmt -w backend/api/v1/audit.go backend/api/v1/audit_test.go backend/api/v1/audit_redaction_test.go backend/api/v1/audit_policy_test.go backend/api/v1/auth_service.go backend/tests/login_audit_test.go backend/tests/project_instance_test.go
 go test ./backend/api/v1 -count=1
 go test -v -count=1 ./backend/tests -run '^(TestAuditLogFormat|TestProjectInstanceCoreBehavior|TestAdminExecuteAuditLog)$' -timeout 10m
