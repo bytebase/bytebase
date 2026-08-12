@@ -95,13 +95,12 @@ const ALLOWED_ROUTE_PATTERNS = [
 //   - EDITOR change-mode workspaces go to the SQL Editor home
 //   - otherwise the user's last meaningful visit, if any
 //   - falling back to the landing page
-// `appFeatures` must already hold the workspace profile when this runs. Two
-// callers guarantee that: `main.ts` awaits `loadWorkspaceProfile()` before
-// mounting when the boot already had a session, and `login()` awaits it before
-// navigating when the boot did not. A signed-out boot cannot read the profile
-// (the setting is authenticated-only), so any future auth path that navigates
-// here must load it first or EDITOR workspaces silently fall through to the
-// landing page.
+// This is the single owner of "where does '/' go". It reads `appFeatures`, so
+// every caller that navigates to "/" must have loaded the workspace profile
+// first. A signed-out boot cannot load it (the setting is authenticated-only),
+// so the auth paths load it themselves before they navigate; miss that and an
+// EDITOR workspace silently falls through to the landing page. The loader must
+// resolve synchronously (see AppRoot), so it cannot fetch the profile itself.
 function resolveRootRedirect(
   store: ReturnType<typeof useAppStore.getState>
 ): string {

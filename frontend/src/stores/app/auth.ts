@@ -9,7 +9,6 @@ import {
   AUTH_PROFILE_SETUP_MODULE,
   AUTH_SIGNIN_MODULE,
   SETUP_MODULE,
-  SQL_EDITOR_HOME_MODULE,
 } from "@/app/router/handles";
 import {
   navigateByName,
@@ -21,7 +20,6 @@ import {
   SendEmailLoginCodeRequestSchema,
   SignupRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
-import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UNKNOWN_USER_NAME } from "@/types/v1/user";
 import { storageKeyResetPassword } from "@/utils/storage-keys";
@@ -146,7 +144,7 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     const redirectQuery = new URLSearchParams(window.location.search).get(
       "redirect"
     );
-    let nextPage = redirectUrl ?? (redirectQuery || "/");
+    const nextPage = redirectUrl ?? (redirectQuery || "/");
     if (resp.mfaTempToken) {
       set({ unauthenticatedOccurred: false });
       navigateByName(AUTH_MFA_MODULE, {
@@ -165,24 +163,16 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     await get().fetchServerInfo(user?.workspace);
     // Re-fetch the current workspace now that we're authenticated.
     await get().loadWorkspace();
-    // The workspace profile is only fetchable once authenticated, so a boot
-    // that started signed out left `appFeatures` at its PIPELINE default.
-    // Load it before anything reads the change mode below — `rootGuard`'s
-    // `resolveRootRedirect` reads the same store right after we navigate.
+    // `rootGuard` decides where "/" goes, and it reads the workspace change
+    // mode from this store. The profile is only fetchable once authenticated,
+    // so a boot that started signed out left `appFeatures` at its PIPELINE
+    // default and an EDITOR workspace would fall through to the landing page.
     // `force` because a previous user's profile must not survive a re-auth.
     await get().loadWorkspaceProfile(true);
 
     // After user login, reset the auth session key.
     set({ authSessionKey: uniqueId() });
 
-    if (
-      redirectUrl === undefined &&
-      !redirectQuery &&
-      get().appFeatures["bb.feature.database-change-mode"] ===
-        DatabaseChangeMode.EDITOR
-    ) {
-      nextPage = resolvePath(SQL_EDITOR_HOME_MODULE);
-    }
     if (resp.requireResetPassword) {
       navigateByName(AUTH_PASSWORD_RESET_MODULE, {
         query: { redirect: nextPage },
@@ -218,6 +208,9 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     }
 
     await get().fetchServerInfo(user?.workspace);
+    // See `login()`. Loaded above the onboarding branch because `SetupPage`
+    // reads the change mode too, and its skip button navigates to "/".
+    await get().loadWorkspaceProfile(true);
     set({ authSessionKey: uniqueId() });
 
     if (get().enableOnboarding()) {
@@ -225,20 +218,10 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
       return;
     }
 
-    // See `login()`: `appFeatures` is still at its default until the profile
-    // is loaded, and signup boots signed out by definition.
-    await get().loadWorkspaceProfile(true);
-
-    const getRedirectQuery = () =>
-      new URLSearchParams(window.location.search).get("redirect");
-    let nextPage = getRedirectQuery() || "/";
-    if (
-      get().appFeatures["bb.feature.database-change-mode"] ===
-      DatabaseChangeMode.EDITOR
-    ) {
-      nextPage = resolvePath(SQL_EDITOR_HOME_MODULE);
-    }
-    navigateToPath(nextPage, { replace: true });
+    const redirectQuery = new URLSearchParams(window.location.search).get(
+      "redirect"
+    );
+    navigateToPath(redirectQuery || "/", { replace: true });
   },
 
   logout: async () => {

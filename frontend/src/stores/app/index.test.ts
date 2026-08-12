@@ -101,6 +101,7 @@ const mocks = vi.hoisted(() => ({
       return serialized ? `${base}?${serialized}` : base;
     }
   ),
+  signup: vi.fn(),
   getActuatorInfo: vi.fn(),
   getWorkspace: vi.fn(),
   updateWorkspace: vi.fn(),
@@ -192,6 +193,7 @@ vi.mock("@/api", () => ({
   authServiceClientConnect: {
     login: mocks.login,
     logout: mocks.logout,
+    signup: mocks.signup,
   },
   projectServiceClientConnect: {
     getProject: mocks.getProject,
@@ -585,7 +587,47 @@ describe("useAppStore", () => {
     expect(
       store.getState().appFeatures["bb.feature.database-change-mode"]
     ).toBe(DatabaseChangeMode.EDITOR);
-    expect(mocks.navigateToPath).toHaveBeenCalledWith("/sql-editor", {
+    // `rootGuard` owns the "/" policy and turns this into the SQL Editor; see
+    // the root-redirect tests in app/router/guard.test.ts. What `login()` owes
+    // it is a loaded profile, asserted above.
+    expect(mocks.navigateToPath).toHaveBeenCalledWith("/", { replace: true });
+  });
+
+  // Regression guard: `signup()` used to override the destination with the SQL
+  // Editor whenever the mode read EDITOR, with no check for an explicit
+  // redirect. That branch was dead (signup always boots signed out, so the mode
+  // was never EDITOR) until the profile load made it live, which would have
+  // silently dropped deep links.
+  test("signup keeps an explicit redirect in an EDITOR workspace", async () => {
+    vi.stubGlobal("location", { search: "?redirect=%2Fprojects%2Ffoo" });
+    mocks.signup.mockResolvedValue({});
+    mocks.getCurrentUser.mockResolvedValue(user);
+    // activeUserCount > 1 so `enableOnboarding()` is false and signup navigates.
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      activeUserCount: 2,
+    });
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "workspaceProfile",
+            value: createProto(WorkspaceProfileSettingSchema, {
+              databaseChangeMode: DatabaseChangeMode.EDITOR,
+            }),
+          },
+        }),
+      })
+    );
+    const store = createAppStore();
+
+    await store.getState().signup({
+      email: user.email,
+      name: "Test",
+      password: "secret",
+    } as never);
+
+    expect(mocks.navigateToPath).toHaveBeenCalledWith("/projects/foo", {
       replace: true,
     });
   });
