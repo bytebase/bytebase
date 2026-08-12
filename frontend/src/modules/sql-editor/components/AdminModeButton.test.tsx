@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   state: {
     project: "projects/test" as string,
     allowAdmin: true,
-    currentTabMode: "WORKSHEET" as string | undefined,
+    currentTabMode: "SAVED_QUERY" as string | undefined,
     isDisconnected: false,
   },
   updateCurrentTab: vi.fn(),
@@ -83,10 +83,10 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  // Default: allow admin, WORKSHEET mode, connected.
+  // Default: allow admin, SAVED_QUERY mode, connected.
   mocks.state.project = "projects/test";
   mocks.state.allowAdmin = true;
-  mocks.state.currentTabMode = "WORKSHEET";
+  mocks.state.currentTabMode = "SAVED_QUERY";
   mocks.state.isDisconnected = false;
   mocks.useSQLEditorAllowAdmin.mockImplementation(() => mocks.state.allowAdmin);
   ({ AdminModeButton } = await import("./AdminModeButton"));
@@ -95,7 +95,7 @@ beforeEach(async () => {
 describe("AdminModeButton", () => {
   test("renders nothing when allowAdmin is false", () => {
     mocks.state.allowAdmin = false;
-    mocks.state.currentTabMode = "WORKSHEET";
+    mocks.state.currentTabMode = "SAVED_QUERY";
     mocks.state.isDisconnected = false;
     const { container, render, unmount } = renderIntoContainer(
       <AdminModeButton />
@@ -105,7 +105,7 @@ describe("AdminModeButton", () => {
     unmount();
   });
 
-  test("renders nothing when current tab mode is not WORKSHEET", () => {
+  test("renders nothing when current tab mode is not SAVED_QUERY", () => {
     mocks.state.allowAdmin = true;
     mocks.state.currentTabMode = "ADMIN";
     mocks.state.isDisconnected = false;
@@ -119,7 +119,7 @@ describe("AdminModeButton", () => {
 
   test("renders disabled button when isDisconnected is true", () => {
     mocks.state.allowAdmin = true;
-    mocks.state.currentTabMode = "WORKSHEET";
+    mocks.state.currentTabMode = "SAVED_QUERY";
     mocks.state.isDisconnected = true;
     const { container, render, unmount } = renderIntoContainer(
       <AdminModeButton />
@@ -133,7 +133,7 @@ describe("AdminModeButton", () => {
 
   test("click sets currentTab.mode to ADMIN", () => {
     mocks.state.allowAdmin = true;
-    mocks.state.currentTabMode = "WORKSHEET";
+    mocks.state.currentTabMode = "SAVED_QUERY";
     mocks.state.isDisconnected = false;
     const { container, render, unmount } = renderIntoContainer(
       <AdminModeButton />

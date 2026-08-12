@@ -5769,6 +5769,357 @@ paths:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.SearchQueryHistoriesResponse'
       deprecated: true
+  /bytebase.v1.SavedQueryService/BatchUpdateSavedQueryOrganizer:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: BatchUpdateSavedQueryOrganizer
+      description: |-
+        Batch update the organizers of saved queries.
+         The access is the same as UpdateSavedQuery method.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: bytebase.v1.SavedQueryService.BatchUpdateSavedQueryOrganizer
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.BatchUpdateSavedQueryOrganizerRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.BatchUpdateSavedQueryOrganizerResponse'
+  /bytebase.v1.SavedQueryService/CreateSavedQuery:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: CreateSavedQuery
+      description: |-
+        Creates a personal saved query used in SQL Editor. Any authenticated user can create their own saved queries.
+         Permissions required: None (authenticated users only)
+      operationId: bytebase.v1.SavedQueryService.CreateSavedQuery
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.CreateSavedQueryRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+  /bytebase.v1.SavedQueryService/DeleteSavedQuery:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: DeleteSavedQuery
+      description: |-
+        Delete a saved query.
+         The access is the same as UpdateSavedQuery method.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: bytebase.v1.SavedQueryService.DeleteSavedQuery
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.DeleteSavedQueryRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /bytebase.v1.SavedQueryService/GetSavedQuery:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: GetSavedQuery
+      description: |-
+        Get a saved query by name.
+         Saved queries are private: only the creator, or a caller holding
+         bb.worksheets.manage on the workspace, can access one.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: bytebase.v1.SavedQueryService.GetSavedQuery
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetSavedQueryRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+  /bytebase.v1.SavedQueryService/ListSavedQueries:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: ListSavedQueries
+      description: |-
+        List saved queries.
+         This is used for listing saved queries in a project, or across all projects by using `projects/-`.
+         Permissions required: bb.worksheets.list
+      operationId: bytebase.v1.SavedQueryService.ListSavedQueries
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListSavedQueriesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListSavedQueriesResponse'
+  /bytebase.v1.SavedQueryService/ListSavedQueryFolders:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: ListSavedQueryFolders
+      description: |-
+        List the caller's saved query folders.
+         Only folders stored in the caller's saved query organizer are returned.
+      operationId: bytebase.v1.SavedQueryService.ListSavedQueryFolders
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListSavedQueryFoldersRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListSavedQueryFoldersResponse'
+  /bytebase.v1.SavedQueryService/SearchSavedQueries:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: SearchSavedQueries
+      description: |-
+        Search for saved queries.
+         This is used for finding my saved queries in a project.
+         The saved query accessibility is the same as GetSavedQuery().
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: bytebase.v1.SavedQueryService.SearchSavedQueries
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.SearchSavedQueriesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SearchSavedQueriesResponse'
+  /bytebase.v1.SavedQueryService/UpdateSavedQuery:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: UpdateSavedQuery
+      description: |-
+        Update a saved query.
+         The access is the same as GetSavedQuery method.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: bytebase.v1.SavedQueryService.UpdateSavedQuery
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.UpdateSavedQueryRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+  /bytebase.v1.SavedQueryService/UpdateSavedQueryOrganizer:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: UpdateSavedQueryOrganizer
+      description: |-
+        Update the organizer of a saved query.
+         The access is the same as UpdateSavedQuery method.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: bytebase.v1.SavedQueryService.UpdateSavedQueryOrganizer
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.UpdateSavedQueryOrganizerRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
   /bytebase.v1.ServiceAccountService/CreateServiceAccount:
     post:
       tags:
@@ -7173,362 +7524,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
-  /bytebase.v1.WorksheetService/BatchUpdateWorksheetOrganizer:
-    post:
-      tags:
-        - bytebase.v1.WorksheetService
-      summary: BatchUpdateWorksheetOrganizer
-      description: |-
-        Batch update the organizers of worksheets.
-         The access is the same as UpdateWorksheet method.
-         Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
-      operationId: bytebase.v1.WorksheetService.BatchUpdateWorksheetOrganizer
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.BatchUpdateWorksheetOrganizerRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.BatchUpdateWorksheetOrganizerResponse'
-  /bytebase.v1.WorksheetService/CreateWorksheet:
-    post:
-      tags:
-        - bytebase.v1.WorksheetService
-      summary: CreateWorksheet
-      description: |-
-        Creates a personal worksheet used in SQL Editor. Any authenticated user can create their own worksheets.
-         Permissions required: None (authenticated users only)
-      operationId: bytebase.v1.WorksheetService.CreateWorksheet
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.CreateWorksheetRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.Worksheet'
-  /bytebase.v1.WorksheetService/DeleteWorksheet:
-    post:
-      tags:
-        - bytebase.v1.WorksheetService
-      summary: DeleteWorksheet
-      description: |-
-        Delete a worksheet.
-         The access is the same as UpdateWorksheet method.
-         Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
-      operationId: bytebase.v1.WorksheetService.DeleteWorksheet
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.DeleteWorksheetRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/google.protobuf.Empty'
-  /bytebase.v1.WorksheetService/GetWorksheet:
-    post:
-      tags:
-        - bytebase.v1.WorksheetService
-      summary: GetWorksheet
-      description: |-
-        Get a worksheet by name.
-         The users can access this method if,
-         - they are the creator of the worksheet;
-         - they have bb.worksheets.get permission on the workspace;
-         - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-         Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
-      operationId: bytebase.v1.WorksheetService.GetWorksheet
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.GetWorksheetRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.Worksheet'
-  /bytebase.v1.WorksheetService/ListWorksheetFolders:
-    post:
-      tags:
-        - bytebase.v1.WorksheetService
-      summary: ListWorksheetFolders
-      description: |-
-        List the caller's worksheet folders.
-         Only folders stored in the caller's worksheet organizer are returned.
-      operationId: bytebase.v1.WorksheetService.ListWorksheetFolders
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.ListWorksheetFoldersRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.ListWorksheetFoldersResponse'
-  /bytebase.v1.WorksheetService/ListWorksheets:
-    post:
-      tags:
-        - bytebase.v1.WorksheetService
-      summary: ListWorksheets
-      description: |-
-        List worksheets.
-         This is used for listing worksheets in a project, or across all projects by using `projects/-`.
-         Permissions required: bb.worksheets.list
-      operationId: bytebase.v1.WorksheetService.ListWorksheets
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.ListWorksheetsRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.ListWorksheetsResponse'
-  /bytebase.v1.WorksheetService/SearchWorksheets:
-    post:
-      tags:
-        - bytebase.v1.WorksheetService
-      summary: SearchWorksheets
-      description: |-
-        Search for worksheets.
-         This is used for finding my worksheets or worksheets shared by other people.
-         The sheet accessibility is the same as GetWorksheet().
-         Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
-      operationId: bytebase.v1.WorksheetService.SearchWorksheets
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.SearchWorksheetsRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.SearchWorksheetsResponse'
-  /bytebase.v1.WorksheetService/UpdateWorksheet:
-    post:
-      tags:
-        - bytebase.v1.WorksheetService
-      summary: UpdateWorksheet
-      description: |-
-        Update a worksheet.
-         The users can access this method if,
-         - they are the creator of the worksheet;
-         - they have bb.worksheets.manage permission on the workspace;
-         - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-         Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
-      operationId: bytebase.v1.WorksheetService.UpdateWorksheet
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.UpdateWorksheetRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.Worksheet'
-  /bytebase.v1.WorksheetService/UpdateWorksheetOrganizer:
-    post:
-      tags:
-        - bytebase.v1.WorksheetService
-      summary: UpdateWorksheetOrganizer
-      description: |-
-        Update the organizer of a worksheet.
-         The access is the same as UpdateWorksheet method.
-         Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
-      operationId: bytebase.v1.WorksheetService.UpdateWorksheetOrganizer
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.UpdateWorksheetOrganizerRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.WorksheetOrganizer'
   /bytebase.v1.WorkspaceService/DeleteWorkspace:
     post:
       tags:
@@ -9286,14 +9281,14 @@ components:
       type: object
       title: BatchUpdateIssuesStatusResponse
       additionalProperties: false
-    bytebase.v1.BatchUpdateWorksheetOrganizerRequest:
+    bytebase.v1.BatchUpdateSavedQueryOrganizerRequest:
       type: object
       properties:
         parent:
           type: string
           title: parent
           description: |-
-            The parent resource whose worksheets' organizers are updated.
+            The parent resource whose saved queries' organizers are updated.
              Format: projects/{project}
         filter:
           type: string
@@ -9303,39 +9298,38 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filter:
-             - name: the worksheet name in "projects/{project}/worksheets/{worksheet}" format, support "==" and "in [xx]" operator.
-             - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
-             - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
-             - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
-             - folder: the worksheet organizer folder path, support exact "==" operator.
+             - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
+             - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
+             - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
+             - folder: the saved query organizer folder path, support exact "==" operator.
         organizer:
           title: organizer
           description: The organizer fields to update.
-          $ref: '#/components/schemas/bytebase.v1.WorksheetOrganizer'
+          $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
         updateMask:
           title: update_mask
           description: |-
             The list of fields to be updated.
-             Fields are specified relative to the worksheet organizer.
+             Fields are specified relative to the saved query organizer.
              Only support update the following fields for now:
              - `starred`
              - `folders`
           $ref: '#/components/schemas/google.protobuf.FieldMask'
-      title: BatchUpdateWorksheetOrganizerRequest
+      title: BatchUpdateSavedQueryOrganizerRequest
       additionalProperties: false
-    bytebase.v1.BatchUpdateWorksheetOrganizerResponse:
+    bytebase.v1.BatchUpdateSavedQueryOrganizerResponse:
       type: object
       properties:
-        worksheetOrganizers:
+        savedQueryOrganizers:
           type: array
           items:
-            $ref: '#/components/schemas/bytebase.v1.WorksheetOrganizer'
-          title: worksheet_organizers
+            $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
+          title: saved_query_organizers
         updatedCount:
           type: integer
           title: updated_count
           format: int32
-      title: BatchUpdateWorksheetOrganizerResponse
+      title: BatchUpdateSavedQueryOrganizerResponse
       additionalProperties: false
     bytebase.v1.BillingInterval:
       type: string
@@ -10162,6 +10156,21 @@ components:
              If set to "", no stages are created.
       title: CreateRolloutRequest
       additionalProperties: false
+    bytebase.v1.CreateSavedQueryRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource where this saved query will be created.
+             Format: projects/{project}
+        savedQuery:
+          title: saved_query
+          description: The saved query to create.
+          $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+      title: CreateSavedQueryRequest
+      additionalProperties: false
     bytebase.v1.CreateServiceAccountRequest:
       type: object
       properties:
@@ -10232,21 +10241,6 @@ components:
       title: CreateWorkloadIdentityRequest
       additionalProperties: false
       description: Request message for creating a workload identity.
-    bytebase.v1.CreateWorksheetRequest:
-      type: object
-      properties:
-        parent:
-          type: string
-          title: parent
-          description: |-
-            The parent resource where this worksheet will be created.
-             Format: projects/{project}
-        worksheet:
-          title: worksheet
-          description: The worksheet to create.
-          $ref: '#/components/schemas/bytebase.v1.Worksheet'
-      title: CreateWorksheetRequest
-      additionalProperties: false
     bytebase.v1.DataClassificationSetting:
       type: object
       properties:
@@ -11187,6 +11181,17 @@ components:
              Format: roles/{role}
       title: DeleteRoleRequest
       additionalProperties: false
+    bytebase.v1.DeleteSavedQueryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the saved query to delete.
+             Format: projects/{project}/savedQueries/{savedQuery}
+      title: DeleteSavedQueryRequest
+      additionalProperties: false
     bytebase.v1.DeleteServiceAccountRequest:
       type: object
       properties:
@@ -11222,17 +11227,6 @@ components:
       title: DeleteWorkloadIdentityRequest
       additionalProperties: false
       description: Request message for deleting a workload identity.
-    bytebase.v1.DeleteWorksheetRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          title: name
-          description: |-
-            The name of the worksheet to delete.
-             Format: projects/{project}/worksheets/{worksheet}
-      title: DeleteWorksheetRequest
-      additionalProperties: false
     bytebase.v1.DeleteWorkspaceRequest:
       type: object
       properties:
@@ -12294,6 +12288,17 @@ components:
              Format: projects/{project}/plans/{plan}/rollout
       title: GetRolloutRequest
       additionalProperties: false
+    bytebase.v1.GetSavedQueryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the saved query to retrieve.
+             Format: projects/{project}/savedQueries/{savedQuery}
+      title: GetSavedQueryRequest
+      additionalProperties: false
     bytebase.v1.GetSchemaStringRequest:
       type: object
       properties:
@@ -12443,17 +12448,6 @@ components:
       title: GetWorkloadIdentityRequest
       additionalProperties: false
       description: Request message for getting a workload identity.
-    bytebase.v1.GetWorksheetRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          title: name
-          description: |-
-            The name of the worksheet to retrieve.
-             Format: projects/{project}/worksheets/{worksheet}
-      title: GetWorksheetRequest
-      additionalProperties: false
     bytebase.v1.GetWorkspaceRequest:
       type: object
       properties:
@@ -14456,6 +14450,89 @@ components:
              If this field is omitted, there are no subsequent pages.
       title: ListRolloutsResponse
       additionalProperties: false
+    bytebase.v1.ListSavedQueriesRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource of the saved queries.
+             Format: projects/{project}
+             Use "projects/-" to list saved queries across all projects.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            To filter the list result.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
+
+             For example:
+             creator == "users/{email}"
+             creator != "users/{email}"
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: |-
+            The maximum number of saved queries to return. The service may return fewer than
+             this value.
+             If unspecified, at most 10 saved queries will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            A page token, received from a previous `ListSavedQueries` call.
+             Provide this to retrieve the subsequent page.
+
+             When paginating, all other parameters provided to `ListSavedQueries` must match
+             the call that provided the page token.
+      title: ListSavedQueriesRequest
+      additionalProperties: false
+    bytebase.v1.ListSavedQueriesResponse:
+      type: object
+      properties:
+        savedQueries:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+          title: saved_queries
+          description: The saved queries from the specified parent.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token to retrieve next page of saved queries.
+             Pass this value in the page_token field in the subsequent call to
+             `ListSavedQueries` method to retrieve the next page of saved queries.
+      title: ListSavedQueriesResponse
+      additionalProperties: false
+    bytebase.v1.ListSavedQueryFoldersRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource of the saved query folders.
+             Format: projects/{project}
+      title: ListSavedQueryFoldersRequest
+      additionalProperties: false
+    bytebase.v1.ListSavedQueryFoldersResponse:
+      type: object
+      properties:
+        folders:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.SavedQueryFolder'
+          title: folders
+          description: The caller's saved query folders.
+      title: ListSavedQueryFoldersResponse
+      additionalProperties: false
     bytebase.v1.ListServiceAccountsRequest:
       type: object
       properties:
@@ -14701,89 +14778,6 @@ components:
       title: ListWorkloadIdentitiesResponse
       additionalProperties: false
       description: Response message for listing workload identities.
-    bytebase.v1.ListWorksheetFoldersRequest:
-      type: object
-      properties:
-        parent:
-          type: string
-          title: parent
-          description: |-
-            The parent resource of the worksheet folders.
-             Format: projects/{project}
-      title: ListWorksheetFoldersRequest
-      additionalProperties: false
-    bytebase.v1.ListWorksheetFoldersResponse:
-      type: object
-      properties:
-        folders:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.WorksheetFolder'
-          title: folders
-          description: The caller's worksheet folders.
-      title: ListWorksheetFoldersResponse
-      additionalProperties: false
-    bytebase.v1.ListWorksheetsRequest:
-      type: object
-      properties:
-        parent:
-          type: string
-          title: parent
-          description: |-
-            The parent resource of the worksheets.
-             Format: projects/{project}
-             Use "projects/-" to list worksheets across all projects.
-        filter:
-          type: string
-          title: filter
-          description: |-
-            To filter the list result.
-             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-             Supported filter:
-             - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
-
-             For example:
-             creator == "users/{email}"
-             creator != "users/{email}"
-        pageSize:
-          type: integer
-          title: page_size
-          format: int32
-          description: |-
-            The maximum number of worksheets to return. The service may return fewer than
-             this value.
-             If unspecified, at most 10 worksheets will be returned.
-             The maximum value is 1000; values above 1000 will be coerced to 1000.
-        pageToken:
-          type: string
-          title: page_token
-          description: |-
-            A page token, received from a previous `ListWorksheets` call.
-             Provide this to retrieve the subsequent page.
-
-             When paginating, all other parameters provided to `ListWorksheets` must match
-             the call that provided the page token.
-      title: ListWorksheetsRequest
-      additionalProperties: false
-    bytebase.v1.ListWorksheetsResponse:
-      type: object
-      properties:
-        worksheets:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.Worksheet'
-          title: worksheets
-          description: The worksheets from the specified parent.
-        nextPageToken:
-          type: string
-          title: next_page_token
-          description: |-
-            A token to retrieve next page of worksheets.
-             Pass this value in the page_token field in the subsequent call to
-             `ListWorksheets` method to retrieve the next page of worksheets.
-      title: ListWorksheetsResponse
-      additionalProperties: false
     bytebase.v1.ListWorkspacesRequest:
       type: object
       title: ListWorkspacesRequest
@@ -17693,6 +17687,116 @@ components:
         - BUILTIN_WALK_THROUGH_CHECK
         - STATEMENT_DISALLOW_TRUNCATE
         - BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+    bytebase.v1.SavedQuery:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the saved query resource, generated by the server.
+             Canonical parent is project.
+             Format: projects/{project}/savedQueries/{savedQuery}
+        project:
+          type: string
+          title: project
+          description: |-
+            The project resource name.
+             Format: projects/{project}
+        database:
+          type: string
+          title: database
+          description: |-
+            The database resource name.
+             Format: instances/{instance}/databases/{database}
+             If the database parent doesn't exist, the database field is empty.
+        title:
+          type: string
+          title: title
+          maxLength: 200
+          description: The title of the saved query.
+        creator:
+          type: string
+          title: creator
+          description: |-
+            The creator of the SavedQuery.
+             Format: users/{email}
+        createTime:
+          title: create_time
+          description: The create time of the saved query.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        updateTime:
+          title: update_time
+          description: The last update time of the saved query.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        content:
+          type: string
+          title: content
+          format: byte
+          description: |-
+            The content of the saved query.
+             By default, it will be cut off in SearchSavedQueries() method. If it doesn't match the `content_size`, you can
+             use GetSavedQuery() request to retrieve the full content.
+        contentSize:
+          type:
+            - integer
+            - string
+          title: content_size
+          format: int64
+          description: content_size is the full size of the content, may not match the size of the `content` field.
+        starred:
+          type: boolean
+          title: starred
+          description: starred indicates whether the saved query is starred by the current authenticated user.
+        folders:
+          type: array
+          items:
+            type: string
+          title: folders
+      title: SavedQuery
+      additionalProperties: false
+    bytebase.v1.SavedQueryFolder:
+      type: object
+      properties:
+        folders:
+          type: array
+          items:
+            type: string
+          title: folders
+          description: The folder path segments.
+        category:
+          title: category
+          description: The folder category.
+          $ref: '#/components/schemas/bytebase.v1.SavedQueryFolder.Category'
+      title: SavedQueryFolder
+      additionalProperties: false
+    bytebase.v1.SavedQueryFolder.Category:
+      type: string
+      title: Category
+      enum:
+        - CATEGORY_UNSPECIFIED
+        - MINE
+        - SHARED
+    bytebase.v1.SavedQueryOrganizer:
+      type: object
+      properties:
+        savedQuery:
+          type: string
+          title: saved_query
+          description: |-
+            The name of the saved query.
+             Format: projects/{project}/savedQueries/{savedQuery}
+        starred:
+          type: boolean
+          title: starred
+          description: starred means if the saved query is starred.
+        folders:
+          type: array
+          items:
+            type: string
+          title: folders
+      title: SavedQueryOrganizer
+      additionalProperties: false
     bytebase.v1.SchemaCatalog:
       type: object
       properties:
@@ -18156,14 +18260,14 @@ components:
              `ListQueryHistory` method to retrieve the next page of history.
       title: SearchQueryHistoriesResponse
       additionalProperties: false
-    bytebase.v1.SearchWorksheetsRequest:
+    bytebase.v1.SearchSavedQueriesRequest:
       type: object
       properties:
         parent:
           type: string
           title: parent
           description: |-
-            The parent resource of the worksheets.
+            The parent resource of the saved queries.
              Format: projects/{project}
         filter:
           type: string
@@ -18173,56 +18277,53 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filter:
-             - name: the worksheet name in "projects/{project}/worksheets/{worksheet}" format, support "==" and "in [xx]" operator.
-             - title: the worksheet title, support "contains" operator.
-             - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
-             - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
-             - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
-             - folder: the worksheet organizer folder path, support "==" operator.
+             - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
+             - title: the saved query title, support "contains" operator.
+             - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
+             - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
+             - folder: the saved query organizer folder path, support "==" operator.
 
              For example:
              creator == "users/{email}"
-             title.contains("worksheet title")
+             title.contains("saved query title")
              creator != "users/{email}"
              starred == true
              starred == false
-             visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
-             visibility == "PRIVATE"
              folder == "foo/bar"
         pageSize:
           type: integer
           title: page_size
           format: int32
           description: |-
-            The maximum number of worksheets to return. The service may return fewer than
+            The maximum number of saved queries to return. The service may return fewer than
              this value.
-             If unspecified, at most 10 worksheets will be returned.
+             If unspecified, at most 10 saved queries will be returned.
              The maximum value is 1000; values above 1000 will be coerced to 1000.
         pageToken:
           type: string
           title: page_token
           description: |-
-            A page token, received from a previous `SearchWorksheets` call.
+            A page token, received from a previous `SearchSavedQueries` call.
              Provide this to retrieve the subsequent page.
-      title: SearchWorksheetsRequest
+      title: SearchSavedQueriesRequest
       additionalProperties: false
-    bytebase.v1.SearchWorksheetsResponse:
+    bytebase.v1.SearchSavedQueriesResponse:
       type: object
       properties:
-        worksheets:
+        savedQueries:
           type: array
           items:
-            $ref: '#/components/schemas/bytebase.v1.Worksheet'
-          title: worksheets
-          description: The worksheets that matched the search criteria.
+            $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+          title: saved_queries
+          description: The saved queries that matched the search criteria.
         nextPageToken:
           type: string
           title: next_page_token
           description: |-
-            A token to retrieve next page of worksheets.
+            A token to retrieve next page of saved queries.
              Pass this value in the page_token field in the subsequent call to
-             `SearchWorksheets` method to retrieve the next page of worksheets.
-      title: SearchWorksheetsResponse
+             `SearchSavedQueries` method to retrieve the next page of saved queries.
+      title: SearchSavedQueriesResponse
       additionalProperties: false
     bytebase.v1.SemanticTypeSetting:
       type: object
@@ -20535,6 +20636,57 @@ components:
              In this situation, `update_mask` is ignored.
       title: UpdateRoleRequest
       additionalProperties: false
+    bytebase.v1.UpdateSavedQueryOrganizerRequest:
+      type: object
+      properties:
+        organizer:
+          title: organizer
+          description: |-
+            The organizer to update.
+
+             The organizer's `saved_query` field is used to identify the saved query.
+             Format: projects/{project}/savedQueries/{savedQuery}
+          $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
+        updateMask:
+          title: update_mask
+          description: |-
+            The list of fields to be updated.
+             Fields are specified relative to the saved query organizer.
+             Only support update the following fields for now:
+             - `starred`
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+        allowMissing:
+          type: boolean
+          title: allow_missing
+          description: |-
+            If set to true, and the saved query organizer is not found, a new saved query organizer will be created.
+             In this situation, `update_mask` is ignored.
+      title: UpdateSavedQueryOrganizerRequest
+      additionalProperties: false
+    bytebase.v1.UpdateSavedQueryRequest:
+      type: object
+      properties:
+        savedQuery:
+          title: saved_query
+          description: |-
+            The saved query to update.
+
+             The saved query's `name` field is used to identify the saved query to update.
+             Format: projects/{project}/savedQueries/{savedQuery}
+          $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+        updateMask:
+          title: update_mask
+          description: |-
+            The list of fields to be updated.
+             Fields are specified relative to the saved query.
+             (e.g., `title`, `content`; *not* `saved_query.title` or `saved_query.content`)
+             Only support update the following fields for now:
+             - `title`
+             - `content`
+             - `database`
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: UpdateSavedQueryRequest
+      additionalProperties: false
     bytebase.v1.UpdateServiceAccountRequest:
       type: object
       properties:
@@ -20655,58 +20807,6 @@ components:
       title: UpdateWorkloadIdentityRequest
       additionalProperties: false
       description: Request message for updating a workload identity.
-    bytebase.v1.UpdateWorksheetOrganizerRequest:
-      type: object
-      properties:
-        organizer:
-          title: organizer
-          description: |-
-            The organizer to update.
-
-             The organizer's `worksheet` field is used to identify the worksheet.
-             Format: projects/{project}/worksheets/{worksheet}
-          $ref: '#/components/schemas/bytebase.v1.WorksheetOrganizer'
-        updateMask:
-          title: update_mask
-          description: |-
-            The list of fields to be updated.
-             Fields are specified relative to the worksheet organizer.
-             Only support update the following fields for now:
-             - `starred`
-          $ref: '#/components/schemas/google.protobuf.FieldMask'
-        allowMissing:
-          type: boolean
-          title: allow_missing
-          description: |-
-            If set to true, and the worksheet organizer is not found, a new worksheet organizer will be created.
-             In this situation, `update_mask` is ignored.
-      title: UpdateWorksheetOrganizerRequest
-      additionalProperties: false
-    bytebase.v1.UpdateWorksheetRequest:
-      type: object
-      properties:
-        worksheet:
-          title: worksheet
-          description: |-
-            The worksheet to update.
-
-             The worksheet's `name` field is used to identify the worksheet to update.
-             Format: projects/{project}/worksheets/{worksheet}
-          $ref: '#/components/schemas/bytebase.v1.Worksheet'
-        updateMask:
-          title: update_mask
-          description: |-
-            The list of fields to be updated.
-             Fields are specified relative to the worksheet.
-             (e.g., `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
-             Only support update the following fields for now:
-             - `title`
-             - `statement`
-             - `starred`
-             - `visibility`
-          $ref: '#/components/schemas/google.protobuf.FieldMask'
-      title: UpdateWorksheetRequest
-      additionalProperties: false
     bytebase.v1.UpdateWorkspaceRequest:
       type: object
       properties:
@@ -21029,127 +21129,6 @@ components:
         - GITHUB
         - GITLAB
       description: ProviderType identifies the CI/CD platform.
-    bytebase.v1.Worksheet:
-      type: object
-      properties:
-        name:
-          type: string
-          title: name
-          description: |-
-            The name of the worksheet resource, generated by the server.
-             Canonical parent is project.
-             Format: projects/{project}/worksheets/{worksheet}
-        project:
-          type: string
-          title: project
-          description: |-
-            The project resource name.
-             Format: projects/{project}
-        database:
-          type: string
-          title: database
-          description: |-
-            The database resource name.
-             Format: instances/{instance}/databases/{database}
-             If the database parent doesn't exist, the database field is empty.
-        title:
-          type: string
-          title: title
-          maxLength: 200
-          description: The title of the worksheet.
-        creator:
-          type: string
-          title: creator
-          description: |-
-            The creator of the Worksheet.
-             Format: users/{email}
-        createTime:
-          title: create_time
-          description: The create time of the worksheet.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
-        updateTime:
-          title: update_time
-          description: The last update time of the worksheet.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
-        content:
-          type: string
-          title: content
-          format: byte
-          description: |-
-            The content of the worksheet.
-             By default, it will be cut off in SearchWorksheet() method. If it doesn't match the `content_size`, you can
-             use GetWorksheet() request to retrieve the full content.
-        contentSize:
-          type:
-            - integer
-            - string
-          title: content_size
-          format: int64
-          description: content_size is the full size of the content, may not match the size of the `content` field.
-        visibility:
-          title: visibility
-          $ref: '#/components/schemas/bytebase.v1.Worksheet.Visibility'
-        starred:
-          type: boolean
-          title: starred
-          description: starred indicates whether the worksheet is starred by the current authenticated user.
-        folders:
-          type: array
-          items:
-            type: string
-          title: folders
-      title: Worksheet
-      additionalProperties: false
-    bytebase.v1.Worksheet.Visibility:
-      type: string
-      title: Visibility
-      enum:
-        - VISIBILITY_UNSPECIFIED
-        - PROJECT_READ
-        - PROJECT_WRITE
-        - PRIVATE
-    bytebase.v1.WorksheetFolder:
-      type: object
-      properties:
-        folders:
-          type: array
-          items:
-            type: string
-          title: folders
-          description: The folder path segments.
-        category:
-          title: category
-          description: The folder category.
-          $ref: '#/components/schemas/bytebase.v1.WorksheetFolder.Category'
-      title: WorksheetFolder
-      additionalProperties: false
-    bytebase.v1.WorksheetFolder.Category:
-      type: string
-      title: Category
-      enum:
-        - CATEGORY_UNSPECIFIED
-        - MINE
-        - SHARED
-    bytebase.v1.WorksheetOrganizer:
-      type: object
-      properties:
-        worksheet:
-          type: string
-          title: worksheet
-          description: |-
-            The name of the worksheet.
-             Format: projects/{project}/worksheets/{worksheet}
-        starred:
-          type: boolean
-          title: starred
-          description: starred means if the worksheet is starred.
-        folders:
-          type: array
-          items:
-            type: string
-          title: folders
-      title: WorksheetOrganizer
-      additionalProperties: false
     bytebase.v1.Workspace:
       type: object
       properties:
@@ -22807,6 +22786,11 @@ tags:
     description: RevisionService manages schema revision history.
   - name: bytebase.v1.RoleService
     description: RoleService manages workspace roles and permissions.
+  - name: bytebase.v1.SavedQueryService
+    description: |-
+      SavedQueryService manages saved queries for SQL Editor query development.
+       Permission IDs still use the legacy `bb.worksheets.*` names; they are
+       renamed together with the access-model redesign and its role migration.
   - name: bytebase.v1.ServiceAccountService
     description: ServiceAccountService manages service accounts for API integrations.
   - name: bytebase.v1.SheetService
@@ -22815,7 +22799,5 @@ tags:
     description: SubscriptionService manages enterprise subscriptions and licensing.
   - name: bytebase.v1.WorkloadIdentityService
     description: WorkloadIdentityService manages workload identities for external CI/CD integrations.
-  - name: bytebase.v1.WorksheetService
-    description: WorksheetService manages SQL worksheets for query development.
   - name: bytebase.v1.WorkspaceService
     description: WorkspaceService manages workspace-level operations and profile.

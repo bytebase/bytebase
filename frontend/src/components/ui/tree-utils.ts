@@ -1,7 +1,7 @@
 /**
  * Generic tree-shape contract — every tree node has a stable string key
  * and (optionally) child nodes of the same shape. Both
- * `WorksheetFolderNode` and `SQLEditorTreeNode` satisfy this.
+ * `SavedQueryFolderNode` and `SQLEditorTreeNode` satisfy this.
  */
 export interface VisibleRowNode {
   readonly key: string;

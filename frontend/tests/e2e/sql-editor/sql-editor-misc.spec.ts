@@ -5,7 +5,7 @@
 //     (SQLEditorRouteShell.tsx:402 reads the param and overrides the
 //     localStorage-persisted tab).
 //   - H4 Clicking the gutter tabs switches the visible aside panel
-//     (Worksheet ↔ Schema ↔ History).
+//     (SavedQuery ↔ Schema ↔ History).
 //   - H5 The SQL editor's gutter logo opens in a new tab
 //     (target=_blank + rel=noopener noreferrer) — GutterBar.tsx:49.
 //   - O1 The QueryContextSettingPopover trigger ("(limit N)") is hidden
@@ -47,7 +47,7 @@ test.afterAll(async () => {
 test.describe("Aside panel URL restoration (H3)", () => {
   // Locks `?panel=<tab>` deep-link restoration: landing on the SQL editor
   // with `?panel=schema` must activate the Schema gutter panel rather than
-  // the persisted-default (WORKSHEET) tab. Restoration runs on the
+  // the persisted-default (SAVED_QUERY) tab. Restoration runs on the
   // `project-context-ready` event in SQLEditorRouteShell.tsx. Previously
   // skipped on a stale "fails under license" note; re-verified passing under
   // an enterprise license both in isolation and in the full suite, so it now
@@ -77,11 +77,11 @@ test.describe("Gutter tab switching (H4)", () => {
     const projectId = env.project.split("/").pop()!;
     await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
 
-    // Start by clicking Worksheet — the worksheet tree shows the
-    // "Search Sheets" textbox and Mine/Shared/Draft folders.
-    await sqlEditor.gutterWorksheetTab.click();
+    // Start by clicking SavedQuery — the saved query tree shows the
+    // "Search saved queries" textbox and Mine/Shared/Draft folders.
+    await sqlEditor.gutterSavedQueryTab.click();
     await expect(
-      page.getByPlaceholder("Search Sheets").first(),
+      page.getByPlaceholder("Search saved queries").first(),
     ).toBeVisible({ timeout: 10_000 });
 
     // Switch to Schema — schema rows render.
@@ -91,8 +91,8 @@ test.describe("Gutter tab switching (H4)", () => {
         .locator('.bb-schema-tree-row[data-node-meta-type="schema"]')
         .first(),
     ).toBeVisible({ timeout: 10_000 });
-    // And the worksheet "Search Sheets" input must NOT be visible.
-    await expect(page.getByPlaceholder("Search Sheets")).toHaveCount(0);
+    // And the saved query "Search saved queries" input must NOT be visible.
+    await expect(page.getByPlaceholder("Search saved queries")).toHaveCount(0);
 
     // Switch to History — empty state placeholder OR an existing
     // [data-history-row]; both are valid (we run on a fresh server so
@@ -135,7 +135,7 @@ test.describe("QueryContextSettingPopover hidden in admin mode (O1)", () => {
     const projectId = env.project.split("/").pop()!;
     await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
 
-    // In worksheet mode, "(limit N)" appears next to Run.
+    // In saved query mode, "(limit N)" appears next to Run.
     await expect(page.getByText(/\(limit\s+\d+\)/i).first()).toBeVisible({
       timeout: 10_000,
     });
@@ -152,7 +152,7 @@ test.describe("QueryContextSettingPopover hidden in admin mode (O1)", () => {
     ).toBeVisible({ timeout: 5_000 });
 
     // Exit so any sibling test landing on the same page starts in
-    // worksheet mode.
+    // saved query mode.
     await page
       .getByRole("button", { name: "Exit admin mode", exact: true })
       .click();

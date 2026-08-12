@@ -88,23 +88,29 @@ export const storageKeySqlEditorConnExpanded = (
 ) => withScope("bb.sql-editor.conn-expanded", scope, env, email);
 export const storageKeySqlEditorShowMissingQueryDb = (email: string) =>
   `bb.sql-editor.show-missing-query-db.${email}`;
-export const storageKeySqlEditorWorksheetFilter = (
+export const storageKeySqlEditorSavedQueryFilter = (
   scope: string,
   project: string,
   email: string
-) => withScope("bb.sql-editor.worksheet-filter", scope, project, email);
-export const storageKeySqlEditorWorksheetTree = (
+) => withScope("bb.sql-editor.saved-query-filter", scope, project, email);
+export const storageKeySqlEditorSavedQueryTree = (
   scope: string,
   project: string,
   email: string
-) => withScope("bb.sql-editor.worksheet-tree", scope, project, email);
-export const storageKeySqlEditorWorksheetFolder = (
+) => withScope("bb.sql-editor.saved-query-tree", scope, project, email);
+export const storageKeySqlEditorSavedQueryFolder = (
   scope: string,
   project: string,
   viewMode: string,
   email: string
 ) =>
-  withScope("bb.sql-editor.worksheet-folder", scope, project, viewMode, email);
+  withScope(
+    "bb.sql-editor.saved-query-folder",
+    scope,
+    project,
+    viewMode,
+    email
+  );
 export const storageKeySqlEditorAiSuggestion = (email: string) =>
   `bb.sql-editor.ai-suggestion.${email}`;
 

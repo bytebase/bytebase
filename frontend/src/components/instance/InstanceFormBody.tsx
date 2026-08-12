@@ -696,6 +696,14 @@ interface InstanceFormBodyProps {
   onOpenInfoPanel?: (section: InfoSection) => void;
 }
 
+// Engines without a host field (or with a non-local default) drop the local
+// development placeholder host when the user switches to them.
+const clearLocalPlaceholderHost = (ds: EditDataSource) => {
+  if (ds.host === "127.0.0.1" || ds.host === "host.docker.internal") {
+    ds.host = "";
+  }
+};
+
 export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
   const { t } = useTranslation();
   const ctx = useInstanceFormContext();
@@ -950,26 +958,21 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
           if (ds.type !== DataSourceType.ADMIN) return ds;
           const updated = { ...ds };
           switch (engine) {
-            case Engine.SNOWFLAKE:
+            case Engine.SNOWFLAKE: {
+              clearLocalPlaceholderHost(updated);
+              break;
+            }
             case Engine.DYNAMODB: {
-              if (
-                updated.host === "127.0.0.1" ||
-                updated.host === "host.docker.internal"
-              ) {
-                updated.host = "";
-              }
+              updated.authenticationType =
+                DataSource_AuthenticationType.AWS_RDS_IAM;
+              clearLocalPlaceholderHost(updated);
               break;
             }
             case Engine.SPANNER:
             case Engine.BIGQUERY: {
               updated.authenticationType =
                 DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM;
-              if (
-                updated.host === "127.0.0.1" ||
-                updated.host === "host.docker.internal"
-              ) {
-                updated.host = "";
-              }
+              clearLocalPlaceholderHost(updated);
               break;
             }
             case Engine.COSMOSDB: {
@@ -1736,27 +1739,20 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
           </div>
 
           {/* Credentials (auth method, username, password) */}
-          {basicInfo.engine !== Engine.DYNAMODB && (
-            <>
-              <DataSourceSection
-                hideOptions
-                onOpenInfoPanel={onOpenInfoPanel}
-              />
+          <DataSourceSection hideOptions onOpenInfoPanel={onOpenInfoPanel} />
 
-              <div className="mt-6">
-                <SyncDatabases
-                  isCreating={isCreating}
-                  showLabel
-                  allowEdit={
-                    isCreating ? allowEdit && !!allowCreate : allowEdit
-                  }
-                  projectName={parent}
-                  onOpenInfoPanel={onOpenInfoPanel}
-                  syncDatabases={basicInfo.syncDatabases}
-                  onSyncDatabasesChange={handleChangeSyncDatabases}
-                />
-              </div>
-            </>
+          {basicInfo.engine !== Engine.DYNAMODB && (
+            <div className="mt-6">
+              <SyncDatabases
+                isCreating={isCreating}
+                showLabel
+                allowEdit={isCreating ? allowEdit && !!allowCreate : allowEdit}
+                projectName={parent}
+                onOpenInfoPanel={onOpenInfoPanel}
+                syncDatabases={basicInfo.syncDatabases}
+                onSyncDatabasesChange={handleChangeSyncDatabases}
+              />
+            </div>
           )}
         </div>
 

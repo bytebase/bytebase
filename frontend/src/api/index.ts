@@ -31,7 +31,7 @@ import { SubscriptionService } from "@/types/proto-es/v1/subscription_service_pb
 import { ServiceAccountService } from "@/types/proto-es/v1/service_account_service_pb";
 import { UserService } from "@/types/proto-es/v1/user_service_pb";
 import { WorkloadIdentityService } from "@/types/proto-es/v1/workload_identity_service_pb";
-import { WorksheetService } from "@/types/proto-es/v1/worksheet_service_pb";
+import { SavedQueryService } from "@/types/proto-es/v1/saved_query_service_pb";
 import { WorkspaceService } from "@/types/proto-es/v1/workspace_service_pb";
 import {
   authInterceptor,
@@ -159,8 +159,8 @@ export const releaseServiceClientConnect = createClient(
   transport
 );
 
-export const worksheetServiceClientConnect = createClient(
-  WorksheetService,
+export const savedQueryServiceClientConnect = createClient(
+  SavedQueryService,
   transport
 );
 

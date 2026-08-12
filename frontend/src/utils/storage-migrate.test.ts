@@ -262,19 +262,26 @@ describe("SQL editor migrations", () => {
   describe("tab keys (opening-tab-list and current-tab-id)", () => {
     test("migrates opening-tab-list to bb.sql-editor.tabs.*", () => {
       const tabs = JSON.stringify([
-        { id: "tab-1", worksheet: "worksheets/ws-1" },
-        { id: "tab-2", worksheet: "worksheets/ws-2" },
+        { id: "tab-1", worksheet: "projects/my-proj/worksheets/ws-1" },
+        { id: "tab-2", worksheet: "projects/my-proj/worksheets/ws-2" },
       ]);
       localStorage.setItem(
         "bb.sql-editor-tab.projects/my-proj.user@example.com.opening-tab-list",
         tabs
       );
       migrateStorageKeys();
+      // The v2 stage renames the legacy `worksheet` link field and its name
+      // format in the same pass.
       expect(
         localStorage.getItem(
           "bb.sql-editor.tabs.projects/my-proj.user@example.com"
         )
-      ).toBe(tabs);
+      ).toBe(
+        JSON.stringify([
+          { id: "tab-1", savedQuery: "projects/my-proj/savedQueries/ws-1" },
+          { id: "tab-2", savedQuery: "projects/my-proj/savedQueries/ws-2" },
+        ])
+      );
       expect(
         localStorage.getItem(
           "bb.sql-editor-tab.projects/my-proj.user@example.com.opening-tab-list"
@@ -302,8 +309,8 @@ describe("SQL editor migrations", () => {
 
     test("migrates both tab list and current tab together", () => {
       const tabs = JSON.stringify([
-        { id: "tab-a", worksheet: "worksheets/ws-a" },
-        { id: "tab-b", worksheet: "worksheets/ws-b" },
+        { id: "tab-a", worksheet: "projects/p1/worksheets/ws-a" },
+        { id: "tab-b", worksheet: "projects/p1/worksheets/ws-b" },
       ]);
       localStorage.setItem(
         "bb.sql-editor-tab.projects/p1.dev@bb.com.opening-tab-list",
@@ -316,7 +323,12 @@ describe("SQL editor migrations", () => {
       migrateStorageKeys();
       expect(
         localStorage.getItem("bb.sql-editor.tabs.projects/p1.dev@bb.com")
-      ).toBe(tabs);
+      ).toBe(
+        JSON.stringify([
+          { id: "tab-a", savedQuery: "projects/p1/savedQueries/ws-a" },
+          { id: "tab-b", savedQuery: "projects/p1/savedQueries/ws-b" },
+        ])
+      );
       expect(
         localStorage.getItem("bb.sql-editor.current-tab.projects/p1.dev@bb.com")
       ).toBe('"tab-b"');
@@ -562,7 +574,7 @@ describe("full migration scenario", () => {
   test("handles empty localStorage gracefully", () => {
     migrateStorageKeys();
     expect(localStorage.getItem(MIGRATION_MARKER)).toBe("1");
-    expect(localStorage.length).toBe(1); // only the marker
+    expect(localStorage.length).toBe(2); // only the v1 and v2 markers
   });
 
   test("preserves unrelated keys", () => {
@@ -570,5 +582,136 @@ describe("full migration scenario", () => {
     localStorage.setItem("bb.sql-editor.result-rows-limit", "500");
     migrateStorageKeys();
     expect(localStorage.getItem("some.other.key")).toBe("value");
+  });
+});
+
+describe("v2: worksheet → saved query rename", () => {
+  const MARKER_V2 = "bb.storage-migration-v2";
+
+  test("moves saved-query pref keys, preserving values and scope segments", () => {
+    localStorage.setItem(
+      "bb.sql-editor.worksheet-filter.projects/p1.a@b.com",
+      '{"mine":true}'
+    );
+    localStorage.setItem(
+      "bb.sql-editor.worksheet-tree.ws1.projects/p1.a@b.com",
+      '["k1"]'
+    );
+    localStorage.setItem(
+      "bb.sql-editor.worksheet-folder.projects/p1.list.a@b.com",
+      '["f1"]'
+    );
+    migrateStorageKeys();
+    expect(
+      localStorage.getItem(
+        "bb.sql-editor.saved-query-filter.projects/p1.a@b.com"
+      )
+    ).toBe('{"mine":true}');
+    expect(
+      localStorage.getItem(
+        "bb.sql-editor.saved-query-tree.ws1.projects/p1.a@b.com"
+      )
+    ).toBe('["k1"]');
+    expect(
+      localStorage.getItem(
+        "bb.sql-editor.saved-query-folder.projects/p1.list.a@b.com"
+      )
+    ).toBe('["f1"]');
+    expect(
+      localStorage.getItem("bb.sql-editor.worksheet-filter.projects/p1.a@b.com")
+    ).toBeNull();
+    expect(localStorage.getItem(MARKER_V2)).toBe("1");
+  });
+
+  test("does not overwrite an existing saved-query pref key", () => {
+    localStorage.setItem(
+      "bb.sql-editor.worksheet-filter.projects/p1.a@b.com",
+      "old"
+    );
+    localStorage.setItem(
+      "bb.sql-editor.saved-query-filter.projects/p1.a@b.com",
+      "new"
+    );
+    migrateStorageKeys();
+    expect(
+      localStorage.getItem(
+        "bb.sql-editor.saved-query-filter.projects/p1.a@b.com"
+      )
+    ).toBe("new");
+  });
+
+  test("rewrites persisted tabs already under the current key", () => {
+    // Users upgraded past v1 have tabs at the new key with legacy fields.
+    localStorage.setItem(MIGRATION_MARKER, "1");
+    localStorage.setItem(
+      "bb.sql-editor.tabs.projects/p1.a@b.com",
+      JSON.stringify([
+        {
+          id: "t1",
+          worksheet: "projects/p1/worksheets/ws-1",
+          mode: "WORKSHEET",
+        },
+        {
+          id: "t2",
+          savedQuery: "projects/p1/savedQueries/ws-2",
+          mode: "ADMIN",
+        },
+        { id: "t3" },
+      ])
+    );
+    migrateStorageKeys();
+    expect(localStorage.getItem("bb.sql-editor.tabs.projects/p1.a@b.com")).toBe(
+      JSON.stringify([
+        {
+          id: "t1",
+          savedQuery: "projects/p1/savedQueries/ws-1",
+          mode: "SAVED_QUERY",
+        },
+        {
+          id: "t2",
+          savedQuery: "projects/p1/savedQueries/ws-2",
+          mode: "ADMIN",
+        },
+        { id: "t3" },
+      ])
+    );
+  });
+
+  test("leaves malformed tab values alone", () => {
+    localStorage.setItem("bb.sql-editor.tabs.projects/p1.a@b.com", "not-json");
+    migrateStorageKeys();
+    expect(localStorage.getItem("bb.sql-editor.tabs.projects/p1.a@b.com")).toBe(
+      "not-json"
+    );
+  });
+
+  test("maps the persisted sidebar tab value", () => {
+    localStorage.setItem(
+      "bb.sql-editor.sidebar.last-visited-tab.projects/p1",
+      '"WORKSHEET"'
+    );
+    localStorage.setItem(
+      "bb.sql-editor.sidebar.last-visited-tab.projects/p2",
+      '"SCHEMA"'
+    );
+    migrateStorageKeys();
+    expect(
+      localStorage.getItem("bb.sql-editor.sidebar.last-visited-tab.projects/p1")
+    ).toBe('"SAVED_QUERY"');
+    expect(
+      localStorage.getItem("bb.sql-editor.sidebar.last-visited-tab.projects/p2")
+    ).toBe('"SCHEMA"');
+  });
+
+  test("skips when the v2 marker is set", () => {
+    localStorage.setItem(MARKER_V2, "1");
+    localStorage.setItem(
+      "bb.sql-editor.worksheet-filter.projects/p1.a@b.com",
+      "old"
+    );
+    migrateStorageKeys();
+    expect(
+      localStorage.getItem("bb.sql-editor.worksheet-filter.projects/p1.a@b.com")
+    ).toBe("old");
   });
 });

@@ -41,9 +41,6 @@ func request_DatabaseCatalogService_GetDatabaseCatalog_0(ctx context.Context, ma
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
@@ -51,6 +48,9 @@ func request_DatabaseCatalogService_GetDatabaseCatalog_0(ctx context.Context, ma
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.GetDatabaseCatalog(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -80,9 +80,6 @@ func request_DatabaseCatalogService_GetDatabaseCatalog_1(ctx context.Context, ma
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
@@ -90,6 +87,9 @@ func request_DatabaseCatalogService_GetDatabaseCatalog_1(ctx context.Context, ma
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.GetDatabaseCatalog(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -124,9 +124,6 @@ func request_DatabaseCatalogService_UpdateDatabaseCatalog_0(ctx context.Context,
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Catalog); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["catalog.name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "catalog.name")
@@ -140,6 +137,9 @@ func request_DatabaseCatalogService_UpdateDatabaseCatalog_0(ctx context.Context,
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_DatabaseCatalogService_UpdateDatabaseCatalog_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.UpdateDatabaseCatalog(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -183,9 +183,6 @@ func request_DatabaseCatalogService_UpdateDatabaseCatalog_1(ctx context.Context,
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Catalog); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["catalog.name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "catalog.name")
@@ -199,6 +196,9 @@ func request_DatabaseCatalogService_UpdateDatabaseCatalog_1(ctx context.Context,
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_DatabaseCatalogService_UpdateDatabaseCatalog_1); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.UpdateDatabaseCatalog(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err

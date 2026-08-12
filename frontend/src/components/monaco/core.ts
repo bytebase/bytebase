@@ -41,7 +41,7 @@ const registerEditorThemes = async () => {
  * name is a silent no-op, which leaves the global theme stuck on
  * whatever was last applied (and Monaco's theme is global, not
  * per-instance, so a stale `vs-dark` from a recently-disposed
- * terminal editor can bleed into a freshly-mounted worksheet editor).
+ * terminal editor can bleed into a freshly-mounted saved query editor).
  */
 export const getResolvedTheme = (requested = "vs"): string => {
   if (state.registeredThemes.has(requested)) return requested;

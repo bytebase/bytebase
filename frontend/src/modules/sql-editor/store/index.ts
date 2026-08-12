@@ -4,7 +4,7 @@ import { createTreeSlice } from "./tree";
 import type { SQLEditorStoreState } from "./types";
 import { createUIStateSlice } from "./uiState";
 import { createWebTerminalSlice } from "./webTerminal";
-import { createWorksheetSaveSlice } from "./worksheet";
+import { createSavedQuerySaveSlice } from "./savedQuery";
 
 export type {
   AsidePanelTab,
@@ -25,5 +25,5 @@ export const useSQLEditorStore = create<SQLEditorStoreState>()((...args) => ({
   ...createQueryHistorySlice(...args),
   ...createTreeSlice(...args),
   ...createWebTerminalSlice(...args),
-  ...createWorksheetSaveSlice(...args),
+  ...createSavedQuerySaveSlice(...args),
 }));

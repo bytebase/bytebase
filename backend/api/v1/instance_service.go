@@ -711,6 +711,39 @@ func (s *InstanceService) validateIAMCredentialForSaaS(dataSource *storepb.DataS
 		)
 	}
 
+	// An IAM extension whose fields are all empty behaves exactly like the
+	// default credential chain at connect time (the host's own cloud
+	// identity), so reject it for the same reason.
+	return validateIAMCredentialNotEmpty(dataSource)
+}
+
+func validateIAMCredentialNotEmpty(dataSource *storepb.DataSource) error {
+	switch {
+	case dataSource.GetAwsCredential() != nil:
+		awsCredential := dataSource.GetAwsCredential()
+		if awsCredential.GetAccessKeyId() == "" && awsCredential.GetRoleArn() == "" {
+			return connect.NewError(
+				connect.CodeInvalidArgument,
+				errors.New("AWS credential requires an access key ID or a role ARN in SaaS mode"),
+			)
+		}
+	case dataSource.GetGcpCredential() != nil:
+		if dataSource.GetGcpCredential().GetContent() == "" {
+			return connect.NewError(
+				connect.CodeInvalidArgument,
+				errors.New("GCP credential content is required in SaaS mode"),
+			)
+		}
+	case dataSource.GetAzureCredential() != nil:
+		azureCredential := dataSource.GetAzureCredential()
+		if azureCredential.GetTenantId() == "" || azureCredential.GetClientId() == "" || azureCredential.GetClientSecret() == "" {
+			return connect.NewError(
+				connect.CodeInvalidArgument,
+				errors.New("Azure credential requires tenant ID, client ID, and client secret in SaaS mode"),
+			)
+		}
+	default:
+	}
 	return nil
 }
 
@@ -1347,6 +1380,12 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	normalizeGCPDataSources(instance.Metadata.GetEngine(), []*storepb.DataSource{dataSource})
 	if err := validateAndSanitizeDataSourceTLS(dataSource); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	// Validate the merged result so untouched stored credentials keep passing:
+	// the create-path SaaS checks never run for updates, which would otherwise
+	// let an update strip an IAM credential down to the default chain.
+	if err := s.validateIAMCredentialForSaaS(dataSource); err != nil {
+		return nil, err
 	}
 
 	if err := s.checkInstanceDataSources(ctx, instance, metadata.GetDataSources()); err != nil {

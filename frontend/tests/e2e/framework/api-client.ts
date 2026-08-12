@@ -490,19 +490,19 @@ export class BytebaseApiClient {
     return resp.name;
   }
 
-  // Worksheets — distinct from Sheets. SQL Editor's left sidebar tree shows
-  // Worksheets, identified by `projects/{project}/worksheets/{uuid}`. The
-  // UUID portion is what the editor URL takes (`/sheets/{uuid}` confusingly
-  // routes to a worksheet).
-  async createWorksheet(project: string, title: string, database: string, content: string): Promise<{ name: string }> {
+  // SavedQueries — distinct from Sheets. SQL Editor's left sidebar tree shows
+  // SavedQueries, identified by `projects/{project}/savedQueries/{uuid}`. The
+  // UUID portion is what the editor URL takes (`/savedQueries/{uuid}`
+  // routes to a saved query).
+  async createSavedQuery(project: string, title: string, database: string, content: string): Promise<{ name: string }> {
     const b64 = Buffer.from(content).toString("base64");
     return this.request<{ name: string }>(
-      "POST", `/v1/${project}/worksheets`,
-      { title, database, content: b64, visibility: "PRIVATE" },
+      "POST", `/v1/${project}/savedQueries`,
+      { title, database, content: b64 },
     );
   }
 
-  async deleteWorksheet(name: string): Promise<void> {
+  async deleteSavedQuery(name: string): Promise<void> {
     try { await this.request<unknown>("DELETE", `/v1/${name}`); } catch { /* ignore */ }
   }
 

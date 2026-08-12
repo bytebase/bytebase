@@ -99,6 +99,7 @@ service AuthService {
       body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_forbidden_reason) = RESETS_CREDENTIAL;
   }
@@ -111,6 +112,7 @@ service AuthService {
       body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_forbidden_reason) = RESETS_CREDENTIAL;
   }

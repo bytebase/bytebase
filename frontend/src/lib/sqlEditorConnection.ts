@@ -54,22 +54,22 @@ export const isConnectedSQLEditorTab = (tab: SQLEditorTab): boolean => {
 };
 
 /**
- * Resolves the connection record for a worksheet by hydrating its database
+ * Resolves the connection record for a saved query by hydrating its database
  * through the React app store. Bails on the `unknownDatabase` fallback so a
  * draft tab whose database was deleted or no longer readable doesn't get
  * `instances/-1/databases/-1` written into its connection — downstream
- * `migrateDraftsFromCache` would attempt to create a worksheet against that
+ * `migrateDraftsFromCache` would attempt to create a saved query against that
  * bogus target and drop the local draft on failure.
  */
-export const extractWorksheetConnection = async (worksheet: {
+export const extractSavedQueryConnection = async (savedQuery: {
   database: string;
 }): Promise<SQLEditorConnection> => {
   const connection = emptySQLEditorConnection();
-  if (worksheet.database) {
+  if (savedQuery.database) {
     try {
       const database = await useAppStore
         .getState()
-        .getOrFetchDatabaseByName(worksheet.database);
+        .getOrFetchDatabaseByName(savedQuery.database);
       if (isValidDatabaseName(database.name)) {
         const { instance } = extractDatabaseResourceName(database.name);
         connection.instance = instance;

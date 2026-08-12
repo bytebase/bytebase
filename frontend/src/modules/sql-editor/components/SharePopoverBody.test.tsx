@@ -12,22 +12,18 @@ const mocks = vi.hoisted(() => ({
   serverInfo: { externalUrl: "https://example.com" } as
     | { externalUrl: string }
     | undefined,
-  useCurrentUser: vi.fn(),
-  patchWorksheet: vi.fn().mockResolvedValue({}),
   pushNotification: vi.fn(),
   extractProjectResourceName: vi.fn(
     (name: string) => name.split("/")[1] ?? name
   ),
-  extractWorksheetID: vi.fn((name: string) => name.split("/")[3] ?? name),
-  routerResolve: vi.fn(() => ({ href: "/sql-editor/projects/proj1/sheets/1" })),
+  extractSavedQueryID: vi.fn((name: string) => name.split("/")[3] ?? name),
+  routerResolve: vi.fn(() => ({
+    href: "/sql-editor/projects/proj1/savedQueries/1",
+  })),
 }));
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/hooks/useAppState", () => ({
-  useCurrentUser: mocks.useCurrentUser,
 }));
 
 vi.mock("@/stores/app", () => {
@@ -36,7 +32,6 @@ vi.mock("@/stores/app", () => {
   // from the Pinia helper to the app-store notification slice.
   const state = () => ({
     serverInfo: mocks.serverInfo,
-    patchWorksheet: mocks.patchWorksheet,
     notify: mocks.pushNotification,
   });
   return {
@@ -49,7 +44,7 @@ vi.mock("@/stores/app", () => {
 
 vi.mock("@/utils", () => ({
   extractProjectResourceName: mocks.extractProjectResourceName,
-  extractWorksheetID: mocks.extractWorksheetID,
+  extractSavedQueryID: mocks.extractSavedQueryID,
 }));
 
 vi.mock("@/app/router", async (importOriginal) => ({
@@ -59,38 +54,12 @@ vi.mock("@/app/router", async (importOriginal) => ({
   },
 }));
 
-vi.mock("@/components/ui/popover", () => ({
-  Popover: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="popover">{children}</div>
-  ),
-  PopoverTrigger: ({
-    children,
-    render: renderEl,
-  }: {
-    children?: React.ReactNode;
-    render?: React.ReactElement;
-  }) => (
-    <div data-testid="popover-trigger">
-      {renderEl ? renderEl : null}
-      {children}
-    </div>
-  ),
-  PopoverContent: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="popover-content">{children}</div>
-  ),
-}));
-
-vi.mock("@/components/ui/tooltip", () => ({
-  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
-
 let SharePopoverBody: typeof import("./SharePopoverBody").SharePopoverBody;
 
-const mockWorksheet = {
-  name: "projects/proj1/worksheets/1",
+const mockSavedQuery = {
+  name: "projects/proj1/savedQueries/1",
   project: "projects/proj1",
   creator: "users/test@example.com",
-  visibility: 3 /* PRIVATE */,
   title: "test sheet",
 };
 
@@ -118,13 +87,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
 
   mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
-
   mocks.serverInfo = { externalUrl: "https://example.com" };
-  mocks.useCurrentUser.mockReturnValue({
-    email: "test@example.com",
-    name: "users/test@example.com",
-  });
-  mocks.patchWorksheet.mockResolvedValue({});
 
   // Mock clipboard
   Object.defineProperty(navigator, "clipboard", {
@@ -143,7 +106,7 @@ afterEach(() => {
 describe("SharePopoverBody", () => {
   test("renders Share title and link input", () => {
     const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody worksheet={mockWorksheet as never} />
+      <SharePopoverBody savedQuery={mockSavedQuery as never} />
     );
     render();
     expect(container.textContent).toContain("common.share");
@@ -152,73 +115,22 @@ describe("SharePopoverBody", () => {
     unmount();
   });
 
-  test("shows 3 visibility options when selector is opened", () => {
+  test("renders the deep link without an access selector", () => {
     const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody worksheet={mockWorksheet as never} />
+      <SharePopoverBody savedQuery={mockSavedQuery as never} />
     );
     render();
-    // The popover-content should contain 3 options
-    const popoverContent = container.querySelector(
-      "[data-testid='popover-content']"
-    );
-    expect(popoverContent).not.toBeNull();
-    // 3 option rows each with cursor-pointer class
-    const optionRows =
-      popoverContent?.querySelectorAll("[data-option-row]") ?? [];
-    expect(optionRows.length).toBe(3);
-    unmount();
-  });
-
-  test("visibility selector disabled when user is not creator", () => {
-    mocks.useCurrentUser.mockReturnValue({
-      email: "other@example.com",
-      name: "users/other@example.com",
-    });
-
-    const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody worksheet={mockWorksheet as never} />
-    );
-    render();
-    // Trigger should have disabled styling
-    const trigger = container.querySelector("[data-access-trigger]");
-    expect(trigger?.getAttribute("data-disabled")).toBe("true");
-    unmount();
-  });
-
-  test("handleChangeAccess calls patchWorksheet and pushNotification but does NOT close the outer popover", async () => {
-    const patchWorksheet = mocks.patchWorksheet;
-
-    const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody worksheet={mockWorksheet as never} />
-    );
-    render();
-
-    const popoverContent = container.querySelector(
-      "[data-testid='popover-content']"
-    );
-    const optionRows = popoverContent?.querySelectorAll("[data-option-row]");
-    expect(optionRows?.length).toBeGreaterThanOrEqual(1);
-
-    // Click second option (Project Read).
-    await act(async () => {
-      (optionRows?.[1] as HTMLElement)?.click();
-    });
-
-    expect(patchWorksheet).toHaveBeenCalledTimes(1);
-    expect(mocks.pushNotification).toHaveBeenCalledTimes(1);
-    // The SharePopoverBody no longer signals "close me" on access
-    // change — the outer share popover stays open so the user can copy
-    // the just-updated link.
+    const input = container.querySelector("input") as HTMLInputElement;
+    expect(input.value).toContain("/savedQueries/1");
+    // Saved queries are private until per-object grants ship, so the
+    // popover carries no visibility selector.
+    expect(container.querySelector("[data-access-trigger]")).toBeNull();
     unmount();
   });
 
   test("copy button writes to clipboard and pushes notification", async () => {
     const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody
-        worksheet={
-          { ...mockWorksheet, visibility: 1 /* PROJECT_READ */ } as never
-        }
-      />
+      <SharePopoverBody savedQuery={mockSavedQuery as never} />
     );
     render();
 
@@ -236,12 +148,11 @@ describe("SharePopoverBody", () => {
     unmount();
   });
 
-  test("copy button disabled when there is no shareable worksheet link", () => {
-    // No worksheet (an unsaved draft) → no link → copy disabled. A saved
-    // worksheet from the tree always has a link, so copy is enabled regardless
-    // of the current tab's status (covered by the private-worksheet test below).
+  test("copy button disabled when there is no shareable saved query link", () => {
+    // No saved query (an unsaved draft) → no link → copy disabled. A saved
+    // query from the tree always has a link, so copy stays enabled there.
     const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody worksheet={undefined as never} />
+      <SharePopoverBody savedQuery={undefined as never} />
     );
     render();
 
@@ -250,22 +161,6 @@ describe("SharePopoverBody", () => {
     ) as HTMLButtonElement;
     expect(copyBtn).not.toBeNull();
     expect(copyBtn.disabled).toBe(true);
-    unmount();
-  });
-
-  test("copy button enabled for a private worksheet (share status ignored)", () => {
-    // mockWorksheet is PRIVATE; the copy button stays enabled regardless of
-    // share status, gated only by the tab's saved state.
-    const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody worksheet={mockWorksheet as never} />
-    );
-    render();
-
-    const copyBtn = container.querySelector(
-      "[data-copy-btn]"
-    ) as HTMLButtonElement;
-    expect(copyBtn).not.toBeNull();
-    expect(copyBtn.disabled).toBe(false);
     unmount();
   });
 });

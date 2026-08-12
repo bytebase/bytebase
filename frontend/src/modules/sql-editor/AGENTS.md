@@ -8,8 +8,8 @@ Follow `../../../AGENTS.md`. This directory owns the SQL Editor application subs
 src/modules/sql-editor/
 ├── components/  # Route shell, panes, editor, results, schema browser, and UI
 ├── hooks/       # SQL Editor hooks backed by the app and editor stores
-├── store/       # Zustand editor, tab, worksheet, tree, history, and terminal state
-├── model/       # Framework-neutral worksheet tree and event models
+├── store/       # Zustand editor, tab, saved query, tree, history, and terminal state
+├── model/       # Framework-neutral saved query tree and event models
 └── legacy/      # One-time persisted-data migration only
 ```
 

@@ -489,7 +489,6 @@
     "view": "Xem",
     "view-details": "Xem Chi tiết",
     "view-doc": "Xem tài liệu",
-    "visibility": "Hiển thị",
     "want-help": "Cần trợ giúp",
     "warning": "Cảnh báo",
     "webhooks": "Webhook",
@@ -1037,6 +1036,7 @@
     },
     "create-gcp-credentials": "Để tạo thông tin xác thực, xem",
     "database-region": "Khu vực cơ sở dữ liệu",
+    "database-region-placeholder": "khu vực cơ sở dữ liệu, ví dụ us-east-1",
     "default-role": "Vai trò mặc định",
     "delete-active-confirmation": "Instance \"{{name}}\" đang hoạt động. Bytebase sẽ lưu trữ instance này trước, sau đó xóa vĩnh viễn. Không thể hoàn tác hành động này. Nhập ID instance \"{{id}}\" để xác nhận.",
     "delete-confirmation": "Thao tác này sẽ xóa vĩnh viễn instance \"{{name}}\". Không thể hoàn tác hành động này. Nhập ID instance \"{{id}}\" để xác nhận.",
@@ -2156,6 +2156,9 @@
     },
     "task-execution-errors": "Lỗi thực hiện tác vụ"
   },
+  "saved-query": {
+    "self": "Truy vấn đã lưu"
+  },
   "schema-diagram": {
     "fit-content-with-view": "Điều chỉnh nội dung vừa với khung nhìn",
     "self": "Sơ đồ Lược đồ"
@@ -2870,23 +2873,23 @@
       "show-shared": "Hiển thị chia sẻ"
     },
     "hint-tips": {
-      "confirm-multi-delete-content": "Các bảng tính và thư mục đã chọn sẽ bị xóa vĩnh viễn.",
+      "confirm-multi-delete-content": "Các truy vấn đã lưu và thư mục đã chọn sẽ bị xóa vĩnh viễn.",
       "confirm-multi-delete-title": "Xóa các mục đã chọn?",
-      "confirm-to-delete-sheet-title": "Xác nhận xóa bảng tính này?",
-      "confirm-to-duplicate-sheet": "Xác nhận nhân bản trang tính này?",
-      "delete-all-sheets": "Xóa tất cả các tập tin",
-      "duplicate-folder-name-content": "Bạn có muốn hợp nhất tất cả các thư mục con và tệp vào thư mục hiện có \"{{folder}}\" không?",
+      "confirm-to-delete-sheet-title": "Xóa truy vấn đã lưu này?",
+      "confirm-to-duplicate-sheet": "Nhân bản truy vấn đã lưu này?",
+      "delete-all-sheets": "Xóa tất cả",
+      "duplicate-folder-name-content": "Bạn có muốn hợp nhất tất cả các thư mục con và truy vấn đã lưu vào thư mục hiện có \"{{folder}}\" không?",
       "duplicate-folder-name-title": "Tên thư mục trùng lặp",
       "move-to-root-folder": "Di chuyển đến thư mục gốc",
-      "non-empty-folder-content": "Bạn muốn di chuyển tất cả các trang tính vào thư mục gốc hay chỉ xóa chúng?",
+      "non-empty-folder-content": "Bạn muốn di chuyển tất cả truy vấn đã lưu vào thư mục gốc hay chỉ xóa chúng?",
       "non-empty-folder-title": "Thư mục không trống"
     },
     "mine": "Của tôi",
-    "move-worksheets": "Di chuyển các trang tính",
+    "move-saved-queries": "Di chuyển truy vấn đã lưu",
     "notifications": {
-      "duplicate-success": "Đã nhân bản thành công vào \"Trang tính của tôi\""
+      "duplicate-success": "Đã nhân bản truy vấn đã lưu"
     },
-    "search-sheets": "Tìm kiếm Trang tính",
+    "search-sheets": "Tìm kiếm truy vấn đã lưu",
     "shared": "Được chia sẻ"
   },
   "sql-editor": {
@@ -2945,7 +2948,7 @@
     "choose-folder": "Chọn hoặc tạo thư mục",
     "choose-folder-tips": "Bạn có thể tạo một thư mục mới bằng cách nhập một đường dẫn không tồn tại. Các thư mục phải được nối bằng dấu \"/\".",
     "click-to-sync-now": "Nhấp để đồng bộ ngay",
-    "close-sheet": "Đóng trang tính",
+    "close-sheet": "Đóng thẻ",
     "column-display-format": "Định dạng hiển thị cột",
     "connect-in-admin-mode": "Kết nối ở chế độ quản trị",
     "connect-to-a-database": "Kết nối cơ sở dữ liệu",
@@ -2982,13 +2985,12 @@
     "hex-format": "Định dạng thập lục phân",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
-        "content": "Đóng trang tính và mất bất kỳ dữ liệu chưa lưu nào?",
-        "title": "Đóng trang tính chưa lưu?"
+        "content": "Đóng thẻ và mất các thay đổi chưa lưu?",
+        "title": "Đóng thẻ chưa lưu?"
       }
     },
     "invalid-database": "Cơ sở dữ liệu không hợp lệ {{database}}",
     "last-synced": "Đã đồng bộ lần cuối: <time></time>",
-    "link-access": "Truy cập liên kết",
     "loading-data": "Đang tải Dữ liệu...",
     "loading-databases": "Đang tải Cơ sở dữ liệu...",
     "manage-connections": "Quản lý kết nối",
@@ -3005,12 +3007,6 @@
     "pending-query": "Đang chờ truy vấn",
     "preview-table-data": "Xem trước dữ liệu bảng",
     "previous-row": "Dòng trước",
-    "private": "Riêng tư",
-    "private-desc": "Chỉ bạn mới có thể truy cập trang tính này",
-    "project-read": "Đọc dự án",
-    "project-read-desc": "Cả chủ sở hữu trang tính và người dùng có quyền \"bb.worksheets.manage\" đều có thể đọc/ghi, những người dùng dự án khác có quyền \"bb.worksheets.get\" có thể đọc",
-    "project-write": "Ghi dự án",
-    "project-write-desc": "Cả chủ sở hữu trang tính và người dùng dự án có quyền \"bb.worksheets.get\" đều có thể đọc/ghi",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn."
     },
@@ -3041,7 +3037,7 @@
     },
     "rows-affected": "dòng bị ảnh hưởng",
     "rows-upper-limit": "đã đạt đến giới hạn kết quả truy vấn",
-    "save-sheet": "Lưu trang tính",
+    "save-sheet": "Lưu truy vấn",
     "scroll-to-bottom": "Cuộn xuống cuối",
     "scroll-to-top": "Cuộn lên đầu",
     "search-history-by-statement": "Tìm kiếm theo câu lệnh",
@@ -3060,24 +3056,24 @@
       "context-menu": {
         "actions": {
           "add-folder": "Thêm thư mục",
-          "add-worksheet": "Thêm bảng tính",
+          "add-saved-query": "Truy vấn mới",
           "close": "Đóng",
           "close-all": "Đóng tất cả",
-          "close-others": "Đóng các trang tính khác",
-          "close-saved": "Đóng các trang tính đã lưu",
-          "close-to-the-right": "Đóng các trang tính bên phải",
+          "close-others": "Đóng các thẻ khác",
+          "close-saved": "Đóng các thẻ đã lưu",
+          "close-to-the-right": "Đóng các thẻ bên phải",
           "multi-select": "Chọn nhiều",
           "rename": "Đổi tên"
         }
       },
-      "unsaved-worksheet": "Bạn có bảng tính chưa lưu."
+      "unsaved-changes": "Bạn có thay đổi chưa lưu."
     },
     "table-empty-placeholder": "Nhấp vào Chạy để thực hiện truy vấn.",
     "table-view": "Chế độ xem bảng",
     "text-format": "Định dạng văn bản",
     "unable-to-connect-database": "Không thể kết nối đến cơ sở dữ liệu {{name}}",
     "upload-file": "Tải lên tệp",
-    "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",
+    "url-copied-to-clipboard": "Đã sao chép liên kết vào bảng nhớ tạm",
     "vertical-display": "Hiển thị dọc",
     "view-database-detail": "Xem chi tiết cơ sở dữ liệu",
     "view-detail": "Xem chi tiết",
@@ -3391,9 +3387,6 @@
       "description": "Sao chép mã và nhập nó vào ứng dụng TOTP của bạn theo cách thủ công.",
       "self": "Bí mật hai yếu tố của bạn"
     }
-  },
-  "worksheet": {
-    "self": "Bảng tính"
   },
   "workspace-setup-guide": {
     "actions": {

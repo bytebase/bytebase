@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { create, type StoreApi } from "zustand";
 import { getSQLEditorEditorState } from "./editor";
+import { createSavedQuerySaveSlice } from "./savedQuery";
 import { getSQLEditorTabsState } from "./tab";
 import type {
   QueryHistorySlice,
@@ -9,14 +10,13 @@ import type {
   UIStateSlice,
   WebTerminalSlice,
 } from "./types";
-import { createWorksheetSaveSlice } from "./worksheet";
 
 // Stub all the other slices so the composed store satisfies
 // `SQLEditorStoreState` without dragging in real implementations
-// (the worksheet slice itself dynamic-imports the Pinia stores it
+// (the saved query slice itself dynamic-imports the Pinia stores it
 // needs, so we only have to mock those via vi.mock below).
 const stubUIStateSlice = (): UIStateSlice => ({
-  asidePanelTab: "WORKSHEET",
+  asidePanelTab: "SAVED_QUERY",
   showConnectionPanel: false,
   showAIPanel: false,
   pendingInsertAtCaret: undefined,
@@ -76,11 +76,11 @@ const piniaMocks = vi.hoisted(() => ({
   tabStore: {
     updateTab: vi.fn(),
   },
-  worksheetStore: {
-    getWorksheetByName: vi.fn(),
-    patchWorksheet: vi.fn(),
-    upsertWorksheetOrganizer: vi.fn(),
-    createWorksheet: vi.fn(),
+  savedQueryStore: {
+    getSavedQueryByName: vi.fn(),
+    patchSavedQuery: vi.fn(),
+    upsertSavedQueryOrganizer: vi.fn(),
+    createSavedQuery: vi.fn(),
     fetchProject: vi.fn(),
     loadProjectIamPolicy: vi.fn(),
   },
@@ -91,7 +91,7 @@ vi.mock("@/stores", () => ({
 }));
 
 vi.mock("@/stores/app", () => ({
-  useAppStore: { getState: () => piniaMocks.worksheetStore },
+  useAppStore: { getState: () => piniaMocks.savedQueryStore },
 }));
 
 vi.mock("@/modules/sql-editor/store/tab-vue-state", () => ({
@@ -111,11 +111,11 @@ vi.mock("@/modules/sql-editor/model/events", () => ({
 }));
 
 vi.mock("@/modules/sql-editor/model/Sheet", () => ({
-  openWorksheetByName: vi.fn(),
+  openSavedQueryByName: vi.fn(),
 }));
 
 vi.mock("@/lib/sqlEditorConnection", () => ({
-  extractWorksheetConnection: vi.fn(
+  extractSavedQueryConnection: vi.fn(
     async ({ database }: { database: string }) => ({
       instance: database ? "instances/cosmos" : "",
       database,
@@ -129,7 +129,7 @@ const makeStore = (): StoreApi<SQLEditorStoreState> =>
     ...stubQueryHistorySlice(),
     ...stubTreeSlice(),
     ...stubWebTerminalSlice(),
-    ...createWorksheetSaveSlice(...args),
+    ...createSavedQuerySaveSlice(...args),
   }));
 
 beforeEach(() => {
@@ -146,7 +146,7 @@ beforeEach(() => {
   getSQLEditorTabsState().reset();
 });
 
-describe("worksheet save slice — autoSaveController", () => {
+describe("saved query save slice — autoSaveController", () => {
   test("initial value is null", () => {
     const store = makeStore();
     expect(store.getState().autoSaveController).toBeNull();
@@ -176,11 +176,11 @@ describe("worksheet save slice — autoSaveController", () => {
   });
 });
 
-describe("worksheet save slice — maybeUpdateWorksheet", () => {
-  test("preserves the selected Cosmos DB container when saving the worksheet", async () => {
+describe("saved query save slice — maybeUpdateSavedQuery", () => {
+  test("preserves the selected Cosmos DB container when saving the saved query", async () => {
     const store = makeStore();
     const tab = getSQLEditorTabsState().addTab({
-      worksheet: "projects/default/worksheets/cosmos-sheet",
+      savedQuery: "projects/default/savedQueries/cosmos-sheet",
       connection: {
         instance: "instances/cosmos",
         database: "instances/cosmos/databases/grs",
@@ -189,18 +189,18 @@ describe("worksheet save slice — maybeUpdateWorksheet", () => {
       statement: "select * from SUPPORDERS_VIS.items",
       status: "DIRTY",
     });
-    piniaMocks.worksheetStore.getWorksheetByName.mockReturnValue({
-      name: tab.worksheet,
-      title: "Cosmos worksheet",
+    piniaMocks.savedQueryStore.getSavedQueryByName.mockReturnValue({
+      name: tab.savedQuery,
+      title: "Cosmos saved query",
       database: tab.connection.database,
     });
-    piniaMocks.worksheetStore.patchWorksheet.mockResolvedValue({
-      name: tab.worksheet,
+    piniaMocks.savedQueryStore.patchSavedQuery.mockResolvedValue({
+      name: tab.savedQuery,
     });
 
-    await store.getState().maybeUpdateWorksheet({
+    await store.getState().maybeUpdateSavedQuery({
       tabId: tab.id,
-      worksheet: tab.worksheet,
+      savedQuery: tab.savedQuery,
       database: tab.connection.database,
       statement: tab.statement,
     });
@@ -213,7 +213,7 @@ describe("worksheet save slice — maybeUpdateWorksheet", () => {
   });
 });
 
-describe("worksheet save slice — maybeSwitchProject", () => {
+describe("saved query save slice — maybeSwitchProject", () => {
   test("with an invalid project name returns undefined without setting project", async () => {
     const store = makeStore();
     const result = await store.getState().maybeSwitchProject("not-a-project");
@@ -222,10 +222,10 @@ describe("worksheet save slice — maybeSwitchProject", () => {
   });
 
   test("switches project even when project IAM policy preload fails", async () => {
-    piniaMocks.worksheetStore.fetchProject.mockResolvedValue({
+    piniaMocks.savedQueryStore.fetchProject.mockResolvedValue({
       name: "projects/aaa",
     });
-    piniaMocks.worksheetStore.loadProjectIamPolicy.mockRejectedValue(
+    piniaMocks.savedQueryStore.loadProjectIamPolicy.mockRejectedValue(
       new Error("permission denied")
     );
 

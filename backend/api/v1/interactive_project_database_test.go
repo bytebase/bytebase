@@ -8,9 +8,12 @@ import (
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -39,39 +42,72 @@ func TestBOT36SQLPrepareRelatedMessageRequiresCanonicalActiveOwner(t *testing.T)
 	require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 }
 
-func TestBOT36WorksheetDatabasesUseCanonicalOwningProjectNames(t *testing.T) {
+func TestBOT36SavedQueryDatabasesUseCanonicalOwningProjectNames(t *testing.T) {
 	ctx, stores, projectID, instanceID, databaseName := setupBOT36ProjectDatabase(t)
-	service := NewWorksheetService(stores, nil)
+	service := NewSavedQueryService(stores, nil)
 
-	_, err := service.getWorksheetDatabase(ctx, projectID, common.FormatDatabase(instanceID, databaseName))
+	_, err := service.validateSavedQueryDatabase(ctx, projectID, common.FormatDatabase(instanceID, databaseName))
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 
-	_, err = service.getWorksheetDatabase(ctx, projectID, common.FormatProjectDatabase("other-project", instanceID, databaseName))
+	_, err = service.validateSavedQueryDatabase(ctx, projectID, common.FormatProjectDatabase("other-project", instanceID, databaseName))
 	require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 
-	database, err := service.getWorksheetDatabase(ctx, projectID, common.FormatProjectDatabase(projectID, instanceID, databaseName))
+	canonical, err := service.validateSavedQueryDatabase(ctx, projectID, common.FormatProjectDatabase(projectID, instanceID, databaseName))
 	require.NoError(t, err)
-	require.Equal(t, databaseName, database.DatabaseName)
+	require.Equal(t, common.FormatProjectDatabase(projectID, instanceID, databaseName), canonical)
 
-	worksheet, err := service.convertWorksheetToAPI(ctx, &store.WorkSheetMessage{
-		ProjectID:    projectID,
-		ResourceID:   "worksheet-a",
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+	// The stored canonical name round-trips through the API shape without
+	// re-resolution — a dangling reference degrades instead of erroring.
+	savedQuery := convertToAPISavedQuery(&store.SavedQueryMessage{
+		ProjectID:  projectID,
+		ResourceID: "saved-query-a",
+		Database:   canonical,
+	})
+	require.Equal(t, canonical, savedQuery.Database)
+
+	workspaceCanonical, err := service.validateSavedQueryDatabase(ctx, projectID, common.FormatDatabase("workspace-instance", "shared"))
+	require.NoError(t, err)
+	require.Equal(t, common.FormatDatabase("workspace-instance", "shared"), workspaceCanonical)
+}
+
+func TestUpdateSavedQueryKeepsDanglingDatabaseReference(t *testing.T) {
+	ctx, stores, projectID, _, _ := setupBOT36ProjectDatabase(t)
+	service := NewSavedQueryService(stores, nil)
+
+	// The database reference is a soft link: an autosave that re-sends the
+	// stored (now dangling) value must not fail validation — that would
+	// brick content saves after the database is deleted or transferred.
+	dangling := common.FormatDatabase("deleted-instance", "gone")
+	created, err := stores.CreateSavedQuery(ctx, &store.SavedQueryMessage{
+		ProjectID: projectID,
+		Creator:   "user@example.com",
+		Title:     "dangling",
+		Statement: "SELECT 1;",
+		Database:  dangling,
 	})
 	require.NoError(t, err)
-	require.Equal(t, common.FormatProjectDatabase(projectID, instanceID, databaseName), worksheet.Database)
 
-	workspaceDatabase, err := service.getWorksheetDatabase(ctx, projectID, common.FormatDatabase("workspace-instance", "shared"))
+	updated, err := service.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+		SavedQuery: &v1pb.SavedQuery{
+			Name:     common.FormatSavedQuery(projectID, created.ResourceID),
+			Database: dangling,
+			Content:  []byte("SELECT 2;"),
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"database", "content"}},
+	}))
 	require.NoError(t, err)
-	workspaceWorksheet, err := service.convertWorksheetToAPI(ctx, &store.WorkSheetMessage{
-		ProjectID:    projectID,
-		ResourceID:   "worksheet-b",
-		InstanceID:   &workspaceDatabase.InstanceID,
-		DatabaseName: &workspaceDatabase.DatabaseName,
-	})
-	require.NoError(t, err)
-	require.Equal(t, common.FormatDatabase("workspace-instance", "shared"), workspaceWorksheet.Database)
+	require.Equal(t, dangling, updated.Msg.Database)
+	require.Equal(t, []byte("SELECT 2;"), updated.Msg.Content)
+
+	// An explicit change to a nonexistent database still fails hard.
+	_, err = service.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+		SavedQuery: &v1pb.SavedQuery{
+			Name:     common.FormatSavedQuery(projectID, created.ResourceID),
+			Database: common.FormatDatabase("another-missing", "db"),
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"database"}},
+	}))
+	require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 }
 
 func TestBOT36AccessGrantTargetsRequireCanonicalOwningProject(t *testing.T) {

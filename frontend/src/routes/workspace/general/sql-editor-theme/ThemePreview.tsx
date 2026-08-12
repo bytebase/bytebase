@@ -27,7 +27,7 @@ interface ThemePreviewProps {
   theme: SQLEditorTheme;
 }
 
-// Illustrative sample DATA (a user's SQL, rows, worksheet/timestamp names) —
+// Illustrative sample DATA (a user's SQL, rows, saved query/timestamp names) —
 // representative content, not translatable UI text, so literals are correct
 // here. The chrome LABELS (Run/Save/Share/Copy all/rows/etc.) use i18n via `t`.
 const PREVIEW_SQL = `SELECT id, name, created_at
@@ -70,7 +70,7 @@ const EMPTY_SEARCH: SearchParams = { query: "", scopes: [] };
 
 /**
  * A miniature SQL Editor right-panel rendered with the given theme's tokens:
- * worksheet tabs, the operation toolbar, a real (read-only) Monaco editor, and
+ * saved query tabs, the operation toolbar, a real (read-only) Monaco editor, and
  * a result sample. The whole box is wrapped in a single `SQLEditorThemeScope`
  * so every descendant re-themes purely through the scope's CSS custom
  * properties.
@@ -104,7 +104,7 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
           </div>
           {/* Inactive tab: bg changes on hover, like the real editor. */}
           <div className="flex h-9 items-center gap-x-2 border-r border-t-[3px] border-r-block-border border-t-transparent px-3 text-control-light transition-colors hover:bg-control-bg">
-            <span>Worksheet 2</span>
+            <span>SavedQuery 2</span>
             <X className="size-3.5" />
           </div>
           <div className="flex h-9 items-center px-2 text-control-light">

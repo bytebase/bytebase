@@ -8,8 +8,8 @@ import type { TreeDataNode } from "@/components/ui/tree";
 import { Tree } from "@/components/ui/tree";
 import { cn } from "@/lib/utils";
 import {
+  type SavedQueryFolderNode,
   useSheetContextByView,
-  type WorksheetFolderNode,
 } from "@/modules/sql-editor/model/Sheet";
 import { TreeNodePrefix } from "./TreeNodePrefix";
 
@@ -20,8 +20,8 @@ type Props = {
 };
 
 function toTreeData(
-  node: WorksheetFolderNode
-): TreeDataNode<WorksheetFolderNode> {
+  node: SavedQueryFolderNode
+): TreeDataNode<SavedQueryFolderNode> {
   return {
     id: node.key,
     data: node,
@@ -106,7 +106,7 @@ export function FolderForm({
     ? [toTreeData(folderTree)]
     : folderTree.children.filter((child) => !child.loadMore).map(toTreeData);
 
-  const searchMatch = (node: TreeDataNode<WorksheetFolderNode>) => {
+  const searchMatch = (node: TreeDataNode<SavedQueryFolderNode>) => {
     if (!folderPath) return true;
     return node.data.key.includes(folderPath);
   };
@@ -140,7 +140,7 @@ export function FolderForm({
             style={{ width: "var(--anchor-width)" }}
             className="p-1"
           >
-            <Tree<WorksheetFolderNode>
+            <Tree<SavedQueryFolderNode>
               data={treeData}
               selectedIds={folderPath ? [folderPath] : []}
               expandedIds={includeRoot ? [rootPath] : undefined}

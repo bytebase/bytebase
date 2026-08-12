@@ -243,6 +243,10 @@
 - [store/role.proto](#store_role-proto)
     - [RolePermissions](#bytebase-store-RolePermissions)
   
+- [store/saved_query.proto](#store_saved_query-proto)
+    - [SavedQueryOrganizerPayload](#bytebase-store-SavedQueryOrganizerPayload)
+    - [SavedQueryPayload](#bytebase-store-SavedQueryPayload)
+  
 - [store/server_config.proto](#store_server_config-proto)
     - [ServerConfigPayload](#bytebase-store-ServerConfigPayload)
   
@@ -354,9 +358,6 @@
   
 - [store/vcs_provider_user.proto](#store_vcs_provider_user-proto)
     - [VCSProviderUserPayload](#bytebase-store-VCSProviderUserPayload)
-  
-- [store/worksheet.proto](#store_worksheet-proto)
-    - [WorkSheetOrganizerPayload](#bytebase-store-WorkSheetOrganizerPayload)
   
 - [store/workspace.proto](#store_workspace-proto)
     - [WorkspacePayload](#bytebase-store-WorkspacePayload)
@@ -4088,6 +4089,7 @@ The severity level for SQL review rules.
 | sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | task_run | [string](#string) |  | The task run associated with the revision. Can be empty. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | type | [SchemaChangeType](#bytebase-store-SchemaChangeType) |  | The type of the revision. |
+| project | [string](#string) |  | The project that authored this revision&#39;s change — where the plan or release that produced it ran. Stamped by the server at creation from the database&#39;s then-current project; rows predating the field are backfilled from corroborated provenance (migration 3.22.5). Not a scope: revisions stay keyed by (instance, db_name) and follow the database across project transfers, while the statement&#39;s sheet stays readable under this project. Can be empty when no owner could be corroborated; such statements are unreadable and the revision carries no sheet name. |
 
 
 
@@ -4119,6 +4121,53 @@ The severity level for SQL review rules.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | permissions | [string](#string) | repeated |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_saved_query-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/saved_query.proto
+
+
+
+<a name="bytebase-store-SavedQueryOrganizerPayload"></a>
+
+### SavedQueryOrganizerPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| starred | [bool](#bool) |  |  |
+| folders | [string](#string) | repeated | The folder path for a saved query. For example, if the folders is [A, B, C], means the saved query is in the A/B/C subfolder. |
+
+
+
+
+
+
+<a name="bytebase-store-SavedQueryPayload"></a>
+
+### SavedQueryPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  | The connected database, stored as its canonical resource name: instances/{instance}/databases/{database} for a workspace instance, projects/{project}/instances/{instance}/databases/{database} for a project instance. Validated against the saved query&#39;s own project at write time; the reference is soft and may dangle after the database is deleted or transferred, degrading to &#34;no database&#34; in the UI. |
 
 
 
@@ -5695,38 +5744,6 @@ ProviderType identifies the CI/CD platform.
 | ----- | ---- | ----- | ----------- |
 | user_name | [string](#string) |  |  |
 | display_name | [string](#string) |  |  |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="store_worksheet-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/worksheet.proto
-
-
-
-<a name="bytebase-store-WorkSheetOrganizerPayload"></a>
-
-### WorkSheetOrganizerPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| starred | [bool](#bool) |  |  |
-| folders | [string](#string) | repeated | The folder path for a worksheet. For example, if the folders is [A, B, C], means the worksheet is in the A/B/C subfolder. |
 
 
 

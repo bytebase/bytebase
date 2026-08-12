@@ -8,7 +8,7 @@ import {
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  SQL_EDITOR_WORKSHEET_MODULE,
+  SQL_EDITOR_SAVED_QUERY_MODULE,
   WORKSPACE_ROUTE_MEMBERS,
 } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
@@ -54,7 +54,7 @@ interface IntroItem {
  *  - `getIntroStateByKey(...)` — per-task done flags and the global
  *    `hidden` flag (toggled when the user dismisses).
  *
- * Async fetches (project / sample issue / sample worksheet) run on
+ * Async fetches (project / sample issue / sample saved query) run on
  * mount and fall back to undefined when the sample data is missing
  * (e.g. an upgraded workspace that never bootstrapped the sample).
  */
@@ -139,7 +139,7 @@ export function Quickstart() {
     void (async () => {
       const sheet = await useAppStore
         .getState()
-        .getOrFetchWorksheetByName(
+        .getOrFetchSavedQueryByName(
           `${sampleProject.name}/sheets/${SAMPLE_SHEET_ID}`,
           true /* silent */
         );
@@ -171,10 +171,10 @@ export function Quickstart() {
       {
         name: t("quick-start.query-data"),
         link: {
-          name: SQL_EDITOR_WORKSHEET_MODULE,
+          name: SQL_EDITOR_SAVED_QUERY_MODULE,
           params: {
             project: SAMPLE_PROJECT_NAME,
-            sheet: SAMPLE_SHEET_ID,
+            savedQuery: SAMPLE_SHEET_ID,
           },
         },
         done: dataQueried,

@@ -28,7 +28,7 @@ const mocks = vi.hoisted(() => ({
   },
   closeTab: vi.fn(),
   setCurrentTabId: vi.fn(),
-  createWorksheet: vi.fn().mockResolvedValue(undefined),
+  createSavedQuery: vi.fn().mockResolvedValue(undefined),
   tabListEventsOn:
     vi.fn<(event: string, h: (p: unknown) => void) => () => void>(),
 }));
@@ -48,10 +48,10 @@ vi.mock("@/modules/sql-editor/store/tab", () => ({
 
 vi.mock("@/modules/sql-editor/store", () => ({
   useSQLEditorStore: (
-    selector: (s: { createWorksheet: typeof mocks.createWorksheet }) => unknown
+    selector: (s: { createSavedQuery: typeof mocks.createSavedQuery }) => unknown
   ) =>
     selector({
-      createWorksheet: mocks.createWorksheet,
+      createSavedQuery: mocks.createSavedQuery,
     }),
 }));
 
@@ -209,7 +209,7 @@ const makeTab = (
   ({
     id,
     title: `t-${id}`,
-    mode: "WORKSHEET",
+    mode: "SAVED_QUERY",
     status: "CLEAN",
     ...overrides,
   }) as unknown as SQLEditorTab;
@@ -269,7 +269,7 @@ describe("TabList", () => {
     unmount();
   });
 
-  test("closing a DIRTY worksheet opens the confirm dialog", () => {
+  test("closing a DIRTY saved query opens the confirm dialog", () => {
     setup([makeTab("a", { status: "DIRTY" })]);
     const { container, render, unmount } = renderIntoContainer(<TabList />);
     render();
@@ -284,7 +284,7 @@ describe("TabList", () => {
     unmount();
   });
 
-  test("+ button calls worksheetStore.createWorksheet", () => {
+  test("+ button calls savedQueryStore.createSavedQuery", () => {
     setup([makeTab("a")]);
     const { container, render, unmount } = renderIntoContainer(<TabList />);
     render();
@@ -295,7 +295,7 @@ describe("TabList", () => {
     act(() => {
       addButton?.click();
     });
-    expect(mocks.createWorksheet).toHaveBeenCalled();
+    expect(mocks.createSavedQuery).toHaveBeenCalled();
     unmount();
   });
 

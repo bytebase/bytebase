@@ -27,6 +27,7 @@ export * from "./auto-route";
 export * from "./pagination";
 export * from "./expr";
 export * from "./accessGrant";
+export * from "./legacy-paths";
 export * from "./storage-keys";
 export * from "./storage-migrate";
 export * from "./document-title";

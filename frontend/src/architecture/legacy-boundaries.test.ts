@@ -21,7 +21,7 @@ const currentUserMigrationSources = import.meta.glob(
     "../modules/ai/components/**/*.{ts,tsx}",
     "../api/middlewares/activeInterceptorMiddleware.ts",
     "../utils/pagination.ts",
-    "../utils/v1/worksheet.ts",
+    "../utils/v1/savedQuery.ts",
   ],
   {
     query: "?raw",

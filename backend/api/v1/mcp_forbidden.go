@@ -118,12 +118,13 @@ const reasonForbiddenClass = "it is not reachable by an AI agent session"
 //
 // Sitting inside audit gets the denial a row for the methods that carry the
 // audit annotation, which is all twenty-three currently annotated FORBIDDEN bar
-// SwitchWorkspace, Refresh, RequestPasswordReset, ResetPassword,
-// TestIdentityProvider and TestEmailSetting: needAudit reads that annotation
-// and nothing else, so those six are denied silently until 1b-2 lands the typed
-// policy-denial record that bypasses it. The last two are the ones that sting —
-// they are the methods that would carry a stored secret to an address the agent
-// chose, and their denials are the rows an operator would most want.
+// SwitchWorkspace, Refresh, TestIdentityProvider and TestEmailSetting:
+// needAudit reads that annotation and nothing else, so those four are denied
+// silently until 1b-2 lands the typed policy-denial record that bypasses it.
+// (RequestPasswordReset and ResetPassword were in this set until #21162 gave
+// them the audit annotation.) The last two are the ones that sting — they are
+// the methods that would carry a stored secret to an address the agent chose,
+// and their denials are the rows an operator would most want.
 func NewInternalMCPForbiddenInterceptor() connect.Interceptor {
 	return connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {

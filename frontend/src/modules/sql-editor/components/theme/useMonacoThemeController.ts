@@ -14,7 +14,7 @@ import { useWorkspaceSQLEditorTheme } from "./useWorkspaceSQLEditorTheme";
  * its `options.theme`; calling the global `setTheme` *while an editor is still
  * constructing* races the codingame VSCode theme service and throws, which makes
  * the editor fall back to its read-only `<pre>`. So we only re-apply on a GENUINE
- * workspace-theme change (prev exists and differs). Mode-only flips (worksheet
+ * workspace-theme change (prev exists and differs). Mode-only flips (saved query
  * ⇄ admin) remount their editor surface with the right construction theme, and
  * calling global `setTheme` during that swap would race the new editor.
  * This also makes the effect safe under React StrictMode's double-invoke — the

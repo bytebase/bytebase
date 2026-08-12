@@ -3,44 +3,43 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
-  WorksheetSchema,
-  Worksheet_Visibility,
-  type Worksheet,
-} from "@/types/proto-es/v1/worksheet_service_pb";
+  SavedQuerySchema,
+  type SavedQuery,
+} from "@/types/proto-es/v1/saved_query_service_pb";
 import {
-  storageKeySqlEditorWorksheetFilter,
-  storageKeySqlEditorWorksheetFolder,
+  storageKeySqlEditorSavedQueryFilter,
+  storageKeySqlEditorSavedQueryFolder,
 } from "@/utils";
 
 type AppState = {
   currentUser: { email: string; workspace: string };
-  worksheetsByKey: Record<string, Worksheet>;
+  savedQueriesByKey: Record<string, SavedQuery>;
   isSaaSMode: () => boolean;
-  getWorksheetByName: (name: string) => Worksheet | undefined;
-  listWorksheetFolders: ReturnType<typeof vi.fn>;
-  fetchWorksheetList: ReturnType<typeof vi.fn>;
-  upsertWorksheetOrganizer: ReturnType<typeof vi.fn>;
-  batchUpdateWorksheetOrganizers: ReturnType<typeof vi.fn>;
+  getSavedQueryByName: (name: string) => SavedQuery | undefined;
+  listSavedQueryFolders: ReturnType<typeof vi.fn>;
+  fetchSavedQueryList: ReturnType<typeof vi.fn>;
+  upsertSavedQueryOrganizer: ReturnType<typeof vi.fn>;
+  batchUpdateSavedQueryOrganizers: ReturnType<typeof vi.fn>;
 };
 
 const mocks = vi.hoisted(() => {
   let appState: AppState;
   const appSubscribers = new Set<(state: AppState, prev: AppState) => void>();
-  const keyForWorksheet = (name: string) => `${name.split("/").pop()}:FULL`;
+  const keyForSavedQuery = (name: string) => `${name.split("/").pop()}:FULL`;
 
-  const setWorksheets = (worksheets: Worksheet[]) => {
+  const setSavedQueries = (savedQueries: SavedQuery[]) => {
     const prev = {
       ...appState,
-      worksheetsByKey: appState.worksheetsByKey,
+      savedQueriesByKey: appState.savedQueriesByKey,
     };
     appState = {
       ...appState,
-      worksheetsByKey: {
-        ...appState.worksheetsByKey,
+      savedQueriesByKey: {
+        ...appState.savedQueriesByKey,
         ...Object.fromEntries(
-          worksheets.map((worksheet) => [
-            keyForWorksheet(worksheet.name),
-            worksheet,
+          savedQueries.map((savedQuery) => [
+            keyForSavedQuery(savedQuery.name),
+            savedQuery,
           ])
         ),
       },
@@ -59,27 +58,26 @@ const mocks = vi.hoisted(() => {
           email: "creator@example.com",
           workspace: "workspaces/default",
         },
-        worksheetsByKey: {},
+        savedQueriesByKey: {},
         isSaaSMode: () => false,
-        getWorksheetByName: (name: string) =>
-          appState.worksheetsByKey[keyForWorksheet(name)],
-        listWorksheetFolders: vi.fn(async () => []),
-        fetchWorksheetList: vi.fn(async (_project, _filter, _params) => {
-          const worksheet = create(WorksheetSchema, {
-            name: "projects/proj1/worksheets/1",
+        getSavedQueryByName: (name: string) =>
+          appState.savedQueriesByKey[keyForSavedQuery(name)],
+        listSavedQueryFolders: vi.fn(async () => []),
+        fetchSavedQueryList: vi.fn(async (_project, _filter, _params) => {
+          const savedQuery = create(SavedQuerySchema, {
+            name: "projects/proj1/savedQueries/1",
             project: "projects/proj1",
             creator: "users/creator@example.com",
-            title: "Existing worksheet",
-            visibility: Worksheet_Visibility.PRIVATE,
+            title: "Existing saved query",
           });
-          setWorksheets([worksheet]);
-          return { worksheets: [worksheet], nextPageToken: "next-page" };
+          setSavedQueries([savedQuery]);
+          return { savedQueries: [savedQuery], nextPageToken: "next-page" };
         }),
-        upsertWorksheetOrganizer: vi.fn(),
-        batchUpdateWorksheetOrganizers: vi.fn(),
+        upsertSavedQueryOrganizer: vi.fn(),
+        batchUpdateSavedQueryOrganizers: vi.fn(),
       };
     },
-    addWorksheets: setWorksheets,
+    addSavedQueries: setSavedQueries,
     useAppStore: {
       getState: () => appState,
       subscribe: (subscriber: (state: AppState, prev: AppState) => void) => {
@@ -136,7 +134,7 @@ describe("sheet context", () => {
     vi.resetModules();
   });
 
-  test("adds newly created worksheets to the initialized paged my view", async () => {
+  test("adds newly created saved queries to the initialized paged my view", async () => {
     const { provideSheetContext, useSheetContextByView } = await import(
       "./context"
     );
@@ -161,7 +159,7 @@ describe("sheet context", () => {
       await viewContext!.fetchSheetList();
     });
 
-    expect(container.textContent).toContain("Existing worksheet");
+    expect(container.textContent).toContain("Existing saved query");
     expect(viewContext!.sheetTree.children.map((child) => child.label)).toContain(
       "common.load-more"
     );
@@ -169,25 +167,24 @@ describe("sheet context", () => {
       "common.load-more"
     );
 
-    mocks.addWorksheets([
-      create(WorksheetSchema, {
-        name: "projects/proj1/worksheets/2",
+    mocks.addSavedQueries([
+      create(SavedQuerySchema, {
+        name: "projects/proj1/savedQueries/2",
         project: "projects/proj1",
         creator: "users/creator@example.com",
-        title: "Created worksheet",
-        visibility: Worksheet_Visibility.PRIVATE,
+        title: "Created saved query",
       }),
     ]);
     await act(async () => {
       vi.runAllTimers();
     });
 
-    expect(container.textContent).toContain("Created worksheet");
+    expect(container.textContent).toContain("Created saved query");
   });
 
-  test("does not restore worksheet filter from localStorage", async () => {
+  test("does not restore saved query filter from localStorage", async () => {
     window.localStorage.setItem(
-      storageKeySqlEditorWorksheetFilter(
+      storageKeySqlEditorSavedQueryFilter(
         "",
         "projects/proj1",
         "creator@example.com"
@@ -224,8 +221,8 @@ describe("sheet context", () => {
     });
   });
 
-  test("does not persist worksheet filter to localStorage", async () => {
-    const key = storageKeySqlEditorWorksheetFilter(
+  test("does not persist saved query filter to localStorage", async () => {
+    const key = storageKeySqlEditorSavedQueryFilter(
       "",
       "projects/proj1",
       "creator@example.com"
@@ -257,7 +254,7 @@ describe("sheet context", () => {
   });
 
   test("uses a collision-free key for load-more rows", async () => {
-    mocks.getAppState().listWorksheetFolders.mockResolvedValueOnce([
+    mocks.getAppState().listSavedQueryFolders.mockResolvedValueOnce([
       { folders: ["__load-more"], category: "my" },
     ]);
 
@@ -283,19 +280,19 @@ describe("sheet context", () => {
 
     const keys = viewContext!.sheetTree.children.map((child) => child.key);
     expect(keys).toContain("/my/__load-more");
-    expect(keys).toContain("__worksheet_load_more__:/my");
+    expect(keys).toContain("__savedQuery_load_more__:/my");
   });
 
-  test("loads caller worksheet folders before the root worksheet page", async () => {
+  test("loads caller saved query folders before the root saved query page", async () => {
     mocks
       .getAppState()
-      .listWorksheetFolders.mockResolvedValueOnce([
+      .listSavedQueryFolders.mockResolvedValueOnce([
         { folders: ["alpha"], category: "my" },
         { folders: ["alpha", "beta"], category: "my" },
         { folders: ["shared"], category: "shared" },
       ]);
-    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => ({
-      worksheets: [],
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => ({
+      savedQueries: [],
       nextPageToken: "",
     }));
 
@@ -322,10 +319,10 @@ describe("sheet context", () => {
       await viewContext!.fetchSheetList();
     });
 
-    expect(mocks.getAppState().listWorksheetFolders).toHaveBeenCalledWith(
+    expect(mocks.getAppState().listSavedQueryFolders).toHaveBeenCalledWith(
       "projects/proj1"
     );
-    expect(mocks.getAppState().fetchWorksheetList).toHaveBeenCalledWith(
+    expect(mocks.getAppState().fetchSavedQueryList).toHaveBeenCalledWith(
       "projects/proj1",
       'creator == "users/creator@example.com" && folder == ""',
       expect.objectContaining({ pageToken: "" })
@@ -336,7 +333,7 @@ describe("sheet context", () => {
 
   test("merges persisted empty folders with backend folders", async () => {
     window.localStorage.setItem(
-      storageKeySqlEditorWorksheetFolder(
+      storageKeySqlEditorSavedQueryFolder(
         "",
         "projects/proj1",
         "shared",
@@ -344,11 +341,11 @@ describe("sheet context", () => {
       ),
       JSON.stringify(["/shared/alpha", "/shared/local-empty"])
     );
-    mocks.getAppState().listWorksheetFolders.mockResolvedValueOnce([
+    mocks.getAppState().listSavedQueryFolders.mockResolvedValueOnce([
       { folders: ["alpha"], category: "my" },
     ]);
-    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => ({
-      worksheets: [],
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => ({
+      savedQueries: [],
       nextPageToken: "",
     }));
 
@@ -403,7 +400,7 @@ describe("sheet context", () => {
     expect(
       JSON.parse(
         window.localStorage.getItem(
-          storageKeySqlEditorWorksheetFolder(
+          storageKeySqlEditorSavedQueryFolder(
             "",
             "projects/proj1",
             "my",
@@ -414,7 +411,7 @@ describe("sheet context", () => {
     ).toEqual(["/my/local-empty"]);
   });
 
-  test("uses server-side keyword and starred filters when fetching worksheets", async () => {
+  test("uses server-side keyword and starred filters when fetching saved queries", async () => {
     const { provideSheetContext, useSheetContext, useSheetContextByView } =
       await import("./context");
     let sheetContext: ReturnType<typeof useSheetContext> | undefined;
@@ -434,7 +431,7 @@ describe("sheet context", () => {
     await act(async () => {
       await viewContext!.fetchSheetList();
     });
-    mocks.getAppState().fetchWorksheetList.mockClear();
+    mocks.getAppState().fetchSavedQueryList.mockClear();
 
     act(() => {
       sheetContext!.setFilter({
@@ -447,18 +444,18 @@ describe("sheet context", () => {
       await vi.runAllTimersAsync();
     });
 
-    expect(mocks.getAppState().fetchWorksheetList).toHaveBeenLastCalledWith(
+    expect(mocks.getAppState().fetchSavedQueryList).toHaveBeenLastCalledWith(
       "projects/proj1",
       'creator == "users/creator@example.com" && folder == "" && title.contains("payroll") && starred == true',
       expect.objectContaining({ pageToken: "" })
     );
 
-    mocks.getAppState().fetchWorksheetList.mockClear();
+    mocks.getAppState().fetchSavedQueryList.mockClear();
     await act(async () => {
       await viewContext!.fetchNextPage();
     });
 
-    expect(mocks.getAppState().fetchWorksheetList).toHaveBeenLastCalledWith(
+    expect(mocks.getAppState().fetchSavedQueryList).toHaveBeenLastCalledWith(
       "projects/proj1",
       'creator == "users/creator@example.com" && folder == "" && title.contains("payroll") && starred == true',
       expect.objectContaining({ pageToken: "next-page" })
@@ -468,11 +465,11 @@ describe("sheet context", () => {
   test("keeps backend-known folders visible when starred filter is active", async () => {
     mocks
       .getAppState()
-      .listWorksheetFolders.mockResolvedValue([
+      .listSavedQueryFolders.mockResolvedValue([
         { folders: ["alpha"], category: "my" },
       ]);
-    mocks.getAppState().fetchWorksheetList.mockResolvedValue({
-      worksheets: [],
+    mocks.getAppState().fetchSavedQueryList.mockResolvedValue({
+      savedQueries: [],
       nextPageToken: "",
     });
 
@@ -499,7 +496,7 @@ describe("sheet context", () => {
     await act(async () => {
       await viewContext!.fetchSheetList();
     });
-    mocks.getAppState().fetchWorksheetList.mockClear();
+    mocks.getAppState().fetchSavedQueryList.mockClear();
 
     act(() => {
       sheetContext!.setFilter({
@@ -511,7 +508,7 @@ describe("sheet context", () => {
       await vi.runAllTimersAsync();
     });
 
-    expect(mocks.getAppState().fetchWorksheetList).toHaveBeenLastCalledWith(
+    expect(mocks.getAppState().fetchSavedQueryList).toHaveBeenLastCalledWith(
       "projects/proj1",
       'creator == "users/creator@example.com" && folder == "" && starred == true',
       expect.objectContaining({ pageToken: "" })
@@ -519,7 +516,7 @@ describe("sheet context", () => {
     expect(container.textContent).toContain("alpha");
   });
 
-  test("fetches worksheet descendants for a folder without replacing the paged view", async () => {
+  test("fetches saved query descendants for a folder without replacing the paged view", async () => {
     const { provideSheetContext, useSheetContextByView } = await import(
       "./context"
     );
@@ -543,32 +540,31 @@ describe("sheet context", () => {
       await viewContext!.fetchSheetList();
     });
 
-    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => {
-      const worksheet = create(WorksheetSchema, {
-          name: "projects/proj1/worksheets/3",
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => {
+      const savedQuery = create(SavedQuerySchema, {
+          name: "projects/proj1/savedQueries/3",
           project: "projects/proj1",
           creator: "users/creator@example.com",
-          title: "Folder worksheet",
+          title: "Folder saved query",
           folders: ["alpha"],
-          visibility: Worksheet_Visibility.PRIVATE,
         });
-      mocks.addWorksheets([worksheet]);
+      mocks.addSavedQueries([savedQuery]);
       return {
-        worksheets: [worksheet],
+        savedQueries: [savedQuery],
         nextPageToken: "",
       };
     });
 
     await act(async () => {
-      await viewContext!.fetchWorksheetsByFolder("/my/alpha");
+      await viewContext!.fetchSavedQueriesByFolder("/my/alpha");
     });
 
-    expect(mocks.getAppState().fetchWorksheetList).toHaveBeenLastCalledWith(
+    expect(mocks.getAppState().fetchSavedQueryList).toHaveBeenLastCalledWith(
       "projects/proj1",
       'creator == "users/creator@example.com" && folder == "alpha"',
       expect.objectContaining({ pageToken: "" })
     );
-    expect(container.textContent).toContain("Existing worksheet");
+    expect(container.textContent).toContain("Existing saved query");
     expect(container.textContent).toContain("alpha");
   });
 
@@ -592,23 +588,22 @@ describe("sheet context", () => {
       await viewContext!.fetchSheetList();
     });
 
-    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => {
-      const worksheet = create(WorksheetSchema, {
-        name: "projects/proj1/worksheets/3",
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => {
+      const savedQuery = create(SavedQuerySchema, {
+        name: "projects/proj1/savedQueries/3",
         project: "projects/proj1",
         creator: "users/creator@example.com",
-        title: "Folder worksheet",
+        title: "Folder saved query",
         folders: ["alpha"],
-        visibility: Worksheet_Visibility.PRIVATE,
       });
-      mocks.addWorksheets([worksheet]);
+      mocks.addSavedQueries([savedQuery]);
       return {
-        worksheets: [worksheet],
+        savedQueries: [savedQuery],
         nextPageToken: "folder-next",
       };
     });
     await act(async () => {
-      await viewContext!.fetchWorksheetsByFolder("/my/alpha");
+      await viewContext!.fetchSavedQueriesByFolder("/my/alpha");
     });
 
     const alpha = viewContext!.sheetTree.children.find(
@@ -618,33 +613,32 @@ describe("sheet context", () => {
       "common.load-more"
     );
 
-    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => ({
-      worksheets: [],
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => ({
+      savedQueries: [],
       nextPageToken: "",
     }));
     await act(async () => {
       await viewContext!.fetchNextPage("/my/alpha");
     });
 
-    expect(mocks.getAppState().fetchWorksheetList).toHaveBeenLastCalledWith(
+    expect(mocks.getAppState().fetchSavedQueryList).toHaveBeenLastCalledWith(
       "projects/proj1",
       'creator == "users/creator@example.com" && folder == "alpha"',
       expect.objectContaining({ pageToken: "folder-next" })
     );
   });
 
-  test("appends newly fetched worksheet pages without frontend reordering", async () => {
-    const firstWorksheet = create(WorksheetSchema, {
-      name: "projects/proj1/worksheets/first",
+  test("appends newly fetched saved query pages without frontend reordering", async () => {
+    const firstSavedQuery = create(SavedQuerySchema, {
+      name: "projects/proj1/savedQueries/first",
       project: "projects/proj1",
       creator: "users/creator@example.com",
-      title: "Zeta worksheet",
-      visibility: Worksheet_Visibility.PRIVATE,
+      title: "Zeta saved query",
     });
-    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => {
-      mocks.addWorksheets([firstWorksheet]);
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => {
+      mocks.addSavedQueries([firstSavedQuery]);
       return {
-        worksheets: [firstWorksheet],
+        savedQueries: [firstSavedQuery],
         nextPageToken: "next-page",
       };
     });
@@ -668,17 +662,16 @@ describe("sheet context", () => {
       await viewContext!.fetchSheetList();
     });
 
-    const secondWorksheet = create(WorksheetSchema, {
-      name: "projects/proj1/worksheets/second",
+    const secondSavedQuery = create(SavedQuerySchema, {
+      name: "projects/proj1/savedQueries/second",
       project: "projects/proj1",
       creator: "users/creator@example.com",
-      title: "Alpha worksheet",
-      visibility: Worksheet_Visibility.PRIVATE,
+      title: "Alpha saved query",
     });
-    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => {
-      mocks.addWorksheets([secondWorksheet]);
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => {
+      mocks.addSavedQueries([secondSavedQuery]);
       return {
-        worksheets: [secondWorksheet],
+        savedQueries: [secondSavedQuery],
         nextPageToken: "",
       };
     });
@@ -688,9 +681,9 @@ describe("sheet context", () => {
 
     expect(
       viewContext!.sheetTree.children
-        .filter((child) => child.worksheet)
+        .filter((child) => child.savedQuery)
         .map((child) => child.label)
-    ).toEqual(["Zeta worksheet", "Alpha worksheet"]);
+    ).toEqual(["Zeta saved query", "Alpha saved query"]);
   });
 
   test("keeps folder and descendant load-more state after renaming a folder", async () => {
@@ -713,44 +706,42 @@ describe("sheet context", () => {
       await viewContext!.fetchSheetList();
     });
 
-    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => {
-      const worksheet = create(WorksheetSchema, {
-        name: "projects/proj1/worksheets/3",
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => {
+      const savedQuery = create(SavedQuerySchema, {
+        name: "projects/proj1/savedQueries/3",
         project: "projects/proj1",
         creator: "users/creator@example.com",
-        title: "Folder worksheet",
+        title: "Folder saved query",
         folders: ["alpha"],
-        visibility: Worksheet_Visibility.PRIVATE,
       });
-      mocks.addWorksheets([worksheet]);
+      mocks.addSavedQueries([savedQuery]);
       return {
-        worksheets: [worksheet],
+        savedQueries: [savedQuery],
         nextPageToken: "folder-next",
       };
     });
     await act(async () => {
-      await viewContext!.fetchWorksheetsByFolder("/my/alpha");
+      await viewContext!.fetchSavedQueriesByFolder("/my/alpha");
     });
 
     expect(viewContext!.hasMoreForFolder("/my/alpha")).toBe(true);
 
-    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => {
-      const worksheet = create(WorksheetSchema, {
-        name: "projects/proj1/worksheets/4",
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => {
+      const savedQuery = create(SavedQuerySchema, {
+        name: "projects/proj1/savedQueries/4",
         project: "projects/proj1",
         creator: "users/creator@example.com",
-        title: "Child folder worksheet",
+        title: "Child folder saved query",
         folders: ["alpha", "child"],
-        visibility: Worksheet_Visibility.PRIVATE,
       });
-      mocks.addWorksheets([worksheet]);
+      mocks.addSavedQueries([savedQuery]);
       return {
-        worksheets: [worksheet],
+        savedQueries: [savedQuery],
         nextPageToken: "child-folder-next",
       };
     });
     await act(async () => {
-      await viewContext!.fetchWorksheetsByFolder("/my/alpha/child");
+      await viewContext!.fetchSavedQueriesByFolder("/my/alpha/child");
     });
 
     expect(viewContext!.hasMoreForFolder("/my/alpha/child")).toBe(true);
@@ -787,23 +778,22 @@ describe("sheet context", () => {
 
     viewContext!.folderContext.addFolder("/my/beta");
 
-    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => {
-      const worksheet = create(WorksheetSchema, {
-        name: "projects/proj1/worksheets/3",
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => {
+      const savedQuery = create(SavedQuerySchema, {
+        name: "projects/proj1/savedQueries/3",
         project: "projects/proj1",
         creator: "users/creator@example.com",
-        title: "Alpha worksheet",
+        title: "Alpha saved query",
         folders: ["alpha"],
-        visibility: Worksheet_Visibility.PRIVATE,
       });
-      mocks.addWorksheets([worksheet]);
+      mocks.addSavedQueries([savedQuery]);
       return {
-        worksheets: [worksheet],
+        savedQueries: [savedQuery],
         nextPageToken: "alpha-next",
       };
     });
     await act(async () => {
-      await viewContext!.fetchWorksheetsByFolder("/my/alpha");
+      await viewContext!.fetchSavedQueriesByFolder("/my/alpha");
     });
 
     expect(viewContext!.hasMoreForFolder("/my/alpha")).toBe(true);
@@ -817,7 +807,7 @@ describe("sheet context", () => {
     expect(viewContext!.hasMoreForFolder("/my/alpha")).toBe(false);
   });
 
-  test("invalidates affected page tokens after moving worksheets", async () => {
+  test("invalidates affected page tokens after moving saved queries", async () => {
     const { provideSheetContext, useSheetContext, useSheetContextByView } =
       await import("./context");
     let sheetContext: ReturnType<typeof useSheetContext> | undefined;
@@ -838,31 +828,30 @@ describe("sheet context", () => {
       await viewContext!.fetchSheetList();
     });
 
-    mocks.getAppState().fetchWorksheetList.mockImplementationOnce(async () => {
-      const worksheet = create(WorksheetSchema, {
-        name: "projects/proj1/worksheets/3",
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => {
+      const savedQuery = create(SavedQuerySchema, {
+        name: "projects/proj1/savedQueries/3",
         project: "projects/proj1",
         creator: "users/creator@example.com",
-        title: "Folder worksheet",
+        title: "Folder saved query",
         folders: ["alpha"],
-        visibility: Worksheet_Visibility.PRIVATE,
       });
-      mocks.addWorksheets([worksheet]);
+      mocks.addSavedQueries([savedQuery]);
       return {
-        worksheets: [worksheet],
+        savedQueries: [savedQuery],
         nextPageToken: "folder-next",
       };
     });
     await act(async () => {
-      await viewContext!.fetchWorksheetsByFolder("/my/alpha");
+      await viewContext!.fetchSavedQueriesByFolder("/my/alpha");
     });
 
     expect(viewContext!.hasMore).toBe(true);
     expect(viewContext!.hasMoreForFolder("/my/alpha")).toBe(true);
 
     await act(async () => {
-      await sheetContext!.batchUpdateWorksheetFolders([
-        { name: "projects/proj1/worksheets/1", folders: ["alpha"] },
+      await sheetContext!.batchUpdateSavedQueryFolders([
+        { name: "projects/proj1/savedQueries/1", folders: ["alpha"] },
       ]);
     });
 
@@ -870,7 +859,7 @@ describe("sheet context", () => {
     expect(viewContext!.hasMoreForFolder("/my/alpha")).toBe(false);
   });
 
-  test("batch updates worksheet folders with one name filter per target folder", async () => {
+  test("batch updates saved query folders with one name filter per target folder", async () => {
     const { provideSheetContext, useSheetContext } = await import("./context");
     let sheetContext: ReturnType<typeof useSheetContext> | undefined;
 
@@ -886,27 +875,27 @@ describe("sheet context", () => {
     });
 
     await act(async () => {
-      await sheetContext!.batchUpdateWorksheetFolders([
-        { name: "projects/proj1/worksheets/1", folders: ["target"] },
-        { name: "projects/proj1/worksheets/2", folders: ["target"] },
+      await sheetContext!.batchUpdateSavedQueryFolders([
+        { name: "projects/proj1/savedQueries/1", folders: ["target"] },
+        { name: "projects/proj1/savedQueries/2", folders: ["target"] },
       ]);
     });
 
-    expect(mocks.getAppState().upsertWorksheetOrganizer).not.toHaveBeenCalled();
+    expect(mocks.getAppState().upsertSavedQueryOrganizer).not.toHaveBeenCalled();
     expect(
-      mocks.getAppState().batchUpdateWorksheetOrganizers
+      mocks.getAppState().batchUpdateSavedQueryOrganizers
     ).toHaveBeenCalledWith([
       {
         parent: "projects/proj1",
         filter:
-          'name in ["projects/proj1/worksheets/1","projects/proj1/worksheets/2"]',
+          'name in ["projects/proj1/savedQueries/1","projects/proj1/savedQueries/2"]',
         organizer: { folders: ["target"] },
         updateMask: ["folders"],
       },
     ]);
   });
 
-  test("batch updates worksheet folder paths without display filters", async () => {
+  test("batch updates saved query folder paths without display filters", async () => {
     const { provideSheetContext, useSheetContext } = await import("./context");
     let sheetContext: ReturnType<typeof useSheetContext> | undefined;
 
@@ -929,14 +918,14 @@ describe("sheet context", () => {
     });
 
     await act(async () => {
-      await sheetContext!.batchUpdateWorksheetFolderPaths("my", [
+      await sheetContext!.batchUpdateSavedQueryFolderPaths("my", [
         { sourceFolder: ["old"], targetFolder: ["new"] },
         { sourceFolder: ["old", "child"], targetFolder: ["new", "child"] },
       ]);
     });
 
     expect(
-      mocks.getAppState().batchUpdateWorksheetOrganizers
+      mocks.getAppState().batchUpdateSavedQueryOrganizers
     ).toHaveBeenCalledWith([
       {
         parent: "projects/proj1",

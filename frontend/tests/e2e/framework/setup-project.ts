@@ -78,7 +78,7 @@ setup("authenticate and discover", async ({ page }) => {
   // `head(projects)` from a list sorted by created_time DESC. Any spec
   // that creates an additional project (e.g. connection.spec.ts's
   // project-switcher fixture) would silently shift the default project
-  // for every later spec, breaking gotoHome-based worksheet/sidebar
+  // for every later spec, breaking gotoHome-based saved query/sidebar
   // tests that assume `project-sample`. Visiting the URL exercises the
   // real `setProject()` path which writes to localStorage in whatever
   // shape `useLocalStorage` expects — safer than hand-rolling the JSON

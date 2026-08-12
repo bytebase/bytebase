@@ -33,7 +33,7 @@ const AIPaneFallback = () => (
 /**
  * React port of `frontend/src/views/sql-editor/EditorPanel/StandardPanel/StandardPanel.vue`.
  *
- * Worksheet-mode editor host. Layout, ordered top-to-bottom:
+ * SavedQuery-mode editor host. Layout, ordered top-to-bottom:
  *   1. Optional outer vertical split — editor / `<ResultPanel>`.
  *      Only rendered when the underlying instance supports read-only
  *      queries (mirrors the Vue `showResultPanel` gate that prevents
@@ -65,7 +65,7 @@ export function StandardPanel() {
   const editorPanelSize = useSQLEditorStore(useShallow(selectEditorPanelSize));
   const instanceHasReadonly = instanceV1HasReadonlyMode(instance);
 
-  if (tab && tab.mode !== "WORKSHEET") {
+  if (tab && tab.mode !== "SAVED_QUERY") {
     return null;
   }
 

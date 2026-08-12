@@ -67,6 +67,7 @@ service ProjectService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.projects.create";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Updates an existing project's properties.
@@ -79,6 +80,7 @@ service ProjectService {
     option (google.api.method_signature) = "project,update_mask";
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Deletes (soft-delete or purge) a project.

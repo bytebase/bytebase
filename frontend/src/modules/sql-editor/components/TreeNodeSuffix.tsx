@@ -5,27 +5,26 @@ import { useShallow } from "zustand/react/shallow";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
+  type SavedQueryFolderNode,
   type SheetViewMode,
   useSheetContext,
-  type WorksheetFolderNode,
 } from "@/modules/sql-editor/model/Sheet";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
-import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 
 type Props = {
-  readonly node: WorksheetFolderNode;
+  readonly node: SavedQueryFolderNode;
   readonly view: SheetViewMode;
   readonly onSharePanelShow: (
     e: React.MouseEvent,
-    node: WorksheetFolderNode
+    node: SavedQueryFolderNode
   ) => void;
   readonly onContextMenuShow: (
     e: React.MouseEvent,
-    node: WorksheetFolderNode
+    node: SavedQueryFolderNode
   ) => void;
   readonly onToggleStar: (args: {
-    worksheet: string;
+    savedQuery: string;
     starred: boolean;
   }) => void;
 };
@@ -39,32 +38,31 @@ export function TreeNodeSuffix({
 }: Props) {
   const { t } = useTranslation();
 
-  const { isWorksheetCreator } = useSheetContext();
+  const { isSavedQueryCreator } = useSheetContext();
 
   // `useShallow` is required: this selector builds a fresh object each
   // call, which would fail `useSyncExternalStore`'s `Object.is` snapshot
   // check and spin an infinite render loop. Shallow-comparing the fields
-  // keeps the snapshot stable when the worksheet's values are unchanged.
-  const worksheetLite = useAppStore(
+  // keeps the snapshot stable when the saved query's values are unchanged.
+  const savedQueryLite = useAppStore(
     useShallow((state) => {
-      if (!node.worksheet) {
+      if (!node.savedQuery) {
         return undefined;
       }
-      const sheet = state.getWorksheetByName(node.worksheet.name);
+      const sheet = state.getSavedQueryByName(node.savedQuery.name);
       if (!sheet) {
         return undefined;
       }
       return {
         name: sheet.name,
         starred: sheet.starred,
-        visibility: sheet.visibility,
         creator: sheet.creator,
       };
     })
   );
-  const worksheetCreatorTitle = useAppStore((state) =>
-    worksheetLite?.creator
-      ? state.getUserByIdentifier(worksheetLite.creator)?.title
+  const savedQueryCreatorTitle = useAppStore((state) =>
+    savedQueryLite?.creator
+      ? state.getUserByIdentifier(savedQueryLite.creator)?.title
       : undefined
   );
   const getOrFetchUserByIdentifier = useAppStore(
@@ -72,36 +70,23 @@ export function TreeNodeSuffix({
   );
 
   useEffect(() => {
-    if (!worksheetLite?.creator || worksheetCreatorTitle) {
+    if (!savedQueryLite?.creator || savedQueryCreatorTitle) {
       return;
     }
-    void getOrFetchUserByIdentifier({ identifier: worksheetLite.creator });
+    void getOrFetchUserByIdentifier({ identifier: savedQueryLite.creator });
   }, [
     getOrFetchUserByIdentifier,
-    worksheetCreatorTitle,
-    worksheetLite?.creator,
+    savedQueryCreatorTitle,
+    savedQueryLite?.creator,
   ]);
 
-  const visibilityDisplayName = (visibility: Worksheet_Visibility) => {
-    switch (visibility) {
-      case Worksheet_Visibility.PRIVATE:
-        return t("sql-editor.private");
-      case Worksheet_Visibility.PROJECT_READ:
-        return t("sql-editor.project-read");
-      case Worksheet_Visibility.PROJECT_WRITE:
-        return t("sql-editor.project-write");
-      default:
-        return "";
-    }
-  };
-
   const creatorForSheet = (creator: string) => {
-    return worksheetCreatorTitle ?? creator;
+    return savedQueryCreatorTitle ?? creator;
   };
 
   // Draft view: show X button to close the draft tab
   if (view === "draft") {
-    if (!node.worksheet) {
+    if (!node.savedQuery) {
       return null;
     }
     return (
@@ -109,10 +94,10 @@ export function TreeNodeSuffix({
         className="size-4 text-control shrink-0"
         onClick={(e) => {
           e.stopPropagation();
-          if (!node.worksheet?.name) return;
-          // Draft nodes use tab.id as worksheet.name (drafts have no worksheet field).
+          if (!node.savedQuery?.name) return;
+          // Draft nodes use tab.id as savedQuery.name (drafts have no saved query field).
           const tabsState = getSQLEditorTabsState();
-          const tab = tabsState.tabsById.get(node.worksheet.name);
+          const tab = tabsState.tabsById.get(node.savedQuery.name);
           if (tab && tab.status !== "CLEAN") {
             if (
               !window.confirm(
@@ -122,14 +107,14 @@ export function TreeNodeSuffix({
               return;
             }
           }
-          tabsState.closeTab(node.worksheet.name);
+          tabsState.closeTab(node.savedQuery.name);
         }}
       />
     );
   }
 
   // Folder node: only show "More" button
-  if (!node.worksheet) {
+  if (!node.savedQuery) {
     return (
       <MoreHorizontal
         className="size-4 text-control shrink-0 cursor-pointer"
@@ -142,33 +127,21 @@ export function TreeNodeSuffix({
     );
   }
 
-  // Worksheet node: visibility badge + star + more
-  if (!worksheetLite) {
+  // SavedQuery node: creator badge (admin view of someone else's query) +
+  // star + more
+  if (!savedQueryLite) {
     return null;
   }
 
-  const showVisibilityBadge =
-    worksheetLite.visibility === Worksheet_Visibility.PROJECT_READ ||
-    worksheetLite.visibility === Worksheet_Visibility.PROJECT_WRITE;
-
   return (
     <div className="inline-flex shrink-0 items-center gap-x-1">
-      {showVisibilityBadge && (
+      {!isSavedQueryCreator(savedQueryLite) && (
         <Tooltip
           content={
             <div>
-              <div>
-                {t("common.visibility")}
-                {": "}
-                {visibilityDisplayName(worksheetLite.visibility)}
-              </div>
-              {!isWorksheetCreator(worksheetLite) && (
-                <div>
-                  {t("common.creator")}
-                  {": "}
-                  {creatorForSheet(worksheetLite.creator)}
-                </div>
-              )}
+              {t("common.creator")}
+              {": "}
+              {creatorForSheet(savedQueryLite.creator)}
             </div>
           }
         >
@@ -184,13 +157,13 @@ export function TreeNodeSuffix({
       <Star
         className={cn(
           "size-4 shrink-0",
-          worksheetLite.starred ? "text-yellow-400" : "text-control-light"
+          savedQueryLite.starred ? "text-yellow-400" : "text-control-light"
         )}
         onClick={(e) => {
           e.stopPropagation();
           onToggleStar({
-            worksheet: worksheetLite.name,
-            starred: !worksheetLite.starred,
+            savedQuery: savedQueryLite.name,
+            starred: !savedQueryLite.starred,
           });
         }}
       />

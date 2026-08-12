@@ -1589,12 +1589,17 @@ func (s *AuthService) RequestPasswordReset(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email is required"))
 	}
 
+	workspaceID, err := s.parseAndSetAuditWorkspace(ctx, email, req.Msg.Workspace)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
 	// Send synchronously, but swallow errors to avoid email enumeration — a fast silent
 	// "success" for unknown emails must be indistinguishable from an SMTP failure for
 	// known ones. Errors are logged server-side for operator visibility.
 	if err := s.sendEmailVerificationCode(
 		ctx,
-		req.Msg.Workspace,
+		workspaceID,
 		email,
 		storepb.EmailVerificationCodePurpose_PASSWORD_RESET,
 		"[Bytebase] Reset your password",
@@ -1623,6 +1628,9 @@ func (s *AuthService) ResetPassword(ctx context.Context, req *connect.Request[v1
 	codeRow, err := s.verifyEmailCode(ctx, email, storepb.EmailVerificationCodePurpose_PASSWORD_RESET, req.Msg.Code)
 	if err != nil {
 		return nil, err
+	}
+	if codeRow.Workspace != "" {
+		common.SetAuditWorkspaceID(ctx, codeRow.Workspace)
 	}
 
 	user, err := s.store.GetUserByEmail(ctx, email)
@@ -1716,7 +1724,7 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 	if email == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email is required"))
 	}
-	workspaceID, err := parseOptionalWorkspace(req.Msg.Workspace)
+	workspaceID, err := s.parseAndSetAuditWorkspace(ctx, email, req.Msg.Workspace)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -1737,7 +1745,7 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 	// send regardless of whether the email exists (sign-up is handled on verify).
 	if err := s.sendEmailVerificationCode(
 		ctx,
-		req.Msg.Workspace,
+		workspaceID,
 		email,
 		storepb.EmailVerificationCodePurpose_LOGIN,
 		"[Bytebase] Your sign-in code",
@@ -1747,6 +1755,31 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
+// parseAndSetAuditWorkspace parses the requested workspace and attributes the
+// audit event only when the email belongs to an active user in that workspace.
+// Membership affects audit attribution only; the parsed workspace ID is still
+// returned for email-setting resolution and verification-code storage.
+func (s *AuthService) parseAndSetAuditWorkspace(ctx context.Context, email string, workspaceName *string) (string, error) {
+	workspaceID, err := parseOptionalWorkspace(workspaceName)
+	if err != nil {
+		return "", err
+	}
+	if workspaceID != "" {
+		account, err := s.store.GetAccountByEmail(ctx, email)
+		if err == nil && account != nil && account.Type == storepb.PrincipalType_END_USER && !account.MemberDeleted {
+			workspace, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+				WorkspaceID:    &workspaceID,
+				Email:          email,
+				IncludeAllUser: !s.profile.SaaS,
+			})
+			if err == nil && workspace != nil {
+				common.SetAuditWorkspaceID(ctx, workspace.ResourceID)
+			}
+		}
+	}
+	return workspaceID, nil
 }
 
 // resolvePreLoginEmailSetting returns the EMAIL setting to use for unauthenticated flows
@@ -1796,22 +1829,17 @@ func resolvePreLoginEmailSetting(
 // Callers decide whether to propagate the error: `SendEmailLoginCode` surfaces it (users need
 // to know email delivery failed), `RequestPasswordReset` swallows it to avoid revealing that
 // the account exists. `bodyFmt` must contain one %s for the 6-digit code.
-func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceName *string, email string, purpose storepb.EmailVerificationCodePurpose, subject, bodyFmt string) error {
-	// For password reset, only send to existing principals — no upsert, no email for unknown addresses.
-	// Prevents arbitrary email spam. LOGIN intentionally skips this check (also covers signup).
+func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, subject, bodyFmt string) error {
+	// For password reset, only send to active end users — no upsert or email for other targets.
+	// Login intentionally skips this account check because email-code login also supports signup.
 	if purpose == storepb.EmailVerificationCodePurpose_PASSWORD_RESET {
 		account, err := s.store.GetAccountByEmail(ctx, email)
 		if err != nil {
 			return errors.Wrap(err, "failed to look up account for password reset")
 		}
-		if account == nil || account.Type != storepb.PrincipalType_END_USER {
+		if account == nil || account.Type != storepb.PrincipalType_END_USER || account.MemberDeleted {
 			return nil // silent: account doesn't exist
 		}
-	}
-
-	workspaceID, err := parseOptionalWorkspace(workspaceName)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse workspace id")
 	}
 
 	// Resolve the EMAIL setting FIRST — fail fast if misconfigured so we don't write a

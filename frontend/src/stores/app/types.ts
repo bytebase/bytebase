@@ -63,6 +63,10 @@ import type { Release } from "@/types/proto-es/v1/release_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import type {
+  SavedQuery,
+  SavedQueryOrganizer,
+} from "@/types/proto-es/v1/saved_query_service_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type {
   DataClassificationSetting_DataClassificationConfig,
@@ -89,10 +93,6 @@ import type {
   User,
 } from "@/types/proto-es/v1/user_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
-import type {
-  Worksheet,
-  WorksheetOrganizer,
-} from "@/types/proto-es/v1/worksheet_service_pb";
 import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import type { IssueFilter } from "@/types/v1/issue/issue";
@@ -614,53 +614,53 @@ export type SheetSlice = {
   getOrFetchSheetByName: (name: string) => Promise<Sheet | undefined>;
 };
 
-export type WorksheetView = "FULL" | "BASIC";
+export type SavedQueryView = "FULL" | "BASIC";
 
-export type WorksheetSlice = {
+export type SavedQuerySlice = {
   // Keyed by `${uid}:${view}` (mirrors the legacy Pinia cache, which kept
   // FULL and BASIC views separately — BASIC list entries omit the
   // statement, FULL entries carry it).
-  worksheetsByKey: Record<string, Worksheet>;
-  worksheetRequests: Record<string, Promise<Worksheet | undefined>>;
-  getWorksheetByName: (
+  savedQueriesByKey: Record<string, SavedQuery>;
+  savedQueryRequests: Record<string, Promise<SavedQuery | undefined>>;
+  getSavedQueryByName: (
     name: string,
-    view?: WorksheetView
-  ) => Worksheet | undefined;
-  getOrFetchWorksheetByName: (
+    view?: SavedQueryView
+  ) => SavedQuery | undefined;
+  getOrFetchSavedQueryByName: (
     name: string,
     silent?: boolean
-  ) => Promise<Worksheet | undefined>;
-  fetchWorksheetList: (
+  ) => Promise<SavedQuery | undefined>;
+  fetchSavedQueryList: (
     parent: string,
     filter: string,
     params?: {
       pageSize?: number;
       pageToken?: string;
     }
-  ) => Promise<{ worksheets: Worksheet[]; nextPageToken: string }>;
-  listWorksheetFolders: (
+  ) => Promise<{ savedQueries: SavedQuery[]; nextPageToken: string }>;
+  listSavedQueryFolders: (
     parent: string
   ) => Promise<{ folders: string[]; category: "my" | "shared" }[]>;
-  createWorksheet: (worksheet: Worksheet) => Promise<Worksheet>;
-  patchWorksheet: (
-    worksheet: Worksheet,
+  createSavedQuery: (savedQuery: SavedQuery) => Promise<SavedQuery>;
+  patchSavedQuery: (
+    savedQuery: SavedQuery,
     updateMask: string[],
     signal?: AbortSignal
-  ) => Promise<Worksheet | undefined>;
-  deleteWorksheetByName: (name: string) => Promise<void>;
-  upsertWorksheetOrganizer: (
-    organizer: Partial<WorksheetOrganizer>,
+  ) => Promise<SavedQuery | undefined>;
+  deleteSavedQueryByName: (name: string) => Promise<void>;
+  upsertSavedQueryOrganizer: (
+    organizer: Partial<SavedQueryOrganizer>,
     updateMask: string[]
   ) => Promise<void>;
-  batchUpdateWorksheetOrganizers: (
+  batchUpdateSavedQueryOrganizers: (
     requests: {
       parent: string;
       filter: string;
-      organizer: Partial<WorksheetOrganizer>;
+      organizer: Partial<SavedQueryOrganizer>;
       updateMask: string[];
     }[]
   ) => Promise<void>;
-  worksheetList: () => Worksheet[];
+  savedQueryList: () => SavedQuery[];
 };
 
 export type InstanceRoleSlice = {
@@ -1108,7 +1108,7 @@ export type AppStoreState = AuthSlice &
   DatabaseSlice &
   DBGroupSlice &
   SheetSlice &
-  WorksheetSlice &
+  SavedQuerySlice &
   InstanceRoleSlice &
   GroupSlice &
   ServiceAccountSlice &

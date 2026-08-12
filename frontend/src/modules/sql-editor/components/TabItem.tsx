@@ -12,7 +12,7 @@ type TabItemProps = {
 };
 
 const iconByTab = {
-  WORKSHEET: FileCode,
+  SAVED_QUERY: FileCode,
   SCHEMA: Database,
   HISTORY: History,
   ACCESS: ShieldCheck,
@@ -30,7 +30,7 @@ export function TabItem({ tab, onClick }: TabItemProps) {
 
   const Icon = iconByTab[tab];
   const labelByTab = {
-    WORKSHEET: t("worksheet.self"),
+    SAVED_QUERY: t("saved-query.self"),
     SCHEMA: t("common.schema"),
     HISTORY: t("common.history"),
     ACCESS: t("sql-editor.access-grants"),

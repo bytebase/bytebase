@@ -98,10 +98,10 @@ func TestProjectInstanceExport(t *testing.T) {
 	a.Contains(err.Error(), fmt.Sprintf("instance %q not found", instanceID))
 }
 
-// TestProjectInstanceWorksheet verifies that worksheets accept the canonical
-// project-scoped database name for databases on a project instance and reject
-// cross-project references.
-func TestProjectInstanceWorksheet(t *testing.T) {
+// TestProjectInstanceSavedQuery verifies that saved queries accept the
+// canonical project-scoped database name for databases on a project instance
+// and reject cross-project references.
+func TestProjectInstanceSavedQuery(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
@@ -111,25 +111,24 @@ func TestProjectInstanceWorksheet(t *testing.T) {
 
 	pg, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
-	const instanceID = "bot37-worksheet-instance"
-	const databaseID = "bot37_worksheet_database"
+	const instanceID = "bot37-saved-query-instance"
+	const databaseID = "bot37_saved_query_database"
 	createPgDatabase(t, pg, databaseID)
 
-	instance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, instanceID, "worksheet project instance", pg)
+	instance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, instanceID, "saved query project instance", pg)
 	_, err = ctl.instanceServiceClient.SyncInstance(ctx, connect.NewRequest(&v1pb.SyncInstanceRequest{Name: instance.Name}))
 	a.NoError(err)
 	databaseName := fmt.Sprintf("%s/databases/%s", instance.Name, databaseID)
 	_, err = ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{Name: databaseName}))
 	a.NoError(err)
 
-	createWorksheet := func(database string) (*v1pb.Worksheet, error) {
-		resp, err := ctl.worksheetServiceClient.CreateWorksheet(ctx, connect.NewRequest(&v1pb.CreateWorksheetRequest{
+	createSavedQuery := func(database string) (*v1pb.SavedQuery, error) {
+		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 			Parent: ctl.project.Name,
-			Worksheet: &v1pb.Worksheet{
-				Title:      "project instance worksheet",
-				Content:    []byte("SELECT 1;"),
-				Database:   database,
-				Visibility: v1pb.Worksheet_PRIVATE,
+			SavedQuery: &v1pb.SavedQuery{
+				Title:    "project instance saved query",
+				Content:  []byte("SELECT 1;"),
+				Database: database,
 			},
 		}))
 		if err != nil {
@@ -139,18 +138,18 @@ func TestProjectInstanceWorksheet(t *testing.T) {
 	}
 
 	// The canonical project-scoped name is accepted and retained.
-	created, err := createWorksheet(databaseName)
+	created, err := createSavedQuery(databaseName)
 	a.NoError(err)
 	a.Equal(databaseName, created.Database)
-	got, err := ctl.worksheetServiceClient.GetWorksheet(ctx, connect.NewRequest(&v1pb.GetWorksheetRequest{Name: created.Name}))
+	got, err := ctl.savedQueryServiceClient.GetSavedQuery(ctx, connect.NewRequest(&v1pb.GetSavedQueryRequest{Name: created.Name}))
 	a.NoError(err)
 	a.Equal(databaseName, got.Msg.Database)
 
 	// A project-instance database referenced from a different project is
 	// rejected with NotFound rather than leaking across projects.
-	otherProject := createProjectForProjectInstanceTest(ctx, t, ctl, "bot37-worksheet-other-project")
+	otherProject := createProjectForProjectInstanceTest(ctx, t, ctl, "bot37-saved-query-other-project")
 	crossProjectName := fmt.Sprintf("%s/instances/%s/databases/%s", otherProject.Name, instanceID, databaseID)
-	_, err = createWorksheet(crossProjectName)
+	_, err = createSavedQuery(crossProjectName)
 	a.Error(err)
 	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 	projectID, projectIDErr := common.GetProjectID(ctl.project.Name)
@@ -160,7 +159,7 @@ func TestProjectInstanceWorksheet(t *testing.T) {
 	// The workspace-form name for a project-instance database is rejected as
 	// non-canonical instead of resolving through the workspace alias.
 	workspaceFormName := fmt.Sprintf("instances/%s/databases/%s", instanceID, databaseID)
-	_, err = createWorksheet(workspaceFormName)
+	_, err = createSavedQuery(workspaceFormName)
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 	a.Contains(err.Error(), fmt.Sprintf("database name %q is not canonical for its instance", workspaceFormName))

@@ -99,7 +99,7 @@ vi.mock("@/modules/sql-editor/store/tab", () => ({
 
 vi.mock("@/types", () => ({
   isValidDatabaseName: mocks.isValidDatabaseName,
-  DEFAULT_SQL_EDITOR_TAB_MODE: "WORKSHEET",
+  DEFAULT_SQL_EDITOR_TAB_MODE: "SAVED_QUERY",
   dialectOfEngineV1: () => "MYSQL",
   languageOfEngineV1: () => "sql",
   typeToView: (type: string) => type.toUpperCase(),
@@ -126,7 +126,7 @@ vi.mock("@/utils", () => ({
     viewState: { view: "CODE" },
     treeState: { database: "", keys: [] },
     editorState: { selection: null },
-    mode: "WORKSHEET",
+    mode: "SAVED_QUERY",
     status: "NEW",
   }),
   extractDatabaseResourceName: (n: string) => ({

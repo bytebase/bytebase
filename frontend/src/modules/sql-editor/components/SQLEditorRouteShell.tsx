@@ -9,7 +9,7 @@ import {
   SQL_EDITOR_INSTANCE_MODULE,
   SQL_EDITOR_PROJECT_MODULE,
   SQL_EDITOR_QUERY_HISTORY_MODULE,
-  SQL_EDITOR_WORKSHEET_MODULE,
+  SQL_EDITOR_SAVED_QUERY_MODULE,
 } from "@/app/router/handles";
 import {
   PermissionDeniedFallback,
@@ -17,7 +17,7 @@ import {
   usePermissionDataReady,
 } from "@/components/ComponentPermissionGuard";
 import { useAppProject } from "@/hooks/useAppProject";
-import { extractWorksheetConnection } from "@/lib/sqlEditorConnection";
+import { extractSavedQueryConnection } from "@/lib/sqlEditorConnection";
 import { useClampResultRowsLimitToPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { migrateLegacyCache } from "@/modules/sql-editor/legacy/migration";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
@@ -45,10 +45,10 @@ import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
-  extractWorksheetID,
+  extractSavedQueryID,
   getDefaultPagination,
   getSheetStatement,
-  isWorksheetReadableV1,
+  isSavedQueryReadableV1,
   storageKeySqlEditorSidebarTab,
 } from "@/utils";
 import { SQLEditorHomePage } from "./SQLEditorHomePage";
@@ -56,14 +56,14 @@ import { SQLEditorHomePage } from "./SQLEditorHomePage";
 // Route-name set for the unsaved-changes leave guard. Vue Router's
 // `beforeEach` is global, so this set scopes the prompt to navigations
 // that actually leave the SQL Editor — internal SQL Editor route sync
-// (`navigate.replace(...)` between worksheet/database/instance modules)
+// (`navigate.replace(...)` between saved query/database/instance modules)
 // must not trigger it.
 const SQL_EDITOR_MODULES = new Set<string>([
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_PROJECT_MODULE,
   SQL_EDITOR_INSTANCE_MODULE,
   SQL_EDITOR_DATABASE_MODULE,
-  SQL_EDITOR_WORKSHEET_MODULE,
+  SQL_EDITOR_SAVED_QUERY_MODULE,
   SQL_EDITOR_QUERY_HISTORY_MODULE,
 ]);
 
@@ -82,7 +82,7 @@ const linkedDraftFingerprint = (tab: {
 
 const ASIDE_PANEL_TABS: readonly AsidePanelTab[] = [
   "SCHEMA",
-  "WORKSHEET",
+  "SAVED_QUERY",
   "HISTORY",
   "ACCESS",
 ];
@@ -94,8 +94,8 @@ const ASIDE_PANEL_TABS: readonly AsidePanelTab[] = [
  *  - on mount, resolves the active project from URL params/query and
  *    `editorStore.storedLastViewedProject`, falling back to the first
  *    accessible project, then sets up the per-project tab list.
- *  - hydrates the active tab from the URL: opens the worksheet for
- *    `/projects/:project/sheets/:sheet`, or opens an instance/database
+ *  - hydrates the active tab from the URL: opens the saved query for
+ *    `/projects/:project/savedQueries/:savedQuery`, or opens an instance/database
  *    connection for the `instances/:instance/databases/:database` form.
  *  - keeps the URL synced with the active tab's connection (Pinia →
  *    `router.replace`), so reload restores the right surface.
@@ -196,24 +196,24 @@ export function SQLEditorRouteShell() {
     return getSQLEditorEditorState().project;
   };
 
-  const switchWorksheet = async (sheetName: string) => {
+  const switchSavedQuery = async (sheetName: string) => {
     const tabsState = getSQLEditorTabsState();
     const openedSheetTab = Array.from(tabsState.tabsById.values()).find(
-      (t) => t.worksheet === sheetName
+      (t) => t.savedQuery === sheetName
     );
     const sheet = await useAppStore
       .getState()
-      .getOrFetchWorksheetByName(sheetName);
+      .getOrFetchSavedQueryByName(sheetName);
     if (!sheet) {
       if (openedSheetTab) {
         tabsState.updateTab(openedSheetTab.id, {
-          worksheet: "",
+          savedQuery: "",
           status: "DIRTY",
         });
       }
       return false;
     }
-    if (!isWorksheetReadableV1(sheet)) {
+    if (!isSavedQueryReadableV1(sheet)) {
       useAppStore.getState().notify({
         module: "bytebase",
         style: "CRITICAL",
@@ -221,7 +221,7 @@ export function SQLEditorRouteShell() {
       });
       return false;
     }
-    const connection = await extractWorksheetConnection(sheet);
+    const connection = await extractSavedQueryConnection(sheet);
     const schema = route.query.schema;
     const table = route.query.table;
     if (typeof schema === "string" && schema) {
@@ -234,7 +234,7 @@ export function SQLEditorRouteShell() {
     tabsState.addTab({
       id: openedSheetTab?.id,
       connection,
-      worksheet: sheet.name,
+      savedQuery: sheet.name,
       title: sheet.title,
       statement: getSheetStatement(sheet),
       status: "CLEAN",
@@ -244,11 +244,13 @@ export function SQLEditorRouteShell() {
 
   const prepareSheet = async () => {
     const projectId = route.params.project;
-    const sheetId = route.params.sheet;
+    const sheetId = route.params.savedQuery;
     if (typeof projectId !== "string" || !projectId) return false;
     if (typeof sheetId !== "string" || !sheetId) return false;
     await maybeSwitchProject(`projects/${projectId}`);
-    return await switchWorksheet(`projects/${projectId}/worksheets/${sheetId}`);
+    return await switchSavedQuery(
+      `projects/${projectId}/savedQueries/${sheetId}`
+    );
   };
 
   const prepareConnectionParams = async () => {
@@ -421,7 +423,7 @@ export function SQLEditorRouteShell() {
   // The dependency array does the multi-source coalescing.
   const projName = useSQLEditorEditorState((s) => s.project);
   const sheetName = useSQLEditorTabState(
-    (s) => s.tabsById.get(s.currentTabId)?.worksheet
+    (s) => s.tabsById.get(s.currentTabId)?.savedQuery
   );
   const instanceName = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.connection.instance
@@ -487,7 +489,7 @@ export function SQLEditorRouteShell() {
     }
 
     if (vals.sheetName) {
-      const sheet = useAppStore.getState().getWorksheetByName(vals.sheetName);
+      const sheet = useAppStore.getState().getSavedQueryByName(vals.sheetName);
       if (sheet) {
         if (vals.schema) query.schema = vals.schema;
         if (vals.table) {
@@ -495,17 +497,17 @@ export function SQLEditorRouteShell() {
           query.schema = vals.schema ?? "";
         }
         await navigate.replace({
-          name: SQL_EDITOR_WORKSHEET_MODULE,
+          name: SQL_EDITOR_SAVED_QUERY_MODULE,
           params: {
             project: extractProjectResourceName(sheet.project),
-            sheet: extractWorksheetID(sheet.name),
+            savedQuery: extractSavedQueryID(sheet.name),
           },
           query,
         });
         return;
       } else {
         tabsState.updateCurrentTab({
-          worksheet: "",
+          savedQuery: "",
           status: "DIRTY",
         });
       }
@@ -589,7 +591,7 @@ export function SQLEditorRouteShell() {
   }, [linkedQueryHistory, linkedQueryHistoryBaseline, linkedTabFingerprint]);
 
   // Running a query consumes the deep-link context — drop the "Opened from
-  // link" banner on the first execution (worksheet or terminal).
+  // link" banner on the first execution (saved query or terminal).
   useEffect(() => {
     const off = sqlEditorEvents.on("query-executed", () => {
       if (useSQLEditorStore.getState().linkedQueryHistory) {
@@ -626,7 +628,7 @@ export function SQLEditorRouteShell() {
       return;
     }
 
-    let stored: AsidePanelTab = "WORKSHEET";
+    let stored: AsidePanelTab = "SAVED_QUERY";
     try {
       const raw = window.localStorage.getItem(
         storageKeySqlEditorSidebarTab(project)
@@ -646,7 +648,9 @@ export function SQLEditorRouteShell() {
 
     const panelQuery = router.currentRoute.value.query.panel;
     if (typeof panelQuery === "string" && panelQuery) {
-      const tab = panelQuery.toUpperCase() as AsidePanelTab;
+      const raw = panelQuery.toUpperCase();
+      // Pre-rename links used ?panel=worksheet.
+      const tab = (raw === "WORKSHEET" ? "SAVED_QUERY" : raw) as AsidePanelTab;
       setAsidePanelTab(ASIDE_PANEL_TABS.includes(tab) ? tab : stored);
     } else {
       setAsidePanelTab(stored);
@@ -678,7 +682,7 @@ export function SQLEditorRouteShell() {
 
   useEffect(() => {
     const dirtyMsg = () =>
-      `${t("sql-editor.tab.unsaved-worksheet")} ${t("common.leave-without-saving")}`;
+      `${t("sql-editor.tab.unsaved-changes")} ${t("common.leave-without-saving")}`;
     const findDirtyTab = () => {
       const tabsState = getSQLEditorTabsState();
       for (const persisted of tabsState.openTmpTabList) {

@@ -1,7 +1,7 @@
 // SQL Editor — tab strip behavior.
 //
 // Covers the top tab strip's contract:
-// - Active tab text reflects the live worksheet state (title + connection)
+// - Active tab text reflects the live saved query state (title + connection)
 // - Tab strip remains scrollable when more tabs open than fit the viewport
 // - Right-click on a tab opens the close-actions context menu
 // - Closing a tab with unsaved changes prompts for confirmation
@@ -31,7 +31,7 @@ test.afterAll(async () => {
 
 test.describe("Active tab text tracks the live connection", () => {
   // BYT-9392 (originally surfaced as SUP-197): when the user switches
-  // the database connection on a worksheet via the breadcrumb picker,
+  // the database connection on a saved query via the breadcrumb picker,
   // the breadcrumb, schema tree, and schema dropdown all update to the
   // new database — but the TAB TITLE keeps showing the old DB name.
   //
@@ -56,9 +56,9 @@ test.describe("Active tab text tracks the live connection", () => {
   // Title intentionally embeds the source DB name verbatim — that is
   // the entire premise of the bug (the title is set once at create
   // time and never re-derived when the connection changes).
-  const WORKSHEET_TITLE = `${SOURCE_DB_SHORT} e2e-tab-title-${Date.now()}`;
+  const SAVED_QUERY_TITLE = `${SOURCE_DB_SHORT} e2e-tab-title-${Date.now()}`;
 
-  let sourceWorksheet = "";
+  let sourceSavedQuery = "";
 
   test.beforeAll(async () => {
     const source = await env.api.findDatabaseByShortName(SOURCE_DB_SHORT);
@@ -81,32 +81,32 @@ test.describe("Active tab text tracks the live connection", () => {
     const project =
       (dbRecord as { project?: string } | undefined)?.project ?? env.project;
 
-    const created = await env.api.createWorksheet(
+    const created = await env.api.createSavedQuery(
       project,
-      WORKSHEET_TITLE,
+      SAVED_QUERY_TITLE,
       source.database,
       "SELECT 1;",
     );
-    sourceWorksheet = created.name;
+    sourceSavedQuery = created.name;
   });
 
   test.afterAll(async () => {
-    if (sourceWorksheet) {
-      await env.api.deleteWorksheet(sourceWorksheet);
+    if (sourceSavedQuery) {
+      await env.api.deleteSavedQuery(sourceSavedQuery);
     }
   });
 
-  test("tab title is the worksheet name and does NOT pick up the new DB name after a connection switch", async () => {
+  test("tab title is the saved query name and does NOT pick up the new DB name after a connection switch", async () => {
     test.setTimeout(120_000);
-    const sourceUuid = sourceWorksheet.split("/").pop()!;
-    const projectId = sourceWorksheet.split("/")[1];
+    const sourceUuid = sourceSavedQuery.split("/").pop()!;
+    const projectId = sourceSavedQuery.split("/")[1];
     await sqlEditor.gotoSheet(projectId, sourceUuid);
     await page.waitForTimeout(2000);
 
-    // Sanity: tab title reflects the worksheet's name on first open.
+    // Sanity: tab title reflects the saved query's name on first open.
     // (The name happens to contain SOURCE_DB_SHORT because we composed
     // it that way at create time — that's purely incidental.)
-    await expect(sqlEditor.activeTab()).toContainText(WORKSHEET_TITLE, {
+    await expect(sqlEditor.activeTab()).toContainText(SAVED_QUERY_TITLE, {
       timeout: 10_000,
     });
 
@@ -134,11 +134,11 @@ test.describe("Active tab text tracks the live connection", () => {
     await page.waitForTimeout(500);
 
     // Current product behavior (R7 fix): the tab title is the
-    // worksheet name and is NOT augmented with the live DB. So after
+    // saved query name and is NOT augmented with the live DB. So after
     // switching to TARGET_DB_SHORT (hr_test), the tab still shows the
-    // original worksheet title and does NOT contain TARGET_DB_SHORT —
+    // original saved query title and does NOT contain TARGET_DB_SHORT —
     // the DB info lives in the breadcrumb only.
-    await expect(sqlEditor.activeTab()).toContainText(WORKSHEET_TITLE, {
+    await expect(sqlEditor.activeTab()).toContainText(SAVED_QUERY_TITLE, {
       timeout: 5000,
     });
     await expect(sqlEditor.activeTab()).not.toContainText(TARGET_DB_SHORT);
@@ -164,7 +164,7 @@ test.describe("Tab strip scrolls when tabs overflow the viewport", () => {
   //
   // Why this matters: the work in clipped tabs is effectively orphaned —
   // the user can't switch to those tabs without closing the visible ones
-  // first. Combined with worksheet-level data-loss bugs (e.g. duplicate
+  // first. Combined with saved query-level data-loss bugs (e.g. duplicate
   // dropping content), unsaved work in inaccessible tabs disappears.
 
   // Reset viewport in afterAll — sibling describes share the page
@@ -172,25 +172,25 @@ test.describe("Tab strip scrolls when tabs overflow the viewport", () => {
   const DEFAULT_VIEWPORT = { width: 1280, height: 720 };
   const NARROW_VIEWPORT = { width: 900, height: 700 };
   const TARGET_TAB_COUNT = 8;
-  const WORKSHEET_TITLE_PREFIX = `e2e-tabs-${Date.now()}-`;
+  const SAVED_QUERY_TITLE_PREFIX = `e2e-tabs-${Date.now()}-`;
 
-  let createdWorksheets: string[] = [];
+  let createdSavedQueries: string[] = [];
 
   test.beforeAll(async () => {
-    // Pre-create the worksheets via API with a real DB connection.
-    // Clicking the in-page "+" Add button creates worksheets WITHOUT a
-    // database (worksheetStore.createWorksheet({}) — TabList.tsx:163),
+    // Pre-create the saved queries via API with a real DB connection.
+    // Clicking the in-page "+" Add button creates saved queries WITHOUT a
+    // database (savedQueryStore.createSavedQuery({}) — TabList.tsx:163),
     // which makes the editor pop the connection panel after each click
-    // and starves the loop. Pre-created worksheets bypass that path
+    // and starves the loop. Pre-created saved queries bypass that path
     // entirely and become tabs the moment we navigate to them.
     for (let i = 0; i < TARGET_TAB_COUNT; i++) {
-      const created = await env.api.createWorksheet(
+      const created = await env.api.createSavedQuery(
         env.project,
-        `${WORKSHEET_TITLE_PREFIX}${i}`,
+        `${SAVED_QUERY_TITLE_PREFIX}${i}`,
         env.database,
         `SELECT ${i};`,
       );
-      createdWorksheets.push(created.name);
+      createdSavedQueries.push(created.name);
     }
   });
 
@@ -198,10 +198,10 @@ test.describe("Tab strip scrolls when tabs overflow the viewport", () => {
     if (page) {
       await page.setViewportSize(DEFAULT_VIEWPORT).catch(() => {});
     }
-    for (const name of createdWorksheets) {
-      await env.api.deleteWorksheet(name);
+    for (const name of createdSavedQueries) {
+      await env.api.deleteSavedQuery(name);
     }
-    createdWorksheets = [];
+    createdSavedQueries = [];
   });
 
   test("horizontal scrollbar is reachable with enough tabs to overflow", async () => {
@@ -209,22 +209,22 @@ test.describe("Tab strip scrolls when tabs overflow the viewport", () => {
 
     await page.setViewportSize(NARROW_VIEWPORT);
 
-    // Open all the pre-created worksheets as tabs by navigating to each
+    // Open all the pre-created saved queries as tabs by navigating to each
     // sheet URL in turn. The SQL editor remembers open tabs per project
     // (tabStore.openTabList), so subsequent navigations append to the
     // strip rather than replacing the active tab.
     const projectId = env.project.split("/").pop()!;
-    for (const name of createdWorksheets) {
+    for (const name of createdSavedQueries) {
       const uuid = name.split("/").pop()!;
       await sqlEditor.gotoSheet(projectId, uuid);
     }
     await page.waitForTimeout(500);
 
-    // Sanity: every worksheet became a tab.
+    // Sanity: every saved query became a tab.
     const tabCount = await sqlEditor.tabCount();
     expect(
       tabCount,
-      `every pre-created worksheet should appear as a tab (got ${tabCount})`,
+      `every pre-created saved query should appear as a tab (got ${tabCount})`,
     ).toBeGreaterThanOrEqual(TARGET_TAB_COUNT);
 
     // The outer scrollable container is the only direct child of
@@ -285,7 +285,7 @@ test.describe("Tab strip scrolls when tabs overflow the viewport", () => {
 
 test.describe("Right-click on a tab opens the close-actions menu", () => {
   // Right-click on a tab in the strip opens a Base UI dropdown menu
-  // with the standard set of close actions and (for worksheet tabs)
+  // with the standard set of close actions and (for saved query tabs)
   // a Rename item. Six items total when Rename is shown.
 
   test("the menu lists Close / Close others / Close to the right / Close saved / Close all / Rename", async () => {

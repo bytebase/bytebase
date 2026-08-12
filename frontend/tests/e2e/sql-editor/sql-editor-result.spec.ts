@@ -29,7 +29,7 @@ test.afterAll(async () => {
 });
 
 // Each test re-enters the connected DB URL via gotoWithDb. The SQL
-// editor opens a fresh worksheet tab on that route, isolating each
+// editor opens a fresh saved query tab on that route, isolating each
 // test from the previous test's editor content + result state.
 // Reusing the same browser context (no new context per test) keeps the
 // run fast; the per-test navigation is what gives state isolation.
@@ -431,7 +431,7 @@ test.describe("Detail panel scrolls long content to the last line (BYT-9610)", (
         "the bottom lines were off-screen and unreachable",
     ).toBeInViewport({ timeout: 5000 });
 
-    // Close the sheet so a sibling describe sharing the page starts clean.
+    // Close the tab so a sibling describe sharing the page starts clean.
     await page.keyboard.press("Escape");
   });
 });

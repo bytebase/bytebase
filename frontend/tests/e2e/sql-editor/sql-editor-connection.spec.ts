@@ -54,9 +54,9 @@ test.describe("Cold-open lands on the SQL Editor home view", () => {
       timeout: 10_000,
     });
 
-    // Gutter rail buttons are stable user-facing labels (Worksheet /
+    // Gutter rail buttons are stable user-facing labels (SavedQuery /
     // Schema / History gutter tabs).
-    await expect(sqlEditor.gutterWorksheetTab).toBeVisible();
+    await expect(sqlEditor.gutterSavedQueryTab).toBeVisible();
     await expect(sqlEditor.gutterSchemaTab).toBeVisible();
     await expect(sqlEditor.gutterHistoryTab).toBeVisible();
 
@@ -69,36 +69,36 @@ test.describe("Cold-open lands on the SQL Editor home view", () => {
   });
 });
 
-test.describe("Opening a worksheet by UUID restores its title in a tab", () => {
-  // C2 — deep-linking into /projects/<p>/sheets/<uuid> must hydrate
-  // the worksheet and render its title as the active tab. This is the
+test.describe("Opening a saved query by UUID restores its title in a tab", () => {
+  // C2 — deep-linking into /projects/<p>/savedQueries/<uuid> must hydrate
+  // the saved query and render its title as the active tab. This is the
   // shareable-link contract: a URL pasted from chat / the Recent menu
-  // must reproducibly land the user on that worksheet.
+  // must reproducibly land the user on that savedQuery.
 
   const SOURCE_TITLE = `e2e-cuj-c2-${Date.now()}`;
   const SOURCE_CONTENT = "SELECT 1;";
 
-  let sourceWorksheet = "";
+  let sourceSavedQuery = "";
 
   test.beforeAll(async () => {
-    const created = await env.api.createWorksheet(
+    const created = await env.api.createSavedQuery(
       env.project,
       SOURCE_TITLE,
       env.database,
       SOURCE_CONTENT,
     );
-    sourceWorksheet = created.name;
+    sourceSavedQuery = created.name;
   });
 
   test.afterAll(async () => {
-    if (sourceWorksheet) await env.api.deleteWorksheet(sourceWorksheet);
+    if (sourceSavedQuery) await env.api.deleteSavedQuery(sourceSavedQuery);
   });
 
-  test("active tab text matches the worksheet title after deep-link", async () => {
+  test("active tab text matches the saved query title after deep-link", async () => {
     test.setTimeout(120_000);
 
     const projectId = env.project.split("/").pop()!;
-    const sheetUuid = sourceWorksheet.split("/").pop()!;
+    const sheetUuid = sourceSavedQuery.split("/").pop()!;
     await sqlEditor.gotoSheet(projectId, sheetUuid);
     await page.waitForTimeout(1500);
 
@@ -136,7 +136,7 @@ test.describe("Instance-only URL lands without a connected database", () => {
 test.describe("Project switcher updates the editor's project context", () => {
   // C5 — choosing a different project from the picker must update the
   // editor's project context (URL changes to /projects/<newProj>) so
-  // the sidebar tree, schema panel, and worksheet list all refresh
+  // the sidebar tree, schema panel, and saved query list all refresh
   // against the new project's databases.
   //
   // The post-demo bootstrap (#20393) only creates one sample project
@@ -144,7 +144,7 @@ test.describe("Project switcher updates the editor's project context", () => {
   // project to be a meaningful test. We provision it on-demand here
   // (NOT in the global seedTestData) so that adding a second project
   // doesn't shift the SQL editor's default landing project for other
-  // specs (e.g. sql-editor-worksheet.spec.ts uses gotoHome() and
+  // specs (e.g. sql-editor-saved-query.spec.ts uses gotoHome() and
   // assumes `project-sample` is current).
 
   test.beforeAll(async () => {

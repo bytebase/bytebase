@@ -34,7 +34,7 @@ const (
 	RolePrefix                 = "roles/"
 	WebhookIDPrefix            = "webhooks/"
 	SheetIDPrefix              = "sheets/"
-	WorksheetIDPrefix          = "worksheets/"
+	SavedQueryIDPrefix         = "savedQueries/"
 	DatabaseGroupNamePrefix    = "databaseGroups/"
 	SchemaNamePrefix           = "schemas/"
 	TableNamePrefix            = "tables/"
@@ -526,20 +526,20 @@ func GetProjectResourceIDSheetSha256(name string) (string, string, error) {
 	return tokens[0], strings.ToLower(tokens[1]), nil
 }
 
-// GetProjectIDWorksheetID returns the project ID and worksheet ID (resource_id) from a resource name.
-// Format: projects/{project}/worksheets/{worksheet}
-func GetProjectIDWorksheetID(name string) (string, string, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, WorksheetIDPrefix)
+// GetProjectIDSavedQueryID returns the project ID and saved query ID (resource_id) from a resource name.
+// Format: projects/{project}/savedQueries/{savedQuery}
+func GetProjectIDSavedQueryID(name string) (string, string, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, SavedQueryIDPrefix)
 	if err != nil {
 		return "", "", err
 	}
 	return tokens[0], tokens[1], nil
 }
 
-// FormatWorksheet formats a worksheet resource name.
-// Format: projects/{project}/worksheets/{worksheet}
-func FormatWorksheet(projectID, worksheetID string) string {
-	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), WorksheetIDPrefix, worksheetID)
+// FormatSavedQuery formats a saved query resource name.
+// Format: projects/{project}/savedQueries/{savedQuery}
+func FormatSavedQuery(projectID, savedQueryID string) string {
+	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), SavedQueryIDPrefix, savedQueryID)
 }
 
 // GetReviewConfigID returns the review config id from a resource name.

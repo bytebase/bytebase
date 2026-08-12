@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   // Per-test controllable tab-derived state.
   tabState: {
     isDisconnected: false,
-    currentMode: "WORKSHEET" as string | undefined,
+    currentMode: "SAVED_QUERY" as string | undefined,
   },
   // New zustand state mirror.
   state: { showAIPanel: false },
@@ -210,7 +210,7 @@ const renderIntoContainer = (element: ReactElement) => {
   };
 };
 
-// Default state: connected, worksheet mode, AI enabled, showAIPanel=false
+// Default state: connected, saved query mode, AI enabled, showAIPanel=false
 type VueStateValues = {
   isDisconnected: boolean;
   currentMode: string | undefined;
@@ -222,7 +222,7 @@ type VueStateValues = {
 const setupDefaultMocks = (overrides: Partial<VueStateValues> = {}) => {
   const values: VueStateValues = {
     isDisconnected: false,
-    currentMode: "WORKSHEET",
+    currentMode: "SAVED_QUERY",
     showAIPanel: false,
     instance: { engine: Engine.POSTGRES },
     openAIEnabled: true,
@@ -267,7 +267,7 @@ describe("OpenAIButton", () => {
     unmount();
   });
 
-  test("renders nothing when not in WORKSHEET mode", () => {
+  test("renders nothing when not in SAVED_QUERY mode", () => {
     setupDefaultMocks({ currentMode: "ADMIN" });
     const { container, render, unmount } = renderIntoContainer(
       <OpenAIButton />
