@@ -372,15 +372,22 @@ func (s *SavedQueryService) UpdateSavedQuery(
 			statement := string(request.SavedQuery.Content)
 			savedQueryPatch.Statement = &statement
 		case "database":
-			if request.SavedQuery.Database != "" {
+			switch request.SavedQuery.Database {
+			case savedQuery.Database:
+				// Unchanged — skip validation entirely. The reference is a
+				// soft link: autosave re-sends the stored value on every
+				// write, and re-validating would brick content saves once
+				// the database is deleted or transferred. A stale stored
+				// value keeps dangling, exactly like the read path.
+			case "":
+				emptyStr := ""
+				savedQueryPatch.Database = &emptyStr
+			default:
 				database, err := s.validateSavedQueryDatabase(ctx, savedQuery.ProjectID, request.SavedQuery.Database)
 				if err != nil {
 					return nil, err
 				}
 				savedQueryPatch.Database = &database
-			} else {
-				emptyStr := ""
-				savedQueryPatch.Database = &emptyStr
 			}
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))

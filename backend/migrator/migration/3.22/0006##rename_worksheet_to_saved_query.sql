@@ -19,7 +19,7 @@ ALTER INDEX IF EXISTS idx_worksheet_organizer_payload RENAME TO idx_saved_query_
 -- design's carry rule, the reference is kept only when the database still
 -- belongs to the saved query's own project; otherwise it is cleared.
 UPDATE saved_query
-SET payload = saved_query.payload || jsonb_build_object(
+SET payload = COALESCE(saved_query.payload, '{}'::jsonb) || jsonb_build_object(
     'database',
     CASE
         WHEN instance.project IS NOT NULL THEN 'projects/' || instance.project || '/instances/' || instance.resource_id || '/databases/' || db.name
@@ -29,6 +29,9 @@ FROM db
     JOIN instance ON instance.resource_id = db.instance
 WHERE saved_query.instance = db.instance
     AND saved_query.db_name = db.name
-    AND db.project = saved_query.project;
+    AND db.project = saved_query.project
+    -- Skip rows whose instance/database project scoping drifted apart; a
+    -- name built from incoherent scopes would never validate again.
+    AND (instance.project IS NULL OR instance.project = db.project);
 
 ALTER TABLE saved_query DROP COLUMN instance, DROP COLUMN db_name;
