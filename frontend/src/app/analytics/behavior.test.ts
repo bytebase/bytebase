@@ -208,6 +208,15 @@ describe("behavior analytics metrics", () => {
   test("defines metric names in one map", () => {
     expect([...behaviorMetricDefinitions.keys()]).toContain("page session");
     expect([...behaviorMetricDefinitions.keys()]).toContain("page navigated");
+    expect([...behaviorMetricDefinitions.keys()]).toContain(
+      "locked feature clicked"
+    );
+    expect([...behaviorMetricDefinitions.keys()]).not.toContain(
+      "locked feature viewed"
+    );
+    expect([...behaviorMetricDefinitions.keys()]).not.toContain(
+      "locked feature upgrade clicked"
+    );
   });
 
   test("creates allowlisted page session metrics with route context", () => {
@@ -272,6 +281,27 @@ describe("behavior analytics metrics", () => {
         route_id: "workspace.landing",
         resource: "projects/demo",
         step: "hasProject",
+      },
+    });
+  });
+
+  test("creates locked feature click metrics with gate context", () => {
+    expect(
+      createBehaviorMetric("locked feature clicked", {
+        routeId: "workspace.profile",
+        properties: {
+          feature: "FEATURE_TWO_FA",
+          lock_reason: "subscription_plan",
+          required_plan: "ENTERPRISE",
+        },
+      })
+    ).toEqual({
+      event: "locked feature clicked",
+      properties: {
+        route_id: "workspace.profile",
+        feature: "FEATURE_TWO_FA",
+        lock_reason: "subscription_plan",
+        required_plan: "ENTERPRISE",
       },
     });
   });
