@@ -36,7 +36,7 @@ Audit these 27 RPCs in this plan:
 | Subscription | `UploadLicense`, `CreatePurchase`, `UpdatePurchase`, `CancelPurchase`, `ExportVCSProviderUsers` |
 | Sensitive external actions | `AIService.Chat`, `AuditLogService.ExportAuditLogs`, `IdentityProviderService.TestIdentityProvider`, `SettingService.TestEmailSetting` |
 
-`RequestPasswordReset` has one deliberate limitation: when the unauthenticated request has no validated workspace, there is nowhere to persist a workspace-owned audit row, so the existing silent-success behavior remains unaudited. Requests tied to a validated workspace must be recorded.
+The password-reset RPCs have one deliberate limitation: when the unauthenticated flow has no validated workspace, there is nowhere to persist a workspace-owned audit row. Both `RequestPasswordReset` and the corresponding successful `ResetPassword` therefore remain unaudited for codes issued without workspace context. Workspace-bound flows must be recorded.
 
 ---
 
@@ -226,6 +226,7 @@ git commit -m "feat: audit core lifecycle APIs"
 - Modify: `backend/api/v1/audit.go`
 - Modify: `backend/api/v1/audit_redaction_test.go`
 - Modify: `backend/api/v1/audit_test.go`
+- Test: `backend/tests/login_audit_test.go`
 - Generated: `backend/generated-go/v1/`, `frontend/src/types/proto-es/v1/`, `proto/gen/grpc-doc/`, `backend/api/mcp/gen/`
 
 **Interfaces:**
@@ -281,7 +282,7 @@ func redactWorksheet(r *v1pb.Worksheet) *v1pb.Worksheet {
 
 Add request switch cases for `CreateReleaseRequest`, `UpdateReleaseRequest`, and `CreateWorksheetRequest`, preserving all non-content fields and update masks. Add response switch cases for `Release` and `Worksheet` so future handler changes cannot expose statement/content fields through the audit response.
 
-- [ ] **Step 4: Add resource extraction and annotations**
+- [ ] **Step 4: Add resource extraction, project ownership, and annotations**
 
 Extend `getRequestResource`:
 
@@ -298,9 +299,13 @@ case *v1pb.DeleteWorksheetRequest:
 
 Add `audit = true` to `CreateRelease`, `UpdateRelease`, `CreateWorksheet`, and `DeleteWorksheet`.
 
-- [ ] **Step 5: Verify redaction does not mutate input**
+Ensure both worksheet lifecycle RPCs publish their owning project through the authorization context so the interceptor persists their audit rows under `projects/{project}`, not the workspace fallback. The implementation may use the existing declarative resource metadata or an equivalent project-resolution path; the required contract is project-scoped audit ownership.
+
+- [ ] **Step 5: Verify redaction and persisted ownership**
 
 Extend `TestAuditRedactionDoesNotMutateInput` with a release and worksheet, call the corresponding audit serializer, and assert the original statement/content still equals `secretSentinel`.
+
+Extend the audit integration coverage to create and delete a worksheet, then query the project audit stream and assert both rows use `projects/{project}` as their parent. This test must fail if either action is filed only in the workspace audit stream.
 
 - [ ] **Step 6: Generate and test**
 
@@ -310,14 +315,15 @@ buf lint proto
 (cd proto && buf generate)
 gofmt -w backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/api/v1/audit_test.go
 go test ./backend/api/v1 -run '^(TestAudit(Request|Response)RedactsCredentials|TestAuditRedactionDoesNotMutateInput|TestLifecycleAuditResource)$' -count=1
+go test -v -count=1 ./backend/tests -run '^TestAuditLogFormat$' -timeout 10m
 ```
 
-Expected: PASS and no sentinel in any serialized payload.
+Expected: PASS, no sentinel in any serialized payload, and worksheet lifecycle rows are discoverable in the owning project's audit stream.
 
 - [ ] **Step 7: Commit the content-bearing batch**
 
 ```bash
-git add proto/v1/v1/release_service.proto proto/v1/v1/worksheet_service.proto backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/api/v1/audit_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen
+git add proto/v1/v1/release_service.proto proto/v1/v1/worksheet_service.proto backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/api/v1/audit_test.go backend/tests/login_audit_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen
 git commit -m "feat: audit release and worksheet lifecycle"
 ```
 
@@ -359,29 +365,14 @@ Register the helper in `getRequestString`. Keep `RequestPasswordResetRequest` un
 
 - [ ] **Step 3: Attribute successful and target-valid auth events**
 
-In `ResetPassword`, call:
+For `RequestPasswordReset`, set the audit workspace only after establishing both of these facts:
 
-```go
-common.SetAuditWorkspaceID(ctx, codeRow.Workspace)
-```
+- the normalized email belongs to an active `END_USER` account;
+- the requested workspace is valid for that account under the existing membership rules.
 
-immediately after `verifyEmailCode` succeeds, before membership, password-policy, or update failures can return.
+An `allUsers` workspace binding alone must not make an unknown, deleted, service-account, or workload-identity email auditable. Keep the endpoint's current always-success response and do not surface lookup failures; an absent, malformed, unknown, or invalid workspace produces no audit row.
 
-For `RequestPasswordReset`, resolve the optional workspace without changing the externally visible result. Before sending the email, use the normalized email plus parsed workspace ID in `FindWorkspace`; set the audit workspace only when the account is an actual member:
-
-```go
-if workspaceID, err := parseOptionalWorkspace(req.Msg.Workspace); err == nil && workspaceID != "" {
-	if workspace, findErr := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
-		WorkspaceID:    &workspaceID,
-		Email:          email,
-		IncludeAllUser: !s.profile.SaaS,
-	}); findErr == nil && workspace != nil {
-		common.SetAuditWorkspaceID(ctx, workspaceID)
-	}
-}
-```
-
-Do not return lookup errors from this preflight and do not change the current always-success behavior; an absent, malformed, unknown, or non-member workspace produces no audit row.
+For `ResetPassword`, attribute the event only to the validated non-empty workspace captured with the verification code. Set that workspace early enough that membership, password-policy, or update failures after successful code verification can be recorded. Do not invent or select an arbitrary workspace when the code has no workspace context; that path is the explicit no-workspace limitation described above.
 
 - [ ] **Step 4: Add audit annotations**
 
@@ -391,8 +382,10 @@ Add `audit = true` to `RequestPasswordReset` and `ResetPassword`.
 
 Extend `backend/tests/login_audit_test.go` to assert:
 
-- a successful password reset row contains the email but neither the submitted code nor new password;
-- a workspace-bound password reset request produces a row without exposing whether the account exists through the API response.
+- a workspace-bound successful password reset row contains the email but neither the submitted code nor new password;
+- a workspace-bound request for an active end user produces a row while preserving the endpoint's always-success response;
+- unknown, deleted, service-account, and workload-identity emails do not create request audit rows, including when the workspace grants `allUsers`;
+- no-workspace request and reset flows preserve their existing API behavior but create no audit row, documenting the storage limitation explicitly.
 
 - [ ] **Step 6: Generate and run auth tests**
 
@@ -694,7 +687,7 @@ Add an “Audit annotation coverage” section to `docs/design/v1-api-audit-2026
 - the audited RPC families from the Coverage Decision table;
 - the deliberate exclusions and their reasons, including session-only workspace switching and non-mutating webhook tests;
 - the rule that serializers must redact credentials/content before annotations are enabled;
-- the workspace-resolution limitation for unauthenticated password-reset requests;
+- the workspace-resolution limitation for both unauthenticated password-reset RPCs;
 - the legacy worksheet-read deferral to the saved-query privacy model.
 
 - [ ] **Step 5: Run all required verification gates**
