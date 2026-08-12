@@ -44,6 +44,54 @@ export enum AuthMethod {
 export declare const AuthMethodSchema: GenEnum<AuthMethod>;
 
 /**
+ * Classification of an RPC for MCP (AI agent) sessions. The effective
+ * authorization of an MCP session is this classification intersected with the
+ * caller's own RBAC: it can only ever narrow what the human could do, never
+ * widen it.
+ *
+ * @generated from enum bytebase.v1.MCPMethodClass
+ */
+export enum MCPMethodClass {
+  /**
+   * Not yet classified. Reaches its handler, subject to RBAC as usual —
+   * the classification is being rolled out method by method, and only
+   * FORBIDDEN is enforced today.
+   *
+   * @generated from enum value: MCP_METHOD_CLASS_UNSPECIFIED = 0;
+   */
+  MCP_METHOD_CLASS_UNSPECIFIED = 0,
+
+  /**
+   * Served to a read-only MCP session and above.
+   *
+   * @generated from enum value: READ = 1;
+   */
+  READ = 1,
+
+  /**
+   * Served to a read-write MCP session only.
+   *
+   * @generated from enum value: WRITE = 2;
+   */
+  WRITE = 2,
+
+  /**
+   * Never reachable by an MCP session, whatever the caller's own
+   * permissions are. These methods escape the MCP boundary rather than
+   * merely exercising a permission: a human with the permission uses the
+   * console; an agent acting for them does not get to.
+   *
+   * @generated from enum value: FORBIDDEN = 3;
+   */
+  FORBIDDEN = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.MCPMethodClass.
+ */
+export declare const MCPMethodClassSchema: GenEnum<MCPMethodClass>;
+
+/**
  * Whether the method allows access without authentication credentials.
  *
  * @generated from extension: bool allow_without_credential = 100000;
@@ -70,4 +118,11 @@ export declare const auth_method: GenExtension<MethodOptions, AuthMethod>;
  * @generated from extension: bool audit = 100003;
  */
 export declare const audit: GenExtension<MethodOptions, boolean>;
+
+/**
+ * How the method is classified for MCP (AI agent) sessions.
+ *
+ * @generated from extension: bytebase.v1.MCPMethodClass mcp_method_class = 100004;
+ */
+export declare const mcp_method_class: GenExtension<MethodOptions, MCPMethodClass>;
 

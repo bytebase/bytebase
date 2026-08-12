@@ -484,11 +484,50 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 	if !ok {
 		return nil, errs.Errorf("invalid audit extension, full method name %q", fullMethod)
 	}
+	mcpMethodClassAny := proto.GetExtension(md, v1pb.E_McpMethodClass)
+	mcpMethodClass, ok := mcpMethodClassAny.(v1pb.MCPMethodClass)
+	if !ok {
+		return nil, errs.Errorf("invalid MCP method class extension, full method name %q", fullMethod)
+	}
 
 	return &common.AuthContext{
 		AllowWithoutCredential: allowWithoutCredential,
 		Permission:             permission,
 		AuthMethod:             authMethod,
 		Audit:                  audit,
+		MCPMethodClass:         mcpMethodClass,
 	}, nil
+}
+
+// MCPMethodClassOfProcedure resolves the MCP classification for a connect
+// procedure path such as "/bytebase.v1.AuthService/Login". Callers that only
+// decide what to ADVERTISE may treat an error as "not classified"; the
+// enforcement path must not — it reads the class off the AuthContext, which
+// fails the request outright when the annotation cannot be resolved.
+func MCPMethodClassOfProcedure(procedure string) (v1pb.MCPMethodClass, error) {
+	tokens := strings.Split(procedure, "/")
+	if len(tokens) != 3 {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid procedure name %q", procedure)
+	}
+	rd, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(tokens[1]))
+	if err != nil {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Wrapf(err, "invalid service descriptor for procedure %q", procedure)
+	}
+	sd, ok := rd.(protoreflect.ServiceDescriptor)
+	if !ok {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid service descriptor for procedure %q", procedure)
+	}
+	method := sd.Methods().ByName(protoreflect.Name(tokens[2]))
+	if method == nil {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("unknown method for procedure %q", procedure)
+	}
+	md, ok := method.Options().(*descriptorpb.MethodOptions)
+	if !ok {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid method options for procedure %q", procedure)
+	}
+	class, ok := proto.GetExtension(md, v1pb.E_McpMethodClass).(v1pb.MCPMethodClass)
+	if !ok {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid MCP method class extension for procedure %q", procedure)
+	}
+	return class, nil
 }

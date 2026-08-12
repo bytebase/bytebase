@@ -1,9 +1,13 @@
 package dynamodb
 
 import (
+	"context"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 func TestDynamoDBEndpoint(t *testing.T) {
@@ -54,5 +58,68 @@ func TestDynamoDBEndpoint(t *testing.T) {
 				t.Errorf("dynamoDBEndpoint() = %q, want %q", got, tc.want)
 			}
 		})
+	}
+}
+
+// setHermeticAWSEnv pins base credentials and points STS at an unroutable local
+// endpoint so Open never reaches real AWS: an attempted AssumeRole fails fast
+// and deterministically instead of depending on ambient credentials or network.
+func setHermeticAWSEnv(t *testing.T) {
+	t.Setenv("AWS_ACCESS_KEY_ID", "AKIAIOSFODNN7EXAMPLE")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+	t.Setenv("AWS_SESSION_TOKEN", "")
+	t.Setenv("AWS_ENDPOINT_URL_STS", "http://127.0.0.1:1")
+	// Single attempt: the SDK's default retryer would otherwise retry the
+	// refused connection with backoff, slowing the failure to several seconds.
+	t.Setenv("AWS_MAX_ATTEMPTS", "1")
+	// Shield the tests from ambient AWS configuration on the host: a set
+	// AWS_PROFILE or shared config file would otherwise leak into
+	// config.LoadDefaultConfig.
+	t.Setenv("AWS_PROFILE", "")
+	missing := filepath.Join(t.TempDir(), "nonexistent")
+	t.Setenv("AWS_CONFIG_FILE", missing)
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", missing)
+}
+
+func TestOpenAssumesRoleWhenRoleArnSet(t *testing.T) {
+	setHermeticAWSEnv(t)
+
+	d := newDriver()
+	_, err := d.Open(context.Background(), storepb.Engine_DYNAMODB, db.ConnectionConfig{
+		ConnectionContext: db.ConnectionContext{InstanceID: "dynamodb-test"},
+		DataSource: &storepb.DataSource{
+			Region: "us-east-1",
+			IamExtension: &storepb.DataSource_AwsCredential{
+				AwsCredential: &storepb.DataSource_AWSCredential{
+					RoleArn: "arn:aws:iam::123456789012:role/bytebase-test-role",
+				},
+			},
+		},
+	})
+	if err == nil {
+		t.Fatal("Open() = nil error; want an assume-role failure, meaning role_arn was ignored")
+	}
+	if !strings.Contains(err.Error(), "failed to assume role") {
+		t.Errorf("Open() error = %q, want it to mention the assume-role attempt", err.Error())
+	}
+}
+
+func TestOpenWithoutRoleArnSkipsAssumeRole(t *testing.T) {
+	setHermeticAWSEnv(t)
+
+	d := newDriver()
+	if _, err := d.Open(context.Background(), storepb.Engine_DYNAMODB, db.ConnectionConfig{
+		ConnectionContext: db.ConnectionContext{InstanceID: "dynamodb-test"},
+		DataSource: &storepb.DataSource{
+			Region: "us-east-1",
+			IamExtension: &storepb.DataSource_AwsCredential{
+				AwsCredential: &storepb.DataSource_AWSCredential{
+					AccessKeyId:     "AKIAIOSFODNN7EXAMPLE",
+					SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+				},
+			},
+		},
+	}); err != nil {
+		t.Fatalf("Open() error = %v, want nil when no role_arn is set", err)
 	}
 }

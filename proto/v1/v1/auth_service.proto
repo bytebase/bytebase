@@ -20,6 +20,7 @@ service AuthService {
     };
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 
   // Logs out the current user session.
@@ -31,6 +32,7 @@ service AuthService {
     };
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 
   // Exchanges an external OIDC token for a Bytebase access token.
@@ -43,6 +45,7 @@ service AuthService {
     };
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 
   // Registers a new user account. Creates a principal and assigns a workspace:
@@ -56,6 +59,7 @@ service AuthService {
     };
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 
   // Refreshes the access token using the refresh token cookie.
@@ -66,6 +70,7 @@ service AuthService {
       body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 
   // Switches the current user's active workspace and issues new tokens.
@@ -76,6 +81,7 @@ service AuthService {
       body: "*"
     };
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 
   // Requests a password reset email for the given email address.
@@ -87,6 +93,7 @@ service AuthService {
       body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 
   // Resets the user's password using a password reset token from email.
@@ -97,6 +104,7 @@ service AuthService {
       body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 
   // Sends a 6-digit verification code to the email for login/signup.
@@ -109,6 +117,7 @@ service AuthService {
     };
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 }
 

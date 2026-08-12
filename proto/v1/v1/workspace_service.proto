@@ -58,6 +58,7 @@ service WorkspaceService {
     option (bytebase.v1.permission) = "bb.workspaces.delete";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 
   // Removes the calling user from a workspace and switches to the next
@@ -70,6 +71,7 @@ service WorkspaceService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 
   // Sets IAM policy for the workspace.

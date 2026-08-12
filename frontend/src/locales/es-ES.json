@@ -1037,6 +1037,7 @@
     },
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "database-region": "Región de la base de datos",
+    "database-region-placeholder": "región de la base de datos, por ejemplo us-east-1",
     "default-role": "Rol predeterminado",
     "delete-active-confirmation": "La instancia \"{{name}}\" está activa. Bytebase la archivará primero y luego la eliminará permanentemente. Esta acción no se puede deshacer. Escribe el ID de la instancia \"{{id}}\" para confirmar.",
     "delete-confirmation": "Esto eliminará permanentemente la instancia \"{{name}}\". Esta acción no se puede deshacer. Escribe el ID de la instancia \"{{id}}\" para confirmar.",

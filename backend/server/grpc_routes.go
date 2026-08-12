@@ -204,12 +204,19 @@ func configureGrpcRouters(
 	// event an operator investigating an agent needs to see. Methods whose
 	// annotation opts out of auditing stay unaudited for permitted and denied
 	// calls alike (needAudit gates both).
+	//
+	// The FORBIDDEN gate sits between them — inside audit, so a denial is
+	// recorded wherever the method's annotation asks for auditing at all, and
+	// outside ACL, because the class is refused whatever the caller's RBAC
+	// would have allowed. P1b's full ceiling gate takes this same slot, and
+	// brings the typed denial record for the unannotated methods with it.
 	internalHandlerOpts := connect.WithHandlerOptions(
 		connect.WithRecover(onPanic),
 		connect.WithInterceptors(
 			validateInterceptor,
 			auth.NewInternalMCPAuthInterceptor(stores, secret, profile),
 			apiv1.NewAuditInterceptor(stores, secret, profile),
+			apiv1.NewInternalMCPForbiddenInterceptor(),
 			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
 		),
 	)
