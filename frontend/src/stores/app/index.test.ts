@@ -449,6 +449,9 @@ const timestampSeconds = (seconds: number) => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Tests here stub `location`; without this the stub leaks into every test
+  // declared after it, with only the keys that test happened to supply.
+  vi.unstubAllGlobals();
   localStorage.clear();
 });
 
@@ -605,7 +608,7 @@ describe("useAppStore", () => {
     // activeUserCount > 1 so `enableOnboarding()` is false and signup navigates.
     mocks.getActuatorInfo.mockResolvedValue({
       workspace: user.workspace,
-      activeUserCount: 2,
+      activatedUserCount: 2,
     });
     mocks.getSetting.mockResolvedValue(
       createProto(SettingSchema, {
@@ -630,6 +633,43 @@ describe("useAppStore", () => {
     expect(mocks.navigateToPath).toHaveBeenCalledWith("/projects/foo", {
       replace: true,
     });
+  });
+
+  // Guards signup's own `loadWorkspaceProfile` call. The explicit-redirect test
+  // above returns before `rootGuard` is consulted, so it passes with or without
+  // the load; this one pins that a no-redirect signup hands the guard a loaded
+  // profile, which is what sends an EDITOR workspace to the SQL Editor.
+  test("signup loads the workspace profile before choosing the next page", async () => {
+    mocks.signup.mockResolvedValue({});
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      activatedUserCount: 2,
+    });
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "workspaceProfile",
+            value: createProto(WorkspaceProfileSettingSchema, {
+              databaseChangeMode: DatabaseChangeMode.EDITOR,
+            }),
+          },
+        }),
+      })
+    );
+    const store = createAppStore();
+
+    await store.getState().signup({
+      email: user.email,
+      name: "Test",
+      password: "secret",
+    } as never);
+
+    expect(
+      store.getState().appFeatures["bb.feature.database-change-mode"]
+    ).toBe(DatabaseChangeMode.EDITOR);
+    expect(mocks.navigateToPath).toHaveBeenCalledWith("/", { replace: true });
   });
 
   test("lists groups and populates the group cache", async () => {
