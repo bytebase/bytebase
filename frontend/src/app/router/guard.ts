@@ -95,8 +95,8 @@ const ALLOWED_ROUTE_PATTERNS = [
 //   - EDITOR change-mode workspaces go to the SQL Editor home
 //   - otherwise the user's last meaningful visit, if any
 //   - falling back to the landing page
-// Resolves "/", which has no page of its own. It reads `appFeatures`, so every
-// caller that navigates here must have loaded the workspace profile first:
+// It reads `appFeatures`, so every caller that navigates here must have loaded
+// the workspace profile first:
 // `main.ts` awaits it before mounting when the boot already had a session, and
 // `login()`/`signup()` await it before navigating when it did not (a signed-out
 // boot cannot load it, the setting is authenticated-only). Miss that and an
