@@ -528,6 +528,41 @@ func TestMCPCannotRetargetADataSource(t *testing.T) {
 	a.Equal(realHost, after.Msg.DataSources[0].Host,
 		"the data source must still point where the operator put it")
 
+	// The same retarget WITHOUT validate_only, denied identically. The pair is
+	// an A/B on one flag: same method, same session, same refusal — and only
+	// one of them is auditable, which is the point of the assertions below.
+	persisting := callAPIOnSession(ctx, t, session, "InstanceService/UpdateDataSource", map[string]any{
+		"name":       instance.Msg.Name,
+		"dataSource": map[string]any{"id": dataSourceID, "host": "attacker.example.com"},
+		"updateMask": "host",
+	})
+	a.Equal(http.StatusForbidden, persisting.Status)
+
+	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
+		Name: "workspaces/-",
+	}))
+	a.NoError(err)
+	rows := deniedMCPRows(ctx, t, ctl, workspace.Msg.Name, "/bytebase.v1.InstanceService/UpdateDataSource")
+	t.Logf("audit rows for the two denied retargets (one validate-only): %d", len(rows))
+
+	// A THIRD way a denial goes unrecorded, distinct from the two the
+	// interceptor's doc comment already names. UpdateDataSource carries
+	// audit = true and is not carved out of workspace-parent resolution, so
+	// the persisting attempt above is on the audit page. The validate-only one
+	// is not: createAuditLog's first statement returns nil for any request
+	// whose validate_only field is set (audit.go), before it does anything
+	// with the denial.
+	//
+	// That skip is right for a permitted call, which changed nothing worth
+	// recording, and backwards for a refused one — and validate_only is
+	// precisely the variant that leaves no other trace, since it dials the
+	// caller's host and persists nothing. Fixing it means exempting policy
+	// denials from the skip, which is interceptor work this PR does not do:
+	// BOT-57. This assertion is what tells whoever does that it landed.
+	a.Len(rows, 1,
+		"exactly one of the two denials is auditable: the validate-only retarget is skipped "+
+			"by createAuditLog before the denial is ever considered")
+
 	// The console keeps working — the gate is on the internal MCP chain only.
 	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, connect.NewRequest(&v1pb.UpdateDataSourceRequest{
 		Name:       instance.Msg.Name,

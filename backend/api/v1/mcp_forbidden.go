@@ -140,12 +140,13 @@ const reasonForbiddenClass = "it is not reachable by an AI agent session"
 // method, and this interceptor grows with the annotations rather than with a
 // list kept here.
 //
-// Sitting inside audit gets the denial a row for most of the twenty-three
-// annotated FORBIDDEN methods. Seven produce nothing, for two different
-// reasons, and the second is not visible from the annotations at all:
+// Sitting inside audit gets the denial a row for most of the annotated
+// FORBIDDEN methods, but not all, and the exceptions are worth knowing because
+// none of them is visible from the annotations alone. Three mechanisms:
 //
 //   - No audit annotation, so needAudit refuses the row outright:
 //     SwitchWorkspace, Refresh, TestIdentityProvider, TestEmailSetting.
+//
 //   - Audit annotation, but no reachable audit parent: RequestPasswordReset,
 //     ResetPassword and SendEmailLoginCode are allow_without_credential, so
 //     createAuditLog takes their parent ONLY from what the handler validated
@@ -156,14 +157,29 @@ const reasonForbiddenClass = "it is not reachable by an AI agent session"
 //     runs and no parent is ever set. #21162 gave the first two the audit
 //     annotation; it did not give them rows.
 //
+//   - Annotated, audited, and not carved out, but the CALLER opted out per
+//     request: createAuditLog returns on its first statement for anything whose
+//     validate_only field is set, before it considers the denial at all.
+//     Unlike the two above this is not a fixed set of methods — it is any
+//     FORBIDDEN method whose request carries the field, today
+//     CreateIdentityProvider, UpdateSetting and UpdateDataSource. The skip is
+//     right for a permitted call, which changed nothing worth recording, and
+//     backwards for a refused one; worse, validate_only is the variant that
+//     leaves no other trace, because it dials the caller's host and persists
+//     nothing.
+//
 // The first group is 1b-2's typed policy-denial record. The second needs that
 // too, or the audit path to accept the delegated credential's workspace, which
-// the internal chain has already verified. TestMCPResetFlowDenialsAreSilent
-// pins the second group so the next person to add the annotation learns it is
-// not enough from a red test rather than from an operator asking where the row
-// went. The two that sting are TestIdentityProvider and TestEmailSetting: they
-// would carry a stored secret to an address the agent chose, and their denials
-// are the rows an operator would most want.
+// the internal chain has already verified. The third needs policy denials
+// exempted from the validate-only skip (BOT-57).
+// TestMCPResetFlowDenialsAreSilent pins the second and
+// TestMCPCannotRetargetADataSource pins the third — as an A/B on one flag, two
+// identical denials of one method, only one of them auditable — so the next
+// person to add an annotation learns it is not enough from a red test rather
+// than from an operator asking where the row went. The ones that sting are
+// TestIdentityProvider and TestEmailSetting, and the validate-only retarget:
+// each would carry a stored secret to an address the agent chose, and their
+// denials are the rows an operator would most want.
 func NewInternalMCPForbiddenInterceptor() connect.Interceptor {
 	return connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
