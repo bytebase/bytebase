@@ -589,13 +589,13 @@ const file_v1_service_account_service_proto_rawDesc = "" +
 	"\x1bbytebase.com/ServiceAccountR\x04name\"X\n" +
 	"\x1dUndeleteServiceAccountRequest\x127\n" +
 	"\x04name\x18\x01 \x01(\tB#\xe0A\x02\xfaA\x1d\n" +
-	"\x1bbytebase.com/ServiceAccountR\x04name2\xbd\n" +
+	"\x1bbytebase.com/ServiceAccountR\x04name2\xc5\n" +
 	"\n" +
-	"\x15ServiceAccountService\x12\xb3\x02\n" +
-	"\x14CreateServiceAccount\x12(.bytebase.v1.CreateServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"\xd3\x01\xdaA)parent,service_account,service_account_id\x8a\xea0\x19bb.serviceAccounts.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\x82\xd3\xe4\x93\x02x:\x0fservice_accountZ<:\x0fservice_account\")/v1/{parent=workspaces/*}/serviceAccounts\"'/v1/{parent=projects/*}/serviceAccounts\x12\xa2\x01\n" +
+	"\x15ServiceAccountService\x12\xb7\x02\n" +
+	"\x14CreateServiceAccount\x12(.bytebase.v1.CreateServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"\xd7\x01\xdaA)parent,service_account,service_account_id\x8a\xea0\x19bb.serviceAccounts.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x02x:\x0fservice_accountZ<:\x0fservice_account\")/v1/{parent=workspaces/*}/serviceAccounts\"'/v1/{parent=projects/*}/serviceAccounts\x12\xa2\x01\n" +
 	"\x11GetServiceAccount\x12%.bytebase.v1.GetServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"I\xdaA\x04name\x8a\xea0\x16bb.serviceAccounts.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1e\x12\x1c/v1/{name=serviceAccounts/*}\x12\xef\x01\n" +
-	"\x13ListServiceAccounts\x12'.bytebase.v1.ListServiceAccountsRequest\x1a(.bytebase.v1.ListServiceAccountsResponse\"\x84\x01\xdaA\x06parent\x8a\xea0\x17bb.serviceAccounts.list\x90\xea0\x01\x82\xd3\xe4\x93\x02VZ+\x12)/v1/{parent=workspaces/*}/serviceAccounts\x12'/v1/{parent=projects/*}/serviceAccounts\x12\xec\x01\n" +
-	"\x14UpdateServiceAccount\x12(.bytebase.v1.UpdateServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"\x8c\x01\xdaA\x1bservice_account,update_mask\x8a\xea0\x19bb.serviceAccounts.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\x82\xd3\xe4\x93\x02?:\x0fservice_account2,/v1/{service_account.name=serviceAccounts/*}\x12\xaa\x01\n" +
+	"\x13ListServiceAccounts\x12'.bytebase.v1.ListServiceAccountsRequest\x1a(.bytebase.v1.ListServiceAccountsResponse\"\x84\x01\xdaA\x06parent\x8a\xea0\x17bb.serviceAccounts.list\x90\xea0\x01\x82\xd3\xe4\x93\x02VZ+\x12)/v1/{parent=workspaces/*}/serviceAccounts\x12'/v1/{parent=projects/*}/serviceAccounts\x12\xf0\x01\n" +
+	"\x14UpdateServiceAccount\x12(.bytebase.v1.UpdateServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"\x90\x01\xdaA\x1bservice_account,update_mask\x8a\xea0\x19bb.serviceAccounts.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x02?:\x0fservice_account2,/v1/{service_account.name=serviceAccounts/*}\x12\xaa\x01\n" +
 	"\x14DeleteServiceAccount\x12(.bytebase.v1.DeleteServiceAccountRequest\x1a\x16.google.protobuf.Empty\"P\xdaA\x04name\x8a\xea0\x19bb.serviceAccounts.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1e*\x1c/v1/{name=serviceAccounts/*}\x12\xba\x01\n" +
 	"\x16UndeleteServiceAccount\x12*.bytebase.v1.UndeleteServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"W\x8a\xea0\x1bbb.serviceAccounts.undelete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/{name=serviceAccounts/*}:undeleteB\xb0\x01\n" +
 	"\x0fcom.bytebase.v1B\x1aServiceAccountServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"

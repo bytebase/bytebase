@@ -58,6 +58,7 @@ service SettingService {
     option (bytebase.v1.permission) = "bb.settings.set";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 }
 

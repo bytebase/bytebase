@@ -14930,6 +14930,23 @@ components:
          Protocol) server's delegated credential. The values are copied verbatim from
          the verified credential's grant state; empty fields record that the grant
          stored nothing (legacy sessions), never a resolved or synthesized value.
+    bytebase.v1.MCPForbiddenReason:
+      type: string
+      title: MCPForbiddenReason
+      enum:
+        - MCP_FORBIDDEN_REASON_UNSPECIFIED
+        - MINTS_CREDENTIAL
+        - RESETS_CREDENTIAL
+        - TAKES_OVER_ACCOUNT
+        - ENDS_SESSION
+        - ENDS_MEMBERSHIP
+        - MINTS_CREDENTIAL_FOR_OTHERS
+      description: |-
+        Why an RPC is FORBIDDEN to MCP sessions. The mechanism, not the wording:
+         each value names what its methods actually do, and the serving side turns
+         that into a sentence. A denial whose stated reason has drifted from the
+         mechanism is worse than a bare refusal, because it is the thing the next
+         reader trusts — so a method changing what it does changes its reason here.
     bytebase.v1.MCPMethodClass:
       type: string
       title: MCPMethodClass

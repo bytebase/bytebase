@@ -92,6 +92,78 @@ export enum MCPMethodClass {
 export declare const MCPMethodClassSchema: GenEnum<MCPMethodClass>;
 
 /**
+ * Why an RPC is FORBIDDEN to MCP sessions. The mechanism, not the wording:
+ * each value names what its methods actually do, and the serving side turns
+ * that into a sentence. A denial whose stated reason has drifted from the
+ * mechanism is worse than a bare refusal, because it is the thing the next
+ * reader trusts — so a method changing what it does changes its reason here.
+ *
+ * @generated from enum bytebase.v1.MCPForbiddenReason
+ */
+export enum MCPForbiddenReason {
+  /**
+   * No reason recorded. The method is still denied — mcp_method_class is what
+   * enforces — and the denial falls back to generic wording.
+   *
+   * @generated from enum value: MCP_FORBIDDEN_REASON_UNSPECIFIED = 0;
+   */
+  MCP_FORBIDDEN_REASON_UNSPECIFIED = 0,
+
+  /**
+   * Puts a token for the caller's own principal in the response body.
+   *
+   * @generated from enum value: MINTS_CREDENTIAL = 1;
+   */
+  MINTS_CREDENTIAL = 1,
+
+  /**
+   * Drives the out-of-band reset flow that sets or delivers the secret a
+   * login accepts.
+   *
+   * @generated from enum value: RESETS_CREDENTIAL = 2;
+   */
+  RESETS_CREDENTIAL = 2,
+
+  /**
+   * Rewrites an account's own credentials, which would let the session log in
+   * as that account.
+   *
+   * @generated from enum value: TAKES_OVER_ACCOUNT = 3;
+   */
+  TAKES_OVER_ACCOUNT = 3,
+
+  /**
+   * Destroys the human's own login session.
+   *
+   * @generated from enum value: ENDS_SESSION = 4;
+   */
+  ENDS_SESSION = 4,
+
+  /**
+   * Destroys the caller's own workspace membership and mints a plain
+   * workspace token on the way out.
+   *
+   * @generated from enum value: ENDS_MEMBERSHIP = 5;
+   */
+  ENDS_MEMBERSHIP = 5,
+
+  /**
+   * Leaves someone holding a principal the caller is not — by issuing its
+   * credential, carrying an existing one out to a host the caller named,
+   * choosing what will later be trusted to mint one, or redirecting where one
+   * gets delivered.
+   *
+   * @generated from enum value: MINTS_CREDENTIAL_FOR_OTHERS = 6;
+   */
+  MINTS_CREDENTIAL_FOR_OTHERS = 6,
+}
+
+/**
+ * Describes the enum bytebase.v1.MCPForbiddenReason.
+ */
+export declare const MCPForbiddenReasonSchema: GenEnum<MCPForbiddenReason>;
+
+/**
  * Whether the method allows access without authentication credentials.
  *
  * @generated from extension: bool allow_without_credential = 100000;
@@ -125,4 +197,14 @@ export declare const audit: GenExtension<MethodOptions, boolean>;
  * @generated from extension: bytebase.v1.MCPMethodClass mcp_method_class = 100004;
  */
 export declare const mcp_method_class: GenExtension<MethodOptions, MCPMethodClass>;
+
+/**
+ * Why the method is forbidden to MCP sessions. Meaningful only alongside
+ * mcp_method_class = FORBIDDEN; the denial names it so the agent, and the
+ * operator reading the audit row, learn why rather than just that it was
+ * refused.
+ *
+ * @generated from extension: bytebase.v1.MCPForbiddenReason mcp_forbidden_reason = 100005;
+ */
+export declare const mcp_forbidden_reason: GenExtension<MethodOptions, MCPForbiddenReason>;
 

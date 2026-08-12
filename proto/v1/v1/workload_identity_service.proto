@@ -34,6 +34,7 @@ service WorkloadIdentityService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 
   // Gets a workload identity by name.
@@ -70,6 +71,7 @@ service WorkloadIdentityService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 
   // Deletes a workload identity.
