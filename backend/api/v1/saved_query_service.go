@@ -20,29 +20,31 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// WorksheetService implements the worksheet service.
-type WorksheetService struct {
-	v1connect.UnimplementedWorksheetServiceHandler
+// SavedQueryService implements the saved query service.
+// The store layer still uses the legacy worksheet naming (table `worksheet`);
+// this service converts between the two at the API boundary.
+type SavedQueryService struct {
+	v1connect.UnimplementedSavedQueryServiceHandler
 	store      *store.Store
 	iamManager *iam.Manager
 }
 
-// NewWorksheetService creates a new WorksheetService.
-func NewWorksheetService(store *store.Store, iamManager *iam.Manager) *WorksheetService {
-	return &WorksheetService{
+// NewSavedQueryService creates a new SavedQueryService.
+func NewSavedQueryService(store *store.Store, iamManager *iam.Manager) *SavedQueryService {
+	return &SavedQueryService{
 		store:      store,
 		iamManager: iamManager,
 	}
 }
 
-// CreateWorksheet creates a new worksheet.
-func (s *WorksheetService) CreateWorksheet(
+// CreateSavedQuery creates a new saved query.
+func (s *SavedQueryService) CreateSavedQuery(
 	ctx context.Context,
-	req *connect.Request[v1pb.CreateWorksheetRequest],
-) (*connect.Response[v1pb.Worksheet], error) {
+	req *connect.Request[v1pb.CreateSavedQueryRequest],
+) (*connect.Response[v1pb.SavedQuery], error) {
 	request := req.Msg
-	if request.Worksheet == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("worksheet must be set"))
+	if request.SavedQuery == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("saved query must be set"))
 	}
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
@@ -68,62 +70,62 @@ func (s *WorksheetService) CreateWorksheet(
 	}
 
 	var database *store.DatabaseMessage
-	if request.Worksheet.Database != "" {
-		database, err = s.getWorksheetDatabase(ctx, projectResourceID, request.Worksheet.Database)
+	if request.SavedQuery.Database != "" {
+		database, err = s.getSavedQueryDatabase(ctx, projectResourceID, request.SavedQuery.Database)
 		if err != nil {
 			return nil, err
 		}
 	}
-	storeWorksheetCreate, err := convertToStoreWorksheetMessage(project, database, user.Email, request.Worksheet)
+	storeSavedQueryCreate, err := convertToStoreWorkSheetMessage(project, database, user.Email, request.SavedQuery)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to convert worksheet: %v", err))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to convert saved query: %v", err))
 	}
-	worksheet, err := s.store.CreateWorkSheet(ctx, storeWorksheetCreate)
+	savedQuery, err := s.store.CreateWorkSheet(ctx, storeSavedQueryCreate)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create worksheet: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create saved query: %v", err))
 	}
-	v1pbWorksheet, err := s.convertWorksheetToAPI(ctx, worksheet)
+	v1pbSavedQuery, err := s.convertToAPISavedQuery(ctx, savedQuery)
 	if err != nil {
 		return nil, err
 	}
-	return connect.NewResponse(v1pbWorksheet), nil
+	return connect.NewResponse(v1pbSavedQuery), nil
 }
 
-// GetWorksheet returns the requested worksheet, cutoff the content if the content is too long and the `raw` flag in request is false.
-func (s *WorksheetService) GetWorksheet(
+// GetSavedQuery returns the requested saved query, cutoff the content if the content is too long and the `raw` flag in request is false.
+func (s *SavedQueryService) GetSavedQuery(
 	ctx context.Context,
-	req *connect.Request[v1pb.GetWorksheetRequest],
-) (*connect.Response[v1pb.Worksheet], error) {
-	projectID, worksheetID, err := common.GetProjectIDWorksheetID(req.Msg.Name)
+	req *connect.Request[v1pb.GetSavedQueryRequest],
+) (*connect.Response[v1pb.SavedQuery], error) {
+	projectID, savedQueryID, err := common.GetProjectIDSavedQueryID(req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	worksheet, err := s.findWorksheet(ctx, projectID, worksheetID, true /* loadFull */)
+	savedQuery, err := s.findSavedQuery(ctx, projectID, savedQueryID, true /* loadFull */)
 	if err != nil {
 		return nil, err
 	}
 
-	ok, err := s.canReadWorksheet(ctx, worksheet)
+	ok, err := s.canReadSavedQuery(ctx, savedQuery)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access with error: %v", err))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot access worksheet %s", worksheet.Title))
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot access saved query %s", savedQuery.Title))
 	}
 
-	v1pbWorksheet, err := s.convertWorksheetToAPI(ctx, worksheet)
+	v1pbSavedQuery, err := s.convertToAPISavedQuery(ctx, savedQuery)
 	if err != nil {
 		return nil, err
 	}
-	return connect.NewResponse(v1pbWorksheet), nil
+	return connect.NewResponse(v1pbSavedQuery), nil
 }
 
-// ListWorksheets returns a list of worksheets.
-func (s *WorksheetService) ListWorksheets(
+// ListSavedQueries returns a list of saved queries.
+func (s *SavedQueryService) ListSavedQueries(
 	ctx context.Context,
-	req *connect.Request[v1pb.ListWorksheetsRequest],
-) (*connect.Response[v1pb.ListWorksheetsResponse], error) {
+	req *connect.Request[v1pb.ListSavedQueriesRequest],
+) (*connect.Response[v1pb.ListSavedQueriesResponse], error) {
 	request := req.Msg
 	if request.PageSize < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("page size must be non-negative: %d", request.PageSize))
@@ -159,7 +161,7 @@ func (s *WorksheetService) ListWorksheets(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	worksheetList, err := s.store.ListWorkSheets(ctx, &store.FindWorkSheetMessage{
+	savedQueryList, err := s.store.ListWorkSheets(ctx, &store.FindWorkSheetMessage{
 		ProjectIDs:     projectIDs,
 		Workspace:      workspaceID,
 		PrincipalEmail: user.Email,
@@ -168,43 +170,43 @@ func (s *WorksheetService) ListWorksheets(
 		Offset:         &offset.offset,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list worksheets: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list saved queries: %v", err))
 	}
 
 	var nextPageToken string
-	if len(worksheetList) == limitPlusOne {
-		worksheetList = worksheetList[:offset.limit]
+	if len(savedQueryList) == limitPlusOne {
+		savedQueryList = savedQueryList[:offset.limit]
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token"))
 		}
 	}
 
-	v1pbWorksheets := make([]*v1pb.Worksheet, 0, len(worksheetList))
-	for _, worksheet := range worksheetList {
-		v1pbWorksheet, err := s.convertWorksheetToAPI(ctx, worksheet)
+	v1pbSavedQueries := make([]*v1pb.SavedQuery, 0, len(savedQueryList))
+	for _, savedQuery := range savedQueryList {
+		v1pbSavedQuery, err := s.convertToAPISavedQuery(ctx, savedQuery)
 		if err != nil {
 			return nil, err
 		}
-		v1pbWorksheets = append(v1pbWorksheets, v1pbWorksheet)
+		v1pbSavedQueries = append(v1pbSavedQueries, v1pbSavedQuery)
 	}
-	return connect.NewResponse(&v1pb.ListWorksheetsResponse{
-		Worksheets:    v1pbWorksheets,
+	return connect.NewResponse(&v1pb.ListSavedQueriesResponse{
+		SavedQueries:  v1pbSavedQueries,
 		NextPageToken: nextPageToken,
 	}), nil
 }
 
-// ListWorksheetFolders returns the caller's worksheet folders.
-func (s *WorksheetService) ListWorksheetFolders(
+// ListSavedQueryFolders returns the caller's saved query folders.
+func (s *SavedQueryService) ListSavedQueryFolders(
 	ctx context.Context,
-	req *connect.Request[v1pb.ListWorksheetFoldersRequest],
-) (*connect.Response[v1pb.ListWorksheetFoldersResponse], error) {
+	req *connect.Request[v1pb.ListSavedQueryFoldersRequest],
+) (*connect.Response[v1pb.ListSavedQueryFoldersResponse], error) {
 	request := req.Msg
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if projectID == "-" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(`ListWorksheetFolders does not support parent "projects/-"`))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(`ListSavedQueryFolders does not support parent "projects/-"`))
 	}
 
 	user, ok := GetUserFromContext(ctx)
@@ -218,25 +220,25 @@ func (s *WorksheetService) ListWorksheetFolders(
 	}
 	organizerList, err := s.store.ListWorksheetOrganizers(ctx, find)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list worksheet folders: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list saved query folders: %v", err))
 	}
 
-	type worksheetFolder struct {
+	type savedQueryFolder struct {
 		folders  []string
-		category v1pb.WorksheetFolder_Category
+		category v1pb.SavedQueryFolder_Category
 	}
-	folderByKey := make(map[string]worksheetFolder)
+	folderByKey := make(map[string]savedQueryFolder)
 	for _, organizer := range organizerList {
-		var category v1pb.WorksheetFolder_Category
+		var category v1pb.SavedQueryFolder_Category
 		if organizer.WorksheetCreator == user.Email {
-			category = v1pb.WorksheetFolder_MINE
+			category = v1pb.SavedQueryFolder_MINE
 		} else {
-			category = v1pb.WorksheetFolder_SHARED
+			category = v1pb.SavedQueryFolder_SHARED
 		}
 		for i := range organizer.Payload.Folders {
 			folders := append([]string(nil), organizer.Payload.Folders[:i+1]...)
 			key := fmt.Sprintf("%d\x00%s", category, strings.Join(folders, "\x00"))
-			folderByKey[key] = worksheetFolder{
+			folderByKey[key] = savedQueryFolder{
 				folders:  folders,
 				category: category,
 			}
@@ -248,11 +250,11 @@ func (s *WorksheetService) ListWorksheetFolders(
 		keys = append(keys, key)
 	}
 	slices.Sort(keys)
-	response := &v1pb.ListWorksheetFoldersResponse{
-		Folders: make([]*v1pb.WorksheetFolder, 0, len(keys)),
+	response := &v1pb.ListSavedQueryFoldersResponse{
+		Folders: make([]*v1pb.SavedQueryFolder, 0, len(keys)),
 	}
 	for _, key := range keys {
-		response.Folders = append(response.Folders, &v1pb.WorksheetFolder{
+		response.Folders = append(response.Folders, &v1pb.SavedQueryFolder{
 			Folders:  folderByKey[key].folders,
 			Category: folderByKey[key].category,
 		})
@@ -260,11 +262,11 @@ func (s *WorksheetService) ListWorksheetFolders(
 	return connect.NewResponse(response), nil
 }
 
-// SearchWorksheets returns a list of worksheets based on the search filters.
-func (s *WorksheetService) SearchWorksheets(
+// SearchSavedQueries returns a list of saved queries based on the search filters.
+func (s *SavedQueryService) SearchSavedQueries(
 	ctx context.Context,
-	req *connect.Request[v1pb.SearchWorksheetsRequest],
-) (*connect.Response[v1pb.SearchWorksheetsResponse], error) {
+	req *connect.Request[v1pb.SearchSavedQueriesRequest],
+) (*connect.Response[v1pb.SearchSavedQueriesResponse], error) {
 	request := req.Msg
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
@@ -276,7 +278,7 @@ func (s *WorksheetService) SearchWorksheets(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if projectID == "-" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(`SearchWorksheets does not support parent "projects/-"`))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(`SearchSavedQueries does not support parent "projects/-"`))
 	}
 	if request.PageSize < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("page size cannot be negative"))
@@ -292,7 +294,7 @@ func (s *WorksheetService) SearchWorksheets(
 	}
 	limitPlusOne := offset.limit + 1
 
-	worksheetFind := &store.FindWorkSheetMessage{
+	savedQueryFind := &store.FindWorkSheetMessage{
 		ProjectIDs:     []string{projectID},
 		PrincipalEmail: user.Email,
 		Limit:          &limitPlusOne,
@@ -303,59 +305,59 @@ func (s *WorksheetService) SearchWorksheets(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	worksheetFind.FilterQ = filterQ
+	savedQueryFind.FilterQ = filterQ
 
-	worksheetList, err := s.store.ListWorkSheets(ctx, worksheetFind)
+	savedQueryList, err := s.store.ListWorkSheets(ctx, savedQueryFind)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list worksheets: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list saved queries: %v", err))
 	}
 	nextPageToken := ""
-	if len(worksheetList) == limitPlusOne {
+	if len(savedQueryList) == limitPlusOne {
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate next page token: %v", err))
 		}
-		worksheetList = worksheetList[:offset.limit]
+		savedQueryList = savedQueryList[:offset.limit]
 	}
 
-	var v1pbWorksheets []*v1pb.Worksheet
-	for _, worksheet := range worksheetList {
-		ok, err := s.canReadWorksheet(ctx, worksheet)
+	var v1pbSavedQueries []*v1pb.SavedQuery
+	for _, savedQuery := range savedQueryList {
+		ok, err := s.canReadSavedQuery(ctx, savedQuery)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access with error: %v", err))
 		}
 		if !ok {
-			slog.Warn("cannot access worksheet", slog.String("name", worksheet.Title))
+			slog.Warn("cannot access saved query", slog.String("name", savedQuery.Title))
 			continue
 		}
-		v1pbWorksheet, err := s.convertWorksheetToAPI(ctx, worksheet)
+		v1pbSavedQuery, err := s.convertToAPISavedQuery(ctx, savedQuery)
 		if err != nil {
 			return nil, err
 		}
-		v1pbWorksheets = append(v1pbWorksheets, v1pbWorksheet)
+		v1pbSavedQueries = append(v1pbSavedQueries, v1pbSavedQuery)
 	}
-	return connect.NewResponse(&v1pb.SearchWorksheetsResponse{
-		Worksheets:    v1pbWorksheets,
+	return connect.NewResponse(&v1pb.SearchSavedQueriesResponse{
+		SavedQueries:  v1pbSavedQueries,
 		NextPageToken: nextPageToken,
 	}), nil
 }
 
-// UpdateWorksheet updates a worksheet.
-func (s *WorksheetService) UpdateWorksheet(
+// UpdateSavedQuery updates a saved query.
+func (s *SavedQueryService) UpdateSavedQuery(
 	ctx context.Context,
-	req *connect.Request[v1pb.UpdateWorksheetRequest],
-) (*connect.Response[v1pb.Worksheet], error) {
+	req *connect.Request[v1pb.UpdateSavedQueryRequest],
+) (*connect.Response[v1pb.SavedQuery], error) {
 	request := req.Msg
-	if request.Worksheet == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("worksheet cannot be empty"))
+	if request.SavedQuery == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("saved query cannot be empty"))
 	}
 	if request.UpdateMask == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask cannot be empty"))
 	}
-	if request.Worksheet.Name == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("worksheet name cannot be empty"))
+	if request.SavedQuery.Name == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("saved query name cannot be empty"))
 	}
 
-	projectID, worksheetID, err := common.GetProjectIDWorksheetID(request.Worksheet.Name)
+	projectID, savedQueryID, err := common.GetProjectIDSavedQueryID(request.SavedQuery.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -364,162 +366,162 @@ func (s *WorksheetService) UpdateWorksheet(
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	worksheet, err := s.findWorksheet(ctx, projectID, worksheetID, false /* loadFull */)
+	savedQuery, err := s.findSavedQuery(ctx, projectID, savedQueryID, false /* loadFull */)
 	if err != nil {
 		return nil, err
 	}
-	ok, err = s.canWriteWorksheet(ctx, worksheet)
+	ok, err = s.canWriteSavedQuery(ctx, savedQuery)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access with error: %v", err))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot write worksheet %s", worksheet.Title))
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot write saved query %s", savedQuery.Title))
 	}
 
-	worksheetPatch := &store.PatchWorkSheetMessage{
-		ResourceID: worksheet.ResourceID,
+	savedQueryPatch := &store.PatchWorkSheetMessage{
+		ResourceID: savedQuery.ResourceID,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "title":
-			worksheetPatch.Title = &request.Worksheet.Title
+			savedQueryPatch.Title = &request.SavedQuery.Title
 		case "content":
-			statement := string(request.Worksheet.Content)
-			worksheetPatch.Statement = &statement
+			statement := string(request.SavedQuery.Content)
+			savedQueryPatch.Statement = &statement
 		case "visibility":
-			visibility, err := convertToStoreWorksheetVisibility(request.Worksheet.Visibility)
+			visibility, err := convertToStoreWorkSheetVisibility(request.SavedQuery.Visibility)
 			if err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid visibility %q", request.Worksheet.Visibility))
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid visibility %q", request.SavedQuery.Visibility))
 			}
 			stringVisibility := string(visibility)
-			worksheetPatch.Visibility = &stringVisibility
+			savedQueryPatch.Visibility = &stringVisibility
 		case "database":
-			if request.Worksheet.Database != "" {
-				database, err := s.getWorksheetDatabase(ctx, worksheet.ProjectID, request.Worksheet.Database)
+			if request.SavedQuery.Database != "" {
+				database, err := s.getSavedQueryDatabase(ctx, savedQuery.ProjectID, request.SavedQuery.Database)
 				if err != nil {
 					return nil, err
 				}
-				worksheetPatch.InstanceID, worksheetPatch.DatabaseName = &database.InstanceID, &database.DatabaseName
+				savedQueryPatch.InstanceID, savedQueryPatch.DatabaseName = &database.InstanceID, &database.DatabaseName
 			} else {
 				emptyStr := ""
-				worksheetPatch.InstanceID = &emptyStr
-				worksheetPatch.DatabaseName = &emptyStr
+				savedQueryPatch.InstanceID = &emptyStr
+				savedQueryPatch.DatabaseName = &emptyStr
 			}
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
 		}
 	}
-	if err := s.store.PatchWorkSheet(ctx, worksheetPatch); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update worksheet: %v", err))
+	if err := s.store.PatchWorkSheet(ctx, savedQueryPatch); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update saved query: %v", err))
 	}
 
-	worksheet, err = s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
-		ProjectIDs:     []string{worksheet.ProjectID},
-		ResourceID:     &worksheetID,
+	savedQuery, err = s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
+		ProjectIDs:     []string{savedQuery.ProjectID},
+		ResourceID:     &savedQueryID,
 		PrincipalEmail: user.Email,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get worksheet: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get saved query: %v", err))
 	}
-	if worksheet == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("worksheet %q not found", request.Worksheet.Name))
+	if savedQuery == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("saved query %q not found", request.SavedQuery.Name))
 	}
-	v1pbWorksheet, err := s.convertWorksheetToAPI(ctx, worksheet)
+	v1pbSavedQuery, err := s.convertToAPISavedQuery(ctx, savedQuery)
 	if err != nil {
 		return nil, err
 	}
-	return connect.NewResponse(v1pbWorksheet), nil
+	return connect.NewResponse(v1pbSavedQuery), nil
 }
 
-// DeleteWorksheet deletes a worksheet.
-func (s *WorksheetService) DeleteWorksheet(
+// DeleteSavedQuery deletes a saved query.
+func (s *SavedQueryService) DeleteSavedQuery(
 	ctx context.Context,
-	req *connect.Request[v1pb.DeleteWorksheetRequest],
+	req *connect.Request[v1pb.DeleteSavedQueryRequest],
 ) (*connect.Response[emptypb.Empty], error) {
-	projectID, worksheetID, err := common.GetProjectIDWorksheetID(req.Msg.Name)
+	projectID, savedQueryID, err := common.GetProjectIDSavedQueryID(req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	worksheet, err := s.findWorksheet(ctx, projectID, worksheetID, false /* loadFull */)
+	savedQuery, err := s.findSavedQuery(ctx, projectID, savedQueryID, false /* loadFull */)
 	if err != nil {
 		return nil, err
 	}
-	ok, err := s.canWriteWorksheet(ctx, worksheet)
+	ok, err := s.canWriteSavedQuery(ctx, savedQuery)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access with error: %v", err))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot write worksheet %s", worksheet.Title))
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot write saved query %s", savedQuery.Title))
 	}
 
-	if err := s.store.DeleteWorkSheet(ctx, worksheet.ResourceID); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to delete worksheet: %v", err))
+	if err := s.store.DeleteWorkSheet(ctx, savedQuery.ResourceID); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to delete saved query: %v", err))
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-// UpdateWorksheetOrganizer upsert the worksheet organizer.
-func (s *WorksheetService) UpdateWorksheetOrganizer(
+// UpdateSavedQueryOrganizer upsert the saved query organizer.
+func (s *SavedQueryService) UpdateSavedQueryOrganizer(
 	ctx context.Context,
-	req *connect.Request[v1pb.UpdateWorksheetOrganizerRequest],
-) (*connect.Response[v1pb.WorksheetOrganizer], error) {
+	req *connect.Request[v1pb.UpdateSavedQueryOrganizerRequest],
+) (*connect.Response[v1pb.SavedQueryOrganizer], error) {
 	request := req.Msg
-	projectID, worksheetID, err := common.GetProjectIDWorksheetID(request.Organizer.Worksheet)
+	projectID, savedQueryID, err := common.GetProjectIDSavedQueryID(request.Organizer.SavedQuery)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	worksheet, err := s.findWorksheet(ctx, projectID, worksheetID, false /* loadFull */)
+	savedQuery, err := s.findSavedQuery(ctx, projectID, savedQueryID, false /* loadFull */)
 	if err != nil {
 		return nil, err
 	}
 
-	ok, err := s.canReadWorksheet(ctx, worksheet)
+	ok, err := s.canReadSavedQuery(ctx, savedQuery)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access with error: %v", err))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot access worksheet %s", worksheet.Title))
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot access saved query %s", savedQuery.Title))
 	}
 
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	worksheetOrganizerUpsert, err := s.store.GetWorksheetOrganizer(ctx, worksheet.ResourceID, user.Email)
+	savedQueryOrganizerUpsert, err := s.store.GetWorksheetOrganizer(ctx, savedQuery.ResourceID, user.Email)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found worksheet organizer with error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found saved query organizer with error: %v", err))
 	}
 
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "starred":
-			worksheetOrganizerUpsert.Payload.Starred = request.Organizer.Starred
+			savedQueryOrganizerUpsert.Payload.Starred = request.Organizer.Starred
 		case "folders":
-			worksheetOrganizerUpsert.Payload.Folders = request.Organizer.Folders
+			savedQueryOrganizerUpsert.Payload.Folders = request.Organizer.Folders
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
 		}
 	}
 
-	organizer, err := s.store.UpsertWorksheetOrganizer(ctx, worksheetOrganizerUpsert)
+	organizer, err := s.store.UpsertWorksheetOrganizer(ctx, savedQueryOrganizerUpsert)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to upsert organizer for worksheet %s with error: %v", request.Organizer.Worksheet, err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to upsert organizer for saved query %s with error: %v", request.Organizer.SavedQuery, err))
 	}
 
-	return connect.NewResponse(&v1pb.WorksheetOrganizer{
-		Worksheet: request.Organizer.Worksheet,
-		Starred:   organizer.Payload.Starred,
-		Folders:   organizer.Payload.Folders,
+	return connect.NewResponse(&v1pb.SavedQueryOrganizer{
+		SavedQuery: request.Organizer.SavedQuery,
+		Starred:    organizer.Payload.Starred,
+		Folders:    organizer.Payload.Folders,
 	}), nil
 }
 
-func (s *WorksheetService) BatchUpdateWorksheetOrganizer(
+func (s *SavedQueryService) BatchUpdateSavedQueryOrganizer(
 	ctx context.Context,
-	req *connect.Request[v1pb.BatchUpdateWorksheetOrganizerRequest],
-) (*connect.Response[v1pb.BatchUpdateWorksheetOrganizerResponse], error) {
+	req *connect.Request[v1pb.BatchUpdateSavedQueryOrganizerRequest],
+) (*connect.Response[v1pb.BatchUpdateSavedQueryOrganizerResponse], error) {
 	request := req.Msg
 	if request.Organizer == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("organizer cannot be empty"))
@@ -536,7 +538,7 @@ func (s *WorksheetService) BatchUpdateWorksheetOrganizer(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if projectID == "-" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("projects/- is not supported for batch update worksheet organizers"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("projects/- is not supported for batch update saved query organizers"))
 	}
 
 	user, ok := GetUserFromContext(ctx)
@@ -548,30 +550,30 @@ func (s *WorksheetService) BatchUpdateWorksheetOrganizer(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	worksheetList, err := s.store.ListWorkSheets(ctx, &store.FindWorkSheetMessage{
+	savedQueryList, err := s.store.ListWorkSheets(ctx, &store.FindWorkSheetMessage{
 		ProjectIDs:     []string{projectID},
 		PrincipalEmail: user.Email,
 		FilterQ:        filterQ,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list worksheets: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list saved queries: %v", err))
 	}
 
-	var worksheetIDs []string
-	for _, worksheet := range worksheetList {
-		ok, err := s.canReadWorksheet(ctx, worksheet)
+	var savedQueryIDs []string
+	for _, savedQuery := range savedQueryList {
+		ok, err := s.canReadSavedQuery(ctx, savedQuery)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access with error: %v", err))
 		}
 		if !ok {
-			slog.Warn("cannot access worksheet", slog.String("name", worksheet.Title))
+			slog.Warn("cannot access saved query", slog.String("name", savedQuery.Title))
 			continue
 		}
-		worksheetIDs = append(worksheetIDs, worksheet.ResourceID)
+		savedQueryIDs = append(savedQueryIDs, savedQuery.ResourceID)
 	}
 
 	patch := &store.BatchUpdateWorksheetOrganizerPatch{
-		WorksheetResourceIDs: worksheetIDs,
+		WorksheetResourceIDs: savedQueryIDs,
 		Principal:            user.Email,
 	}
 	for _, path := range request.UpdateMask.Paths {
@@ -589,42 +591,42 @@ func (s *WorksheetService) BatchUpdateWorksheetOrganizer(
 
 	organizers, err := s.store.BatchUpdateWorksheetOrganizer(ctx, patch)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to batch update worksheet organizers: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to batch update saved query organizers: %v", err))
 	}
-	response := &v1pb.BatchUpdateWorksheetOrganizerResponse{
+	response := &v1pb.BatchUpdateSavedQueryOrganizerResponse{
 		UpdatedCount: int32(len(organizers)),
 	}
 	for _, organizer := range organizers {
-		response.WorksheetOrganizers = append(response.WorksheetOrganizers, &v1pb.WorksheetOrganizer{
-			Worksheet: fmt.Sprintf("%s/worksheets/%s", request.Parent, organizer.WorksheetResourceID),
-			Starred:   organizer.Payload.Starred,
-			Folders:   organizer.Payload.Folders,
+		response.SavedQueryOrganizers = append(response.SavedQueryOrganizers, &v1pb.SavedQueryOrganizer{
+			SavedQuery: fmt.Sprintf("%s/savedQueries/%s", request.Parent, organizer.WorksheetResourceID),
+			Starred:    organizer.Payload.Starred,
+			Folders:    organizer.Payload.Folders,
 		})
 	}
 	return connect.NewResponse(response), nil
 }
 
-func (s *WorksheetService) findWorksheet(ctx context.Context, projectID string, worksheetID string, loadFull bool) (*store.WorkSheetMessage, error) {
+func (s *SavedQueryService) findSavedQuery(ctx context.Context, projectID string, savedQueryID string, loadFull bool) (*store.WorkSheetMessage, error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	worksheet, err := s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
+	savedQuery, err := s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
 		ProjectIDs:     []string{projectID},
-		ResourceID:     &worksheetID,
+		ResourceID:     &savedQueryID,
 		LoadFull:       loadFull,
 		PrincipalEmail: user.Email,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get worksheet: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get saved query: %v", err))
 	}
-	if worksheet == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the worksheet"))
+	if savedQuery == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
-	return worksheet, nil
+	return savedQuery, nil
 }
 
-func (s *WorksheetService) getWorksheetDatabase(ctx context.Context, projectID, name string) (*store.DatabaseMessage, error) {
+func (s *SavedQueryService) getSavedQueryDatabase(ctx context.Context, projectID, name string) (*store.DatabaseMessage, error) {
 	targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", name))
@@ -660,18 +662,18 @@ func (s *WorksheetService) getWorksheetDatabase(ctx context.Context, projectID, 
 	return database, nil
 }
 
-// canWriteWorksheet check if the principal can write the worksheet.
-// worksheet is writable when the user has bb.worksheets.manage permission on the workspace, or.
+// canWriteSavedQuery check if the principal can write the saved query.
+// The saved query is writable when the user has bb.worksheets.manage permission on the workspace, or.
 // PRIVATE: the creator.
 // PROJECT_WRITE: all members with bb.projects.get permission in the project.
-func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *store.WorkSheetMessage) (bool, error) {
+func (s *SavedQueryService) canWriteSavedQuery(ctx context.Context, savedQuery *store.WorkSheetMessage) (bool, error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	// Worksheet creator and workspace "bb.worksheets.manage" can always write.
-	if worksheet.Creator == user.Email {
+	// The saved query creator and workspace "bb.worksheets.manage" can always write.
+	if savedQuery.Creator == user.Email {
 		return true, nil
 	}
 	ok, err := s.iamManager.CheckPermission(ctx, permission.WorksheetsManage, user, common.GetWorkspaceIDFromContext(ctx))
@@ -682,33 +684,33 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 		return true, nil
 	}
 
-	switch worksheet.Visibility {
+	switch savedQuery.Visibility {
 	case store.PrivateWorkSheet:
 		return false, nil
 	case store.ProjectReadWorkSheet:
 		// For READ visibility, check the "bb.worksheets.manage" permission in the project.
-		return s.checkWorksheetPermission(ctx, worksheet.ProjectID, user, permission.WorksheetsManage)
+		return s.checkSavedQueryPermission(ctx, savedQuery.ProjectID, user, permission.WorksheetsManage)
 	case store.ProjectWriteWorkSheet:
 		// For READ visibility, needs "bb.worksheets.get" permission in the project.
-		return s.checkWorksheetPermission(ctx, worksheet.ProjectID, user, permission.WorksheetsGet)
+		return s.checkSavedQueryPermission(ctx, savedQuery.ProjectID, user, permission.WorksheetsGet)
 	default:
 		return false, nil
 	}
 }
 
-// canReadWorksheet check if the principal can read the worksheet.
-// worksheet is readable when the user has bb.worksheets.get permission on the workspace, or.
+// canReadSavedQuery check if the principal can read the saved query.
+// The saved query is readable when the user has bb.worksheets.get permission on the workspace, or.
 // PRIVATE: the creator only.
 // PROJECT_WRITE: all members with bb.projects.get permission in the project.
 // PROJECT_READ: all members with bb.projects.get permission in the project.
-func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *store.WorkSheetMessage) (bool, error) {
+func (s *SavedQueryService) canReadSavedQuery(ctx context.Context, savedQuery *store.WorkSheetMessage) (bool, error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	// Worksheet creator and workspace bb.worksheets.get can always read.
-	if worksheet.Creator == user.Email {
+	// The saved query creator and workspace bb.worksheets.get can always read.
+	if savedQuery.Creator == user.Email {
 		return true, nil
 	}
 	ok, err := s.iamManager.CheckPermission(ctx, permission.WorksheetsManage, user, common.GetWorkspaceIDFromContext(ctx))
@@ -719,18 +721,18 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 		return true, nil
 	}
 
-	switch worksheet.Visibility {
+	switch savedQuery.Visibility {
 	case store.PrivateWorkSheet:
 		return false, nil
 	case store.ProjectReadWorkSheet, store.ProjectWriteWorkSheet:
 		// Check the "bb.worksheets.get" permission in the project.
-		return s.checkWorksheetPermission(ctx, worksheet.ProjectID, user, permission.WorksheetsGet)
+		return s.checkSavedQueryPermission(ctx, savedQuery.ProjectID, user, permission.WorksheetsGet)
 	default:
 		return false, nil
 	}
 }
 
-func (s *WorksheetService) checkWorksheetPermission(
+func (s *SavedQueryService) checkSavedQueryPermission(
 	ctx context.Context,
 	projectID string,
 	user *store.UserMessage,
@@ -751,54 +753,54 @@ func (s *WorksheetService) checkWorksheetPermission(
 	return ok, nil
 }
 
-func (s *WorksheetService) convertWorksheetToAPI(ctx context.Context, worksheet *store.WorkSheetMessage) (*v1pb.Worksheet, error) {
+func (s *SavedQueryService) convertToAPISavedQuery(ctx context.Context, savedQuery *store.WorkSheetMessage) (*v1pb.SavedQuery, error) {
 	databaseParent := ""
-	if worksheet.InstanceID != nil && worksheet.DatabaseName != nil {
+	if savedQuery.InstanceID != nil && savedQuery.DatabaseName != nil {
 		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 			Workspace:  common.GetWorkspaceIDFromContext(ctx),
-			ResourceID: worksheet.InstanceID,
+			ResourceID: savedQuery.InstanceID,
 		})
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get worksheet instance %q", *worksheet.InstanceID))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get saved query instance %q", *savedQuery.InstanceID))
 		}
 		if instance == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("worksheet instance %q not found", *worksheet.InstanceID))
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("saved query instance %q not found", *savedQuery.InstanceID))
 		}
-		databaseParent = common.FormatDatabase(*worksheet.InstanceID, *worksheet.DatabaseName)
+		databaseParent = common.FormatDatabase(*savedQuery.InstanceID, *savedQuery.DatabaseName)
 		if instance.ProjectID != nil {
-			databaseParent = common.FormatProjectDatabase(*instance.ProjectID, *worksheet.InstanceID, *worksheet.DatabaseName)
+			databaseParent = common.FormatProjectDatabase(*instance.ProjectID, *savedQuery.InstanceID, *savedQuery.DatabaseName)
 		}
 	}
 
-	visibility := v1pb.Worksheet_VISIBILITY_UNSPECIFIED
-	switch worksheet.Visibility {
+	visibility := v1pb.SavedQuery_VISIBILITY_UNSPECIFIED
+	switch savedQuery.Visibility {
 	case store.ProjectReadWorkSheet:
-		visibility = v1pb.Worksheet_PROJECT_READ
+		visibility = v1pb.SavedQuery_PROJECT_READ
 	case store.ProjectWriteWorkSheet:
-		visibility = v1pb.Worksheet_PROJECT_WRITE
+		visibility = v1pb.SavedQuery_PROJECT_WRITE
 	case store.PrivateWorkSheet:
-		visibility = v1pb.Worksheet_PRIVATE
+		visibility = v1pb.SavedQuery_PRIVATE
 	default:
 		// Keep VISIBILITY_UNSPECIFIED
 	}
-	return &v1pb.Worksheet{
-		Name:        common.FormatWorksheet(worksheet.ProjectID, worksheet.ResourceID),
-		Project:     common.FormatProject(worksheet.ProjectID),
+	return &v1pb.SavedQuery{
+		Name:        common.FormatSavedQuery(savedQuery.ProjectID, savedQuery.ResourceID),
+		Project:     common.FormatProject(savedQuery.ProjectID),
 		Database:    databaseParent,
-		Title:       worksheet.Title,
-		Creator:     fmt.Sprintf("users/%s", worksheet.Creator),
-		CreateTime:  timestamppb.New(worksheet.CreatedAt),
-		UpdateTime:  timestamppb.New(worksheet.UpdatedAt),
-		Content:     []byte(worksheet.Statement),
-		ContentSize: worksheet.Size,
+		Title:       savedQuery.Title,
+		Creator:     fmt.Sprintf("users/%s", savedQuery.Creator),
+		CreateTime:  timestamppb.New(savedQuery.CreatedAt),
+		UpdateTime:  timestamppb.New(savedQuery.UpdatedAt),
+		Content:     []byte(savedQuery.Statement),
+		ContentSize: savedQuery.Size,
 		Visibility:  visibility,
-		Starred:     worksheet.Starred,
-		Folders:     worksheet.Folders,
+		Starred:     savedQuery.Starred,
+		Folders:     savedQuery.Folders,
 	}, nil
 }
 
-func convertToStoreWorksheetMessage(project *store.ProjectMessage, database *store.DatabaseMessage, creator string, worksheet *v1pb.Worksheet) (*store.WorkSheetMessage, error) {
-	visibility, err := convertToStoreWorksheetVisibility(worksheet.Visibility)
+func convertToStoreWorkSheetMessage(project *store.ProjectMessage, database *store.DatabaseMessage, creator string, savedQuery *v1pb.SavedQuery) (*store.WorkSheetMessage, error) {
+	visibility, err := convertToStoreWorkSheetVisibility(savedQuery.Visibility)
 	if err != nil {
 		return nil, err
 	}
@@ -806,8 +808,8 @@ func convertToStoreWorksheetMessage(project *store.ProjectMessage, database *sto
 	worksheetMessage := &store.WorkSheetMessage{
 		ProjectID:  project.ResourceID,
 		Creator:    creator,
-		Title:      worksheet.Title,
-		Statement:  string(worksheet.Content),
+		Title:      savedQuery.Title,
+		Statement:  string(savedQuery.Content),
 		Visibility: visibility,
 	}
 	if database != nil {
@@ -818,15 +820,15 @@ func convertToStoreWorksheetMessage(project *store.ProjectMessage, database *sto
 	return worksheetMessage, nil
 }
 
-func convertToStoreWorksheetVisibility(visibility v1pb.Worksheet_Visibility) (store.WorkSheetVisibility, error) {
+func convertToStoreWorkSheetVisibility(visibility v1pb.SavedQuery_Visibility) (store.WorkSheetVisibility, error) {
 	switch visibility {
-	case v1pb.Worksheet_VISIBILITY_UNSPECIFIED:
+	case v1pb.SavedQuery_VISIBILITY_UNSPECIFIED:
 		return store.WorkSheetVisibility(""), connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid visibility %q", visibility))
-	case v1pb.Worksheet_PROJECT_READ:
+	case v1pb.SavedQuery_PROJECT_READ:
 		return store.ProjectReadWorkSheet, nil
-	case v1pb.Worksheet_PROJECT_WRITE:
+	case v1pb.SavedQuery_PROJECT_WRITE:
 		return store.ProjectWriteWorkSheet, nil
-	case v1pb.Worksheet_PRIVATE:
+	case v1pb.SavedQuery_PRIVATE:
 		return store.PrivateWorkSheet, nil
 	default:
 		return store.WorkSheetVisibility(""), connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid visibility %q", visibility))

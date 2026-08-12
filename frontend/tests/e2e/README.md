@@ -105,7 +105,7 @@ frontend/tests/e2e/
 │   ├── seed-test-data.ts  — workspace-level baseline seeded once per boot
 │   ├── sign-in.ts         — POST-login helper that captures per-user storageState
 │   └── psql.ts            — psql-over-Unix-socket helpers for DDL/DML setup
-├── sql-editor/            — SQL Editor suite (connection, result, tabs, worksheet,
+├── sql-editor/            — SQL Editor suite (connection, result, tabs, saved query,
 │                            schema, admin-mode, history, jit, permissions,
 │                            workspace-gates, batch, misc) + sql-editor.page.ts
 ├── plan-detail/           — plan detail suite (lifecycle, checks, rollout, sections, tasks)

@@ -4,8 +4,8 @@ import { AccessPane } from "./AccessPane";
 import { ActionBar } from "./AsidePanel/ActionBar";
 import { GutterBar } from "./GutterBar";
 import { HistoryPane } from "./HistoryPane";
+import { SavedQueryPane } from "./SavedQueryPane";
 import { SchemaPane } from "./SchemaPane/SchemaPane";
-import { WorksheetPane } from "./WorksheetPane";
 
 /**
  * Replaces `frontend/src/views/sql-editor/AsidePanel/AsidePanel.vue`.
@@ -14,7 +14,7 @@ import { WorksheetPane } from "./WorksheetPane";
  *   1. GutterBar (vertical icon rail) — fixed.
  *   2. ActionBar — only when `asidePanelTab === "SCHEMA"` and the tab is
  *      connected to a database. Vertical button column for view drill-downs.
- *   3. Main column — active pane (Worksheet / Schema / History / Access).
+ *   3. Main column — active pane (SavedQuery / Schema / History / Access).
  *
  * Schema-viewer modal stays in `SQLEditorHomePage.vue` (Vue parent) since
  * the embedded `TableSchemaViewer` is Vue-only; the React side triggers
@@ -37,7 +37,7 @@ export function AsidePanel() {
       <div className="h-full flex-1 flex flex-col overflow-hidden">
         <div className="flex-1 flex flex-row overflow-hidden">
           <div className="h-full flex-1 flex flex-col pt-1 overflow-hidden">
-            {asidePanelTab === "WORKSHEET" ? <WorksheetPane /> : null}
+            {asidePanelTab === "SAVED_QUERY" ? <SavedQueryPane /> : null}
             {asidePanelTab === "SCHEMA" ? <SchemaPane /> : null}
             {asidePanelTab === "HISTORY" ? <HistoryPane /> : null}
             {asidePanelTab === "ACCESS" ? <AccessPane /> : null}

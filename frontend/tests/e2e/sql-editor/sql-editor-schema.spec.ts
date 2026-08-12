@@ -193,7 +193,7 @@ test.describe("Schema search filters the schema tree", () => {
 
     // The schema tree input has placeholder t("common.search") = "Search".
     // It's the only Search-placeholder textbox visible inside the
-    // schema gutter pane (the worksheet pane uses "Search Sheets").
+    // schema gutter pane (the saved query pane uses "Search saved queries").
     const searchBox = page.getByPlaceholder("Search").first();
     await expect(searchBox).toBeVisible({ timeout: 10_000 });
     await searchBox.fill("employee");

@@ -10,7 +10,7 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
   return {
     id: uuidv1(),
     // Tabs are created untitled. The UI renders a localized "Untitled"
-    // placeholder when the title is empty; users name worksheets explicitly
+    // placeholder when the title is empty; users name saved queries explicitly
     // when (and if) they save.
     title: "",
     connection: emptySQLEditorConnection(),
@@ -18,7 +18,7 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
     selectedStatement: "",
     status: "CLEAN",
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-    worksheet: "",
+    savedQuery: "",
     treeState: {
       database: UNKNOWN_DATABASE_NAME,
       keys: [],

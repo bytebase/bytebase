@@ -47,7 +47,7 @@ type Props = {
 
 /**
  * Replaces frontend/src/views/sql-editor/EditorCommon/OpenAIButton/*.vue.
- * Shows an AI-assistant toggle when the editor is connected + in worksheet
+ * Shows an AI-assistant toggle when the editor is connected + in saved query
  * mode. Clicking the button toggles the AI panel; the attached dropdown
  * offers shortcuts that seed the chat with a prompt.
  */
@@ -76,7 +76,7 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
 
   const [menuOpen, setMenuOpen] = useState(false);
 
-  if (isDisconnected || currentMode !== "WORKSHEET") {
+  if (isDisconnected || currentMode !== "SAVED_QUERY") {
     return null;
   }
 

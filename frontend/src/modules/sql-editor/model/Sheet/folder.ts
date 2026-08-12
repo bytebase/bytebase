@@ -1,4 +1,4 @@
-// Pure worksheet-folder path helpers, extracted from context.ts so the
+// Pure saved query-folder path helpers, extracted from context.ts so the
 // hierarchy logic is directly unit-testable.
 
 /**

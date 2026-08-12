@@ -121,7 +121,7 @@ func configureGrpcRouters(
 	userService := apiv1.NewUserService(stores, licenseService, profile, iamManager)
 	serviceAccountService := apiv1.NewServiceAccountService(stores, profile, iamManager)
 	workloadIdentityService := apiv1.NewWorkloadIdentityService(stores, profile, iamManager)
-	worksheetService := apiv1.NewWorksheetService(stores, iamManager)
+	savedQueryService := apiv1.NewSavedQueryService(stores, iamManager)
 	workspaceService := apiv1.NewWorkspaceService(stores, iamManager, profile, licenseService, authService)
 
 	onPanic := func(_ context.Context, s connect.Spec, _ http.Header, p any) error {
@@ -183,7 +183,7 @@ func configureGrpcRouters(
 		add(v1connect.NewUserServiceHandler(userService, opts))
 		add(v1connect.NewServiceAccountServiceHandler(serviceAccountService, opts))
 		add(v1connect.NewWorkloadIdentityServiceHandler(workloadIdentityService, opts))
-		add(v1connect.NewWorksheetServiceHandler(worksheetService, opts))
+		add(v1connect.NewSavedQueryServiceHandler(savedQueryService, opts))
 		add(v1connect.NewWorkspaceServiceHandler(workspaceService, opts))
 		return handlers
 	}
@@ -258,7 +258,7 @@ func configureGrpcRouters(
 		v1connect.SubscriptionServiceName,
 		v1connect.UserServiceName,
 		v1connect.WorkloadIdentityServiceName,
-		v1connect.WorksheetServiceName,
+		v1connect.SavedQueryServiceName,
 		v1connect.WorkspaceServiceName,
 	)
 	reflectPath, reflectHandler := grpcreflect.NewHandlerV1(reflector)
@@ -373,7 +373,7 @@ func configureGrpcRouters(
 	if err := v1pb.RegisterWorkloadIdentityServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterWorksheetServiceHandler(ctx, mux, grpcConn); err != nil {
+	if err := v1pb.RegisterSavedQueryServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	if err := v1pb.RegisterWorkspaceServiceHandler(ctx, mux, grpcConn); err != nil {

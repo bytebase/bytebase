@@ -6,7 +6,7 @@ import type { SQLEditorTheme } from "./types";
 import { useMonacoThemeController } from "./useMonacoThemeController";
 
 const mocks = vi.hoisted(() => ({
-  mode: "WORKSHEET" as SQLEditorTabMode,
+  mode: "SAVED_QUERY" as SQLEditorTabMode,
   setTheme: vi.fn(),
   workspaceTheme: undefined as SQLEditorTheme | undefined,
 }));
@@ -45,7 +45,7 @@ const flushEffects = async () => {
 
 describe("useMonacoThemeController", () => {
   beforeEach(() => {
-    mocks.mode = "WORKSHEET";
+    mocks.mode = "SAVED_QUERY";
     mocks.workspaceTheme = PRESET_BY_ID.light;
     mocks.setTheme.mockClear();
   });

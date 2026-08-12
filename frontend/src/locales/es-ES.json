@@ -2157,6 +2157,9 @@
     },
     "task-execution-errors": "Errores de ejecución de tareas"
   },
+  "saved-query": {
+    "self": "Consultas guardadas"
+  },
   "schema-diagram": {
     "fit-content-with-view": "Ajustar contenido dentro de la vista",
     "self": "Diagrama de Esquema"
@@ -2865,29 +2868,29 @@
   },
   "sheet": {
     "filter": {
-      "only-show-starred": "Solo programa protagonizado",
-      "show-draft": "Mostrar borrador",
-      "show-mine": "Muéstrame el mío",
-      "show-shared": "Mostrar compartido"
+      "only-show-starred": "Mostrar solo destacadas",
+      "show-draft": "Mostrar borradores",
+      "show-mine": "Mostrar mías",
+      "show-shared": "Mostrar compartidas"
     },
     "hint-tips": {
-      "confirm-multi-delete-content": "Las hojas de cálculo y carpetas seleccionadas se eliminarán permanentemente.",
+      "confirm-multi-delete-content": "Las consultas guardadas y carpetas seleccionadas se eliminarán permanentemente.",
       "confirm-multi-delete-title": "¿Eliminar los elementos seleccionados?",
-      "confirm-to-delete-sheet-title": "¿Confirmar la eliminación de esta hoja de cálculo?",
-      "confirm-to-duplicate-sheet": "¿Confirmar para duplicar esta hoja?",
-      "delete-all-sheets": "Eliminar todos los archivos",
-      "duplicate-folder-name-content": "¿Desea fusionar todas las subcarpetas y archivos en la carpeta existente \"{{folder}}\"?",
+      "confirm-to-delete-sheet-title": "¿Eliminar esta consulta guardada?",
+      "confirm-to-duplicate-sheet": "¿Duplicar esta consulta guardada?",
+      "delete-all-sheets": "Eliminar todo",
+      "duplicate-folder-name-content": "¿Desea fusionar todas las subcarpetas y consultas guardadas en la carpeta existente \"{{folder}}\"?",
       "duplicate-folder-name-title": "Nombre de carpeta duplicado",
       "move-to-root-folder": "Mover a la carpeta raíz",
-      "non-empty-folder-content": "¿Desea mover todas las hojas de cálculo a la carpeta raíz o simplemente eliminarlas?",
-      "non-empty-folder-title": "carpeta no vacía"
+      "non-empty-folder-content": "¿Desea mover todas las consultas guardadas a la carpeta raíz o simplemente eliminarlas?",
+      "non-empty-folder-title": "Carpeta no vacía"
     },
     "mine": "Mío",
-    "move-worksheets": "Hojas de trabajo de movimiento",
+    "move-saved-queries": "Mover consultas guardadas",
     "notifications": {
-      "duplicate-success": "Duplicado con éxito en \"Mis hojas\""
+      "duplicate-success": "Consulta guardada duplicada"
     },
-    "search-sheets": "Hojas de búsqueda",
+    "search-sheets": "Buscar consultas guardadas",
     "shared": "Compartido"
   },
   "sql-editor": {
@@ -2946,7 +2949,7 @@
     "choose-folder": "Seleccionar o crear una carpeta",
     "choose-folder-tips": "Puedes crear una nueva carpeta introduciendo una ruta que no exista. Las carpetas deben unirse con una barra diagonal (\"/\").",
     "click-to-sync-now": "Haga clic para sincronizar ahora",
-    "close-sheet": "Cerrar hoja",
+    "close-sheet": "Cerrar pestaña",
     "column-display-format": "Formato de visualización de columna",
     "connect-in-admin-mode": "Conectar en modo administrador",
     "connect-to-a-database": "Conectar a base de datos",
@@ -2983,13 +2986,13 @@
     "hex-format": "Formato hexadecimal",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
-        "content": "¿Cerrar la hoja y perder cualquier dato no guardado?",
-        "title": "¿Cerrar la hoja no guardada?"
+        "content": "¿Cerrar la pestaña y perder los cambios no guardados?",
+        "title": "¿Cerrar la pestaña no guardada?"
       }
     },
     "invalid-database": "Base de datos no válida {{database}}",
     "last-synced": "Última sincronización: <time></time>",
-    "link-access": "Acceso al enlace",
+    "link-access": "Acceso",
     "loading-data": "Cargando datos...",
     "loading-databases": "Cargando bases de datos...",
     "manage-connections": "Gestionar las conexiones",
@@ -3007,11 +3010,11 @@
     "preview-table-data": "Vista previa de datos de la tabla",
     "previous-row": "Fila anterior",
     "private": "Privado",
-    "private-desc": "Solo tú puedes acceder a esta hoja",
-    "project-read": "Lectura del proyecto",
-    "project-read-desc": "Tanto el propietario de la hoja como los usuarios con permiso \"bb.worksheets.manage\" pueden leer/escribir, otros usuarios del proyecto con permiso \"bb.worksheets.get\" pueden leer",
-    "project-write": "Escritura del proyecto",
-    "project-write-desc": "Tanto el propietario de la hoja como los usuarios del proyecto con permiso \"bb.worksheets.get\" pueden leer/escribir",
+    "private-desc": "Solo tú puedes acceder a esta consulta guardada",
+    "project-read": "El proyecto puede ver",
+    "project-read-desc": "Los miembros del proyecto pueden ver esta consulta guardada. Solo el propietario y los administradores pueden editarla.",
+    "project-write": "El proyecto puede editar",
+    "project-write-desc": "Los miembros del proyecto pueden ver y editar esta consulta guardada.",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador."
     },
@@ -3042,7 +3045,7 @@
     },
     "rows-affected": "filas afectadas",
     "rows-upper-limit": "se ha alcanzado el límite de resultados de la consulta",
-    "save-sheet": "Guardar hoja",
+    "save-sheet": "Guardar consulta",
     "scroll-to-bottom": "Desplazarse hacia abajo",
     "scroll-to-top": "Desplazarse hacia arriba",
     "search-history-by-statement": "Búsqueda por enunciado",
@@ -3061,7 +3064,7 @@
       "context-menu": {
         "actions": {
           "add-folder": "Agregar carpeta",
-          "add-worksheet": "Agregar hoja de trabajo",
+          "add-saved-query": "Nueva consulta",
           "close": "Cerrar",
           "close-all": "Cerrar todo",
           "close-others": "cerrar otros",
@@ -3071,14 +3074,14 @@
           "rename": "Renombrar"
         }
       },
-      "unsaved-worksheet": "Tiene una hoja de trabajo sin guardar."
+      "unsaved-changes": "Tiene cambios sin guardar."
     },
     "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
     "table-view": "Vista de tabla",
     "text-format": "Formato de texto",
     "unable-to-connect-database": "No se puede conectar a la base de datos {{name}}",
     "upload-file": "Subir archivo",
-    "url-copied-to-clipboard": "La URL se copia al portapapeles.",
+    "url-copied-to-clipboard": "Enlace copiado al portapapeles",
     "vertical-display": "Pantalla vertical",
     "view-database-detail": "Ver detalle de la base de datos",
     "view-detail": "Ver detalle",
@@ -3392,9 +3395,6 @@
       "description": "Copie el código e ingréselo manualmente en su aplicación TOTP.",
       "self": "Su secreto de dos factores"
     }
-  },
-  "worksheet": {
-    "self": "Hoja de trabajo"
   },
   "workspace-setup-guide": {
     "actions": {

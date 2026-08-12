@@ -84,7 +84,7 @@ export function SQLEditorHeader() {
     for (const persisted of tabsState.openTmpTabList) {
       const tab = tabsState.tabsById.get(persisted.id);
       if (tab && tab.status !== "CLEAN") {
-        window.alert(t("sql-editor.tab.unsaved-worksheet"));
+        window.alert(t("sql-editor.tab.unsaved-changes"));
         return false;
       }
     }

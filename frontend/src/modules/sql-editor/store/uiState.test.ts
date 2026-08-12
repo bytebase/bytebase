@@ -3,10 +3,10 @@ import { create, type StoreApi } from "zustand";
 import { STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE } from "@/utils/storage-keys";
 import type {
   QueryHistorySlice,
+  SavedQuerySaveSlice,
   SQLEditorStoreState,
   TreeSlice,
   WebTerminalSlice,
-  WorksheetSaveSlice,
 } from "./types";
 
 const originalLocalStorage = globalThis.localStorage;
@@ -58,13 +58,13 @@ const stubWebTerminalSlice = (): WebTerminalSlice => ({
   updateWebTerminalQueryItem: vi.fn(),
 });
 
-const stubWorksheetSaveSlice = (): WorksheetSaveSlice => ({
+const stubSavedQuerySaveSlice = (): SavedQuerySaveSlice => ({
   autoSaveController: null,
   setAutoSaveController: vi.fn(),
   abortAutoSave: vi.fn(),
   maybeSwitchProject: vi.fn(async () => undefined),
-  maybeUpdateWorksheet: vi.fn(async () => undefined),
-  createWorksheet: vi.fn(async () => undefined),
+  maybeUpdateSavedQuery: vi.fn(async () => undefined),
+  createSavedQuery: vi.fn(async () => undefined),
 });
 
 // Build a fresh store for each test so the slice's `aiPanelSize`
@@ -81,7 +81,7 @@ const makeStore = async (): Promise<StoreApi<SQLEditorStoreState>> => {
     ...stubQueryHistorySlice(),
     ...stubTreeSlice(),
     ...stubWebTerminalSlice(),
-    ...stubWorksheetSaveSlice(),
+    ...stubSavedQuerySaveSlice(),
   }));
 };
 
@@ -107,7 +107,7 @@ describe("sqlEditor uiState slice", () => {
   test("initial state has documented defaults", async () => {
     const useStore = await makeStore();
     const s = useStore.getState();
-    expect(s.asidePanelTab).toBe("WORKSHEET");
+    expect(s.asidePanelTab).toBe("SAVED_QUERY");
     expect(s.showConnectionPanel).toBe(false);
     expect(s.showAIPanel).toBe(false);
     expect(s.pendingInsertAtCaret).toBeUndefined();

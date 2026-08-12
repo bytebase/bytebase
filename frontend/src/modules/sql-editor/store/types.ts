@@ -12,7 +12,7 @@ import type {
   SearchQueryHistoriesResponse,
 } from "@/types/proto-es/v1/query_history_service_pb";
 
-export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY" | "ACCESS";
+export type AsidePanelTab = "SCHEMA" | "SAVED_QUERY" | "HISTORY" | "ACCESS";
 
 export interface UIStateSlice {
   asidePanelTab: AsidePanelTab;
@@ -107,7 +107,7 @@ export interface WebTerminalSlice {
   ) => void;
 }
 
-export interface WorksheetSaveSlice {
+export interface SavedQuerySaveSlice {
   // Live AbortController for the active auto-save request. Set by the
   // auto-save composable so a subsequent edit can cancel the in-flight
   // PATCH. `null` between saves.
@@ -115,16 +115,16 @@ export interface WorksheetSaveSlice {
   setAutoSaveController: (controller: AbortController | null) => void;
   abortAutoSave: () => void;
   maybeSwitchProject: (projectName: string) => Promise<string | undefined>;
-  maybeUpdateWorksheet: (opts: {
+  maybeUpdateSavedQuery: (opts: {
     tabId: string;
-    worksheet?: string;
+    savedQuery?: string;
     title?: string;
     database: string;
     statement: string;
     folders?: string[];
     signal?: AbortSignal;
   }) => Promise<SQLEditorTab | undefined>;
-  createWorksheet: (opts: {
+  createSavedQuery: (opts: {
     tabId?: string;
     title?: string;
     statement?: string;
@@ -137,7 +137,7 @@ export type SQLEditorStoreState = UIStateSlice &
   QueryHistorySlice &
   TreeSlice &
   WebTerminalSlice &
-  WorksheetSaveSlice;
+  SavedQuerySaveSlice;
 
 export type SQLEditorSliceCreator<Slice> = StateCreator<
   SQLEditorStoreState,

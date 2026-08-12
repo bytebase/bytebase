@@ -307,7 +307,7 @@ moving on.
 banners, confirm-dialog titles — read them one by one. Duplicate wording (a field
 labeled "Expiration" with a "4 hours" dropdown that *also* says "hours" inline),
 backwards version banners ("New version 3.17.1 available" while you're on 3.18),
-and placebo confirm dialogs ("Confirm to delete this worksheet?" with no body
+and placebo confirm dialogs ("Delete this saved query?" with no body
 text) all hide in plain text we breeze past.
 
 #### 10. Record video for transient bugs
@@ -460,7 +460,7 @@ If the test still passes, it isn't actually checking the thing.
 #### L. Self-contained state
 
 No test depends on another's leftovers. Every spec sets up and tears down its
-own DB schema, worksheets, IAM bindings. Independence is the only way tests
+own DB schema, saved queries, IAM bindings. Independence is the only way tests
 survive at scale.
 
 #### M. Assert visual relationships, not absolute thresholds

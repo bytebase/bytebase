@@ -20,6 +20,7 @@ import { ReviewConfigService } from "@/types/proto-es/v1/review_config_service_p
 import { RevisionService } from "@/types/proto-es/v1/revision_service_pb";
 import { RoleService } from "@/types/proto-es/v1/role_service_pb";
 import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
+import { SavedQueryService } from "@/types/proto-es/v1/saved_query_service_pb";
 import { ServiceAccountService } from "@/types/proto-es/v1/service_account_service_pb";
 import { SettingService } from "@/types/proto-es/v1/setting_service_pb";
 import { SheetService } from "@/types/proto-es/v1/sheet_service_pb";
@@ -27,7 +28,6 @@ import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
 import { SubscriptionService } from "@/types/proto-es/v1/subscription_service_pb";
 import { UserService } from "@/types/proto-es/v1/user_service_pb";
 import { WorkloadIdentityService } from "@/types/proto-es/v1/workload_identity_service_pb";
-import { WorksheetService } from "@/types/proto-es/v1/worksheet_service_pb";
 import { WorkspaceService } from "@/types/proto-es/v1/workspace_service_pb";
 
 // The methods that have audit field in their options.
@@ -60,7 +60,7 @@ export const ALL_METHODS_WITH_AUDIT = [
   SubscriptionService,
   UserService,
   WorkloadIdentityService,
-  WorksheetService,
+  SavedQueryService,
   WorkspaceService,
 ]
   .reduce((list, service) => {

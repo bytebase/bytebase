@@ -127,7 +127,7 @@ export function TabItem({
         style={bodyStyle}
       >
         <Prefix tab={tab} />
-        {tab.mode === "WORKSHEET" ? (
+        {tab.mode === "SAVED_QUERY" ? (
           <Label tab={tab} />
         ) : (
           <AdminLabel tab={tab} />

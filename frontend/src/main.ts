@@ -10,13 +10,20 @@ import "./lib/dayjs";
 import "./lib/highlight";
 import { initializeGA4 } from "./lib/ga4";
 import { useAppStore } from "./stores/app";
-import { isDev, isRelease, migrateStorageKeys } from "./utils";
+import {
+  isDev,
+  isRelease,
+  migrateStorageKeys,
+  rewriteLegacyPath,
+} from "./utils";
 
 console.debug("dev:", isDev());
 console.debug("release:", isRelease());
 
-// Migrate renamed localStorage keys before any store reads from storage.
+// Migrate renamed localStorage keys before any store reads from storage,
+// and renamed URLs before the router mounts.
 migrateStorageKeys();
+rewriteLegacyPath();
 
 (async () => {
   const store = useAppStore.getState();

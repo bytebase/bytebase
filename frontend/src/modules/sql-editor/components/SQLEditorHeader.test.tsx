@@ -57,7 +57,7 @@ vi.mock("react-i18next", () => ({
     t: (key: string) =>
       ({
         "sql-editor.self": "SQL Editor",
-        "sql-editor.tab.unsaved-worksheet": "Unsaved worksheet.",
+        "sql-editor.tab.unsaved-changes": "You have unsaved changes.",
       })[key] ?? key,
   }),
 }));
@@ -264,7 +264,7 @@ describe("SQLEditorHeader", () => {
     render();
 
     expect(mocks.breadcrumbProps?.onBeforeSwitchWorkspace?.()).toBe(false);
-    expect(window.alert).toHaveBeenCalledWith("Unsaved worksheet.");
+    expect(window.alert).toHaveBeenCalledWith("You have unsaved changes.");
 
     unmount();
   });

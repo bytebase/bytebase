@@ -20,7 +20,7 @@ type AdminModeButtonProps = {
 /**
  * Replaces frontend/src/views/sql-editor/EditorCommon/AdminModeButton.vue.
  * Visible only when the user has admin permission AND the current tab is
- * in WORKSHEET mode. Clicking switches the tab to ADMIN mode.
+ * in SAVED_QUERY mode. Clicking switches the tab to ADMIN mode.
  */
 export function AdminModeButton({
   size = "default",
@@ -35,7 +35,7 @@ export function AdminModeButton({
   );
   const isDisconnected = useIsDisconnected();
 
-  if (!allowAdmin || currentTabMode !== "WORKSHEET") {
+  if (!allowAdmin || currentTabMode !== "SAVED_QUERY") {
     return null;
   }
 

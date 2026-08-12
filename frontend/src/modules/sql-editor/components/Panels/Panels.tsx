@@ -56,7 +56,7 @@ const AIPaneFallback = () => (
  * React port of `frontend/src/views/sql-editor/EditorPanel/Panels/Panels.vue`.
  *
  * The host shell beneath `<EditorPanel>`. Two render modes:
- * - `viewState.view === "CODE"` (or no viewState) — shows the worksheet
+ * - `viewState.view === "CODE"` (or no viewState) — shows the saved query
  *   editor (`<StandardPanel>`) or terminal (`<TerminalPanel>`) based on
  *   the active tab's mode. The Vue version did this selection in
  *   `EditorPanel.vue` and passed the result into `<Panels>` via a named
@@ -84,7 +84,7 @@ export function Panels() {
   // Subscribe to `mode` as its own primitive — Pinia's tabStore mutates
   // the tab proxy in place via `Object.assign`, so `() => tabStore
   // .currentTab` only fires Vue's watch on tab-switches (proxy
-  // reference changes), not on `mode` flipping between "WORKSHEET" and
+  // reference changes), not on `mode` flipping between "SAVED_QUERY" and
   // "ADMIN" within the same tab. Without this, clicking the admin-mode
   // button doesn't swap to the `TerminalPanel`.
   const tabMode = useSQLEditorTabState(
@@ -163,7 +163,7 @@ export function Panels() {
   }, [tabId, databaseMetadata, currentSchema, setSchema]);
 
   const codePanel = useMemo(() => {
-    if (!tab || tabMode === "WORKSHEET") {
+    if (!tab || tabMode === "SAVED_QUERY") {
       return <StandardPanel key={`standard-${tab?.id ?? "default"}`} />;
     }
     if (tabMode === "ADMIN") {

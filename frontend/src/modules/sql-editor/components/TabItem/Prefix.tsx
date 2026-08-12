@@ -11,18 +11,18 @@ type Props = {
 /**
  * Replaces frontend/src/views/sql-editor/TabList/TabItem/Prefix.vue.
  * Leading icons on a tab row:
- *  - Pencil for draft (no worksheet yet).
- *  - Users glyph when viewing someone else's shared worksheet.
+ *  - Pencil for draft (no saved query yet).
+ *  - Users glyph when viewing someone else's shared savedQuery.
  *  - Wrench when the tab is in ADMIN mode.
  *  - Engine icon / unlink glyph via SheetConnectionIcon.
  */
 export function Prefix({ tab }: Props) {
-  const { isWorksheetCreator } = useSheetContext();
+  const { isSavedQueryCreator } = useSheetContext();
 
-  const isDraft = !tab.worksheet && tab.viewState.view === "CODE";
+  const isDraft = !tab.savedQuery && tab.viewState.view === "CODE";
 
   const sheet = useAppStore((s) =>
-    tab.worksheet ? s.getWorksheetByName(tab.worksheet) : null
+    tab.savedQuery ? s.getSavedQueryByName(tab.savedQuery) : null
   );
 
   return (
@@ -31,7 +31,7 @@ export function Prefix({ tab }: Props) {
         <PencilLine className="size-4" />
       ) : (
         <>
-          {sheet && !isWorksheetCreator(sheet) && <Users className="size-4" />}
+          {sheet && !isSavedQueryCreator(sheet) && <Users className="size-4" />}
           {tab.mode === "ADMIN" && <Wrench className="size-4" />}
         </>
       )}

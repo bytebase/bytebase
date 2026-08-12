@@ -9,7 +9,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
-import { SQL_EDITOR_WORKSHEET_MODULE } from "@/app/router/handles";
+import { SQL_EDITOR_SAVED_QUERY_MODULE } from "@/app/router/handles";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -20,26 +20,26 @@ import { useCurrentUser } from "@/hooks/useAppState";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
-import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
-import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
-import { extractProjectResourceName, extractWorksheetID } from "@/utils";
+import type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";
+import { SavedQuery_Visibility } from "@/types/proto-es/v1/saved_query_service_pb";
+import { extractProjectResourceName, extractSavedQueryID } from "@/utils";
 
 type AccessOption = {
   label: string;
   description: string;
-  value: Worksheet_Visibility;
+  value: SavedQuery_Visibility;
   icon: React.ReactNode;
 };
 
 type Props = {
-  readonly worksheet?: Worksheet;
+  readonly savedQuery?: SavedQuery;
 };
 
 /**
  * Replaces frontend/src/views/sql-editor/EditorCommon/SharePopover.vue.
  * Renders the share popover body content: visibility selector + shareable link.
  */
-export function SharePopoverBody({ worksheet }: Props) {
+export function SharePopoverBody({ savedQuery }: Props) {
   const { t } = useTranslation();
   const workspaceExternalURL = useAppStore((s) => s.serverInfo?.externalUrl);
   const currentUser = useCurrentUser();
@@ -49,19 +49,19 @@ export function SharePopoverBody({ worksheet }: Props) {
       {
         label: t("sql-editor.private"),
         description: t("sql-editor.private-desc"),
-        value: Worksheet_Visibility.PRIVATE,
+        value: SavedQuery_Visibility.PRIVATE,
         icon: <LockKeyhole className="size-5" />,
       },
       {
         label: t("sql-editor.project-read"),
         description: t("sql-editor.project-read-desc"),
-        value: Worksheet_Visibility.PROJECT_READ,
+        value: SavedQuery_Visibility.PROJECT_READ,
         icon: <Users className="size-5" />,
       },
       {
         label: t("sql-editor.project-write"),
         description: t("sql-editor.project-write-desc"),
-        value: Worksheet_Visibility.PROJECT_WRITE,
+        value: SavedQuery_Visibility.PROJECT_WRITE,
         icon: <Users className="size-5" />,
       },
     ],
@@ -69,9 +69,9 @@ export function SharePopoverBody({ worksheet }: Props) {
   );
 
   const allowChangeAccess = useMemo(() => {
-    if (!worksheet || !currentUser) return false;
-    return worksheet.creator === `users/${currentUser.email}`;
-  }, [worksheet, currentUser]);
+    if (!savedQuery || !currentUser) return false;
+    return savedQuery.creator === `users/${currentUser.email}`;
+  }, [savedQuery, currentUser]);
 
   const [currentAccess, setCurrentAccess] = useState<AccessOption>(
     () => accessOptions[0]
@@ -79,37 +79,37 @@ export function SharePopoverBody({ worksheet }: Props) {
 
   const [selectorOpen, setSelectorOpen] = useState(false);
 
-  // Sync currentAccess from worksheet.visibility when worksheet changes
+  // Sync currentAccess from savedQuery.visibility when saved query changes
   useEffect(() => {
-    if (!worksheet) return;
+    if (!savedQuery) return;
     const idx = accessOptions.findIndex(
-      (opt) => opt.value === worksheet.visibility
+      (opt) => opt.value === savedQuery.visibility
     );
     setCurrentAccess(idx !== -1 ? accessOptions[idx] : accessOptions[0]);
-  }, [worksheet, accessOptions]);
+  }, [savedQuery, accessOptions]);
 
   const sharedTabLink = useMemo(() => {
-    if (!worksheet) return "";
+    if (!savedQuery) return "";
     const route = router.resolve({
-      name: SQL_EDITOR_WORKSHEET_MODULE,
+      name: SQL_EDITOR_SAVED_QUERY_MODULE,
       params: {
-        project: extractProjectResourceName(worksheet.project),
-        sheet: extractWorksheetID(worksheet.name),
+        project: extractProjectResourceName(savedQuery.project),
+        savedQuery: extractSavedQueryID(savedQuery.name),
       },
     });
     return new URL(route.href, workspaceExternalURL || window.location.origin)
       .href;
-  }, [worksheet, workspaceExternalURL]);
+  }, [savedQuery, workspaceExternalURL]);
 
   const handleChangeAccess = async (option: AccessOption) => {
-    if (!allowChangeAccess || !worksheet) {
+    if (!allowChangeAccess || !savedQuery) {
       setSelectorOpen(false);
       return;
     }
     setCurrentAccess(option);
     await useAppStore
       .getState()
-      .patchWorksheet({ ...worksheet, visibility: option.value }, [
+      .patchSavedQuery({ ...savedQuery, visibility: option.value }, [
         "visibility",
       ]);
 
@@ -230,11 +230,11 @@ export function SharePopoverBody({ worksheet }: Props) {
           value={sharedTabLink}
           className="flex-1 min-w-0 h-full px-2 bg-background text-control text-sm cursor-text appearance-none border-0 shadow-none outline-hidden focus:outline-hidden focus:ring-0 focus:border-0 focus:shadow-none"
         />
-        {/* Copy button — enabled whenever the shared worksheet has a link.
-            Gated on the shared worksheet (sharedTabLink), NOT the current tab's
-            status: the popover can be opened for any worksheet from the tree,
+        {/* Copy button — enabled whenever the shared savedQuery has a link.
+            Gated on the shared savedQuery (sharedTabLink), NOT the current tab's
+            status: the popover can be opened for any savedQuery from the tree,
             so the current tab's dirty state is irrelevant. Only an unsaved draft
-            (no worksheet → no link) disables it. */}
+            (no savedQuery → no link) disables it. */}
         <Button
           type="button"
           appearance="secondary"

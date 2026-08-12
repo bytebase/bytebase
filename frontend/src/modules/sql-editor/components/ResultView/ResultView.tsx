@@ -44,7 +44,7 @@ export interface ResultViewProps {
   resultSet?: SQLResultSetV1;
   loading?: boolean;
   // Compact layout (fixed-height result body) for the terminal / admin panel.
-  // The worksheet panel leaves this false to keep the flex-grow layout.
+  // The saved query panel leaves this false to keep the flex-grow layout.
   compact?: boolean;
 }
 

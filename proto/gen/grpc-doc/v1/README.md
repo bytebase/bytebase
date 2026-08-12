@@ -676,6 +676,29 @@
   
     - [RoleService](#bytebase-v1-RoleService)
   
+- [v1/saved_query_service.proto](#v1_saved_query_service-proto)
+    - [BatchUpdateSavedQueryOrganizerRequest](#bytebase-v1-BatchUpdateSavedQueryOrganizerRequest)
+    - [BatchUpdateSavedQueryOrganizerResponse](#bytebase-v1-BatchUpdateSavedQueryOrganizerResponse)
+    - [CreateSavedQueryRequest](#bytebase-v1-CreateSavedQueryRequest)
+    - [DeleteSavedQueryRequest](#bytebase-v1-DeleteSavedQueryRequest)
+    - [GetSavedQueryRequest](#bytebase-v1-GetSavedQueryRequest)
+    - [ListSavedQueriesRequest](#bytebase-v1-ListSavedQueriesRequest)
+    - [ListSavedQueriesResponse](#bytebase-v1-ListSavedQueriesResponse)
+    - [ListSavedQueryFoldersRequest](#bytebase-v1-ListSavedQueryFoldersRequest)
+    - [ListSavedQueryFoldersResponse](#bytebase-v1-ListSavedQueryFoldersResponse)
+    - [SavedQuery](#bytebase-v1-SavedQuery)
+    - [SavedQueryFolder](#bytebase-v1-SavedQueryFolder)
+    - [SavedQueryOrganizer](#bytebase-v1-SavedQueryOrganizer)
+    - [SearchSavedQueriesRequest](#bytebase-v1-SearchSavedQueriesRequest)
+    - [SearchSavedQueriesResponse](#bytebase-v1-SearchSavedQueriesResponse)
+    - [UpdateSavedQueryOrganizerRequest](#bytebase-v1-UpdateSavedQueryOrganizerRequest)
+    - [UpdateSavedQueryRequest](#bytebase-v1-UpdateSavedQueryRequest)
+  
+    - [SavedQuery.Visibility](#bytebase-v1-SavedQuery-Visibility)
+    - [SavedQueryFolder.Category](#bytebase-v1-SavedQueryFolder-Category)
+  
+    - [SavedQueryService](#bytebase-v1-SavedQueryService)
+  
 - [v1/service_account_service.proto](#v1_service_account_service-proto)
     - [CreateServiceAccountRequest](#bytebase-v1-CreateServiceAccountRequest)
     - [DeleteServiceAccountRequest](#bytebase-v1-DeleteServiceAccountRequest)
@@ -741,29 +764,6 @@
     - [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType)
   
     - [WorkloadIdentityService](#bytebase-v1-WorkloadIdentityService)
-  
-- [v1/worksheet_service.proto](#v1_worksheet_service-proto)
-    - [BatchUpdateWorksheetOrganizerRequest](#bytebase-v1-BatchUpdateWorksheetOrganizerRequest)
-    - [BatchUpdateWorksheetOrganizerResponse](#bytebase-v1-BatchUpdateWorksheetOrganizerResponse)
-    - [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest)
-    - [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest)
-    - [GetWorksheetRequest](#bytebase-v1-GetWorksheetRequest)
-    - [ListWorksheetFoldersRequest](#bytebase-v1-ListWorksheetFoldersRequest)
-    - [ListWorksheetFoldersResponse](#bytebase-v1-ListWorksheetFoldersResponse)
-    - [ListWorksheetsRequest](#bytebase-v1-ListWorksheetsRequest)
-    - [ListWorksheetsResponse](#bytebase-v1-ListWorksheetsResponse)
-    - [SearchWorksheetsRequest](#bytebase-v1-SearchWorksheetsRequest)
-    - [SearchWorksheetsResponse](#bytebase-v1-SearchWorksheetsResponse)
-    - [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest)
-    - [UpdateWorksheetRequest](#bytebase-v1-UpdateWorksheetRequest)
-    - [Worksheet](#bytebase-v1-Worksheet)
-    - [WorksheetFolder](#bytebase-v1-WorksheetFolder)
-    - [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer)
-  
-    - [Worksheet.Visibility](#bytebase-v1-Worksheet-Visibility)
-    - [WorksheetFolder.Category](#bytebase-v1-WorksheetFolder-Category)
-  
-    - [WorksheetService](#bytebase-v1-WorksheetService)
   
 - [v1/workspace_service.proto](#v1_workspace_service-proto)
     - [DeleteWorkspaceRequest](#bytebase-v1-DeleteWorkspaceRequest)
@@ -11016,6 +11016,355 @@ RoleService manages workspace roles and permissions.
 
 
 
+<a name="v1_saved_query_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/saved_query_service.proto
+
+
+
+<a name="bytebase-v1-BatchUpdateSavedQueryOrganizerRequest"></a>
+
+### BatchUpdateSavedQueryOrganizerRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource whose saved queries&#39; organizers are updated. Format: projects/{project} |
+| filter | [string](#string) |  | To filter the batch update target. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - name: the saved query name in &#34;projects/{project}/savedQueries/{savedQuery}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator. - creator: the saved query creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred saved queries, support &#34;==&#34; operator. - visibility: check Visibility enum in the SavedQuery message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator. - folder: the saved query organizer folder path, support exact &#34;==&#34; operator. |
+| organizer | [SavedQueryOrganizer](#bytebase-v1-SavedQueryOrganizer) |  | The organizer fields to update. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the saved query organizer. Only support update the following fields for now: - `starred` - `folders` |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchUpdateSavedQueryOrganizerResponse"></a>
+
+### BatchUpdateSavedQueryOrganizerResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| saved_query_organizers | [SavedQueryOrganizer](#bytebase-v1-SavedQueryOrganizer) | repeated |  |
+| updated_count | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateSavedQueryRequest"></a>
+
+### CreateSavedQueryRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource where this saved query will be created. Format: projects/{project} |
+| saved_query | [SavedQuery](#bytebase-v1-SavedQuery) |  | The saved query to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteSavedQueryRequest"></a>
+
+### DeleteSavedQueryRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the saved query to delete. Format: projects/{project}/savedQueries/{savedQuery} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetSavedQueryRequest"></a>
+
+### GetSavedQueryRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the saved query to retrieve. Format: projects/{project}/savedQueries/{savedQuery} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSavedQueriesRequest"></a>
+
+### ListSavedQueriesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource of the saved queries. Format: projects/{project} Use &#34;projects/-&#34; to list saved queries across all projects. |
+| filter | [string](#string) |  | To filter the list result. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - creator: the saved query creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
+
+For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; |
+| page_size | [int32](#int32) |  | The maximum number of saved queries to return. The service may return fewer than this value. If unspecified, at most 10 saved queries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListSavedQueries` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListSavedQueries` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSavedQueriesResponse"></a>
+
+### ListSavedQueriesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| saved_queries | [SavedQuery](#bytebase-v1-SavedQuery) | repeated | The saved queries from the specified parent. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of saved queries. Pass this value in the page_token field in the subsequent call to `ListSavedQueries` method to retrieve the next page of saved queries. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSavedQueryFoldersRequest"></a>
+
+### ListSavedQueryFoldersRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource of the saved query folders. Format: projects/{project} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSavedQueryFoldersResponse"></a>
+
+### ListSavedQueryFoldersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| folders | [SavedQueryFolder](#bytebase-v1-SavedQueryFolder) | repeated | The caller&#39;s saved query folders. |
+
+
+
+
+
+
+<a name="bytebase-v1-SavedQuery"></a>
+
+### SavedQuery
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the saved query resource, generated by the server. Canonical parent is project. Format: projects/{project}/savedQueries/{savedQuery} |
+| project | [string](#string) |  | The project resource name. Format: projects/{project} |
+| database | [string](#string) |  | The database resource name. Format: instances/{instance}/databases/{database} If the database parent doesn&#39;t exist, the database field is empty. |
+| title | [string](#string) |  | The title of the saved query. |
+| creator | [string](#string) |  | The creator of the SavedQuery. Format: users/{email} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the saved query. |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the saved query. |
+| content | [bytes](#bytes) |  | The content of the saved query. By default, it will be cut off in SearchSavedQueries() method. If it doesn&#39;t match the `content_size`, you can use GetSavedQuery() request to retrieve the full content. |
+| content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
+| visibility | [SavedQuery.Visibility](#bytebase-v1-SavedQuery-Visibility) |  |  |
+| starred | [bool](#bool) |  | starred indicates whether the saved query is starred by the current authenticated user. |
+| folders | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SavedQueryFolder"></a>
+
+### SavedQueryFolder
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| folders | [string](#string) | repeated | The folder path segments. |
+| category | [SavedQueryFolder.Category](#bytebase-v1-SavedQueryFolder-Category) |  | The folder category. |
+
+
+
+
+
+
+<a name="bytebase-v1-SavedQueryOrganizer"></a>
+
+### SavedQueryOrganizer
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| saved_query | [string](#string) |  | The name of the saved query. Format: projects/{project}/savedQueries/{savedQuery} |
+| starred | [bool](#bool) |  | starred means if the saved query is starred. |
+| folders | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchSavedQueriesRequest"></a>
+
+### SearchSavedQueriesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource of the saved queries. Format: projects/{project} |
+| filter | [string](#string) |  | To filter the search result. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - name: the saved query name in &#34;projects/{project}/savedQueries/{savedQuery}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator. - title: the saved query title, support &#34;contains&#34; operator. - creator: the saved query creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred saved queries, support &#34;==&#34; operator. - visibility: check Visibility enum in the SavedQuery message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator. - folder: the saved query organizer folder path, support &#34;==&#34; operator.
+
+For example: creator == &#34;users/{email}&#34; title.contains(&#34;saved query title&#34;) creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;] visibility == &#34;PRIVATE&#34; folder == &#34;foo/bar&#34; |
+| page_size | [int32](#int32) |  | The maximum number of saved queries to return. The service may return fewer than this value. If unspecified, at most 10 saved queries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchSavedQueries` call. Provide this to retrieve the subsequent page. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchSavedQueriesResponse"></a>
+
+### SearchSavedQueriesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| saved_queries | [SavedQuery](#bytebase-v1-SavedQuery) | repeated | The saved queries that matched the search criteria. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of saved queries. Pass this value in the page_token field in the subsequent call to `SearchSavedQueries` method to retrieve the next page of saved queries. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateSavedQueryOrganizerRequest"></a>
+
+### UpdateSavedQueryOrganizerRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| organizer | [SavedQueryOrganizer](#bytebase-v1-SavedQueryOrganizer) |  | The organizer to update.
+
+The organizer&#39;s `saved_query` field is used to identify the saved query. Format: projects/{project}/savedQueries/{savedQuery} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the saved query organizer. Only support update the following fields for now: - `starred` |
+| allow_missing | [bool](#bool) |  | If set to true, and the saved query organizer is not found, a new saved query organizer will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateSavedQueryRequest"></a>
+
+### UpdateSavedQueryRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| saved_query | [SavedQuery](#bytebase-v1-SavedQuery) |  | The saved query to update.
+
+The saved query&#39;s `name` field is used to identify the saved query to update. Format: projects/{project}/savedQueries/{savedQuery} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the saved query. (e.g., `title`, `statement`; *not* `saved_query.title` or `saved_query.statement`) Only support update the following fields for now: - `title` - `statement` - `starred` - `visibility` |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-SavedQuery-Visibility"></a>
+
+### SavedQuery.Visibility
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VISIBILITY_UNSPECIFIED | 0 |  |
+| PROJECT_READ | 1 | Read access in project scope, saved query OWNER/DBA and project OWNER can read/write, other project members can read. |
+| PROJECT_WRITE | 2 | Write access in project scope, saved query OWNER/DBA and all members in the project can write the saved query. |
+| PRIVATE | 3 | Private, only saved query OWNER can read/write. |
+
+
+
+<a name="bytebase-v1-SavedQueryFolder-Category"></a>
+
+### SavedQueryFolder.Category
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CATEGORY_UNSPECIFIED | 0 |  |
+| MINE | 1 |  |
+| SHARED | 2 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-SavedQueryService"></a>
+
+### SavedQueryService
+SavedQueryService manages saved queries for SQL Editor query development.
+Permission IDs still use the legacy `bb.worksheets.*` names; they are
+renamed together with the access-model redesign and its role migration.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| CreateSavedQuery | [CreateSavedQueryRequest](#bytebase-v1-CreateSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Creates a personal saved query used in SQL Editor. Any authenticated user can create their own saved queries. Permissions required: None (authenticated users only) |
+| GetSavedQuery | [GetSavedQueryRequest](#bytebase-v1-GetSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Get a saved query by name. The users can access this method if, - they are the creator of the saved query; - they have bb.worksheets.get permission on the workspace; - the saved query is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project. Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries) |
+| ListSavedQueries | [ListSavedQueriesRequest](#bytebase-v1-ListSavedQueriesRequest) | [ListSavedQueriesResponse](#bytebase-v1-ListSavedQueriesResponse) | List saved queries. This is used for listing saved queries in a project, or across all projects by using `projects/-`. Permissions required: bb.worksheets.list |
+| ListSavedQueryFolders | [ListSavedQueryFoldersRequest](#bytebase-v1-ListSavedQueryFoldersRequest) | [ListSavedQueryFoldersResponse](#bytebase-v1-ListSavedQueryFoldersResponse) | List the caller&#39;s saved query folders. Only folders stored in the caller&#39;s saved query organizer are returned. |
+| SearchSavedQueries | [SearchSavedQueriesRequest](#bytebase-v1-SearchSavedQueriesRequest) | [SearchSavedQueriesResponse](#bytebase-v1-SearchSavedQueriesResponse) | Search for saved queries. This is used for finding my saved queries or saved queries shared by other people. The saved query accessibility is the same as GetSavedQuery(). Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries) |
+| UpdateSavedQuery | [UpdateSavedQueryRequest](#bytebase-v1-UpdateSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Update a saved query. The users can access this method if, - they are the creator of the saved query; - they have bb.worksheets.manage permission on the workspace; - the saved query is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project. Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE saved queries) |
+| UpdateSavedQueryOrganizer | [UpdateSavedQueryOrganizerRequest](#bytebase-v1-UpdateSavedQueryOrganizerRequest) | [SavedQueryOrganizer](#bytebase-v1-SavedQueryOrganizer) | Update the organizer of a saved query. The access is the same as UpdateSavedQuery method. Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries) |
+| BatchUpdateSavedQueryOrganizer | [BatchUpdateSavedQueryOrganizerRequest](#bytebase-v1-BatchUpdateSavedQueryOrganizerRequest) | [BatchUpdateSavedQueryOrganizerResponse](#bytebase-v1-BatchUpdateSavedQueryOrganizerResponse) | Batch update the organizers of saved queries. The access is the same as UpdateSavedQuery method. Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries) |
+| DeleteSavedQuery | [DeleteSavedQueryRequest](#bytebase-v1-DeleteSavedQueryRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a saved query. The access is the same as UpdateSavedQuery method. Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE saved queries) |
+
+ 
+
+
+
 <a name="v1_service_account_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -11977,353 +12326,6 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 | UpdateWorkloadIdentity | [UpdateWorkloadIdentityRequest](#bytebase-v1-UpdateWorkloadIdentityRequest) | [WorkloadIdentity](#bytebase-v1-WorkloadIdentity) | Updates a workload identity. Permissions required: bb.workloadIdentities.update |
 | DeleteWorkloadIdentity | [DeleteWorkloadIdentityRequest](#bytebase-v1-DeleteWorkloadIdentityRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a workload identity. Permissions required: bb.workloadIdentities.delete |
 | UndeleteWorkloadIdentity | [UndeleteWorkloadIdentityRequest](#bytebase-v1-UndeleteWorkloadIdentityRequest) | [WorkloadIdentity](#bytebase-v1-WorkloadIdentity) | Restores a deleted workload identity. Permissions required: bb.workloadIdentities.undelete |
-
- 
-
-
-
-<a name="v1_worksheet_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/worksheet_service.proto
-
-
-
-<a name="bytebase-v1-BatchUpdateWorksheetOrganizerRequest"></a>
-
-### BatchUpdateWorksheetOrganizerRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource whose worksheets&#39; organizers are updated. Format: projects/{project} |
-| filter | [string](#string) |  | To filter the batch update target. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter: - name: the worksheet name in &#34;projects/{project}/worksheets/{worksheet}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator. - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator. - folder: the worksheet organizer folder path, support exact &#34;==&#34; operator. |
-| organizer | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) |  | The organizer fields to update. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet organizer. Only support update the following fields for now: - `starred` - `folders` |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchUpdateWorksheetOrganizerResponse"></a>
-
-### BatchUpdateWorksheetOrganizerResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| worksheet_organizers | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) | repeated |  |
-| updated_count | [int32](#int32) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-CreateWorksheetRequest"></a>
-
-### CreateWorksheetRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this worksheet will be created. Format: projects/{project} |
-| worksheet | [Worksheet](#bytebase-v1-Worksheet) |  | The worksheet to create. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteWorksheetRequest"></a>
-
-### DeleteWorksheetRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the worksheet to delete. Format: projects/{project}/worksheets/{worksheet} |
-
-
-
-
-
-
-<a name="bytebase-v1-GetWorksheetRequest"></a>
-
-### GetWorksheetRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the worksheet to retrieve. Format: projects/{project}/worksheets/{worksheet} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListWorksheetFoldersRequest"></a>
-
-### ListWorksheetFoldersRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource of the worksheet folders. Format: projects/{project} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListWorksheetFoldersResponse"></a>
-
-### ListWorksheetFoldersResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| folders | [WorksheetFolder](#bytebase-v1-WorksheetFolder) | repeated | The caller&#39;s worksheet folders. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListWorksheetsRequest"></a>
-
-### ListWorksheetsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource of the worksheets. Format: projects/{project} Use &#34;projects/-&#34; to list worksheets across all projects. |
-| filter | [string](#string) |  | To filter the list result. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter: - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
-
-For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; |
-| page_size | [int32](#int32) |  | The maximum number of worksheets to return. The service may return fewer than this value. If unspecified, at most 10 worksheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListWorksheets` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListWorksheets` must match the call that provided the page token. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListWorksheetsResponse"></a>
-
-### ListWorksheetsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| worksheets | [Worksheet](#bytebase-v1-Worksheet) | repeated | The worksheets from the specified parent. |
-| next_page_token | [string](#string) |  | A token to retrieve next page of worksheets. Pass this value in the page_token field in the subsequent call to `ListWorksheets` method to retrieve the next page of worksheets. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchWorksheetsRequest"></a>
-
-### SearchWorksheetsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource of the worksheets. Format: projects/{project} |
-| filter | [string](#string) |  | To filter the search result. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter: - name: the worksheet name in &#34;projects/{project}/worksheets/{worksheet}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator. - title: the worksheet title, support &#34;contains&#34; operator. - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator. - folder: the worksheet organizer folder path, support &#34;==&#34; operator.
-
-For example: creator == &#34;users/{email}&#34; title.contains(&#34;worksheet title&#34;) creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;] visibility == &#34;PRIVATE&#34; folder == &#34;foo/bar&#34; |
-| page_size | [int32](#int32) |  | The maximum number of worksheets to return. The service may return fewer than this value. If unspecified, at most 10 worksheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `SearchWorksheets` call. Provide this to retrieve the subsequent page. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchWorksheetsResponse"></a>
-
-### SearchWorksheetsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| worksheets | [Worksheet](#bytebase-v1-Worksheet) | repeated | The worksheets that matched the search criteria. |
-| next_page_token | [string](#string) |  | A token to retrieve next page of worksheets. Pass this value in the page_token field in the subsequent call to `SearchWorksheets` method to retrieve the next page of worksheets. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateWorksheetOrganizerRequest"></a>
-
-### UpdateWorksheetOrganizerRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| organizer | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) |  | The organizer to update.
-
-The organizer&#39;s `worksheet` field is used to identify the worksheet. Format: projects/{project}/worksheets/{worksheet} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet organizer. Only support update the following fields for now: - `starred` |
-| allow_missing | [bool](#bool) |  | If set to true, and the worksheet organizer is not found, a new worksheet organizer will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateWorksheetRequest"></a>
-
-### UpdateWorksheetRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| worksheet | [Worksheet](#bytebase-v1-Worksheet) |  | The worksheet to update.
-
-The worksheet&#39;s `name` field is used to identify the worksheet to update. Format: projects/{project}/worksheets/{worksheet} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet. (e.g., `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`) Only support update the following fields for now: - `title` - `statement` - `starred` - `visibility` |
-
-
-
-
-
-
-<a name="bytebase-v1-Worksheet"></a>
-
-### Worksheet
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the worksheet resource, generated by the server. Canonical parent is project. Format: projects/{project}/worksheets/{worksheet} |
-| project | [string](#string) |  | The project resource name. Format: projects/{project} |
-| database | [string](#string) |  | The database resource name. Format: instances/{instance}/databases/{database} If the database parent doesn&#39;t exist, the database field is empty. |
-| title | [string](#string) |  | The title of the worksheet. |
-| creator | [string](#string) |  | The creator of the Worksheet. Format: users/{email} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the worksheet. |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the worksheet. |
-| content | [bytes](#bytes) |  | The content of the worksheet. By default, it will be cut off in SearchWorksheet() method. If it doesn&#39;t match the `content_size`, you can use GetWorksheet() request to retrieve the full content. |
-| content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
-| visibility | [Worksheet.Visibility](#bytebase-v1-Worksheet-Visibility) |  |  |
-| starred | [bool](#bool) |  | starred indicates whether the worksheet is starred by the current authenticated user. |
-| folders | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-WorksheetFolder"></a>
-
-### WorksheetFolder
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| folders | [string](#string) | repeated | The folder path segments. |
-| category | [WorksheetFolder.Category](#bytebase-v1-WorksheetFolder-Category) |  | The folder category. |
-
-
-
-
-
-
-<a name="bytebase-v1-WorksheetOrganizer"></a>
-
-### WorksheetOrganizer
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| worksheet | [string](#string) |  | The name of the worksheet. Format: projects/{project}/worksheets/{worksheet} |
-| starred | [bool](#bool) |  | starred means if the worksheet is starred. |
-| folders | [string](#string) | repeated |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-Worksheet-Visibility"></a>
-
-### Worksheet.Visibility
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| VISIBILITY_UNSPECIFIED | 0 |  |
-| PROJECT_READ | 1 | Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read. |
-| PROJECT_WRITE | 2 | Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet. |
-| PRIVATE | 3 | Private, only worksheet OWNER can read/write. |
-
-
-
-<a name="bytebase-v1-WorksheetFolder-Category"></a>
-
-### WorksheetFolder.Category
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CATEGORY_UNSPECIFIED | 0 |  |
-| MINE | 1 |  |
-| SHARED | 2 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-WorksheetService"></a>
-
-### WorksheetService
-WorksheetService manages SQL worksheets for query development.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| CreateWorksheet | [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Creates a personal worksheet used in SQL Editor. Any authenticated user can create their own worksheets. Permissions required: None (authenticated users only) |
-| GetWorksheet | [GetWorksheetRequest](#bytebase-v1-GetWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Get a worksheet by name. The users can access this method if, - they are the creator of the worksheet; - they have bb.worksheets.get permission on the workspace; - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project. Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets) |
-| ListWorksheets | [ListWorksheetsRequest](#bytebase-v1-ListWorksheetsRequest) | [ListWorksheetsResponse](#bytebase-v1-ListWorksheetsResponse) | List worksheets. This is used for listing worksheets in a project, or across all projects by using `projects/-`. Permissions required: bb.worksheets.list |
-| ListWorksheetFolders | [ListWorksheetFoldersRequest](#bytebase-v1-ListWorksheetFoldersRequest) | [ListWorksheetFoldersResponse](#bytebase-v1-ListWorksheetFoldersResponse) | List the caller&#39;s worksheet folders. Only folders stored in the caller&#39;s worksheet organizer are returned. |
-| SearchWorksheets | [SearchWorksheetsRequest](#bytebase-v1-SearchWorksheetsRequest) | [SearchWorksheetsResponse](#bytebase-v1-SearchWorksheetsResponse) | Search for worksheets. This is used for finding my worksheets or worksheets shared by other people. The sheet accessibility is the same as GetWorksheet(). Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets) |
-| UpdateWorksheet | [UpdateWorksheetRequest](#bytebase-v1-UpdateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Update a worksheet. The users can access this method if, - they are the creator of the worksheet; - they have bb.worksheets.manage permission on the workspace; - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project. Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets) |
-| UpdateWorksheetOrganizer | [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest) | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) | Update the organizer of a worksheet. The access is the same as UpdateWorksheet method. Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets) |
-| BatchUpdateWorksheetOrganizer | [BatchUpdateWorksheetOrganizerRequest](#bytebase-v1-BatchUpdateWorksheetOrganizerRequest) | [BatchUpdateWorksheetOrganizerResponse](#bytebase-v1-BatchUpdateWorksheetOrganizerResponse) | Batch update the organizers of worksheets. The access is the same as UpdateWorksheet method. Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets) |
-| DeleteWorksheet | [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a worksheet. The access is the same as UpdateWorksheet method. Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets) |
 
  
 

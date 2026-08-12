@@ -1,12 +1,12 @@
 import { describe, expect, test } from "vitest";
 
-import type { WorksheetFolderNode } from "@/modules/sql-editor/model/Sheet";
+import type { SavedQueryFolderNode } from "@/modules/sql-editor/model/Sheet";
 
 import { filterNode } from "./filterNode";
 
 const makeNode = (
-  partial: Partial<WorksheetFolderNode>
-): WorksheetFolderNode => ({
+  partial: Partial<SavedQueryFolderNode>
+): SavedQueryFolderNode => ({
   ...partial,
   key: "/my/node",
   label: "node",
@@ -22,7 +22,7 @@ describe("filterNode", () => {
       pred(
         "payroll",
         makeNode({
-          key: "__worksheet_load_more__:/my",
+          key: "__savedQuery_load_more__:/my",
           label: "common.load-more",
           loadMore: true,
         })

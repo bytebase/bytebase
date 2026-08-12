@@ -21,7 +21,7 @@ export type SQLEditorEvents = {
   "append-editor-content": { content: string; select: boolean };
   "insert-at-caret": { content: string };
   // Fired after a SQL statement has finished executing — by both the
-  // worksheet (`useExecuteSQL`) and admin/terminal (`webTerminal`)
+  // saved query (`useExecuteSQL`) and admin/terminal (`webTerminal`)
   // paths. `HistoryPane` listens and refetches. Bypasses store
   // reactivity that doesn't reliably propagate the post-exec
   // mutations into React selector subscribers.
