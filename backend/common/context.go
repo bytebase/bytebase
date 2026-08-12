@@ -5,6 +5,8 @@ import (
 	"context"
 
 	"google.golang.org/protobuf/types/known/anypb"
+
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // ContextKey is the key type of context value.
@@ -128,7 +130,14 @@ type AuthContext struct {
 	AllowWithoutCredential bool
 	Permission             string
 	AuthMethod             AuthMethod
-	Resources              []*Resource
+	// MCPMethodClass is the method's bytebase.v1.mcp_method_class annotation.
+	// The effective authorization of an MCP session is this classification
+	// intersected with the caller's own RBAC — it only ever narrows. Only
+	// FORBIDDEN is enforced today; READ and WRITE are the serving classes
+	// P1b's ceiling modes select between, and UNSPECIFIED means "not yet
+	// classified" rather than "safe".
+	MCPMethodClass v1pb.MCPMethodClass
+	Resources      []*Resource
 	// DelegatedGrant carries the grant state of the delegated MCP credential
 	// on internal-chain requests; nil on the public chain. Presence, not any
 	// field value, marks a request as MCP-originated.

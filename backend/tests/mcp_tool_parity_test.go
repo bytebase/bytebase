@@ -99,6 +99,11 @@ func TestMCPToolCallParity(t *testing.T) {
 // bearer; the delegated credential is signed with a derived key and cannot be
 // extracted that way, so the guard has to recognize it explicitly or fail open
 // for every MCP session.
+//
+// SwitchWorkspace is now also in the FORBIDDEN class, so the interceptor
+// refuses it before the handler runs; this test asserts the outcome an agent
+// sees, which both layers must deliver. The handler guard's own recognition
+// logic is pinned directly by TestSwitchWorkspaceMCPRecognition.
 func TestMCPCannotMintPlainUserToken(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)

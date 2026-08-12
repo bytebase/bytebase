@@ -5,6 +5,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
+
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // TestCheckTokenAudience pins the general-API audience policy for P1a PR 5:
@@ -57,4 +59,35 @@ func TestCheckTokenAudience(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "audience mismatch")
 	})
+}
+
+// TestMCPMethodClassOfProcedure pins that the classification the gate enforces
+// is read from the annotation on the RPC, and that an unresolvable procedure
+// is an error rather than a quiet "unclassified".
+func TestMCPMethodClassOfProcedure(t *testing.T) {
+	for _, tc := range []struct {
+		procedure string
+		want      v1pb.MCPMethodClass
+	}{
+		{"/bytebase.v1.AuthService/Login", v1pb.MCPMethodClass_FORBIDDEN},
+		{"/bytebase.v1.UserService/UpdateUser", v1pb.MCPMethodClass_FORBIDDEN},
+		{"/bytebase.v1.WorkspaceService/LeaveWorkspace", v1pb.MCPMethodClass_FORBIDDEN},
+		// Not yet classified — the rollout is method by method, and an
+		// unannotated RPC keeps serving exactly as before.
+		{"/bytebase.v1.UserService/GetUser", v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED},
+		{"/bytebase.v1.ProjectService/ListProjects", v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED},
+	} {
+		got, err := MCPMethodClassOfProcedure(tc.procedure)
+		require.NoError(t, err, tc.procedure)
+		require.Equal(t, tc.want, got, tc.procedure)
+	}
+
+	for _, procedure := range []string{
+		"not-a-procedure",
+		"/bytebase.v1.NoSuchService/Login",
+		"/bytebase.v1.AuthService/NoSuchMethod",
+	} {
+		_, err := MCPMethodClassOfProcedure(procedure)
+		require.Error(t, err, "%q must not resolve to a classification", procedure)
+	}
 }

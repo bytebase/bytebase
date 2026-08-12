@@ -5,7 +5,9 @@
 
 - [v1/annotation.proto](#v1_annotation-proto)
     - [AuthMethod](#bytebase-v1-AuthMethod)
+    - [MCPMethodClass](#bytebase-v1-MCPMethodClass)
   
+    - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
@@ -801,6 +803,23 @@ Authorization method for RPC calls.
 | CUSTOM | 2 | Custom authorization logic. |
 
 
+
+<a name="bytebase-v1-MCPMethodClass"></a>
+
+### MCPMethodClass
+Classification of an RPC for MCP (AI agent) sessions. The effective
+authorization of an MCP session is this classification intersected with the
+caller&#39;s own RBAC: it can only ever narrow what the human could do, never
+widen it.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MCP_METHOD_CLASS_UNSPECIFIED | 0 | Not yet classified. Reaches its handler, subject to RBAC as usual — the classification is being rolled out method by method, and only FORBIDDEN is enforced today. |
+| READ | 1 | Served to a read-only MCP session and above. |
+| WRITE | 2 | Served to a read-write MCP session only. |
+| FORBIDDEN | 3 | Never reachable by an MCP session, whatever the caller&#39;s own permissions are. These methods escape the MCP boundary rather than merely exercising a permission: a human with the permission uses the console; an agent acting for them does not get to. |
+
+
  
 
 
@@ -812,6 +831,7 @@ Authorization method for RPC calls.
 | allow_without_credential | bool | .google.protobuf.MethodOptions | 100000 | Whether the method allows access without authentication credentials. |
 | audit | bool | .google.protobuf.MethodOptions | 100003 | Whether to audit calls to this method. |
 | auth_method | AuthMethod | .google.protobuf.MethodOptions | 100002 | The authorization method to use for this RPC. |
+| mcp_method_class | MCPMethodClass | .google.protobuf.MethodOptions | 100004 | How the method is classified for MCP (AI agent) sessions. |
 | permission | string | .google.protobuf.MethodOptions | 100001 | The permission required to call this method. |
 
  

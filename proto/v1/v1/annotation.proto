@@ -16,6 +16,8 @@ extend google.protobuf.MethodOptions {
   AuthMethod auth_method = 100002;
   // Whether to audit calls to this method.
   bool audit = 100003;
+  // How the method is classified for MCP (AI agent) sessions.
+  MCPMethodClass mcp_method_class = 100004;
 }
 
 // Authorization method for RPC calls.
@@ -26,4 +28,24 @@ enum AuthMethod {
   IAM = 1;
   // Custom authorization logic.
   CUSTOM = 2;
+}
+
+// Classification of an RPC for MCP (AI agent) sessions. The effective
+// authorization of an MCP session is this classification intersected with the
+// caller's own RBAC: it can only ever narrow what the human could do, never
+// widen it.
+enum MCPMethodClass {
+  // Not yet classified. Reaches its handler, subject to RBAC as usual —
+  // the classification is being rolled out method by method, and only
+  // FORBIDDEN is enforced today.
+  MCP_METHOD_CLASS_UNSPECIFIED = 0;
+  // Served to a read-only MCP session and above.
+  READ = 1;
+  // Served to a read-write MCP session only.
+  WRITE = 2;
+  // Never reachable by an MCP session, whatever the caller's own
+  // permissions are. These methods escape the MCP boundary rather than
+  // merely exercising a permission: a human with the permission uses the
+  // console; an agent acting for them does not get to.
+  FORBIDDEN = 3;
 }

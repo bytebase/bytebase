@@ -182,11 +182,13 @@ func TestMCPMigrationGrantStateMatrix(t *testing.T) {
 	a.NoError(err)
 
 	// Row 3: the legacy admission — a plain web-session token driving MCP.
+	// The call is an audited mutation, so each session leaves exactly one
+	// provenance-carrying row to sort out below.
 	plainSession := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
 	defer plainSession.Close()
-	a.Equal(http.StatusOK, callAPIStatus(ctx, t, plainSession, "UserService/UpdateUser", map[string]any{
-		"user":       map[string]any{"name": ctl.principalName, "title": "driven by a pre-grant session"},
-		"updateMask": "title",
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, plainSession, "GroupService/CreateGroup", map[string]any{
+		"group":      map[string]any{"title": "driven by a pre-grant session"},
+		"groupEmail": "pre-grant-group@example.com",
 	}), "a plain web-session token must keep working through tools")
 
 	// Row 4: a real consent that never names a scope.
@@ -209,15 +211,15 @@ func TestMCPMigrationGrantStateMatrix(t *testing.T) {
 
 	scopelessSession := openMCPSession(ctx, t, ctl, scopelessToken)
 	defer scopelessSession.Close()
-	a.Equal(http.StatusOK, callAPIStatus(ctx, t, scopelessSession, "UserService/UpdateUser", map[string]any{
-		"user":       map[string]any{"name": ctl.principalName, "title": "driven by a scope-less grant"},
-		"updateMask": "title",
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, scopelessSession, "GroupService/CreateGroup", map[string]any{
+		"group":      map[string]any{"title": "driven by a scope-less grant"},
+		"groupEmail": "scopeless-grant-group@example.com",
 	}), "a grant that recorded no scope must still work end to end")
 
 	// What an operator investigating these sessions sees.
 	rows, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
 		Parent:  workspace.Msg.Name,
-		Filter:  `method == "/bytebase.v1.UserService/UpdateUser"`,
+		Filter:  `method == "/bytebase.v1.GroupService/CreateGroup"`,
 		OrderBy: "create_time desc",
 	}))
 	a.NoError(err)

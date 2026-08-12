@@ -29,10 +29,17 @@ type mcpCallResult struct {
 // bearer, exactly as an agent would, and decodes what that agent gets back.
 func callAPIViaMCP(ctx context.Context, t *testing.T, ctl *controller, bearer, operationID string, body map[string]any) mcpCallResult {
 	t.Helper()
-	a := require.New(t)
-
 	session := openMCPSession(ctx, t, ctl, bearer)
 	defer session.Close()
+	return callAPIOnSession(ctx, t, session, operationID, body)
+}
+
+// callAPIOnSession is callAPIViaMCP against an already-open session, for the
+// tests whose subject is a multi-call chain: one agent session, several tool
+// calls, one correlation ID.
+func callAPIOnSession(ctx context.Context, t *testing.T, session *mcp.ClientSession, operationID string, body map[string]any) mcpCallResult {
+	t.Helper()
+	a := require.New(t)
 
 	result, err := session.CallTool(ctx, &mcp.CallToolParams{
 		Name: "call_api",
@@ -93,6 +100,14 @@ func workspaceHasMember(ctx context.Context, t *testing.T, ctl *controller, bear
 // ordering is what the membership assertion below pins — with the guard
 // removed this test fails twice over, on the status and on the destroyed
 // membership.
+//
+// Since the FORBIDDEN gate landed, the refusal an MCP session actually meets
+// comes from the interceptor, ahead of the handler — so this test no longer
+// discriminates on WHICH layer refused, only that the session is refused and
+// the membership survives. The handler guard keeps its own coverage in
+// backend/api/v1: TestLeaveAndDeleteWorkspaceRefuseMCPCaller pins that each
+// handler refuses before it touches the store, and
+// TestSwitchWorkspaceInternalRefusesMCPCaller pins the shared mint point.
 func TestMCPCannotLeaveWorkspace(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -147,7 +162,7 @@ func TestMCPCannotLeaveWorkspace(t *testing.T) {
 
 	a.Equal(http.StatusForbidden, out.Status,
 		"an MCP session must be refused before it can leave a workspace")
-	a.Contains(out.Error, "MCP sessions cannot leave workspaces",
+	a.Contains(out.Error, "not available to MCP sessions",
 		"the refusal must come from the MCP guard, not from some other precondition")
 	// This fixture has a single workspace, so switchWorkspaceInternal's nextWS
 	// is always nil and the mint is out of reach even unguarded: the assertion
@@ -172,10 +187,11 @@ func TestMCPCannotLeaveWorkspace(t *testing.T) {
 
 // TestMCPCannotDeleteWorkspace is the DeleteWorkspace half of the same escape.
 // DeleteWorkspace ends in the same switchWorkspaceInternal token mint, and the
-// guard sits ahead of every check in the handler — including the SaaS-only
+// refusal sits ahead of every check in the handler — including the SaaS-only
 // precondition. That placement is what the assertion pins: this build is
-// self-hosted, so with the guard removed the MCP call reaches the SaaS check
-// and comes back FailedPrecondition rather than PermissionDenied.
+// self-hosted, so with both the gate and the handler guard removed the MCP call
+// reaches the SaaS check and comes back FailedPrecondition rather than
+// PermissionDenied.
 func TestMCPCannotDeleteWorkspace(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -199,7 +215,7 @@ func TestMCPCannotDeleteWorkspace(t *testing.T) {
 
 	a.Equal(http.StatusForbidden, out.Status,
 		"an MCP session must be refused before any deletion work happens")
-	a.Contains(out.Error, "MCP sessions cannot delete workspaces",
+	a.Contains(out.Error, "not available to MCP sessions",
 		"the refusal must come from the MCP guard, ahead of the SaaS precondition")
 	// As in the leave test, the mint is unreachable on a self-hosted fixture,
 	// so this states the invariant rather than discriminating on it.
@@ -243,20 +259,17 @@ func TestMCPOAuthSessionCannotLeaveOrDeleteWorkspace(t *testing.T) {
 
 	oauthToken, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
 
-	for _, tc := range []struct {
-		operation string
-		refusal   string
-	}{
-		{"WorkspaceService/LeaveWorkspace", "MCP sessions cannot leave workspaces"},
-		{"WorkspaceService/DeleteWorkspace", "MCP sessions cannot delete workspaces"},
+	for _, operation := range []string{
+		"WorkspaceService/LeaveWorkspace",
+		"WorkspaceService/DeleteWorkspace",
 	} {
-		out := callAPIViaMCP(ctx, t, ctl, oauthToken, tc.operation,
+		out := callAPIViaMCP(ctx, t, ctl, oauthToken, operation,
 			map[string]any{"name": workspace.Msg.Name})
-		t.Logf("MCP OAuth %s → status=%d error=%q", tc.operation, out.Status, out.Error)
+		t.Logf("MCP OAuth %s → status=%d error=%q", operation, out.Status, out.Error)
 
 		a.Equal(http.StatusForbidden, out.Status,
-			"a real MCP OAuth session must be refused by %s", tc.operation)
-		a.Contains(out.Error, tc.refusal,
+			"a real MCP OAuth session must be refused by %s", operation)
+		a.Contains(out.Error, "not available to MCP sessions",
 			"the refusal must come from the MCP guard")
 		a.Empty(out.Response.Token,
 			"an MCP session must never receive a plain user access token")
