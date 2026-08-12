@@ -450,8 +450,10 @@ const timestampSeconds = (seconds: number) => ({
 beforeEach(() => {
   vi.clearAllMocks();
   // Tests here stub `location`; without this the stub leaks into every test
-  // declared after it, with only the keys that test happened to supply.
+  // declared after it, with only the keys that test happened to supply. The
+  // unstub is blanket, so re-install the localStorage mock it also removes.
   vi.unstubAllGlobals();
+  vi.stubGlobal("localStorage", mocks.localStorage);
   localStorage.clear();
 });
 
