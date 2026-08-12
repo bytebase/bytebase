@@ -43,11 +43,9 @@ type SavedQueryServiceClient interface {
 	// Permissions required: None (authenticated users only)
 	CreateSavedQuery(ctx context.Context, in *CreateSavedQueryRequest, opts ...grpc.CallOption) (*SavedQuery, error)
 	// Get a saved query by name.
-	// The users can access this method if,
-	// - they are the creator of the saved query;
-	// - they have bb.worksheets.get permission on the workspace;
-	// - the saved query is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-	// Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+	// Saved queries are private: only the creator, or a caller holding
+	// bb.worksheets.manage on the workspace, can access one.
+	// Permissions required: creator, or workspace bb.worksheets.manage
 	GetSavedQuery(ctx context.Context, in *GetSavedQueryRequest, opts ...grpc.CallOption) (*SavedQuery, error)
 	// List saved queries.
 	// This is used for listing saved queries in a project, or across all projects by using `projects/-`.
@@ -57,28 +55,25 @@ type SavedQueryServiceClient interface {
 	// Only folders stored in the caller's saved query organizer are returned.
 	ListSavedQueryFolders(ctx context.Context, in *ListSavedQueryFoldersRequest, opts ...grpc.CallOption) (*ListSavedQueryFoldersResponse, error)
 	// Search for saved queries.
-	// This is used for finding my saved queries or saved queries shared by other people.
+	// This is used for finding my saved queries in a project.
 	// The saved query accessibility is the same as GetSavedQuery().
-	// Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+	// Permissions required: creator, or workspace bb.worksheets.manage
 	SearchSavedQueries(ctx context.Context, in *SearchSavedQueriesRequest, opts ...grpc.CallOption) (*SearchSavedQueriesResponse, error)
 	// Update a saved query.
-	// The users can access this method if,
-	// - they are the creator of the saved query;
-	// - they have bb.worksheets.manage permission on the workspace;
-	// - the saved query is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-	// Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE saved queries)
+	// The access is the same as GetSavedQuery method.
+	// Permissions required: creator, or workspace bb.worksheets.manage
 	UpdateSavedQuery(ctx context.Context, in *UpdateSavedQueryRequest, opts ...grpc.CallOption) (*SavedQuery, error)
 	// Update the organizer of a saved query.
 	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+	// Permissions required: creator, or workspace bb.worksheets.manage
 	UpdateSavedQueryOrganizer(ctx context.Context, in *UpdateSavedQueryOrganizerRequest, opts ...grpc.CallOption) (*SavedQueryOrganizer, error)
 	// Batch update the organizers of saved queries.
 	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+	// Permissions required: creator, or workspace bb.worksheets.manage
 	BatchUpdateSavedQueryOrganizer(ctx context.Context, in *BatchUpdateSavedQueryOrganizerRequest, opts ...grpc.CallOption) (*BatchUpdateSavedQueryOrganizerResponse, error)
 	// Delete a saved query.
 	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE saved queries)
+	// Permissions required: creator, or workspace bb.worksheets.manage
 	DeleteSavedQuery(ctx context.Context, in *DeleteSavedQueryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -192,11 +187,9 @@ type SavedQueryServiceServer interface {
 	// Permissions required: None (authenticated users only)
 	CreateSavedQuery(context.Context, *CreateSavedQueryRequest) (*SavedQuery, error)
 	// Get a saved query by name.
-	// The users can access this method if,
-	// - they are the creator of the saved query;
-	// - they have bb.worksheets.get permission on the workspace;
-	// - the saved query is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-	// Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+	// Saved queries are private: only the creator, or a caller holding
+	// bb.worksheets.manage on the workspace, can access one.
+	// Permissions required: creator, or workspace bb.worksheets.manage
 	GetSavedQuery(context.Context, *GetSavedQueryRequest) (*SavedQuery, error)
 	// List saved queries.
 	// This is used for listing saved queries in a project, or across all projects by using `projects/-`.
@@ -206,28 +199,25 @@ type SavedQueryServiceServer interface {
 	// Only folders stored in the caller's saved query organizer are returned.
 	ListSavedQueryFolders(context.Context, *ListSavedQueryFoldersRequest) (*ListSavedQueryFoldersResponse, error)
 	// Search for saved queries.
-	// This is used for finding my saved queries or saved queries shared by other people.
+	// This is used for finding my saved queries in a project.
 	// The saved query accessibility is the same as GetSavedQuery().
-	// Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+	// Permissions required: creator, or workspace bb.worksheets.manage
 	SearchSavedQueries(context.Context, *SearchSavedQueriesRequest) (*SearchSavedQueriesResponse, error)
 	// Update a saved query.
-	// The users can access this method if,
-	// - they are the creator of the saved query;
-	// - they have bb.worksheets.manage permission on the workspace;
-	// - the saved query is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-	// Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE saved queries)
+	// The access is the same as GetSavedQuery method.
+	// Permissions required: creator, or workspace bb.worksheets.manage
 	UpdateSavedQuery(context.Context, *UpdateSavedQueryRequest) (*SavedQuery, error)
 	// Update the organizer of a saved query.
 	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+	// Permissions required: creator, or workspace bb.worksheets.manage
 	UpdateSavedQueryOrganizer(context.Context, *UpdateSavedQueryOrganizerRequest) (*SavedQueryOrganizer, error)
 	// Batch update the organizers of saved queries.
 	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+	// Permissions required: creator, or workspace bb.worksheets.manage
 	BatchUpdateSavedQueryOrganizer(context.Context, *BatchUpdateSavedQueryOrganizerRequest) (*BatchUpdateSavedQueryOrganizerResponse, error)
 	// Delete a saved query.
 	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE saved queries)
+	// Permissions required: creator, or workspace bb.worksheets.manage
 	DeleteSavedQuery(context.Context, *DeleteSavedQueryRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedSavedQueryServiceServer()
 }

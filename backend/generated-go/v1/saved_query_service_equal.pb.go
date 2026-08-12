@@ -336,9 +336,6 @@ func (x *SavedQuery) Equal(y *SavedQuery) bool {
 	if x.ContentSize != y.ContentSize {
 		return false
 	}
-	if x.Visibility != y.Visibility {
-		return false
-	}
 	if x.Starred != y.Starred {
 		return false
 	}

@@ -489,7 +489,6 @@
     "view": "View",
     "view-details": "View Details",
     "view-doc": "View doc",
-    "visibility": "Visibility",
     "want-help": "Want help",
     "warning": "Warning",
     "webhooks": "Webhooks",
@@ -2992,7 +2991,6 @@
     },
     "invalid-database": "Invalid database {{database}}",
     "last-synced": "Last synced: <time></time>",
-    "link-access": "Access",
     "loading-data": "Loading Data...",
     "loading-databases": "Loading Databases...",
     "manage-connections": "Manage connections",
@@ -3009,12 +3007,6 @@
     "pending-query": "Pending query",
     "preview-table-data": "Preview table data",
     "previous-row": "Previous Row",
-    "private": "Private",
-    "private-desc": "Only you can access this saved query",
-    "project-read": "Project can view",
-    "project-read-desc": "Project members can view this saved query. Only the owner and admins can edit it.",
-    "project-write": "Project can edit",
-    "project-write-desc": "Project members can view and edit this saved query.",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
     },

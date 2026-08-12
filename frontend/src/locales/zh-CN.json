@@ -489,7 +489,6 @@
     "view": "查看",
     "view-details": "查看详情",
     "view-doc": "查看文档",
-    "visibility": "可见性",
     "want-help": "需要帮助",
     "warning": "警告",
     "webhooks": "Webhook",
@@ -2992,7 +2991,6 @@
     },
     "invalid-database": "数据库 {{database}} 无效",
     "last-synced": "上次同步时间：<time></time>",
-    "link-access": "访问权限",
     "loading-data": "加载数据中...",
     "loading-databases": "加载数据库信息...",
     "manage-connections": "管理连接",
@@ -3009,12 +3007,6 @@
     "pending-query": "待处理查询",
     "preview-table-data": "预览表数据",
     "previous-row": "上一行",
-    "private": "私有",
-    "private-desc": "只有您自己可以访问此查询",
-    "project-read": "项目内可查看",
-    "project-read-desc": "项目成员可以查看此查询，仅所有者和管理员可以编辑。",
-    "project-write": "项目内可编辑",
-    "project-write-desc": "项目成员可以查看和编辑此查询。",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "禁止查询主数据源。"
     },

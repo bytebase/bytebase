@@ -13783,7 +13783,7 @@ paths:
       description: |-
         Batch update the organizers of saved queries.
          The access is the same as UpdateSavedQuery method.
-         Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+         Permissions required: creator, or workspace bb.worksheets.manage
       operationId: SavedQueryService_BatchUpdateSavedQueryOrganizer
       parameters:
         - name: project
@@ -13809,7 +13809,6 @@ paths:
                      - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
                      - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
                      - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-                     - visibility: check Visibility enum in the SavedQuery message for values, support "==" and "in [xx]" operator.
                      - folder: the saved query organizer folder path, support exact "==" operator.
                 organizer:
                   title: organizer
@@ -13844,11 +13843,9 @@ paths:
       summary: GetSavedQuery
       description: |-
         Get a saved query by name.
-         The users can access this method if,
-         - they are the creator of the saved query;
-         - they have bb.worksheets.get permission on the workspace;
-         - the saved query is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-         Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+         Saved queries are private: only the creator, or a caller holding
+         bb.worksheets.manage on the workspace, can access one.
+         Permissions required: creator, or workspace bb.worksheets.manage
       operationId: SavedQueryService_GetSavedQuery
       parameters:
         - name: project
@@ -13877,7 +13874,7 @@ paths:
       description: |-
         Delete a saved query.
          The access is the same as UpdateSavedQuery method.
-         Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE saved queries)
+         Permissions required: creator, or workspace bb.worksheets.manage
       operationId: SavedQueryService_DeleteSavedQuery
       parameters:
         - name: project
@@ -13905,11 +13902,8 @@ paths:
       summary: UpdateSavedQuery
       description: |-
         Update a saved query.
-         The users can access this method if,
-         - they are the creator of the saved query;
-         - they have bb.worksheets.manage permission on the workspace;
-         - the saved query is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-         Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE saved queries)
+         The access is the same as GetSavedQuery method.
+         Permissions required: creator, or workspace bb.worksheets.manage
       operationId: SavedQueryService_UpdateSavedQuery
       parameters:
         - name: project
@@ -14159,7 +14153,7 @@ paths:
       description: |-
         Update the organizer of a saved query.
          The access is the same as UpdateSavedQuery method.
-         Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+         Permissions required: creator, or workspace bb.worksheets.manage
       operationId: SavedQueryService_UpdateSavedQueryOrganizer
       parameters:
         - name: project
@@ -14416,9 +14410,9 @@ paths:
       summary: SearchSavedQueries
       description: |-
         Search for saved queries.
-         This is used for finding my saved queries or saved queries shared by other people.
+         This is used for finding my saved queries in a project.
          The saved query accessibility is the same as GetSavedQuery().
-         Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+         Permissions required: creator, or workspace bb.worksheets.manage
       operationId: SavedQueryService_SearchSavedQueries
       parameters:
         - name: project
@@ -14445,7 +14439,6 @@ paths:
                      - title: the saved query title, support "contains" operator.
                      - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
                      - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-                     - visibility: check Visibility enum in the SavedQuery message for values, support "==" and "in [xx]" operator.
                      - folder: the saved query organizer folder path, support "==" operator.
 
                      For example:
@@ -14454,8 +14447,6 @@ paths:
                      creator != "users/{email}"
                      starred == true
                      starred == false
-                     visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
-                     visibility == "PRIVATE"
                      folder == "foo/bar"
                 pageSize:
                   type: integer
@@ -20262,7 +20253,6 @@ components:
              - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
              - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
              - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-             - visibility: check Visibility enum in the SavedQuery message for values, support "==" and "in [xx]" operator.
              - folder: the saved query organizer folder path, support exact "==" operator.
         organizer:
           title: organizer
@@ -29027,9 +29017,6 @@ components:
           format: int64
           description: content_size is the full size of the content, may not match the size of the `content` field.
           readOnly: true
-        visibility:
-          title: visibility
-          $ref: '#/components/schemas/bytebase.v1.SavedQuery.Visibility'
         starred:
           type: boolean
           title: starred
@@ -29047,16 +29034,7 @@ components:
         - name
         - title
         - content
-        - visibility
       additionalProperties: false
-    bytebase.v1.SavedQuery.Visibility:
-      type: string
-      title: Visibility
-      enum:
-        - VISIBILITY_UNSPECIFIED
-        - PROJECT_READ
-        - PROJECT_WRITE
-        - PRIVATE
     bytebase.v1.SavedQueryFolder:
       type: object
       properties:
@@ -29594,7 +29572,6 @@ components:
              - title: the saved query title, support "contains" operator.
              - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
              - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-             - visibility: check Visibility enum in the SavedQuery message for values, support "==" and "in [xx]" operator.
              - folder: the saved query organizer folder path, support "==" operator.
 
              For example:
@@ -29603,8 +29580,6 @@ components:
              creator != "users/{email}"
              starred == true
              starred == false
-             visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
-             visibility == "PRIVATE"
              folder == "foo/bar"
         pageSize:
           type: integer
@@ -32089,12 +32064,11 @@ components:
           description: |-
             The list of fields to be updated.
              Fields are specified relative to the saved query.
-             (e.g., `title`, `statement`; *not* `saved_query.title` or `saved_query.statement`)
+             (e.g., `title`, `content`; *not* `saved_query.title` or `saved_query.content`)
              Only support update the following fields for now:
              - `title`
-             - `statement`
-             - `starred`
-             - `visibility`
+             - `content`
+             - `database`
           $ref: '#/components/schemas/google.protobuf.FieldMask'
       title: UpdateSavedQueryRequest
       required:

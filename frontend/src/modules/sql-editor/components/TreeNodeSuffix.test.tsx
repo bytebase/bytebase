@@ -68,14 +68,6 @@ vi.mock("@/components/ui/tooltip", () => ({
   ),
 }));
 
-vi.mock("@/types/proto-es/v1/saved_query_service_pb", () => ({
-  SavedQuery_Visibility: {
-    PRIVATE: 0,
-    PROJECT_READ: 1,
-    PROJECT_WRITE: 2,
-  },
-}));
-
 // ---- helpers ----------------------------------------------------------------
 
 const makeNode = (
@@ -130,7 +122,6 @@ beforeEach(async () => {
   mocks.getSavedQueryByName.mockImplementation((name: string) => ({
     name,
     starred: false,
-    visibility: 0, // PRIVATE
     creator: "users/test@example.com",
   }));
   mocks.getSQLEditorTabsState.mockReturnValue({

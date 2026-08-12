@@ -2818,10 +2818,6 @@
               
               
                 <li>
-                  <a href="#bytebase.v1.SavedQuery.Visibility"><span class="badge">E</span>SavedQuery.Visibility</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.SavedQueryFolder.Category"><span class="badge">E</span>SavedQueryFolder.Category</a>
                 </li>
               
@@ -31540,7 +31536,6 @@ Supported filter:
 - name: the saved query name in &#34;projects/{project}/savedQueries/{savedQuery}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator.
 - creator: the saved query creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
 - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred saved queries, support &#34;==&#34; operator.
-- visibility: check Visibility enum in the SavedQuery message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
 - folder: the saved query organizer folder path, support exact &#34;==&#34; operator. </p></td>
                 </tr>
               
@@ -31908,13 +31903,6 @@ use GetSavedQuery() request to retrieve the full content. </p></td>
                 </tr>
               
                 <tr>
-                  <td>visibility</td>
-                  <td><a href="#bytebase.v1.SavedQuery.Visibility">SavedQuery.Visibility</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>starred</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -32035,7 +32023,6 @@ Supported filter:
 - title: the saved query title, support &#34;contains&#34; operator.
 - creator: the saved query creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
 - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred saved queries, support &#34;==&#34; operator.
-- visibility: check Visibility enum in the SavedQuery message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
 - folder: the saved query organizer folder path, support &#34;==&#34; operator.
 
 For example:
@@ -32044,8 +32031,6 @@ title.contains(&#34;saved query title&#34;)
 creator != &#34;users/{email}&#34;
 starred == true
 starred == false
-visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;]
-visibility == &#34;PRIVATE&#34;
 folder == &#34;foo/bar&#34; </p></td>
                 </tr>
               
@@ -32178,12 +32163,11 @@ Format: projects/{project}/savedQueries/{savedQuery} </p></td>
                   <td></td>
                   <td><p>The list of fields to be updated.
 Fields are specified relative to the saved query.
-(e.g., `title`, `statement`; *not* `saved_query.title` or `saved_query.statement`)
+(e.g., `title`, `content`; *not* `saved_query.title` or `saved_query.content`)
 Only support update the following fields for now:
 - `title`
-- `statement`
-- `starred`
-- `visibility` </p></td>
+- `content`
+- `database` </p></td>
                 </tr>
               
             </tbody>
@@ -32194,41 +32178,6 @@ Only support update the following fields for now:
         
       
 
-      
-        <h3 id="bytebase.v1.SavedQuery.Visibility">SavedQuery.Visibility</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>VISIBILITY_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PROJECT_READ</td>
-                <td>1</td>
-                <td><p>Read access in project scope, saved query OWNER/DBA and project OWNER can read/write, other project members can read.</p></td>
-              </tr>
-            
-              <tr>
-                <td>PROJECT_WRITE</td>
-                <td>2</td>
-                <td><p>Write access in project scope, saved query OWNER/DBA and all members in the project can write the saved query.</p></td>
-              </tr>
-            
-              <tr>
-                <td>PRIVATE</td>
-                <td>3</td>
-                <td><p>Private, only saved query OWNER can read/write.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.v1.SavedQueryFolder.Category">SavedQueryFolder.Category</h3>
         <p></p>
@@ -32284,11 +32233,9 @@ Permissions required: None (authenticated users only)</p></td>
                 <td><a href="#bytebase.v1.GetSavedQueryRequest">GetSavedQueryRequest</a></td>
                 <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
                 <td><p>Get a saved query by name.
-The users can access this method if,
-- they are the creator of the saved query;
-- they have bb.worksheets.get permission on the workspace;
-- the saved query is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)</p></td>
+Saved queries are private: only the creator, or a caller holding
+bb.worksheets.manage on the workspace, can access one.
+Permissions required: creator, or workspace bb.worksheets.manage</p></td>
               </tr>
             
               <tr>
@@ -32313,9 +32260,9 @@ Only folders stored in the caller&#39;s saved query organizer are returned.</p><
                 <td><a href="#bytebase.v1.SearchSavedQueriesRequest">SearchSavedQueriesRequest</a></td>
                 <td><a href="#bytebase.v1.SearchSavedQueriesResponse">SearchSavedQueriesResponse</a></td>
                 <td><p>Search for saved queries.
-This is used for finding my saved queries or saved queries shared by other people.
+This is used for finding my saved queries in a project.
 The saved query accessibility is the same as GetSavedQuery().
-Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)</p></td>
+Permissions required: creator, or workspace bb.worksheets.manage</p></td>
               </tr>
             
               <tr>
@@ -32323,11 +32270,8 @@ Permissions required: bb.worksheets.get (or creator, or project member for share
                 <td><a href="#bytebase.v1.UpdateSavedQueryRequest">UpdateSavedQueryRequest</a></td>
                 <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
                 <td><p>Update a saved query.
-The users can access this method if,
-- they are the creator of the saved query;
-- they have bb.worksheets.manage permission on the workspace;
-- the saved query is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE saved queries)</p></td>
+The access is the same as GetSavedQuery method.
+Permissions required: creator, or workspace bb.worksheets.manage</p></td>
               </tr>
             
               <tr>
@@ -32336,7 +32280,7 @@ Permissions required: bb.worksheets.manage (or creator, or project member for PR
                 <td><a href="#bytebase.v1.SavedQueryOrganizer">SavedQueryOrganizer</a></td>
                 <td><p>Update the organizer of a saved query.
 The access is the same as UpdateSavedQuery method.
-Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)</p></td>
+Permissions required: creator, or workspace bb.worksheets.manage</p></td>
               </tr>
             
               <tr>
@@ -32345,7 +32289,7 @@ Permissions required: bb.worksheets.get (or creator, or project member for share
                 <td><a href="#bytebase.v1.BatchUpdateSavedQueryOrganizerResponse">BatchUpdateSavedQueryOrganizerResponse</a></td>
                 <td><p>Batch update the organizers of saved queries.
 The access is the same as UpdateSavedQuery method.
-Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)</p></td>
+Permissions required: creator, or workspace bb.worksheets.manage</p></td>
               </tr>
             
               <tr>
@@ -32354,7 +32298,7 @@ Permissions required: bb.worksheets.get (or creator, or project member for share
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><p>Delete a saved query.
 The access is the same as UpdateSavedQuery method.
-Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE saved queries)</p></td>
+Permissions required: creator, or workspace bb.worksheets.manage</p></td>
               </tr>
             
           </tbody>

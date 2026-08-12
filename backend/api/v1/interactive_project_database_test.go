@@ -43,35 +43,28 @@ func TestBOT36SavedQueryDatabasesUseCanonicalOwningProjectNames(t *testing.T) {
 	ctx, stores, projectID, instanceID, databaseName := setupBOT36ProjectDatabase(t)
 	service := NewSavedQueryService(stores, nil)
 
-	_, err := service.getSavedQueryDatabase(ctx, projectID, common.FormatDatabase(instanceID, databaseName))
+	_, err := service.validateSavedQueryDatabase(ctx, projectID, common.FormatDatabase(instanceID, databaseName))
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 
-	_, err = service.getSavedQueryDatabase(ctx, projectID, common.FormatProjectDatabase("other-project", instanceID, databaseName))
+	_, err = service.validateSavedQueryDatabase(ctx, projectID, common.FormatProjectDatabase("other-project", instanceID, databaseName))
 	require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 
-	database, err := service.getSavedQueryDatabase(ctx, projectID, common.FormatProjectDatabase(projectID, instanceID, databaseName))
+	canonical, err := service.validateSavedQueryDatabase(ctx, projectID, common.FormatProjectDatabase(projectID, instanceID, databaseName))
 	require.NoError(t, err)
-	require.Equal(t, databaseName, database.DatabaseName)
+	require.Equal(t, common.FormatProjectDatabase(projectID, instanceID, databaseName), canonical)
 
-	savedQuery, err := service.convertToAPISavedQuery(ctx, &store.WorkSheetMessage{
-		ProjectID:    projectID,
-		ResourceID:   "saved-query-a",
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+	// The stored canonical name round-trips through the API shape without
+	// re-resolution — a dangling reference degrades instead of erroring.
+	savedQuery := convertToAPISavedQuery(&store.SavedQueryMessage{
+		ProjectID:  projectID,
+		ResourceID: "saved-query-a",
+		Database:   canonical,
 	})
-	require.NoError(t, err)
-	require.Equal(t, common.FormatProjectDatabase(projectID, instanceID, databaseName), savedQuery.Database)
+	require.Equal(t, canonical, savedQuery.Database)
 
-	workspaceDatabase, err := service.getSavedQueryDatabase(ctx, projectID, common.FormatDatabase("workspace-instance", "shared"))
+	workspaceCanonical, err := service.validateSavedQueryDatabase(ctx, projectID, common.FormatDatabase("workspace-instance", "shared"))
 	require.NoError(t, err)
-	workspaceSavedQuery, err := service.convertToAPISavedQuery(ctx, &store.WorkSheetMessage{
-		ProjectID:    projectID,
-		ResourceID:   "saved-query-b",
-		InstanceID:   &workspaceDatabase.InstanceID,
-		DatabaseName: &workspaceDatabase.DatabaseName,
-	})
-	require.NoError(t, err)
-	require.Equal(t, common.FormatDatabase("workspace-instance", "shared"), workspaceSavedQuery.Database)
+	require.Equal(t, common.FormatDatabase("workspace-instance", "shared"), workspaceCanonical)
 }
 
 func TestBOT36AccessGrantTargetsRequireCanonicalOwningProject(t *testing.T) {

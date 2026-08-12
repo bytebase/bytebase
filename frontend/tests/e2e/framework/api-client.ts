@@ -498,7 +498,7 @@ export class BytebaseApiClient {
     const b64 = Buffer.from(content).toString("base64");
     return this.request<{ name: string }>(
       "POST", `/v1/${project}/savedQueries`,
-      { title, database, content: b64, visibility: "PRIVATE" },
+      { title, database, content: b64 },
     );
   }
 

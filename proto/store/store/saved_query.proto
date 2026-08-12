@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message SavedQueryPayload {
+  // The connected database, stored as its canonical resource name:
+  // instances/{instance}/databases/{database} for a workspace instance,
+  // projects/{project}/instances/{instance}/databases/{database} for a
+  // project instance. Validated against the saved query's own project at
+  // write time; the reference is soft and may dangle after the database
+  // is deleted or transferred, degrading to "no database" in the UI.
+  string database = 1;
+}
+
+message SavedQueryOrganizerPayload {
+  bool starred = 1;
+  // The folder path for a saved query.
+  // For example, if the folders is [A, B, C], means the saved query is in the A/B/C subfolder.
+  repeated string folders = 2;
+}

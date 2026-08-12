@@ -489,7 +489,6 @@
     "view": "Ver",
     "view-details": "Ver Detalles",
     "view-doc": "Ver doc",
-    "visibility": "Visibilidad",
     "want-help": "¿Quiere ayuda?",
     "warning": "Advertencia",
     "webhooks": "Webhooks",
@@ -2992,7 +2991,6 @@
     },
     "invalid-database": "Base de datos no válida {{database}}",
     "last-synced": "Última sincronización: <time></time>",
-    "link-access": "Acceso",
     "loading-data": "Cargando datos...",
     "loading-databases": "Cargando bases de datos...",
     "manage-connections": "Gestionar las conexiones",
@@ -3009,12 +3007,6 @@
     "pending-query": "Consulta pendiente",
     "preview-table-data": "Vista previa de datos de la tabla",
     "previous-row": "Fila anterior",
-    "private": "Privado",
-    "private-desc": "Solo tú puedes acceder a esta consulta guardada",
-    "project-read": "El proyecto puede ver",
-    "project-read-desc": "Los miembros del proyecto pueden ver esta consulta guardada. Solo el propietario y los administradores pueden editarla.",
-    "project-write": "El proyecto puede editar",
-    "project-write-desc": "Los miembros del proyecto pueden ver y editar esta consulta guardada.",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador."
     },

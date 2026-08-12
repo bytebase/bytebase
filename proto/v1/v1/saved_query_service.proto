@@ -30,11 +30,9 @@ service SavedQueryService {
   }
 
   // Get a saved query by name.
-  // The users can access this method if,
-  // - they are the creator of the saved query;
-  // - they have bb.worksheets.get permission on the workspace;
-  // - the saved query is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-  // Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+  // Saved queries are private: only the creator, or a caller holding
+  // bb.worksheets.manage on the workspace, can access one.
+  // Permissions required: creator, or workspace bb.worksheets.manage
   rpc GetSavedQuery(GetSavedQueryRequest) returns (SavedQuery) {
     option (google.api.http) = {get: "/v1/{name=projects/*/savedQueries/*}"};
     option (google.api.method_signature) = "name";
@@ -60,9 +58,9 @@ service SavedQueryService {
   }
 
   // Search for saved queries.
-  // This is used for finding my saved queries or saved queries shared by other people.
+  // This is used for finding my saved queries in a project.
   // The saved query accessibility is the same as GetSavedQuery().
-  // Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+  // Permissions required: creator, or workspace bb.worksheets.manage
   rpc SearchSavedQueries(SearchSavedQueriesRequest) returns (SearchSavedQueriesResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/savedQueries:search"
@@ -73,11 +71,8 @@ service SavedQueryService {
   }
 
   // Update a saved query.
-  // The users can access this method if,
-  // - they are the creator of the saved query;
-  // - they have bb.worksheets.manage permission on the workspace;
-  // - the saved query is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-  // Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE saved queries)
+  // The access is the same as GetSavedQuery method.
+  // Permissions required: creator, or workspace bb.worksheets.manage
   rpc UpdateSavedQuery(UpdateSavedQueryRequest) returns (SavedQuery) {
     option (google.api.http) = {
       patch: "/v1/{saved_query.name=projects/*/savedQueries/*}"
@@ -89,7 +84,7 @@ service SavedQueryService {
 
   // Update the organizer of a saved query.
   // The access is the same as UpdateSavedQuery method.
-  // Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+  // Permissions required: creator, or workspace bb.worksheets.manage
   rpc UpdateSavedQueryOrganizer(UpdateSavedQueryOrganizerRequest) returns (SavedQueryOrganizer) {
     option (google.api.http) = {
       patch: "/v1/{organizer.saved_query=projects/*/savedQueries/*}/organizer"
@@ -101,7 +96,7 @@ service SavedQueryService {
 
   // Batch update the organizers of saved queries.
   // The access is the same as UpdateSavedQuery method.
-  // Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+  // Permissions required: creator, or workspace bb.worksheets.manage
   rpc BatchUpdateSavedQueryOrganizer(BatchUpdateSavedQueryOrganizerRequest) returns (BatchUpdateSavedQueryOrganizerResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/savedQueries/organizers:batchUpdate"
@@ -113,7 +108,7 @@ service SavedQueryService {
 
   // Delete a saved query.
   // The access is the same as UpdateSavedQuery method.
-  // Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE saved queries)
+  // Permissions required: creator, or workspace bb.worksheets.manage
   rpc DeleteSavedQuery(DeleteSavedQueryRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/savedQueries/*}"};
     option (google.api.method_signature) = "name";
@@ -214,12 +209,11 @@ message UpdateSavedQueryRequest {
 
   // The list of fields to be updated.
   // Fields are specified relative to the saved query.
-  // (e.g., `title`, `statement`; *not* `saved_query.title` or `saved_query.statement`)
+  // (e.g., `title`, `content`; *not* `saved_query.title` or `saved_query.content`)
   // Only support update the following fields for now:
   // - `title`
-  // - `statement`
-  // - `starred`
-  // - `visibility`
+  // - `content`
+  // - `database`
   google.protobuf.FieldMask update_mask = 2;
 }
 
@@ -235,7 +229,6 @@ message BatchUpdateSavedQueryOrganizerRequest {
   // - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
   // - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
   // - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-  // - visibility: check Visibility enum in the SavedQuery message for values, support "==" and "in [xx]" operator.
   // - folder: the saved query organizer folder path, support exact "==" operator.
   string filter = 2;
 
@@ -304,7 +297,6 @@ message SearchSavedQueriesRequest {
   // - title: the saved query title, support "contains" operator.
   // - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
   // - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-  // - visibility: check Visibility enum in the SavedQuery message for values, support "==" and "in [xx]" operator.
   // - folder: the saved query organizer folder path, support "==" operator.
   //
   // For example:
@@ -313,8 +305,6 @@ message SearchSavedQueriesRequest {
   // creator != "users/{email}"
   // starred == true
   // starred == false
-  // visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
-  // visibility == "PRIVATE"
   // folder == "foo/bar"
   string filter = 2;
 
@@ -381,16 +371,10 @@ message SavedQuery {
   // content_size is the full size of the content, may not match the size of the `content` field.
   int64 content_size = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  enum Visibility {
-    VISIBILITY_UNSPECIFIED = 0;
-    // Read access in project scope, saved query OWNER/DBA and project OWNER can read/write, other project members can read.
-    PROJECT_READ = 1;
-    // Write access in project scope, saved query OWNER/DBA and all members in the project can write the saved query.
-    PROJECT_WRITE = 2;
-    // Private, only saved query OWNER can read/write.
-    PRIVATE = 3;
-  }
-  Visibility visibility = 10 [(google.api.field_behavior) = REQUIRED];
+  // The removed visibility field (saved queries are private to their creator;
+  // per-object sharing arrives with the access-model redesign).
+  reserved 10;
+  reserved "visibility";
 
   // starred indicates whether the saved query is starred by the current authenticated user.
   bool starred = 11 [(google.api.field_behavior) = OUTPUT_ONLY];

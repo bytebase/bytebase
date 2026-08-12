@@ -11,7 +11,6 @@ import {
 } from "@/modules/sql-editor/model/Sheet";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
-import { SavedQuery_Visibility } from "@/types/proto-es/v1/saved_query_service_pb";
 
 type Props = {
   readonly node: SavedQueryFolderNode;
@@ -57,7 +56,6 @@ export function TreeNodeSuffix({
       return {
         name: sheet.name,
         starred: sheet.starred,
-        visibility: sheet.visibility,
         creator: sheet.creator,
       };
     })
@@ -81,19 +79,6 @@ export function TreeNodeSuffix({
     savedQueryCreatorTitle,
     savedQueryLite?.creator,
   ]);
-
-  const visibilityDisplayName = (visibility: SavedQuery_Visibility) => {
-    switch (visibility) {
-      case SavedQuery_Visibility.PRIVATE:
-        return t("sql-editor.private");
-      case SavedQuery_Visibility.PROJECT_READ:
-        return t("sql-editor.project-read");
-      case SavedQuery_Visibility.PROJECT_WRITE:
-        return t("sql-editor.project-write");
-      default:
-        return "";
-    }
-  };
 
   const creatorForSheet = (creator: string) => {
     return savedQueryCreatorTitle ?? creator;
@@ -142,33 +127,21 @@ export function TreeNodeSuffix({
     );
   }
 
-  // SavedQuery node: visibility badge + star + more
+  // SavedQuery node: creator badge (admin view of someone else's query) +
+  // star + more
   if (!savedQueryLite) {
     return null;
   }
 
-  const showVisibilityBadge =
-    savedQueryLite.visibility === SavedQuery_Visibility.PROJECT_READ ||
-    savedQueryLite.visibility === SavedQuery_Visibility.PROJECT_WRITE;
-
   return (
     <div className="inline-flex shrink-0 items-center gap-x-1">
-      {showVisibilityBadge && (
+      {!isSavedQueryCreator(savedQueryLite) && (
         <Tooltip
           content={
             <div>
-              <div>
-                {t("common.visibility")}
-                {": "}
-                {visibilityDisplayName(savedQueryLite.visibility)}
-              </div>
-              {!isSavedQueryCreator(savedQueryLite) && (
-                <div>
-                  {t("common.creator")}
-                  {": "}
-                  {creatorForSheet(savedQueryLite.creator)}
-                </div>
-              )}
+              {t("common.creator")}
+              {": "}
+              {creatorForSheet(savedQueryLite.creator)}
             </div>
           }
         >
