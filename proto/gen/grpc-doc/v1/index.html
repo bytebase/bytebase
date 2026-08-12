@@ -184,9 +184,17 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.MCPForbiddenReason"><span class="badge">E</span>MCPForbiddenReason</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.MCPMethodClass"><span class="badge">E</span>MCPMethodClass</a>
                 </li>
               
+              
+                <li>
+                  <a href="#v1%2fannotation.proto-extensions"><span class="badge">X</span>File-level Extensions</a>
+                </li>
               
                 <li>
                   <a href="#v1%2fannotation.proto-extensions"><span class="badge">X</span>File-level Extensions</a>
@@ -3084,93 +3092,6 @@
         
           
           <li>
-            <a href="#v1%2fworksheet_service.proto">v1/worksheet_service.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.v1.BatchUpdateWorksheetOrganizerRequest"><span class="badge">M</span>BatchUpdateWorksheetOrganizerRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.BatchUpdateWorksheetOrganizerResponse"><span class="badge">M</span>BatchUpdateWorksheetOrganizerResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.CreateWorksheetRequest"><span class="badge">M</span>CreateWorksheetRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DeleteWorksheetRequest"><span class="badge">M</span>DeleteWorksheetRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.GetWorksheetRequest"><span class="badge">M</span>GetWorksheetRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListWorksheetFoldersRequest"><span class="badge">M</span>ListWorksheetFoldersRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListWorksheetFoldersResponse"><span class="badge">M</span>ListWorksheetFoldersResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListWorksheetsRequest"><span class="badge">M</span>ListWorksheetsRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListWorksheetsResponse"><span class="badge">M</span>ListWorksheetsResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SearchWorksheetsRequest"><span class="badge">M</span>SearchWorksheetsRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SearchWorksheetsResponse"><span class="badge">M</span>SearchWorksheetsResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.UpdateWorksheetOrganizerRequest"><span class="badge">M</span>UpdateWorksheetOrganizerRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.UpdateWorksheetRequest"><span class="badge">M</span>UpdateWorksheetRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Worksheet"><span class="badge">M</span>Worksheet</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.WorksheetFolder"><span class="badge">M</span>WorksheetFolder</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.WorksheetOrganizer"><span class="badge">M</span>WorksheetOrganizer</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.v1.Worksheet.Visibility"><span class="badge">E</span>Worksheet.Visibility</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.WorksheetFolder.Category"><span class="badge">E</span>WorksheetFolder.Category</a>
-                </li>
-              
-              
-              
-                <li>
-                  <a href="#bytebase.v1.WorksheetService"><span class="badge">S</span>WorksheetService</a>
-                </li>
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#v1%2fworkspace_service.proto">v1/workspace_service.proto</a>
             <ul>
               
@@ -3263,6 +3184,75 @@
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.MCPForbiddenReason">MCPForbiddenReason</h3>
+        <p>Why an RPC is FORBIDDEN to MCP sessions. The mechanism, not the wording:</p><p>each value names what its methods actually do, and the serving side turns</p><p>that into a sentence. A denial whose stated reason has drifted from the</p><p>mechanism is worse than a bare refusal, because it is the thing the next</p><p>reader trusts — so a method changing what it does changes its reason here.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MCP_FORBIDDEN_REASON_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>No reason recorded. The method is still denied — mcp_method_class is what
+enforces — and the denial falls back to generic wording.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MINTS_CREDENTIAL</td>
+                <td>1</td>
+                <td><p>Puts a token for the caller&#39;s own principal in the response body.</p></td>
+              </tr>
+            
+              <tr>
+                <td>RESETS_CREDENTIAL</td>
+                <td>2</td>
+                <td><p>Drives the out-of-band reset flow that sets or delivers the secret a
+login accepts.</p></td>
+              </tr>
+            
+              <tr>
+                <td>TAKES_OVER_ACCOUNT</td>
+                <td>3</td>
+                <td><p>Rewrites an account&#39;s own credentials, which would let the session log in
+as that account.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ENDS_SESSION</td>
+                <td>4</td>
+                <td><p>Destroys the human&#39;s own login session.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ENDS_MEMBERSHIP</td>
+                <td>5</td>
+                <td><p>Destroys the caller&#39;s own workspace membership and mints a plain
+workspace token on the way out.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MINTS_CREDENTIAL_FOR_OTHERS</td>
+                <td>6</td>
+                <td><p>Leaves someone holding a principal the caller is not — by issuing its
+credential, carrying an existing one out to a host the caller named,
+choosing what will later be trusted to mint one, or redirecting where one
+gets delivered.</p></td>
+              </tr>
+            
+              <tr>
+                <td>REWRITES_SESSION_BOUNDARY</td>
+                <td>7</td>
+                <td><p>Rewrites the workspace configuration that governs the session making the
+call — the MCP switch itself, the sign-in and SSO settings, and the mail
+relay that carries credential resets. A session that can widen its own
+ceiling is not bounded by it.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.MCPMethodClass">MCPMethodClass</h3>
         <p>Classification of an RPC for MCP (AI agent) sessions. The effective</p><p>authorization of an MCP session is this classification intersected with the</p><p>caller's own RBAC: it can only ever narrow what the human could do, never</p><p>widen it.</p>
         <table class="enum-table">
@@ -3334,6 +3324,17 @@ console; an agent acting for them does not get to.</p></td>
                 <td><a href="#google.protobuf.MethodOptions">.google.protobuf.MethodOptions</a></td>
                 <td>100002</td>
                 <td><p>The authorization method to use for this RPC.</p></td>
+              </tr>
+            
+              <tr>
+                <td>mcp_forbidden_reason</td>
+                <td><a href="#bytebase.v1.MCPForbiddenReason">MCPForbiddenReason</a></td>
+                <td><a href="#google.protobuf.MethodOptions">.google.protobuf.MethodOptions</a></td>
+                <td>100005</td>
+                <td><p>Why the method is forbidden to MCP sessions. Meaningful only alongside
+mcp_method_class = FORBIDDEN; the denial names it so the agent, and the
+operator reading the audit row, learn why rather than just that it was
+refused.</p></td>
               </tr>
             
               <tr>
@@ -35220,972 +35221,6 @@ Permissions required: bb.workloadIdentities.undelete</p></td>
                 <td>POST</td>
                 <td>/v1/{name=workloadIdentities/*}:undelete</td>
                 <td>*</td>
-              </tr>
-              
-            
-            </tbody>
-          </table>
-          
-        
-    
-      
-      <div class="file-heading">
-        <h2 id="v1/worksheet_service.proto">v1/worksheet_service.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.v1.BatchUpdateWorksheetOrganizerRequest">BatchUpdateWorksheetOrganizerRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent resource whose worksheets&#39; organizers are updated.
-Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>To filter the batch update target.
-The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter:
-- name: the worksheet name in &#34;projects/{project}/worksheets/{worksheet}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator.
-- creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
-- starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator.
-- visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
-- folder: the worksheet organizer folder path, support exact &#34;==&#34; operator. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>organizer</td>
-                  <td><a href="#bytebase.v1.WorksheetOrganizer">WorksheetOrganizer</a></td>
-                  <td></td>
-                  <td><p>The organizer fields to update. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>The list of fields to be updated.
-Fields are specified relative to the worksheet organizer.
-Only support update the following fields for now:
-- `starred`
-- `folders` </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.BatchUpdateWorksheetOrganizerResponse">BatchUpdateWorksheetOrganizerResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>worksheet_organizers</td>
-                  <td><a href="#bytebase.v1.WorksheetOrganizer">WorksheetOrganizer</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>updated_count</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.CreateWorksheetRequest">CreateWorksheetRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent resource where this worksheet will be created.
-Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>worksheet</td>
-                  <td><a href="#bytebase.v1.Worksheet">Worksheet</a></td>
-                  <td></td>
-                  <td><p>The worksheet to create. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DeleteWorksheetRequest">DeleteWorksheetRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the worksheet to delete.
-Format: projects/{project}/worksheets/{worksheet} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.GetWorksheetRequest">GetWorksheetRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the worksheet to retrieve.
-Format: projects/{project}/worksheets/{worksheet} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListWorksheetFoldersRequest">ListWorksheetFoldersRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent resource of the worksheet folders.
-Format: projects/{project} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListWorksheetFoldersResponse">ListWorksheetFoldersResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>folders</td>
-                  <td><a href="#bytebase.v1.WorksheetFolder">WorksheetFolder</a></td>
-                  <td>repeated</td>
-                  <td><p>The caller&#39;s worksheet folders. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListWorksheetsRequest">ListWorksheetsRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent resource of the worksheets.
-Format: projects/{project}
-Use &#34;projects/-&#34; to list worksheets across all projects. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>To filter the list result.
-The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter:
-- creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
-
-For example:
-creator == &#34;users/{email}&#34;
-creator != &#34;users/{email}&#34; </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of worksheets to return. The service may return fewer than
-this value.
-If unspecified, at most 10 worksheets will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListWorksheets` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListWorksheets` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListWorksheetsResponse">ListWorksheetsResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>worksheets</td>
-                  <td><a href="#bytebase.v1.Worksheet">Worksheet</a></td>
-                  <td>repeated</td>
-                  <td><p>The worksheets from the specified parent. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token to retrieve next page of worksheets.
-Pass this value in the page_token field in the subsequent call to
-`ListWorksheets` method to retrieve the next page of worksheets. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SearchWorksheetsRequest">SearchWorksheetsRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent resource of the worksheets.
-Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>To filter the search result.
-The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter:
-- name: the worksheet name in &#34;projects/{project}/worksheets/{worksheet}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator.
-- title: the worksheet title, support &#34;contains&#34; operator.
-- creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
-- starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator.
-- visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
-- folder: the worksheet organizer folder path, support &#34;==&#34; operator.
-
-For example:
-creator == &#34;users/{email}&#34;
-title.contains(&#34;worksheet title&#34;)
-creator != &#34;users/{email}&#34;
-starred == true
-starred == false
-visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;]
-visibility == &#34;PRIVATE&#34;
-folder == &#34;foo/bar&#34; </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of worksheets to return. The service may return fewer than
-this value.
-If unspecified, at most 10 worksheets will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `SearchWorksheets` call.
-Provide this to retrieve the subsequent page. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SearchWorksheetsResponse">SearchWorksheetsResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>worksheets</td>
-                  <td><a href="#bytebase.v1.Worksheet">Worksheet</a></td>
-                  <td>repeated</td>
-                  <td><p>The worksheets that matched the search criteria. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token to retrieve next page of worksheets.
-Pass this value in the page_token field in the subsequent call to
-`SearchWorksheets` method to retrieve the next page of worksheets. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.UpdateWorksheetOrganizerRequest">UpdateWorksheetOrganizerRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>organizer</td>
-                  <td><a href="#bytebase.v1.WorksheetOrganizer">WorksheetOrganizer</a></td>
-                  <td></td>
-                  <td><p>The organizer to update.
-
-The organizer&#39;s `worksheet` field is used to identify the worksheet.
-Format: projects/{project}/worksheets/{worksheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>The list of fields to be updated.
-Fields are specified relative to the worksheet organizer.
-Only support update the following fields for now:
-- `starred` </p></td>
-                </tr>
-              
-                <tr>
-                  <td>allow_missing</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If set to true, and the worksheet organizer is not found, a new worksheet organizer will be created.
-In this situation, `update_mask` is ignored. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.UpdateWorksheetRequest">UpdateWorksheetRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>worksheet</td>
-                  <td><a href="#bytebase.v1.Worksheet">Worksheet</a></td>
-                  <td></td>
-                  <td><p>The worksheet to update.
-
-The worksheet&#39;s `name` field is used to identify the worksheet to update.
-Format: projects/{project}/worksheets/{worksheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>The list of fields to be updated.
-Fields are specified relative to the worksheet.
-(e.g., `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
-Only support update the following fields for now:
-- `title`
-- `statement`
-- `starred`
-- `visibility` </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Worksheet">Worksheet</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the worksheet resource, generated by the server.
-Canonical parent is project.
-Format: projects/{project}/worksheets/{worksheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>project</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The project resource name.
-Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database resource name.
-Format: instances/{instance}/databases/{database}
-If the database parent doesn&#39;t exist, the database field is empty. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The title of the worksheet. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>creator</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The creator of the Worksheet.
-Format: users/{email} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The create time of the worksheet. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The last update time of the worksheet. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>content</td>
-                  <td><a href="#bytes">bytes</a></td>
-                  <td></td>
-                  <td><p>The content of the worksheet.
-By default, it will be cut off in SearchWorksheet() method. If it doesn&#39;t match the `content_size`, you can
-use GetWorksheet() request to retrieve the full content. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>content_size</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>content_size is the full size of the content, may not match the size of the `content` field. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>visibility</td>
-                  <td><a href="#bytebase.v1.Worksheet.Visibility">Worksheet.Visibility</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>starred</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>starred indicates whether the worksheet is starred by the current authenticated user. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>folders</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.WorksheetFolder">WorksheetFolder</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>folders</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The folder path segments. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>category</td>
-                  <td><a href="#bytebase.v1.WorksheetFolder.Category">WorksheetFolder.Category</a></td>
-                  <td></td>
-                  <td><p>The folder category. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.WorksheetOrganizer">WorksheetOrganizer</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>worksheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the worksheet.
-Format: projects/{project}/worksheets/{worksheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>starred</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>starred means if the worksheet is starred. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>folders</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.v1.Worksheet.Visibility">Worksheet.Visibility</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>VISIBILITY_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PROJECT_READ</td>
-                <td>1</td>
-                <td><p>Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read.</p></td>
-              </tr>
-            
-              <tr>
-                <td>PROJECT_WRITE</td>
-                <td>2</td>
-                <td><p>Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet.</p></td>
-              </tr>
-            
-              <tr>
-                <td>PRIVATE</td>
-                <td>3</td>
-                <td><p>Private, only worksheet OWNER can read/write.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.WorksheetFolder.Category">WorksheetFolder.Category</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>CATEGORY_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MINE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SHARED</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-
-      
-
-      
-        <h3 id="bytebase.v1.WorksheetService">WorksheetService</h3>
-        <p>WorksheetService manages SQL worksheets for query development.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>CreateWorksheet</td>
-                <td><a href="#bytebase.v1.CreateWorksheetRequest">CreateWorksheetRequest</a></td>
-                <td><a href="#bytebase.v1.Worksheet">Worksheet</a></td>
-                <td><p>Creates a personal worksheet used in SQL Editor. Any authenticated user can create their own worksheets.
-Permissions required: None (authenticated users only)</p></td>
-              </tr>
-            
-              <tr>
-                <td>GetWorksheet</td>
-                <td><a href="#bytebase.v1.GetWorksheetRequest">GetWorksheetRequest</a></td>
-                <td><a href="#bytebase.v1.Worksheet">Worksheet</a></td>
-                <td><p>Get a worksheet by name.
-The users can access this method if,
-- they are the creator of the worksheet;
-- they have bb.worksheets.get permission on the workspace;
-- the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)</p></td>
-              </tr>
-            
-              <tr>
-                <td>ListWorksheets</td>
-                <td><a href="#bytebase.v1.ListWorksheetsRequest">ListWorksheetsRequest</a></td>
-                <td><a href="#bytebase.v1.ListWorksheetsResponse">ListWorksheetsResponse</a></td>
-                <td><p>List worksheets.
-This is used for listing worksheets in a project, or across all projects by using `projects/-`.
-Permissions required: bb.worksheets.list</p></td>
-              </tr>
-            
-              <tr>
-                <td>ListWorksheetFolders</td>
-                <td><a href="#bytebase.v1.ListWorksheetFoldersRequest">ListWorksheetFoldersRequest</a></td>
-                <td><a href="#bytebase.v1.ListWorksheetFoldersResponse">ListWorksheetFoldersResponse</a></td>
-                <td><p>List the caller&#39;s worksheet folders.
-Only folders stored in the caller&#39;s worksheet organizer are returned.</p></td>
-              </tr>
-            
-              <tr>
-                <td>SearchWorksheets</td>
-                <td><a href="#bytebase.v1.SearchWorksheetsRequest">SearchWorksheetsRequest</a></td>
-                <td><a href="#bytebase.v1.SearchWorksheetsResponse">SearchWorksheetsResponse</a></td>
-                <td><p>Search for worksheets.
-This is used for finding my worksheets or worksheets shared by other people.
-The sheet accessibility is the same as GetWorksheet().
-Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)</p></td>
-              </tr>
-            
-              <tr>
-                <td>UpdateWorksheet</td>
-                <td><a href="#bytebase.v1.UpdateWorksheetRequest">UpdateWorksheetRequest</a></td>
-                <td><a href="#bytebase.v1.Worksheet">Worksheet</a></td>
-                <td><p>Update a worksheet.
-The users can access this method if,
-- they are the creator of the worksheet;
-- they have bb.worksheets.manage permission on the workspace;
-- the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)</p></td>
-              </tr>
-            
-              <tr>
-                <td>UpdateWorksheetOrganizer</td>
-                <td><a href="#bytebase.v1.UpdateWorksheetOrganizerRequest">UpdateWorksheetOrganizerRequest</a></td>
-                <td><a href="#bytebase.v1.WorksheetOrganizer">WorksheetOrganizer</a></td>
-                <td><p>Update the organizer of a worksheet.
-The access is the same as UpdateWorksheet method.
-Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)</p></td>
-              </tr>
-            
-              <tr>
-                <td>BatchUpdateWorksheetOrganizer</td>
-                <td><a href="#bytebase.v1.BatchUpdateWorksheetOrganizerRequest">BatchUpdateWorksheetOrganizerRequest</a></td>
-                <td><a href="#bytebase.v1.BatchUpdateWorksheetOrganizerResponse">BatchUpdateWorksheetOrganizerResponse</a></td>
-                <td><p>Batch update the organizers of worksheets.
-The access is the same as UpdateWorksheet method.
-Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)</p></td>
-              </tr>
-            
-              <tr>
-                <td>DeleteWorksheet</td>
-                <td><a href="#bytebase.v1.DeleteWorksheetRequest">DeleteWorksheetRequest</a></td>
-                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p>Delete a worksheet.
-The access is the same as UpdateWorksheet method.
-Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-
-        
-          
-          
-          <h4>Methods with HTTP bindings</h4>
-          <table>
-            <thead>
-              <tr>
-                <td>Method Name</td>
-                <td>Method</td>
-                <td>Pattern</td>
-                <td>Body</td>
-              </tr>
-            </thead>
-            <tbody>
-            
-              
-              
-              <tr>
-                <td>CreateWorksheet</td>
-                <td>POST</td>
-                <td>/v1/{parent=projects/*}/worksheets</td>
-                <td>worksheet</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GetWorksheet</td>
-                <td>GET</td>
-                <td>/v1/{name=projects/*/worksheets/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListWorksheets</td>
-                <td>GET</td>
-                <td>/v1/{parent=projects/*}/worksheets</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListWorksheetFolders</td>
-                <td>GET</td>
-                <td>/v1/{parent=projects/*}/worksheetFolders</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>SearchWorksheets</td>
-                <td>POST</td>
-                <td>/v1/{parent=projects/*}/worksheets:search</td>
-                <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdateWorksheet</td>
-                <td>PATCH</td>
-                <td>/v1/{worksheet.name=projects/*/worksheets/*}</td>
-                <td>worksheet</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdateWorksheetOrganizer</td>
-                <td>PATCH</td>
-                <td>/v1/{organizer.worksheet=projects/*/worksheets/*}/organizer</td>
-                <td>organizer</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>BatchUpdateWorksheetOrganizer</td>
-                <td>POST</td>
-                <td>/v1/{parent=projects/*}/worksheets/organizers:batchUpdate</td>
-                <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>DeleteWorksheet</td>
-                <td>DELETE</td>
-                <td>/v1/{name=projects/*/worksheets/*}</td>
-                <td></td>
               </tr>
               
             

@@ -9,7 +9,7 @@ import { file_google_protobuf_descriptor } from "@bufbuild/protobuf/wkt";
  * Describes the file v1/annotation.proto.
  */
 export const file_v1_annotation = /*@__PURE__*/
-  fileDesc("ChN2MS9hbm5vdGF0aW9uLnByb3RvEgtieXRlYmFzZS52MSo+CgpBdXRoTWV0aG9kEhsKF0FVVEhfTUVUSE9EX1VOU1BFQ0lGSUVEEAASBwoDSUFNEAESCgoGQ1VTVE9NEAIqVgoOTUNQTWV0aG9kQ2xhc3MSIAocTUNQX01FVEhPRF9DTEFTU19VTlNQRUNJRklFRBAAEggKBFJFQUQQARIJCgVXUklURRACEg0KCUZPUkJJRERFThADOloKGGFsbG93X3dpdGhvdXRfY3JlZGVudGlhbBIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKCNBiABKAhSFmFsbG93V2l0aG91dENyZWRlbnRpYWw6QAoKcGVybWlzc2lvbhIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKGNBiABKAlSCnBlcm1pc3Npb246WgoLYXV0aF9tZXRob2QSHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxiijQYgASgOMhcuYnl0ZWJhc2UudjEuQXV0aE1ldGhvZFIKYXV0aE1ldGhvZDo2CgVhdWRpdBIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKONBiABKAhSBWF1ZGl0OmcKEG1jcF9tZXRob2RfY2xhc3MSHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxikjQYgASgOMhsuYnl0ZWJhc2UudjEuTUNQTWV0aG9kQ2xhc3NSDm1jcE1ldGhvZENsYXNzQqUBCg9jb20uYnl0ZWJhc2UudjFCD0Fubm90YXRpb25Qcm90b1ABWjRnaXRodWIuY29tL2J5dGViYXNlL2J5dGViYXNlL2JhY2tlbmQvZ2VuZXJhdGVkLWdvL3YxogIDQlhYqgILQnl0ZWJhc2UuVjHKAgtCeXRlYmFzZVxWMeICF0J5dGViYXNlXFYxXEdQQk1ldGFkYXRh6gIMQnl0ZWJhc2U6OlYxYgZwcm90bzM", [file_google_protobuf_descriptor]);
+  fileDesc("ChN2MS9hbm5vdGF0aW9uLnByb3RvEgtieXRlYmFzZS52MSo+CgpBdXRoTWV0aG9kEhsKF0FVVEhfTUVUSE9EX1VOU1BFQ0lGSUVEEAASBwoDSUFNEAESCgoGQ1VTVE9NEAIqVgoOTUNQTWV0aG9kQ2xhc3MSIAocTUNQX01FVEhPRF9DTEFTU19VTlNQRUNJRklFRBAAEggKBFJFQUQQARIJCgVXUklURRACEg0KCUZPUkJJRERFThADKuYBChJNQ1BGb3JiaWRkZW5SZWFzb24SJAogTUNQX0ZPUkJJRERFTl9SRUFTT05fVU5TUEVDSUZJRUQQABIUChBNSU5UU19DUkVERU5USUFMEAESFQoRUkVTRVRTX0NSRURFTlRJQUwQAhIWChJUQUtFU19PVkVSX0FDQ09VTlQQAxIQCgxFTkRTX1NFU1NJT04QBBITCg9FTkRTX01FTUJFUlNISVAQBRIfChtNSU5UU19DUkVERU5USUFMX0ZPUl9PVEhFUlMQBhIdChlSRVdSSVRFU19TRVNTSU9OX0JPVU5EQVJZEAc6WgoYYWxsb3dfd2l0aG91dF9jcmVkZW50aWFsEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYoI0GIAEoCFIWYWxsb3dXaXRob3V0Q3JlZGVudGlhbDpACgpwZXJtaXNzaW9uEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYoY0GIAEoCVIKcGVybWlzc2lvbjpaCgthdXRoX21ldGhvZBIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKKNBiABKA4yFy5ieXRlYmFzZS52MS5BdXRoTWV0aG9kUgphdXRoTWV0aG9kOjYKBWF1ZGl0Eh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYo40GIAEoCFIFYXVkaXQ6ZwoQbWNwX21ldGhvZF9jbGFzcxIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKSNBiABKA4yGy5ieXRlYmFzZS52MS5NQ1BNZXRob2RDbGFzc1IObWNwTWV0aG9kQ2xhc3M6cwoUbWNwX2ZvcmJpZGRlbl9yZWFzb24SHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxiljQYgASgOMh8uYnl0ZWJhc2UudjEuTUNQRm9yYmlkZGVuUmVhc29uUhJtY3BGb3JiaWRkZW5SZWFzb25CpQEKD2NvbS5ieXRlYmFzZS52MUIPQW5ub3RhdGlvblByb3RvUAFaNGdpdGh1Yi5jb20vYnl0ZWJhc2UvYnl0ZWJhc2UvYmFja2VuZC9nZW5lcmF0ZWQtZ28vdjGiAgNCWFiqAgtCeXRlYmFzZS5WMcoCC0J5dGViYXNlXFYx4gIXQnl0ZWJhc2VcVjFcR1BCTWV0YWRhdGHqAgxCeXRlYmFzZTo6VjFiBnByb3RvMw", [file_google_protobuf_descriptor]);
 
 /**
  * Describes the enum bytebase.v1.AuthMethod.
@@ -41,6 +41,24 @@ export const MCPMethodClassSchema = /*@__PURE__*/
  */
 export const MCPMethodClass = /*@__PURE__*/
   tsEnum(MCPMethodClassSchema);
+
+/**
+ * Describes the enum bytebase.v1.MCPForbiddenReason.
+ */
+export const MCPForbiddenReasonSchema = /*@__PURE__*/
+  enumDesc(file_v1_annotation, 2);
+
+/**
+ * Why an RPC is FORBIDDEN to MCP sessions. The mechanism, not the wording:
+ * each value names what its methods actually do, and the serving side turns
+ * that into a sentence. A denial whose stated reason has drifted from the
+ * mechanism is worse than a bare refusal, because it is the thing the next
+ * reader trusts — so a method changing what it does changes its reason here.
+ *
+ * @generated from enum bytebase.v1.MCPForbiddenReason
+ */
+export const MCPForbiddenReason = /*@__PURE__*/
+  tsEnum(MCPForbiddenReasonSchema);
 
 /**
  * Whether the method allows access without authentication credentials.
@@ -81,4 +99,15 @@ export const audit = /*@__PURE__*/
  */
 export const mcp_method_class = /*@__PURE__*/
   extDesc(file_v1_annotation, 4);
+
+/**
+ * Why the method is forbidden to MCP sessions. Meaningful only alongside
+ * mcp_method_class = FORBIDDEN; the denial names it so the agent, and the
+ * operator reading the audit row, learn why rather than just that it was
+ * refused.
+ *
+ * @generated from extension: bytebase.v1.MCPForbiddenReason mcp_forbidden_reason = 100005;
+ */
+export const mcp_forbidden_reason = /*@__PURE__*/
+  extDesc(file_v1_annotation, 5);
 

@@ -15,14 +15,21 @@ import (
 )
 
 // mcpCallResult is the slice of call_api's structured output these tests care
-// about: the status the agent sees, the error text, and any token the response
-// body carried.
+// about: the status the agent sees, the error text, and any credential the
+// response body carried. The internal chain answers connect JSON, which is
+// protojson, so the field names here are the camelCased ones an agent would
+// actually read — service_key arrives as serviceKey.
 type mcpCallResult struct {
 	Status   int    `json:"status"`
 	Error    string `json:"error"`
 	Response struct {
-		Token string `json:"token"`
+		Token      string `json:"token"`
+		ServiceKey string `json:"serviceKey"`
 	} `json:"response"`
+	// RawResponse is the response body as the agent received it, for the
+	// assertions that are about what a listing does NOT contain and would
+	// otherwise need a typed mirror of the whole message.
+	RawResponse string `json:"-"`
 }
 
 // callAPIViaMCP drives one call_api tool call over a live /mcp session bound to
@@ -54,6 +61,11 @@ func callAPIOnSession(ctx context.Context, t *testing.T, session *mcp.ClientSess
 	a.NoError(err)
 	var out mcpCallResult
 	a.NoError(json.Unmarshal(raw, &out))
+	var envelope struct {
+		Response json.RawMessage `json:"response"`
+	}
+	a.NoError(json.Unmarshal(raw, &envelope))
+	out.RawResponse = string(envelope.Response)
 	// A tool-level failure — a mistyped operationId, a transport error — leaves
 	// StructuredContent nil, which decodes to a zero status rather than an
 	// error. Without this the test would report a status mismatch that has

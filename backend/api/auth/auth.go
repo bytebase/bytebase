@@ -489,6 +489,11 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 	if !ok {
 		return nil, errs.Errorf("invalid MCP method class extension, full method name %q", fullMethod)
 	}
+	mcpForbiddenReasonAny := proto.GetExtension(md, v1pb.E_McpForbiddenReason)
+	mcpForbiddenReason, ok := mcpForbiddenReasonAny.(v1pb.MCPForbiddenReason)
+	if !ok {
+		return nil, errs.Errorf("invalid MCP forbidden reason extension, full method name %q", fullMethod)
+	}
 
 	return &common.AuthContext{
 		AllowWithoutCredential: allowWithoutCredential,
@@ -496,6 +501,7 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 		AuthMethod:             authMethod,
 		Audit:                  audit,
 		MCPMethodClass:         mcpMethodClass,
+		MCPForbiddenReason:     mcpForbiddenReason,
 	}, nil
 }
 

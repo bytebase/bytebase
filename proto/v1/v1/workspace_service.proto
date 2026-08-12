@@ -59,6 +59,7 @@ service WorkspaceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_forbidden_reason) = ENDS_MEMBERSHIP;
   }
 
   // Removes the calling user from a workspace and switches to the next
@@ -72,6 +73,7 @@ service WorkspaceService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_forbidden_reason) = ENDS_MEMBERSHIP;
   }
 
   // Sets IAM policy for the workspace.
@@ -100,6 +102,8 @@ service WorkspaceService {
     option (bytebase.v1.permission) = "bb.workspaces.rotateDirectorySyncToken";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 }
 

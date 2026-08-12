@@ -129,15 +129,9 @@ func TestMCPCannotChangeOwnPasswordAndLogIn(t *testing.T) {
 	// investigating, so both denials must be on the audit page — including
 	// Login, which the handler never reached.
 	deniedRows := func(method string) []*v1pb.AuditLog {
-		resp, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
-			Parent:  workspace,
-			Filter:  `method == "` + method + `"`,
-			OrderBy: "create_time desc",
-		}))
-		a.NoError(err)
 		var rows []*v1pb.AuditLog
-		for _, row := range resp.Msg.AuditLogs {
-			if row.User == "users/"+agentEmail && row.McpDelegation != nil {
+		for _, row := range deniedMCPRows(ctx, t, ctl, workspace, method) {
+			if row.User == "users/"+agentEmail {
 				rows = append(rows, row)
 			}
 		}
