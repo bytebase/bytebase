@@ -890,20 +890,6 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 		return errors.Wrapf(err, "failed to delete query history for instance %s", resourceID)
 	}
 
-	// Update worksheets to nullify instance and db_name references
-	q = qb.Q().Space(`
-		UPDATE worksheet
-		SET instance = NULL, db_name = NULL
-		WHERE instance = ?
-	`, resourceID)
-	query, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
-	}
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return errors.Wrapf(err, "failed to update worksheets for instance %s", resourceID)
-	}
-
 	// Delete task_run_log entries for tasks associated with this instance
 	q = qb.Q().Space(`
 		DELETE FROM task_run_log trl

@@ -4,7 +4,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   SavedQuerySchema,
-  SavedQuery_Visibility,
   type SavedQuery,
 } from "@/types/proto-es/v1/saved_query_service_pb";
 import {
@@ -70,7 +69,6 @@ const mocks = vi.hoisted(() => {
             project: "projects/proj1",
             creator: "users/creator@example.com",
             title: "Existing saved query",
-            visibility: SavedQuery_Visibility.PRIVATE,
           });
           setSavedQueries([savedQuery]);
           return { savedQueries: [savedQuery], nextPageToken: "next-page" };
@@ -175,7 +173,6 @@ describe("sheet context", () => {
         project: "projects/proj1",
         creator: "users/creator@example.com",
         title: "Created saved query",
-        visibility: SavedQuery_Visibility.PRIVATE,
       }),
     ]);
     await act(async () => {
@@ -550,7 +547,6 @@ describe("sheet context", () => {
           creator: "users/creator@example.com",
           title: "Folder saved query",
           folders: ["alpha"],
-          visibility: SavedQuery_Visibility.PRIVATE,
         });
       mocks.addSavedQueries([savedQuery]);
       return {
@@ -599,7 +595,6 @@ describe("sheet context", () => {
         creator: "users/creator@example.com",
         title: "Folder saved query",
         folders: ["alpha"],
-        visibility: SavedQuery_Visibility.PRIVATE,
       });
       mocks.addSavedQueries([savedQuery]);
       return {
@@ -639,7 +634,6 @@ describe("sheet context", () => {
       project: "projects/proj1",
       creator: "users/creator@example.com",
       title: "Zeta saved query",
-      visibility: SavedQuery_Visibility.PRIVATE,
     });
     mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => {
       mocks.addSavedQueries([firstSavedQuery]);
@@ -673,7 +667,6 @@ describe("sheet context", () => {
       project: "projects/proj1",
       creator: "users/creator@example.com",
       title: "Alpha saved query",
-      visibility: SavedQuery_Visibility.PRIVATE,
     });
     mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => {
       mocks.addSavedQueries([secondSavedQuery]);
@@ -720,7 +713,6 @@ describe("sheet context", () => {
         creator: "users/creator@example.com",
         title: "Folder saved query",
         folders: ["alpha"],
-        visibility: SavedQuery_Visibility.PRIVATE,
       });
       mocks.addSavedQueries([savedQuery]);
       return {
@@ -741,7 +733,6 @@ describe("sheet context", () => {
         creator: "users/creator@example.com",
         title: "Child folder saved query",
         folders: ["alpha", "child"],
-        visibility: SavedQuery_Visibility.PRIVATE,
       });
       mocks.addSavedQueries([savedQuery]);
       return {
@@ -794,7 +785,6 @@ describe("sheet context", () => {
         creator: "users/creator@example.com",
         title: "Alpha saved query",
         folders: ["alpha"],
-        visibility: SavedQuery_Visibility.PRIVATE,
       });
       mocks.addSavedQueries([savedQuery]);
       return {
@@ -845,7 +835,6 @@ describe("sheet context", () => {
         creator: "users/creator@example.com",
         title: "Folder saved query",
         folders: ["alpha"],
-        visibility: SavedQuery_Visibility.PRIVATE,
       });
       mocks.addSavedQueries([savedQuery]);
       return {

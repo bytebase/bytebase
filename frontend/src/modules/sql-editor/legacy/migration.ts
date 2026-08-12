@@ -6,10 +6,7 @@ import { getCurrentUserV1 } from "@/stores/modules/migration-helpers";
 import { extractUserEmail } from "@/stores/modules/v1";
 import type { EditorPanelViewState, SQLEditorTab } from "@/types";
 import { DEFAULT_SQL_EDITOR_TAB_MODE } from "@/types";
-import {
-  SavedQuery_Visibility,
-  SavedQuerySchema,
-} from "@/types/proto-es/v1/saved_query_service_pb";
+import { SavedQuerySchema } from "@/types/proto-es/v1/saved_query_service_pb";
 import { defaultSQLEditorTab, WebStorageHelper } from "@/utils";
 import {
   deleteExtendedTab,
@@ -176,7 +173,6 @@ export const migrateDraftsFromCache = async (project: string) => {
             database: connection.database,
             content: new TextEncoder().encode(tab.statement),
             project,
-            visibility: SavedQuery_Visibility.PRIVATE,
           })
         );
       } catch {}

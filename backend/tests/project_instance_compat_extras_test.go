@@ -126,10 +126,9 @@ func TestProjectInstanceSavedQuery(t *testing.T) {
 		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 			Parent: ctl.project.Name,
 			SavedQuery: &v1pb.SavedQuery{
-				Title:      "project instance saved query",
-				Content:    []byte("SELECT 1;"),
-				Database:   database,
-				Visibility: v1pb.SavedQuery_PRIVATE,
+				Title:    "project instance saved query",
+				Content:  []byte("SELECT 1;"),
+				Database: database,
 			},
 		}))
 		if err != nil {

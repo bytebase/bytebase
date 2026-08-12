@@ -1151,6 +1151,25 @@
         
           
           <li>
+            <a href="#store%2fsaved_query.proto">store/saved_query.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.SavedQueryOrganizerPayload"><span class="badge">M</span>SavedQueryOrganizerPayload</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SavedQueryPayload"><span class="badge">M</span>SavedQueryPayload</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2fserver_config.proto">store/server_config.proto</a>
             <ul>
               
@@ -1588,21 +1607,6 @@
               
                 <li>
                   <a href="#bytebase.store.VCSProviderUserPayload"><span class="badge">M</span>VCSProviderUserPayload</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#store%2fworksheet.proto">store/worksheet.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.WorkSheetOrganizerPayload"><span class="badge">M</span>WorkSheetOrganizerPayload</a>
                 </li>
               
               
@@ -11699,6 +11703,81 @@ unreadable and the revision carries no sheet name. </p></td>
     
       
       <div class="file-heading">
+        <h2 id="store/saved_query.proto">store/saved_query.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.SavedQueryOrganizerPayload">SavedQueryOrganizerPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>starred</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>folders</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The folder path for a saved query.
+For example, if the folders is [A, B, C], means the saved query is in the A/B/C subfolder. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SavedQueryPayload">SavedQueryPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The connected database, stored as its canonical resource name:
+instances/{instance}/databases/{database} for a workspace instance,
+projects/{project}/instances/{instance}/databases/{database} for a
+project instance. Validated against the saved query&#39;s own project at
+write time; the reference is soft and may dangle after the database
+is deleted or transferred, degrading to &#34;no database&#34; in the UI. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="store/server_config.proto">store/server_config.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -15187,52 +15266,6 @@ Used to auto-select workspace on next login instead of requiring a workspace pic
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
-        <h2 id="store/worksheet.proto">store/worksheet.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.WorkSheetOrganizerPayload">WorkSheetOrganizerPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>starred</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>folders</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The folder path for a worksheet.
-For example, if the folders is [A, B, C], means the worksheet is in the A/B/C subfolder. </p></td>
                 </tr>
               
             </tbody>

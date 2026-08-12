@@ -20,10 +20,7 @@ import {
 import { useAppStore } from "@/stores/app";
 import type { SQLEditorTab, SQLEditorTabMode } from "@/types";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
-import {
-  type SavedQuery,
-  SavedQuery_Visibility,
-} from "@/types/proto-es/v1/saved_query_service_pb";
+import { type SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";
 import {
   getDefaultPagination,
   getSheetStatement,
@@ -1024,13 +1021,13 @@ const sheetFilterForView = (
   includeDisplayFilters = true
 ): string => {
   const email = useAppStore.getState().currentUser?.email ?? "";
+  // The server already restricts Search results to rows the caller can
+  // read (their own, plus everything for workspace admins), so "shared"
+  // is simply the readable rows someone else created.
   const baseFilters =
     view === "my"
       ? [`creator == "users/${escapeCELStringLiteral(email)}"`]
-      : [
-          `creator != "users/${escapeCELStringLiteral(email)}"`,
-          `visibility in ["${SavedQuery_Visibility[SavedQuery_Visibility.PROJECT_READ]}","${SavedQuery_Visibility[SavedQuery_Visibility.PROJECT_WRITE]}"]`,
-        ];
+      : [`creator != "users/${escapeCELStringLiteral(email)}"`];
   return [
     ...baseFilters,
     ...extraFilters,
@@ -1195,14 +1192,9 @@ const viewForSavedQuery = (
 ): SheetViewMode | undefined => {
   const project = getSQLEditorEditorState().project;
   if (savedQuery.project !== project) return undefined;
-  if (isSavedQueryCreator(savedQuery)) return "my";
-  if (
-    savedQuery.visibility === SavedQuery_Visibility.PROJECT_READ ||
-    savedQuery.visibility === SavedQuery_Visibility.PROJECT_WRITE
-  ) {
-    return "shared";
-  }
-  return undefined;
+  // A reachable saved query someone else created can only be here via the
+  // admin backstop — it lists under "shared".
+  return isSavedQueryCreator(savedQuery) ? "my" : "shared";
 };
 
 const addNewSavedQueriesToViewMembership = (

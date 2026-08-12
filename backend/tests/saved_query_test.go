@@ -52,9 +52,8 @@ func TestListSavedQueries(t *testing.T) {
 		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 			Parent: parent,
 			SavedQuery: &v1pb.SavedQuery{
-				Title:      title,
-				Content:    []byte("SELECT 1;"),
-				Visibility: v1pb.SavedQuery_PROJECT_READ,
+				Title:   title,
+				Content: []byte("SELECT 1;"),
 			},
 		}))
 		a.NoError(err)
@@ -157,9 +156,8 @@ func TestSearchSavedQueriesFilterByFolder(t *testing.T) {
 		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 			Parent: ctl.project.Name,
 			SavedQuery: &v1pb.SavedQuery{
-				Title:      title,
-				Content:    []byte("SELECT 1;"),
-				Visibility: v1pb.SavedQuery_PRIVATE,
+				Title:   title,
+				Content: []byte("SELECT 1;"),
 			},
 		}))
 		a.NoError(err)
@@ -251,9 +249,8 @@ func TestSearchSavedQueriesFilterByTitle(t *testing.T) {
 		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 			Parent: ctl.project.Name,
 			SavedQuery: &v1pb.SavedQuery{
-				Title:      title,
-				Content:    []byte("SELECT 1;"),
-				Visibility: v1pb.SavedQuery_PRIVATE,
+				Title:   title,
+				Content: []byte("SELECT 1;"),
 			},
 		}))
 		a.NoError(err)
@@ -319,9 +316,8 @@ func TestBatchUpdateSavedQueryOrganizerFilterByFolder(t *testing.T) {
 		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 			Parent: ctl.project.Name,
 			SavedQuery: &v1pb.SavedQuery{
-				Title:      title,
-				Content:    []byte("SELECT 1;"),
-				Visibility: v1pb.SavedQuery_PRIVATE,
+				Title:   title,
+				Content: []byte("SELECT 1;"),
 			},
 		}))
 		a.NoError(err)
@@ -423,13 +419,12 @@ func TestListSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 
 	ownerToken := ctl.authInterceptor.token
 
-	createSavedQuery := func(title string, visibility v1pb.SavedQuery_Visibility) *v1pb.SavedQuery {
+	createSavedQuery := func(title string) *v1pb.SavedQuery {
 		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 			Parent: ctl.project.Name,
 			SavedQuery: &v1pb.SavedQuery{
-				Title:      title,
-				Content:    []byte("SELECT 1;"),
-				Visibility: visibility,
+				Title:   title,
+				Content: []byte("SELECT 1;"),
 			},
 		}))
 		a.NoError(err)
@@ -446,9 +441,9 @@ func TestListSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 		a.NoError(err)
 	}
 
-	ownerSavedQuery := createSavedQuery("owner", v1pb.SavedQuery_PRIVATE)
+	ownerSavedQuery := createSavedQuery("owner")
 	setFolders(ownerSavedQuery, []string{"owner", "child"})
-	ownerSharedSavedQuery := createSavedQuery("owner-shared", v1pb.SavedQuery_PROJECT_READ)
+	ownerSharedSavedQuery := createSavedQuery("owner-shared")
 	setFolders(ownerSharedSavedQuery, []string{"owner-shared"})
 
 	otherEmail := fmt.Sprintf("saved-query-folder-%s@example.com", generateRandomString("user"))
@@ -484,9 +479,9 @@ func TestListSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 	}))
 	a.NoError(err)
 	ctl.authInterceptor.token = loginResp.Msg.Token
-	sharedSavedQuery := createSavedQuery("shared", v1pb.SavedQuery_PROJECT_READ)
+	sharedSavedQuery := createSavedQuery("shared")
 	setFolders(sharedSavedQuery, []string{"other", "shared"})
-	privateSavedQuery := createSavedQuery("private", v1pb.SavedQuery_PRIVATE)
+	privateSavedQuery := createSavedQuery("private")
 
 	ctl.authInterceptor.token = ownerToken
 	setFolders(sharedSavedQuery, []string{"owner", "child"})
@@ -497,9 +492,9 @@ func TestListSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 	_, privateSavedQueryID, err := common.GetProjectIDSavedQueryID(privateSavedQuery.Name)
 	a.NoError(err)
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO worksheet_organizer (worksheet, principal, payload)
+		INSERT INTO saved_query_organizer (saved_query, principal, payload)
 		SELECT resource_id, $1, '{"folders":["private"]}'::jsonb
-		FROM worksheet
+		FROM saved_query
 		WHERE resource_id = $2
 	`, "demo@example.com", privateSavedQueryID)
 	a.NoError(err)

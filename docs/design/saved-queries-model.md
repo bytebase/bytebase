@@ -479,9 +479,11 @@ changelog.
 
 **Existing data migrates owner-private** — a deliberate, one-time breaking
 change. Every existing row keeps its `creator`, `title`, `content`, and its
-connected-database reference (`instance`/`db_name` — retained columns, not
-dropped — so run context survives; cleared only if that database no longer
-belongs to the query's project, per the same-project invariant);
+connected-database reference (carried into the payload as the database's
+canonical resource name, `SavedQueryPayload.database` — so run context
+survives and the name encodes workspace- vs project-instance scope; cleared
+only if that database no longer belongs to the query's project, per the
+same-project invariant);
 `visibility` is dropped and `bindings` starts empty, so `PRIVATE`,
 `PROJECT_READ`, and `PROJECT_WRITE` alike become creator-only. **Owner
 organization is preserved**: the creator's own `worksheet_organizer` row

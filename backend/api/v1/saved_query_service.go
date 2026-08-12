@@ -21,8 +21,6 @@ import (
 )
 
 // SavedQueryService implements the saved query service.
-// The store layer still uses the legacy worksheet naming (table `worksheet`);
-// this service converts between the two at the API boundary.
 type SavedQueryService struct {
 	v1connect.UnimplementedSavedQueryServiceHandler
 	store      *store.Store
@@ -69,25 +67,19 @@ func (s *SavedQueryService) CreateSavedQuery(
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	var database *store.DatabaseMessage
+	database := ""
 	if request.SavedQuery.Database != "" {
-		database, err = s.getSavedQueryDatabase(ctx, projectResourceID, request.SavedQuery.Database)
+		database, err = s.validateSavedQueryDatabase(ctx, projectResourceID, request.SavedQuery.Database)
 		if err != nil {
 			return nil, err
 		}
 	}
-	storeSavedQueryCreate, err := convertToStoreWorkSheetMessage(project, database, user.Email, request.SavedQuery)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to convert saved query: %v", err))
-	}
-	savedQuery, err := s.store.CreateWorkSheet(ctx, storeSavedQueryCreate)
+	storeSavedQueryCreate := convertToStoreSavedQueryMessage(project, database, user.Email, request.SavedQuery)
+	savedQuery, err := s.store.CreateSavedQuery(ctx, storeSavedQueryCreate)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create saved query: %v", err))
 	}
-	v1pbSavedQuery, err := s.convertToAPISavedQuery(ctx, savedQuery)
-	if err != nil {
-		return nil, err
-	}
+	v1pbSavedQuery := convertToAPISavedQuery(savedQuery)
 	return connect.NewResponse(v1pbSavedQuery), nil
 }
 
@@ -114,10 +106,7 @@ func (s *SavedQueryService) GetSavedQuery(
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot access saved query %s", savedQuery.Title))
 	}
 
-	v1pbSavedQuery, err := s.convertToAPISavedQuery(ctx, savedQuery)
-	if err != nil {
-		return nil, err
-	}
+	v1pbSavedQuery := convertToAPISavedQuery(savedQuery)
 	return connect.NewResponse(v1pbSavedQuery), nil
 }
 
@@ -156,12 +145,12 @@ func (s *SavedQueryService) ListSavedQueries(
 	}
 	limitPlusOne := offset.limit + 1
 
-	filterQ, err := store.GetListWorksheetFilter(request.Filter)
+	filterQ, err := store.GetListSavedQueryFilter(request.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	savedQueryList, err := s.store.ListWorkSheets(ctx, &store.FindWorkSheetMessage{
+	savedQueryList, err := s.store.ListSavedQueries(ctx, &store.FindSavedQueryMessage{
 		ProjectIDs:     projectIDs,
 		Workspace:      workspaceID,
 		PrincipalEmail: user.Email,
@@ -183,10 +172,7 @@ func (s *SavedQueryService) ListSavedQueries(
 
 	v1pbSavedQueries := make([]*v1pb.SavedQuery, 0, len(savedQueryList))
 	for _, savedQuery := range savedQueryList {
-		v1pbSavedQuery, err := s.convertToAPISavedQuery(ctx, savedQuery)
-		if err != nil {
-			return nil, err
-		}
+		v1pbSavedQuery := convertToAPISavedQuery(savedQuery)
 		v1pbSavedQueries = append(v1pbSavedQueries, v1pbSavedQuery)
 	}
 	return connect.NewResponse(&v1pb.ListSavedQueriesResponse{
@@ -214,11 +200,11 @@ func (s *SavedQueryService) ListSavedQueryFolders(
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	find := &store.FindWorkSheetMessage{
+	find := &store.FindSavedQueryMessage{
 		ProjectIDs:     []string{projectID},
 		PrincipalEmail: user.Email,
 	}
-	organizerList, err := s.store.ListWorksheetOrganizers(ctx, find)
+	organizerList, err := s.store.ListSavedQueryOrganizers(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list saved query folders: %v", err))
 	}
@@ -230,7 +216,7 @@ func (s *SavedQueryService) ListSavedQueryFolders(
 	folderByKey := make(map[string]savedQueryFolder)
 	for _, organizer := range organizerList {
 		var category v1pb.SavedQueryFolder_Category
-		if organizer.WorksheetCreator == user.Email {
+		if organizer.SavedQueryCreator == user.Email {
 			category = v1pb.SavedQueryFolder_MINE
 		} else {
 			category = v1pb.SavedQueryFolder_SHARED
@@ -294,20 +280,20 @@ func (s *SavedQueryService) SearchSavedQueries(
 	}
 	limitPlusOne := offset.limit + 1
 
-	savedQueryFind := &store.FindWorkSheetMessage{
+	savedQueryFind := &store.FindSavedQueryMessage{
 		ProjectIDs:     []string{projectID},
 		PrincipalEmail: user.Email,
 		Limit:          &limitPlusOne,
 		Offset:         &offset.offset,
 	}
 
-	filterQ, err := store.GetListSheetFilter(ctx, s.store, user.Email, request.Filter, true /* allowTitleContains */)
+	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, user.Email, request.Filter, true /* allowTitleContains */)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	savedQueryFind.FilterQ = filterQ
 
-	savedQueryList, err := s.store.ListWorkSheets(ctx, savedQueryFind)
+	savedQueryList, err := s.store.ListSavedQueries(ctx, savedQueryFind)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list saved queries: %v", err))
 	}
@@ -329,10 +315,7 @@ func (s *SavedQueryService) SearchSavedQueries(
 			slog.Warn("cannot access saved query", slog.String("name", savedQuery.Title))
 			continue
 		}
-		v1pbSavedQuery, err := s.convertToAPISavedQuery(ctx, savedQuery)
-		if err != nil {
-			return nil, err
-		}
+		v1pbSavedQuery := convertToAPISavedQuery(savedQuery)
 		v1pbSavedQueries = append(v1pbSavedQueries, v1pbSavedQuery)
 	}
 	return connect.NewResponse(&v1pb.SearchSavedQueriesResponse{
@@ -378,7 +361,7 @@ func (s *SavedQueryService) UpdateSavedQuery(
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot write saved query %s", savedQuery.Title))
 	}
 
-	savedQueryPatch := &store.PatchWorkSheetMessage{
+	savedQueryPatch := &store.PatchSavedQueryMessage{
 		ResourceID: savedQuery.ResourceID,
 	}
 	for _, path := range request.UpdateMask.Paths {
@@ -388,34 +371,33 @@ func (s *SavedQueryService) UpdateSavedQuery(
 		case "content":
 			statement := string(request.SavedQuery.Content)
 			savedQueryPatch.Statement = &statement
-		case "visibility":
-			visibility, err := convertToStoreWorkSheetVisibility(request.SavedQuery.Visibility)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid visibility %q", request.SavedQuery.Visibility))
-			}
-			stringVisibility := string(visibility)
-			savedQueryPatch.Visibility = &stringVisibility
 		case "database":
-			if request.SavedQuery.Database != "" {
-				database, err := s.getSavedQueryDatabase(ctx, savedQuery.ProjectID, request.SavedQuery.Database)
+			switch request.SavedQuery.Database {
+			case savedQuery.Database:
+				// Unchanged — skip validation entirely. The reference is a
+				// soft link: autosave re-sends the stored value on every
+				// write, and re-validating would brick content saves once
+				// the database is deleted or transferred. A stale stored
+				// value keeps dangling, exactly like the read path.
+			case "":
+				emptyStr := ""
+				savedQueryPatch.Database = &emptyStr
+			default:
+				database, err := s.validateSavedQueryDatabase(ctx, savedQuery.ProjectID, request.SavedQuery.Database)
 				if err != nil {
 					return nil, err
 				}
-				savedQueryPatch.InstanceID, savedQueryPatch.DatabaseName = &database.InstanceID, &database.DatabaseName
-			} else {
-				emptyStr := ""
-				savedQueryPatch.InstanceID = &emptyStr
-				savedQueryPatch.DatabaseName = &emptyStr
+				savedQueryPatch.Database = &database
 			}
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
 		}
 	}
-	if err := s.store.PatchWorkSheet(ctx, savedQueryPatch); err != nil {
+	if err := s.store.PatchSavedQuery(ctx, savedQueryPatch); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update saved query: %v", err))
 	}
 
-	savedQuery, err = s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
+	savedQuery, err = s.store.GetSavedQuery(ctx, &store.FindSavedQueryMessage{
 		ProjectIDs:     []string{savedQuery.ProjectID},
 		ResourceID:     &savedQueryID,
 		PrincipalEmail: user.Email,
@@ -426,10 +408,7 @@ func (s *SavedQueryService) UpdateSavedQuery(
 	if savedQuery == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("saved query %q not found", request.SavedQuery.Name))
 	}
-	v1pbSavedQuery, err := s.convertToAPISavedQuery(ctx, savedQuery)
-	if err != nil {
-		return nil, err
-	}
+	v1pbSavedQuery := convertToAPISavedQuery(savedQuery)
 	return connect.NewResponse(v1pbSavedQuery), nil
 }
 
@@ -455,7 +434,7 @@ func (s *SavedQueryService) DeleteSavedQuery(
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot write saved query %s", savedQuery.Title))
 	}
 
-	if err := s.store.DeleteWorkSheet(ctx, savedQuery.ResourceID); err != nil {
+	if err := s.store.DeleteSavedQuery(ctx, savedQuery.ResourceID); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to delete saved query: %v", err))
 	}
 
@@ -490,7 +469,7 @@ func (s *SavedQueryService) UpdateSavedQueryOrganizer(
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	savedQueryOrganizerUpsert, err := s.store.GetWorksheetOrganizer(ctx, savedQuery.ResourceID, user.Email)
+	savedQueryOrganizerUpsert, err := s.store.GetSavedQueryOrganizer(ctx, savedQuery.ResourceID, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found saved query organizer with error: %v", err))
 	}
@@ -506,7 +485,7 @@ func (s *SavedQueryService) UpdateSavedQueryOrganizer(
 		}
 	}
 
-	organizer, err := s.store.UpsertWorksheetOrganizer(ctx, savedQueryOrganizerUpsert)
+	organizer, err := s.store.UpsertSavedQueryOrganizer(ctx, savedQueryOrganizerUpsert)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to upsert organizer for saved query %s with error: %v", request.Organizer.SavedQuery, err))
 	}
@@ -546,11 +525,11 @@ func (s *SavedQueryService) BatchUpdateSavedQueryOrganizer(
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	filterQ, err := store.GetListSheetFilter(ctx, s.store, user.Email, request.Filter, false /* allowTitleContains */)
+	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, user.Email, request.Filter, false /* allowTitleContains */)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	savedQueryList, err := s.store.ListWorkSheets(ctx, &store.FindWorkSheetMessage{
+	savedQueryList, err := s.store.ListSavedQueries(ctx, &store.FindSavedQueryMessage{
 		ProjectIDs:     []string{projectID},
 		PrincipalEmail: user.Email,
 		FilterQ:        filterQ,
@@ -572,9 +551,9 @@ func (s *SavedQueryService) BatchUpdateSavedQueryOrganizer(
 		savedQueryIDs = append(savedQueryIDs, savedQuery.ResourceID)
 	}
 
-	patch := &store.BatchUpdateWorksheetOrganizerPatch{
-		WorksheetResourceIDs: savedQueryIDs,
-		Principal:            user.Email,
+	patch := &store.BatchUpdateSavedQueryOrganizerPatch{
+		SavedQueryResourceIDs: savedQueryIDs,
+		Principal:             user.Email,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
@@ -589,7 +568,7 @@ func (s *SavedQueryService) BatchUpdateSavedQueryOrganizer(
 		}
 	}
 
-	organizers, err := s.store.BatchUpdateWorksheetOrganizer(ctx, patch)
+	organizers, err := s.store.BatchUpdateSavedQueryOrganizer(ctx, patch)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to batch update saved query organizers: %v", err))
 	}
@@ -598,7 +577,7 @@ func (s *SavedQueryService) BatchUpdateSavedQueryOrganizer(
 	}
 	for _, organizer := range organizers {
 		response.SavedQueryOrganizers = append(response.SavedQueryOrganizers, &v1pb.SavedQueryOrganizer{
-			SavedQuery: fmt.Sprintf("%s/savedQueries/%s", request.Parent, organizer.WorksheetResourceID),
+			SavedQuery: fmt.Sprintf("%s/savedQueries/%s", request.Parent, organizer.SavedQueryResourceID),
 			Starred:    organizer.Payload.Starred,
 			Folders:    organizer.Payload.Folders,
 		})
@@ -606,12 +585,12 @@ func (s *SavedQueryService) BatchUpdateSavedQueryOrganizer(
 	return connect.NewResponse(response), nil
 }
 
-func (s *SavedQueryService) findSavedQuery(ctx context.Context, projectID string, savedQueryID string, loadFull bool) (*store.WorkSheetMessage, error) {
+func (s *SavedQueryService) findSavedQuery(ctx context.Context, projectID string, savedQueryID string, loadFull bool) (*store.SavedQueryMessage, error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	savedQuery, err := s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
+	savedQuery, err := s.store.GetSavedQuery(ctx, &store.FindSavedQueryMessage{
 		ProjectIDs:     []string{projectID},
 		ResourceID:     &savedQueryID,
 		LoadFull:       loadFull,
@@ -626,13 +605,19 @@ func (s *SavedQueryService) findSavedQuery(ctx context.Context, projectID string
 	return savedQuery, nil
 }
 
-func (s *SavedQueryService) getSavedQueryDatabase(ctx context.Context, projectID, name string) (*store.DatabaseMessage, error) {
+// validateSavedQueryDatabase checks that `name` refers to an existing
+// database in the saved query's own project and is canonical for its
+// instance's scope (project form for a project instance, workspace form
+// otherwise), then returns it as the canonical name to store. The stored
+// reference is soft: it is validated only at write time and may dangle
+// afterwards.
+func (s *SavedQueryService) validateSavedQueryDatabase(ctx context.Context, projectID, name string) (string, error) {
 	targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", name))
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", name))
 	}
 	if targetProjectID != nil && *targetProjectID != projectID {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", name, projectID))
+		return "", connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", name, projectID))
 	}
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		Workspace:    common.GetWorkspaceIDFromContext(ctx),
@@ -640,197 +625,82 @@ func (s *SavedQueryService) getSavedQueryDatabase(ctx context.Context, projectID
 		DatabaseName: &databaseName,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+		return "", connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
 	}
 	if database == nil || database.ProjectID != projectID {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", name, projectID))
+		return "", connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", name, projectID))
 	}
 	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &instanceID,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance %q", instanceID))
+		return "", connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance %q", instanceID))
 	}
 	if instance == nil || instance.Deleted {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
+		return "", connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
 	}
 	if (targetProjectID == nil) != (instance.ProjectID == nil) ||
 		targetProjectID != nil && *targetProjectID != *instance.ProjectID {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database name %q is not canonical for its instance", name))
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database name %q is not canonical for its instance", name))
 	}
-	return database, nil
+	return name, nil
 }
 
 // canWriteSavedQuery check if the principal can write the saved query.
-// The saved query is writable when the user has bb.worksheets.manage permission on the workspace, or.
-// PRIVATE: the creator.
-// PROJECT_WRITE: all members with bb.projects.get permission in the project.
-func (s *SavedQueryService) canWriteSavedQuery(ctx context.Context, savedQuery *store.WorkSheetMessage) (bool, error) {
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return false, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-
-	// The saved query creator and workspace "bb.worksheets.manage" can always write.
-	if savedQuery.Creator == user.Email {
-		return true, nil
-	}
-	ok, err := s.iamManager.CheckPermission(ctx, permission.WorksheetsManage, user, common.GetWorkspaceIDFromContext(ctx))
-	if err != nil {
-		return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
-	}
-	if ok {
-		return true, nil
-	}
-
-	switch savedQuery.Visibility {
-	case store.PrivateWorkSheet:
-		return false, nil
-	case store.ProjectReadWorkSheet:
-		// For READ visibility, check the "bb.worksheets.manage" permission in the project.
-		return s.checkSavedQueryPermission(ctx, savedQuery.ProjectID, user, permission.WorksheetsManage)
-	case store.ProjectWriteWorkSheet:
-		// For READ visibility, needs "bb.worksheets.get" permission in the project.
-		return s.checkSavedQueryPermission(ctx, savedQuery.ProjectID, user, permission.WorksheetsGet)
-	default:
-		return false, nil
-	}
+// Saved queries are private: only the creator, or a caller holding
+// "bb.worksheets.manage" on the workspace (the admin backstop), can write.
+func (s *SavedQueryService) canWriteSavedQuery(ctx context.Context, savedQuery *store.SavedQueryMessage) (bool, error) {
+	return s.canAccessSavedQuery(ctx, savedQuery)
 }
 
 // canReadSavedQuery check if the principal can read the saved query.
-// The saved query is readable when the user has bb.worksheets.get permission on the workspace, or.
-// PRIVATE: the creator only.
-// PROJECT_WRITE: all members with bb.projects.get permission in the project.
-// PROJECT_READ: all members with bb.projects.get permission in the project.
-func (s *SavedQueryService) canReadSavedQuery(ctx context.Context, savedQuery *store.WorkSheetMessage) (bool, error) {
+// The access is the same as canWriteSavedQuery.
+func (s *SavedQueryService) canReadSavedQuery(ctx context.Context, savedQuery *store.SavedQueryMessage) (bool, error) {
+	return s.canAccessSavedQuery(ctx, savedQuery)
+}
+
+func (s *SavedQueryService) canAccessSavedQuery(ctx context.Context, savedQuery *store.SavedQueryMessage) (bool, error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-
-	// The saved query creator and workspace bb.worksheets.get can always read.
 	if savedQuery.Creator == user.Email {
 		return true, nil
 	}
 	ok, err := s.iamManager.CheckPermission(ctx, permission.WorksheetsManage, user, common.GetWorkspaceIDFromContext(ctx))
-	if err != nil {
-		return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
-	}
-	if ok {
-		return true, nil
-	}
-
-	switch savedQuery.Visibility {
-	case store.PrivateWorkSheet:
-		return false, nil
-	case store.ProjectReadWorkSheet, store.ProjectWriteWorkSheet:
-		// Check the "bb.worksheets.get" permission in the project.
-		return s.checkSavedQueryPermission(ctx, savedQuery.ProjectID, user, permission.WorksheetsGet)
-	default:
-		return false, nil
-	}
-}
-
-func (s *SavedQueryService) checkSavedQueryPermission(
-	ctx context.Context,
-	projectID string,
-	user *store.UserMessage,
-	permission permission.Permission,
-) (bool, error) {
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-		Workspace:  workspaceID,
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return false, err
-	}
-	ok, err := s.iamManager.CheckPermission(ctx, permission, user, workspaceID, project.ResourceID)
 	if err != nil {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	return ok, nil
 }
 
-func (s *SavedQueryService) convertToAPISavedQuery(ctx context.Context, savedQuery *store.WorkSheetMessage) (*v1pb.SavedQuery, error) {
-	databaseParent := ""
-	if savedQuery.InstanceID != nil && savedQuery.DatabaseName != nil {
-		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
-			Workspace:  common.GetWorkspaceIDFromContext(ctx),
-			ResourceID: savedQuery.InstanceID,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get saved query instance %q", *savedQuery.InstanceID))
-		}
-		if instance == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("saved query instance %q not found", *savedQuery.InstanceID))
-		}
-		databaseParent = common.FormatDatabase(*savedQuery.InstanceID, *savedQuery.DatabaseName)
-		if instance.ProjectID != nil {
-			databaseParent = common.FormatProjectDatabase(*instance.ProjectID, *savedQuery.InstanceID, *savedQuery.DatabaseName)
-		}
-	}
-
-	visibility := v1pb.SavedQuery_VISIBILITY_UNSPECIFIED
-	switch savedQuery.Visibility {
-	case store.ProjectReadWorkSheet:
-		visibility = v1pb.SavedQuery_PROJECT_READ
-	case store.ProjectWriteWorkSheet:
-		visibility = v1pb.SavedQuery_PROJECT_WRITE
-	case store.PrivateWorkSheet:
-		visibility = v1pb.SavedQuery_PRIVATE
-	default:
-		// Keep VISIBILITY_UNSPECIFIED
-	}
+// convertToAPISavedQuery converts a store message to the API shape. The
+// stored database reference is already the canonical name and is returned
+// as is — it is soft and may dangle, in which case the UI degrades to "no
+// database" (no per-row resolution, no hard error).
+func convertToAPISavedQuery(savedQuery *store.SavedQueryMessage) *v1pb.SavedQuery {
 	return &v1pb.SavedQuery{
 		Name:        common.FormatSavedQuery(savedQuery.ProjectID, savedQuery.ResourceID),
 		Project:     common.FormatProject(savedQuery.ProjectID),
-		Database:    databaseParent,
+		Database:    savedQuery.Database,
 		Title:       savedQuery.Title,
 		Creator:     fmt.Sprintf("users/%s", savedQuery.Creator),
 		CreateTime:  timestamppb.New(savedQuery.CreatedAt),
 		UpdateTime:  timestamppb.New(savedQuery.UpdatedAt),
 		Content:     []byte(savedQuery.Statement),
 		ContentSize: savedQuery.Size,
-		Visibility:  visibility,
 		Starred:     savedQuery.Starred,
 		Folders:     savedQuery.Folders,
-	}, nil
+	}
 }
 
-func convertToStoreWorkSheetMessage(project *store.ProjectMessage, database *store.DatabaseMessage, creator string, savedQuery *v1pb.SavedQuery) (*store.WorkSheetMessage, error) {
-	visibility, err := convertToStoreWorkSheetVisibility(savedQuery.Visibility)
-	if err != nil {
-		return nil, err
-	}
-
-	worksheetMessage := &store.WorkSheetMessage{
-		ProjectID:  project.ResourceID,
-		Creator:    creator,
-		Title:      savedQuery.Title,
-		Statement:  string(savedQuery.Content),
-		Visibility: visibility,
-	}
-	if database != nil {
-		worksheetMessage.InstanceID = &database.InstanceID
-		worksheetMessage.DatabaseName = &database.DatabaseName
-	}
-
-	return worksheetMessage, nil
-}
-
-func convertToStoreWorkSheetVisibility(visibility v1pb.SavedQuery_Visibility) (store.WorkSheetVisibility, error) {
-	switch visibility {
-	case v1pb.SavedQuery_VISIBILITY_UNSPECIFIED:
-		return store.WorkSheetVisibility(""), connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid visibility %q", visibility))
-	case v1pb.SavedQuery_PROJECT_READ:
-		return store.ProjectReadWorkSheet, nil
-	case v1pb.SavedQuery_PROJECT_WRITE:
-		return store.ProjectWriteWorkSheet, nil
-	case v1pb.SavedQuery_PRIVATE:
-		return store.PrivateWorkSheet, nil
-	default:
-		return store.WorkSheetVisibility(""), connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid visibility %q", visibility))
+func convertToStoreSavedQueryMessage(project *store.ProjectMessage, database string, creator string, savedQuery *v1pb.SavedQuery) *store.SavedQueryMessage {
+	return &store.SavedQueryMessage{
+		ProjectID: project.ResourceID,
+		Creator:   creator,
+		Title:     savedQuery.Title,
+		Statement: string(savedQuery.Content),
+		Database:  database,
 	}
 }

@@ -489,7 +489,6 @@
     "view": "Xem",
     "view-details": "Xem Chi tiết",
     "view-doc": "Xem tài liệu",
-    "visibility": "Hiển thị",
     "want-help": "Cần trợ giúp",
     "warning": "Cảnh báo",
     "webhooks": "Webhook",
@@ -2992,7 +2991,6 @@
     },
     "invalid-database": "Cơ sở dữ liệu không hợp lệ {{database}}",
     "last-synced": "Đã đồng bộ lần cuối: <time></time>",
-    "link-access": "Quyền truy cập",
     "loading-data": "Đang tải Dữ liệu...",
     "loading-databases": "Đang tải Cơ sở dữ liệu...",
     "manage-connections": "Quản lý kết nối",
@@ -3009,12 +3007,6 @@
     "pending-query": "Đang chờ truy vấn",
     "preview-table-data": "Xem trước dữ liệu bảng",
     "previous-row": "Dòng trước",
-    "private": "Riêng tư",
-    "private-desc": "Chỉ bạn mới có thể truy cập truy vấn đã lưu này",
-    "project-read": "Dự án có thể xem",
-    "project-read-desc": "Thành viên dự án có thể xem truy vấn đã lưu này. Chỉ chủ sở hữu và quản trị viên mới có thể chỉnh sửa.",
-    "project-write": "Dự án có thể chỉnh sửa",
-    "project-write-desc": "Thành viên dự án có thể xem và chỉnh sửa truy vấn đã lưu này.",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn."
     },

@@ -5,10 +5,7 @@ import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { openSavedQueryByName } from "@/modules/sql-editor/model/Sheet";
 import { useAppStore } from "@/stores/app";
 import { isValidProjectName } from "@/types";
-import {
-  SavedQuery_Visibility,
-  SavedQuerySchema,
-} from "@/types/proto-es/v1/saved_query_service_pb";
+import { SavedQuerySchema } from "@/types/proto-es/v1/saved_query_service_pb";
 import { getSQLEditorEditorState } from "./editor";
 import { getSQLEditorTabsState } from "./tab";
 import type { SavedQuerySaveSlice, SQLEditorSliceCreator } from "./types";
@@ -146,7 +143,6 @@ export const createSavedQuerySaveSlice: SQLEditorSliceCreator<
         database,
         content: new TextEncoder().encode(statement),
         project: editorStore.project,
-        visibility: SavedQuery_Visibility.PRIVATE,
       })
     );
 

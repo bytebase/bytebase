@@ -1,35 +1,13 @@
-import {
-  Check,
-  ChevronDown,
-  Copy,
-  Link2,
-  LockKeyhole,
-  Users,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Copy, Link2 } from "lucide-react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { SQL_EDITOR_SAVED_QUERY_MODULE } from "@/app/router/handles";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { useCurrentUser } from "@/hooks/useAppState";
 import { writeTextToClipboard } from "@/lib/clipboard";
-import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";
-import { SavedQuery_Visibility } from "@/types/proto-es/v1/saved_query_service_pb";
 import { extractProjectResourceName, extractSavedQueryID } from "@/utils";
-
-type AccessOption = {
-  label: string;
-  description: string;
-  value: SavedQuery_Visibility;
-  icon: React.ReactNode;
-};
 
 type Props = {
   readonly savedQuery?: SavedQuery;
@@ -37,56 +15,14 @@ type Props = {
 
 /**
  * Replaces frontend/src/views/sql-editor/EditorCommon/SharePopover.vue.
- * Renders the share popover body content: visibility selector + shareable link.
+ * Renders the share popover body: the saved query's deep link with a copy
+ * button. The link carries location, not access — a saved query is private
+ * to its creator (admins aside) until the access-model redesign ships
+ * per-object grants, so there is no access selector here.
  */
 export function SharePopoverBody({ savedQuery }: Props) {
   const { t } = useTranslation();
   const workspaceExternalURL = useAppStore((s) => s.serverInfo?.externalUrl);
-  const currentUser = useCurrentUser();
-
-  const accessOptions = useMemo<AccessOption[]>(
-    () => [
-      {
-        label: t("sql-editor.private"),
-        description: t("sql-editor.private-desc"),
-        value: SavedQuery_Visibility.PRIVATE,
-        icon: <LockKeyhole className="size-5" />,
-      },
-      {
-        label: t("sql-editor.project-read"),
-        description: t("sql-editor.project-read-desc"),
-        value: SavedQuery_Visibility.PROJECT_READ,
-        icon: <Users className="size-5" />,
-      },
-      {
-        label: t("sql-editor.project-write"),
-        description: t("sql-editor.project-write-desc"),
-        value: SavedQuery_Visibility.PROJECT_WRITE,
-        icon: <Users className="size-5" />,
-      },
-    ],
-    [t]
-  );
-
-  const allowChangeAccess = useMemo(() => {
-    if (!savedQuery || !currentUser) return false;
-    return savedQuery.creator === `users/${currentUser.email}`;
-  }, [savedQuery, currentUser]);
-
-  const [currentAccess, setCurrentAccess] = useState<AccessOption>(
-    () => accessOptions[0]
-  );
-
-  const [selectorOpen, setSelectorOpen] = useState(false);
-
-  // Sync currentAccess from savedQuery.visibility when saved query changes
-  useEffect(() => {
-    if (!savedQuery) return;
-    const idx = accessOptions.findIndex(
-      (opt) => opt.value === savedQuery.visibility
-    );
-    setCurrentAccess(idx !== -1 ? accessOptions[idx] : accessOptions[0]);
-  }, [savedQuery, accessOptions]);
 
   const sharedTabLink = useMemo(() => {
     if (!savedQuery) return "";
@@ -100,38 +36,6 @@ export function SharePopoverBody({ savedQuery }: Props) {
     return new URL(route.href, workspaceExternalURL || window.location.origin)
       .href;
   }, [savedQuery, workspaceExternalURL]);
-
-  const handleChangeAccess = async (option: AccessOption) => {
-    if (!allowChangeAccess || !savedQuery) {
-      setSelectorOpen(false);
-      return;
-    }
-    setCurrentAccess(option);
-    await useAppStore
-      .getState()
-      .patchSavedQuery({ ...savedQuery, visibility: option.value }, [
-        "visibility",
-      ]);
-
-    if (await writeTextToClipboard(sharedTabLink)) {
-      useAppStore.getState().notify({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("sql-editor.url-copied-to-clipboard"),
-      });
-    } else {
-      useAppStore.getState().notify({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.updated"),
-      });
-    }
-
-    // Close only the inner access selector — keep the outer share
-    // popover open so the user can still copy the just-updated link
-    // (or change the access again).
-    setSelectorOpen(false);
-  };
 
   const handleCopyLink = async () => {
     if (await writeTextToClipboard(sharedTabLink)) {
@@ -147,72 +51,10 @@ export function SharePopoverBody({ savedQuery }: Props) {
 
   return (
     <div className="w-96 p-2 flex flex-col gap-y-4">
-      {/* Header: Share title + visibility selector */}
       <section className="w-full flex flex-row justify-between items-center">
         <div className="pr-4">
           <h2 className="text-lg font-semibold">{t("common.share")}</h2>
         </div>
-        <Popover open={selectorOpen} onOpenChange={setSelectorOpen}>
-          <PopoverTrigger
-            // The trigger renders a <div>, not a native <button>; tell Base
-            // UI so it doesn't warn about missing native button semantics.
-            nativeButton={false}
-            render={
-              <div
-                data-access-trigger
-                data-disabled={!allowChangeAccess ? "true" : "false"}
-                className={cn(
-                  "flex items-center",
-                  allowChangeAccess ? "cursor-pointer" : "cursor-not-allowed"
-                )}
-              />
-            }
-          >
-            <span className="pr-2">{t("sql-editor.link-access")}:</span>
-            <div
-              className={cn(
-                "border flex flex-row justify-start items-center px-2 py-1 rounded-sm",
-                allowChangeAccess
-                  ? "hover:border-accent"
-                  : "border-control-border text-control-placeholder"
-              )}
-            >
-              <strong>{currentAccess.label}</strong>
-              <ChevronDown className="size-4 ml-1" />
-            </div>
-          </PopoverTrigger>
-          <PopoverContent side="bottom" align="end" className="w-80 p-2">
-            <div className="flex flex-col gap-y-2">
-              {accessOptions.map((option) => (
-                <div
-                  key={option.value}
-                  data-option-row
-                  className={cn(
-                    "p-2 rounded-xs flex justify-between",
-                    allowChangeAccess && "cursor-pointer hover:bg-control-bg",
-                    option.value === currentAccess.value && "bg-control-bg"
-                  )}
-                  onClick={() => handleChangeAccess(option)}
-                >
-                  <div>
-                    <div className="flex gap-x-2 items-center">
-                      {option.icon}
-                      <h2 className="text-md flex">{option.label}</h2>
-                    </div>
-                    <span className="text-xs textinfolabel">
-                      {option.description}
-                    </span>
-                  </div>
-                  {option.value === currentAccess.value && (
-                    <div className="flex items-center">
-                      <Check className="size-5" />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
       </section>
 
       {/* Link input + copy button — single bordered container with rounded

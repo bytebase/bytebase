@@ -356,38 +356,36 @@ CREATE TABLE issue_comment (
 CREATE INDEX idx_issue_comment_issue_id ON issue_comment(project, issue_id);
 CREATE UNIQUE INDEX idx_issue_comment_unique_resource_id ON issue_comment(resource_id);
 
--- worksheet table stores worksheets in SQL Editor.
-CREATE TABLE worksheet (
+-- saved_query table stores SQL Editor saved queries.
+CREATE TABLE saved_query (
     -- global unique
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
-    instance text,
-    db_name text,
     name text NOT NULL,
     statement text NOT NULL,
-    -- visibility: PROJECT_READ, PROJECT_WRITE, PRIVATE
-    -- Enum: Worksheet.Visibility (proto/v1/v1/worksheet_service.proto)
-    visibility text NOT NULL,
+    -- Stored as SavedQueryPayload (proto/store/store/saved_query.proto); the
+    -- connected database is a soft reference kept as its canonical name.
     payload jsonb NOT NULL DEFAULT '{}',
     PRIMARY KEY (resource_id)
 );
 
-CREATE INDEX idx_worksheet_project ON worksheet(project);
-CREATE INDEX idx_worksheet_creator_project ON worksheet(creator, project);
+CREATE INDEX idx_saved_query_project ON saved_query(project);
+CREATE INDEX idx_saved_query_creator_project ON saved_query(creator, project);
 
--- worksheet_organizer table stores the sheet status for a principal.
-CREATE TABLE worksheet_organizer (
-    worksheet text NOT NULL REFERENCES worksheet(resource_id) ON DELETE CASCADE,
+-- saved_query_organizer table stores a principal's star and folder placement
+-- for a saved query.
+CREATE TABLE saved_query_organizer (
+    saved_query text NOT NULL REFERENCES saved_query(resource_id) ON DELETE CASCADE,
     principal text NOT NULL,
     payload jsonb NOT NULL DEFAULT '{}',
-    PRIMARY KEY (worksheet, principal)
+    PRIMARY KEY (saved_query, principal)
 );
 
-CREATE INDEX idx_worksheet_organizer_principal ON worksheet_organizer(principal);
-CREATE INDEX idx_worksheet_organizer_payload ON worksheet_organizer USING GIN(payload);
+CREATE INDEX idx_saved_query_organizer_principal ON saved_query_organizer(principal);
+CREATE INDEX idx_saved_query_organizer_payload ON saved_query_organizer USING GIN(payload);
 
 CREATE TABLE db_group (
     project text NOT NULL REFERENCES project(resource_id),

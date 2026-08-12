@@ -243,12 +243,11 @@ export declare type UpdateSavedQueryRequest = Message<"bytebase.v1.UpdateSavedQu
   /**
    * The list of fields to be updated.
    * Fields are specified relative to the saved query.
-   * (e.g., `title`, `statement`; *not* `saved_query.title` or `saved_query.statement`)
+   * (e.g., `title`, `content`; *not* `saved_query.title` or `saved_query.content`)
    * Only support update the following fields for now:
    * - `title`
-   * - `statement`
-   * - `starred`
-   * - `visibility`
+   * - `content`
+   * - `database`
    *
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
@@ -281,7 +280,6 @@ export declare type BatchUpdateSavedQueryOrganizerRequest = Message<"bytebase.v1
    * - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
    * - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
    * - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-   * - visibility: check Visibility enum in the SavedQuery message for values, support "==" and "in [xx]" operator.
    * - folder: the saved query organizer folder path, support exact "==" operator.
    *
    * @generated from field: string filter = 2;
@@ -444,7 +442,6 @@ export declare type SearchSavedQueriesRequest = Message<"bytebase.v1.SearchSaved
    * - title: the saved query title, support "contains" operator.
    * - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
    * - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-   * - visibility: check Visibility enum in the SavedQuery message for values, support "==" and "in [xx]" operator.
    * - folder: the saved query organizer folder path, support "==" operator.
    *
    * For example:
@@ -453,8 +450,6 @@ export declare type SearchSavedQueriesRequest = Message<"bytebase.v1.SearchSaved
    * creator != "users/{email}"
    * starred == true
    * starred == false
-   * visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
-   * visibility == "PRIVATE"
    * folder == "foo/bar"
    *
    * @generated from field: string filter = 2;
@@ -589,11 +584,6 @@ export declare type SavedQuery = Message<"bytebase.v1.SavedQuery"> & {
   contentSize: bigint;
 
   /**
-   * @generated from field: bytebase.v1.SavedQuery.Visibility visibility = 10;
-   */
-  visibility: SavedQuery_Visibility;
-
-  /**
    * starred indicates whether the saved query is starred by the current authenticated user.
    *
    * @generated from field: bool starred = 11;
@@ -611,42 +601,6 @@ export declare type SavedQuery = Message<"bytebase.v1.SavedQuery"> & {
  * Use `create(SavedQuerySchema)` to create a new message.
  */
 export declare const SavedQuerySchema: GenMessage<SavedQuery>;
-
-/**
- * @generated from enum bytebase.v1.SavedQuery.Visibility
- */
-export enum SavedQuery_Visibility {
-  /**
-   * @generated from enum value: VISIBILITY_UNSPECIFIED = 0;
-   */
-  VISIBILITY_UNSPECIFIED = 0,
-
-  /**
-   * Read access in project scope, saved query OWNER/DBA and project OWNER can read/write, other project members can read.
-   *
-   * @generated from enum value: PROJECT_READ = 1;
-   */
-  PROJECT_READ = 1,
-
-  /**
-   * Write access in project scope, saved query OWNER/DBA and all members in the project can write the saved query.
-   *
-   * @generated from enum value: PROJECT_WRITE = 2;
-   */
-  PROJECT_WRITE = 2,
-
-  /**
-   * Private, only saved query OWNER can read/write.
-   *
-   * @generated from enum value: PRIVATE = 3;
-   */
-  PRIVATE = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.SavedQuery.Visibility.
- */
-export declare const SavedQuery_VisibilitySchema: GenEnum<SavedQuery_Visibility>;
 
 /**
  * SavedQueryService manages saved queries for SQL Editor query development.
@@ -669,11 +623,9 @@ export declare const SavedQueryService: GenService<{
   },
   /**
    * Get a saved query by name.
-   * The users can access this method if,
-   * - they are the creator of the saved query;
-   * - they have bb.worksheets.get permission on the workspace;
-   * - the saved query is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-   * Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+   * Saved queries are private: only the creator, or a caller holding
+   * bb.worksheets.manage on the workspace, can access one.
+   * Permissions required: creator, or workspace bb.worksheets.manage
    *
    * @generated from rpc bytebase.v1.SavedQueryService.GetSavedQuery
    */
@@ -707,9 +659,9 @@ export declare const SavedQueryService: GenService<{
   },
   /**
    * Search for saved queries.
-   * This is used for finding my saved queries or saved queries shared by other people.
+   * This is used for finding my saved queries in a project.
    * The saved query accessibility is the same as GetSavedQuery().
-   * Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+   * Permissions required: creator, or workspace bb.worksheets.manage
    *
    * @generated from rpc bytebase.v1.SavedQueryService.SearchSavedQueries
    */
@@ -720,11 +672,8 @@ export declare const SavedQueryService: GenService<{
   },
   /**
    * Update a saved query.
-   * The users can access this method if,
-   * - they are the creator of the saved query;
-   * - they have bb.worksheets.manage permission on the workspace;
-   * - the saved query is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-   * Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE saved queries)
+   * The access is the same as GetSavedQuery method.
+   * Permissions required: creator, or workspace bb.worksheets.manage
    *
    * @generated from rpc bytebase.v1.SavedQueryService.UpdateSavedQuery
    */
@@ -736,7 +685,7 @@ export declare const SavedQueryService: GenService<{
   /**
    * Update the organizer of a saved query.
    * The access is the same as UpdateSavedQuery method.
-   * Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+   * Permissions required: creator, or workspace bb.worksheets.manage
    *
    * @generated from rpc bytebase.v1.SavedQueryService.UpdateSavedQueryOrganizer
    */
@@ -748,7 +697,7 @@ export declare const SavedQueryService: GenService<{
   /**
    * Batch update the organizers of saved queries.
    * The access is the same as UpdateSavedQuery method.
-   * Permissions required: bb.worksheets.get (or creator, or project member for shared saved queries)
+   * Permissions required: creator, or workspace bb.worksheets.manage
    *
    * @generated from rpc bytebase.v1.SavedQueryService.BatchUpdateSavedQueryOrganizer
    */
@@ -760,7 +709,7 @@ export declare const SavedQueryService: GenService<{
   /**
    * Delete a saved query.
    * The access is the same as UpdateSavedQuery method.
-   * Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE saved queries)
+   * Permissions required: creator, or workspace bb.worksheets.manage
    *
    * @generated from rpc bytebase.v1.SavedQueryService.DeleteSavedQuery
    */
