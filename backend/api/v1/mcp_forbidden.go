@@ -116,15 +116,30 @@ const reasonForbiddenClass = "it is not reachable by an AI agent session"
 // method, and this interceptor grows with the annotations rather than with a
 // list kept here.
 //
-// Sitting inside audit gets the denial a row for the methods that carry the
-// audit annotation, which is all twenty-three currently annotated FORBIDDEN bar
-// SwitchWorkspace, Refresh, TestIdentityProvider and TestEmailSetting:
-// needAudit reads that annotation and nothing else, so those four are denied
-// silently until 1b-2 lands the typed policy-denial record that bypasses it.
-// (RequestPasswordReset and ResetPassword were in this set until #21162 gave
-// them the audit annotation.) The last two are the ones that sting — they are
-// the methods that would carry a stored secret to an address the agent chose,
-// and their denials are the rows an operator would most want.
+// Sitting inside audit gets the denial a row for most of the twenty-three
+// annotated FORBIDDEN methods. Seven produce nothing, for two different
+// reasons, and the second is not visible from the annotations at all:
+//
+//   - No audit annotation, so needAudit refuses the row outright:
+//     SwitchWorkspace, Refresh, TestIdentityProvider, TestEmailSetting.
+//   - Audit annotation, but no reachable audit parent: RequestPasswordReset,
+//     ResetPassword and SendEmailLoginCode are allow_without_credential, so
+//     createAuditLog takes their parent ONLY from what the handler validated
+//     via common.SetAuditWorkspaceID and deliberately skips the workspace
+//     fallback (handlerValidatedWorkspaceMethod, audit.go) — an unvalidated
+//     workspace on an unauthenticated method would let anyone write rows into
+//     someone else's. This gate refuses before dispatch, so the handler never
+//     runs and no parent is ever set. #21162 gave the first two the audit
+//     annotation; it did not give them rows.
+//
+// The first group is 1b-2's typed policy-denial record. The second needs that
+// too, or the audit path to accept the delegated credential's workspace, which
+// the internal chain has already verified. TestMCPResetFlowDenialsAreSilent
+// pins the second group so the next person to add the annotation learns it is
+// not enough from a red test rather than from an operator asking where the row
+// went. The two that sting are TestIdentityProvider and TestEmailSetting: they
+// would carry a stored secret to an address the agent chose, and their denials
+// are the rows an operator would most want.
 func NewInternalMCPForbiddenInterceptor() connect.Interceptor {
 	return connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {

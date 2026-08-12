@@ -447,6 +447,96 @@ func TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets(t *testing.T) {
 		"TestEmailSetting carries no audit annotation either — same gap, same fix")
 }
 
+// TestMCPResetFlowDenialsAreSilent pins a gap the audit annotation does NOT
+// close.
+//
+// #21162 gave RequestPasswordReset and ResetPassword `audit = true`, which
+// looks like it should give their MCP denials a row — needAudit reads that
+// annotation and nothing else. It does not, and the reason is one layer down.
+//
+// These three RPCs are allow_without_credential, so an unauthenticated caller
+// could name any workspace, and auditing against an unvalidated workspace would
+// let anyone write rows into someone else's. createAuditLog therefore carves
+// them out (handlerValidatedWorkspaceMethod, audit.go): their audit parent
+// comes only from what the HANDLER validated via common.SetAuditWorkspaceID,
+// and the ordinary workspace fallback is explicitly skipped for them.
+//
+// The FORBIDDEN gate refuses before dispatch, so the handler never runs, so
+// nothing ever calls SetAuditWorkspaceID, so there is no parent and no row.
+// The workspace is not actually unknown here — the internal chain put a
+// credential-verified one in the context — the carve-out just cannot use it.
+//
+// So the silent set is seven, not the four an annotation audit would suggest.
+// Closing it means letting the audit path use the delegated workspace, or the
+// typed denial record: 1b-2's work, not this PR's. This test is the tripwire.
+func TestMCPResetFlowDenialsAreSilent(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
+		Name: "workspaces/-",
+	}))
+	a.NoError(err)
+	workspaceName := workspace.Msg.Name
+
+	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
+	defer session.Close()
+
+	// The positive control goes first and through the same helper: UpdateUser is
+	// FORBIDDEN, audited, and NOT carved out, so it must produce a row. Without
+	// it the zeroes below would also be satisfied by a query that finds nothing
+	// for an unrelated reason.
+	control := callAPIOnSession(ctx, t, session, "UserService/UpdateUser", map[string]any{
+		"user":       map[string]any{"name": "users/demo@example.com", "password": "2048bytebase"},
+		"updateMask": "password",
+	})
+
+	probes := map[string]mcpCallResult{
+		"RequestPasswordReset": callAPIOnSession(ctx, t, session, "AuthService/RequestPasswordReset", map[string]any{
+			"email":     "demo@example.com",
+			"workspace": workspaceName,
+		}),
+		"ResetPassword": callAPIOnSession(ctx, t, session, "AuthService/ResetPassword", map[string]any{
+			"email":       "demo@example.com",
+			"code":        "000000",
+			"newPassword": "2048bytebase",
+		}),
+		"SendEmailLoginCode": callAPIOnSession(ctx, t, session, "AuthService/SendEmailLoginCode", map[string]any{
+			"email":     "demo@example.com",
+			"workspace": workspaceName,
+		}),
+	}
+	for name, out := range probes {
+		t.Logf("MCP %s → status=%d error=%q", name, out.Status, out.Error)
+	}
+	for name, out := range probes {
+		a.Equal(http.StatusForbidden, out.Status, "%s must be refused", name)
+		a.Contains(out.Error, "not available to MCP sessions", "%s must be refused by the gate", name)
+	}
+
+	a.Equal(http.StatusForbidden, control.Status)
+	a.Len(deniedMCPRows(ctx, t, ctl, workspaceName, "/bytebase.v1.UserService/UpdateUser"), 1,
+		"positive control: a FORBIDDEN, audited, non-carved-out method must produce a denial row")
+
+	for method, label := range map[string]string{
+		"/bytebase.v1.AuthService/RequestPasswordReset": "RequestPasswordReset",
+		"/bytebase.v1.AuthService/ResetPassword":        "ResetPassword",
+		"/bytebase.v1.AuthService/SendEmailLoginCode":   "SendEmailLoginCode",
+	} {
+		rows := deniedMCPRows(ctx, t, ctl, workspaceName, method)
+		t.Logf("audit rows for denied %s: %d", label, len(rows))
+		a.Empty(rows,
+			"%s carries audit = true, yet its MCP denial writes no row: the audit parent for this "+
+				"method comes only from the handler, and the gate refuses before the handler runs", label)
+	}
+}
+
 // TestMCPCredentialMintsLeaveDiscovery pins the other half of the
 // classification: an agent must not be OFFERED work it can never do, but a call
 // that arrives anyway — from memory, or from a skill written before the
