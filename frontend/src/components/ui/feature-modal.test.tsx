@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  captureFeatureGateMetric: vi.fn(),
   useSubscriptionState: vi.fn(),
   useAppStore: vi.fn(),
   instanceMissingLicense: false,
@@ -30,7 +31,14 @@ vi.mock("@/stores/app", () => ({
 
 vi.mock("@/app/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router")>()),
-  router: { push: vi.fn() },
+  router: {
+    currentRoute: { value: { name: "workspace.profile" } },
+    push: vi.fn(),
+  },
+}));
+
+vi.mock("@/app/analytics/feature-gate", () => ({
+  captureFeatureGateMetric: mocks.captureFeatureGateMetric,
 }));
 
 vi.mock("@/types", () => ({
@@ -51,6 +59,9 @@ vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
     FREE: 0,
     TEAM: 1,
     ENTERPRISE: 3,
+    0: "FREE",
+    1: "TEAM",
+    3: "ENTERPRISE",
   },
 }));
 
@@ -119,9 +130,9 @@ const renderIntoContainer = (element: ReactElement) => {
   document.body.appendChild(container);
   return {
     container,
-    render: () => {
+    render: (nextElement = element) => {
       act(() => {
-        root.render(element);
+        root.render(nextElement);
       });
     },
     unmount: () => {
@@ -177,6 +188,51 @@ describe("FeatureModal", () => {
     const heading = container.querySelector("h3");
     expect(heading?.textContent).toBe(
       "dynamic.subscription.features.FEATURE_BATCH_QUERY.title"
+    );
+    unmount();
+  });
+
+  test("captures one click metric for each locked feature modal opening", () => {
+    const onOpenChange = vi.fn();
+    const { render, unmount } = renderIntoContainer(
+      <FeatureModal open feature={1} onOpenChange={onOpenChange} />
+    );
+
+    render();
+    render(<FeatureModal open feature={1} onOpenChange={onOpenChange} />);
+
+    expect(mocks.captureFeatureGateMetric).toHaveBeenCalledOnce();
+    expect(mocks.captureFeatureGateMetric).toHaveBeenLastCalledWith(
+      "locked feature clicked",
+      1,
+      undefined
+    );
+
+    render(<FeatureModal open={false} feature={1} onOpenChange={onOpenChange} />);
+    render(<FeatureModal open feature={1} onOpenChange={onOpenChange} />);
+
+    expect(mocks.captureFeatureGateMetric).toHaveBeenCalledTimes(2);
+    unmount();
+  });
+
+  test("includes instance context in the modal opening metric", () => {
+    mocks.instanceMissingLicense = true;
+    const instance = { name: "instances/test" } as never;
+    const { render, unmount } = renderIntoContainer(
+      <FeatureModal
+        open
+        feature={1}
+        instance={instance}
+        onOpenChange={() => {}}
+      />
+    );
+
+    render();
+
+    expect(mocks.captureFeatureGateMetric).toHaveBeenLastCalledWith(
+      "locked feature clicked",
+      1,
+      instance
     );
     unmount();
   });
