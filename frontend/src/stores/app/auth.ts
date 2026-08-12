@@ -165,6 +165,12 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     await get().fetchServerInfo(user?.workspace);
     // Re-fetch the current workspace now that we're authenticated.
     await get().loadWorkspace();
+    // The workspace profile is only fetchable once authenticated, so a boot
+    // that started signed out left `appFeatures` at its PIPELINE default.
+    // Load it before anything reads the change mode below — `rootGuard`'s
+    // `resolveRootRedirect` reads the same store right after we navigate.
+    // `force` because a previous user's profile must not survive a re-auth.
+    await get().loadWorkspaceProfile(true);
 
     // After user login, reset the auth session key.
     set({ authSessionKey: uniqueId() });
@@ -218,6 +224,10 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
       navigateByName(SETUP_MODULE, { replace: true });
       return;
     }
+
+    // See `login()`: `appFeatures` is still at its default until the profile
+    // is loaded, and signup boots signed out by definition.
+    await get().loadWorkspaceProfile(true);
 
     const getRedirectQuery = () =>
       new URLSearchParams(window.location.search).get("redirect");

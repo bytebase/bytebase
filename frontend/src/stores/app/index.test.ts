@@ -527,13 +527,21 @@ describe("useAppStore", () => {
     mocks.getCurrentUser.mockResolvedValue(user);
     mocks.getActuatorInfo.mockResolvedValue({ workspace: user.workspace });
     mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    // `login()` loads the profile itself, so EDITOR mode comes from the server
+    // rather than a seeded `appFeatures`.
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "workspaceProfile",
+            value: createProto(WorkspaceProfileSettingSchema, {
+              databaseChangeMode: DatabaseChangeMode.EDITOR,
+            }),
+          },
+        }),
+      })
+    );
     const store = createAppStore();
-    store.setState({
-      appFeatures: {
-        ...store.getState().appFeatures,
-        "bb.feature.database-change-mode": DatabaseChangeMode.EDITOR,
-      },
-    });
 
     await store.getState().login({
       request: { email: user.email, password: "secret" } as never,
@@ -541,6 +549,43 @@ describe("useAppStore", () => {
     });
 
     expect(mocks.navigateToPath).toHaveBeenCalledWith(redirectUrl, {
+      replace: true,
+    });
+  });
+
+  // Regression guard (customer report): signing in from the bare root left
+  // `appFeatures` at its PIPELINE default, because a signed-out boot never
+  // fetches the workspace profile and `login()` did not fetch it either. The
+  // EDITOR branch below then failed and the user landed on the workspace
+  // landing page instead of the SQL Editor. Note this test seeds no
+  // `appFeatures` — the profile must come from the server during `login()`.
+  test("login loads the workspace profile before choosing the next page", async () => {
+    mocks.login.mockResolvedValue({ requireResetPassword: false });
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({ workspace: user.workspace });
+    mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "workspaceProfile",
+            value: createProto(WorkspaceProfileSettingSchema, {
+              databaseChangeMode: DatabaseChangeMode.EDITOR,
+            }),
+          },
+        }),
+      })
+    );
+    const store = createAppStore();
+
+    await store.getState().login({
+      request: { email: user.email, password: "secret" } as never,
+    });
+
+    expect(
+      store.getState().appFeatures["bb.feature.database-change-mode"]
+    ).toBe(DatabaseChangeMode.EDITOR);
+    expect(mocks.navigateToPath).toHaveBeenCalledWith("/sql-editor", {
       replace: true,
     });
   });
