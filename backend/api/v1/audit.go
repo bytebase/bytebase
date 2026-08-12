@@ -184,9 +184,9 @@ type auditEntry struct {
 	// serviceData is populated by handlers via common.WithSetServiceData.
 	serviceData *anypb.Any
 	// handlerAuditWorkspaceID is populated by handlers via
-	// common.SetAuditWorkspaceID. Used as the audit-parent fallback for
-	// allow_without_credential methods (Login/Signup/ExchangeToken) where
-	// authContext.Resources is empty because no workspace is in the context.
+	// common.SetAuditWorkspaceID. Used as the validated audit parent for
+	// allow_without_credential methods where authContext.Resources is empty
+	// because no workspace is in the context.
 	handlerAuditWorkspaceID string
 	rerr                    error
 	headers                 http.Header
@@ -229,9 +229,9 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 
 	// Build the list of parents to audit under. Normally these come from the
 	// ACL interceptor via authContext.Resources. For audited methods that run
-	// without a workspace-bound caller (Login/Signup/ExchangeToken), Resources
-	// is empty; fall back to the workspace the handler announced, or any
-	// workspace embedded in the response, so the audit entry is still written.
+	// without a workspace-bound caller, Resources is empty; fall back to the
+	// workspace the handler announced, or any workspace embedded in the
+	// response, so the audit entry is still written.
 	type auditParent struct {
 		parent           string
 		auditWorkspaceID string
@@ -249,21 +249,33 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 		seenParent[ap.parent] = true
 		parents = append(parents, ap)
 	}
-	for _, authResource := range authContext.Resources {
-		switch authResource.Type {
-		case common.ResourceTypeProject:
+	handlerValidatedWorkspaceMethod := e.method == v1connect.AuthServiceRequestPasswordResetProcedure ||
+		e.method == v1connect.AuthServiceResetPasswordProcedure ||
+		e.method == v1connect.AuthServiceSendEmailLoginCodeProcedure
+	if handlerValidatedWorkspaceMethod {
+		if e.handlerAuditWorkspaceID != "" {
 			appendParent(auditParent{
-				parent: common.FormatProject(authResource.ID),
+				parent:           common.FormatWorkspace(e.handlerAuditWorkspaceID),
+				auditWorkspaceID: e.handlerAuditWorkspaceID,
 			})
-		case common.ResourceTypeWorkspace:
-			appendParent(auditParent{
-				parent:           common.FormatWorkspace(authResource.ID),
-				auditWorkspaceID: authResource.ID,
-			})
-		default:
+		}
+	} else {
+		for _, authResource := range authContext.Resources {
+			switch authResource.Type {
+			case common.ResourceTypeProject:
+				appendParent(auditParent{
+					parent: common.FormatProject(authResource.ID),
+				})
+			case common.ResourceTypeWorkspace:
+				appendParent(auditParent{
+					parent:           common.FormatWorkspace(authResource.ID),
+					auditWorkspaceID: authResource.ID,
+				})
+			default:
+			}
 		}
 	}
-	if len(parents) == 0 {
+	if len(parents) == 0 && !handlerValidatedWorkspaceMethod {
 		fallbackWS := e.handlerAuditWorkspaceID
 		if fallbackWS == "" {
 			if loginResp, ok := e.response.(*v1pb.LoginResponse); ok {
@@ -470,6 +482,12 @@ func getRequestResource(request any, method string) string {
 		return r.GetEmail()
 	case *v1pb.ExchangeTokenRequest:
 		return r.GetEmail()
+	case *v1pb.RequestPasswordResetRequest:
+		return strings.ToLower(strings.TrimSpace(r.GetEmail()))
+	case *v1pb.ResetPasswordRequest:
+		return strings.ToLower(strings.TrimSpace(r.GetEmail()))
+	case *v1pb.SendEmailLoginCodeRequest:
+		return strings.ToLower(strings.TrimSpace(r.GetEmail()))
 	case *v1pb.CreateInstanceRequest:
 		if r.GetParent() == "" {
 			return common.FormatInstance(r.GetInstanceId())
@@ -510,6 +528,8 @@ func getRequestString(request any) (string, error) {
 			return redactSignupRequest(r)
 		case *v1pb.ExchangeTokenRequest:
 			return redactExchangeTokenRequest(r)
+		case *v1pb.ResetPasswordRequest:
+			return redactResetPasswordRequest(r)
 		case *v1pb.CreateProjectRequest:
 			r = proto.CloneOf(r)
 			r.Project = redactProject(r.Project)
@@ -517,6 +537,18 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.UpdateProjectRequest:
 			r = proto.CloneOf(r)
 			r.Project = redactProject(r.Project)
+			return r
+		case *v1pb.CreateReleaseRequest:
+			r = proto.CloneOf(r)
+			r.Release = redactRelease(r.Release)
+			return r
+		case *v1pb.UpdateReleaseRequest:
+			r = proto.CloneOf(r)
+			r.Release = redactRelease(r.Release)
+			return r
+		case *v1pb.CreateSavedQueryRequest:
+			r = proto.CloneOf(r)
+			r.SavedQuery = redactSavedQuery(r.SavedQuery)
 			return r
 		case *v1pb.CreateInstanceRequest:
 			r = proto.CloneOf(r)
@@ -614,6 +646,10 @@ func getResponseString(response any) (string, error) {
 			return redactInstance(r)
 		case *v1pb.Project:
 			return redactProject(r)
+		case *v1pb.Release:
+			return redactRelease(r)
+		case *v1pb.SavedQuery:
+			return redactSavedQuery(r)
 		case *v1pb.Sheet:
 			return redactSheet(r)
 		case *v1pb.BatchCreateSheetsResponse:
@@ -637,6 +673,16 @@ func getResponseString(response any) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func redactResetPasswordRequest(r *v1pb.ResetPasswordRequest) *v1pb.ResetPasswordRequest {
+	if r == nil {
+		return nil
+	}
+	cloned := proto.CloneOf(r)
+	cloned.Code = maskedString
+	cloned.NewPassword = maskedString
+	return cloned
 }
 
 func redactExportRequest(r *v1pb.ExportRequest) *v1pb.ExportRequest {
@@ -800,6 +846,28 @@ func redactProject(p *v1pb.Project) *v1pb.Project {
 	for i, webhook := range cloned.Webhooks {
 		cloned.Webhooks[i] = redactWebhook(webhook)
 	}
+	return cloned
+}
+
+func redactRelease(r *v1pb.Release) *v1pb.Release {
+	if r == nil {
+		return nil
+	}
+	cloned := proto.CloneOf(r)
+	for _, file := range cloned.Files {
+		if file != nil {
+			file.Statement = nil
+		}
+	}
+	return cloned
+}
+
+func redactSavedQuery(r *v1pb.SavedQuery) *v1pb.SavedQuery {
+	if r == nil {
+		return nil
+	}
+	cloned := proto.CloneOf(r)
+	cloned.Content = nil
 	return cloned
 }
 

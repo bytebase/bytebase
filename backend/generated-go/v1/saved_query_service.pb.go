@@ -1139,9 +1139,10 @@ var File_v1_saved_query_service_proto protoreflect.FileDescriptor
 
 const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1cv1/saved_query_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"u\n" +
-	"\x17CreateSavedQueryRequest\x12\x1b\n" +
-	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x12=\n" +
+	"\x1cv1/saved_query_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x8e\x01\n" +
+	"\x17CreateSavedQueryRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12=\n" +
 	"\vsaved_query\x18\x02 \x01(\v2\x17.bytebase.v1.SavedQueryB\x03\xe0A\x02R\n" +
 	"savedQuery\"/\n" +
 	"\x14GetSavedQueryRequest\x12\x17\n" +
@@ -1191,9 +1192,10 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\vsaved_query\x18\x01 \x01(\tB\x03\xe0A\x02R\n" +
 	"savedQuery\x12\x18\n" +
 	"\astarred\x18\x02 \x01(\bR\astarred\x12\x18\n" +
-	"\afolders\x18\x03 \x03(\tR\afolders\"2\n" +
-	"\x17DeleteSavedQueryRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"\x8c\x01\n" +
+	"\afolders\x18\x03 \x03(\tR\afolders\"N\n" +
+	"\x17DeleteSavedQueryRequest\x123\n" +
+	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
+	"\x17bytebase.com/SavedQueryR\x04name\"\x8c\x01\n" +
 	"\x19SearchSavedQueriesRequest\x12\x1b\n" +
 	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x16\n" +
 	"\x06filter\x18\x02 \x01(\tR\x06filter\x12\x1b\n" +
@@ -1202,7 +1204,7 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"page_token\x18\x04 \x01(\tR\tpageToken\"\x82\x01\n" +
 	"\x1aSearchSavedQueriesResponse\x12<\n" +
 	"\rsaved_queries\x18\x01 \x03(\v2\x17.bytebase.v1.SavedQueryR\fsavedQueries\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xc0\x03\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8d\x04\n" +
 	"\n" +
 	"SavedQuery\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x1d\n" +
@@ -1217,19 +1219,20 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\acontent\x18\b \x01(\fB\x03\xe0A\x02R\acontent\x12&\n" +
 	"\fcontent_size\x18\t \x01(\x03B\x03\xe0A\x03R\vcontentSize\x12\x1d\n" +
 	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\x12\x1d\n" +
-	"\afolders\x18\f \x03(\tB\x03\xe0A\x03R\afoldersJ\x04\b\n" +
+	"\afolders\x18\f \x03(\tB\x03\xe0A\x03R\afolders:K\xeaAH\n" +
+	"\x17bytebase.com/SavedQuery\x12-projects/{project}/savedQueries/{saved_query}J\x04\b\n" +
 	"\x10\vR\n" +
-	"visibility2\xee\f\n" +
-	"\x11SavedQueryService\x12\xa5\x01\n" +
-	"\x10CreateSavedQuery\x12$.bytebase.v1.CreateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"R\xdaA\x12parent,saved_query\x90\xea0\x02\x82\xd3\xe4\x93\x023:\vsaved_query\"$/v1/{parent=projects/*}/savedQueries\x12\x84\x01\n" +
+	"visibility2\xf6\f\n" +
+	"\x11SavedQueryService\x12\xa9\x01\n" +
+	"\x10CreateSavedQuery\x12$.bytebase.v1.CreateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"V\xdaA\x12parent,saved_query\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x023:\vsaved_query\"$/v1/{parent=projects/*}/savedQueries\x12\x84\x01\n" +
 	"\rGetSavedQuery\x12!.bytebase.v1.GetSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"7\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/savedQueries/*}\x12\xb0\x01\n" +
 	"\x10ListSavedQueries\x12$.bytebase.v1.ListSavedQueriesRequest\x1a%.bytebase.v1.ListSavedQueriesResponse\"O\xdaA\x06parent\x8a\xea0\x12bb.worksheets.list\x90\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{parent=projects/*}/savedQueries\x12\xae\x01\n" +
 	"\x15ListSavedQueryFolders\x12).bytebase.v1.ListSavedQueryFoldersRequest\x1a*.bytebase.v1.ListSavedQueryFoldersResponse\">\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x02+\x12)/v1/{parent=projects/*}/savedQueryFolders\x12\xaa\x01\n" +
 	"\x12SearchSavedQueries\x12&.bytebase.v1.SearchSavedQueriesRequest\x1a'.bytebase.v1.SearchSavedQueriesResponse\"C\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:search\x12\xb6\x01\n" +
 	"\x10UpdateSavedQuery\x12$.bytebase.v1.UpdateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"c\xdaA\x17saved_query,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02?:\vsaved_query20/v1/{saved_query.name=projects/*/savedQueries/*}\x12\xdc\x01\n" +
 	"\x19UpdateSavedQueryOrganizer\x12-.bytebase.v1.UpdateSavedQueryOrganizerRequest\x1a .bytebase.v1.SavedQueryOrganizer\"n\xdaA\x15organizer,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02L:\torganizer2?/v1/{organizer.saved_query=projects/*/savedQueries/*}/organizer\x12\xf4\x01\n" +
-	"\x1eBatchUpdateSavedQueryOrganizer\x122.bytebase.v1.BatchUpdateSavedQueryOrganizerRequest\x1a3.bytebase.v1.BatchUpdateSavedQueryOrganizerResponse\"i\xdaA\x1cparent,organizer,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02@:\x01*\";/v1/{parent=projects/*}/savedQueries/organizers:batchUpdate\x12\x89\x01\n" +
-	"\x10DeleteSavedQuery\x12$.bytebase.v1.DeleteSavedQueryRequest\x1a\x16.google.protobuf.Empty\"7\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02&*$/v1/{name=projects/*/savedQueries/*}B\xac\x01\n" +
+	"\x1eBatchUpdateSavedQueryOrganizer\x122.bytebase.v1.BatchUpdateSavedQueryOrganizerRequest\x1a3.bytebase.v1.BatchUpdateSavedQueryOrganizerResponse\"i\xdaA\x1cparent,organizer,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02@:\x01*\";/v1/{parent=projects/*}/savedQueries/organizers:batchUpdate\x12\x8d\x01\n" +
+	"\x10DeleteSavedQuery\x12$.bytebase.v1.DeleteSavedQueryRequest\x1a\x16.google.protobuf.Empty\";\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02&*$/v1/{name=projects/*/savedQueries/*}B\xac\x01\n" +
 	"\x0fcom.bytebase.v1B\x16SavedQueryServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

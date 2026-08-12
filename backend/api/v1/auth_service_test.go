@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -12,7 +13,10 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -45,6 +49,40 @@ func TestExtractDomain(t *testing.T) {
 			t.Errorf("extractDomain %s, got %s, want %s", test.domain, got, test.want)
 		}
 	}
+}
+
+func TestPasswordResetEmailSkipsDeletedUser(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+	require.NoError(t, migrator.MigrateSchema(ctx, container.GetDB()))
+
+	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", container.GetHost(), container.GetPort())
+	stores, err := store.New(ctx, pgURL, false)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+
+	user, err := stores.CreateUser(ctx, &store.UserMessage{
+		Email:        "deleted@example.com",
+		Name:         "Deleted user",
+		PasswordHash: "unused",
+		Profile:      &storepb.UserProfile{},
+	})
+	require.NoError(t, err)
+	deleted := true
+	_, err = stores.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &deleted})
+	require.NoError(t, err)
+
+	t.Setenv("EMAIL_CONFIG", "")
+	service := &AuthService{store: stores, secret: "test-secret"}
+	require.NoError(t, service.sendEmailVerificationCode(
+		ctx,
+		"",
+		user.Email,
+		storepb.EmailVerificationCodePurpose_PASSWORD_RESET,
+		"subject",
+		"code: %s, expires in %d minutes",
+	))
 }
 
 // TestSwitchWorkspaceMCPRecognition pins the SwitchWorkspace guard predicate

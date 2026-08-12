@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add reliable, non-secret-bearing audit records for the uncovered V1 security and mutation APIs while explicitly preserving the intentional opt-outs for high-volume reads, synchronization, token refresh, and worksheet autosave.
+**Goal:** Add reliable, non-secret-bearing audit records for the uncovered V1 security and mutation APIs while explicitly preserving the intentional opt-outs for high-volume reads, synchronization, token refresh, and saved query autosave.
 
 **Architecture:** Keep the existing proto-driven audit interceptor as the single audit path. Each covered RPC receives `option (bytebase.v1.audit) = true`; `backend/api/v1/audit.go` remains responsible for canonical resource extraction and cloning/redacting request and response messages before serialization. Standard resource extraction reuses the method-aware proto reflection helper already shared with ACL evaluation, while explicit audit cases are reserved for canonical create names and non-standard request shapes. Unauthenticated handlers resolve a validated workspace through `common.SetAuditWorkspaceID`, and focused end-to-end tests verify that annotations result in persisted rows rather than merely changing descriptors.
 
@@ -10,14 +10,14 @@
 
 ## Global Constraints
 
-- Never put credentials, tokens, raw SQL, AI prompts, worksheet content, exported files, license text, webhook URLs, or payment-session data in an audit request or response.
+- Never put credentials, tokens, raw SQL, AI prompts, saved query content, exported files, license text, webhook URLs, or payment-session data in an audit request or response.
 - Every redactor must clone before modification; `getRequestString` and `getResponseString` must not mutate live handler messages.
 - Audit parents must be canonical `workspaces/{workspace}` or `projects/{project}` names; project-scoped actions must not leak into the workspace-scoped audit stream.
-- Keep `Refresh`, `SyncDatabase`, `BatchSyncDatabases`, `SyncInstance`, `BatchSyncInstances`, `UpdateWorksheet`, `UpdateWorksheetOrganizer`, and `BatchUpdateWorksheetOrganizer` unaudited in this change.
+- Keep `Refresh`, `SyncDatabase`, `BatchSyncDatabases`, `SyncInstance`, `BatchSyncInstances`, `UpdateSavedQuery`, `UpdateSavedQueryOrganizer`, and `BatchUpdateSavedQueryOrganizer` unaudited in this change.
 - Keep `SwitchWorkspace` unaudited because it changes session/token context rather than workspace resources or authorization grants.
 - Keep `TestWebhook` unaudited because it sends a synthetic outbound probe without changing persisted project configuration.
 - Keep POST-based searches, CEL parse/deparse, schema diffs, release checks, instance database discovery, and rollback previews unaudited.
-- Do not add blanket auditing to worksheet reads in the legacy service. The saved-query migration owns metadata-only search and conditional auditing for another user's private content.
+- Do not add blanket auditing to saved query reads. The saved-query privacy model owns metadata-only search and conditional auditing for another user's private content.
 - Run the repository's proto workflow after every proto batch: `buf format -w proto`, `buf lint proto`, then `(cd proto && buf generate)` so later commands remain at the repository root.
 - Run `gofmt -w` on modified Go files and the focused Go tests after each task. Run the full Go lint/build gates before completion.
 
@@ -30,7 +30,7 @@ Audit these 27 RPCs in this plan:
 | Family | RPCs |
 | --- | --- |
 | Core lifecycle | `SetupSample`, `CreateProject`, `UpdateProject`, `RunPlanChecks`, `CancelPlanCheckRun`, `DeleteRelease`, `UndeleteRelease`, `BatchCreateRevisions`, `DeleteRevision` |
-| Content-bearing lifecycle | `CreateRelease`, `UpdateRelease`, `CreateWorksheet`, `DeleteWorksheet` |
+| Content-bearing lifecycle | `CreateRelease`, `UpdateRelease`, `CreateSavedQuery`, `DeleteSavedQuery` |
 | Authentication | `RequestPasswordReset`, `ResetPassword` |
 | Project webhooks | `AddWebhook`, `UpdateWebhook`, `RemoveWebhook` |
 | Subscription | `UploadLicense`, `CreatePurchase`, `UpdatePurchase`, `CancelPurchase`, `ExportVCSProviderUsers` |
@@ -59,7 +59,7 @@ The password-reset RPCs have one deliberate limitation: when the unauthenticated
 - Consumes: existing `getResourceFromSingleRequest`, `maskedString`, `proto.CloneOf`, and proto `bytebase.v1.audit` extension.
 - Produces: audited descriptors, canonical resource names, and clone-first project payload redaction for nine lifecycle RPCs.
 
-- [ ] **Step 1: Extend the resource extraction test first**
+- [x] **Step 1: Extend the resource extraction test first**
 
 Add cases to `TestProjectLifecycleAuditResource`, rename it to `TestLifecycleAuditResource`, and include the matching full RPC procedure in each case:
 
@@ -79,7 +79,7 @@ Add cases to `TestProjectLifecycleAuditResource`, rename it to `TestLifecycleAud
 
 Change the assertion to `require.Equal(t, test.want, getRequestResource(test.request, test.method))`.
 
-- [ ] **Step 2: Run the unit test and verify the new cases fail**
+- [x] **Step 2: Run the unit test and verify the new cases fail**
 
 Run:
 
@@ -89,7 +89,7 @@ go test ./backend/api/v1 -run '^TestLifecycleAuditResource$' -count=1
 
 Expected: FAIL because `getRequestResource` does not yet accept the RPC method or use descriptor metadata for standard request shapes.
 
-- [ ] **Step 3: Make resource extraction method-aware**
+- [x] **Step 3: Make resource extraction method-aware**
 
 Pass the full RPC procedure from the interceptor into `getRequestResource`. Preserve explicit cases only where descriptor metadata cannot express the audit resource: authentication email, canonical create names, and non-standard field or batch shapes such as `UpdateDatabaseCatalog.catalog` and `BatchUpdateDatabases.parent`. For all standard annotated requests, extract the short RPC method name and reuse `getResourceFromSingleRequest`:
 
@@ -108,7 +108,7 @@ case *v1pb.CreateProjectRequest:
 
 This keeps the audit-specific switch small while preserving plan, release, revision, IdP, data-source, setting, and other annotated resource names through the shared reflection path.
 
-- [ ] **Step 4: Add failing project payload redaction tests**
+- [x] **Step 4: Add failing project payload redaction tests**
 
 In `backend/api/v1/audit_redaction_test.go`, add request cases for both project mutations with `secretSentinel` in a nested webhook URL:
 
@@ -124,7 +124,7 @@ In `backend/api/v1/audit_redaction_test.go`, add request cases for both project 
 
 Add a response case for `Project` with the same nested webhook URL. Extend `TestAuditRedactionDoesNotMutateInput` with a project response and assert its original webhook URL remains `secretSentinel` after serialization.
 
-- [ ] **Step 5: Run the redaction tests and verify they fail**
+- [x] **Step 5: Run the redaction tests and verify they fail**
 
 ```bash
 go test ./backend/api/v1 -run '^TestAudit(Request|Response)RedactsCredentials$' -count=1
@@ -132,7 +132,7 @@ go test ./backend/api/v1 -run '^TestAudit(Request|Response)RedactsCredentials$' 
 
 Expected: FAIL because project request and response payloads currently serialize webhook URLs unchanged.
 
-- [ ] **Step 6: Implement clone-first project redaction**
+- [x] **Step 6: Implement clone-first project redaction**
 
 Add the nested webhook and project redactors to `backend/api/v1/audit.go`:
 
@@ -162,7 +162,7 @@ func redactProject(p *v1pb.Project) *v1pb.Project {
 
 Register `CreateProjectRequest` and `UpdateProjectRequest` in `getRequestString`, cloning the outer request and replacing its nested project with `redactProject`. Register `Project` in `getResponseString`. Preserve project IDs, update masks, names, webhook names/types/titles, and all other non-secret fields.
 
-- [ ] **Step 7: Annotate the low-risk RPCs**
+- [x] **Step 7: Annotate the low-risk RPCs**
 
 Add this option inside each RPC block for `SetupSample`, `CreateProject`, `UpdateProject`, `RunPlanChecks`, `CancelPlanCheckRun`, `DeleteRelease`, `UndeleteRelease`, `BatchCreateRevisions`, and `DeleteRevision`:
 
@@ -170,7 +170,7 @@ Add this option inside each RPC block for `SetupSample`, `CreateProject`, `Updat
 option (bytebase.v1.audit) = true;
 ```
 
-- [ ] **Step 8: Generate and run focused unit tests**
+- [x] **Step 8: Generate and run focused unit tests**
 
 Run:
 
@@ -184,7 +184,7 @@ go test ./backend/api/v1 -run '^(TestLifecycleAuditResource|TestAudit(Request|Re
 
 Expected: all commands PASS.
 
-- [ ] **Step 9: Add persistence regression coverage for the original symptom**
+- [x] **Step 9: Add persistence regression coverage for the original symptom**
 
 In `backend/tests/login_audit_test.go`, reuse `ctl.project`, which `StartServerWithExternalPg` already created through `ProjectService.CreateProject`. Query workspace audit logs with:
 
@@ -202,7 +202,7 @@ Filter: `method == "/bytebase.v1.InstanceService/CreateInstance"`,
 
 Assert a row exists with `Resource == projectInstance.Name`. This pins the distinction between “descriptor is annotated” and “row was actually persisted.”
 
-- [ ] **Step 10: Run the lifecycle integration tests**
+- [x] **Step 10: Run the lifecycle integration tests**
 
 Run:
 
@@ -212,7 +212,7 @@ go test -v -count=1 ./backend/tests -run '^(TestAuditLogFormat|TestProjectInstan
 
 Expected: PASS, including persisted `CreateProject`, `UpdateProject`, and `CreateInstance` rows.
 
-- [ ] **Step 11: Commit the low-risk batch**
+- [x] **Step 11: Commit the low-risk batch**
 
 ```bash
 git add proto/v1/v1/actuator_service.proto proto/v1/v1/project_service.proto proto/v1/v1/plan_service.proto proto/v1/v1/release_service.proto proto/v1/v1/revision_service.proto backend/api/v1/audit.go backend/api/v1/audit_test.go backend/api/v1/audit_redaction_test.go backend/tests/login_audit_test.go backend/tests/project_instance_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen
@@ -221,11 +221,11 @@ git commit -m "feat: audit core lifecycle APIs"
 
 ---
 
-### Task 2: Release and Worksheet Content Redaction
+### Task 2: Release and Saved Query Content Redaction
 
 **Files:**
 - Modify: `proto/v1/v1/release_service.proto`
-- Modify: `proto/v1/v1/worksheet_service.proto`
+- Modify: `proto/v1/v1/saved_query_service.proto`
 - Modify: `backend/api/v1/audit.go`
 - Modify: `backend/api/v1/audit_redaction_test.go`
 - Modify: `backend/api/v1/audit_test.go`
@@ -234,22 +234,24 @@ git commit -m "feat: audit core lifecycle APIs"
 
 **Interfaces:**
 - Consumes: `getRequestString`, `getResponseString`, `maskedString`, and `proto.CloneOf`.
-- Produces: `redactRelease`, `redactWorksheet`, and redacted create/update request handling.
+- Produces: `redactRelease`, `redactSavedQuery`, and redacted create/update request handling.
 
-- [ ] **Step 1: Add failing request and response redaction cases**
+- [x] **Step 1: Add failing request and response redaction cases**
 
-Add `secretSentinel` as a release statement and worksheet content in `TestAuditRequestRedactsCredentials`, and add a worksheet response case in `TestAuditResponseRedactsCredentials`:
+Add `secretSentinel` as a release statement and saved query content in `TestAuditRequestRedactsCredentials`, and add a saved query response case in `TestAuditResponseRedactsCredentials`:
 
 ```go
 {"release SQL", &v1pb.CreateReleaseRequest{Release: &v1pb.Release{Files: []*v1pb.Release_File{{Statement: []byte(secretSentinel)}}}}},
-{"worksheet SQL", &v1pb.CreateWorksheetRequest{Worksheet: &v1pb.Worksheet{Content: []byte(secretSentinel)}}},
+{"saved query SQL", &v1pb.CreateSavedQueryRequest{SavedQuery: &v1pb.SavedQuery{Content: []byte(secretSentinel)}}},
 ```
 
 ```go
-{name: "worksheet response SQL", response: &v1pb.Worksheet{Content: []byte(secretSentinel)}},
+{name: "saved query response SQL", response: &v1pb.SavedQuery{Content: []byte(secretSentinel)}},
 ```
 
-- [ ] **Step 2: Run the redaction tests and verify they fail**
+Because protobuf `bytes` fields are base64-encoded by `protojson`, assert that neither `secretSentinel` nor its base64 representation appears in the serialized payload.
+
+- [x] **Step 2: Run the redaction tests and verify they fail**
 
 ```bash
 go test ./backend/api/v1 -run '^TestAudit(Request|Response)RedactsCredentials$' -count=1
@@ -257,7 +259,7 @@ go test ./backend/api/v1 -run '^TestAudit(Request|Response)RedactsCredentials$' 
 
 Expected: FAIL because the sentinel appears in serialized audit payloads.
 
-- [ ] **Step 3: Implement clone-first content redactors**
+- [x] **Step 3: Implement clone-first content redactors**
 
 Add these helpers to `audit.go`:
 
@@ -273,7 +275,7 @@ func redactRelease(r *v1pb.Release) *v1pb.Release {
 	return cloned
 }
 
-func redactWorksheet(r *v1pb.Worksheet) *v1pb.Worksheet {
+func redactSavedQuery(r *v1pb.SavedQuery) *v1pb.SavedQuery {
 	if r == nil {
 		return nil
 	}
@@ -283,23 +285,23 @@ func redactWorksheet(r *v1pb.Worksheet) *v1pb.Worksheet {
 }
 ```
 
-Add request switch cases for `CreateReleaseRequest`, `UpdateReleaseRequest`, and `CreateWorksheetRequest`, preserving all non-content fields and update masks. Add response switch cases for `Release` and `Worksheet` so future handler changes cannot expose statement/content fields through the audit response.
+Add request switch cases for `CreateReleaseRequest`, `UpdateReleaseRequest`, and `CreateSavedQueryRequest`, preserving all non-content fields and update masks. Add response switch cases for `Release` and `SavedQuery` so future handler changes cannot expose statement/content fields through the audit response.
 
-- [ ] **Step 4: Verify resource extraction, project ownership, and annotations**
+- [x] **Step 4: Verify resource extraction, project ownership, and annotations**
 
-Add method-aware `TestLifecycleAuditResource` cases for release and worksheet requests. Their annotated parent, name, and nested resource fields must be resolved by the shared reflection path without adding audit-specific type-switch branches.
+Add method-aware `TestLifecycleAuditResource` cases for release and saved query requests. Their annotated parent, name, and nested resource fields must be resolved by the shared reflection path without adding audit-specific type-switch branches. Declare `SavedQuery` as `bytebase.com/SavedQuery`, and annotate `CreateSavedQueryRequest.parent` and `DeleteSavedQueryRequest.name` with their canonical resource references.
 
-Add `audit = true` to `CreateRelease`, `UpdateRelease`, `CreateWorksheet`, and `DeleteWorksheet`.
+Add `audit = true` to `CreateRelease`, `UpdateRelease`, `CreateSavedQuery`, and `DeleteSavedQuery`.
 
-Ensure both worksheet lifecycle RPCs publish their owning project through the authorization context so the interceptor persists their audit rows under `projects/{project}`, not the workspace fallback. The implementation may use the existing declarative resource metadata or an equivalent project-resolution path; the required contract is project-scoped audit ownership.
+Ensure both saved query lifecycle RPCs publish their owning project through the authorization context so the interceptor persists their audit rows under `projects/{project}`, not the workspace fallback. The implementation may use the existing declarative resource metadata or an equivalent project-resolution path; the required contract is project-scoped audit ownership.
 
-- [ ] **Step 5: Verify redaction and persisted ownership**
+- [x] **Step 5: Verify redaction and persisted ownership**
 
-Extend `TestAuditRedactionDoesNotMutateInput` with a release and worksheet, call the corresponding audit serializer, and assert the original statement/content still equals `secretSentinel`.
+Extend `TestAuditRedactionDoesNotMutateInput` with a release and saved query, call the corresponding audit serializer, and assert the original statement/content still equals `secretSentinel`.
 
-Extend the audit integration coverage to create and delete a worksheet, then query the project audit stream and assert both rows use `projects/{project}` as their parent. This test must fail if either action is filed only in the workspace audit stream.
+Extend the audit integration coverage to create and delete a saved query, then query the project audit stream and assert both rows use `projects/{project}` as their parent. This test must fail if either action is filed only in the workspace audit stream.
 
-- [ ] **Step 6: Generate and test**
+- [x] **Step 6: Generate and test**
 
 ```bash
 buf format -w proto
@@ -310,13 +312,13 @@ go test ./backend/api/v1 -run '^(TestAudit(Request|Response)RedactsCredentials|T
 go test -v -count=1 ./backend/tests -run '^TestAuditLogFormat$' -timeout 10m
 ```
 
-Expected: PASS, no sentinel in any serialized payload, and worksheet lifecycle rows are discoverable in the owning project's audit stream.
+Expected: PASS, no sentinel in any serialized payload, and saved query lifecycle rows are discoverable in the owning project's audit stream.
 
-- [ ] **Step 7: Commit the content-bearing batch**
+- [x] **Step 7: Commit the content-bearing batch**
 
 ```bash
-git add proto/v1/v1/release_service.proto proto/v1/v1/worksheet_service.proto backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/api/v1/audit_test.go backend/tests/login_audit_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen
-git commit -m "feat: audit release and worksheet lifecycle"
+git add proto/v1/v1/release_service.proto proto/v1/v1/saved_query_service.proto backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/api/v1/audit_test.go backend/tests/login_audit_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen
+git commit -m "feat: audit release and saved query lifecycle"
 ```
 
 ---
@@ -335,11 +337,11 @@ git commit -m "feat: audit release and worksheet lifecycle"
 - Consumes: `common.SetAuditWorkspaceID`, `parseOptionalWorkspace`, and existing `redactLoginResponse`.
 - Produces: `redactResetPasswordRequest` and validated workspace attribution for password-reset events.
 
-- [ ] **Step 1: Add failing credential-redaction tests**
+- [x] **Step 1: Add failing credential-redaction tests**
 
 Add a request case containing the sentinel in password-reset `code` and `new_password`. Assert the email remains visible while both secrets are absent.
 
-- [ ] **Step 2: Implement request redactors**
+- [x] **Step 2: Implement request redactors**
 
 ```go
 func redactResetPasswordRequest(r *v1pb.ResetPasswordRequest) *v1pb.ResetPasswordRequest {
@@ -355,31 +357,36 @@ func redactResetPasswordRequest(r *v1pb.ResetPasswordRequest) *v1pb.ResetPasswor
 
 Register the helper in `getRequestString`. Keep `RequestPasswordResetRequest` unchanged because email and workspace are audit identifiers, not credentials.
 
-- [ ] **Step 3: Attribute successful and target-valid auth events**
+- [x] **Step 3: Attribute successful and target-valid auth events**
 
 For `RequestPasswordReset`, set the audit workspace only after establishing both of these facts:
 
 - the normalized email belongs to an active `END_USER` account;
 - the requested workspace is valid for that account under the existing membership rules.
 
+The password-reset delivery path must apply the same active `END_USER` check before resolving email configuration, storing a verification code, or sending email. Unknown, deleted, service-account, and workload-identity targets remain silent no-ops.
+
 An `allUsers` workspace binding alone must not make an unknown, deleted, service-account, or workload-identity email auditable. Keep the endpoint's current always-success response and do not surface lookup failures; an absent, malformed, unknown, or invalid workspace produces no audit row.
+
+For both password-reset RPCs, the interceptor must accept only the workspace explicitly validated and announced by the handler. An authenticated caller's token workspace must not become a fallback audit parent when validation fails or no workspace was supplied.
 
 For `ResetPassword`, attribute the event only to the validated non-empty workspace captured with the verification code. Set that workspace early enough that membership, password-policy, or update failures after successful code verification can be recorded. Do not invent or select an arbitrary workspace when the code has no workspace context; that path is the explicit no-workspace limitation described above.
 
-- [ ] **Step 4: Add audit annotations**
+- [x] **Step 4: Add audit annotations**
 
 Add `audit = true` to `RequestPasswordReset` and `ResetPassword`.
 
-- [ ] **Step 5: Add auth persistence tests**
+- [x] **Step 5: Add auth persistence tests**
 
 Extend `backend/tests/login_audit_test.go` to assert:
 
 - a workspace-bound successful password reset row contains the email but neither the submitted code nor new password;
 - a workspace-bound request for an active end user produces a row while preserving the endpoint's always-success response;
 - unknown, deleted, service-account, and workload-identity emails do not create request audit rows, including when the workspace grants `allUsers`;
+- those exclusions also hold when the caller supplies a valid access token;
 - no-workspace request and reset flows preserve their existing API behavior but create no audit row, documenting the storage limitation explicitly.
 
-- [ ] **Step 6: Generate and run auth tests**
+- [x] **Step 6: Generate and run auth tests**
 
 ```bash
 buf format -w proto
@@ -394,10 +401,66 @@ Expected: PASS with no auth credential present in stored request/response JSON.
 
 - [ ] **Step 7: Commit the authentication batch**
 
+Left uncommitted for the author to review and commit explicitly.
+
 ```bash
 git add proto/v1/v1/auth_service.proto backend/api/v1/auth_service.go backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/tests/login_audit_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen
 git commit -m "feat: audit authentication security events"
 ```
+
+---
+
+### Task 3A: Email-Code Login Audit Attribution
+
+**Files:**
+- Modify: `backend/api/v1/auth_service.go`
+- Modify: `backend/api/v1/audit.go`
+- Test: `backend/api/v1/audit_test.go`
+- Test: `backend/tests/login_audit_test.go`
+
+**Interfaces:**
+- Consumes: the existing `SendEmailLoginCode` audit annotation, `store.GetAccountByEmail`, `store.FindWorkspace`, and `common.SetAuditWorkspaceID`.
+- Produces: workspace attribution for `SendEmailLoginCode` without changing its delivery or signup behavior.
+
+- [x] **Step 1: Attribute requests for existing workspace users**
+
+Normalize the requested email and parse the optional workspace once. Announce that workspace to the audit interceptor only when the email belongs to an active `END_USER` account that is a member of the requested workspace under the existing membership rules.
+
+This lookup affects audit attribution only. The parsed workspace ID is still used by the existing email-setting and verification-code paths, and the RPC keeps its existing login and auto-signup behavior.
+
+- [x] **Step 2: Keep signup-capable requests out of the send audit**
+
+An email that does not yet have an active workspace account, including an invited email that may later sign up, does not create a `SendEmailLoginCode` audit row because there is no existing user membership to attribute. Supplying an authenticated caller token must not make such a target auditable.
+
+The successful `Login` request is audited after email-code authentication resolves or creates the user and determines the workspace. This provides the durable security event for email-code signup.
+
+Delivery eligibility and self-host email-code signup policy require separate design discussion and are explicitly outside this audit-only task.
+
+- [x] **Step 3: Constrain and define audit attribution**
+
+`SendEmailLoginCode` may use only the workspace explicitly validated and announced by the handler. Do not fall back to ACL resources or the caller token for this unauthenticated target operation.
+
+For an attributed workspace-bound request, the audit row contains:
+
+- `Parent`: the validated `workspaces/{workspace}`;
+- `Resource`: the normalized email address;
+- `Request`: email and workspace, with no verification code because this RPC does not accept one;
+- `Response`: the empty response on success;
+- the standard method, caller when authenticated, status, latency, request metadata, and MCP delegation fields.
+
+An unknown, inactive, non-user, non-member, or workspace-less target produces no row because there is no validated workspace parent. An authenticated caller's token workspace must not change that result.
+
+- [x] **Step 4: Add regression coverage**
+
+Extend resource extraction coverage for normalized `SendEmailLoginCodeRequest.email`. Extend the audit integration test to cover an active member, an invited email without an account, an authenticated unknown-address request, and the subsequent successful email-code `Login` audit row.
+
+```bash
+gofmt -w backend/api/v1/auth_service.go backend/api/v1/audit.go backend/api/v1/audit_test.go backend/tests/login_audit_test.go
+go test ./backend/api/v1 -run '^TestLifecycleAuditResource$' -count=1
+go test -v -count=1 ./backend/tests -run '^TestAuditLogFormat$' -timeout 10m
+```
+
+Expected: the existing member request creates a workspace `SendEmailLoginCode` audit row; signup-capable targets do not; and a successful email-code signup creates a workspace `Login` audit row with the code redacted.
 
 ---
 
@@ -613,8 +676,8 @@ func TestRequiredAPIAuditCoverage(t *testing.T) {
 		"bytebase.v1.SubscriptionService.ExportVCSProviderUsers",
 		"bytebase.v1.SubscriptionService.UpdatePurchase",
 		"bytebase.v1.SubscriptionService.UploadLicense",
-		"bytebase.v1.WorksheetService.CreateWorksheet",
-		"bytebase.v1.WorksheetService.DeleteWorksheet",
+		"bytebase.v1.SavedQueryService.CreateSavedQuery",
+		"bytebase.v1.SavedQueryService.DeleteSavedQuery",
 	} {
 		t.Run(method, func(t *testing.T) {
 			requireAuditedMethod(t, method)
@@ -652,9 +715,9 @@ func TestIntentionalAPIAuditExclusions(t *testing.T) {
 		"bytebase.v1.InstanceService.BatchSyncInstances",
 		"bytebase.v1.InstanceService.SyncInstance",
 		"bytebase.v1.ProjectService.TestWebhook",
-		"bytebase.v1.WorksheetService.BatchUpdateWorksheetOrganizer",
-		"bytebase.v1.WorksheetService.UpdateWorksheet",
-		"bytebase.v1.WorksheetService.UpdateWorksheetOrganizer",
+		"bytebase.v1.SavedQueryService.BatchUpdateSavedQueryOrganizer",
+		"bytebase.v1.SavedQueryService.UpdateSavedQuery",
+		"bytebase.v1.SavedQueryService.UpdateSavedQueryOrganizer",
 	} {
 		t.Run(method, func(t *testing.T) {
 			requireUnauditedMethod(t, method)
@@ -680,7 +743,7 @@ Add an “Audit annotation coverage” section to `docs/design/v1-api-audit-2026
 - the deliberate exclusions and their reasons, including session-only workspace switching and non-mutating webhook tests;
 - the rule that serializers must redact credentials/content before annotations are enabled;
 - the workspace-resolution limitation for both unauthenticated password-reset RPCs;
-- the legacy worksheet-read deferral to the saved-query privacy model.
+- the saved-query read deferral to the saved-query privacy model.
 
 - [ ] **Step 5: Run all required verification gates**
 
