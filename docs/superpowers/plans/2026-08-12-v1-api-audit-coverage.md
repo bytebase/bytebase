@@ -337,11 +337,11 @@ git commit -m "feat: audit release and worksheet lifecycle"
 - Consumes: `common.SetAuditWorkspaceID`, `parseOptionalWorkspace`, and existing `redactLoginResponse`.
 - Produces: `redactResetPasswordRequest` and validated workspace attribution for password-reset events.
 
-- [ ] **Step 1: Add failing credential-redaction tests**
+- [x] **Step 1: Add failing credential-redaction tests**
 
 Add a request case containing the sentinel in password-reset `code` and `new_password`. Assert the email remains visible while both secrets are absent.
 
-- [ ] **Step 2: Implement request redactors**
+- [x] **Step 2: Implement request redactors**
 
 ```go
 func redactResetPasswordRequest(r *v1pb.ResetPasswordRequest) *v1pb.ResetPasswordRequest {
@@ -357,31 +357,36 @@ func redactResetPasswordRequest(r *v1pb.ResetPasswordRequest) *v1pb.ResetPasswor
 
 Register the helper in `getRequestString`. Keep `RequestPasswordResetRequest` unchanged because email and workspace are audit identifiers, not credentials.
 
-- [ ] **Step 3: Attribute successful and target-valid auth events**
+- [x] **Step 3: Attribute successful and target-valid auth events**
 
 For `RequestPasswordReset`, set the audit workspace only after establishing both of these facts:
 
 - the normalized email belongs to an active `END_USER` account;
 - the requested workspace is valid for that account under the existing membership rules.
 
+The password-reset delivery path must apply the same active `END_USER` check before resolving email configuration, storing a verification code, or sending email. Unknown, deleted, service-account, and workload-identity targets remain silent no-ops.
+
 An `allUsers` workspace binding alone must not make an unknown, deleted, service-account, or workload-identity email auditable. Keep the endpoint's current always-success response and do not surface lookup failures; an absent, malformed, unknown, or invalid workspace produces no audit row.
+
+For both password-reset RPCs, the interceptor must accept only the workspace explicitly validated and announced by the handler. An authenticated caller's token workspace must not become a fallback audit parent when validation fails or no workspace was supplied.
 
 For `ResetPassword`, attribute the event only to the validated non-empty workspace captured with the verification code. Set that workspace early enough that membership, password-policy, or update failures after successful code verification can be recorded. Do not invent or select an arbitrary workspace when the code has no workspace context; that path is the explicit no-workspace limitation described above.
 
-- [ ] **Step 4: Add audit annotations**
+- [x] **Step 4: Add audit annotations**
 
 Add `audit = true` to `RequestPasswordReset` and `ResetPassword`.
 
-- [ ] **Step 5: Add auth persistence tests**
+- [x] **Step 5: Add auth persistence tests**
 
 Extend `backend/tests/login_audit_test.go` to assert:
 
 - a workspace-bound successful password reset row contains the email but neither the submitted code nor new password;
 - a workspace-bound request for an active end user produces a row while preserving the endpoint's always-success response;
 - unknown, deleted, service-account, and workload-identity emails do not create request audit rows, including when the workspace grants `allUsers`;
+- those exclusions also hold when the caller supplies a valid access token;
 - no-workspace request and reset flows preserve their existing API behavior but create no audit row, documenting the storage limitation explicitly.
 
-- [ ] **Step 6: Generate and run auth tests**
+- [x] **Step 6: Generate and run auth tests**
 
 ```bash
 buf format -w proto
@@ -396,10 +401,66 @@ Expected: PASS with no auth credential present in stored request/response JSON.
 
 - [ ] **Step 7: Commit the authentication batch**
 
+Left uncommitted for the author to review and commit explicitly.
+
 ```bash
 git add proto/v1/v1/auth_service.proto backend/api/v1/auth_service.go backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/tests/login_audit_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen
 git commit -m "feat: audit authentication security events"
 ```
+
+---
+
+### Task 3A: Email-Code Login Audit Attribution
+
+**Files:**
+- Modify: `backend/api/v1/auth_service.go`
+- Modify: `backend/api/v1/audit.go`
+- Test: `backend/api/v1/audit_test.go`
+- Test: `backend/tests/login_audit_test.go`
+
+**Interfaces:**
+- Consumes: the existing `SendEmailLoginCode` audit annotation, `store.GetAccountByEmail`, `store.FindWorkspace`, and `common.SetAuditWorkspaceID`.
+- Produces: workspace attribution for `SendEmailLoginCode` without changing its delivery or signup behavior.
+
+- [x] **Step 1: Attribute requests for existing workspace users**
+
+Normalize the requested email and parse the optional workspace once. Announce that workspace to the audit interceptor only when the email belongs to an active `END_USER` account that is a member of the requested workspace under the existing membership rules.
+
+This lookup affects audit attribution only. The parsed workspace ID is still used by the existing email-setting and verification-code paths, and the RPC keeps its existing login and auto-signup behavior.
+
+- [x] **Step 2: Keep signup-capable requests out of the send audit**
+
+An email that does not yet have an active workspace account, including an invited email that may later sign up, does not create a `SendEmailLoginCode` audit row because there is no existing user membership to attribute. Supplying an authenticated caller token must not make such a target auditable.
+
+The successful `Login` request is audited after email-code authentication resolves or creates the user and determines the workspace. This provides the durable security event for email-code signup.
+
+Delivery eligibility and self-host email-code signup policy require separate design discussion and are explicitly outside this audit-only task.
+
+- [x] **Step 3: Constrain and define audit attribution**
+
+`SendEmailLoginCode` may use only the workspace explicitly validated and announced by the handler. Do not fall back to ACL resources or the caller token for this unauthenticated target operation.
+
+For an attributed workspace-bound request, the audit row contains:
+
+- `Parent`: the validated `workspaces/{workspace}`;
+- `Resource`: the normalized email address;
+- `Request`: email and workspace, with no verification code because this RPC does not accept one;
+- `Response`: the empty response on success;
+- the standard method, caller when authenticated, status, latency, request metadata, and MCP delegation fields.
+
+An unknown, inactive, non-user, non-member, or workspace-less target produces no row because there is no validated workspace parent. An authenticated caller's token workspace must not change that result.
+
+- [x] **Step 4: Add regression coverage**
+
+Extend resource extraction coverage for normalized `SendEmailLoginCodeRequest.email`. Extend the audit integration test to cover an active member, an invited email without an account, an authenticated unknown-address request, and the subsequent successful email-code `Login` audit row.
+
+```bash
+gofmt -w backend/api/v1/auth_service.go backend/api/v1/audit.go backend/api/v1/audit_test.go backend/tests/login_audit_test.go
+go test ./backend/api/v1 -run '^TestLifecycleAuditResource$' -count=1
+go test -v -count=1 ./backend/tests -run '^TestAuditLogFormat$' -timeout 10m
+```
+
+Expected: the existing member request creates a workspace `SendEmailLoginCode` audit row; signup-capable targets do not; and a successful email-code signup creates a workspace `Login` audit row with the code redacted.
 
 ---
 

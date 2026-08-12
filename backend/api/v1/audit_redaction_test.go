@@ -135,12 +135,20 @@ func TestAuditRequestRedactsCredentials(t *testing.T) {
 		{"worksheet SQL", &v1pb.CreateWorksheetRequest{Worksheet: &v1pb.Worksheet{
 			Content: []byte(secretSentinel),
 		}}},
+		{"password reset code and password", &v1pb.ResetPasswordRequest{
+			Email:       "user@example.com",
+			Code:        secretSentinel,
+			NewPassword: secretSentinel,
+		}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getRequestString(tt.request)
 			require.NoError(t, err)
 			require.NotContains(t, got, secretSentinel, "credential written to the audit log")
 			require.NotContains(t, got, encodedSecretSentinel, "encoded content written to the audit log")
+			if _, ok := tt.request.(*v1pb.ResetPasswordRequest); ok {
+				require.Contains(t, got, "user@example.com", "email is required for audit attribution")
+			}
 		})
 	}
 }
@@ -199,6 +207,7 @@ func TestAuditRedactionDoesNotMutateInput(t *testing.T) {
 		{name: "create release request", request: &v1pb.CreateReleaseRequest{Release: &v1pb.Release{Files: []*v1pb.Release_File{{Statement: []byte(secretSentinel)}}}}},
 		{name: "update release request", request: &v1pb.UpdateReleaseRequest{Release: &v1pb.Release{Files: []*v1pb.Release_File{{Statement: []byte(secretSentinel)}}}}},
 		{name: "create worksheet request", request: &v1pb.CreateWorksheetRequest{Worksheet: &v1pb.Worksheet{Content: []byte(secretSentinel)}}},
+		{name: "reset password request", request: &v1pb.ResetPasswordRequest{Email: "user@example.com", Code: secretSentinel, NewPassword: secretSentinel}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := getRequestString(tt.request)
@@ -221,6 +230,9 @@ func TestAuditRedactionDoesNotMutateInput(t *testing.T) {
 				sensitiveValue = string(request.GetRelease().GetFiles()[0].GetStatement())
 			case *v1pb.CreateWorksheetRequest:
 				sensitiveValue = string(request.GetWorksheet().GetContent())
+			case *v1pb.ResetPasswordRequest:
+				sensitiveValue = request.GetCode()
+				require.Equal(t, secretSentinel, request.GetNewPassword())
 			default:
 				t.Fatalf("unexpected request type %T", request)
 			}

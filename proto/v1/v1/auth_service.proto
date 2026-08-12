@@ -94,6 +94,7 @@ service AuthService {
     };
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.audit) = true;
   }
 
   // Resets the user's password using a password reset token from email.
@@ -105,6 +106,7 @@ service AuthService {
     };
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.audit) = true;
   }
 
   // Sends a 6-digit verification code to the email for login/signup.
