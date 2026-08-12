@@ -15,6 +15,114 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+func TestValidateIAMCredentialForSaaS(t *testing.T) {
+	saas := &InstanceService{profile: &config.Profile{SaaS: true}}
+	selfHosted := &InstanceService{profile: &config.Profile{SaaS: false}}
+
+	awsDS := func(credential *storepb.DataSource_AWSCredential) *storepb.DataSource {
+		ds := &storepb.DataSource{AuthenticationType: storepb.DataSource_AWS_RDS_IAM}
+		if credential != nil {
+			ds.IamExtension = &storepb.DataSource_AwsCredential{AwsCredential: credential}
+		}
+		return ds
+	}
+
+	testCases := []struct {
+		name    string
+		service *InstanceService
+		ds      *storepb.DataSource
+		wantErr bool
+	}{
+		{
+			name:    "saas rejects nil iam extension",
+			service: saas,
+			ds:      awsDS(nil),
+			wantErr: true,
+		},
+		{
+			// An all-empty credential behaves exactly like the default chain
+			// at connect time: the host's own AWS identity.
+			name:    "saas rejects empty aws credential",
+			service: saas,
+			ds:      awsDS(&storepb.DataSource_AWSCredential{}),
+			wantErr: true,
+		},
+		{
+			name:    "saas accepts aws access key",
+			service: saas,
+			ds:      awsDS(&storepb.DataSource_AWSCredential{AccessKeyId: "AKIAIOSFODNN7EXAMPLE", SecretAccessKey: "secret"}),
+			wantErr: false,
+		},
+		{
+			// Role-only is the legitimate SaaS cross-account pattern: the
+			// tenant's role trusts the host identity as the base principal.
+			name:    "saas accepts aws role arn without keys",
+			service: saas,
+			ds:      awsDS(&storepb.DataSource_AWSCredential{RoleArn: "arn:aws:iam::123456789012:role/tenant"}),
+			wantErr: false,
+		},
+		{
+			name:    "saas rejects empty gcp credential",
+			service: saas,
+			ds: &storepb.DataSource{
+				AuthenticationType: storepb.DataSource_GOOGLE_CLOUD_SQL_IAM,
+				IamExtension:       &storepb.DataSource_GcpCredential{GcpCredential: &storepb.DataSource_GCPCredential{}},
+			},
+			wantErr: true,
+		},
+		{
+			name:    "saas accepts gcp credential content",
+			service: saas,
+			ds: &storepb.DataSource{
+				AuthenticationType: storepb.DataSource_GOOGLE_CLOUD_SQL_IAM,
+				IamExtension:       &storepb.DataSource_GcpCredential{GcpCredential: &storepb.DataSource_GCPCredential{Content: `{"type":"service_account"}`}},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "saas rejects incomplete azure credential",
+			service: saas,
+			ds: &storepb.DataSource{
+				AuthenticationType: storepb.DataSource_AZURE_IAM,
+				IamExtension:       &storepb.DataSource_AzureCredential_{AzureCredential: &storepb.DataSource_AzureCredential{TenantId: "tenant"}},
+			},
+			wantErr: true,
+		},
+		{
+			name:    "saas accepts complete azure credential",
+			service: saas,
+			ds: &storepb.DataSource{
+				AuthenticationType: storepb.DataSource_AZURE_IAM,
+				IamExtension:       &storepb.DataSource_AzureCredential_{AzureCredential: &storepb.DataSource_AzureCredential{TenantId: "tenant", ClientId: "client", ClientSecret: "secret"}},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "saas ignores password authentication",
+			service: saas,
+			ds:      &storepb.DataSource{AuthenticationType: storepb.DataSource_PASSWORD},
+			wantErr: false,
+		},
+		{
+			// Self-hosted deployments may use the default credential chain.
+			name:    "self-hosted accepts empty aws credential",
+			service: selfHosted,
+			ds:      awsDS(&storepb.DataSource_AWSCredential{}),
+			wantErr: false,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.service.validateIAMCredentialForSaaS(tc.ds)
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestValidateExtraConnectionParametersRejectsTiDBAllowAllFiles(t *testing.T) {
 	err := validateExtraConnectionParameters(storepb.Engine_TIDB, map[string]string{
 		"allowAllFiles": "true",
