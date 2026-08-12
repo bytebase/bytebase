@@ -8,7 +8,7 @@ const LEGACY_SHEET_PATH =
   /^(\/sql-editor\/projects\/[^/]+)\/sheets\/([^/]+)\/?$/;
 
 export function rewriteLegacyPath() {
-  const match = window.location.pathname.match(LEGACY_SHEET_PATH);
+  const match = LEGACY_SHEET_PATH.exec(window.location.pathname);
   if (!match) return;
   window.history.replaceState(
     window.history.state,

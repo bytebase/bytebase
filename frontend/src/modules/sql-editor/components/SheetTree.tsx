@@ -1252,19 +1252,24 @@ export function SheetTree({
                   }}
                   onClick={(e) => e.stopPropagation()}
                 />
-              ) : folderNode.savedQuery && !folderNode.label ? (
-                // Untitled saved query — render a placeholder. We don't pipe this
-                // through HighlightLabelText since there's nothing to highlight
-                // and the muted italic styling signals "empty title".
-                <span className="truncate block text-control-placeholder italic">
-                  {t("common.untitled")}
-                </span>
               ) : (
-                <HighlightLabelText
-                  text={folderNode.label}
-                  keyword={savedQueryFilter.keyword}
-                  className="truncate block"
-                />
+                <>
+                  {folderNode.savedQuery && !folderNode.label ? (
+                    // Untitled saved query — render a placeholder. We don't
+                    // pipe this through HighlightLabelText since there's
+                    // nothing to highlight and the muted italic styling
+                    // signals "empty title".
+                    <span className="truncate block text-control-placeholder italic">
+                      {t("common.untitled")}
+                    </span>
+                  ) : (
+                    <HighlightLabelText
+                      text={folderNode.label}
+                      keyword={savedQueryFilter.keyword}
+                      className="truncate block"
+                    />
+                  )}
+                </>
               )}
             </span>
           )}
@@ -1580,7 +1585,10 @@ export function SheetTree({
 
   // ---- Main render ---------------------------------------------------------
   return (
-    <div className="relative flex min-w-0 max-w-full flex-col items-stretch gap-y-1 overflow-x-clip saved query-tree">
+    <div
+      data-testid="saved-query-tree"
+      className="relative flex min-w-0 max-w-full flex-col items-stretch gap-y-1 overflow-x-clip"
+    >
       <Tree<SavedQueryFolderNode>
         data={treeData}
         renderNode={renderNode}

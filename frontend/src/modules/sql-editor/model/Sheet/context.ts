@@ -756,7 +756,7 @@ const getKeyForSavedQuery = (
 ): string =>
   [
     getPwdForSavedQuery(view, savedQuery),
-    `bytebase-${savedQuery.type}-${savedQuery.name.split("/").slice(-1)[0]}.sql`,
+    `bytebase-${savedQuery.type}-${savedQuery.name.split("/").at(-1)}.sql`,
   ].join("/");
 
 const getFoldersForSavedQuery = (

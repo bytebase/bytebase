@@ -209,7 +209,7 @@ export function SavedQueryPane() {
 
       <div
         className={cn(
-          "relative flex min-w-0 max-w-full flex-1 flex-col gap-y-2 overflow-y-auto overflow-x-hidden saved query-scroll",
+          "relative flex min-w-0 max-w-full flex-1 flex-col gap-y-2 overflow-y-auto overflow-x-hidden",
           showMultiSelectToolbar && "pb-16"
         )}
       >

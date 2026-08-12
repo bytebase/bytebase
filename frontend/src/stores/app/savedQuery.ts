@@ -1,6 +1,6 @@
 import { clone, create as createProto } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import { uniq, uniqBy } from "lodash-es";
+import { uniqBy } from "lodash-es";
 import { savedQueryServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import { UNKNOWN_ID } from "@/types";
@@ -57,14 +57,20 @@ export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
     // endpoint rejects the whole request on an invalid name, which would
     // drop hydration for every valid database in the same batch, so filter
     // those out first. Dedupe all three to keep the batch payloads minimal.
-    const databases = uniq(
-      savedQueries.map((w) => w.database).filter(isValidDatabaseName)
-    );
+    const databases = [
+      ...new Set(
+        savedQueries.map((w) => w.database).filter(isValidDatabaseName)
+      ),
+    ];
     try {
       await Promise.all([
-        get().batchFetchProjects(uniq(savedQueries.map((w) => w.project))),
+        get().batchFetchProjects([
+          ...new Set(savedQueries.map((w) => w.project)),
+        ]),
         get().batchFetchDatabases(databases),
-        get().batchGetOrFetchUsers(uniq(savedQueries.map((w) => w.creator))),
+        get().batchGetOrFetchUsers([
+          ...new Set(savedQueries.map((w) => w.creator)),
+        ]),
       ]);
     } catch {
       // Best-effort hydration; the saved query entry is still cached below.

@@ -424,7 +424,7 @@ describe("SQLEditorRouteShell", () => {
         schema: "public",
         table: "users",
       },
-      mode: "WORKSHEET",
+      mode: "SAVED_QUERY",
     });
     expect(mocks.navigateReplace).toHaveBeenCalledWith({
       name: "sql-editor.database",
@@ -484,7 +484,7 @@ describe("SQLEditorRouteShell", () => {
         instance: parent,
         database: "",
       },
-      mode: "WORKSHEET",
+      mode: "SAVED_QUERY",
     });
     expect(mocks.navigateReplace).toHaveBeenCalledWith({
       name: "sql-editor.instance",

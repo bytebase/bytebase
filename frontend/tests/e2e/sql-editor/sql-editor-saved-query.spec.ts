@@ -197,7 +197,7 @@ test.describe("Multi-select delete shows the dedicated confirm dialog (BYT-9631)
     await sqlEditor.gotoHome();
     await page.waitForTimeout(1000);
 
-    const tree = page.locator(".savedQuery-tree");
+    const tree = page.getByTestId("saved-query-tree");
     await expect(tree.getByText(TITLE_A).first()).toBeVisible({
       timeout: 10_000,
     });
@@ -314,7 +314,7 @@ test.describe("Duplicate", () => {
     // Right-click the source row in the sidebar tree to open the
     // saved query context menu. Anchor by the unique title text.
     const sourceRow = page
-      .locator(".savedQuery-tree")
+      .getByTestId("saved-query-tree")
       .getByText(SOURCE_TITLE)
       .first();
     await expect(sourceRow).toBeVisible({ timeout: 10_000 });
@@ -403,7 +403,7 @@ test.describe("Right-click → Delete prompts for confirmation and removes the s
     // The saved query appears in the sidebar tree under "Mine" — find
     // by its unique title.
     const row = page
-      .locator(".savedQuery-tree")
+      .getByTestId("saved-query-tree")
       .getByText(TARGET_TITLE)
       .first();
     await expect(row).toBeVisible({ timeout: 10_000 });
@@ -425,7 +425,7 @@ test.describe("Right-click → Delete prompts for confirmation and removes the s
 
     // The row must disappear from the sidebar tree.
     await expect(
-      page.locator(".savedQuery-tree").getByText(TARGET_TITLE),
+      page.getByTestId("saved-query-tree").getByText(TARGET_TITLE),
     ).toHaveCount(0, { timeout: 10_000 });
 
     // Mark the saved query as already deleted so afterAll doesn't
@@ -481,10 +481,10 @@ test.describe("Sidebar search filters the saved query list", () => {
 
     // Both saved queries visible at baseline.
     await expect(
-      page.locator(".savedQuery-tree").getByText(NEEDLE_TITLE),
+      page.getByTestId("saved-query-tree").getByText(NEEDLE_TITLE),
     ).toBeVisible({ timeout: 10_000 });
     await expect(
-      page.locator(".savedQuery-tree").getByText(HAYSTACK_TITLE),
+      page.getByTestId("saved-query-tree").getByText(HAYSTACK_TITLE),
     ).toBeVisible();
 
     // The search input is a textbox in the saved query pane.
@@ -497,10 +497,10 @@ test.describe("Sidebar search filters the saved query list", () => {
 
     // Needle stays, haystack disappears.
     await expect(
-      page.locator(".savedQuery-tree").getByText(NEEDLE_TITLE),
+      page.getByTestId("saved-query-tree").getByText(NEEDLE_TITLE),
     ).toBeVisible();
     await expect(
-      page.locator(".savedQuery-tree").getByText(HAYSTACK_TITLE),
+      page.getByTestId("saved-query-tree").getByText(HAYSTACK_TITLE),
     ).toHaveCount(0);
 
     // Reset for any sibling describe sharing the page.
@@ -542,11 +542,11 @@ test.describe("Mine / Shared / Draft folders collapse and re-expand", () => {
     await sqlEditor.gotoHome();
     await page.waitForTimeout(800);
 
-    const child = page.locator(".savedQuery-tree").getByText(TITLE).first();
+    const child = page.getByTestId("saved-query-tree").getByText(TITLE).first();
     await expect(child).toBeVisible({ timeout: 10_000 });
 
     const mineFolder = page
-      .locator(".savedQuery-tree")
+      .getByTestId("saved-query-tree")
       .getByRole("treeitem")
       .filter({ hasText: /^Mine$/ })
       .first();

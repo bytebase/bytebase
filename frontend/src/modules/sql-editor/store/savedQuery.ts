@@ -6,7 +6,6 @@ import { openSavedQueryByName } from "@/modules/sql-editor/model/Sheet";
 import { useAppStore } from "@/stores/app";
 import { isValidProjectName } from "@/types";
 import {
-  type SavedQuery,
   SavedQuery_Visibility,
   SavedQuerySchema,
 } from "@/types/proto-es/v1/saved_query_service_pb";
@@ -77,8 +76,7 @@ export const createSavedQuerySaveSlice: SQLEditorSliceCreator<
     const connection = await extractSavedQueryConnection({ database });
     const currentTab = tabStore.tabsById.get(tabId);
     const nextConnection =
-      currentTab &&
-      currentTab.connection.instance === connection.instance &&
+      currentTab?.connection.instance === connection.instance &&
       currentTab.connection.database === connection.database
         ? { ...currentTab.connection, ...connection }
         : connection;
@@ -190,4 +188,4 @@ export const createSavedQuerySaveSlice: SQLEditorSliceCreator<
 
 // Re-export the SavedQuery proto type so callers don't have to plumb the
 // proto path themselves.
-export type { SavedQuery };
+export type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";

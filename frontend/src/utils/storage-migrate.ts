@@ -223,12 +223,12 @@ function migrateSavedQueryTabValues() {
         >;
         const next: Record<string, unknown> = { ...rest };
         if (typeof worksheet === "string" || typeof savedQuery === "string") {
-          const name =
-            typeof savedQuery === "string" && savedQuery
-              ? savedQuery
-              : typeof worksheet === "string"
-                ? worksheet
-                : "";
+          let name = "";
+          if (typeof savedQuery === "string" && savedQuery) {
+            name = savedQuery;
+          } else if (typeof worksheet === "string") {
+            name = worksheet;
+          }
           next.savedQuery = name.replace("/worksheets/", "/savedQueries/");
         }
         if (mode !== undefined) {

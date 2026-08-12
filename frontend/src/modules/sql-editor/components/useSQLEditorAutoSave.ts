@@ -57,7 +57,7 @@ export function useSQLEditorAutoSave() {
   const runAutoSave = async () => {
     const tabsState = getSQLEditorTabsState();
     const tab = tabsState.tabsById.get(tabsState.currentTabId);
-    if (!tab || !tab.savedQuery || tab.status === "CLEAN") return;
+    if (!tab?.savedQuery || tab.status === "CLEAN") return;
 
     const savedQuery = useAppStore
       .getState()

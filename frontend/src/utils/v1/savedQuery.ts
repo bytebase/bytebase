@@ -8,7 +8,7 @@ import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 
 export const extractSavedQueryID = (name: string) => {
   const pattern = /(?:^|\/)savedQueries\/([^/]+)(?:$|\/)/;
-  const matches = name.match(pattern);
+  const matches = pattern.exec(name);
   return matches?.[1] ?? `${UNKNOWN_ID}`;
 };
 
