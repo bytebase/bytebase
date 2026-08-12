@@ -67,6 +67,7 @@ service ReleaseService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.releases.delete";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Restores a deleted release.
@@ -75,6 +76,7 @@ service ReleaseService {
     option (google.api.http) = {post: "/v1/{name=projects/*/releases/*}:undelete"};
     option (bytebase.v1.permission) = "bb.releases.undelete";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Validates a release by dry-running checks on target databases.

@@ -51,6 +51,7 @@ service RevisionService {
     };
     option (bytebase.v1.permission) = "bb.revisions.create";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Deletes a schema revision.
@@ -63,6 +64,7 @@ service RevisionService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.revisions.delete";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 }
 

@@ -37,6 +37,7 @@ service ActuatorService {
     };
     option (bytebase.v1.permission) = "bb.projects.create";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 }
 

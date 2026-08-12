@@ -39,6 +39,19 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	projectID := "bot35-project-instance"
 	projectInstance := createProjectInstanceTestInstance(ctx, t, ctl, &projectParent, projectID, "project instance", pg)
 	a.Equal(fmt.Sprintf("%s/instances/%s", ctl.project.Name, projectID), projectInstance.Name)
+	createAuditLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: ctl.project.Name,
+		Filter: `method == "/bytebase.v1.InstanceService/CreateInstance"`,
+	}))
+	a.NoError(err)
+	foundCreateAudit := false
+	for _, auditLog := range createAuditLogs.Msg.AuditLogs {
+		if auditLog.Resource == projectInstance.Name {
+			foundCreateAudit = true
+			break
+		}
+	}
+	a.True(foundCreateAudit, "project instance creation must persist its canonical resource in the project audit stream")
 
 	_, err = ctl.instanceServiceClient.SyncInstance(ctx, connect.NewRequest(&v1pb.SyncInstanceRequest{
 		Name: projectInstance.Name,

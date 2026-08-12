@@ -4,7 +4,7 @@
 
 **Goal:** Add reliable, non-secret-bearing audit records for the uncovered V1 security and mutation APIs while explicitly preserving the intentional opt-outs for high-volume reads, synchronization, token refresh, and worksheet autosave.
 
-**Architecture:** Keep the existing proto-driven audit interceptor as the single audit path. Each covered RPC receives `option (bytebase.v1.audit) = true`; `backend/api/v1/audit.go` remains responsible for canonical resource extraction and cloning/redacting request and response messages before serialization. Unauthenticated handlers resolve a validated workspace through `common.SetAuditWorkspaceID`, and focused end-to-end tests verify that annotations result in persisted rows rather than merely changing descriptors.
+**Architecture:** Keep the existing proto-driven audit interceptor as the single audit path. Each covered RPC receives `option (bytebase.v1.audit) = true`; `backend/api/v1/audit.go` remains responsible for canonical resource extraction and cloning/redacting request and response messages before serialization. Standard resource extraction reuses the method-aware proto reflection helper already shared with ACL evaluation, while explicit audit cases are reserved for canonical create names and non-standard request shapes. Unauthenticated handlers resolve a validated workspace through `common.SetAuditWorkspaceID`, and focused end-to-end tests verify that annotations result in persisted rows rather than merely changing descriptors.
 
 **Tech Stack:** Protocol Buffers, Connect RPC, Go, `protoregistry`, `protojson`, Bytebase audit interceptor/store, Testify, backend integration test harness.
 
@@ -56,25 +56,28 @@ The password-reset RPCs have one deliberate limitation: when the unauthenticated
 - Generated: `backend/generated-go/v1/`, `frontend/src/types/proto-es/v1/`, `proto/gen/grpc-doc/`, `backend/api/mcp/gen/`
 
 **Interfaces:**
-- Consumes: existing `getRequestResource(any) string`, `maskedString`, `proto.CloneOf`, and proto `bytebase.v1.audit` extension.
+- Consumes: existing `getResourceFromSingleRequest`, `maskedString`, `proto.CloneOf`, and proto `bytebase.v1.audit` extension.
 - Produces: audited descriptors, canonical resource names, and clone-first project payload redaction for nine lifecycle RPCs.
 
 - [ ] **Step 1: Extend the resource extraction test first**
 
-Add cases to `TestProjectLifecycleAuditResource` and rename it to `TestLifecycleAuditResource`:
+Add cases to `TestProjectLifecycleAuditResource`, rename it to `TestLifecycleAuditResource`, and include the matching full RPC procedure in each case:
 
 ```go
-{name: "create project", request: &v1pb.CreateProjectRequest{ProjectId: "project-a", Project: &v1pb.Project{}}, want: "projects/project-a"},
-{name: "update project", request: &v1pb.UpdateProjectRequest{Project: &v1pb.Project{Name: "projects/project-a"}}, want: "projects/project-a"},
-{name: "run plan checks", request: &v1pb.RunPlanChecksRequest{Name: "projects/project-a/plans/101"}, want: "projects/project-a/plans/101"},
-{name: "cancel plan checks", request: &v1pb.CancelPlanCheckRunRequest{Name: "projects/project-a/plans/101/planCheckRun"}, want: "projects/project-a/plans/101/planCheckRun"},
-{name: "delete release", request: &v1pb.DeleteReleaseRequest{Name: "projects/project-a/releases/release-a"}, want: "projects/project-a/releases/release-a"},
-{name: "undelete release", request: &v1pb.UndeleteReleaseRequest{Name: "projects/project-a/releases/release-a"}, want: "projects/project-a/releases/release-a"},
-{name: "batch create revisions", request: &v1pb.BatchCreateRevisionsRequest{Parent: "instances/instance-a/databases/database-a"}, want: "instances/instance-a/databases/database-a"},
-{name: "delete revision", request: &v1pb.DeleteRevisionRequest{Name: "instances/instance-a/databases/database-a/revisions/101"}, want: "instances/instance-a/databases/database-a/revisions/101"},
+{name: "create project", method: v1connect.ProjectServiceCreateProjectProcedure, request: &v1pb.CreateProjectRequest{ProjectId: "project-a", Project: &v1pb.Project{}}, want: "projects/project-a"},
+{name: "create project ignores nested name", method: v1connect.ProjectServiceCreateProjectProcedure, request: &v1pb.CreateProjectRequest{ProjectId: "project-a", Project: &v1pb.Project{Name: "projects/wrong-project"}}, want: "projects/project-a"},
+{name: "update project", method: v1connect.ProjectServiceUpdateProjectProcedure, request: &v1pb.UpdateProjectRequest{Project: &v1pb.Project{Name: "projects/project-a"}}, want: "projects/project-a"},
+{name: "create workspace instance", method: v1connect.InstanceServiceCreateInstanceProcedure, request: &v1pb.CreateInstanceRequest{InstanceId: "instance-a", Instance: &v1pb.Instance{}}, want: "instances/instance-a"},
+{name: "create project instance", method: v1connect.InstanceServiceCreateInstanceProcedure, request: &v1pb.CreateInstanceRequest{Parent: new("projects/project-a"), InstanceId: "instance-a", Instance: &v1pb.Instance{}}, want: "projects/project-a/instances/instance-a"},
+{name: "run plan checks", method: v1connect.PlanServiceRunPlanChecksProcedure, request: &v1pb.RunPlanChecksRequest{Name: "projects/project-a/plans/101"}, want: "projects/project-a/plans/101"},
+{name: "cancel plan checks", method: v1connect.PlanServiceCancelPlanCheckRunProcedure, request: &v1pb.CancelPlanCheckRunRequest{Name: "projects/project-a/plans/101/planCheckRun"}, want: "projects/project-a/plans/101/planCheckRun"},
+{name: "delete release", method: v1connect.ReleaseServiceDeleteReleaseProcedure, request: &v1pb.DeleteReleaseRequest{Name: "projects/project-a/releases/release-a"}, want: "projects/project-a/releases/release-a"},
+{name: "undelete release", method: v1connect.ReleaseServiceUndeleteReleaseProcedure, request: &v1pb.UndeleteReleaseRequest{Name: "projects/project-a/releases/release-a"}, want: "projects/project-a/releases/release-a"},
+{name: "batch create revisions", method: v1connect.RevisionServiceBatchCreateRevisionsProcedure, request: &v1pb.BatchCreateRevisionsRequest{Parent: "instances/instance-a/databases/database-a"}, want: "instances/instance-a/databases/database-a"},
+{name: "delete revision", method: v1connect.RevisionServiceDeleteRevisionProcedure, request: &v1pb.DeleteRevisionRequest{Name: "instances/instance-a/databases/database-a/revisions/101"}, want: "instances/instance-a/databases/database-a/revisions/101"},
 ```
 
-Change the assertion to `require.Equal(t, test.want, getRequestResource(test.request))`.
+Change the assertion to `require.Equal(t, test.want, getRequestResource(test.request, test.method))`.
 
 - [ ] **Step 2: Run the unit test and verify the new cases fail**
 
@@ -84,26 +87,26 @@ Run:
 go test ./backend/api/v1 -run '^TestLifecycleAuditResource$' -count=1
 ```
 
-Expected: FAIL for plan, release, and revision cases because `getRequestResource` currently returns an empty string.
+Expected: FAIL because `getRequestResource` does not yet accept the RPC method or use descriptor metadata for standard request shapes.
 
-- [ ] **Step 3: Add canonical resource extraction**
+- [ ] **Step 3: Make resource extraction method-aware**
 
-Add direct cases to `getRequestResource`; do not introduce another dispatcher:
+Pass the full RPC procedure from the interceptor into `getRequestResource`. Preserve explicit cases only where descriptor metadata cannot express the audit resource: authentication email, canonical create names, and non-standard field or batch shapes such as `UpdateDatabaseCatalog.catalog` and `BatchUpdateDatabases.parent`. For all standard annotated requests, extract the short RPC method name and reuse `getResourceFromSingleRequest`:
 
 ```go
-case *v1pb.RunPlanChecksRequest:
-	return r.GetName()
-case *v1pb.CancelPlanCheckRunRequest:
-	return r.GetName()
-case *v1pb.DeleteReleaseRequest:
-	return r.GetName()
-case *v1pb.UndeleteReleaseRequest:
-	return r.GetName()
-case *v1pb.BatchCreateRevisionsRequest:
-	return r.GetParent()
-case *v1pb.DeleteRevisionRequest:
-	return r.GetName()
+case *v1pb.CreateInstanceRequest:
+	if r.GetParent() == "" {
+		return common.FormatInstance(r.GetInstanceId())
+	}
+	if projectID, err := common.GetProjectID(r.GetParent()); err == nil {
+		return common.FormatProjectInstance(projectID, r.GetInstanceId())
+	}
+	return ""
+case *v1pb.CreateProjectRequest:
+	return common.FormatProject(r.GetProjectId())
 ```
+
+This keeps the audit-specific switch small while preserving plan, release, revision, IdP, data-source, setting, and other annotated resource names through the shared reflection path.
 
 - [ ] **Step 4: Add failing project payload redaction tests**
 
@@ -282,20 +285,9 @@ func redactWorksheet(r *v1pb.Worksheet) *v1pb.Worksheet {
 
 Add request switch cases for `CreateReleaseRequest`, `UpdateReleaseRequest`, and `CreateWorksheetRequest`, preserving all non-content fields and update masks. Add response switch cases for `Release` and `Worksheet` so future handler changes cannot expose statement/content fields through the audit response.
 
-- [ ] **Step 4: Add resource extraction, project ownership, and annotations**
+- [ ] **Step 4: Verify resource extraction, project ownership, and annotations**
 
-Extend `getRequestResource`:
-
-```go
-case *v1pb.CreateReleaseRequest:
-	return r.GetParent()
-case *v1pb.UpdateReleaseRequest:
-	return r.GetRelease().GetName()
-case *v1pb.CreateWorksheetRequest:
-	return r.GetParent()
-case *v1pb.DeleteWorksheetRequest:
-	return r.GetName()
-```
+Add method-aware `TestLifecycleAuditResource` cases for release and worksheet requests. Their annotated parent, name, and nested resource fields must be resolved by the shared reflection path without adding audit-specific type-switch branches.
 
 Add `audit = true` to `CreateRelease`, `UpdateRelease`, `CreateWorksheet`, and `DeleteWorksheet`.
 
@@ -520,22 +512,22 @@ func redactExportAuditLogsResponse(r *v1pb.ExportAuditLogsResponse) *v1pb.Export
 
 Register Add/Update/Remove webhook requests using Task 1's `redactWebhook`, and register `TestIdentityProviderRequest`, `TestIdentityProviderResponse`, `TestEmailSettingRequest`, `AIChatRequest`, `AIChatResponse`, and `ExportAuditLogsResponse` in the serializer switches. Add response-side sentinel cases for both `TestIdentityProviderResponse.Claims` and `TestIdentityProviderResponse.UserInfo`, and assert the serialized response is empty.
 
-- [ ] **Step 4: Add canonical resource extraction**
+- [ ] **Step 4: Add canonical resource extraction and regression tests**
+
+Extend `TestLifecycleAuditResource` with both IdP test modes before enabling the annotation:
 
 ```go
-case *v1pb.AddWebhookRequest:
-	return r.GetProject()
-case *v1pb.UpdateWebhookRequest:
-	return r.GetWebhook().GetName()
-case *v1pb.RemoveWebhookRequest:
-	return r.GetWebhook().GetName()
-case *v1pb.ExportAuditLogsRequest:
-	return r.GetParent()
-case *v1pb.TestEmailSettingRequest:
-	return r.GetParent()
+{name: "test existing identity provider", method: v1connect.IdentityProviderServiceTestIdentityProviderProcedure, request: &v1pb.TestIdentityProviderRequest{
+	IdentityProvider: &v1pb.IdentityProvider{Name: "idps/idp-a"},
+}, want: "idps/idp-a"},
+{name: "test uncreated identity provider", method: v1connect.IdentityProviderServiceTestIdentityProviderProcedure, request: &v1pb.TestIdentityProviderRequest{
+	IdentityProvider: &v1pb.IdentityProvider{},
+}, want: ""},
 ```
 
-The IdP test and AI chat remain workspace-parented with an empty resource because neither request names a canonical Bytebase resource.
+The existing-provider case is resolved from the nested `IdentityProvider` message's `google.api.resource` annotation through `getResourceFromSingleRequest`; no IdP-specific audit branch is needed. The uncreated-provider case pins the empty-name behavior and must remain empty. Add method-aware cases for webhook, export-audit-log, and email-setting requests so their annotated fields are covered by the same shared path.
+
+The IdP test remains workspace-parented through the existing ACL resource-resolution fallback, but an existing provider retains its canonical `idps/{idp}` resource name in the audit row's `Resource` field. Testing an uncreated provider leaves `Resource` empty. AI chat remains workspace-parented with an empty resource because its request names no canonical Bytebase resource.
 
 - [ ] **Step 5: Add annotations**
 
@@ -551,7 +543,7 @@ gofmt -w backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/
 go test ./backend/api/v1 -run '^(TestAudit(Request|Response)RedactsCredentials|TestAuditRedactionDoesNotMutateInput|TestLifecycleAuditResource)$' -count=1
 ```
 
-Expected: PASS; audit rows retain action metadata without outbound payloads or credentials.
+Expected: PASS; existing-provider IdP tests retain `idps/{idp}`, uncreated-provider tests retain an empty resource, and audit rows contain no outbound payloads or credentials.
 
 - [ ] **Step 7: Commit the sensitive-action batch**
 
