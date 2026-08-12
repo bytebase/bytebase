@@ -54,7 +54,7 @@ func searchAPIOnSession(ctx context.Context, t *testing.T, session *mcp.ClientSe
 // #21152 forbade the methods that rewrite or re-issue the CALLER's credential.
 // Every one of those is eventually contained by acting on that one principal:
 // revoke the OAuth grant, flip the workspace MCP switch, deactivate the human.
-// The three calls below issue a credential for a principal that is not the
+// The five calls below leave someone holding a principal that is not the
 // caller, so none of those levers touch what they leave behind:
 //
 //   - CreateServiceAccount returns a plaintext bbs_ key for a brand new
@@ -83,10 +83,11 @@ func searchAPIOnSession(ctx context.Context, t *testing.T, session *mcp.ClientSe
 //
 // The RED state is what the assertions are shaped around. With the annotations
 // removed, the first call answers 200 with a bbs_ key in the body, the second
-// with another one, the third with a SCIM token, and the fourth creates a user
-// whose password logs in. All four run and all four are logged before anything
-// is asserted, so an unguarded build reports the whole exposure instead of
-// stopping at the first hit.
+// with another one, the third with a SCIM token, the fourth creates a user
+// whose password logs in, and the fifth moves another admin's account onto an
+// address the session picked. All five run and all five are logged before
+// anything is asserted, so an unguarded build reports the whole exposure
+// instead of stopping at the first hit.
 func TestMCPCannotMintCredentialsForOtherPrincipals(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -216,7 +217,7 @@ func TestMCPCannotMintCredentialsForOtherPrincipals(t *testing.T) {
 	}))
 	a.Error(err, "the address the MCP session tried to rebind to must own no account")
 
-	// All four carry the audit annotation, so all four denials are on the
+	// All five carry the audit annotation, so all five denials are on the
 	// operator's audit page — a denied credential mint is precisely the event
 	// worth investigating.
 	for method, label := range map[string]string{
@@ -245,7 +246,7 @@ func TestMCPCannotMintCredentialsForOtherPrincipals(t *testing.T) {
 	a.True(strings.HasPrefix(stillWorks.Msg.ServiceKey, "bbs_"))
 }
 
-// TestMCPCannotWriteIdentityTrustAnchors covers the half of the class where no
+// TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets covers the half of the class where no
 // credential appears in the response at all — the session instead arranges for
 // one to be issued later, or ships an existing secret out of the process.
 //
@@ -398,10 +399,16 @@ func TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets(t *testing.T) {
 			"%s must name this class's reason", name)
 	}
 
-	// Nothing landed. The agent's own reads answer this, which is the point of
-	// leaving them served: they are legitimate work, and they carry no secret.
+	// Nothing landed. The agent's own read answers this, which is the point of
+	// leaving it served: it is legitimate work, it carries no secret, and here
+	// it is also the instrument. Reading the listing rather than just its
+	// status is what discriminates a gate that refuses before dispatch from one
+	// that refuses after the identity provider is written.
 	idps := callAPIOnSession(ctx, t, session, "IdentityProviderService/ListIdentityProviders", map[string]any{})
 	a.Equal(http.StatusOK, idps.Status, "the read stays served — it blanks every secret before returning")
+	a.NotContains(idps.RawResponse, idpID, "the identity provider must never have been created")
+	a.NotContains(idps.RawResponse, "attacker.example.com",
+		"no part of the attacker's SSO config may have reached the store")
 	wis, err := ctl.workloadIdentityServiceClient.ListWorkloadIdentities(ctx, connect.NewRequest(&v1pb.ListWorkloadIdentitiesRequest{
 		Parent: workspaceName,
 	}))
@@ -410,7 +417,7 @@ func TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets(t *testing.T) {
 		a.NotContains(wi.Email, wiID, "the workload identity must never have been written")
 	}
 
-	// Four of the five carry the audit annotation and produce a denial row.
+	// Four of the six carry the audit annotation and produce a denial row.
 	for method, label := range map[string]string{
 		"/bytebase.v1.IdentityProviderService/CreateIdentityProvider": "CreateIdentityProvider",
 		"/bytebase.v1.IdentityProviderService/UpdateIdentityProvider": "UpdateIdentityProvider",
@@ -464,28 +471,47 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 	// Browsing the service must not list the forbidden methods, while the
 	// reads of that same service stay on offer — the assertion is that the
 	// classification is per method, not per service.
-	for service, forbidden := range map[string][]string{
-		"ServiceAccountService":   {"CreateServiceAccount", "UpdateServiceAccount"},
-		"IdentityProviderService": {"CreateIdentityProvider", "UpdateIdentityProvider", "TestIdentityProvider"},
-		"WorkloadIdentityService": {"CreateWorkloadIdentity", "UpdateWorkloadIdentity"},
-		"UserService":             {"CreateUser", "UpdateEmail"},
-		"WorkspaceService":        {"RotateDirectorySyncToken"},
-		"SettingService":          {"TestEmailSetting"},
+	//
+	// Each row carries a `served` method as a positive control. Without one,
+	// NotContains over an opaque text blob passes for the wrong reason as soon
+	// as search_api returns anything that is not an endpoint listing — an
+	// unknown service name, an error string, an empty result — and a test that
+	// cannot fail is worse here than no test, because this is the assertion
+	// standing between an agent and a menu of work it can never do.
+	for _, row := range []struct {
+		service   string
+		forbidden []string
+		served    string
+	}{
+		{"ServiceAccountService", []string{"CreateServiceAccount", "UpdateServiceAccount"}, "GetServiceAccount"},
+		{"IdentityProviderService", []string{"CreateIdentityProvider", "UpdateIdentityProvider", "TestIdentityProvider"}, "GetIdentityProvider"},
+		{"WorkloadIdentityService", []string{"CreateWorkloadIdentity", "UpdateWorkloadIdentity"}, "GetWorkloadIdentity"},
+		{"UserService", []string{"CreateUser", "UpdateEmail"}, "GetUser"},
+		{"WorkspaceService", []string{"RotateDirectorySyncToken"}, "GetIamPolicy"},
+		{"SettingService", []string{"TestEmailSetting"}, "GetSetting"},
 	} {
-		listing := searchAPIOnSession(ctx, t, session, map[string]any{"service": service})
-		for _, method := range forbidden {
-			a.NotContains(listing, service+"/"+method,
-				"search_api must not offer %s/%s, which the session can never call", service, method)
+		listing := searchAPIOnSession(ctx, t, session, map[string]any{"service": row.service})
+		a.Contains(listing, row.service+"/"+row.served,
+			"positive control: %s must really be an endpoint listing", row.service)
+		for _, method := range row.forbidden {
+			a.NotContains(listing, row.service+"/"+method,
+				"search_api must not offer %s/%s, which the session can never call", row.service, method)
 		}
 	}
 
-	// The service list is the entry point, and it counts endpoints. A service
-	// whose every method were forbidden would drop out of it entirely; these
-	// keep their reads, so what the count has to be is smaller than the whole
-	// service — asserted here as the forbidden methods being absent from the
-	// browse above, since the list itself only carries totals.
+	// The service list is the entry point into discovery. Every service here
+	// keeps at least its reads, so all of them stay listed — a service does
+	// drop out when every one of its methods is forbidden, which is what
+	// happened to AuthService and is pinned in the mcp package. The per-method
+	// hiding is the browse assertion above; this only checks the batch did not
+	// take a whole service off the menu.
 	services := searchAPIOnSession(ctx, t, session, map[string]any{})
-	a.Contains(services, "ServiceAccountService", "the service keeps its reads, so it stays listed")
+	for _, service := range []string{
+		"ServiceAccountService", "IdentityProviderService", "WorkloadIdentityService",
+		"UserService", "WorkspaceService", "SettingService",
+	} {
+		a.Contains(services, service, "%s keeps its reads, so it must stay listed", service)
+	}
 
 	// Still resolvable by operation ID, and a call still reaches the gate.
 	for _, operation := range []string{

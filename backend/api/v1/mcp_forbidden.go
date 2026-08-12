@@ -29,12 +29,14 @@ const (
 	// the very secret Login accepts. Denying Login alone would leave the
 	// agent holding the credential for the next human login.
 	reasonResetsCredential = "it drives the credential-reset flow that sets or delivers the secret a login accepts"
-	// reasonTakesOverAccount: UpdateUser's password and MFA branches authorize
-	// on caller == subject alone, with no permission check and no proof of the
-	// old password, so an MCP session can rewrite its own user's credentials
-	// and then log in with them. The whole method is refused, not just those
-	// branches — the classification is per method.
-	reasonTakesOverAccount = "it can rewrite the account's own credentials, which would let the session take the account over"
+	// reasonTakesOverAccount: UpdateUser's password and MFA branches take no
+	// proof of the old password. A caller updating itself needs no permission
+	// at all, and on self-hosted a caller holding bb.users.update reaches any
+	// other end user's password too (user_service.go: the caller != subject
+	// branch checks that permission and nothing further). Either way the
+	// session ends up holding credentials it can log in with. The whole method
+	// is refused, not just those branches — the classification is per method.
+	reasonTakesOverAccount = "it can rewrite an account's credentials, which would let the session take that account over"
 	// reasonEndsSession: Logout deletes the web refresh token and expires the
 	// session cookies. It mints nothing; it destroys the human's own login
 	// session, which an agent acting on their behalf has no business doing.
@@ -44,20 +46,22 @@ const (
 	// whenever the caller has no refresh cookie — and an MCP session never has
 	// one — after having already destroyed the caller's membership.
 	reasonEndsMembership = "it destroys the caller's own workspace membership and mints a plain workspace token"
-	// reasonMintsCredentialForOthers: the method puts a credential that belongs
-	// to a principal the caller is not within someone's reach — by issuing it
-	// (a service key or SCIM token returned in plaintext, a caller-chosen
-	// password on a new account), by carrying it out (a stored client secret or
-	// SMTP password sent to a caller-supplied host), by choosing what will
-	// later be trusted to mint it (an issuer and subject ExchangeToken
-	// validates against), or by redirecting where it gets delivered
-	// (UpdateEmail rebinds any account to an address the caller picked, and the
-	// reset flow mails the code to whatever address the account now carries).
-	// Every lever that contains a runaway session acts on the caller's own
+	// reasonMintsCredentialForOthers: the method leaves someone holding a
+	// principal the caller is not. Four ways, all of them here:
+	//   - issuing the credential outright — a service key or SCIM token
+	//     returned in plaintext, a caller-chosen password on a new account;
+	//   - carrying an existing one out — a stored client secret or SMTP
+	//     password sent to a host the caller named;
+	//   - choosing what will later be trusted to mint one — the issuer and
+	//     subject ExchangeToken validates against;
+	//   - redirecting where one gets delivered — UpdateEmail rebinds any
+	//     account to an address the caller picked, and the reset flow mails the
+	//     code to whatever address the account then carries.
+	// The levers that contain a runaway session all act on the caller's own
 	// principal: revoke the OAuth grant, flip the workspace MCP switch,
-	// deactivate the human. None of them reaches an identity that was never the
-	// caller's, so what these give away survives all three.
-	reasonMintsCredentialForOthers = "it gives away a credential for a principal other than the caller, which revoking this session would not reach"
+	// deactivate the human. None of them reaches a principal that was never the
+	// caller's, so what these give away outlives all three.
+	reasonMintsCredentialForOthers = "it hands someone control of a principal other than the caller, which revoking this session would not take back"
 	// reasonForbiddenClass is the fallback for a method annotated FORBIDDEN
 	// that has no entry below. Adding the annotation is what denies the
 	// method; the table only supplies better wording.
@@ -94,9 +98,14 @@ var mcpForbiddenReasons = map[string]string{
 	v1connect.WorkspaceServiceLeaveWorkspaceProcedure:  reasonEndsMembership,
 	v1connect.WorkspaceServiceDeleteWorkspaceProcedure: reasonEndsMembership,
 
-	// Credentials for a principal that is not the caller. The rows above end
-	// at the caller's own account, so revoking that user contains them; these
-	// leave an identity behind that no such revocation touches.
+	// Control of a principal that is not the caller. Most rows above run
+	// through the caller's own session or account, so revoking that user
+	// eventually contains them; these leave a principal behind that no such
+	// revocation touches. The line is not perfectly clean on the earlier rows —
+	// Signup creates a new principal, and UpdateUser's password branch reaches
+	// other end users when the caller holds bb.users.update — but those were
+	// classified for what the caller walks away with, and these are classified
+	// for what someone else does.
 	v1connect.ServiceAccountServiceCreateServiceAccountProcedure:     reasonMintsCredentialForOthers,
 	v1connect.ServiceAccountServiceUpdateServiceAccountProcedure:     reasonMintsCredentialForOthers,
 	v1connect.WorkspaceServiceRotateDirectorySyncTokenProcedure:      reasonMintsCredentialForOthers,
@@ -108,6 +117,28 @@ var mcpForbiddenReasons = map[string]string{
 	v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure: reasonMintsCredentialForOthers,
 	v1connect.WorkloadIdentityServiceUpdateWorkloadIdentityProcedure: reasonMintsCredentialForOthers,
 	v1connect.SettingServiceTestEmailSettingProcedure:                reasonMintsCredentialForOthers,
+	// Two neighbours are deliberately NOT here, and both are closer to this
+	// class than anything else left out, so the reasoning is recorded rather
+	// than left to be rediscovered:
+	//
+	// SettingService/UpdateSetting is TestEmailSetting's persisting twin. The
+	// same stored-password substitution (value.email.smtp with an empty
+	// password keeps the stored one) and the setting it writes is the one
+	// resolvePreLoginEmailSetting reads to mail password resets and login
+	// codes — so it does not merely leak the SMTP credential once, it owns the
+	// credential-delivery channel from then on. It also rewrites the MCP
+	// ceiling itself (value.workspace_profile.mcp_capability) and the SSO and
+	// sign-in switches. It is out because that second mechanism needs its own
+	// sentence, and because one RPC covers a dozen unrelated settings whose
+	// agent-legitimacy was never measured here — forbidding all of them on the
+	// strength of two is a product decision this change did not earn. BOT-53.
+	//
+	// The Undelete* family (user, service account, workload identity) restores
+	// a principal whose password or key hash survived the soft delete, so an
+	// operator's deactivation is undone. It is out because the caller learns
+	// and chooses nothing: the credential goes back to whoever already had it,
+	// and a second delete takes it away again. Issuing beats re-arming, and
+	// this class is about issuing. BOT-54.
 }
 
 // NewInternalMCPForbiddenInterceptor denies every method annotated
@@ -123,7 +154,7 @@ var mcpForbiddenReasons = map[string]string{
 // list kept here.
 //
 // Sitting inside audit gets the denial a row for the methods that carry the
-// audit annotation, which is all twenty-two currently annotated FORBIDDEN bar
+// audit annotation, which is all twenty-three currently annotated FORBIDDEN bar
 // SwitchWorkspace, Refresh, RequestPasswordReset, ResetPassword,
 // TestIdentityProvider and TestEmailSetting: needAudit reads that annotation
 // and nothing else, so those six are denied silently until 1b-2 lands the typed

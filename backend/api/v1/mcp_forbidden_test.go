@@ -101,48 +101,45 @@ func TestForbiddenClassMembership(t *testing.T) {
 	require.Equal(t, reasonTakesOverAccount, mcpForbiddenReasons[v1connect.UserServiceUpdateUserProcedure])
 	require.Equal(t, reasonEndsMembership, mcpForbiddenReasons[v1connect.WorkspaceServiceDeleteWorkspaceProcedure])
 
-	// The distinction the second batch rests on: UpdateUser rewrites the
-	// CALLER's own credentials, so revoking that user contains it, while
-	// CreateServiceAccount leaves behind a principal that revocation never
-	// reaches. Two reasons, because they are two different mechanisms.
-	require.Equal(t, reasonMintsCredentialForOthers,
-		mcpForbiddenReasons[v1connect.ServiceAccountServiceCreateServiceAccountProcedure])
-	require.NotEqual(t, mcpForbiddenReasons[v1connect.UserServiceUpdateUserProcedure],
-		mcpForbiddenReasons[v1connect.UserServiceCreateUserProcedure],
-		"CreateUser makes a new principal; UpdateUser takes over the caller's own")
-}
-
-// TestForbiddenCredentialMintsAreNotDiscoverable is the classification's other
-// half for this batch: an agent must not be OFFERED work it can never do. The
-// index hides FORBIDDEN endpoints from every discovery path while keeping them
-// resolvable by operation ID, and that behavior is pinned in the mcp package
-// against AuthService. This asserts the annotations themselves, which is what
-// that behavior keys on — a method dropped from the annotation set would
-// silently reappear in search_api.
-func TestForbiddenCredentialMintsAreNotDiscoverable(t *testing.T) {
-	got := forbiddenProceduresFromDescriptors(t)
+	// The second batch is one mechanism, so it is one reason, and every member
+	// carries exactly it. Presence alone would let a member drift onto the
+	// caller's-own-credential wording, which is the specific way this table
+	// goes wrong: the reasons are near-synonyms in English and are not
+	// near-synonyms in what they tell an operator.
 	for _, procedure := range []string{
 		v1connect.ServiceAccountServiceCreateServiceAccountProcedure,
 		v1connect.ServiceAccountServiceUpdateServiceAccountProcedure,
 		v1connect.WorkspaceServiceRotateDirectorySyncTokenProcedure,
 		v1connect.UserServiceCreateUserProcedure,
+		v1connect.UserServiceUpdateEmailProcedure,
 		v1connect.IdentityProviderServiceCreateIdentityProviderProcedure,
 		v1connect.IdentityProviderServiceUpdateIdentityProviderProcedure,
 		v1connect.IdentityProviderServiceTestIdentityProviderProcedure,
 		v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure,
 		v1connect.WorkloadIdentityServiceUpdateWorkloadIdentityProcedure,
 		v1connect.SettingServiceTestEmailSettingProcedure,
-		v1connect.UserServiceUpdateEmailProcedure,
 	} {
-		require.True(t, got[procedure], "%s must be FORBIDDEN to stay out of search_api", procedure)
+		require.Equal(t, reasonMintsCredentialForOthers, mcpForbiddenReasons[procedure],
+			"%s leaves someone holding a principal the caller is not; its denial has to say so", procedure)
 	}
+}
 
-	// The reads of the same two services stay served. Their conversions blank
-	// every secret before it leaves the process (idp_service.go's three
-	// "SECURITY: We do not expose" lines), and ListIdentityProviders is the
-	// unauthenticated login-page endpoint — forbidding either would cost an
-	// agent legitimate work while protecting nothing an anonymous HTTP client
-	// could not already read.
+// TestForbiddenClassLeavesReadsAlone pins the other half of the second batch's
+// ruling, which is the half a later change could quietly widen: the reads of
+// the services whose writes were just forbidden stay UNCLASSIFIED, and so stay
+// discoverable and callable.
+//
+// They carry no credential. Every identity-provider read goes through the one
+// conversion that blanks the client secret and the LDAP bind password
+// (idp_service.go, three "SECURITY: We do not expose" lines), service-account
+// reads never populate ServiceKey (only create and the rotation branch do), and
+// workload-identity reads return issuer, audience and subject pattern —
+// configuration, not a secret. ListIdentityProviders is additionally
+// allow_without_credential, the endpoint the login page calls unauthenticated,
+// so forbidding it would cost an agent legitimate work while protecting nothing
+// an anonymous client could not already read.
+func TestForbiddenClassLeavesReadsAlone(t *testing.T) {
+	got := forbiddenProceduresFromDescriptors(t)
 	for _, procedure := range []string{
 		v1connect.IdentityProviderServiceGetIdentityProviderProcedure,
 		v1connect.IdentityProviderServiceListIdentityProvidersProcedure,
