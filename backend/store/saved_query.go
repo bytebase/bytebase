@@ -205,7 +205,7 @@ func (s *Store) ListSavedQueryOrganizers(ctx context.Context, find *FindSavedQue
 			saved_query_organizer.principal,
 			saved_query_organizer.payload
 		FROM saved_query_organizer
-		JOIN savedQuery ON saved_query.resource_id = saved_query_organizer.saved_query
+		JOIN saved_query ON saved_query.resource_id = saved_query_organizer.saved_query
 		WHERE saved_query_organizer.principal = ?`, find.PrincipalEmail)
 
 	if find.Workspace != "" {
@@ -249,7 +249,7 @@ func (s *Store) ListSavedQueryOrganizers(ctx context.Context, find *FindSavedQue
 
 		var payload storepb.SavedQueryOrganizerPayload
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payloadBytes, &payload); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal savedQuery organizer payload")
+			return nil, errors.Wrapf(err, "failed to unmarshal saved query organizer payload")
 		}
 		savedQueryOrganizer.Payload = &payload
 
@@ -402,7 +402,7 @@ func (s *Store) UpsertSavedQueryOrganizer(ctx context.Context, patch *SavedQuery
 	}
 	q := qb.Q().Space(`
 	  INSERT INTO saved_query_organizer (
-			savedQuery,
+			saved_query,
 			principal,
 			payload
 		)
@@ -410,7 +410,7 @@ func (s *Store) UpsertSavedQueryOrganizer(ctx context.Context, patch *SavedQuery
 		ON CONFLICT(saved_query, principal) DO UPDATE SET
 			payload = EXCLUDED.payload
 		RETURNING
-			savedQuery,
+			saved_query,
 			principal,
 			payload
 	`, patch.SavedQueryResourceID, patch.Principal, payloadStr)
@@ -450,7 +450,7 @@ func (s *Store) BatchUpdateSavedQueryOrganizer(ctx context.Context, patch *Batch
 		return nil, errors.New("principal is empty")
 	}
 	if patch.Starred == nil && patch.Folders == nil {
-		return nil, errors.New("empty savedQuery organizer patch")
+		return nil, errors.New("empty saved query organizer patch")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -461,7 +461,7 @@ func (s *Store) BatchUpdateSavedQueryOrganizer(ctx context.Context, patch *Batch
 
 	insertQuery, insertArgs, err := qb.Q().Space(`
 		INSERT INTO saved_query_organizer (
-			savedQuery,
+			saved_query,
 			principal,
 			payload
 		)
@@ -471,10 +471,10 @@ func (s *Store) BatchUpdateSavedQueryOrganizer(ctx context.Context, patch *Batch
 		ON CONFLICT (saved_query, principal) DO NOTHING
 	`, patch.Principal, patch.SavedQueryResourceIDs).ToSQL()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to build savedQuery organizer insert query")
+		return nil, errors.Wrap(err, "failed to build saved query organizer insert query")
 	}
 	if _, err := tx.ExecContext(ctx, insertQuery, insertArgs...); err != nil {
-		return nil, errors.Wrap(err, "failed to insert missing savedQuery organizers")
+		return nil, errors.Wrap(err, "failed to insert missing saved query organizers")
 	}
 
 	payloadExpr := "payload"
@@ -496,11 +496,11 @@ func (s *Store) BatchUpdateSavedQueryOrganizer(ctx context.Context, patch *Batch
 	updateQuery, args, err := qb.Q().Space(fmt.Sprintf(`
 		UPDATE saved_query_organizer
 		SET payload = %s
-		WHERE principal = ? AND savedQuery = ANY(?)
-		RETURNING savedQuery, principal, payload
+		WHERE principal = ? AND saved_query = ANY(?)
+		RETURNING saved_query, principal, payload
 	`, payloadExpr), updateArgs...).ToSQL()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to build savedQuery organizer update query")
+		return nil, errors.Wrap(err, "failed to build saved query organizer update query")
 	}
 	rows, err := tx.QueryContext(ctx, updateQuery, args...)
 	if err != nil {

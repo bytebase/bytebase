@@ -508,21 +508,11 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrapf(err, "failed to delete saved_query_organizer for project %s", resourceID)
 	}
 
-	// Clear project-instance references before deleting their instances.
-	q = qb.Q().Space(`
-		UPDATE saved query
-		SET instance = NULL, db_name = NULL
-		WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)
-	`, resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build project instance saved query update query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to update saved querys for project instances in project %s", resourceID)
-	}
+	// Saved queries keep their connected-database reference as a soft
+	// canonical name in the payload; references to this project's instances
+	// dangle after the purge and the UI degrades to "no database".
 
-	// Delete saved querys created by project service accounts or workload identities.
+	// Delete saved queries created by project service accounts or workload identities.
 	q = qb.Q().Space(`DELETE FROM saved_query
 		WHERE creator IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
 		   OR creator IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
@@ -531,17 +521,17 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrap(err, "failed to build saved query delete query for principals")
 	}
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete saved querys for project principals %s", resourceID)
+		return errors.Wrapf(err, "failed to delete saved queries for project principals %s", resourceID)
 	}
 
-	// Reassign remaining saved querys associated with this project.
-	q = qb.Q().Space("UPDATE saved query SET project = ? WHERE project = ?", defaultProjectID, resourceID)
+	// Reassign remaining saved queries associated with this project.
+	q = qb.Q().Space("UPDATE saved_query SET project = ? WHERE project = ?", defaultProjectID, resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build saved query update query")
 	}
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to update saved querys for project %s", resourceID)
+		return errors.Wrapf(err, "failed to update saved queries for project %s", resourceID)
 	}
 
 	// Delete issue_comment entries for issues in this project
