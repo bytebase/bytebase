@@ -3359,7 +3359,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x0eDataSourceType\x12\x1b\n" +
 	"\x17DATA_SOURCE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ADMIN\x10\x01\x12\r\n" +
-	"\tREAD_ONLY\x10\x022\xd6\x15\n" +
+	"\tREAD_ONLY\x10\x022\xde\x15\n" +
 	"\x0fInstanceService\x12\xa9\x01\n" +
 	"\vGetInstance\x12\x1f.bytebase.v1.GetInstanceRequest\x1a\x15.bytebase.v1.Instance\"b\xdaA\x04name\x8a\xea0\x10bb.instances.get\x90\xea0\x01\x82\xd3\xe4\x93\x02=Z#\x12!/v1/{name=projects/*/instances/*}\x12\x16/v1/{name=instances/*}\x12\xae\x01\n" +
 	"\rListInstances\x12!.bytebase.v1.ListInstancesRequest\x1a\".bytebase.v1.ListInstancesResponse\"V\xdaA\x00\x8a\xea0\x11bb.instances.list\x90\xea0\x01\x82\xd3\xe4\x93\x024Z#\x12!/v1/{parent=projects/*}/instances\x12\r/v1/instances\x12\xc5\x01\n" +
@@ -3372,8 +3372,8 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x12BatchSyncInstances\x12&.bytebase.v1.BatchSyncInstancesRequest\x1a'.bytebase.v1.BatchSyncInstancesResponse\"m\x8a\xea0\x11bb.instances.sync\x90\xea0\x01\x82\xd3\xe4\x93\x02N:\x01*Z0:\x01*\"+/v1/{parent=projects/*}/instances:batchSync\"\x17/v1/instances:batchSync\x12\xe4\x01\n" +
 	"\x14BatchUpdateInstances\x12(.bytebase.v1.BatchUpdateInstancesRequest\x1a).bytebase.v1.BatchUpdateInstancesResponse\"w\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02R:\x01*Z2:\x01*\"-/v1/{parent=projects/*}/instances:batchUpdate\"\x19/v1/instances:batchUpdate\x12\xd0\x01\n" +
 	"\rAddDataSource\x12!.bytebase.v1.AddDataSourceRequest\x1a\x15.bytebase.v1.Instance\"\x84\x01\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02_:\x01*Z4:\x01*\"//v1/{name=projects/*/instances/*}:addDataSource\"$/v1/{name=instances/*}:addDataSource\x12\xdc\x01\n" +
-	"\x10RemoveDataSource\x12$.bytebase.v1.RemoveDataSourceRequest\x1a\x15.bytebase.v1.Instance\"\x8a\x01\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02e:\x01*Z7:\x01*\"2/v1/{name=projects/*/instances/*}:removeDataSource\"'/v1/{name=instances/*}:removeDataSource\x12\x8a\x02\n" +
-	"\x10UpdateDataSource\x12$.bytebase.v1.UpdateDataSourceRequest\x1a\x15.bytebase.v1.Instance\"\xb8\x01\xdaA\x17data_source,update_mask\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02y:\vdata_sourceZA:\vdata_source22/v1/{name=projects/*/instances/*}:updateDataSource2'/v1/{name=instances/*}:updateDataSourceB\xaa\x01\n" +
+	"\x10RemoveDataSource\x12$.bytebase.v1.RemoveDataSourceRequest\x1a\x15.bytebase.v1.Instance\"\x8a\x01\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02e:\x01*Z7:\x01*\"2/v1/{name=projects/*/instances/*}:removeDataSource\"'/v1/{name=instances/*}:removeDataSource\x12\x92\x02\n" +
+	"\x10UpdateDataSource\x12$.bytebase.v1.UpdateDataSourceRequest\x1a\x15.bytebase.v1.Instance\"\xc0\x01\xdaA\x17data_source,update_mask\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x02y:\vdata_sourceZA:\vdata_source22/v1/{name=projects/*/instances/*}:updateDataSource2'/v1/{name=instances/*}:updateDataSourceB\xaa\x01\n" +
 	"\x0fcom.bytebase.v1B\x14InstanceServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

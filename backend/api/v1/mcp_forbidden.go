@@ -74,6 +74,28 @@ var mcpForbiddenReasons = map[v1pb.MCPForbiddenReason]string{
 	// deactivate the human. None of them reaches a principal that was never the
 	// caller's, so what these give away outlives all three.
 	//
+	// InstanceService/UpdateDataSource is the same "carry an existing one out"
+	// shape as the two Test methods, against the database's credentials rather
+	// than Bytebase's own: it merges a partial request onto the STORED,
+	// already-decrypted data source, so an update_mask naming only a
+	// destination field (host, port, ssh_host, additional_addresses,
+	// sasl_config.kdc_host) keeps the stored password, ssl_key and
+	// ssh_private_key. With validate_only it dials the caller's host
+	// immediately and persists nothing; without it the retarget is written and
+	// SyncInstance triggers the connection on demand. No allowlist filters the
+	// host on either path. A database user is a principal other than the
+	// caller, the same way the SMTP account behind TestEmailSetting is.
+	//
+	// Its siblings are NOT here and the line is severity, not tidiness:
+	// UpdateInstance and BatchUpdateInstances rebuild the data-source list
+	// wholesale, so every secret is wiped unless resent — except the Kerberos
+	// keytab, which retainStoredKeytabs inherits by data-source ID. That is a
+	// narrower, persist-only version of the same vector, and it is filed
+	// rather than swept in with instance management, which no one has yet
+	// decided an agent should lose. AddDataSource and CreateInstance also dial
+	// on validate_only but build the data source entirely from the request, so
+	// they carry no stored secret and are not this class. BOT-57.
+	//
 	// The Undelete* family (user, service account, workload identity) is
 	// deliberately NOT in this group, and it is the nearest thing left out, so
 	// the reasoning is recorded rather than left to be rediscovered. It

@@ -81,6 +81,7 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.SettingServiceTestEmailSettingProcedure,
 		v1connect.UserServiceUpdateEmailProcedure,
 		v1connect.SettingServiceUpdateSettingProcedure,
+		v1connect.InstanceServiceUpdateDataSourceProcedure,
 	}
 	got := forbiddenProceduresFromDescriptors(t)
 
@@ -121,6 +122,7 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.WorkloadIdentityServiceUpdateWorkloadIdentityProcedure: v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.SettingServiceTestEmailSettingProcedure:                v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.SettingServiceUpdateSettingProcedure:                   v1pb.MCPForbiddenReason_REWRITES_SESSION_BOUNDARY,
+		v1connect.InstanceServiceUpdateDataSourceProcedure:               v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
 	}
 	require.Equal(t, wantReason, got,
 		"every FORBIDDEN method records the mechanism it is refused for, and this is the second signature on it")
