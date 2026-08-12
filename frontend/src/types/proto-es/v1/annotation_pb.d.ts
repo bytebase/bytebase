@@ -156,6 +156,16 @@ export enum MCPForbiddenReason {
    * @generated from enum value: MINTS_CREDENTIAL_FOR_OTHERS = 6;
    */
   MINTS_CREDENTIAL_FOR_OTHERS = 6,
+
+  /**
+   * Rewrites the workspace configuration that governs the session making the
+   * call — the MCP switch itself, the sign-in and SSO settings, and the mail
+   * relay that carries credential resets. A session that can widen its own
+   * ceiling is not bounded by it.
+   *
+   * @generated from enum value: REWRITES_SESSION_BOUNDARY = 7;
+   */
+  REWRITES_SESSION_BOUNDARY = 7,
 }
 
 /**

@@ -82,4 +82,9 @@ enum MCPForbiddenReason {
   // choosing what will later be trusted to mint one, or redirecting where one
   // gets delivered.
   MINTS_CREDENTIAL_FOR_OTHERS = 6;
+  // Rewrites the workspace configuration that governs the session making the
+  // call — the MCP switch itself, the sign-in and SSO settings, and the mail
+  // relay that carries credential resets. A session that can widen its own
+  // ceiling is not bounded by it.
+  REWRITES_SESSION_BOUNDARY = 7;
 }

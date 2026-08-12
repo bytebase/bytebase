@@ -46,6 +46,8 @@ service SettingService {
     option (bytebase.v1.permission) = "bb.settings.set";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_forbidden_reason) = REWRITES_SESSION_BOUNDARY;
   }
 
   // Sends a test email using the provided config (without persisting).

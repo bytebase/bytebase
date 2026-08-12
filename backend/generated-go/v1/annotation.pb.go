@@ -169,6 +169,11 @@ const (
 	// choosing what will later be trusted to mint one, or redirecting where one
 	// gets delivered.
 	MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS MCPForbiddenReason = 6
+	// Rewrites the workspace configuration that governs the session making the
+	// call — the MCP switch itself, the sign-in and SSO settings, and the mail
+	// relay that carries credential resets. A session that can widen its own
+	// ceiling is not bounded by it.
+	MCPForbiddenReason_REWRITES_SESSION_BOUNDARY MCPForbiddenReason = 7
 )
 
 // Enum value maps for MCPForbiddenReason.
@@ -181,6 +186,7 @@ var (
 		4: "ENDS_SESSION",
 		5: "ENDS_MEMBERSHIP",
 		6: "MINTS_CREDENTIAL_FOR_OTHERS",
+		7: "REWRITES_SESSION_BOUNDARY",
 	}
 	MCPForbiddenReason_value = map[string]int32{
 		"MCP_FORBIDDEN_REASON_UNSPECIFIED": 0,
@@ -190,6 +196,7 @@ var (
 		"ENDS_SESSION":                     4,
 		"ENDS_MEMBERSHIP":                  5,
 		"MINTS_CREDENTIAL_FOR_OTHERS":      6,
+		"REWRITES_SESSION_BOUNDARY":        7,
 	}
 )
 
@@ -317,7 +324,7 @@ const file_v1_annotation_proto_rawDesc = "" +
 	"\x1cMCP_METHOD_CLASS_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04READ\x10\x01\x12\t\n" +
 	"\x05WRITE\x10\x02\x12\r\n" +
-	"\tFORBIDDEN\x10\x03*\xc7\x01\n" +
+	"\tFORBIDDEN\x10\x03*\xe6\x01\n" +
 	"\x12MCPForbiddenReason\x12$\n" +
 	" MCP_FORBIDDEN_REASON_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10MINTS_CREDENTIAL\x10\x01\x12\x15\n" +
@@ -325,7 +332,8 @@ const file_v1_annotation_proto_rawDesc = "" +
 	"\x12TAKES_OVER_ACCOUNT\x10\x03\x12\x10\n" +
 	"\fENDS_SESSION\x10\x04\x12\x13\n" +
 	"\x0fENDS_MEMBERSHIP\x10\x05\x12\x1f\n" +
-	"\x1bMINTS_CREDENTIAL_FOR_OTHERS\x10\x06:Z\n" +
+	"\x1bMINTS_CREDENTIAL_FOR_OTHERS\x10\x06\x12\x1d\n" +
+	"\x19REWRITES_SESSION_BOUNDARY\x10\a:Z\n" +
 	"\x18allow_without_credential\x12\x1e.google.protobuf.MethodOptions\x18\xa0\x8d\x06 \x01(\bR\x16allowWithoutCredential:@\n" +
 	"\n" +
 	"permission\x12\x1e.google.protobuf.MethodOptions\x18\xa1\x8d\x06 \x01(\tR\n" +

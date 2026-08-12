@@ -9,6 +9,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -445,6 +446,101 @@ func TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets(t *testing.T) {
 		"TestIdentityProvider carries no audit annotation, so its denial is silent — 1b-2's typed denial record closes this")
 	a.Empty(deniedMCPRows(ctx, t, ctl, workspaceName, "/bytebase.v1.SettingService/TestEmailSetting"),
 		"TestEmailSetting carries no audit annotation either — same gap, same fix")
+}
+
+// TestMCPCannotRewriteItsOwnCeiling covers the one method refused for what it
+// governs rather than for what it hands out.
+//
+// SettingService/UpdateSetting writes value.workspace_profile.mcp_capability,
+// which IS the MCP ceiling — the workspace switch that decides whether MCP
+// sessions are served at all, and at 1b-2 whether they are served read-only.
+// A session that can widen its own ceiling is not bounded by it, and "flip the
+// workspace MCP switch" stops being one of the three levers that contain a
+// runaway agent. The same method also keeps the stored SMTP password when
+// value.email.smtp omits it while accepting a new host, which hands over the
+// relay that carries password resets — TestEmailSetting's persisting twin.
+//
+// The ceiling assertion is the load-bearing one: it reads the setting back
+// through the console afterwards, so this discriminates a gate that refuses
+// before dispatch from one that refuses after the store write.
+func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	before, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
+		Name: "settings/WORKSPACE_PROFILE",
+	}))
+	a.NoError(err)
+	ceilingBefore := before.Msg.GetValue().GetWorkspaceProfile().GetMcpCapability()
+
+	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
+	defer session.Close()
+
+	widened := callAPIOnSession(ctx, t, session, "SettingService/UpdateSetting", map[string]any{
+		"setting": map[string]any{
+			"name":  "settings/WORKSPACE_PROFILE",
+			"value": map[string]any{"workspaceProfile": map[string]any{"mcpCapability": "READ_WRITE"}},
+		},
+		"updateMask": "value.workspaceProfile.mcpCapability",
+	})
+	redirected := callAPIOnSession(ctx, t, session, "SettingService/UpdateSetting", map[string]any{
+		"setting": map[string]any{
+			"name": "settings/EMAIL",
+			"value": map[string]any{"email": map[string]any{
+				"from": "bytebase@example.com",
+				"type": "SMTP",
+				"smtp": map[string]any{"host": "smtp.attacker.example.com", "port": 587, "username": "collector"},
+			}},
+		},
+		"updateMask": "value.email.smtp",
+	})
+
+	t.Logf("MCP UpdateSetting{mcp_capability: READ_WRITE} → status=%d error=%q", widened.Status, widened.Error)
+	t.Logf("MCP UpdateSetting{email.smtp → attacker} → status=%d error=%q", redirected.Status, redirected.Error)
+
+	for name, out := range map[string]mcpCallResult{"ceiling": widened, "smtp relay": redirected} {
+		a.Equal(http.StatusForbidden, out.Status, "the %s write must be refused before dispatch", name)
+		a.Contains(out.Error, "not available to MCP sessions", "the %s write must be refused by the gate", name)
+		a.Contains(out.Error, "the switch meant to contain it",
+			"the %s denial must name the boundary, not a credential it did not hand out", name)
+	}
+
+	after, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
+		Name: "settings/WORKSPACE_PROFILE",
+	}))
+	a.NoError(err)
+	a.Equal(ceilingBefore, after.Msg.GetValue().GetWorkspaceProfile().GetMcpCapability(),
+		"the session must not have moved the ceiling that governs it")
+
+	// The console keeps working: the gate is on the internal MCP chain only.
+	// An explicit value rather than an echo of ceilingBefore, which the fixture
+	// leaves UNSPECIFIED — validateMCPCapability rejects writing that back, so
+	// echoing it would fail for a reason that has nothing to do with the gate.
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		Setting: &v1pb.Setting{
+			Name: "settings/WORKSPACE_PROFILE",
+			Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_WorkspaceProfile{
+				WorkspaceProfile: &v1pb.WorkspaceProfileSetting{
+					McpCapability: v1pb.WorkspaceProfileSetting_READ_ONLY,
+				},
+			}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"value.workspace_profile.mcp_capability"}},
+	}))
+	a.NoError(err, "a normal session must still be able to write workspace settings")
+
+	moved, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
+		Name: "settings/WORKSPACE_PROFILE",
+	}))
+	a.NoError(err)
+	a.Equal(v1pb.WorkspaceProfileSetting_READ_ONLY, moved.Msg.GetValue().GetWorkspaceProfile().GetMcpCapability(),
+		"the console write must actually land — otherwise the denial above proves nothing about the gate")
 }
 
 // TestMCPResetFlowDenialsAreSilent pins a gap the audit annotation does NOT

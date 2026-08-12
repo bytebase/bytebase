@@ -26156,6 +26156,7 @@ components:
         - ENDS_SESSION
         - ENDS_MEMBERSHIP
         - MINTS_CREDENTIAL_FOR_OTHERS
+        - REWRITES_SESSION_BOUNDARY
       description: |-
         Why an RPC is FORBIDDEN to MCP sessions. The mechanism, not the wording:
          each value names what its methods actually do, and the serving side turns

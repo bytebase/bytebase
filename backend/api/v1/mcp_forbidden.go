@@ -74,29 +74,31 @@ var mcpForbiddenReasons = map[v1pb.MCPForbiddenReason]string{
 	// deactivate the human. None of them reaches a principal that was never the
 	// caller's, so what these give away outlives all three.
 	//
-	// Two neighbours are deliberately NOT annotated, and both are closer to
-	// this mechanism than anything else left out, so the reasoning is recorded
-	// rather than left to be rediscovered:
-	//
-	// SettingService/UpdateSetting is TestEmailSetting's persisting twin. The
-	// same stored-password substitution (value.email.smtp with an empty
-	// password keeps the stored one) and the setting it writes is the one
-	// resolvePreLoginEmailSetting reads to mail password resets and login
-	// codes — so it does not merely leak the SMTP credential once, it owns the
-	// credential-delivery channel from then on. It also rewrites the MCP
-	// ceiling itself (value.workspace_profile.mcp_capability) and the SSO and
-	// sign-in switches. It is out because that second mechanism needs its own
-	// reason value, and because one RPC covers a dozen unrelated settings whose
-	// agent-legitimacy was never measured here — forbidding all of them on the
-	// strength of two is a product decision this change did not earn. BOT-53.
-	//
-	// The Undelete* family (user, service account, workload identity) restores
-	// a principal whose password or key hash survived the soft delete, so an
-	// operator's deactivation is undone. It is out because the caller learns
-	// and chooses nothing: the credential goes back to whoever already had it,
-	// and a second delete takes it away again. Issuing beats re-arming, and
-	// this mechanism is about issuing. BOT-54.
+	// The Undelete* family (user, service account, workload identity) is
+	// deliberately NOT in this group, and it is the nearest thing left out, so
+	// the reasoning is recorded rather than left to be rediscovered. It
+	// restores a principal whose password or key hash survived the soft
+	// delete, so an operator's deactivation is undone. It is out because the
+	// caller learns and chooses nothing: the credential goes back to whoever
+	// already had it, and a second delete takes it away again. Issuing beats
+	// re-arming, and this mechanism is about issuing. BOT-54.
 	v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS: "it hands someone control of a principal other than the caller, which revoking this session would not take back",
+
+	// SettingService/UpdateSetting, refused for the boundary it rewrites
+	// rather than for any credential it hands out. Two mask paths carry it:
+	// value.workspace_profile.mcp_capability IS the MCP ceiling, so a session
+	// that reaches it is not bounded by it; and value.email.smtp keeps the
+	// stored password when the request omits it while accepting a new host,
+	// which hands over the relay resolvePreLoginEmailSetting reads to mail
+	// password resets and login codes. TestEmailSetting is the one-shot
+	// version of the second; this is the persisting one. The same method also
+	// writes the SSO domain allowlist and the sign-in switches.
+	//
+	// Classification is per method, so this refuses the whole RPC — including
+	// the settings that have nothing to do with either path. Splitting the
+	// handler so ordinary configuration stays reachable to an agent is the
+	// follow-up (BOT-53); disallowing first is the deliberate order.
+	v1pb.MCPForbiddenReason_REWRITES_SESSION_BOUNDARY: "it rewrites the workspace settings that bound this session, including the switch meant to contain it",
 }
 
 // reasonForbiddenClass is the fallback for a method annotated FORBIDDEN whose
