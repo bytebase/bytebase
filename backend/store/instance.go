@@ -890,10 +890,6 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 		return errors.Wrapf(err, "failed to delete query history for instance %s", resourceID)
 	}
 
-	// Saved queries keep their connected-database reference as a soft
-	// canonical name in the payload; it dangles after the instance is
-	// deleted and the UI degrades to "no database", so nothing to update.
-
 	// Delete task_run_log entries for tasks associated with this instance
 	q = qb.Q().Space(`
 		DELETE FROM task_run_log trl

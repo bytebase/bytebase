@@ -508,10 +508,6 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrapf(err, "failed to delete saved_query_organizer for project %s", resourceID)
 	}
 
-	// Saved queries keep their connected-database reference as a soft
-	// canonical name in the payload; references to this project's instances
-	// dangle after the purge and the UI degrades to "no database".
-
 	// Delete saved queries created by project service accounts or workload identities.
 	q = qb.Q().Space(`DELETE FROM saved_query
 		WHERE creator IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
