@@ -484,9 +484,10 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 	if !ok {
 		return nil, errs.Errorf("invalid audit extension, full method name %q", fullMethod)
 	}
-	mcpMethodClass, err := mcpMethodClassOf(md, fullMethod)
-	if err != nil {
-		return nil, err
+	mcpMethodClassAny := proto.GetExtension(md, v1pb.E_McpMethodClass)
+	mcpMethodClass, ok := mcpMethodClassAny.(v1pb.MCPMethodClass)
+	if !ok {
+		return nil, errs.Errorf("invalid MCP method class extension, full method name %q", fullMethod)
 	}
 
 	return &common.AuthContext{
@@ -498,55 +499,35 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 	}, nil
 }
 
-// mcpMethodClassOf reads the bytebase.v1.mcp_method_class annotation.
-func mcpMethodClassOf(md *descriptorpb.MethodOptions, fullMethod string) (common.MCPMethodClass, error) {
-	classAny := proto.GetExtension(md, v1pb.E_McpMethodClass)
-	class, ok := classAny.(v1pb.MCPMethodClass)
-	if !ok {
-		return common.MCPMethodClassUnspecified, errs.Errorf("invalid MCP method class extension, full method name %q", fullMethod)
-	}
-	switch class {
-	case v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED:
-		return common.MCPMethodClassUnspecified, nil
-	case v1pb.MCPMethodClass_READ:
-		return common.MCPMethodClassRead, nil
-	case v1pb.MCPMethodClass_WRITE:
-		return common.MCPMethodClassWrite, nil
-	case v1pb.MCPMethodClass_FORBIDDEN:
-		return common.MCPMethodClassForbidden, nil
-	default:
-		// A class this build does not know is never waved through: an
-		// unrecognized ceiling value must fail closed, not resolve to
-		// "unclassified, therefore served".
-		return common.MCPMethodClassUnspecified, errs.Errorf("unknown MCP method class %v for full method name %q", class, fullMethod)
-	}
-}
-
 // MCPMethodClassOfProcedure resolves the MCP classification for a connect
 // procedure path such as "/bytebase.v1.AuthService/Login". Callers that only
 // decide what to ADVERTISE may treat an error as "not classified"; the
 // enforcement path must not — it reads the class off the AuthContext, which
 // fails the request outright when the annotation cannot be resolved.
-func MCPMethodClassOfProcedure(procedure string) (common.MCPMethodClass, error) {
+func MCPMethodClassOfProcedure(procedure string) (v1pb.MCPMethodClass, error) {
 	tokens := strings.Split(procedure, "/")
 	if len(tokens) != 3 {
-		return common.MCPMethodClassUnspecified, errs.Errorf("invalid procedure name %q", procedure)
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid procedure name %q", procedure)
 	}
 	rd, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(tokens[1]))
 	if err != nil {
-		return common.MCPMethodClassUnspecified, errs.Wrapf(err, "invalid service descriptor for procedure %q", procedure)
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Wrapf(err, "invalid service descriptor for procedure %q", procedure)
 	}
 	sd, ok := rd.(protoreflect.ServiceDescriptor)
 	if !ok {
-		return common.MCPMethodClassUnspecified, errs.Errorf("invalid service descriptor for procedure %q", procedure)
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid service descriptor for procedure %q", procedure)
 	}
 	method := sd.Methods().ByName(protoreflect.Name(tokens[2]))
 	if method == nil {
-		return common.MCPMethodClassUnspecified, errs.Errorf("unknown method for procedure %q", procedure)
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("unknown method for procedure %q", procedure)
 	}
 	md, ok := method.Options().(*descriptorpb.MethodOptions)
 	if !ok {
-		return common.MCPMethodClassUnspecified, errs.Errorf("invalid method options for procedure %q", procedure)
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid method options for procedure %q", procedure)
 	}
-	return mcpMethodClassOf(md, procedure)
+	class, ok := proto.GetExtension(md, v1pb.E_McpMethodClass).(v1pb.MCPMethodClass)
+	if !ok {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid MCP method class extension for procedure %q", procedure)
+	}
+	return class, nil
 }

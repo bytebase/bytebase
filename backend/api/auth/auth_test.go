@@ -6,7 +6,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // TestCheckTokenAudience pins the general-API audience policy for P1a PR 5:
@@ -67,15 +67,15 @@ func TestCheckTokenAudience(t *testing.T) {
 func TestMCPMethodClassOfProcedure(t *testing.T) {
 	for _, tc := range []struct {
 		procedure string
-		want      common.MCPMethodClass
+		want      v1pb.MCPMethodClass
 	}{
-		{"/bytebase.v1.AuthService/Login", common.MCPMethodClassForbidden},
-		{"/bytebase.v1.UserService/UpdateUser", common.MCPMethodClassForbidden},
-		{"/bytebase.v1.WorkspaceService/LeaveWorkspace", common.MCPMethodClassForbidden},
+		{"/bytebase.v1.AuthService/Login", v1pb.MCPMethodClass_FORBIDDEN},
+		{"/bytebase.v1.UserService/UpdateUser", v1pb.MCPMethodClass_FORBIDDEN},
+		{"/bytebase.v1.WorkspaceService/LeaveWorkspace", v1pb.MCPMethodClass_FORBIDDEN},
 		// Not yet classified — the rollout is method by method, and an
 		// unannotated RPC keeps serving exactly as before.
-		{"/bytebase.v1.UserService/GetUser", common.MCPMethodClassUnspecified},
-		{"/bytebase.v1.ProjectService/ListProjects", common.MCPMethodClassUnspecified},
+		{"/bytebase.v1.UserService/GetUser", v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED},
+		{"/bytebase.v1.ProjectService/ListProjects", v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED},
 	} {
 		got, err := MCPMethodClassOfProcedure(tc.procedure)
 		require.NoError(t, err, tc.procedure)

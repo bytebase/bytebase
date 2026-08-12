@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
@@ -108,7 +109,7 @@ func NewInternalMCPForbiddenInterceptor() connect.Interceptor {
 				return nil, connect.NewError(connect.CodeInternal,
 					errors.New("MCP method classification unavailable: no auth context"))
 			}
-			if authCtx.MCPMethodClass != common.MCPMethodClassForbidden {
+			if authCtx.MCPMethodClass != v1pb.MCPMethodClass_FORBIDDEN {
 				return next(ctx, req)
 			}
 			procedure := req.Spec().Procedure

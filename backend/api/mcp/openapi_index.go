@@ -13,7 +13,7 @@ import (
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
-	"github.com/bytebase/bytebase/backend/common"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 //go:embed gen/openapi.yaml
@@ -211,7 +211,7 @@ func forbiddenToMCP(path string) bool {
 	if err != nil {
 		return false
 	}
-	return class == common.MCPMethodClassForbidden
+	return class == v1pb.MCPMethodClass_FORBIDDEN
 }
 
 func extractPermissions(description string) []string {

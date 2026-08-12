@@ -109,14 +109,14 @@ func TestInternalMCPForbiddenInterceptor(t *testing.T) {
 		_, err := interceptor.WrapUnary(next)(ctx, req)
 		return dispatched, err
 	}
-	withClass := func(class common.MCPMethodClass) context.Context {
+	withClass := func(class v1pb.MCPMethodClass) context.Context {
 		return context.WithValue(context.Background(), common.AuthContextKey,
 			&common.AuthContext{MCPMethodClass: class})
 	}
 
 	for procedure := range forbiddenProceduresFromDescriptors(t) {
 		t.Run(procedure, func(t *testing.T) {
-			dispatched, err := invoke(withClass(common.MCPMethodClassForbidden), procedure)
+			dispatched, err := invoke(withClass(v1pb.MCPMethodClass_FORBIDDEN), procedure)
 			require.Error(t, err, "a FORBIDDEN method must never reach its handler")
 			require.False(t, dispatched, "the denial must happen before dispatch, so no handler side effect can land")
 			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
@@ -129,10 +129,10 @@ func TestInternalMCPForbiddenInterceptor(t *testing.T) {
 	// Only FORBIDDEN is enforced in this phase: an unclassified method is
 	// served exactly as before, and the serving classes 1b-2 will select
 	// between are not gated here yet.
-	for name, class := range map[string]common.MCPMethodClass{
-		"unclassified": common.MCPMethodClassUnspecified,
-		"read":         common.MCPMethodClassRead,
-		"write":        common.MCPMethodClassWrite,
+	for name, class := range map[string]v1pb.MCPMethodClass{
+		"unclassified": v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED,
+		"read":         v1pb.MCPMethodClass_READ,
+		"write":        v1pb.MCPMethodClass_WRITE,
 	} {
 		t.Run("dispatched: "+name, func(t *testing.T) {
 			dispatched, err := invoke(withClass(class), v1connect.UserServiceGetUserProcedure)
