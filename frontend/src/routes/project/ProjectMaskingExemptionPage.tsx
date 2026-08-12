@@ -403,6 +403,7 @@ export function ProjectMaskingExemptionPage({
           <Button onClick={handleGrantClick} disabled={!hasCreatePermission}>
             <FeatureBadge
               feature={PlanFeature.FEATURE_DATA_MASKING}
+              clickable={false}
               className="text-white"
               fallback={<ShieldCheck className="size-4" />}
             />
