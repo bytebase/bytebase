@@ -160,15 +160,15 @@ describe("migrateUserStorage", () => {
     localStorage.setItem(`bb.sql-editor.conn-expanded.env/prod.${email}`, "12");
     localStorage.setItem(`bb.sql-editor.conn-expanded-keys.${email}`, "13");
     localStorage.setItem(
-      `bb.sql-editor.worksheet-filter.projects/p1.${email}`,
+      `bb.sql-editor.saved-query-filter.projects/p1.${email}`,
       "14"
     );
     localStorage.setItem(
-      `bb.sql-editor.worksheet-tree.projects/p1.${email}`,
+      `bb.sql-editor.saved-query-tree.projects/p1.${email}`,
       "15"
     );
     localStorage.setItem(
-      `bb.sql-editor.worksheet-folder.projects/p1.list.${email}`,
+      `bb.sql-editor.saved-query-folder.projects/p1.list.${email}`,
       "16"
     );
     localStorage.setItem(`bb.sql-editor.ai-suggestion.${email}`, "17");
@@ -199,17 +199,17 @@ describe("migrateUserStorage", () => {
     ).toBe("13");
     expect(
       localStorage.getItem(
-        `bb.sql-editor.worksheet-filter.projects/p1.${newEmail}`
+        `bb.sql-editor.saved-query-filter.projects/p1.${newEmail}`
       )
     ).toBe("14");
     expect(
       localStorage.getItem(
-        `bb.sql-editor.worksheet-tree.projects/p1.${newEmail}`
+        `bb.sql-editor.saved-query-tree.projects/p1.${newEmail}`
       )
     ).toBe("15");
     expect(
       localStorage.getItem(
-        `bb.sql-editor.worksheet-folder.projects/p1.list.${newEmail}`
+        `bb.sql-editor.saved-query-folder.projects/p1.list.${newEmail}`
       )
     ).toBe("16");
     expect(

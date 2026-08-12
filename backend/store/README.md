@@ -12,7 +12,7 @@ PostgreSQL holds row locks until a transaction ends. Transactions that acquire t
    - `plan_webhook_delivery -> plan -> project`
    - `plan_check_run -> plan -> project`
    - `task_run_log -> task_run -> task -> plan -> project`
-   - `worksheet_organizer -> worksheet -> project`
+   - `saved_query_organizer -> saved_query -> project`
    - `changelog -> sync_history -> db -> instance -> project`
    - `revision -> db -> instance -> project`
    - `db_schema -> db -> instance -> project`
@@ -43,7 +43,7 @@ validate that policy against project deletion before writing the managed data.
 Transactions spanning project- or instance-owned sibling branches follow this canonical order:
 
 ```text
-query_history -> policy -> worksheet_organizer -> worksheet
+query_history -> policy -> saved_query_organizer -> saved_query
 -> issue_comment -> issue -> plan_webhook_delivery -> plan_check_run
 -> task_run_log -> task_run -> task -> plan -> access_grant -> release
 -> db_group -> changelog -> sync_history -> revision -> db_schema -> db

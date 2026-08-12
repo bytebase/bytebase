@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import type { WorksheetFolderNode } from "@/modules/sql-editor/model/Sheet";
+import type { SavedQueryFolderNode } from "@/modules/sql-editor/model/Sheet";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -19,7 +19,7 @@ globalThis.ResizeObserver = class ResizeObserver {
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   getSQLEditorTabsState: vi.fn(),
-  getWorksheetByName: vi.fn<(name: string) => unknown>(),
+  getSavedQueryByName: vi.fn<(name: string) => unknown>(),
   getUserByIdentifier: vi.fn<() => { title: string } | undefined>(() => ({
     title: "Test User",
   })),
@@ -33,7 +33,7 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/stores/app", () => {
   const state = {
-    getWorksheetByName: mocks.getWorksheetByName,
+    getSavedQueryByName: mocks.getSavedQueryByName,
     getUserByIdentifier: mocks.getUserByIdentifier,
     getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
   };
@@ -68,19 +68,11 @@ vi.mock("@/components/ui/tooltip", () => ({
   ),
 }));
 
-vi.mock("@/types/proto-es/v1/worksheet_service_pb", () => ({
-  Worksheet_Visibility: {
-    PRIVATE: 0,
-    PROJECT_READ: 1,
-    PROJECT_WRITE: 2,
-  },
-}));
-
 // ---- helpers ----------------------------------------------------------------
 
 const makeNode = (
-  overrides?: Partial<WorksheetFolderNode>
-): WorksheetFolderNode => ({
+  overrides?: Partial<SavedQueryFolderNode>
+): SavedQueryFolderNode => ({
   key: "/my/folder",
   label: "folder",
   editable: true,
@@ -89,17 +81,17 @@ const makeNode = (
   ...overrides,
 });
 
-const makeWorksheetNode = (
-  overrides?: Partial<WorksheetFolderNode>
-): WorksheetFolderNode =>
+const makeSavedQueryNode = (
+  overrides?: Partial<SavedQueryFolderNode>
+): SavedQueryFolderNode =>
   makeNode({
     key: "/my/folder/ws1",
     label: "My Query",
-    worksheet: {
-      name: "worksheets/ws1",
+    savedQuery: {
+      name: "savedQueries/ws1",
       title: "My Query",
       folders: [],
-      type: "worksheet",
+      type: "savedQuery",
     },
     ...overrides,
   });
@@ -127,10 +119,9 @@ const renderIntoContainer = (element: React.ReactElement) => {
 let TreeNodeSuffix: typeof import("./TreeNodeSuffix").TreeNodeSuffix;
 
 beforeEach(async () => {
-  mocks.getWorksheetByName.mockImplementation((name: string) => ({
+  mocks.getSavedQueryByName.mockImplementation((name: string) => ({
     name,
     starred: false,
-    visibility: 0, // PRIVATE
     creator: "users/test@example.com",
   }));
   mocks.getSQLEditorTabsState.mockReturnValue({
@@ -140,7 +131,7 @@ beforeEach(async () => {
   mocks.getUserByIdentifier.mockReturnValue({ title: "Test User" });
   mocks.getOrFetchUserByIdentifier.mockResolvedValue({ title: "Test User" });
   mocks.useSheetContext.mockReturnValue({
-    isWorksheetCreator: vi.fn(() => true),
+    isSavedQueryCreator: vi.fn(() => true),
   });
 
   ({ TreeNodeSuffix } = await import("./TreeNodeSuffix"));
@@ -152,8 +143,8 @@ afterEach(() => {
 });
 
 describe("TreeNodeSuffix", () => {
-  test("renders star icon for worksheet node; click fires onToggleStar with correct args", () => {
-    const node = makeWorksheetNode();
+  test("renders star icon for saved query node; click fires onToggleStar with correct args", () => {
+    const node = makeSavedQueryNode();
     const onToggleStar = vi.fn();
     const onSharePanelShow = vi.fn();
     const onContextMenuShow = vi.fn();
@@ -179,7 +170,7 @@ describe("TreeNodeSuffix", () => {
     });
 
     expect(onToggleStar).toHaveBeenCalledWith({
-      worksheet: "worksheets/ws1",
+      savedQuery: "savedQueries/ws1",
       starred: true, // was false, toggled to true
     });
 
@@ -187,7 +178,7 @@ describe("TreeNodeSuffix", () => {
   });
 
   test("does not render star icon for folder nodes", () => {
-    const node = makeNode(); // folder, no worksheet
+    const node = makeNode(); // folder, no savedQuery
     const onToggleStar = vi.fn();
     const onSharePanelShow = vi.fn();
     const onContextMenuShow = vi.fn();
@@ -209,9 +200,9 @@ describe("TreeNodeSuffix", () => {
     unmount();
   });
 
-  test("fetches worksheet creator before rendering the raw identifier", () => {
+  test("fetches saved query creator before rendering the raw identifier", () => {
     mocks.getUserByIdentifier.mockReturnValue(undefined);
-    const node = makeWorksheetNode();
+    const node = makeSavedQueryNode();
     const onToggleStar = vi.fn();
     const onSharePanelShow = vi.fn();
     const onContextMenuShow = vi.fn();
@@ -235,7 +226,7 @@ describe("TreeNodeSuffix", () => {
   });
 
   test('"More" button fires onContextMenuShow with the node', () => {
-    const node = makeWorksheetNode();
+    const node = makeSavedQueryNode();
     const onContextMenuShow = vi.fn();
     const onToggleStar = vi.fn();
     const onSharePanelShow = vi.fn();

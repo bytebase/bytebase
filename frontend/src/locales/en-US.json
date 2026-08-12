@@ -489,7 +489,6 @@
     "view": "View",
     "view-details": "View Details",
     "view-doc": "View doc",
-    "visibility": "Visibility",
     "want-help": "Want help",
     "warning": "Warning",
     "webhooks": "Webhooks",
@@ -2157,6 +2156,9 @@
     },
     "task-execution-errors": "Task execution errors"
   },
+  "saved-query": {
+    "self": "Saved queries"
+  },
   "schema-diagram": {
     "fit-content-with-view": "Fit content within view",
     "self": "Schema Diagram"
@@ -2866,28 +2868,28 @@
   "sheet": {
     "filter": {
       "only-show-starred": "Only show starred",
-      "show-draft": "Show draft",
+      "show-draft": "Show drafts",
       "show-mine": "Show mine",
       "show-shared": "Show shared"
     },
     "hint-tips": {
-      "confirm-multi-delete-content": "The selected worksheets and folders will be permanently deleted.",
+      "confirm-multi-delete-content": "The selected saved queries and folders will be permanently deleted.",
       "confirm-multi-delete-title": "Delete selected items?",
-      "confirm-to-delete-sheet-title": "Confirm to delete this worksheet?",
-      "confirm-to-duplicate-sheet": "Confirm to duplicate this worksheet?",
-      "delete-all-sheets": "Delete all files",
-      "duplicate-folder-name-content": "Do you want to merge all subfolders and files into the existing folder \"{{folder}}\"?",
+      "confirm-to-delete-sheet-title": "Delete this saved query?",
+      "confirm-to-duplicate-sheet": "Duplicate this saved query?",
+      "delete-all-sheets": "Delete all",
+      "duplicate-folder-name-content": "Do you want to merge all subfolders and saved queries into the existing folder \"{{folder}}\"?",
       "duplicate-folder-name-title": "Duplicate folder name",
       "move-to-root-folder": "Move to root folder",
-      "non-empty-folder-content": "Do you want to move all worksheets into the root folder or just delete them?",
+      "non-empty-folder-content": "Do you want to move all saved queries into the root folder or just delete them?",
       "non-empty-folder-title": "Non-empty folder"
     },
     "mine": "Mine",
-    "move-worksheets": "Move worksheets",
+    "move-saved-queries": "Move saved queries",
     "notifications": {
-      "duplicate-success": "Successfully duplicate the worksheet"
+      "duplicate-success": "Saved query duplicated"
     },
-    "search-sheets": "Search Sheets",
+    "search-sheets": "Search saved queries",
     "shared": "Shared"
   },
   "sql-editor": {
@@ -2946,7 +2948,7 @@
     "choose-folder": "Choose or create folder",
     "choose-folder-tips": "You can create a new folder by entering a non-existent path. The folders should be joined with a \"/\".",
     "click-to-sync-now": "Click to sync now",
-    "close-sheet": "Close sheet",
+    "close-sheet": "Close tab",
     "column-display-format": "Column Display Format",
     "connect-in-admin-mode": "Connect in admin mode",
     "connect-to-a-database": "Connect to database",
@@ -2983,13 +2985,12 @@
     "hex-format": "Hexadecimal format",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
-        "content": "Close the sheet and lose any unsaved data?",
-        "title": "Close the unsaved sheet?"
+        "content": "Close the tab and lose any unsaved changes?",
+        "title": "Close the unsaved tab?"
       }
     },
     "invalid-database": "Invalid database {{database}}",
     "last-synced": "Last synced: <time></time>",
-    "link-access": "Link access",
     "loading-data": "Loading Data...",
     "loading-databases": "Loading Databases...",
     "manage-connections": "Manage connections",
@@ -3006,12 +3007,6 @@
     "pending-query": "Pending query",
     "preview-table-data": "Preview table data",
     "previous-row": "Previous Row",
-    "private": "Private",
-    "private-desc": "Only you can access this sheet",
-    "project-read": "Project read",
-    "project-read-desc": "Both sheet owner and users with \"bb.worksheets.manage\" permission can read/write, other project users with \"bb.worksheets.get\" permission can read",
-    "project-write": "Project write",
-    "project-write-desc": "Both sheet owner and project users with \"bb.worksheets.get\" permission can read/write",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
     },
@@ -3042,7 +3037,7 @@
     },
     "rows-affected": "rows affected",
     "rows-upper-limit": "reached the limit of query results",
-    "save-sheet": "Save Sheet",
+    "save-sheet": "Save query",
     "scroll-to-bottom": "Scroll to the bottom",
     "scroll-to-top": "Scroll to the top",
     "search-history-by-statement": "Search by statement",
@@ -3061,7 +3056,7 @@
       "context-menu": {
         "actions": {
           "add-folder": "Add folder",
-          "add-worksheet": "Add worksheet",
+          "add-saved-query": "New query",
           "close": "Close",
           "close-all": "Close all",
           "close-others": "Close others",
@@ -3071,14 +3066,14 @@
           "rename": "Rename"
         }
       },
-      "unsaved-worksheet": "You have unsaved worksheet."
+      "unsaved-changes": "You have unsaved changes."
     },
     "table-empty-placeholder": "Click Run to execute the query.",
     "table-view": "Table view",
     "text-format": "Text format",
     "unable-to-connect-database": "Unable to connect to database {{name}}",
     "upload-file": "Upload file",
-    "url-copied-to-clipboard": "The URL is copied to your clipboard",
+    "url-copied-to-clipboard": "Link copied to clipboard",
     "vertical-display": "Vertical display",
     "view-database-detail": "View database detail",
     "view-detail": "View detail",
@@ -3392,9 +3387,6 @@
       "description": "Copy the code and enter it in your TOTP app manually.",
       "self": "Your two-factor secret"
     }
-  },
-  "worksheet": {
-    "self": "Worksheet"
   },
   "workspace-setup-guide": {
     "actions": {

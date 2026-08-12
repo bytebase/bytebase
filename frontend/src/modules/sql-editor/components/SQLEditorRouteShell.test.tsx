@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => {
     addTab: vi.fn((payload: Partial<SQLEditorTab> = {}) => {
       const tab = {
         id: "tab-1",
-        worksheet: "",
+        savedQuery: "",
         connection: {
           instance: "",
           database: "",
@@ -52,8 +52,8 @@ const mocks = vi.hoisted(() => {
     fetchInstance: vi.fn<
       (name: string) => Promise<{ name: string } | undefined>
     >(async (name: string) => ({ name })),
-    getWorksheetByName: vi.fn(),
-    getOrFetchWorksheetByName: vi.fn(),
+    getSavedQueryByName: vi.fn(),
+    getOrFetchSavedQueryByName: vi.fn(),
     searchProjects: vi.fn(),
     beforeEach: vi.fn(() => vi.fn()),
     navigateReplace: vi.fn(),
@@ -144,8 +144,8 @@ vi.mock("@/stores/app", () => ({
     getState: () => ({
       getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
       fetchInstance: mocks.fetchInstance,
-      getWorksheetByName: mocks.getWorksheetByName,
-      getOrFetchWorksheetByName: mocks.getOrFetchWorksheetByName,
+      getSavedQueryByName: mocks.getSavedQueryByName,
+      getOrFetchSavedQueryByName: mocks.getOrFetchSavedQueryByName,
       searchProjects: mocks.searchProjects,
       serverInfo: {
         defaultProject: "projects/proj1",
@@ -173,7 +173,7 @@ vi.mock("@/modules/sql-editor/store", () => ({
 
 vi.mock("@/utils", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/utils")>()),
-  isWorksheetReadableV1: vi.fn(() => true),
+  isSavedQueryReadableV1: vi.fn(() => true),
 }));
 
 vi.mock("@/modules/sql-editor/store/editor", () => ({
@@ -222,7 +222,7 @@ beforeEach(() => {
     (payload: Partial<SQLEditorTab> = {}) => {
       const tab = {
         id: "tab-1",
-        worksheet: "",
+        savedQuery: "",
         connection: {
           instance: "",
           database: "",
@@ -239,11 +239,11 @@ beforeEach(() => {
     project: "projects/proj1",
   }));
   mocks.fetchInstance.mockImplementation(async (name: string) => ({ name }));
-  mocks.getWorksheetByName.mockImplementation((name: string) => ({
+  mocks.getSavedQueryByName.mockImplementation((name: string) => ({
     name,
     project: "projects/proj1",
   }));
-  mocks.getOrFetchWorksheetByName.mockImplementation(async (name: string) => ({
+  mocks.getOrFetchSavedQueryByName.mockImplementation(async (name: string) => ({
     name,
     project: "projects/proj1",
     database: "instances/inst1/databases/db1",
@@ -301,7 +301,7 @@ describe("SQLEditorRouteShell", () => {
         schema: "public",
         table: "users",
       },
-      mode: "WORKSHEET",
+      mode: "SAVED_QUERY",
     });
     expect(mocks.navigateReplace).toHaveBeenCalledWith({
       name: "sql-editor.database",
@@ -343,7 +343,7 @@ describe("SQLEditorRouteShell", () => {
         schema: "public",
         table: "users",
       },
-      mode: "WORKSHEET",
+      mode: "SAVED_QUERY",
     });
     expect(mocks.navigateReplace).toHaveBeenCalledWith({
       name: "sql-editor.database",
@@ -384,7 +384,7 @@ describe("SQLEditorRouteShell", () => {
         schema: "public",
         table: "users",
       },
-      mode: "WORKSHEET",
+      mode: "SAVED_QUERY",
     });
 
     unmount();
@@ -424,7 +424,7 @@ describe("SQLEditorRouteShell", () => {
         schema: "public",
         table: "users",
       },
-      mode: "WORKSHEET",
+      mode: "SAVED_QUERY",
     });
     expect(mocks.navigateReplace).toHaveBeenCalledWith({
       name: "sql-editor.database",
@@ -484,7 +484,7 @@ describe("SQLEditorRouteShell", () => {
         instance: parent,
         database: "",
       },
-      mode: "WORKSHEET",
+      mode: "SAVED_QUERY",
     });
     expect(mocks.navigateReplace).toHaveBeenCalledWith({
       name: "sql-editor.instance",
@@ -522,7 +522,7 @@ describe("SQLEditorRouteShell", () => {
         schema: "public",
         table: "users",
       },
-      mode: "WORKSHEET",
+      mode: "SAVED_QUERY",
     });
 
     unmount();
@@ -533,7 +533,7 @@ describe("SQLEditorRouteShell", () => {
       (payload: Partial<SQLEditorTab> = {}) =>
         ({
           id: "tab-pending",
-          worksheet: "",
+          savedQuery: "",
           connection: {
             instance: "",
             database: "",
@@ -557,7 +557,7 @@ describe("SQLEditorRouteShell", () => {
         schema: "public",
         table: "users",
       },
-      mode: "WORKSHEET",
+      mode: "SAVED_QUERY",
     });
     expect(mocks.navigateReplace).not.toHaveBeenCalledWith({
       name: "sql-editor.project",
@@ -595,7 +595,7 @@ describe("SQLEditorRouteShell", () => {
   test("updates a stale database URL when the active tab is disconnected", async () => {
     mocks.tabsState.tabsById.set("tab-blank", {
       id: "tab-blank",
-      worksheet: "",
+      savedQuery: "",
       connection: {
         instance: "",
         database: "",
@@ -606,7 +606,7 @@ describe("SQLEditorRouteShell", () => {
       (payload: Partial<SQLEditorTab> = {}) => {
         const tab = {
           id: "tab-from-route",
-          worksheet: "",
+          savedQuery: "",
           connection: {
             instance: "",
             database: "",
@@ -637,13 +637,13 @@ describe("SQLEditorRouteShell", () => {
     unmount();
   });
 
-  test("seeds worksheet route tabs with schema and table from the URL", async () => {
+  test("seeds saved query route tabs with schema and table from the URL", async () => {
     mocks.renderRoute = {
       ...mocks.renderRoute,
-      name: "sql-editor.worksheet",
+      name: "sql-editor.saved-query",
       params: {
         project: "proj1",
-        sheet: "sheet1",
+        savedQuery: "sheet1",
       },
       query: {
         schema: "public",
@@ -653,10 +653,10 @@ describe("SQLEditorRouteShell", () => {
     };
     mocks.currentRoute = {
       ...mocks.currentRoute,
-      name: "sql-editor.worksheet",
+      name: "sql-editor.saved-query",
       params: {
         project: "proj1",
-        sheet: "sheet1",
+        savedQuery: "sheet1",
       },
       query: {
         schema: "public",
@@ -681,7 +681,7 @@ describe("SQLEditorRouteShell", () => {
         schema: "public",
         table: "SUPPORDERS_VIS.items",
       },
-      worksheet: "projects/proj1/worksheets/sheet1",
+      savedQuery: "projects/proj1/savedQueries/sheet1",
       title: undefined,
       statement: "select 1",
       status: "CLEAN",
@@ -690,7 +690,7 @@ describe("SQLEditorRouteShell", () => {
     unmount();
   });
 
-  test("keeps schema and table query parameters when syncing worksheet tabs", async () => {
+  test("keeps schema and table query parameters when syncing saved query tabs", async () => {
     mocks.renderRoute = {
       ...mocks.renderRoute,
       name: "sql-editor.project",
@@ -709,9 +709,9 @@ describe("SQLEditorRouteShell", () => {
       query: {},
       requiredPermissions: [],
     };
-    mocks.tabsState.tabsById.set("tab-worksheet", {
-      id: "tab-worksheet",
-      worksheet: "projects/proj1/worksheets/sheet1",
+    mocks.tabsState.tabsById.set("tab-savedQuery", {
+      id: "tab-savedQuery",
+      savedQuery: "projects/proj1/savedQueries/sheet1",
       connection: {
         instance: "instances/inst1",
         database: "instances/inst1/databases/db1",
@@ -719,7 +719,7 @@ describe("SQLEditorRouteShell", () => {
         table: "SUPPORDERS_VIS.items",
       },
     } as SQLEditorTab);
-    mocks.tabsState.currentTabId = "tab-worksheet";
+    mocks.tabsState.currentTabId = "tab-savedQuery";
 
     const { unmount } = renderShell();
 
@@ -730,10 +730,10 @@ describe("SQLEditorRouteShell", () => {
     });
 
     expect(mocks.navigateReplace).toHaveBeenCalledWith({
-      name: "sql-editor.worksheet",
+      name: "sql-editor.saved-query",
       params: {
         project: "proj1",
-        sheet: "sheet1",
+        savedQuery: "sheet1",
       },
       query: {
         table: "SUPPORDERS_VIS.items",

@@ -21,9 +21,9 @@ export function Suffix({ tab, onClose }: Props) {
 
   const icon = ((): IconKind => {
     // Always show saving indicator when saving, even while hovering.
-    if (tab.mode === "WORKSHEET" && tab.status === "SAVING") return "saving";
+    if (tab.mode === "SAVED_QUERY" && tab.status === "SAVING") return "saving";
     if (hovering) return "close";
-    if (tab.mode === "WORKSHEET" && tab.status === "DIRTY") return "unsaved";
+    if (tab.mode === "SAVED_QUERY" && tab.status === "DIRTY") return "unsaved";
     return "close";
   })();
 
@@ -35,8 +35,8 @@ export function Suffix({ tab, onClose }: Props) {
   );
 
   const accent =
-    (tab.mode === "WORKSHEET" && tab.status === "DIRTY") ||
-    (tab.mode === "WORKSHEET" && tab.status === "SAVING")
+    (tab.mode === "SAVED_QUERY" && tab.status === "DIRTY") ||
+    (tab.mode === "SAVED_QUERY" && tab.status === "SAVING")
       ? "text-accent"
       : "";
 

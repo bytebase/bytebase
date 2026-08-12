@@ -1,5 +1,7 @@
 import { Lock, Sparkles, X } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { captureFeatureGateMetric } from "@/app/analytics/feature-gate";
 import { router } from "@/app/router";
 import { INSTANCE_ROUTE_DASHBOARD } from "@/app/router/handles";
 import { Button } from "@/components/ui/button";
@@ -46,6 +48,7 @@ export function FeatureModal({ open, feature, instance, onOpenChange }: Props) {
   const { t } = useTranslation();
   const { showTrial, trialingDays } = useSubscriptionState();
   const hasPermission = hasWorkspacePermissionV2("bb.settings.set");
+  const wasOpenRef = useRef(false);
 
   const resolvedFeature = feature ?? PlanFeature.FEATURE_UNSPECIFIED;
   const instanceMissingLicense = useAppStore((state) =>
@@ -54,6 +57,18 @@ export function FeatureModal({ open, feature, instance, onOpenChange }: Props) {
   const requiredPlan = useAppStore((state) =>
     state.getMinimumRequiredPlan(resolvedFeature)
   );
+
+  useEffect(() => {
+    const isOpen = open && !!feature;
+    if (isOpen && !wasOpenRef.current) {
+      captureFeatureGateMetric(
+        "locked feature clicked",
+        resolvedFeature,
+        instance
+      );
+    }
+    wasOpenRef.current = isOpen;
+  }, [feature, instance, open, resolvedFeature]);
 
   if (!feature) {
     return null;

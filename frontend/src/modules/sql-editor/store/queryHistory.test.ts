@@ -7,11 +7,11 @@ import {
 } from "./queryHistory";
 import type {
   QueryHistoryFilter,
+  SavedQuerySaveSlice,
   SQLEditorStoreState,
   TreeSlice,
   UIStateSlice,
   WebTerminalSlice,
-  WorksheetSaveSlice,
 } from "./types";
 
 const searchQueryHistoriesMock = vi.fn();
@@ -29,7 +29,7 @@ vi.mock("@/api", () => ({
 // `SQLEditorStoreState` shape without dragging in the real uiState
 // slice (which reads localStorage on creation).
 const stubUIStateSlice = (): UIStateSlice => ({
-  asidePanelTab: "WORKSHEET",
+  asidePanelTab: "SAVED_QUERY",
   showConnectionPanel: false,
   showAIPanel: false,
   pendingInsertAtCaret: undefined,
@@ -66,13 +66,13 @@ const stubWebTerminalSlice = (): WebTerminalSlice => ({
   updateWebTerminalQueryItem: vi.fn(),
 });
 
-const stubWorksheetSaveSlice = (): WorksheetSaveSlice => ({
+const stubSavedQuerySaveSlice = (): SavedQuerySaveSlice => ({
   autoSaveController: null,
   setAutoSaveController: vi.fn(),
   abortAutoSave: vi.fn(),
   maybeSwitchProject: vi.fn(async () => undefined),
-  maybeUpdateWorksheet: vi.fn(async () => undefined),
-  createWorksheet: vi.fn(async () => undefined),
+  maybeUpdateSavedQuery: vi.fn(async () => undefined),
+  createSavedQuery: vi.fn(async () => undefined),
 });
 
 const makeStore = (): StoreApi<SQLEditorStoreState> =>
@@ -80,7 +80,7 @@ const makeStore = (): StoreApi<SQLEditorStoreState> =>
     ...stubUIStateSlice(),
     ...stubTreeSlice(),
     ...stubWebTerminalSlice(),
-    ...stubWorksheetSaveSlice(),
+    ...stubSavedQuerySaveSlice(),
     ...createQueryHistorySlice(...args),
   }));
 

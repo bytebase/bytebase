@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => {
     isInBatchMode: false,
     currentTab: {
       id: "t-1",
-      mode: "WORKSHEET" as const,
+      mode: "SAVED_QUERY" as const,
       title: "Untitled",
       connection: { database: "", instance: "" },
       batchQueryContext: {
@@ -439,7 +439,7 @@ beforeEach(async () => {
   mocks.tabStore.isInBatchMode = false;
   mocks.tabStore.currentTab = {
     id: "t-1",
-    mode: "WORKSHEET",
+    mode: "SAVED_QUERY",
     title: "Untitled",
     connection: { database: "", instance: "" },
     batchQueryContext: { databases: [], databaseGroups: [] },

@@ -51,7 +51,7 @@ vi.mock("@/stores/app", () => {
     ...state,
     getOrFetchProjectByName: mocks.getOrFetchProjectByName,
     fetchIssueByName: vi.fn(),
-    getOrFetchWorksheetByName: vi.fn(),
+    getOrFetchSavedQueryByName: vi.fn(),
     saveIntroStateByKey: mocks.saveIntroStateByKey,
   });
   return { useAppStore };

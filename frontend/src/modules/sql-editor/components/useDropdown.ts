@@ -1,5 +1,5 @@
 /**
- * useDropdown — context-menu state for the worksheet tree.
+ * useDropdown — context-menu state for the saved query tree.
  *
  * The hook exposes `confirmDelete` state that the consumer (SheetTree) binds
  * to a shadcn AlertDialog, and `showSharePanel` + `handleSharePanelShow` so
@@ -11,12 +11,12 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCurrentUser } from "@/hooks/useAppState";
 import type {
+  SavedQueryFilter,
+  SavedQueryFolderNode,
   SheetViewMode,
-  WorksheetFilter,
-  WorksheetFolderNode,
 } from "@/modules/sql-editor/model/Sheet";
 import { useAppStore } from "@/stores/app";
-import { isWorksheetWritableV1 } from "@/utils";
+import { isSavedQueryWritableV1 } from "@/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,7 +27,7 @@ export type DropdownOptionType =
   | "rename"
   | "delete"
   | "add-folder"
-  | "add-worksheet"
+  | "add-saved-query"
   | "multi-select"
   | "duplicate";
 
@@ -42,10 +42,10 @@ export type MenuItem =
 
 export function useDropdown(
   viewMode: SheetViewMode,
-  worksheetFilter: WorksheetFilter,
+  savedQueryFilter: SavedQueryFilter,
   // Only the "my" tree is wired to the parent's multi-select state. For
   // other views (shared / draft) the context-menu entry is hidden so a
-  // right-click on a shared worksheet cannot populate the my tree's
+  // right-click on a shared saved query cannot populate the my tree's
   // checkedNodes — which the toolbar's Delete + Move-to-folder flows act on.
   canMultiSelect = false
 ) {
@@ -57,24 +57,24 @@ export function useDropdown(
   // Context state — current right-click target
   // ------------------------------------------------------------------
   const [currentNode, setCurrentNode] = useState<
-    WorksheetFolderNode | undefined
+    SavedQueryFolderNode | undefined
   >(undefined);
   const [showSharePanel, setShowSharePanel] = useState(false);
 
   // ------------------------------------------------------------------
   // Reactive reads from Pinia / Vue stores
   // ------------------------------------------------------------------
-  const worksheetEntity = useAppStore((s) =>
-    viewMode === "draft" || !currentNode?.worksheet
+  const savedQueryEntity = useAppStore((s) =>
+    viewMode === "draft" || !currentNode?.savedQuery
       ? undefined
-      : s.getWorksheetByName(currentNode.worksheet.name)
+      : s.getSavedQueryByName(currentNode.savedQuery.name)
   );
 
   // ------------------------------------------------------------------
   // Derived: allowed-to-create-new
   // ------------------------------------------------------------------
   const allowCreateNew =
-    !worksheetFilter.keyword && !worksheetFilter.onlyShowStarred;
+    !savedQueryFilter.keyword && !savedQueryFilter.onlyShowStarred;
 
   // ------------------------------------------------------------------
   // Menu options — computed from current state
@@ -91,11 +91,11 @@ export function useDropdown(
 
     const items: ItemDef[] = [];
 
-    if (currentNode.worksheet) {
-      if (!worksheetEntity) {
+    if (currentNode.savedQuery) {
+      if (!savedQueryEntity) {
         return [];
       }
-      const isCreator = worksheetEntity.creator === `users/${me?.email ?? ""}`;
+      const isCreator = savedQueryEntity.creator === `users/${me?.email ?? ""}`;
       items.push({
         key: "duplicate",
         label: isCreator ? t("common.duplicate") : t("common.fork"),
@@ -106,7 +106,7 @@ export function useDropdown(
           label: t("common.share"),
         });
       }
-      const canWriteSheet = isWorksheetWritableV1(worksheetEntity);
+      const canWriteSheet = isSavedQueryWritableV1(savedQueryEntity);
       if (canWriteSheet) {
         items.push({
           key: "rename",
@@ -135,8 +135,8 @@ export function useDropdown(
       if (viewMode === "my") {
         if (allowCreateNew) {
           items.push({
-            key: "add-worksheet",
-            label: t("sql-editor.tab.context-menu.actions.add-worksheet"),
+            key: "add-saved-query",
+            label: t("sql-editor.tab.context-menu.actions.add-saved-query"),
           });
         }
         if (canMultiSelect) {
@@ -166,7 +166,7 @@ export function useDropdown(
   }, [
     viewMode,
     currentNode,
-    worksheetEntity,
+    savedQueryEntity,
     me,
     allowCreateNew,
     canMultiSelect,
@@ -184,7 +184,7 @@ export function useDropdown(
    */
   const handleContextMenu = (
     e: React.MouseEvent,
-    node: WorksheetFolderNode
+    node: SavedQueryFolderNode
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -198,7 +198,7 @@ export function useDropdown(
    */
   const handleSharePanelShow = (
     e: React.MouseEvent,
-    node: WorksheetFolderNode
+    node: SavedQueryFolderNode
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -221,8 +221,8 @@ export function useDropdown(
     currentNode,
     /** Computed menu options for the ContextMenu. */
     options,
-    /** Worksheet entity resolved from the store (for SharePopoverBody). */
-    worksheetEntity,
+    /** SavedQuery entity resolved from the store (for SharePopoverBody). */
+    savedQueryEntity,
     /** Whether the share panel should be shown. */
     showSharePanel,
     /** Call from each row's onContextMenu to open the context menu. */

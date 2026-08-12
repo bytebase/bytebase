@@ -131,45 +131,44 @@ func TestAuditLogFormat(t *testing.T) {
 	a.Len(updateProjectLogs.Msg.AuditLogs, 1)
 	a.Equal(ctl.project.Name, updateProjectLogs.Msg.AuditLogs[0].Resource)
 
-	worksheetContent := "SELECT secret_audit_worksheet_content;"
-	worksheet, err := ctl.worksheetServiceClient.CreateWorksheet(ctx, connect.NewRequest(&v1pb.CreateWorksheetRequest{
+	savedQueryContent := "SELECT secret_audit_saved_query_content;"
+	savedQuery, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 		Parent: ctl.project.Name,
-		Worksheet: &v1pb.Worksheet{
-			Title:      "Audit worksheet",
-			Content:    []byte(worksheetContent),
-			Visibility: v1pb.Worksheet_PRIVATE,
+		SavedQuery: &v1pb.SavedQuery{
+			Title:   "Audit saved query",
+			Content: []byte(savedQueryContent),
 		},
 	}))
 	a.NoError(err)
 
-	createWorksheetLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+	createSavedQueryLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
 		Parent: ctl.project.Name,
-		Filter: `method == "/bytebase.v1.WorksheetService/CreateWorksheet"`,
+		Filter: `method == "/bytebase.v1.SavedQueryService/CreateSavedQuery"`,
 	}))
 	a.NoError(err)
-	a.Len(createWorksheetLogs.Msg.AuditLogs, 1)
-	a.Equal(ctl.project.Name, createWorksheetLogs.Msg.AuditLogs[0].Resource)
-	a.True(strings.HasPrefix(createWorksheetLogs.Msg.AuditLogs[0].Name, ctl.project.Name+"/auditLogs/"))
-	auditedCreateWorksheetRequest := &v1pb.CreateWorksheetRequest{}
-	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(createWorksheetLogs.Msg.AuditLogs[0].Request), auditedCreateWorksheetRequest))
-	a.Empty(auditedCreateWorksheetRequest.GetWorksheet().GetContent())
-	auditedWorksheet := &v1pb.Worksheet{}
-	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(createWorksheetLogs.Msg.AuditLogs[0].Response), auditedWorksheet))
-	a.Empty(auditedWorksheet.Content)
+	a.Len(createSavedQueryLogs.Msg.AuditLogs, 1)
+	a.Equal(ctl.project.Name, createSavedQueryLogs.Msg.AuditLogs[0].Resource)
+	a.True(strings.HasPrefix(createSavedQueryLogs.Msg.AuditLogs[0].Name, ctl.project.Name+"/auditLogs/"))
+	auditedCreateSavedQueryRequest := &v1pb.CreateSavedQueryRequest{}
+	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(createSavedQueryLogs.Msg.AuditLogs[0].Request), auditedCreateSavedQueryRequest))
+	a.Empty(auditedCreateSavedQueryRequest.GetSavedQuery().GetContent())
+	auditedSavedQuery := &v1pb.SavedQuery{}
+	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(createSavedQueryLogs.Msg.AuditLogs[0].Response), auditedSavedQuery))
+	a.Empty(auditedSavedQuery.Content)
 
-	_, err = ctl.worksheetServiceClient.DeleteWorksheet(ctx, connect.NewRequest(&v1pb.DeleteWorksheetRequest{
-		Name: worksheet.Msg.Name,
+	_, err = ctl.savedQueryServiceClient.DeleteSavedQuery(ctx, connect.NewRequest(&v1pb.DeleteSavedQueryRequest{
+		Name: savedQuery.Msg.Name,
 	}))
 	a.NoError(err)
 
-	deleteWorksheetLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+	deleteSavedQueryLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
 		Parent: ctl.project.Name,
-		Filter: `method == "/bytebase.v1.WorksheetService/DeleteWorksheet"`,
+		Filter: `method == "/bytebase.v1.SavedQueryService/DeleteSavedQuery"`,
 	}))
 	a.NoError(err)
-	a.Len(deleteWorksheetLogs.Msg.AuditLogs, 1)
-	a.Equal(worksheet.Msg.Name, deleteWorksheetLogs.Msg.AuditLogs[0].Resource)
-	a.True(strings.HasPrefix(deleteWorksheetLogs.Msg.AuditLogs[0].Name, ctl.project.Name+"/auditLogs/"))
+	a.Len(deleteSavedQueryLogs.Msg.AuditLogs, 1)
+	a.Equal(savedQuery.Msg.Name, deleteSavedQueryLogs.Msg.AuditLogs[0].Resource)
+	a.True(strings.HasPrefix(deleteSavedQueryLogs.Msg.AuditLogs[0].Name, ctl.project.Name+"/auditLogs/"))
 
 	// --- Part 2: Signup (workspace-scoped, allow_without_credential) ---
 	//

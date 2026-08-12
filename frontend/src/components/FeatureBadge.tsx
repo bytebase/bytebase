@@ -1,6 +1,7 @@
 import { Lock, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { captureFeatureGateMetric } from "@/app/analytics/feature-gate";
 import { RouterLink } from "@/components/RouterLink";
 import { useSubscriptionState } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
@@ -92,6 +93,13 @@ export function FeatureBadge({
         <RouterLink
           to="/setting/subscription"
           className={className ?? "text-accent inline-flex"}
+          onClick={() =>
+            captureFeatureGateMetric(
+              "locked feature clicked",
+              feature,
+              instance
+            )
+          }
         >
           <Sparkles className="w-5 h-5" />
         </RouterLink>

@@ -11,7 +11,7 @@ import type { SQLEditorTab } from "@/types/sqlEditor/tab";
 const mocks = vi.hoisted(() => ({
   updateTab: vi.fn(),
   setCurrentTabId: vi.fn(),
-  patchWorksheet: vi.fn().mockResolvedValue(undefined),
+  patchSavedQuery: vi.fn().mockResolvedValue(undefined),
   getSQLEditorTabsState: vi.fn(),
   tabListEvents: {
     on: vi.fn<(event: string, h: (p: unknown) => void) => () => void>(),
@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/stores/app", () => ({
   useAppStore: {
-    getState: () => ({ patchWorksheet: mocks.patchWorksheet }),
+    getState: () => ({ patchSavedQuery: mocks.patchSavedQuery }),
   },
 }));
 
@@ -40,13 +40,13 @@ vi.mock("@/components/ui/ellipsis-text", () => ({
   ),
 }));
 
-// WorksheetSchema + @bufbuild/protobuf pull native deps; stub them.
+// SavedQuerySchema + @bufbuild/protobuf pull native deps; stub them.
 vi.mock("@bufbuild/protobuf", () => ({
   create: vi.fn((schema, data) => ({ ...data, $schema: schema })),
 }));
 
-vi.mock("@/types/proto-es/v1/worksheet_service_pb", () => ({
-  WorksheetSchema: { typeName: "WorksheetSchema" },
+vi.mock("@/types/proto-es/v1/saved_query_service_pb", () => ({
+  SavedQuerySchema: { typeName: "SavedQuerySchema" },
 }));
 
 let Label: typeof import("./Label").Label;
@@ -76,7 +76,7 @@ const makeTab = (overrides: Partial<SQLEditorTab> = {}): SQLEditorTab =>
     id: "t1",
     title: "My query",
     status: "CLEAN",
-    worksheet: "",
+    savedQuery: "",
     viewState: { view: "CODE" },
     ...overrides,
   }) as unknown as SQLEditorTab;

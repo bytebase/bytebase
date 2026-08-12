@@ -10,8 +10,8 @@ export type SQLEditorTabStatus =
   | "SAVING" // auto-saving in progress
   | "CLEAN"; // saved to a remote sheet
 
-export type SQLEditorTabMode = "WORKSHEET" | "ADMIN";
-export const DEFAULT_SQL_EDITOR_TAB_MODE: SQLEditorTabMode = "WORKSHEET";
+export type SQLEditorTabMode = "SAVED_QUERY" | "ADMIN";
+export const DEFAULT_SQL_EDITOR_TAB_MODE: SQLEditorTabMode = "SAVED_QUERY";
 export type QueryDataSourceType =
   | DataSourceType.ADMIN
   | DataSourceType.READ_ONLY;
@@ -66,7 +66,7 @@ export type SQLEditorTab = {
   // basic fields
   id: string; // uuid
   title: string; // display title, should be synced with sheet's title once saved
-  worksheet: string; // if ref to a local or remote sheet
+  savedQuery: string; // if ref to a local or remote sheet
   connection: SQLEditorConnection;
   status: SQLEditorTabStatus;
   statement: string; // local editing statement, might be out-of-sync to ref sheet's statement
@@ -94,5 +94,5 @@ export type SQLEditorTab = {
 
 export type CoreSQLEditorTab = Pick<
   SQLEditorTab,
-  "worksheet" | "connection" | "mode"
+  "savedQuery" | "connection" | "mode"
 >;

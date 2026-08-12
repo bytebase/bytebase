@@ -168,7 +168,7 @@ beforeEach(async () => {
   mocks.getInstanceResource.mockReturnValue(mockInstance);
   mocks.orderBy.mockImplementation((arr: unknown[]) => arr);
 
-  setTabMode("WORKSHEET");
+  setTabMode("SAVED_QUERY");
   mocks.editorState = {
     project: "projects/p1",
     resultRowsLimit: 1000,

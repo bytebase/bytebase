@@ -12,7 +12,7 @@
 // This is intentionally NOT persisted to localStorage: a page reload creates a
 // fresh model, which re-triggers `didOpen` and re-fetches the ranges from the
 // backend. Keeping it in memory avoids unbounded storage growth and stale
-// ranges that no longer match a worksheet's content.
+// ranges that no longer match a saved query's content.
 
 export type StatementRange = {
   startLineNumber: number;

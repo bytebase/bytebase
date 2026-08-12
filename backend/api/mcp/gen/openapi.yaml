@@ -5769,6 +5769,357 @@ paths:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.SearchQueryHistoriesResponse'
       deprecated: true
+  /bytebase.v1.SavedQueryService/BatchUpdateSavedQueryOrganizer:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: BatchUpdateSavedQueryOrganizer
+      description: |-
+        Batch update the organizers of saved queries.
+         The access is the same as UpdateSavedQuery method.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: bytebase.v1.SavedQueryService.BatchUpdateSavedQueryOrganizer
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.BatchUpdateSavedQueryOrganizerRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.BatchUpdateSavedQueryOrganizerResponse'
+  /bytebase.v1.SavedQueryService/CreateSavedQuery:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: CreateSavedQuery
+      description: |-
+        Creates a personal saved query used in SQL Editor. Any authenticated user can create their own saved queries.
+         Permissions required: None (authenticated users only)
+      operationId: bytebase.v1.SavedQueryService.CreateSavedQuery
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.CreateSavedQueryRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+  /bytebase.v1.SavedQueryService/DeleteSavedQuery:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: DeleteSavedQuery
+      description: |-
+        Delete a saved query.
+         The access is the same as UpdateSavedQuery method.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: bytebase.v1.SavedQueryService.DeleteSavedQuery
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.DeleteSavedQueryRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /bytebase.v1.SavedQueryService/GetSavedQuery:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: GetSavedQuery
+      description: |-
+        Get a saved query by name.
+         Saved queries are private: only the creator, or a caller holding
+         bb.worksheets.manage on the workspace, can access one.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: bytebase.v1.SavedQueryService.GetSavedQuery
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetSavedQueryRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+  /bytebase.v1.SavedQueryService/ListSavedQueries:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: ListSavedQueries
+      description: |-
+        List saved queries.
+         This is used for listing saved queries in a project, or across all projects by using `projects/-`.
+         Permissions required: bb.worksheets.list
+      operationId: bytebase.v1.SavedQueryService.ListSavedQueries
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListSavedQueriesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListSavedQueriesResponse'
+  /bytebase.v1.SavedQueryService/ListSavedQueryFolders:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: ListSavedQueryFolders
+      description: |-
+        List the caller's saved query folders.
+         Only folders stored in the caller's saved query organizer are returned.
+      operationId: bytebase.v1.SavedQueryService.ListSavedQueryFolders
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListSavedQueryFoldersRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListSavedQueryFoldersResponse'
+  /bytebase.v1.SavedQueryService/SearchSavedQueries:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: SearchSavedQueries
+      description: |-
+        Search for saved queries.
+         This is used for finding my saved queries in a project.
+         The saved query accessibility is the same as GetSavedQuery().
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: bytebase.v1.SavedQueryService.SearchSavedQueries
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.SearchSavedQueriesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SearchSavedQueriesResponse'
+  /bytebase.v1.SavedQueryService/UpdateSavedQuery:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: UpdateSavedQuery
+      description: |-
+        Update a saved query.
+         The access is the same as GetSavedQuery method.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: bytebase.v1.SavedQueryService.UpdateSavedQuery
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.UpdateSavedQueryRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+  /bytebase.v1.SavedQueryService/UpdateSavedQueryOrganizer:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: UpdateSavedQueryOrganizer
+      description: |-
+        Update the organizer of a saved query.
+         The access is the same as UpdateSavedQuery method.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: bytebase.v1.SavedQueryService.UpdateSavedQueryOrganizer
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.UpdateSavedQueryOrganizerRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
   /bytebase.v1.ServiceAccountService/CreateServiceAccount:
     post:
       tags:
@@ -9286,6 +9637,56 @@ components:
       type: object
       title: BatchUpdateIssuesStatusResponse
       additionalProperties: false
+    bytebase.v1.BatchUpdateSavedQueryOrganizerRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource whose saved queries' organizers are updated.
+             Format: projects/{project}
+        filter:
+          type: string
+          title: filter
+          description: |-
+            To filter the batch update target.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
+             - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
+             - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
+             - folder: the saved query organizer folder path, support exact "==" operator.
+        organizer:
+          title: organizer
+          description: The organizer fields to update.
+          $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
+        updateMask:
+          title: update_mask
+          description: |-
+            The list of fields to be updated.
+             Fields are specified relative to the saved query organizer.
+             Only support update the following fields for now:
+             - `starred`
+             - `folders`
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: BatchUpdateSavedQueryOrganizerRequest
+      additionalProperties: false
+    bytebase.v1.BatchUpdateSavedQueryOrganizerResponse:
+      type: object
+      properties:
+        savedQueryOrganizers:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
+          title: saved_query_organizers
+        updatedCount:
+          type: integer
+          title: updated_count
+          format: int32
+      title: BatchUpdateSavedQueryOrganizerResponse
+      additionalProperties: false
     bytebase.v1.BatchUpdateWorksheetOrganizerRequest:
       type: object
       properties:
@@ -10161,6 +10562,21 @@ components:
              If unspecified, all stages are created.
              If set to "", no stages are created.
       title: CreateRolloutRequest
+      additionalProperties: false
+    bytebase.v1.CreateSavedQueryRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource where this saved query will be created.
+             Format: projects/{project}
+        savedQuery:
+          title: saved_query
+          description: The saved query to create.
+          $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+      title: CreateSavedQueryRequest
       additionalProperties: false
     bytebase.v1.CreateServiceAccountRequest:
       type: object
@@ -11186,6 +11602,17 @@ components:
             The name of the role to delete.
              Format: roles/{role}
       title: DeleteRoleRequest
+      additionalProperties: false
+    bytebase.v1.DeleteSavedQueryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the saved query to delete.
+             Format: projects/{project}/savedQueries/{savedQuery}
+      title: DeleteSavedQueryRequest
       additionalProperties: false
     bytebase.v1.DeleteServiceAccountRequest:
       type: object
@@ -12293,6 +12720,17 @@ components:
              This is the rollout resource name, which is the plan name plus /rollout suffix.
              Format: projects/{project}/plans/{plan}/rollout
       title: GetRolloutRequest
+      additionalProperties: false
+    bytebase.v1.GetSavedQueryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the saved query to retrieve.
+             Format: projects/{project}/savedQueries/{savedQuery}
+      title: GetSavedQueryRequest
       additionalProperties: false
     bytebase.v1.GetSchemaStringRequest:
       type: object
@@ -14455,6 +14893,89 @@ components:
             A token, which can be sent as `page_token` to retrieve the next page.
              If this field is omitted, there are no subsequent pages.
       title: ListRolloutsResponse
+      additionalProperties: false
+    bytebase.v1.ListSavedQueriesRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource of the saved queries.
+             Format: projects/{project}
+             Use "projects/-" to list saved queries across all projects.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            To filter the list result.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
+
+             For example:
+             creator == "users/{email}"
+             creator != "users/{email}"
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: |-
+            The maximum number of saved queries to return. The service may return fewer than
+             this value.
+             If unspecified, at most 10 saved queries will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            A page token, received from a previous `ListSavedQueries` call.
+             Provide this to retrieve the subsequent page.
+
+             When paginating, all other parameters provided to `ListSavedQueries` must match
+             the call that provided the page token.
+      title: ListSavedQueriesRequest
+      additionalProperties: false
+    bytebase.v1.ListSavedQueriesResponse:
+      type: object
+      properties:
+        savedQueries:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+          title: saved_queries
+          description: The saved queries from the specified parent.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token to retrieve next page of saved queries.
+             Pass this value in the page_token field in the subsequent call to
+             `ListSavedQueries` method to retrieve the next page of saved queries.
+      title: ListSavedQueriesResponse
+      additionalProperties: false
+    bytebase.v1.ListSavedQueryFoldersRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource of the saved query folders.
+             Format: projects/{project}
+      title: ListSavedQueryFoldersRequest
+      additionalProperties: false
+    bytebase.v1.ListSavedQueryFoldersResponse:
+      type: object
+      properties:
+        folders:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.SavedQueryFolder'
+          title: folders
+          description: The caller's saved query folders.
+      title: ListSavedQueryFoldersResponse
       additionalProperties: false
     bytebase.v1.ListServiceAccountsRequest:
       type: object
@@ -17676,6 +18197,116 @@ components:
         - BUILTIN_WALK_THROUGH_CHECK
         - STATEMENT_DISALLOW_TRUNCATE
         - BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+    bytebase.v1.SavedQuery:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the saved query resource, generated by the server.
+             Canonical parent is project.
+             Format: projects/{project}/savedQueries/{savedQuery}
+        project:
+          type: string
+          title: project
+          description: |-
+            The project resource name.
+             Format: projects/{project}
+        database:
+          type: string
+          title: database
+          description: |-
+            The database resource name.
+             Format: instances/{instance}/databases/{database}
+             If the database parent doesn't exist, the database field is empty.
+        title:
+          type: string
+          title: title
+          maxLength: 200
+          description: The title of the saved query.
+        creator:
+          type: string
+          title: creator
+          description: |-
+            The creator of the SavedQuery.
+             Format: users/{email}
+        createTime:
+          title: create_time
+          description: The create time of the saved query.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        updateTime:
+          title: update_time
+          description: The last update time of the saved query.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        content:
+          type: string
+          title: content
+          format: byte
+          description: |-
+            The content of the saved query.
+             By default, it will be cut off in SearchSavedQueries() method. If it doesn't match the `content_size`, you can
+             use GetSavedQuery() request to retrieve the full content.
+        contentSize:
+          type:
+            - integer
+            - string
+          title: content_size
+          format: int64
+          description: content_size is the full size of the content, may not match the size of the `content` field.
+        starred:
+          type: boolean
+          title: starred
+          description: starred indicates whether the saved query is starred by the current authenticated user.
+        folders:
+          type: array
+          items:
+            type: string
+          title: folders
+      title: SavedQuery
+      additionalProperties: false
+    bytebase.v1.SavedQueryFolder:
+      type: object
+      properties:
+        folders:
+          type: array
+          items:
+            type: string
+          title: folders
+          description: The folder path segments.
+        category:
+          title: category
+          description: The folder category.
+          $ref: '#/components/schemas/bytebase.v1.SavedQueryFolder.Category'
+      title: SavedQueryFolder
+      additionalProperties: false
+    bytebase.v1.SavedQueryFolder.Category:
+      type: string
+      title: Category
+      enum:
+        - CATEGORY_UNSPECIFIED
+        - MINE
+        - SHARED
+    bytebase.v1.SavedQueryOrganizer:
+      type: object
+      properties:
+        savedQuery:
+          type: string
+          title: saved_query
+          description: |-
+            The name of the saved query.
+             Format: projects/{project}/savedQueries/{savedQuery}
+        starred:
+          type: boolean
+          title: starred
+          description: starred means if the saved query is starred.
+        folders:
+          type: array
+          items:
+            type: string
+          title: folders
+      title: SavedQueryOrganizer
+      additionalProperties: false
     bytebase.v1.SchemaCatalog:
       type: object
       properties:
@@ -18138,6 +18769,71 @@ components:
              Pass this value in the page_token field in the subsequent call to
              `ListQueryHistory` method to retrieve the next page of history.
       title: SearchQueryHistoriesResponse
+      additionalProperties: false
+    bytebase.v1.SearchSavedQueriesRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource of the saved queries.
+             Format: projects/{project}
+        filter:
+          type: string
+          title: filter
+          description: |-
+            To filter the search result.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
+             - title: the saved query title, support "contains" operator.
+             - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
+             - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
+             - folder: the saved query organizer folder path, support "==" operator.
+
+             For example:
+             creator == "users/{email}"
+             title.contains("saved query title")
+             creator != "users/{email}"
+             starred == true
+             starred == false
+             folder == "foo/bar"
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: |-
+            The maximum number of saved queries to return. The service may return fewer than
+             this value.
+             If unspecified, at most 10 saved queries will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            A page token, received from a previous `SearchSavedQueries` call.
+             Provide this to retrieve the subsequent page.
+      title: SearchSavedQueriesRequest
+      additionalProperties: false
+    bytebase.v1.SearchSavedQueriesResponse:
+      type: object
+      properties:
+        savedQueries:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+          title: saved_queries
+          description: The saved queries that matched the search criteria.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token to retrieve next page of saved queries.
+             Pass this value in the page_token field in the subsequent call to
+             `SearchSavedQueries` method to retrieve the next page of saved queries.
+      title: SearchSavedQueriesResponse
       additionalProperties: false
     bytebase.v1.SearchWorksheetsRequest:
       type: object
@@ -20518,6 +21214,57 @@ components:
              In this situation, `update_mask` is ignored.
       title: UpdateRoleRequest
       additionalProperties: false
+    bytebase.v1.UpdateSavedQueryOrganizerRequest:
+      type: object
+      properties:
+        organizer:
+          title: organizer
+          description: |-
+            The organizer to update.
+
+             The organizer's `saved_query` field is used to identify the saved query.
+             Format: projects/{project}/savedQueries/{savedQuery}
+          $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
+        updateMask:
+          title: update_mask
+          description: |-
+            The list of fields to be updated.
+             Fields are specified relative to the saved query organizer.
+             Only support update the following fields for now:
+             - `starred`
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+        allowMissing:
+          type: boolean
+          title: allow_missing
+          description: |-
+            If set to true, and the saved query organizer is not found, a new saved query organizer will be created.
+             In this situation, `update_mask` is ignored.
+      title: UpdateSavedQueryOrganizerRequest
+      additionalProperties: false
+    bytebase.v1.UpdateSavedQueryRequest:
+      type: object
+      properties:
+        savedQuery:
+          title: saved_query
+          description: |-
+            The saved query to update.
+
+             The saved query's `name` field is used to identify the saved query to update.
+             Format: projects/{project}/savedQueries/{savedQuery}
+          $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+        updateMask:
+          title: update_mask
+          description: |-
+            The list of fields to be updated.
+             Fields are specified relative to the saved query.
+             (e.g., `title`, `content`; *not* `saved_query.title` or `saved_query.content`)
+             Only support update the following fields for now:
+             - `title`
+             - `content`
+             - `database`
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: UpdateSavedQueryRequest
+      additionalProperties: false
     bytebase.v1.UpdateServiceAccountRequest:
       type: object
       properties:
@@ -22790,6 +23537,11 @@ tags:
     description: RevisionService manages schema revision history.
   - name: bytebase.v1.RoleService
     description: RoleService manages workspace roles and permissions.
+  - name: bytebase.v1.SavedQueryService
+    description: |-
+      SavedQueryService manages saved queries for SQL Editor query development.
+       Permission IDs still use the legacy `bb.worksheets.*` names; they are
+       renamed together with the access-model redesign and its role migration.
   - name: bytebase.v1.ServiceAccountService
     description: ServiceAccountService manages service accounts for API integrations.
   - name: bytebase.v1.SheetService

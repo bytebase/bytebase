@@ -7,7 +7,7 @@ import { TabItem } from "./TabItem";
 
 /**
  * Left gutter of the SQL Editor aside panel. Shows 4 tab buttons
- * (WORKSHEET, SCHEMA, HISTORY, and optionally ACCESS when the current
+ * (SAVED_QUERY, SCHEMA, HISTORY, and optionally ACCESS when the current
  * project allows JIT).
  *
  * Replaces frontend/src/views/sql-editor/AsidePanel/GutterBar/GutterBar.vue.
@@ -22,7 +22,7 @@ export function GutterBar() {
 
   useEffect(() => {
     if (asidePanelTab === "ACCESS" && !project?.allowJustInTimeAccess) {
-      setAsidePanelTab("WORKSHEET");
+      setAsidePanelTab("SAVED_QUERY");
     }
   }, [asidePanelTab, project?.allowJustInTimeAccess, setAsidePanelTab]);
 
@@ -33,7 +33,10 @@ export function GutterBar() {
   return (
     <div className="h-full flex flex-col items-stretch justify-between overflow-hidden text-sm p-1">
       <div className="flex flex-col gap-y-1">
-        <TabItem tab="WORKSHEET" onClick={() => handleClickTab("WORKSHEET")} />
+        <TabItem
+          tab="SAVED_QUERY"
+          onClick={() => handleClickTab("SAVED_QUERY")}
+        />
         <TabItem tab="SCHEMA" onClick={() => handleClickTab("SCHEMA")} />
         <TabItem tab="HISTORY" onClick={() => handleClickTab("HISTORY")} />
         {project?.allowJustInTimeAccess && (

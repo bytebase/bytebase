@@ -1,21 +1,17 @@
 import { create } from "@bufbuild/protobuf";
 import { isUndefined } from "lodash-es";
-import { extractWorksheetConnection } from "@/lib/sqlEditorConnection";
+import { extractSavedQueryConnection } from "@/lib/sqlEditorConnection";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
-import { openWorksheetByName } from "@/modules/sql-editor/model/Sheet";
+import { openSavedQueryByName } from "@/modules/sql-editor/model/Sheet";
 import { useAppStore } from "@/stores/app";
 import { isValidProjectName } from "@/types";
-import {
-  type Worksheet,
-  Worksheet_Visibility,
-  WorksheetSchema,
-} from "@/types/proto-es/v1/worksheet_service_pb";
+import { SavedQuerySchema } from "@/types/proto-es/v1/saved_query_service_pb";
 import { getSQLEditorEditorState } from "./editor";
 import { getSQLEditorTabsState } from "./tab";
-import type { SQLEditorSliceCreator, WorksheetSaveSlice } from "./types";
+import type { SavedQuerySaveSlice, SQLEditorSliceCreator } from "./types";
 
-export const createWorksheetSaveSlice: SQLEditorSliceCreator<
-  WorksheetSaveSlice
+export const createSavedQuerySaveSlice: SQLEditorSliceCreator<
+  SavedQuerySaveSlice
 > = (set, get) => ({
   autoSaveController: null,
 
@@ -62,9 +58,9 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
     }
   },
 
-  maybeUpdateWorksheet: async ({
+  maybeUpdateSavedQuery: async ({
     tabId,
-    worksheet,
+    savedQuery,
     title,
     database,
     statement,
@@ -72,13 +68,12 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
     signal,
   }) => {
     const tabStore = getSQLEditorTabsState();
-    const worksheetStore = useAppStore.getState();
+    const savedQueryStore = useAppStore.getState();
 
-    const connection = await extractWorksheetConnection({ database });
+    const connection = await extractSavedQueryConnection({ database });
     const currentTab = tabStore.tabsById.get(tabId);
     const nextConnection =
-      currentTab &&
-      currentTab.connection.instance === connection.instance &&
+      currentTab?.connection.instance === connection.instance &&
       currentTab.connection.database === connection.database
         ? { ...currentTab.connection, ...connection }
         : connection;
@@ -87,19 +82,19 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
     // the current title on auto-save calls that never pass one.
     // `title === ""` is a real, explicit empty title that should be
     // persisted (renders as the Untitled placeholder elsewhere).
-    const currentSheet = worksheet
-      ? worksheetStore.getWorksheetByName(worksheet)
+    const currentSheet = savedQuery
+      ? savedQueryStore.getSavedQueryByName(savedQuery)
       : undefined;
-    if (worksheet && !currentSheet) {
+    if (savedQuery && !currentSheet) {
       return;
     }
-    const worksheetTitle = title ?? currentSheet?.title ?? "";
+    const savedQueryTitle = title ?? currentSheet?.title ?? "";
 
-    if (worksheet && currentSheet) {
-      const updated = await worksheetStore.patchWorksheet(
+    if (savedQuery && currentSheet) {
+      const updated = await savedQueryStore.patchSavedQuery(
         {
           ...currentSheet,
-          title: worksheetTitle,
+          title: savedQueryTitle,
           database,
           content: new TextEncoder().encode(statement),
         },
@@ -110,9 +105,9 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
         return;
       }
       if (!isUndefined(folders)) {
-        await worksheetStore.upsertWorksheetOrganizer(
+        await savedQueryStore.upsertSavedQueryOrganizer(
           {
-            worksheet: updated.name,
+            savedQuery: updated.name,
             folders: folders,
           },
           ["folders"]
@@ -123,12 +118,12 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
     return tabStore.updateTab(tabId, {
       status: "CLEAN",
       connection: nextConnection,
-      title: worksheetTitle,
-      worksheet,
+      title: savedQueryTitle,
+      savedQuery,
     });
   },
 
-  createWorksheet: async ({
+  createSavedQuery: async ({
     tabId,
     title,
     statement = "",
@@ -137,25 +132,24 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
   }) => {
     const editorStore = getSQLEditorEditorState();
     const tabStore = getSQLEditorTabsState();
-    const worksheetStore = useAppStore.getState();
+    const savedQueryStore = useAppStore.getState();
 
-    const worksheetTitle = title ?? "";
-    const connection = await extractWorksheetConnection({ database });
+    const savedQueryTitle = title ?? "";
+    const connection = await extractSavedQueryConnection({ database });
 
-    const newWorksheet = await worksheetStore.createWorksheet(
-      create(WorksheetSchema, {
-        title: worksheetTitle,
+    const newSavedQuery = await savedQueryStore.createSavedQuery(
+      create(SavedQuerySchema, {
+        title: savedQueryTitle,
         database,
         content: new TextEncoder().encode(statement),
         project: editorStore.project,
-        visibility: Worksheet_Visibility.PRIVATE,
       })
     );
 
     if (folders.length > 0) {
-      await worksheetStore.upsertWorksheetOrganizer(
+      await savedQueryStore.upsertSavedQueryOrganizer(
         {
-          worksheet: newWorksheet.name,
+          savedQuery: newSavedQuery.name,
           folders: folders,
         },
         ["folders"]
@@ -165,15 +159,15 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
     if (tabId) {
       return tabStore.updateTab(tabId, {
         status: "CLEAN",
-        title: worksheetTitle,
+        title: savedQueryTitle,
         statement,
         connection,
-        worksheet: newWorksheet.name,
+        savedQuery: newSavedQuery.name,
       });
     }
 
-    const tab = await openWorksheetByName({
-      worksheet: newWorksheet.name,
+    const tab = await openSavedQueryByName({
+      savedQuery: newSavedQuery.name,
       forceNewTab: true,
     });
     queueMicrotask(() => {
@@ -188,6 +182,6 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
   },
 });
 
-// Re-export the Worksheet proto type so callers don't have to plumb the
+// Re-export the SavedQuery proto type so callers don't have to plumb the
 // proto path themselves.
-export type { Worksheet };
+export type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";

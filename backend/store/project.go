@@ -496,52 +496,38 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrapf(err, "failed to delete policy for project %s", resourceID)
 	}
 
-	// Delete worksheet_organizer entries referencing project principals.
-	q = qb.Q().Space(`DELETE FROM worksheet_organizer
+	// Delete saved_query_organizer entries referencing project principals.
+	q = qb.Q().Space(`DELETE FROM saved_query_organizer
 		WHERE principal IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
 		   OR principal IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
-		return errors.Wrap(err, "failed to build worksheet_organizer delete query")
+		return errors.Wrap(err, "failed to build saved_query_organizer delete query")
 	}
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete worksheet_organizer for project %s", resourceID)
+		return errors.Wrapf(err, "failed to delete saved_query_organizer for project %s", resourceID)
 	}
 
-	// Clear project-instance references before deleting their instances.
-	q = qb.Q().Space(`
-		UPDATE worksheet
-		SET instance = NULL, db_name = NULL
-		WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)
-	`, resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build project instance worksheet update query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to update worksheets for project instances in project %s", resourceID)
-	}
-
-	// Delete worksheets created by project service accounts or workload identities.
-	q = qb.Q().Space(`DELETE FROM worksheet
+	// Delete saved queries created by project service accounts or workload identities.
+	q = qb.Q().Space(`DELETE FROM saved_query
 		WHERE creator IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
 		   OR creator IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
-		return errors.Wrap(err, "failed to build worksheet delete query for principals")
+		return errors.Wrap(err, "failed to build saved query delete query for principals")
 	}
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete worksheets for project principals %s", resourceID)
+		return errors.Wrapf(err, "failed to delete saved queries for project principals %s", resourceID)
 	}
 
-	// Reassign remaining worksheets associated with this project.
-	q = qb.Q().Space("UPDATE worksheet SET project = ? WHERE project = ?", defaultProjectID, resourceID)
+	// Reassign remaining saved queries associated with this project.
+	q = qb.Q().Space("UPDATE saved_query SET project = ? WHERE project = ?", defaultProjectID, resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
-		return errors.Wrap(err, "failed to build worksheet update query")
+		return errors.Wrap(err, "failed to build saved query update query")
 	}
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to update worksheets for project %s", resourceID)
+		return errors.Wrapf(err, "failed to update saved queries for project %s", resourceID)
 	}
 
 	// Delete issue_comment entries for issues in this project

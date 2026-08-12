@@ -10,7 +10,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   useSQLEditorStore: vi.fn(),
-  currentAsidePanelTab: "WORKSHEET" as string,
+  currentAsidePanelTab: "SAVED_QUERY" as string,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -49,7 +49,7 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.currentAsidePanelTab = "WORKSHEET";
+  mocks.currentAsidePanelTab = "SAVED_QUERY";
   mocks.useSQLEditorStore.mockImplementation(
     (selector: (s: { asidePanelTab: string }) => unknown) =>
       selector({ asidePanelTab: mocks.currentAsidePanelTab })
@@ -58,12 +58,12 @@ beforeEach(async () => {
 });
 
 describe("TabItem", () => {
-  test("renders label for WORKSHEET tab", () => {
+  test("renders label for SAVED_QUERY tab", () => {
     const { container, render, unmount } = renderIntoContainer(
-      <TabItem tab="WORKSHEET" onClick={() => {}} />
+      <TabItem tab="SAVED_QUERY" onClick={() => {}} />
     );
     render();
-    expect(container.textContent).toContain("worksheet.self");
+    expect(container.textContent).toContain("saved-query.self");
     expect(container.querySelector("button")).not.toBeNull();
     unmount();
   });
@@ -109,7 +109,7 @@ describe("TabItem", () => {
   });
 
   test("does NOT apply active class when asidePanelTab differs", () => {
-    mocks.currentAsidePanelTab = "WORKSHEET";
+    mocks.currentAsidePanelTab = "SAVED_QUERY";
     const { container, render, unmount } = renderIntoContainer(
       <TabItem tab="SCHEMA" onClick={() => {}} />
     );

@@ -25,6 +25,7 @@ export const behaviorMetricDefinitions = new Map([
   ["connect database clicked", {}],
   ["instance connection test clicked", {}],
   ["instance create clicked", {}],
+  ["locked feature clicked", {}],
   ["setup guide action clicked", {}],
   ["setup guide dismissed", {}],
   ["post sync first change clicked", {}],

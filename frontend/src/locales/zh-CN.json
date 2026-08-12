@@ -489,7 +489,6 @@
     "view": "查看",
     "view-details": "查看详情",
     "view-doc": "查看文档",
-    "visibility": "可见性",
     "want-help": "需要帮助",
     "warning": "警告",
     "webhooks": "Webhook",
@@ -2157,6 +2156,9 @@
     },
     "task-execution-errors": "任务执行错误"
   },
+  "saved-query": {
+    "self": "已保存的查询"
+  },
   "schema-diagram": {
     "fit-content-with-view": "自动适应视图",
     "self": "Schema 关系图"
@@ -2871,23 +2873,23 @@
       "show-shared": "显示共享"
     },
     "hint-tips": {
-      "confirm-multi-delete-content": "选中的工作表和文件夹将被永久删除。",
+      "confirm-multi-delete-content": "选中的已保存查询和文件夹将被永久删除。",
       "confirm-multi-delete-title": "删除选中的项目？",
-      "confirm-to-delete-sheet-title": "确认删除此工作表？",
-      "confirm-to-duplicate-sheet": "确定要复制这条工作表?",
-      "delete-all-sheets": "删除所有文件",
-      "duplicate-folder-name-content": "是否要将所有子文件夹和文件合并到现有文件夹“{{folder}}”中？",
+      "confirm-to-delete-sheet-title": "确定要删除此查询吗？",
+      "confirm-to-duplicate-sheet": "确定要复制此查询吗？",
+      "delete-all-sheets": "全部删除",
+      "duplicate-folder-name-content": "是否要将所有子文件夹和已保存查询合并到现有文件夹“{{folder}}”中？",
       "duplicate-folder-name-title": "重复的文件夹名称",
       "move-to-root-folder": "移动到根文件夹",
-      "non-empty-folder-content": "您是想将所有工作表移动到根文件夹，还是直接删除它们？",
+      "non-empty-folder-content": "您是想将所有已保存查询移动到根文件夹，还是直接删除它们？",
       "non-empty-folder-title": "非空文件夹"
     },
     "mine": "我的",
-    "move-worksheets": "移动工作表",
+    "move-saved-queries": "移动已保存的查询",
     "notifications": {
-      "duplicate-success": "已成功拷贝至“我的工作表”"
+      "duplicate-success": "查询已复制"
     },
-    "search-sheets": "搜索工作表",
+    "search-sheets": "搜索已保存的查询",
     "shared": "共享的"
   },
   "sql-editor": {
@@ -2946,7 +2948,7 @@
     "choose-folder": "选择或创建文件夹",
     "choose-folder-tips": "您可以通过输入不存在的路径来创建新文件夹。文件夹之间应以\"/\"连接。",
     "click-to-sync-now": "点击立即同步",
-    "close-sheet": "关闭工作表",
+    "close-sheet": "关闭标签页",
     "column-display-format": "列显示格式",
     "connect-in-admin-mode": "以管理员模式连接",
     "connect-to-a-database": "连接数据库",
@@ -2983,13 +2985,12 @@
     "hex-format": "十六进制格式",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
-        "content": "关闭当前工作表会丢失所有未保存的数据？",
-        "title": "确定关闭未保存的工作表？"
+        "content": "关闭标签页会丢失所有未保存的更改？",
+        "title": "确定关闭未保存的标签页？"
       }
     },
     "invalid-database": "数据库 {{database}} 无效",
     "last-synced": "上次同步时间：<time></time>",
-    "link-access": "链接访问权限",
     "loading-data": "加载数据中...",
     "loading-databases": "加载数据库信息...",
     "manage-connections": "管理连接",
@@ -3006,12 +3007,6 @@
     "pending-query": "待处理查询",
     "preview-table-data": "预览表数据",
     "previous-row": "上一行",
-    "private": "私有",
-    "private-desc": "只有您自己可以访问此工作表",
-    "project-read": "项目内可读",
-    "project-read-desc": "工作表所有者和具有\"bb.worksheets.manage\"权限的用户都可以读/写，具有\"bb.worksheets.get\"权限的其他项目用户可以读取",
-    "project-write": "项目内读写",
-    "project-write-desc": "工作表所有者和具有\"bb.worksheets.get\"权限的项目用户都可以读/写",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "禁止查询主数据源。"
     },
@@ -3042,7 +3037,7 @@
     },
     "rows-affected": "行受影响",
     "rows-upper-limit": "到达查询结果条数上限",
-    "save-sheet": "保存工作表",
+    "save-sheet": "保存查询",
     "scroll-to-bottom": "滚动到底部",
     "scroll-to-top": "滚动到顶部",
     "search-history-by-statement": "搜索 SQL 语句",
@@ -3061,7 +3056,7 @@
       "context-menu": {
         "actions": {
           "add-folder": "添加文件夹",
-          "add-worksheet": "添加工作表",
+          "add-saved-query": "新建查询",
           "close": "关闭",
           "close-all": "关闭所有",
           "close-others": "关闭其他",
@@ -3071,14 +3066,14 @@
           "rename": "重命名"
         }
       },
-      "unsaved-worksheet": "您有未保存的工作表。"
+      "unsaved-changes": "您有未保存的更改。"
     },
     "table-empty-placeholder": "点击 \"运行\" 执行查询",
     "table-view": "表格视图",
     "text-format": "文本格式",
     "unable-to-connect-database": "无法连接到数据库 {{name}}",
     "upload-file": "上传文件",
-    "url-copied-to-clipboard": "URL 已复制到剪贴板",
+    "url-copied-to-clipboard": "链接已复制到剪贴板",
     "vertical-display": "竖向展示",
     "view-database-detail": "查看数据库详情",
     "view-detail": "查看详情",
@@ -3392,9 +3387,6 @@
       "description": "复制密钥并在您的应用程序中手动输入。",
       "self": "双重认证密钥"
     }
-  },
-  "worksheet": {
-    "self": "工作表"
   },
   "workspace-setup-guide": {
     "actions": {

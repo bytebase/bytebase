@@ -13684,6 +13684,818 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListRolloutsResponse'
+  /v1/projects/{project}/savedQueries:
+    get:
+      tags:
+        - SavedQueryService
+      summary: ListSavedQueries
+      description: |-
+        List saved queries.
+         This is used for listing saved queries in a project, or across all projects by using `projects/-`.
+         Permissions required: bb.worksheets.list
+      operationId: SavedQueryService_ListSavedQueries
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: filter
+          in: query
+          description: |-
+            To filter the list result.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
+
+             For example:
+             creator == "users/{email}"
+             creator != "users/{email}"
+          schema:
+            type: string
+            title: filter
+        - name: pageSize
+          in: query
+          description: |-
+            The maximum number of saved queries to return. The service may return fewer than
+             this value.
+             If unspecified, at most 10 saved queries will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+          schema:
+            type: integer
+            title: page_size
+            format: int32
+        - name: pageToken
+          in: query
+          description: |-
+            A page token, received from a previous `ListSavedQueries` call.
+             Provide this to retrieve the subsequent page.
+
+             When paginating, all other parameters provided to `ListSavedQueries` must match
+             the call that provided the page token.
+          schema:
+            type: string
+            title: page_token
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListSavedQueriesResponse'
+    post:
+      tags:
+        - SavedQueryService
+      summary: CreateSavedQuery
+      description: |-
+        Creates a personal saved query used in SQL Editor. Any authenticated user can create their own saved queries.
+         Permissions required: None (authenticated users only)
+      operationId: SavedQueryService_CreateSavedQuery
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: The saved query to create.
+        content:
+          application/json:
+            schema:
+              title: saved_query
+              description: The saved query to create.
+              $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+  /v1/projects/{project}/savedQueries/organizers:batchUpdate:
+    post:
+      tags:
+        - SavedQueryService
+      summary: BatchUpdateSavedQueryOrganizer
+      description: |-
+        Batch update the organizers of saved queries.
+         The access is the same as UpdateSavedQuery method.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: SavedQueryService_BatchUpdateSavedQueryOrganizer
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filter:
+                  type: string
+                  title: filter
+                  description: |-
+                    To filter the batch update target.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+                     Supported filter:
+                     - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
+                     - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
+                     - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
+                     - folder: the saved query organizer folder path, support exact "==" operator.
+                organizer:
+                  title: organizer
+                  description: The organizer fields to update.
+                  $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
+                updateMask:
+                  title: update_mask
+                  description: |-
+                    The list of fields to be updated.
+                     Fields are specified relative to the saved query organizer.
+                     Only support update the following fields for now:
+                     - `starred`
+                     - `folders`
+                  $ref: '#/components/schemas/google.protobuf.FieldMask'
+              title: BatchUpdateSavedQueryOrganizerRequest
+              required:
+                - organizer
+                - updateMask
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.BatchUpdateSavedQueryOrganizerResponse'
+  /v1/projects/{project}/savedQueries/{savedQuery}:
+    get:
+      tags:
+        - SavedQueryService
+      summary: GetSavedQuery
+      description: |-
+        Get a saved query by name.
+         Saved queries are private: only the creator, or a caller holding
+         bb.worksheets.manage on the workspace, can access one.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: SavedQueryService_GetSavedQuery
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: savedQuery
+          in: path
+          description: The savedQuery id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+    delete:
+      tags:
+        - SavedQueryService
+      summary: DeleteSavedQuery
+      description: |-
+        Delete a saved query.
+         The access is the same as UpdateSavedQuery method.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: SavedQueryService_DeleteSavedQuery
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: savedQuery
+          in: path
+          description: The savedQuery id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+    patch:
+      tags:
+        - SavedQueryService
+      summary: UpdateSavedQuery
+      description: |-
+        Update a saved query.
+         The access is the same as GetSavedQuery method.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: SavedQueryService_UpdateSavedQuery
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: savedQuery
+          in: path
+          description: The savedQuery id.
+          required: true
+          schema:
+            type: string
+        - name: updateMask
+          in: query
+          description: |-
+            `FieldMask` represents a set of symbolic field paths, for example:
+
+                 paths: "f.a"
+                 paths: "f.b.d"
+
+             Here `f` represents a field in some root message, `a` and `b`
+             fields in the message found in `f`, and `d` a field found in the
+             message in `f.b`.
+
+             Field masks are used to specify a subset of fields that should be
+             returned by a get operation or modified by an update operation.
+             Field masks also have a custom JSON encoding (see below).
+
+             # Field Masks in Projections
+
+             When used in the context of a projection, a response message or
+             sub-message is filtered by the API to only contain those fields as
+             specified in the mask. For example, if the mask in the previous
+             example is applied to a response message as follows:
+
+                 f {
+                   a : 22
+                   b {
+                     d : 1
+                     x : 2
+                   }
+                   y : 13
+                 }
+                 z: 8
+
+             The result will not contain specific values for fields x,y and z
+             (their value will be set to the default, and omitted in proto text
+             output):
+
+
+                 f {
+                   a : 22
+                   b {
+                     d : 1
+                   }
+                 }
+
+             A repeated field is not allowed except at the last position of a
+             paths string.
+
+             If a FieldMask object is not present in a get operation, the
+             operation applies to all fields (as if a FieldMask of all fields
+             had been specified).
+
+             Note that a field mask does not necessarily apply to the
+             top-level response message. In case of a REST get operation, the
+             field mask applies directly to the response, but in case of a REST
+             list operation, the mask instead applies to each individual message
+             in the returned resource list. In case of a REST custom method,
+             other definitions may be used. Where the mask applies will be
+             clearly documented together with its declaration in the API.  In
+             any case, the effect on the returned resource/resources is required
+             behavior for APIs.
+
+             # Field Masks in Update Operations
+
+             A field mask in update operations specifies which fields of the
+             targeted resource are going to be updated. The API is required
+             to only change the values of the fields as specified in the mask
+             and leave the others untouched. If a resource is passed in to
+             describe the updated values, the API ignores the values of all
+             fields not covered by the mask.
+
+             If a repeated field is specified for an update operation, new values will
+             be appended to the existing repeated field in the target resource. Note that
+             a repeated field is only allowed in the last position of a `paths` string.
+
+             If a sub-message is specified in the last position of the field mask for an
+             update operation, then new value will be merged into the existing sub-message
+             in the target resource.
+
+             For example, given the target message:
+
+                 f {
+                   b {
+                     d: 1
+                     x: 2
+                   }
+                   c: [1]
+                 }
+
+             And an update message:
+
+                 f {
+                   b {
+                     d: 10
+                   }
+                   c: [2]
+                 }
+
+             then if the field mask is:
+
+              paths: ["f.b", "f.c"]
+
+             then the result will be:
+
+                 f {
+                   b {
+                     d: 10
+                     x: 2
+                   }
+                   c: [1, 2]
+                 }
+
+             An implementation may provide options to override this default behavior for
+             repeated and message fields.
+
+             In order to reset a field's value to the default, the field must
+             be in the mask and set to the default value in the provided resource.
+             Hence, in order to reset all fields of a resource, provide a default
+             instance of the resource and set all fields in the mask, or do
+             not provide a mask as described below.
+
+             If a field mask is not present on update, the operation applies to
+             all fields (as if a field mask of all fields has been specified).
+             Note that in the presence of schema evolution, this may mean that
+             fields the client does not know and has therefore not filled into
+             the request will be reset to their default. If this is unwanted
+             behavior, a specific service may require a client to always specify
+             a field mask, producing an error if not.
+
+             As with get operations, the location of the resource which
+             describes the updated values in the request message depends on the
+             operation kind. In any case, the effect of the field mask is
+             required to be honored by the API.
+
+             ## Considerations for HTTP REST
+
+             The HTTP kind of an update operation which uses a field mask must
+             be set to PATCH instead of PUT in order to satisfy HTTP semantics
+             (PUT must only be used for full updates).
+
+             # JSON Encoding of Field Masks
+
+             In JSON, a field mask is encoded as a single string where paths are
+             separated by a comma. Fields name in each path are converted
+             to/from lower-camel naming conventions.
+
+             As an example, consider the following message declarations:
+
+                 message Profile {
+                   User user = 1;
+                   Photo photo = 2;
+                 }
+                 message User {
+                   string display_name = 1;
+                   string address = 2;
+                 }
+
+             In proto a field mask for `Profile` may look as such:
+
+                 mask {
+                   paths: "user.display_name"
+                   paths: "photo"
+                 }
+
+             In JSON, the same mask is represented as below:
+
+                 {
+                   mask: "user.displayName,photo"
+                 }
+
+             # Field Masks and Oneof Fields
+
+             Field masks treat fields in oneofs just as regular fields. Consider the
+             following message:
+
+                 message SampleMessage {
+                   oneof test_oneof {
+                     string name = 4;
+                     SubMessage sub_message = 9;
+                   }
+                 }
+
+             The field mask can be:
+
+                 mask {
+                   paths: "name"
+                 }
+
+             Or:
+
+                 mask {
+                   paths: "sub_message"
+                 }
+
+             Note that oneof type names ("test_oneof" in this case) cannot be used in
+             paths.
+
+             ## Field Mask Verification
+
+             The implementation of any API method which has a FieldMask type field in the
+             request should verify the included field paths, and return an
+             `INVALID_ARGUMENT` error if any path is unmappable.
+          schema:
+            type: string
+      requestBody:
+        description: |-
+          The saved query to update.
+
+           The saved query's `name` field is used to identify the saved query to update.
+           Format: projects/{project}/savedQueries/{savedQuery}
+        content:
+          application/json:
+            schema:
+              title: saved_query
+              description: |-
+                The saved query to update.
+
+                 The saved query's `name` field is used to identify the saved query to update.
+                 Format: projects/{project}/savedQueries/{savedQuery}
+              $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+  /v1/projects/{project}/savedQueries/{savedQuery}/organizer:
+    patch:
+      tags:
+        - SavedQueryService
+      summary: UpdateSavedQueryOrganizer
+      description: |-
+        Update the organizer of a saved query.
+         The access is the same as UpdateSavedQuery method.
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: SavedQueryService_UpdateSavedQueryOrganizer
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: savedQuery
+          in: path
+          description: The savedQuery id.
+          required: true
+          schema:
+            type: string
+        - name: updateMask
+          in: query
+          description: |-
+            `FieldMask` represents a set of symbolic field paths, for example:
+
+                 paths: "f.a"
+                 paths: "f.b.d"
+
+             Here `f` represents a field in some root message, `a` and `b`
+             fields in the message found in `f`, and `d` a field found in the
+             message in `f.b`.
+
+             Field masks are used to specify a subset of fields that should be
+             returned by a get operation or modified by an update operation.
+             Field masks also have a custom JSON encoding (see below).
+
+             # Field Masks in Projections
+
+             When used in the context of a projection, a response message or
+             sub-message is filtered by the API to only contain those fields as
+             specified in the mask. For example, if the mask in the previous
+             example is applied to a response message as follows:
+
+                 f {
+                   a : 22
+                   b {
+                     d : 1
+                     x : 2
+                   }
+                   y : 13
+                 }
+                 z: 8
+
+             The result will not contain specific values for fields x,y and z
+             (their value will be set to the default, and omitted in proto text
+             output):
+
+
+                 f {
+                   a : 22
+                   b {
+                     d : 1
+                   }
+                 }
+
+             A repeated field is not allowed except at the last position of a
+             paths string.
+
+             If a FieldMask object is not present in a get operation, the
+             operation applies to all fields (as if a FieldMask of all fields
+             had been specified).
+
+             Note that a field mask does not necessarily apply to the
+             top-level response message. In case of a REST get operation, the
+             field mask applies directly to the response, but in case of a REST
+             list operation, the mask instead applies to each individual message
+             in the returned resource list. In case of a REST custom method,
+             other definitions may be used. Where the mask applies will be
+             clearly documented together with its declaration in the API.  In
+             any case, the effect on the returned resource/resources is required
+             behavior for APIs.
+
+             # Field Masks in Update Operations
+
+             A field mask in update operations specifies which fields of the
+             targeted resource are going to be updated. The API is required
+             to only change the values of the fields as specified in the mask
+             and leave the others untouched. If a resource is passed in to
+             describe the updated values, the API ignores the values of all
+             fields not covered by the mask.
+
+             If a repeated field is specified for an update operation, new values will
+             be appended to the existing repeated field in the target resource. Note that
+             a repeated field is only allowed in the last position of a `paths` string.
+
+             If a sub-message is specified in the last position of the field mask for an
+             update operation, then new value will be merged into the existing sub-message
+             in the target resource.
+
+             For example, given the target message:
+
+                 f {
+                   b {
+                     d: 1
+                     x: 2
+                   }
+                   c: [1]
+                 }
+
+             And an update message:
+
+                 f {
+                   b {
+                     d: 10
+                   }
+                   c: [2]
+                 }
+
+             then if the field mask is:
+
+              paths: ["f.b", "f.c"]
+
+             then the result will be:
+
+                 f {
+                   b {
+                     d: 10
+                     x: 2
+                   }
+                   c: [1, 2]
+                 }
+
+             An implementation may provide options to override this default behavior for
+             repeated and message fields.
+
+             In order to reset a field's value to the default, the field must
+             be in the mask and set to the default value in the provided resource.
+             Hence, in order to reset all fields of a resource, provide a default
+             instance of the resource and set all fields in the mask, or do
+             not provide a mask as described below.
+
+             If a field mask is not present on update, the operation applies to
+             all fields (as if a field mask of all fields has been specified).
+             Note that in the presence of schema evolution, this may mean that
+             fields the client does not know and has therefore not filled into
+             the request will be reset to their default. If this is unwanted
+             behavior, a specific service may require a client to always specify
+             a field mask, producing an error if not.
+
+             As with get operations, the location of the resource which
+             describes the updated values in the request message depends on the
+             operation kind. In any case, the effect of the field mask is
+             required to be honored by the API.
+
+             ## Considerations for HTTP REST
+
+             The HTTP kind of an update operation which uses a field mask must
+             be set to PATCH instead of PUT in order to satisfy HTTP semantics
+             (PUT must only be used for full updates).
+
+             # JSON Encoding of Field Masks
+
+             In JSON, a field mask is encoded as a single string where paths are
+             separated by a comma. Fields name in each path are converted
+             to/from lower-camel naming conventions.
+
+             As an example, consider the following message declarations:
+
+                 message Profile {
+                   User user = 1;
+                   Photo photo = 2;
+                 }
+                 message User {
+                   string display_name = 1;
+                   string address = 2;
+                 }
+
+             In proto a field mask for `Profile` may look as such:
+
+                 mask {
+                   paths: "user.display_name"
+                   paths: "photo"
+                 }
+
+             In JSON, the same mask is represented as below:
+
+                 {
+                   mask: "user.displayName,photo"
+                 }
+
+             # Field Masks and Oneof Fields
+
+             Field masks treat fields in oneofs just as regular fields. Consider the
+             following message:
+
+                 message SampleMessage {
+                   oneof test_oneof {
+                     string name = 4;
+                     SubMessage sub_message = 9;
+                   }
+                 }
+
+             The field mask can be:
+
+                 mask {
+                   paths: "name"
+                 }
+
+             Or:
+
+                 mask {
+                   paths: "sub_message"
+                 }
+
+             Note that oneof type names ("test_oneof" in this case) cannot be used in
+             paths.
+
+             ## Field Mask Verification
+
+             The implementation of any API method which has a FieldMask type field in the
+             request should verify the included field paths, and return an
+             `INVALID_ARGUMENT` error if any path is unmappable.
+          schema:
+            type: string
+        - name: allowMissing
+          in: query
+          description: |-
+            If set to true, and the saved query organizer is not found, a new saved query organizer will be created.
+             In this situation, `update_mask` is ignored.
+          schema:
+            type: boolean
+            title: allow_missing
+      requestBody:
+        description: |-
+          The organizer to update.
+
+           The organizer's `saved_query` field is used to identify the saved query.
+           Format: projects/{project}/savedQueries/{savedQuery}
+        content:
+          application/json:
+            schema:
+              title: organizer
+              description: |-
+                The organizer to update.
+
+                 The organizer's `saved_query` field is used to identify the saved query.
+                 Format: projects/{project}/savedQueries/{savedQuery}
+              $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
+  /v1/projects/{project}/savedQueries:search:
+    post:
+      tags:
+        - SavedQueryService
+      summary: SearchSavedQueries
+      description: |-
+        Search for saved queries.
+         This is used for finding my saved queries in a project.
+         The saved query accessibility is the same as GetSavedQuery().
+         Permissions required: creator, or workspace bb.worksheets.manage
+      operationId: SavedQueryService_SearchSavedQueries
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filter:
+                  type: string
+                  title: filter
+                  description: |-
+                    To filter the search result.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+                     Supported filter:
+                     - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
+                     - title: the saved query title, support "contains" operator.
+                     - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
+                     - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
+                     - folder: the saved query organizer folder path, support "==" operator.
+
+                     For example:
+                     creator == "users/{email}"
+                     title.contains("saved query title")
+                     creator != "users/{email}"
+                     starred == true
+                     starred == false
+                     folder == "foo/bar"
+                pageSize:
+                  type: integer
+                  title: page_size
+                  format: int32
+                  description: |-
+                    The maximum number of saved queries to return. The service may return fewer than
+                     this value.
+                     If unspecified, at most 10 saved queries will be returned.
+                     The maximum value is 1000; values above 1000 will be coerced to 1000.
+                pageToken:
+                  type: string
+                  title: page_token
+                  description: |-
+                    A page token, received from a previous `SearchSavedQueries` call.
+                     Provide this to retrieve the subsequent page.
+              title: SearchSavedQueriesRequest
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SearchSavedQueriesResponse'
+  /v1/projects/{project}/savedQueryFolders:
+    get:
+      tags:
+        - SavedQueryService
+      summary: ListSavedQueryFolders
+      description: |-
+        List the caller's saved query folders.
+         Only folders stored in the caller's saved query organizer are returned.
+      operationId: SavedQueryService_ListSavedQueryFolders
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListSavedQueryFoldersResponse'
   /v1/projects/{project}/serviceAccounts:
     get:
       tags:
@@ -20242,6 +21054,60 @@ components:
       type: object
       title: BatchUpdateIssuesStatusResponse
       additionalProperties: false
+    bytebase.v1.BatchUpdateSavedQueryOrganizerRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource whose saved queries' organizers are updated.
+             Format: projects/{project}
+        filter:
+          type: string
+          title: filter
+          description: |-
+            To filter the batch update target.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
+             - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
+             - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
+             - folder: the saved query organizer folder path, support exact "==" operator.
+        organizer:
+          title: organizer
+          description: The organizer fields to update.
+          $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
+        updateMask:
+          title: update_mask
+          description: |-
+            The list of fields to be updated.
+             Fields are specified relative to the saved query organizer.
+             Only support update the following fields for now:
+             - `starred`
+             - `folders`
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: BatchUpdateSavedQueryOrganizerRequest
+      required:
+        - parent
+        - organizer
+        - updateMask
+      additionalProperties: false
+    bytebase.v1.BatchUpdateSavedQueryOrganizerResponse:
+      type: object
+      properties:
+        savedQueryOrganizers:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
+          title: saved_query_organizers
+        updatedCount:
+          type: integer
+          title: updated_count
+          format: int32
+      title: BatchUpdateSavedQueryOrganizerResponse
+      additionalProperties: false
     bytebase.v1.BatchUpdateWorksheetOrganizerRequest:
       type: object
       properties:
@@ -21167,6 +22033,24 @@ components:
       title: CreateRolloutRequest
       required:
         - parent
+      additionalProperties: false
+    bytebase.v1.CreateSavedQueryRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource where this saved query will be created.
+             Format: projects/{project}
+        savedQuery:
+          title: saved_query
+          description: The saved query to create.
+          $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+      title: CreateSavedQueryRequest
+      required:
+        - parent
+        - savedQuery
       additionalProperties: false
     bytebase.v1.CreateServiceAccountRequest:
       type: object
@@ -22267,6 +23151,19 @@ components:
             The name of the role to delete.
              Format: roles/{role}
       title: DeleteRoleRequest
+      required:
+        - name
+      additionalProperties: false
+    bytebase.v1.DeleteSavedQueryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the saved query to delete.
+             Format: projects/{project}/savedQueries/{savedQuery}
+      title: DeleteSavedQueryRequest
       required:
         - name
       additionalProperties: false
@@ -23441,6 +24338,19 @@ components:
              This is the rollout resource name, which is the plan name plus /rollout suffix.
              Format: projects/{project}/plans/{plan}/rollout
       title: GetRolloutRequest
+      required:
+        - name
+      additionalProperties: false
+    bytebase.v1.GetSavedQueryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the saved query to retrieve.
+             Format: projects/{project}/savedQueries/{savedQuery}
+      title: GetSavedQueryRequest
       required:
         - name
       additionalProperties: false
@@ -25674,6 +26584,93 @@ components:
             A token, which can be sent as `page_token` to retrieve the next page.
              If this field is omitted, there are no subsequent pages.
       title: ListRolloutsResponse
+      additionalProperties: false
+    bytebase.v1.ListSavedQueriesRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource of the saved queries.
+             Format: projects/{project}
+             Use "projects/-" to list saved queries across all projects.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            To filter the list result.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
+
+             For example:
+             creator == "users/{email}"
+             creator != "users/{email}"
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: |-
+            The maximum number of saved queries to return. The service may return fewer than
+             this value.
+             If unspecified, at most 10 saved queries will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            A page token, received from a previous `ListSavedQueries` call.
+             Provide this to retrieve the subsequent page.
+
+             When paginating, all other parameters provided to `ListSavedQueries` must match
+             the call that provided the page token.
+      title: ListSavedQueriesRequest
+      required:
+        - parent
+      additionalProperties: false
+    bytebase.v1.ListSavedQueriesResponse:
+      type: object
+      properties:
+        savedQueries:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+          title: saved_queries
+          description: The saved queries from the specified parent.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token to retrieve next page of saved queries.
+             Pass this value in the page_token field in the subsequent call to
+             `ListSavedQueries` method to retrieve the next page of saved queries.
+      title: ListSavedQueriesResponse
+      additionalProperties: false
+    bytebase.v1.ListSavedQueryFoldersRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource of the saved query folders.
+             Format: projects/{project}
+      title: ListSavedQueryFoldersRequest
+      required:
+        - parent
+      additionalProperties: false
+    bytebase.v1.ListSavedQueryFoldersResponse:
+      type: object
+      properties:
+        folders:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.SavedQueryFolder'
+          title: folders
+          description: The caller's saved query folders.
+      title: ListSavedQueryFoldersResponse
       additionalProperties: false
     bytebase.v1.ListServiceAccountsRequest:
       type: object
@@ -28965,6 +29962,130 @@ components:
         - BUILTIN_WALK_THROUGH_CHECK
         - STATEMENT_DISALLOW_TRUNCATE
         - BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+    bytebase.v1.SavedQuery:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            (IMMUTABLE) The name of the saved query resource, generated by the server.
+             Canonical parent is project.
+             Format: projects/{project}/savedQueries/{savedQuery}
+        project:
+          type: string
+          title: project
+          description: |-
+            The project resource name.
+             Format: projects/{project}
+          readOnly: true
+        database:
+          type: string
+          title: database
+          description: |-
+            The database resource name.
+             Format: instances/{instance}/databases/{database}
+             If the database parent doesn't exist, the database field is empty.
+        title:
+          type: string
+          title: title
+          maxLength: 200
+          description: The title of the saved query.
+        creator:
+          type: string
+          title: creator
+          description: |-
+            The creator of the SavedQuery.
+             Format: users/{email}
+          readOnly: true
+        createTime:
+          title: create_time
+          description: The create time of the saved query.
+          readOnly: true
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        updateTime:
+          title: update_time
+          description: The last update time of the saved query.
+          readOnly: true
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        content:
+          type: string
+          title: content
+          format: byte
+          description: |-
+            The content of the saved query.
+             By default, it will be cut off in SearchSavedQueries() method. If it doesn't match the `content_size`, you can
+             use GetSavedQuery() request to retrieve the full content.
+        contentSize:
+          type:
+            - integer
+            - string
+          title: content_size
+          format: int64
+          description: content_size is the full size of the content, may not match the size of the `content` field.
+          readOnly: true
+        starred:
+          type: boolean
+          title: starred
+          description: starred indicates whether the saved query is starred by the current authenticated user.
+          readOnly: true
+        folders:
+          type: array
+          items:
+            type: string
+            readOnly: true
+          title: folders
+          readOnly: true
+      title: SavedQuery
+      required:
+        - name
+        - title
+        - content
+      additionalProperties: false
+    bytebase.v1.SavedQueryFolder:
+      type: object
+      properties:
+        folders:
+          type: array
+          items:
+            type: string
+          title: folders
+          description: The folder path segments.
+        category:
+          title: category
+          description: The folder category.
+          $ref: '#/components/schemas/bytebase.v1.SavedQueryFolder.Category'
+      title: SavedQueryFolder
+      additionalProperties: false
+    bytebase.v1.SavedQueryFolder.Category:
+      type: string
+      title: Category
+      enum:
+        - CATEGORY_UNSPECIFIED
+        - MINE
+        - SHARED
+    bytebase.v1.SavedQueryOrganizer:
+      type: object
+      properties:
+        savedQuery:
+          type: string
+          title: saved_query
+          description: |-
+            The name of the saved query.
+             Format: projects/{project}/savedQueries/{savedQuery}
+        starred:
+          type: boolean
+          title: starred
+          description: starred means if the saved query is starred.
+        folders:
+          type: array
+          items:
+            type: string
+          title: folders
+      title: SavedQueryOrganizer
+      required:
+        - savedQuery
+      additionalProperties: false
     bytebase.v1.SchemaCatalog:
       type: object
       properties:
@@ -29436,6 +30557,73 @@ components:
              Pass this value in the page_token field in the subsequent call to
              `ListQueryHistory` method to retrieve the next page of history.
       title: SearchQueryHistoriesResponse
+      additionalProperties: false
+    bytebase.v1.SearchSavedQueriesRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource of the saved queries.
+             Format: projects/{project}
+        filter:
+          type: string
+          title: filter
+          description: |-
+            To filter the search result.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
+             - title: the saved query title, support "contains" operator.
+             - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
+             - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
+             - folder: the saved query organizer folder path, support "==" operator.
+
+             For example:
+             creator == "users/{email}"
+             title.contains("saved query title")
+             creator != "users/{email}"
+             starred == true
+             starred == false
+             folder == "foo/bar"
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: |-
+            The maximum number of saved queries to return. The service may return fewer than
+             this value.
+             If unspecified, at most 10 saved queries will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            A page token, received from a previous `SearchSavedQueries` call.
+             Provide this to retrieve the subsequent page.
+      title: SearchSavedQueriesRequest
+      required:
+        - parent
+      additionalProperties: false
+    bytebase.v1.SearchSavedQueriesResponse:
+      type: object
+      properties:
+        savedQueries:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+          title: saved_queries
+          description: The saved queries that matched the search criteria.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token to retrieve next page of saved queries.
+             Pass this value in the page_token field in the subsequent call to
+             `SearchSavedQueries` method to retrieve the next page of saved queries.
+      title: SearchSavedQueriesResponse
       additionalProperties: false
     bytebase.v1.SearchWorksheetsRequest:
       type: object
@@ -31908,6 +33096,61 @@ components:
       required:
         - role
       additionalProperties: false
+    bytebase.v1.UpdateSavedQueryOrganizerRequest:
+      type: object
+      properties:
+        organizer:
+          title: organizer
+          description: |-
+            The organizer to update.
+
+             The organizer's `saved_query` field is used to identify the saved query.
+             Format: projects/{project}/savedQueries/{savedQuery}
+          $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
+        updateMask:
+          title: update_mask
+          description: |-
+            The list of fields to be updated.
+             Fields are specified relative to the saved query organizer.
+             Only support update the following fields for now:
+             - `starred`
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+        allowMissing:
+          type: boolean
+          title: allow_missing
+          description: |-
+            If set to true, and the saved query organizer is not found, a new saved query organizer will be created.
+             In this situation, `update_mask` is ignored.
+      title: UpdateSavedQueryOrganizerRequest
+      required:
+        - organizer
+      additionalProperties: false
+    bytebase.v1.UpdateSavedQueryRequest:
+      type: object
+      properties:
+        savedQuery:
+          title: saved_query
+          description: |-
+            The saved query to update.
+
+             The saved query's `name` field is used to identify the saved query to update.
+             Format: projects/{project}/savedQueries/{savedQuery}
+          $ref: '#/components/schemas/bytebase.v1.SavedQuery'
+        updateMask:
+          title: update_mask
+          description: |-
+            The list of fields to be updated.
+             Fields are specified relative to the saved query.
+             (e.g., `title`, `content`; *not* `saved_query.title` or `saved_query.content`)
+             Only support update the following fields for now:
+             - `title`
+             - `content`
+             - `database`
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: UpdateSavedQueryRequest
+      required:
+        - savedQuery
+      additionalProperties: false
     bytebase.v1.UpdateServiceAccountRequest:
       type: object
       properties:
@@ -34224,6 +35467,11 @@ tags:
     description: RevisionService manages schema revision history.
   - name: RoleService
     description: RoleService manages workspace roles and permissions.
+  - name: SavedQueryService
+    description: |-
+      SavedQueryService manages saved queries for SQL Editor query development.
+       Permission IDs still use the legacy `bb.worksheets.*` names; they are
+       renamed together with the access-model redesign and its role migration.
   - name: ServiceAccountService
     description: ServiceAccountService manages service accounts for API integrations.
   - name: SheetService

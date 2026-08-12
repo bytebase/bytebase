@@ -1,16 +1,16 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type {
-  WorksheetFilter,
-  WorksheetFolderNode,
+  SavedQueryFilter,
+  SavedQueryFolderNode,
 } from "@/modules/sql-editor/model/Sheet";
-import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
+import type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";
 import { useDropdown } from "./useDropdown";
 
 const mocks = vi.hoisted(() => ({
   currentUser: { email: "me@example.com" },
-  worksheet: undefined as Worksheet | undefined,
-  isWorksheetWritableV1: vi.fn(() => true),
+  savedQuery: undefined as SavedQuery | undefined,
+  isSavedQueryWritableV1: vi.fn(() => true),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -24,15 +24,15 @@ vi.mock("@/hooks/useAppState", () => ({
 vi.mock("@/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({
-      getWorksheetByName: () => mocks.worksheet,
+      getSavedQueryByName: () => mocks.savedQuery,
     }),
 }));
 
 vi.mock("@/utils", () => ({
-  isWorksheetWritableV1: mocks.isWorksheetWritableV1,
+  isSavedQueryWritableV1: mocks.isSavedQueryWritableV1,
 }));
 
-const baseFilter: WorksheetFilter = {
+const baseFilter: SavedQueryFilter = {
   keyword: "",
   onlyShowStarred: false,
   showMine: true,
@@ -40,16 +40,16 @@ const baseFilter: WorksheetFilter = {
   showDraft: true,
 };
 
-const worksheetNode: WorksheetFolderNode = {
+const savedQueryNode: SavedQueryFolderNode = {
   key: "/my/sheet",
   label: "sheet",
   editable: true,
   children: [],
-  worksheet: {
-    name: "projects/proj/worksheets/sheet",
+  savedQuery: {
+    name: "projects/proj/savedQueries/sheet",
     title: "sheet",
     folders: [],
-    type: "worksheet",
+    type: "savedQuery",
   },
 };
 
@@ -61,21 +61,21 @@ const event = {
 describe("useDropdown", () => {
   afterEach(() => {
     vi.clearAllMocks();
-    mocks.worksheet = undefined;
+    mocks.savedQuery = undefined;
   });
 
-  test("hides delete for writable shared worksheets", () => {
-    mocks.worksheet = {
-      name: "projects/proj/worksheets/sheet",
+  test("hides delete for writable shared saved queries", () => {
+    mocks.savedQuery = {
+      name: "projects/proj/savedQueries/sheet",
       creator: "users/other@example.com",
-    } as Worksheet;
+    } as SavedQuery;
 
     const { result } = renderHook(() =>
       useDropdown("shared", baseFilter, false)
     );
 
     act(() => {
-      result.current.handleContextMenu(event, worksheetNode);
+      result.current.handleContextMenu(event, savedQueryNode);
     });
 
     expect(
@@ -83,16 +83,16 @@ describe("useDropdown", () => {
     ).toEqual(["duplicate", "rename"]);
   });
 
-  test("keeps delete for writable my worksheets", () => {
-    mocks.worksheet = {
-      name: "projects/proj/worksheets/sheet",
+  test("keeps delete for writable my saved queries", () => {
+    mocks.savedQuery = {
+      name: "projects/proj/savedQueries/sheet",
       creator: "users/me@example.com",
-    } as Worksheet;
+    } as SavedQuery;
 
     const { result } = renderHook(() => useDropdown("my", baseFilter, false));
 
     act(() => {
-      result.current.handleContextMenu(event, worksheetNode);
+      result.current.handleContextMenu(event, savedQueryNode);
     });
 
     expect(

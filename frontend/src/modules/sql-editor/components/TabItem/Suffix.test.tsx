@@ -33,7 +33,7 @@ const renderIntoContainer = (element: ReactElement) => {
 const makeTab = (overrides: Partial<SQLEditorTab> = {}): SQLEditorTab =>
   ({
     id: "t1",
-    mode: "WORKSHEET",
+    mode: "SAVED_QUERY",
     status: "CLEAN",
     ...overrides,
   }) as unknown as SQLEditorTab;
@@ -69,7 +69,7 @@ describe("Suffix", () => {
     unmount();
   });
 
-  test("SAVING WORKSHEET tab renders the spinner (takes priority over hover)", () => {
+  test("SAVING SAVED_QUERY tab renders the spinner (takes priority over hover)", () => {
     const { container, render, unmount } = renderIntoContainer(
       <Suffix tab={makeTab({ status: "SAVING" })} onClose={vi.fn()} />
     );
@@ -80,7 +80,7 @@ describe("Suffix", () => {
     unmount();
   });
 
-  test("DIRTY WORKSHEET tab renders the unsaved-dot icon (when not hovered)", () => {
+  test("DIRTY SAVED_QUERY tab renders the unsaved-dot icon (when not hovered)", () => {
     const { container, render, unmount } = renderIntoContainer(
       <Suffix tab={makeTab({ status: "DIRTY" })} onClose={vi.fn()} />
     );

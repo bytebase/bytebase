@@ -31,7 +31,7 @@ const writeAIPanelSize = (size: number) => {
 export const createUIStateSlice: SQLEditorSliceCreator<UIStateSlice> = (
   set
 ) => ({
-  asidePanelTab: "WORKSHEET",
+  asidePanelTab: "SAVED_QUERY",
   showConnectionPanel: false,
   showAIPanel: false,
   pendingInsertAtCaret: undefined,

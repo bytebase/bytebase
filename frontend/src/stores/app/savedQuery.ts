@@ -1,0 +1,269 @@
+import { clone, create as createProto } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { uniqBy } from "lodash-es";
+import { savedQueryServiceClientConnect } from "@/api";
+import { silentContextKey } from "@/api/context-key";
+import { UNKNOWN_ID } from "@/types";
+import type {
+  SavedQuery,
+  SavedQueryOrganizer,
+} from "@/types/proto-es/v1/saved_query_service_pb";
+import {
+  BatchUpdateSavedQueryOrganizerRequestSchema,
+  CreateSavedQueryRequestSchema,
+  DeleteSavedQueryRequestSchema,
+  GetSavedQueryRequestSchema,
+  ListSavedQueryFoldersRequestSchema,
+  SavedQueryFolder_Category,
+  SavedQueryOrganizerSchema,
+  SavedQuerySchema,
+  SearchSavedQueriesRequestSchema,
+  UpdateSavedQueryOrganizerRequestSchema,
+  UpdateSavedQueryRequestSchema,
+} from "@/types/proto-es/v1/saved_query_service_pb";
+import { isValidDatabaseName } from "@/types/v1/database";
+import { extractSavedQueryID } from "@/utils/v1/savedQuery";
+import type { AppSliceCreator, SavedQuerySlice, SavedQueryView } from "./types";
+
+const cacheKey = (uid: string, view: SavedQueryView) => `${uid}:${view}`;
+
+/**
+ * Zustand port of the legacy Pinia `useWorkSheetStore`. Saved queries are
+ * keyed by `${uid}:${view}` so FULL (with statement) and BASIC (list)
+ * views coexist, matching the old cache. Related resources (project,
+ * database, creator) are hydrated through the sibling app slices rather
+ * than the old Pinia stores.
+ */
+export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
+  set,
+  get
+) => {
+  const setCacheEntry = (savedQuery: SavedQuery, view: SavedQueryView) => {
+    const uid = extractSavedQueryID(savedQuery.name);
+    if (uid === String(UNKNOWN_ID)) return;
+    set((s) => {
+      const savedQueriesByKey = { ...s.savedQueriesByKey };
+      // A FULL entry supersedes any stale BASIC entry for the same uid.
+      if (view === "FULL") {
+        delete savedQueriesByKey[cacheKey(uid, "BASIC")];
+      }
+      savedQueriesByKey[cacheKey(uid, view)] = savedQuery;
+      return { savedQueriesByKey };
+    });
+  };
+
+  const hydrateRelatedResources = async (savedQueries: SavedQuery[]) => {
+    // A saved query without a connection has `database: ""`. The batch
+    // endpoint rejects the whole request on an invalid name, which would
+    // drop hydration for every valid database in the same batch, so filter
+    // those out first. Dedupe all three to keep the batch payloads minimal.
+    const databases = [
+      ...new Set(
+        savedQueries.map((w) => w.database).filter(isValidDatabaseName)
+      ),
+    ];
+    try {
+      await Promise.all([
+        get().batchFetchProjects([
+          ...new Set(savedQueries.map((w) => w.project)),
+        ]),
+        get().batchFetchDatabases(databases),
+        get().batchGetOrFetchUsers([
+          ...new Set(savedQueries.map((w) => w.creator)),
+        ]),
+      ]);
+    } catch {
+      // Best-effort hydration; the saved query entry is still cached below.
+    }
+  };
+
+  const updateCacheWithOrganizer = (organizer: SavedQueryOrganizer) => {
+    for (const view of ["FULL", "BASIC"] as const) {
+      const existing = get().getSavedQueryByName(organizer.savedQuery, view);
+      if (!existing) continue;
+      const updated = clone(SavedQuerySchema, existing);
+      updated.starred = organizer.starred;
+      updated.folders = organizer.folders;
+      setCacheEntry(updated, view);
+    }
+  };
+
+  return {
+    savedQueriesByKey: {},
+    savedQueryRequests: {},
+
+    getSavedQueryByName: (name, view) => {
+      const uid = extractSavedQueryID(name);
+      if (!uid || uid === String(UNKNOWN_ID)) return undefined;
+      const byKey = get().savedQueriesByKey;
+      if (view === undefined) {
+        return byKey[cacheKey(uid, "FULL")] ?? byKey[cacheKey(uid, "BASIC")];
+      }
+      return byKey[cacheKey(uid, view)];
+    },
+
+    getOrFetchSavedQueryByName: async (name, silent = false) => {
+      const uid = extractSavedQueryID(name);
+      if (uid.startsWith("-") || !uid) return undefined;
+
+      const cached = get().savedQueriesByKey[cacheKey(uid, "FULL")];
+      if (cached) return cached;
+
+      const pending = get().savedQueryRequests[uid];
+      if (pending) return pending;
+
+      const promise = (async () => {
+        try {
+          const response = await savedQueryServiceClientConnect.getSavedQuery(
+            createProto(GetSavedQueryRequestSchema, { name }),
+            {
+              contextValues: createContextValues().set(
+                silentContextKey,
+                silent
+              ),
+            }
+          );
+          await hydrateRelatedResources([response]);
+          setCacheEntry(response, "FULL");
+          return response;
+        } catch {
+          return undefined;
+        } finally {
+          set((s) => {
+            const { [uid]: _removed, ...savedQueryRequests } =
+              s.savedQueryRequests;
+            return { savedQueryRequests };
+          });
+        }
+      })();
+
+      set((s) => ({
+        savedQueryRequests: { ...s.savedQueryRequests, [uid]: promise },
+      }));
+      return promise;
+    },
+
+    fetchSavedQueryList: async (parent, filter, params = {}) => {
+      const response = await savedQueryServiceClientConnect.searchSavedQueries(
+        createProto(SearchSavedQueriesRequestSchema, {
+          parent,
+          filter,
+          pageSize: params.pageSize,
+          pageToken: params.pageToken,
+        })
+      );
+      await hydrateRelatedResources(response.savedQueries);
+      for (const savedQuery of response.savedQueries) {
+        setCacheEntry(savedQuery, "BASIC");
+      }
+      return {
+        savedQueries: response.savedQueries,
+        nextPageToken: response.nextPageToken,
+      };
+    },
+
+    listSavedQueryFolders: async (parent) => {
+      const response =
+        await savedQueryServiceClientConnect.listSavedQueryFolders(
+          createProto(ListSavedQueryFoldersRequestSchema, {
+            parent,
+          })
+        );
+      const folders: { folders: string[]; category: "my" | "shared" }[] = [];
+      for (const folder of response.folders) {
+        switch (folder.category) {
+          case SavedQueryFolder_Category.MINE:
+            folders.push({ folders: folder.folders, category: "my" });
+            break;
+          case SavedQueryFolder_Category.SHARED:
+            folders.push({ folders: folder.folders, category: "shared" });
+            break;
+        }
+      }
+      return folders;
+    },
+
+    createSavedQuery: async (savedQuery) => {
+      const fullSavedQuery = savedQuery.name
+        ? savedQuery
+        : clone(SavedQuerySchema, savedQuery);
+      const response = await savedQueryServiceClientConnect.createSavedQuery(
+        createProto(CreateSavedQueryRequestSchema, {
+          parent: fullSavedQuery.project,
+          savedQuery: fullSavedQuery,
+        })
+      );
+      setCacheEntry(response, "FULL");
+      return response;
+    },
+
+    patchSavedQuery: async (savedQuery, updateMask, signal) => {
+      if (!savedQuery.name) return undefined;
+      const response = await savedQueryServiceClientConnect.updateSavedQuery(
+        createProto(UpdateSavedQueryRequestSchema, {
+          savedQuery,
+          updateMask: { paths: updateMask },
+        }),
+        { signal }
+      );
+      setCacheEntry(response, "FULL");
+      return response;
+    },
+
+    deleteSavedQueryByName: async (name) => {
+      await savedQueryServiceClientConnect.deleteSavedQuery(
+        createProto(DeleteSavedQueryRequestSchema, { name })
+      );
+      const uid = extractSavedQueryID(name);
+      set((s) => {
+        const {
+          [cacheKey(uid, "FULL")]: _f,
+          [cacheKey(uid, "BASIC")]: _b,
+          ...savedQueriesByKey
+        } = s.savedQueriesByKey;
+        return { savedQueriesByKey };
+      });
+    },
+
+    upsertSavedQueryOrganizer: async (organizer, updateMask) => {
+      const response =
+        await savedQueryServiceClientConnect.updateSavedQueryOrganizer(
+          createProto(UpdateSavedQueryOrganizerRequestSchema, {
+            organizer: createProto(SavedQueryOrganizerSchema, {
+              ...organizer,
+            } as SavedQueryOrganizer),
+            updateMask: { paths: updateMask },
+          })
+        );
+      updateCacheWithOrganizer(response);
+    },
+
+    batchUpdateSavedQueryOrganizers: async (requests) => {
+      const responses = await Promise.all(
+        requests.map((request) =>
+          savedQueryServiceClientConnect.batchUpdateSavedQueryOrganizer(
+            createProto(BatchUpdateSavedQueryOrganizerRequestSchema, {
+              parent: request.parent,
+              filter: request.filter,
+              organizer: createProto(SavedQueryOrganizerSchema, {
+                ...request.organizer,
+              } as SavedQueryOrganizer),
+              updateMask: { paths: request.updateMask },
+            })
+          )
+        )
+      );
+      for (const response of responses) {
+        response.savedQueryOrganizers.map(updateCacheWithOrganizer);
+      }
+    },
+
+    // The deduped full list. Callers split into "my" / "shared" using
+    // their own current-user source — the SQL editor uses the Pinia
+    // current user (reliably loaded before saved queries are fetched),
+    // whereas the app store's `currentUser` can lag on routes that don't
+    // load it eagerly.
+    savedQueryList: () =>
+      uniqBy(Object.values(get().savedQueriesByKey), (w) => w.name),
+  };
+};

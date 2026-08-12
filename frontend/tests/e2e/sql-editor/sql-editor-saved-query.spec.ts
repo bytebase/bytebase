@@ -1,8 +1,8 @@
-// SQL Editor — worksheet operations.
+// SQL Editor — saved query operations.
 //
-// Covers worksheet-level actions taken from the sidebar tree:
+// Covers saved query-level actions taken from the sidebar tree:
 // create, duplicate, delete, save, search. Tests in this file each
-// set up their own worksheet via the API and drop it in afterAll,
+// set up their own saved query via the API and drop it in afterAll,
 // never reusing demo data.
 
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
@@ -28,10 +28,10 @@ test.afterAll(async () => {
 });
 
 test.describe("Share popover copy-link button (BYT-9667)", () => {
-  // BYT-9667 (FIXED, #20541): the worksheet Share popover's URL copy icon looked
+  // BYT-9667 (FIXED, #20541): the saved query Share popover's URL copy icon looked
   // inert — same flat grey background as the addon segments, no hover/click
   // feedback (only a bottom toast). The comment thread added two contracts:
-  //   (a) the copy button must stay CLICKABLE for PRIVATE worksheets (an interim
+  //   (a) the copy button must stay CLICKABLE for PRIVATE saved queries (an interim
   //       change disabled it for private — Peter rejected that), and
   //   (b) it should be disabled ONLY while the tab has unsaved changes.
   // The fix converts it to the shared ghost Button (white bg, grey on hover via
@@ -48,12 +48,12 @@ test.describe("Share popover copy-link button (BYT-9667)", () => {
   let page9667: Page;
   let editor9667: SqlEditorPage;
   const TITLE = `e2e-byt9667-${Date.now()}`;
-  let worksheet = "";
+  let savedQuery = "";
 
   test.beforeAll(async ({ browser }) => {
     // Created PRIVATE by default — exactly the regression cell.
-    worksheet = (
-      await env.api.createWorksheet(env.project, TITLE, env.database, "SELECT 1;")
+    savedQuery = (
+      await env.api.createSavedQuery(env.project, TITLE, env.database, "SELECT 1;")
     ).name;
     ctx9667 = await browser.newContext({
       storageState: ".auth/state.json",
@@ -64,15 +64,15 @@ test.describe("Share popover copy-link button (BYT-9667)", () => {
   });
 
   test.afterAll(async () => {
-    if (worksheet) await env.api.deleteWorksheet(worksheet);
+    if (savedQuery) await env.api.deleteSavedQuery(savedQuery);
     await ctx9667?.close();
   });
 
-  test("copy button is enabled for a private worksheet, responds to hover, and copies the deep link", async () => {
+  test("copy button is enabled for a private saved query, responds to hover, and copies the deep link", async () => {
     test.setTimeout(120_000);
 
     const projectId = env.project.split("/").pop()!;
-    const sheetUuid = worksheet.split("/").pop()!;
+    const sheetUuid = savedQuery.split("/").pop()!;
     await editor9667.gotoSheet(projectId, sheetUuid);
     await page9667.waitForTimeout(1500);
 
@@ -91,10 +91,10 @@ test.describe("Share popover copy-link button (BYT-9667)", () => {
     const copyBtn = page9667.locator("[data-copy-btn]");
     await expect(copyBtn).toBeVisible({ timeout: 5000 });
 
-    // (a) Regression: the copy button stays clickable for a PRIVATE worksheet.
+    // (a) Regression: the copy button stays clickable for a PRIVATE savedQuery.
     await expect(
       copyBtn,
-      "the copy button must remain enabled for a private worksheet",
+      "the copy button must remain enabled for a private saved query",
     ).toBeEnabled();
 
     // (b) Visual response: hovering changes the background (white → hover grey).
@@ -113,16 +113,16 @@ test.describe("Share popover copy-link button (BYT-9667)", () => {
         `bug: static grey, no hover feedback). before=${bgBefore} hover=${bgHover}`,
     ).not.toBe(bgBefore);
 
-    // (c) Clicking copies the worksheet deep link + raises the success toast.
+    // (c) Clicking copies the saved query deep link + raises the success toast.
     await copyBtn.click();
     await expect(
-      page9667.getByText("The URL is copied to your clipboard").first(),
+      page9667.getByText("Link copied to clipboard").first(),
     ).toBeVisible({ timeout: 5000 });
     const clipboard = await page9667.evaluate(() =>
       navigator.clipboard.readText(),
     );
     expect(clipboard).toMatch(
-      new RegExp(`/sql-editor/projects/[^/]+/sheets/${sheetUuid}`),
+      new RegExp(`/sql-editor/projects/[^/]+/savedQueries/${sheetUuid}`),
     );
   });
 
@@ -130,7 +130,7 @@ test.describe("Share popover copy-link button (BYT-9667)", () => {
     test.setTimeout(120_000);
 
     const projectId = env.project.split("/").pop()!;
-    const sheetUuid = worksheet.split("/").pop()!;
+    const sheetUuid = savedQuery.split("/").pop()!;
     await editor9667.gotoSheet(projectId, sheetUuid);
     await page9667.waitForTimeout(1500);
     await expect(editor9667.activeTab()).toContainText(TITLE, {
@@ -161,13 +161,13 @@ test.describe("Share popover copy-link button (BYT-9667)", () => {
 });
 
 test.describe("Multi-select delete shows the dedicated confirm dialog (BYT-9631)", () => {
-  // BYT-9631 (FIXED, #20541): selecting multiple worksheets via Multi-select and
+  // BYT-9631 (FIXED, #20541): selecting multiple saved queries via Multi-select and
   // clicking Delete showed the WRONG dialog — the single-folder "Non-empty
-  // folder" prompt ("Do you want to move all worksheets into the root folder or
-  // just delete them?") with a "Delete all files" / "Move to root folder"
+  // folder" prompt ("Do you want to move all saved queries into the root folder or
+  // just delete them?") with a "Delete all" / "Move to root folder"
   // choice. For an explicit multi-selection that was confusing and offered a
   // nonsensical "move to root folder" option. The fix routes multi-delete to a
-  // dedicated AlertDialog: "Delete selected items?" / "The selected worksheets
+  // dedicated AlertDialog: "Delete selected items?" / "The selected saved queries
   // and folders will be permanently deleted."
 
   const STAMP = Date.now();
@@ -179,30 +179,30 @@ test.describe("Multi-select delete shows the dedicated confirm dialog (BYT-9631)
   let wsC = "";
 
   test.beforeAll(async () => {
-    wsA = (await env.api.createWorksheet(env.project, TITLE_A, env.database, "SELECT 1;")).name;
-    wsB = (await env.api.createWorksheet(env.project, TITLE_B, env.database, "SELECT 2;")).name;
-    wsC = (await env.api.createWorksheet(env.project, TITLE_C, env.database, "SELECT 3;")).name;
+    wsA = (await env.api.createSavedQuery(env.project, TITLE_A, env.database, "SELECT 1;")).name;
+    wsB = (await env.api.createSavedQuery(env.project, TITLE_B, env.database, "SELECT 2;")).name;
+    wsC = (await env.api.createSavedQuery(env.project, TITLE_C, env.database, "SELECT 3;")).name;
   });
 
   test.afterAll(async () => {
-    // A and B may already be deleted by the test; deleteWorksheet swallows 404.
+    // A and B may already be deleted by the test; deleteSavedQuery swallows 404.
     for (const ws of [wsA, wsB, wsC]) {
-      if (ws) await env.api.deleteWorksheet(ws);
+      if (ws) await env.api.deleteSavedQuery(ws);
     }
   });
 
-  test("deleting two checked worksheets uses the multi-select dialog, not the non-empty-folder prompt", async () => {
+  test("deleting two checked saved queries uses the multi-select dialog, not the non-empty-folder prompt", async () => {
     test.setTimeout(120_000);
 
     await sqlEditor.gotoHome();
     await page.waitForTimeout(1000);
 
-    const tree = page.locator(".worksheet-tree");
+    const tree = page.getByTestId("saved-query-tree");
     await expect(tree.getByText(TITLE_A).first()).toBeVisible({
       timeout: 10_000,
     });
 
-    // Enter multi-select via the worksheet row's context menu.
+    // Enter multi-select via the saved query row's context menu.
     await tree.getByText(TITLE_A).first().click({ button: "right" });
     const multiSelectItem = page.getByRole("menuitem", {
       name: "Multi-select",
@@ -239,13 +239,13 @@ test.describe("Multi-select delete shows the dedicated confirm dialog (BYT-9631)
     await expect(dialog.getByText("Delete selected items?")).toBeVisible();
     await expect(
       dialog.getByText(
-        "The selected worksheets and folders will be permanently deleted.",
+        "The selected saved queries and folders will be permanently deleted.",
       ),
     ).toBeVisible();
     // The wrong (pre-fix) dialog must be absent.
     await expect(page.getByText("Non-empty folder")).toHaveCount(0);
     await expect(
-      page.getByRole("button", { name: "Delete all files" }),
+      page.getByRole("button", { name: "Delete all" }),
     ).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Move to root folder" }),
@@ -262,9 +262,9 @@ test.describe("Multi-select delete shows the dedicated confirm dialog (BYT-9631)
 
 test.describe("Duplicate", () => {
   // The duplicate handler in SheetTree.tsx (around line 1152) calls
-  //   editorWorksheetStore.createWorksheet({ title, folders, database })
+  //   editorSavedQueryStore.createSavedQuery({ title, folders, database })
   // and is missing the `content` (or `statement`) field. As a result the
-  // duplicated worksheet inherits the title and connection but its body
+  // duplicated saved query inherits the title and connection but its body
   // is empty — a silent data-loss bug visible only after clicking into
   // the new tab.
   //
@@ -275,32 +275,32 @@ test.describe("Duplicate", () => {
   const SOURCE_CONTENT = "SELECT 42;";
   const SOURCE_TITLE = `e2e-duplicate-${Date.now()}`;
 
-  let sourceWorksheet = "";
-  let duplicateWorksheet = "";
+  let sourceSavedQuery = "";
+  let duplicateSavedQuery = "";
 
   test.beforeAll(async () => {
-    const created = await env.api.createWorksheet(
+    const created = await env.api.createSavedQuery(
       env.project,
       SOURCE_TITLE,
       env.database,
       SOURCE_CONTENT,
     );
-    sourceWorksheet = created.name;
+    sourceSavedQuery = created.name;
   });
 
   test.afterAll(async () => {
-    if (sourceWorksheet) await env.api.deleteWorksheet(sourceWorksheet);
-    if (duplicateWorksheet) await env.api.deleteWorksheet(duplicateWorksheet);
+    if (sourceSavedQuery) await env.api.deleteSavedQuery(sourceSavedQuery);
+    if (duplicateSavedQuery) await env.api.deleteSavedQuery(duplicateSavedQuery);
   });
 
-  test("duplicating a worksheet preserves the SQL body", async () => {
+  test("duplicating a saved query preserves the SQL body", async () => {
     // R26 — Duplicate drops the SQL body. Queued as not-high-priority;
     // mark expected-fail until the SheetTree.tsx duplicate handler is
     // patched to pass `content` through. Passing here will re-flag it
     // for marker removal.
     test.fail();
     test.setTimeout(120_000);
-    const sourceUuid = sourceWorksheet.split("/").pop()!;
+    const sourceUuid = sourceSavedQuery.split("/").pop()!;
     const projectId = env.project.split("/").pop()!;
     await sqlEditor.gotoSheet(projectId, sourceUuid);
     await page.waitForTimeout(1500);
@@ -312,9 +312,9 @@ test.describe("Duplicate", () => {
     });
 
     // Right-click the source row in the sidebar tree to open the
-    // worksheet context menu. Anchor by the unique title text.
+    // saved query context menu. Anchor by the unique title text.
     const sourceRow = page
-      .locator(".worksheet-tree")
+      .getByTestId("saved-query-tree")
       .getByText(SOURCE_TITLE)
       .first();
     await expect(sourceRow).toBeVisible({ timeout: 10_000 });
@@ -327,7 +327,7 @@ test.describe("Duplicate", () => {
     await expect(duplicateItem).toBeVisible({ timeout: 5000 });
     await duplicateItem.click();
 
-    // The AlertDialog ("Confirm to duplicate this worksheet?") opens.
+    // The AlertDialog ("Duplicate this saved query?") opens.
     const dialog = page.getByRole("alertdialog");
     await expect(dialog).toBeVisible({ timeout: 5000 });
 
@@ -347,7 +347,7 @@ test.describe("Duplicate", () => {
 
     const newUuid = page.url().match(/\/sheets\/([0-9a-f-]+)/i)?.[1];
     if (newUuid) {
-      duplicateWorksheet = `${projectPrefix}/worksheets/${newUuid}`;
+      duplicateSavedQuery = `${projectPrefix}/savedQueries/${newUuid}`;
     }
 
     // Wait for Monaco on the new tab to settle before reading its value.
@@ -366,44 +366,44 @@ test.describe("Duplicate", () => {
   });
 });
 
-test.describe("Right-click → Delete prompts for confirmation and removes the worksheet", () => {
-  // Deleting a worksheet from the sidebar must surface a confirm
+test.describe("Right-click → Delete prompts for confirmation and removes the saved query", () => {
+  // Deleting a saved query from the sidebar must surface a confirm
   // dialog before the destructive action. After confirmation, the
-  // worksheet vanishes from the sidebar tree.
+  // saved query vanishes from the sidebar tree.
 
   const TARGET_TITLE = `e2e-delete-${Date.now()}`;
 
-  let createdWorksheet = "";
+  let createdSavedQuery = "";
 
   test.beforeAll(async () => {
-    const created = await env.api.createWorksheet(
+    const created = await env.api.createSavedQuery(
       env.project,
       TARGET_TITLE,
       env.database,
       "SELECT 'to-delete';",
     );
-    createdWorksheet = created.name;
+    createdSavedQuery = created.name;
   });
 
   test.afterAll(async () => {
-    // If the test deleted the worksheet, the API delete here is a
+    // If the test deleted the saved query, the API delete here is a
     // no-op. If the test failed before deletion, this cleans up.
-    if (createdWorksheet) {
-      await env.api.deleteWorksheet(createdWorksheet);
+    if (createdSavedQuery) {
+      await env.api.deleteSavedQuery(createdSavedQuery);
     }
   });
 
-  test("confirming the alert removes the worksheet from the sidebar", async () => {
+  test("confirming the alert removes the saved query from the sidebar", async () => {
     test.setTimeout(120_000);
 
     const projectId = env.project.split("/").pop()!;
     await sqlEditor.gotoHome();
     await page.waitForTimeout(800);
 
-    // The worksheet appears in the sidebar tree under "Mine" — find
+    // The saved query appears in the sidebar tree under "Mine" — find
     // by its unique title.
     const row = page
-      .locator(".worksheet-tree")
+      .getByTestId("saved-query-tree")
       .getByText(TARGET_TITLE)
       .first();
     await expect(row).toBeVisible({ timeout: 10_000 });
@@ -419,47 +419,47 @@ test.describe("Right-click → Delete prompts for confirmation and removes the w
     const dialog = page.getByRole("alertdialog");
     await expect(dialog).toBeVisible({ timeout: 5000 });
     // The destructive confirm reads "Delete" (matches the action) —
-    // not "Confirm" like the duplicate-worksheet dialog uses.
+    // not "Confirm" like the duplicate-saved-query dialog uses.
     await dialog.getByRole("button", { name: "Delete", exact: true }).click();
     await expect(dialog).not.toBeVisible({ timeout: 5000 });
 
     // The row must disappear from the sidebar tree.
     await expect(
-      page.locator(".worksheet-tree").getByText(TARGET_TITLE),
+      page.getByTestId("saved-query-tree").getByText(TARGET_TITLE),
     ).toHaveCount(0, { timeout: 10_000 });
 
-    // Mark the worksheet as already deleted so afterAll doesn't
-    // double-delete (deleteWorksheet swallows errors but log noise
+    // Mark the saved query as already deleted so afterAll doesn't
+    // double-delete (deleteSavedQuery swallows errors but log noise
     // would suggest a real problem).
     void projectId;
-    createdWorksheet = "";
+    createdSavedQuery = "";
   });
 });
 
-test.describe("Sidebar search filters the worksheet list", () => {
-  // Typing into the "Search Sheets" input filters the visible
-  // worksheet rows to those whose title matches the keyword.
+test.describe("Sidebar search filters the saved query list", () => {
+  // Typing into the "Search saved queries" input filters the visible
+  // saved query rows to those whose title matches the keyword.
   // Non-matching rows must disappear; matching rows must stay.
 
-  // Two worksheets with distinct unique tokens — the search keyword
+  // Two saved queries with distinct unique tokens — the search keyword
   // matches one and excludes the other.
   const STAMP = Date.now();
   const NEEDLE_TITLE = `e2e-search-needle-${STAMP}`;
   const HAYSTACK_TITLE = `e2e-search-other-${STAMP}`;
-  let needleWorksheet = "";
-  let haystackWorksheet = "";
+  let needleSavedQuery = "";
+  let haystackSavedQuery = "";
 
   test.beforeAll(async () => {
-    needleWorksheet = (
-      await env.api.createWorksheet(
+    needleSavedQuery = (
+      await env.api.createSavedQuery(
         env.project,
         NEEDLE_TITLE,
         env.database,
         "SELECT 1;",
       )
     ).name;
-    haystackWorksheet = (
-      await env.api.createWorksheet(
+    haystackSavedQuery = (
+      await env.api.createSavedQuery(
         env.project,
         HAYSTACK_TITLE,
         env.database,
@@ -469,38 +469,38 @@ test.describe("Sidebar search filters the worksheet list", () => {
   });
 
   test.afterAll(async () => {
-    if (needleWorksheet) await env.api.deleteWorksheet(needleWorksheet);
-    if (haystackWorksheet) await env.api.deleteWorksheet(haystackWorksheet);
+    if (needleSavedQuery) await env.api.deleteSavedQuery(needleSavedQuery);
+    if (haystackSavedQuery) await env.api.deleteSavedQuery(haystackSavedQuery);
   });
 
-  test('typing "needle" hides the non-matching worksheet', async () => {
+  test('typing "needle" hides the non-matching saved query', async () => {
     test.setTimeout(120_000);
 
     await sqlEditor.gotoHome();
     await page.waitForTimeout(800);
 
-    // Both worksheets visible at baseline.
+    // Both saved queries visible at baseline.
     await expect(
-      page.locator(".worksheet-tree").getByText(NEEDLE_TITLE),
+      page.getByTestId("saved-query-tree").getByText(NEEDLE_TITLE),
     ).toBeVisible({ timeout: 10_000 });
     await expect(
-      page.locator(".worksheet-tree").getByText(HAYSTACK_TITLE),
+      page.getByTestId("saved-query-tree").getByText(HAYSTACK_TITLE),
     ).toBeVisible();
 
-    // The Search Sheets input is a textbox in the worksheet pane.
-    const search = page.getByPlaceholder("Search Sheets").first();
+    // The search input is a textbox in the saved query pane.
+    const search = page.getByPlaceholder("Search saved queries").first();
     await expect(search).toBeVisible({ timeout: 5000 });
     await search.fill("needle");
     // Search is debounced (DEBOUNCE_SEARCH_DELAY constant in the
-    // worksheet store). Wait for the filter to settle.
+    // saved query store). Wait for the filter to settle.
     await page.waitForTimeout(800);
 
     // Needle stays, haystack disappears.
     await expect(
-      page.locator(".worksheet-tree").getByText(NEEDLE_TITLE),
+      page.getByTestId("saved-query-tree").getByText(NEEDLE_TITLE),
     ).toBeVisible();
     await expect(
-      page.locator(".worksheet-tree").getByText(HAYSTACK_TITLE),
+      page.getByTestId("saved-query-tree").getByText(HAYSTACK_TITLE),
     ).toHaveCount(0);
 
     // Reset for any sibling describe sharing the page.
@@ -510,20 +510,20 @@ test.describe("Sidebar search filters the worksheet list", () => {
 });
 
 test.describe("Mine / Shared / Draft folders collapse and re-expand", () => {
-  // Each top-level folder in the worksheet tree (Mine, Shared, Draft)
+  // Each top-level folder in the saved query tree (Mine, Shared, Draft)
   // is independently collapsible. Clicking a folder header toggles
   // its expanded state — its children disappear, and clicking again
   // brings them back.
 
   const STAMP = Date.now();
   const TITLE = `e2e-collapse-${STAMP}`;
-  let createdWorksheet = "";
+  let createdSavedQuery = "";
 
   test.beforeAll(async () => {
-    // Create one worksheet under Mine so we have a child whose
+    // Create one saved query under Mine so we have a child whose
     // visibility we can probe.
-    createdWorksheet = (
-      await env.api.createWorksheet(
+    createdSavedQuery = (
+      await env.api.createSavedQuery(
         env.project,
         TITLE,
         env.database,
@@ -533,7 +533,7 @@ test.describe("Mine / Shared / Draft folders collapse and re-expand", () => {
   });
 
   test.afterAll(async () => {
-    if (createdWorksheet) await env.api.deleteWorksheet(createdWorksheet);
+    if (createdSavedQuery) await env.api.deleteSavedQuery(createdSavedQuery);
   });
 
   test("clicking Mine hides its children, clicking again restores them", async () => {
@@ -542,11 +542,11 @@ test.describe("Mine / Shared / Draft folders collapse and re-expand", () => {
     await sqlEditor.gotoHome();
     await page.waitForTimeout(800);
 
-    const child = page.locator(".worksheet-tree").getByText(TITLE).first();
+    const child = page.getByTestId("saved-query-tree").getByText(TITLE).first();
     await expect(child).toBeVisible({ timeout: 10_000 });
 
     const mineFolder = page
-      .locator(".worksheet-tree")
+      .getByTestId("saved-query-tree")
       .getByRole("treeitem")
       .filter({ hasText: /^Mine$/ })
       .first();

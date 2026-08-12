@@ -27,7 +27,7 @@ interface EditorMainProps {
 /**
  * React port of `frontend/src/views/sql-editor/EditorPanel/StandardPanel/EditorMain.vue`.
  *
- * Worksheet shell:
+ * SavedQuery shell:
  *  - Top toolbar (`EditorAction`, already React)
  *  - Body: `SQLEditor` when there's a tab, `Welcome` otherwise
  *  - Two hidden React modal mounts (`ExecutingHintModal`, `SaveSheetModal`)

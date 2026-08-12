@@ -97,7 +97,7 @@ export interface SingleResultViewProps {
   // "Request export" affordance when the policy disables direct export.
   requestExportSlot?: ReactNode;
   // Compact layout (fixed-height, non-growing body) used by the terminal /
-  // admin result panel. Defaults to the flex-grow worksheet layout.
+  // admin result panel. Defaults to the flex-grow saved query layout.
   compact?: boolean;
 }
 

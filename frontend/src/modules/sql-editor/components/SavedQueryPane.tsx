@@ -1,7 +1,7 @@
 /**
- * WorksheetPane — React port of WorksheetPane.vue (Stage 12, Phase 4).
+ * SavedQueryPane — React port of SavedQueryPane.vue (Stage 12, Phase 4).
  *
- * Hosts the SQL editor's worksheet sidebar: search, filter menu, multi-select
+ * Hosts the SQL editor's saved query sidebar: search, filter menu, multi-select
  * toolbar, move-to-folder dialog, and one SheetTree per visible view.
  */
 
@@ -22,8 +22,8 @@ import {
 import { SearchInput } from "@/components/ui/search-input";
 import { cn } from "@/lib/utils";
 import type {
+  SavedQueryFolderNode,
   SheetViewMode,
-  WorksheetFolderNode,
 } from "@/modules/sql-editor/model/Sheet";
 import {
   useSheetContext,
@@ -34,8 +34,8 @@ import { FolderForm } from "./FolderForm";
 import { SheetTree, type SheetTreeHandle } from "./SheetTree";
 
 function collectSelectableNodes(
-  node: WorksheetFolderNode | undefined
-): WorksheetFolderNode[] {
+  node: SavedQueryFolderNode | undefined
+): SavedQueryFolderNode[] {
   if (!node || node.loadMore) return [];
   return [
     node,
@@ -43,20 +43,20 @@ function collectSelectableNodes(
   ];
 }
 
-export function WorksheetPane() {
+export function SavedQueryPane() {
   const { t } = useTranslation();
 
   const sheetContext = useSheetContext();
-  const { filter, filterChanged, batchUpdateWorksheetFolders, setFilter } =
+  const { filter, filterChanged, batchUpdateSavedQueryFolders, setFilter } =
     sheetContext;
 
   const myViewContext = useSheetContextByView("my");
-  const { getFoldersForWorksheet } = myViewContext;
+  const { getFoldersForSavedQuery } = myViewContext;
 
   const mineSheetTreeRef = useRef<SheetTreeHandle>(null);
 
   const [multiSelectMode, setMultiSelectMode] = useState(false);
-  const [checkedNodes, setCheckedNodes] = useState<WorksheetFolderNode[]>([]);
+  const [checkedNodes, setCheckedNodes] = useState<SavedQueryFolderNode[]>([]);
   const [showReorgModal, setShowReorgModal] = useState(false);
   const [pendingMoveFolder, setPendingMoveFolder] = useState("");
   const [loading, setLoading] = useState(false);
@@ -76,11 +76,11 @@ export function WorksheetPane() {
     return results;
   }, [filter.showShared, filter.showDraft]);
 
-  const checkedWorksheets = useMemo(
+  const checkedSavedQueries = useMemo(
     () =>
       checkedNodes
-        .filter((node) => node.worksheet)
-        .map((node) => node.worksheet!.name),
+        .filter((node) => node.savedQuery)
+        .map((node) => node.savedQuery!.name),
     [checkedNodes]
   );
   const selectableNodes = useMemo(
@@ -112,12 +112,12 @@ export function WorksheetPane() {
     }
   };
 
-  const handleMoveWorksheets = async () => {
+  const handleMoveSavedQueries = async () => {
     setLoading(true);
     try {
-      const folders = getFoldersForWorksheet(pendingMoveFolder);
-      await batchUpdateWorksheetFolders(
-        checkedWorksheets.map((worksheet) => ({ name: worksheet, folders }))
+      const folders = getFoldersForSavedQuery(pendingMoveFolder);
+      await batchUpdateSavedQueryFolders(
+        checkedSavedQueries.map((savedQuery) => ({ name: savedQuery, folders }))
       );
       setShowReorgModal(false);
       setMultiSelectMode(false);
@@ -135,13 +135,13 @@ export function WorksheetPane() {
   const batchActions: SelectionAction[] = [
     {
       key: "move",
-      label: t("sheet.move-worksheets"),
+      label: t("sheet.move-saved-queries"),
       icon: FolderInputIcon,
       onClick: () => {
         setPendingMoveFolder("");
         setShowReorgModal(true);
       },
-      disabled: checkedWorksheets.length === 0 || loading,
+      disabled: checkedSavedQueries.length === 0 || loading,
     },
     {
       key: "cancel",
@@ -209,7 +209,7 @@ export function WorksheetPane() {
 
       <div
         className={cn(
-          "relative flex min-w-0 max-w-full flex-1 flex-col gap-y-2 overflow-y-auto overflow-x-hidden worksheet-scroll",
+          "relative flex min-w-0 max-w-full flex-1 flex-col gap-y-2 overflow-y-auto overflow-x-hidden",
           showMultiSelectToolbar && "pb-16"
         )}
       >
@@ -260,7 +260,7 @@ export function WorksheetPane() {
         onOpenChange={(open) => !open && closeReorgModal()}
       >
         <DialogContent className="w-lg max-w-[calc(100vw-8rem)] p-6">
-          <DialogTitle>{t("sheet.move-worksheets")}</DialogTitle>
+          <DialogTitle>{t("sheet.move-saved-queries")}</DialogTitle>
           <div className="mt-3 flex flex-col gap-y-3">
             <FolderForm
               folder={pendingMoveFolder}
@@ -271,7 +271,7 @@ export function WorksheetPane() {
               <Button appearance="outline" onClick={closeReorgModal}>
                 {t("common.close")}
               </Button>
-              <Button onClick={handleMoveWorksheets} disabled={loading}>
+              <Button onClick={handleMoveSavedQueries} disabled={loading}>
                 {t("common.save")}
               </Button>
             </div>

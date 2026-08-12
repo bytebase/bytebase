@@ -9,11 +9,11 @@ import {
 
 const mocks = vi.hoisted(() => ({
   loadCurrentUser: vi.fn(async () => undefined),
-  getOrFetchWorksheetByName: vi.fn(),
+  getOrFetchSavedQueryByName: vi.fn(),
 }));
 
 vi.mock("@/lib/sqlEditorConnection", () => ({
-  extractWorksheetConnection: vi.fn(async () => ({
+  extractSavedQueryConnection: vi.fn(async () => ({
     instance: "instances/mysql-instance",
     database: "instances/mysql-instance/databases/bytebase",
   })),
@@ -29,7 +29,7 @@ vi.mock("@/stores/app", () => ({
       },
       isSaaSMode: () => false,
       loadCurrentUser: mocks.loadCurrentUser,
-      getOrFetchWorksheetByName: mocks.getOrFetchWorksheetByName,
+      getOrFetchSavedQueryByName: mocks.getOrFetchSavedQueryByName,
     }),
   },
 }));
@@ -69,7 +69,7 @@ beforeEach(() => {
   getSQLEditorTabsState().reset();
   __resetTabStoreProjectCursor();
   mocks.loadCurrentUser.mockClear();
-  mocks.getOrFetchWorksheetByName.mockImplementation(async (name: string) => ({
+  mocks.getOrFetchSavedQueryByName.mockImplementation(async (name: string) => ({
     name,
     project: name.startsWith("projects/project-sample/")
       ? "projects/project-sample"
@@ -267,19 +267,19 @@ describe("useSQLEditorTabsStore", () => {
     unsubscribe();
   });
 
-  test("initProject ignores persisted worksheets from other projects", async () => {
+  test("initProject ignores persisted saved queries from other projects", async () => {
     storage.set(
       storageKeySqlEditorTabs("", "projects/aaa", "ed@bytebase.com"),
       JSON.stringify([
         {
           id: "cross-project-tab",
-          worksheet: "projects/project-sample/worksheets/sample-sheet",
-          mode: "WORKSHEET",
+          savedQuery: "projects/project-sample/savedQueries/sample-sheet",
+          mode: "SAVED_QUERY",
         },
         {
           id: "same-project-tab",
-          worksheet: "projects/aaa/worksheets/aaa-sheet",
-          mode: "WORKSHEET",
+          savedQuery: "projects/aaa/savedQueries/aaa-sheet",
+          mode: "SAVED_QUERY",
         },
       ])
     );
@@ -293,5 +293,35 @@ describe("useSQLEditorTabsStore", () => {
       "same-project-tab",
     ]);
     expect(state.currentTabId).toBe("same-project-tab");
+  });
+
+  test("initProject normalizes tabs persisted before the saved query rename", async () => {
+    // Backstop for storage-migrate's v2 rewrite: a tab stored with the
+    // legacy `worksheet` field, old name format, and "WORKSHEET" mode
+    // must still hydrate into a saved-query-linked tab.
+    storage.set(
+      storageKeySqlEditorTabs("", "projects/aaa", "ed@bytebase.com"),
+      JSON.stringify([
+        {
+          id: "legacy-tab",
+          worksheet: "projects/aaa/worksheets/legacy-sheet",
+          mode: "WORKSHEET",
+        },
+      ])
+    );
+
+    await getSQLEditorTabsState().initProject("projects/aaa");
+
+    expect(mocks.getOrFetchSavedQueryByName).toHaveBeenCalledWith(
+      "projects/aaa/savedQueries/legacy-sheet",
+      true
+    );
+    const state = useSQLEditorTabsStore.getState();
+    const tab = state.tabsById.get("legacy-tab");
+    expect(tab?.savedQuery).toBe("projects/aaa/savedQueries/legacy-sheet");
+    expect(tab?.mode).toBe("SAVED_QUERY");
+    expect(
+      state.openTmpTabList.find((t) => t.id === "legacy-tab")
+    ).not.toHaveProperty("worksheet");
   });
 });

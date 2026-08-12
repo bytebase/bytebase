@@ -546,9 +546,9 @@ func getRequestString(request any) (string, error) {
 			r = proto.CloneOf(r)
 			r.Release = redactRelease(r.Release)
 			return r
-		case *v1pb.CreateWorksheetRequest:
+		case *v1pb.CreateSavedQueryRequest:
 			r = proto.CloneOf(r)
-			r.Worksheet = redactWorksheet(r.Worksheet)
+			r.SavedQuery = redactSavedQuery(r.SavedQuery)
 			return r
 		case *v1pb.CreateInstanceRequest:
 			r = proto.CloneOf(r)
@@ -648,8 +648,8 @@ func getResponseString(response any) (string, error) {
 			return redactProject(r)
 		case *v1pb.Release:
 			return redactRelease(r)
-		case *v1pb.Worksheet:
-			return redactWorksheet(r)
+		case *v1pb.SavedQuery:
+			return redactSavedQuery(r)
 		case *v1pb.Sheet:
 			return redactSheet(r)
 		case *v1pb.BatchCreateSheetsResponse:
@@ -862,7 +862,7 @@ func redactRelease(r *v1pb.Release) *v1pb.Release {
 	return cloned
 }
 
-func redactWorksheet(r *v1pb.Worksheet) *v1pb.Worksheet {
+func redactSavedQuery(r *v1pb.SavedQuery) *v1pb.SavedQuery {
 	if r == nil {
 		return nil
 	}

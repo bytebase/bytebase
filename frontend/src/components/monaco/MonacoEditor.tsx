@@ -94,7 +94,7 @@ export interface MonacoEditorProps {
    * When `true` (default), the editor's height grows with content,
    * clamped to `[min, max]`. When `false`, the inner editor container
    * fills its parent's height (`h-full`) and `min`/`max` are ignored.
-   * Use the parent-fill mode for surfaces like the worksheet
+   * Use the parent-fill mode for surfaces like the saved query
    * `SQLEditor`, where the editor is expected to occupy the full
    * height of an `NSplit`/flex column.
    */

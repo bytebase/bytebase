@@ -10,7 +10,7 @@ export class SqlEditorPage {
   readonly runButton: Locator;
   readonly saveButton: Locator;
   readonly adminModeButton: Locator;
-  readonly gutterWorksheetTab: Locator;
+  readonly gutterSavedQueryTab: Locator;
   readonly gutterSchemaTab: Locator;
   readonly gutterHistoryTab: Locator;
   readonly gutterAccessTab: Locator;
@@ -33,7 +33,7 @@ export class SqlEditorPage {
     this.runButton = page.locator("button").filter({ has: page.locator("svg.lucide-play") }).first();
     this.saveButton = page.getByRole("button", { name: "Save", exact: true });
     // AdminModeButton has a lucide-wrench icon and renders only when
-    // editorStore.allowAdmin && currentTab.mode === "WORKSHEET".
+    // editorStore.allowAdmin && currentTab.mode === "SAVED_QUERY".
     //
     // Scoping note: the workspace-level "Bytebase has not configured
     // --external-url" banner (frontend/src/components/BannersWrapper.tsx)
@@ -48,7 +48,10 @@ export class SqlEditorPage {
       .locator("button.border-warning")
       .filter({ has: page.locator("svg.lucide-wrench") })
       .first();
-    this.gutterWorksheetTab = page.getByRole("button", { name: "Worksheet", exact: true });
+    this.gutterSavedQueryTab = page.getByRole("button", {
+      name: "Saved queries",
+      exact: true,
+    });
     this.gutterSchemaTab = page.getByRole("button", { name: "Schema", exact: true });
     this.gutterHistoryTab = page.getByRole("button", { name: "History", exact: true });
     // ACCESS gutter tab only renders when project.allowJustInTimeAccess=true.
@@ -104,7 +107,7 @@ export class SqlEditorPage {
 
   async gotoSheet(projectId: string, sheetUuid: string) {
     await this.page.goto(
-      `${this.baseURL}/sql-editor/projects/${projectId}/sheets/${sheetUuid}`
+      `${this.baseURL}/sql-editor/projects/${projectId}/savedQueries/${sheetUuid}`
     );
     await this.page.keyboard.press("Escape").catch(() => {});
     await this.page.waitForTimeout(1000);
@@ -164,7 +167,7 @@ export class SqlEditorPage {
   // NOT exposed on the production React bundle, so any read MUST go through
   // the rendered `.view-lines` (a `monaco.editor.getEditors()` read returns
   // undefined and silently yields ""). `which`:
-  //   - "first"   the first role="code" surface (the worksheet editor)
+  //   - "first"   the first role="code" surface (the saved query editor)
   //   - "last"    the last surface (the admin terminal's editable prompt)
   //   - "longest" the surface with the most content (ignores empty panes)
   async readEditorContent(

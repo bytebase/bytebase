@@ -63,8 +63,8 @@ func TestAuditResponseRedactsCredentials(t *testing.T) {
 			}}},
 		},
 		{
-			name:     "worksheet response SQL",
-			response: &v1pb.Worksheet{Content: []byte(secretSentinel)},
+			name:     "saved query response SQL",
+			response: &v1pb.SavedQuery{Content: []byte(secretSentinel)},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -132,7 +132,7 @@ func TestAuditRequestRedactsCredentials(t *testing.T) {
 		{"updated release SQL", &v1pb.UpdateReleaseRequest{Release: &v1pb.Release{
 			Files: []*v1pb.Release_File{{Statement: []byte(secretSentinel)}},
 		}}},
-		{"worksheet SQL", &v1pb.CreateWorksheetRequest{Worksheet: &v1pb.Worksheet{
+		{"saved query SQL", &v1pb.CreateSavedQueryRequest{SavedQuery: &v1pb.SavedQuery{
 			Content: []byte(secretSentinel),
 		}}},
 		{"password reset code and password", &v1pb.ResetPasswordRequest{
@@ -180,10 +180,10 @@ func TestAuditRedactionDoesNotMutateInput(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, secretSentinel, string(release.GetFiles()[0].GetStatement()), "redaction mutated the release response")
 
-	worksheet := &v1pb.Worksheet{Content: []byte(secretSentinel)}
-	_, err = getResponseString(worksheet)
+	savedQuery := &v1pb.SavedQuery{Content: []byte(secretSentinel)}
+	_, err = getResponseString(savedQuery)
 	require.NoError(t, err)
-	require.Equal(t, secretSentinel, string(worksheet.GetContent()), "redaction mutated the worksheet response")
+	require.Equal(t, secretSentinel, string(savedQuery.GetContent()), "redaction mutated the saved query response")
 
 	for _, tt := range []struct {
 		name    string
@@ -206,7 +206,7 @@ func TestAuditRedactionDoesNotMutateInput(t *testing.T) {
 		{name: "remove data source request", request: &v1pb.RemoveDataSourceRequest{DataSource: &v1pb.DataSource{Password: secretSentinel}}},
 		{name: "create release request", request: &v1pb.CreateReleaseRequest{Release: &v1pb.Release{Files: []*v1pb.Release_File{{Statement: []byte(secretSentinel)}}}}},
 		{name: "update release request", request: &v1pb.UpdateReleaseRequest{Release: &v1pb.Release{Files: []*v1pb.Release_File{{Statement: []byte(secretSentinel)}}}}},
-		{name: "create worksheet request", request: &v1pb.CreateWorksheetRequest{Worksheet: &v1pb.Worksheet{Content: []byte(secretSentinel)}}},
+		{name: "create saved query request", request: &v1pb.CreateSavedQueryRequest{SavedQuery: &v1pb.SavedQuery{Content: []byte(secretSentinel)}}},
 		{name: "reset password request", request: &v1pb.ResetPasswordRequest{Email: "user@example.com", Code: secretSentinel, NewPassword: secretSentinel}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -228,8 +228,8 @@ func TestAuditRedactionDoesNotMutateInput(t *testing.T) {
 				sensitiveValue = string(request.GetRelease().GetFiles()[0].GetStatement())
 			case *v1pb.UpdateReleaseRequest:
 				sensitiveValue = string(request.GetRelease().GetFiles()[0].GetStatement())
-			case *v1pb.CreateWorksheetRequest:
-				sensitiveValue = string(request.GetWorksheet().GetContent())
+			case *v1pb.CreateSavedQueryRequest:
+				sensitiveValue = string(request.GetSavedQuery().GetContent())
 			case *v1pb.ResetPasswordRequest:
 				sensitiveValue = request.GetCode()
 				require.Equal(t, secretSentinel, request.GetNewPassword())
