@@ -1207,9 +1207,10 @@ var File_v1_worksheet_service_proto protoreflect.FileDescriptor
 
 const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1av1/worksheet_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"p\n" +
-	"\x16CreateWorksheetRequest\x12\x1b\n" +
-	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x129\n" +
+	"\x1av1/worksheet_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x89\x01\n" +
+	"\x16CreateWorksheetRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x129\n" +
 	"\tworksheet\x18\x02 \x01(\v2\x16.bytebase.v1.WorksheetB\x03\xe0A\x02R\tworksheet\".\n" +
 	"\x13GetWorksheetRequest\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"\xa1\x01\n" +
@@ -1258,9 +1259,10 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\x12WorksheetOrganizer\x12!\n" +
 	"\tworksheet\x18\x01 \x01(\tB\x03\xe0A\x02R\tworksheet\x12\x18\n" +
 	"\astarred\x18\x02 \x01(\bR\astarred\x12\x18\n" +
-	"\afolders\x18\x03 \x03(\tR\afolders\"1\n" +
-	"\x16DeleteWorksheetRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"\x8a\x01\n" +
+	"\afolders\x18\x03 \x03(\tR\afolders\"L\n" +
+	"\x16DeleteWorksheetRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe0A\x02\xfaA\x18\n" +
+	"\x16bytebase.com/WorksheetR\x04name\"\x8a\x01\n" +
 	"\x17SearchWorksheetsRequest\x12\x1b\n" +
 	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x16\n" +
 	"\x06filter\x18\x02 \x01(\tR\x06filter\x12\x1b\n" +
@@ -1271,7 +1273,7 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\n" +
 	"worksheets\x18\x01 \x03(\v2\x16.bytebase.v1.WorksheetR\n" +
 	"worksheets\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xd1\x04\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x99\x05\n" +
 	"\tWorksheet\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x1d\n" +
 	"\aproject\x18\x02 \x01(\tB\x03\xe0A\x03R\aproject\x12\x1a\n" +
@@ -1295,17 +1297,18 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\x16VISIBILITY_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fPROJECT_READ\x10\x01\x12\x11\n" +
 	"\rPROJECT_WRITE\x10\x02\x12\v\n" +
-	"\aPRIVATE\x10\x032\xaf\f\n" +
-	"\x10WorksheetService\x12\x9c\x01\n" +
-	"\x0fCreateWorksheet\x12#.bytebase.v1.CreateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"L\xdaA\x10parent,worksheet\x90\xea0\x02\x82\xd3\xe4\x93\x02/:\tworksheet\"\"/v1/{parent=projects/*}/worksheets\x12\x7f\n" +
+	"\aPRIVATE\x10\x03:F\xeaAC\n" +
+	"\x16bytebase.com/Worksheet\x12)projects/{project}/worksheets/{worksheet}2\xb7\f\n" +
+	"\x10WorksheetService\x12\xa0\x01\n" +
+	"\x0fCreateWorksheet\x12#.bytebase.v1.CreateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"P\xdaA\x10parent,worksheet\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02/:\tworksheet\"\"/v1/{parent=projects/*}/worksheets\x12\x7f\n" +
 	"\fGetWorksheet\x12 .bytebase.v1.GetWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"5\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02$\x12\"/v1/{name=projects/*/worksheets/*}\x12\xa8\x01\n" +
 	"\x0eListWorksheets\x12\".bytebase.v1.ListWorksheetsRequest\x1a#.bytebase.v1.ListWorksheetsResponse\"M\xdaA\x06parent\x8a\xea0\x12bb.worksheets.list\x90\xea0\x01\x82\xd3\xe4\x93\x02$\x12\"/v1/{parent=projects/*}/worksheets\x12\xaa\x01\n" +
 	"\x14ListWorksheetFolders\x12(.bytebase.v1.ListWorksheetFoldersRequest\x1a).bytebase.v1.ListWorksheetFoldersResponse\"=\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x02*\x12(/v1/{parent=projects/*}/worksheetFolders\x12\xa2\x01\n" +
 	"\x10SearchWorksheets\x12$.bytebase.v1.SearchWorksheetsRequest\x1a%.bytebase.v1.SearchWorksheetsResponse\"A\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x02.:\x01*\")/v1/{parent=projects/*}/worksheets:search\x12\xab\x01\n" +
 	"\x0fUpdateWorksheet\x12#.bytebase.v1.UpdateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"[\xdaA\x15worksheet,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x029:\tworksheet2,/v1/{worksheet.name=projects/*/worksheets/*}\x12\xd5\x01\n" +
 	"\x18UpdateWorksheetOrganizer\x12,.bytebase.v1.UpdateWorksheetOrganizerRequest\x1a\x1f.bytebase.v1.WorksheetOrganizer\"j\xdaA\x15organizer,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02H:\torganizer2;/v1/{organizer.worksheet=projects/*/worksheets/*}/organizer\x12\xef\x01\n" +
-	"\x1dBatchUpdateWorksheetOrganizer\x121.bytebase.v1.BatchUpdateWorksheetOrganizerRequest\x1a2.bytebase.v1.BatchUpdateWorksheetOrganizerResponse\"g\xdaA\x1cparent,organizer,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02>:\x01*\"9/v1/{parent=projects/*}/worksheets/organizers:batchUpdate\x12\x85\x01\n" +
-	"\x0fDeleteWorksheet\x12#.bytebase.v1.DeleteWorksheetRequest\x1a\x16.google.protobuf.Empty\"5\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02$*\"/v1/{name=projects/*/worksheets/*}B\xab\x01\n" +
+	"\x1dBatchUpdateWorksheetOrganizer\x121.bytebase.v1.BatchUpdateWorksheetOrganizerRequest\x1a2.bytebase.v1.BatchUpdateWorksheetOrganizerResponse\"g\xdaA\x1cparent,organizer,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02>:\x01*\"9/v1/{parent=projects/*}/worksheets/organizers:batchUpdate\x12\x89\x01\n" +
+	"\x0fDeleteWorksheet\x12#.bytebase.v1.DeleteWorksheetRequest\x1a\x16.google.protobuf.Empty\"9\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02$*\"/v1/{name=projects/*/worksheets/*}B\xab\x01\n" +
 	"\x0fcom.bytebase.v1B\x15WorksheetServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

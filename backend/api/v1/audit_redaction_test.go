@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"encoding/base64"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -18,6 +19,8 @@ import (
 // here rather than silently starting to log it.
 
 const secretSentinel = "s3cr3t-sentinel-value"
+
+var encodedSecretSentinel = base64.StdEncoding.EncodeToString([]byte(secretSentinel))
 
 func TestAuditResponseRedactsCredentials(t *testing.T) {
 	for _, tt := range []struct {
@@ -53,11 +56,22 @@ func TestAuditResponseRedactsCredentials(t *testing.T) {
 				Url:  secretSentinel,
 			}}},
 		},
+		{
+			name: "release response SQL",
+			response: &v1pb.Release{Files: []*v1pb.Release_File{nil, {
+				Statement: []byte(secretSentinel),
+			}}},
+		},
+		{
+			name:     "worksheet response SQL",
+			response: &v1pb.Worksheet{Content: []byte(secretSentinel)},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getResponseString(tt.response)
 			require.NoError(t, err)
 			require.NotContains(t, got, secretSentinel, "credential written to the audit log")
+			require.NotContains(t, got, encodedSecretSentinel, "encoded content written to the audit log")
 		})
 	}
 }
@@ -112,11 +126,21 @@ func TestAuditRequestRedactsCredentials(t *testing.T) {
 			Name:     "projects/project-a",
 			Webhooks: []*v1pb.Webhook{{Name: "projects/project-a/webhooks/webhook-a", Url: secretSentinel}},
 		}}},
+		{"release SQL", &v1pb.CreateReleaseRequest{Release: &v1pb.Release{
+			Files: []*v1pb.Release_File{nil, {Statement: []byte(secretSentinel)}},
+		}}},
+		{"updated release SQL", &v1pb.UpdateReleaseRequest{Release: &v1pb.Release{
+			Files: []*v1pb.Release_File{{Statement: []byte(secretSentinel)}},
+		}}},
+		{"worksheet SQL", &v1pb.CreateWorksheetRequest{Worksheet: &v1pb.Worksheet{
+			Content: []byte(secretSentinel),
+		}}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getRequestString(tt.request)
 			require.NoError(t, err)
 			require.NotContains(t, got, secretSentinel, "credential written to the audit log")
+			require.NotContains(t, got, encodedSecretSentinel, "encoded content written to the audit log")
 		})
 	}
 }
@@ -143,6 +167,16 @@ func TestAuditRedactionDoesNotMutateInput(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, secretSentinel, project.GetWebhooks()[0].GetUrl(), "redaction mutated the project response")
 
+	release := &v1pb.Release{Files: []*v1pb.Release_File{{Statement: []byte(secretSentinel)}}}
+	_, err = getResponseString(release)
+	require.NoError(t, err)
+	require.Equal(t, secretSentinel, string(release.GetFiles()[0].GetStatement()), "redaction mutated the release response")
+
+	worksheet := &v1pb.Worksheet{Content: []byte(secretSentinel)}
+	_, err = getResponseString(worksheet)
+	require.NoError(t, err)
+	require.Equal(t, secretSentinel, string(worksheet.GetContent()), "redaction mutated the worksheet response")
+
 	for _, tt := range []struct {
 		name    string
 		request any
@@ -162,26 +196,35 @@ func TestAuditRedactionDoesNotMutateInput(t *testing.T) {
 		{name: "add data source request", request: &v1pb.AddDataSourceRequest{DataSource: &v1pb.DataSource{Password: secretSentinel}}},
 		{name: "update data source request", request: &v1pb.UpdateDataSourceRequest{DataSource: &v1pb.DataSource{Password: secretSentinel}}},
 		{name: "remove data source request", request: &v1pb.RemoveDataSourceRequest{DataSource: &v1pb.DataSource{Password: secretSentinel}}},
+		{name: "create release request", request: &v1pb.CreateReleaseRequest{Release: &v1pb.Release{Files: []*v1pb.Release_File{{Statement: []byte(secretSentinel)}}}}},
+		{name: "update release request", request: &v1pb.UpdateReleaseRequest{Release: &v1pb.Release{Files: []*v1pb.Release_File{{Statement: []byte(secretSentinel)}}}}},
+		{name: "create worksheet request", request: &v1pb.CreateWorksheetRequest{Worksheet: &v1pb.Worksheet{Content: []byte(secretSentinel)}}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := getRequestString(tt.request)
 			require.NoError(t, err)
-			var password string
+			var sensitiveValue string
 			switch request := tt.request.(type) {
 			case *v1pb.CreateInstanceRequest:
-				password = request.GetInstance().GetDataSources()[0].GetPassword()
+				sensitiveValue = request.GetInstance().GetDataSources()[0].GetPassword()
 			case *v1pb.UpdateInstanceRequest:
-				password = request.GetInstance().GetDataSources()[0].GetPassword()
+				sensitiveValue = request.GetInstance().GetDataSources()[0].GetPassword()
 			case *v1pb.AddDataSourceRequest:
-				password = request.GetDataSource().GetPassword()
+				sensitiveValue = request.GetDataSource().GetPassword()
 			case *v1pb.UpdateDataSourceRequest:
-				password = request.GetDataSource().GetPassword()
+				sensitiveValue = request.GetDataSource().GetPassword()
 			case *v1pb.RemoveDataSourceRequest:
-				password = request.GetDataSource().GetPassword()
+				sensitiveValue = request.GetDataSource().GetPassword()
+			case *v1pb.CreateReleaseRequest:
+				sensitiveValue = string(request.GetRelease().GetFiles()[0].GetStatement())
+			case *v1pb.UpdateReleaseRequest:
+				sensitiveValue = string(request.GetRelease().GetFiles()[0].GetStatement())
+			case *v1pb.CreateWorksheetRequest:
+				sensitiveValue = string(request.GetWorksheet().GetContent())
 			default:
 				t.Fatalf("unexpected request type %T", request)
 			}
-			require.Equal(t, secretSentinel, password, "redaction mutated the request")
+			require.Equal(t, secretSentinel, sensitiveValue, "redaction mutated the request")
 		})
 	}
 }

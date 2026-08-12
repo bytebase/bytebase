@@ -1228,14 +1228,14 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tVERSIONED\x10\x01\x12\x0f\n" +
 	"\vDECLARATIVE\x10\x02:@\xeaA=\n" +
-	"\x14bytebase.com/Release\x12%projects/{project}/releases/{release}2\xc8\n" +
+	"\x14bytebase.com/Release\x12%projects/{project}/releases/{release}2\xd0\n" +
 	"\n" +
 	"\x0eReleaseService\x12\x8a\x01\n" +
 	"\n" +
 	"GetRelease\x12\x1e.bytebase.v1.GetReleaseRequest\x1a\x14.bytebase.v1.Release\"F\xdaA\x04name\x8a\xea0\x0fbb.releases.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/{name=projects/*/releases/*}\x12\x9e\x01\n" +
-	"\fListReleases\x12 .bytebase.v1.ListReleasesRequest\x1a!.bytebase.v1.ListReleasesResponse\"I\xdaA\x06parent\x8a\xea0\x10bb.releases.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/{parent=projects/*}/releases\x12\xa6\x01\n" +
-	"\rCreateRelease\x12!.bytebase.v1.CreateReleaseRequest\x1a\x14.bytebase.v1.Release\"\\\xdaA\x0eparent,release\x8a\xea0\x12bb.releases.create\x90\xea0\x01\x82\xd3\xe4\x93\x02+:\arelease\" /v1/{parent=projects/*}/releases\x12\xb3\x01\n" +
-	"\rUpdateRelease\x12!.bytebase.v1.UpdateReleaseRequest\x1a\x14.bytebase.v1.Release\"i\xdaA\x13release,update_mask\x8a\xea0\x12bb.releases.update\x90\xea0\x01\x82\xd3\xe4\x93\x023:\arelease2(/v1/{release.name=projects/*/releases/*}\x12\x99\x01\n" +
+	"\fListReleases\x12 .bytebase.v1.ListReleasesRequest\x1a!.bytebase.v1.ListReleasesResponse\"I\xdaA\x06parent\x8a\xea0\x10bb.releases.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/{parent=projects/*}/releases\x12\xaa\x01\n" +
+	"\rCreateRelease\x12!.bytebase.v1.CreateReleaseRequest\x1a\x14.bytebase.v1.Release\"`\xdaA\x0eparent,release\x8a\xea0\x12bb.releases.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02+:\arelease\" /v1/{parent=projects/*}/releases\x12\xb7\x01\n" +
+	"\rUpdateRelease\x12!.bytebase.v1.UpdateReleaseRequest\x1a\x14.bytebase.v1.Release\"m\xdaA\x13release,update_mask\x8a\xea0\x12bb.releases.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x023:\arelease2(/v1/{release.name=projects/*/releases/*}\x12\x99\x01\n" +
 	"\rDeleteRelease\x12!.bytebase.v1.DeleteReleaseRequest\x1a\x16.google.protobuf.Empty\"M\xdaA\x04name\x8a\xea0\x12bb.releases.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\"* /v1/{name=projects/*/releases/*}\x12\x9f\x01\n" +
 	"\x0fUndeleteRelease\x12#.bytebase.v1.UndeleteReleaseRequest\x1a\x14.bytebase.v1.Release\"Q\x8a\xea0\x14bb.releases.undelete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02+\")/v1/{name=projects/*/releases/*}:undelete\x12\x9f\x01\n" +
 	"\fCheckRelease\x12 .bytebase.v1.CheckReleaseRequest\x1a!.bytebase.v1.CheckReleaseResponse\"J\x8a\xea0\x11bb.releases.check\x90\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{parent=projects/*}/releases:check\x12\xc8\x01\n" +

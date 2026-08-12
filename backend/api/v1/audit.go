@@ -518,6 +518,18 @@ func getRequestString(request any) (string, error) {
 			r = proto.CloneOf(r)
 			r.Project = redactProject(r.Project)
 			return r
+		case *v1pb.CreateReleaseRequest:
+			r = proto.CloneOf(r)
+			r.Release = redactRelease(r.Release)
+			return r
+		case *v1pb.UpdateReleaseRequest:
+			r = proto.CloneOf(r)
+			r.Release = redactRelease(r.Release)
+			return r
+		case *v1pb.CreateWorksheetRequest:
+			r = proto.CloneOf(r)
+			r.Worksheet = redactWorksheet(r.Worksheet)
+			return r
 		case *v1pb.CreateInstanceRequest:
 			r = proto.CloneOf(r)
 			r.Instance = redactInstance(r.Instance)
@@ -614,6 +626,10 @@ func getResponseString(response any) (string, error) {
 			return redactInstance(r)
 		case *v1pb.Project:
 			return redactProject(r)
+		case *v1pb.Release:
+			return redactRelease(r)
+		case *v1pb.Worksheet:
+			return redactWorksheet(r)
 		case *v1pb.Sheet:
 			return redactSheet(r)
 		case *v1pb.BatchCreateSheetsResponse:
@@ -800,6 +816,28 @@ func redactProject(p *v1pb.Project) *v1pb.Project {
 	for i, webhook := range cloned.Webhooks {
 		cloned.Webhooks[i] = redactWebhook(webhook)
 	}
+	return cloned
+}
+
+func redactRelease(r *v1pb.Release) *v1pb.Release {
+	if r == nil {
+		return nil
+	}
+	cloned := proto.CloneOf(r)
+	for _, file := range cloned.Files {
+		if file != nil {
+			file.Statement = nil
+		}
+	}
+	return cloned
+}
+
+func redactWorksheet(r *v1pb.Worksheet) *v1pb.Worksheet {
+	if r == nil {
+		return nil
+	}
+	cloned := proto.CloneOf(r)
+	cloned.Content = nil
 	return cloned
 }
 

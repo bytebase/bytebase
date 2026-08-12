@@ -59,7 +59,7 @@ The password-reset RPCs have one deliberate limitation: when the unauthenticated
 - Consumes: existing `getResourceFromSingleRequest`, `maskedString`, `proto.CloneOf`, and proto `bytebase.v1.audit` extension.
 - Produces: audited descriptors, canonical resource names, and clone-first project payload redaction for nine lifecycle RPCs.
 
-- [ ] **Step 1: Extend the resource extraction test first**
+- [x] **Step 1: Extend the resource extraction test first**
 
 Add cases to `TestProjectLifecycleAuditResource`, rename it to `TestLifecycleAuditResource`, and include the matching full RPC procedure in each case:
 
@@ -79,7 +79,7 @@ Add cases to `TestProjectLifecycleAuditResource`, rename it to `TestLifecycleAud
 
 Change the assertion to `require.Equal(t, test.want, getRequestResource(test.request, test.method))`.
 
-- [ ] **Step 2: Run the unit test and verify the new cases fail**
+- [x] **Step 2: Run the unit test and verify the new cases fail**
 
 Run:
 
@@ -89,7 +89,7 @@ go test ./backend/api/v1 -run '^TestLifecycleAuditResource$' -count=1
 
 Expected: FAIL because `getRequestResource` does not yet accept the RPC method or use descriptor metadata for standard request shapes.
 
-- [ ] **Step 3: Make resource extraction method-aware**
+- [x] **Step 3: Make resource extraction method-aware**
 
 Pass the full RPC procedure from the interceptor into `getRequestResource`. Preserve explicit cases only where descriptor metadata cannot express the audit resource: authentication email, canonical create names, and non-standard field or batch shapes such as `UpdateDatabaseCatalog.catalog` and `BatchUpdateDatabases.parent`. For all standard annotated requests, extract the short RPC method name and reuse `getResourceFromSingleRequest`:
 
@@ -108,7 +108,7 @@ case *v1pb.CreateProjectRequest:
 
 This keeps the audit-specific switch small while preserving plan, release, revision, IdP, data-source, setting, and other annotated resource names through the shared reflection path.
 
-- [ ] **Step 4: Add failing project payload redaction tests**
+- [x] **Step 4: Add failing project payload redaction tests**
 
 In `backend/api/v1/audit_redaction_test.go`, add request cases for both project mutations with `secretSentinel` in a nested webhook URL:
 
@@ -124,7 +124,7 @@ In `backend/api/v1/audit_redaction_test.go`, add request cases for both project 
 
 Add a response case for `Project` with the same nested webhook URL. Extend `TestAuditRedactionDoesNotMutateInput` with a project response and assert its original webhook URL remains `secretSentinel` after serialization.
 
-- [ ] **Step 5: Run the redaction tests and verify they fail**
+- [x] **Step 5: Run the redaction tests and verify they fail**
 
 ```bash
 go test ./backend/api/v1 -run '^TestAudit(Request|Response)RedactsCredentials$' -count=1
@@ -132,7 +132,7 @@ go test ./backend/api/v1 -run '^TestAudit(Request|Response)RedactsCredentials$' 
 
 Expected: FAIL because project request and response payloads currently serialize webhook URLs unchanged.
 
-- [ ] **Step 6: Implement clone-first project redaction**
+- [x] **Step 6: Implement clone-first project redaction**
 
 Add the nested webhook and project redactors to `backend/api/v1/audit.go`:
 
@@ -162,7 +162,7 @@ func redactProject(p *v1pb.Project) *v1pb.Project {
 
 Register `CreateProjectRequest` and `UpdateProjectRequest` in `getRequestString`, cloning the outer request and replacing its nested project with `redactProject`. Register `Project` in `getResponseString`. Preserve project IDs, update masks, names, webhook names/types/titles, and all other non-secret fields.
 
-- [ ] **Step 7: Annotate the low-risk RPCs**
+- [x] **Step 7: Annotate the low-risk RPCs**
 
 Add this option inside each RPC block for `SetupSample`, `CreateProject`, `UpdateProject`, `RunPlanChecks`, `CancelPlanCheckRun`, `DeleteRelease`, `UndeleteRelease`, `BatchCreateRevisions`, and `DeleteRevision`:
 
@@ -170,7 +170,7 @@ Add this option inside each RPC block for `SetupSample`, `CreateProject`, `Updat
 option (bytebase.v1.audit) = true;
 ```
 
-- [ ] **Step 8: Generate and run focused unit tests**
+- [x] **Step 8: Generate and run focused unit tests**
 
 Run:
 
@@ -184,7 +184,7 @@ go test ./backend/api/v1 -run '^(TestLifecycleAuditResource|TestAudit(Request|Re
 
 Expected: all commands PASS.
 
-- [ ] **Step 9: Add persistence regression coverage for the original symptom**
+- [x] **Step 9: Add persistence regression coverage for the original symptom**
 
 In `backend/tests/login_audit_test.go`, reuse `ctl.project`, which `StartServerWithExternalPg` already created through `ProjectService.CreateProject`. Query workspace audit logs with:
 
@@ -202,7 +202,7 @@ Filter: `method == "/bytebase.v1.InstanceService/CreateInstance"`,
 
 Assert a row exists with `Resource == projectInstance.Name`. This pins the distinction between “descriptor is annotated” and “row was actually persisted.”
 
-- [ ] **Step 10: Run the lifecycle integration tests**
+- [x] **Step 10: Run the lifecycle integration tests**
 
 Run:
 
@@ -212,7 +212,7 @@ go test -v -count=1 ./backend/tests -run '^(TestAuditLogFormat|TestProjectInstan
 
 Expected: PASS, including persisted `CreateProject`, `UpdateProject`, and `CreateInstance` rows.
 
-- [ ] **Step 11: Commit the low-risk batch**
+- [x] **Step 11: Commit the low-risk batch**
 
 ```bash
 git add proto/v1/v1/actuator_service.proto proto/v1/v1/project_service.proto proto/v1/v1/plan_service.proto proto/v1/v1/release_service.proto proto/v1/v1/revision_service.proto backend/api/v1/audit.go backend/api/v1/audit_test.go backend/api/v1/audit_redaction_test.go backend/tests/login_audit_test.go backend/tests/project_instance_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen
@@ -236,7 +236,7 @@ git commit -m "feat: audit core lifecycle APIs"
 - Consumes: `getRequestString`, `getResponseString`, `maskedString`, and `proto.CloneOf`.
 - Produces: `redactRelease`, `redactWorksheet`, and redacted create/update request handling.
 
-- [ ] **Step 1: Add failing request and response redaction cases**
+- [x] **Step 1: Add failing request and response redaction cases**
 
 Add `secretSentinel` as a release statement and worksheet content in `TestAuditRequestRedactsCredentials`, and add a worksheet response case in `TestAuditResponseRedactsCredentials`:
 
@@ -249,7 +249,9 @@ Add `secretSentinel` as a release statement and worksheet content in `TestAuditR
 {name: "worksheet response SQL", response: &v1pb.Worksheet{Content: []byte(secretSentinel)}},
 ```
 
-- [ ] **Step 2: Run the redaction tests and verify they fail**
+Because protobuf `bytes` fields are base64-encoded by `protojson`, assert that neither `secretSentinel` nor its base64 representation appears in the serialized payload.
+
+- [x] **Step 2: Run the redaction tests and verify they fail**
 
 ```bash
 go test ./backend/api/v1 -run '^TestAudit(Request|Response)RedactsCredentials$' -count=1
@@ -257,7 +259,7 @@ go test ./backend/api/v1 -run '^TestAudit(Request|Response)RedactsCredentials$' 
 
 Expected: FAIL because the sentinel appears in serialized audit payloads.
 
-- [ ] **Step 3: Implement clone-first content redactors**
+- [x] **Step 3: Implement clone-first content redactors**
 
 Add these helpers to `audit.go`:
 
@@ -285,21 +287,21 @@ func redactWorksheet(r *v1pb.Worksheet) *v1pb.Worksheet {
 
 Add request switch cases for `CreateReleaseRequest`, `UpdateReleaseRequest`, and `CreateWorksheetRequest`, preserving all non-content fields and update masks. Add response switch cases for `Release` and `Worksheet` so future handler changes cannot expose statement/content fields through the audit response.
 
-- [ ] **Step 4: Verify resource extraction, project ownership, and annotations**
+- [x] **Step 4: Verify resource extraction, project ownership, and annotations**
 
-Add method-aware `TestLifecycleAuditResource` cases for release and worksheet requests. Their annotated parent, name, and nested resource fields must be resolved by the shared reflection path without adding audit-specific type-switch branches.
+Add method-aware `TestLifecycleAuditResource` cases for release and worksheet requests. Their annotated parent, name, and nested resource fields must be resolved by the shared reflection path without adding audit-specific type-switch branches. Declare `Worksheet` as `bytebase.com/Worksheet`, and annotate `CreateWorksheetRequest.parent` and `DeleteWorksheetRequest.name` with their canonical resource references.
 
 Add `audit = true` to `CreateRelease`, `UpdateRelease`, `CreateWorksheet`, and `DeleteWorksheet`.
 
 Ensure both worksheet lifecycle RPCs publish their owning project through the authorization context so the interceptor persists their audit rows under `projects/{project}`, not the workspace fallback. The implementation may use the existing declarative resource metadata or an equivalent project-resolution path; the required contract is project-scoped audit ownership.
 
-- [ ] **Step 5: Verify redaction and persisted ownership**
+- [x] **Step 5: Verify redaction and persisted ownership**
 
 Extend `TestAuditRedactionDoesNotMutateInput` with a release and worksheet, call the corresponding audit serializer, and assert the original statement/content still equals `secretSentinel`.
 
 Extend the audit integration coverage to create and delete a worksheet, then query the project audit stream and assert both rows use `projects/{project}` as their parent. This test must fail if either action is filed only in the workspace audit stream.
 
-- [ ] **Step 6: Generate and test**
+- [x] **Step 6: Generate and test**
 
 ```bash
 buf format -w proto
@@ -312,7 +314,7 @@ go test -v -count=1 ./backend/tests -run '^TestAuditLogFormat$' -timeout 10m
 
 Expected: PASS, no sentinel in any serialized payload, and worksheet lifecycle rows are discoverable in the owning project's audit stream.
 
-- [ ] **Step 7: Commit the content-bearing batch**
+- [x] **Step 7: Commit the content-bearing batch**
 
 ```bash
 git add proto/v1/v1/release_service.proto proto/v1/v1/worksheet_service.proto backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/api/v1/audit_test.go backend/tests/login_audit_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen

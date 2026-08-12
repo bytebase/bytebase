@@ -126,6 +126,46 @@ func TestAuditLogFormat(t *testing.T) {
 	a.Len(updateProjectLogs.Msg.AuditLogs, 1)
 	a.Equal(ctl.project.Name, updateProjectLogs.Msg.AuditLogs[0].Resource)
 
+	worksheetContent := "SELECT secret_audit_worksheet_content;"
+	worksheet, err := ctl.worksheetServiceClient.CreateWorksheet(ctx, connect.NewRequest(&v1pb.CreateWorksheetRequest{
+		Parent: ctl.project.Name,
+		Worksheet: &v1pb.Worksheet{
+			Title:      "Audit worksheet",
+			Content:    []byte(worksheetContent),
+			Visibility: v1pb.Worksheet_PRIVATE,
+		},
+	}))
+	a.NoError(err)
+
+	createWorksheetLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: ctl.project.Name,
+		Filter: `method == "/bytebase.v1.WorksheetService/CreateWorksheet"`,
+	}))
+	a.NoError(err)
+	a.Len(createWorksheetLogs.Msg.AuditLogs, 1)
+	a.Equal(ctl.project.Name, createWorksheetLogs.Msg.AuditLogs[0].Resource)
+	a.True(strings.HasPrefix(createWorksheetLogs.Msg.AuditLogs[0].Name, ctl.project.Name+"/auditLogs/"))
+	auditedCreateWorksheetRequest := &v1pb.CreateWorksheetRequest{}
+	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(createWorksheetLogs.Msg.AuditLogs[0].Request), auditedCreateWorksheetRequest))
+	a.Empty(auditedCreateWorksheetRequest.GetWorksheet().GetContent())
+	auditedWorksheet := &v1pb.Worksheet{}
+	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(createWorksheetLogs.Msg.AuditLogs[0].Response), auditedWorksheet))
+	a.Empty(auditedWorksheet.Content)
+
+	_, err = ctl.worksheetServiceClient.DeleteWorksheet(ctx, connect.NewRequest(&v1pb.DeleteWorksheetRequest{
+		Name: worksheet.Msg.Name,
+	}))
+	a.NoError(err)
+
+	deleteWorksheetLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: ctl.project.Name,
+		Filter: `method == "/bytebase.v1.WorksheetService/DeleteWorksheet"`,
+	}))
+	a.NoError(err)
+	a.Len(deleteWorksheetLogs.Msg.AuditLogs, 1)
+	a.Equal(worksheet.Msg.Name, deleteWorksheetLogs.Msg.AuditLogs[0].Resource)
+	a.True(strings.HasPrefix(deleteWorksheetLogs.Msg.AuditLogs[0].Name, ctl.project.Name+"/auditLogs/"))
+
 	// --- Part 2: Signup (workspace-scoped, allow_without_credential) ---
 	//
 	// The initial `signupAndLogin` in setup already produced a Signup audit
