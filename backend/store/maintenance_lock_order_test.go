@@ -210,8 +210,13 @@ func TestDeleteProjectAndDeleteInstanceLockOrder(t *testing.T) {
 		fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
 		const barrierID = 9921
 		barrier := newMaintenanceLockBarrier(fixture.ctx, t, fixture.db, barrierID)
+		// Park the purge on its task delete: `task` is the table both paths
+		// still contend on. (The purge used to be parked on the saved-query
+		// re-parent, with DeleteInstance blocking via its saved-query
+		// nullify UPDATE — that cross-path statement was removed when the
+		// connected-database reference became a soft payload link.)
 		installMaintenanceLockBarrier(t, fixture.db, barrierID,
-			"AFTER UPDATE OF project ON saved_query FOR EACH ROW")
+			"AFTER DELETE ON task FOR EACH ROW")
 
 		projectResult := make(chan error, 1)
 		go func() { projectResult <- fixture.store.DeleteProject(fixture.ctx, "default", "project-a") }()
