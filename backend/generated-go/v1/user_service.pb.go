@@ -897,21 +897,21 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
 	"\x06source\x18\x03 \x01(\tR\x06source:%\xeaA\"\n" +
-	"\x11bytebase.com/User\x12\rusers/{email}J\x04\b\x05\x10\x06J\x04\b\x0f\x10\x102\xe6\b\n" +
+	"\x11bytebase.com/User\x12\rusers/{email}J\x04\b\x05\x10\x06J\x04\b\x0f\x10\x102\xee\b\n" +
 	"\vUserService\x12p\n" +
 	"\aGetUser\x12\x1b.bytebase.v1.GetUserRequest\x1a\x11.bytebase.v1.User\"5\xdaA\x04name\x8a\xea0\fbb.users.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/{name=users/*}\x12\x86\x01\n" +
 	"\rBatchGetUsers\x12!.bytebase.v1.BatchGetUsersRequest\x1a\".bytebase.v1.BatchGetUsersResponse\".\x8a\xea0\fbb.users.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/users:batchGet\x12Y\n" +
 	"\x0eGetCurrentUser\x12\x16.google.protobuf.Empty\x1a\x11.bytebase.v1.User\"\x1c\x80\xea0\x01\x90\xea0\x02\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/users/me\x12{\n" +
-	"\tListUsers\x12\x1d.bytebase.v1.ListUsersRequest\x1a\x1e.bytebase.v1.ListUsersResponse\"/\xdaA\x06parent\x8a\xea0\rbb.users.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\v\x12\t/v1/users\x12z\n" +
+	"\tListUsers\x12\x1d.bytebase.v1.ListUsersRequest\x1a\x1e.bytebase.v1.ListUsersResponse\"/\xdaA\x06parent\x8a\xea0\rbb.users.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\v\x12\t/v1/users\x12~\n" +
 	"\n" +
-	"CreateUser\x12\x1e.bytebase.v1.CreateUserRequest\x1a\x11.bytebase.v1.User\"9\xdaA\x04user\x8a\xea0\x0fbb.users.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x11:\x04user\"\t/v1/users\x12\x85\x01\n" +
+	"CreateUser\x12\x1e.bytebase.v1.CreateUserRequest\x1a\x11.bytebase.v1.User\"=\xdaA\x04user\x8a\xea0\x0fbb.users.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\x82\xd3\xe4\x93\x02\x11:\x04user\"\t/v1/users\x12\x85\x01\n" +
 	"\n" +
 	"UpdateUser\x12\x1e.bytebase.v1.UpdateUserRequest\x1a\x11.bytebase.v1.User\"D\xdaA\x10user,update_mask\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\x82\xd3\xe4\x93\x02\x1f:\x04user2\x17/v1/{user.name=users/*}\x12o\n" +
 	"\n" +
 	"DeleteUser\x12\x1e.bytebase.v1.DeleteUserRequest\x1a\x16.google.protobuf.Empty\")\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/{name=users/*}\x12s\n" +
-	"\fUndeleteUser\x12 .bytebase.v1.UndeleteUserRequest\x1a\x11.bytebase.v1.User\".\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/{name=users/*}:undelete\x12\x99\x01\n" +
-	"\vUpdateEmail\x12\x1f.bytebase.v1.UpdateEmailRequest\x1a\x11.bytebase.v1.User\"V\xdaA\n" +
-	"name,email\x8a\xea0\x14bb.users.updateEmail\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/v1/{name=users/*}:updateEmailB\xa6\x01\n" +
+	"\fUndeleteUser\x12 .bytebase.v1.UndeleteUserRequest\x1a\x11.bytebase.v1.User\".\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/{name=users/*}:undelete\x12\x9d\x01\n" +
+	"\vUpdateEmail\x12\x1f.bytebase.v1.UpdateEmailRequest\x1a\x11.bytebase.v1.User\"Z\xdaA\n" +
+	"name,email\x8a\xea0\x14bb.users.updateEmail\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/v1/{name=users/*}:updateEmailB\xa6\x01\n" +
 	"\x0fcom.bytebase.v1B\x10UserServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

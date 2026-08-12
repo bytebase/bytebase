@@ -62,6 +62,17 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.UserServiceUpdateUserProcedure,
 		v1connect.WorkspaceServiceLeaveWorkspaceProcedure,
 		v1connect.WorkspaceServiceDeleteWorkspaceProcedure,
+		v1connect.ServiceAccountServiceCreateServiceAccountProcedure,
+		v1connect.ServiceAccountServiceUpdateServiceAccountProcedure,
+		v1connect.WorkspaceServiceRotateDirectorySyncTokenProcedure,
+		v1connect.UserServiceCreateUserProcedure,
+		v1connect.IdentityProviderServiceCreateIdentityProviderProcedure,
+		v1connect.IdentityProviderServiceUpdateIdentityProviderProcedure,
+		v1connect.IdentityProviderServiceTestIdentityProviderProcedure,
+		v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure,
+		v1connect.WorkloadIdentityServiceUpdateWorkloadIdentityProcedure,
+		v1connect.SettingServiceTestEmailSettingProcedure,
+		v1connect.UserServiceUpdateEmailProcedure,
 	}
 	got := forbiddenProceduresFromDescriptors(t)
 
@@ -89,6 +100,60 @@ func TestForbiddenClassMembership(t *testing.T) {
 	require.Equal(t, reasonResetsCredential, mcpForbiddenReasons[v1connect.AuthServiceResetPasswordProcedure])
 	require.Equal(t, reasonTakesOverAccount, mcpForbiddenReasons[v1connect.UserServiceUpdateUserProcedure])
 	require.Equal(t, reasonEndsMembership, mcpForbiddenReasons[v1connect.WorkspaceServiceDeleteWorkspaceProcedure])
+
+	// The distinction the second batch rests on: UpdateUser rewrites the
+	// CALLER's own credentials, so revoking that user contains it, while
+	// CreateServiceAccount leaves behind a principal that revocation never
+	// reaches. Two reasons, because they are two different mechanisms.
+	require.Equal(t, reasonMintsCredentialForOthers,
+		mcpForbiddenReasons[v1connect.ServiceAccountServiceCreateServiceAccountProcedure])
+	require.NotEqual(t, mcpForbiddenReasons[v1connect.UserServiceUpdateUserProcedure],
+		mcpForbiddenReasons[v1connect.UserServiceCreateUserProcedure],
+		"CreateUser makes a new principal; UpdateUser takes over the caller's own")
+}
+
+// TestForbiddenCredentialMintsAreNotDiscoverable is the classification's other
+// half for this batch: an agent must not be OFFERED work it can never do. The
+// index hides FORBIDDEN endpoints from every discovery path while keeping them
+// resolvable by operation ID, and that behavior is pinned in the mcp package
+// against AuthService. This asserts the annotations themselves, which is what
+// that behavior keys on — a method dropped from the annotation set would
+// silently reappear in search_api.
+func TestForbiddenCredentialMintsAreNotDiscoverable(t *testing.T) {
+	got := forbiddenProceduresFromDescriptors(t)
+	for _, procedure := range []string{
+		v1connect.ServiceAccountServiceCreateServiceAccountProcedure,
+		v1connect.ServiceAccountServiceUpdateServiceAccountProcedure,
+		v1connect.WorkspaceServiceRotateDirectorySyncTokenProcedure,
+		v1connect.UserServiceCreateUserProcedure,
+		v1connect.IdentityProviderServiceCreateIdentityProviderProcedure,
+		v1connect.IdentityProviderServiceUpdateIdentityProviderProcedure,
+		v1connect.IdentityProviderServiceTestIdentityProviderProcedure,
+		v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure,
+		v1connect.WorkloadIdentityServiceUpdateWorkloadIdentityProcedure,
+		v1connect.SettingServiceTestEmailSettingProcedure,
+		v1connect.UserServiceUpdateEmailProcedure,
+	} {
+		require.True(t, got[procedure], "%s must be FORBIDDEN to stay out of search_api", procedure)
+	}
+
+	// The reads of the same two services stay served. Their conversions blank
+	// every secret before it leaves the process (idp_service.go's three
+	// "SECURITY: We do not expose" lines), and ListIdentityProviders is the
+	// unauthenticated login-page endpoint — forbidding either would cost an
+	// agent legitimate work while protecting nothing an anonymous HTTP client
+	// could not already read.
+	for _, procedure := range []string{
+		v1connect.IdentityProviderServiceGetIdentityProviderProcedure,
+		v1connect.IdentityProviderServiceListIdentityProvidersProcedure,
+		v1connect.WorkloadIdentityServiceGetWorkloadIdentityProcedure,
+		v1connect.WorkloadIdentityServiceListWorkloadIdentitiesProcedure,
+		v1connect.ServiceAccountServiceGetServiceAccountProcedure,
+		v1connect.ServiceAccountServiceListServiceAccountsProcedure,
+	} {
+		require.False(t, got[procedure],
+			"%s is a read that carries no credential; forbidding it is scope this batch did not take", procedure)
+	}
 }
 
 // TestInternalMCPForbiddenInterceptor pins what the interceptor does with a

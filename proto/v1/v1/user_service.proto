@@ -66,6 +66,7 @@ service UserService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.permission) = "bb.users.create";
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 
   // Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
@@ -113,6 +114,7 @@ service UserService {
     option (bytebase.v1.permission) = "bb.users.updateEmail";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 }
 

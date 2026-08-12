@@ -15,13 +15,16 @@ import (
 )
 
 // mcpCallResult is the slice of call_api's structured output these tests care
-// about: the status the agent sees, the error text, and any token the response
-// body carried.
+// about: the status the agent sees, the error text, and any credential the
+// response body carried. The internal chain answers connect JSON, which is
+// protojson, so the field names here are the camelCased ones an agent would
+// actually read — service_key arrives as serviceKey.
 type mcpCallResult struct {
 	Status   int    `json:"status"`
 	Error    string `json:"error"`
 	Response struct {
-		Token string `json:"token"`
+		Token      string `json:"token"`
+		ServiceKey string `json:"serviceKey"`
 	} `json:"response"`
 }
 

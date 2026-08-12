@@ -44,6 +44,20 @@ const (
 	// whenever the caller has no refresh cookie — and an MCP session never has
 	// one — after having already destroyed the caller's membership.
 	reasonEndsMembership = "it destroys the caller's own workspace membership and mints a plain workspace token"
+	// reasonMintsCredentialForOthers: the method puts a credential that belongs
+	// to a principal the caller is not within someone's reach — by issuing it
+	// (a service key or SCIM token returned in plaintext, a caller-chosen
+	// password on a new account), by carrying it out (a stored client secret or
+	// SMTP password sent to a caller-supplied host), by choosing what will
+	// later be trusted to mint it (an issuer and subject ExchangeToken
+	// validates against), or by redirecting where it gets delivered
+	// (UpdateEmail rebinds any account to an address the caller picked, and the
+	// reset flow mails the code to whatever address the account now carries).
+	// Every lever that contains a runaway session acts on the caller's own
+	// principal: revoke the OAuth grant, flip the workspace MCP switch,
+	// deactivate the human. None of them reaches an identity that was never the
+	// caller's, so what these give away survives all three.
+	reasonMintsCredentialForOthers = "it gives away a credential for a principal other than the caller, which revoking this session would not reach"
 	// reasonForbiddenClass is the fallback for a method annotated FORBIDDEN
 	// that has no entry below. Adding the annotation is what denies the
 	// method; the table only supplies better wording.
@@ -79,6 +93,21 @@ var mcpForbiddenReasons = map[string]string{
 	// Workspace lifecycle.
 	v1connect.WorkspaceServiceLeaveWorkspaceProcedure:  reasonEndsMembership,
 	v1connect.WorkspaceServiceDeleteWorkspaceProcedure: reasonEndsMembership,
+
+	// Credentials for a principal that is not the caller. The rows above end
+	// at the caller's own account, so revoking that user contains them; these
+	// leave an identity behind that no such revocation touches.
+	v1connect.ServiceAccountServiceCreateServiceAccountProcedure:     reasonMintsCredentialForOthers,
+	v1connect.ServiceAccountServiceUpdateServiceAccountProcedure:     reasonMintsCredentialForOthers,
+	v1connect.WorkspaceServiceRotateDirectorySyncTokenProcedure:      reasonMintsCredentialForOthers,
+	v1connect.UserServiceCreateUserProcedure:                         reasonMintsCredentialForOthers,
+	v1connect.UserServiceUpdateEmailProcedure:                        reasonMintsCredentialForOthers,
+	v1connect.IdentityProviderServiceCreateIdentityProviderProcedure: reasonMintsCredentialForOthers,
+	v1connect.IdentityProviderServiceUpdateIdentityProviderProcedure: reasonMintsCredentialForOthers,
+	v1connect.IdentityProviderServiceTestIdentityProviderProcedure:   reasonMintsCredentialForOthers,
+	v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure: reasonMintsCredentialForOthers,
+	v1connect.WorkloadIdentityServiceUpdateWorkloadIdentityProcedure: reasonMintsCredentialForOthers,
+	v1connect.SettingServiceTestEmailSettingProcedure:                reasonMintsCredentialForOthers,
 }
 
 // NewInternalMCPForbiddenInterceptor denies every method annotated
@@ -94,10 +123,13 @@ var mcpForbiddenReasons = map[string]string{
 // list kept here.
 //
 // Sitting inside audit gets the denial a row for the methods that carry the
-// audit annotation, which is all twelve currently annotated FORBIDDEN bar
-// SwitchWorkspace, Refresh, RequestPasswordReset and ResetPassword: needAudit
-// reads that annotation and nothing else, so those four are denied silently
-// until 1b-2 lands the typed policy-denial record that bypasses it.
+// audit annotation, which is all twenty-two currently annotated FORBIDDEN bar
+// SwitchWorkspace, Refresh, RequestPasswordReset, ResetPassword,
+// TestIdentityProvider and TestEmailSetting: needAudit reads that annotation
+// and nothing else, so those six are denied silently until 1b-2 lands the typed
+// policy-denial record that bypasses it. The last two are the ones that sting —
+// they are the methods that would carry a stored secret to an address the agent
+// chose, and their denials are the rows an operator would most want.
 func NewInternalMCPForbiddenInterceptor() connect.Interceptor {
 	return connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {

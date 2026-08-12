@@ -33,6 +33,7 @@ service WorkloadIdentityService {
     option (bytebase.v1.permission) = "bb.workloadIdentities.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 
   // Gets a workload identity by name.
@@ -68,6 +69,7 @@ service WorkloadIdentityService {
     option (bytebase.v1.permission) = "bb.workloadIdentities.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
   }
 
   // Deletes a workload identity.
