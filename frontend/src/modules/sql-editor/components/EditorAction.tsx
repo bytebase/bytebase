@@ -22,7 +22,11 @@ import {
 import { useAppStore } from "@/stores/app";
 import type { SQLEditorQueryParams } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { isSavedQueryWritableV1, keyboardShortcutStr } from "@/utils";
+import {
+  canCreateSavedQueryInProject,
+  isSavedQueryWritableV1,
+  keyboardShortcutStr,
+} from "@/utils";
 import { AdminModeButton } from "./AdminModeButton";
 import { ChooserGroup } from "./ChooserGroup";
 import { ContainerChooser } from "./ContainerChooser";
@@ -71,6 +75,7 @@ export function EditorAction({ onExecute }: Props) {
   );
   const isDisconnected = useIsDisconnected();
   const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
+  const project = useSQLEditorEditorState((s) => s.project);
 
   const isAdminMode = tabMode === "ADMIN";
   const showSheetsFeature = tabMode === "SAVED_QUERY";
@@ -99,6 +104,9 @@ export function EditorAction({ onExecute }: Props) {
       if (sheet && sheet.database !== currentTab.connection.database) {
         return true;
       }
+    } else if (!canCreateSavedQueryInProject(project)) {
+      // Saving a tab that has no saved query behind it creates one.
+      return false;
     }
     // Only disable when status is CLEAN (nothing to save).
     // SAVING is allowed — manual save will abort auto-save and proceed.

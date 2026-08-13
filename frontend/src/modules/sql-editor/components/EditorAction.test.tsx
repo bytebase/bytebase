@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   useSavedQueryAndTab: vi.fn(),
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   isSavedQueryWritableV1: vi.fn(() => true),
+  canCreateSavedQueryInProject: vi.fn(() => true),
   keyboardShortcutStr: vi.fn((s: string) => s),
   emit: vi.fn(),
 }));
@@ -73,6 +74,7 @@ vi.mock("@/modules/sql-editor/store/editor", () => ({
 
 vi.mock("@/utils", () => ({
   isSavedQueryWritableV1: mocks.isSavedQueryWritableV1,
+  canCreateSavedQueryInProject: mocks.canCreateSavedQueryInProject,
   keyboardShortcutStr: mocks.keyboardShortcutStr,
   isDev: () => true,
 }));

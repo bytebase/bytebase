@@ -11,6 +11,13 @@ export const extractSavedQueryID = (name: string) => {
   return matches?.[1] ?? `${UNKNOWN_ID}`;
 };
 
+// Creating a saved query takes bb.savedQueries.create on the project. A role
+// can grant SQL Editor access without it, so entry points that would persist a
+// new saved query check this first -- the editor stays usable, it just keeps
+// the work local.
+export const canCreateSavedQueryInProject = (project: string) =>
+  hasProjectPermissionV2(getProjectByName(project), "bb.savedQueries.create");
+
 // Saved queries are private: only the creator, or someone holding
 // "bb.savedQueries.manage" (the admin backstop), can read or write one.
 // Per-object sharing arrives with the access-model redesign.
