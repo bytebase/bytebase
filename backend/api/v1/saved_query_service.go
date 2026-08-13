@@ -116,7 +116,9 @@ func (s *SavedQueryService) GetSavedQuery(
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access with error: %v", err))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot access saved query %s", savedQuery.Title))
+		// Same answer as a name that does not exist: a saved query the caller
+		// cannot read must not be probeable, by existence or by title.
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
 	v1pbSavedQuery := convertToAPISavedQuery(savedQuery)
@@ -176,6 +178,11 @@ func (s *SavedQueryService) ListSavedQueries(
 		FilterQ:        filterQ,
 		Limit:          &limitPlusOne,
 		Offset:         &offset.offset,
+		// Governance reads are whole-statement reads. Search previews and
+		// offers GetSavedQuery for the rest, but a caller holding only
+		// bb.savedQueries.list cannot Get another creator's row, so a
+		// truncated statement here would have no way back to the full one.
+		LoadFull: true,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list saved queries: %v", err))
@@ -378,7 +385,11 @@ func (s *SavedQueryService) UpdateSavedQuery(
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access with error: %v", err))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot write saved query %s", savedQuery.Title))
+		// Write access and read access are one predicate today, so failing it
+		// means the caller cannot see this row either -- answer as if it were
+		// missing. Once per-object grants land, a VIEWER who cannot write gets
+		// PermissionDenied here, because they can already see the row.
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
 	savedQueryPatch := &store.PatchSavedQueryMessage{
@@ -457,7 +468,11 @@ func (s *SavedQueryService) DeleteSavedQuery(
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access with error: %v", err))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot write saved query %s", savedQuery.Title))
+		// Write access and read access are one predicate today, so failing it
+		// means the caller cannot see this row either -- answer as if it were
+		// missing. Once per-object grants land, a VIEWER who cannot write gets
+		// PermissionDenied here, because they can already see the row.
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
 	if err := s.store.DeleteSavedQuery(ctx, savedQuery.ResourceID); err != nil {

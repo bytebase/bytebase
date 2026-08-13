@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -509,6 +511,133 @@ func TestSearchSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 	}))
 	a.NoError(err)
 	a.Equal([]string{"theirs", "theirs/deep"}, sharedFolders.Msg.Folders)
+}
+
+func TestGetSavedQueryHidesUnreadableRows(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	ownerToken := ctl.authInterceptor.token
+	created, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
+		Parent: ctl.project.Name,
+		SavedQuery: &v1pb.SavedQuery{
+			Title:   "Private title that must not leak",
+			Content: []byte("SELECT 1;"),
+		},
+	}))
+	a.NoError(err)
+
+	otherEmail := fmt.Sprintf("saved-query-probe-%s@example.com", generateRandomString("user"))
+	const otherPassword = "1024bytebase"
+	otherUser, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{
+			Email:    otherEmail,
+			Password: otherPassword,
+			Title:    "Saved Query Probe User",
+		},
+	}))
+	a.NoError(err)
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, otherUser.Msg.Workspace, fmt.Sprintf("user:%s", otherEmail), "roles/workspaceMember")
+	a.NoError(err)
+	policyResp, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+		Resource: ctl.project.Name,
+	}))
+	a.NoError(err)
+	policy := policyResp.Msg
+	policy.Bindings = append(policy.Bindings, &v1pb.Binding{
+		Role:    "roles/sqlEditorUser",
+		Members: []string{fmt.Sprintf("user:%s", otherEmail)},
+	})
+	_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Resource: ctl.project.Name,
+		Policy:   policy,
+	}))
+	a.NoError(err)
+
+	loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    otherEmail,
+		Password: otherPassword,
+	}))
+	a.NoError(err)
+	ctl.authInterceptor.token = loginResp.Msg.Token
+	defer func() { ctl.authInterceptor.token = ownerToken }()
+
+	// A saved query someone else owns answers exactly like a name that was
+	// never issued -- same code, and no title in the message.
+	_, err = ctl.savedQueryServiceClient.GetSavedQuery(ctx, connect.NewRequest(&v1pb.GetSavedQueryRequest{
+		Name: created.Msg.Name,
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+	a.NotContains(err.Error(), "Private title that must not leak")
+
+	missing, err := ctl.savedQueryServiceClient.GetSavedQuery(ctx, connect.NewRequest(&v1pb.GetSavedQueryRequest{
+		Name: fmt.Sprintf("%s/savedQueries/909909", ctl.project.Name),
+	}))
+	a.Error(err)
+	a.Nil(missing)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+
+	// Writes answer the same way, so a name cannot be probed by trying to
+	// change or remove it either.
+	_, err = ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+		SavedQuery: &v1pb.SavedQuery{Name: created.Msg.Name, Title: "probe"},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title"}},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+
+	_, err = ctl.savedQueryServiceClient.DeleteSavedQuery(ctx, connect.NewRequest(&v1pb.DeleteSavedQueryRequest{
+		Name: created.Msg.Name,
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+}
+
+func TestListSavedQueriesReturnsWholeStatement(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	// Longer than the display cap Search truncates at, which the governance
+	// surface must not apply -- a lister cannot Get another creator's row to
+	// fetch the remainder.
+	statement := append([]byte("SELECT 1; -- "), bytes.Repeat([]byte("x"), common.MaxSheetSize)...)
+	created, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
+		Parent: ctl.project.Name,
+		SavedQuery: &v1pb.SavedQuery{
+			Title:   "long statement",
+			Content: statement,
+		},
+	}))
+	a.NoError(err)
+
+	listResp, err := ctl.savedQueryServiceClient.ListSavedQueries(ctx, connect.NewRequest(&v1pb.ListSavedQueriesRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf(`name == %q`, created.Msg.Name),
+	}))
+	a.NoError(err)
+	a.Len(listResp.Msg.SavedQueries, 1)
+	listed := listResp.Msg.SavedQueries[0]
+	a.Equal(int64(len(statement)), listed.ContentSize)
+	a.Equal(len(statement), len(listed.Content))
+
+	searchResp, err := ctl.savedQueryServiceClient.SearchSavedQueries(ctx, connect.NewRequest(&v1pb.SearchSavedQueriesRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf(`name == %q`, created.Msg.Name),
+	}))
+	a.NoError(err)
+	a.Len(searchResp.Msg.SavedQueries, 1)
+	a.Less(len(searchResp.Msg.SavedQueries[0].Content), len(statement))
 }
 
 func TestCreateSavedQueryRejectsArchivedProject(t *testing.T) {

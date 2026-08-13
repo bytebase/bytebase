@@ -13692,7 +13692,8 @@ paths:
       description: |-
         List saved queries: the grant-independent governance surface. Supports
          listing in a project, or across all projects by using `projects/-`, with
-         full content — e.g. an offboarding review filtering by creator.
+         whole statements rather than the previews Search returns — e.g. an
+         offboarding review filtering by creator.
          Permissions required: bb.savedQueries.list
       operationId: SavedQueryService_ListSavedQueries
       parameters:
@@ -13813,6 +13814,7 @@ paths:
       summary: DeleteSavedQuery
       description: |-
         Delete a saved query. Only the creator (or an admin) can delete.
+         Returns NotFound for saved queries the caller cannot read.
          Permissions required: creator, or bb.savedQueries.manage in scope
       operationId: SavedQueryService_DeleteSavedQuery
       parameters:
@@ -13842,6 +13844,7 @@ paths:
       description: |-
         Update a saved query. `title`, `content`, and `database` require write
          access; `folder` re-files the saved query and is creator/admin only.
+         Returns NotFound for saved queries the caller cannot read.
          Permissions required: creator, or bb.savedQueries.manage in scope
       operationId: SavedQueryService_UpdateSavedQuery
       parameters:

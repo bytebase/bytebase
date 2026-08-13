@@ -565,7 +565,8 @@ export declare const SavedQueryService: GenService<{
   /**
    * List saved queries: the grant-independent governance surface. Supports
    * listing in a project, or across all projects by using `projects/-`, with
-   * full content — e.g. an offboarding review filtering by creator.
+   * whole statements rather than the previews Search returns — e.g. an
+   * offboarding review filtering by creator.
    * Permissions required: bb.savedQueries.list
    *
    * @generated from rpc bytebase.v1.SavedQueryService.ListSavedQueries
@@ -605,6 +606,7 @@ export declare const SavedQueryService: GenService<{
   /**
    * Update a saved query. `title`, `content`, and `database` require write
    * access; `folder` re-files the saved query and is creator/admin only.
+   * Returns NotFound for saved queries the caller cannot read.
    * Permissions required: creator, or bb.savedQueries.manage in scope
    *
    * @generated from rpc bytebase.v1.SavedQueryService.UpdateSavedQuery
@@ -644,6 +646,7 @@ export declare const SavedQueryService: GenService<{
   },
   /**
    * Delete a saved query. Only the creator (or an admin) can delete.
+   * Returns NotFound for saved queries the caller cannot read.
    * Permissions required: creator, or bb.savedQueries.manage in scope
    *
    * @generated from rpc bytebase.v1.SavedQueryService.DeleteSavedQuery

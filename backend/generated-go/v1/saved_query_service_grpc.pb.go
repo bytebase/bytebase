@@ -53,7 +53,8 @@ type SavedQueryServiceClient interface {
 	GetSavedQuery(ctx context.Context, in *GetSavedQueryRequest, opts ...grpc.CallOption) (*SavedQuery, error)
 	// List saved queries: the grant-independent governance surface. Supports
 	// listing in a project, or across all projects by using `projects/-`, with
-	// full content — e.g. an offboarding review filtering by creator.
+	// whole statements rather than the previews Search returns — e.g. an
+	// offboarding review filtering by creator.
 	// Permissions required: bb.savedQueries.list
 	ListSavedQueries(ctx context.Context, in *ListSavedQueriesRequest, opts ...grpc.CallOption) (*ListSavedQueriesResponse, error)
 	// Search for saved queries in a project: the SQL Editor's hot list path,
@@ -69,6 +70,7 @@ type SavedQueryServiceClient interface {
 	SearchSavedQueryFolders(ctx context.Context, in *SearchSavedQueryFoldersRequest, opts ...grpc.CallOption) (*SearchSavedQueryFoldersResponse, error)
 	// Update a saved query. `title`, `content`, and `database` require write
 	// access; `folder` re-files the saved query and is creator/admin only.
+	// Returns NotFound for saved queries the caller cannot read.
 	// Permissions required: creator, or bb.savedQueries.manage in scope
 	UpdateSavedQuery(ctx context.Context, in *UpdateSavedQueryRequest, opts ...grpc.CallOption) (*SavedQuery, error)
 	// Star or unstar a saved query for the caller. A star is always the
@@ -84,6 +86,7 @@ type SavedQueryServiceClient interface {
 	// Permissions required: creator, or bb.savedQueries.manage in scope
 	BatchUpdateSavedQueries(ctx context.Context, in *BatchUpdateSavedQueriesRequest, opts ...grpc.CallOption) (*BatchUpdateSavedQueriesResponse, error)
 	// Delete a saved query. Only the creator (or an admin) can delete.
+	// Returns NotFound for saved queries the caller cannot read.
 	// Permissions required: creator, or bb.savedQueries.manage in scope
 	DeleteSavedQuery(ctx context.Context, in *DeleteSavedQueryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -208,7 +211,8 @@ type SavedQueryServiceServer interface {
 	GetSavedQuery(context.Context, *GetSavedQueryRequest) (*SavedQuery, error)
 	// List saved queries: the grant-independent governance surface. Supports
 	// listing in a project, or across all projects by using `projects/-`, with
-	// full content — e.g. an offboarding review filtering by creator.
+	// whole statements rather than the previews Search returns — e.g. an
+	// offboarding review filtering by creator.
 	// Permissions required: bb.savedQueries.list
 	ListSavedQueries(context.Context, *ListSavedQueriesRequest) (*ListSavedQueriesResponse, error)
 	// Search for saved queries in a project: the SQL Editor's hot list path,
@@ -224,6 +228,7 @@ type SavedQueryServiceServer interface {
 	SearchSavedQueryFolders(context.Context, *SearchSavedQueryFoldersRequest) (*SearchSavedQueryFoldersResponse, error)
 	// Update a saved query. `title`, `content`, and `database` require write
 	// access; `folder` re-files the saved query and is creator/admin only.
+	// Returns NotFound for saved queries the caller cannot read.
 	// Permissions required: creator, or bb.savedQueries.manage in scope
 	UpdateSavedQuery(context.Context, *UpdateSavedQueryRequest) (*SavedQuery, error)
 	// Star or unstar a saved query for the caller. A star is always the
@@ -239,6 +244,7 @@ type SavedQueryServiceServer interface {
 	// Permissions required: creator, or bb.savedQueries.manage in scope
 	BatchUpdateSavedQueries(context.Context, *BatchUpdateSavedQueriesRequest) (*BatchUpdateSavedQueriesResponse, error)
 	// Delete a saved query. Only the creator (or an admin) can delete.
+	// Returns NotFound for saved queries the caller cannot read.
 	// Permissions required: creator, or bb.savedQueries.manage in scope
 	DeleteSavedQuery(context.Context, *DeleteSavedQueryRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedSavedQueryServiceServer()

@@ -75,7 +75,8 @@ type SavedQueryServiceClient interface {
 	GetSavedQuery(context.Context, *connect.Request[v1.GetSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error)
 	// List saved queries: the grant-independent governance surface. Supports
 	// listing in a project, or across all projects by using `projects/-`, with
-	// full content — e.g. an offboarding review filtering by creator.
+	// whole statements rather than the previews Search returns — e.g. an
+	// offboarding review filtering by creator.
 	// Permissions required: bb.savedQueries.list
 	ListSavedQueries(context.Context, *connect.Request[v1.ListSavedQueriesRequest]) (*connect.Response[v1.ListSavedQueriesResponse], error)
 	// Search for saved queries in a project: the SQL Editor's hot list path,
@@ -91,6 +92,7 @@ type SavedQueryServiceClient interface {
 	SearchSavedQueryFolders(context.Context, *connect.Request[v1.SearchSavedQueryFoldersRequest]) (*connect.Response[v1.SearchSavedQueryFoldersResponse], error)
 	// Update a saved query. `title`, `content`, and `database` require write
 	// access; `folder` re-files the saved query and is creator/admin only.
+	// Returns NotFound for saved queries the caller cannot read.
 	// Permissions required: creator, or bb.savedQueries.manage in scope
 	UpdateSavedQuery(context.Context, *connect.Request[v1.UpdateSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error)
 	// Star or unstar a saved query for the caller. A star is always the
@@ -106,6 +108,7 @@ type SavedQueryServiceClient interface {
 	// Permissions required: creator, or bb.savedQueries.manage in scope
 	BatchUpdateSavedQueries(context.Context, *connect.Request[v1.BatchUpdateSavedQueriesRequest]) (*connect.Response[v1.BatchUpdateSavedQueriesResponse], error)
 	// Delete a saved query. Only the creator (or an admin) can delete.
+	// Returns NotFound for saved queries the caller cannot read.
 	// Permissions required: creator, or bb.savedQueries.manage in scope
 	DeleteSavedQuery(context.Context, *connect.Request[v1.DeleteSavedQueryRequest]) (*connect.Response[emptypb.Empty], error)
 }
@@ -248,7 +251,8 @@ type SavedQueryServiceHandler interface {
 	GetSavedQuery(context.Context, *connect.Request[v1.GetSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error)
 	// List saved queries: the grant-independent governance surface. Supports
 	// listing in a project, or across all projects by using `projects/-`, with
-	// full content — e.g. an offboarding review filtering by creator.
+	// whole statements rather than the previews Search returns — e.g. an
+	// offboarding review filtering by creator.
 	// Permissions required: bb.savedQueries.list
 	ListSavedQueries(context.Context, *connect.Request[v1.ListSavedQueriesRequest]) (*connect.Response[v1.ListSavedQueriesResponse], error)
 	// Search for saved queries in a project: the SQL Editor's hot list path,
@@ -264,6 +268,7 @@ type SavedQueryServiceHandler interface {
 	SearchSavedQueryFolders(context.Context, *connect.Request[v1.SearchSavedQueryFoldersRequest]) (*connect.Response[v1.SearchSavedQueryFoldersResponse], error)
 	// Update a saved query. `title`, `content`, and `database` require write
 	// access; `folder` re-files the saved query and is creator/admin only.
+	// Returns NotFound for saved queries the caller cannot read.
 	// Permissions required: creator, or bb.savedQueries.manage in scope
 	UpdateSavedQuery(context.Context, *connect.Request[v1.UpdateSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error)
 	// Star or unstar a saved query for the caller. A star is always the
@@ -279,6 +284,7 @@ type SavedQueryServiceHandler interface {
 	// Permissions required: creator, or bb.savedQueries.manage in scope
 	BatchUpdateSavedQueries(context.Context, *connect.Request[v1.BatchUpdateSavedQueriesRequest]) (*connect.Response[v1.BatchUpdateSavedQueriesResponse], error)
 	// Delete a saved query. Only the creator (or an admin) can delete.
+	// Returns NotFound for saved queries the caller cannot read.
 	// Permissions required: creator, or bb.savedQueries.manage in scope
 	DeleteSavedQuery(context.Context, *connect.Request[v1.DeleteSavedQueryRequest]) (*connect.Response[emptypb.Empty], error)
 }
