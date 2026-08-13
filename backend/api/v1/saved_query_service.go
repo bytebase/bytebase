@@ -63,7 +63,11 @@ func (s *SavedQueryService) CreateSavedQuery(
 			return nil, err
 		}
 	}
-	savedQuery, err := s.store.CreateSavedQuery(ctx, convertToStoreSavedQueryMessage(projectResourceID, database, user.Email, request.SavedQuery))
+	folder, err := store.NormalizeSavedQueryFolder(request.SavedQuery.Folder)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	savedQuery, err := s.store.CreateSavedQuery(ctx, convertToStoreSavedQueryMessage(projectResourceID, database, user.Email, folder, request.SavedQuery))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create saved query: %v", err))
 	}
@@ -360,7 +364,10 @@ func (s *SavedQueryService) UpdateSavedQuery(
 			statement := string(request.SavedQuery.Content)
 			savedQueryPatch.Statement = &statement
 		case "folder":
-			folder := strings.Trim(request.SavedQuery.Folder, "/")
+			folder, err := store.NormalizeSavedQueryFolder(request.SavedQuery.Folder)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
 			savedQueryPatch.Folder = &folder
 		case "database":
 			switch request.SavedQuery.Database {
@@ -494,6 +501,13 @@ func (s *SavedQueryService) BatchUpdateSavedQueries(
 		}
 	}
 
+	// Normalize before any work: a folder the filter could never match must
+	// not be written to a single row.
+	folder, err := store.NormalizeSavedQueryFolder(request.SavedQuery.Folder)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -532,7 +546,7 @@ func (s *SavedQueryService) BatchUpdateSavedQueries(
 		savedQueryIDs = append(savedQueryIDs, savedQuery.ResourceID)
 	}
 
-	updated, err := s.store.BatchUpdateSavedQueryFolder(ctx, savedQueryIDs, request.SavedQuery.Folder)
+	updated, err := s.store.BatchUpdateSavedQueryFolder(ctx, savedQueryIDs, folder)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to batch update saved queries: %v", err))
 	}
@@ -668,13 +682,13 @@ func convertToAPISavedQuery(savedQuery *store.SavedQueryMessage) *v1pb.SavedQuer
 	}
 }
 
-func convertToStoreSavedQueryMessage(projectID string, database string, creator string, savedQuery *v1pb.SavedQuery) *store.SavedQueryMessage {
+func convertToStoreSavedQueryMessage(projectID string, database string, creator string, folder string, savedQuery *v1pb.SavedQuery) *store.SavedQueryMessage {
 	return &store.SavedQueryMessage{
 		ProjectID: projectID,
 		Creator:   creator,
 		Title:     savedQuery.Title,
 		Statement: string(savedQuery.Content),
 		Database:  database,
-		Folder:    strings.Trim(savedQuery.Folder, "/"),
+		Folder:    folder,
 	}
 }

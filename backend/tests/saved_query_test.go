@@ -389,6 +389,29 @@ func TestBatchUpdateSavedQueriesFilterByFolder(t *testing.T) {
 	a.Equal(int32(2), nameResp.Msg.UpdatedCount)
 	a.ElementsMatch([]string{directSavedQuery.Name, childSavedQuery.Name}, searchByFolder("selected"))
 	a.ElementsMatch([]string{otherSavedQuery.Name}, searchByFolder("other"))
+
+	// Batch moves normalize like every other write path, so a folder sent
+	// with boundary slashes still lands where `folder == "boxed"` finds it.
+	slashResp, err := ctl.savedQueryServiceClient.BatchUpdateSavedQueries(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueriesRequest{
+		Parent:     ctl.project.Name,
+		Filter:     `folder == "selected"`,
+		SavedQuery: &v1pb.SavedQuery{Folder: "/boxed/"},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
+	}))
+	a.NoError(err)
+	a.Equal(int32(2), slashResp.Msg.UpdatedCount)
+	a.ElementsMatch([]string{directSavedQuery.Name, childSavedQuery.Name}, searchByFolder("boxed"))
+
+	// A path the filter could never match is rejected, not written.
+	_, err = ctl.savedQueryServiceClient.BatchUpdateSavedQueries(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueriesRequest{
+		Parent:     ctl.project.Name,
+		Filter:     `folder == "boxed"`,
+		SavedQuery: &v1pb.SavedQuery{Folder: "bad//path"},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	a.ElementsMatch([]string{directSavedQuery.Name, childSavedQuery.Name}, searchByFolder("boxed"))
 }
 
 func TestSearchSavedQueryFoldersReturnsCallerFolders(t *testing.T) {

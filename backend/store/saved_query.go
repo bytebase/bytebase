@@ -478,6 +478,20 @@ func (s *Store) ListSavedQueryFolderPaths(ctx context.Context, projectID string,
 	return folders, nil
 }
 
+// NormalizeSavedQueryFolder puts a client-supplied folder path into the one
+// form that is stored and matched. Boundary slashes are trimmed, so "/team/"
+// and "team" name the same folder, and an empty path segment is rejected
+// rather than stored: every write path and the `folder ==` filter share this
+// function, so a folder that can be stored is always a folder that can be
+// found. "" means unfiled.
+func NormalizeSavedQueryFolder(folder string) (string, error) {
+	normalized := strings.Trim(folder, "/")
+	if strings.Contains(normalized, "//") {
+		return "", errors.Errorf("invalid folder %q: empty path segment", folder)
+	}
+	return normalized, nil
+}
+
 func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, filter string, allowTitleContains bool) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
@@ -547,9 +561,9 @@ func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, fil
 			if !ok {
 				return nil, errors.Errorf("invalid folder value %q", value)
 			}
-			folder = strings.Trim(folder, "/")
-			if strings.Contains(folder, "//") {
-				return nil, errors.Errorf("invalid folder %q", value)
+			folder, err := NormalizeSavedQueryFolder(folder)
+			if err != nil {
+				return nil, err
 			}
 			return qb.Q().Space("saved_query.folder = ?", folder), nil
 		default:
