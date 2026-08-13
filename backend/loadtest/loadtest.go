@@ -26,14 +26,14 @@ type Config struct {
 	Host          string
 	Port          int
 	AdminUser     string
-	AdminPassword string
+	AdminPassword string `json:"-"`
 	SSLMode       string // "disable" locally, "require" or "verify-full" for Cloud SQL.
 
 	DatabaseNamePrefix string // e.g. "lt_ws_"
 	RoleNamePrefix     string // e.g. "lt_role_"
 
 	// SeedSQL is applied verbatim to each tenant database after creation.
-	SeedSQL string
+	SeedSQL string `json:"-"`
 
 	// Matrix.
 	DatabaseCounts           []int
@@ -100,7 +100,7 @@ type Tenant struct {
 	Index    int
 	Database string
 	Role     string
-	Password string
+	Password string `json:"-"`
 }
 
 // DurationStats summarizes a latency distribution in milliseconds.
