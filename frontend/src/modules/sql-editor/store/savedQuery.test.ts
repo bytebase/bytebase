@@ -79,7 +79,6 @@ const piniaMocks = vi.hoisted(() => ({
   savedQueryStore: {
     getSavedQueryByName: vi.fn(),
     patchSavedQuery: vi.fn(),
-    upsertSavedQueryOrganizer: vi.fn(),
     createSavedQuery: vi.fn(),
     fetchProject: vi.fn(),
     loadProjectIamPolicy: vi.fn(),

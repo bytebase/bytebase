@@ -11,14 +11,14 @@ export const extractSavedQueryID = (name: string) => {
 };
 
 // Saved queries are private: only the creator, or a workspace admin holding
-// "bb.worksheets.manage" (the admin backstop), can read or write one.
+// "bb.savedQueries.manage" (the admin backstop), can read or write one.
 // Per-object sharing arrives with the access-model redesign.
 const canAccessSavedQuery = (sheet: SavedQuery) => {
   const currentUser = getCurrentUserV1();
   if (extractUserEmail(sheet.creator) === currentUser.email) {
     return true;
   }
-  return hasWorkspacePermissionV2("bb.worksheets.manage");
+  return hasWorkspacePermissionV2("bb.savedQueries.manage");
 };
 
 export const isSavedQueryReadableV1 = (sheet: SavedQuery) =>

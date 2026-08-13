@@ -15,53 +15,50 @@ import "v1/annotation.proto";
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 // SavedQueryService manages saved queries for SQL Editor query development.
-// Permission IDs still use the legacy `bb.worksheets.*` names; they are
-// renamed together with the access-model redesign and its role migration.
+//
+// A saved query is private to its creator; `bb.savedQueries.manage` is the
+// admin backstop that can reach any saved query in scope. Per-object
+// VIEWER/EDITOR grants arrive with the access-model redesign, which brings
+// its own policy shapes and the GetIamPolicy/SetIamPolicy pair that manages
+// them.
 service SavedQueryService {
-  // Creates a personal saved query used in SQL Editor. Any authenticated user can create their own saved queries.
-  // Permissions required: None (authenticated users only)
+  // Creates a personal saved query used in SQL Editor. The creator becomes
+  // the fixed owner.
+  // Permissions required: bb.savedQueries.create on the parent project
   rpc CreateSavedQuery(CreateSavedQueryRequest) returns (SavedQuery) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/savedQueries"
       body: "saved_query"
     };
     option (google.api.method_signature) = "parent,saved_query";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.permission) = "bb.savedQueries.create";
+    option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
 
-  // Get a saved query by name.
-  // Saved queries are private: only the creator, or a caller holding
-  // bb.worksheets.manage on the workspace, can access one.
-  // Permissions required: creator, or workspace bb.worksheets.manage
+  // Get a saved query by name. Returns NotFound for saved queries the
+  // caller cannot read.
+  // Permissions required: creator, or bb.savedQueries.manage in scope
   rpc GetSavedQuery(GetSavedQueryRequest) returns (SavedQuery) {
     option (google.api.http) = {get: "/v1/{name=projects/*/savedQueries/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
-  // List saved queries.
-  // This is used for listing saved queries in a project, or across all projects by using `projects/-`.
-  // Permissions required: bb.worksheets.list
+  // List saved queries: the grant-independent governance surface. Supports
+  // listing in a project, or across all projects by using `projects/-`, with
+  // full content — e.g. an offboarding review filtering by creator.
+  // Permissions required: bb.savedQueries.list
   rpc ListSavedQueries(ListSavedQueriesRequest) returns (ListSavedQueriesResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/savedQueries"};
     option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.worksheets.list";
+    option (bytebase.v1.permission) = "bb.savedQueries.list";
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // List the caller's saved query folders.
-  // Only folders stored in the caller's saved query organizer are returned.
-  rpc ListSavedQueryFolders(ListSavedQueryFoldersRequest) returns (ListSavedQueryFoldersResponse) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*}/savedQueryFolders"};
-    option (google.api.method_signature) = "parent";
-    option (bytebase.v1.auth_method) = CUSTOM;
-  }
-
-  // Search for saved queries.
-  // This is used for finding my saved queries in a project.
-  // The saved query accessibility is the same as GetSavedQuery().
-  // Permissions required: creator, or workspace bb.worksheets.manage
+  // Search for saved queries in a project: the SQL Editor's hot list path,
+  // returning only rows the caller can read, with content previews.
+  // Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
   rpc SearchSavedQueries(SearchSavedQueriesRequest) returns (SearchSavedQueriesResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/savedQueries:search"
@@ -71,9 +68,24 @@ service SavedQueryService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
-  // Update a saved query.
-  // The access is the same as GetSavedQuery method.
-  // Permissions required: creator, or workspace bb.worksheets.manage
+  // Search the folder paths of the caller's saved queries in a project.
+  // Folders are a derived view over the `folder` field rather than a
+  // resource collection, so this is a custom method on savedQueries and
+  // shares SearchSavedQueries' caller-scoped semantics — not the
+  // cross-creator reach of ListSavedQueries.
+  // Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
+  rpc SearchSavedQueryFolders(SearchSavedQueryFoldersRequest) returns (SearchSavedQueryFoldersResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/savedQueries:searchFolders"
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent";
+    option (bytebase.v1.auth_method) = CUSTOM;
+  }
+
+  // Update a saved query. `title`, `content`, and `database` require write
+  // access; `folder` re-files the saved query and is creator/admin only.
+  // Permissions required: creator, or bb.savedQueries.manage in scope
   rpc UpdateSavedQuery(UpdateSavedQueryRequest) returns (SavedQuery) {
     option (google.api.http) = {
       patch: "/v1/{saved_query.name=projects/*/savedQueries/*}"
@@ -83,33 +95,36 @@ service SavedQueryService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
-  // Update the organizer of a saved query.
-  // The access is the same as UpdateSavedQuery method.
-  // Permissions required: creator, or workspace bb.worksheets.manage
-  rpc UpdateSavedQueryOrganizer(UpdateSavedQueryOrganizerRequest) returns (SavedQueryOrganizer) {
+  // Star or unstar a saved query for the caller. A star is always the
+  // caller's own per-user marker — invisible to others and carrying no
+  // access. The only requirement is that the caller can read the saved
+  // query being starred (which also keeps private saved query names
+  // unprobeable).
+  // Permissions required: read access to the saved query
+  rpc UpdateSavedQueryStar(UpdateSavedQueryStarRequest) returns (SavedQuery) {
     option (google.api.http) = {
-      patch: "/v1/{organizer.saved_query=projects/*/savedQueries/*}/organizer"
-      body: "organizer"
-    };
-    option (google.api.method_signature) = "organizer,update_mask";
-    option (bytebase.v1.auth_method) = CUSTOM;
-  }
-
-  // Batch update the organizers of saved queries.
-  // The access is the same as UpdateSavedQuery method.
-  // Permissions required: creator, or workspace bb.worksheets.manage
-  rpc BatchUpdateSavedQueryOrganizer(BatchUpdateSavedQueryOrganizerRequest) returns (BatchUpdateSavedQueryOrganizerResponse) {
-    option (google.api.http) = {
-      post: "/v1/{parent=projects/*}/savedQueries/organizers:batchUpdate"
+      post: "/v1/{name=projects/*/savedQueries/*}:updateStar"
       body: "*"
     };
-    option (google.api.method_signature) = "parent,organizer,update_mask";
+    option (google.api.method_signature) = "name,starred";
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
-  // Delete a saved query.
-  // The access is the same as UpdateSavedQuery method.
-  // Permissions required: creator, or workspace bb.worksheets.manage
+  // Batch re-file saved queries into a folder. The update mask supports
+  // `folder` only; only rows the caller may re-file are updated (their own,
+  // or any in scope for admins).
+  // Permissions required: creator, or bb.savedQueries.manage in scope
+  rpc BatchUpdateSavedQueries(BatchUpdateSavedQueriesRequest) returns (BatchUpdateSavedQueriesResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/savedQueries:batchUpdate"
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent,saved_query,update_mask";
+    option (bytebase.v1.auth_method) = CUSTOM;
+  }
+
+  // Delete a saved query. Only the creator (or an admin) can delete.
+  // Permissions required: creator, or bb.savedQueries.manage in scope
   rpc DeleteSavedQuery(DeleteSavedQueryRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/savedQueries/*}"};
     option (google.api.method_signature) = "name";
@@ -180,29 +195,20 @@ message ListSavedQueriesResponse {
   string next_page_token = 2;
 }
 
-message ListSavedQueryFoldersRequest {
-  // The parent resource of the saved query folders.
+message SearchSavedQueryFoldersRequest {
+  // The parent resource whose saved query folders are searched.
   // Format: projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 }
 
-message ListSavedQueryFoldersResponse {
-  // The caller's saved query folders.
-  repeated SavedQueryFolder folders = 1;
-}
-
-message SavedQueryFolder {
-  enum Category {
-    CATEGORY_UNSPECIFIED = 0;
-    MINE = 1;
-    SHARED = 2;
-  }
-
-  // The folder path segments.
+message SearchSavedQueryFoldersResponse {
+  // The caller's folder paths, including every ancestor prefix, sorted.
+  // A folder is a path on saved queries ("a/b/c"), so empty folders cannot
+  // exist.
   repeated string folders = 1;
-
-  // The folder category.
-  Category category = 2;
 }
 
 message UpdateSavedQueryRequest {
@@ -219,11 +225,21 @@ message UpdateSavedQueryRequest {
   // - `title`
   // - `content`
   // - `database`
+  // - `folder`
   google.protobuf.FieldMask update_mask = 2;
 }
 
-message BatchUpdateSavedQueryOrganizerRequest {
-  // The parent resource whose saved queries' organizers are updated.
+message UpdateSavedQueryStarRequest {
+  // The name of the saved query to star or unstar.
+  // Format: projects/{project}/savedQueries/{savedQuery}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Whether the caller stars the saved query.
+  bool starred = 2;
+}
+
+message BatchUpdateSavedQueriesRequest {
+  // The parent resource whose saved queries are updated.
   // Format: projects/{project}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
@@ -234,53 +250,21 @@ message BatchUpdateSavedQueryOrganizerRequest {
   // - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
   // - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
   // - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-  // - folder: the saved query organizer folder path, support exact "==" operator.
+  // - folder: the saved query folder path, support exact "==" operator.
   string filter = 2;
 
-  // The organizer fields to update.
-  SavedQueryOrganizer organizer = 3 [(google.api.field_behavior) = REQUIRED];
+  // The fields to apply to every matched saved query.
+  SavedQuery saved_query = 3 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to be updated.
-  // Fields are specified relative to the saved query organizer.
   // Only support update the following fields for now:
-  // - `starred`
-  // - `folders`
+  // - `folder`
   google.protobuf.FieldMask update_mask = 4 [(google.api.field_behavior) = REQUIRED];
 }
 
-message BatchUpdateSavedQueryOrganizerResponse {
-  repeated SavedQueryOrganizer saved_query_organizers = 1;
-
-  int32 updated_count = 2;
-}
-
-message UpdateSavedQueryOrganizerRequest {
-  // The organizer to update.
-  //
-  // The organizer's `saved_query` field is used to identify the saved query.
-  // Format: projects/{project}/savedQueries/{savedQuery}
-  SavedQueryOrganizer organizer = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The list of fields to be updated.
-  // Fields are specified relative to the saved query organizer.
-  // Only support update the following fields for now:
-  // - `starred`
-  google.protobuf.FieldMask update_mask = 2;
-
-  // If set to true, and the saved query organizer is not found, a new saved query organizer will be created.
-  // In this situation, `update_mask` is ignored.
-  bool allow_missing = 3;
-}
-
-message SavedQueryOrganizer {
-  // The name of the saved query.
-  // Format: projects/{project}/savedQueries/{savedQuery}
-  string saved_query = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // starred means if the saved query is starred.
-  bool starred = 2;
-
-  repeated string folders = 3;
+message BatchUpdateSavedQueriesResponse {
+  // The number of saved queries updated.
+  int32 updated_count = 1;
 }
 
 message DeleteSavedQueryRequest {
@@ -305,7 +289,7 @@ message SearchSavedQueriesRequest {
   // - title: the saved query title, support "contains" operator.
   // - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
   // - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-  // - folder: the saved query organizer folder path, support "==" operator.
+  // - folder: the saved query folder path, support "==" operator.
   //
   // For example:
   // creator == "users/{email}"
@@ -366,7 +350,8 @@ message SavedQuery {
     (buf.validate.field).string.max_len = 200
   ];
 
-  // The creator of the SavedQuery.
+  // The creator of the SavedQuery — the fixed owner; ownership does not
+  // transfer.
   // Format: users/{email}
   string creator = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
@@ -384,13 +369,16 @@ message SavedQuery {
   // content_size is the full size of the content, may not match the size of the `content` field.
   int64 content_size = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The removed visibility field (saved queries are private to their creator;
-  // per-object sharing arrives with the access-model redesign).
-  reserved 10;
-  reserved "visibility";
+  // The removed visibility field (superseded by per-object grants) and the
+  // removed per-user folder segments (superseded by `folder`).
+  reserved 10, 12;
+  reserved "visibility", "folders";
 
   // starred indicates whether the saved query is starred by the current authenticated user.
   bool starred = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  repeated string folders = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The folder path this saved query lives in, set by its creator (or an
+  // admin). Empty means unfiled. A saved query lives in exactly one folder;
+  // a folder is a path on saved queries, e.g. "a/b/c".
+  string folder = 13 [(buf.validate.field).string.max_len = 256];
 }

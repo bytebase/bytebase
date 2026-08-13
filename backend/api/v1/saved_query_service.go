@@ -35,7 +35,9 @@ func NewSavedQueryService(store *store.Store, iamManager *iam.Manager) *SavedQue
 	}
 }
 
-// CreateSavedQuery creates a new saved query.
+// CreateSavedQuery creates a new saved query. The bb.savedQueries.create
+// permission is enforced at the interceptor; the store's insert transaction
+// fences against a concurrent project purge (active project required).
 func (s *SavedQueryService) CreateSavedQuery(
 	ctx context.Context,
 	req *connect.Request[v1pb.CreateSavedQueryRequest],
@@ -53,19 +55,6 @@ func (s *SavedQueryService) CreateSavedQuery(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
-		ResourceID: &projectResourceID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project with resource id %q, err: %v", projectResourceID, err))
-	}
-	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q not found", projectResourceID))
-	}
-	if project.Deleted {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q had deleted", projectResourceID))
-	}
 
 	database := ""
 	if request.SavedQuery.Database != "" {
@@ -74,13 +63,11 @@ func (s *SavedQueryService) CreateSavedQuery(
 			return nil, err
 		}
 	}
-	storeSavedQueryCreate := convertToStoreSavedQueryMessage(project, database, user.Email, request.SavedQuery)
-	savedQuery, err := s.store.CreateSavedQuery(ctx, storeSavedQueryCreate)
+	savedQuery, err := s.store.CreateSavedQuery(ctx, convertToStoreSavedQueryMessage(projectResourceID, database, user.Email, request.SavedQuery))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create saved query: %v", err))
 	}
-	v1pbSavedQuery := convertToAPISavedQuery(savedQuery)
-	return connect.NewResponse(v1pbSavedQuery), nil
+	return connect.NewResponse(convertToAPISavedQuery(savedQuery)), nil
 }
 
 // GetSavedQuery returns the requested saved query, cutoff the content if the content is too long and the `raw` flag in request is false.
@@ -181,71 +168,52 @@ func (s *SavedQueryService) ListSavedQueries(
 	}), nil
 }
 
-// ListSavedQueryFolders returns the caller's saved query folders.
-func (s *SavedQueryService) ListSavedQueryFolders(
+// SearchSavedQueryFolders returns the caller's saved query folder paths in a
+// project, including every ancestor prefix.
+func (s *SavedQueryService) SearchSavedQueryFolders(
 	ctx context.Context,
-	req *connect.Request[v1pb.ListSavedQueryFoldersRequest],
-) (*connect.Response[v1pb.ListSavedQueryFoldersResponse], error) {
+	req *connect.Request[v1pb.SearchSavedQueryFoldersRequest],
+) (*connect.Response[v1pb.SearchSavedQueryFoldersResponse], error) {
 	request := req.Msg
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if projectID == "-" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(`ListSavedQueryFolders does not support parent "projects/-"`))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(`SearchSavedQueryFolders does not support parent "projects/-"`))
 	}
 
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-
-	find := &store.FindSavedQueryMessage{
-		ProjectIDs:     []string{projectID},
-		PrincipalEmail: user.Email,
+	if err := s.checkDiscoverSavedQueries(ctx, user, projectID); err != nil {
+		return nil, err
 	}
-	organizerList, err := s.store.ListSavedQueryOrganizers(ctx, find)
+
+	paths, err := s.store.ListSavedQueryFolderPaths(ctx, projectID, user.Email)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list saved query folders: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to search saved query folders: %v", err))
 	}
 
-	type savedQueryFolder struct {
-		folders  []string
-		category v1pb.SavedQueryFolder_Category
-	}
-	folderByKey := make(map[string]savedQueryFolder)
-	for _, organizer := range organizerList {
-		var category v1pb.SavedQueryFolder_Category
-		if organizer.SavedQueryCreator == user.Email {
-			category = v1pb.SavedQueryFolder_MINE
-		} else {
-			category = v1pb.SavedQueryFolder_SHARED
-		}
-		for i := range organizer.Payload.Folders {
-			folders := append([]string(nil), organizer.Payload.Folders[:i+1]...)
-			key := fmt.Sprintf("%d\x00%s", category, strings.Join(folders, "\x00"))
-			folderByKey[key] = savedQueryFolder{
-				folders:  folders,
-				category: category,
-			}
+	// Expand every ancestor prefix so the tree can render intermediate
+	// folders that only exist through their children.
+	prefixSet := make(map[string]bool)
+	for _, path := range paths {
+		segments := strings.Split(path, "/")
+		for i := range segments {
+			prefixSet[strings.Join(segments[:i+1], "/")] = true
 		}
 	}
+	folders := make([]string, 0, len(prefixSet))
+	for folder := range prefixSet {
+		folders = append(folders, folder)
+	}
+	slices.Sort(folders)
 
-	keys := make([]string, 0, len(folderByKey))
-	for key := range folderByKey {
-		keys = append(keys, key)
-	}
-	slices.Sort(keys)
-	response := &v1pb.ListSavedQueryFoldersResponse{
-		Folders: make([]*v1pb.SavedQueryFolder, 0, len(keys)),
-	}
-	for _, key := range keys {
-		response.Folders = append(response.Folders, &v1pb.SavedQueryFolder{
-			Folders:  folderByKey[key].folders,
-			Category: folderByKey[key].category,
-		})
-	}
-	return connect.NewResponse(response), nil
+	return connect.NewResponse(&v1pb.SearchSavedQueryFoldersResponse{
+		Folders: folders,
+	}), nil
 }
 
 // SearchSavedQueries returns a list of saved queries based on the search filters.
@@ -265,6 +233,9 @@ func (s *SavedQueryService) SearchSavedQueries(
 	}
 	if projectID == "-" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(`SearchSavedQueries does not support parent "projects/-"`))
+	}
+	if err := s.checkDiscoverSavedQueries(ctx, user, projectID); err != nil {
+		return nil, err
 	}
 	if request.PageSize < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("page size cannot be negative"))
@@ -371,6 +342,9 @@ func (s *SavedQueryService) UpdateSavedQuery(
 		case "content":
 			statement := string(request.SavedQuery.Content)
 			savedQueryPatch.Statement = &statement
+		case "folder":
+			folder := strings.Trim(request.SavedQuery.Folder, "/")
+			savedQueryPatch.Folder = &folder
 		case "database":
 			switch request.SavedQuery.Database {
 			case savedQuery.Database:
@@ -441,13 +415,15 @@ func (s *SavedQueryService) DeleteSavedQuery(
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-// UpdateSavedQueryOrganizer upsert the saved query organizer.
-func (s *SavedQueryService) UpdateSavedQueryOrganizer(
+// UpdateSavedQueryStar stars or unstars a saved query for the caller. A
+// star is always the caller's own per-user marker; the gate is read access
+// to the saved query being starred.
+func (s *SavedQueryService) UpdateSavedQueryStar(
 	ctx context.Context,
-	req *connect.Request[v1pb.UpdateSavedQueryOrganizerRequest],
-) (*connect.Response[v1pb.SavedQueryOrganizer], error) {
+	req *connect.Request[v1pb.UpdateSavedQueryStarRequest],
+) (*connect.Response[v1pb.SavedQuery], error) {
 	request := req.Msg
-	projectID, savedQueryID, err := common.GetProjectIDSavedQueryID(request.Organizer.SavedQuery)
+	projectID, savedQueryID, err := common.GetProjectIDSavedQueryID(request.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -456,60 +432,49 @@ func (s *SavedQueryService) UpdateSavedQueryOrganizer(
 	if err != nil {
 		return nil, err
 	}
-
 	ok, err := s.canReadSavedQuery(ctx, savedQuery)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access with error: %v", err))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot access saved query %s", savedQuery.Title))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	savedQueryOrganizerUpsert, err := s.store.GetSavedQueryOrganizer(ctx, savedQuery.ResourceID, user.Email)
+	applied, err := s.store.SetSavedQueryStar(ctx, savedQuery.ResourceID, user.Email, request.Starred)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found saved query organizer with error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update star: %v", err))
+	}
+	if !applied {
+		// Deleted between the read above and the star write.
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
-	for _, path := range request.UpdateMask.Paths {
-		switch path {
-		case "starred":
-			savedQueryOrganizerUpsert.Payload.Starred = request.Organizer.Starred
-		case "folders":
-			savedQueryOrganizerUpsert.Payload.Folders = request.Organizer.Folders
-		default:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
-		}
-	}
-
-	organizer, err := s.store.UpsertSavedQueryOrganizer(ctx, savedQueryOrganizerUpsert)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to upsert organizer for saved query %s with error: %v", request.Organizer.SavedQuery, err))
-	}
-
-	return connect.NewResponse(&v1pb.SavedQueryOrganizer{
-		SavedQuery: request.Organizer.SavedQuery,
-		Starred:    organizer.Payload.Starred,
-		Folders:    organizer.Payload.Folders,
-	}), nil
+	savedQuery.Starred = request.Starred
+	return connect.NewResponse(convertToAPISavedQuery(savedQuery)), nil
 }
 
-func (s *SavedQueryService) BatchUpdateSavedQueryOrganizer(
+// BatchUpdateSavedQueries re-files the matched saved queries into a folder.
+// Only rows the caller may re-file are updated: their own, or any in scope
+// for admins.
+func (s *SavedQueryService) BatchUpdateSavedQueries(
 	ctx context.Context,
-	req *connect.Request[v1pb.BatchUpdateSavedQueryOrganizerRequest],
-) (*connect.Response[v1pb.BatchUpdateSavedQueryOrganizerResponse], error) {
+	req *connect.Request[v1pb.BatchUpdateSavedQueriesRequest],
+) (*connect.Response[v1pb.BatchUpdateSavedQueriesResponse], error) {
 	request := req.Msg
-	if request.Organizer == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("organizer cannot be empty"))
+	if request.SavedQuery == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("saved_query cannot be empty"))
 	}
-	if request.UpdateMask == nil {
+	if request.UpdateMask == nil || len(request.UpdateMask.Paths) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask cannot be empty"))
 	}
-	if len(request.UpdateMask.Paths) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask paths cannot be empty"))
+	for _, path := range request.UpdateMask.Paths {
+		if path != "folder" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q; only \"folder\" is supported", path))
+		}
 	}
 
 	projectID, err := common.GetProjectID(request.Parent)
@@ -517,7 +482,7 @@ func (s *SavedQueryService) BatchUpdateSavedQueryOrganizer(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if projectID == "-" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("projects/- is not supported for batch update saved query organizers"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("projects/- is not supported for batch update saved queries"))
 	}
 
 	user, ok := GetUserFromContext(ctx)
@@ -540,49 +505,40 @@ func (s *SavedQueryService) BatchUpdateSavedQueryOrganizer(
 
 	var savedQueryIDs []string
 	for _, savedQuery := range savedQueryList {
-		ok, err := s.canReadSavedQuery(ctx, savedQuery)
+		ok, err := s.canWriteSavedQuery(ctx, savedQuery)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access with error: %v", err))
 		}
 		if !ok {
-			slog.Warn("cannot access saved query", slog.String("name", savedQuery.Title))
 			continue
 		}
 		savedQueryIDs = append(savedQueryIDs, savedQuery.ResourceID)
 	}
 
-	patch := &store.BatchUpdateSavedQueryOrganizerPatch{
-		SavedQueryResourceIDs: savedQueryIDs,
-		Principal:             user.Email,
+	updated, err := s.store.BatchUpdateSavedQueryFolder(ctx, savedQueryIDs, request.SavedQuery.Folder)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to batch update saved queries: %v", err))
 	}
-	for _, path := range request.UpdateMask.Paths {
-		switch path {
-		case "starred":
-			starred := request.Organizer.Starred
-			patch.Starred = &starred
-		case "folders":
-			folders := request.Organizer.Folders
-			patch.Folders = &folders
-		default:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
+	return connect.NewResponse(&v1pb.BatchUpdateSavedQueriesResponse{
+		UpdatedCount: int32(updated),
+	}), nil
+}
+
+// checkDiscoverSavedQueries gates the per-project discovery surfaces
+// (Search, folder list): bb.savedQueries.search, with bb.savedQueries.manage
+// as the admin backstop that must be able to enumerate what it manages.
+func (s *SavedQueryService) checkDiscoverSavedQueries(ctx context.Context, user *store.UserMessage, projectID string) error {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	for _, p := range []permission.Permission{permission.SavedQueriesSearch, permission.SavedQueriesManage} {
+		ok, err := s.iamManager.CheckPermission(ctx, p, user, workspaceID, projectID)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
+		}
+		if ok {
+			return nil
 		}
 	}
-
-	organizers, err := s.store.BatchUpdateSavedQueryOrganizer(ctx, patch)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to batch update saved query organizers: %v", err))
-	}
-	response := &v1pb.BatchUpdateSavedQueryOrganizerResponse{
-		UpdatedCount: int32(len(organizers)),
-	}
-	for _, organizer := range organizers {
-		response.SavedQueryOrganizers = append(response.SavedQueryOrganizers, &v1pb.SavedQueryOrganizer{
-			SavedQuery: fmt.Sprintf("%s/savedQueries/%s", request.Parent, organizer.SavedQueryResourceID),
-			Starred:    organizer.Payload.Starred,
-			Folders:    organizer.Payload.Folders,
-		})
-	}
-	return connect.NewResponse(response), nil
+	return connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied: %s", permission.SavedQueriesSearch))
 }
 
 func (s *SavedQueryService) findSavedQuery(ctx context.Context, projectID string, savedQueryID string, loadFull bool) (*store.SavedQueryMessage, error) {
@@ -649,7 +605,7 @@ func (s *SavedQueryService) validateSavedQueryDatabase(ctx context.Context, proj
 
 // canWriteSavedQuery check if the principal can write the saved query.
 // Saved queries are private: only the creator, or a caller holding
-// "bb.worksheets.manage" on the workspace (the admin backstop), can write.
+// "bb.savedQueries.manage" in scope (the admin backstop), can write.
 func (s *SavedQueryService) canWriteSavedQuery(ctx context.Context, savedQuery *store.SavedQueryMessage) (bool, error) {
 	return s.canAccessSavedQuery(ctx, savedQuery)
 }
@@ -668,7 +624,7 @@ func (s *SavedQueryService) canAccessSavedQuery(ctx context.Context, savedQuery 
 	if savedQuery.Creator == user.Email {
 		return true, nil
 	}
-	ok, err := s.iamManager.CheckPermission(ctx, permission.WorksheetsManage, user, common.GetWorkspaceIDFromContext(ctx))
+	ok, err := s.iamManager.CheckPermission(ctx, permission.SavedQueriesManage, user, common.GetWorkspaceIDFromContext(ctx), savedQuery.ProjectID)
 	if err != nil {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
@@ -691,16 +647,17 @@ func convertToAPISavedQuery(savedQuery *store.SavedQueryMessage) *v1pb.SavedQuer
 		Content:     []byte(savedQuery.Statement),
 		ContentSize: savedQuery.Size,
 		Starred:     savedQuery.Starred,
-		Folders:     savedQuery.Folders,
+		Folder:      savedQuery.Folder,
 	}
 }
 
-func convertToStoreSavedQueryMessage(project *store.ProjectMessage, database string, creator string, savedQuery *v1pb.SavedQuery) *store.SavedQueryMessage {
+func convertToStoreSavedQueryMessage(projectID string, database string, creator string, savedQuery *v1pb.SavedQuery) *store.SavedQueryMessage {
 	return &store.SavedQueryMessage{
-		ProjectID: project.ResourceID,
+		ProjectID: projectID,
 		Creator:   creator,
 		Title:     savedQuery.Title,
 		Statement: string(savedQuery.Content),
 		Database:  database,
+		Folder:    strings.Trim(savedQuery.Folder, "/"),
 	}
 }

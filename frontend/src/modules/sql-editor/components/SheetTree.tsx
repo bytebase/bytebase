@@ -959,9 +959,7 @@ export function SheetTree({
         clearTimeout(starTimerRef.current);
       }
       starTimerRef.current = setTimeout(() => {
-        void useAppStore
-          .getState()
-          .upsertSavedQueryOrganizer({ savedQuery, starred }, ["starred"]);
+        void useAppStore.getState().updateSavedQueryStar(savedQuery, starred);
       }, 300);
     },
     []
@@ -1387,7 +1385,9 @@ export function SheetTree({
                 if (!savedQuery) return;
                 await createSavedQuery({
                   title: savedQuery.title,
-                  folders: savedQuery.folders,
+                  folders: savedQuery.folder
+                    ? savedQuery.folder.split("/")
+                    : [],
                   database: savedQuery.database,
                 });
                 useAppStore.getState().notify({

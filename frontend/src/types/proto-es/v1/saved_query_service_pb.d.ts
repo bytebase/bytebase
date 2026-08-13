@@ -2,7 +2,7 @@
 // @generated from file v1/saved_query_service.proto (package bytebase.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
 
@@ -140,11 +140,11 @@ export declare type ListSavedQueriesResponse = Message<"bytebase.v1.ListSavedQue
 export declare const ListSavedQueriesResponseSchema: GenMessage<ListSavedQueriesResponse>;
 
 /**
- * @generated from message bytebase.v1.ListSavedQueryFoldersRequest
+ * @generated from message bytebase.v1.SearchSavedQueryFoldersRequest
  */
-export declare type ListSavedQueryFoldersRequest = Message<"bytebase.v1.ListSavedQueryFoldersRequest"> & {
+export declare type SearchSavedQueryFoldersRequest = Message<"bytebase.v1.SearchSavedQueryFoldersRequest"> & {
   /**
-   * The parent resource of the saved query folders.
+   * The parent resource whose saved query folders are searched.
    * Format: projects/{project}
    *
    * @generated from field: string parent = 1;
@@ -153,78 +153,30 @@ export declare type ListSavedQueryFoldersRequest = Message<"bytebase.v1.ListSave
 };
 
 /**
- * Describes the message bytebase.v1.ListSavedQueryFoldersRequest.
- * Use `create(ListSavedQueryFoldersRequestSchema)` to create a new message.
+ * Describes the message bytebase.v1.SearchSavedQueryFoldersRequest.
+ * Use `create(SearchSavedQueryFoldersRequestSchema)` to create a new message.
  */
-export declare const ListSavedQueryFoldersRequestSchema: GenMessage<ListSavedQueryFoldersRequest>;
+export declare const SearchSavedQueryFoldersRequestSchema: GenMessage<SearchSavedQueryFoldersRequest>;
 
 /**
- * @generated from message bytebase.v1.ListSavedQueryFoldersResponse
+ * @generated from message bytebase.v1.SearchSavedQueryFoldersResponse
  */
-export declare type ListSavedQueryFoldersResponse = Message<"bytebase.v1.ListSavedQueryFoldersResponse"> & {
+export declare type SearchSavedQueryFoldersResponse = Message<"bytebase.v1.SearchSavedQueryFoldersResponse"> & {
   /**
-   * The caller's saved query folders.
-   *
-   * @generated from field: repeated bytebase.v1.SavedQueryFolder folders = 1;
-   */
-  folders: SavedQueryFolder[];
-};
-
-/**
- * Describes the message bytebase.v1.ListSavedQueryFoldersResponse.
- * Use `create(ListSavedQueryFoldersResponseSchema)` to create a new message.
- */
-export declare const ListSavedQueryFoldersResponseSchema: GenMessage<ListSavedQueryFoldersResponse>;
-
-/**
- * @generated from message bytebase.v1.SavedQueryFolder
- */
-export declare type SavedQueryFolder = Message<"bytebase.v1.SavedQueryFolder"> & {
-  /**
-   * The folder path segments.
+   * The caller's folder paths, including every ancestor prefix, sorted.
+   * A folder is a path on saved queries ("a/b/c"), so empty folders cannot
+   * exist.
    *
    * @generated from field: repeated string folders = 1;
    */
   folders: string[];
-
-  /**
-   * The folder category.
-   *
-   * @generated from field: bytebase.v1.SavedQueryFolder.Category category = 2;
-   */
-  category: SavedQueryFolder_Category;
 };
 
 /**
- * Describes the message bytebase.v1.SavedQueryFolder.
- * Use `create(SavedQueryFolderSchema)` to create a new message.
+ * Describes the message bytebase.v1.SearchSavedQueryFoldersResponse.
+ * Use `create(SearchSavedQueryFoldersResponseSchema)` to create a new message.
  */
-export declare const SavedQueryFolderSchema: GenMessage<SavedQueryFolder>;
-
-/**
- * @generated from enum bytebase.v1.SavedQueryFolder.Category
- */
-export enum SavedQueryFolder_Category {
-  /**
-   * @generated from enum value: CATEGORY_UNSPECIFIED = 0;
-   */
-  CATEGORY_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: MINE = 1;
-   */
-  MINE = 1,
-
-  /**
-   * @generated from enum value: SHARED = 2;
-   */
-  SHARED = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.SavedQueryFolder.Category.
- */
-export declare const SavedQueryFolder_CategorySchema: GenEnum<SavedQueryFolder_Category>;
+export declare const SearchSavedQueryFoldersResponseSchema: GenMessage<SearchSavedQueryFoldersResponse>;
 
 /**
  * @generated from message bytebase.v1.UpdateSavedQueryRequest
@@ -248,6 +200,7 @@ export declare type UpdateSavedQueryRequest = Message<"bytebase.v1.UpdateSavedQu
    * - `title`
    * - `content`
    * - `database`
+   * - `folder`
    *
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
@@ -261,11 +214,37 @@ export declare type UpdateSavedQueryRequest = Message<"bytebase.v1.UpdateSavedQu
 export declare const UpdateSavedQueryRequestSchema: GenMessage<UpdateSavedQueryRequest>;
 
 /**
- * @generated from message bytebase.v1.BatchUpdateSavedQueryOrganizerRequest
+ * @generated from message bytebase.v1.UpdateSavedQueryStarRequest
  */
-export declare type BatchUpdateSavedQueryOrganizerRequest = Message<"bytebase.v1.BatchUpdateSavedQueryOrganizerRequest"> & {
+export declare type UpdateSavedQueryStarRequest = Message<"bytebase.v1.UpdateSavedQueryStarRequest"> & {
   /**
-   * The parent resource whose saved queries' organizers are updated.
+   * The name of the saved query to star or unstar.
+   * Format: projects/{project}/savedQueries/{savedQuery}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * Whether the caller stars the saved query.
+   *
+   * @generated from field: bool starred = 2;
+   */
+  starred: boolean;
+};
+
+/**
+ * Describes the message bytebase.v1.UpdateSavedQueryStarRequest.
+ * Use `create(UpdateSavedQueryStarRequestSchema)` to create a new message.
+ */
+export declare const UpdateSavedQueryStarRequestSchema: GenMessage<UpdateSavedQueryStarRequest>;
+
+/**
+ * @generated from message bytebase.v1.BatchUpdateSavedQueriesRequest
+ */
+export declare type BatchUpdateSavedQueriesRequest = Message<"bytebase.v1.BatchUpdateSavedQueriesRequest"> & {
+  /**
+   * The parent resource whose saved queries are updated.
    * Format: projects/{project}
    *
    * @generated from field: string parent = 1;
@@ -280,25 +259,23 @@ export declare type BatchUpdateSavedQueryOrganizerRequest = Message<"bytebase.v1
    * - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
    * - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
    * - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-   * - folder: the saved query organizer folder path, support exact "==" operator.
+   * - folder: the saved query folder path, support exact "==" operator.
    *
    * @generated from field: string filter = 2;
    */
   filter: string;
 
   /**
-   * The organizer fields to update.
+   * The fields to apply to every matched saved query.
    *
-   * @generated from field: bytebase.v1.SavedQueryOrganizer organizer = 3;
+   * @generated from field: bytebase.v1.SavedQuery saved_query = 3;
    */
-  organizer?: SavedQueryOrganizer | undefined;
+  savedQuery?: SavedQuery | undefined;
 
   /**
    * The list of fields to be updated.
-   * Fields are specified relative to the saved query organizer.
    * Only support update the following fields for now:
-   * - `starred`
-   * - `folders`
+   * - `folder`
    *
    * @generated from field: google.protobuf.FieldMask update_mask = 4;
    */
@@ -306,101 +283,28 @@ export declare type BatchUpdateSavedQueryOrganizerRequest = Message<"bytebase.v1
 };
 
 /**
- * Describes the message bytebase.v1.BatchUpdateSavedQueryOrganizerRequest.
- * Use `create(BatchUpdateSavedQueryOrganizerRequestSchema)` to create a new message.
+ * Describes the message bytebase.v1.BatchUpdateSavedQueriesRequest.
+ * Use `create(BatchUpdateSavedQueriesRequestSchema)` to create a new message.
  */
-export declare const BatchUpdateSavedQueryOrganizerRequestSchema: GenMessage<BatchUpdateSavedQueryOrganizerRequest>;
+export declare const BatchUpdateSavedQueriesRequestSchema: GenMessage<BatchUpdateSavedQueriesRequest>;
 
 /**
- * @generated from message bytebase.v1.BatchUpdateSavedQueryOrganizerResponse
+ * @generated from message bytebase.v1.BatchUpdateSavedQueriesResponse
  */
-export declare type BatchUpdateSavedQueryOrganizerResponse = Message<"bytebase.v1.BatchUpdateSavedQueryOrganizerResponse"> & {
+export declare type BatchUpdateSavedQueriesResponse = Message<"bytebase.v1.BatchUpdateSavedQueriesResponse"> & {
   /**
-   * @generated from field: repeated bytebase.v1.SavedQueryOrganizer saved_query_organizers = 1;
-   */
-  savedQueryOrganizers: SavedQueryOrganizer[];
-
-  /**
-   * @generated from field: int32 updated_count = 2;
+   * The number of saved queries updated.
+   *
+   * @generated from field: int32 updated_count = 1;
    */
   updatedCount: number;
 };
 
 /**
- * Describes the message bytebase.v1.BatchUpdateSavedQueryOrganizerResponse.
- * Use `create(BatchUpdateSavedQueryOrganizerResponseSchema)` to create a new message.
+ * Describes the message bytebase.v1.BatchUpdateSavedQueriesResponse.
+ * Use `create(BatchUpdateSavedQueriesResponseSchema)` to create a new message.
  */
-export declare const BatchUpdateSavedQueryOrganizerResponseSchema: GenMessage<BatchUpdateSavedQueryOrganizerResponse>;
-
-/**
- * @generated from message bytebase.v1.UpdateSavedQueryOrganizerRequest
- */
-export declare type UpdateSavedQueryOrganizerRequest = Message<"bytebase.v1.UpdateSavedQueryOrganizerRequest"> & {
-  /**
-   * The organizer to update.
-   *
-   * The organizer's `saved_query` field is used to identify the saved query.
-   * Format: projects/{project}/savedQueries/{savedQuery}
-   *
-   * @generated from field: bytebase.v1.SavedQueryOrganizer organizer = 1;
-   */
-  organizer?: SavedQueryOrganizer | undefined;
-
-  /**
-   * The list of fields to be updated.
-   * Fields are specified relative to the saved query organizer.
-   * Only support update the following fields for now:
-   * - `starred`
-   *
-   * @generated from field: google.protobuf.FieldMask update_mask = 2;
-   */
-  updateMask?: FieldMask | undefined;
-
-  /**
-   * If set to true, and the saved query organizer is not found, a new saved query organizer will be created.
-   * In this situation, `update_mask` is ignored.
-   *
-   * @generated from field: bool allow_missing = 3;
-   */
-  allowMissing: boolean;
-};
-
-/**
- * Describes the message bytebase.v1.UpdateSavedQueryOrganizerRequest.
- * Use `create(UpdateSavedQueryOrganizerRequestSchema)` to create a new message.
- */
-export declare const UpdateSavedQueryOrganizerRequestSchema: GenMessage<UpdateSavedQueryOrganizerRequest>;
-
-/**
- * @generated from message bytebase.v1.SavedQueryOrganizer
- */
-export declare type SavedQueryOrganizer = Message<"bytebase.v1.SavedQueryOrganizer"> & {
-  /**
-   * The name of the saved query.
-   * Format: projects/{project}/savedQueries/{savedQuery}
-   *
-   * @generated from field: string saved_query = 1;
-   */
-  savedQuery: string;
-
-  /**
-   * starred means if the saved query is starred.
-   *
-   * @generated from field: bool starred = 2;
-   */
-  starred: boolean;
-
-  /**
-   * @generated from field: repeated string folders = 3;
-   */
-  folders: string[];
-};
-
-/**
- * Describes the message bytebase.v1.SavedQueryOrganizer.
- * Use `create(SavedQueryOrganizerSchema)` to create a new message.
- */
-export declare const SavedQueryOrganizerSchema: GenMessage<SavedQueryOrganizer>;
+export declare const BatchUpdateSavedQueriesResponseSchema: GenMessage<BatchUpdateSavedQueriesResponse>;
 
 /**
  * @generated from message bytebase.v1.DeleteSavedQueryRequest
@@ -442,7 +346,7 @@ export declare type SearchSavedQueriesRequest = Message<"bytebase.v1.SearchSaved
    * - title: the saved query title, support "contains" operator.
    * - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
    * - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-   * - folder: the saved query organizer folder path, support "==" operator.
+   * - folder: the saved query folder path, support "==" operator.
    *
    * For example:
    * creator == "users/{email}"
@@ -546,7 +450,8 @@ export declare type SavedQuery = Message<"bytebase.v1.SavedQuery"> & {
   title: string;
 
   /**
-   * The creator of the SavedQuery.
+   * The creator of the SavedQuery — the fixed owner; ownership does not
+   * transfer.
    * Format: users/{email}
    *
    * @generated from field: string creator = 5;
@@ -591,9 +496,13 @@ export declare type SavedQuery = Message<"bytebase.v1.SavedQuery"> & {
   starred: boolean;
 
   /**
-   * @generated from field: repeated string folders = 12;
+   * The folder path this saved query lives in, set by its creator (or an
+   * admin). Empty means unfiled. A saved query lives in exactly one folder;
+   * a folder is a path on saved queries, e.g. "a/b/c".
+   *
+   * @generated from field: string folder = 13;
    */
-  folders: string[];
+  folder: string;
 };
 
 /**
@@ -604,15 +513,20 @@ export declare const SavedQuerySchema: GenMessage<SavedQuery>;
 
 /**
  * SavedQueryService manages saved queries for SQL Editor query development.
- * Permission IDs still use the legacy `bb.worksheets.*` names; they are
- * renamed together with the access-model redesign and its role migration.
+ *
+ * A saved query is private to its creator; `bb.savedQueries.manage` is the
+ * admin backstop that can reach any saved query in scope. Per-object
+ * VIEWER/EDITOR grants arrive with the access-model redesign, which brings
+ * its own policy shapes and the GetIamPolicy/SetIamPolicy pair that manages
+ * them.
  *
  * @generated from service bytebase.v1.SavedQueryService
  */
 export declare const SavedQueryService: GenService<{
   /**
-   * Creates a personal saved query used in SQL Editor. Any authenticated user can create their own saved queries.
-   * Permissions required: None (authenticated users only)
+   * Creates a personal saved query used in SQL Editor. The creator becomes
+   * the fixed owner.
+   * Permissions required: bb.savedQueries.create on the parent project
    *
    * @generated from rpc bytebase.v1.SavedQueryService.CreateSavedQuery
    */
@@ -622,10 +536,9 @@ export declare const SavedQueryService: GenService<{
     output: typeof SavedQuerySchema;
   },
   /**
-   * Get a saved query by name.
-   * Saved queries are private: only the creator, or a caller holding
-   * bb.worksheets.manage on the workspace, can access one.
-   * Permissions required: creator, or workspace bb.worksheets.manage
+   * Get a saved query by name. Returns NotFound for saved queries the
+   * caller cannot read.
+   * Permissions required: creator, or bb.savedQueries.manage in scope
    *
    * @generated from rpc bytebase.v1.SavedQueryService.GetSavedQuery
    */
@@ -635,9 +548,10 @@ export declare const SavedQueryService: GenService<{
     output: typeof SavedQuerySchema;
   },
   /**
-   * List saved queries.
-   * This is used for listing saved queries in a project, or across all projects by using `projects/-`.
-   * Permissions required: bb.worksheets.list
+   * List saved queries: the grant-independent governance surface. Supports
+   * listing in a project, or across all projects by using `projects/-`, with
+   * full content — e.g. an offboarding review filtering by creator.
+   * Permissions required: bb.savedQueries.list
    *
    * @generated from rpc bytebase.v1.SavedQueryService.ListSavedQueries
    */
@@ -647,21 +561,9 @@ export declare const SavedQueryService: GenService<{
     output: typeof ListSavedQueriesResponseSchema;
   },
   /**
-   * List the caller's saved query folders.
-   * Only folders stored in the caller's saved query organizer are returned.
-   *
-   * @generated from rpc bytebase.v1.SavedQueryService.ListSavedQueryFolders
-   */
-  listSavedQueryFolders: {
-    methodKind: "unary";
-    input: typeof ListSavedQueryFoldersRequestSchema;
-    output: typeof ListSavedQueryFoldersResponseSchema;
-  },
-  /**
-   * Search for saved queries.
-   * This is used for finding my saved queries in a project.
-   * The saved query accessibility is the same as GetSavedQuery().
-   * Permissions required: creator, or workspace bb.worksheets.manage
+   * Search for saved queries in a project: the SQL Editor's hot list path,
+   * returning only rows the caller can read, with content previews.
+   * Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
    *
    * @generated from rpc bytebase.v1.SavedQueryService.SearchSavedQueries
    */
@@ -671,9 +573,24 @@ export declare const SavedQueryService: GenService<{
     output: typeof SearchSavedQueriesResponseSchema;
   },
   /**
-   * Update a saved query.
-   * The access is the same as GetSavedQuery method.
-   * Permissions required: creator, or workspace bb.worksheets.manage
+   * Search the folder paths of the caller's saved queries in a project.
+   * Folders are a derived view over the `folder` field rather than a
+   * resource collection, so this is a custom method on savedQueries and
+   * shares SearchSavedQueries' caller-scoped semantics — not the
+   * cross-creator reach of ListSavedQueries.
+   * Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
+   *
+   * @generated from rpc bytebase.v1.SavedQueryService.SearchSavedQueryFolders
+   */
+  searchSavedQueryFolders: {
+    methodKind: "unary";
+    input: typeof SearchSavedQueryFoldersRequestSchema;
+    output: typeof SearchSavedQueryFoldersResponseSchema;
+  },
+  /**
+   * Update a saved query. `title`, `content`, and `database` require write
+   * access; `folder` re-files the saved query and is creator/admin only.
+   * Permissions required: creator, or bb.savedQueries.manage in scope
    *
    * @generated from rpc bytebase.v1.SavedQueryService.UpdateSavedQuery
    */
@@ -683,33 +600,36 @@ export declare const SavedQueryService: GenService<{
     output: typeof SavedQuerySchema;
   },
   /**
-   * Update the organizer of a saved query.
-   * The access is the same as UpdateSavedQuery method.
-   * Permissions required: creator, or workspace bb.worksheets.manage
+   * Star or unstar a saved query for the caller. A star is always the
+   * caller's own per-user marker — invisible to others and carrying no
+   * access. The only requirement is that the caller can read the saved
+   * query being starred (which also keeps private saved query names
+   * unprobeable).
+   * Permissions required: read access to the saved query
    *
-   * @generated from rpc bytebase.v1.SavedQueryService.UpdateSavedQueryOrganizer
+   * @generated from rpc bytebase.v1.SavedQueryService.UpdateSavedQueryStar
    */
-  updateSavedQueryOrganizer: {
+  updateSavedQueryStar: {
     methodKind: "unary";
-    input: typeof UpdateSavedQueryOrganizerRequestSchema;
-    output: typeof SavedQueryOrganizerSchema;
+    input: typeof UpdateSavedQueryStarRequestSchema;
+    output: typeof SavedQuerySchema;
   },
   /**
-   * Batch update the organizers of saved queries.
-   * The access is the same as UpdateSavedQuery method.
-   * Permissions required: creator, or workspace bb.worksheets.manage
+   * Batch re-file saved queries into a folder. The update mask supports
+   * `folder` only; only rows the caller may re-file are updated (their own,
+   * or any in scope for admins).
+   * Permissions required: creator, or bb.savedQueries.manage in scope
    *
-   * @generated from rpc bytebase.v1.SavedQueryService.BatchUpdateSavedQueryOrganizer
+   * @generated from rpc bytebase.v1.SavedQueryService.BatchUpdateSavedQueries
    */
-  batchUpdateSavedQueryOrganizer: {
+  batchUpdateSavedQueries: {
     methodKind: "unary";
-    input: typeof BatchUpdateSavedQueryOrganizerRequestSchema;
-    output: typeof BatchUpdateSavedQueryOrganizerResponseSchema;
+    input: typeof BatchUpdateSavedQueriesRequestSchema;
+    output: typeof BatchUpdateSavedQueriesResponseSchema;
   },
   /**
-   * Delete a saved query.
-   * The access is the same as UpdateSavedQuery method.
-   * Permissions required: creator, or workspace bb.worksheets.manage
+   * Delete a saved query. Only the creator (or an admin) can delete.
+   * Permissions required: creator, or bb.savedQueries.manage in scope
    *
    * @generated from rpc bytebase.v1.SavedQueryService.DeleteSavedQuery
    */

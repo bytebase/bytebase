@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -33,13 +32,15 @@ type SavedQueryMessage struct {
 
 	Title     string
 	Statement string
+	// The folder path this saved query lives in ("a/b/c", "" = unfiled).
+	Folder string
 
 	// Output only fields
 	Size      int64
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	Starred   bool
-	Folders   []string
+	// Whether FindSavedQueryMessage.PrincipalEmail starred this saved query.
+	Starred bool
 }
 
 // FindSavedQueryMessage is the API message for finding sheets.
@@ -68,6 +69,8 @@ type PatchSavedQueryMessage struct {
 	Statement  *string
 	// Database sets the connected database ("" clears it).
 	Database *string
+	// Folder re-files the saved query ("" = unfiled).
+	Folder *string
 }
 
 // GetSavedQuery gets a sheet.
@@ -105,12 +108,12 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 			saved_query.updated_at,
 			saved_query.project,
 			saved_query.payload,
+			saved_query.folder,
 			saved_query.name,
 			%s,
 			OCTET_LENGTH(saved_query.statement),
-			COALESCE(saved_query_organizer.payload, '{}')
+			EXISTS (SELECT 1 FROM saved_query_star WHERE saved_query_star.saved_query = saved_query.resource_id AND saved_query_star.principal = ?)
 		FROM saved_query
-		LEFT JOIN saved_query_organizer ON saved_query_organizer.saved_query = saved_query.resource_id AND saved_query_organizer.principal = ?
 		WHERE TRUE`, statementField), find.PrincipalEmail)
 
 	if find.Workspace != "" {
@@ -152,7 +155,7 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 	var sheets []*SavedQueryMessage
 	for rows.Next() {
 		var sheet SavedQueryMessage
-		var payloadBytes, organizerPayloadBytes []byte
+		var payloadBytes []byte
 		if err := rows.Scan(
 			&sheet.ResourceID,
 			&sheet.Creator,
@@ -160,10 +163,11 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 			&sheet.UpdatedAt,
 			&sheet.ProjectID,
 			&payloadBytes,
+			&sheet.Folder,
 			&sheet.Title,
 			&sheet.Statement,
 			&sheet.Size,
-			&organizerPayloadBytes,
+			&sheet.Starred,
 		); err != nil {
 			return nil, err
 		}
@@ -174,13 +178,6 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 		}
 		sheet.Database = payload.Database
 
-		var organizerPayload storepb.SavedQueryOrganizerPayload
-		if err := common.ProtojsonUnmarshaler.Unmarshal(organizerPayloadBytes, &organizerPayload); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal saved query organizer payload")
-		}
-		sheet.Folders = organizerPayload.Folders
-		sheet.Starred = organizerPayload.Starred
-
 		sheets = append(sheets, &sheet)
 	}
 	if err := rows.Err(); err != nil {
@@ -190,102 +187,57 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 	return sheets, nil
 }
 
-// ListSavedQueryOrganizers returns the caller's savedQuery organizers.
-func (s *Store) ListSavedQueryOrganizers(ctx context.Context, find *FindSavedQueryMessage) ([]*SavedQueryOrganizerMessage, error) {
-	if len(find.ProjectIDs) == 0 && find.Workspace == "" {
-		return nil, errors.Errorf("empty project filter")
-	}
-	if find.PrincipalEmail == "" {
-		return nil, errors.Errorf("empty principal")
-	}
-	q := qb.Q().Space(`
-		SELECT
-			saved_query.resource_id,
-			saved_query.creator,
-			saved_query_organizer.principal,
-			saved_query_organizer.payload
-		FROM saved_query_organizer
-		JOIN saved_query ON saved_query.resource_id = saved_query_organizer.saved_query
-		WHERE saved_query_organizer.principal = ?`, find.PrincipalEmail)
-
-	if find.Workspace != "" {
-		q.And("EXISTS (SELECT 1 FROM project WHERE project.resource_id = saved_query.project AND project.workspace = ? AND project.deleted = FALSE)", find.Workspace)
-	}
-	if len(find.ProjectIDs) == 1 {
-		q.And("saved_query.project = ?", find.ProjectIDs[0])
-	} else if len(find.ProjectIDs) > 1 {
-		q.And("saved_query.project = ANY(?)", find.ProjectIDs)
-	}
-
-	if filterQ := find.FilterQ; filterQ != nil {
-		q.And("?", filterQ)
-	}
-
-	q.Space("ORDER BY saved_query.project, saved_query.resource_id")
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var savedQueryOrganizers []*SavedQueryOrganizerMessage
-	for rows.Next() {
-		var savedQueryOrganizer SavedQueryOrganizerMessage
-		var payloadBytes []byte
-		if err := rows.Scan(
-			&savedQueryOrganizer.SavedQueryResourceID,
-			&savedQueryOrganizer.SavedQueryCreator,
-			&savedQueryOrganizer.Principal,
-			&payloadBytes,
-		); err != nil {
-			return nil, err
-		}
-
-		var payload storepb.SavedQueryOrganizerPayload
-		if err := common.ProtojsonUnmarshaler.Unmarshal(payloadBytes, &payload); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal saved query organizer payload")
-		}
-		savedQueryOrganizer.Payload = &payload
-
-		savedQueryOrganizers = append(savedQueryOrganizers, &savedQueryOrganizer)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return savedQueryOrganizers, nil
-}
-
-// CreateSavedQuery creates a new saved query.
+// CreateSavedQuery creates a new saved query. The insert transaction locks
+// the owning project row and requires it to be active, so a create racing a
+// project purge fails cleanly instead of as an FK violation — the parent
+// fence for a new child row that cannot be locked in advance.
 func (s *Store) CreateSavedQuery(ctx context.Context, create *SavedQueryMessage) (*SavedQueryMessage, error) {
 	payloadStr, err := protojson.Marshal(&storepb.SavedQueryPayload{Database: create.Database})
 	if err != nil {
 		return nil, err
 	}
-	q := qb.Q().Space(`
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	// Callers reach this only after the API layer has resolved the parent
+	// project, so a missing or deleted project here means it was purged
+	// mid-request. That is a lost race, not a caller mistake.
+	var deleted bool
+	if err := tx.QueryRowContext(ctx, `
+		SELECT deleted
+		FROM project
+		WHERE resource_id = $1
+		FOR UPDATE
+	`, create.ProjectID).Scan(&deleted); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.Errorf("project %s was deleted while creating the saved query", create.ProjectID)
+		}
+		return nil, errors.Wrapf(err, "failed to lock project %s", create.ProjectID)
+	}
+	if deleted {
+		return nil, errors.Errorf("project %s was deleted while creating the saved query", create.ProjectID)
+	}
+
+	query, args, err := qb.Q().Space(`
 		INSERT INTO saved_query (
 			creator,
 			project,
 			name,
 			statement,
+			folder,
 			payload
 		)
-		VALUES (?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?)
 		RETURNING resource_id, created_at, updated_at, OCTET_LENGTH(statement)
-	`, create.Creator, create.ProjectID, create.Title, create.Statement, payloadStr)
-
-	query, args, err := q.ToSQL()
+	`, create.Creator, create.ProjectID, create.Title, create.Statement, create.Folder, payloadStr).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&create.ResourceID,
 		&create.CreatedAt,
 		&create.UpdatedAt,
@@ -295,6 +247,9 @@ func (s *Store) CreateSavedQuery(ctx context.Context, create *SavedQueryMessage)
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
 		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 
 	return create, nil
@@ -328,212 +283,180 @@ func (s *Store) PatchSavedQuery(ctx context.Context, patch *PatchSavedQueryMessa
 	return nil
 }
 
-// DeleteSavedQuery deletes an existing saved query by resource ID.
-// The saved_query_organizer rows are cascade-deleted via FK on saved_query(resource_id).
+// DeleteSavedQuery deletes an existing saved query by resource ID. Star rows
+// are deleted first, in full primary-key order — explicitly, not via the FK
+// cascade (which would lock the parent first) — matching the star and purge
+// lock order so a delete racing a star toggle or a purge cannot deadlock.
 func (s *Store) DeleteSavedQuery(ctx context.Context, resourceID string) error {
-	q := qb.Q().Space(`DELETE FROM saved_query WHERE resource_id = ?`, resourceID)
-	query, args, err := q.ToSQL()
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
+		return errors.Wrap(err, "failed to begin transaction")
 	}
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM saved_query_star
+		WHERE (saved_query, principal) IN (
+			SELECT saved_query, principal
+			FROM saved_query_star
+			WHERE saved_query = $1
+			ORDER BY saved_query, principal
+			FOR UPDATE
+		)
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete stars for saved query %s", resourceID)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM saved_query WHERE resource_id = $1`, resourceID); err != nil {
 		return err
 	}
-	return nil
+	return tx.Commit()
 }
 
-// SavedQueryOrganizerMessage is the store message for savedQuery organizer.
-type SavedQueryOrganizerMessage struct {
-	SavedQueryResourceID string
-	SavedQueryCreator    string
-	Principal            string
-	Payload              *storepb.SavedQueryOrganizerPayload
-}
-
-// BatchUpdateSavedQueryOrganizerPatch is the patch for updating savedQuery organizers in batch.
-type BatchUpdateSavedQueryOrganizerPatch struct {
-	SavedQueryResourceIDs []string
-	Principal             string
-	Starred               *bool
-	Folders               *[]string
-}
-
-func (s *Store) GetSavedQueryOrganizer(ctx context.Context, savedQueryResourceID string, principal string) (*SavedQueryOrganizerMessage, error) {
-	q := qb.Q().Space(`
-		SELECT
-			payload
-		FROM saved_query_organizer
-		WHERE saved_query = ? AND principal = ?
-	`, savedQueryResourceID, principal)
-
-	query, args, err := q.ToSQL()
+// SetSavedQueryStar stars or unstars a saved query for a principal, and
+// reports whether the saved query was still there to star. Lock order per the
+// store row-lock rules: toggling or removing an existing star locks that child
+// row directly; only the first star for a (query, principal) inserts a child
+// that cannot be locked in advance — that case alone takes the parent fence
+// (lock the saved_query row), and its inserted key is novel so it never
+// contends with a purge's existing-child locks. The parent fence is also the
+// only path that can observe a concurrent delete, which it reports as false
+// rather than an error so the caller decides what a vanished row means.
+func (s *Store) SetSavedQueryStar(ctx context.Context, savedQueryResourceID, principal string, starred bool) (bool, error) {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
+		return false, errors.Wrap(err, "failed to begin transaction")
 	}
+	defer tx.Rollback()
 
-	savedQueryOrganizer := SavedQueryOrganizerMessage{
-		SavedQueryResourceID: savedQueryResourceID,
-		Principal:            principal,
-		Payload:              &storepb.SavedQueryOrganizerPayload{},
-	}
-	var payload []byte
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&payload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return &savedQueryOrganizer, nil
-		}
-		return nil, errors.Wrapf(err, "failed to scan")
-	}
-	workSheetPayload := &storepb.SavedQueryOrganizerPayload{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, workSheetPayload); err != nil {
-		return nil, err
-	}
-	savedQueryOrganizer.Payload = workSheetPayload
-
-	return &savedQueryOrganizer, nil
-}
-
-// UpsertSavedQueryOrganizer upserts a new SheetOrganizerMessage.
-func (s *Store) UpsertSavedQueryOrganizer(ctx context.Context, patch *SavedQueryOrganizerMessage) (*SavedQueryOrganizerMessage, error) {
-	payloadStr, err := protojson.Marshal(patch.Payload)
-	if err != nil {
-		return nil, err
-	}
-	q := qb.Q().Space(`
-	  INSERT INTO saved_query_organizer (
-			saved_query,
-			principal,
-			payload
+	var exists bool
+	if err := tx.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM saved_query_star
+			WHERE saved_query = $1 AND principal = $2
+			FOR UPDATE
 		)
-		VALUES (?, ?, ?)
-		ON CONFLICT(saved_query, principal) DO UPDATE SET
-			payload = EXCLUDED.payload
-		RETURNING
-			saved_query,
-			principal,
-			payload
-	`, patch.SavedQueryResourceID, patch.Principal, payloadStr)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
+	`, savedQueryResourceID, principal).Scan(&exists); err != nil {
+		return false, errors.Wrap(err, "failed to lock star row")
 	}
 
-	var savedQueryOrganizer SavedQueryOrganizerMessage
-	var payload []byte
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&savedQueryOrganizer.SavedQueryResourceID,
-		&savedQueryOrganizer.Principal,
-		&payload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	switch {
+	case starred && !exists:
+		var one int
+		if err := tx.QueryRowContext(ctx, `
+			SELECT 1
+			FROM saved_query
+			WHERE resource_id = $1
+			FOR UPDATE
+		`, savedQueryResourceID).Scan(&one); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return false, nil
+			}
+			return false, errors.Wrapf(err, "failed to lock saved query %s", savedQueryResourceID)
 		}
-		return nil, err
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO saved_query_star (saved_query, principal)
+			VALUES ($1, $2)
+			ON CONFLICT (saved_query, principal) DO NOTHING
+		`, savedQueryResourceID, principal); err != nil {
+			return false, errors.Wrap(err, "failed to insert star")
+		}
+	case !starred && exists:
+		if _, err := tx.ExecContext(ctx, `
+			DELETE FROM saved_query_star
+			WHERE saved_query = $1 AND principal = $2
+		`, savedQueryResourceID, principal); err != nil {
+			return false, errors.Wrap(err, "failed to delete star")
+		}
+	default:
+		// Already in the requested state: an unstar of a row that is gone
+		// needs no parent, so it is reported as applied.
 	}
-	workSheetPayload := &storepb.SavedQueryOrganizerPayload{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, workSheetPayload); err != nil {
-		return nil, err
-	}
-	savedQueryOrganizer.Payload = workSheetPayload
 
-	return &savedQueryOrganizer, nil
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
-// BatchUpdateSavedQueryOrganizer updates savedQuery organizer payload fields in batch.
-func (s *Store) BatchUpdateSavedQueryOrganizer(ctx context.Context, patch *BatchUpdateSavedQueryOrganizerPatch) ([]*SavedQueryOrganizerMessage, error) {
-	if len(patch.SavedQueryResourceIDs) == 0 {
-		return nil, nil
-	}
-	if patch.Principal == "" {
-		return nil, errors.New("principal is empty")
-	}
-	if patch.Starred == nil && patch.Folders == nil {
-		return nil, errors.New("empty saved query organizer patch")
+// BatchUpdateSavedQueryFolder re-files the given saved queries into folder.
+// The rows are locked in full primary-key order (resource_id) before the
+// update, so two overlapping batches can never lock in opposing orders; a
+// row deleted mid-batch simply updates zero rows.
+func (s *Store) BatchUpdateSavedQueryFolder(ctx context.Context, resourceIDs []string, folder string) (int, error) {
+	if len(resourceIDs) == 0 {
+		return 0, nil
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
+		return 0, errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	insertQuery, insertArgs, err := qb.Q().Space(`
-		INSERT INTO saved_query_organizer (
-			saved_query,
-			principal,
-			payload
-		)
-		SELECT saved_query.resource_id, ?, '{}'::jsonb
+	rows, err := tx.QueryContext(ctx, `
+		SELECT resource_id
 		FROM saved_query
-		WHERE saved_query.resource_id = ANY(?)
-		ON CONFLICT (saved_query, principal) DO NOTHING
-	`, patch.Principal, patch.SavedQueryResourceIDs).ToSQL()
+		WHERE resource_id = ANY($1)
+		ORDER BY resource_id
+		FOR UPDATE
+	`, resourceIDs)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to build saved query organizer insert query")
-	}
-	if _, err := tx.ExecContext(ctx, insertQuery, insertArgs...); err != nil {
-		return nil, errors.Wrap(err, "failed to insert missing saved query organizers")
-	}
-
-	payloadExpr := "payload"
-	var updateArgs []any
-	if patch.Starred != nil {
-		payloadExpr = fmt.Sprintf("jsonb_set(%s, '{starred}', to_jsonb(?::boolean), true)", payloadExpr)
-		updateArgs = append(updateArgs, *patch.Starred)
-	}
-	if patch.Folders != nil {
-		folderBytes, err := json.Marshal(*patch.Folders)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshal folders")
-		}
-		payloadExpr = fmt.Sprintf("jsonb_set(%s, '{folders}', ?::jsonb, true)", payloadExpr)
-		updateArgs = append(updateArgs, string(folderBytes))
-	}
-	updateArgs = append(updateArgs, patch.Principal, patch.SavedQueryResourceIDs)
-
-	updateQuery, args, err := qb.Q().Space(fmt.Sprintf(`
-		UPDATE saved_query_organizer
-		SET payload = %s
-		WHERE principal = ? AND saved_query = ANY(?)
-		RETURNING saved_query, principal, payload
-	`, payloadExpr), updateArgs...).ToSQL()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to build saved query organizer update query")
-	}
-	rows, err := tx.QueryContext(ctx, updateQuery, args...)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to update savedQuery organizers")
+		return 0, errors.Wrap(err, "failed to lock saved queries")
 	}
 	defer rows.Close()
-
-	var savedQueryOrganizers []*SavedQueryOrganizerMessage
+	var locked []string
 	for rows.Next() {
-		var savedQueryOrganizer SavedQueryOrganizerMessage
-		var payload []byte
-		if err := rows.Scan(
-			&savedQueryOrganizer.SavedQueryResourceID,
-			&savedQueryOrganizer.Principal,
-			&payload,
-		); err != nil {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return 0, err
+		}
+		locked = append(locked, id)
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	if len(locked) > 0 {
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE saved_query
+			SET folder = $1, updated_at = now()
+			WHERE resource_id = ANY($2)
+		`, folder, locked); err != nil {
+			return 0, errors.Wrap(err, "failed to update folders")
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, errors.Wrap(err, "failed to commit transaction")
+	}
+	return len(locked), nil
+}
+
+// ListSavedQueryFolderPaths returns the distinct folder paths of the
+// creator's saved queries in a project.
+func (s *Store) ListSavedQueryFolderPaths(ctx context.Context, projectID, creator string) ([]string, error) {
+	rows, err := s.GetDB().QueryContext(ctx, `
+		SELECT DISTINCT folder
+		FROM saved_query
+		WHERE project = $1 AND creator = $2 AND folder <> ''
+		ORDER BY folder
+	`, projectID, creator)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var folders []string
+	for rows.Next() {
+		var folder string
+		if err := rows.Scan(&folder); err != nil {
 			return nil, err
 		}
-		workSheetPayload := &storepb.SavedQueryOrganizerPayload{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, workSheetPayload); err != nil {
-			return nil, err
-		}
-		savedQueryOrganizer.Payload = workSheetPayload
-		savedQueryOrganizers = append(savedQueryOrganizers, &savedQueryOrganizer)
+		folders = append(folders, folder)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
-	}
-	return savedQueryOrganizers, nil
+	return folders, nil
 }
 
 func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, filter string, allowTitleContains bool) (*qb.Query, error) {
@@ -594,7 +517,10 @@ func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, fil
 			return qb.Q().Space("saved_query.creator = ?", userID), nil
 		case "starred":
 			if starred, ok := value.(bool); ok {
-				return qb.Q().Space("saved_query.resource_id IN (SELECT saved_query FROM saved_query_organizer WHERE principal = ? AND (payload->>'starred')::boolean = ?)", caller, starred), nil
+				if starred {
+					return qb.Q().Space("EXISTS (SELECT 1 FROM saved_query_star WHERE saved_query_star.saved_query = saved_query.resource_id AND saved_query_star.principal = ?)", caller), nil
+				}
+				return qb.Q().Space("NOT EXISTS (SELECT 1 FROM saved_query_star WHERE saved_query_star.saved_query = saved_query.resource_id AND saved_query_star.principal = ?)", caller), nil
 			}
 			return qb.Q().Space("TRUE"), nil
 		case "folder":
@@ -603,19 +529,10 @@ func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, fil
 				return nil, errors.Errorf("invalid folder value %q", value)
 			}
 			folder = strings.Trim(folder, "/")
-			if folder == "" {
-				return qb.Q().Space("COALESCE(jsonb_array_length(saved_query_organizer.payload->'folders'), 0) = 0"), nil
+			if strings.Contains(folder, "//") {
+				return nil, errors.Errorf("invalid folder %q", value)
 			}
-			q := qb.Q()
-			segments := strings.Split(folder, "/")
-			for i, segment := range segments {
-				if segment == "" {
-					return nil, errors.Errorf("invalid folder %q", value)
-				}
-				q.And(fmt.Sprintf("saved_query_organizer.payload->'folders'->>%d = ?", i), segment)
-			}
-			q.And("jsonb_array_length(saved_query_organizer.payload->'folders') = ?", len(segments))
-			return qb.Q().Space("(?)", q), nil
+			return qb.Q().Space("saved_query.folder = ?", folder), nil
 		default:
 			return nil, errors.Errorf("unsupport variable %q", variable)
 		}

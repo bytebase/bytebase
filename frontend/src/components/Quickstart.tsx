@@ -182,7 +182,7 @@ export function Quickstart() {
         requiredPermissions: [
           "bb.sql.select",
           "bb.projects.get",
-          "bb.worksheets.get",
+          "bb.savedQueries.search",
         ],
         needsProject: true,
       },

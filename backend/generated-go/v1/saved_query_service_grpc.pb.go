@@ -20,15 +20,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SavedQueryService_CreateSavedQuery_FullMethodName               = "/bytebase.v1.SavedQueryService/CreateSavedQuery"
-	SavedQueryService_GetSavedQuery_FullMethodName                  = "/bytebase.v1.SavedQueryService/GetSavedQuery"
-	SavedQueryService_ListSavedQueries_FullMethodName               = "/bytebase.v1.SavedQueryService/ListSavedQueries"
-	SavedQueryService_ListSavedQueryFolders_FullMethodName          = "/bytebase.v1.SavedQueryService/ListSavedQueryFolders"
-	SavedQueryService_SearchSavedQueries_FullMethodName             = "/bytebase.v1.SavedQueryService/SearchSavedQueries"
-	SavedQueryService_UpdateSavedQuery_FullMethodName               = "/bytebase.v1.SavedQueryService/UpdateSavedQuery"
-	SavedQueryService_UpdateSavedQueryOrganizer_FullMethodName      = "/bytebase.v1.SavedQueryService/UpdateSavedQueryOrganizer"
-	SavedQueryService_BatchUpdateSavedQueryOrganizer_FullMethodName = "/bytebase.v1.SavedQueryService/BatchUpdateSavedQueryOrganizer"
-	SavedQueryService_DeleteSavedQuery_FullMethodName               = "/bytebase.v1.SavedQueryService/DeleteSavedQuery"
+	SavedQueryService_CreateSavedQuery_FullMethodName        = "/bytebase.v1.SavedQueryService/CreateSavedQuery"
+	SavedQueryService_GetSavedQuery_FullMethodName           = "/bytebase.v1.SavedQueryService/GetSavedQuery"
+	SavedQueryService_ListSavedQueries_FullMethodName        = "/bytebase.v1.SavedQueryService/ListSavedQueries"
+	SavedQueryService_SearchSavedQueries_FullMethodName      = "/bytebase.v1.SavedQueryService/SearchSavedQueries"
+	SavedQueryService_SearchSavedQueryFolders_FullMethodName = "/bytebase.v1.SavedQueryService/SearchSavedQueryFolders"
+	SavedQueryService_UpdateSavedQuery_FullMethodName        = "/bytebase.v1.SavedQueryService/UpdateSavedQuery"
+	SavedQueryService_UpdateSavedQueryStar_FullMethodName    = "/bytebase.v1.SavedQueryService/UpdateSavedQueryStar"
+	SavedQueryService_BatchUpdateSavedQueries_FullMethodName = "/bytebase.v1.SavedQueryService/BatchUpdateSavedQueries"
+	SavedQueryService_DeleteSavedQuery_FullMethodName        = "/bytebase.v1.SavedQueryService/DeleteSavedQuery"
 )
 
 // SavedQueryServiceClient is the client API for SavedQueryService service.
@@ -36,44 +36,55 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
 // SavedQueryService manages saved queries for SQL Editor query development.
-// Permission IDs still use the legacy `bb.worksheets.*` names; they are
-// renamed together with the access-model redesign and its role migration.
+//
+// A saved query is private to its creator; `bb.savedQueries.manage` is the
+// admin backstop that can reach any saved query in scope. Per-object
+// VIEWER/EDITOR grants arrive with the access-model redesign, which brings
+// its own policy shapes and the GetIamPolicy/SetIamPolicy pair that manages
+// them.
 type SavedQueryServiceClient interface {
-	// Creates a personal saved query used in SQL Editor. Any authenticated user can create their own saved queries.
-	// Permissions required: None (authenticated users only)
+	// Creates a personal saved query used in SQL Editor. The creator becomes
+	// the fixed owner.
+	// Permissions required: bb.savedQueries.create on the parent project
 	CreateSavedQuery(ctx context.Context, in *CreateSavedQueryRequest, opts ...grpc.CallOption) (*SavedQuery, error)
-	// Get a saved query by name.
-	// Saved queries are private: only the creator, or a caller holding
-	// bb.worksheets.manage on the workspace, can access one.
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Get a saved query by name. Returns NotFound for saved queries the
+	// caller cannot read.
+	// Permissions required: creator, or bb.savedQueries.manage in scope
 	GetSavedQuery(ctx context.Context, in *GetSavedQueryRequest, opts ...grpc.CallOption) (*SavedQuery, error)
-	// List saved queries.
-	// This is used for listing saved queries in a project, or across all projects by using `projects/-`.
-	// Permissions required: bb.worksheets.list
+	// List saved queries: the grant-independent governance surface. Supports
+	// listing in a project, or across all projects by using `projects/-`, with
+	// full content — e.g. an offboarding review filtering by creator.
+	// Permissions required: bb.savedQueries.list
 	ListSavedQueries(ctx context.Context, in *ListSavedQueriesRequest, opts ...grpc.CallOption) (*ListSavedQueriesResponse, error)
-	// List the caller's saved query folders.
-	// Only folders stored in the caller's saved query organizer are returned.
-	ListSavedQueryFolders(ctx context.Context, in *ListSavedQueryFoldersRequest, opts ...grpc.CallOption) (*ListSavedQueryFoldersResponse, error)
-	// Search for saved queries.
-	// This is used for finding my saved queries in a project.
-	// The saved query accessibility is the same as GetSavedQuery().
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Search for saved queries in a project: the SQL Editor's hot list path,
+	// returning only rows the caller can read, with content previews.
+	// Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
 	SearchSavedQueries(ctx context.Context, in *SearchSavedQueriesRequest, opts ...grpc.CallOption) (*SearchSavedQueriesResponse, error)
-	// Update a saved query.
-	// The access is the same as GetSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Search the folder paths of the caller's saved queries in a project.
+	// Folders are a derived view over the `folder` field rather than a
+	// resource collection, so this is a custom method on savedQueries and
+	// shares SearchSavedQueries' caller-scoped semantics — not the
+	// cross-creator reach of ListSavedQueries.
+	// Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
+	SearchSavedQueryFolders(ctx context.Context, in *SearchSavedQueryFoldersRequest, opts ...grpc.CallOption) (*SearchSavedQueryFoldersResponse, error)
+	// Update a saved query. `title`, `content`, and `database` require write
+	// access; `folder` re-files the saved query and is creator/admin only.
+	// Permissions required: creator, or bb.savedQueries.manage in scope
 	UpdateSavedQuery(ctx context.Context, in *UpdateSavedQueryRequest, opts ...grpc.CallOption) (*SavedQuery, error)
-	// Update the organizer of a saved query.
-	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
-	UpdateSavedQueryOrganizer(ctx context.Context, in *UpdateSavedQueryOrganizerRequest, opts ...grpc.CallOption) (*SavedQueryOrganizer, error)
-	// Batch update the organizers of saved queries.
-	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
-	BatchUpdateSavedQueryOrganizer(ctx context.Context, in *BatchUpdateSavedQueryOrganizerRequest, opts ...grpc.CallOption) (*BatchUpdateSavedQueryOrganizerResponse, error)
-	// Delete a saved query.
-	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Star or unstar a saved query for the caller. A star is always the
+	// caller's own per-user marker — invisible to others and carrying no
+	// access. The only requirement is that the caller can read the saved
+	// query being starred (which also keeps private saved query names
+	// unprobeable).
+	// Permissions required: read access to the saved query
+	UpdateSavedQueryStar(ctx context.Context, in *UpdateSavedQueryStarRequest, opts ...grpc.CallOption) (*SavedQuery, error)
+	// Batch re-file saved queries into a folder. The update mask supports
+	// `folder` only; only rows the caller may re-file are updated (their own,
+	// or any in scope for admins).
+	// Permissions required: creator, or bb.savedQueries.manage in scope
+	BatchUpdateSavedQueries(ctx context.Context, in *BatchUpdateSavedQueriesRequest, opts ...grpc.CallOption) (*BatchUpdateSavedQueriesResponse, error)
+	// Delete a saved query. Only the creator (or an admin) can delete.
+	// Permissions required: creator, or bb.savedQueries.manage in scope
 	DeleteSavedQuery(ctx context.Context, in *DeleteSavedQueryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -115,20 +126,20 @@ func (c *savedQueryServiceClient) ListSavedQueries(ctx context.Context, in *List
 	return out, nil
 }
 
-func (c *savedQueryServiceClient) ListSavedQueryFolders(ctx context.Context, in *ListSavedQueryFoldersRequest, opts ...grpc.CallOption) (*ListSavedQueryFoldersResponse, error) {
+func (c *savedQueryServiceClient) SearchSavedQueries(ctx context.Context, in *SearchSavedQueriesRequest, opts ...grpc.CallOption) (*SearchSavedQueriesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListSavedQueryFoldersResponse)
-	err := c.cc.Invoke(ctx, SavedQueryService_ListSavedQueryFolders_FullMethodName, in, out, cOpts...)
+	out := new(SearchSavedQueriesResponse)
+	err := c.cc.Invoke(ctx, SavedQueryService_SearchSavedQueries_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *savedQueryServiceClient) SearchSavedQueries(ctx context.Context, in *SearchSavedQueriesRequest, opts ...grpc.CallOption) (*SearchSavedQueriesResponse, error) {
+func (c *savedQueryServiceClient) SearchSavedQueryFolders(ctx context.Context, in *SearchSavedQueryFoldersRequest, opts ...grpc.CallOption) (*SearchSavedQueryFoldersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SearchSavedQueriesResponse)
-	err := c.cc.Invoke(ctx, SavedQueryService_SearchSavedQueries_FullMethodName, in, out, cOpts...)
+	out := new(SearchSavedQueryFoldersResponse)
+	err := c.cc.Invoke(ctx, SavedQueryService_SearchSavedQueryFolders_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -145,20 +156,20 @@ func (c *savedQueryServiceClient) UpdateSavedQuery(ctx context.Context, in *Upda
 	return out, nil
 }
 
-func (c *savedQueryServiceClient) UpdateSavedQueryOrganizer(ctx context.Context, in *UpdateSavedQueryOrganizerRequest, opts ...grpc.CallOption) (*SavedQueryOrganizer, error) {
+func (c *savedQueryServiceClient) UpdateSavedQueryStar(ctx context.Context, in *UpdateSavedQueryStarRequest, opts ...grpc.CallOption) (*SavedQuery, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SavedQueryOrganizer)
-	err := c.cc.Invoke(ctx, SavedQueryService_UpdateSavedQueryOrganizer_FullMethodName, in, out, cOpts...)
+	out := new(SavedQuery)
+	err := c.cc.Invoke(ctx, SavedQueryService_UpdateSavedQueryStar_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *savedQueryServiceClient) BatchUpdateSavedQueryOrganizer(ctx context.Context, in *BatchUpdateSavedQueryOrganizerRequest, opts ...grpc.CallOption) (*BatchUpdateSavedQueryOrganizerResponse, error) {
+func (c *savedQueryServiceClient) BatchUpdateSavedQueries(ctx context.Context, in *BatchUpdateSavedQueriesRequest, opts ...grpc.CallOption) (*BatchUpdateSavedQueriesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BatchUpdateSavedQueryOrganizerResponse)
-	err := c.cc.Invoke(ctx, SavedQueryService_BatchUpdateSavedQueryOrganizer_FullMethodName, in, out, cOpts...)
+	out := new(BatchUpdateSavedQueriesResponse)
+	err := c.cc.Invoke(ctx, SavedQueryService_BatchUpdateSavedQueries_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -180,44 +191,55 @@ func (c *savedQueryServiceClient) DeleteSavedQuery(ctx context.Context, in *Dele
 // for forward compatibility.
 //
 // SavedQueryService manages saved queries for SQL Editor query development.
-// Permission IDs still use the legacy `bb.worksheets.*` names; they are
-// renamed together with the access-model redesign and its role migration.
+//
+// A saved query is private to its creator; `bb.savedQueries.manage` is the
+// admin backstop that can reach any saved query in scope. Per-object
+// VIEWER/EDITOR grants arrive with the access-model redesign, which brings
+// its own policy shapes and the GetIamPolicy/SetIamPolicy pair that manages
+// them.
 type SavedQueryServiceServer interface {
-	// Creates a personal saved query used in SQL Editor. Any authenticated user can create their own saved queries.
-	// Permissions required: None (authenticated users only)
+	// Creates a personal saved query used in SQL Editor. The creator becomes
+	// the fixed owner.
+	// Permissions required: bb.savedQueries.create on the parent project
 	CreateSavedQuery(context.Context, *CreateSavedQueryRequest) (*SavedQuery, error)
-	// Get a saved query by name.
-	// Saved queries are private: only the creator, or a caller holding
-	// bb.worksheets.manage on the workspace, can access one.
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Get a saved query by name. Returns NotFound for saved queries the
+	// caller cannot read.
+	// Permissions required: creator, or bb.savedQueries.manage in scope
 	GetSavedQuery(context.Context, *GetSavedQueryRequest) (*SavedQuery, error)
-	// List saved queries.
-	// This is used for listing saved queries in a project, or across all projects by using `projects/-`.
-	// Permissions required: bb.worksheets.list
+	// List saved queries: the grant-independent governance surface. Supports
+	// listing in a project, or across all projects by using `projects/-`, with
+	// full content — e.g. an offboarding review filtering by creator.
+	// Permissions required: bb.savedQueries.list
 	ListSavedQueries(context.Context, *ListSavedQueriesRequest) (*ListSavedQueriesResponse, error)
-	// List the caller's saved query folders.
-	// Only folders stored in the caller's saved query organizer are returned.
-	ListSavedQueryFolders(context.Context, *ListSavedQueryFoldersRequest) (*ListSavedQueryFoldersResponse, error)
-	// Search for saved queries.
-	// This is used for finding my saved queries in a project.
-	// The saved query accessibility is the same as GetSavedQuery().
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Search for saved queries in a project: the SQL Editor's hot list path,
+	// returning only rows the caller can read, with content previews.
+	// Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
 	SearchSavedQueries(context.Context, *SearchSavedQueriesRequest) (*SearchSavedQueriesResponse, error)
-	// Update a saved query.
-	// The access is the same as GetSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Search the folder paths of the caller's saved queries in a project.
+	// Folders are a derived view over the `folder` field rather than a
+	// resource collection, so this is a custom method on savedQueries and
+	// shares SearchSavedQueries' caller-scoped semantics — not the
+	// cross-creator reach of ListSavedQueries.
+	// Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
+	SearchSavedQueryFolders(context.Context, *SearchSavedQueryFoldersRequest) (*SearchSavedQueryFoldersResponse, error)
+	// Update a saved query. `title`, `content`, and `database` require write
+	// access; `folder` re-files the saved query and is creator/admin only.
+	// Permissions required: creator, or bb.savedQueries.manage in scope
 	UpdateSavedQuery(context.Context, *UpdateSavedQueryRequest) (*SavedQuery, error)
-	// Update the organizer of a saved query.
-	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
-	UpdateSavedQueryOrganizer(context.Context, *UpdateSavedQueryOrganizerRequest) (*SavedQueryOrganizer, error)
-	// Batch update the organizers of saved queries.
-	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
-	BatchUpdateSavedQueryOrganizer(context.Context, *BatchUpdateSavedQueryOrganizerRequest) (*BatchUpdateSavedQueryOrganizerResponse, error)
-	// Delete a saved query.
-	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Star or unstar a saved query for the caller. A star is always the
+	// caller's own per-user marker — invisible to others and carrying no
+	// access. The only requirement is that the caller can read the saved
+	// query being starred (which also keeps private saved query names
+	// unprobeable).
+	// Permissions required: read access to the saved query
+	UpdateSavedQueryStar(context.Context, *UpdateSavedQueryStarRequest) (*SavedQuery, error)
+	// Batch re-file saved queries into a folder. The update mask supports
+	// `folder` only; only rows the caller may re-file are updated (their own,
+	// or any in scope for admins).
+	// Permissions required: creator, or bb.savedQueries.manage in scope
+	BatchUpdateSavedQueries(context.Context, *BatchUpdateSavedQueriesRequest) (*BatchUpdateSavedQueriesResponse, error)
+	// Delete a saved query. Only the creator (or an admin) can delete.
+	// Permissions required: creator, or bb.savedQueries.manage in scope
 	DeleteSavedQuery(context.Context, *DeleteSavedQueryRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedSavedQueryServiceServer()
 }
@@ -238,20 +260,20 @@ func (UnimplementedSavedQueryServiceServer) GetSavedQuery(context.Context, *GetS
 func (UnimplementedSavedQueryServiceServer) ListSavedQueries(context.Context, *ListSavedQueriesRequest) (*ListSavedQueriesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListSavedQueries not implemented")
 }
-func (UnimplementedSavedQueryServiceServer) ListSavedQueryFolders(context.Context, *ListSavedQueryFoldersRequest) (*ListSavedQueryFoldersResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListSavedQueryFolders not implemented")
-}
 func (UnimplementedSavedQueryServiceServer) SearchSavedQueries(context.Context, *SearchSavedQueriesRequest) (*SearchSavedQueriesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SearchSavedQueries not implemented")
+}
+func (UnimplementedSavedQueryServiceServer) SearchSavedQueryFolders(context.Context, *SearchSavedQueryFoldersRequest) (*SearchSavedQueryFoldersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SearchSavedQueryFolders not implemented")
 }
 func (UnimplementedSavedQueryServiceServer) UpdateSavedQuery(context.Context, *UpdateSavedQueryRequest) (*SavedQuery, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateSavedQuery not implemented")
 }
-func (UnimplementedSavedQueryServiceServer) UpdateSavedQueryOrganizer(context.Context, *UpdateSavedQueryOrganizerRequest) (*SavedQueryOrganizer, error) {
-	return nil, status.Error(codes.Unimplemented, "method UpdateSavedQueryOrganizer not implemented")
+func (UnimplementedSavedQueryServiceServer) UpdateSavedQueryStar(context.Context, *UpdateSavedQueryStarRequest) (*SavedQuery, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateSavedQueryStar not implemented")
 }
-func (UnimplementedSavedQueryServiceServer) BatchUpdateSavedQueryOrganizer(context.Context, *BatchUpdateSavedQueryOrganizerRequest) (*BatchUpdateSavedQueryOrganizerResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method BatchUpdateSavedQueryOrganizer not implemented")
+func (UnimplementedSavedQueryServiceServer) BatchUpdateSavedQueries(context.Context, *BatchUpdateSavedQueriesRequest) (*BatchUpdateSavedQueriesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BatchUpdateSavedQueries not implemented")
 }
 func (UnimplementedSavedQueryServiceServer) DeleteSavedQuery(context.Context, *DeleteSavedQueryRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteSavedQuery not implemented")
@@ -331,24 +353,6 @@ func _SavedQueryService_ListSavedQueries_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SavedQueryService_ListSavedQueryFolders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListSavedQueryFoldersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SavedQueryServiceServer).ListSavedQueryFolders(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SavedQueryService_ListSavedQueryFolders_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SavedQueryServiceServer).ListSavedQueryFolders(ctx, req.(*ListSavedQueryFoldersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SavedQueryService_SearchSavedQueries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SearchSavedQueriesRequest)
 	if err := dec(in); err != nil {
@@ -363,6 +367,24 @@ func _SavedQueryService_SearchSavedQueries_Handler(srv interface{}, ctx context.
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SavedQueryServiceServer).SearchSavedQueries(ctx, req.(*SearchSavedQueriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SavedQueryService_SearchSavedQueryFolders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchSavedQueryFoldersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SavedQueryServiceServer).SearchSavedQueryFolders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SavedQueryService_SearchSavedQueryFolders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SavedQueryServiceServer).SearchSavedQueryFolders(ctx, req.(*SearchSavedQueryFoldersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -385,38 +407,38 @@ func _SavedQueryService_UpdateSavedQuery_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SavedQueryService_UpdateSavedQueryOrganizer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateSavedQueryOrganizerRequest)
+func _SavedQueryService_UpdateSavedQueryStar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSavedQueryStarRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SavedQueryServiceServer).UpdateSavedQueryOrganizer(ctx, in)
+		return srv.(SavedQueryServiceServer).UpdateSavedQueryStar(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SavedQueryService_UpdateSavedQueryOrganizer_FullMethodName,
+		FullMethod: SavedQueryService_UpdateSavedQueryStar_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SavedQueryServiceServer).UpdateSavedQueryOrganizer(ctx, req.(*UpdateSavedQueryOrganizerRequest))
+		return srv.(SavedQueryServiceServer).UpdateSavedQueryStar(ctx, req.(*UpdateSavedQueryStarRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SavedQueryService_BatchUpdateSavedQueryOrganizer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BatchUpdateSavedQueryOrganizerRequest)
+func _SavedQueryService_BatchUpdateSavedQueries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchUpdateSavedQueriesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SavedQueryServiceServer).BatchUpdateSavedQueryOrganizer(ctx, in)
+		return srv.(SavedQueryServiceServer).BatchUpdateSavedQueries(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SavedQueryService_BatchUpdateSavedQueryOrganizer_FullMethodName,
+		FullMethod: SavedQueryService_BatchUpdateSavedQueries_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SavedQueryServiceServer).BatchUpdateSavedQueryOrganizer(ctx, req.(*BatchUpdateSavedQueryOrganizerRequest))
+		return srv.(SavedQueryServiceServer).BatchUpdateSavedQueries(ctx, req.(*BatchUpdateSavedQueriesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -459,24 +481,24 @@ var SavedQueryService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SavedQueryService_ListSavedQueries_Handler,
 		},
 		{
-			MethodName: "ListSavedQueryFolders",
-			Handler:    _SavedQueryService_ListSavedQueryFolders_Handler,
-		},
-		{
 			MethodName: "SearchSavedQueries",
 			Handler:    _SavedQueryService_SearchSavedQueries_Handler,
+		},
+		{
+			MethodName: "SearchSavedQueryFolders",
+			Handler:    _SavedQueryService_SearchSavedQueryFolders_Handler,
 		},
 		{
 			MethodName: "UpdateSavedQuery",
 			Handler:    _SavedQueryService_UpdateSavedQuery_Handler,
 		},
 		{
-			MethodName: "UpdateSavedQueryOrganizer",
-			Handler:    _SavedQueryService_UpdateSavedQueryOrganizer_Handler,
+			MethodName: "UpdateSavedQueryStar",
+			Handler:    _SavedQueryService_UpdateSavedQueryStar_Handler,
 		},
 		{
-			MethodName: "BatchUpdateSavedQueryOrganizer",
-			Handler:    _SavedQueryService_BatchUpdateSavedQueryOrganizer_Handler,
+			MethodName: "BatchUpdateSavedQueries",
+			Handler:    _SavedQueryService_BatchUpdateSavedQueries_Handler,
 		},
 		{
 			MethodName: "DeleteSavedQuery",

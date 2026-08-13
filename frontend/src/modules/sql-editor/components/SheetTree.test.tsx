@@ -23,12 +23,12 @@ const mocks = vi.hoisted(() => ({
     getSavedQueryByName: vi.fn(),
     deleteSavedQueryByName: vi.fn(),
     patchSavedQuery: vi.fn(),
-    upsertSavedQueryOrganizer: vi.fn(),
+    updateSavedQueryStar: vi.fn(),
   } as {
     getSavedQueryByName: ReturnType<typeof vi.fn>;
     deleteSavedQueryByName: ReturnType<typeof vi.fn>;
     patchSavedQuery: ReturnType<typeof vi.fn>;
-    upsertSavedQueryOrganizer: ReturnType<typeof vi.fn>;
+    updateSavedQueryStar: ReturnType<typeof vi.fn>;
   },
   getSQLEditorTabsState: vi.fn(),
   project: "projects/proj1",
@@ -487,7 +487,7 @@ const setupDefaultMocks = () => {
   }));
   mocks.appStore.deleteSavedQueryByName.mockResolvedValue(undefined);
   mocks.appStore.patchSavedQuery.mockResolvedValue({});
-  mocks.appStore.upsertSavedQueryOrganizer.mockResolvedValue(undefined);
+  mocks.appStore.updateSavedQueryStar.mockResolvedValue(undefined);
   mocks.getSQLEditorTabsState.mockReturnValue({
     tabsById: new Map(),
     closeTab: vi.fn(),

@@ -43,21 +43,21 @@ const (
 	// SavedQueryServiceListSavedQueriesProcedure is the fully-qualified name of the SavedQueryService's
 	// ListSavedQueries RPC.
 	SavedQueryServiceListSavedQueriesProcedure = "/bytebase.v1.SavedQueryService/ListSavedQueries"
-	// SavedQueryServiceListSavedQueryFoldersProcedure is the fully-qualified name of the
-	// SavedQueryService's ListSavedQueryFolders RPC.
-	SavedQueryServiceListSavedQueryFoldersProcedure = "/bytebase.v1.SavedQueryService/ListSavedQueryFolders"
 	// SavedQueryServiceSearchSavedQueriesProcedure is the fully-qualified name of the
 	// SavedQueryService's SearchSavedQueries RPC.
 	SavedQueryServiceSearchSavedQueriesProcedure = "/bytebase.v1.SavedQueryService/SearchSavedQueries"
+	// SavedQueryServiceSearchSavedQueryFoldersProcedure is the fully-qualified name of the
+	// SavedQueryService's SearchSavedQueryFolders RPC.
+	SavedQueryServiceSearchSavedQueryFoldersProcedure = "/bytebase.v1.SavedQueryService/SearchSavedQueryFolders"
 	// SavedQueryServiceUpdateSavedQueryProcedure is the fully-qualified name of the SavedQueryService's
 	// UpdateSavedQuery RPC.
 	SavedQueryServiceUpdateSavedQueryProcedure = "/bytebase.v1.SavedQueryService/UpdateSavedQuery"
-	// SavedQueryServiceUpdateSavedQueryOrganizerProcedure is the fully-qualified name of the
-	// SavedQueryService's UpdateSavedQueryOrganizer RPC.
-	SavedQueryServiceUpdateSavedQueryOrganizerProcedure = "/bytebase.v1.SavedQueryService/UpdateSavedQueryOrganizer"
-	// SavedQueryServiceBatchUpdateSavedQueryOrganizerProcedure is the fully-qualified name of the
-	// SavedQueryService's BatchUpdateSavedQueryOrganizer RPC.
-	SavedQueryServiceBatchUpdateSavedQueryOrganizerProcedure = "/bytebase.v1.SavedQueryService/BatchUpdateSavedQueryOrganizer"
+	// SavedQueryServiceUpdateSavedQueryStarProcedure is the fully-qualified name of the
+	// SavedQueryService's UpdateSavedQueryStar RPC.
+	SavedQueryServiceUpdateSavedQueryStarProcedure = "/bytebase.v1.SavedQueryService/UpdateSavedQueryStar"
+	// SavedQueryServiceBatchUpdateSavedQueriesProcedure is the fully-qualified name of the
+	// SavedQueryService's BatchUpdateSavedQueries RPC.
+	SavedQueryServiceBatchUpdateSavedQueriesProcedure = "/bytebase.v1.SavedQueryService/BatchUpdateSavedQueries"
 	// SavedQueryServiceDeleteSavedQueryProcedure is the fully-qualified name of the SavedQueryService's
 	// DeleteSavedQuery RPC.
 	SavedQueryServiceDeleteSavedQueryProcedure = "/bytebase.v1.SavedQueryService/DeleteSavedQuery"
@@ -65,41 +65,48 @@ const (
 
 // SavedQueryServiceClient is a client for the bytebase.v1.SavedQueryService service.
 type SavedQueryServiceClient interface {
-	// Creates a personal saved query used in SQL Editor. Any authenticated user can create their own saved queries.
-	// Permissions required: None (authenticated users only)
+	// Creates a personal saved query used in SQL Editor. The creator becomes
+	// the fixed owner.
+	// Permissions required: bb.savedQueries.create on the parent project
 	CreateSavedQuery(context.Context, *connect.Request[v1.CreateSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error)
-	// Get a saved query by name.
-	// Saved queries are private: only the creator, or a caller holding
-	// bb.worksheets.manage on the workspace, can access one.
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Get a saved query by name. Returns NotFound for saved queries the
+	// caller cannot read.
+	// Permissions required: creator, or bb.savedQueries.manage in scope
 	GetSavedQuery(context.Context, *connect.Request[v1.GetSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error)
-	// List saved queries.
-	// This is used for listing saved queries in a project, or across all projects by using `projects/-`.
-	// Permissions required: bb.worksheets.list
+	// List saved queries: the grant-independent governance surface. Supports
+	// listing in a project, or across all projects by using `projects/-`, with
+	// full content — e.g. an offboarding review filtering by creator.
+	// Permissions required: bb.savedQueries.list
 	ListSavedQueries(context.Context, *connect.Request[v1.ListSavedQueriesRequest]) (*connect.Response[v1.ListSavedQueriesResponse], error)
-	// List the caller's saved query folders.
-	// Only folders stored in the caller's saved query organizer are returned.
-	ListSavedQueryFolders(context.Context, *connect.Request[v1.ListSavedQueryFoldersRequest]) (*connect.Response[v1.ListSavedQueryFoldersResponse], error)
-	// Search for saved queries.
-	// This is used for finding my saved queries in a project.
-	// The saved query accessibility is the same as GetSavedQuery().
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Search for saved queries in a project: the SQL Editor's hot list path,
+	// returning only rows the caller can read, with content previews.
+	// Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
 	SearchSavedQueries(context.Context, *connect.Request[v1.SearchSavedQueriesRequest]) (*connect.Response[v1.SearchSavedQueriesResponse], error)
-	// Update a saved query.
-	// The access is the same as GetSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Search the folder paths of the caller's saved queries in a project.
+	// Folders are a derived view over the `folder` field rather than a
+	// resource collection, so this is a custom method on savedQueries and
+	// shares SearchSavedQueries' caller-scoped semantics — not the
+	// cross-creator reach of ListSavedQueries.
+	// Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
+	SearchSavedQueryFolders(context.Context, *connect.Request[v1.SearchSavedQueryFoldersRequest]) (*connect.Response[v1.SearchSavedQueryFoldersResponse], error)
+	// Update a saved query. `title`, `content`, and `database` require write
+	// access; `folder` re-files the saved query and is creator/admin only.
+	// Permissions required: creator, or bb.savedQueries.manage in scope
 	UpdateSavedQuery(context.Context, *connect.Request[v1.UpdateSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error)
-	// Update the organizer of a saved query.
-	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
-	UpdateSavedQueryOrganizer(context.Context, *connect.Request[v1.UpdateSavedQueryOrganizerRequest]) (*connect.Response[v1.SavedQueryOrganizer], error)
-	// Batch update the organizers of saved queries.
-	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
-	BatchUpdateSavedQueryOrganizer(context.Context, *connect.Request[v1.BatchUpdateSavedQueryOrganizerRequest]) (*connect.Response[v1.BatchUpdateSavedQueryOrganizerResponse], error)
-	// Delete a saved query.
-	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Star or unstar a saved query for the caller. A star is always the
+	// caller's own per-user marker — invisible to others and carrying no
+	// access. The only requirement is that the caller can read the saved
+	// query being starred (which also keeps private saved query names
+	// unprobeable).
+	// Permissions required: read access to the saved query
+	UpdateSavedQueryStar(context.Context, *connect.Request[v1.UpdateSavedQueryStarRequest]) (*connect.Response[v1.SavedQuery], error)
+	// Batch re-file saved queries into a folder. The update mask supports
+	// `folder` only; only rows the caller may re-file are updated (their own,
+	// or any in scope for admins).
+	// Permissions required: creator, or bb.savedQueries.manage in scope
+	BatchUpdateSavedQueries(context.Context, *connect.Request[v1.BatchUpdateSavedQueriesRequest]) (*connect.Response[v1.BatchUpdateSavedQueriesResponse], error)
+	// Delete a saved query. Only the creator (or an admin) can delete.
+	// Permissions required: creator, or bb.savedQueries.manage in scope
 	DeleteSavedQuery(context.Context, *connect.Request[v1.DeleteSavedQueryRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
@@ -132,16 +139,16 @@ func NewSavedQueryServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			connect.WithSchema(savedQueryServiceMethods.ByName("ListSavedQueries")),
 			connect.WithClientOptions(opts...),
 		),
-		listSavedQueryFolders: connect.NewClient[v1.ListSavedQueryFoldersRequest, v1.ListSavedQueryFoldersResponse](
-			httpClient,
-			baseURL+SavedQueryServiceListSavedQueryFoldersProcedure,
-			connect.WithSchema(savedQueryServiceMethods.ByName("ListSavedQueryFolders")),
-			connect.WithClientOptions(opts...),
-		),
 		searchSavedQueries: connect.NewClient[v1.SearchSavedQueriesRequest, v1.SearchSavedQueriesResponse](
 			httpClient,
 			baseURL+SavedQueryServiceSearchSavedQueriesProcedure,
 			connect.WithSchema(savedQueryServiceMethods.ByName("SearchSavedQueries")),
+			connect.WithClientOptions(opts...),
+		),
+		searchSavedQueryFolders: connect.NewClient[v1.SearchSavedQueryFoldersRequest, v1.SearchSavedQueryFoldersResponse](
+			httpClient,
+			baseURL+SavedQueryServiceSearchSavedQueryFoldersProcedure,
+			connect.WithSchema(savedQueryServiceMethods.ByName("SearchSavedQueryFolders")),
 			connect.WithClientOptions(opts...),
 		),
 		updateSavedQuery: connect.NewClient[v1.UpdateSavedQueryRequest, v1.SavedQuery](
@@ -150,16 +157,16 @@ func NewSavedQueryServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			connect.WithSchema(savedQueryServiceMethods.ByName("UpdateSavedQuery")),
 			connect.WithClientOptions(opts...),
 		),
-		updateSavedQueryOrganizer: connect.NewClient[v1.UpdateSavedQueryOrganizerRequest, v1.SavedQueryOrganizer](
+		updateSavedQueryStar: connect.NewClient[v1.UpdateSavedQueryStarRequest, v1.SavedQuery](
 			httpClient,
-			baseURL+SavedQueryServiceUpdateSavedQueryOrganizerProcedure,
-			connect.WithSchema(savedQueryServiceMethods.ByName("UpdateSavedQueryOrganizer")),
+			baseURL+SavedQueryServiceUpdateSavedQueryStarProcedure,
+			connect.WithSchema(savedQueryServiceMethods.ByName("UpdateSavedQueryStar")),
 			connect.WithClientOptions(opts...),
 		),
-		batchUpdateSavedQueryOrganizer: connect.NewClient[v1.BatchUpdateSavedQueryOrganizerRequest, v1.BatchUpdateSavedQueryOrganizerResponse](
+		batchUpdateSavedQueries: connect.NewClient[v1.BatchUpdateSavedQueriesRequest, v1.BatchUpdateSavedQueriesResponse](
 			httpClient,
-			baseURL+SavedQueryServiceBatchUpdateSavedQueryOrganizerProcedure,
-			connect.WithSchema(savedQueryServiceMethods.ByName("BatchUpdateSavedQueryOrganizer")),
+			baseURL+SavedQueryServiceBatchUpdateSavedQueriesProcedure,
+			connect.WithSchema(savedQueryServiceMethods.ByName("BatchUpdateSavedQueries")),
 			connect.WithClientOptions(opts...),
 		),
 		deleteSavedQuery: connect.NewClient[v1.DeleteSavedQueryRequest, emptypb.Empty](
@@ -173,15 +180,15 @@ func NewSavedQueryServiceClient(httpClient connect.HTTPClient, baseURL string, o
 
 // savedQueryServiceClient implements SavedQueryServiceClient.
 type savedQueryServiceClient struct {
-	createSavedQuery               *connect.Client[v1.CreateSavedQueryRequest, v1.SavedQuery]
-	getSavedQuery                  *connect.Client[v1.GetSavedQueryRequest, v1.SavedQuery]
-	listSavedQueries               *connect.Client[v1.ListSavedQueriesRequest, v1.ListSavedQueriesResponse]
-	listSavedQueryFolders          *connect.Client[v1.ListSavedQueryFoldersRequest, v1.ListSavedQueryFoldersResponse]
-	searchSavedQueries             *connect.Client[v1.SearchSavedQueriesRequest, v1.SearchSavedQueriesResponse]
-	updateSavedQuery               *connect.Client[v1.UpdateSavedQueryRequest, v1.SavedQuery]
-	updateSavedQueryOrganizer      *connect.Client[v1.UpdateSavedQueryOrganizerRequest, v1.SavedQueryOrganizer]
-	batchUpdateSavedQueryOrganizer *connect.Client[v1.BatchUpdateSavedQueryOrganizerRequest, v1.BatchUpdateSavedQueryOrganizerResponse]
-	deleteSavedQuery               *connect.Client[v1.DeleteSavedQueryRequest, emptypb.Empty]
+	createSavedQuery        *connect.Client[v1.CreateSavedQueryRequest, v1.SavedQuery]
+	getSavedQuery           *connect.Client[v1.GetSavedQueryRequest, v1.SavedQuery]
+	listSavedQueries        *connect.Client[v1.ListSavedQueriesRequest, v1.ListSavedQueriesResponse]
+	searchSavedQueries      *connect.Client[v1.SearchSavedQueriesRequest, v1.SearchSavedQueriesResponse]
+	searchSavedQueryFolders *connect.Client[v1.SearchSavedQueryFoldersRequest, v1.SearchSavedQueryFoldersResponse]
+	updateSavedQuery        *connect.Client[v1.UpdateSavedQueryRequest, v1.SavedQuery]
+	updateSavedQueryStar    *connect.Client[v1.UpdateSavedQueryStarRequest, v1.SavedQuery]
+	batchUpdateSavedQueries *connect.Client[v1.BatchUpdateSavedQueriesRequest, v1.BatchUpdateSavedQueriesResponse]
+	deleteSavedQuery        *connect.Client[v1.DeleteSavedQueryRequest, emptypb.Empty]
 }
 
 // CreateSavedQuery calls bytebase.v1.SavedQueryService.CreateSavedQuery.
@@ -199,14 +206,14 @@ func (c *savedQueryServiceClient) ListSavedQueries(ctx context.Context, req *con
 	return c.listSavedQueries.CallUnary(ctx, req)
 }
 
-// ListSavedQueryFolders calls bytebase.v1.SavedQueryService.ListSavedQueryFolders.
-func (c *savedQueryServiceClient) ListSavedQueryFolders(ctx context.Context, req *connect.Request[v1.ListSavedQueryFoldersRequest]) (*connect.Response[v1.ListSavedQueryFoldersResponse], error) {
-	return c.listSavedQueryFolders.CallUnary(ctx, req)
-}
-
 // SearchSavedQueries calls bytebase.v1.SavedQueryService.SearchSavedQueries.
 func (c *savedQueryServiceClient) SearchSavedQueries(ctx context.Context, req *connect.Request[v1.SearchSavedQueriesRequest]) (*connect.Response[v1.SearchSavedQueriesResponse], error) {
 	return c.searchSavedQueries.CallUnary(ctx, req)
+}
+
+// SearchSavedQueryFolders calls bytebase.v1.SavedQueryService.SearchSavedQueryFolders.
+func (c *savedQueryServiceClient) SearchSavedQueryFolders(ctx context.Context, req *connect.Request[v1.SearchSavedQueryFoldersRequest]) (*connect.Response[v1.SearchSavedQueryFoldersResponse], error) {
+	return c.searchSavedQueryFolders.CallUnary(ctx, req)
 }
 
 // UpdateSavedQuery calls bytebase.v1.SavedQueryService.UpdateSavedQuery.
@@ -214,15 +221,14 @@ func (c *savedQueryServiceClient) UpdateSavedQuery(ctx context.Context, req *con
 	return c.updateSavedQuery.CallUnary(ctx, req)
 }
 
-// UpdateSavedQueryOrganizer calls bytebase.v1.SavedQueryService.UpdateSavedQueryOrganizer.
-func (c *savedQueryServiceClient) UpdateSavedQueryOrganizer(ctx context.Context, req *connect.Request[v1.UpdateSavedQueryOrganizerRequest]) (*connect.Response[v1.SavedQueryOrganizer], error) {
-	return c.updateSavedQueryOrganizer.CallUnary(ctx, req)
+// UpdateSavedQueryStar calls bytebase.v1.SavedQueryService.UpdateSavedQueryStar.
+func (c *savedQueryServiceClient) UpdateSavedQueryStar(ctx context.Context, req *connect.Request[v1.UpdateSavedQueryStarRequest]) (*connect.Response[v1.SavedQuery], error) {
+	return c.updateSavedQueryStar.CallUnary(ctx, req)
 }
 
-// BatchUpdateSavedQueryOrganizer calls
-// bytebase.v1.SavedQueryService.BatchUpdateSavedQueryOrganizer.
-func (c *savedQueryServiceClient) BatchUpdateSavedQueryOrganizer(ctx context.Context, req *connect.Request[v1.BatchUpdateSavedQueryOrganizerRequest]) (*connect.Response[v1.BatchUpdateSavedQueryOrganizerResponse], error) {
-	return c.batchUpdateSavedQueryOrganizer.CallUnary(ctx, req)
+// BatchUpdateSavedQueries calls bytebase.v1.SavedQueryService.BatchUpdateSavedQueries.
+func (c *savedQueryServiceClient) BatchUpdateSavedQueries(ctx context.Context, req *connect.Request[v1.BatchUpdateSavedQueriesRequest]) (*connect.Response[v1.BatchUpdateSavedQueriesResponse], error) {
+	return c.batchUpdateSavedQueries.CallUnary(ctx, req)
 }
 
 // DeleteSavedQuery calls bytebase.v1.SavedQueryService.DeleteSavedQuery.
@@ -232,41 +238,48 @@ func (c *savedQueryServiceClient) DeleteSavedQuery(ctx context.Context, req *con
 
 // SavedQueryServiceHandler is an implementation of the bytebase.v1.SavedQueryService service.
 type SavedQueryServiceHandler interface {
-	// Creates a personal saved query used in SQL Editor. Any authenticated user can create their own saved queries.
-	// Permissions required: None (authenticated users only)
+	// Creates a personal saved query used in SQL Editor. The creator becomes
+	// the fixed owner.
+	// Permissions required: bb.savedQueries.create on the parent project
 	CreateSavedQuery(context.Context, *connect.Request[v1.CreateSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error)
-	// Get a saved query by name.
-	// Saved queries are private: only the creator, or a caller holding
-	// bb.worksheets.manage on the workspace, can access one.
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Get a saved query by name. Returns NotFound for saved queries the
+	// caller cannot read.
+	// Permissions required: creator, or bb.savedQueries.manage in scope
 	GetSavedQuery(context.Context, *connect.Request[v1.GetSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error)
-	// List saved queries.
-	// This is used for listing saved queries in a project, or across all projects by using `projects/-`.
-	// Permissions required: bb.worksheets.list
+	// List saved queries: the grant-independent governance surface. Supports
+	// listing in a project, or across all projects by using `projects/-`, with
+	// full content — e.g. an offboarding review filtering by creator.
+	// Permissions required: bb.savedQueries.list
 	ListSavedQueries(context.Context, *connect.Request[v1.ListSavedQueriesRequest]) (*connect.Response[v1.ListSavedQueriesResponse], error)
-	// List the caller's saved query folders.
-	// Only folders stored in the caller's saved query organizer are returned.
-	ListSavedQueryFolders(context.Context, *connect.Request[v1.ListSavedQueryFoldersRequest]) (*connect.Response[v1.ListSavedQueryFoldersResponse], error)
-	// Search for saved queries.
-	// This is used for finding my saved queries in a project.
-	// The saved query accessibility is the same as GetSavedQuery().
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Search for saved queries in a project: the SQL Editor's hot list path,
+	// returning only rows the caller can read, with content previews.
+	// Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
 	SearchSavedQueries(context.Context, *connect.Request[v1.SearchSavedQueriesRequest]) (*connect.Response[v1.SearchSavedQueriesResponse], error)
-	// Update a saved query.
-	// The access is the same as GetSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Search the folder paths of the caller's saved queries in a project.
+	// Folders are a derived view over the `folder` field rather than a
+	// resource collection, so this is a custom method on savedQueries and
+	// shares SearchSavedQueries' caller-scoped semantics — not the
+	// cross-creator reach of ListSavedQueries.
+	// Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
+	SearchSavedQueryFolders(context.Context, *connect.Request[v1.SearchSavedQueryFoldersRequest]) (*connect.Response[v1.SearchSavedQueryFoldersResponse], error)
+	// Update a saved query. `title`, `content`, and `database` require write
+	// access; `folder` re-files the saved query and is creator/admin only.
+	// Permissions required: creator, or bb.savedQueries.manage in scope
 	UpdateSavedQuery(context.Context, *connect.Request[v1.UpdateSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error)
-	// Update the organizer of a saved query.
-	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
-	UpdateSavedQueryOrganizer(context.Context, *connect.Request[v1.UpdateSavedQueryOrganizerRequest]) (*connect.Response[v1.SavedQueryOrganizer], error)
-	// Batch update the organizers of saved queries.
-	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
-	BatchUpdateSavedQueryOrganizer(context.Context, *connect.Request[v1.BatchUpdateSavedQueryOrganizerRequest]) (*connect.Response[v1.BatchUpdateSavedQueryOrganizerResponse], error)
-	// Delete a saved query.
-	// The access is the same as UpdateSavedQuery method.
-	// Permissions required: creator, or workspace bb.worksheets.manage
+	// Star or unstar a saved query for the caller. A star is always the
+	// caller's own per-user marker — invisible to others and carrying no
+	// access. The only requirement is that the caller can read the saved
+	// query being starred (which also keeps private saved query names
+	// unprobeable).
+	// Permissions required: read access to the saved query
+	UpdateSavedQueryStar(context.Context, *connect.Request[v1.UpdateSavedQueryStarRequest]) (*connect.Response[v1.SavedQuery], error)
+	// Batch re-file saved queries into a folder. The update mask supports
+	// `folder` only; only rows the caller may re-file are updated (their own,
+	// or any in scope for admins).
+	// Permissions required: creator, or bb.savedQueries.manage in scope
+	BatchUpdateSavedQueries(context.Context, *connect.Request[v1.BatchUpdateSavedQueriesRequest]) (*connect.Response[v1.BatchUpdateSavedQueriesResponse], error)
+	// Delete a saved query. Only the creator (or an admin) can delete.
+	// Permissions required: creator, or bb.savedQueries.manage in scope
 	DeleteSavedQuery(context.Context, *connect.Request[v1.DeleteSavedQueryRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
@@ -295,16 +308,16 @@ func NewSavedQueryServiceHandler(svc SavedQueryServiceHandler, opts ...connect.H
 		connect.WithSchema(savedQueryServiceMethods.ByName("ListSavedQueries")),
 		connect.WithHandlerOptions(opts...),
 	)
-	savedQueryServiceListSavedQueryFoldersHandler := connect.NewUnaryHandler(
-		SavedQueryServiceListSavedQueryFoldersProcedure,
-		svc.ListSavedQueryFolders,
-		connect.WithSchema(savedQueryServiceMethods.ByName("ListSavedQueryFolders")),
-		connect.WithHandlerOptions(opts...),
-	)
 	savedQueryServiceSearchSavedQueriesHandler := connect.NewUnaryHandler(
 		SavedQueryServiceSearchSavedQueriesProcedure,
 		svc.SearchSavedQueries,
 		connect.WithSchema(savedQueryServiceMethods.ByName("SearchSavedQueries")),
+		connect.WithHandlerOptions(opts...),
+	)
+	savedQueryServiceSearchSavedQueryFoldersHandler := connect.NewUnaryHandler(
+		SavedQueryServiceSearchSavedQueryFoldersProcedure,
+		svc.SearchSavedQueryFolders,
+		connect.WithSchema(savedQueryServiceMethods.ByName("SearchSavedQueryFolders")),
 		connect.WithHandlerOptions(opts...),
 	)
 	savedQueryServiceUpdateSavedQueryHandler := connect.NewUnaryHandler(
@@ -313,16 +326,16 @@ func NewSavedQueryServiceHandler(svc SavedQueryServiceHandler, opts ...connect.H
 		connect.WithSchema(savedQueryServiceMethods.ByName("UpdateSavedQuery")),
 		connect.WithHandlerOptions(opts...),
 	)
-	savedQueryServiceUpdateSavedQueryOrganizerHandler := connect.NewUnaryHandler(
-		SavedQueryServiceUpdateSavedQueryOrganizerProcedure,
-		svc.UpdateSavedQueryOrganizer,
-		connect.WithSchema(savedQueryServiceMethods.ByName("UpdateSavedQueryOrganizer")),
+	savedQueryServiceUpdateSavedQueryStarHandler := connect.NewUnaryHandler(
+		SavedQueryServiceUpdateSavedQueryStarProcedure,
+		svc.UpdateSavedQueryStar,
+		connect.WithSchema(savedQueryServiceMethods.ByName("UpdateSavedQueryStar")),
 		connect.WithHandlerOptions(opts...),
 	)
-	savedQueryServiceBatchUpdateSavedQueryOrganizerHandler := connect.NewUnaryHandler(
-		SavedQueryServiceBatchUpdateSavedQueryOrganizerProcedure,
-		svc.BatchUpdateSavedQueryOrganizer,
-		connect.WithSchema(savedQueryServiceMethods.ByName("BatchUpdateSavedQueryOrganizer")),
+	savedQueryServiceBatchUpdateSavedQueriesHandler := connect.NewUnaryHandler(
+		SavedQueryServiceBatchUpdateSavedQueriesProcedure,
+		svc.BatchUpdateSavedQueries,
+		connect.WithSchema(savedQueryServiceMethods.ByName("BatchUpdateSavedQueries")),
 		connect.WithHandlerOptions(opts...),
 	)
 	savedQueryServiceDeleteSavedQueryHandler := connect.NewUnaryHandler(
@@ -339,16 +352,16 @@ func NewSavedQueryServiceHandler(svc SavedQueryServiceHandler, opts ...connect.H
 			savedQueryServiceGetSavedQueryHandler.ServeHTTP(w, r)
 		case SavedQueryServiceListSavedQueriesProcedure:
 			savedQueryServiceListSavedQueriesHandler.ServeHTTP(w, r)
-		case SavedQueryServiceListSavedQueryFoldersProcedure:
-			savedQueryServiceListSavedQueryFoldersHandler.ServeHTTP(w, r)
 		case SavedQueryServiceSearchSavedQueriesProcedure:
 			savedQueryServiceSearchSavedQueriesHandler.ServeHTTP(w, r)
+		case SavedQueryServiceSearchSavedQueryFoldersProcedure:
+			savedQueryServiceSearchSavedQueryFoldersHandler.ServeHTTP(w, r)
 		case SavedQueryServiceUpdateSavedQueryProcedure:
 			savedQueryServiceUpdateSavedQueryHandler.ServeHTTP(w, r)
-		case SavedQueryServiceUpdateSavedQueryOrganizerProcedure:
-			savedQueryServiceUpdateSavedQueryOrganizerHandler.ServeHTTP(w, r)
-		case SavedQueryServiceBatchUpdateSavedQueryOrganizerProcedure:
-			savedQueryServiceBatchUpdateSavedQueryOrganizerHandler.ServeHTTP(w, r)
+		case SavedQueryServiceUpdateSavedQueryStarProcedure:
+			savedQueryServiceUpdateSavedQueryStarHandler.ServeHTTP(w, r)
+		case SavedQueryServiceBatchUpdateSavedQueriesProcedure:
+			savedQueryServiceBatchUpdateSavedQueriesHandler.ServeHTTP(w, r)
 		case SavedQueryServiceDeleteSavedQueryProcedure:
 			savedQueryServiceDeleteSavedQueryHandler.ServeHTTP(w, r)
 		default:
@@ -372,24 +385,24 @@ func (UnimplementedSavedQueryServiceHandler) ListSavedQueries(context.Context, *
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SavedQueryService.ListSavedQueries is not implemented"))
 }
 
-func (UnimplementedSavedQueryServiceHandler) ListSavedQueryFolders(context.Context, *connect.Request[v1.ListSavedQueryFoldersRequest]) (*connect.Response[v1.ListSavedQueryFoldersResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SavedQueryService.ListSavedQueryFolders is not implemented"))
-}
-
 func (UnimplementedSavedQueryServiceHandler) SearchSavedQueries(context.Context, *connect.Request[v1.SearchSavedQueriesRequest]) (*connect.Response[v1.SearchSavedQueriesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SavedQueryService.SearchSavedQueries is not implemented"))
+}
+
+func (UnimplementedSavedQueryServiceHandler) SearchSavedQueryFolders(context.Context, *connect.Request[v1.SearchSavedQueryFoldersRequest]) (*connect.Response[v1.SearchSavedQueryFoldersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SavedQueryService.SearchSavedQueryFolders is not implemented"))
 }
 
 func (UnimplementedSavedQueryServiceHandler) UpdateSavedQuery(context.Context, *connect.Request[v1.UpdateSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SavedQueryService.UpdateSavedQuery is not implemented"))
 }
 
-func (UnimplementedSavedQueryServiceHandler) UpdateSavedQueryOrganizer(context.Context, *connect.Request[v1.UpdateSavedQueryOrganizerRequest]) (*connect.Response[v1.SavedQueryOrganizer], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SavedQueryService.UpdateSavedQueryOrganizer is not implemented"))
+func (UnimplementedSavedQueryServiceHandler) UpdateSavedQueryStar(context.Context, *connect.Request[v1.UpdateSavedQueryStarRequest]) (*connect.Response[v1.SavedQuery], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SavedQueryService.UpdateSavedQueryStar is not implemented"))
 }
 
-func (UnimplementedSavedQueryServiceHandler) BatchUpdateSavedQueryOrganizer(context.Context, *connect.Request[v1.BatchUpdateSavedQueryOrganizerRequest]) (*connect.Response[v1.BatchUpdateSavedQueryOrganizerResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SavedQueryService.BatchUpdateSavedQueryOrganizer is not implemented"))
+func (UnimplementedSavedQueryServiceHandler) BatchUpdateSavedQueries(context.Context, *connect.Request[v1.BatchUpdateSavedQueriesRequest]) (*connect.Response[v1.BatchUpdateSavedQueriesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SavedQueryService.BatchUpdateSavedQueries is not implemented"))
 }
 
 func (UnimplementedSavedQueryServiceHandler) DeleteSavedQuery(context.Context, *connect.Request[v1.DeleteSavedQueryRequest]) (*connect.Response[emptypb.Empty], error) {

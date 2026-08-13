@@ -496,16 +496,29 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrapf(err, "failed to delete policy for project %s", resourceID)
 	}
 
-	// Delete saved_query_organizer entries referencing project principals.
-	q = qb.Q().Space(`DELETE FROM saved_query_organizer
-		WHERE principal IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
-		   OR principal IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
+	// Delete star rows before their parents, in full primary-key order: stars
+	// held by project principals, and stars on the saved queries the next
+	// statement deletes.
+	q = qb.Q().Space(`DELETE FROM saved_query_star
+		WHERE (saved_query, principal) IN (
+			SELECT saved_query, principal
+			FROM saved_query_star
+			WHERE principal IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
+			   OR principal IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)
+			   OR saved_query IN (
+					SELECT resource_id FROM saved_query
+					WHERE creator IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
+					   OR creator IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)
+			   )
+			ORDER BY saved_query, principal
+			FOR UPDATE
+		)`, resourceID, workspace, resourceID, workspace, resourceID, workspace, resourceID, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
-		return errors.Wrap(err, "failed to build saved_query_organizer delete query")
+		return errors.Wrap(err, "failed to build saved_query_star delete query")
 	}
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete saved_query_organizer for project %s", resourceID)
+		return errors.Wrapf(err, "failed to delete saved_query_star for project %s", resourceID)
 	}
 
 	// Delete saved queries created by project service accounts or workload identities.

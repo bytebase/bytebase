@@ -2761,11 +2761,11 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.v1.BatchUpdateSavedQueryOrganizerRequest"><span class="badge">M</span>BatchUpdateSavedQueryOrganizerRequest</a>
+                  <a href="#bytebase.v1.BatchUpdateSavedQueriesRequest"><span class="badge">M</span>BatchUpdateSavedQueriesRequest</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.BatchUpdateSavedQueryOrganizerResponse"><span class="badge">M</span>BatchUpdateSavedQueryOrganizerResponse</a>
+                  <a href="#bytebase.v1.BatchUpdateSavedQueriesResponse"><span class="badge">M</span>BatchUpdateSavedQueriesResponse</a>
                 </li>
               
                 <li>
@@ -2789,23 +2789,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ListSavedQueryFoldersRequest"><span class="badge">M</span>ListSavedQueryFoldersRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListSavedQueryFoldersResponse"><span class="badge">M</span>ListSavedQueryFoldersResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.SavedQuery"><span class="badge">M</span>SavedQuery</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SavedQueryFolder"><span class="badge">M</span>SavedQueryFolder</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SavedQueryOrganizer"><span class="badge">M</span>SavedQueryOrganizer</a>
                 </li>
               
                 <li>
@@ -2817,17 +2801,21 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.UpdateSavedQueryOrganizerRequest"><span class="badge">M</span>UpdateSavedQueryOrganizerRequest</a>
+                  <a href="#bytebase.v1.SearchSavedQueryFoldersRequest"><span class="badge">M</span>SearchSavedQueryFoldersRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchSavedQueryFoldersResponse"><span class="badge">M</span>SearchSavedQueryFoldersResponse</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.UpdateSavedQueryRequest"><span class="badge">M</span>UpdateSavedQueryRequest</a>
                 </li>
               
-              
                 <li>
-                  <a href="#bytebase.v1.SavedQueryFolder.Category"><span class="badge">E</span>SavedQueryFolder.Category</a>
+                  <a href="#bytebase.v1.UpdateSavedQueryStarRequest"><span class="badge">M</span>UpdateSavedQueryStarRequest</a>
                 </li>
+              
               
               
               
@@ -31595,7 +31583,7 @@ Permissions required: bb.roles.delete</p></td>
       <p></p>
 
       
-        <h3 id="bytebase.v1.BatchUpdateSavedQueryOrganizerRequest">BatchUpdateSavedQueryOrganizerRequest</h3>
+        <h3 id="bytebase.v1.BatchUpdateSavedQueriesRequest">BatchUpdateSavedQueriesRequest</h3>
         <p></p>
 
         
@@ -31609,7 +31597,7 @@ Permissions required: bb.roles.delete</p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent resource whose saved queries&#39; organizers are updated.
+                  <td><p>The parent resource whose saved queries are updated.
 Format: projects/{project} </p></td>
                 </tr>
               
@@ -31624,14 +31612,14 @@ Supported filter:
 - name: the saved query name in &#34;projects/{project}/savedQueries/{savedQuery}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator.
 - creator: the saved query creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
 - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred saved queries, support &#34;==&#34; operator.
-- folder: the saved query organizer folder path, support exact &#34;==&#34; operator. </p></td>
+- folder: the saved query folder path, support exact &#34;==&#34; operator. </p></td>
                 </tr>
               
                 <tr>
-                  <td>organizer</td>
-                  <td><a href="#bytebase.v1.SavedQueryOrganizer">SavedQueryOrganizer</a></td>
+                  <td>saved_query</td>
+                  <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
                   <td></td>
-                  <td><p>The organizer fields to update. </p></td>
+                  <td><p>The fields to apply to every matched saved query. </p></td>
                 </tr>
               
                 <tr>
@@ -31639,10 +31627,8 @@ Supported filter:
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
                   <td><p>The list of fields to be updated.
-Fields are specified relative to the saved query organizer.
 Only support update the following fields for now:
-- `starred`
-- `folders` </p></td>
+- `folder` </p></td>
                 </tr>
               
             </tbody>
@@ -31652,7 +31638,7 @@ Only support update the following fields for now:
 
         
       
-        <h3 id="bytebase.v1.BatchUpdateSavedQueryOrganizerResponse">BatchUpdateSavedQueryOrganizerResponse</h3>
+        <h3 id="bytebase.v1.BatchUpdateSavedQueriesResponse">BatchUpdateSavedQueriesResponse</h3>
         <p></p>
 
         
@@ -31663,17 +31649,10 @@ Only support update the following fields for now:
             <tbody>
               
                 <tr>
-                  <td>saved_query_organizers</td>
-                  <td><a href="#bytebase.v1.SavedQueryOrganizer">SavedQueryOrganizer</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>updated_count</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The number of saved queries updated. </p></td>
                 </tr>
               
             </tbody>
@@ -31860,55 +31839,6 @@ Pass this value in the page_token field in the subsequent call to
 
         
       
-        <h3 id="bytebase.v1.ListSavedQueryFoldersRequest">ListSavedQueryFoldersRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent resource of the saved query folders.
-Format: projects/{project} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListSavedQueryFoldersResponse">ListSavedQueryFoldersResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>folders</td>
-                  <td><a href="#bytebase.v1.SavedQueryFolder">SavedQueryFolder</a></td>
-                  <td>repeated</td>
-                  <td><p>The caller&#39;s saved query folders. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.SavedQuery">SavedQuery</h3>
         <p></p>
 
@@ -31956,7 +31886,8 @@ If the database parent doesn&#39;t exist, the database field is empty. </p></td>
                   <td>creator</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The creator of the SavedQuery.
+                  <td><p>The creator of the SavedQuery — the fixed owner; ownership does not
+transfer.
 Format: users/{email} </p></td>
                 </tr>
               
@@ -31998,80 +31929,12 @@ use GetSavedQuery() request to retrieve the full content. </p></td>
                 </tr>
               
                 <tr>
-                  <td>folders</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SavedQueryFolder">SavedQueryFolder</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>folders</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The folder path segments. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>category</td>
-                  <td><a href="#bytebase.v1.SavedQueryFolder.Category">SavedQueryFolder.Category</a></td>
-                  <td></td>
-                  <td><p>The folder category. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SavedQueryOrganizer">SavedQueryOrganizer</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>saved_query</td>
+                  <td>folder</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the saved query.
-Format: projects/{project}/savedQueries/{savedQuery} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>starred</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>starred means if the saved query is starred. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>folders</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
+                  <td><p>The folder path this saved query lives in, set by its creator (or an
+admin). Empty means unfiled. A saved query lives in exactly one folder;
+a folder is a path on saved queries, e.g. &#34;a/b/c&#34;. </p></td>
                 </tr>
               
             </tbody>
@@ -32111,7 +31974,7 @@ Supported filter:
 - title: the saved query title, support &#34;contains&#34; operator.
 - creator: the saved query creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
 - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred saved queries, support &#34;==&#34; operator.
-- folder: the saved query organizer folder path, support &#34;==&#34; operator.
+- folder: the saved query folder path, support &#34;==&#34; operator.
 
 For example:
 creator == &#34;users/{email}&#34;
@@ -32180,7 +32043,7 @@ Pass this value in the page_token field in the subsequent call to
 
         
       
-        <h3 id="bytebase.v1.UpdateSavedQueryOrganizerRequest">UpdateSavedQueryOrganizerRequest</h3>
+        <h3 id="bytebase.v1.SearchSavedQueryFoldersRequest">SearchSavedQueryFoldersRequest</h3>
         <p></p>
 
         
@@ -32191,31 +32054,37 @@ Pass this value in the page_token field in the subsequent call to
             <tbody>
               
                 <tr>
-                  <td>organizer</td>
-                  <td><a href="#bytebase.v1.SavedQueryOrganizer">SavedQueryOrganizer</a></td>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The organizer to update.
+                  <td><p>The parent resource whose saved query folders are searched.
+Format: projects/{project} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
 
-The organizer&#39;s `saved_query` field is used to identify the saved query.
-Format: projects/{project}/savedQueries/{savedQuery} </p></td>
-                </tr>
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchSavedQueryFoldersResponse">SearchSavedQueryFoldersResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
               
                 <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>The list of fields to be updated.
-Fields are specified relative to the saved query organizer.
-Only support update the following fields for now:
-- `starred` </p></td>
-                </tr>
-              
-                <tr>
-                  <td>allow_missing</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If set to true, and the saved query organizer is not found, a new saved query organizer will be created.
-In this situation, `update_mask` is ignored. </p></td>
+                  <td>folders</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The caller&#39;s folder paths, including every ancestor prefix, sorted.
+A folder is a path on saved queries (&#34;a/b/c&#34;), so empty folders cannot
+exist. </p></td>
                 </tr>
               
             </tbody>
@@ -32255,7 +32124,40 @@ Fields are specified relative to the saved query.
 Only support update the following fields for now:
 - `title`
 - `content`
-- `database` </p></td>
+- `database`
+- `folder` </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateSavedQueryStarRequest">UpdateSavedQueryStarRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the saved query to star or unstar.
+Format: projects/{project}/savedQueries/{savedQuery} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>starred</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the caller stars the saved query. </p></td>
                 </tr>
               
             </tbody>
@@ -32267,41 +32169,12 @@ Only support update the following fields for now:
       
 
       
-        <h3 id="bytebase.v1.SavedQueryFolder.Category">SavedQueryFolder.Category</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>CATEGORY_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MINE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SHARED</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
 
       
 
       
         <h3 id="bytebase.v1.SavedQueryService">SavedQueryService</h3>
-        <p>SavedQueryService manages saved queries for SQL Editor query development.</p><p>Permission IDs still use the legacy `bb.worksheets.*` names; they are</p><p>renamed together with the access-model redesign and its role migration.</p>
+        <p>SavedQueryService manages saved queries for SQL Editor query development.</p><p>A saved query is private to its creator; `bb.savedQueries.manage` is the</p><p>admin backstop that can reach any saved query in scope. Per-object</p><p>VIEWER/EDITOR grants arrive with the access-model redesign, which brings</p><p>its own policy shapes and the GetIamPolicy/SetIamPolicy pair that manages</p><p>them.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
@@ -32312,81 +32185,88 @@ Only support update the following fields for now:
                 <td>CreateSavedQuery</td>
                 <td><a href="#bytebase.v1.CreateSavedQueryRequest">CreateSavedQueryRequest</a></td>
                 <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
-                <td><p>Creates a personal saved query used in SQL Editor. Any authenticated user can create their own saved queries.
-Permissions required: None (authenticated users only)</p></td>
+                <td><p>Creates a personal saved query used in SQL Editor. The creator becomes
+the fixed owner.
+Permissions required: bb.savedQueries.create on the parent project</p></td>
               </tr>
             
               <tr>
                 <td>GetSavedQuery</td>
                 <td><a href="#bytebase.v1.GetSavedQueryRequest">GetSavedQueryRequest</a></td>
                 <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
-                <td><p>Get a saved query by name.
-Saved queries are private: only the creator, or a caller holding
-bb.worksheets.manage on the workspace, can access one.
-Permissions required: creator, or workspace bb.worksheets.manage</p></td>
+                <td><p>Get a saved query by name. Returns NotFound for saved queries the
+caller cannot read.
+Permissions required: creator, or bb.savedQueries.manage in scope</p></td>
               </tr>
             
               <tr>
                 <td>ListSavedQueries</td>
                 <td><a href="#bytebase.v1.ListSavedQueriesRequest">ListSavedQueriesRequest</a></td>
                 <td><a href="#bytebase.v1.ListSavedQueriesResponse">ListSavedQueriesResponse</a></td>
-                <td><p>List saved queries.
-This is used for listing saved queries in a project, or across all projects by using `projects/-`.
-Permissions required: bb.worksheets.list</p></td>
-              </tr>
-            
-              <tr>
-                <td>ListSavedQueryFolders</td>
-                <td><a href="#bytebase.v1.ListSavedQueryFoldersRequest">ListSavedQueryFoldersRequest</a></td>
-                <td><a href="#bytebase.v1.ListSavedQueryFoldersResponse">ListSavedQueryFoldersResponse</a></td>
-                <td><p>List the caller&#39;s saved query folders.
-Only folders stored in the caller&#39;s saved query organizer are returned.</p></td>
+                <td><p>List saved queries: the grant-independent governance surface. Supports
+listing in a project, or across all projects by using `projects/-`, with
+full content — e.g. an offboarding review filtering by creator.
+Permissions required: bb.savedQueries.list</p></td>
               </tr>
             
               <tr>
                 <td>SearchSavedQueries</td>
                 <td><a href="#bytebase.v1.SearchSavedQueriesRequest">SearchSavedQueriesRequest</a></td>
                 <td><a href="#bytebase.v1.SearchSavedQueriesResponse">SearchSavedQueriesResponse</a></td>
-                <td><p>Search for saved queries.
-This is used for finding my saved queries in a project.
-The saved query accessibility is the same as GetSavedQuery().
-Permissions required: creator, or workspace bb.worksheets.manage</p></td>
+                <td><p>Search for saved queries in a project: the SQL Editor&#39;s hot list path,
+returning only rows the caller can read, with content previews.
+Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project</p></td>
+              </tr>
+            
+              <tr>
+                <td>SearchSavedQueryFolders</td>
+                <td><a href="#bytebase.v1.SearchSavedQueryFoldersRequest">SearchSavedQueryFoldersRequest</a></td>
+                <td><a href="#bytebase.v1.SearchSavedQueryFoldersResponse">SearchSavedQueryFoldersResponse</a></td>
+                <td><p>Search the folder paths of the caller&#39;s saved queries in a project.
+Folders are a derived view over the `folder` field rather than a
+resource collection, so this is a custom method on savedQueries and
+shares SearchSavedQueries&#39; caller-scoped semantics — not the
+cross-creator reach of ListSavedQueries.
+Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project</p></td>
               </tr>
             
               <tr>
                 <td>UpdateSavedQuery</td>
                 <td><a href="#bytebase.v1.UpdateSavedQueryRequest">UpdateSavedQueryRequest</a></td>
                 <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
-                <td><p>Update a saved query.
-The access is the same as GetSavedQuery method.
-Permissions required: creator, or workspace bb.worksheets.manage</p></td>
+                <td><p>Update a saved query. `title`, `content`, and `database` require write
+access; `folder` re-files the saved query and is creator/admin only.
+Permissions required: creator, or bb.savedQueries.manage in scope</p></td>
               </tr>
             
               <tr>
-                <td>UpdateSavedQueryOrganizer</td>
-                <td><a href="#bytebase.v1.UpdateSavedQueryOrganizerRequest">UpdateSavedQueryOrganizerRequest</a></td>
-                <td><a href="#bytebase.v1.SavedQueryOrganizer">SavedQueryOrganizer</a></td>
-                <td><p>Update the organizer of a saved query.
-The access is the same as UpdateSavedQuery method.
-Permissions required: creator, or workspace bb.worksheets.manage</p></td>
+                <td>UpdateSavedQueryStar</td>
+                <td><a href="#bytebase.v1.UpdateSavedQueryStarRequest">UpdateSavedQueryStarRequest</a></td>
+                <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
+                <td><p>Star or unstar a saved query for the caller. A star is always the
+caller&#39;s own per-user marker — invisible to others and carrying no
+access. The only requirement is that the caller can read the saved
+query being starred (which also keeps private saved query names
+unprobeable).
+Permissions required: read access to the saved query</p></td>
               </tr>
             
               <tr>
-                <td>BatchUpdateSavedQueryOrganizer</td>
-                <td><a href="#bytebase.v1.BatchUpdateSavedQueryOrganizerRequest">BatchUpdateSavedQueryOrganizerRequest</a></td>
-                <td><a href="#bytebase.v1.BatchUpdateSavedQueryOrganizerResponse">BatchUpdateSavedQueryOrganizerResponse</a></td>
-                <td><p>Batch update the organizers of saved queries.
-The access is the same as UpdateSavedQuery method.
-Permissions required: creator, or workspace bb.worksheets.manage</p></td>
+                <td>BatchUpdateSavedQueries</td>
+                <td><a href="#bytebase.v1.BatchUpdateSavedQueriesRequest">BatchUpdateSavedQueriesRequest</a></td>
+                <td><a href="#bytebase.v1.BatchUpdateSavedQueriesResponse">BatchUpdateSavedQueriesResponse</a></td>
+                <td><p>Batch re-file saved queries into a folder. The update mask supports
+`folder` only; only rows the caller may re-file are updated (their own,
+or any in scope for admins).
+Permissions required: creator, or bb.savedQueries.manage in scope</p></td>
               </tr>
             
               <tr>
                 <td>DeleteSavedQuery</td>
                 <td><a href="#bytebase.v1.DeleteSavedQueryRequest">DeleteSavedQueryRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p>Delete a saved query.
-The access is the same as UpdateSavedQuery method.
-Permissions required: creator, or workspace bb.worksheets.manage</p></td>
+                <td><p>Delete a saved query. Only the creator (or an admin) can delete.
+Permissions required: creator, or bb.savedQueries.manage in scope</p></td>
               </tr>
             
           </tbody>
@@ -32440,19 +32320,19 @@ Permissions required: creator, or workspace bb.worksheets.manage</p></td>
               
               
               <tr>
-                <td>ListSavedQueryFolders</td>
-                <td>GET</td>
-                <td>/v1/{parent=projects/*}/savedQueryFolders</td>
-                <td></td>
+                <td>SearchSavedQueries</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/savedQueries:search</td>
+                <td>*</td>
               </tr>
               
             
               
               
               <tr>
-                <td>SearchSavedQueries</td>
+                <td>SearchSavedQueryFolders</td>
                 <td>POST</td>
-                <td>/v1/{parent=projects/*}/savedQueries:search</td>
+                <td>/v1/{parent=projects/*}/savedQueries:searchFolders</td>
                 <td>*</td>
               </tr>
               
@@ -32470,19 +32350,19 @@ Permissions required: creator, or workspace bb.worksheets.manage</p></td>
               
               
               <tr>
-                <td>UpdateSavedQueryOrganizer</td>
-                <td>PATCH</td>
-                <td>/v1/{organizer.saved_query=projects/*/savedQueries/*}/organizer</td>
-                <td>organizer</td>
+                <td>UpdateSavedQueryStar</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/savedQueries/*}:updateStar</td>
+                <td>*</td>
               </tr>
               
             
               
               
               <tr>
-                <td>BatchUpdateSavedQueryOrganizer</td>
+                <td>BatchUpdateSavedQueries</td>
                 <td>POST</td>
-                <td>/v1/{parent=projects/*}/savedQueries/organizers:batchUpdate</td>
+                <td>/v1/{parent=projects/*}/savedQueries:batchUpdate</td>
                 <td>*</td>
               </tr>
               
