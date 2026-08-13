@@ -820,7 +820,7 @@ reader trusts — so a method changing what it does changes its reason here.
 | ENDS_SESSION | 4 | Destroys the human&#39;s own login session. |
 | ENDS_MEMBERSHIP | 5 | Destroys the caller&#39;s own workspace membership and mints a plain workspace token on the way out. |
 | MINTS_CREDENTIAL_FOR_OTHERS | 6 | Leaves someone holding a principal the caller is not — by issuing its credential, carrying an existing one out to a host the caller named, choosing what will later be trusted to mint one, or redirecting where one gets delivered. |
-| REWRITES_SESSION_BOUNDARY | 7 | Rewrites the workspace configuration that governs the session making the call — the MCP switch itself, the sign-in and SSO settings, and the mail relay that carries credential resets. A session that can widen its own ceiling is not bounded by it. |
+| REWRITES_SESSION_BOUNDARY | 7 | Rewrites the workspace configuration that governs the session making the call — the MCP switch itself, the sign-in and SSO settings, the mail relay that carries credential resets, and the AI endpoint the stored API key is sent to. A session that can widen its own ceiling is not bounded by it. |
 
 
 

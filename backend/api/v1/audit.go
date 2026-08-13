@@ -591,6 +591,12 @@ func getRequestString(request any) (string, error) {
 			r = proto.CloneOf(r)
 			r.Instance = redactInstance(r.Instance)
 			return r
+		case *v1pb.BatchUpdateInstancesRequest:
+			r = proto.CloneOf(r)
+			for _, ur := range r.Requests {
+				ur.Instance = redactInstance(ur.Instance)
+			}
+			return r
 		case *v1pb.AddDataSourceRequest:
 			r = proto.CloneOf(r)
 			r.DataSource = redactDataSource(r.DataSource)
@@ -695,6 +701,12 @@ func getResponseString(response any) (string, error) {
 			n := &v1pb.BatchCreateSheetsResponse{}
 			for _, sheet := range r.Sheets {
 				n.Sheets = append(n.Sheets, redactSheet(sheet))
+			}
+			return n
+		case *v1pb.BatchUpdateInstancesResponse:
+			n := &v1pb.BatchUpdateInstancesResponse{}
+			for _, instance := range r.Instances {
+				n.Instances = append(n.Instances, redactInstance(instance))
 			}
 			return n
 		default:
@@ -1046,11 +1058,11 @@ func redactInstance(i *v1pb.Instance) *v1pb.Instance {
 }
 
 func redactDataSource(d *v1pb.DataSource) *v1pb.DataSource {
-	// Clone the datasource to avoid modifying the original
-	cloned, ok := proto.Clone(d).(*v1pb.DataSource)
-	if !ok {
-		return d
+	if d == nil {
+		return nil
 	}
+	// Clone the datasource to avoid modifying the original
+	cloned := proto.CloneOf(d)
 	if cloned.Password != "" {
 		cloned.Password = maskedString
 	}
@@ -1081,6 +1093,10 @@ func redactDataSource(d *v1pb.DataSource) *v1pb.DataSource {
 	if cloned.AuthenticationPrivateKey != "" {
 		cloned.AuthenticationPrivateKey = maskedString
 	}
+	if cloned.AuthenticationPrivateKeyPassphrase != "" {
+		cloned.AuthenticationPrivateKeyPassphrase = maskedString
+	}
+	redactIAMExtension(cloned)
 	if cloned.ExternalSecret != nil {
 		cloned.ExternalSecret = new(v1pb.DataSourceExternalSecret)
 	}
@@ -1094,6 +1110,46 @@ func redactDataSource(d *v1pb.DataSource) *v1pb.DataSource {
 		cloned.MasterPassword = maskedString
 	}
 	return cloned
+}
+
+// redactIAMExtension strips the IAM credential while keeping the variant that
+// was set, so the row still records which credential type the caller supplied.
+// It keys off the oneof rather than authentication_type, which a request is
+// free to leave unset or contradict.
+//
+// What survives mirrors the read path (instance_service_converter.go): the
+// Azure tenant and client IDs name the principal and are not INPUT_ONLY, so
+// they stay; every AWSCredential field is, including the role ARN, so none
+// does; and the GCP content is a whole service-account key.
+//
+// Keeping the ARN was considered — it names a principal rather than
+// authenticating as one, and the row could then answer which role a data
+// source was pointed at. It is dropped anyway, because "no INPUT_ONLY field
+// survives redaction" is an invariant a descriptor walk can check forever
+// (TestAuditRedactsEveryInputOnlyDataSourceField), and a hand-kept exception
+// list is the drift this function exists to stop.
+func redactIAMExtension(d *v1pb.DataSource) {
+	switch extension := d.GetIamExtension().(type) {
+	case *v1pb.DataSource_AzureCredential_:
+		d.IamExtension = &v1pb.DataSource_AzureCredential_{
+			AzureCredential: &v1pb.DataSource_AzureCredential{
+				TenantId: extension.AzureCredential.GetTenantId(),
+				ClientId: extension.AzureCredential.GetClientId(),
+			},
+		}
+	case *v1pb.DataSource_AwsCredential:
+		d.IamExtension = &v1pb.DataSource_AwsCredential{
+			AwsCredential: &v1pb.DataSource_AWSCredential{},
+		}
+	case *v1pb.DataSource_GcpCredential:
+		d.IamExtension = &v1pb.DataSource_GcpCredential{
+			GcpCredential: &v1pb.DataSource_GCPCredential{},
+		}
+	default:
+		// A variant added to the oneof after this function was written is
+		// dropped whole rather than logged. Unset lands here too and stays nil.
+		d.IamExtension = nil
+	}
 }
 
 func redactAdminExecuteResponse(r *v1pb.AdminExecuteResponse) *v1pb.AdminExecuteResponse {
