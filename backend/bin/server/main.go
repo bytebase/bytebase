@@ -7,6 +7,7 @@ import (
 	"github.com/bytebase/bytebase/backend/bin/server/cmd"
 )
 
+// ...oops
 func main() {
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
