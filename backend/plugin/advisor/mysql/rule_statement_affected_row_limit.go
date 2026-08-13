@@ -71,18 +71,26 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 			line := baseLine + int(mysqlparser.ByteOffsetToRunePosition(stmt.Text, contentStartIndex(stmt.Text)).Line)
 
 			explainCount++
-			res, err := advisor.Query(ctx, advisor.QueryContext{}, driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", text))
-			if err != nil {
-				advice = append(advice, &storepb.Advice{
-					Status:        level,
-					Code:          code.StatementAffectedRowExceedsLimit.Int32(),
-					Title:         title,
-					Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
-					StartPosition: common.ConvertANTLRLineToPosition(line),
-				})
-			} else {
-				rowCount, err := getRows(res)
+			// Prefer the JSON query plan: the tabular EXPLAIN's first "rows" value may
+			// be the scan estimate of a driving table unrelated to the DML target
+			// (BYT-9858). Fall back to the tabular heuristic when the JSON plan yields
+			// no flagged target node.
+			var rowCount int64
+			counted := false
+			if res, err := advisor.Query(ctx, advisor.QueryContext{}, driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", text)); err == nil {
+				rowCount, counted = getRowsFromJSONPlan(res)
+			}
+			if !counted {
+				res, err := advisor.Query(ctx, advisor.QueryContext{}, driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", text))
 				if err != nil {
+					advice = append(advice, &storepb.Advice{
+						Status:        level,
+						Code:          code.StatementAffectedRowExceedsLimit.Int32(),
+						Title:         title,
+						Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
+						StartPosition: common.ConvertANTLRLineToPosition(line),
+					})
+				} else if rowCount, err = getRows(res); err != nil {
 					advice = append(advice, &storepb.Advice{
 						Status:        level,
 						Code:          code.Internal.Int32(),
@@ -90,7 +98,12 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 						Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", text, err.Error()),
 						StartPosition: common.ConvertANTLRLineToPosition(line),
 					})
-				} else if rowCount = capRowsByLimit(rowCount, limit); rowCount > int64(maxRow) {
+				} else {
+					counted = true
+				}
+			}
+			if counted {
+				if rowCount = capRowsByLimit(rowCount, limit); rowCount > int64(maxRow) {
 					advice = append(advice, &storepb.Advice{
 						Status:        level,
 						Code:          code.StatementAffectedRowExceedsLimit.Int32(),
@@ -108,6 +121,31 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 
 	return advice, nil
+}
+
+// getRowsFromJSONPlan extracts the affected-row estimate from an
+// `EXPLAIN FORMAT=JSON` query result, whose single column holds the JSON plan.
+func getRowsFromJSONPlan(res []any) (int64, bool) {
+	if len(res) != 3 {
+		return 0, false
+	}
+	rowList, ok := res[2].([]any)
+	if !ok {
+		return 0, false
+	}
+	var plan strings.Builder
+	for _, rowAny := range rowList {
+		row, ok := rowAny.([]any)
+		if !ok {
+			return 0, false
+		}
+		for _, col := range row {
+			if s, ok := col.(string); ok {
+				plan.WriteString(s)
+			}
+		}
+	}
+	return mysqlparser.GetEstimatedAffectedRowsFromExplainJSON(plan.String())
 }
 
 func getRows(res []any) (int64, error) {

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -12,6 +13,10 @@ import (
 
 var testOceanBaseExplainRows [][]driver.Value
 var testMySQLExplainRows [][]driver.Value
+
+// testMySQLExplainJSON is returned for `EXPLAIN FORMAT=JSON` queries; when empty, the
+// JSON query returns no rows and CountAffectedRows falls back to the tabular rows.
+var testMySQLExplainJSON string
 
 func init() {
 	sql.Register("test_oceanbase_explain", testOceanBaseExplainDriver{})
@@ -84,17 +89,28 @@ func (testMySQLExplainConn) Begin() (driver.Tx, error) {
 	return nil, driver.ErrSkip
 }
 
-func (testMySQLExplainConn) QueryContext(context.Context, string, []driver.NamedValue) (driver.Rows, error) {
-	return &testMySQLExplainResultRows{rows: testMySQLExplainRows}, nil
+func (testMySQLExplainConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
+	if strings.HasPrefix(query, "EXPLAIN FORMAT=JSON") {
+		var rows [][]driver.Value
+		if testMySQLExplainJSON != "" {
+			rows = [][]driver.Value{{testMySQLExplainJSON}}
+		}
+		return &testMySQLExplainResultRows{columns: []string{"EXPLAIN"}, rows: rows}, nil
+	}
+	return &testMySQLExplainResultRows{
+		columns: []string{"id", "select_type", "table", "type", "rows", "filtered"},
+		rows:    testMySQLExplainRows,
+	}, nil
 }
 
 type testMySQLExplainResultRows struct {
-	rows [][]driver.Value
-	idx  int
+	columns []string
+	rows    [][]driver.Value
+	idx     int
 }
 
-func (*testMySQLExplainResultRows) Columns() []string {
-	return []string{"id", "select_type", "table", "type", "rows", "filtered"}
+func (r *testMySQLExplainResultRows) Columns() []string {
+	return r.columns
 }
 
 func (*testMySQLExplainResultRows) Close() error {
@@ -111,6 +127,7 @@ func (r *testMySQLExplainResultRows) Next(dest []driver.Value) error {
 }
 
 func TestCountAffectedRowsCapsExplainEstimateByLimit(t *testing.T) {
+	testMySQLExplainJSON = ""
 	testMySQLExplainRows = [][]driver.Value{
 		{int64(1), "SIMPLE", "td", "ALL", int64(1000), "100.00"},
 	}
@@ -145,6 +162,35 @@ func TestCountAffectedRowsCapsExplainEstimateByLimit(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, tc.want, got, tc.statement)
 	}
+}
+
+func TestCountAffectedRowsPrefersJSONPlanTargetNode(t *testing.T) {
+	// The tabular EXPLAIN's first row is a driving-table scan estimate; the JSON plan
+	// flags the update target whose cumulative estimate is far smaller (BYT-9858).
+	testMySQLExplainJSON = `{"query_block":{"select_id":1,"nested_loop":[
+		{"table":{"table_name":"t","access_type":"ALL","rows_examined_per_scan":100232,"rows_produced_per_join":3006,"filtered":"3.00"}},
+		{"table":{"update":true,"table_name":"o","access_type":"ref","rows_examined_per_scan":3,"rows_produced_per_join":1144,"filtered":"10.00"}}
+	]}}`
+	testMySQLExplainRows = [][]driver.Value{
+		{int64(1), "SIMPLE", "t", "ALL", int64(100232), "3.00"},
+		{int64(1), "UPDATE", "o", "ref", int64(3), "10.00"},
+	}
+	defer func() { testMySQLExplainJSON = "" }()
+
+	db, err := sql.Open("test_mysql_explain", "")
+	require.NoError(t, err)
+	defer db.Close()
+
+	driver := &Driver{db: db}
+
+	got, err := driver.CountAffectedRows(context.Background(), "UPDATE o SET c = 1 WHERE c IS NULL AND EXISTS (SELECT 1 FROM t WHERE t.k = o.k);")
+	require.NoError(t, err)
+	require.Equal(t, int64(1144), got)
+
+	// The statement LIMIT still caps the JSON-plan estimate.
+	got, err = driver.CountAffectedRows(context.Background(), "UPDATE o SET c = 1 WHERE c IS NULL LIMIT 10;")
+	require.NoError(t, err)
+	require.Equal(t, int64(10), got)
 }
 
 func TestCountAffectedRowsForOceanBaseConcatenatesExplainRows(t *testing.T) {
