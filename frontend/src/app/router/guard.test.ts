@@ -1,5 +1,6 @@
 import { matchRoutes, RouterContextProvider } from "react-router";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 
 // Configurable fake session, controlled per test.
 const session = {
@@ -10,6 +11,8 @@ const session = {
   hasTwoFa: false,
   isSaaSMode: false,
   currentUser: undefined as { mfaEnabled: boolean } | undefined,
+  // Mirrors the store default: PIPELINE until the workspace profile loads.
+  databaseChangeMode: DatabaseChangeMode.PIPELINE,
 };
 
 const resets = {
@@ -28,6 +31,9 @@ vi.mock("@/stores/app", () => ({
       hasFeature: () => session.hasTwoFa,
       isSaaSMode: () => session.isSaaSMode,
       currentUser: session.currentUser,
+      appFeatures: {
+        "bb.feature.database-change-mode": session.databaseChangeMode,
+      },
       ...resets,
     }),
   },
@@ -46,7 +52,10 @@ import {
   AUTH_SIGNIN_MODULE,
   AUTH_SIGNUP_MODULE,
   PROJECT_V1_ROUTE_DASHBOARD,
+  SQL_EDITOR_HOME_MODULE,
+  WORKSPACE_ROOT_MODULE,
   WORKSPACE_ROUTE_404,
+  WORKSPACE_ROUTE_LANDING,
 } from "./handles";
 import { setRouteNameIndex } from "./navigation";
 import { routes } from "./routes";
@@ -59,6 +68,7 @@ beforeEach(() => {
   session.hasTwoFa = false;
   session.isSaaSMode = false;
   session.currentUser = undefined;
+  session.databaseChangeMode = DatabaseChangeMode.PIPELINE;
   vi.clearAllMocks();
   setRouteNameIndex(
     new Map<string, string>([
@@ -66,6 +76,8 @@ beforeEach(() => {
       [AUTH_2FA_SETUP_MODULE, "/auth/2fa-setup"],
       [AUTH_PASSWORD_RESET_MODULE, "/auth/password-reset"],
       [WORKSPACE_ROUTE_404, "/404"],
+      [SQL_EDITOR_HOME_MODULE, "/sql-editor"],
+      [WORKSPACE_ROUTE_LANDING, "/landing"],
     ])
   );
 });
@@ -100,6 +112,24 @@ async function runCatchAllLoader(path: string): Promise<Response> {
 describe("rootGuard", () => {
   test("error page is allowed directly", () => {
     expect(run(WORKSPACE_ROUTE_404, "/404")).toBeNull();
+  });
+
+  test("root sends an EDITOR workspace to the SQL Editor", () => {
+    session.isLoggedIn = true;
+    session.databaseChangeMode = DatabaseChangeMode.EDITOR;
+
+    expect(location(run(WORKSPACE_ROOT_MODULE, "/"))).toBe("/sql-editor");
+  });
+
+  // Documents why `login()` must load the workspace profile before it
+  // navigates: this guard cannot tell "not loaded" from "PIPELINE", and the
+  // last-visit fallback ignores /sql-editor, so an EDITOR workspace whose
+  // profile is still unloaded lands here instead of the editor.
+  test("root falls back to landing while the workspace profile is unloaded", () => {
+    session.isLoggedIn = true;
+    session.databaseChangeMode = DatabaseChangeMode.PIPELINE;
+
+    expect(location(run(WORKSPACE_ROOT_MODULE, "/"))).toBe("/landing");
   });
 
   test("logged-out user on an unknown URL matched by the 404 catch-all is redirected to signin", () => {
