@@ -83,11 +83,11 @@ func openDB(ctx context.Context, dsn string) (*sql.DB, error) {
 		}
 		db.SetMaxOpenConns(1)
 		db.SetMaxIdleConns(1)
-		if err := db.PingContext(ctx); err == nil {
+		pingErr := db.PingContext(ctx)
+		if pingErr == nil {
 			return db, nil
-		} else {
-			lastErr = err
 		}
+		lastErr = pingErr
 		db.Close()
 		time.Sleep(time.Duration(attempt+1) * time.Second)
 	}
