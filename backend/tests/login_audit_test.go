@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -130,6 +131,109 @@ func TestAuditLogFormat(t *testing.T) {
 	a.NoError(err)
 	a.Len(updateProjectLogs.Msg.AuditLogs, 1)
 	a.Equal(ctl.project.Name, updateProjectLogs.Msg.AuditLogs[0].Resource)
+
+	webhookSecretURL := "https://hooks.slack.com/services/audit-status-secret"
+	missingWebhookName := ctl.project.Name + "/webhooks/missing-webhook"
+	for _, test := range []struct {
+		method string
+		call   func() error
+	}{
+		{
+			method: "/bytebase.v1.ProjectService/UpdateWebhook",
+			call: func() error {
+				_, err := ctl.projectServiceClient.UpdateWebhook(ctx, connect.NewRequest(&v1pb.UpdateWebhookRequest{
+					Webhook: &v1pb.Webhook{Name: missingWebhookName, Url: webhookSecretURL},
+				}))
+				return err
+			},
+		},
+		{
+			method: "/bytebase.v1.ProjectService/RemoveWebhook",
+			call: func() error {
+				_, err := ctl.projectServiceClient.RemoveWebhook(ctx, connect.NewRequest(&v1pb.RemoveWebhookRequest{
+					Webhook: &v1pb.Webhook{Name: missingWebhookName, Url: webhookSecretURL},
+				}))
+				return err
+			},
+		},
+	} {
+		t.Run(test.method, func(t *testing.T) {
+			a := require.New(t)
+			err := test.call()
+			a.Error(err)
+			a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+			a.NotContains(err.Error(), webhookSecretURL)
+
+			auditLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+				Parent: ctl.project.Name,
+				Filter: fmt.Sprintf("method == %q", test.method),
+			}))
+			a.NoError(err)
+			a.Len(auditLogs.Msg.AuditLogs, 1)
+			a.NotNil(auditLogs.Msg.AuditLogs[0].Status)
+			a.NotContains(auditLogs.Msg.AuditLogs[0].Status.Message, webhookSecretURL)
+		})
+	}
+
+	malformedWebhookURL := "https://hooks.slack.com/services/audit-status-secret/%zz"
+	_, err = ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
+		Project: ctl.project.Name,
+		Webhook: &v1pb.Webhook{
+			Type:  v1pb.WebhookType_SLACK,
+			Title: "Malformed audit webhook",
+			Url:   malformedWebhookURL,
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	a.NotContains(err.Error(), malformedWebhookURL)
+
+	validWebhook, err := ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
+		Project: ctl.project.Name,
+		Webhook: &v1pb.Webhook{
+			Type:  v1pb.WebhookType_SLACK,
+			Title: "Webhook audit status update",
+			Url:   "https://hooks.slack.com/services/audit-status-update",
+		},
+	}))
+	a.NoError(err)
+	var validWebhookName string
+	for _, webhook := range validWebhook.Msg.Webhooks {
+		if webhook.Title == "Webhook audit status update" {
+			validWebhookName = webhook.Name
+			break
+		}
+	}
+	a.NotEmpty(validWebhookName)
+	_, err = ctl.projectServiceClient.UpdateWebhook(ctx, connect.NewRequest(&v1pb.UpdateWebhookRequest{
+		Webhook: &v1pb.Webhook{
+			Name: validWebhookName,
+			Url:  malformedWebhookURL,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"url"}},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	a.NotContains(err.Error(), malformedWebhookURL)
+
+	for _, method := range []string{
+		"/bytebase.v1.ProjectService/AddWebhook",
+		"/bytebase.v1.ProjectService/UpdateWebhook",
+	} {
+		auditLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+			Parent: ctl.project.Name,
+			Filter: fmt.Sprintf("method == %q", method),
+		}))
+		a.NoError(err)
+		foundInvalidArgument := false
+		for _, auditLog := range auditLogs.Msg.AuditLogs {
+			if auditLog.GetStatus().GetCode() == int32(connect.CodeInvalidArgument) {
+				foundInvalidArgument = true
+				a.NotContains(auditLog.GetStatus().GetMessage(), malformedWebhookURL)
+			}
+		}
+		a.True(foundInvalidArgument, "%s must persist the failed request", method)
+	}
 
 	savedQueryContent := "SELECT secret_audit_saved_query_content;"
 	savedQuery, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{

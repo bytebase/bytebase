@@ -9,7 +9,6 @@ import (
 	context "context"
 	errors "errors"
 	v1 "github.com/bytebase/bytebase/backend/generated-go/v1"
-	httpbody "google.golang.org/genproto/googleapis/api/httpbody"
 	http "net/http"
 	strings "strings"
 )
@@ -70,7 +69,7 @@ type SubscriptionServiceClient interface {
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
 	// Exports active VCS users as CSV.
-	ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error)
+	ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[v1.ExportVCSProviderUsersResponse], error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(context.Context, *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
@@ -106,7 +105,7 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 			connect.WithSchema(subscriptionServiceMethods.ByName("GetSubscription")),
 			connect.WithClientOptions(opts...),
 		),
-		exportVCSProviderUsers: connect.NewClient[v1.ExportVCSProviderUsersRequest, httpbody.HttpBody](
+		exportVCSProviderUsers: connect.NewClient[v1.ExportVCSProviderUsersRequest, v1.ExportVCSProviderUsersResponse](
 			httpClient,
 			baseURL+SubscriptionServiceExportVCSProviderUsersProcedure,
 			connect.WithSchema(subscriptionServiceMethods.ByName("ExportVCSProviderUsers")),
@@ -160,7 +159,7 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 // subscriptionServiceClient implements SubscriptionServiceClient.
 type subscriptionServiceClient struct {
 	getSubscription        *connect.Client[v1.GetSubscriptionRequest, v1.Subscription]
-	exportVCSProviderUsers *connect.Client[v1.ExportVCSProviderUsersRequest, httpbody.HttpBody]
+	exportVCSProviderUsers *connect.Client[v1.ExportVCSProviderUsersRequest, v1.ExportVCSProviderUsersResponse]
 	uploadLicense          *connect.Client[v1.UploadLicenseRequest, v1.Subscription]
 	createPurchase         *connect.Client[v1.CreatePurchaseRequest, v1.PurchaseResponse]
 	updatePurchase         *connect.Client[v1.UpdatePurchaseRequest, v1.PurchaseResponse]
@@ -176,7 +175,7 @@ func (c *subscriptionServiceClient) GetSubscription(ctx context.Context, req *co
 }
 
 // ExportVCSProviderUsers calls bytebase.v1.SubscriptionService.ExportVCSProviderUsers.
-func (c *subscriptionServiceClient) ExportVCSProviderUsers(ctx context.Context, req *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error) {
+func (c *subscriptionServiceClient) ExportVCSProviderUsers(ctx context.Context, req *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[v1.ExportVCSProviderUsersResponse], error) {
 	return c.exportVCSProviderUsers.CallUnary(ctx, req)
 }
 
@@ -222,7 +221,7 @@ type SubscriptionServiceHandler interface {
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
 	// Exports active VCS users as CSV.
-	ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error)
+	ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[v1.ExportVCSProviderUsersResponse], error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(context.Context, *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
@@ -335,7 +334,7 @@ func (UnimplementedSubscriptionServiceHandler) GetSubscription(context.Context, 
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.GetSubscription is not implemented"))
 }
 
-func (UnimplementedSubscriptionServiceHandler) ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error) {
+func (UnimplementedSubscriptionServiceHandler) ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[v1.ExportVCSProviderUsersResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.ExportVCSProviderUsers is not implemented"))
 }
 

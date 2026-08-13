@@ -530,6 +530,8 @@ func getRequestString(request any) (string, error) {
 			return redactExchangeTokenRequest(r)
 		case *v1pb.ResetPasswordRequest:
 			return redactResetPasswordRequest(r)
+		case *v1pb.UploadLicenseRequest:
+			return redactUploadLicenseRequest(r)
 		case *v1pb.CreateProjectRequest:
 			r = proto.CloneOf(r)
 			r.Project = redactProject(r.Project)
@@ -537,6 +539,18 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.UpdateProjectRequest:
 			r = proto.CloneOf(r)
 			r.Project = redactProject(r.Project)
+			return r
+		case *v1pb.AddWebhookRequest:
+			r = proto.CloneOf(r)
+			r.Webhook = redactWebhook(r.Webhook)
+			return r
+		case *v1pb.UpdateWebhookRequest:
+			r = proto.CloneOf(r)
+			r.Webhook = redactWebhook(r.Webhook)
+			return r
+		case *v1pb.RemoveWebhookRequest:
+			r = proto.CloneOf(r)
+			r.Webhook = redactWebhook(r.Webhook)
 			return r
 		case *v1pb.CreateReleaseRequest:
 			r = proto.CloneOf(r)
@@ -650,6 +664,12 @@ func getResponseString(response any) (string, error) {
 			return redactRelease(r)
 		case *v1pb.SavedQuery:
 			return redactSavedQuery(r)
+		case *v1pb.PurchaseResponse:
+			return redactPurchaseResponse(r)
+		case *v1pb.ExportVCSProviderUsersResponse:
+			return redactExportVCSProviderUsersResponse(r)
+		case *v1pb.ExportAuditLogsResponse:
+			return redactExportAuditLogsResponse(r)
 		case *v1pb.Sheet:
 			return redactSheet(r)
 		case *v1pb.BatchCreateSheetsResponse:
@@ -683,6 +703,34 @@ func redactResetPasswordRequest(r *v1pb.ResetPasswordRequest) *v1pb.ResetPasswor
 	cloned.Code = maskedString
 	cloned.NewPassword = maskedString
 	return cloned
+}
+
+func redactUploadLicenseRequest(r *v1pb.UploadLicenseRequest) *v1pb.UploadLicenseRequest {
+	if r == nil {
+		return nil
+	}
+	return &v1pb.UploadLicenseRequest{License: maskedString}
+}
+
+func redactPurchaseResponse(r *v1pb.PurchaseResponse) *v1pb.PurchaseResponse {
+	if r == nil {
+		return nil
+	}
+	return &v1pb.PurchaseResponse{}
+}
+
+func redactExportVCSProviderUsersResponse(r *v1pb.ExportVCSProviderUsersResponse) *v1pb.ExportVCSProviderUsersResponse {
+	if r == nil {
+		return nil
+	}
+	return &v1pb.ExportVCSProviderUsersResponse{}
+}
+
+func redactExportAuditLogsResponse(r *v1pb.ExportAuditLogsResponse) *v1pb.ExportAuditLogsResponse {
+	if r == nil {
+		return nil
+	}
+	return &v1pb.ExportAuditLogsResponse{NextPageToken: r.NextPageToken}
 }
 
 func redactExportRequest(r *v1pb.ExportRequest) *v1pb.ExportRequest {

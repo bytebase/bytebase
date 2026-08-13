@@ -11,7 +11,6 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
-	"google.golang.org/genproto/googleapis/api/httpbody"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -60,7 +59,7 @@ func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *connect.Re
 }
 
 // ExportVCSProviderUsers exports active VCS provider users as CSV.
-func (s *SubscriptionService) ExportVCSProviderUsers(ctx context.Context, _ *connect.Request[v1pb.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error) {
+func (s *SubscriptionService) ExportVCSProviderUsers(ctx context.Context, _ *connect.Request[v1pb.ExportVCSProviderUsersRequest]) (*connect.Response[v1pb.ExportVCSProviderUsersResponse], error) {
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	users, err := s.store.ListActiveVCSProviderUsers(ctx, workspaceID, vcsProviderUserActiveWindow)
 	if err != nil {
@@ -88,9 +87,8 @@ func (s *SubscriptionService) ExportVCSProviderUsers(ctx context.Context, _ *con
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	return connect.NewResponse(&httpbody.HttpBody{
-		ContentType: "text/csv; charset=utf-8",
-		Data:        buf.Bytes(),
+	return connect.NewResponse(&v1pb.ExportVCSProviderUsersResponse{
+		Content: buf.Bytes(),
 	}), nil
 }
 

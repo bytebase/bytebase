@@ -725,6 +725,7 @@
     - [CancelPurchaseRequest](#bytebase-v1-CancelPurchaseRequest)
     - [CreatePurchaseRequest](#bytebase-v1-CreatePurchaseRequest)
     - [ExportVCSProviderUsersRequest](#bytebase-v1-ExportVCSProviderUsersRequest)
+    - [ExportVCSProviderUsersResponse](#bytebase-v1-ExportVCSProviderUsersResponse)
     - [GetPaymentInfoRequest](#bytebase-v1-GetPaymentInfoRequest)
     - [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest)
     - [ListPurchasePlansRequest](#bytebase-v1-ListPurchasePlansRequest)
@@ -11704,6 +11705,21 @@ SheetService manages SQL scripts and saved queries.
 
 
 
+<a name="bytebase-v1-ExportVCSProviderUsersResponse"></a>
+
+### ExportVCSProviderUsersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [bytes](#bytes) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-GetPaymentInfoRequest"></a>
 
 ### GetPaymentInfoRequest
@@ -12124,7 +12140,7 @@ SubscriptionService manages enterprise subscriptions and licensing.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | GetSubscription returns the current subscription. If there is no license, we will return a free plan subscription without expiration time. If there is expired license, we will return a free plan subscription with the expiration time of the expired license. |
-| ExportVCSProviderUsers | [ExportVCSProviderUsersRequest](#bytebase-v1-ExportVCSProviderUsersRequest) | [.google.api.HttpBody](#google-api-HttpBody) | Exports active VCS users as CSV. |
+| ExportVCSProviderUsers | [ExportVCSProviderUsersRequest](#bytebase-v1-ExportVCSProviderUsersRequest) | [ExportVCSProviderUsersResponse](#bytebase-v1-ExportVCSProviderUsersResponse) | Exports active VCS users as CSV. |
 | UploadLicense | [UploadLicenseRequest](#bytebase-v1-UploadLicenseRequest) | [Subscription](#bytebase-v1-Subscription) | Uploads an enterprise license (self-hosted only). |
 | CreatePurchase | [CreatePurchaseRequest](#bytebase-v1-CreatePurchaseRequest) | [PurchaseResponse](#bytebase-v1-PurchaseResponse) | CreatePurchase creates a new subscription purchase (SaaS only). Returns a Stripe Checkout URL for the user to complete payment. |
 | UpdatePurchase | [UpdatePurchaseRequest](#bytebase-v1-UpdatePurchaseRequest) | [PurchaseResponse](#bytebase-v1-PurchaseResponse) | UpdatePurchase updates an existing subscription (SaaS only). May return a Stripe Checkout URL if payment method change is needed. |

@@ -5,7 +5,6 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
-import "google/api/httpbody.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 
@@ -22,10 +21,11 @@ service SubscriptionService {
   }
 
   // Exports active VCS users as CSV.
-  rpc ExportVCSProviderUsers(ExportVCSProviderUsersRequest) returns (google.api.HttpBody) {
+  rpc ExportVCSProviderUsers(ExportVCSProviderUsersRequest) returns (ExportVCSProviderUsersResponse) {
     option (google.api.http) = {get: "/v1/subscription:vcsProviderUsersExport"};
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Uploads an enterprise license (self-hosted only).
@@ -36,6 +36,7 @@ service SubscriptionService {
     };
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // CreatePurchase creates a new subscription purchase (SaaS only).
@@ -47,6 +48,7 @@ service SubscriptionService {
     };
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // UpdatePurchase updates an existing subscription (SaaS only).
@@ -58,6 +60,7 @@ service SubscriptionService {
     };
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // CancelPurchase cancels an active subscription (SaaS only).
@@ -68,6 +71,7 @@ service SubscriptionService {
     };
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // GetPaymentInfo returns payment details for the current subscription (SaaS only).
@@ -93,6 +97,10 @@ service SubscriptionService {
 message GetSubscriptionRequest {}
 
 message ExportVCSProviderUsersRequest {}
+
+message ExportVCSProviderUsersResponse {
+  bytes content = 1;
+}
 
 message UploadLicenseRequest {
   string license = 1;

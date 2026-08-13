@@ -5,7 +5,6 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import type { HttpBodySchema } from "../google/api/httpbody_pb";
 
 /**
  * Describes the file v1/subscription_service.proto.
@@ -35,6 +34,22 @@ export declare type ExportVCSProviderUsersRequest = Message<"bytebase.v1.ExportV
  * Use `create(ExportVCSProviderUsersRequestSchema)` to create a new message.
  */
 export declare const ExportVCSProviderUsersRequestSchema: GenMessage<ExportVCSProviderUsersRequest>;
+
+/**
+ * @generated from message bytebase.v1.ExportVCSProviderUsersResponse
+ */
+export declare type ExportVCSProviderUsersResponse = Message<"bytebase.v1.ExportVCSProviderUsersResponse"> & {
+  /**
+   * @generated from field: bytes content = 1;
+   */
+  content: Uint8Array;
+};
+
+/**
+ * Describes the message bytebase.v1.ExportVCSProviderUsersResponse.
+ * Use `create(ExportVCSProviderUsersResponseSchema)` to create a new message.
+ */
+export declare const ExportVCSProviderUsersResponseSchema: GenMessage<ExportVCSProviderUsersResponse>;
 
 /**
  * @generated from message bytebase.v1.UploadLicenseRequest
@@ -1041,7 +1056,7 @@ export declare const SubscriptionService: GenService<{
   exportVCSProviderUsers: {
     methodKind: "unary";
     input: typeof ExportVCSProviderUsersRequestSchema;
-    output: typeof HttpBodySchema;
+    output: typeof ExportVCSProviderUsersResponseSchema;
   },
   /**
    * Uploads an enterprise license (self-hosted only).

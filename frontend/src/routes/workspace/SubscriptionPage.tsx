@@ -143,8 +143,8 @@ export function SubscriptionPage({
             contextValues: createContextValues().set(silentContextKey, true),
           }
         );
-      const blob = new Blob([new TextDecoder().decode(body.data)], {
-        type: body.contentType || "text/csv; charset=utf-8",
+      const blob = new Blob([new TextDecoder().decode(body.content)], {
+        type: "text/csv; charset=utf-8",
       });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");

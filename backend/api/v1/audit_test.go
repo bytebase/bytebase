@@ -340,8 +340,10 @@ func TestLifecycleAuditResource(t *testing.T) {
 		{name: "create review config", request: &v1pb.CreateReviewConfigRequest{ReviewConfig: &v1pb.ReviewConfig{Name: "reviewConfigs/config-a"}}, method: "/bytebase.v1.ReviewConfigService/CreateReviewConfig", want: "reviewConfigs/config-a"},
 		{name: "update review config", request: &v1pb.UpdateReviewConfigRequest{ReviewConfig: &v1pb.ReviewConfig{Name: "reviewConfigs/config-a"}}, method: "/bytebase.v1.ReviewConfigService/UpdateReviewConfig", want: "reviewConfigs/config-a"},
 		{name: "delete review config", request: &v1pb.DeleteReviewConfigRequest{Name: "reviewConfigs/config-a"}, method: "/bytebase.v1.ReviewConfigService/DeleteReviewConfig", want: "reviewConfigs/config-a"},
-		{name: "test existing identity provider", request: &v1pb.TestIdentityProviderRequest{IdentityProvider: &v1pb.IdentityProvider{Name: "idps/idp-a"}}, method: "/bytebase.v1.IdentityProviderService/TestIdentityProvider", want: "idps/idp-a"},
-		{name: "test uncreated identity provider", request: &v1pb.TestIdentityProviderRequest{IdentityProvider: &v1pb.IdentityProvider{}}, method: "/bytebase.v1.IdentityProviderService/TestIdentityProvider", want: ""},
+		{name: "add webhook", request: &v1pb.AddWebhookRequest{Project: "projects/project-a"}, method: v1connect.ProjectServiceAddWebhookProcedure, want: "projects/project-a"},
+		{name: "update webhook", request: &v1pb.UpdateWebhookRequest{Webhook: &v1pb.Webhook{Name: "projects/project-a/webhooks/webhook-a"}}, method: v1connect.ProjectServiceUpdateWebhookProcedure, want: "projects/project-a/webhooks/webhook-a"},
+		{name: "remove webhook", request: &v1pb.RemoveWebhookRequest{Webhook: &v1pb.Webhook{Name: "projects/project-a/webhooks/webhook-a"}}, method: v1connect.ProjectServiceRemoveWebhookProcedure, want: "projects/project-a/webhooks/webhook-a"},
+		{name: "export audit logs", request: &v1pb.ExportAuditLogsRequest{Parent: "projects/project-a"}, method: v1connect.AuditLogServiceExportAuditLogsProcedure, want: "projects/project-a"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			require.Equal(t, test.want, getRequestResource(test.request, test.method))

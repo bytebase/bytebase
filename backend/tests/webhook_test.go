@@ -278,14 +278,14 @@ func TestWebhookIntegration(t *testing.T) {
 		rollout := runAllTasks(ctx, t, ctl, plan)
 
 		// Phase 1: failing task → exactly one PIPELINE_FAILED, no PIPELINE_COMPLETED.
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, rollout.Name)
 		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
-		requireWebhookCount(t, collector, project.Name, "Rollout completed", 0)
+		requireWebhookCount(t, collector, project.Name, "Rollout completed", 0, rollout.Name)
 
 		// Phase 2: skip the failed task → PIPELINE_COMPLETED fires (the fix).
 		skipFailedTasks(ctx, t, ctl, rollout)
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
-		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, rollout.Name)
+		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1, rollout.Name)
 	})
 
 	t.Run("PipelineCompleted_AllTasksDone", func(t *testing.T) {
