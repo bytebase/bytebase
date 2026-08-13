@@ -15,24 +15,3 @@ func (x *SavedQueryPayload) Equal(y *SavedQueryPayload) bool {
 	}
 	return true
 }
-
-func (x *SavedQueryOrganizerPayload) Equal(y *SavedQueryOrganizerPayload) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Starred != y.Starred {
-		return false
-	}
-	if len(x.Folders) != len(y.Folders) {
-		return false
-	}
-	for i := 0; i < len(x.Folders); i++ {
-		if x.Folders[i] != y.Folders[i] {
-			return false
-		}
-	}
-	return true
-}

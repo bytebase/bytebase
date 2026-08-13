@@ -13,10 +13,3 @@ message SavedQueryPayload {
   // is deleted or transferred, degrading to "no database" in the UI.
   string database = 1;
 }
-
-message SavedQueryOrganizerPayload {
-  bool starred = 1;
-  // The folder path for a saved query.
-  // For example, if the folders is [A, B, C], means the saved query is in the A/B/C subfolder.
-  repeated string folders = 2;
-}

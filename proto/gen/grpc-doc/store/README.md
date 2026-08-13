@@ -244,7 +244,6 @@
     - [RolePermissions](#bytebase-store-RolePermissions)
   
 - [store/saved_query.proto](#store_saved_query-proto)
-    - [SavedQueryOrganizerPayload](#bytebase-store-SavedQueryOrganizerPayload)
     - [SavedQueryPayload](#bytebase-store-SavedQueryPayload)
   
 - [store/server_config.proto](#store_server_config-proto)
@@ -4140,22 +4139,6 @@ The severity level for SQL review rules.
 <p align="right"><a href="#top">Top</a></p>
 
 ## store/saved_query.proto
-
-
-
-<a name="bytebase-store-SavedQueryOrganizerPayload"></a>
-
-### SavedQueryOrganizerPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| starred | [bool](#bool) |  |  |
-| folders | [string](#string) | repeated | The folder path for a saved query. For example, if the folders is [A, B, C], means the saved query is in the A/B/C subfolder. |
-
-
-
 
 
 
