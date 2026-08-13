@@ -20,6 +20,14 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 		return countAffectedRowsForOceanBase(ctx, d.db, statement)
 	}
 
+	// Prefer the JSON query plan: the tabular EXPLAIN's first "rows" value may be the
+	// scan estimate of a driving table unrelated to the DML target (BYT-9858). Fall
+	// back to the tabular heuristic when no flagged target node is found (e.g. INSERT
+	// plans, or servers that don't mark the target).
+	if count, ok := d.countAffectedRowsFromJSONPlan(ctx, statement); ok {
+		return capAffectedRowsByLimit(count, statement), nil
+	}
+
 	explainSQL := fmt.Sprintf("EXPLAIN %s", statement)
 	rows, err := d.db.QueryContext(ctx, explainSQL)
 	if err != nil {
@@ -69,6 +77,29 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 		return 0, err
 	}
 	return 0, nil
+}
+
+func (d *Driver) countAffectedRowsFromJSONPlan(ctx context.Context, statement string) (int64, bool) {
+	rows, err := d.db.QueryContext(ctx, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", statement))
+	if err != nil {
+		return 0, false
+	}
+	defer rows.Close()
+
+	var plan strings.Builder
+	for rows.Next() {
+		var planColumn sql.NullString
+		if err := rows.Scan(&planColumn); err != nil {
+			return 0, false
+		}
+		if planColumn.Valid {
+			plan.WriteString(planColumn.String)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return 0, false
+	}
+	return mysqlparser.GetEstimatedAffectedRowsFromExplainJSON(plan.String())
 }
 
 func capAffectedRowsByLimit(count int64, statement string) int64 {
