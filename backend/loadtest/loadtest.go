@@ -36,11 +36,9 @@ type Config struct {
 	SeedSQL string `json:"-"`
 
 	// Matrix.
-	DatabaseCounts           []int
-	InteractiveConcurrencies []int
-	SyncConcurrency          int           // Bytebase uses 100; default when <= 0.
-	SyncInterval             time.Duration // cadence hint for the sync workload.
-	SteadyStateDuration      time.Duration // duration for interactive/DDL steady-state phases.
+	DatabaseCounts      []int
+	SyncInterval        time.Duration // cadence hint for the sync workload.
+	SteadyStateDuration time.Duration // duration for the interactive steady-state phase.
 
 	// Workloads.
 	InteractiveQueries []string
@@ -63,13 +61,6 @@ func (c *Config) tenantDSN(database, role, password string) string {
 func (c *Config) adminDSNForDB(database string) string {
 	return fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s sslmode=%s connect_timeout=10",
 		c.AdminUser, c.AdminPassword, c.Host, c.Port, database, c.SSLMode)
-}
-
-func (c *Config) syncConcurrency() int {
-	if c.SyncConcurrency <= 0 {
-		return 100
-	}
-	return c.SyncConcurrency
 }
 
 func (c *Config) databaseName(i int) string {
@@ -251,27 +242,13 @@ func Run(ctx context.Context, cfg Config) ([]Result, error) {
 		}
 		r.Idle = idle
 
-		syncRes, err := runSyncWorkload(ctx, db, &cfg, tenants)
+		syncRes, ir, ddl, err := runOverlapWorkload(ctx, &cfg, tenants)
 		if err != nil {
 			_, _ = cleanup(ctx, db, &cfg, tenants)
-			return results, errors.Wrapf(err, "sync workload")
+			return results, errors.Wrapf(err, "overlap workload")
 		}
 		r.Sync = syncRes
-
-		for _, concurrency := range cfg.InteractiveConcurrencies {
-			ir, err := runInteractiveWorkload(ctx, db, &cfg, tenants, concurrency)
-			if err != nil {
-				_, _ = cleanup(ctx, db, &cfg, tenants)
-				return results, errors.Wrapf(err, "interactive workload (c=%d)", concurrency)
-			}
-			r.Interactive = append(r.Interactive, ir)
-		}
-
-		ddl, err := runDDLWorkload(ctx, db, &cfg, tenants)
-		if err != nil {
-			_, _ = cleanup(ctx, db, &cfg, tenants)
-			return results, errors.Wrapf(err, "ddl workload")
-		}
+		r.Interactive = append(r.Interactive, ir)
 		r.DDL = ddl
 
 		churn, err := runChurn(ctx, db, &cfg, tenants)

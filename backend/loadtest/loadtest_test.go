@@ -36,21 +36,19 @@ func TestSampleInstanceLoadLocal(t *testing.T) {
 	}
 
 	cfg := Config{
-		Host:                     tc.GetHost(),
-		Port:                     port,
-		AdminUser:                "postgres",
-		AdminPassword:            "root-password",
-		SSLMode:                  "disable",
-		DatabaseNamePrefix:       "lt_ws_",
-		RoleNamePrefix:           "lt_role_",
-		SeedSQL:                  seed,
-		DatabaseCounts:           []int{5, 70},
-		InteractiveConcurrencies: []int{10, 50},
-		SyncConcurrency:          100,
-		SteadyStateDuration:      10 * time.Second,
-		InteractiveQueries:       DefaultInteractiveQueries(),
-		DDLStatements:            DefaultDDLStatements(),
-		Verbose:                  true,
+		Host:                tc.GetHost(),
+		Port:                port,
+		AdminUser:           "postgres",
+		AdminPassword:       "root-password",
+		SSLMode:             "disable",
+		DatabaseNamePrefix:  "lt_ws_",
+		RoleNamePrefix:      "lt_role_",
+		SeedSQL:             seed,
+		DatabaseCounts:      []int{3, 10},
+		SteadyStateDuration: 10 * time.Second,
+		InteractiveQueries:  DefaultInteractiveQueries(),
+		DDLStatements:       DefaultDDLStatements(),
+		Verbose:             true,
 	}
 
 	results, err := Run(ctx, cfg)

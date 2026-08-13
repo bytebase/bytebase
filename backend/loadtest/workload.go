@@ -11,6 +11,8 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/sourcegraph/conc/pool"
 )
 
 func runInteractiveWorkload(ctx context.Context, _ *sql.DB, cfg *Config, tenants []Tenant, concurrency int) (InteractiveResult, error) {
@@ -101,33 +103,44 @@ func runInteractiveWorkload(ctx context.Context, _ *sql.DB, cfg *Config, tenants
 // nolint:unparam // failures are reported via DDLResult.Errors; the error result is always nil by contract.
 func runDDLWorkload(ctx context.Context, _ *sql.DB, cfg *Config, tenants []Tenant) (DDLResult, error) {
 	var (
+		mu         sync.Mutex
 		latencies  []time.Duration
 		errorCount int
 	)
+	p := pool.New().WithMaxGoroutines(len(tenants))
 	for _, t := range tenants {
-		db, err := sql.Open("pgx", cfg.adminDSNForDB(t.Database))
-		if err != nil {
-			errorCount++
-			if cfg.Verbose {
-				log.Printf("ddl: open tenant %s: %v", t.Database, err)
-			}
-			continue
-		}
-		db.SetMaxOpenConns(1)
-		db.SetMaxIdleConns(1)
-		for _, stmt := range cfg.DDLStatements {
-			begin := time.Now()
-			if _, err := db.ExecContext(ctx, stmt); err != nil {
+		p.Go(func() {
+			db, err := sql.Open("pgx", cfg.adminDSNForDB(t.Database))
+			if err != nil {
+				mu.Lock()
 				errorCount++
+				mu.Unlock()
 				if cfg.Verbose {
-					log.Printf("ddl: tenant %s: %v", t.Database, err)
+					log.Printf("ddl: open tenant %s: %v", t.Database, err)
 				}
-				continue
+				return
 			}
-			latencies = append(latencies, time.Since(begin))
-		}
-		db.Close()
+			defer db.Close()
+			db.SetMaxOpenConns(1)
+			db.SetMaxIdleConns(1)
+			for _, stmt := range cfg.DDLStatements {
+				begin := time.Now()
+				if _, err := db.ExecContext(ctx, stmt); err != nil {
+					mu.Lock()
+					errorCount++
+					mu.Unlock()
+					if cfg.Verbose {
+						log.Printf("ddl: tenant %s: %v", t.Database, err)
+					}
+					continue
+				}
+				mu.Lock()
+				latencies = append(latencies, time.Since(begin))
+				mu.Unlock()
+			}
+		})
 	}
+	p.Wait()
 	return DDLResult{Stats: newDurationStats(latencies, errorCount), Errors: errorCount}, nil
 }
 

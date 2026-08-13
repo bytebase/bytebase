@@ -30,7 +30,7 @@ func runSyncWorkload(ctx context.Context, _ *sql.DB, cfg *Config, tenants []Tena
 	latencies := make([]time.Duration, 0, len(tenants))
 	errors := 0
 
-	p := pool.New().WithMaxGoroutines(cfg.syncConcurrency())
+	p := pool.New().WithMaxGoroutines(len(tenants))
 	for _, t := range tenants {
 		p.Go(func() {
 			start := time.Now()

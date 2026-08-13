@@ -24,7 +24,6 @@ func main() {
 	password := flag.String("password", "", "admin password")
 	sslmode := flag.String("sslmode", "disable", "pgx sslmode (disable|require|verify-full)")
 	counts := flag.String("counts", "70,500,1000", "comma-separated database counts")
-	concurrencies := flag.String("concurrencies", "10,50", "comma-separated interactive concurrency levels")
 	report := flag.String("report", "", "output path for the JSON report (empty = no file)")
 	verbose := flag.Bool("verbose", false, "log per-tenant errors")
 	flag.Parse()
@@ -40,32 +39,25 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	concurrencyLevels, err := parseInts(*concurrencies)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	seed, err := postgres.LoadSampleData()
 	if err != nil {
 		log.Fatalf("load sample data: %v", err)
 	}
 
 	cfg := loadtest.Config{
-		Host:                     *host,
-		Port:                     *port,
-		AdminUser:                *user,
-		AdminPassword:            *password,
-		SSLMode:                  *sslmode,
-		DatabaseNamePrefix:       "lt_ws_",
-		RoleNamePrefix:           "lt_role_",
-		SeedSQL:                  seed,
-		DatabaseCounts:           dbCounts,
-		InteractiveConcurrencies: concurrencyLevels,
-		SyncConcurrency:          100,
-		InteractiveQueries:       loadtest.DefaultInteractiveQueries(),
-		DDLStatements:            loadtest.DefaultDDLStatements(),
-		ReportPath:               *report,
-		Verbose:                  *verbose,
+		Host:               *host,
+		Port:               *port,
+		AdminUser:          *user,
+		AdminPassword:      *password,
+		SSLMode:            *sslmode,
+		DatabaseNamePrefix: "lt_ws_",
+		RoleNamePrefix:     "lt_role_",
+		SeedSQL:            seed,
+		DatabaseCounts:     dbCounts,
+		InteractiveQueries: loadtest.DefaultInteractiveQueries(),
+		DDLStatements:      loadtest.DefaultDDLStatements(),
+		ReportPath:         *report,
+		Verbose:            *verbose,
 	}
 
 	results, err := loadtest.Run(context.Background(), cfg)
