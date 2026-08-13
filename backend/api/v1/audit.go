@@ -195,8 +195,27 @@ type auditEntry struct {
 }
 
 func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) error {
-	// Skip audit logging for validate-only requests.
-	if isValidateOnlyRequest(e.request) {
+	// Skip audit logging for validate-only requests that SUCCEEDED. A dry run
+	// that Bytebase accepted changed nothing, so recording it is noise — that
+	// is the whole reason for the skip.
+	//
+	// The outcome is what decides, not the flag. A refused attempt is worth
+	// exactly as much as any other refused attempt, and six request messages
+	// carry validate_only — UpdateDataSource, AddDataSource, CreateInstance,
+	// CreateIdentityProvider, UpdateSetting and CreateDatabaseGroup, every one
+	// of them audited, three of them on methods MCP forbids. Skipping on the
+	// flag alone made setting it a switch that turns off the record of being
+	// caught.
+	//
+	// EVERY failure records, not only a policy denial, and that is deliberate
+	// rather than incidental. The instance form runs a validate-only
+	// connection test before each save and on each Test Connection click, so
+	// the rows this adds are mostly failed connection tests, not refusals —
+	// a real volume change on a common flow. Keying on a denial code instead
+	// would be the same shape of hole this closes: it would record the
+	// refusals that happen to carry that code and silently drop every other
+	// rejected attempt.
+	if e.rerr == nil && isValidateOnlyRequest(e.request) {
 		return nil
 	}
 
