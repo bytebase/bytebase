@@ -1,0 +1,288 @@
+// Package loadtest implements a reproducible load test for the Bytebase Cloud
+// sample PostgreSQL instance. It provisions isolated databases and roles,
+// seeds the Bytebase sample schema, replays Bytebase-like sync/DDL/interactive
+// workloads, records measurements, and removes everything it created.
+//
+// The core is DSN-driven so the same harness runs against local Postgres
+// (Phase 1) and GCP Cloud SQL (Phase 2). See README.md for the agreed workload
+// assumptions and pass/fail thresholds.
+package loadtest
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"slices"
+	"time"
+
+	"github.com/pkg/errors"
+
+	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" database/sql driver
+)
+
+// Config is the full test matrix and connection settings.
+type Config struct {
+	// Connection settings. The admin user must have CREATEDB and CREATEROLE.
+	Host          string
+	Port          int
+	AdminUser     string
+	AdminPassword string
+	SSLMode       string // "disable" locally, "require" or "verify-full" for Cloud SQL.
+
+	DatabaseNamePrefix string // e.g. "lt_ws_"
+	RoleNamePrefix     string // e.g. "lt_role_"
+
+	// SeedSQL is applied verbatim to each tenant database after creation.
+	SeedSQL string
+
+	// Matrix.
+	DatabaseCounts           []int
+	InteractiveConcurrencies []int
+	SyncConcurrency          int           // Bytebase uses 100; default when <= 0.
+	SyncInterval             time.Duration // cadence hint for the sync workload.
+	SteadyStateDuration      time.Duration // duration for interactive/DDL steady-state phases.
+
+	// Workloads.
+	InteractiveQueries []string
+	DDLStatements      []string
+
+	ReportPath string
+	Verbose    bool
+}
+
+func (c *Config) adminDSN() string {
+	return fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=postgres sslmode=%s",
+		c.AdminUser, c.AdminPassword, c.Host, c.Port, c.SSLMode)
+}
+
+func (c *Config) tenantDSN(database, role, password string) string {
+	return fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s sslmode=%s",
+		role, password, c.Host, c.Port, database, c.SSLMode)
+}
+
+func (c *Config) syncConcurrency() int {
+	if c.SyncConcurrency <= 0 {
+		return 100
+	}
+	return c.SyncConcurrency
+}
+
+func (c *Config) databaseName(i int) string {
+	return fmt.Sprintf("%s%d", c.DatabaseNamePrefix, i)
+}
+
+func (c *Config) roleName(i int) string {
+	return fmt.Sprintf("%s%d", c.RoleNamePrefix, i)
+}
+
+// openDB opens a single-connection pool with the given DSN and verifies it.
+func openDB(ctx context.Context, dsn string) (*sql.DB, error) {
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		return nil, err
+	}
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+	if err := db.PingContext(ctx); err != nil {
+		db.Close()
+		return nil, err
+	}
+	return db, nil
+}
+
+// Tenant is one provisioned workspace database and its dedicated role.
+type Tenant struct {
+	Index    int
+	Database string
+	Role     string
+	Password string
+}
+
+// DurationStats summarizes a latency distribution in milliseconds.
+type DurationStats struct {
+	Count  int
+	P50Ms  float64
+	P95Ms  float64
+	P99Ms  float64
+	MaxMs  float64
+	Errors int
+}
+
+func newDurationStats(latencies []time.Duration, errors int) DurationStats {
+	if len(latencies) == 0 {
+		return DurationStats{Errors: errors}
+	}
+	ms := make([]float64, len(latencies))
+	for i, d := range latencies {
+		ms[i] = float64(d.Microseconds()) / 1000.0
+	}
+	slices.Sort(ms)
+	p := func(q float64) float64 {
+		return ms[int(q*float64(len(ms)-1))]
+	}
+	return DurationStats{
+		Count:  len(ms),
+		P50Ms:  p(0.50),
+		P95Ms:  p(0.95),
+		P99Ms:  p(0.99),
+		MaxMs:  ms[len(ms)-1],
+		Errors: errors,
+	}
+}
+
+// Metrics is an instance-level snapshot from PostgreSQL statistics views.
+// Instance-level CPU/memory/IOPS are out of scope for Phase 1 (local Postgres)
+// and will be captured from Cloud Monitoring in Phase 2.
+type Metrics struct {
+	Timestamp         time.Time
+	TotalConnections  int
+	ActiveConnections int
+	IdleConnections   int
+	MaxConnections    int
+	DatabaseCount     int
+	XactCommit        int64
+	XactRollback      int64
+	BlocksRead        int64
+	BlocksHit         int64
+	TempFiles         int64
+	TempBytes         int64
+	Deadlocks         int64
+}
+
+type ProvisionResult struct {
+	Tenants       []Tenant
+	Stats         DurationStats
+	TotalDuration time.Duration
+}
+
+type SeedResult struct {
+	Stats         DurationStats
+	TotalDuration time.Duration
+}
+
+type SyncResult struct {
+	Stats         DurationStats // per-database sync latency
+	TotalDuration time.Duration
+	Databases     int
+}
+
+type InteractiveResult struct {
+	Concurrency int
+	Stats       DurationStats
+	Timeouts    int
+	Duration    time.Duration
+}
+
+type DDLResult struct {
+	Stats  DurationStats
+	Errors int
+}
+
+type ChurnResult struct {
+	Created int
+	Dropped int
+	Errors  int
+	Orphans int
+}
+
+type CleanupResult struct {
+	Dropped         int
+	Failed          int
+	OrphanDatabases []string
+	OrphanRoles     []string
+}
+
+// Result is the outcome of one database-count run through all phases.
+type Result struct {
+	DatabaseCount int
+	StartedAt     time.Time
+	FinishedAt    time.Time
+	Provision     ProvisionResult
+	Seed          SeedResult
+	Idle          Metrics
+	Sync          SyncResult
+	Interactive   []InteractiveResult
+	DDL           DDLResult
+	Churn         ChurnResult
+	Cleanup       CleanupResult
+}
+
+// Run executes the full matrix and returns one Result per database count.
+func Run(ctx context.Context, cfg Config) ([]Result, error) {
+	db, err := openDB(ctx, cfg.adminDSN())
+	if err != nil {
+		return nil, errors.Wrapf(err, "open admin connection")
+	}
+	defer db.Close()
+
+	results := make([]Result, 0, len(cfg.DatabaseCounts))
+	for _, count := range cfg.DatabaseCounts {
+		r := Result{DatabaseCount: count, StartedAt: time.Now()}
+
+		tenants, prov, err := provision(ctx, db, &cfg, count)
+		if err != nil {
+			return results, errors.Wrapf(err, "provision %d databases", count)
+		}
+		r.Provision = prov
+
+		seed, err := seedAll(ctx, db, &cfg, tenants)
+		if err != nil {
+			_, _ = cleanup(ctx, db, &cfg, tenants)
+			return results, errors.Wrapf(err, "seed %d databases", count)
+		}
+		r.Seed = seed
+
+		idle, err := snapshotMetrics(ctx, db)
+		if err != nil {
+			_, _ = cleanup(ctx, db, &cfg, tenants)
+			return results, errors.Wrapf(err, "idle snapshot")
+		}
+		r.Idle = idle
+
+		syncRes, err := runSyncWorkload(ctx, db, &cfg, tenants)
+		if err != nil {
+			_, _ = cleanup(ctx, db, &cfg, tenants)
+			return results, errors.Wrapf(err, "sync workload")
+		}
+		r.Sync = syncRes
+
+		for _, concurrency := range cfg.InteractiveConcurrencies {
+			ir, err := runInteractiveWorkload(ctx, db, &cfg, tenants, concurrency)
+			if err != nil {
+				_, _ = cleanup(ctx, db, &cfg, tenants)
+				return results, errors.Wrapf(err, "interactive workload (c=%d)", concurrency)
+			}
+			r.Interactive = append(r.Interactive, ir)
+		}
+
+		ddl, err := runDDLWorkload(ctx, db, &cfg, tenants)
+		if err != nil {
+			_, _ = cleanup(ctx, db, &cfg, tenants)
+			return results, errors.Wrapf(err, "ddl workload")
+		}
+		r.DDL = ddl
+
+		churn, err := runChurn(ctx, db, &cfg, tenants)
+		if err != nil {
+			_, _ = cleanup(ctx, db, &cfg, tenants)
+			return results, errors.Wrapf(err, "churn workload")
+		}
+		r.Churn = churn
+
+		cleanupRes, err := cleanup(ctx, db, &cfg, tenants)
+		if err != nil {
+			return results, errors.Wrapf(err, "cleanup %d databases", count)
+		}
+		r.Cleanup = cleanupRes
+		r.FinishedAt = time.Now()
+
+		results = append(results, r)
+	}
+
+	if cfg.ReportPath != "" {
+		if err := writeReport(cfg.ReportPath, results, cfg); err != nil {
+			return results, errors.Wrapf(err, "write report")
+		}
+	}
+	return results, nil
+}

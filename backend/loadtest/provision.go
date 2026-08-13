@@ -1,0 +1,129 @@
+package loadtest
+
+import (
+	"context"
+	"crypto/rand"
+	"database/sql"
+	"encoding/hex"
+	"fmt"
+	"log"
+	"time"
+)
+
+// nolint:unparam // failures are reported via Stats.Errors, the error result is always nil by contract.
+func provision(ctx context.Context, db *sql.DB, cfg *Config, count int) ([]Tenant, ProvisionResult, error) {
+	started := time.Now()
+	tenants := make([]Tenant, 0, count)
+	latencies := make([]time.Duration, 0, count)
+	errors := 0
+
+	for i := 0; i < count; i++ {
+		role := cfg.roleName(i)
+		dbase := cfg.databaseName(i)
+
+		pwBytes := make([]byte, 16)
+		if _, err := rand.Read(pwBytes); err != nil {
+			errors++
+			if cfg.Verbose {
+				log.Printf("provision tenant %d: generate password: %v", i, err)
+			}
+			continue
+		}
+		pw := hex.EncodeToString(pwBytes)
+
+		tenantStart := time.Now()
+		statements := []string{
+			fmt.Sprintf("CREATE ROLE %s LOGIN PASSWORD '%s'", role, pw),
+			fmt.Sprintf("CREATE DATABASE %s OWNER %s", dbase, role),
+			fmt.Sprintf("REVOKE CONNECT ON DATABASE %s FROM PUBLIC", dbase),
+			fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s", dbase, role),
+		}
+		failed := false
+		for _, stmt := range statements {
+			if _, err := db.ExecContext(ctx, stmt); err != nil {
+				failed = true
+				errors++
+				if cfg.Verbose {
+					log.Printf("provision tenant %d: %v", i, err)
+				}
+				break
+			}
+		}
+		if failed {
+			continue
+		}
+
+		latencies = append(latencies, time.Since(tenantStart))
+		tenants = append(tenants, Tenant{Index: i, Database: dbase, Role: role, Password: pw})
+	}
+
+	return tenants, ProvisionResult{
+		Tenants:       tenants,
+		Stats:         newDurationStats(latencies, errors),
+		TotalDuration: time.Since(started),
+	}, nil
+}
+
+func cleanup(ctx context.Context, db *sql.DB, cfg *Config, tenants []Tenant) (CleanupResult, error) {
+	result := CleanupResult{}
+	for _, tenant := range tenants {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE %s WITH (FORCE)", tenant.Database)); err != nil {
+			result.Failed++
+			if cfg.Verbose {
+				log.Printf("cleanup tenant %d: drop database %s: %v", tenant.Index, tenant.Database, err)
+			}
+		} else {
+			result.Dropped++
+		}
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP ROLE %s", tenant.Role)); err != nil {
+			result.Failed++
+			if cfg.Verbose {
+				log.Printf("cleanup tenant %d: drop role %s: %v", tenant.Index, tenant.Role, err)
+			}
+		}
+	}
+
+	if rows, err := db.QueryContext(ctx, "SELECT datname FROM pg_database WHERE datname LIKE $1", cfg.DatabaseNamePrefix+"%"); err != nil {
+		if cfg.Verbose {
+			log.Printf("cleanup: query orphan databases: %v", err)
+		}
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var name string
+			if err := rows.Scan(&name); err != nil {
+				if cfg.Verbose {
+					log.Printf("cleanup: scan orphan database: %v", err)
+				}
+				continue
+			}
+			result.OrphanDatabases = append(result.OrphanDatabases, name)
+		}
+		if err := rows.Err(); err != nil && cfg.Verbose {
+			log.Printf("cleanup: iterate orphan databases: %v", err)
+		}
+	}
+
+	if rows, err := db.QueryContext(ctx, "SELECT rolname FROM pg_roles WHERE rolname LIKE $1", cfg.RoleNamePrefix+"%"); err != nil {
+		if cfg.Verbose {
+			log.Printf("cleanup: query orphan roles: %v", err)
+		}
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var name string
+			if err := rows.Scan(&name); err != nil {
+				if cfg.Verbose {
+					log.Printf("cleanup: scan orphan role: %v", err)
+				}
+				continue
+			}
+			result.OrphanRoles = append(result.OrphanRoles, name)
+		}
+		if err := rows.Err(); err != nil && cfg.Verbose {
+			log.Printf("cleanup: iterate orphan roles: %v", err)
+		}
+	}
+
+	return result, nil
+}
