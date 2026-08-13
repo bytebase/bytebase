@@ -11,6 +11,19 @@ export const extractSavedQueryID = (name: string) => {
   return matches?.[1] ?? `${UNKNOWN_ID}`;
 };
 
+// Browsing saved queries takes bb.savedQueries.search on the project, or the
+// admin backstop -- the same OR the server's discovery gate applies to Search
+// and SearchSavedQueryFolders. A SQL role can grant query access without
+// either, in which case the tree stays empty rather than firing requests that
+// can only come back denied.
+export const canSearchSavedQueriesInProject = (project: string) => {
+  const resolved = getProjectByName(project);
+  return (
+    hasProjectPermissionV2(resolved, "bb.savedQueries.search") ||
+    hasProjectPermissionV2(resolved, "bb.savedQueries.manage")
+  );
+};
+
 // Creating a saved query takes bb.savedQueries.create on the project. A role
 // can grant SQL Editor access without it, so entry points that would persist a
 // new saved query check this first -- the editor stays usable, it just keeps
