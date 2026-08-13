@@ -60,7 +60,8 @@ func ValidateWebhookURL(webhookType storepb.WebhookType, webhookURL string) erro
 	// Parse URL
 	u, err := url.Parse(webhookURL)
 	if err != nil {
-		return errors.Wrapf(err, "invalid URL format")
+		// Do not include the parser error because it may contain the raw URL and be persisted in the audit status.
+		return errors.New("invalid URL format")
 	}
 
 	// Only allow http/https

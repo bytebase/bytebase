@@ -175,6 +175,66 @@ func TestAuditLogFormat(t *testing.T) {
 		})
 	}
 
+	malformedWebhookURL := "https://hooks.slack.com/services/audit-status-secret/%zz"
+	_, err = ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
+		Project: ctl.project.Name,
+		Webhook: &v1pb.Webhook{
+			Type:  v1pb.WebhookType_SLACK,
+			Title: "Malformed audit webhook",
+			Url:   malformedWebhookURL,
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	a.NotContains(err.Error(), malformedWebhookURL)
+
+	validWebhook, err := ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
+		Project: ctl.project.Name,
+		Webhook: &v1pb.Webhook{
+			Type:  v1pb.WebhookType_SLACK,
+			Title: "Webhook audit status update",
+			Url:   "https://hooks.slack.com/services/audit-status-update",
+		},
+	}))
+	a.NoError(err)
+	var validWebhookName string
+	for _, webhook := range validWebhook.Msg.Webhooks {
+		if webhook.Title == "Webhook audit status update" {
+			validWebhookName = webhook.Name
+			break
+		}
+	}
+	a.NotEmpty(validWebhookName)
+	_, err = ctl.projectServiceClient.UpdateWebhook(ctx, connect.NewRequest(&v1pb.UpdateWebhookRequest{
+		Webhook: &v1pb.Webhook{
+			Name: validWebhookName,
+			Url:  malformedWebhookURL,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"url"}},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	a.NotContains(err.Error(), malformedWebhookURL)
+
+	for _, method := range []string{
+		"/bytebase.v1.ProjectService/AddWebhook",
+		"/bytebase.v1.ProjectService/UpdateWebhook",
+	} {
+		auditLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+			Parent: ctl.project.Name,
+			Filter: fmt.Sprintf("method == %q", method),
+		}))
+		a.NoError(err)
+		foundInvalidArgument := false
+		for _, auditLog := range auditLogs.Msg.AuditLogs {
+			if auditLog.GetStatus().GetCode() == int32(connect.CodeInvalidArgument) {
+				foundInvalidArgument = true
+				a.NotContains(auditLog.GetStatus().GetMessage(), malformedWebhookURL)
+			}
+		}
+		a.True(foundInvalidArgument, "%s must persist the failed request", method)
+	}
+
 	savedQueryContent := "SELECT secret_audit_saved_query_content;"
 	savedQuery, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 		Parent: ctl.project.Name,
