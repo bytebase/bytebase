@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 
@@ -25,10 +26,14 @@ func main() {
 	counts := flag.String("counts", "70,500,1000", "comma-separated database counts")
 	concurrencies := flag.String("concurrencies", "10,50", "comma-separated interactive concurrency levels")
 	report := flag.String("report", "", "output path for the JSON report (empty = no file)")
+	verbose := flag.Bool("verbose", false, "log per-tenant errors")
 	flag.Parse()
 
 	if *password == "" {
-		log.Fatal("--password is required")
+		*password = os.Getenv("PGPASSWORD")
+	}
+	if *password == "" {
+		log.Fatal("--password is required (or set PGPASSWORD)")
 	}
 
 	dbCounts, err := parseInts(*counts)
@@ -60,6 +65,7 @@ func main() {
 		InteractiveQueries:       loadtest.DefaultInteractiveQueries(),
 		DDLStatements:            loadtest.DefaultDDLStatements(),
 		ReportPath:               *report,
+		Verbose:                  *verbose,
 	}
 
 	results, err := loadtest.Run(context.Background(), cfg)

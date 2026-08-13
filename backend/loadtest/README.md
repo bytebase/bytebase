@@ -14,10 +14,12 @@ Postgres (Phase 1) and GCP Cloud SQL (Phase 2). Components are split across
   for free harness development.
 - Tier under test: smallest shippable tier (1 vCPU / ~3.75 GB).
 - Connection: direct, no pooler, public IP + TLS; password superuser admin.
-- Isolation: one database + one role per workspace; `REVOKE CONNECT ... FROM
-  PUBLIC` on every tenant DB + grant only the owning role; role owns its DB.
-  `pg_database` name disclosure is accepted.
-- Seed: the Bytebase sample HR schema (7 tables, 2 views, 1 function, ~13k rows).
+- Isolation: one database + one role per workspace. The database is owned by the
+  admin user (Cloud SQL's `postgres` superuser cannot `SET ROLE` / transfer
+  ownership); the role is granted `CONNECT` on only its own database and
+  `SELECT` on its seeded schema. `pg_database` name disclosure is accepted.
+- Seed: the Bytebase sample HR schema (7 tables, 2 views, 1 function, ~13k rows),
+  applied by the admin; the workspace role is granted `SELECT` afterwards.
 
 ## Workload assumptions (labeled, not measured traffic)
 

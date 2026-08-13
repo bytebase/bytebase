@@ -51,13 +51,18 @@ type Config struct {
 }
 
 func (c *Config) adminDSN() string {
-	return fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=postgres sslmode=%s",
+	return fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=postgres sslmode=%s connect_timeout=10",
 		c.AdminUser, c.AdminPassword, c.Host, c.Port, c.SSLMode)
 }
 
 func (c *Config) tenantDSN(database, role, password string) string {
-	return fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s sslmode=%s",
+	return fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s sslmode=%s connect_timeout=10",
 		role, password, c.Host, c.Port, database, c.SSLMode)
+}
+
+func (c *Config) adminDSNForDB(database string) string {
+	return fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s sslmode=%s connect_timeout=10",
+		c.AdminUser, c.AdminPassword, c.Host, c.Port, database, c.SSLMode)
 }
 
 func (c *Config) syncConcurrency() int {
@@ -215,6 +220,8 @@ func Run(ctx context.Context, cfg Config) ([]Result, error) {
 	}
 	defer db.Close()
 
+	cleanupPrefix(ctx, db, &cfg)
+
 	results := make([]Result, 0, len(cfg.DatabaseCounts))
 	for _, count := range cfg.DatabaseCounts {
 		r := Result{DatabaseCount: count, StartedAt: time.Now()}
@@ -224,6 +231,11 @@ func Run(ctx context.Context, cfg Config) ([]Result, error) {
 			return results, errors.Wrapf(err, "provision %d databases", count)
 		}
 		r.Provision = prov
+		if len(tenants) == 0 {
+			r.FinishedAt = time.Now()
+			results = append(results, r)
+			continue
+		}
 
 		seed, err := seedAll(ctx, db, &cfg, tenants)
 		if err != nil {

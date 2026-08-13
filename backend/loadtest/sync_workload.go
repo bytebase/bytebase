@@ -57,7 +57,7 @@ func runSyncWorkload(ctx context.Context, _ *sql.DB, cfg *Config, tenants []Tena
 // syncOneDatabase opens one connection to a tenant database and runs the sync
 // queries sequentially, returning the first error encountered.
 func syncOneDatabase(ctx context.Context, cfg *Config, t Tenant, queries []string) error {
-	db, err := sql.Open("pgx", cfg.tenantDSN(t.Database, t.Role, t.Password))
+	db, err := sql.Open("pgx", cfg.adminDSNForDB(t.Database))
 	if err != nil {
 		return err
 	}

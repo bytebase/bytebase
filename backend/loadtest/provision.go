@@ -34,7 +34,7 @@ func provision(ctx context.Context, db *sql.DB, cfg *Config, count int) ([]Tenan
 		tenantStart := time.Now()
 		statements := []string{
 			fmt.Sprintf("CREATE ROLE %s LOGIN PASSWORD '%s'", role, pw),
-			fmt.Sprintf("CREATE DATABASE %s OWNER %s", dbase, role),
+			fmt.Sprintf("CREATE DATABASE %s", dbase),
 			fmt.Sprintf("REVOKE CONNECT ON DATABASE %s FROM PUBLIC", dbase),
 			fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s", dbase, role),
 		}
@@ -126,4 +126,36 @@ func cleanup(ctx context.Context, db *sql.DB, cfg *Config, tenants []Tenant) (Cl
 	}
 
 	return result, nil
+}
+
+// cleanupPrefix removes any databases and roles left over from a previous run so
+// re-runs are idempotent. It is best-effort: errors are ignored here and the main
+// cleanup phase reports any remaining orphans.
+func cleanupPrefix(ctx context.Context, db *sql.DB, cfg *Config) {
+	for _, name := range queryNames(ctx, db, "SELECT datname FROM pg_database WHERE datname LIKE $1", cfg.DatabaseNamePrefix) {
+		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE %s WITH (FORCE)", name))
+	}
+	for _, name := range queryNames(ctx, db, "SELECT rolname FROM pg_roles WHERE rolname LIKE $1", cfg.RoleNamePrefix) {
+		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP ROLE %s", name))
+	}
+}
+
+// queryNames returns the single text column of a parameterized LIKE query.
+func queryNames(ctx context.Context, db *sql.DB, query, prefix string) []string {
+	rows, err := db.QueryContext(ctx, query, prefix+"%")
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	var names []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err == nil {
+			names = append(names, name)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil
+	}
+	return names
 }

@@ -105,7 +105,7 @@ func runDDLWorkload(ctx context.Context, _ *sql.DB, cfg *Config, tenants []Tenan
 		errorCount int
 	)
 	for _, t := range tenants {
-		db, err := sql.Open("pgx", cfg.tenantDSN(t.Database, t.Role, t.Password))
+		db, err := sql.Open("pgx", cfg.adminDSNForDB(t.Database))
 		if err != nil {
 			errorCount++
 			if cfg.Verbose {
@@ -154,7 +154,7 @@ func runChurn(ctx context.Context, db *sql.DB, cfg *Config, tenants []Tenant) (C
 			result.Errors++
 			continue
 		}
-		if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s OWNER %s", dbase, role)); err != nil {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", dbase)); err != nil {
 			result.Errors++
 			continue
 		}
