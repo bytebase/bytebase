@@ -56,14 +56,22 @@ func firstSlackSectionText(body []byte) string {
 }
 
 // matchesEvent reports whether a captured Slack payload matches the given
-// project and event title. Project filtering prevents cross-subtest
-// contamination from the async webhook dispatcher.
-func matchesEvent(req webhookRequest, projectName, eventTitle string) bool {
+// project, event title, and optional resource names. Project and resource
+// filtering prevents contamination from the async webhook dispatcher.
+func matchesEvent(req webhookRequest, projectName, eventTitle string, resources ...string) bool {
 	body := string(req.Body)
 	if !strings.Contains(body, projectName) {
 		return false
 	}
-	return strings.Contains(firstSlackSectionText(req.Body), eventTitle)
+	if !strings.Contains(firstSlackSectionText(req.Body), eventTitle) {
+		return false
+	}
+	for _, resource := range resources {
+		if !strings.Contains(body, resource) {
+			return false
+		}
+	}
+	return true
 }
 
 // webhookWaitTimeout is the deadline for waitForWebhookCount and the issue-state
@@ -73,33 +81,33 @@ const webhookWaitTimeout = 30 * time.Second
 
 // waitForWebhookCount blocks until at least n webhooks for (project, eventTitle)
 // have arrived, or fails the test after webhookWaitTimeout.
-func waitForWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int) {
+func waitForWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int, resources ...string) {
 	t.Helper()
 	deadline := time.Now().Add(webhookWaitTimeout)
 	for {
-		count := countWebhooksFor(c, projectName, eventTitle)
+		count := countWebhooksFor(c, projectName, eventTitle, resources...)
 		if count >= n {
 			return
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("timed out waiting for %d %q webhooks on %s; got %d after %s",
-				n, eventTitle, projectName, count, webhookWaitTimeout)
+			t.Fatalf("timed out waiting for %d %q webhooks on %s for resources %v; got %d after %s",
+				n, eventTitle, projectName, resources, count, webhookWaitTimeout)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
 }
 
 // requireWebhookCount asserts the exact count of webhooks for (project, eventTitle).
-func requireWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int) {
+func requireWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int, resources ...string) {
 	t.Helper()
-	got := countWebhooksFor(c, projectName, eventTitle)
-	require.Equalf(t, n, got, "expected %d %q webhooks on %s, got %d", n, eventTitle, projectName, got)
+	got := countWebhooksFor(c, projectName, eventTitle, resources...)
+	require.Equalf(t, n, got, "expected %d %q webhooks on %s for resources %v, got %d", n, eventTitle, projectName, resources, got)
 }
 
-func countWebhooksFor(c *webhookCollector, projectName, eventTitle string) int {
+func countWebhooksFor(c *webhookCollector, projectName, eventTitle string, resources ...string) int {
 	n := 0
 	for _, req := range c.getRequests() {
-		if matchesEvent(req, projectName, eventTitle) {
+		if matchesEvent(req, projectName, eventTitle, resources...) {
 			n++
 		}
 	}
