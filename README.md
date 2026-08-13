@@ -128,10 +128,10 @@ alias y="pnpm --dir frontend i && pnpm --dir frontend dev"
 - [Bytebase vs Navicat](https://www.bytebase.com/blog/bytebase-vs-navicat/)
 - [Bytebase vs CloudBeaver](https://www.bytebase.com/blog/bytebase-vs-cloudbeaver/)
 
-<a href="https://www.star-history.com/?repos=bytebase%2Fbytebase%2Cliquibase%2Fliquibase%2Cflyway%2Fflyway%2Cdbeaver%2Fcloudbeaver&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=bytebase/bytebase%2Cliquibase/liquibase%2Cflyway/flyway%2Cdbeaver/cloudbeaver&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=bytebase/bytebase%2Cliquibase/liquibase%2Cflyway/flyway%2Cdbeaver/cloudbeaver&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=bytebase/bytebase%2Cliquibase/liquibase%2Cflyway/flyway%2Cdbeaver/cloudbeaver&type=date&legend=top-left" />
- </picture>
+<a href="https://star-history.dera.page/#bytebase/bytebase,liquibase/liquibase,flyway/flyway,dbeaver/cloudbeaver&type=date&legend=top-left">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=bytebase/bytebase%2Cliquibase/liquibase%2Cflyway/flyway%2Cdbeaver/cloudbeaver&type=date&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=bytebase/bytebase%2Cliquibase/liquibase%2Cflyway/flyway%2Cdbeaver/cloudbeaver&type=date&legend=top-left" />
+    <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=bytebase/bytebase%2Cliquibase/liquibase%2Cflyway/flyway%2Cdbeaver/cloudbeaver&type=date&legend=top-left" />
+  </picture>
 </a>
