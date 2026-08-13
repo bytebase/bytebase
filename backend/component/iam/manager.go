@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"maps"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -129,7 +128,7 @@ func check(user *store.UserMessage, p permission.Permission, policy *storepb.Iam
 			continue
 		}
 		if projectWideOnly {
-			scoped, err := common.BindingConditionScopesResources(binding.Condition.GetExpression(), time.Now())
+			scoped, err := conditionScopesResources(binding.Condition.GetExpression())
 			if err != nil {
 				// An unparsable condition is not a grant.
 				slog.Error("failed to inspect binding condition", slog.String("expression", binding.Condition.GetExpression()), log.BBError(err))

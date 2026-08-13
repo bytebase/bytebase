@@ -7,7 +7,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/cel-go/cel"
 	celtypes "github.com/google/cel-go/common/types"
-	celref "github.com/google/cel-go/common/types/ref"
 	"github.com/google/cel-go/ext"
 	"github.com/pkg/errors"
 	exprproto "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
@@ -300,9 +299,27 @@ func doEvalBindingCondition(expr string, input map[string]any) (bool, error) {
 		return true, nil
 	}
 
-	out, err := partialEvalBindingCondition(expr, input)
+	e, err := cel.NewEnv(IAMPolicyConditionCELAttributes...)
 	if err != nil {
-		return false, err
+		return false, errors.Wrapf(err, "failed to new cel env")
+	}
+	ast, iss := e.Compile(expr)
+	if iss != nil && iss.Err() != nil {
+		return false, errors.Wrapf(iss.Err(), "failed to compile expr %q", expr)
+	}
+	// enable partial evaluation because the input only has request.time
+	// but the expression can have more.
+	prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to construct program")
+	}
+	vars, err := e.PartialVars(input)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get vars")
+	}
+	out, _, err := prg.Eval(vars)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to eval cel expr")
 	}
 	// `out` is one of
 	// - True
@@ -320,49 +337,4 @@ func doEvalBindingCondition(expr string, input map[string]any) (bool, error) {
 		return false, errors.Errorf("failed to convert cel result to bool")
 	}
 	return res, nil
-}
-
-// BindingConditionScopesResources reports whether a binding condition
-// constrains anything beyond expiry -- a database, schema, table, or
-// environment scope. Only request.time is bound, so such a condition cannot
-// reduce to a bool and comes back as the residual expression the generic IAM
-// check passes through. Callers that must not honor a data-slice grant use
-// this to reject the binding outright.
-func BindingConditionScopesResources(expr string, requestTime time.Time) (bool, error) {
-	if expr == "" {
-		return false, nil
-	}
-	out, err := partialEvalBindingCondition(expr, map[string]any{
-		CELAttributeRequestTime: requestTime,
-	})
-	if err != nil {
-		return false, err
-	}
-	return !celtypes.IsBool(out), nil
-}
-
-func partialEvalBindingCondition(expr string, input map[string]any) (celref.Val, error) {
-	e, err := cel.NewEnv(IAMPolicyConditionCELAttributes...)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to new cel env")
-	}
-	ast, iss := e.Compile(expr)
-	if iss != nil && iss.Err() != nil {
-		return nil, errors.Wrapf(iss.Err(), "failed to compile expr %q", expr)
-	}
-	// enable partial evaluation because the input only has request.time
-	// but the expression can have more.
-	prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to construct program")
-	}
-	vars, err := e.PartialVars(input)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get vars")
-	}
-	out, _, err := prg.Eval(vars)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to eval cel expr")
-	}
-	return out, nil
 }
