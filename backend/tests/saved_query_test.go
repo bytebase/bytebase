@@ -48,6 +48,25 @@ func TestListSavedQueries(t *testing.T) {
 	_, err = ctl.addMemberToWorkspaceIAM(ctx, otherUser.Msg.Workspace, fmt.Sprintf("user:%s", otherEmail), "roles/workspaceMember")
 	a.NoError(err)
 
+	// Creating a saved query now takes bb.savedQueries.create on the parent
+	// project, which workspaceMember does not carry -- a workspace role would
+	// grant it in every project. The scenario needs this user to own a saved
+	// query in ctl.project, so give them a role there.
+	policyResp, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+		Resource: ctl.project.Name,
+	}))
+	a.NoError(err)
+	policy := policyResp.Msg
+	policy.Bindings = append(policy.Bindings, &v1pb.Binding{
+		Role:    "roles/sqlEditorUser",
+		Members: []string{fmt.Sprintf("user:%s", otherEmail)},
+	})
+	_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Resource: ctl.project.Name,
+		Policy:   policy,
+	}))
+	a.NoError(err)
+
 	createSavedQuery := func(title, parent string) *v1pb.SavedQuery {
 		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 			Parent: parent,
@@ -495,12 +514,22 @@ func TestSearchSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 	a.NoError(err)
 	a.Empty(notMineForOther.Msg.Folders)
 
+	// Unfiltered means "every folder I can read", so the admin backstop sees
+	// the other creator's folders too. The My/Shared split the SQL Editor
+	// renders comes from the creator filter, asserted below.
 	ctl.authInterceptor.token = ownerToken
 	ownerFolders, err := ctl.savedQueryServiceClient.SearchSavedQueryFolders(ctx, connect.NewRequest(&v1pb.SearchSavedQueryFoldersRequest{
 		Parent: ctl.project.Name,
 	}))
 	a.NoError(err)
-	a.Equal([]string{"owner", "owner-second", "owner/child"}, ownerFolders.Msg.Folders)
+	a.Equal([]string{"owner", "owner-second", "owner/child", "theirs", "theirs/deep"}, ownerFolders.Msg.Folders)
+
+	ownFolders, err := ctl.savedQueryServiceClient.SearchSavedQueryFolders(ctx, connect.NewRequest(&v1pb.SearchSavedQueryFoldersRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf(`creator == "users/%s"`, ownerEmail),
+	}))
+	a.NoError(err)
+	a.Equal([]string{"owner", "owner-second", "owner/child"}, ownFolders.Msg.Folders)
 
 	// The admin backstop is what makes the SQL Editor's shared tree work:
 	// everyone-else's folders resolve server-side, so a cold cache still

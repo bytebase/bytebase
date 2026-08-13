@@ -32,9 +32,15 @@ WHERE jsonb_typeof(permissions->'permissions') = 'array';
 -- other people's queries is retired).
 ALTER TABLE saved_query ADD COLUMN folder text NOT NULL DEFAULT '';
 
+-- The organizer never validated its segments, so a stored array could carry
+-- empty or slash-padded ones. Joining those raw would write "/b", "a/" or
+-- "a//b" -- paths NormalizeSavedQueryFolder rejects and the `folder ==` filter
+-- refuses to match, stranding the row in a folder nothing can name. Collapse
+-- slash runs and trim the ends so every migrated path is one the application
+-- can produce and find.
 UPDATE saved_query
 SET folder = COALESCE((
-    SELECT string_agg(f.elem, '/' ORDER BY f.ord)
+    SELECT btrim(regexp_replace(string_agg(f.elem, '/' ORDER BY f.ord), '/+', '/', 'g'), '/')
     FROM jsonb_array_elements_text(o.payload->'folders') WITH ORDINALITY AS f(elem, ord)
 ), '')
 FROM saved_query_organizer o
