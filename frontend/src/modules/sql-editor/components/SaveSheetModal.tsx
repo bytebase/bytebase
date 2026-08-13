@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { useSQLEditorEvent } from "@/hooks/useSQLEditorEvent";
 import { useSheetContextByView } from "@/modules/sql-editor/model/Sheet";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
+import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useAppStore } from "@/stores/app";
 import type { SQLEditorTab } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { extractSavedQueryID } from "@/utils";
+import { canCreateSavedQueryInProject, extractSavedQueryID } from "@/utils";
 import { FolderForm } from "./FolderForm";
 
 export function SaveSheetModal() {
@@ -20,6 +21,7 @@ export function SaveSheetModal() {
   );
   const createSavedQuery = useSQLEditorStore((s) => s.createSavedQuery);
   const sheetContext = useSheetContextByView("my");
+  const project = useSQLEditorEditorState((s) => s.project);
 
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -78,6 +80,13 @@ export function SaveSheetModal() {
   };
 
   useSQLEditorEvent("save-sheet", ({ tab, editTitle }) => {
+    // Both the toolbar button and Cmd/Ctrl+S land here, so this is where a
+    // save that would create a saved query is refused -- the toolbar hides
+    // its button, but the shortcut has no affordance to hide. The draft
+    // stays in the tab; nothing is lost, nothing is sent.
+    if (!tab.savedQuery && !canCreateSavedQueryInProject(project)) {
+      return;
+    }
     setTitle(tab.title);
     setRawTab(tab);
 
