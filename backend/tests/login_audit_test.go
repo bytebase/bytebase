@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -130,6 +131,49 @@ func TestAuditLogFormat(t *testing.T) {
 	a.NoError(err)
 	a.Len(updateProjectLogs.Msg.AuditLogs, 1)
 	a.Equal(ctl.project.Name, updateProjectLogs.Msg.AuditLogs[0].Resource)
+
+	webhookSecretURL := "https://hooks.slack.com/services/audit-status-secret"
+	missingWebhookName := ctl.project.Name + "/webhooks/missing-webhook"
+	for _, test := range []struct {
+		method string
+		call   func() error
+	}{
+		{
+			method: "/bytebase.v1.ProjectService/UpdateWebhook",
+			call: func() error {
+				_, err := ctl.projectServiceClient.UpdateWebhook(ctx, connect.NewRequest(&v1pb.UpdateWebhookRequest{
+					Webhook: &v1pb.Webhook{Name: missingWebhookName, Url: webhookSecretURL},
+				}))
+				return err
+			},
+		},
+		{
+			method: "/bytebase.v1.ProjectService/RemoveWebhook",
+			call: func() error {
+				_, err := ctl.projectServiceClient.RemoveWebhook(ctx, connect.NewRequest(&v1pb.RemoveWebhookRequest{
+					Webhook: &v1pb.Webhook{Name: missingWebhookName, Url: webhookSecretURL},
+				}))
+				return err
+			},
+		},
+	} {
+		t.Run(test.method, func(t *testing.T) {
+			a := require.New(t)
+			err := test.call()
+			a.Error(err)
+			a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+			a.NotContains(err.Error(), webhookSecretURL)
+
+			auditLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+				Parent: ctl.project.Name,
+				Filter: fmt.Sprintf("method == %q", test.method),
+			}))
+			a.NoError(err)
+			a.Len(auditLogs.Msg.AuditLogs, 1)
+			a.NotNil(auditLogs.Msg.AuditLogs[0].Status)
+			a.NotContains(auditLogs.Msg.AuditLogs[0].Status.Message, webhookSecretURL)
+		})
+	}
 
 	savedQueryContent := "SELECT secret_audit_saved_query_content;"
 	savedQuery, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{

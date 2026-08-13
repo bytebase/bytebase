@@ -823,7 +823,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 				Webhook: req.Msg.Webhook,
 			}))
 		}
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", req.Msg.Webhook.Url))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", webhookID))
 	}
 
 	// Start with existing webhook payload
@@ -906,7 +906,7 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if webhook == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", req.Msg.Webhook.Url))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", webhookID))
 	}
 
 	if err := s.store.DeleteProjectWebhook(ctx, project.ResourceID, webhook.ResourceID); err != nil {

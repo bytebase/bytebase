@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Never put credentials, tokens, raw SQL, AI prompts, saved query content, exported files, license text, webhook URLs, or payment-session data in an audit request or response.
+- Never put credentials, tokens, raw SQL, AI prompts, saved query content, exported files, license text, webhook URLs, or payment-session data in an audit request, response, or error status.
 - Every redactor must clone before modification; `getRequestString` and `getResponseString` must not mutate live handler messages.
 - Audit parents must be canonical `workspaces/{workspace}` or `projects/{project}` names; project-scoped actions must not leak into the workspace-scoped audit stream.
 - Keep `Refresh`, `SyncDatabase`, `BatchSyncDatabases`, `SyncInstance`, `BatchSyncInstances`, `UpdateSavedQuery`, `UpdateSavedQueryOrganizer`, and `BatchUpdateSavedQueryOrganizer` unaudited in this change.
