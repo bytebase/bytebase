@@ -191,7 +191,24 @@ func (s *SavedQueryService) SearchSavedQueryFolders(
 		return nil, err
 	}
 
-	paths, err := s.store.ListSavedQueryFolderPaths(ctx, projectID, user.Email)
+	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, user.Email, request.Filter, false /* allowTitleContains */)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	// Folders are derived from rows, so they inherit the rows' read rule.
+	// Without the admin backstop the caller only ever sees folders holding
+	// their own saved queries, whatever the filter asks for.
+	canManage, err := s.iamManager.CheckPermission(ctx, permission.SavedQueriesManage, user, common.GetWorkspaceIDFromContext(ctx), projectID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
+	}
+	creator := &user.Email
+	if canManage {
+		creator = nil
+	}
+
+	paths, err := s.store.ListSavedQueryFolderPaths(ctx, projectID, creator, filterQ)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to search saved query folders: %v", err))
 	}

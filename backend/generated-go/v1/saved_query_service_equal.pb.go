@@ -90,6 +90,9 @@ func (x *SearchSavedQueryFoldersRequest) Equal(y *SearchSavedQueryFoldersRequest
 	if x.Parent != y.Parent {
 		return false
 	}
+	if x.Filter != y.Filter {
+		return false
+	}
 	return true
 }
 

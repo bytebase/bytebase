@@ -150,6 +150,21 @@ export declare type SearchSavedQueryFoldersRequest = Message<"bytebase.v1.Search
    * @generated from field: string parent = 1;
    */
   parent: string;
+
+  /**
+   * To filter the folders by the saved queries they hold. Takes the same
+   * fields and syntax as `SearchSavedQueries.filter`, except `title`. A
+   * folder is returned when at least one saved query the caller can read
+   * matches, so the caller-scoping is the same as SearchSavedQueries: your
+   * own saved queries, plus everyone's for the admin backstop.
+   *
+   * For example, to split a folder tree into your own and everyone else's:
+   * creator == "users/{email}"
+   * creator != "users/{email}"
+   *
+   * @generated from field: string filter = 2;
+   */
+  filter: string;
 };
 
 /**

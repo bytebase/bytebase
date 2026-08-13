@@ -635,7 +635,10 @@ export type SavedQuerySlice = {
       pageToken?: string;
     }
   ) => Promise<{ savedQueries: SavedQuery[]; nextPageToken: string }>;
-  searchSavedQueryFolders: (parent: string) => Promise<string[]>;
+  searchSavedQueryFolders: (
+    parent: string,
+    filter?: string
+  ) => Promise<string[]>;
   createSavedQuery: (savedQuery: SavedQuery) => Promise<SavedQuery>;
   patchSavedQuery: (
     savedQuery: SavedQuery,

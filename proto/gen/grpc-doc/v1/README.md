@@ -11236,6 +11236,9 @@ For example: creator == &#34;users/{email}&#34; title.contains(&#34;saved query 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource whose saved query folders are searched. Format: projects/{project} |
+| filter | [string](#string) |  | To filter the folders by the saved queries they hold. Takes the same fields and syntax as `SearchSavedQueries.filter`, except `title`. A folder is returned when at least one saved query the caller can read matches, so the caller-scoping is the same as SearchSavedQueries: your own saved queries, plus everyone&#39;s for the admin backstop.
+
+For example, to split a folder tree into your own and everyone else&#39;s: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; |
 
 
 

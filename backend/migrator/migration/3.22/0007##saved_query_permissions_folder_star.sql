@@ -52,11 +52,13 @@ CREATE TABLE saved_query_star (
 
 CREATE INDEX idx_saved_query_star_principal ON saved_query_star(principal);
 
+-- Stars are per-principal, so every starred organizer row migrates -- unlike
+-- the folder backfill above, which is creator-only because a row has exactly
+-- one folder. The join drops organizer rows whose saved query is already gone.
 INSERT INTO saved_query_star (saved_query, principal)
 SELECT o.saved_query, o.principal
 FROM saved_query_organizer o
     JOIN saved_query sq ON sq.resource_id = o.saved_query
-WHERE COALESCE((o.payload->>'starred')::boolean, FALSE)
-    AND o.principal = sq.creator;
+WHERE COALESCE((o.payload->>'starred')::boolean, FALSE);
 
 DROP TABLE saved_query_organizer;

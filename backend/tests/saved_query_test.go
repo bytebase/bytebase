@@ -460,12 +460,32 @@ func TestSearchSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 	a.NoError(err)
 	a.Equal([]string{"theirs", "theirs/deep"}, otherFolders.Msg.Folders)
 
+	// A plain project member gets nothing for everyone-else's folders: the
+	// filter cannot widen what the caller may read.
+	const ownerEmail = "demo@example.com"
+	notMineForOther, err := ctl.savedQueryServiceClient.SearchSavedQueryFolders(ctx, connect.NewRequest(&v1pb.SearchSavedQueryFoldersRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf(`creator != "users/%s"`, otherEmail),
+	}))
+	a.NoError(err)
+	a.Empty(notMineForOther.Msg.Folders)
+
 	ctl.authInterceptor.token = ownerToken
 	ownerFolders, err := ctl.savedQueryServiceClient.SearchSavedQueryFolders(ctx, connect.NewRequest(&v1pb.SearchSavedQueryFoldersRequest{
 		Parent: ctl.project.Name,
 	}))
 	a.NoError(err)
 	a.Equal([]string{"owner", "owner-second", "owner/child"}, ownerFolders.Msg.Folders)
+
+	// The admin backstop is what makes the SQL Editor's shared tree work:
+	// everyone-else's folders resolve server-side, so a cold cache still
+	// renders the folders holding saved queries the caller never opened.
+	sharedFolders, err := ctl.savedQueryServiceClient.SearchSavedQueryFolders(ctx, connect.NewRequest(&v1pb.SearchSavedQueryFoldersRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf(`creator != "users/%s"`, ownerEmail),
+	}))
+	a.NoError(err)
+	a.Equal([]string{"theirs", "theirs/deep"}, sharedFolders.Msg.Folders)
 }
 
 func TestSearchSavedQueriesRejectsWildcardProject(t *testing.T) {

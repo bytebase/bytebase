@@ -276,7 +276,17 @@ type SearchSavedQueryFoldersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource whose saved query folders are searched.
 	// Format: projects/{project}
-	Parent        string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// To filter the folders by the saved queries they hold. Takes the same
+	// fields and syntax as `SearchSavedQueries.filter`, except `title`. A
+	// folder is returned when at least one saved query the caller can read
+	// matches, so the caller-scoping is the same as SearchSavedQueries: your
+	// own saved queries, plus everyone's for the admin backstop.
+	//
+	// For example, to split a folder tree into your own and everyone else's:
+	// creator == "users/{email}"
+	// creator != "users/{email}"
+	Filter        string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -314,6 +324,13 @@ func (*SearchSavedQueryFoldersRequest) Descriptor() ([]byte, []int) {
 func (x *SearchSavedQueryFoldersRequest) GetParent() string {
 	if x != nil {
 		return x.Parent
+	}
+	return ""
+}
+
+func (x *SearchSavedQueryFoldersRequest) GetFilter() string {
+	if x != nil {
+		return x.Filter
 	}
 	return ""
 }
@@ -973,10 +990,11 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"page_token\x18\x04 \x01(\tR\tpageToken\"\x80\x01\n" +
 	"\x18ListSavedQueriesResponse\x12<\n" +
 	"\rsaved_queries\x18\x01 \x03(\v2\x17.bytebase.v1.SavedQueryR\fsavedQueries\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"V\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"n\n" +
 	"\x1eSearchSavedQueryFoldersRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\";\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12\x16\n" +
+	"\x06filter\x18\x02 \x01(\tR\x06filter\";\n" +
 	"\x1fSearchSavedQueryFoldersResponse\x12\x18\n" +
 	"\afolders\x18\x01 \x03(\tR\afolders\"\x95\x01\n" +
 	"\x17UpdateSavedQueryRequest\x12=\n" +

@@ -265,6 +265,9 @@ func (s *Store) PatchSavedQuery(ctx context.Context, patch *PatchSavedQueryMessa
 	if v := patch.Statement; v != nil {
 		set.Comma("statement = ?", *v)
 	}
+	if v := patch.Folder; v != nil {
+		set.Comma("folder = ?", *v)
+	}
 	if v := patch.Database; v != nil {
 		if *v == "" {
 			set.Comma("payload = payload - 'database'")
@@ -432,15 +435,31 @@ func (s *Store) BatchUpdateSavedQueryFolder(ctx context.Context, resourceIDs []s
 	return len(locked), nil
 }
 
-// ListSavedQueryFolderPaths returns the distinct folder paths of the
-// creator's saved queries in a project.
-func (s *Store) ListSavedQueryFolderPaths(ctx context.Context, projectID, creator string) ([]string, error) {
-	rows, err := s.GetDB().QueryContext(ctx, `
+// ListSavedQueryFolderPaths returns the distinct folder paths of the saved
+// queries in a project that match filterQ. A non-nil creator restricts the
+// paths to that creator's rows, which is how the API layer applies the same
+// read rule the rows themselves carry: your own always, everyone's only with
+// the admin backstop.
+func (s *Store) ListSavedQueryFolderPaths(ctx context.Context, projectID string, creator *string, filterQ *qb.Query) ([]string, error) {
+	q := qb.Q().Space(`
 		SELECT DISTINCT folder
 		FROM saved_query
-		WHERE project = $1 AND creator = $2 AND folder <> ''
-		ORDER BY folder
-	`, projectID, creator)
+		WHERE TRUE`)
+	q.And("saved_query.project = ?", projectID)
+	q.And("saved_query.folder <> ''")
+	if creator != nil {
+		q.And("saved_query.creator = ?", *creator)
+	}
+	if filterQ != nil {
+		q.And("?", filterQ)
+	}
+	q.Space("ORDER BY folder")
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

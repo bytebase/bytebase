@@ -146,11 +146,12 @@ export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
       };
     },
 
-    searchSavedQueryFolders: async (parent) => {
+    searchSavedQueryFolders: async (parent, filter) => {
       const response =
         await savedQueryServiceClientConnect.searchSavedQueryFolders(
           createProto(SearchSavedQueryFoldersRequestSchema, {
             parent,
+            filter,
           })
         );
       return response.folders;

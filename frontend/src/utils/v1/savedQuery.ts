@@ -1,8 +1,9 @@
 import { getCurrentUserV1 } from "@/stores";
+import { getProjectByName } from "@/stores/app/projectAccess";
 import { extractUserEmail } from "@/stores/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
 import type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 
 export const extractSavedQueryID = (name: string) => {
   const pattern = /(?:^|\/)savedQueries\/([^/]+)(?:$|\/)/;
@@ -10,15 +11,22 @@ export const extractSavedQueryID = (name: string) => {
   return matches?.[1] ?? `${UNKNOWN_ID}`;
 };
 
-// Saved queries are private: only the creator, or a workspace admin holding
+// Saved queries are private: only the creator, or someone holding
 // "bb.savedQueries.manage" (the admin backstop), can read or write one.
 // Per-object sharing arrives with the access-model redesign.
+//
+// The backstop is checked on the saved query's own project, mirroring the
+// server: a project-level grant (Project Owner, or a custom project role)
+// is enough, and the project check already falls back to workspace grants.
 const canAccessSavedQuery = (sheet: SavedQuery) => {
   const currentUser = getCurrentUserV1();
   if (extractUserEmail(sheet.creator) === currentUser.email) {
     return true;
   }
-  return hasWorkspacePermissionV2("bb.savedQueries.manage");
+  return hasProjectPermissionV2(
+    getProjectByName(sheet.project),
+    "bb.savedQueries.manage"
+  );
 };
 
 export const isSavedQueryReadableV1 = (sheet: SavedQuery) =>

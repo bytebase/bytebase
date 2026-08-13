@@ -320,7 +320,8 @@ describe("sheet context", () => {
     });
 
     expect(mocks.getAppState().searchSavedQueryFolders).toHaveBeenCalledWith(
-      "projects/proj1"
+      "projects/proj1",
+      'creator == "users/creator@example.com"'
     );
     expect(mocks.getAppState().fetchSavedQueryList).toHaveBeenCalledWith(
       "projects/proj1",
@@ -329,6 +330,48 @@ describe("sheet context", () => {
     );
     expect(container.textContent).toContain("alpha");
     expect(container.textContent).not.toContain("shared");
+  });
+
+  test("builds the shared folder tree from the server, not the row cache", async () => {
+    // Regression: deriving shared folders from cached rows found nothing on a
+    // cold cache, because the root page only fetches unfiled rows -- so every
+    // foldered shared saved query was unreachable.
+    mocks
+      .getAppState()
+      .searchSavedQueryFolders.mockResolvedValueOnce(["theirs", "theirs/deep"]);
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => ({
+      savedQueries: [],
+      nextPageToken: "",
+    }));
+
+    const { provideSheetContext, useSheetContextByView } = await import(
+      "./context"
+    );
+    let viewContext: ReturnType<typeof useSheetContextByView> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      viewContext = useSheetContextByView("shared");
+      return (
+        <div>
+          {viewContext.sheetTree.children.map((child) => child.label).join(",")}
+        </div>
+      );
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+    await act(async () => {
+      await viewContext!.fetchSheetList();
+    });
+
+    expect(mocks.getAppState().searchSavedQueryFolders).toHaveBeenCalledWith(
+      "projects/proj1",
+      'creator != "users/creator@example.com"'
+    );
+    expect(container.textContent).toContain("theirs");
   });
 
   test("merges persisted empty folders with backend folders", async () => {

@@ -1057,27 +1057,17 @@ const fetchSavedQueryFoldersForView = async (view: SheetViewMode) => {
     return;
   }
   const folderPaths = new Set<string>();
-  if (view === "my") {
-    // The server returns the caller's own folder paths with every ancestor
-    // prefix expanded.
-    const project = getSQLEditorEditorState().project;
-    const paths = await useAppStore.getState().searchSavedQueryFolders(project);
-    for (const path of paths) {
-      folderPaths.add(getFolderContext(view).rootPath + "/" + path);
-    }
-  } else {
-    // Folders are creator-personal; the shared view derives its folders
-    // from the shared rows themselves (their creators' placement).
-    for (const savedQuery of useAppStore.getState().savedQueryList()) {
-      if (viewForSavedQuery(savedQuery) !== "shared" || !savedQuery.folder) {
-        continue;
-      }
-      for (const path of getPathesForSavedQuery(view, {
-        folders: savedQuery.folder.split("/"),
-      })) {
-        folderPaths.add(path);
-      }
-    }
+  // Both views ask the server, which returns the folder paths of the saved
+  // queries the caller can read, with every ancestor prefix expanded. The
+  // view's own creator filter is what splits mine from everyone else's --
+  // deriving the shared tree from cached rows instead would miss every
+  // foldered row, since the root page only loads unfiled ones.
+  const project = getSQLEditorEditorState().project;
+  const paths = await useAppStore
+    .getState()
+    .searchSavedQueryFolders(project, sheetFilterForView(view, [], false));
+  for (const path of paths) {
+    folderPaths.add(getFolderContext(view).rootPath + "/" + path);
   }
   for (const path of readPersistedFolders(view)) {
     folderPaths.add(path);
