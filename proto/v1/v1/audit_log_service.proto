@@ -45,6 +45,7 @@ service AuditLogService {
     };
     option (bytebase.v1.permission) = "bb.auditLogs.export";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 }
 

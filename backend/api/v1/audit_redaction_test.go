@@ -79,6 +79,13 @@ func TestAuditResponseRedactsCredentials(t *testing.T) {
 				Content: []byte(secretSentinel),
 			},
 		},
+		{
+			name: "exported audit log content",
+			response: &v1pb.ExportAuditLogsResponse{
+				Content:       []byte(secretSentinel),
+				NextPageToken: "next-page-token",
+			},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getResponseString(tt.response)
@@ -154,6 +161,16 @@ func TestAuditRequestRedactsCredentials(t *testing.T) {
 			NewPassword: secretSentinel,
 		}},
 		{"enterprise license", &v1pb.UploadLicenseRequest{License: secretSentinel}},
+		{"add webhook URL", &v1pb.AddWebhookRequest{
+			Project: "projects/project-a",
+			Webhook: &v1pb.Webhook{Name: "projects/project-a/webhooks/webhook-a", Title: "Webhook A", Url: secretSentinel},
+		}},
+		{"update webhook URL", &v1pb.UpdateWebhookRequest{
+			Webhook: &v1pb.Webhook{Name: "projects/project-a/webhooks/webhook-a", Title: "Webhook A", Url: secretSentinel},
+		}},
+		{"remove webhook URL", &v1pb.RemoveWebhookRequest{
+			Webhook: &v1pb.Webhook{Name: "projects/project-a/webhooks/webhook-a", Title: "Webhook A", Url: secretSentinel},
+		}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getRequestString(tt.request)
@@ -162,6 +179,43 @@ func TestAuditRequestRedactsCredentials(t *testing.T) {
 			require.NotContains(t, got, encodedSecretSentinel, "encoded content written to the audit log")
 			if _, ok := tt.request.(*v1pb.ResetPasswordRequest); ok {
 				require.Contains(t, got, "user@example.com", "email is required for audit attribution")
+			}
+		})
+	}
+}
+
+func TestSensitiveOutboundAuditMetadata(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		value    any
+		response bool
+		want     []string
+	}{
+		{
+			name:  "webhook request retains identifiers",
+			value: &v1pb.AddWebhookRequest{Project: "projects/project-a", Webhook: &v1pb.Webhook{Name: "projects/project-a/webhooks/webhook-a", Title: "Webhook A", Url: secretSentinel}},
+			want:  []string{"projects/project-a", "projects/project-a/webhooks/webhook-a", "Webhook A"},
+		},
+		{
+			name:     "audit export retains page token",
+			value:    &v1pb.ExportAuditLogsResponse{Content: []byte(secretSentinel), NextPageToken: "next-page-token"},
+			response: true,
+			want:     []string{"next-page-token"},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var (
+				got string
+				err error
+			)
+			if tt.response {
+				got, err = getResponseString(tt.value)
+			} else {
+				got, err = getRequestString(tt.value)
+			}
+			require.NoError(t, err)
+			for _, want := range tt.want {
+				require.Contains(t, got, want)
 			}
 		})
 	}
@@ -198,6 +252,11 @@ func TestAuditRedactionDoesNotMutateInput(t *testing.T) {
 	_, err = getResponseString(savedQuery)
 	require.NoError(t, err)
 	require.Equal(t, secretSentinel, string(savedQuery.GetContent()), "redaction mutated the saved query response")
+
+	auditExport := &v1pb.ExportAuditLogsResponse{Content: []byte(secretSentinel), NextPageToken: "next-page-token"}
+	_, err = getResponseString(auditExport)
+	require.NoError(t, err)
+	require.Equal(t, secretSentinel, string(auditExport.GetContent()), "redaction mutated the audit export response")
 
 	for _, tt := range []struct {
 		name    string

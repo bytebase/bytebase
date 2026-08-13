@@ -540,6 +540,18 @@ func getRequestString(request any) (string, error) {
 			r = proto.CloneOf(r)
 			r.Project = redactProject(r.Project)
 			return r
+		case *v1pb.AddWebhookRequest:
+			r = proto.CloneOf(r)
+			r.Webhook = redactWebhook(r.Webhook)
+			return r
+		case *v1pb.UpdateWebhookRequest:
+			r = proto.CloneOf(r)
+			r.Webhook = redactWebhook(r.Webhook)
+			return r
+		case *v1pb.RemoveWebhookRequest:
+			r = proto.CloneOf(r)
+			r.Webhook = redactWebhook(r.Webhook)
+			return r
 		case *v1pb.CreateReleaseRequest:
 			r = proto.CloneOf(r)
 			r.Release = redactRelease(r.Release)
@@ -656,6 +668,8 @@ func getResponseString(response any) (string, error) {
 			return redactPurchaseResponse(r)
 		case *v1pb.ExportVCSProviderUsersResponse:
 			return redactExportVCSProviderUsersResponse(r)
+		case *v1pb.ExportAuditLogsResponse:
+			return redactExportAuditLogsResponse(r)
 		case *v1pb.Sheet:
 			return redactSheet(r)
 		case *v1pb.BatchCreateSheetsResponse:
@@ -710,6 +724,13 @@ func redactExportVCSProviderUsersResponse(r *v1pb.ExportVCSProviderUsersResponse
 		return nil
 	}
 	return &v1pb.ExportVCSProviderUsersResponse{}
+}
+
+func redactExportAuditLogsResponse(r *v1pb.ExportAuditLogsResponse) *v1pb.ExportAuditLogsResponse {
+	if r == nil {
+		return nil
+	}
+	return &v1pb.ExportAuditLogsResponse{NextPageToken: r.NextPageToken}
 }
 
 func redactExportRequest(r *v1pb.ExportRequest) *v1pb.ExportRequest {

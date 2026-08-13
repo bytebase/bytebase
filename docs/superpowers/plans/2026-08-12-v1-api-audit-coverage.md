@@ -15,7 +15,7 @@
 - Audit parents must be canonical `workspaces/{workspace}` or `projects/{project}` names; project-scoped actions must not leak into the workspace-scoped audit stream.
 - Keep `Refresh`, `SyncDatabase`, `BatchSyncDatabases`, `SyncInstance`, `BatchSyncInstances`, `UpdateSavedQuery`, `UpdateSavedQueryOrganizer`, and `BatchUpdateSavedQueryOrganizer` unaudited in this change.
 - Keep `SwitchWorkspace` unaudited because it changes session/token context rather than workspace resources or authorization grants.
-- Keep `TestWebhook` unaudited because it sends a synthetic outbound probe without changing persisted project configuration.
+- Keep `TestWebhook`, `TestIdentityProvider`, `TestEmailSetting`, and `AIService.Chat` unaudited because they are non-mutating operations.
 - Keep POST-based searches, CEL parse/deparse, schema diffs, release checks, instance database discovery, and rollback previews unaudited.
 - Do not add blanket auditing to saved query reads. The saved-query privacy model owns metadata-only search and conditional auditing for another user's private content.
 - Run the repository's proto workflow after every proto batch: `buf format -w proto`, `buf lint proto`, then `(cd proto && buf generate)` so later commands remain at the repository root.
@@ -25,7 +25,7 @@
 
 ## Coverage Decision
 
-Audit these 27 RPCs in this plan:
+Audit these 24 RPCs in this plan:
 
 | Family | RPCs |
 | --- | --- |
@@ -34,7 +34,7 @@ Audit these 27 RPCs in this plan:
 | Authentication | `RequestPasswordReset`, `ResetPassword` |
 | Project webhooks | `AddWebhook`, `UpdateWebhook`, `RemoveWebhook` |
 | Subscription | `UploadLicense`, `CreatePurchase`, `UpdatePurchase`, `CancelPurchase`, `ExportVCSProviderUsers` |
-| Sensitive external actions | `AIService.Chat`, `AuditLogService.ExportAuditLogs`, `IdentityProviderService.TestIdentityProvider`, `SettingService.TestEmailSetting` |
+| Sensitive external actions | `AuditLogService.ExportAuditLogs` |
 
 The password-reset RPCs have one deliberate limitation: when the unauthenticated flow has no validated workspace, there is nowhere to persist a workspace-owned audit row. Both `RequestPasswordReset` and the corresponding successful `ResetPassword` therefore remain unaudited for codes issued without workspace context. Workspace-bound flows must be recorded.
 
@@ -539,13 +539,10 @@ git commit -m "feat: audit subscription management actions"
 
 ---
 
-### Task 5: Webhook, Configuration Test, AI, and Audit Export Actions
+### Task 5: Webhook and Audit Export Actions
 
 **Files:**
 - Modify: `proto/v1/v1/project_service.proto`
-- Modify: `proto/v1/v1/idp_service.proto`
-- Modify: `proto/v1/v1/setting_service.proto`
-- Modify: `proto/v1/v1/ai_service.proto`
 - Modify: `proto/v1/v1/audit_log_service.proto`
 - Modify: `backend/api/v1/audit.go`
 - Modify: `backend/api/v1/audit_redaction_test.go`
@@ -553,62 +550,37 @@ git commit -m "feat: audit subscription management actions"
 - Generated: `backend/generated-go/v1/`, `frontend/src/types/proto-es/v1/`, `proto/gen/grpc-doc/`, `backend/api/mcp/gen/`
 
 **Interfaces:**
-- Consumes: existing `redactIdentityProvider`, `redactSetting`, and `maskedString`.
-- Produces: metadata-only audit payloads for outbound tests, AI calls, and audit-log exports.
+- Consumes: existing `redactWebhook` and `maskedString`.
+- Produces: metadata-only audit payloads for webhook mutations and audit-log exports.
 
-- [ ] **Step 1: Add failing secret/content tests**
+- [x] **Step 1: Add failing secret/content tests**
 
-Add cases for OAuth/OIDC authorization code, LDAP password, SMTP password, AI message content/tool arguments/provider metadata, exported audit-log bytes, and identity-provider response claims/user info. The shared project redactor from Task 1 already covers webhook URLs in webhook requests and returned `Project` responses. Keep safe identifiers such as project name, webhook name/title, recipient email, IdP name, AI token usage, and export page token.
+Add cases for exported audit-log bytes. The shared project redactor from Task 1 already covers webhook URLs in webhook requests and returned `Project` responses. Keep safe identifiers such as project name, webhook name/title, and export page token.
 
-- [ ] **Step 2: Extract a reusable email-setting redactor**
+- [x] **Step 2: Confirm configuration probes remain excluded**
 
-Create `redactEmailSetting(*v1pb.EmailSetting) *v1pb.EmailSetting` by moving the existing SMTP-password masking logic out of `redactSetting`; make `redactSetting` call it. Use the same helper for `TestEmailSettingRequest` so the two paths cannot drift.
+Keep `TestIdentityProvider`, `TestEmailSetting`, and `AIService.Chat` unaudited alongside `TestWebhook`; none of these methods mutates a Bytebase resource.
 
-- [ ] **Step 3: Implement request/response redactors**
+- [x] **Step 3: Implement request/response redactors**
 
 Implement these exact contracts:
 
 ```go
-func redactTestIdentityProviderRequest(r *v1pb.TestIdentityProviderRequest) *v1pb.TestIdentityProviderRequest
-// Clone; call redactIdentityProvider; mask OAuth/OIDC code and LDAP password.
-
-func redactTestIdentityProviderResponse(r *v1pb.TestIdentityProviderResponse) *v1pb.TestIdentityProviderResponse
-// Return an empty response; provider claims and mapped email, title, and phone are identity data, not audit metadata.
-
-func redactAIChatRequest(r *v1pb.AIChatRequest) *v1pb.AIChatRequest
-// Return an empty AIChatRequest so prompts, tool schemas, tool arguments, and provider metadata are never logged.
-
-func redactAIChatResponse(r *v1pb.AIChatResponse) *v1pb.AIChatResponse
-// Return a response containing only a cloned Usage message.
-
 func redactExportAuditLogsResponse(r *v1pb.ExportAuditLogsResponse) *v1pb.ExportAuditLogsResponse
 // Return only NextPageToken; drop Content.
 ```
 
-Register Add/Update/Remove webhook requests using Task 1's `redactWebhook`, and register `TestIdentityProviderRequest`, `TestIdentityProviderResponse`, `TestEmailSettingRequest`, `AIChatRequest`, `AIChatResponse`, and `ExportAuditLogsResponse` in the serializer switches. Add response-side sentinel cases for both `TestIdentityProviderResponse.Claims` and `TestIdentityProviderResponse.UserInfo`, and assert the serialized response is empty.
+Register Add/Update/Remove webhook requests using Task 1's `redactWebhook`, and register `ExportAuditLogsResponse` in the response serializer switch.
 
-- [ ] **Step 4: Add canonical resource extraction and regression tests**
+- [x] **Step 4: Add canonical resource extraction and regression tests**
 
-Extend `TestLifecycleAuditResource` with both IdP test modes before enabling the annotation:
+Add method-aware cases for webhook and export-audit-log requests so their annotated fields are covered by the shared resource path.
 
-```go
-{name: "test existing identity provider", method: v1connect.IdentityProviderServiceTestIdentityProviderProcedure, request: &v1pb.TestIdentityProviderRequest{
-	IdentityProvider: &v1pb.IdentityProvider{Name: "idps/idp-a"},
-}, want: "idps/idp-a"},
-{name: "test uncreated identity provider", method: v1connect.IdentityProviderServiceTestIdentityProviderProcedure, request: &v1pb.TestIdentityProviderRequest{
-	IdentityProvider: &v1pb.IdentityProvider{},
-}, want: ""},
-```
+- [x] **Step 5: Add annotations**
 
-The existing-provider case is resolved from the nested `IdentityProvider` message's `google.api.resource` annotation through `getResourceFromSingleRequest`; no IdP-specific audit branch is needed. The uncreated-provider case pins the empty-name behavior and must remain empty. Add method-aware cases for webhook, export-audit-log, and email-setting requests so their annotated fields are covered by the same shared path.
+Add `audit = true` to `AddWebhook`, `UpdateWebhook`, `RemoveWebhook`, and `ExportAuditLogs`.
 
-The IdP test remains workspace-parented through the existing ACL resource-resolution fallback, but an existing provider retains its canonical `idps/{idp}` resource name in the audit row's `Resource` field. Testing an uncreated provider leaves `Resource` empty. AI chat remains workspace-parented with an empty resource because its request names no canonical Bytebase resource.
-
-- [ ] **Step 5: Add annotations**
-
-Add `audit = true` to `AddWebhook`, `UpdateWebhook`, `RemoveWebhook`, `TestIdentityProvider`, `TestEmailSetting`, `AIService.Chat`, and `ExportAuditLogs`.
-
-- [ ] **Step 6: Generate and test**
+- [x] **Step 6: Generate and test**
 
 ```bash
 buf format -w proto
@@ -618,12 +590,14 @@ gofmt -w backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/
 go test ./backend/api/v1 -run '^(TestAudit(Request|Response)RedactsCredentials|TestAuditRedactionDoesNotMutateInput|TestLifecycleAuditResource)$' -count=1
 ```
 
-Expected: PASS; existing-provider IdP tests retain `idps/{idp}`, uncreated-provider tests retain an empty resource, and audit rows contain no outbound payloads or credentials.
+Expected: PASS; webhook resources remain canonical and audit rows contain no exported audit-log content.
 
 - [ ] **Step 7: Commit the sensitive-action batch**
 
+Left uncommitted for the author to review and commit explicitly.
+
 ```bash
-git add proto/v1/v1/project_service.proto proto/v1/v1/idp_service.proto proto/v1/v1/setting_service.proto proto/v1/v1/ai_service.proto proto/v1/v1/audit_log_service.proto backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/api/v1/audit_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen
+git add proto/v1/v1/project_service.proto proto/v1/v1/audit_log_service.proto backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/api/v1/audit_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen
 git commit -m "feat: audit sensitive outbound actions"
 ```
 
@@ -664,11 +638,9 @@ func requireAuditedMethod(t *testing.T, fullName string) {
 func TestRequiredAPIAuditCoverage(t *testing.T) {
 	for _, method := range []string{
 		"bytebase.v1.ActuatorService.SetupSample",
-		"bytebase.v1.AIService.Chat",
 		"bytebase.v1.AuditLogService.ExportAuditLogs",
 		"bytebase.v1.AuthService.RequestPasswordReset",
 		"bytebase.v1.AuthService.ResetPassword",
-		"bytebase.v1.IdentityProviderService.TestIdentityProvider",
 		"bytebase.v1.PlanService.CancelPlanCheckRun",
 		"bytebase.v1.PlanService.RunPlanChecks",
 		"bytebase.v1.ProjectService.AddWebhook",
@@ -682,7 +654,6 @@ func TestRequiredAPIAuditCoverage(t *testing.T) {
 		"bytebase.v1.ReleaseService.UpdateRelease",
 		"bytebase.v1.RevisionService.BatchCreateRevisions",
 		"bytebase.v1.RevisionService.DeleteRevision",
-		"bytebase.v1.SettingService.TestEmailSetting",
 		"bytebase.v1.SubscriptionService.CancelPurchase",
 		"bytebase.v1.SubscriptionService.CreatePurchase",
 		"bytebase.v1.SubscriptionService.ExportVCSProviderUsers",
@@ -700,7 +671,7 @@ func TestRequiredAPIAuditCoverage(t *testing.T) {
 
 - [ ] **Step 2: Add the intentional-exclusion test**
 
-Add `requireUnauditedMethod` and enumerate the ten deliberate exclusions from Global Constraints. This makes adding audit to sync, autosave, session mechanics, or non-mutating probe paths a conscious policy change instead of accidental drift:
+Add `requireUnauditedMethod` and enumerate the thirteen deliberate exclusions from Global Constraints. This makes adding audit to sync, autosave, session mechanics, or non-mutating operations a conscious policy change instead of accidental drift:
 
 ```go
 func requireUnauditedMethod(t *testing.T, fullName string) {
@@ -720,16 +691,19 @@ func requireUnauditedMethod(t *testing.T, fullName string) {
 
 func TestIntentionalAPIAuditExclusions(t *testing.T) {
 	for _, method := range []string{
+		"bytebase.v1.AIService.Chat",
 		"bytebase.v1.AuthService.Refresh",
 		"bytebase.v1.AuthService.SwitchWorkspace",
 		"bytebase.v1.DatabaseService.BatchSyncDatabases",
 		"bytebase.v1.DatabaseService.SyncDatabase",
 		"bytebase.v1.InstanceService.BatchSyncInstances",
 		"bytebase.v1.InstanceService.SyncInstance",
+		"bytebase.v1.IdentityProviderService.TestIdentityProvider",
 		"bytebase.v1.ProjectService.TestWebhook",
 		"bytebase.v1.SavedQueryService.BatchUpdateSavedQueryOrganizer",
 		"bytebase.v1.SavedQueryService.UpdateSavedQuery",
 		"bytebase.v1.SavedQueryService.UpdateSavedQueryOrganizer",
+		"bytebase.v1.SettingService.TestEmailSetting",
 	} {
 		t.Run(method, func(t *testing.T) {
 			requireUnauditedMethod(t, method)
@@ -752,7 +726,7 @@ Expected: PASS with all required descriptors audited and all deliberate exclusio
 Add an “Audit annotation coverage” section to `docs/design/v1-api-audit-2026-08.md` containing:
 
 - the audited RPC families from the Coverage Decision table;
-- the deliberate exclusions and their reasons, including session-only workspace switching and non-mutating webhook tests;
+- the deliberate exclusions and their reasons, including session-only workspace switching and non-mutating configuration probes;
 - the rule that serializers must redact credentials/content before annotations are enabled;
 - the workspace-resolution limitation for both unauthenticated password-reset RPCs;
 - the saved-query read deferral to the saved-query privacy model.

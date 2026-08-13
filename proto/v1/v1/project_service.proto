@@ -146,6 +146,7 @@ service ProjectService {
     };
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Updates an existing webhook configuration.
@@ -158,6 +159,7 @@ service ProjectService {
     option (google.api.method_signature) = "webhook,update_mask";
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Removes a webhook from a project.
@@ -169,6 +171,7 @@ service ProjectService {
     };
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Tests a webhook by sending a test notification.
