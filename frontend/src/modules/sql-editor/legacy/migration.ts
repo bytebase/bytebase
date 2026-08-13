@@ -158,9 +158,11 @@ export const migrateDraftsFromCache = async (project: string) => {
   const draftTabListKey = `${keyNamespace}.draft-tab-list`;
   const draftTabList = readLegacyStorage<SQLEditorTab[]>(draftTabListKey, []);
 
-  // Migrating a draft creates a saved query. Without that permission every
-  // create would fail while the draft was dropped from legacy storage anyway,
-  // so leave the drafts where they are -- they migrate if the grant arrives.
+  // Migrating a draft creates a saved query. This check is the cheap half of
+  // the answer -- false means the server will refuse too, so skip the doomed
+  // requests entirely. True is not a promise: it does not evaluate binding
+  // conditions, and the server rejects a resource-scoped grant for this
+  // permission. The loop below has to survive a refusal either way.
   if (!canCreateSavedQueryInProject(project)) {
     return;
   }
@@ -186,7 +188,12 @@ export const migrateDraftsFromCache = async (project: string) => {
             project,
           })
         );
-      } catch {}
+      } catch {
+        // The draft in legacy storage is the only copy, so it survives a
+        // failed migration: a denied create, a network blip, a server error.
+        // It is retried the next time this runs.
+        continue;
+      }
     }
     const index = draftTabList.findIndex((d) => d.id === draft.id);
     if (index >= 0) {

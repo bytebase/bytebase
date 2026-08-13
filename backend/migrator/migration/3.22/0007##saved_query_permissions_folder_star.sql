@@ -47,6 +47,14 @@ FROM saved_query_organizer o
 WHERE o.saved_query = saved_query.resource_id
     AND o.principal = saved_query.creator;
 
+-- Folder reads scan a project, so index them: DISTINCT folder for a project
+-- (admin) or a project + creator (the caller's own tree) become index-only
+-- scans instead of reading every row in the project. The project prefix still
+-- answers a plain project lookup, so the old single-column index is redundant.
+DROP INDEX IF EXISTS idx_saved_query_project;
+
+CREATE INDEX idx_saved_query_project_creator_folder ON saved_query(project, creator, folder);
+
 -- A star is a per-user marker on a readable saved query: row existence is the
 -- star. The FK cascade is a race backstop only — code paths delete star rows
 -- explicitly before their parent.
