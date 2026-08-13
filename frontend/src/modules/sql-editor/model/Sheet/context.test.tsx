@@ -937,6 +937,68 @@ describe("sheet context", () => {
     );
   });
 
+  test("moves cached rows that the starred filter hides", async () => {
+    // Regression: the server moves every row in the folder (the batch filter
+    // drops display filters), so patching only the visible rows left the
+    // hidden ones under their old folder once the starred filter cleared.
+    const starred = create(SavedQuerySchema, {
+      name: "projects/proj1/savedQueries/starred",
+      project: "projects/proj1",
+      creator: "users/creator@example.com",
+      title: "Starred",
+      folder: "old",
+      starred: true,
+    });
+    const unstarred = create(SavedQuerySchema, {
+      name: "projects/proj1/savedQueries/unstarred",
+      project: "projects/proj1",
+      creator: "users/creator@example.com",
+      title: "Unstarred",
+      folder: "old",
+      starred: false,
+    });
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => {
+      mocks.addSavedQueries([starred, unstarred]);
+      return { savedQueries: [starred, unstarred], nextPageToken: "" };
+    });
+
+    const { provideSheetContext, useSheetContext, useSheetContextByView } =
+      await import("./context");
+    let sheetContext: ReturnType<typeof useSheetContext> | undefined;
+    let viewContext: ReturnType<typeof useSheetContextByView> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      sheetContext = useSheetContext();
+      viewContext = useSheetContextByView("my");
+      return null;
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+    await act(async () => {
+      await viewContext!.fetchSheetList();
+    });
+    act(() => {
+      sheetContext!.setFilter({
+        ...sheetContext!.filter,
+        onlyShowStarred: true,
+      });
+    });
+
+    await act(async () => {
+      await sheetContext!.batchUpdateSavedQueryFolderPaths("my", [
+        { sourceFolder: ["old"], targetFolder: ["new"] },
+      ]);
+    });
+
+    expect(
+      mocks.getAppState().patchSavedQueryFolderInCache
+    ).toHaveBeenCalledWith([starred.name, unstarred.name], "new");
+  });
+
   test("batch updates saved query folder paths without display filters", async () => {
     const { provideSheetContext, useSheetContext } = await import("./context");
     let sheetContext: ReturnType<typeof useSheetContext> | undefined;

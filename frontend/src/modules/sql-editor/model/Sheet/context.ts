@@ -837,9 +837,12 @@ const buildTree = (
   return parent;
 };
 
-const savedQueriesForView = (view: SheetViewMode): SavedQuery[] => {
+// Every cached row for the view, before display filters. The tree renders
+// `savedQueriesForView`, but cache maintenance has to see the rows a display
+// filter hides: the server moves those too, so leaving them out strands them
+// under their old folder until a refetch.
+const cachedSavedQueriesForView = (view: SheetViewMode): SavedQuery[] => {
   if (view !== "my" && view !== "shared") return [];
-  const filter = useSheetContextStore.getState().filter;
   const project = getSQLEditorEditorState().project;
   // SQLEditorLayout awaits `loadCurrentUser()` in its bootstrap, so by the
   // time saved queries land here the app-store `currentUser` is populated.
@@ -849,7 +852,7 @@ const savedQueriesForView = (view: SheetViewMode): SavedQuery[] => {
   const email = useAppStore.getState().currentUser?.email ?? "";
   const creator = `users/${email}`;
   const appState = useAppStore.getState();
-  let list = useSheetContextStore
+  const list = useSheetContextStore
     .getState()
     .viewStates[view].savedQueryNames.map((name) =>
       appState.getSavedQueryByName(name)
@@ -860,10 +863,14 @@ const savedQueriesForView = (view: SheetViewMode): SavedQuery[] => {
       const mine = sheet.creator === creator;
       return view === "my" ? mine : !mine;
     });
-  if (filter.onlyShowStarred) {
-    list = list.filter((sheet) => sheet.starred);
-  }
   return list;
+};
+
+const savedQueriesForView = (view: SheetViewMode): SavedQuery[] => {
+  const list = cachedSavedQueriesForView(view);
+  return useSheetContextStore.getState().filter.onlyShowStarred
+    ? list.filter((sheet) => sheet.starred)
+    : list;
 };
 
 const sheetLikeItemsForView = (view: SheetViewMode): SavedQueryLikeItem[] => {
@@ -1313,7 +1320,7 @@ const batchUpdateSavedQueryFolderPaths = async (
     // Cached rows are named before the move so the tree can be rebuilt
     // without waiting for a refetch; rows outside the cache move server-side
     // and arrive with the new folder on their next page.
-    const movedNames = savedQueriesForView(view)
+    const movedNames = cachedSavedQueriesForView(view)
       .filter((savedQuery) => savedQuery.folder === source)
       .map((savedQuery) => savedQuery.name);
     await useAppStore
