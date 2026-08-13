@@ -1016,9 +1016,10 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\rupdated_count\x18\x01 \x01(\x05R\fupdatedCount\"N\n" +
 	"\x17DeleteSavedQueryRequest\x123\n" +
 	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
-	"\x17bytebase.com/SavedQueryR\x04name\"\x8c\x01\n" +
-	"\x19SearchSavedQueriesRequest\x12\x1b\n" +
-	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x16\n" +
+	"\x17bytebase.com/SavedQueryR\x04name\"\xa5\x01\n" +
+	"\x19SearchSavedQueriesRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12\x16\n" +
 	"\x06filter\x18\x02 \x01(\tR\x06filter\x12\x1b\n" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +

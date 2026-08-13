@@ -293,7 +293,10 @@ message DeleteSavedQueryRequest {
 message SearchSavedQueriesRequest {
   // The parent resource of the saved queries.
   // Format: projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 
   // To filter the search result.
   // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec

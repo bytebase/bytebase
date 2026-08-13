@@ -608,6 +608,8 @@ func TestListSavedQueriesReturnsWholeStatement(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
+	const ownerEmail = "demo@example.com"
+
 	// Longer than the display cap Search truncates at, which the governance
 	// surface must not apply -- a lister cannot Get another creator's row to
 	// fetch the remainder.
@@ -621,13 +623,16 @@ func TestListSavedQueriesReturnsWholeStatement(t *testing.T) {
 	}))
 	a.NoError(err)
 
+	// The governance list filters on metadata -- creator is the enumeration
+	// the offboarding review is built around, and the only variable this
+	// filter accepts.
 	listResp, err := ctl.savedQueryServiceClient.ListSavedQueries(ctx, connect.NewRequest(&v1pb.ListSavedQueriesRequest{
 		Parent: ctl.project.Name,
-		Filter: fmt.Sprintf(`name == %q`, created.Msg.Name),
+		Filter: fmt.Sprintf(`creator == "users/%s"`, ownerEmail),
 	}))
 	a.NoError(err)
-	a.Len(listResp.Msg.SavedQueries, 1)
-	listed := listResp.Msg.SavedQueries[0]
+	listed := findSavedQueryByName(listResp.Msg.SavedQueries, created.Msg.Name)
+	a.NotNil(listed)
 	a.Equal(int64(len(statement)), listed.ContentSize)
 	a.Equal(len(statement), len(listed.Content))
 
@@ -699,4 +704,13 @@ func savedQueryNames(savedQueries []*v1pb.SavedQuery) []string {
 		names = append(names, savedQuery.Name)
 	}
 	return names
+}
+
+func findSavedQueryByName(savedQueries []*v1pb.SavedQuery, name string) *v1pb.SavedQuery {
+	for _, savedQuery := range savedQueries {
+		if savedQuery.Name == name {
+			return savedQuery
+		}
+	}
+	return nil
 }
