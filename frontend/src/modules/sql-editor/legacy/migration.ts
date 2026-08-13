@@ -7,7 +7,11 @@ import { extractUserEmail } from "@/stores/modules/v1";
 import type { EditorPanelViewState, SQLEditorTab } from "@/types";
 import { DEFAULT_SQL_EDITOR_TAB_MODE } from "@/types";
 import { SavedQuerySchema } from "@/types/proto-es/v1/saved_query_service_pb";
-import { defaultSQLEditorTab, WebStorageHelper } from "@/utils";
+import {
+  canCreateSavedQueryInProject,
+  defaultSQLEditorTab,
+  WebStorageHelper,
+} from "@/utils";
 import {
   deleteExtendedTab,
   EXTENDED_TAB_FIELDS,
@@ -153,6 +157,13 @@ export const migrateDraftsFromCache = async (project: string) => {
 
   const draftTabListKey = `${keyNamespace}.draft-tab-list`;
   const draftTabList = readLegacyStorage<SQLEditorTab[]>(draftTabListKey, []);
+
+  // Migrating a draft creates a saved query. Without that permission every
+  // create would fail while the draft was dropped from legacy storage anyway,
+  // so leave the drafts where they are -- they migrate if the grant arrives.
+  if (!canCreateSavedQueryInProject(project)) {
+    return;
+  }
 
   const drafts = [...draftTabList];
   for (const draft of drafts) {
