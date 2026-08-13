@@ -89,12 +89,21 @@ var mcpForbiddenReasons = map[v1pb.MCPForbiddenReason]string{
 	// Its siblings are NOT here and the line is severity, not tidiness:
 	// UpdateInstance and BatchUpdateInstances rebuild the data-source list
 	// wholesale, so every secret is wiped unless resent — except the Kerberos
-	// keytab, which retainStoredKeytabs inherits by data-source ID. That is a
-	// narrower, persist-only version of the same vector, and it is filed
-	// rather than swept in with instance management, which no one has yet
-	// decided an agent should lose. AddDataSource and CreateInstance also dial
-	// on validate_only but build the data source entirely from the request, so
-	// they carry no stored secret and are not this class. BOT-57.
+	// keytab, which retainStoredKeytabs used to inherit by data-source ID.
+	// That narrower, persist-only version of the vector is now closed at the
+	// retention rule instead of at reachability: a keytab is not inherited to
+	// a destination the caller moved (instance_service_converter.go). It costs
+	// an agent no instance management, something no one has yet decided it
+	// should lose, and it binds human callers too — a Kerberos host edit now
+	// asks for the keytab again, on the console as much as on the API.
+	// The keytab is the ONLY secret that rule reaches, because it is the only
+	// one those two methods inherit. On UpdateDataSource above, every other
+	// stored secret still rides an update_mask that names only a destination,
+	// which is why that method is refused here rather than fixed there:
+	// requiring a password re-supplied on every host edit is a product call.
+	// AddDataSource and CreateInstance also dial on validate_only but build
+	// the data source entirely from the request, so they carry no stored
+	// secret and are not this class. BOT-57.
 	//
 	// The Undelete* family (user, service account, workload identity) is
 	// deliberately NOT in this group, and it is the nearest thing left out, so
@@ -142,7 +151,7 @@ const reasonForbiddenClass = "it is not reachable by an AI agent session"
 //
 // Sitting inside audit gets the denial a row for most of the annotated
 // FORBIDDEN methods, but not all, and the exceptions are worth knowing because
-// none of them is visible from the annotations alone. Three mechanisms:
+// none of them is visible from the annotations alone. Two mechanisms remain:
 //
 //   - No audit annotation, so needAudit refuses the row outright:
 //     SwitchWorkspace, Refresh, TestIdentityProvider, TestEmailSetting.
@@ -157,29 +166,25 @@ const reasonForbiddenClass = "it is not reachable by an AI agent session"
 //     runs and no parent is ever set. #21162 gave the first two the audit
 //     annotation; it did not give them rows.
 //
-//   - Annotated, audited, and not carved out, but the CALLER opted out per
-//     request: createAuditLog returns on its first statement for anything whose
-//     validate_only field is set, before it considers the denial at all.
-//     Unlike the two above this is not a fixed set of methods — it is any
-//     FORBIDDEN method whose request carries the field, today
-//     CreateIdentityProvider, UpdateSetting and UpdateDataSource. The skip is
-//     right for a permitted call, which changed nothing worth recording, and
-//     backwards for a refused one; worse, validate_only is the variant that
-//     leaves no other trace, because it dials the caller's host and persists
-//     nothing.
+// A third way is CLOSED and kept here because it is the one a reader would
+// otherwise rediscover: createAuditLog used to return on its first statement
+// for anything whose validate_only field is set, before it considered the
+// denial at all. That silenced any FORBIDDEN method whose request carries the
+// field — CreateIdentityProvider, UpdateSetting and UpdateDataSource — and
+// validate_only is the variant that leaves no other trace, since it dials the
+// caller's host and persists nothing. The skip now applies only when the call
+// SUCCEEDED (audit.go), so a denial always records.
 //
 // The first group is 1b-2's typed policy-denial record. The second needs that
 // too, or the audit path to accept the delegated credential's workspace, which
-// the internal chain has already verified. The third needs policy denials
-// exempted from the validate-only skip (BOT-57).
-// TestMCPResetFlowDenialsAreSilent pins the second and
-// TestMCPCannotRetargetADataSource pins the third — as an A/B on one flag, two
-// identical denials of one method, only one of them auditable — so the next
-// person to add an annotation learns it is not enough from a red test rather
-// than from an operator asking where the row went. The ones that sting are
-// TestIdentityProvider and TestEmailSetting, and the validate-only retarget:
-// each would carry a stored secret to an address the agent chose, and their
-// denials are the rows an operator would most want.
+// the internal chain has already verified.
+// TestMCPResetFlowDenialsAreSilent pins the second, so the next person to add
+// an annotation learns it is not enough from a red test rather than from an
+// operator asking where the row went; TestMCPCannotRetargetADataSource now
+// asserts the closed third, as an A/B on one flag — two identical denials of
+// one method, both auditable. The ones that sting are TestIdentityProvider and
+// TestEmailSetting: each would carry a stored secret to an address the agent
+// chose, and their denials are the rows an operator would most want.
 func NewInternalMCPForbiddenInterceptor() connect.Interceptor {
 	return connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {

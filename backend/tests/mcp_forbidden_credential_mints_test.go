@@ -545,23 +545,24 @@ func TestMCPCannotRetargetADataSource(t *testing.T) {
 	rows := deniedMCPRows(ctx, t, ctl, workspace.Msg.Name, "/bytebase.v1.InstanceService/UpdateDataSource")
 	t.Logf("audit rows for the two denied retargets (one validate-only): %d", len(rows))
 
-	// A THIRD way a denial goes unrecorded, distinct from the two the
-	// interceptor's doc comment already names. UpdateDataSource carries
-	// audit = true and is not carved out of workspace-parent resolution, so
-	// the persisting attempt above is on the audit page. The validate-only one
-	// is not: createAuditLog's first statement returns nil for any request
-	// whose validate_only field is set (audit.go), before it does anything
-	// with the denial.
+	// Both denials are on the audit page. UpdateDataSource carries audit = true
+	// and is not carved out of workspace-parent resolution, and createAuditLog
+	// now skips a validate-only request only when the call SUCCEEDED — a dry
+	// run Bytebase accepted changed nothing worth recording, a refused one is
+	// worth exactly as much as any other refusal.
 	//
-	// That skip is right for a permitted call, which changed nothing worth
-	// recording, and backwards for a refused one — and validate_only is
-	// precisely the variant that leaves no other trace, since it dials the
-	// caller's host and persists nothing. Fixing it means exempting policy
-	// denials from the skip, which is interceptor work this PR does not do:
-	// BOT-57. This assertion is what tells whoever does that it landed.
-	a.Len(rows, 1,
-		"exactly one of the two denials is auditable: the validate-only retarget is skipped "+
-			"by createAuditLog before the denial is ever considered")
+	// This is the assertion that discriminates the two. Before, the
+	// validate-only denial returned from createAuditLog's first statement
+	// before the denial was ever considered, so this pair — same method, same
+	// session, same refusal, one flag apart — produced ONE row, and the
+	// validate-only variant is precisely the one that leaves no other trace:
+	// it dials the caller's host and persists nothing.
+	a.Len(rows, 2,
+		"both denials are auditable: setting validate_only must not turn off the record of being refused")
+	for _, row := range rows {
+		a.Equal(int32(connect.CodePermissionDenied), row.GetStatus().GetCode(),
+			"each row must carry the denial, not a blank status")
+	}
 
 	// The console keeps working — the gate is on the internal MCP chain only.
 	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, connect.NewRequest(&v1pb.UpdateDataSourceRequest{

@@ -6,6 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -451,32 +452,109 @@ func convertDataSourceSaslConfig(saslConfig *storepb.SASLConfig) *v1pb.SASLConfi
 	return storeSaslConfig
 }
 
+// dataSourceDestination projects the fields through which a caller supplies an
+// address that the data source's own connection, or the keytab itself,
+// is made to. Two data sources with equal projections reach the same
+// caller-named endpoints.
+//
+// Both halves of that rule carry weight. external_secret.url is a
+// caller-supplied address Bytebase does dial (component/secret/vault.go), and
+// it is still out, because what travels there is the fetch of a password — the
+// keytab never does. A guard for the password would have to include it; this
+// one does not.
+//
+// In. host and port, plus each additional_addresses entry, are the data
+// source's own endpoints. ssh_host and ssh_port are the tunnel every byte
+// transits when it is set (plugin/db/util/ssh.go dials that pair). The
+// krb_config kdc_host and kdc_port are where kinit presents the keytab itself
+// (plugin/db/util/sasl.go writes them into krb5.conf), and that is the only
+// peer the keytab material reaches — the database server gets a ticket derived
+// from it, not the keytab. extra_connection_parameters is spliced verbatim
+// into the connection string the driver then parses, and both parsers take the
+// last key they read, so a host entry there overrides the host field on
+// PostgreSQL (plugin/db/pg/pg.go) and the server on SQL Server
+// (plugin/db/mssql/mssql.go).
+//
+// Out, and the line is one rule rather than a list of exceptions: a field is
+// out when the new endpoint comes from somewhere other than the caller.
+// direct_connection, replica_set, master_name and redis_type follow peers the
+// operator's own server advertises. srv resolves the operator's own hostname
+// through the operator's DNS. cloud_sql_ip_type and authentication_type pick
+// among the addresses Google resolves for an instance the operator named.
+// Reaching a host of the caller's choosing through any of them means moving
+// host or additional_addresses first, and those are in. Out for a second
+// reason — no endpoint at all — are database, authentication_database, sid,
+// service_name and warehouse_id, which name a target inside a server already
+// reached; region and project_id/instance_id, which select which cloud API
+// serves while host/port stay the dialed endpoint; and krb_config's primary,
+// instance and realm, which choose the principal kinit claims rather than
+// where it sends the claim, with kdc_transport_protocol reaching the same
+// kdc_host:kdc_port either way.
+func dataSourceDestination(ds *storepb.DataSource) *storepb.DataSource {
+	krb := ds.GetSaslConfig().GetKrbConfig()
+	return &storepb.DataSource{
+		Host:                      ds.GetHost(),
+		Port:                      ds.GetPort(),
+		AdditionalAddresses:       ds.GetAdditionalAddresses(),
+		SshHost:                   ds.GetSshHost(),
+		SshPort:                   ds.GetSshPort(),
+		ExtraConnectionParameters: ds.GetExtraConnectionParameters(),
+		SaslConfig: &storepb.SASLConfig{
+			Mechanism: &storepb.SASLConfig_KrbConfig{
+				KrbConfig: &storepb.KerberosConfig{
+					KdcHost: krb.GetKdcHost(),
+					KdcPort: krb.GetKdcPort(),
+				},
+			},
+		},
+	}
+}
+
 // retainStoredKeytabOnEmptyUpdate keeps the stored keytab when an update
 // carries an empty one. The keytab is INPUT_ONLY — reads return it blank — so
 // a read-modify-write client would otherwise wipe it on every update.
-func retainStoredKeytabOnEmptyUpdate(updated, stored *storepb.SASLConfig) {
-	updatedKrb := updated.GetKrbConfig()
+//
+// It will not carry the keytab to a new destination. Retention exists to stop
+// a client from losing a credential it already holds, and an update that moves
+// where the data source connects is not that client: inheriting there would
+// hand the keytab to a host the caller picked, and among the data source's
+// secrets the keytab is the one that survives a wholesale replacement, so it
+// is the one worth moving. The caller has to supply it again, which is proof
+// they hold it.
+func retainStoredKeytabOnEmptyUpdate(updated, stored *storepb.DataSource) error {
+	updatedKrb := updated.GetSaslConfig().GetKrbConfig()
 	if updatedKrb == nil || len(updatedKrb.Keytab) > 0 {
-		return
+		return nil
 	}
-	if storedKrb := stored.GetKrbConfig(); storedKrb != nil {
-		updatedKrb.Keytab = storedKrb.Keytab
+	storedKrb := stored.GetSaslConfig().GetKrbConfig()
+	if len(storedKrb.GetKeytab()) == 0 {
+		return nil
 	}
+	if !proto.Equal(dataSourceDestination(updated), dataSourceDestination(stored)) {
+		return errors.Errorf("data source %q connects somewhere new, so its Kerberos keytab must be supplied again", updated.GetId())
+	}
+	updatedKrb.Keytab = storedKrb.Keytab
+	return nil
 }
 
 // retainStoredKeytabs applies retainStoredKeytabOnEmptyUpdate across a full
 // data source replacement (UpdateInstance with update_mask=data_sources),
 // matching stored data sources by ID.
-func retainStoredKeytabs(updated, stored []*storepb.DataSource) {
+func retainStoredKeytabs(updated, stored []*storepb.DataSource) error {
 	storedByID := make(map[string]*storepb.DataSource, len(stored))
 	for _, ds := range stored {
 		storedByID[ds.GetId()] = ds
 	}
 	for _, ds := range updated {
-		if existing, ok := storedByID[ds.GetId()]; ok {
-			retainStoredKeytabOnEmptyUpdate(ds.GetSaslConfig(), existing.GetSaslConfig())
+		existing, ok := storedByID[ds.GetId()]
+		if !ok {
+			continue
+		}
+		if err := retainStoredKeytabOnEmptyUpdate(ds, existing); err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
 func convertDataSourceAddresses(addresses []*storepb.DataSource_Address) []*v1pb.DataSource_Address {

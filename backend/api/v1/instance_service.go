@@ -850,7 +850,9 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
-			retainStoredKeytabs(dataSources, instance.Metadata.GetDataSources())
+			if err := retainStoredKeytabs(dataSources, instance.Metadata.GetDataSources()); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
 			normalizeGCPDataSources(instance.Metadata.GetEngine(), dataSources)
 			for _, ds := range dataSources {
 				if err := validateAndSanitizeDataSourceTLS(ds); err != nil {
@@ -1240,6 +1242,21 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		}
 	}
 
+	// dataSource points into the cloned metadata and is patched in place below,
+	// so keep the pre-image: keytab retention compares the whole merged result
+	// against it, which the mask loop cannot do while it is still running.
+	storedDataSource := proto.CloneOf(dataSource)
+
+	// Then drop the stored keytab off the value being patched. Only the
+	// sasl_config path writes one, so after the loop a keytab is present iff
+	// THIS request supplied it — which is what retention has to decide on.
+	// Left in place, a mask that never names sasl_config would carry the
+	// stored keytab through untouched and retention would read it as supplied,
+	// letting update_mask=["host"] alone move it to the caller's address.
+	if krb := dataSource.GetSaslConfig().GetKrbConfig(); krb != nil {
+		krb.Keytab = nil
+	}
+
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "username":
@@ -1293,9 +1310,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 			}
 			dataSource.ExternalSecret = externalSecret
 		case "sasl_config":
-			saslConfig := convertV1DataSourceSaslConfig(req.Msg.DataSource.SaslConfig)
-			retainStoredKeytabOnEmptyUpdate(saslConfig, dataSource.SaslConfig)
-			dataSource.SaslConfig = saslConfig
+			dataSource.SaslConfig = convertV1DataSourceSaslConfig(req.Msg.DataSource.SaslConfig)
 		case "authentication_type":
 			dataSource.AuthenticationType = convertV1AuthenticationType(req.Msg.DataSource.AuthenticationType)
 		case "additional_addresses":
@@ -1374,6 +1389,13 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupported update_mask "%s"`, path))
 		}
+	}
+
+	// Run on the merged result, not inside the mask loop: whether the keytab
+	// may be inherited depends on the destination the request ends at, and the
+	// paths that move it can be applied after sasl_config.
+	if err := retainStoredKeytabOnEmptyUpdate(dataSource, storedDataSource); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	clearDataSourceAuthentication(dataSource)

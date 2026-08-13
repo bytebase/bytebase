@@ -181,73 +181,265 @@ func TestConvertDataSourceSaslConfigNeverReturnsKeytab(t *testing.T) {
 	require.Equal(t, "tcp", krb.KdcTransportProtocol)
 }
 
-func TestRetainStoredKeytabOnEmptyUpdate(t *testing.T) {
-	stored := &storepb.SASLConfig{
-		Mechanism: &storepb.SASLConfig_KrbConfig{
-			KrbConfig: &storepb.KerberosConfig{Keytab: []byte("stored-keytab")},
+// krbDataSource builds a data source at the given destination, carrying a
+// Kerberos config with the given keytab.
+func krbDataSource(id, host, keytab string) *storepb.DataSource {
+	return &storepb.DataSource{
+		Id:   id,
+		Host: host,
+		Port: "10000",
+		SaslConfig: &storepb.SASLConfig{
+			Mechanism: &storepb.SASLConfig_KrbConfig{
+				KrbConfig: &storepb.KerberosConfig{
+					Primary: "hive",
+					Realm:   "EXAMPLE.COM",
+					Keytab:  []byte(keytab),
+					KdcHost: "kdc.example.com",
+					KdcPort: "88",
+				},
+			},
 		},
 	}
+}
+
+func TestRetainStoredKeytabOnEmptyUpdate(t *testing.T) {
+	const storedHost = "hive.internal.example.com"
+	stored := krbDataSource("admin", storedHost, "stored-keytab")
 
 	// An empty keytab on update keeps the stored one; other fields still apply.
-	updated := &storepb.SASLConfig{
-		Mechanism: &storepb.SASLConfig_KrbConfig{
-			KrbConfig: &storepb.KerberosConfig{Realm: "NEW.COM"},
-		},
-	}
-	retainStoredKeytabOnEmptyUpdate(updated, stored)
-	require.Equal(t, []byte("stored-keytab"), updated.GetKrbConfig().Keytab)
-	require.Equal(t, "NEW.COM", updated.GetKrbConfig().Realm)
+	updated := krbDataSource("admin", storedHost, "")
+	updated.GetSaslConfig().GetKrbConfig().Realm = "NEW.COM"
+	require.NoError(t, retainStoredKeytabOnEmptyUpdate(updated, stored))
+	require.Equal(t, []byte("stored-keytab"), updated.GetSaslConfig().GetKrbConfig().Keytab)
+	require.Equal(t, "NEW.COM", updated.GetSaslConfig().GetKrbConfig().Realm,
+		"the principal a keytab claims is not where it is sent — it must stay updatable")
 
 	// A newly uploaded keytab replaces the stored one.
-	updated = &storepb.SASLConfig{
-		Mechanism: &storepb.SASLConfig_KrbConfig{
-			KrbConfig: &storepb.KerberosConfig{Keytab: []byte("new-keytab")},
-		},
-	}
-	retainStoredKeytabOnEmptyUpdate(updated, stored)
-	require.Equal(t, []byte("new-keytab"), updated.GetKrbConfig().Keytab)
+	updated = krbDataSource("admin", storedHost, "new-keytab")
+	require.NoError(t, retainStoredKeytabOnEmptyUpdate(updated, stored))
+	require.Equal(t, []byte("new-keytab"), updated.GetSaslConfig().GetKrbConfig().Keytab)
 
 	// Nothing stored: the empty keytab stays empty.
-	updated = &storepb.SASLConfig{
-		Mechanism: &storepb.SASLConfig_KrbConfig{
-			KrbConfig: &storepb.KerberosConfig{},
-		},
-	}
-	retainStoredKeytabOnEmptyUpdate(updated, nil)
-	require.Empty(t, updated.GetKrbConfig().Keytab)
+	updated = krbDataSource("admin", storedHost, "")
+	require.NoError(t, retainStoredKeytabOnEmptyUpdate(updated, krbDataSource("admin", storedHost, "")))
+	require.Empty(t, updated.GetSaslConfig().GetKrbConfig().Keytab)
 
 	// Clearing the whole SASL config is a no-op for retention.
-	retainStoredKeytabOnEmptyUpdate(nil, stored)
+	require.NoError(t, retainStoredKeytabOnEmptyUpdate(&storepb.DataSource{Id: "admin"}, stored))
+}
+
+// TestRetainStoredKeytabRefusesANewDestination is the guard: a keytab is
+// inherited to keep a read-modify-write client from wiping it, never to carry
+// it somewhere the caller chose. Each case moves exactly one destination field
+// and leaves the keytab out.
+func TestRetainStoredKeytabRefusesANewDestination(t *testing.T) {
+	const storedHost = "hive.internal.example.com"
+
+	moved := map[string]func(ds *storepb.DataSource){
+		"host": func(ds *storepb.DataSource) { ds.Host = "attacker.example.com" },
+		"port": func(ds *storepb.DataSource) { ds.Port = "10001" },
+		"additional_addresses": func(ds *storepb.DataSource) {
+			ds.AdditionalAddresses = []*storepb.DataSource_Address{{Host: "attacker.example.com", Port: "10000"}}
+		},
+		"ssh_host": func(ds *storepb.DataSource) { ds.SshHost = "attacker.example.com" },
+		"ssh_port": func(ds *storepb.DataSource) { ds.SshPort = "2222" },
+		// Compared wholesale rather than by address-bearing key: the key
+		// names differ per driver, and a name this code does not know would
+		// be a hole. Over-refusing costs nothing — Hive, the only engine that
+		// reads a keytab, does not read this map at all.
+		"extra_connection_parameters": func(ds *storepb.DataSource) {
+			ds.ExtraConnectionParameters = map[string]string{"host": "attacker.example.com"}
+		},
+		"sasl_config.kdc_host": func(ds *storepb.DataSource) {
+			ds.GetSaslConfig().GetKrbConfig().KdcHost = "kdc.attacker.example.com"
+		},
+		"sasl_config.kdc_port": func(ds *storepb.DataSource) {
+			ds.GetSaslConfig().GetKrbConfig().KdcPort = "8888"
+		},
+	}
+
+	for field, move := range moved {
+		t.Run(field+" moved, keytab omitted", func(t *testing.T) {
+			stored := krbDataSource("admin", storedHost, "stored-keytab")
+			updated := krbDataSource("admin", storedHost, "")
+			move(updated)
+
+			err := retainStoredKeytabOnEmptyUpdate(updated, stored)
+			require.Error(t, err, "moving %s must not carry the stored keytab along", field)
+			require.Contains(t, err.Error(), "keytab")
+			require.Empty(t, updated.GetSaslConfig().GetKrbConfig().Keytab,
+				"the keytab must not reach the new destination")
+		})
+
+		t.Run(field+" moved, keytab re-supplied", func(t *testing.T) {
+			stored := krbDataSource("admin", storedHost, "stored-keytab")
+			updated := krbDataSource("admin", storedHost, "re-supplied-keytab")
+			move(updated)
+
+			require.NoError(t, retainStoredKeytabOnEmptyUpdate(updated, stored),
+				"re-supplying the keytab is what the guard asks for; %s may then move", field)
+			require.Equal(t, []byte("re-supplied-keytab"), updated.GetSaslConfig().GetKrbConfig().Keytab)
+		})
+	}
+
+	// Fields the caller cannot name an address through keep inheriting. Some
+	// of them do move the peer — a replica set follows what the operator's own
+	// server advertises, srv resolves the operator's own hostname through the
+	// operator's DNS, cloud_sql_ip_type picks among the addresses Google
+	// resolves for the instance already named — but none of them lets the
+	// caller choose where it lands, and treating them as a move would fire the
+	// guard on ordinary edits.
+	kept := map[string]func(ds *storepb.DataSource){
+		"username":                   func(ds *storepb.DataSource) { ds.Username = "someone-else" },
+		"database":                   func(ds *storepb.DataSource) { ds.Database = "other" },
+		"srv":                        func(ds *storepb.DataSource) { ds.Srv = true },
+		"replica_set":                func(ds *storepb.DataSource) { ds.ReplicaSet = "rs1" },
+		"direct_connection":          func(ds *storepb.DataSource) { ds.DirectConnection = true },
+		"region":                     func(ds *storepb.DataSource) { ds.Region = "us-east-1" },
+		"cloud_sql_ip_type":          func(ds *storepb.DataSource) { ds.CloudSqlIpType = storepb.DataSource_PRIVATE },
+		"authentication_type":        func(ds *storepb.DataSource) { ds.AuthenticationType = storepb.DataSource_AWS_RDS_IAM },
+		"sasl_config.realm":          func(ds *storepb.DataSource) { ds.GetSaslConfig().GetKrbConfig().Realm = "OTHER.COM" },
+		"sasl_config.kdc_transport":  func(ds *storepb.DataSource) { ds.GetSaslConfig().GetKrbConfig().KdcTransportProtocol = "tcp" },
+		"sasl_config.primary":        func(ds *storepb.DataSource) { ds.GetSaslConfig().GetKrbConfig().Primary = "impala" },
+		"verify_tls_certificate":     func(ds *storepb.DataSource) { ds.VerifyTlsCertificate = true },
+		"authentication_private_key": func(ds *storepb.DataSource) { ds.AuthenticationPrivateKey = "pem" },
+	}
+
+	for field, edit := range kept {
+		t.Run(field+" edited, keytab still inherited", func(t *testing.T) {
+			stored := krbDataSource("admin", storedHost, "stored-keytab")
+			updated := krbDataSource("admin", storedHost, "")
+			edit(updated)
+
+			require.NoError(t, retainStoredKeytabOnEmptyUpdate(updated, stored))
+			require.Equal(t, []byte("stored-keytab"), updated.GetSaslConfig().GetKrbConfig().Keytab,
+				"editing %s connects nowhere new, so a read-modify-write client must not be forced to re-upload", field)
+		})
+	}
+}
+
+// TestDataSourceDestinationClassifiesEveryField forces a decision on every
+// DataSource field. dataSourceDestination is a projection, so a field added
+// later is silently treated as "not a destination" — and if that field carries
+// an address, the keytab guard stops seeing the move. This fails until the new
+// field is named in one list or the other, which is the point: the choice gets
+// made by whoever adds it rather than defaulted.
+func TestDataSourceDestinationClassifiesEveryField(t *testing.T) {
+	// Fields the caller supplies an address through. Keep in step with
+	// dataSourceDestination.
+	inDestination := []string{
+		"host", "port", "additional_addresses",
+		"ssh_host", "ssh_port",
+		"extra_connection_parameters",
+		"sasl_config", // krb_config.kdc_host / kdc_port; see the projection
+	}
+	// Everything else, with the reason recorded beside it in
+	// dataSourceDestination's doc comment.
+	notDestination := []string{
+		"id", "type", "username", "password", "obfuscated_password",
+		"use_ssl", "verify_tls_certificate",
+		"ssl_ca", "obfuscated_ssl_ca", "ssl_cert", "obfuscated_ssl_cert",
+		"ssl_key", "obfuscated_ssl_key",
+		"ssl_ca_path", "obfuscated_ssl_ca_path",
+		"ssl_cert_path", "obfuscated_ssl_cert_path",
+		"ssl_key_path", "obfuscated_ssl_key_path",
+		"database", "srv", "authentication_database", "replica_set",
+		"sid", "service_name",
+		"ssh_user", "ssh_password", "obfuscated_ssh_password",
+		"ssh_private_key", "obfuscated_ssh_private_key",
+		"authentication_private_key", "obfuscated_authentication_private_key",
+		"authentication_private_key_passphrase", "obfuscated_authentication_private_key_passphrase",
+		"external_secret", "authentication_type", "cloud_sql_ip_type",
+		"azure_credential", "aws_credential", "gcp_credential",
+		"direct_connection", "region", "warehouse_id",
+		"master_name", "master_username", "master_password", "obfuscated_master_password",
+		"redis_type", "project_id", "instance_id",
+	}
+
+	classified := make(map[string]bool, len(inDestination)+len(notDestination))
+	for _, name := range append(append([]string{}, inDestination...), notDestination...) {
+		require.False(t, classified[name], "field %q listed twice", name)
+		classified[name] = true
+	}
+
+	fields := (&storepb.DataSource{}).ProtoReflect().Descriptor().Fields()
+	var unclassified []string
+	for i := 0; i < fields.Len(); i++ {
+		name := string(fields.Get(i).Name())
+		if !classified[name] {
+			unclassified = append(unclassified, name)
+		}
+		delete(classified, name)
+	}
+	require.Empty(t, unclassified,
+		"new DataSource field(s) %v: decide whether a caller supplies an address through them. "+
+			"If so, add them to dataSourceDestination — otherwise a keytab will follow them to a new host. "+
+			"If not, record the reason in its doc comment and list them here.", unclassified)
+	require.Empty(t, classified, "field(s) listed here no longer exist on DataSource: %v", classified)
+
+	// sasl_config is the one field the projection picks apart rather than
+	// copying whole, so the walk has to go a level down with it. Otherwise a
+	// new address on KerberosConfig defaults to "not a destination" at exactly
+	// the message holding the endpoint the keytab itself reaches, and this
+	// test stays green because "sasl_config" is already listed above.
+	krbClassified := map[string]bool{
+		// In the projection.
+		"kdc_host": true, "kdc_port": true,
+		// Out: the principal kinit claims, the transport to the same KDC, and
+		// the secret itself.
+		"primary": true, "instance": true, "realm": true,
+		"keytab": true, "kdc_transport_protocol": true,
+	}
+	krbFields := (&storepb.KerberosConfig{}).ProtoReflect().Descriptor().Fields()
+	for i := 0; i < krbFields.Len(); i++ {
+		name := string(krbFields.Get(i).Name())
+		require.True(t, krbClassified[name],
+			"new KerberosConfig field %q: decide whether it names an endpoint the keytab reaches, "+
+				"and add it to dataSourceDestination if so", name)
+		delete(krbClassified, name)
+	}
+	require.Empty(t, krbClassified, "field(s) listed here no longer exist on KerberosConfig: %v", krbClassified)
+
+	// A second SASL mechanism would carry its own endpoint, and the projection
+	// reads only krb_config.
+	saslOneofs := (&storepb.SASLConfig{}).ProtoReflect().Descriptor().Oneofs()
+	require.Equal(t, 1, saslOneofs.Len())
+	require.Equal(t, 1, saslOneofs.Get(0).Fields().Len(),
+		"a new SASL mechanism needs its endpoint fields added to dataSourceDestination")
 }
 
 func TestRetainStoredKeytabs(t *testing.T) {
-	krbDS := func(id string, keytab []byte) *storepb.DataSource {
-		return &storepb.DataSource{
-			Id: id,
-			SaslConfig: &storepb.SASLConfig{
-				Mechanism: &storepb.SASLConfig_KrbConfig{
-					KrbConfig: &storepb.KerberosConfig{Keytab: keytab},
-				},
-			},
-		}
-	}
+	const storedHost = "hive.internal.example.com"
 	stored := []*storepb.DataSource{
-		krbDS("admin", []byte("admin-keytab")),
-		krbDS("ro", []byte("ro-keytab")),
+		krbDataSource("admin", storedHost, "admin-keytab"),
+		krbDataSource("ro", storedHost, "ro-keytab"),
 	}
 
 	updated := []*storepb.DataSource{
-		krbDS("admin", nil),                  // unchanged on read-modify-write
-		krbDS("ro", []byte("new-ro-keytab")), // freshly uploaded
-		krbDS("added", nil),                  // new data source, nothing stored
-		{Id: "plain"},                        // no SASL config at all
+		krbDataSource("admin", storedHost, ""),           // unchanged on read-modify-write
+		krbDataSource("ro", storedHost, "new-ro-keytab"), // freshly uploaded
+		krbDataSource("added", "new.example.com", ""),    // new data source, nothing stored
+		{Id: "plain", Host: storedHost},                  // no SASL config at all
 	}
-	retainStoredKeytabs(updated, stored)
+	require.NoError(t, retainStoredKeytabs(updated, stored))
 
 	require.Equal(t, []byte("admin-keytab"), updated[0].GetSaslConfig().GetKrbConfig().Keytab)
 	require.Equal(t, []byte("new-ro-keytab"), updated[1].GetSaslConfig().GetKrbConfig().Keytab)
 	require.Empty(t, updated[2].GetSaslConfig().GetKrbConfig().Keytab)
 	require.Nil(t, updated[3].GetSaslConfig())
+
+	// A full replacement that moves one data source is refused whole. The
+	// wholesale rebuild is exactly where a read-modify-write client sends every
+	// keytab back empty, so this is the path the inheritance was built for and
+	// the path a retarget rides.
+	moved := []*storepb.DataSource{
+		krbDataSource("admin", storedHost, ""),
+		krbDataSource("ro", "attacker.example.com", ""),
+	}
+	err := retainStoredKeytabs(moved, stored)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `"ro"`, "the error must name the data source the caller has to fix")
+	require.Empty(t, moved[1].GetSaslConfig().GetKrbConfig().Keytab)
 }
 
 // assertNoInputOnlyValues walks every populated message field and requires
