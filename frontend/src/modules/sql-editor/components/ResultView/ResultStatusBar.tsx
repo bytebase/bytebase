@@ -79,7 +79,7 @@ export function ResultStatusBar({
           data-testid="result-status-database"
         >
           <DatabaseTargetDisplay
-            database={database}
+            target={database.name}
             showEnvironment
             className="max-w-full"
           />

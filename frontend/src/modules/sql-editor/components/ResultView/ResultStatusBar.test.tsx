@@ -14,15 +14,15 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/components/DatabaseTargetDisplay", () => ({
   DatabaseTargetDisplay: ({
-    database,
+    target,
     showEnvironment,
   }: {
-    database: Database;
+    target: string;
     showEnvironment?: boolean;
   }) => (
     <span
       data-testid="database-target-display"
-      data-database={database.name}
+      data-database={target}
       data-show-environment={String(showEnvironment)}
     />
   ),

@@ -25,6 +25,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: {
+    init: vi.fn(),
+    type: "3rdParty",
+  },
   useTranslation: () => ({
     t: (key: string) => key,
   }),
@@ -43,6 +47,11 @@ vi.mock("@/hooks/useProjectByName", () => ({
 vi.mock("@/stores/app", () => {
   const state = () => ({
     projectsByName: {},
+    databasesByName: {},
+    environmentList: [],
+    // The real store never returns undefined here — it falls back to an
+    // unknown environment — so the stub keeps that contract.
+    getEnvironmentByName: () => ({ name: "", title: "" }),
     fetchAccessGrant: mocks.fetchAccessGrant,
     searchMyAccessGrants: mocks.searchMyAccessGrants,
     getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
@@ -57,6 +66,8 @@ vi.mock("@/stores/app", () => {
 
 vi.mock("@/stores/modules/v1/common", () => ({
   projectNamePrefix: "projects/",
+  instanceNamePrefix: "instances/",
+  databaseNamePrefix: "databases/",
 }));
 
 vi.mock("@/types", () => ({

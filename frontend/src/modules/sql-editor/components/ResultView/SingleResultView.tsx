@@ -806,7 +806,7 @@ function DatabaseInfo({ database }: { database: Database }) {
   return (
     <div className="flex flex-col gap-1 mb-3">
       <span className="text-xs text-control-light">{t("common.database")}</span>
-      <DatabaseTargetDisplay database={database} showEnvironment />
+      <DatabaseTargetDisplay target={database.name} showEnvironment />
     </div>
   );
 }
