@@ -65,8 +65,8 @@ A recorded attempt to execute a task. Use this term when discussing execution lo
 _Avoid_: Task
 
 **Release**:
-A packaged set of database change inputs used to coordinate deployment across targets. It is the change artifact, not the approval record or execution.
-_Avoid_: Plan, rollout, issue
+A project-scoped, immutable snapshot of the ordered database changes submitted in one publication, canonically one GitOps publication from one repository commit. It is the governed change artifact handed from Git to Bytebase, not an approval record or deployment execution.
+_Avoid_: Plan, rollout, issue, deployment
 
 **Changelog**:
 The recorded history of a database migration after execution. It is evidence that a change ran, not the proposed change itself.
