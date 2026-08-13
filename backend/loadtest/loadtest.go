@@ -71,19 +71,27 @@ func (c *Config) roleName(i int) string {
 	return fmt.Sprintf("%s%d", c.RoleNamePrefix, i)
 }
 
-// openDB opens a single-connection pool with the given DSN and verifies it.
+// openDB opens a single-connection pool with the given DSN and verifies it,
+// retrying a few times because a single transient dial failure should not abort
+// an otherwise healthy run.
 func openDB(ctx context.Context, dsn string) (*sql.DB, error) {
-	db, err := sql.Open("pgx", dsn)
-	if err != nil {
-		return nil, err
-	}
-	db.SetMaxOpenConns(1)
-	db.SetMaxIdleConns(1)
-	if err := db.PingContext(ctx); err != nil {
+	var lastErr error
+	for attempt := 0; attempt < 3; attempt++ {
+		db, err := sql.Open("pgx", dsn)
+		if err != nil {
+			return nil, err
+		}
+		db.SetMaxOpenConns(1)
+		db.SetMaxIdleConns(1)
+		if err := db.PingContext(ctx); err == nil {
+			return db, nil
+		} else {
+			lastErr = err
+		}
 		db.Close()
-		return nil, err
+		time.Sleep(time.Duration(attempt+1) * time.Second)
 	}
-	return db, nil
+	return nil, lastErr
 }
 
 // Tenant is one provisioned workspace database and its dedicated role.
