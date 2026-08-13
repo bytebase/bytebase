@@ -511,6 +511,43 @@ func TestSearchSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 	a.Equal([]string{"theirs", "theirs/deep"}, sharedFolders.Msg.Folders)
 }
 
+func TestCreateSavedQueryRejectsArchivedProject(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	projectID := generateRandomString("sq-archived")
+	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+		Project: &v1pb.Project{
+			Name:  fmt.Sprintf("projects/%s", projectID),
+			Title: projectID,
+		},
+		ProjectId: projectID,
+	}))
+	a.NoError(err)
+
+	_, err = ctl.projectServiceClient.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{
+		Name: projectResp.Msg.Name,
+	}))
+	a.NoError(err)
+
+	// Resource resolution returns archived projects, so without an explicit
+	// check the create would reach the store's purge fence and read as a 500.
+	_, err = ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
+		Parent: projectResp.Msg.Name,
+		SavedQuery: &v1pb.SavedQuery{
+			Title:   "into an archived project",
+			Content: []byte("SELECT 1;"),
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+}
+
 func TestSearchSavedQueriesRejectsWildcardProject(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)

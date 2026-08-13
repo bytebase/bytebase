@@ -2,12 +2,15 @@ package iam
 
 import (
 	"context"
+	"log/slog"
 	"maps"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -34,6 +37,20 @@ func NewManager(store *store.Store, licenseService *enterprise.LicenseService, s
 // CEL on the binding is not considered.
 // When multiple projects are specified, the user should have permission on every projects.
 func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, user *store.UserMessage, workspaceID string, projectIDs ...string) (bool, error) {
+	return m.doCheckPermission(ctx, p, user, workspaceID, false /* projectWideOnly */, projectIDs...)
+}
+
+// CheckProjectWidePermission is CheckPermission for permissions that a
+// resource-scoped grant must not confer. A binding whose condition narrows to
+// specific databases, schemas, tables, or environments is skipped entirely,
+// so a data-slice grant cannot widen into a project-wide surface. Expiry is
+// unaffected: ValidateIAMBinding already drops bindings whose time window has
+// closed.
+func (m *Manager) CheckProjectWidePermission(ctx context.Context, p permission.Permission, user *store.UserMessage, workspaceID string, projectIDs ...string) (bool, error) {
+	return m.doCheckPermission(ctx, p, user, workspaceID, true /* projectWideOnly */, projectIDs...)
+}
+
+func (m *Manager) doCheckPermission(ctx context.Context, p permission.Permission, user *store.UserMessage, workspaceID string, projectWideOnly bool, projectIDs ...string) (bool, error) {
 	getPermissions := func(role string) map[permission.Permission]bool {
 		perms, _ := m.GetPermissions(ctx, workspaceID, role)
 		return perms
@@ -48,7 +65,7 @@ func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, 
 		return false, err
 	}
 	// In SaaS mode, skip allUsers for workspace-level IAM (members must be explicit).
-	if ok := check(user, p, policyMessage.Policy, getPermissions, getGroupMembers, m.saas); ok {
+	if ok := check(user, p, policyMessage.Policy, getPermissions, getGroupMembers, m.saas, projectWideOnly); ok {
 		return true, nil
 	}
 
@@ -71,7 +88,7 @@ func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, 
 				return false, err
 			}
 			// Project-level: allUsers means "all workspace members", which is safe.
-			if ok := check(user, p, policyMessage.Policy, getPermissions, getGroupMembers, false); !ok {
+			if ok := check(user, p, policyMessage.Policy, getPermissions, getGroupMembers, false, projectWideOnly); !ok {
 				allOK = false
 				break
 			}
@@ -104,12 +121,23 @@ func (m *Manager) GetUserGroups(ctx context.Context, workspaceID string, email s
 	return m.store.GetUserGroupsSnapshot(ctx, workspaceID, common.FormatUserEmail(email))
 }
 
-func check(user *store.UserMessage, p permission.Permission, policy *storepb.IamPolicy, getPermissions func(role string) map[permission.Permission]bool, getGroupMembers func(groupName string) map[string]bool, skipAllUsers bool) bool {
+func check(user *store.UserMessage, p permission.Permission, policy *storepb.IamPolicy, getPermissions func(role string) map[permission.Permission]bool, getGroupMembers func(groupName string) map[string]bool, skipAllUsers bool, projectWideOnly bool) bool {
 	userName := formatUserNameByType(user)
 
 	for _, binding := range policy.GetBindings() {
 		if !utils.ValidateIAMBinding(binding) {
 			continue
+		}
+		if projectWideOnly {
+			scoped, err := common.BindingConditionScopesResources(binding.Condition.GetExpression(), time.Now())
+			if err != nil {
+				// An unparsable condition is not a grant.
+				slog.Error("failed to inspect binding condition", slog.String("expression", binding.Condition.GetExpression()), log.BBError(err))
+				continue
+			}
+			if scoped {
+				continue
+			}
 		}
 		permissions := getPermissions(binding.GetRole())
 		if permissions == nil {

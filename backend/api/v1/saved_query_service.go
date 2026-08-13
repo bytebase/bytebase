@@ -56,6 +56,28 @@ func (s *SavedQueryService) CreateSavedQuery(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
+	// The interceptor resolves archived projects too (GetProject returns a
+	// project regardless of its deleted state), so a create into one would
+	// otherwise reach the store's purge fence and surface as a 500.
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %q", projectResourceID))
+	}
+	if project == nil || project.Deleted {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectResourceID))
+	}
+
+	// The interceptor already checked bb.savedQueries.create, but it evaluates
+	// conditions with request.time only and passes the rest, so a grant scoped
+	// to a slice of databases would satisfy it. A saved query is a project-wide
+	// row; re-check the source here and reject those bindings.
+	if err := s.checkProjectWide(ctx, user, permission.SavedQueriesCreate, projectResourceID); err != nil {
+		return nil, err
+	}
+
 	database := ""
 	if request.SavedQuery.Database != "" {
 		database, err = s.validateSavedQueryDatabase(ctx, projectResourceID, request.SavedQuery.Database)
@@ -124,6 +146,12 @@ func (s *SavedQueryService) ListSavedQueries(
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
+	// Same source re-check as CreateSavedQuery: bb.savedQueries.list reads
+	// everyone's content, which a database-scoped grant must not confer.
+	if err := s.checkProjectWide(ctx, user, permission.SavedQueriesList, projectIDs...); err != nil {
+		return nil, err
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -203,7 +231,7 @@ func (s *SavedQueryService) SearchSavedQueryFolders(
 	// Folders are derived from rows, so they inherit the rows' read rule.
 	// Without the admin backstop the caller only ever sees folders holding
 	// their own saved queries, whatever the filter asks for.
-	canManage, err := s.iamManager.CheckPermission(ctx, permission.SavedQueriesManage, user, common.GetWorkspaceIDFromContext(ctx), projectID)
+	canManage, err := s.iamManager.CheckProjectWidePermission(ctx, permission.SavedQueriesManage, user, common.GetWorkspaceIDFromContext(ctx), projectID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
@@ -558,10 +586,24 @@ func (s *SavedQueryService) BatchUpdateSavedQueries(
 // checkDiscoverSavedQueries gates the per-project discovery surfaces
 // (Search, folder list): bb.savedQueries.search, with bb.savedQueries.manage
 // as the admin backstop that must be able to enumerate what it manages.
+// checkProjectWide re-checks an IAM-gated permission, rejecting bindings whose
+// condition scopes resources. The generic interceptor cannot express this: it
+// evaluates request.time and passes the residual condition through.
+func (s *SavedQueryService) checkProjectWide(ctx context.Context, user *store.UserMessage, p permission.Permission, projectIDs ...string) error {
+	ok, err := s.iamManager.CheckProjectWidePermission(ctx, p, user, common.GetWorkspaceIDFromContext(ctx), projectIDs...)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
+	}
+	if !ok {
+		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied: %s", p))
+	}
+	return nil
+}
+
 func (s *SavedQueryService) checkDiscoverSavedQueries(ctx context.Context, user *store.UserMessage, projectID string) error {
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	for _, p := range []permission.Permission{permission.SavedQueriesSearch, permission.SavedQueriesManage} {
-		ok, err := s.iamManager.CheckPermission(ctx, p, user, workspaceID, projectID)
+		ok, err := s.iamManager.CheckProjectWidePermission(ctx, p, user, workspaceID, projectID)
 		if err != nil {
 			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 		}
@@ -655,7 +697,7 @@ func (s *SavedQueryService) canAccessSavedQuery(ctx context.Context, savedQuery 
 	if savedQuery.Creator == user.Email {
 		return true, nil
 	}
-	ok, err := s.iamManager.CheckPermission(ctx, permission.SavedQueriesManage, user, common.GetWorkspaceIDFromContext(ctx), savedQuery.ProjectID)
+	ok, err := s.iamManager.CheckProjectWidePermission(ctx, permission.SavedQueriesManage, user, common.GetWorkspaceIDFromContext(ctx), savedQuery.ProjectID)
 	if err != nil {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
