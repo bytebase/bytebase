@@ -69,6 +69,7 @@ import { useSQLEditorStore as useSQLEditorReactStore } from "@/modules/sql-edito
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
+import { canSearchSavedQueriesInProject } from "@/utils";
 import { filterNode } from "./filterNode";
 import { SharePopoverBody } from "./SharePopoverBody";
 import { TreeNodePrefix } from "./TreeNodePrefix";
@@ -337,7 +338,10 @@ export function SheetTree({
 
   // ---- Auto-fetch on mount + project change --------------------------------
   useEffect(() => {
-    if (!isInitialized && project) {
+    // Without discovery access the search and folder calls can only come back
+    // denied, so the tree stays empty instead of failing on every mount. The
+    // Draft view is local and unaffected -- it never fetches.
+    if (!isInitialized && project && canSearchSavedQueriesInProject(project)) {
       void fetchSheetList();
     }
   }, [isInitialized, project, fetchSheetList]);
@@ -959,9 +963,7 @@ export function SheetTree({
         clearTimeout(starTimerRef.current);
       }
       starTimerRef.current = setTimeout(() => {
-        void useAppStore
-          .getState()
-          .upsertSavedQueryOrganizer({ savedQuery, starred }, ["starred"]);
+        void useAppStore.getState().updateSavedQueryStar(savedQuery, starred);
       }, 300);
     },
     []
@@ -1387,7 +1389,9 @@ export function SheetTree({
                 if (!savedQuery) return;
                 await createSavedQuery({
                   title: savedQuery.title,
-                  folders: savedQuery.folders,
+                  folders: savedQuery.folder
+                    ? savedQuery.folder.split("/")
+                    : [],
                   database: savedQuery.database,
                 });
                 useAppStore.getState().notify({

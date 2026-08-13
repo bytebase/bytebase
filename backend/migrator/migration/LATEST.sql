@@ -366,26 +366,33 @@ CREATE TABLE saved_query (
     project text NOT NULL REFERENCES project(resource_id),
     name text NOT NULL,
     statement text NOT NULL,
+    -- The folder path this saved query lives in ("a/b/c", '' = unfiled), set
+    -- by its creator (or an admin). A folder is a path on rows, so empty
+    -- folders cannot exist.
+    folder text NOT NULL DEFAULT '',
     -- Stored as SavedQueryPayload (proto/store/store/saved_query.proto); the
     -- connected database is a soft reference kept as its canonical name.
     payload jsonb NOT NULL DEFAULT '{}',
     PRIMARY KEY (resource_id)
 );
 
-CREATE INDEX idx_saved_query_project ON saved_query(project);
+-- Serves the folder tree and the rows inside a folder: DISTINCT folder over a
+-- project (admin) or a project + creator (the SQL Editor's own tree) both run
+-- as index-only scans, and the project prefix still answers a project lookup
+-- on its own.
+CREATE INDEX idx_saved_query_project_creator_folder ON saved_query(project, creator, folder);
 CREATE INDEX idx_saved_query_creator_project ON saved_query(creator, project);
 
--- saved_query_organizer table stores a principal's star and folder placement
--- for a saved query.
-CREATE TABLE saved_query_organizer (
+-- saved_query_star stores per-user stars: row existence is the star. The FK
+-- cascade is a race backstop only — code paths delete star rows explicitly
+-- before their parent.
+CREATE TABLE saved_query_star (
     saved_query text NOT NULL REFERENCES saved_query(resource_id) ON DELETE CASCADE,
     principal text NOT NULL,
-    payload jsonb NOT NULL DEFAULT '{}',
     PRIMARY KEY (saved_query, principal)
 );
 
-CREATE INDEX idx_saved_query_organizer_principal ON saved_query_organizer(principal);
-CREATE INDEX idx_saved_query_organizer_payload ON saved_query_organizer USING GIN(payload);
+CREATE INDEX idx_saved_query_star_principal ON saved_query_star(principal);
 
 CREATE TABLE db_group (
     project text NOT NULL REFERENCES project(resource_id),

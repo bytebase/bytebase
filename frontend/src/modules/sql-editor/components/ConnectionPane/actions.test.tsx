@@ -12,6 +12,10 @@ const mocks = vi.hoisted(() => ({
   sqlEditorEventsEmit: vi.fn().mockResolvedValue(undefined),
   setShowConnectionPanel: vi.fn(),
   setAsidePanelTab: vi.fn(),
+  createSavedQuery: vi.fn().mockResolvedValue(undefined),
+  maybeUpdateSavedQuery: vi.fn().mockResolvedValue(undefined),
+  canCreateSavedQueryInProject: vi.fn(() => true),
+  addTab: vi.fn(() => ({ id: "local-tab" })),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -46,8 +50,8 @@ vi.mock("@/modules/sql-editor/store", () => ({
     {
       getState: () => ({
         setAsidePanelTab: mocks.setAsidePanelTab,
-        createSavedQuery: vi.fn().mockResolvedValue(undefined),
-        maybeUpdateSavedQuery: vi.fn().mockResolvedValue(undefined),
+        createSavedQuery: mocks.createSavedQuery,
+        maybeUpdateSavedQuery: mocks.maybeUpdateSavedQuery,
       }),
     }
   ),
@@ -62,7 +66,17 @@ vi.mock("@/modules/sql-editor/model/events", () => ({
   sqlEditorEvents: { emit: mocks.sqlEditorEventsEmit },
 }));
 
+vi.mock("@/modules/sql-editor/store/tab", () => ({
+  getSQLEditorTabsState: () => ({
+    tabsById: new Map(),
+    currentTabId: "",
+    addTab: mocks.addTab,
+    updateTab: vi.fn(),
+  }),
+}));
+
 vi.mock("@/utils", () => ({
+  canCreateSavedQueryInProject: mocks.canCreateSavedQueryInProject,
   extractDatabaseResourceName: (name: string) => ({
     instance: "instances/prod",
     databaseName: name.split("/").pop() ?? "",
@@ -151,7 +165,46 @@ const makeDatabaseNode = (
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.allowAdmin = false;
+  mocks.canCreateSavedQueryInProject.mockReturnValue(true);
+  mocks.addTab.mockReturnValue({ id: "local-tab" });
+  mocks.createSavedQuery.mockResolvedValue(undefined);
   ({ useConnectionMenu } = await import("./actions"));
+});
+
+describe("setConnection", () => {
+  test("opens a local tab instead of creating without the permission", async () => {
+    // "Connect in new tab" would otherwise POST a saved query and 403 for a
+    // role that can query but not create, leaving no connected tab at all.
+    mocks.canCreateSavedQueryInProject.mockReturnValue(false);
+    const { setConnection } = await import("./actions");
+
+    await act(async () => {
+      setConnection({
+        database: { name: "instances/prod/databases/db1" } as never,
+        newTab: true,
+      });
+      await Promise.resolve();
+    });
+
+    expect(mocks.createSavedQuery).not.toHaveBeenCalled();
+    expect(mocks.addTab).toHaveBeenCalled();
+  });
+
+  test("creates a saved query when the caller may", async () => {
+    mocks.canCreateSavedQueryInProject.mockReturnValue(true);
+    const { setConnection } = await import("./actions");
+
+    await act(async () => {
+      setConnection({
+        database: { name: "instances/prod/databases/db1" } as never,
+        newTab: true,
+      });
+      await Promise.resolve();
+    });
+
+    expect(mocks.createSavedQuery).toHaveBeenCalled();
+    expect(mocks.addTab).not.toHaveBeenCalled();
+  });
 });
 
 describe("useConnectionMenu", () => {

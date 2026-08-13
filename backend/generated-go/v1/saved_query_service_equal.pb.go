@@ -80,7 +80,7 @@ func (x *ListSavedQueriesResponse) Equal(y *ListSavedQueriesResponse) bool {
 	return true
 }
 
-func (x *ListSavedQueryFoldersRequest) Equal(y *ListSavedQueryFoldersRequest) bool {
+func (x *SearchSavedQueryFoldersRequest) Equal(y *SearchSavedQueryFoldersRequest) bool {
 	if x == y {
 		return true
 	}
@@ -90,28 +90,13 @@ func (x *ListSavedQueryFoldersRequest) Equal(y *ListSavedQueryFoldersRequest) bo
 	if x.Parent != y.Parent {
 		return false
 	}
-	return true
-}
-
-func (x *ListSavedQueryFoldersResponse) Equal(y *ListSavedQueryFoldersResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Folders) != len(y.Folders) {
+	if x.Filter != y.Filter {
 		return false
 	}
-	for i := 0; i < len(x.Folders); i++ {
-		if !x.Folders[i].Equal(y.Folders[i]) {
-			return false
-		}
-	}
 	return true
 }
 
-func (x *SavedQueryFolder) Equal(y *SavedQueryFolder) bool {
+func (x *SearchSavedQueryFoldersResponse) Equal(y *SearchSavedQueryFoldersResponse) bool {
 	if x == y {
 		return true
 	}
@@ -125,9 +110,6 @@ func (x *SavedQueryFolder) Equal(y *SavedQueryFolder) bool {
 		if x.Folders[i] != y.Folders[i] {
 			return false
 		}
-	}
-	if x.Category != y.Category {
-		return false
 	}
 	return true
 }
@@ -152,7 +134,23 @@ func (x *UpdateSavedQueryRequest) Equal(y *UpdateSavedQueryRequest) bool {
 	return true
 }
 
-func (x *BatchUpdateSavedQueryOrganizerRequest) Equal(y *BatchUpdateSavedQueryOrganizerRequest) bool {
+func (x *UpdateSavedQueryStarRequest) Equal(y *UpdateSavedQueryStarRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Starred != y.Starred {
+		return false
+	}
+	return true
+}
+
+func (x *BatchUpdateSavedQueriesRequest) Equal(y *BatchUpdateSavedQueriesRequest) bool {
 	if x == y {
 		return true
 	}
@@ -165,7 +163,7 @@ func (x *BatchUpdateSavedQueryOrganizerRequest) Equal(y *BatchUpdateSavedQueryOr
 	if x.Filter != y.Filter {
 		return false
 	}
-	if !x.Organizer.Equal(y.Organizer) {
+	if !x.SavedQuery.Equal(y.SavedQuery) {
 		return false
 	}
 	if equal, ok := interface{}(x.UpdateMask).(interface {
@@ -178,70 +176,15 @@ func (x *BatchUpdateSavedQueryOrganizerRequest) Equal(y *BatchUpdateSavedQueryOr
 	return true
 }
 
-func (x *BatchUpdateSavedQueryOrganizerResponse) Equal(y *BatchUpdateSavedQueryOrganizerResponse) bool {
+func (x *BatchUpdateSavedQueriesResponse) Equal(y *BatchUpdateSavedQueriesResponse) bool {
 	if x == y {
 		return true
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
-	}
-	if len(x.SavedQueryOrganizers) != len(y.SavedQueryOrganizers) {
-		return false
-	}
-	for i := 0; i < len(x.SavedQueryOrganizers); i++ {
-		if !x.SavedQueryOrganizers[i].Equal(y.SavedQueryOrganizers[i]) {
-			return false
-		}
 	}
 	if x.UpdatedCount != y.UpdatedCount {
 		return false
-	}
-	return true
-}
-
-func (x *UpdateSavedQueryOrganizerRequest) Equal(y *UpdateSavedQueryOrganizerRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if !x.Organizer.Equal(y.Organizer) {
-		return false
-	}
-	if equal, ok := interface{}(x.UpdateMask).(interface {
-		Equal(*fieldmaskpb.FieldMask) bool
-	}); !ok || !equal.Equal(y.UpdateMask) {
-		return false
-	} else if !proto.Equal(x.UpdateMask, y.UpdateMask) {
-		return false
-	}
-	if x.AllowMissing != y.AllowMissing {
-		return false
-	}
-	return true
-}
-
-func (x *SavedQueryOrganizer) Equal(y *SavedQueryOrganizer) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.SavedQuery != y.SavedQuery {
-		return false
-	}
-	if x.Starred != y.Starred {
-		return false
-	}
-	if len(x.Folders) != len(y.Folders) {
-		return false
-	}
-	for i := 0; i < len(x.Folders); i++ {
-		if x.Folders[i] != y.Folders[i] {
-			return false
-		}
 	}
 	return true
 }
@@ -339,13 +282,8 @@ func (x *SavedQuery) Equal(y *SavedQuery) bool {
 	if x.Starred != y.Starred {
 		return false
 	}
-	if len(x.Folders) != len(y.Folders) {
+	if x.Folder != y.Folder {
 		return false
-	}
-	for i := 0; i < len(x.Folders); i++ {
-		if x.Folders[i] != y.Folders[i] {
-			return false
-		}
 	}
 	return true
 }

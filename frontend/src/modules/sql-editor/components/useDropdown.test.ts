@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   currentUser: { email: "me@example.com" },
   savedQuery: undefined as SavedQuery | undefined,
   isSavedQueryWritableV1: vi.fn(() => true),
+  canCreateSavedQueryInProject: vi.fn(() => true),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -30,6 +31,12 @@ vi.mock("@/stores/app", () => ({
 
 vi.mock("@/utils", () => ({
   isSavedQueryWritableV1: mocks.isSavedQueryWritableV1,
+  canCreateSavedQueryInProject: mocks.canCreateSavedQueryInProject,
+}));
+
+vi.mock("@/modules/sql-editor/store/editor", () => ({
+  useSQLEditorEditorState: (selector: (s: { project: string }) => unknown) =>
+    selector({ project: "projects/proj1" }),
 }));
 
 const baseFilter: SavedQueryFilter = {

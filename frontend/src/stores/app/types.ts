@@ -63,10 +63,7 @@ import type { Release } from "@/types/proto-es/v1/release_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
-import type {
-  SavedQuery,
-  SavedQueryOrganizer,
-} from "@/types/proto-es/v1/saved_query_service_pb";
+import type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type {
   DataClassificationSetting_DataClassificationConfig,
@@ -638,9 +635,10 @@ export type SavedQuerySlice = {
       pageToken?: string;
     }
   ) => Promise<{ savedQueries: SavedQuery[]; nextPageToken: string }>;
-  listSavedQueryFolders: (
-    parent: string
-  ) => Promise<{ folders: string[]; category: "my" | "shared" }[]>;
+  searchSavedQueryFolders: (
+    parent: string,
+    filter?: string
+  ) => Promise<string[]>;
   createSavedQuery: (savedQuery: SavedQuery) => Promise<SavedQuery>;
   patchSavedQuery: (
     savedQuery: SavedQuery,
@@ -648,18 +646,18 @@ export type SavedQuerySlice = {
     signal?: AbortSignal
   ) => Promise<SavedQuery | undefined>;
   deleteSavedQueryByName: (name: string) => Promise<void>;
-  upsertSavedQueryOrganizer: (
-    organizer: Partial<SavedQueryOrganizer>,
-    updateMask: string[]
-  ) => Promise<void>;
-  batchUpdateSavedQueryOrganizers: (
-    requests: {
-      parent: string;
-      filter: string;
-      organizer: Partial<SavedQueryOrganizer>;
-      updateMask: string[];
-    }[]
-  ) => Promise<void>;
+  updateSavedQueryStar: (name: string, starred: boolean) => Promise<void>;
+  batchUpdateSavedQueryFolder: (
+    parent: string,
+    filter: string,
+    folder: string
+  ) => Promise<number>;
+  /**
+   * Mirror a completed server-side folder move onto the cached rows. The
+   * batch RPC answers with a count, not the moved resources, so the caller
+   * names the rows it already holds.
+   */
+  patchSavedQueryFolderInCache: (names: string[], folder: string) => void;
   savedQueryList: () => SavedQuery[];
 };
 

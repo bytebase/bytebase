@@ -4,22 +4,17 @@ import { uniqBy } from "lodash-es";
 import { savedQueryServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import { UNKNOWN_ID } from "@/types";
-import type {
-  SavedQuery,
-  SavedQueryOrganizer,
-} from "@/types/proto-es/v1/saved_query_service_pb";
+import type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";
 import {
-  BatchUpdateSavedQueryOrganizerRequestSchema,
+  BatchUpdateSavedQueriesRequestSchema,
   CreateSavedQueryRequestSchema,
   DeleteSavedQueryRequestSchema,
   GetSavedQueryRequestSchema,
-  ListSavedQueryFoldersRequestSchema,
-  SavedQueryFolder_Category,
-  SavedQueryOrganizerSchema,
   SavedQuerySchema,
   SearchSavedQueriesRequestSchema,
-  UpdateSavedQueryOrganizerRequestSchema,
+  SearchSavedQueryFoldersRequestSchema,
   UpdateSavedQueryRequestSchema,
+  UpdateSavedQueryStarRequestSchema,
 } from "@/types/proto-es/v1/saved_query_service_pb";
 import { isValidDatabaseName } from "@/types/v1/database";
 import { extractSavedQueryID } from "@/utils/v1/savedQuery";
@@ -74,17 +69,6 @@ export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
       ]);
     } catch {
       // Best-effort hydration; the saved query entry is still cached below.
-    }
-  };
-
-  const updateCacheWithOrganizer = (organizer: SavedQueryOrganizer) => {
-    for (const view of ["FULL", "BASIC"] as const) {
-      const existing = get().getSavedQueryByName(organizer.savedQuery, view);
-      if (!existing) continue;
-      const updated = clone(SavedQuerySchema, existing);
-      updated.starred = organizer.starred;
-      updated.folders = organizer.folders;
-      setCacheEntry(updated, view);
     }
   };
 
@@ -162,25 +146,15 @@ export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
       };
     },
 
-    listSavedQueryFolders: async (parent) => {
+    searchSavedQueryFolders: async (parent, filter) => {
       const response =
-        await savedQueryServiceClientConnect.listSavedQueryFolders(
-          createProto(ListSavedQueryFoldersRequestSchema, {
+        await savedQueryServiceClientConnect.searchSavedQueryFolders(
+          createProto(SearchSavedQueryFoldersRequestSchema, {
             parent,
+            filter,
           })
         );
-      const folders: { folders: string[]; category: "my" | "shared" }[] = [];
-      for (const folder of response.folders) {
-        switch (folder.category) {
-          case SavedQueryFolder_Category.MINE:
-            folders.push({ folders: folder.folders, category: "my" });
-            break;
-          case SavedQueryFolder_Category.SHARED:
-            folders.push({ folders: folder.folders, category: "shared" });
-            break;
-        }
-      }
-      return folders;
+      return response.folders;
     },
 
     createSavedQuery: async (savedQuery) => {
@@ -225,36 +199,43 @@ export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
       });
     },
 
-    upsertSavedQueryOrganizer: async (organizer, updateMask) => {
+    updateSavedQueryStar: async (name, starred) => {
       const response =
-        await savedQueryServiceClientConnect.updateSavedQueryOrganizer(
-          createProto(UpdateSavedQueryOrganizerRequestSchema, {
-            organizer: createProto(SavedQueryOrganizerSchema, {
-              ...organizer,
-            } as SavedQueryOrganizer),
-            updateMask: { paths: updateMask },
-          })
+        await savedQueryServiceClientConnect.updateSavedQueryStar(
+          createProto(UpdateSavedQueryStarRequestSchema, { name, starred })
         );
-      updateCacheWithOrganizer(response);
+      // Refresh whichever cache views hold the row so star badges update.
+      for (const view of ["FULL", "BASIC"] as const) {
+        const existing = get().getSavedQueryByName(name, view);
+        if (!existing) continue;
+        const updated = clone(SavedQuerySchema, existing);
+        updated.starred = response.starred;
+        setCacheEntry(updated, view);
+      }
     },
 
-    batchUpdateSavedQueryOrganizers: async (requests) => {
-      const responses = await Promise.all(
-        requests.map((request) =>
-          savedQueryServiceClientConnect.batchUpdateSavedQueryOrganizer(
-            createProto(BatchUpdateSavedQueryOrganizerRequestSchema, {
-              parent: request.parent,
-              filter: request.filter,
-              organizer: createProto(SavedQueryOrganizerSchema, {
-                ...request.organizer,
-              } as SavedQueryOrganizer),
-              updateMask: { paths: request.updateMask },
-            })
-          )
-        )
-      );
-      for (const response of responses) {
-        response.savedQueryOrganizers.map(updateCacheWithOrganizer);
+    batchUpdateSavedQueryFolder: async (parent, filter, folder) => {
+      const response =
+        await savedQueryServiceClientConnect.batchUpdateSavedQueries(
+          createProto(BatchUpdateSavedQueriesRequestSchema, {
+            parent,
+            filter,
+            savedQuery: createProto(SavedQuerySchema, { folder }),
+            updateMask: { paths: ["folder"] },
+          })
+        );
+      return response.updatedCount;
+    },
+
+    patchSavedQueryFolderInCache: (names, folder) => {
+      for (const name of names) {
+        for (const view of ["FULL", "BASIC"] as const) {
+          const existing = get().getSavedQueryByName(name, view);
+          if (!existing) continue;
+          const updated = clone(SavedQuerySchema, existing);
+          updated.folder = folder;
+          setCacheEntry(updated, view);
+        }
       }
     },
 

@@ -1,8 +1,8 @@
 package tests
 
 import (
+	"bytes"
 	"context"
-	"database/sql"
 	"fmt"
 	"testing"
 
@@ -48,6 +48,25 @@ func TestListSavedQueries(t *testing.T) {
 	_, err = ctl.addMemberToWorkspaceIAM(ctx, otherUser.Msg.Workspace, fmt.Sprintf("user:%s", otherEmail), "roles/workspaceMember")
 	a.NoError(err)
 
+	// Creating a saved query now takes bb.savedQueries.create on the parent
+	// project, which workspaceMember does not carry -- a workspace role would
+	// grant it in every project. The scenario needs this user to own a saved
+	// query in ctl.project, so give them a role there.
+	policyResp, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+		Resource: ctl.project.Name,
+	}))
+	a.NoError(err)
+	policy := policyResp.Msg
+	policy.Bindings = append(policy.Bindings, &v1pb.Binding{
+		Role:    "roles/sqlEditorUser",
+		Members: []string{fmt.Sprintf("user:%s", otherEmail)},
+	})
+	_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Resource: ctl.project.Name,
+		Policy:   policy,
+	}))
+	a.NoError(err)
+
 	createSavedQuery := func(title, parent string) *v1pb.SavedQuery {
 		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 			Parent: parent,
@@ -82,7 +101,7 @@ func TestListSavedQueries(t *testing.T) {
 	_, err = ctl.roleServiceClient.CreateRole(ctx, connect.NewRequest(&v1pb.CreateRoleRequest{
 		Role: &v1pb.Role{
 			Title:       "Saved Query Lister",
-			Permissions: []string{"bb.worksheets.list"},
+			Permissions: []string{"bb.savedQueries.list"},
 		},
 		RoleId: roleID,
 	}))
@@ -163,25 +182,25 @@ func TestSearchSavedQueriesFilterByFolder(t *testing.T) {
 		a.NoError(err)
 		return resp.Msg
 	}
-	setFolders := func(savedQuery *v1pb.SavedQuery, folders []string) {
-		_, err := ctl.savedQueryServiceClient.UpdateSavedQueryOrganizer(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryOrganizerRequest{
-			Organizer: &v1pb.SavedQueryOrganizer{
-				SavedQuery: savedQuery.Name,
-				Folders:    folders,
+	setFolder := func(savedQuery *v1pb.SavedQuery, folder string) {
+		_, err := ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+			SavedQuery: &v1pb.SavedQuery{
+				Name:   savedQuery.Name,
+				Folder: folder,
 			},
-			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folders"}},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
 		}))
 		a.NoError(err)
 	}
 
 	alphaSavedQuery := createSavedQuery("alpha")
-	setFolders(alphaSavedQuery, []string{"alpha"})
+	setFolder(alphaSavedQuery, "alpha")
 	alphaChildSavedQuery := createSavedQuery("alpha-child")
-	setFolders(alphaChildSavedQuery, []string{"alpha", "beta"})
+	setFolder(alphaChildSavedQuery, "alpha/beta")
 	alphabetSavedQuery := createSavedQuery("alphabet")
-	setFolders(alphabetSavedQuery, []string{"alphabet"})
+	setFolder(alphabetSavedQuery, "alphabet")
 	nestedAlphaSavedQuery := createSavedQuery("nested-alpha")
-	setFolders(nestedAlphaSavedQuery, []string{"gamma", "alpha"})
+	setFolder(nestedAlphaSavedQuery, "gamma/alpha")
 	rootSavedQuery := createSavedQuery("root")
 
 	resp, err := ctl.savedQueryServiceClient.SearchSavedQueries(ctx, connect.NewRequest(&v1pb.SearchSavedQueriesRequest{
@@ -213,9 +232,9 @@ func TestSearchSavedQueriesFilterByFolder(t *testing.T) {
 	a.ElementsMatch([]string{rootSavedQuery.Name}, savedQueryNames(rootResp.Msg.SavedQueries))
 
 	pageFirstSavedQuery := createSavedQuery("aaa-page")
-	setFolders(pageFirstSavedQuery, []string{"paging"})
+	setFolder(pageFirstSavedQuery, "paging")
 	pageSecondSavedQuery := createSavedQuery("zzz-page")
-	setFolders(pageSecondSavedQuery, []string{"paging"})
+	setFolder(pageSecondSavedQuery, "paging")
 
 	firstPageResp, err := ctl.savedQueryServiceClient.SearchSavedQueries(ctx, connect.NewRequest(&v1pb.SearchSavedQueriesRequest{
 		Parent:   ctl.project.Name,
@@ -303,7 +322,7 @@ func TestSearchSavedQueriesFilterByTitle(t *testing.T) {
 	a.Error(err)
 }
 
-func TestBatchUpdateSavedQueryOrganizerFilterByFolder(t *testing.T) {
+func TestBatchUpdateSavedQueriesFilterByFolder(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -312,26 +331,17 @@ func TestBatchUpdateSavedQueryOrganizerFilterByFolder(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	createSavedQuery := func(title string) *v1pb.SavedQuery {
+	createSavedQuery := func(title, folder string) *v1pb.SavedQuery {
 		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 			Parent: ctl.project.Name,
 			SavedQuery: &v1pb.SavedQuery{
 				Title:   title,
 				Content: []byte("SELECT 1;"),
+				Folder:  folder,
 			},
 		}))
 		a.NoError(err)
 		return resp.Msg
-	}
-	setFolders := func(savedQuery *v1pb.SavedQuery, folders []string) {
-		_, err := ctl.savedQueryServiceClient.UpdateSavedQueryOrganizer(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryOrganizerRequest{
-			Organizer: &v1pb.SavedQueryOrganizer{
-				SavedQuery: savedQuery.Name,
-				Folders:    folders,
-			},
-			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folders"}},
-		}))
-		a.NoError(err)
 	}
 	searchByFolder := func(folder string) []string {
 		resp, err := ctl.savedQueryServiceClient.SearchSavedQueries(ctx, connect.NewRequest(&v1pb.SearchSavedQueriesRequest{
@@ -342,31 +352,24 @@ func TestBatchUpdateSavedQueryOrganizerFilterByFolder(t *testing.T) {
 		return savedQueryNames(resp.Msg.SavedQueries)
 	}
 
-	directSavedQuery := createSavedQuery("old-direct")
-	setFolders(directSavedQuery, []string{"old"})
-	childSavedQuery := createSavedQuery("old-child")
-	setFolders(childSavedQuery, []string{"old", "child"})
-	otherSavedQuery := createSavedQuery("other")
-	setFolders(otherSavedQuery, []string{"other"})
+	directSavedQuery := createSavedQuery("old-direct", "old")
+	childSavedQuery := createSavedQuery("old-child", "old/child")
+	otherSavedQuery := createSavedQuery("other", "other")
 
-	directResp, err := ctl.savedQueryServiceClient.BatchUpdateSavedQueryOrganizer(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueryOrganizerRequest{
-		Parent: ctl.project.Name,
-		Filter: `folder == "old"`,
-		Organizer: &v1pb.SavedQueryOrganizer{
-			Folders: []string{"new"},
-		},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folders"}},
+	directResp, err := ctl.savedQueryServiceClient.BatchUpdateSavedQueries(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueriesRequest{
+		Parent:     ctl.project.Name,
+		Filter:     `folder == "old"`,
+		SavedQuery: &v1pb.SavedQuery{Folder: "new"},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
 	}))
 	a.NoError(err)
 	a.Equal(int32(1), directResp.Msg.UpdatedCount)
 
-	childResp, err := ctl.savedQueryServiceClient.BatchUpdateSavedQueryOrganizer(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueryOrganizerRequest{
-		Parent: ctl.project.Name,
-		Filter: `folder == "old/child"`,
-		Organizer: &v1pb.SavedQueryOrganizer{
-			Folders: []string{"new", "child"},
-		},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folders"}},
+	childResp, err := ctl.savedQueryServiceClient.BatchUpdateSavedQueries(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueriesRequest{
+		Parent:     ctl.project.Name,
+		Filter:     `folder == "old/child"`,
+		SavedQuery: &v1pb.SavedQuery{Folder: "new/child"},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
 	}))
 	a.NoError(err)
 	a.Equal(int32(1), childResp.Msg.UpdatedCount)
@@ -377,16 +380,12 @@ func TestBatchUpdateSavedQueryOrganizerFilterByFolder(t *testing.T) {
 	a.Empty(searchByFolder("old"))
 	a.Empty(searchByFolder("old/child"))
 
-	starResp, err := ctl.savedQueryServiceClient.BatchUpdateSavedQueryOrganizer(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueryOrganizerRequest{
-		Parent: ctl.project.Name,
-		Filter: `folder == "new"`,
-		Organizer: &v1pb.SavedQueryOrganizer{
-			Starred: true,
-		},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"starred"}},
+	starResp, err := ctl.savedQueryServiceClient.UpdateSavedQueryStar(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryStarRequest{
+		Name:    directSavedQuery.Name,
+		Starred: true,
 	}))
 	a.NoError(err)
-	a.Equal(int32(1), starResp.Msg.UpdatedCount)
+	a.True(starResp.Msg.Starred)
 	starredResp, err := ctl.savedQueryServiceClient.SearchSavedQueries(ctx, connect.NewRequest(&v1pb.SearchSavedQueriesRequest{
 		Parent: ctl.project.Name,
 		Filter: `folder == "new" && starred == true`,
@@ -394,21 +393,49 @@ func TestBatchUpdateSavedQueryOrganizerFilterByFolder(t *testing.T) {
 	a.NoError(err)
 	a.ElementsMatch([]string{directSavedQuery.Name}, savedQueryNames(starredResp.Msg.SavedQueries))
 
-	nameResp, err := ctl.savedQueryServiceClient.BatchUpdateSavedQueryOrganizer(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueryOrganizerRequest{
-		Parent: ctl.project.Name,
-		Filter: fmt.Sprintf(`name in [%q,%q]`, directSavedQuery.Name, childSavedQuery.Name),
-		Organizer: &v1pb.SavedQueryOrganizer{
-			Folders: []string{"selected"},
-		},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folders"}},
+	unstarResp, err := ctl.savedQueryServiceClient.UpdateSavedQueryStar(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryStarRequest{
+		Name:    directSavedQuery.Name,
+		Starred: false,
+	}))
+	a.NoError(err)
+	a.False(unstarResp.Msg.Starred)
+
+	nameResp, err := ctl.savedQueryServiceClient.BatchUpdateSavedQueries(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueriesRequest{
+		Parent:     ctl.project.Name,
+		Filter:     fmt.Sprintf(`name in [%q,%q]`, directSavedQuery.Name, childSavedQuery.Name),
+		SavedQuery: &v1pb.SavedQuery{Folder: "selected"},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
 	}))
 	a.NoError(err)
 	a.Equal(int32(2), nameResp.Msg.UpdatedCount)
 	a.ElementsMatch([]string{directSavedQuery.Name, childSavedQuery.Name}, searchByFolder("selected"))
 	a.ElementsMatch([]string{otherSavedQuery.Name}, searchByFolder("other"))
+
+	// Batch moves normalize like every other write path, so a folder sent
+	// with boundary slashes still lands where `folder == "boxed"` finds it.
+	slashResp, err := ctl.savedQueryServiceClient.BatchUpdateSavedQueries(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueriesRequest{
+		Parent:     ctl.project.Name,
+		Filter:     `folder == "selected"`,
+		SavedQuery: &v1pb.SavedQuery{Folder: "/boxed/"},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
+	}))
+	a.NoError(err)
+	a.Equal(int32(2), slashResp.Msg.UpdatedCount)
+	a.ElementsMatch([]string{directSavedQuery.Name, childSavedQuery.Name}, searchByFolder("boxed"))
+
+	// A path the filter could never match is rejected, not written.
+	_, err = ctl.savedQueryServiceClient.BatchUpdateSavedQueries(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueriesRequest{
+		Parent:     ctl.project.Name,
+		Filter:     `folder == "boxed"`,
+		SavedQuery: &v1pb.SavedQuery{Folder: "bad//path"},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	a.ElementsMatch([]string{directSavedQuery.Name, childSavedQuery.Name}, searchByFolder("boxed"))
 }
 
-func TestListSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
+func TestSearchSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -419,32 +446,21 @@ func TestListSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 
 	ownerToken := ctl.authInterceptor.token
 
-	createSavedQuery := func(title string) *v1pb.SavedQuery {
-		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
+	createSavedQuery := func(title, folder string) {
+		_, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 			Parent: ctl.project.Name,
 			SavedQuery: &v1pb.SavedQuery{
 				Title:   title,
 				Content: []byte("SELECT 1;"),
+				Folder:  folder,
 			},
-		}))
-		a.NoError(err)
-		return resp.Msg
-	}
-	setFolders := func(savedQuery *v1pb.SavedQuery, folders []string) {
-		_, err := ctl.savedQueryServiceClient.UpdateSavedQueryOrganizer(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryOrganizerRequest{
-			Organizer: &v1pb.SavedQueryOrganizer{
-				SavedQuery: savedQuery.Name,
-				Folders:    folders,
-			},
-			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folders"}},
 		}))
 		a.NoError(err)
 	}
 
-	ownerSavedQuery := createSavedQuery("owner")
-	setFolders(ownerSavedQuery, []string{"owner", "child"})
-	ownerSharedSavedQuery := createSavedQuery("owner-shared")
-	setFolders(ownerSharedSavedQuery, []string{"owner-shared"})
+	createSavedQuery("owner", "owner/child")
+	createSavedQuery("owner-second", "owner-second")
+	createSavedQuery("unfiled", "")
 
 	otherEmail := fmt.Sprintf("saved-query-folder-%s@example.com", generateRandomString("user"))
 	otherPassword := "1024bytebase"
@@ -479,38 +495,220 @@ func TestListSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 	}))
 	a.NoError(err)
 	ctl.authInterceptor.token = loginResp.Msg.Token
-	sharedSavedQuery := createSavedQuery("shared")
-	setFolders(sharedSavedQuery, []string{"other", "shared"})
-	privateSavedQuery := createSavedQuery("private")
+	createSavedQuery("other-users", "theirs/deep")
 
-	ctl.authInterceptor.token = ownerToken
-	setFolders(sharedSavedQuery, []string{"owner", "child"})
-
-	db, err := sql.Open("pgx", ctl.profile.PgURL)
-	a.NoError(err)
-	defer db.Close()
-	_, privateSavedQueryID, err := common.GetProjectIDSavedQueryID(privateSavedQuery.Name)
-	a.NoError(err)
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO saved_query_organizer (saved_query, principal, payload)
-		SELECT resource_id, $1, '{"folders":["private"]}'::jsonb
-		FROM saved_query
-		WHERE resource_id = $2
-	`, "demo@example.com", privateSavedQueryID)
-	a.NoError(err)
-
-	resp, err := ctl.savedQueryServiceClient.ListSavedQueryFolders(ctx, connect.NewRequest(&v1pb.ListSavedQueryFoldersRequest{
+	// Each caller sees only their own folder paths, with ancestor prefixes.
+	otherFolders, err := ctl.savedQueryServiceClient.SearchSavedQueryFolders(ctx, connect.NewRequest(&v1pb.SearchSavedQueryFoldersRequest{
 		Parent: ctl.project.Name,
 	}))
 	a.NoError(err)
-	a.ElementsMatch([]string{
-		"MINE:[owner]",
-		"MINE:[owner child]",
-		"MINE:[owner-shared]",
-		"SHARED:[owner]",
-		"SHARED:[owner child]",
-		"SHARED:[private]",
-	}, savedQueryFolderEntries(resp.Msg.Folders))
+	a.Equal([]string{"theirs", "theirs/deep"}, otherFolders.Msg.Folders)
+
+	// A plain project member gets nothing for everyone-else's folders: the
+	// filter cannot widen what the caller may read.
+	const ownerEmail = "demo@example.com"
+	notMineForOther, err := ctl.savedQueryServiceClient.SearchSavedQueryFolders(ctx, connect.NewRequest(&v1pb.SearchSavedQueryFoldersRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf(`creator != "users/%s"`, otherEmail),
+	}))
+	a.NoError(err)
+	a.Empty(notMineForOther.Msg.Folders)
+
+	// Unfiltered means "every folder I can read", so the admin backstop sees
+	// the other creator's folders too. The My/Shared split the SQL Editor
+	// renders comes from the creator filter, asserted below.
+	ctl.authInterceptor.token = ownerToken
+	ownerFolders, err := ctl.savedQueryServiceClient.SearchSavedQueryFolders(ctx, connect.NewRequest(&v1pb.SearchSavedQueryFoldersRequest{
+		Parent: ctl.project.Name,
+	}))
+	a.NoError(err)
+	a.Equal([]string{"owner", "owner-second", "owner/child", "theirs", "theirs/deep"}, ownerFolders.Msg.Folders)
+
+	ownFolders, err := ctl.savedQueryServiceClient.SearchSavedQueryFolders(ctx, connect.NewRequest(&v1pb.SearchSavedQueryFoldersRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf(`creator == "users/%s"`, ownerEmail),
+	}))
+	a.NoError(err)
+	a.Equal([]string{"owner", "owner-second", "owner/child"}, ownFolders.Msg.Folders)
+
+	// The admin backstop is what makes the SQL Editor's shared tree work:
+	// everyone-else's folders resolve server-side, so a cold cache still
+	// renders the folders holding saved queries the caller never opened.
+	sharedFolders, err := ctl.savedQueryServiceClient.SearchSavedQueryFolders(ctx, connect.NewRequest(&v1pb.SearchSavedQueryFoldersRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf(`creator != "users/%s"`, ownerEmail),
+	}))
+	a.NoError(err)
+	a.Equal([]string{"theirs", "theirs/deep"}, sharedFolders.Msg.Folders)
+}
+
+func TestGetSavedQueryHidesUnreadableRows(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	ownerToken := ctl.authInterceptor.token
+	created, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
+		Parent: ctl.project.Name,
+		SavedQuery: &v1pb.SavedQuery{
+			Title:   "Private title that must not leak",
+			Content: []byte("SELECT 1;"),
+		},
+	}))
+	a.NoError(err)
+
+	otherEmail := fmt.Sprintf("saved-query-probe-%s@example.com", generateRandomString("user"))
+	const otherPassword = "1024bytebase"
+	otherUser, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{
+			Email:    otherEmail,
+			Password: otherPassword,
+			Title:    "Saved Query Probe User",
+		},
+	}))
+	a.NoError(err)
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, otherUser.Msg.Workspace, fmt.Sprintf("user:%s", otherEmail), "roles/workspaceMember")
+	a.NoError(err)
+	policyResp, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+		Resource: ctl.project.Name,
+	}))
+	a.NoError(err)
+	policy := policyResp.Msg
+	policy.Bindings = append(policy.Bindings, &v1pb.Binding{
+		Role:    "roles/sqlEditorUser",
+		Members: []string{fmt.Sprintf("user:%s", otherEmail)},
+	})
+	_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Resource: ctl.project.Name,
+		Policy:   policy,
+	}))
+	a.NoError(err)
+
+	loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    otherEmail,
+		Password: otherPassword,
+	}))
+	a.NoError(err)
+	ctl.authInterceptor.token = loginResp.Msg.Token
+	defer func() { ctl.authInterceptor.token = ownerToken }()
+
+	// A saved query someone else owns answers exactly like a name that was
+	// never issued -- same code, and no title in the message.
+	_, err = ctl.savedQueryServiceClient.GetSavedQuery(ctx, connect.NewRequest(&v1pb.GetSavedQueryRequest{
+		Name: created.Msg.Name,
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+	a.NotContains(err.Error(), "Private title that must not leak")
+
+	missing, err := ctl.savedQueryServiceClient.GetSavedQuery(ctx, connect.NewRequest(&v1pb.GetSavedQueryRequest{
+		Name: fmt.Sprintf("%s/savedQueries/909909", ctl.project.Name),
+	}))
+	a.Error(err)
+	a.Nil(missing)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+
+	// Writes answer the same way, so a name cannot be probed by trying to
+	// change or remove it either.
+	_, err = ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+		SavedQuery: &v1pb.SavedQuery{Name: created.Msg.Name, Title: "probe"},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title"}},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+
+	_, err = ctl.savedQueryServiceClient.DeleteSavedQuery(ctx, connect.NewRequest(&v1pb.DeleteSavedQueryRequest{
+		Name: created.Msg.Name,
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+}
+
+func TestListSavedQueriesReturnsWholeStatement(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	const ownerEmail = "demo@example.com"
+
+	// Longer than the display cap Search truncates at, which the governance
+	// surface must not apply -- a lister cannot Get another creator's row to
+	// fetch the remainder.
+	statement := append([]byte("SELECT 1; -- "), bytes.Repeat([]byte("x"), common.MaxSheetSize)...)
+	created, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
+		Parent: ctl.project.Name,
+		SavedQuery: &v1pb.SavedQuery{
+			Title:   "long statement",
+			Content: statement,
+		},
+	}))
+	a.NoError(err)
+
+	// The governance list filters on metadata -- creator is the enumeration
+	// the offboarding review is built around, and the only variable this
+	// filter accepts.
+	listResp, err := ctl.savedQueryServiceClient.ListSavedQueries(ctx, connect.NewRequest(&v1pb.ListSavedQueriesRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf(`creator == "users/%s"`, ownerEmail),
+	}))
+	a.NoError(err)
+	listed := findSavedQueryByName(listResp.Msg.SavedQueries, created.Msg.Name)
+	a.NotNil(listed)
+	a.Equal(int64(len(statement)), listed.ContentSize)
+	a.Equal(len(statement), len(listed.Content))
+
+	searchResp, err := ctl.savedQueryServiceClient.SearchSavedQueries(ctx, connect.NewRequest(&v1pb.SearchSavedQueriesRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf(`name == %q`, created.Msg.Name),
+	}))
+	a.NoError(err)
+	a.Len(searchResp.Msg.SavedQueries, 1)
+	a.Less(len(searchResp.Msg.SavedQueries[0].Content), len(statement))
+}
+
+func TestCreateSavedQueryRejectsArchivedProject(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	projectID := generateRandomString("sq-archived")
+	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+		Project: &v1pb.Project{
+			Name:  fmt.Sprintf("projects/%s", projectID),
+			Title: projectID,
+		},
+		ProjectId: projectID,
+	}))
+	a.NoError(err)
+
+	_, err = ctl.projectServiceClient.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{
+		Name: projectResp.Msg.Name,
+	}))
+	a.NoError(err)
+
+	// Resource resolution returns archived projects, so without an explicit
+	// check the create would reach the store's purge fence and read as a 500.
+	_, err = ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
+		Parent: projectResp.Msg.Name,
+		SavedQuery: &v1pb.SavedQuery{
+			Title:   "into an archived project",
+			Content: []byte("SELECT 1;"),
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 }
 
 func TestSearchSavedQueriesRejectsWildcardProject(t *testing.T) {
@@ -537,10 +735,11 @@ func savedQueryNames(savedQueries []*v1pb.SavedQuery) []string {
 	return names
 }
 
-func savedQueryFolderEntries(folders []*v1pb.SavedQueryFolder) []string {
-	entries := make([]string, 0, len(folders))
-	for _, folder := range folders {
-		entries = append(entries, fmt.Sprintf("%s:%v", folder.Category, folder.Folders))
+func findSavedQueryByName(savedQueries []*v1pb.SavedQuery, name string) *v1pb.SavedQuery {
+	for _, savedQuery := range savedQueries {
+		if savedQuery.Name == name {
+			return savedQuery
+		}
 	}
-	return entries
+	return nil
 }

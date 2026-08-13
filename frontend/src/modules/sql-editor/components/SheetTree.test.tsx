@@ -18,17 +18,18 @@ globalThis.ResizeObserver = class ResizeObserver {
 // ---- hoisted mocks ----------------------------------------------------------
 
 const mocks = vi.hoisted(() => ({
+  canSearchSavedQueriesInProject: vi.fn(() => true),
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   appStore: {
     getSavedQueryByName: vi.fn(),
     deleteSavedQueryByName: vi.fn(),
     patchSavedQuery: vi.fn(),
-    upsertSavedQueryOrganizer: vi.fn(),
+    updateSavedQueryStar: vi.fn(),
   } as {
     getSavedQueryByName: ReturnType<typeof vi.fn>;
     deleteSavedQueryByName: ReturnType<typeof vi.fn>;
     patchSavedQuery: ReturnType<typeof vi.fn>;
-    upsertSavedQueryOrganizer: ReturnType<typeof vi.fn>;
+    updateSavedQueryStar: ReturnType<typeof vi.fn>;
   },
   getSQLEditorTabsState: vi.fn(),
   project: "projects/proj1",
@@ -49,6 +50,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
+}));
+
+vi.mock("@/utils", () => ({
+  canSearchSavedQueriesInProject: mocks.canSearchSavedQueriesInProject,
 }));
 
 vi.mock("@/stores", () => ({
@@ -487,7 +492,7 @@ const setupDefaultMocks = () => {
   }));
   mocks.appStore.deleteSavedQueryByName.mockResolvedValue(undefined);
   mocks.appStore.patchSavedQuery.mockResolvedValue({});
-  mocks.appStore.upsertSavedQueryOrganizer.mockResolvedValue(undefined);
+  mocks.appStore.updateSavedQueryStar.mockResolvedValue(undefined);
   mocks.getSQLEditorTabsState.mockReturnValue({
     tabsById: new Map(),
     closeTab: vi.fn(),
@@ -560,6 +565,7 @@ let SheetTree: typeof import("./SheetTree").SheetTree;
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.canSearchSavedQueriesInProject.mockReturnValue(true);
   setupDefaultMocks();
   ({ SheetTree } = await import("./SheetTree"));
 });
@@ -572,6 +578,27 @@ afterEach(() => {
 // ---- tests ------------------------------------------------------------------
 
 describe("SheetTree", () => {
+  test("fetches on mount when the caller can discover saved queries", () => {
+    const ctx = setupDefaultMocks();
+    ctx.viewContext.isInitialized = false;
+    const { render, unmount } = renderIntoContainer(<SheetTree view="my" />);
+    render();
+    expect(ctx.viewContext.fetchSheetList).toHaveBeenCalled();
+    unmount();
+  });
+
+  test("does not fetch without discovery access", () => {
+    // A SQL role can grant query access without bb.savedQueries.search, and
+    // both the search and folder calls would come back denied on every mount.
+    mocks.canSearchSavedQueriesInProject.mockReturnValue(false);
+    const ctx = setupDefaultMocks();
+    ctx.viewContext.isInitialized = false;
+    const { render, unmount } = renderIntoContainer(<SheetTree view="my" />);
+    render();
+    expect(ctx.viewContext.fetchSheetList).not.toHaveBeenCalled();
+    unmount();
+  });
+
   test("1. Renders tree from store data", () => {
     const { container, render, unmount } = renderIntoContainer(
       <SheetTree

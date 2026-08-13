@@ -10,7 +10,10 @@ import { router } from "@/app/router";
 import { useSQLEditorAllowAdmin } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
-import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
+import {
+  getSQLEditorEditorState,
+  useSQLEditorEditorState,
+} from "@/modules/sql-editor/store/editor";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
 import type {
   BatchQueryContext,
@@ -25,6 +28,7 @@ import {
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   autoDatabaseRoute,
+  canCreateSavedQueryInProject,
   extractDatabaseResourceName,
   getInstanceResource,
   instanceV1HasAlterSchema,
@@ -86,6 +90,11 @@ export function setConnection(options: {
         database: connection.database,
         statement: currentTab.statement,
       });
+    }
+    if (!canCreateSavedQueryInProject(getSQLEditorEditorState().project)) {
+      // Same fallback as the tab bar's "+": open the tab locally rather than
+      // failing the request, so the connection the user picked still opens.
+      return Promise.resolve(getSQLEditorTabsState().addTab({ connection }));
     }
     return createSavedQuery({
       database: connection.database,

@@ -681,7 +681,7 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	}
 	rows.Close()
 
-	if err := updateReference("UPDATE saved_query_organizer SET principal = $1 WHERE principal = $2"); err != nil {
+	if err := updateReference("UPDATE saved_query_star SET principal = $1 WHERE principal = $2"); err != nil {
 		return nil, err
 	}
 	if err := updateReference("UPDATE saved_query SET creator = $1 WHERE creator = $2"); err != nil {

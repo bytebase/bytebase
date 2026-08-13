@@ -487,6 +487,27 @@ func TestGetResourceFromRequest(t *testing.T) {
 			method: "/bytebase.v1.PlanService/CancelPlanCheckRun",
 			want:   []string{"projects/hello/plans/world/planCheckRun"},
 		},
+		{
+			// The search parents resolve, so a project that does not exist is
+			// answered here rather than by the permission check, which reports
+			// a missing project as a plain error.
+			request: &v1pb.SearchSavedQueriesRequest{Parent: "projects/hello"},
+			method:  "/bytebase.v1.SavedQueryService/SearchSavedQueries",
+			want:    []string{"projects/hello"},
+		},
+		{
+			request: &v1pb.SearchSavedQueryFoldersRequest{Parent: "projects/hello"},
+			method:  "/bytebase.v1.SavedQueryService/SearchSavedQueryFolders",
+			want:    []string{"projects/hello"},
+		},
+		{
+			// The wildcard stays a handler-level InvalidArgument: resolution
+			// falls back to the workspace instead of hunting for a project
+			// named "-".
+			request: &v1pb.SearchSavedQueriesRequest{Parent: "projects/-"},
+			method:  "/bytebase.v1.SavedQueryService/SearchSavedQueries",
+			want:    []string{"projects/-"},
+		},
 	}
 
 	for _, tt := range tests {

@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
     getPwdForSavedQuery: vi.fn(() => ""),
     getFoldersForSavedQuery: vi.fn(() => []),
   },
+  canCreateSavedQueryInProject: vi.fn(() => true),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -57,7 +58,13 @@ vi.mock("@/types", () => ({
   UNKNOWN_ID: 0,
 }));
 
+vi.mock("@/modules/sql-editor/store/editor", () => ({
+  useSQLEditorEditorState: (selector: (s: { project: string }) => unknown) =>
+    selector({ project: "projects/proj1" }),
+}));
+
 vi.mock("@/utils", () => ({
+  canCreateSavedQueryInProject: mocks.canCreateSavedQueryInProject,
   extractSavedQueryID: vi.fn((savedQuery: string) => {
     if (!savedQuery) return "0";
     // Return non-zero for saved queries that look like real ones
@@ -200,6 +207,7 @@ let SaveSheetModal: typeof import("./SaveSheetModal").SaveSheetModal;
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
+  mocks.canCreateSavedQueryInProject.mockReturnValue(true);
   mocks.editorSavedQueryStore.abortAutoSave.mockReset();
   mocks.editorSavedQueryStore.maybeUpdateSavedQuery.mockResolvedValue(undefined);
   mocks.editorSavedQueryStore.createSavedQuery.mockResolvedValue(undefined);
@@ -235,6 +243,41 @@ describe("SaveSheetModal", () => {
     expect(input).not.toBeNull();
     expect(input.value).toBe("Untitled");
 
+    unmount();
+  });
+
+  test("save-sheet is a no-op for a draft when the caller cannot create", async () => {
+    // Cmd/Ctrl+S emits the same event as the toolbar button, and the button is
+    // already hidden without the permission -- so the shortcut must not reach
+    // the create call either. The draft stays in the tab.
+    mocks.canCreateSavedQueryInProject.mockReturnValue(false);
+    const { container, render, unmount } = renderIntoContainer(
+      <SaveSheetModal />
+    );
+    render();
+
+    await act(async () => {
+      emitSaveSheet({ tab: tabWithoutSavedQuery });
+    });
+
+    const dialog = container.querySelector("[data-testid='dialog']");
+    expect(dialog?.getAttribute("data-open")).toBe("false");
+    expect(mocks.editorSavedQueryStore.createSavedQuery).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("saving an existing saved query is unaffected by the create permission", async () => {
+    mocks.canCreateSavedQueryInProject.mockReturnValue(false);
+    const { render, unmount } = renderIntoContainer(<SaveSheetModal />);
+    render();
+
+    await act(async () => {
+      emitSaveSheet({ tab: savedTab });
+    });
+
+    expect(
+      mocks.editorSavedQueryStore.maybeUpdateSavedQuery
+    ).toHaveBeenCalled();
     unmount();
   });
 

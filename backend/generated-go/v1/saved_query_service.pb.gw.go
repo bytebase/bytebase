@@ -172,45 +172,6 @@ func local_request_SavedQueryService_ListSavedQueries_0(ctx context.Context, mar
 	return msg, metadata, err
 }
 
-func request_SavedQueryService_ListSavedQueryFolders_0(ctx context.Context, marshaler runtime.Marshaler, client SavedQueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq ListSavedQueryFoldersRequest
-		metadata runtime.ServerMetadata
-		err      error
-	)
-	val, ok := pathParams["parent"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
-	}
-	protoReq.Parent, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
-	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
-	msg, err := client.ListSavedQueryFolders(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-}
-
-func local_request_SavedQueryService_ListSavedQueryFolders_0(ctx context.Context, marshaler runtime.Marshaler, server SavedQueryServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq ListSavedQueryFoldersRequest
-		metadata runtime.ServerMetadata
-		err      error
-	)
-	val, ok := pathParams["parent"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
-	}
-	protoReq.Parent, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
-	}
-	msg, err := server.ListSavedQueryFolders(ctx, &protoReq)
-	return msg, metadata, err
-}
-
 func request_SavedQueryService_SearchSavedQueries_0(ctx context.Context, marshaler runtime.Marshaler, client SavedQueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq SearchSavedQueriesRequest
@@ -253,6 +214,51 @@ func local_request_SavedQueryService_SearchSavedQueries_0(ctx context.Context, m
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 	msg, err := server.SearchSavedQueries(ctx, &protoReq)
+	return msg, metadata, err
+}
+
+func request_SavedQueryService_SearchSavedQueryFolders_0(ctx context.Context, marshaler runtime.Marshaler, client SavedQueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq SearchSavedQueryFoldersRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.SearchSavedQueryFolders(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_SavedQueryService_SearchSavedQueryFolders_0(ctx context.Context, marshaler runtime.Marshaler, server SavedQueryServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq SearchSavedQueryFoldersRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
+	}
+	msg, err := server.SearchSavedQueryFolders(ctx, &protoReq)
 	return msg, metadata, err
 }
 
@@ -337,90 +343,54 @@ func local_request_SavedQueryService_UpdateSavedQuery_0(ctx context.Context, mar
 	return msg, metadata, err
 }
 
-var filter_SavedQueryService_UpdateSavedQueryOrganizer_0 = &utilities.DoubleArray{Encoding: map[string]int{"organizer": 0, "saved_query": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
-
-func request_SavedQueryService_UpdateSavedQueryOrganizer_0(ctx context.Context, marshaler runtime.Marshaler, client SavedQueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_SavedQueryService_UpdateSavedQueryStar_0(ctx context.Context, marshaler runtime.Marshaler, client SavedQueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq UpdateSavedQueryOrganizerRequest
+		protoReq UpdateSavedQueryStarRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Organizer); err != nil && !errors.Is(err, io.EOF) {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
-		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Organizer); err != nil {
-			return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-		} else {
-			protoReq.UpdateMask = fieldMask
-		}
-	}
-	val, ok := pathParams["organizer.saved_query"]
+	val, ok := pathParams["name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organizer.saved_query")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-	err = runtime.PopulateFieldFromPath(&protoReq, "organizer.saved_query", val)
+	protoReq.Name, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organizer.saved_query", err)
-	}
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SavedQueryService_UpdateSavedQueryOrganizer_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
 	}
-	msg, err := client.UpdateSavedQueryOrganizer(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.UpdateSavedQueryStar(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func local_request_SavedQueryService_UpdateSavedQueryOrganizer_0(ctx context.Context, marshaler runtime.Marshaler, server SavedQueryServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_SavedQueryService_UpdateSavedQueryStar_0(ctx context.Context, marshaler runtime.Marshaler, server SavedQueryServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq UpdateSavedQueryOrganizerRequest
+		protoReq UpdateSavedQueryStarRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Organizer); err != nil && !errors.Is(err, io.EOF) {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
-		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Organizer); err != nil {
-			return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-		} else {
-			protoReq.UpdateMask = fieldMask
-		}
-	}
-	val, ok := pathParams["organizer.saved_query"]
+	val, ok := pathParams["name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organizer.saved_query")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-	err = runtime.PopulateFieldFromPath(&protoReq, "organizer.saved_query", val)
+	protoReq.Name, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organizer.saved_query", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SavedQueryService_UpdateSavedQueryOrganizer_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	msg, err := server.UpdateSavedQueryOrganizer(ctx, &protoReq)
+	msg, err := server.UpdateSavedQueryStar(ctx, &protoReq)
 	return msg, metadata, err
 }
 
-func request_SavedQueryService_BatchUpdateSavedQueryOrganizer_0(ctx context.Context, marshaler runtime.Marshaler, client SavedQueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_SavedQueryService_BatchUpdateSavedQueries_0(ctx context.Context, marshaler runtime.Marshaler, client SavedQueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq BatchUpdateSavedQueryOrganizerRequest
+		protoReq BatchUpdateSavedQueriesRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -438,13 +408,13 @@ func request_SavedQueryService_BatchUpdateSavedQueryOrganizer_0(ctx context.Cont
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
 	}
-	msg, err := client.BatchUpdateSavedQueryOrganizer(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.BatchUpdateSavedQueries(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func local_request_SavedQueryService_BatchUpdateSavedQueryOrganizer_0(ctx context.Context, marshaler runtime.Marshaler, server SavedQueryServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_SavedQueryService_BatchUpdateSavedQueries_0(ctx context.Context, marshaler runtime.Marshaler, server SavedQueryServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq BatchUpdateSavedQueryOrganizerRequest
+		protoReq BatchUpdateSavedQueriesRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -459,7 +429,7 @@ func local_request_SavedQueryService_BatchUpdateSavedQueryOrganizer_0(ctx contex
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-	msg, err := server.BatchUpdateSavedQueryOrganizer(ctx, &protoReq)
+	msg, err := server.BatchUpdateSavedQueries(ctx, &protoReq)
 	return msg, metadata, err
 }
 
@@ -568,26 +538,6 @@ func RegisterSavedQueryServiceHandlerServer(ctx context.Context, mux *runtime.Se
 		}
 		forward_SavedQueryService_ListSavedQueries_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_SavedQueryService_ListSavedQueryFolders_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SavedQueryService/ListSavedQueryFolders", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/savedQueryFolders"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_SavedQueryService_ListSavedQueryFolders_0(annotatedContext, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		forward_SavedQueryService_ListSavedQueryFolders_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-	})
 	mux.Handle(http.MethodPost, pattern_SavedQueryService_SearchSavedQueries_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -607,6 +557,26 @@ func RegisterSavedQueryServiceHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 		forward_SavedQueryService_SearchSavedQueries_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodPost, pattern_SavedQueryService_SearchSavedQueryFolders_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SavedQueryService/SearchSavedQueryFolders", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/savedQueries:searchFolders"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_SavedQueryService_SearchSavedQueryFolders_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_SavedQueryService_SearchSavedQueryFolders_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodPatch, pattern_SavedQueryService_UpdateSavedQuery_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -628,45 +598,45 @@ func RegisterSavedQueryServiceHandlerServer(ctx context.Context, mux *runtime.Se
 		}
 		forward_SavedQueryService_UpdateSavedQuery_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPatch, pattern_SavedQueryService_UpdateSavedQueryOrganizer_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_SavedQueryService_UpdateSavedQueryStar_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SavedQueryService/UpdateSavedQueryOrganizer", runtime.WithHTTPPathPattern("/v1/{organizer.saved_query=projects/*/savedQueries/*}/organizer"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SavedQueryService/UpdateSavedQueryStar", runtime.WithHTTPPathPattern("/v1/{name=projects/*/savedQueries/*}:updateStar"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SavedQueryService_UpdateSavedQueryOrganizer_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_SavedQueryService_UpdateSavedQueryStar_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_SavedQueryService_UpdateSavedQueryOrganizer_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SavedQueryService_UpdateSavedQueryStar_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPost, pattern_SavedQueryService_BatchUpdateSavedQueryOrganizer_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_SavedQueryService_BatchUpdateSavedQueries_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SavedQueryService/BatchUpdateSavedQueryOrganizer", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/savedQueries/organizers:batchUpdate"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SavedQueryService/BatchUpdateSavedQueries", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/savedQueries:batchUpdate"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SavedQueryService_BatchUpdateSavedQueryOrganizer_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_SavedQueryService_BatchUpdateSavedQueries_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_SavedQueryService_BatchUpdateSavedQueryOrganizer_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SavedQueryService_BatchUpdateSavedQueries_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodDelete, pattern_SavedQueryService_DeleteSavedQuery_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -779,23 +749,6 @@ func RegisterSavedQueryServiceHandlerClient(ctx context.Context, mux *runtime.Se
 		}
 		forward_SavedQueryService_ListSavedQueries_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_SavedQueryService_ListSavedQueryFolders_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SavedQueryService/ListSavedQueryFolders", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/savedQueryFolders"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_SavedQueryService_ListSavedQueryFolders_0(annotatedContext, inboundMarshaler, client, req, pathParams)
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		forward_SavedQueryService_ListSavedQueryFolders_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-	})
 	mux.Handle(http.MethodPost, pattern_SavedQueryService_SearchSavedQueries_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -812,6 +765,23 @@ func RegisterSavedQueryServiceHandlerClient(ctx context.Context, mux *runtime.Se
 			return
 		}
 		forward_SavedQueryService_SearchSavedQueries_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodPost, pattern_SavedQueryService_SearchSavedQueryFolders_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SavedQueryService/SearchSavedQueryFolders", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/savedQueries:searchFolders"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_SavedQueryService_SearchSavedQueryFolders_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_SavedQueryService_SearchSavedQueryFolders_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodPatch, pattern_SavedQueryService_UpdateSavedQuery_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -830,39 +800,39 @@ func RegisterSavedQueryServiceHandlerClient(ctx context.Context, mux *runtime.Se
 		}
 		forward_SavedQueryService_UpdateSavedQuery_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPatch, pattern_SavedQueryService_UpdateSavedQueryOrganizer_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_SavedQueryService_UpdateSavedQueryStar_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SavedQueryService/UpdateSavedQueryOrganizer", runtime.WithHTTPPathPattern("/v1/{organizer.saved_query=projects/*/savedQueries/*}/organizer"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SavedQueryService/UpdateSavedQueryStar", runtime.WithHTTPPathPattern("/v1/{name=projects/*/savedQueries/*}:updateStar"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SavedQueryService_UpdateSavedQueryOrganizer_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SavedQueryService_UpdateSavedQueryStar_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_SavedQueryService_UpdateSavedQueryOrganizer_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SavedQueryService_UpdateSavedQueryStar_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPost, pattern_SavedQueryService_BatchUpdateSavedQueryOrganizer_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_SavedQueryService_BatchUpdateSavedQueries_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SavedQueryService/BatchUpdateSavedQueryOrganizer", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/savedQueries/organizers:batchUpdate"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SavedQueryService/BatchUpdateSavedQueries", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/savedQueries:batchUpdate"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SavedQueryService_BatchUpdateSavedQueryOrganizer_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SavedQueryService_BatchUpdateSavedQueries_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_SavedQueryService_BatchUpdateSavedQueryOrganizer_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SavedQueryService_BatchUpdateSavedQueries_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodDelete, pattern_SavedQueryService_DeleteSavedQuery_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -885,25 +855,25 @@ func RegisterSavedQueryServiceHandlerClient(ctx context.Context, mux *runtime.Se
 }
 
 var (
-	pattern_SavedQueryService_CreateSavedQuery_0               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "savedQueries"}, ""))
-	pattern_SavedQueryService_GetSavedQuery_0                  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "savedQueries", "name"}, ""))
-	pattern_SavedQueryService_ListSavedQueries_0               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "savedQueries"}, ""))
-	pattern_SavedQueryService_ListSavedQueryFolders_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "savedQueryFolders"}, ""))
-	pattern_SavedQueryService_SearchSavedQueries_0             = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "savedQueries"}, "search"))
-	pattern_SavedQueryService_UpdateSavedQuery_0               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "savedQueries", "saved_query.name"}, ""))
-	pattern_SavedQueryService_UpdateSavedQueryOrganizer_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "projects", "savedQueries", "organizer.saved_query", "organizer"}, ""))
-	pattern_SavedQueryService_BatchUpdateSavedQueryOrganizer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3, 2, 4}, []string{"v1", "projects", "parent", "savedQueries", "organizers"}, "batchUpdate"))
-	pattern_SavedQueryService_DeleteSavedQuery_0               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "savedQueries", "name"}, ""))
+	pattern_SavedQueryService_CreateSavedQuery_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "savedQueries"}, ""))
+	pattern_SavedQueryService_GetSavedQuery_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "savedQueries", "name"}, ""))
+	pattern_SavedQueryService_ListSavedQueries_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "savedQueries"}, ""))
+	pattern_SavedQueryService_SearchSavedQueries_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "savedQueries"}, "search"))
+	pattern_SavedQueryService_SearchSavedQueryFolders_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "savedQueries"}, "searchFolders"))
+	pattern_SavedQueryService_UpdateSavedQuery_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "savedQueries", "saved_query.name"}, ""))
+	pattern_SavedQueryService_UpdateSavedQueryStar_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "savedQueries", "name"}, "updateStar"))
+	pattern_SavedQueryService_BatchUpdateSavedQueries_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "savedQueries"}, "batchUpdate"))
+	pattern_SavedQueryService_DeleteSavedQuery_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "savedQueries", "name"}, ""))
 )
 
 var (
-	forward_SavedQueryService_CreateSavedQuery_0               = runtime.ForwardResponseMessage
-	forward_SavedQueryService_GetSavedQuery_0                  = runtime.ForwardResponseMessage
-	forward_SavedQueryService_ListSavedQueries_0               = runtime.ForwardResponseMessage
-	forward_SavedQueryService_ListSavedQueryFolders_0          = runtime.ForwardResponseMessage
-	forward_SavedQueryService_SearchSavedQueries_0             = runtime.ForwardResponseMessage
-	forward_SavedQueryService_UpdateSavedQuery_0               = runtime.ForwardResponseMessage
-	forward_SavedQueryService_UpdateSavedQueryOrganizer_0      = runtime.ForwardResponseMessage
-	forward_SavedQueryService_BatchUpdateSavedQueryOrganizer_0 = runtime.ForwardResponseMessage
-	forward_SavedQueryService_DeleteSavedQuery_0               = runtime.ForwardResponseMessage
+	forward_SavedQueryService_CreateSavedQuery_0        = runtime.ForwardResponseMessage
+	forward_SavedQueryService_GetSavedQuery_0           = runtime.ForwardResponseMessage
+	forward_SavedQueryService_ListSavedQueries_0        = runtime.ForwardResponseMessage
+	forward_SavedQueryService_SearchSavedQueries_0      = runtime.ForwardResponseMessage
+	forward_SavedQueryService_SearchSavedQueryFolders_0 = runtime.ForwardResponseMessage
+	forward_SavedQueryService_UpdateSavedQuery_0        = runtime.ForwardResponseMessage
+	forward_SavedQueryService_UpdateSavedQueryStar_0    = runtime.ForwardResponseMessage
+	forward_SavedQueryService_BatchUpdateSavedQueries_0 = runtime.ForwardResponseMessage
+	forward_SavedQueryService_DeleteSavedQuery_0        = runtime.ForwardResponseMessage
 )

@@ -105,7 +105,7 @@ export interface ViewContext {
   getKeyForSavedQuery: (savedQuery: SavedQueryLikeItem) => string;
   getFoldersForSavedQuery: (path: string) => string[];
   getPathesForSavedQuery: (savedQuery: { folders: string[] }) => string[];
-  getPwdForSavedQuery: (savedQuery: { folders: string[] }) => string;
+  getPwdForSavedQuery: (savedQuery: { folder: string }) => string;
 }
 
 export type SavedQueryFolderPathUpdate = {
@@ -575,7 +575,7 @@ const convertToSavedQueryLikeItem = (
 ): SavedQueryLikeItem => ({
   name: savedQuery.name,
   title: savedQuery.title,
-  folders: savedQuery.folders,
+  folders: savedQuery.folder ? savedQuery.folder.split("/") : [],
   type: "savedQuery",
 });
 
@@ -837,9 +837,12 @@ const buildTree = (
   return parent;
 };
 
-const savedQueriesForView = (view: SheetViewMode): SavedQuery[] => {
+// Every cached row for the view, before display filters. The tree renders
+// `savedQueriesForView`, but cache maintenance has to see the rows a display
+// filter hides: the server moves those too, so leaving them out strands them
+// under their old folder until a refetch.
+const cachedSavedQueriesForView = (view: SheetViewMode): SavedQuery[] => {
   if (view !== "my" && view !== "shared") return [];
-  const filter = useSheetContextStore.getState().filter;
   const project = getSQLEditorEditorState().project;
   // SQLEditorLayout awaits `loadCurrentUser()` in its bootstrap, so by the
   // time saved queries land here the app-store `currentUser` is populated.
@@ -849,7 +852,7 @@ const savedQueriesForView = (view: SheetViewMode): SavedQuery[] => {
   const email = useAppStore.getState().currentUser?.email ?? "";
   const creator = `users/${email}`;
   const appState = useAppStore.getState();
-  let list = useSheetContextStore
+  const list = useSheetContextStore
     .getState()
     .viewStates[view].savedQueryNames.map((name) =>
       appState.getSavedQueryByName(name)
@@ -860,10 +863,14 @@ const savedQueriesForView = (view: SheetViewMode): SavedQuery[] => {
       const mine = sheet.creator === creator;
       return view === "my" ? mine : !mine;
     });
-  if (filter.onlyShowStarred) {
-    list = list.filter((sheet) => sheet.starred);
-  }
   return list;
+};
+
+const savedQueriesForView = (view: SheetViewMode): SavedQuery[] => {
+  const list = cachedSavedQueriesForView(view);
+  return useSheetContextStore.getState().filter.onlyShowStarred
+    ? list.filter((sheet) => sheet.starred)
+    : list;
 };
 
 const sheetLikeItemsForView = (view: SheetViewMode): SavedQueryLikeItem[] => {
@@ -1056,16 +1063,18 @@ const fetchSavedQueryFoldersForView = async (view: SheetViewMode) => {
   if (view !== "my" && view !== "shared") {
     return;
   }
-  const project = getSQLEditorEditorState().project;
-  const paths = await useAppStore.getState().listSavedQueryFolders(project);
   const folderPaths = new Set<string>();
-  for (const { folders, category } of paths) {
-    if (category !== view) {
-      continue;
-    }
-    for (const path of getPathesForSavedQuery(view, { folders })) {
-      folderPaths.add(path);
-    }
+  // Both views ask the server, which returns the folder paths of the saved
+  // queries the caller can read, with every ancestor prefix expanded. The
+  // view's own creator filter is what splits mine from everyone else's --
+  // deriving the shared tree from cached rows instead would miss every
+  // foldered row, since the root page only loads unfiled ones.
+  const project = getSQLEditorEditorState().project;
+  const paths = await useAppStore
+    .getState()
+    .searchSavedQueryFolders(project, sheetFilterForView(view, [], false));
+  for (const path of paths) {
+    folderPaths.add(getFolderContext(view).rootPath + "/" + path);
   }
   for (const path of readPersistedFolders(view)) {
     folderPaths.add(path);
@@ -1166,7 +1175,10 @@ const buildViewContext = (view: SheetViewMode): ViewContext => {
     getKeyForSavedQuery: (ws) => getKeyForSavedQuery(view, ws),
     getFoldersForSavedQuery: (path) => getFoldersForSavedQuery(view, path),
     getPathesForSavedQuery: (ws) => getPathesForSavedQuery(view, ws),
-    getPwdForSavedQuery: (ws) => getPwdForSavedQuery(view, ws),
+    getPwdForSavedQuery: (ws) =>
+      getPwdForSavedQuery(view, {
+        folders: ws.folder ? ws.folder.split("/") : [],
+      }),
   };
 };
 
@@ -1241,7 +1253,12 @@ const batchUpdateSavedQueryFolders = async (
     const current = useAppStore.getState().getSavedQueryByName(savedQuery.name);
     const view = current ? viewForSavedQuery(current) : undefined;
     if (current && (view === "my" || view === "shared")) {
-      addAffectedFolderKey(view, getPwdForSavedQuery(view, current));
+      addAffectedFolderKey(
+        view,
+        getPwdForSavedQuery(view, {
+          folders: current.folder ? current.folder.split("/") : [],
+        })
+      );
       addAffectedFolderKey(view, getPwdForSavedQuery(view, savedQuery));
     }
 
@@ -1264,17 +1281,22 @@ const batchUpdateSavedQueryFolders = async (
   }
   const requests = [...requestByKey.values()];
   if (requests.length === 0) return;
-  await useAppStore.getState().batchUpdateSavedQueryOrganizers(
-    requests.map((request) => ({
-      parent: request.parent,
-      filter: `name in [${request.names
-        .map((name) => '"' + escapeCELStringLiteral(name) + '"')
-        .join(",")}]`,
-      organizer: {
-        folders: request.folders,
-      },
-      updateMask: ["folders"],
-    }))
+  await Promise.all(
+    requests.map(async (request) => {
+      const folder = request.folders.join("/");
+      await useAppStore
+        .getState()
+        .batchUpdateSavedQueryFolder(
+          request.parent,
+          `name in [${request.names
+            .map((name) => '"' + escapeCELStringLiteral(name) + '"')
+            .join(",")}]`,
+          folder
+        );
+      useAppStore
+        .getState()
+        .patchSavedQueryFolderInCache(request.names, folder);
+    })
   );
   for (const [view, folderKeys] of affectedFolderKeysByView) {
     useSheetContextStore.getState().invalidateViewPageState(view, folderKeys);
@@ -1292,22 +1314,28 @@ const batchUpdateSavedQueryFolderPaths = async (
   const sortedUpdates = [...updates].sort(
     (a, b) => b.sourceFolder.length - a.sourceFolder.length
   );
-  await useAppStore.getState().batchUpdateSavedQueryOrganizers(
-    sortedUpdates.map((update) => ({
-      parent: project,
-      filter: sheetFilterForView(
-        view,
-        [
-          `folder == "${escapeCELStringLiteral(update.sourceFolder.join("/"))}"`,
-        ],
-        false
-      ),
-      organizer: {
-        folders: update.targetFolder,
-      },
-      updateMask: ["folders"],
-    }))
-  );
+  for (const update of sortedUpdates) {
+    const source = update.sourceFolder.join("/");
+    const target = update.targetFolder.join("/");
+    // Cached rows are named before the move so the tree can be rebuilt
+    // without waiting for a refetch; rows outside the cache move server-side
+    // and arrive with the new folder on their next page.
+    const movedNames = cachedSavedQueriesForView(view)
+      .filter((savedQuery) => savedQuery.folder === source)
+      .map((savedQuery) => savedQuery.name);
+    await useAppStore
+      .getState()
+      .batchUpdateSavedQueryFolder(
+        project,
+        sheetFilterForView(
+          view,
+          [`folder == "${escapeCELStringLiteral(source)}"`],
+          false
+        ),
+        target
+      );
+    useAppStore.getState().patchSavedQueryFolderInCache(movedNames, target);
+  }
 };
 
 let _watchersBound = false;
@@ -1446,7 +1474,7 @@ const onCurrentTabChanged = (tab: SQLEditorTab | undefined) => {
     savedQueryLikeItem = {
       name: savedQuery.name,
       title: savedQuery.title,
-      folders: savedQuery.folders,
+      folders: savedQuery.folder ? savedQuery.folder.split("/") : [],
       type: "savedQuery",
     };
     view = isSavedQueryCreator(savedQuery) ? "my" : "shared";

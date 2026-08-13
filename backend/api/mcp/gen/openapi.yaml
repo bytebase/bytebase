@@ -5769,16 +5769,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.SearchQueryHistoriesResponse'
       deprecated: true
-  /bytebase.v1.SavedQueryService/BatchUpdateSavedQueryOrganizer:
+  /bytebase.v1.SavedQueryService/BatchUpdateSavedQueries:
     post:
       tags:
         - bytebase.v1.SavedQueryService
-      summary: BatchUpdateSavedQueryOrganizer
+      summary: BatchUpdateSavedQueries
       description: |-
-        Batch update the organizers of saved queries.
-         The access is the same as UpdateSavedQuery method.
-         Permissions required: creator, or workspace bb.worksheets.manage
-      operationId: bytebase.v1.SavedQueryService.BatchUpdateSavedQueryOrganizer
+        Batch re-file saved queries into a folder. The update mask supports
+         `folder` only; only rows the caller may re-file are updated (their own,
+         or any in scope for admins).
+         Permissions required: creator, or bb.savedQueries.manage in scope
+      operationId: bytebase.v1.SavedQueryService.BatchUpdateSavedQueries
       parameters:
         - name: Connect-Protocol-Version
           in: header
@@ -5793,7 +5794,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/bytebase.v1.BatchUpdateSavedQueryOrganizerRequest'
+              $ref: '#/components/schemas/bytebase.v1.BatchUpdateSavedQueriesRequest'
         required: true
       responses:
         default:
@@ -5807,15 +5808,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/bytebase.v1.BatchUpdateSavedQueryOrganizerResponse'
+                $ref: '#/components/schemas/bytebase.v1.BatchUpdateSavedQueriesResponse'
   /bytebase.v1.SavedQueryService/CreateSavedQuery:
     post:
       tags:
         - bytebase.v1.SavedQueryService
       summary: CreateSavedQuery
       description: |-
-        Creates a personal saved query used in SQL Editor. Any authenticated user can create their own saved queries.
-         Permissions required: None (authenticated users only)
+        Creates a personal saved query used in SQL Editor. The creator becomes
+         the fixed owner.
+         Permissions required: bb.savedQueries.create on the parent project
       operationId: bytebase.v1.SavedQueryService.CreateSavedQuery
       parameters:
         - name: Connect-Protocol-Version
@@ -5852,9 +5854,9 @@ paths:
         - bytebase.v1.SavedQueryService
       summary: DeleteSavedQuery
       description: |-
-        Delete a saved query.
-         The access is the same as UpdateSavedQuery method.
-         Permissions required: creator, or workspace bb.worksheets.manage
+        Delete a saved query. Only the creator (or an admin) can delete.
+         Returns NotFound for saved queries the caller cannot read.
+         Permissions required: creator, or bb.savedQueries.manage in scope
       operationId: bytebase.v1.SavedQueryService.DeleteSavedQuery
       parameters:
         - name: Connect-Protocol-Version
@@ -5891,10 +5893,9 @@ paths:
         - bytebase.v1.SavedQueryService
       summary: GetSavedQuery
       description: |-
-        Get a saved query by name.
-         Saved queries are private: only the creator, or a caller holding
-         bb.worksheets.manage on the workspace, can access one.
-         Permissions required: creator, or workspace bb.worksheets.manage
+        Get a saved query by name. Returns NotFound for saved queries the
+         caller cannot read.
+         Permissions required: creator, or bb.savedQueries.manage in scope
       operationId: bytebase.v1.SavedQueryService.GetSavedQuery
       parameters:
         - name: Connect-Protocol-Version
@@ -5931,9 +5932,11 @@ paths:
         - bytebase.v1.SavedQueryService
       summary: ListSavedQueries
       description: |-
-        List saved queries.
-         This is used for listing saved queries in a project, or across all projects by using `projects/-`.
-         Permissions required: bb.worksheets.list
+        List saved queries: the grant-independent governance surface. Supports
+         listing in a project, or across all projects by using `projects/-`, with
+         whole statements rather than the previews Search returns — e.g. an
+         offboarding review filtering by creator.
+         Permissions required: bb.savedQueries.list
       operationId: bytebase.v1.SavedQueryService.ListSavedQueries
       parameters:
         - name: Connect-Protocol-Version
@@ -5964,54 +5967,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListSavedQueriesResponse'
-  /bytebase.v1.SavedQueryService/ListSavedQueryFolders:
-    post:
-      tags:
-        - bytebase.v1.SavedQueryService
-      summary: ListSavedQueryFolders
-      description: |-
-        List the caller's saved query folders.
-         Only folders stored in the caller's saved query organizer are returned.
-      operationId: bytebase.v1.SavedQueryService.ListSavedQueryFolders
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.ListSavedQueryFoldersRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.ListSavedQueryFoldersResponse'
   /bytebase.v1.SavedQueryService/SearchSavedQueries:
     post:
       tags:
         - bytebase.v1.SavedQueryService
       summary: SearchSavedQueries
       description: |-
-        Search for saved queries.
-         This is used for finding my saved queries in a project.
-         The saved query accessibility is the same as GetSavedQuery().
-         Permissions required: creator, or workspace bb.worksheets.manage
+        Search for saved queries in a project: the SQL Editor's hot list path,
+         returning only rows the caller can read, with content previews.
+         Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
       operationId: bytebase.v1.SavedQueryService.SearchSavedQueries
       parameters:
         - name: Connect-Protocol-Version
@@ -6042,15 +6006,58 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.SearchSavedQueriesResponse'
+  /bytebase.v1.SavedQueryService/SearchSavedQueryFolders:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: SearchSavedQueryFolders
+      description: |-
+        Search the folder paths of the caller's saved queries in a project.
+         Folders are a derived view over the `folder` field rather than a
+         resource collection, so this is a custom method on savedQueries and
+         shares SearchSavedQueries' caller-scoped semantics — not the
+         cross-creator reach of ListSavedQueries.
+         Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
+      operationId: bytebase.v1.SavedQueryService.SearchSavedQueryFolders
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.SearchSavedQueryFoldersRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SearchSavedQueryFoldersResponse'
   /bytebase.v1.SavedQueryService/UpdateSavedQuery:
     post:
       tags:
         - bytebase.v1.SavedQueryService
       summary: UpdateSavedQuery
       description: |-
-        Update a saved query.
-         The access is the same as GetSavedQuery method.
-         Permissions required: creator, or workspace bb.worksheets.manage
+        Update a saved query. `title`, `content`, and `database` require write
+         access; `folder` re-files the saved query and is creator/admin only.
+         Returns NotFound for saved queries the caller cannot read.
+         Permissions required: creator, or bb.savedQueries.manage in scope
       operationId: bytebase.v1.SavedQueryService.UpdateSavedQuery
       parameters:
         - name: Connect-Protocol-Version
@@ -6081,16 +6088,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.SavedQuery'
-  /bytebase.v1.SavedQueryService/UpdateSavedQueryOrganizer:
+  /bytebase.v1.SavedQueryService/UpdateSavedQueryStar:
     post:
       tags:
         - bytebase.v1.SavedQueryService
-      summary: UpdateSavedQueryOrganizer
+      summary: UpdateSavedQueryStar
       description: |-
-        Update the organizer of a saved query.
-         The access is the same as UpdateSavedQuery method.
-         Permissions required: creator, or workspace bb.worksheets.manage
-      operationId: bytebase.v1.SavedQueryService.UpdateSavedQueryOrganizer
+        Star or unstar a saved query for the caller. A star is always the
+         caller's own per-user marker — invisible to others and carrying no
+         access. The only requirement is that the caller can read the saved
+         query being starred (which also keeps private saved query names
+         unprobeable).
+         Permissions required: read access to the saved query
+      operationId: bytebase.v1.SavedQueryService.UpdateSavedQueryStar
       parameters:
         - name: Connect-Protocol-Version
           in: header
@@ -6105,7 +6115,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/bytebase.v1.UpdateSavedQueryOrganizerRequest'
+              $ref: '#/components/schemas/bytebase.v1.UpdateSavedQueryStarRequest'
         required: true
       responses:
         default:
@@ -6119,7 +6129,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
+                $ref: '#/components/schemas/bytebase.v1.SavedQuery'
   /bytebase.v1.ServiceAccountService/CreateServiceAccount:
     post:
       tags:
@@ -9281,14 +9291,14 @@ components:
       type: object
       title: BatchUpdateIssuesStatusResponse
       additionalProperties: false
-    bytebase.v1.BatchUpdateSavedQueryOrganizerRequest:
+    bytebase.v1.BatchUpdateSavedQueriesRequest:
       type: object
       properties:
         parent:
           type: string
           title: parent
           description: |-
-            The parent resource whose saved queries' organizers are updated.
+            The parent resource whose saved queries are updated.
              Format: projects/{project}
         filter:
           type: string
@@ -9301,35 +9311,29 @@ components:
              - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
              - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
              - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-             - folder: the saved query organizer folder path, support exact "==" operator.
-        organizer:
-          title: organizer
-          description: The organizer fields to update.
-          $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
+             - folder: the saved query folder path, support exact "==" operator.
+        savedQuery:
+          title: saved_query
+          description: The fields to apply to every matched saved query.
+          $ref: '#/components/schemas/bytebase.v1.SavedQuery'
         updateMask:
           title: update_mask
           description: |-
             The list of fields to be updated.
-             Fields are specified relative to the saved query organizer.
              Only support update the following fields for now:
-             - `starred`
-             - `folders`
+             - `folder`
           $ref: '#/components/schemas/google.protobuf.FieldMask'
-      title: BatchUpdateSavedQueryOrganizerRequest
+      title: BatchUpdateSavedQueriesRequest
       additionalProperties: false
-    bytebase.v1.BatchUpdateSavedQueryOrganizerResponse:
+    bytebase.v1.BatchUpdateSavedQueriesResponse:
       type: object
       properties:
-        savedQueryOrganizers:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
-          title: saved_query_organizers
         updatedCount:
           type: integer
           title: updated_count
           format: int32
-      title: BatchUpdateSavedQueryOrganizerResponse
+          description: The number of saved queries updated.
+      title: BatchUpdateSavedQueriesResponse
       additionalProperties: false
     bytebase.v1.BillingInterval:
       type: string
@@ -14520,28 +14524,6 @@ components:
              `ListSavedQueries` method to retrieve the next page of saved queries.
       title: ListSavedQueriesResponse
       additionalProperties: false
-    bytebase.v1.ListSavedQueryFoldersRequest:
-      type: object
-      properties:
-        parent:
-          type: string
-          title: parent
-          description: |-
-            The parent resource of the saved query folders.
-             Format: projects/{project}
-      title: ListSavedQueryFoldersRequest
-      additionalProperties: false
-    bytebase.v1.ListSavedQueryFoldersResponse:
-      type: object
-      properties:
-        folders:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.SavedQueryFolder'
-          title: folders
-          description: The caller's saved query folders.
-      title: ListSavedQueryFoldersResponse
-      additionalProperties: false
     bytebase.v1.ListServiceAccountsRequest:
       type: object
       properties:
@@ -17729,7 +17711,8 @@ components:
           type: string
           title: creator
           description: |-
-            The creator of the SavedQuery.
+            The creator of the SavedQuery — the fixed owner; ownership does not
+             transfer.
              Format: users/{email}
         createTime:
           title: create_time
@@ -17758,54 +17741,15 @@ components:
           type: boolean
           title: starred
           description: starred indicates whether the saved query is starred by the current authenticated user.
-        folders:
-          type: array
-          items:
-            type: string
-          title: folders
-      title: SavedQuery
-      additionalProperties: false
-    bytebase.v1.SavedQueryFolder:
-      type: object
-      properties:
-        folders:
-          type: array
-          items:
-            type: string
-          title: folders
-          description: The folder path segments.
-        category:
-          title: category
-          description: The folder category.
-          $ref: '#/components/schemas/bytebase.v1.SavedQueryFolder.Category'
-      title: SavedQueryFolder
-      additionalProperties: false
-    bytebase.v1.SavedQueryFolder.Category:
-      type: string
-      title: Category
-      enum:
-        - CATEGORY_UNSPECIFIED
-        - MINE
-        - SHARED
-    bytebase.v1.SavedQueryOrganizer:
-      type: object
-      properties:
-        savedQuery:
+        folder:
           type: string
-          title: saved_query
+          title: folder
+          maxLength: 256
           description: |-
-            The name of the saved query.
-             Format: projects/{project}/savedQueries/{savedQuery}
-        starred:
-          type: boolean
-          title: starred
-          description: starred means if the saved query is starred.
-        folders:
-          type: array
-          items:
-            type: string
-          title: folders
-      title: SavedQueryOrganizer
+            The folder path this saved query lives in, set by its creator (or an
+             admin). Empty means unfiled. A saved query lives in exactly one folder;
+             a folder is a path on saved queries, e.g. "a/b/c".
+      title: SavedQuery
       additionalProperties: false
     bytebase.v1.SchemaCatalog:
       type: object
@@ -18291,7 +18235,7 @@ components:
              - title: the saved query title, support "contains" operator.
              - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
              - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-             - folder: the saved query organizer folder path, support "==" operator.
+             - folder: the saved query folder path, support "==" operator.
 
              For example:
              creator == "users/{email}"
@@ -18334,6 +18278,44 @@ components:
              Pass this value in the page_token field in the subsequent call to
              `SearchSavedQueries` method to retrieve the next page of saved queries.
       title: SearchSavedQueriesResponse
+      additionalProperties: false
+    bytebase.v1.SearchSavedQueryFoldersRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource whose saved query folders are searched.
+             Format: projects/{project}
+        filter:
+          type: string
+          title: filter
+          description: |-
+            To filter the folders by the saved queries they hold. Takes the same
+             fields and syntax as `SearchSavedQueries.filter`, except `title`. A
+             folder is returned when at least one saved query the caller can read
+             matches, so the caller-scoping is the same as SearchSavedQueries: your
+             own saved queries, plus everyone's for the admin backstop.
+
+             For example, to split a folder tree into your own and everyone else's:
+             creator == "users/{email}"
+             creator != "users/{email}"
+      title: SearchSavedQueryFoldersRequest
+      additionalProperties: false
+    bytebase.v1.SearchSavedQueryFoldersResponse:
+      type: object
+      properties:
+        folders:
+          type: array
+          items:
+            type: string
+          title: folders
+          description: |-
+            The caller's folder paths, including every ancestor prefix, sorted.
+             A folder is a path on saved queries ("a/b/c"), so empty folders cannot
+             exist.
+      title: SearchSavedQueryFoldersResponse
       additionalProperties: false
     bytebase.v1.SemanticTypeSetting:
       type: object
@@ -20646,33 +20628,6 @@ components:
              In this situation, `update_mask` is ignored.
       title: UpdateRoleRequest
       additionalProperties: false
-    bytebase.v1.UpdateSavedQueryOrganizerRequest:
-      type: object
-      properties:
-        organizer:
-          title: organizer
-          description: |-
-            The organizer to update.
-
-             The organizer's `saved_query` field is used to identify the saved query.
-             Format: projects/{project}/savedQueries/{savedQuery}
-          $ref: '#/components/schemas/bytebase.v1.SavedQueryOrganizer'
-        updateMask:
-          title: update_mask
-          description: |-
-            The list of fields to be updated.
-             Fields are specified relative to the saved query organizer.
-             Only support update the following fields for now:
-             - `starred`
-          $ref: '#/components/schemas/google.protobuf.FieldMask'
-        allowMissing:
-          type: boolean
-          title: allow_missing
-          description: |-
-            If set to true, and the saved query organizer is not found, a new saved query organizer will be created.
-             In this situation, `update_mask` is ignored.
-      title: UpdateSavedQueryOrganizerRequest
-      additionalProperties: false
     bytebase.v1.UpdateSavedQueryRequest:
       type: object
       properties:
@@ -20694,8 +20649,24 @@ components:
              - `title`
              - `content`
              - `database`
+             - `folder`
           $ref: '#/components/schemas/google.protobuf.FieldMask'
       title: UpdateSavedQueryRequest
+      additionalProperties: false
+    bytebase.v1.UpdateSavedQueryStarRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the saved query to star or unstar.
+             Format: projects/{project}/savedQueries/{savedQuery}
+        starred:
+          type: boolean
+          title: starred
+          description: Whether the caller stars the saved query.
+      title: UpdateSavedQueryStarRequest
       additionalProperties: false
     bytebase.v1.UpdateServiceAccountRequest:
       type: object
@@ -22733,8 +22704,12 @@ tags:
   - name: bytebase.v1.SavedQueryService
     description: |-
       SavedQueryService manages saved queries for SQL Editor query development.
-       Permission IDs still use the legacy `bb.worksheets.*` names; they are
-       renamed together with the access-model redesign and its role migration.
+
+       A saved query is private to its creator; `bb.savedQueries.manage` is the
+       admin backstop that can reach any saved query in scope. Per-object
+       VIEWER/EDITOR grants arrive with the access-model redesign, which brings
+       its own policy shapes and the GetIamPolicy/SetIamPolicy pair that manages
+       them.
   - name: bytebase.v1.ServiceAccountService
     description: ServiceAccountService manages service accounts for API integrations.
   - name: bytebase.v1.SheetService

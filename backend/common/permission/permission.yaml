@@ -99,6 +99,10 @@ permissions:
   - bb.rollouts.create
   - bb.rollouts.get
   - bb.rollouts.list
+  - bb.savedQueries.create
+  - bb.savedQueries.search
+  - bb.savedQueries.list
+  - bb.savedQueries.manage
   - bb.serviceAccounts.create
   - bb.serviceAccounts.delete
   - bb.serviceAccounts.get
@@ -130,9 +134,6 @@ permissions:
   - bb.users.undelete
   - bb.users.update
   - bb.users.updateEmail
-  - bb.worksheets.get
-  - bb.worksheets.list
-  - bb.worksheets.manage
   - bb.workloadIdentities.create
   - bb.workloadIdentities.delete
   - bb.workloadIdentities.get

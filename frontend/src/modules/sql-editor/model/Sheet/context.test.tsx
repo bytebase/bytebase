@@ -16,10 +16,12 @@ type AppState = {
   savedQueriesByKey: Record<string, SavedQuery>;
   isSaaSMode: () => boolean;
   getSavedQueryByName: (name: string) => SavedQuery | undefined;
-  listSavedQueryFolders: ReturnType<typeof vi.fn>;
+  savedQueryList: () => SavedQuery[];
+  patchSavedQueryFolderInCache: ReturnType<typeof vi.fn>;
+  searchSavedQueryFolders: ReturnType<typeof vi.fn>;
   fetchSavedQueryList: ReturnType<typeof vi.fn>;
-  upsertSavedQueryOrganizer: ReturnType<typeof vi.fn>;
-  batchUpdateSavedQueryOrganizers: ReturnType<typeof vi.fn>;
+  updateSavedQueryStar: ReturnType<typeof vi.fn>;
+  batchUpdateSavedQueryFolder: ReturnType<typeof vi.fn>;
 };
 
 const mocks = vi.hoisted(() => {
@@ -62,7 +64,8 @@ const mocks = vi.hoisted(() => {
         isSaaSMode: () => false,
         getSavedQueryByName: (name: string) =>
           appState.savedQueriesByKey[keyForSavedQuery(name)],
-        listSavedQueryFolders: vi.fn(async () => []),
+        savedQueryList: () => Object.values(appState.savedQueriesByKey),
+        searchSavedQueryFolders: vi.fn(async () => []),
         fetchSavedQueryList: vi.fn(async (_project, _filter, _params) => {
           const savedQuery = create(SavedQuerySchema, {
             name: "projects/proj1/savedQueries/1",
@@ -73,8 +76,9 @@ const mocks = vi.hoisted(() => {
           setSavedQueries([savedQuery]);
           return { savedQueries: [savedQuery], nextPageToken: "next-page" };
         }),
-        upsertSavedQueryOrganizer: vi.fn(),
-        batchUpdateSavedQueryOrganizers: vi.fn(),
+        updateSavedQueryStar: vi.fn(),
+        batchUpdateSavedQueryFolder: vi.fn(async () => 0),
+        patchSavedQueryFolderInCache: vi.fn(),
       };
     },
     addSavedQueries: setSavedQueries,
@@ -254,8 +258,8 @@ describe("sheet context", () => {
   });
 
   test("uses a collision-free key for load-more rows", async () => {
-    mocks.getAppState().listSavedQueryFolders.mockResolvedValueOnce([
-      { folders: ["__load-more"], category: "my" },
+    mocks.getAppState().searchSavedQueryFolders.mockResolvedValueOnce([
+      "__load-more",
     ]);
 
     const { provideSheetContext, useSheetContextByView } = await import(
@@ -286,11 +290,7 @@ describe("sheet context", () => {
   test("loads caller saved query folders before the root saved query page", async () => {
     mocks
       .getAppState()
-      .listSavedQueryFolders.mockResolvedValueOnce([
-        { folders: ["alpha"], category: "my" },
-        { folders: ["alpha", "beta"], category: "my" },
-        { folders: ["shared"], category: "shared" },
-      ]);
+      .searchSavedQueryFolders.mockResolvedValueOnce(["alpha", "alpha/beta"]);
     mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => ({
       savedQueries: [],
       nextPageToken: "",
@@ -319,8 +319,9 @@ describe("sheet context", () => {
       await viewContext!.fetchSheetList();
     });
 
-    expect(mocks.getAppState().listSavedQueryFolders).toHaveBeenCalledWith(
-      "projects/proj1"
+    expect(mocks.getAppState().searchSavedQueryFolders).toHaveBeenCalledWith(
+      "projects/proj1",
+      'creator == "users/creator@example.com"'
     );
     expect(mocks.getAppState().fetchSavedQueryList).toHaveBeenCalledWith(
       "projects/proj1",
@@ -329,6 +330,48 @@ describe("sheet context", () => {
     );
     expect(container.textContent).toContain("alpha");
     expect(container.textContent).not.toContain("shared");
+  });
+
+  test("builds the shared folder tree from the server, not the row cache", async () => {
+    // Regression: deriving shared folders from cached rows found nothing on a
+    // cold cache, because the root page only fetches unfiled rows -- so every
+    // foldered shared saved query was unreachable.
+    mocks
+      .getAppState()
+      .searchSavedQueryFolders.mockResolvedValueOnce(["theirs", "theirs/deep"]);
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => ({
+      savedQueries: [],
+      nextPageToken: "",
+    }));
+
+    const { provideSheetContext, useSheetContextByView } = await import(
+      "./context"
+    );
+    let viewContext: ReturnType<typeof useSheetContextByView> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      viewContext = useSheetContextByView("shared");
+      return (
+        <div>
+          {viewContext.sheetTree.children.map((child) => child.label).join(",")}
+        </div>
+      );
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+    await act(async () => {
+      await viewContext!.fetchSheetList();
+    });
+
+    expect(mocks.getAppState().searchSavedQueryFolders).toHaveBeenCalledWith(
+      "projects/proj1",
+      'creator != "users/creator@example.com"'
+    );
+    expect(container.textContent).toContain("theirs");
   });
 
   test("merges persisted empty folders with backend folders", async () => {
@@ -341,9 +384,6 @@ describe("sheet context", () => {
       ),
       JSON.stringify(["/shared/alpha", "/shared/local-empty"])
     );
-    mocks.getAppState().listSavedQueryFolders.mockResolvedValueOnce([
-      { folders: ["alpha"], category: "my" },
-    ]);
     mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => ({
       savedQueries: [],
       nextPageToken: "",
@@ -465,9 +505,7 @@ describe("sheet context", () => {
   test("keeps backend-known folders visible when starred filter is active", async () => {
     mocks
       .getAppState()
-      .listSavedQueryFolders.mockResolvedValue([
-        { folders: ["alpha"], category: "my" },
-      ]);
+      .searchSavedQueryFolders.mockResolvedValue(["alpha"]);
     mocks.getAppState().fetchSavedQueryList.mockResolvedValue({
       savedQueries: [],
       nextPageToken: "",
@@ -546,7 +584,7 @@ describe("sheet context", () => {
           project: "projects/proj1",
           creator: "users/creator@example.com",
           title: "Folder saved query",
-          folders: ["alpha"],
+          folder: "alpha",
         });
       mocks.addSavedQueries([savedQuery]);
       return {
@@ -594,7 +632,7 @@ describe("sheet context", () => {
         project: "projects/proj1",
         creator: "users/creator@example.com",
         title: "Folder saved query",
-        folders: ["alpha"],
+        folder: "alpha",
       });
       mocks.addSavedQueries([savedQuery]);
       return {
@@ -712,7 +750,7 @@ describe("sheet context", () => {
         project: "projects/proj1",
         creator: "users/creator@example.com",
         title: "Folder saved query",
-        folders: ["alpha"],
+        folder: "alpha",
       });
       mocks.addSavedQueries([savedQuery]);
       return {
@@ -732,7 +770,7 @@ describe("sheet context", () => {
         project: "projects/proj1",
         creator: "users/creator@example.com",
         title: "Child folder saved query",
-        folders: ["alpha", "child"],
+        folder: "alpha/child",
       });
       mocks.addSavedQueries([savedQuery]);
       return {
@@ -784,7 +822,7 @@ describe("sheet context", () => {
         project: "projects/proj1",
         creator: "users/creator@example.com",
         title: "Alpha saved query",
-        folders: ["alpha"],
+        folder: "alpha",
       });
       mocks.addSavedQueries([savedQuery]);
       return {
@@ -834,7 +872,7 @@ describe("sheet context", () => {
         project: "projects/proj1",
         creator: "users/creator@example.com",
         title: "Folder saved query",
-        folders: ["alpha"],
+        folder: "alpha",
       });
       mocks.addSavedQueries([savedQuery]);
       return {
@@ -881,18 +919,84 @@ describe("sheet context", () => {
       ]);
     });
 
-    expect(mocks.getAppState().upsertSavedQueryOrganizer).not.toHaveBeenCalled();
     expect(
-      mocks.getAppState().batchUpdateSavedQueryOrganizers
-    ).toHaveBeenCalledWith([
-      {
-        parent: "projects/proj1",
-        filter:
-          'name in ["projects/proj1/savedQueries/1","projects/proj1/savedQueries/2"]',
-        organizer: { folders: ["target"] },
-        updateMask: ["folders"],
-      },
-    ]);
+      mocks.getAppState().batchUpdateSavedQueryFolder
+    ).toHaveBeenCalledTimes(1);
+    expect(mocks.getAppState().batchUpdateSavedQueryFolder).toHaveBeenCalledWith(
+      "projects/proj1",
+      'name in ["projects/proj1/savedQueries/1","projects/proj1/savedQueries/2"]',
+      "target"
+    );
+    // The batch RPC answers with a count, so the moved rows are mirrored into
+    // the cache — otherwise the tree rebuild snaps them back to the old folder.
+    expect(
+      mocks.getAppState().patchSavedQueryFolderInCache
+    ).toHaveBeenCalledWith(
+      ["projects/proj1/savedQueries/1", "projects/proj1/savedQueries/2"],
+      "target"
+    );
+  });
+
+  test("moves cached rows that the starred filter hides", async () => {
+    // Regression: the server moves every row in the folder (the batch filter
+    // drops display filters), so patching only the visible rows left the
+    // hidden ones under their old folder once the starred filter cleared.
+    const starred = create(SavedQuerySchema, {
+      name: "projects/proj1/savedQueries/starred",
+      project: "projects/proj1",
+      creator: "users/creator@example.com",
+      title: "Starred",
+      folder: "old",
+      starred: true,
+    });
+    const unstarred = create(SavedQuerySchema, {
+      name: "projects/proj1/savedQueries/unstarred",
+      project: "projects/proj1",
+      creator: "users/creator@example.com",
+      title: "Unstarred",
+      folder: "old",
+      starred: false,
+    });
+    mocks.getAppState().fetchSavedQueryList.mockImplementationOnce(async () => {
+      mocks.addSavedQueries([starred, unstarred]);
+      return { savedQueries: [starred, unstarred], nextPageToken: "" };
+    });
+
+    const { provideSheetContext, useSheetContext, useSheetContextByView } =
+      await import("./context");
+    let sheetContext: ReturnType<typeof useSheetContext> | undefined;
+    let viewContext: ReturnType<typeof useSheetContextByView> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      sheetContext = useSheetContext();
+      viewContext = useSheetContextByView("my");
+      return null;
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+    await act(async () => {
+      await viewContext!.fetchSheetList();
+    });
+    act(() => {
+      sheetContext!.setFilter({
+        ...sheetContext!.filter,
+        onlyShowStarred: true,
+      });
+    });
+
+    await act(async () => {
+      await sheetContext!.batchUpdateSavedQueryFolderPaths("my", [
+        { sourceFolder: ["old"], targetFolder: ["new"] },
+      ]);
+    });
+
+    expect(
+      mocks.getAppState().patchSavedQueryFolderInCache
+    ).toHaveBeenCalledWith([starred.name, unstarred.name], "new");
   });
 
   test("batch updates saved query folder paths without display filters", async () => {
@@ -925,21 +1029,20 @@ describe("sheet context", () => {
     });
 
     expect(
-      mocks.getAppState().batchUpdateSavedQueryOrganizers
-    ).toHaveBeenCalledWith([
-      {
-        parent: "projects/proj1",
-        filter:
-          'creator == "users/creator@example.com" && folder == "old/child"',
-        organizer: { folders: ["new", "child"] },
-        updateMask: ["folders"],
-      },
-      {
-        parent: "projects/proj1",
-        filter: 'creator == "users/creator@example.com" && folder == "old"',
-        organizer: { folders: ["new"] },
-        updateMask: ["folders"],
-      },
-    ]);
+      mocks.getAppState().batchUpdateSavedQueryFolder
+    ).toHaveBeenNthCalledWith(
+      1,
+      "projects/proj1",
+      'creator == "users/creator@example.com" && folder == "old/child"',
+      "new/child"
+    );
+    expect(
+      mocks.getAppState().batchUpdateSavedQueryFolder
+    ).toHaveBeenNthCalledWith(
+      2,
+      "projects/proj1",
+      'creator == "users/creator@example.com" && folder == "old"',
+      "new"
+    );
   });
 });

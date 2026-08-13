@@ -407,7 +407,7 @@ residual resource conditions, **both re-check the permission source
 in-handler and reject resource-conditioned bindings**, enforcing the family
 condition rule uniformly: a database- or environment-scoped role confers
 neither `list`'s content read nor `create`'s project-wide row. The search
-family (`SearchSavedQueries`, `ListSavedQueryFolders`)
+family (`SearchSavedQueries`, `SearchSavedQueryFolders`)
 is CUSTOM — its gate is `discover(u, P) ∨ admin(u, P)`, an OR the
 single-permission interceptor cannot express — and every object method is
 a CUSTOM per-row predicate.
@@ -439,7 +439,7 @@ additive relaxation, not a new surface.
 | `SetIamPolicy` | CUSTOM | `share(s,u)` + etag CAS | policy only; audited |
 | `UpdateSavedQueryStar` | CUSTOM | `read(s,u)` — star any readable query | — ; unaudited |
 | `BatchUpdateSavedQueries` | CUSTOM | rows the caller may re-file (creator; admin: any); mask limited to `folder` | count only; audited |
-| `ListSavedQueryFolders` | CUSTOM | `discover ∨ admin` → the caller's own folder paths | paths only; unaudited |
+| `SearchSavedQueryFolders` | CUSTOM | `discover ∨ admin` → the caller's own folder paths | paths only; unaudited |
 
 Duplicate/fork needs no RPC: read what you can already see, then
 `CreateSavedQuery` — the copy is yours and private.

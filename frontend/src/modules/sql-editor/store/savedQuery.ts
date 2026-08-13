@@ -91,27 +91,24 @@ export const createSavedQuerySaveSlice: SQLEditorSliceCreator<
     const savedQueryTitle = title ?? currentSheet?.title ?? "";
 
     if (savedQuery && currentSheet) {
+      const updateMask = ["title", "database", "content"];
+      const patched = {
+        ...currentSheet,
+        title: savedQueryTitle,
+        database,
+        content: new TextEncoder().encode(statement),
+      };
+      if (!isUndefined(folders)) {
+        patched.folder = folders.join("/");
+        updateMask.push("folder");
+      }
       const updated = await savedQueryStore.patchSavedQuery(
-        {
-          ...currentSheet,
-          title: savedQueryTitle,
-          database,
-          content: new TextEncoder().encode(statement),
-        },
-        ["title", "database", "content"],
+        patched,
+        updateMask,
         signal
       );
       if (!updated) {
         return;
-      }
-      if (!isUndefined(folders)) {
-        await savedQueryStore.upsertSavedQueryOrganizer(
-          {
-            savedQuery: updated.name,
-            folders: folders,
-          },
-          ["folders"]
-        );
       }
     }
 
@@ -143,18 +140,9 @@ export const createSavedQuerySaveSlice: SQLEditorSliceCreator<
         database,
         content: new TextEncoder().encode(statement),
         project: editorStore.project,
+        folder: folders.join("/"),
       })
     );
-
-    if (folders.length > 0) {
-      await savedQueryStore.upsertSavedQueryOrganizer(
-        {
-          savedQuery: newSavedQuery.name,
-          folders: folders,
-        },
-        ["folders"]
-      );
-    }
 
     if (tabId) {
       return tabStore.updateTab(tabId, {

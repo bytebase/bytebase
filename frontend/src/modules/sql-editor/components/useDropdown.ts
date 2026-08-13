@@ -15,8 +15,9 @@ import type {
   SavedQueryFolderNode,
   SheetViewMode,
 } from "@/modules/sql-editor/model/Sheet";
+import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useAppStore } from "@/stores/app";
-import { isSavedQueryWritableV1 } from "@/utils";
+import { canCreateSavedQueryInProject, isSavedQueryWritableV1 } from "@/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -73,8 +74,13 @@ export function useDropdown(
   // ------------------------------------------------------------------
   // Derived: allowed-to-create-new
   // ------------------------------------------------------------------
+  const project = useSQLEditorEditorState((s) => s.project);
+  // Adding a folder is local until something is filed into it, so only the
+  // entries that persist a new saved query need the create permission.
   const allowCreateNew =
     !savedQueryFilter.keyword && !savedQueryFilter.onlyShowStarred;
+  const allowCreateSavedQuery =
+    allowCreateNew && canCreateSavedQueryInProject(project);
 
   // ------------------------------------------------------------------
   // Menu options — computed from current state
@@ -96,10 +102,13 @@ export function useDropdown(
         return [];
       }
       const isCreator = savedQueryEntity.creator === `users/${me?.email ?? ""}`;
-      items.push({
-        key: "duplicate",
-        label: isCreator ? t("common.duplicate") : t("common.fork"),
-      });
+      // Duplicate and fork both write a new saved query.
+      if (canCreateSavedQueryInProject(project)) {
+        items.push({
+          key: "duplicate",
+          label: isCreator ? t("common.duplicate") : t("common.fork"),
+        });
+      }
       if (isCreator) {
         items.push({
           key: "share",
@@ -133,7 +142,7 @@ export function useDropdown(
         });
       }
       if (viewMode === "my") {
-        if (allowCreateNew) {
+        if (allowCreateSavedQuery) {
           items.push({
             key: "add-saved-query",
             label: t("sql-editor.tab.context-menu.actions.add-saved-query"),
@@ -169,6 +178,8 @@ export function useDropdown(
     savedQueryEntity,
     me,
     allowCreateNew,
+    allowCreateSavedQuery,
+    project,
     canMultiSelect,
     t,
   ]);

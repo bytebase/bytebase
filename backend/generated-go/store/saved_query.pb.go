@@ -71,70 +71,13 @@ func (x *SavedQueryPayload) GetDatabase() string {
 	return ""
 }
 
-type SavedQueryOrganizerPayload struct {
-	state   protoimpl.MessageState `protogen:"open.v1"`
-	Starred bool                   `protobuf:"varint,1,opt,name=starred,proto3" json:"starred,omitempty"`
-	// The folder path for a saved query.
-	// For example, if the folders is [A, B, C], means the saved query is in the A/B/C subfolder.
-	Folders       []string `protobuf:"bytes,2,rep,name=folders,proto3" json:"folders,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SavedQueryOrganizerPayload) Reset() {
-	*x = SavedQueryOrganizerPayload{}
-	mi := &file_store_saved_query_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SavedQueryOrganizerPayload) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SavedQueryOrganizerPayload) ProtoMessage() {}
-
-func (x *SavedQueryOrganizerPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_store_saved_query_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SavedQueryOrganizerPayload.ProtoReflect.Descriptor instead.
-func (*SavedQueryOrganizerPayload) Descriptor() ([]byte, []int) {
-	return file_store_saved_query_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *SavedQueryOrganizerPayload) GetStarred() bool {
-	if x != nil {
-		return x.Starred
-	}
-	return false
-}
-
-func (x *SavedQueryOrganizerPayload) GetFolders() []string {
-	if x != nil {
-		return x.Folders
-	}
-	return nil
-}
-
 var File_store_saved_query_proto protoreflect.FileDescriptor
 
 const file_store_saved_query_proto_rawDesc = "" +
 	"\n" +
 	"\x17store/saved_query.proto\x12\x0ebytebase.store\"/\n" +
 	"\x11SavedQueryPayload\x12\x1a\n" +
-	"\bdatabase\x18\x01 \x01(\tR\bdatabase\"P\n" +
-	"\x1aSavedQueryOrganizerPayload\x12\x18\n" +
-	"\astarred\x18\x01 \x01(\bR\astarred\x12\x18\n" +
-	"\afolders\x18\x02 \x03(\tR\afoldersB\x92\x01\n" +
+	"\bdatabase\x18\x01 \x01(\tR\bdatabaseB\x92\x01\n" +
 	"\x12com.bytebase.storeB\x0fSavedQueryProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -149,10 +92,9 @@ func file_store_saved_query_proto_rawDescGZIP() []byte {
 	return file_store_saved_query_proto_rawDescData
 }
 
-var file_store_saved_query_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_store_saved_query_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_saved_query_proto_goTypes = []any{
-	(*SavedQueryPayload)(nil),          // 0: bytebase.store.SavedQueryPayload
-	(*SavedQueryOrganizerPayload)(nil), // 1: bytebase.store.SavedQueryOrganizerPayload
+	(*SavedQueryPayload)(nil), // 0: bytebase.store.SavedQueryPayload
 }
 var file_store_saved_query_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -173,7 +115,7 @@ func file_store_saved_query_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_saved_query_proto_rawDesc), len(file_store_saved_query_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

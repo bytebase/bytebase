@@ -7,7 +7,11 @@ import { extractUserEmail } from "@/stores/modules/v1";
 import type { EditorPanelViewState, SQLEditorTab } from "@/types";
 import { DEFAULT_SQL_EDITOR_TAB_MODE } from "@/types";
 import { SavedQuerySchema } from "@/types/proto-es/v1/saved_query_service_pb";
-import { defaultSQLEditorTab, WebStorageHelper } from "@/utils";
+import {
+  canCreateSavedQueryInProject,
+  defaultSQLEditorTab,
+  WebStorageHelper,
+} from "@/utils";
 import {
   deleteExtendedTab,
   EXTENDED_TAB_FIELDS,
@@ -154,6 +158,15 @@ export const migrateDraftsFromCache = async (project: string) => {
   const draftTabListKey = `${keyNamespace}.draft-tab-list`;
   const draftTabList = readLegacyStorage<SQLEditorTab[]>(draftTabListKey, []);
 
+  // Migrating a draft creates a saved query. This check is the cheap half of
+  // the answer -- false means the server will refuse too, so skip the doomed
+  // requests entirely. True is not a promise: it does not evaluate binding
+  // conditions, and the server rejects a resource-scoped grant for this
+  // permission. The loop below has to survive a refusal either way.
+  if (!canCreateSavedQueryInProject(project)) {
+    return;
+  }
+
   const drafts = [...draftTabList];
   for (const draft of drafts) {
     const tab = {
@@ -175,7 +188,12 @@ export const migrateDraftsFromCache = async (project: string) => {
             project,
           })
         );
-      } catch {}
+      } catch {
+        // The draft in legacy storage is the only copy, so it survives a
+        // failed migration: a denied create, a network blip, a server error.
+        // It is retried the next time this runs.
+        continue;
+      }
     }
     const index = draftTabList.findIndex((d) => d.id === draft.id);
     if (index >= 0) {

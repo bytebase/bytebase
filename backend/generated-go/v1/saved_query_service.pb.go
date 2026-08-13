@@ -26,55 +26,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type SavedQueryFolder_Category int32
-
-const (
-	SavedQueryFolder_CATEGORY_UNSPECIFIED SavedQueryFolder_Category = 0
-	SavedQueryFolder_MINE                 SavedQueryFolder_Category = 1
-	SavedQueryFolder_SHARED               SavedQueryFolder_Category = 2
-)
-
-// Enum value maps for SavedQueryFolder_Category.
-var (
-	SavedQueryFolder_Category_name = map[int32]string{
-		0: "CATEGORY_UNSPECIFIED",
-		1: "MINE",
-		2: "SHARED",
-	}
-	SavedQueryFolder_Category_value = map[string]int32{
-		"CATEGORY_UNSPECIFIED": 0,
-		"MINE":                 1,
-		"SHARED":               2,
-	}
-)
-
-func (x SavedQueryFolder_Category) Enum() *SavedQueryFolder_Category {
-	p := new(SavedQueryFolder_Category)
-	*p = x
-	return p
-}
-
-func (x SavedQueryFolder_Category) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (SavedQueryFolder_Category) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_saved_query_service_proto_enumTypes[0].Descriptor()
-}
-
-func (SavedQueryFolder_Category) Type() protoreflect.EnumType {
-	return &file_v1_saved_query_service_proto_enumTypes[0]
-}
-
-func (x SavedQueryFolder_Category) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use SavedQueryFolder_Category.Descriptor instead.
-func (SavedQueryFolder_Category) EnumDescriptor() ([]byte, []int) {
-	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{6, 0}
-}
-
 type CreateSavedQueryRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource where this saved query will be created.
@@ -321,29 +272,39 @@ func (x *ListSavedQueriesResponse) GetNextPageToken() string {
 	return ""
 }
 
-type ListSavedQueryFoldersRequest struct {
+type SearchSavedQueryFoldersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The parent resource of the saved query folders.
+	// The parent resource whose saved query folders are searched.
 	// Format: projects/{project}
-	Parent        string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// To filter the folders by the saved queries they hold. Takes the same
+	// fields and syntax as `SearchSavedQueries.filter`, except `title`. A
+	// folder is returned when at least one saved query the caller can read
+	// matches, so the caller-scoping is the same as SearchSavedQueries: your
+	// own saved queries, plus everyone's for the admin backstop.
+	//
+	// For example, to split a folder tree into your own and everyone else's:
+	// creator == "users/{email}"
+	// creator != "users/{email}"
+	Filter        string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListSavedQueryFoldersRequest) Reset() {
-	*x = ListSavedQueryFoldersRequest{}
+func (x *SearchSavedQueryFoldersRequest) Reset() {
+	*x = SearchSavedQueryFoldersRequest{}
 	mi := &file_v1_saved_query_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListSavedQueryFoldersRequest) String() string {
+func (x *SearchSavedQueryFoldersRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListSavedQueryFoldersRequest) ProtoMessage() {}
+func (*SearchSavedQueryFoldersRequest) ProtoMessage() {}
 
-func (x *ListSavedQueryFoldersRequest) ProtoReflect() protoreflect.Message {
+func (x *SearchSavedQueryFoldersRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_saved_query_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -355,40 +316,49 @@ func (x *ListSavedQueryFoldersRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListSavedQueryFoldersRequest.ProtoReflect.Descriptor instead.
-func (*ListSavedQueryFoldersRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use SearchSavedQueryFoldersRequest.ProtoReflect.Descriptor instead.
+func (*SearchSavedQueryFoldersRequest) Descriptor() ([]byte, []int) {
 	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *ListSavedQueryFoldersRequest) GetParent() string {
+func (x *SearchSavedQueryFoldersRequest) GetParent() string {
 	if x != nil {
 		return x.Parent
 	}
 	return ""
 }
 
-type ListSavedQueryFoldersResponse struct {
+func (x *SearchSavedQueryFoldersRequest) GetFilter() string {
+	if x != nil {
+		return x.Filter
+	}
+	return ""
+}
+
+type SearchSavedQueryFoldersResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The caller's saved query folders.
-	Folders       []*SavedQueryFolder `protobuf:"bytes,1,rep,name=folders,proto3" json:"folders,omitempty"`
+	// The caller's folder paths, including every ancestor prefix, sorted.
+	// A folder is a path on saved queries ("a/b/c"), so empty folders cannot
+	// exist.
+	Folders       []string `protobuf:"bytes,1,rep,name=folders,proto3" json:"folders,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListSavedQueryFoldersResponse) Reset() {
-	*x = ListSavedQueryFoldersResponse{}
+func (x *SearchSavedQueryFoldersResponse) Reset() {
+	*x = SearchSavedQueryFoldersResponse{}
 	mi := &file_v1_saved_query_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListSavedQueryFoldersResponse) String() string {
+func (x *SearchSavedQueryFoldersResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListSavedQueryFoldersResponse) ProtoMessage() {}
+func (*SearchSavedQueryFoldersResponse) ProtoMessage() {}
 
-func (x *ListSavedQueryFoldersResponse) ProtoReflect() protoreflect.Message {
+func (x *SearchSavedQueryFoldersResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_saved_query_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -400,70 +370,16 @@ func (x *ListSavedQueryFoldersResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListSavedQueryFoldersResponse.ProtoReflect.Descriptor instead.
-func (*ListSavedQueryFoldersResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use SearchSavedQueryFoldersResponse.ProtoReflect.Descriptor instead.
+func (*SearchSavedQueryFoldersResponse) Descriptor() ([]byte, []int) {
 	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *ListSavedQueryFoldersResponse) GetFolders() []*SavedQueryFolder {
+func (x *SearchSavedQueryFoldersResponse) GetFolders() []string {
 	if x != nil {
 		return x.Folders
 	}
 	return nil
-}
-
-type SavedQueryFolder struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The folder path segments.
-	Folders []string `protobuf:"bytes,1,rep,name=folders,proto3" json:"folders,omitempty"`
-	// The folder category.
-	Category      SavedQueryFolder_Category `protobuf:"varint,2,opt,name=category,proto3,enum=bytebase.v1.SavedQueryFolder_Category" json:"category,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SavedQueryFolder) Reset() {
-	*x = SavedQueryFolder{}
-	mi := &file_v1_saved_query_service_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SavedQueryFolder) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SavedQueryFolder) ProtoMessage() {}
-
-func (x *SavedQueryFolder) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_saved_query_service_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SavedQueryFolder.ProtoReflect.Descriptor instead.
-func (*SavedQueryFolder) Descriptor() ([]byte, []int) {
-	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *SavedQueryFolder) GetFolders() []string {
-	if x != nil {
-		return x.Folders
-	}
-	return nil
-}
-
-func (x *SavedQueryFolder) GetCategory() SavedQueryFolder_Category {
-	if x != nil {
-		return x.Category
-	}
-	return SavedQueryFolder_CATEGORY_UNSPECIFIED
 }
 
 type UpdateSavedQueryRequest struct {
@@ -480,6 +396,7 @@ type UpdateSavedQueryRequest struct {
 	// - `title`
 	// - `content`
 	// - `database`
+	// - `folder`
 	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -487,7 +404,7 @@ type UpdateSavedQueryRequest struct {
 
 func (x *UpdateSavedQueryRequest) Reset() {
 	*x = UpdateSavedQueryRequest{}
-	mi := &file_v1_saved_query_service_proto_msgTypes[7]
+	mi := &file_v1_saved_query_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -499,7 +416,7 @@ func (x *UpdateSavedQueryRequest) String() string {
 func (*UpdateSavedQueryRequest) ProtoMessage() {}
 
 func (x *UpdateSavedQueryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_saved_query_service_proto_msgTypes[7]
+	mi := &file_v1_saved_query_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -512,7 +429,7 @@ func (x *UpdateSavedQueryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateSavedQueryRequest.ProtoReflect.Descriptor instead.
 func (*UpdateSavedQueryRequest) Descriptor() ([]byte, []int) {
-	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *UpdateSavedQueryRequest) GetSavedQuery() *SavedQuery {
@@ -529,9 +446,64 @@ func (x *UpdateSavedQueryRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 	return nil
 }
 
-type BatchUpdateSavedQueryOrganizerRequest struct {
+type UpdateSavedQueryStarRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The parent resource whose saved queries' organizers are updated.
+	// The name of the saved query to star or unstar.
+	// Format: projects/{project}/savedQueries/{savedQuery}
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Whether the caller stars the saved query.
+	Starred       bool `protobuf:"varint,2,opt,name=starred,proto3" json:"starred,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateSavedQueryStarRequest) Reset() {
+	*x = UpdateSavedQueryStarRequest{}
+	mi := &file_v1_saved_query_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateSavedQueryStarRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateSavedQueryStarRequest) ProtoMessage() {}
+
+func (x *UpdateSavedQueryStarRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_saved_query_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateSavedQueryStarRequest.ProtoReflect.Descriptor instead.
+func (*UpdateSavedQueryStarRequest) Descriptor() ([]byte, []int) {
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *UpdateSavedQueryStarRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *UpdateSavedQueryStarRequest) GetStarred() bool {
+	if x != nil {
+		return x.Starred
+	}
+	return false
+}
+
+type BatchUpdateSavedQueriesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The parent resource whose saved queries are updated.
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// To filter the batch update target.
@@ -541,34 +513,32 @@ type BatchUpdateSavedQueryOrganizerRequest struct {
 	// - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
 	// - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
 	// - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-	// - folder: the saved query organizer folder path, support exact "==" operator.
+	// - folder: the saved query folder path, support exact "==" operator.
 	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
-	// The organizer fields to update.
-	Organizer *SavedQueryOrganizer `protobuf:"bytes,3,opt,name=organizer,proto3" json:"organizer,omitempty"`
+	// The fields to apply to every matched saved query.
+	SavedQuery *SavedQuery `protobuf:"bytes,3,opt,name=saved_query,json=savedQuery,proto3" json:"saved_query,omitempty"`
 	// The list of fields to be updated.
-	// Fields are specified relative to the saved query organizer.
 	// Only support update the following fields for now:
-	// - `starred`
-	// - `folders`
+	// - `folder`
 	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,4,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BatchUpdateSavedQueryOrganizerRequest) Reset() {
-	*x = BatchUpdateSavedQueryOrganizerRequest{}
+func (x *BatchUpdateSavedQueriesRequest) Reset() {
+	*x = BatchUpdateSavedQueriesRequest{}
 	mi := &file_v1_saved_query_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BatchUpdateSavedQueryOrganizerRequest) String() string {
+func (x *BatchUpdateSavedQueriesRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BatchUpdateSavedQueryOrganizerRequest) ProtoMessage() {}
+func (*BatchUpdateSavedQueriesRequest) ProtoMessage() {}
 
-func (x *BatchUpdateSavedQueryOrganizerRequest) ProtoReflect() protoreflect.Message {
+func (x *BatchUpdateSavedQueriesRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_saved_query_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -580,61 +550,61 @@ func (x *BatchUpdateSavedQueryOrganizerRequest) ProtoReflect() protoreflect.Mess
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BatchUpdateSavedQueryOrganizerRequest.ProtoReflect.Descriptor instead.
-func (*BatchUpdateSavedQueryOrganizerRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use BatchUpdateSavedQueriesRequest.ProtoReflect.Descriptor instead.
+func (*BatchUpdateSavedQueriesRequest) Descriptor() ([]byte, []int) {
 	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *BatchUpdateSavedQueryOrganizerRequest) GetParent() string {
+func (x *BatchUpdateSavedQueriesRequest) GetParent() string {
 	if x != nil {
 		return x.Parent
 	}
 	return ""
 }
 
-func (x *BatchUpdateSavedQueryOrganizerRequest) GetFilter() string {
+func (x *BatchUpdateSavedQueriesRequest) GetFilter() string {
 	if x != nil {
 		return x.Filter
 	}
 	return ""
 }
 
-func (x *BatchUpdateSavedQueryOrganizerRequest) GetOrganizer() *SavedQueryOrganizer {
+func (x *BatchUpdateSavedQueriesRequest) GetSavedQuery() *SavedQuery {
 	if x != nil {
-		return x.Organizer
+		return x.SavedQuery
 	}
 	return nil
 }
 
-func (x *BatchUpdateSavedQueryOrganizerRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
+func (x *BatchUpdateSavedQueriesRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 	if x != nil {
 		return x.UpdateMask
 	}
 	return nil
 }
 
-type BatchUpdateSavedQueryOrganizerResponse struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	SavedQueryOrganizers []*SavedQueryOrganizer `protobuf:"bytes,1,rep,name=saved_query_organizers,json=savedQueryOrganizers,proto3" json:"saved_query_organizers,omitempty"`
-	UpdatedCount         int32                  `protobuf:"varint,2,opt,name=updated_count,json=updatedCount,proto3" json:"updated_count,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+type BatchUpdateSavedQueriesResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The number of saved queries updated.
+	UpdatedCount  int32 `protobuf:"varint,1,opt,name=updated_count,json=updatedCount,proto3" json:"updated_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BatchUpdateSavedQueryOrganizerResponse) Reset() {
-	*x = BatchUpdateSavedQueryOrganizerResponse{}
+func (x *BatchUpdateSavedQueriesResponse) Reset() {
+	*x = BatchUpdateSavedQueriesResponse{}
 	mi := &file_v1_saved_query_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BatchUpdateSavedQueryOrganizerResponse) String() string {
+func (x *BatchUpdateSavedQueriesResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BatchUpdateSavedQueryOrganizerResponse) ProtoMessage() {}
+func (*BatchUpdateSavedQueriesResponse) ProtoMessage() {}
 
-func (x *BatchUpdateSavedQueryOrganizerResponse) ProtoReflect() protoreflect.Message {
+func (x *BatchUpdateSavedQueriesResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_saved_query_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -646,156 +616,16 @@ func (x *BatchUpdateSavedQueryOrganizerResponse) ProtoReflect() protoreflect.Mes
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BatchUpdateSavedQueryOrganizerResponse.ProtoReflect.Descriptor instead.
-func (*BatchUpdateSavedQueryOrganizerResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use BatchUpdateSavedQueriesResponse.ProtoReflect.Descriptor instead.
+func (*BatchUpdateSavedQueriesResponse) Descriptor() ([]byte, []int) {
 	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *BatchUpdateSavedQueryOrganizerResponse) GetSavedQueryOrganizers() []*SavedQueryOrganizer {
-	if x != nil {
-		return x.SavedQueryOrganizers
-	}
-	return nil
-}
-
-func (x *BatchUpdateSavedQueryOrganizerResponse) GetUpdatedCount() int32 {
+func (x *BatchUpdateSavedQueriesResponse) GetUpdatedCount() int32 {
 	if x != nil {
 		return x.UpdatedCount
 	}
 	return 0
-}
-
-type UpdateSavedQueryOrganizerRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The organizer to update.
-	//
-	// The organizer's `saved_query` field is used to identify the saved query.
-	// Format: projects/{project}/savedQueries/{savedQuery}
-	Organizer *SavedQueryOrganizer `protobuf:"bytes,1,opt,name=organizer,proto3" json:"organizer,omitempty"`
-	// The list of fields to be updated.
-	// Fields are specified relative to the saved query organizer.
-	// Only support update the following fields for now:
-	// - `starred`
-	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
-	// If set to true, and the saved query organizer is not found, a new saved query organizer will be created.
-	// In this situation, `update_mask` is ignored.
-	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UpdateSavedQueryOrganizerRequest) Reset() {
-	*x = UpdateSavedQueryOrganizerRequest{}
-	mi := &file_v1_saved_query_service_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateSavedQueryOrganizerRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateSavedQueryOrganizerRequest) ProtoMessage() {}
-
-func (x *UpdateSavedQueryOrganizerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_saved_query_service_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateSavedQueryOrganizerRequest.ProtoReflect.Descriptor instead.
-func (*UpdateSavedQueryOrganizerRequest) Descriptor() ([]byte, []int) {
-	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *UpdateSavedQueryOrganizerRequest) GetOrganizer() *SavedQueryOrganizer {
-	if x != nil {
-		return x.Organizer
-	}
-	return nil
-}
-
-func (x *UpdateSavedQueryOrganizerRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
-	if x != nil {
-		return x.UpdateMask
-	}
-	return nil
-}
-
-func (x *UpdateSavedQueryOrganizerRequest) GetAllowMissing() bool {
-	if x != nil {
-		return x.AllowMissing
-	}
-	return false
-}
-
-type SavedQueryOrganizer struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of the saved query.
-	// Format: projects/{project}/savedQueries/{savedQuery}
-	SavedQuery string `protobuf:"bytes,1,opt,name=saved_query,json=savedQuery,proto3" json:"saved_query,omitempty"`
-	// starred means if the saved query is starred.
-	Starred       bool     `protobuf:"varint,2,opt,name=starred,proto3" json:"starred,omitempty"`
-	Folders       []string `protobuf:"bytes,3,rep,name=folders,proto3" json:"folders,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SavedQueryOrganizer) Reset() {
-	*x = SavedQueryOrganizer{}
-	mi := &file_v1_saved_query_service_proto_msgTypes[11]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SavedQueryOrganizer) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SavedQueryOrganizer) ProtoMessage() {}
-
-func (x *SavedQueryOrganizer) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_saved_query_service_proto_msgTypes[11]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SavedQueryOrganizer.ProtoReflect.Descriptor instead.
-func (*SavedQueryOrganizer) Descriptor() ([]byte, []int) {
-	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{11}
-}
-
-func (x *SavedQueryOrganizer) GetSavedQuery() string {
-	if x != nil {
-		return x.SavedQuery
-	}
-	return ""
-}
-
-func (x *SavedQueryOrganizer) GetStarred() bool {
-	if x != nil {
-		return x.Starred
-	}
-	return false
-}
-
-func (x *SavedQueryOrganizer) GetFolders() []string {
-	if x != nil {
-		return x.Folders
-	}
-	return nil
 }
 
 type DeleteSavedQueryRequest struct {
@@ -809,7 +639,7 @@ type DeleteSavedQueryRequest struct {
 
 func (x *DeleteSavedQueryRequest) Reset() {
 	*x = DeleteSavedQueryRequest{}
-	mi := &file_v1_saved_query_service_proto_msgTypes[12]
+	mi := &file_v1_saved_query_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -821,7 +651,7 @@ func (x *DeleteSavedQueryRequest) String() string {
 func (*DeleteSavedQueryRequest) ProtoMessage() {}
 
 func (x *DeleteSavedQueryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_saved_query_service_proto_msgTypes[12]
+	mi := &file_v1_saved_query_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -834,7 +664,7 @@ func (x *DeleteSavedQueryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteSavedQueryRequest.ProtoReflect.Descriptor instead.
 func (*DeleteSavedQueryRequest) Descriptor() ([]byte, []int) {
-	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{12}
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *DeleteSavedQueryRequest) GetName() string {
@@ -857,7 +687,7 @@ type SearchSavedQueriesRequest struct {
 	// - title: the saved query title, support "contains" operator.
 	// - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
 	// - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-	// - folder: the saved query organizer folder path, support "==" operator.
+	// - folder: the saved query folder path, support "==" operator.
 	//
 	// For example:
 	// creator == "users/{email}"
@@ -881,7 +711,7 @@ type SearchSavedQueriesRequest struct {
 
 func (x *SearchSavedQueriesRequest) Reset() {
 	*x = SearchSavedQueriesRequest{}
-	mi := &file_v1_saved_query_service_proto_msgTypes[13]
+	mi := &file_v1_saved_query_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -893,7 +723,7 @@ func (x *SearchSavedQueriesRequest) String() string {
 func (*SearchSavedQueriesRequest) ProtoMessage() {}
 
 func (x *SearchSavedQueriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_saved_query_service_proto_msgTypes[13]
+	mi := &file_v1_saved_query_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -906,7 +736,7 @@ func (x *SearchSavedQueriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchSavedQueriesRequest.ProtoReflect.Descriptor instead.
 func (*SearchSavedQueriesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{13}
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *SearchSavedQueriesRequest) GetParent() string {
@@ -951,7 +781,7 @@ type SearchSavedQueriesResponse struct {
 
 func (x *SearchSavedQueriesResponse) Reset() {
 	*x = SearchSavedQueriesResponse{}
-	mi := &file_v1_saved_query_service_proto_msgTypes[14]
+	mi := &file_v1_saved_query_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -963,7 +793,7 @@ func (x *SearchSavedQueriesResponse) String() string {
 func (*SearchSavedQueriesResponse) ProtoMessage() {}
 
 func (x *SearchSavedQueriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_saved_query_service_proto_msgTypes[14]
+	mi := &file_v1_saved_query_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -976,7 +806,7 @@ func (x *SearchSavedQueriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchSavedQueriesResponse.ProtoReflect.Descriptor instead.
 func (*SearchSavedQueriesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{14}
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SearchSavedQueriesResponse) GetSavedQueries() []*SavedQuery {
@@ -1008,7 +838,8 @@ type SavedQuery struct {
 	Database string `protobuf:"bytes,3,opt,name=database,proto3" json:"database,omitempty"`
 	// The title of the saved query.
 	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	// The creator of the SavedQuery.
+	// The creator of the SavedQuery — the fixed owner; ownership does not
+	// transfer.
 	// Format: users/{email}
 	Creator string `protobuf:"bytes,5,opt,name=creator,proto3" json:"creator,omitempty"`
 	// The create time of the saved query.
@@ -1022,15 +853,18 @@ type SavedQuery struct {
 	// content_size is the full size of the content, may not match the size of the `content` field.
 	ContentSize int64 `protobuf:"varint,9,opt,name=content_size,json=contentSize,proto3" json:"content_size,omitempty"`
 	// starred indicates whether the saved query is starred by the current authenticated user.
-	Starred       bool     `protobuf:"varint,11,opt,name=starred,proto3" json:"starred,omitempty"`
-	Folders       []string `protobuf:"bytes,12,rep,name=folders,proto3" json:"folders,omitempty"`
+	Starred bool `protobuf:"varint,11,opt,name=starred,proto3" json:"starred,omitempty"`
+	// The folder path this saved query lives in, set by its creator (or an
+	// admin). Empty means unfiled. A saved query lives in exactly one folder;
+	// a folder is a path on saved queries, e.g. "a/b/c".
+	Folder        string `protobuf:"bytes,13,opt,name=folder,proto3" json:"folder,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SavedQuery) Reset() {
 	*x = SavedQuery{}
-	mi := &file_v1_saved_query_service_proto_msgTypes[15]
+	mi := &file_v1_saved_query_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1042,7 +876,7 @@ func (x *SavedQuery) String() string {
 func (*SavedQuery) ProtoMessage() {}
 
 func (x *SavedQuery) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_saved_query_service_proto_msgTypes[15]
+	mi := &file_v1_saved_query_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1055,7 +889,7 @@ func (x *SavedQuery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SavedQuery.ProtoReflect.Descriptor instead.
 func (*SavedQuery) Descriptor() ([]byte, []int) {
-	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{15}
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SavedQuery) GetName() string {
@@ -1128,11 +962,11 @@ func (x *SavedQuery) GetStarred() bool {
 	return false
 }
 
-func (x *SavedQuery) GetFolders() []string {
+func (x *SavedQuery) GetFolder() string {
 	if x != nil {
-		return x.Folders
+		return x.Folder
 	}
-	return nil
+	return ""
 }
 
 var File_v1_saved_query_service_proto protoreflect.FileDescriptor
@@ -1156,55 +990,43 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"page_token\x18\x04 \x01(\tR\tpageToken\"\x80\x01\n" +
 	"\x18ListSavedQueriesResponse\x12<\n" +
 	"\rsaved_queries\x18\x01 \x03(\v2\x17.bytebase.v1.SavedQueryR\fsavedQueries\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\";\n" +
-	"\x1cListSavedQueryFoldersRequest\x12\x1b\n" +
-	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\"X\n" +
-	"\x1dListSavedQueryFoldersResponse\x127\n" +
-	"\afolders\x18\x01 \x03(\v2\x1d.bytebase.v1.SavedQueryFolderR\afolders\"\xac\x01\n" +
-	"\x10SavedQueryFolder\x12\x18\n" +
-	"\afolders\x18\x01 \x03(\tR\afolders\x12B\n" +
-	"\bcategory\x18\x02 \x01(\x0e2&.bytebase.v1.SavedQueryFolder.CategoryR\bcategory\":\n" +
-	"\bCategory\x12\x18\n" +
-	"\x14CATEGORY_UNSPECIFIED\x10\x00\x12\b\n" +
-	"\x04MINE\x10\x01\x12\n" +
-	"\n" +
-	"\x06SHARED\x10\x02\"\x95\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"n\n" +
+	"\x1eSearchSavedQueryFoldersRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12\x16\n" +
+	"\x06filter\x18\x02 \x01(\tR\x06filter\";\n" +
+	"\x1fSearchSavedQueryFoldersResponse\x12\x18\n" +
+	"\afolders\x18\x01 \x03(\tR\afolders\"\x95\x01\n" +
 	"\x17UpdateSavedQueryRequest\x12=\n" +
 	"\vsaved_query\x18\x01 \x01(\v2\x17.bytebase.v1.SavedQueryB\x03\xe0A\x02R\n" +
 	"savedQuery\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"\xe3\x01\n" +
-	"%BatchUpdateSavedQueryOrganizerRequest\x12\x1b\n" +
+	"updateMask\"P\n" +
+	"\x1bUpdateSavedQueryStarRequest\x12\x17\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\x12\x18\n" +
+	"\astarred\x18\x02 \x01(\bR\astarred\"\xd6\x01\n" +
+	"\x1eBatchUpdateSavedQueriesRequest\x12\x1b\n" +
 	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x16\n" +
-	"\x06filter\x18\x02 \x01(\tR\x06filter\x12C\n" +
-	"\torganizer\x18\x03 \x01(\v2 .bytebase.v1.SavedQueryOrganizerB\x03\xe0A\x02R\torganizer\x12@\n" +
+	"\x06filter\x18\x02 \x01(\tR\x06filter\x12=\n" +
+	"\vsaved_query\x18\x03 \x01(\v2\x17.bytebase.v1.SavedQueryB\x03\xe0A\x02R\n" +
+	"savedQuery\x12@\n" +
 	"\vupdate_mask\x18\x04 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
-	"updateMask\"\xa5\x01\n" +
-	"&BatchUpdateSavedQueryOrganizerResponse\x12V\n" +
-	"\x16saved_query_organizers\x18\x01 \x03(\v2 .bytebase.v1.SavedQueryOrganizerR\x14savedQueryOrganizers\x12#\n" +
-	"\rupdated_count\x18\x02 \x01(\x05R\fupdatedCount\"\xc9\x01\n" +
-	" UpdateSavedQueryOrganizerRequest\x12C\n" +
-	"\torganizer\x18\x01 \x01(\v2 .bytebase.v1.SavedQueryOrganizerB\x03\xe0A\x02R\torganizer\x12;\n" +
-	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"o\n" +
-	"\x13SavedQueryOrganizer\x12$\n" +
-	"\vsaved_query\x18\x01 \x01(\tB\x03\xe0A\x02R\n" +
-	"savedQuery\x12\x18\n" +
-	"\astarred\x18\x02 \x01(\bR\astarred\x12\x18\n" +
-	"\afolders\x18\x03 \x03(\tR\afolders\"N\n" +
+	"updateMask\"F\n" +
+	"\x1fBatchUpdateSavedQueriesResponse\x12#\n" +
+	"\rupdated_count\x18\x01 \x01(\x05R\fupdatedCount\"N\n" +
 	"\x17DeleteSavedQueryRequest\x123\n" +
 	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
-	"\x17bytebase.com/SavedQueryR\x04name\"\x8c\x01\n" +
-	"\x19SearchSavedQueriesRequest\x12\x1b\n" +
-	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x16\n" +
+	"\x17bytebase.com/SavedQueryR\x04name\"\xa5\x01\n" +
+	"\x19SearchSavedQueriesRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12\x16\n" +
 	"\x06filter\x18\x02 \x01(\tR\x06filter\x12\x1b\n" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x04 \x01(\tR\tpageToken\"\x82\x01\n" +
 	"\x1aSearchSavedQueriesResponse\x12<\n" +
 	"\rsaved_queries\x18\x01 \x03(\v2\x17.bytebase.v1.SavedQueryR\fsavedQueries\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8d\x04\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x9f\x04\n" +
 	"\n" +
 	"SavedQuery\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x1d\n" +
@@ -1218,20 +1040,20 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"updateTime\x12\x1d\n" +
 	"\acontent\x18\b \x01(\fB\x03\xe0A\x02R\acontent\x12&\n" +
 	"\fcontent_size\x18\t \x01(\x03B\x03\xe0A\x03R\vcontentSize\x12\x1d\n" +
-	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\x12\x1d\n" +
-	"\afolders\x18\f \x03(\tB\x03\xe0A\x03R\afolders:K\xeaAH\n" +
+	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\x12 \n" +
+	"\x06folder\x18\r \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\x06folder:K\xeaAH\n" +
 	"\x17bytebase.com/SavedQuery\x12-projects/{project}/savedQueries/{saved_query}J\x04\b\n" +
-	"\x10\vR\n" +
-	"visibility2\xf6\f\n" +
-	"\x11SavedQueryService\x12\xa9\x01\n" +
-	"\x10CreateSavedQuery\x12$.bytebase.v1.CreateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"V\xdaA\x12parent,saved_query\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x023:\vsaved_query\"$/v1/{parent=projects/*}/savedQueries\x12\x84\x01\n" +
-	"\rGetSavedQuery\x12!.bytebase.v1.GetSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"7\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/savedQueries/*}\x12\xb0\x01\n" +
-	"\x10ListSavedQueries\x12$.bytebase.v1.ListSavedQueriesRequest\x1a%.bytebase.v1.ListSavedQueriesResponse\"O\xdaA\x06parent\x8a\xea0\x12bb.worksheets.list\x90\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{parent=projects/*}/savedQueries\x12\xae\x01\n" +
-	"\x15ListSavedQueryFolders\x12).bytebase.v1.ListSavedQueryFoldersRequest\x1a*.bytebase.v1.ListSavedQueryFoldersResponse\">\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x02+\x12)/v1/{parent=projects/*}/savedQueryFolders\x12\xaa\x01\n" +
-	"\x12SearchSavedQueries\x12&.bytebase.v1.SearchSavedQueriesRequest\x1a'.bytebase.v1.SearchSavedQueriesResponse\"C\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:search\x12\xb6\x01\n" +
-	"\x10UpdateSavedQuery\x12$.bytebase.v1.UpdateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"c\xdaA\x17saved_query,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02?:\vsaved_query20/v1/{saved_query.name=projects/*/savedQueries/*}\x12\xdc\x01\n" +
-	"\x19UpdateSavedQueryOrganizer\x12-.bytebase.v1.UpdateSavedQueryOrganizerRequest\x1a .bytebase.v1.SavedQueryOrganizer\"n\xdaA\x15organizer,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02L:\torganizer2?/v1/{organizer.saved_query=projects/*/savedQueries/*}/organizer\x12\xf4\x01\n" +
-	"\x1eBatchUpdateSavedQueryOrganizer\x122.bytebase.v1.BatchUpdateSavedQueryOrganizerRequest\x1a3.bytebase.v1.BatchUpdateSavedQueryOrganizerResponse\"i\xdaA\x1cparent,organizer,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02@:\x01*\";/v1/{parent=projects/*}/savedQueries/organizers:batchUpdate\x12\x8d\x01\n" +
+	"\x10\vJ\x04\b\f\x10\rR\n" +
+	"visibilityR\afolders2\xd2\f\n" +
+	"\x11SavedQueryService\x12\xc3\x01\n" +
+	"\x10CreateSavedQuery\x12$.bytebase.v1.CreateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"p\xdaA\x12parent,saved_query\x8a\xea0\x16bb.savedQueries.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x023:\vsaved_query\"$/v1/{parent=projects/*}/savedQueries\x12\x84\x01\n" +
+	"\rGetSavedQuery\x12!.bytebase.v1.GetSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"7\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/savedQueries/*}\x12\xb2\x01\n" +
+	"\x10ListSavedQueries\x12$.bytebase.v1.ListSavedQueriesRequest\x1a%.bytebase.v1.ListSavedQueriesResponse\"Q\xdaA\x06parent\x8a\xea0\x14bb.savedQueries.list\x90\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{parent=projects/*}/savedQueries\x12\xaa\x01\n" +
+	"\x12SearchSavedQueries\x12&.bytebase.v1.SearchSavedQueriesRequest\x1a'.bytebase.v1.SearchSavedQueriesResponse\"C\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:search\x12\xc0\x01\n" +
+	"\x17SearchSavedQueryFolders\x12+.bytebase.v1.SearchSavedQueryFoldersRequest\x1a,.bytebase.v1.SearchSavedQueryFoldersResponse\"J\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{parent=projects/*}/savedQueries:searchFolders\x12\xb6\x01\n" +
+	"\x10UpdateSavedQuery\x12$.bytebase.v1.UpdateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"c\xdaA\x17saved_query,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02?:\vsaved_query20/v1/{saved_query.name=projects/*/savedQueries/*}\x12\xa8\x01\n" +
+	"\x14UpdateSavedQueryStar\x12(.bytebase.v1.UpdateSavedQueryStarRequest\x1a\x17.bytebase.v1.SavedQuery\"M\xdaA\fname,starred\x90\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/savedQueries/*}:updateStar\x12\xd6\x01\n" +
+	"\x17BatchUpdateSavedQueries\x12+.bytebase.v1.BatchUpdateSavedQueriesRequest\x1a,.bytebase.v1.BatchUpdateSavedQueriesResponse\"`\xdaA\x1eparent,saved_query,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x025:\x01*\"0/v1/{parent=projects/*}/savedQueries:batchUpdate\x12\x8d\x01\n" +
 	"\x10DeleteSavedQuery\x12$.bytebase.v1.DeleteSavedQueryRequest\x1a\x16.google.protobuf.Empty\";\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02&*$/v1/{name=projects/*/savedQueries/*}B\xac\x01\n" +
 	"\x0fcom.bytebase.v1B\x16SavedQueryServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
@@ -1247,68 +1069,59 @@ func file_v1_saved_query_service_proto_rawDescGZIP() []byte {
 	return file_v1_saved_query_service_proto_rawDescData
 }
 
-var file_v1_saved_query_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_saved_query_service_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_v1_saved_query_service_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_v1_saved_query_service_proto_goTypes = []any{
-	(SavedQueryFolder_Category)(0),                 // 0: bytebase.v1.SavedQueryFolder.Category
-	(*CreateSavedQueryRequest)(nil),                // 1: bytebase.v1.CreateSavedQueryRequest
-	(*GetSavedQueryRequest)(nil),                   // 2: bytebase.v1.GetSavedQueryRequest
-	(*ListSavedQueriesRequest)(nil),                // 3: bytebase.v1.ListSavedQueriesRequest
-	(*ListSavedQueriesResponse)(nil),               // 4: bytebase.v1.ListSavedQueriesResponse
-	(*ListSavedQueryFoldersRequest)(nil),           // 5: bytebase.v1.ListSavedQueryFoldersRequest
-	(*ListSavedQueryFoldersResponse)(nil),          // 6: bytebase.v1.ListSavedQueryFoldersResponse
-	(*SavedQueryFolder)(nil),                       // 7: bytebase.v1.SavedQueryFolder
-	(*UpdateSavedQueryRequest)(nil),                // 8: bytebase.v1.UpdateSavedQueryRequest
-	(*BatchUpdateSavedQueryOrganizerRequest)(nil),  // 9: bytebase.v1.BatchUpdateSavedQueryOrganizerRequest
-	(*BatchUpdateSavedQueryOrganizerResponse)(nil), // 10: bytebase.v1.BatchUpdateSavedQueryOrganizerResponse
-	(*UpdateSavedQueryOrganizerRequest)(nil),       // 11: bytebase.v1.UpdateSavedQueryOrganizerRequest
-	(*SavedQueryOrganizer)(nil),                    // 12: bytebase.v1.SavedQueryOrganizer
-	(*DeleteSavedQueryRequest)(nil),                // 13: bytebase.v1.DeleteSavedQueryRequest
-	(*SearchSavedQueriesRequest)(nil),              // 14: bytebase.v1.SearchSavedQueriesRequest
-	(*SearchSavedQueriesResponse)(nil),             // 15: bytebase.v1.SearchSavedQueriesResponse
-	(*SavedQuery)(nil),                             // 16: bytebase.v1.SavedQuery
-	(*fieldmaskpb.FieldMask)(nil),                  // 17: google.protobuf.FieldMask
-	(*timestamppb.Timestamp)(nil),                  // 18: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),                          // 19: google.protobuf.Empty
+	(*CreateSavedQueryRequest)(nil),         // 0: bytebase.v1.CreateSavedQueryRequest
+	(*GetSavedQueryRequest)(nil),            // 1: bytebase.v1.GetSavedQueryRequest
+	(*ListSavedQueriesRequest)(nil),         // 2: bytebase.v1.ListSavedQueriesRequest
+	(*ListSavedQueriesResponse)(nil),        // 3: bytebase.v1.ListSavedQueriesResponse
+	(*SearchSavedQueryFoldersRequest)(nil),  // 4: bytebase.v1.SearchSavedQueryFoldersRequest
+	(*SearchSavedQueryFoldersResponse)(nil), // 5: bytebase.v1.SearchSavedQueryFoldersResponse
+	(*UpdateSavedQueryRequest)(nil),         // 6: bytebase.v1.UpdateSavedQueryRequest
+	(*UpdateSavedQueryStarRequest)(nil),     // 7: bytebase.v1.UpdateSavedQueryStarRequest
+	(*BatchUpdateSavedQueriesRequest)(nil),  // 8: bytebase.v1.BatchUpdateSavedQueriesRequest
+	(*BatchUpdateSavedQueriesResponse)(nil), // 9: bytebase.v1.BatchUpdateSavedQueriesResponse
+	(*DeleteSavedQueryRequest)(nil),         // 10: bytebase.v1.DeleteSavedQueryRequest
+	(*SearchSavedQueriesRequest)(nil),       // 11: bytebase.v1.SearchSavedQueriesRequest
+	(*SearchSavedQueriesResponse)(nil),      // 12: bytebase.v1.SearchSavedQueriesResponse
+	(*SavedQuery)(nil),                      // 13: bytebase.v1.SavedQuery
+	(*fieldmaskpb.FieldMask)(nil),           // 14: google.protobuf.FieldMask
+	(*timestamppb.Timestamp)(nil),           // 15: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                   // 16: google.protobuf.Empty
 }
 var file_v1_saved_query_service_proto_depIdxs = []int32{
-	16, // 0: bytebase.v1.CreateSavedQueryRequest.saved_query:type_name -> bytebase.v1.SavedQuery
-	16, // 1: bytebase.v1.ListSavedQueriesResponse.saved_queries:type_name -> bytebase.v1.SavedQuery
-	7,  // 2: bytebase.v1.ListSavedQueryFoldersResponse.folders:type_name -> bytebase.v1.SavedQueryFolder
-	0,  // 3: bytebase.v1.SavedQueryFolder.category:type_name -> bytebase.v1.SavedQueryFolder.Category
-	16, // 4: bytebase.v1.UpdateSavedQueryRequest.saved_query:type_name -> bytebase.v1.SavedQuery
-	17, // 5: bytebase.v1.UpdateSavedQueryRequest.update_mask:type_name -> google.protobuf.FieldMask
-	12, // 6: bytebase.v1.BatchUpdateSavedQueryOrganizerRequest.organizer:type_name -> bytebase.v1.SavedQueryOrganizer
-	17, // 7: bytebase.v1.BatchUpdateSavedQueryOrganizerRequest.update_mask:type_name -> google.protobuf.FieldMask
-	12, // 8: bytebase.v1.BatchUpdateSavedQueryOrganizerResponse.saved_query_organizers:type_name -> bytebase.v1.SavedQueryOrganizer
-	12, // 9: bytebase.v1.UpdateSavedQueryOrganizerRequest.organizer:type_name -> bytebase.v1.SavedQueryOrganizer
-	17, // 10: bytebase.v1.UpdateSavedQueryOrganizerRequest.update_mask:type_name -> google.protobuf.FieldMask
-	16, // 11: bytebase.v1.SearchSavedQueriesResponse.saved_queries:type_name -> bytebase.v1.SavedQuery
-	18, // 12: bytebase.v1.SavedQuery.create_time:type_name -> google.protobuf.Timestamp
-	18, // 13: bytebase.v1.SavedQuery.update_time:type_name -> google.protobuf.Timestamp
-	1,  // 14: bytebase.v1.SavedQueryService.CreateSavedQuery:input_type -> bytebase.v1.CreateSavedQueryRequest
-	2,  // 15: bytebase.v1.SavedQueryService.GetSavedQuery:input_type -> bytebase.v1.GetSavedQueryRequest
-	3,  // 16: bytebase.v1.SavedQueryService.ListSavedQueries:input_type -> bytebase.v1.ListSavedQueriesRequest
-	5,  // 17: bytebase.v1.SavedQueryService.ListSavedQueryFolders:input_type -> bytebase.v1.ListSavedQueryFoldersRequest
-	14, // 18: bytebase.v1.SavedQueryService.SearchSavedQueries:input_type -> bytebase.v1.SearchSavedQueriesRequest
-	8,  // 19: bytebase.v1.SavedQueryService.UpdateSavedQuery:input_type -> bytebase.v1.UpdateSavedQueryRequest
-	11, // 20: bytebase.v1.SavedQueryService.UpdateSavedQueryOrganizer:input_type -> bytebase.v1.UpdateSavedQueryOrganizerRequest
-	9,  // 21: bytebase.v1.SavedQueryService.BatchUpdateSavedQueryOrganizer:input_type -> bytebase.v1.BatchUpdateSavedQueryOrganizerRequest
-	13, // 22: bytebase.v1.SavedQueryService.DeleteSavedQuery:input_type -> bytebase.v1.DeleteSavedQueryRequest
-	16, // 23: bytebase.v1.SavedQueryService.CreateSavedQuery:output_type -> bytebase.v1.SavedQuery
-	16, // 24: bytebase.v1.SavedQueryService.GetSavedQuery:output_type -> bytebase.v1.SavedQuery
-	4,  // 25: bytebase.v1.SavedQueryService.ListSavedQueries:output_type -> bytebase.v1.ListSavedQueriesResponse
-	6,  // 26: bytebase.v1.SavedQueryService.ListSavedQueryFolders:output_type -> bytebase.v1.ListSavedQueryFoldersResponse
-	15, // 27: bytebase.v1.SavedQueryService.SearchSavedQueries:output_type -> bytebase.v1.SearchSavedQueriesResponse
-	16, // 28: bytebase.v1.SavedQueryService.UpdateSavedQuery:output_type -> bytebase.v1.SavedQuery
-	12, // 29: bytebase.v1.SavedQueryService.UpdateSavedQueryOrganizer:output_type -> bytebase.v1.SavedQueryOrganizer
-	10, // 30: bytebase.v1.SavedQueryService.BatchUpdateSavedQueryOrganizer:output_type -> bytebase.v1.BatchUpdateSavedQueryOrganizerResponse
-	19, // 31: bytebase.v1.SavedQueryService.DeleteSavedQuery:output_type -> google.protobuf.Empty
-	23, // [23:32] is the sub-list for method output_type
-	14, // [14:23] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	13, // 0: bytebase.v1.CreateSavedQueryRequest.saved_query:type_name -> bytebase.v1.SavedQuery
+	13, // 1: bytebase.v1.ListSavedQueriesResponse.saved_queries:type_name -> bytebase.v1.SavedQuery
+	13, // 2: bytebase.v1.UpdateSavedQueryRequest.saved_query:type_name -> bytebase.v1.SavedQuery
+	14, // 3: bytebase.v1.UpdateSavedQueryRequest.update_mask:type_name -> google.protobuf.FieldMask
+	13, // 4: bytebase.v1.BatchUpdateSavedQueriesRequest.saved_query:type_name -> bytebase.v1.SavedQuery
+	14, // 5: bytebase.v1.BatchUpdateSavedQueriesRequest.update_mask:type_name -> google.protobuf.FieldMask
+	13, // 6: bytebase.v1.SearchSavedQueriesResponse.saved_queries:type_name -> bytebase.v1.SavedQuery
+	15, // 7: bytebase.v1.SavedQuery.create_time:type_name -> google.protobuf.Timestamp
+	15, // 8: bytebase.v1.SavedQuery.update_time:type_name -> google.protobuf.Timestamp
+	0,  // 9: bytebase.v1.SavedQueryService.CreateSavedQuery:input_type -> bytebase.v1.CreateSavedQueryRequest
+	1,  // 10: bytebase.v1.SavedQueryService.GetSavedQuery:input_type -> bytebase.v1.GetSavedQueryRequest
+	2,  // 11: bytebase.v1.SavedQueryService.ListSavedQueries:input_type -> bytebase.v1.ListSavedQueriesRequest
+	11, // 12: bytebase.v1.SavedQueryService.SearchSavedQueries:input_type -> bytebase.v1.SearchSavedQueriesRequest
+	4,  // 13: bytebase.v1.SavedQueryService.SearchSavedQueryFolders:input_type -> bytebase.v1.SearchSavedQueryFoldersRequest
+	6,  // 14: bytebase.v1.SavedQueryService.UpdateSavedQuery:input_type -> bytebase.v1.UpdateSavedQueryRequest
+	7,  // 15: bytebase.v1.SavedQueryService.UpdateSavedQueryStar:input_type -> bytebase.v1.UpdateSavedQueryStarRequest
+	8,  // 16: bytebase.v1.SavedQueryService.BatchUpdateSavedQueries:input_type -> bytebase.v1.BatchUpdateSavedQueriesRequest
+	10, // 17: bytebase.v1.SavedQueryService.DeleteSavedQuery:input_type -> bytebase.v1.DeleteSavedQueryRequest
+	13, // 18: bytebase.v1.SavedQueryService.CreateSavedQuery:output_type -> bytebase.v1.SavedQuery
+	13, // 19: bytebase.v1.SavedQueryService.GetSavedQuery:output_type -> bytebase.v1.SavedQuery
+	3,  // 20: bytebase.v1.SavedQueryService.ListSavedQueries:output_type -> bytebase.v1.ListSavedQueriesResponse
+	12, // 21: bytebase.v1.SavedQueryService.SearchSavedQueries:output_type -> bytebase.v1.SearchSavedQueriesResponse
+	5,  // 22: bytebase.v1.SavedQueryService.SearchSavedQueryFolders:output_type -> bytebase.v1.SearchSavedQueryFoldersResponse
+	13, // 23: bytebase.v1.SavedQueryService.UpdateSavedQuery:output_type -> bytebase.v1.SavedQuery
+	13, // 24: bytebase.v1.SavedQueryService.UpdateSavedQueryStar:output_type -> bytebase.v1.SavedQuery
+	9,  // 25: bytebase.v1.SavedQueryService.BatchUpdateSavedQueries:output_type -> bytebase.v1.BatchUpdateSavedQueriesResponse
+	16, // 26: bytebase.v1.SavedQueryService.DeleteSavedQuery:output_type -> google.protobuf.Empty
+	18, // [18:27] is the sub-list for method output_type
+	9,  // [9:18] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_v1_saved_query_service_proto_init() }
@@ -1322,14 +1135,13 @@ func file_v1_saved_query_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_saved_query_service_proto_rawDesc), len(file_v1_saved_query_service_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   16,
+			NumEnums:      0,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_v1_saved_query_service_proto_goTypes,
 		DependencyIndexes: file_v1_saved_query_service_proto_depIdxs,
-		EnumInfos:         file_v1_saved_query_service_proto_enumTypes,
 		MessageInfos:      file_v1_saved_query_service_proto_msgTypes,
 	}.Build()
 	File_v1_saved_query_service_proto = out.File
