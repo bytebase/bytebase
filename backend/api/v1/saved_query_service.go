@@ -56,9 +56,9 @@ func (s *SavedQueryService) CreateSavedQuery(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	// The interceptor resolves archived projects too (GetProject returns a
-	// project regardless of its deleted state), so a create into one would
-	// otherwise reach the store's purge fence and surface as a 500.
+	// Resource resolution returns archived projects (GetProject reports a
+	// project regardless of its deleted state), so this is what rejects a
+	// create into one. The store's fence covers the window after it.
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectResourceID,
@@ -91,6 +91,10 @@ func (s *SavedQueryService) CreateSavedQuery(
 	}
 	savedQuery, err := s.store.CreateSavedQuery(ctx, convertToStoreSavedQueryMessage(projectResourceID, database, user.Email, folder, request.SavedQuery))
 	if err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			// The fence lost to an archive or purge racing this create.
+			return nil, connect.NewError(connect.CodeNotFound, errors.Wrapf(err, "project %q not found", projectResourceID))
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create saved query: %v", err))
 	}
 	return connect.NewResponse(convertToAPISavedQuery(savedQuery)), nil

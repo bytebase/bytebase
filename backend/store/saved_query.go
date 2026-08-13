@@ -203,23 +203,10 @@ func (s *Store) CreateSavedQuery(ctx context.Context, create *SavedQueryMessage)
 	}
 	defer tx.Rollback()
 
-	// Callers reach this only after the API layer has resolved the parent
-	// project, so a missing or deleted project here means it was purged
-	// mid-request. That is a lost race, not a caller mistake.
-	var deleted bool
-	if err := tx.QueryRowContext(ctx, `
-		SELECT deleted
-		FROM project
-		WHERE resource_id = $1
-		FOR UPDATE
-	`, create.ProjectID).Scan(&deleted); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.Errorf("project %s was deleted while creating the saved query", create.ProjectID)
-		}
-		return nil, errors.Wrapf(err, "failed to lock project %s", create.ProjectID)
-	}
-	if deleted {
-		return nil, errors.Errorf("project %s was deleted while creating the saved query", create.ProjectID)
+	// A saved query is a new child row, so it takes the "requires an active
+	// project" fence: lock the parent and refuse if it is archived or purged.
+	if err := lockActiveProject(ctx, tx, create.ProjectID); err != nil {
+		return nil, err
 	}
 
 	query, args, err := qb.Q().Space(`

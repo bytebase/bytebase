@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -351,4 +352,41 @@ func TestSavedQueryBatchFolderMovesLockOrder(t *testing.T) {
 	}
 	require.NoError(t, rows.Err())
 	require.Equal(t, []string{"two", "two"}, folders)
+}
+
+// TestCreateSavedQueryRejectsInactiveProject covers the shared fence's outcome
+// on this path: the API layer checks the parent before calling, so the fence
+// only fires when the project is archived or purged in between, and the caller
+// has to be able to tell that from a genuine failure.
+func TestCreateSavedQueryRejectsInactiveProject(t *testing.T) {
+	fixture := newProjectDeletionLockOrderFixture(t, "")
+
+	// project-a is seeded soft-deleted.
+	_, err := fixture.store.CreateSavedQuery(fixture.ctx, &store.SavedQueryMessage{
+		ProjectID: "project-a",
+		Creator:   "user@example.com",
+		Title:     "into an archived project",
+		Statement: "SELECT 1",
+	})
+	require.Error(t, err)
+	require.Equal(t, common.NotFound, common.ErrorCode(err))
+
+	_, err = fixture.store.CreateSavedQuery(fixture.ctx, &store.SavedQueryMessage{
+		ProjectID: "no-such-project",
+		Creator:   "user@example.com",
+		Title:     "into a purged project",
+		Statement: "SELECT 1",
+	})
+	require.Error(t, err)
+	require.Equal(t, common.NotFound, common.ErrorCode(err))
+
+	// An active parent is unaffected.
+	created, err := fixture.store.CreateSavedQuery(fixture.ctx, &store.SavedQueryMessage{
+		ProjectID: "default",
+		Creator:   "user@example.com",
+		Title:     "into an active project",
+		Statement: "SELECT 1",
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, created.ResourceID)
 }
