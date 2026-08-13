@@ -66,6 +66,19 @@ func TestAuditResponseRedactsCredentials(t *testing.T) {
 			name:     "saved query response SQL",
 			response: &v1pb.SavedQuery{Content: []byte(secretSentinel)},
 		},
+		{
+			name: "purchase checkout credentials",
+			response: &v1pb.PurchaseResponse{
+				PaymentUrl: secretSentinel,
+				SessionId:  secretSentinel,
+			},
+		},
+		{
+			name: "VCS provider user export",
+			response: &v1pb.ExportVCSProviderUsersResponse{
+				Content: []byte(secretSentinel),
+			},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getResponseString(tt.response)
@@ -140,6 +153,7 @@ func TestAuditRequestRedactsCredentials(t *testing.T) {
 			Code:        secretSentinel,
 			NewPassword: secretSentinel,
 		}},
+		{"enterprise license", &v1pb.UploadLicenseRequest{License: secretSentinel}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getRequestString(tt.request)

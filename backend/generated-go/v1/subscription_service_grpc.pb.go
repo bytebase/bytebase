@@ -8,7 +8,6 @@ package v1
 
 import (
 	context "context"
-	httpbody "google.golang.org/genproto/googleapis/api/httpbody"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -42,7 +41,7 @@ type SubscriptionServiceClient interface {
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	GetSubscription(ctx context.Context, in *GetSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error)
 	// Exports active VCS users as CSV.
-	ExportVCSProviderUsers(ctx context.Context, in *ExportVCSProviderUsersRequest, opts ...grpc.CallOption) (*httpbody.HttpBody, error)
+	ExportVCSProviderUsers(ctx context.Context, in *ExportVCSProviderUsersRequest, opts ...grpc.CallOption) (*ExportVCSProviderUsersResponse, error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(ctx context.Context, in *UploadLicenseRequest, opts ...grpc.CallOption) (*Subscription, error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
@@ -79,9 +78,9 @@ func (c *subscriptionServiceClient) GetSubscription(ctx context.Context, in *Get
 	return out, nil
 }
 
-func (c *subscriptionServiceClient) ExportVCSProviderUsers(ctx context.Context, in *ExportVCSProviderUsersRequest, opts ...grpc.CallOption) (*httpbody.HttpBody, error) {
+func (c *subscriptionServiceClient) ExportVCSProviderUsers(ctx context.Context, in *ExportVCSProviderUsersRequest, opts ...grpc.CallOption) (*ExportVCSProviderUsersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(httpbody.HttpBody)
+	out := new(ExportVCSProviderUsersResponse)
 	err := c.cc.Invoke(ctx, SubscriptionService_ExportVCSProviderUsers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -170,7 +169,7 @@ type SubscriptionServiceServer interface {
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	GetSubscription(context.Context, *GetSubscriptionRequest) (*Subscription, error)
 	// Exports active VCS users as CSV.
-	ExportVCSProviderUsers(context.Context, *ExportVCSProviderUsersRequest) (*httpbody.HttpBody, error)
+	ExportVCSProviderUsers(context.Context, *ExportVCSProviderUsersRequest) (*ExportVCSProviderUsersResponse, error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(context.Context, *UploadLicenseRequest) (*Subscription, error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
@@ -200,7 +199,7 @@ type UnimplementedSubscriptionServiceServer struct{}
 func (UnimplementedSubscriptionServiceServer) GetSubscription(context.Context, *GetSubscriptionRequest) (*Subscription, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSubscription not implemented")
 }
-func (UnimplementedSubscriptionServiceServer) ExportVCSProviderUsers(context.Context, *ExportVCSProviderUsersRequest) (*httpbody.HttpBody, error) {
+func (UnimplementedSubscriptionServiceServer) ExportVCSProviderUsers(context.Context, *ExportVCSProviderUsersRequest) (*ExportVCSProviderUsersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ExportVCSProviderUsers not implemented")
 }
 func (UnimplementedSubscriptionServiceServer) UploadLicense(context.Context, *UploadLicenseRequest) (*Subscription, error) {

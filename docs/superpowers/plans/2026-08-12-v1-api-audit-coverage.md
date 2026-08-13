@@ -399,9 +399,9 @@ go test -v -count=1 ./backend/tests -run '^TestAuditLogFormat$' -timeout 10m
 
 Expected: PASS with no auth credential present in stored request/response JSON.
 
-- [ ] **Step 7: Commit the authentication batch**
+- [x] **Step 7: Commit the authentication batch**
 
-Left uncommitted for the author to review and commit explicitly.
+Merged in PR #21162.
 
 ```bash
 git add proto/v1/v1/auth_service.proto backend/api/v1/auth_service.go backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/tests/login_audit_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen
@@ -474,13 +474,23 @@ Expected: the existing member request creates a workspace `SendEmailLoginCode` a
 
 **Interfaces:**
 - Consumes: workspace parent fallback from the authenticated context.
-- Produces: `redactUploadLicenseRequest`, empty/redacted purchase responses, and metadata-only HTTP export responses.
+- Produces: `redactUploadLicenseRequest`, empty/redacted purchase responses, and metadata-only VCS provider user export responses.
 
-- [ ] **Step 1: Add failing redaction cases**
+- [x] **Step 1: Add failing redaction cases**
 
-Cover `UploadLicenseRequest.License`, `PurchaseResponse.PaymentUrl`, `PurchaseResponse.SessionId`, and `google.api.HttpBody.Data` with `secretSentinel` in the request/response redaction tables.
+Cover `UploadLicenseRequest.License`, `PurchaseResponse.PaymentUrl`, `PurchaseResponse.SessionId`, and `ExportVCSProviderUsersResponse.Content` with `secretSentinel` in the request/response redaction tables.
 
-- [ ] **Step 2: Implement subscription redactors**
+- [x] **Step 2: Implement subscription redactors**
+
+Replace the generic `google.api.HttpBody` export result with an RPC-specific response:
+
+```proto
+message ExportVCSProviderUsersResponse {
+  bytes content = 1;
+}
+```
+
+Return this message from `ExportVCSProviderUsers` and update the Subscription page download path to read `Content` and use the fixed `text/csv; charset=utf-8` media type. The HTTP/JSON representation now carries base64-encoded `content` instead of returning a raw CSV body.
 
 ```go
 func redactUploadLicenseRequest(r *v1pb.UploadLicenseRequest) *v1pb.UploadLicenseRequest {
@@ -498,15 +508,15 @@ func redactPurchaseResponse(r *v1pb.PurchaseResponse) *v1pb.PurchaseResponse {
 }
 ```
 
-For `google.api.HttpBody`, retain only `ContentType` and drop `Data` and `Extensions`. Register these types in the request/response serializer switches.
+For `ExportVCSProviderUsersResponse`, drop `Content` and serialize an empty response. Register these types in the request/response serializer switches.
 
-- [ ] **Step 3: Add subscription annotations**
+- [x] **Step 3: Add subscription annotations**
 
 Add `audit = true` to `UploadLicense`, `CreatePurchase`, `UpdatePurchase`, `CancelPurchase`, and `ExportVCSProviderUsers`.
 
 Leave `Resource` empty for these workspace-singleton operations; the authenticated workspace remains the audit parent. Do not invent a non-resource-format subscription name.
 
-- [ ] **Step 4: Generate and test**
+- [x] **Step 4: Generate and test**
 
 ```bash
 buf format -w proto
@@ -516,9 +526,11 @@ gofmt -w backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go
 go test ./backend/api/v1 -run '^(TestAudit(Request|Response)RedactsCredentials|TestAuditRedactionDoesNotMutateInput)$' -count=1
 ```
 
-Expected: PASS; license, checkout URL/session, and CSV data are absent.
+Expected: PASS; license, checkout URL/session, and CSV content are absent.
 
 - [ ] **Step 5: Commit the subscription batch**
+
+Left uncommitted for the author to review and commit explicitly.
 
 ```bash
 git add proto/v1/v1/subscription_service.proto backend/api/v1/audit.go backend/api/v1/audit_redaction_test.go backend/generated-go/v1 frontend/src/types/proto-es/v1 proto/gen/grpc-doc backend/api/mcp/gen

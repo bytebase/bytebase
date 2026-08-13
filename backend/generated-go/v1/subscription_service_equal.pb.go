@@ -23,6 +23,19 @@ func (x *ExportVCSProviderUsersRequest) Equal(y *ExportVCSProviderUsersRequest) 
 	return true
 }
 
+func (x *ExportVCSProviderUsersResponse) Equal(y *ExportVCSProviderUsersResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if string(x.Content) != string(y.Content) {
+		return false
+	}
+	return true
+}
+
 func (x *UploadLicenseRequest) Equal(y *UploadLicenseRequest) bool {
 	if x == y {
 		return true

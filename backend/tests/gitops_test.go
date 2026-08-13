@@ -538,8 +538,7 @@ func TestVCSProviderUserActuatorAndExport(t *testing.T) {
 
 	body, err := ctl.subscriptionServiceClient.ExportVCSProviderUsers(ctx, connect.NewRequest(&v1pb.ExportVCSProviderUsersRequest{}))
 	a.NoError(err)
-	a.Equal("text/csv; charset=utf-8", body.Msg.ContentType)
-	csv := string(body.Msg.Data)
+	csv := string(body.Msg.Content)
 	a.Contains(csv, "vcs_type,user_id,user_name,display_name,last_seen_at")
 	a.Contains(csv, "GITHUB,1001,alice,Alice,")
 	a.Contains(csv, "GITHUB,1002,bob,,")
@@ -572,7 +571,7 @@ func TestVCSProviderUserExportEscapesSpreadsheetFormulas(t *testing.T) {
 
 	body, err := ctl.subscriptionServiceClient.ExportVCSProviderUsers(ctx, connect.NewRequest(&v1pb.ExportVCSProviderUsersRequest{}))
 	a.NoError(err)
-	rows, err := csv.NewReader(strings.NewReader(string(body.Msg.Data))).ReadAll()
+	rows, err := csv.NewReader(strings.NewReader(string(body.Msg.Content))).ReadAll()
 	a.NoError(err)
 	a.Len(rows, 2)
 	a.Equal([]string{"vcs_type", "user_id", "user_name", "display_name", "last_seen_at"}, rows[0])

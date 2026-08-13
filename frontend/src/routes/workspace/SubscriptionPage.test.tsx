@@ -118,8 +118,7 @@ describe("SubscriptionPage", () => {
     vi.setSystemTime(new Date(2026, 4, 28, 17, 10, 11));
     mocks.hasWorkspacePermissionV2.mockReturnValue(true);
     mocks.exportVCSProviderUsers.mockResolvedValue({
-      contentType: "text/csv; charset=utf-8",
-      data: new TextEncoder().encode(
+      content: new TextEncoder().encode(
         "vcs_type,user_id,user_name,display_name,last_seen_at\ngithub,123,alice,Alice,2026-05-28T09:00:00Z\n"
       ),
     });
