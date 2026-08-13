@@ -101,6 +101,7 @@ const mocks = vi.hoisted(() => ({
       return serialized ? `${base}?${serialized}` : base;
     }
   ),
+  signup: vi.fn(),
   getActuatorInfo: vi.fn(),
   getWorkspace: vi.fn(),
   updateWorkspace: vi.fn(),
@@ -190,6 +191,7 @@ vi.mock("@/api", () => ({
   authServiceClientConnect: {
     login: mocks.login,
     logout: mocks.logout,
+    signup: mocks.signup,
   },
   projectServiceClientConnect: {
     getProject: mocks.getProject,
@@ -441,6 +443,11 @@ const timestampSeconds = (seconds: number) => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Tests here stub `location`; without this the stub leaks into every test
+  // declared after it, with only the keys that test happened to supply. The
+  // unstub is blanket, so re-install the localStorage mock it also removes.
+  vi.unstubAllGlobals();
+  vi.stubGlobal("localStorage", mocks.localStorage);
   localStorage.clear();
 });
 
@@ -521,13 +528,21 @@ describe("useAppStore", () => {
     mocks.getCurrentUser.mockResolvedValue(user);
     mocks.getActuatorInfo.mockResolvedValue({ workspace: user.workspace });
     mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    // `login()` loads the profile itself, so EDITOR mode comes from the server
+    // rather than a seeded `appFeatures`.
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "workspaceProfile",
+            value: createProto(WorkspaceProfileSettingSchema, {
+              databaseChangeMode: DatabaseChangeMode.EDITOR,
+            }),
+          },
+        }),
+      })
+    );
     const store = createAppStore();
-    store.setState({
-      appFeatures: {
-        ...store.getState().appFeatures,
-        "bb.feature.database-change-mode": DatabaseChangeMode.EDITOR,
-      },
-    });
 
     await store.getState().login({
       request: { email: user.email, password: "secret" } as never,
@@ -537,6 +552,120 @@ describe("useAppStore", () => {
     expect(mocks.navigateToPath).toHaveBeenCalledWith(redirectUrl, {
       replace: true,
     });
+  });
+
+  // Regression guard (customer report): signing in from the bare root left
+  // `appFeatures` at its PIPELINE default, because a signed-out boot never
+  // fetches the workspace profile and `login()` did not fetch it either. The
+  // EDITOR branch below then failed and the user landed on the workspace
+  // landing page instead of the SQL Editor. Note this test seeds no
+  // `appFeatures` — the profile must come from the server during `login()`.
+  test("login loads the workspace profile before choosing the next page", async () => {
+    mocks.login.mockResolvedValue({ requireResetPassword: false });
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({ workspace: user.workspace });
+    mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "workspaceProfile",
+            value: createProto(WorkspaceProfileSettingSchema, {
+              databaseChangeMode: DatabaseChangeMode.EDITOR,
+            }),
+          },
+        }),
+      })
+    );
+    const store = createAppStore();
+
+    await store.getState().login({
+      request: { email: user.email, password: "secret" } as never,
+    });
+
+    expect(
+      store.getState().appFeatures["bb.feature.database-change-mode"]
+    ).toBe(DatabaseChangeMode.EDITOR);
+    // `rootGuard` owns the "/" policy and turns this into the SQL Editor; see
+    // the root-redirect tests in app/router/guard.test.ts. What `login()` owes
+    // it is a loaded profile, asserted above.
+    expect(mocks.navigateToPath).toHaveBeenCalledWith("/", { replace: true });
+  });
+
+  // Regression guard: `signup()` used to override the destination with the SQL
+  // Editor whenever the mode read EDITOR, with no check for an explicit
+  // redirect. That branch was dead (signup always boots signed out, so the mode
+  // was never EDITOR) until the profile load made it live, which would have
+  // silently dropped deep links.
+  test("signup keeps an explicit redirect in an EDITOR workspace", async () => {
+    vi.stubGlobal("location", { search: "?redirect=%2Fprojects%2Ffoo" });
+    mocks.signup.mockResolvedValue({});
+    mocks.getCurrentUser.mockResolvedValue(user);
+    // activeUserCount > 1 so `enableOnboarding()` is false and signup navigates.
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      activatedUserCount: 2,
+    });
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "workspaceProfile",
+            value: createProto(WorkspaceProfileSettingSchema, {
+              databaseChangeMode: DatabaseChangeMode.EDITOR,
+            }),
+          },
+        }),
+      })
+    );
+    const store = createAppStore();
+
+    await store.getState().signup({
+      email: user.email,
+      name: "Test",
+      password: "secret",
+    } as never);
+
+    expect(mocks.navigateToPath).toHaveBeenCalledWith("/projects/foo", {
+      replace: true,
+    });
+  });
+
+  // Guards signup's own `loadWorkspaceProfile` call. The explicit-redirect test
+  // above returns before `rootGuard` is consulted, so it passes with or without
+  // the load; this one pins that a no-redirect signup hands the guard a loaded
+  // profile, which is what sends an EDITOR workspace to the SQL Editor.
+  test("signup loads the workspace profile before choosing the next page", async () => {
+    mocks.signup.mockResolvedValue({});
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      activatedUserCount: 2,
+    });
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "workspaceProfile",
+            value: createProto(WorkspaceProfileSettingSchema, {
+              databaseChangeMode: DatabaseChangeMode.EDITOR,
+            }),
+          },
+        }),
+      })
+    );
+    const store = createAppStore();
+
+    await store.getState().signup({
+      email: user.email,
+      name: "Test",
+      password: "secret",
+    } as never);
+
+    expect(
+      store.getState().appFeatures["bb.feature.database-change-mode"]
+    ).toBe(DatabaseChangeMode.EDITOR);
+    expect(mocks.navigateToPath).toHaveBeenCalledWith("/", { replace: true });
   });
 
   test("lists groups and populates the group cache", async () => {
