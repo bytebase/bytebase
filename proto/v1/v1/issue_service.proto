@@ -176,8 +176,21 @@ service IssueService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = DRIVES_THE_APPROVAL_DECISION;
+    // WRITE, not FORBIDDEN with its two siblings, because it is structurally
+    // the opposite of them. ApproveIssue and RejectIssue record the review
+    // decision — an approver role via canReview, the self-approval guard, an
+    // APPROVED or REJECTED approver appended. This action requires the issue to
+    // be ALREADY rejected, requires the actor to be the issue CREATOR, never
+    // calls canReview, and records no decision: it strips the REJECTED
+    // approvers and returns the issue to PENDING for a fresh human decision
+    // (component/review/workflow.go applyReviewAction, ActionRequest).
+    //
+    // It approves nothing, so refusing it protects nothing the other two do not
+    // already protect, and it costs the loop propose_database_change exists
+    // for: while a rejection stands Approve and Reject both hard-fail, so this
+    // is the ONLY exit from the rejected state. Forbidding it means an agent
+    // that fixes the SQL a human asked it to fix cannot resubmit.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Re-runs approval-template finding for an issue stuck in CHECKING.

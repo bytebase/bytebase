@@ -116,7 +116,6 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.InstanceServiceUpdateDataSourceProcedure,
 		v1connect.IssueServiceApproveIssueProcedure,
 		v1connect.IssueServiceRejectIssueProcedure,
-		v1connect.IssueServiceRequestIssueProcedure,
 		v1connect.IssueServiceRetryIssueApprovalProcedure,
 	}
 	got := forbiddenProceduresFromDescriptors(t)
@@ -161,7 +160,6 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.InstanceServiceUpdateDataSourceProcedure:               v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.IssueServiceApproveIssueProcedure:                      v1pb.MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION,
 		v1connect.IssueServiceRejectIssueProcedure:                       v1pb.MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION,
-		v1connect.IssueServiceRequestIssueProcedure:                      v1pb.MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION,
 		v1connect.IssueServiceRetryIssueApprovalProcedure:                v1pb.MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION,
 	}
 	// Wording for every mechanism in use is checkReasonsMatchTheClass's job, over

@@ -153,23 +153,18 @@ var mcpForbiddenReasons = map[v1pb.MCPForbiddenReason]string{
 	// belongs in WRITE is the gate PR's decision to take deliberately rather
 	// than inherit.
 	//
-	// RequestIssue is the contested row, and the reason's wording does NOT
-	// describe it. It is the third action of the same handler but structurally
-	// the opposite of the other two: it requires the issue to already be
-	// rejected, requires the actor to be the issue CREATOR, never calls
-	// canReview, and records no decision — it strips the REJECTED approvers and
-	// returns the issue to PENDING for a fresh human decision
-	// (component/review/workflow.go applyReviewAction, ActionRequest). It
-	// cannot approve anything, so forbidding it protects nothing the other two
-	// do not already protect. What it costs is real: while a rejection stands,
-	// Approve and Reject both hard-fail ("cannot approve because the issue has
-	// been rejected"), so this is the ONLY exit from the rejected state, and an
-	// agent that fixes the SQL a human asked it to fix cannot resubmit — the
-	// human has to re-request from the console, or the agent abandons the issue
-	// and creates a replacement. That is the propose-fix-resubmit loop
-	// propose_database_change exists for. Raised by the Codex review; kept
-	// FORBIDDEN here only because the four-method set is a spec-level decision,
-	// and flagged for the lead as the row to widen.
+	// RequestIssue is the third action of the same handler and is deliberately
+	// NOT here — it is WRITE. Spec §1b-1 named four approval methods; that line
+	// grouped by RPC family rather than by mechanism, and the mechanism does not
+	// agree. This action requires the issue to be already rejected, requires the
+	// actor to be the issue CREATOR, never calls canReview, and records no
+	// decision: it strips the REJECTED approvers and returns the issue to
+	// PENDING for a fresh human decision. It cannot approve anything, so
+	// refusing it protects nothing the other two do not, and it costs the
+	// propose-fix-resubmit loop, since while a rejection stands Approve and
+	// Reject both hard-fail and this is the only exit from that state. The
+	// reasoning is on the RPC in issue_service.proto. Raised by the Codex
+	// review; Vincent took the call.
 	//
 	// RetryIssueApproval is the near miss and is in deliberately. It casts no
 	// vote — it re-runs approval-template finding for an issue stuck in

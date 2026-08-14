@@ -16,9 +16,9 @@ belongs; the gate that acts on them is a later change.
 | Class | Methods | Meaning |
 |---|---|---|
 | READ | 47 | served to a read-only session and above |
-| WRITE | 39 | served to a read-write session only |
+| WRITE | 40 | served to a read-write session only |
 | EXCLUDED | 93 | served by no mode this phase ships |
-| FORBIDDEN | 29 | never served, enforced today |
+| FORBIDDEN | 28 | never served, enforced today |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this |
 | **total** | **208** | |
 
@@ -102,7 +102,7 @@ belongs; the gate that acts on them is a later change.
 | IssueService/ListIssueComments | READ | — | bb.issueComments.list |
 | IssueService/ListIssues | READ | — | bb.issues.list |
 | IssueService/RejectIssue | FORBIDDEN | DRIVES_THE_APPROVAL_DECISION | — |
-| IssueService/RequestIssue | FORBIDDEN | DRIVES_THE_APPROVAL_DECISION | — |
+| IssueService/RequestIssue | WRITE | — | — |
 | IssueService/RetryIssueApproval | FORBIDDEN | DRIVES_THE_APPROVAL_DECISION | — |
 | IssueService/SearchIssues | READ | — | bb.issues.get |
 | IssueService/UpdateIssue | WRITE | — | bb.issues.update |
