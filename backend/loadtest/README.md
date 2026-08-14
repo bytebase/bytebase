@@ -29,17 +29,17 @@ Postgres (Phase 1) and GCP Cloud SQL (Phase 2). Components are split across
 
 - Sync load: replay Bytebase's per-workspace catalog-introspection + schema-dump
   pattern. Each workspace's instance syncs only its own database as its
-  per-database role, on an independent 15-minute cadence; the realistic overlap
-  is a small number of concurrent syncs (default 10, conservative vs the
-  expected ~N x sync-duration/15min at 1000 databases).
+  per-database role. One worker is spawned per database and all workers run
+  concurrently (the worst case where every workspace syncs at once).
 - DDL load: replay change-ticket DDL (idempotent, non-rewriting) as the
   per-database role, capped at a modest overlap (default 5) because change
   tickets are rare and independently scheduled.
 - Interactive: 10 concurrent sessions steady state, 50 burst, held fixed while
   database count varies. Database count and connection count are independent.
 
-All three concurrency levels are configurable (`-sync-concurrency`,
-`-ddl-concurrency`, `-interactive-concurrency`, `-interactive-burst`).
+DDL and interactive concurrency are configurable (`-ddl-concurrency`,
+`-interactive-concurrency`, `-interactive-burst`); sync is always one worker
+per database.
 
 ## Pass/fail thresholds (at 500 databases, steady + 50-session burst + sync)
 
@@ -69,6 +69,6 @@ Phase 2 (Cloud SQL, needs GCP credentials):
     go run ./backend/cmd/sample-loadtest \
       -host <public-ip> -port 5432 -user postgres -password <secret> \
       -sslmode require -counts 70,500,1000 \
-      -sync-concurrency 10 -ddl-concurrency 5 \
+      -ddl-concurrency 5 \
       -interactive-concurrency 10 -interactive-burst 50 \
       -report /tmp/loadtest-report.json

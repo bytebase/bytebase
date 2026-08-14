@@ -45,10 +45,10 @@ type Config struct {
 	DDLStatements      []string
 
 	// Concurrency for the per-workspace workload model. Zero means "use the
-	// realistic default" (see defaults.go). Sync and DDL model independent
-	// per-workspace schedules with a modest overlap rather than an N-wide pool;
-	// interactive concurrency is held fixed while the database count varies.
-	SyncConcurrency        int // max concurrent per-workspace syncs.
+	// realistic default" (see defaults.go). DDL models independent per-workspace
+	// schedules with a modest overlap; interactive concurrency is held fixed
+	// while the database count varies. Sync runs one worker per database (see
+	// sync_workload.go).
 	DDLConcurrency         int // max concurrent per-workspace change-ticket DDL.
 	InteractiveConcurrency int // steady-state interactive sessions.
 	InteractiveBurst       int // burst interactive sessions.

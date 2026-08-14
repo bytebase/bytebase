@@ -26,7 +26,6 @@ func main() {
 	counts := flag.String("counts", "70,500,1000", "comma-separated database counts")
 	report := flag.String("report", "", "output path for the JSON report (empty = no file)")
 	verbose := flag.Bool("verbose", false, "log per-tenant errors")
-	syncConcurrency := flag.Int("sync-concurrency", 0, "max concurrent per-workspace syncs (0 = realistic default)")
 	ddlConcurrency := flag.Int("ddl-concurrency", 0, "max concurrent per-workspace change-ticket DDL (0 = realistic default)")
 	interactiveConcurrency := flag.Int("interactive-concurrency", 0, "steady-state interactive sessions (0 = realistic default)")
 	interactiveBurst := flag.Int("interactive-burst", 0, "burst interactive sessions (0 = realistic default)")
@@ -60,7 +59,6 @@ func main() {
 		DatabaseCounts:         dbCounts,
 		InteractiveQueries:     loadtest.DefaultInteractiveQueries(),
 		DDLStatements:          loadtest.DefaultDDLStatements(),
-		SyncConcurrency:        *syncConcurrency,
 		DDLConcurrency:         *ddlConcurrency,
 		InteractiveConcurrency: *interactiveConcurrency,
 		InteractiveBurst:       *interactiveBurst,

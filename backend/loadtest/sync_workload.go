@@ -21,9 +21,8 @@ var syncQueries = []string{
 
 // runSyncWorkload replays Bytebase's per-workspace schema-sync load: each
 // workspace's instance syncs only its own database, connecting as that
-// database's role. Syncs are independent (each workspace has its own schedule),
-// so concurrency is capped at cfg.syncConcurrency() — a modest realistic
-// overlap — instead of every database syncing at once.
+// database's role. One worker is spawned per database and all workers run
+// concurrently, modeling the worst case where every workspace syncs at once.
 // nolint:unparam // failures are recorded in DurationStats.Errors; the error result is always nil by contract.
 func runSyncWorkload(ctx context.Context, _ *sql.DB, cfg *Config, tenants []Tenant) (SyncResult, error) {
 	start := time.Now()
@@ -32,7 +31,7 @@ func runSyncWorkload(ctx context.Context, _ *sql.DB, cfg *Config, tenants []Tena
 	latencies := make([]time.Duration, 0, len(tenants))
 	errors := 0
 
-	p := pool.New().WithMaxGoroutines(cfg.syncConcurrency())
+	p := pool.New().WithMaxGoroutines(len(tenants))
 	for _, t := range tenants {
 		p.Go(func() {
 			start := time.Now()
