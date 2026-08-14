@@ -529,6 +529,9 @@ func (s *SavedQueryService) UpdateSavedQueryStar(
 	if !access.canRead() {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
+	if !access.canStar() {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only the creator or a grantee can star a saved query"))
+	}
 
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
@@ -907,6 +910,12 @@ func (a savedQueryAccess) canRead() bool {
 
 func (a savedQueryAccess) canWrite() bool {
 	return a.isCreator || a.isAdmin || a.level >= storepb.SavedQueryBinding_EDITOR
+}
+
+// canStar follows the grant, not the backstop: a star marks something you use,
+// and a saved query an admin only sees through manage is not that.
+func (a savedQueryAccess) canStar() bool {
+	return a.isCreator || a.level >= storepb.SavedQueryBinding_VIEWER
 }
 
 // canManage covers sharing, deleting, and re-filing: a binding never confers

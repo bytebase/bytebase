@@ -547,7 +547,7 @@ func (s *Store) MoveSavedQueries(ctx context.Context, projectID, creator string,
 	if len(resourceIDs) == 0 {
 		return 0, nil
 	}
-	return s.moveSavedQueries(ctx, `
+	return s.applySavedQueryMove(ctx, `
 		SELECT resource_id
 		FROM saved_query
 		WHERE resource_id = ANY($1) AND project = $2 AND creator = $3
@@ -570,7 +570,7 @@ func (s *Store) MoveSavedQueryFolder(ctx context.Context, projectID, creator, so
 	if source == "" {
 		return 0, errors.New("source folder cannot be empty")
 	}
-	return s.moveSavedQueries(ctx, `
+	return s.applySavedQueryMove(ctx, `
 		SELECT resource_id
 		FROM saved_query
 		WHERE project = $1 AND creator = $2 AND (folder = $3 OR folder LIKE $4)
@@ -590,7 +590,7 @@ func (s *Store) MoveSavedQueryFolder(ctx context.Context, projectID, creator, so
 	})
 }
 
-func (s *Store) moveSavedQueries(ctx context.Context, selectSQL string, args []any, update func(*sql.Tx, []string) error) (int, error) {
+func (s *Store) applySavedQueryMove(ctx context.Context, selectSQL string, args []any, update func(*sql.Tx, []string) error) (int, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to begin transaction")

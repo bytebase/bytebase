@@ -635,11 +635,10 @@ export declare const SavedQuerySchema: GenMessage<SavedQuery>;
  *
  * A saved query is private to its creator until shared. Three things grant
  * access to one: being its creator (the fixed owner), holding a VIEWER or
- * EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop.
- * The backstop reads, deletes, and re-shares any saved query in scope, private
- * ones included. It does not edit content, star, or file: those belong to the
- * creator and, for content, to EDITOR grantees. Bindings are managed through
- * the GetSavedQueryPolicy/SetSavedQueryPolicy pair.
+ * EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop
+ * that reaches private saved queries too. Starring is the one thing the
+ * backstop does not reach: a star marks something you use. Bindings are
+ * managed through the GetSavedQueryPolicy/SetSavedQueryPolicy pair.
  *
  * Two gates sit on top of that: bb.savedQueries.search gates discovery, and
  * running a saved query needs the SQL Editor's own database permissions.
@@ -725,13 +724,12 @@ export declare const SavedQueryService: GenService<{
     output: typeof SearchSavedQueryFoldersResponseSchema;
   },
   /**
-   * Update a saved query. `title`, `content`, and `database` need write access:
-   * the creator or an EDITOR binding. `folder` is the creator's alone, since
-   * filing is personal organization. The admin backstop does neither -- it
-   * reads, deletes, and re-shares. `database` must belong to the saved query's
-   * own project. An unreadable saved query returns NotFound; a caller who can
-   * read but not make the requested change gets PermissionDenied.
-   * Permissions required: creator, or an EDITOR binding for content fields
+   * Update a saved query. `title`, `content`, and `database` need write access;
+   * `folder` is creator/admin only, because filing is organization rather than
+   * editing. `database` must belong to the saved query's own project. An
+   * unreadable saved query returns NotFound; a VIEWER who cannot write gets
+   * PermissionDenied.
+   * Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage
    *
    * @generated from rpc bytebase.v1.SavedQueryService.UpdateSavedQuery
    */

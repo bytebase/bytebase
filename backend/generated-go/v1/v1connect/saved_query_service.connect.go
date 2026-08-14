@@ -108,13 +108,12 @@ type SavedQueryServiceClient interface {
 	// from the ones reaching you through a grant (`shared == true`).
 	// Permissions required: bb.savedQueries.search on the project
 	SearchSavedQueryFolders(context.Context, *connect.Request[v1.SearchSavedQueryFoldersRequest]) (*connect.Response[v1.SearchSavedQueryFoldersResponse], error)
-	// Update a saved query. `title`, `content`, and `database` need write access:
-	// the creator or an EDITOR binding. `folder` is the creator's alone, since
-	// filing is personal organization. The admin backstop does neither -- it
-	// reads, deletes, and re-shares. `database` must belong to the saved query's
-	// own project. An unreadable saved query returns NotFound; a caller who can
-	// read but not make the requested change gets PermissionDenied.
-	// Permissions required: creator, or an EDITOR binding for content fields
+	// Update a saved query. `title`, `content`, and `database` need write access;
+	// `folder` is creator/admin only, because filing is organization rather than
+	// editing. `database` must belong to the saved query's own project. An
+	// unreadable saved query returns NotFound; a VIEWER who cannot write gets
+	// PermissionDenied.
+	// Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage
 	UpdateSavedQuery(context.Context, *connect.Request[v1.UpdateSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error)
 	// Star or unstar a saved query for the caller. A star is a per-user marker:
 	// invisible to everyone else and granting nothing. It follows the grant, not
@@ -339,13 +338,12 @@ type SavedQueryServiceHandler interface {
 	// from the ones reaching you through a grant (`shared == true`).
 	// Permissions required: bb.savedQueries.search on the project
 	SearchSavedQueryFolders(context.Context, *connect.Request[v1.SearchSavedQueryFoldersRequest]) (*connect.Response[v1.SearchSavedQueryFoldersResponse], error)
-	// Update a saved query. `title`, `content`, and `database` need write access:
-	// the creator or an EDITOR binding. `folder` is the creator's alone, since
-	// filing is personal organization. The admin backstop does neither -- it
-	// reads, deletes, and re-shares. `database` must belong to the saved query's
-	// own project. An unreadable saved query returns NotFound; a caller who can
-	// read but not make the requested change gets PermissionDenied.
-	// Permissions required: creator, or an EDITOR binding for content fields
+	// Update a saved query. `title`, `content`, and `database` need write access;
+	// `folder` is creator/admin only, because filing is organization rather than
+	// editing. `database` must belong to the saved query's own project. An
+	// unreadable saved query returns NotFound; a VIEWER who cannot write gets
+	// PermissionDenied.
+	// Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage
 	UpdateSavedQuery(context.Context, *connect.Request[v1.UpdateSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error)
 	// Star or unstar a saved query for the caller. A star is a per-user marker:
 	// invisible to everyone else and granting nothing. It follows the grant, not

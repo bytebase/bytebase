@@ -178,14 +178,13 @@ Alternatives the rejected options.
 4. **Creator = fixed owner, no transfer** (G4). Scratchpad-grade
    simplicity: no extra tier, no orphan-guard machinery; the admin backstop
    and fork-a-copy cover the departed-creator case.
-5. **Admin (`manage`) reads private, but does not write.** The backstop
-   reads, re-shares, and deletes — what incident response and orphan cleanup
-   need. It stops short of editing content, starring, and filing: those are
-   the creator's (and, for content, an EDITOR grantee's). This is narrower
-   than `dataform.admin` and Databricks workspace admins, deliberately —
-   rewriting somebody's draft or reorganising their tree is not an
-   administrative act. The real tradeoff: admins can read private
-   drafts, and reads are not audited — the audit log records changes, not
+5. **Admin (`manage`) reads private.** Peer parity (`dataform.admin`,
+   Databricks workspace admins), and what makes incident response and orphan
+   cleanup possible. Two things it deliberately does not reach: **starring**,
+   a per-user marker on something you actually use, and the bulk
+   **`MoveMySavedQueries`**, which is caller-scoped by name — a single
+   `UpdateSavedQuery` still lets an admin re-file one saved query. The real
+   tradeoff: admins can read private drafts, and reads are not audited — the audit log records changes, not
    lookups (see API and authorization: Audit events). The control on admin
    access is therefore who holds `manage` (never a default member role),
    not an after-the-fact read trail; an admin *write* to someone else's
@@ -263,9 +262,9 @@ grant(s, u)    = max level (VIEWER|EDITOR) among s.bindings matching principals(
 create(u, P)   = u holds bb.savedQueries.create on P
 discover(u, P) = u holds bb.savedQueries.search on P     -- gates Search, not content
 read(s, u)     = admin(u, s.project) OR u == s.creator OR grant(s, u) >= VIEWER
-write(s, u)    = u == s.creator OR grant(s, u) >= EDITOR      -- content; not the backstop
+write(s, u)    = admin(u, s.project) OR u == s.creator OR grant(s, u) >= EDITOR
 star(s, u)     = u == s.creator OR grant(s, u) >= VIEWER      -- a per-user marker
-file(s, u)     = u == s.creator                              -- folders are personal
+move(s, u)     = u == s.creator                              -- MoveMySavedQueries
 share(s, u)    = admin(u, s.project) OR u == s.creator
 delete(s, u)   = admin(u, s.project) OR u == s.creator
 ```
@@ -277,7 +276,7 @@ delete(s, u)   = admin(u, s.project) OR u == s.creator
 | `bb.savedQueries.create` | Create saved queries in the project |
 | `bb.savedQueries.search` | Discover: Search and the folder list, results still filtered to `read(s,u)` |
 | `bb.savedQueries.list` | Audit: enumerate in scope, read-only, ignoring bindings |
-| `bb.savedQueries.manage` | Admin backstop: read, re-share, and delete anything in scope, private included. Not write, star, or file |
+| `bb.savedQueries.manage` | Admin backstop: read, write, re-file, re-share, and delete anything in scope, private included. Not star |
 
 There is no `get` permission — bindings decide reads, so `bb.worksheets.get`
 is dropped rather than renamed. `search` is dedicated rather than riding on
@@ -451,7 +450,7 @@ express. Every object method is a CUSTOM per-row predicate.
 | `GetSavedQueryPolicy` | CUSTOM | `read(s,u)`; NotFound when unreadable | policy only; unaudited |
 | `SetSavedQueryPolicy` | CUSTOM | `share(s,u)` + etag CAS | policy only; audited |
 | `UpdateSavedQueryStar` | CUSTOM | `read(s,u)` — star any readable query | — ; unaudited |
-| `MoveMySavedQueries` | CUSTOM | the caller's own rows, by name or by folder (descendants included) | count only; audited |
+| `MoveMySavedQueries` | CUSTOM | the caller's own rows only, by name or by folder (descendants included) | count only; audited |
 | `SearchSavedQueryFolders` | CUSTOM | `discover` → folder paths of readable rows, same access clause as Search | paths only; unaudited |
 
 Duplicate and fork need no RPC: read what you can already see, then

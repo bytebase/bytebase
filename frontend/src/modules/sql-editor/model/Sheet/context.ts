@@ -1303,7 +1303,11 @@ const batchUpdateSavedQueryFolderPaths = async (
   view: SheetViewMode,
   updates: SavedQueryFolderPathUpdate[]
 ): Promise<void> => {
-  if (view !== "my" && view !== "shared") return;
+  // Only the caller's own tree can be re-filed: MoveMySavedQueries scopes to
+  // creator, so running this for the Shared view would move nothing while the
+  // cache patch below claimed otherwise, leaving a phantom move on screen
+  // until the next refetch.
+  if (view !== "my") return;
   if (updates.length === 0) return;
   const project = getSQLEditorEditorState().project;
   // The server moves a folder's descendants with it, so only the top-level
