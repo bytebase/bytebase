@@ -29,7 +29,10 @@ const (
 
 // nextAction enum constants.
 const (
-	nextActionApproveIssue   = "APPROVE_ISSUE"
+	// The agent waits; it does not approve. ApproveIssue is FORBIDDEN to MCP
+	// sessions, so naming it here would send the agent at a call that is
+	// refused. The issue link in the output is what a human follows instead.
+	nextActionAwaitApproval  = "AWAIT_HUMAN_APPROVAL"
 	nextActionCreateRollout  = "CREATE_ROLLOUT"
 	nextActionMonitorRollout = "MONITOR_ROLLOUT"
 	nextActionWaitPlanCheck  = "WAIT_PLAN_CHECK"
@@ -244,7 +247,7 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 		nextAction = nextActionFixSQLRetry
 	case approvalStatus == "PENDING" || approvalStatus == "CHECKING":
 		rolloutDeferredReason = rolloutApprovalPending
-		nextAction = nextActionApproveIssue
+		nextAction = nextActionAwaitApproval
 	case approvalStatus == "REJECTED":
 		rolloutDeferredReason = rolloutApprovalRejected
 		nextAction = nextActionFixSQLRetry
@@ -487,7 +490,7 @@ func deriveNextAction(approvalStatus string) string {
 	case "REJECTED":
 		return nextActionFixSQLRetry
 	default: // PENDING, CHECKING, or unknown
-		return nextActionApproveIssue
+		return nextActionAwaitApproval
 	}
 }
 

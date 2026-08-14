@@ -15,9 +15,9 @@ belongs; the gate that acts on them is a later change.
 
 | Class | Methods | Meaning |
 |---|---|---|
-| READ | 48 | served to a read-only session and above |
-| WRITE | 40 | served to a read-write session only |
-| EXCLUDED | 91 | served by no mode this phase ships |
+| READ | 47 | served to a read-only session and above |
+| WRITE | 39 | served to a read-write session only |
+| EXCLUDED | 93 | served by no mode this phase ships |
 | FORBIDDEN | 29 | never served, enforced today |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this |
 | **total** | **208** | |
@@ -122,7 +122,7 @@ belongs; the gate that acts on them is a later change.
 | ProjectService/AddWebhook | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.update |
 | ProjectService/BatchDeleteProjects | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.delete |
 | ProjectService/BatchGetProjects | EXCLUDED | RETURNS_A_STORED_SECRET | bb.projects.get |
-| ProjectService/CreateProject | WRITE | — | bb.projects.create |
+| ProjectService/CreateProject | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.create |
 | ProjectService/DeleteProject | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.delete |
 | ProjectService/GetIamPolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.getIamPolicy |
 | ProjectService/GetProject | EXCLUDED | RETURNS_A_STORED_SECRET | bb.projects.get |
@@ -204,7 +204,7 @@ belongs; the gate that acts on them is a later change.
 | SubscriptionService/CreatePurchase | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | SubscriptionService/ExportVCSProviderUsers | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | SubscriptionService/GetPaymentInfo | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
-| SubscriptionService/GetSubscription | READ | — | — |
+| SubscriptionService/GetSubscription | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
 | SubscriptionService/ListPurchasePlans | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
 | SubscriptionService/UpdatePurchase | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | SubscriptionService/UploadLicense | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |

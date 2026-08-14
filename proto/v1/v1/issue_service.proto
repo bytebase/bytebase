@@ -41,6 +41,14 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issues.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    // WRITE covers the DATABASE_CHANGE issue this method exists for. It does
+    // not cover the other two types: a ROLE_GRANT or ACCESS_GRANT issue whose
+    // workspace rule produces no approval template completes on creation and
+    // writes the project IAM binding, for a grantee the request names — the
+    // outcome ProjectService/SetIamPolicy is EXCLUDED for. A class annotation
+    // cannot split by request field, so the ceiling PR owes a carve-out
+    // refusing those two types on the MCP path. UpdateIssue reaches the same
+    // completion through allow_missing and carries the same debt.
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 

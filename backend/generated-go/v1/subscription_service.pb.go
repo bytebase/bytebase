@@ -1849,9 +1849,9 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x12FEATURE_CUSTOM_MSA\x10D\x12\x1d\n" +
 	"\x19FEATURE_COMMUNITY_SUPPORT\x10E\x12\x19\n" +
 	"\x15FEATURE_EMAIL_SUPPORT\x10F\x12&\n" +
-	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10G2\xed\v\n" +
-	"\x13SubscriptionService\x12r\n" +
-	"\x0fGetSubscription\x12#.bytebase.v1.GetSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"\x1f\xdaA\x00\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/subscription\x12\xcc\x01\n" +
+	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10G2\xf1\v\n" +
+	"\x13SubscriptionService\x12v\n" +
+	"\x0fGetSubscription\x12#.bytebase.v1.GetSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"#\xdaA\x00\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/subscription\x12\xcc\x01\n" +
 	"\x16ExportVCSProviderUsers\x12*.bytebase.v1.ExportVCSProviderUsersRequest\x1a+.bytebase.v1.ExportVCSProviderUsersResponse\"Y\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02)\x12'/v1/subscription:vcsProviderUsersExport\x12\x9c\x01\n" +
 	"\rUploadLicense\x12!.bytebase.v1.UploadLicenseRequest\x1a\x19.bytebase.v1.Subscription\"M\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02\x1d:\x01*2\x18/v1/subscription/license\x12\xa3\x01\n" +
 	"\x0eCreatePurchase\x12\".bytebase.v1.CreatePurchaseRequest\x1a\x1d.bytebase.v1.PurchaseResponse\"N\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/v1/subscription:purchase\x12\xa9\x01\n" +

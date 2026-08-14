@@ -197,9 +197,8 @@ const (
 	// key is sent to. A session that can widen its own ceiling is not bounded
 	// by it.
 	MCPForbiddenReason_REWRITES_SESSION_BOUNDARY MCPForbiddenReason = 7
-	// Moves the human review decision that is meant to gate the change, or
-	// re-derives who has to make it. An agent may compose a change and may
-	// execute an approved one; it may never be the approver of its own work.
+	// Records the human review decision that is meant to gate the change. An
+	// agent composes a change; it never casts the vote on its own change.
 	MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION MCPForbiddenReason = 8
 )
 

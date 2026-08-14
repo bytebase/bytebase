@@ -167,14 +167,8 @@ func TestForbiddenClassMembership(t *testing.T) {
 	require.Equal(t, wantReason, got,
 		"every FORBIDDEN method records the mechanism it is refused for, and this is the second signature on it")
 
-	// Wording exists for every mechanism in use. A missing sentence is a UX
-	// regression, not a security one — the class annotation is what denies —
-	// so it is asserted separately from membership, and it is now one check per
-	// mechanism rather than one per method.
-	for procedure, reason := range got {
-		require.Contains(t, mcpForbiddenReasons, reason,
-			"%s is refused for %v, which has no sentence to say so", procedure, reason)
-	}
+	// Wording for every mechanism in use is checkReasonsMatchTheClass's job, for
+	// every class rather than only the ones enumerated here.
 }
 
 // The lint. Every clause is a function over the rows rather than a body of
@@ -249,33 +243,81 @@ func checkReasonsMatchTheClass(rows []mcpClassification, wording map[v1pb.MCPFor
 	return violations
 }
 
-// checkDeniedClassesAreServedByNoMode proves the refusal is absolute: no
-// ceiling mode reaches a FORBIDDEN method, and none reaches an EXCLUDED one
-// either. The second half is the weaker claim of the two and is here for the
-// same reason — an exclusion a mode still serves is not an exclusion.
+// mcpDeniedClasses is the other half of the same decision: the classes no mode
+// serves. Held against mcpServingModes below.
+var mcpDeniedClasses = []v1pb.MCPMethodClass{v1pb.MCPMethodClass_FORBIDDEN, v1pb.MCPMethodClass_EXCLUDED}
+
+// checkEveryClassHasAServingDecision proves that "no method is both denied and
+// reachable through a serving mode" is true of the whole vocabulary rather than
+// of the rows that happen to exist today.
 //
-// The tail clause guards the other direction. Emptying the serving table would
-// satisfy every check above vacuously, so a class that says it is served has to
-// be served by something.
-func checkDeniedClassesAreServedByNoMode(rows []mcpClassification, serving map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass) []string {
+// Asserting it row by row would prove nothing: a row carries one class, so
+// FORBIDDEN and READ are mutually exclusive by construction, and a check that
+// walks 208 rows looking for a contradiction the type system already forbids is
+// a check that cannot fail. What can drift is the vocabulary. So this reads the
+// two enums out of the compiled descriptors and holds the tables against them:
+// every class is served by some mode or denied, never both and never neither,
+// and every ceiling mode says what it serves. Add a fifth class to
+// MCPMethodClass, or a fourth mode to MCPCapability, and the build fails until
+// somebody decides who serves it — which is the decision that would otherwise
+// be made by whichever `switch` in the gate happened to have a default arm.
+//
+// The last loop closes the circle back to the rows: a method may only carry a
+// class this table has decided, so an annotation cannot reach a value the
+// serving decision skipped.
+func checkEveryClassHasAServingDecision(
+	rows []mcpClassification,
+	serving map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass,
+	denied []v1pb.MCPMethodClass,
+	classes protoreflect.EnumDescriptor,
+	modes protoreflect.EnumDescriptor,
+) []string {
 	var violations []string
-	for _, row := range rows {
-		if row.class != v1pb.MCPMethodClass_FORBIDDEN && row.class != v1pb.MCPMethodClass_EXCLUDED {
-			continue
-		}
-		for mode, classes := range serving {
-			if slices.Contains(classes, row.class) {
-				violations = append(violations, fmt.Sprintf("%s: is %v and reachable through %v", row.procedure, row.class, mode))
-			}
+	servedBy := map[v1pb.MCPMethodClass][]v1pb.WorkspaceProfileSetting_MCPCapability{}
+	for mode, served := range serving {
+		for _, class := range served {
+			servedBy[class] = append(servedBy[class], mode)
 		}
 	}
-	for _, class := range []v1pb.MCPMethodClass{v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE} {
-		served := false
-		for _, classes := range serving {
-			served = served || slices.Contains(classes, class)
+
+	decided := map[v1pb.MCPMethodClass]bool{}
+	values := classes.Values()
+	for i := range values.Len() {
+		class := v1pb.MCPMethodClass(values.Get(i).Number())
+		if class == v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED {
+			continue
 		}
-		if !served {
-			violations = append(violations, fmt.Sprintf("%v is a serving class that no mode serves", class))
+		isServed, isDenied := len(servedBy[class]) > 0, slices.Contains(denied, class)
+		switch {
+		case isServed && isDenied:
+			violations = append(violations, fmt.Sprintf("%v is denied and served by %v", class, servedBy[class]))
+		case !isServed && !isDenied:
+			violations = append(violations, fmt.Sprintf("%v is neither served by a mode nor denied", class))
+		default:
+		}
+		decided[class] = true
+	}
+	for _, class := range denied {
+		if !decided[class] {
+			violations = append(violations, fmt.Sprintf("%v is denied but is not a class", class))
+		}
+	}
+
+	modeValues := modes.Values()
+	for i := range modeValues.Len() {
+		value := modeValues.Get(i)
+		mode := v1pb.WorkspaceProfileSetting_MCPCapability(value.Number())
+		if mode == v1pb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED {
+			continue
+		}
+		if _, ok := serving[mode]; !ok {
+			violations = append(violations, fmt.Sprintf("ceiling mode %v does not say which classes it serves", mode))
+		}
+	}
+
+	for _, row := range rows {
+		if row.class != v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED && !decided[row.class] {
+			violations = append(violations, fmt.Sprintf("%s: carries %v, which has no serving decision", row.procedure, row.class))
 		}
 	}
 	slices.Sort(violations)
@@ -290,8 +332,18 @@ func TestLintReasonsMatchTheClass(t *testing.T) {
 	require.Empty(t, checkReasonsMatchTheClass(mcpClassificationsFromDescriptors(t), mcpForbiddenReasons))
 }
 
-func TestLintDeniedClassesAreServedByNoMode(t *testing.T) {
-	require.Empty(t, checkDeniedClassesAreServedByNoMode(mcpClassificationsFromDescriptors(t), mcpServingModes))
+// mcpEnums reads the two enums the serving decision spans out of the compiled
+// descriptors, so the lint below tracks the protos rather than a Go copy of
+// them.
+func mcpEnums(t *testing.T) (classes, modes protoreflect.EnumDescriptor) {
+	t.Helper()
+	return v1pb.MCPMethodClass(0).Descriptor(), v1pb.WorkspaceProfileSetting_MCPCapability(0).Descriptor()
+}
+
+func TestLintEveryClassHasAServingDecision(t *testing.T) {
+	classes, modes := mcpEnums(t)
+	require.Empty(t, checkEveryClassHasAServingDecision(
+		mcpClassificationsFromDescriptors(t), mcpServingModes, mcpDeniedClasses, classes, modes))
 }
 
 // TestLintClausesFireWhenBroken is the RED half: one mutation per clause,
@@ -334,43 +386,69 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 		broken := []mcpClassification{
 			{procedure: "/p", class: v1pb.MCPMethodClass_READ, forbiddenReason: v1pb.MCPForbiddenReason_MINTS_CREDENTIAL},
 			{procedure: "/q", class: v1pb.MCPMethodClass_WRITE, exclusionReason: v1pb.MCPExclusionReason_ADMINISTERS_THE_WORKSPACE},
+			// The mistake two reason enums make possible: both at once. Whichever
+			// class the method carries, the other reason is a sentence about it
+			// that is not true.
+			{
+				procedure:       "/r",
+				class:           v1pb.MCPMethodClass_FORBIDDEN,
+				forbiddenReason: v1pb.MCPForbiddenReason_MINTS_CREDENTIAL,
+				exclusionReason: v1pb.MCPExclusionReason_ADMINISTERS_THE_WORKSPACE,
+			},
+			{
+				procedure:       "/s",
+				class:           v1pb.MCPMethodClass_EXCLUDED,
+				exclusionReason: v1pb.MCPExclusionReason_ADMINISTERS_THE_WORKSPACE,
+				forbiddenReason: v1pb.MCPForbiddenReason_MINTS_CREDENTIAL,
+			},
 		}
 		require.Equal(t, []string{
 			"/p: records why it is forbidden but is not classified FORBIDDEN",
 			"/q: records why it is excluded but is not classified EXCLUDED",
+			"/r: is FORBIDDEN and also records an exclusion reason",
+			"/s: is EXCLUDED and also records a forbidden reason",
 		}, checkReasonsMatchTheClass(broken, mcpForbiddenReasons))
 	})
 
-	t.Run("a FORBIDDEN method a mode serves fails", func(t *testing.T) {
-		rows := []mcpClassification{{procedure: "/p", class: v1pb.MCPMethodClass_FORBIDDEN}}
+	// The serving-decision clause is over the vocabulary, so its mutations are
+	// vocabulary mutations: a class that two decisions claim, a class no decision
+	// claims, a ceiling mode nobody wrote a row for, and a row reaching a class
+	// the tables skipped.
+	classes, modes := mcpEnums(t)
+
+	t.Run("a class both served and denied fails", func(t *testing.T) {
 		widened := map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
+			v1pb.WorkspaceProfileSetting_DISABLED:  {},
+			v1pb.WorkspaceProfileSetting_READ_ONLY: {v1pb.MCPMethodClass_READ},
 			v1pb.WorkspaceProfileSetting_READ_WRITE: {
-				v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE, v1pb.MCPMethodClass_FORBIDDEN,
+				v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE, v1pb.MCPMethodClass_EXCLUDED,
 			},
 		}
-		require.Equal(t, []string{"/p: is FORBIDDEN and reachable through READ_WRITE"},
-			checkDeniedClassesAreServedByNoMode(rows, widened))
+		require.Equal(t, []string{"EXCLUDED is denied and served by [READ_WRITE]"},
+			checkEveryClassHasAServingDecision(nil, widened, mcpDeniedClasses, classes, modes))
 	})
 
-	t.Run("an EXCLUDED method a mode serves fails", func(t *testing.T) {
-		rows := []mcpClassification{{
-			procedure:       "/p",
-			class:           v1pb.MCPMethodClass_EXCLUDED,
-			exclusionReason: v1pb.MCPExclusionReason_ADMINISTERS_THE_WORKSPACE,
-		}}
-		widened := map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
-			v1pb.WorkspaceProfileSetting_READ_ONLY: {v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_EXCLUDED},
-			v1pb.WorkspaceProfileSetting_READ_WRITE: {
-				v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE,
-			},
-		}
-		require.Equal(t, []string{"/p: is EXCLUDED and reachable through READ_ONLY"},
-			checkDeniedClassesAreServedByNoMode(rows, widened))
+	t.Run("a class nobody decided fails", func(t *testing.T) {
+		require.Equal(t, []string{"WRITE is neither served by a mode nor denied"},
+			checkEveryClassHasAServingDecision(nil, map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
+				v1pb.WorkspaceProfileSetting_DISABLED:   {},
+				v1pb.WorkspaceProfileSetting_READ_ONLY:  {v1pb.MCPMethodClass_READ},
+				v1pb.WorkspaceProfileSetting_READ_WRITE: {v1pb.MCPMethodClass_READ},
+			}, mcpDeniedClasses, classes, modes))
 	})
 
-	t.Run("emptying the serving table fails", func(t *testing.T) {
-		require.Equal(t, []string{"READ is a serving class that no mode serves", "WRITE is a serving class that no mode serves"},
-			checkDeniedClassesAreServedByNoMode(nil, nil))
+	t.Run("a ceiling mode with no serving row fails", func(t *testing.T) {
+		require.Equal(t, []string{"ceiling mode DISABLED does not say which classes it serves"},
+			checkEveryClassHasAServingDecision(nil, map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
+				v1pb.WorkspaceProfileSetting_READ_ONLY:  {v1pb.MCPMethodClass_READ},
+				v1pb.WorkspaceProfileSetting_READ_WRITE: {v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE},
+			}, mcpDeniedClasses, classes, modes))
+	})
+
+	t.Run("a row carrying an undecided class fails", func(t *testing.T) {
+		rows := []mcpClassification{{procedure: "/p", class: v1pb.MCPMethodClass(9999)}}
+		require.Equal(t, []string{"/p: carries 9999, which has no serving decision"},
+			checkEveryClassHasAServingDecision(rows, mcpServingModes, mcpDeniedClasses, classes, modes))
 	})
 }
 
@@ -604,13 +682,18 @@ func TestInternalMCPForbiddenInterceptor(t *testing.T) {
 		require.Contains(t, err.Error(), reasonForbiddenClass)
 	})
 
-	// Only FORBIDDEN is enforced in this phase: an unclassified method is
-	// served exactly as before, and the serving classes 1b-2 will select
-	// between are not gated here yet.
+	// Only FORBIDDEN is enforced in this phase, so every other class still
+	// dispatches. EXCLUDED is the one that most looks like a denial and is not
+	// one yet — it is the largest class, and it covers methods the console and
+	// the API serve today — so a later change to the condition above that turned
+	// it into a serving-class allowlist would silently deny them. UNSPECIFIED
+	// reaches here only in a build that has not been linted; it is served, as
+	// before.
 	for name, class := range map[string]v1pb.MCPMethodClass{
 		"unclassified": v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED,
 		"read":         v1pb.MCPMethodClass_READ,
 		"write":        v1pb.MCPMethodClass_WRITE,
+		"excluded":     v1pb.MCPMethodClass_EXCLUDED,
 	} {
 		t.Run("dispatched: "+name, func(t *testing.T) {
 			dispatched, err := invoke(

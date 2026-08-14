@@ -26,6 +26,13 @@ service SQLService {
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    // READ here is conditional, and it is the one row in the classification
+    // where the method is not the whole story: on every engine in
+    // EngineSupportQueryNewACL this handler classifies each statement and
+    // authorizes DML with bb.sql.dml and DDL with bb.sql.ddl, so what it does
+    // is decided by its argument. The ceiling PR that starts serving READ owes
+    // a statement-level clamp before a read-only session may call this; until
+    // then no session is admitted at that level at all.
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
