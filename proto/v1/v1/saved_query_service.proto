@@ -95,6 +95,7 @@ service SavedQueryService {
     };
     option (google.api.method_signature) = "saved_query,update_mask";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Star or unstar a saved query for the caller. A star is always the
@@ -123,6 +124,7 @@ service SavedQueryService {
     };
     option (google.api.method_signature) = "parent,saved_query,update_mask";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Delete a saved query. Only the creator (or an admin) can delete.

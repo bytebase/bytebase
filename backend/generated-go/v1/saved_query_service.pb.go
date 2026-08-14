@@ -1044,16 +1044,16 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\x06folder\x18\r \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\x06folder:K\xeaAH\n" +
 	"\x17bytebase.com/SavedQuery\x12-projects/{project}/savedQueries/{saved_query}J\x04\b\n" +
 	"\x10\vJ\x04\b\f\x10\rR\n" +
-	"visibilityR\afolders2\xd2\f\n" +
+	"visibilityR\afolders2\xda\f\n" +
 	"\x11SavedQueryService\x12\xc3\x01\n" +
 	"\x10CreateSavedQuery\x12$.bytebase.v1.CreateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"p\xdaA\x12parent,saved_query\x8a\xea0\x16bb.savedQueries.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x023:\vsaved_query\"$/v1/{parent=projects/*}/savedQueries\x12\x84\x01\n" +
 	"\rGetSavedQuery\x12!.bytebase.v1.GetSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"7\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/savedQueries/*}\x12\xb2\x01\n" +
 	"\x10ListSavedQueries\x12$.bytebase.v1.ListSavedQueriesRequest\x1a%.bytebase.v1.ListSavedQueriesResponse\"Q\xdaA\x06parent\x8a\xea0\x14bb.savedQueries.list\x90\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{parent=projects/*}/savedQueries\x12\xaa\x01\n" +
 	"\x12SearchSavedQueries\x12&.bytebase.v1.SearchSavedQueriesRequest\x1a'.bytebase.v1.SearchSavedQueriesResponse\"C\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:search\x12\xc0\x01\n" +
-	"\x17SearchSavedQueryFolders\x12+.bytebase.v1.SearchSavedQueryFoldersRequest\x1a,.bytebase.v1.SearchSavedQueryFoldersResponse\"J\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{parent=projects/*}/savedQueries:searchFolders\x12\xb6\x01\n" +
-	"\x10UpdateSavedQuery\x12$.bytebase.v1.UpdateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"c\xdaA\x17saved_query,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02?:\vsaved_query20/v1/{saved_query.name=projects/*/savedQueries/*}\x12\xa8\x01\n" +
-	"\x14UpdateSavedQueryStar\x12(.bytebase.v1.UpdateSavedQueryStarRequest\x1a\x17.bytebase.v1.SavedQuery\"M\xdaA\fname,starred\x90\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/savedQueries/*}:updateStar\x12\xd6\x01\n" +
-	"\x17BatchUpdateSavedQueries\x12+.bytebase.v1.BatchUpdateSavedQueriesRequest\x1a,.bytebase.v1.BatchUpdateSavedQueriesResponse\"`\xdaA\x1eparent,saved_query,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x025:\x01*\"0/v1/{parent=projects/*}/savedQueries:batchUpdate\x12\x8d\x01\n" +
+	"\x17SearchSavedQueryFolders\x12+.bytebase.v1.SearchSavedQueryFoldersRequest\x1a,.bytebase.v1.SearchSavedQueryFoldersResponse\"J\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{parent=projects/*}/savedQueries:searchFolders\x12\xba\x01\n" +
+	"\x10UpdateSavedQuery\x12$.bytebase.v1.UpdateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"g\xdaA\x17saved_query,update_mask\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02?:\vsaved_query20/v1/{saved_query.name=projects/*/savedQueries/*}\x12\xa8\x01\n" +
+	"\x14UpdateSavedQueryStar\x12(.bytebase.v1.UpdateSavedQueryStarRequest\x1a\x17.bytebase.v1.SavedQuery\"M\xdaA\fname,starred\x90\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/savedQueries/*}:updateStar\x12\xda\x01\n" +
+	"\x17BatchUpdateSavedQueries\x12+.bytebase.v1.BatchUpdateSavedQueriesRequest\x1a,.bytebase.v1.BatchUpdateSavedQueriesResponse\"d\xdaA\x1eparent,saved_query,update_mask\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x025:\x01*\"0/v1/{parent=projects/*}/savedQueries:batchUpdate\x12\x8d\x01\n" +
 	"\x10DeleteSavedQuery\x12$.bytebase.v1.DeleteSavedQueryRequest\x1a\x16.google.protobuf.Empty\";\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02&*$/v1/{name=projects/*/savedQueries/*}B\xac\x01\n" +
 	"\x0fcom.bytebase.v1B\x16SavedQueryServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
