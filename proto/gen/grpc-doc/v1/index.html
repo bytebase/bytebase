@@ -2761,14 +2761,6 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.v1.BatchUpdateSavedQueriesRequest"><span class="badge">M</span>BatchUpdateSavedQueriesRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.BatchUpdateSavedQueriesResponse"><span class="badge">M</span>BatchUpdateSavedQueriesResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.CreateSavedQueryRequest"><span class="badge">M</span>CreateSavedQueryRequest</a>
                 </li>
               
@@ -2790,6 +2782,14 @@
               
                 <li>
                   <a href="#bytebase.v1.ListSavedQueriesResponse"><span class="badge">M</span>ListSavedQueriesResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.MoveMySavedQueriesRequest"><span class="badge">M</span>MoveMySavedQueriesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.MoveMySavedQueriesResponse"><span class="badge">M</span>MoveMySavedQueriesResponse</a>
                 </li>
               
                 <li>
@@ -31607,83 +31607,6 @@ Permissions required: bb.roles.delete</p></td>
       <p></p>
 
       
-        <h3 id="bytebase.v1.BatchUpdateSavedQueriesRequest">BatchUpdateSavedQueriesRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Select the saved queries to update, in CEL. See
-https://github.com/google/cel-spec
-
-Supported fields:
-- name: the saved query name. Supports &#34;==&#34; and &#34;in [...]&#34;.
-- creator: the creator in &#34;users/{email}&#34; format. Supports &#34;==&#34; and &#34;!=&#34;.
-- starred: whether the caller starred it. Supports &#34;==&#34;.
-- folder: the exact folder path. Supports &#34;==&#34;. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>saved_query</td>
-                  <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
-                  <td></td>
-                  <td><p>The values to apply to every matched saved query. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>Fields to update. Supported: `folder`. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.BatchUpdateSavedQueriesResponse">BatchUpdateSavedQueriesResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>updated_count</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>How many saved queries were updated, which may be fewer than the filter
-matched. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.CreateSavedQueryRequest">CreateSavedQueryRequest</h3>
         <p></p>
 
@@ -31867,6 +31790,77 @@ that offset against a different result set. </p></td>
                   <td></td>
                   <td><p>Pass to the next ListSavedQueries call to fetch the following page. Empty
 on the last page. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.MoveMySavedQueriesRequest">MoveMySavedQueriesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>names</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The saved queries to move. Set this or `source_folder`, not both.
+Format: projects/{project}/savedQueries/{savedQuery} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>source_folder</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Move everything filed under this path, descendants included, e.g. &#34;a/b&#34;.
+Set this or `names`, not both. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>target_folder</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Where they land. A path like &#34;a/b/c&#34;; empty unfiles them. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.MoveMySavedQueriesResponse">MoveMySavedQueriesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>moved_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>How many moved. Fewer than were named when some are not the caller&#39;s. </p></td>
                 </tr>
               
             </tbody>
@@ -32420,11 +32414,11 @@ Permissions required: bb.savedQueries.search on the project</p></td>
                 <td>UpdateSavedQuery</td>
                 <td><a href="#bytebase.v1.UpdateSavedQueryRequest">UpdateSavedQueryRequest</a></td>
                 <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
-                <td><p>Update a saved query. `title`, `content`, and `database` need write
-access; `folder` is creator/admin only, because filing is organization
-rather than editing. `database` must belong to the saved query&#39;s own
-project. An unreadable saved query returns NotFound; a VIEWER who cannot
-write gets PermissionDenied.
+                <td><p>Update a saved query. `title`, `content`, and `database` need write access;
+`folder` is creator/admin only, because filing is organization rather than
+editing. `database` must belong to the saved query&#39;s own project. An
+unreadable saved query returns NotFound; a VIEWER who cannot write gets
+PermissionDenied.
 Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage</p></td>
               </tr>
             
@@ -32432,21 +32426,25 @@ Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage</p><
                 <td>UpdateSavedQueryStar</td>
                 <td><a href="#bytebase.v1.UpdateSavedQueryStarRequest">UpdateSavedQueryStarRequest</a></td>
                 <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
-                <td><p>Star or unstar a saved query for the caller. A star is a per-user marker:
-invisible to everyone else and granting nothing. Read access is the gate
-only so unreadable saved queries stay unprobeable.
-Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage</p></td>
+                <td><p>Star or unstar a saved query for the caller. Stars are personal: yours are
+invisible to everyone else and grant nothing. You can star any saved query
+you created or have been granted access to; anything else answers
+NotFound, so names stay unprobeable.
+Permissions required: creator, or a VIEWER or EDITOR binding</p></td>
               </tr>
             
               <tr>
-                <td>BatchUpdateSavedQueries</td>
-                <td><a href="#bytebase.v1.BatchUpdateSavedQueriesRequest">BatchUpdateSavedQueriesRequest</a></td>
-                <td><a href="#bytebase.v1.BatchUpdateSavedQueriesResponse">BatchUpdateSavedQueriesResponse</a></td>
-                <td><p>Re-file saved queries into a folder in bulk; the update mask supports
-`folder` only. An EDITOR binding does not carry re-filing, so matched
-saved queries the caller cannot re-file are skipped rather than rejected,
-and the response counts what actually changed.
-Permissions required: creator, or bb.savedQueries.manage</p></td>
+                <td>MoveMySavedQueries</td>
+                <td><a href="#bytebase.v1.MoveMySavedQueriesRequest">MoveMySavedQueriesRequest</a></td>
+                <td><a href="#bytebase.v1.MoveMySavedQueriesResponse">MoveMySavedQueriesResponse</a></td>
+                <td><p>Move the caller&#39;s own saved queries into a folder, named individually or a
+whole folder at a time. Moving a folder carries its descendants, so renaming &#34;a/b&#34; to
+&#34;a/c&#34; also moves &#34;a/b/deep&#34; -- one call, not one per path.
+
+Filing is personal organization, so only the creator&#39;s own move: a folder
+is that person&#39;s tree, and neither a binding nor the admin backstop
+reaches into it. The response counts what moved.
+Permissions required: creator</p></td>
               </tr>
             
               <tr>
@@ -32572,9 +32570,9 @@ Permissions required: creator, or bb.savedQueries.manage</p></td>
               
               
               <tr>
-                <td>BatchUpdateSavedQueries</td>
+                <td>MoveMySavedQueries</td>
                 <td>POST</td>
-                <td>/v1/{parent=projects/*}/savedQueries:batchUpdate</td>
+                <td>/v1/{parent=projects/*}/savedQueries:moveMy</td>
                 <td>*</td>
               </tr>
               

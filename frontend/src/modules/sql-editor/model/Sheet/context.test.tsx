@@ -21,7 +21,7 @@ type AppState = {
   searchSavedQueryFolders: ReturnType<typeof vi.fn>;
   fetchSavedQueryList: ReturnType<typeof vi.fn>;
   updateSavedQueryStar: ReturnType<typeof vi.fn>;
-  batchUpdateSavedQueryFolder: ReturnType<typeof vi.fn>;
+  moveMySavedQueries: ReturnType<typeof vi.fn>;
 };
 
 const mocks = vi.hoisted(() => {
@@ -77,7 +77,7 @@ const mocks = vi.hoisted(() => {
           return { savedQueries: [savedQuery], nextPageToken: "next-page" };
         }),
         updateSavedQueryStar: vi.fn(),
-        batchUpdateSavedQueryFolder: vi.fn(async () => 0),
+        moveMySavedQueries: vi.fn(async () => 0),
         patchSavedQueryFolderInCache: vi.fn(),
       };
     },
@@ -922,13 +922,16 @@ describe("sheet context", () => {
       ]);
     });
 
-    expect(
-      mocks.getAppState().batchUpdateSavedQueryFolder
-    ).toHaveBeenCalledTimes(1);
-    expect(mocks.getAppState().batchUpdateSavedQueryFolder).toHaveBeenCalledWith(
+    expect(mocks.getAppState().moveMySavedQueries).toHaveBeenCalledTimes(1);
+    expect(mocks.getAppState().moveMySavedQueries).toHaveBeenCalledWith(
       "projects/proj1",
-      'name in ["projects/proj1/savedQueries/1","projects/proj1/savedQueries/2"]',
-      "target"
+      {
+        names: [
+          "projects/proj1/savedQueries/1",
+          "projects/proj1/savedQueries/2",
+        ],
+        targetFolder: "target",
+      }
     );
     // The batch RPC answers with a count, so the moved rows are mirrored into
     // the cache — otherwise the tree rebuild snaps them back to the old folder.
@@ -1031,21 +1034,12 @@ describe("sheet context", () => {
       ]);
     });
 
-    expect(
-      mocks.getAppState().batchUpdateSavedQueryFolder
-    ).toHaveBeenNthCalledWith(
-      1,
+    // The server moves descendants with the folder, so only the top-level move
+    // is sent -- "old/child" would otherwise be rewritten twice.
+    expect(mocks.getAppState().moveMySavedQueries).toHaveBeenCalledTimes(1);
+    expect(mocks.getAppState().moveMySavedQueries).toHaveBeenCalledWith(
       "projects/proj1",
-      'creator == "users/creator@example.com" && folder == "old/child"',
-      "new/child"
-    );
-    expect(
-      mocks.getAppState().batchUpdateSavedQueryFolder
-    ).toHaveBeenNthCalledWith(
-      2,
-      "projects/proj1",
-      'creator == "users/creator@example.com" && folder == "old"',
-      "new"
+      { sourceFolder: "old", targetFolder: "new" }
     );
   });
 });

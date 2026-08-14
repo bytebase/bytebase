@@ -5769,47 +5769,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.SearchQueryHistoriesResponse'
       deprecated: true
-  /bytebase.v1.SavedQueryService/BatchUpdateSavedQueries:
-    post:
-      tags:
-        - bytebase.v1.SavedQueryService
-      summary: BatchUpdateSavedQueries
-      description: |-
-        Re-file saved queries into a folder in bulk; the update mask supports
-         `folder` only. An EDITOR binding does not carry re-filing, so matched
-         saved queries the caller cannot re-file are skipped rather than rejected,
-         and the response counts what actually changed.
-         Permissions required: creator, or bb.savedQueries.manage
-      operationId: bytebase.v1.SavedQueryService.BatchUpdateSavedQueries
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.BatchUpdateSavedQueriesRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.BatchUpdateSavedQueriesResponse'
   /bytebase.v1.SavedQueryService/CreateSavedQuery:
     post:
       tags:
@@ -6010,6 +5969,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListSavedQueriesResponse'
+  /bytebase.v1.SavedQueryService/MoveMySavedQueries:
+    post:
+      tags:
+        - bytebase.v1.SavedQueryService
+      summary: |-
+        Move the caller's own saved queries into a folder, named individually or a
+         whole folder at a time. Moving a folder carries its descendants, so renaming "a/b" to
+         "a/c" also moves "a/b/deep" -- one call, not one per path.
+      description: |-
+        Filing is personal organization, so only the creator's own move: a folder
+         is that person's tree, and neither a binding nor the admin backstop
+         reaches into it. The response counts what moved.
+         Permissions required: creator
+      operationId: bytebase.v1.SavedQueryService.MoveMySavedQueries
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.MoveMySavedQueriesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.MoveMySavedQueriesResponse'
   /bytebase.v1.SavedQueryService/SearchSavedQueries:
     post:
       tags:
@@ -6146,11 +6148,11 @@ paths:
         - bytebase.v1.SavedQueryService
       summary: UpdateSavedQuery
       description: |-
-        Update a saved query. `title`, `content`, and `database` need write
-         access; `folder` is creator/admin only, because filing is organization
-         rather than editing. `database` must belong to the saved query's own
-         project. An unreadable saved query returns NotFound; a VIEWER who cannot
-         write gets PermissionDenied.
+        Update a saved query. `title`, `content`, and `database` need write access;
+         `folder` is creator/admin only, because filing is organization rather than
+         editing. `database` must belong to the saved query's own project. An
+         unreadable saved query returns NotFound; a VIEWER who cannot write gets
+         PermissionDenied.
          Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage
       operationId: bytebase.v1.SavedQueryService.UpdateSavedQuery
       parameters:
@@ -6188,10 +6190,11 @@ paths:
         - bytebase.v1.SavedQueryService
       summary: UpdateSavedQueryStar
       description: |-
-        Star or unstar a saved query for the caller. A star is a per-user marker:
-         invisible to everyone else and granting nothing. Read access is the gate
-         only so unreadable saved queries stay unprobeable.
-         Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
+        Star or unstar a saved query for the caller. Stars are personal: yours are
+         invisible to everyone else and grant nothing. You can star any saved query
+         you created or have been granted access to; anything else answers
+         NotFound, so names stay unprobeable.
+         Permissions required: creator, or a VIEWER or EDITOR binding
       operationId: bytebase.v1.SavedQueryService.UpdateSavedQueryStar
       parameters:
         - name: Connect-Protocol-Version
@@ -9382,47 +9385,6 @@ components:
     bytebase.v1.BatchUpdateIssuesStatusResponse:
       type: object
       title: BatchUpdateIssuesStatusResponse
-      additionalProperties: false
-    bytebase.v1.BatchUpdateSavedQueriesRequest:
-      type: object
-      properties:
-        parent:
-          type: string
-          title: parent
-          description: 'Format: projects/{project}'
-        filter:
-          type: string
-          title: filter
-          description: |-
-            Select the saved queries to update, in CEL. See
-             https://github.com/google/cel-spec
-
-             Supported fields:
-             - name: the saved query name. Supports "==" and "in [...]".
-             - creator: the creator in "users/{email}" format. Supports "==" and "!=".
-             - starred: whether the caller starred it. Supports "==".
-             - folder: the exact folder path. Supports "==".
-        savedQuery:
-          title: saved_query
-          description: The values to apply to every matched saved query.
-          $ref: '#/components/schemas/bytebase.v1.SavedQuery'
-        updateMask:
-          title: update_mask
-          description: 'Fields to update. Supported: `folder`.'
-          $ref: '#/components/schemas/google.protobuf.FieldMask'
-      title: BatchUpdateSavedQueriesRequest
-      additionalProperties: false
-    bytebase.v1.BatchUpdateSavedQueriesResponse:
-      type: object
-      properties:
-        updatedCount:
-          type: integer
-          title: updated_count
-          format: int32
-          description: |-
-            How many saved queries were updated, which may be fewer than the filter
-             matched.
-      title: BatchUpdateSavedQueriesResponse
       additionalProperties: false
     bytebase.v1.BillingInterval:
       type: string
@@ -15208,6 +15170,45 @@ components:
       title: MaterializedViewMetadata
       additionalProperties: false
       description: MaterializedViewMetadata is the metadata for materialized views.
+    bytebase.v1.MoveMySavedQueriesRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: 'Format: projects/{project}'
+        names:
+          type: array
+          items:
+            type: string
+          title: names
+          description: |-
+            The saved queries to move. Set this or `source_folder`, not both.
+             Format: projects/{project}/savedQueries/{savedQuery}
+        sourceFolder:
+          type: string
+          title: source_folder
+          maxLength: 256
+          description: |-
+            Move everything filed under this path, descendants included, e.g. "a/b".
+             Set this or `names`, not both.
+        targetFolder:
+          type: string
+          title: target_folder
+          maxLength: 256
+          description: Where they land. A path like "a/b/c"; empty unfiles them.
+      title: MoveMySavedQueriesRequest
+      additionalProperties: false
+    bytebase.v1.MoveMySavedQueriesResponse:
+      type: object
+      properties:
+        movedCount:
+          type: integer
+          title: moved_count
+          format: int32
+          description: How many moved. Fewer than were named when some are not the caller's.
+      title: MoveMySavedQueriesResponse
+      additionalProperties: false
     bytebase.v1.OAuth2AuthStyle:
       type: string
       title: OAuth2AuthStyle

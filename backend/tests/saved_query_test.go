@@ -322,7 +322,7 @@ func TestSearchSavedQueriesFilterByTitle(t *testing.T) {
 	a.Error(err)
 }
 
-func TestBatchUpdateSavedQueriesFilterByFolder(t *testing.T) {
+func TestMoveSavedQueries(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -351,88 +351,75 @@ func TestBatchUpdateSavedQueriesFilterByFolder(t *testing.T) {
 		a.NoError(err)
 		return savedQueryNames(resp.Msg.SavedQueries)
 	}
+	move := func(request *v1pb.MoveMySavedQueriesRequest) (int32, error) {
+		request.Parent = ctl.project.Name
+		resp, err := ctl.savedQueryServiceClient.MoveMySavedQueries(ctx, connect.NewRequest(request))
+		if err != nil {
+			return 0, err
+		}
+		return resp.Msg.MovedCount, nil
+	}
 
 	directSavedQuery := createSavedQuery("old-direct", "old")
 	childSavedQuery := createSavedQuery("old-child", "old/child")
 	otherSavedQuery := createSavedQuery("other", "other")
 
-	directResp, err := ctl.savedQueryServiceClient.BatchUpdateSavedQueries(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueriesRequest{
-		Parent:     ctl.project.Name,
-		Filter:     `folder == "old"`,
-		SavedQuery: &v1pb.SavedQuery{Folder: "new"},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
-	}))
+	// Moving a folder carries its descendants: one call, not one per path.
+	moved, err := move(&v1pb.MoveMySavedQueriesRequest{SourceFolder: "old", TargetFolder: "new"})
 	a.NoError(err)
-	a.Equal(int32(1), directResp.Msg.UpdatedCount)
-
-	childResp, err := ctl.savedQueryServiceClient.BatchUpdateSavedQueries(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueriesRequest{
-		Parent:     ctl.project.Name,
-		Filter:     `folder == "old/child"`,
-		SavedQuery: &v1pb.SavedQuery{Folder: "new/child"},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
-	}))
-	a.NoError(err)
-	a.Equal(int32(1), childResp.Msg.UpdatedCount)
-
+	a.Equal(int32(2), moved)
 	a.ElementsMatch([]string{directSavedQuery.Name}, searchByFolder("new"))
 	a.ElementsMatch([]string{childSavedQuery.Name}, searchByFolder("new/child"))
 	a.ElementsMatch([]string{otherSavedQuery.Name}, searchByFolder("other"))
 	a.Empty(searchByFolder("old"))
 	a.Empty(searchByFolder("old/child"))
 
-	starResp, err := ctl.savedQueryServiceClient.UpdateSavedQueryStar(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryStarRequest{
-		Name:    directSavedQuery.Name,
-		Starred: true,
-	}))
+	// Naming saved queries moves exactly those, descendants irrelevant.
+	moved, err = move(&v1pb.MoveMySavedQueriesRequest{
+		Names:        []string{directSavedQuery.Name, childSavedQuery.Name},
+		TargetFolder: "selected",
+	})
 	a.NoError(err)
-	a.True(starResp.Msg.Starred)
-	starredResp, err := ctl.savedQueryServiceClient.SearchSavedQueries(ctx, connect.NewRequest(&v1pb.SearchSavedQueriesRequest{
-		Parent: ctl.project.Name,
-		Filter: `folder == "new" && starred == true`,
-	}))
-	a.NoError(err)
-	a.ElementsMatch([]string{directSavedQuery.Name}, savedQueryNames(starredResp.Msg.SavedQueries))
-
-	unstarResp, err := ctl.savedQueryServiceClient.UpdateSavedQueryStar(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryStarRequest{
-		Name:    directSavedQuery.Name,
-		Starred: false,
-	}))
-	a.NoError(err)
-	a.False(unstarResp.Msg.Starred)
-
-	nameResp, err := ctl.savedQueryServiceClient.BatchUpdateSavedQueries(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueriesRequest{
-		Parent:     ctl.project.Name,
-		Filter:     fmt.Sprintf(`name in [%q,%q]`, directSavedQuery.Name, childSavedQuery.Name),
-		SavedQuery: &v1pb.SavedQuery{Folder: "selected"},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
-	}))
-	a.NoError(err)
-	a.Equal(int32(2), nameResp.Msg.UpdatedCount)
+	a.Equal(int32(2), moved)
 	a.ElementsMatch([]string{directSavedQuery.Name, childSavedQuery.Name}, searchByFolder("selected"))
 	a.ElementsMatch([]string{otherSavedQuery.Name}, searchByFolder("other"))
 
-	// Batch moves normalize like every other write path, so a folder sent
-	// with boundary slashes still lands where `folder == "boxed"` finds it.
-	slashResp, err := ctl.savedQueryServiceClient.BatchUpdateSavedQueries(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueriesRequest{
-		Parent:     ctl.project.Name,
-		Filter:     `folder == "selected"`,
-		SavedQuery: &v1pb.SavedQuery{Folder: "/boxed/"},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
-	}))
+	// Folders normalize like every other write path, so boundary slashes still
+	// land where `folder == "boxed"` finds them.
+	moved, err = move(&v1pb.MoveMySavedQueriesRequest{SourceFolder: "selected", TargetFolder: "/boxed/"})
 	a.NoError(err)
-	a.Equal(int32(2), slashResp.Msg.UpdatedCount)
+	a.Equal(int32(2), moved)
 	a.ElementsMatch([]string{directSavedQuery.Name, childSavedQuery.Name}, searchByFolder("boxed"))
 
-	// A path the filter could never match is rejected, not written.
-	_, err = ctl.savedQueryServiceClient.BatchUpdateSavedQueries(ctx, connect.NewRequest(&v1pb.BatchUpdateSavedQueriesRequest{
-		Parent:     ctl.project.Name,
-		Filter:     `folder == "boxed"`,
-		SavedQuery: &v1pb.SavedQuery{Folder: "bad//path"},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
-	}))
+	// An unfilable path is rejected, not written.
+	_, err = move(&v1pb.MoveMySavedQueriesRequest{SourceFolder: "boxed", TargetFolder: "bad//path"})
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 	a.ElementsMatch([]string{directSavedQuery.Name, childSavedQuery.Name}, searchByFolder("boxed"))
+
+	// Exactly one of names / source_folder.
+	_, err = move(&v1pb.MoveMySavedQueriesRequest{TargetFolder: "x"})
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	_, err = move(&v1pb.MoveMySavedQueriesRequest{
+		Names:        []string{directSavedQuery.Name},
+		SourceFolder: "boxed",
+		TargetFolder: "x",
+	})
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	// A folder cannot swallow itself.
+	_, err = move(&v1pb.MoveMySavedQueriesRequest{SourceFolder: "boxed", TargetFolder: "boxed/inner"})
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	// Unfiling: an empty target drops the prefix rather than leaving "/tail".
+	moved, err = move(&v1pb.MoveMySavedQueriesRequest{SourceFolder: "boxed", TargetFolder: ""})
+	a.NoError(err)
+	a.Equal(int32(2), moved)
+	a.Empty(searchByFolder("boxed"))
+	a.ElementsMatch([]string{directSavedQuery.Name, childSavedQuery.Name}, searchByFolder(""))
 }
 
 func TestSearchSavedQueryFoldersReturnsCallerFolders(t *testing.T) {

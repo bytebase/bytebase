@@ -6,11 +6,11 @@ import { silentContextKey } from "@/api/context-key";
 import { UNKNOWN_ID } from "@/types";
 import type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";
 import {
-  BatchUpdateSavedQueriesRequestSchema,
   CreateSavedQueryRequestSchema,
   DeleteSavedQueryRequestSchema,
   GetSavedQueryPolicyRequestSchema,
   GetSavedQueryRequestSchema,
+  MoveMySavedQueriesRequestSchema,
   SavedQueryBinding_Level,
   SavedQuerySchema,
   SearchSavedQueriesRequestSchema,
@@ -246,17 +246,16 @@ export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
       }
     },
 
-    batchUpdateSavedQueryFolder: async (parent, filter, folder) => {
-      const response =
-        await savedQueryServiceClientConnect.batchUpdateSavedQueries(
-          createProto(BatchUpdateSavedQueriesRequestSchema, {
-            parent,
-            filter,
-            savedQuery: createProto(SavedQuerySchema, { folder }),
-            updateMask: { paths: ["folder"] },
-          })
-        );
-      return response.updatedCount;
+    moveMySavedQueries: async (parent, params) => {
+      const response = await savedQueryServiceClientConnect.moveMySavedQueries(
+        createProto(MoveMySavedQueriesRequestSchema, {
+          parent,
+          names: params.names,
+          sourceFolder: params.sourceFolder,
+          targetFolder: params.targetFolder,
+        })
+      );
+      return response.movedCount;
     },
 
     patchSavedQueryFolderInCache: (names, folder) => {

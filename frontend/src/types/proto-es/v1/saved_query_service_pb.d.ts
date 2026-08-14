@@ -228,9 +228,9 @@ export declare type UpdateSavedQueryStarRequest = Message<"bytebase.v1.UpdateSav
 export declare const UpdateSavedQueryStarRequestSchema: GenMessage<UpdateSavedQueryStarRequest>;
 
 /**
- * @generated from message bytebase.v1.BatchUpdateSavedQueriesRequest
+ * @generated from message bytebase.v1.MoveMySavedQueriesRequest
  */
-export declare type BatchUpdateSavedQueriesRequest = Message<"bytebase.v1.BatchUpdateSavedQueriesRequest"> & {
+export declare type MoveMySavedQueriesRequest = Message<"bytebase.v1.MoveMySavedQueriesRequest"> & {
   /**
    * Format: projects/{project}
    *
@@ -239,58 +239,52 @@ export declare type BatchUpdateSavedQueriesRequest = Message<"bytebase.v1.BatchU
   parent: string;
 
   /**
-   * Select the saved queries to update, in CEL. See
-   * https://github.com/google/cel-spec
+   * The saved queries to move. Set this or `source_folder`, not both.
+   * Format: projects/{project}/savedQueries/{savedQuery}
    *
-   * Supported fields:
-   * - name: the saved query name. Supports "==" and "in [...]".
-   * - creator: the creator in "users/{email}" format. Supports "==" and "!=".
-   * - starred: whether the caller starred it. Supports "==".
-   * - folder: the exact folder path. Supports "==".
-   *
-   * @generated from field: string filter = 2;
+   * @generated from field: repeated string names = 2;
    */
-  filter: string;
+  names: string[];
 
   /**
-   * The values to apply to every matched saved query.
+   * Move everything filed under this path, descendants included, e.g. "a/b".
+   * Set this or `names`, not both.
    *
-   * @generated from field: bytebase.v1.SavedQuery saved_query = 3;
+   * @generated from field: string source_folder = 3;
    */
-  savedQuery?: SavedQuery | undefined;
+  sourceFolder: string;
 
   /**
-   * Fields to update. Supported: `folder`.
+   * Where they land. A path like "a/b/c"; empty unfiles them.
    *
-   * @generated from field: google.protobuf.FieldMask update_mask = 4;
+   * @generated from field: string target_folder = 4;
    */
-  updateMask?: FieldMask | undefined;
+  targetFolder: string;
 };
 
 /**
- * Describes the message bytebase.v1.BatchUpdateSavedQueriesRequest.
- * Use `create(BatchUpdateSavedQueriesRequestSchema)` to create a new message.
+ * Describes the message bytebase.v1.MoveMySavedQueriesRequest.
+ * Use `create(MoveMySavedQueriesRequestSchema)` to create a new message.
  */
-export declare const BatchUpdateSavedQueriesRequestSchema: GenMessage<BatchUpdateSavedQueriesRequest>;
+export declare const MoveMySavedQueriesRequestSchema: GenMessage<MoveMySavedQueriesRequest>;
 
 /**
- * @generated from message bytebase.v1.BatchUpdateSavedQueriesResponse
+ * @generated from message bytebase.v1.MoveMySavedQueriesResponse
  */
-export declare type BatchUpdateSavedQueriesResponse = Message<"bytebase.v1.BatchUpdateSavedQueriesResponse"> & {
+export declare type MoveMySavedQueriesResponse = Message<"bytebase.v1.MoveMySavedQueriesResponse"> & {
   /**
-   * How many saved queries were updated, which may be fewer than the filter
-   * matched.
+   * How many moved. Fewer than were named when some are not the caller's.
    *
-   * @generated from field: int32 updated_count = 1;
+   * @generated from field: int32 moved_count = 1;
    */
-  updatedCount: number;
+  movedCount: number;
 };
 
 /**
- * Describes the message bytebase.v1.BatchUpdateSavedQueriesResponse.
- * Use `create(BatchUpdateSavedQueriesResponseSchema)` to create a new message.
+ * Describes the message bytebase.v1.MoveMySavedQueriesResponse.
+ * Use `create(MoveMySavedQueriesResponseSchema)` to create a new message.
  */
-export declare const BatchUpdateSavedQueriesResponseSchema: GenMessage<BatchUpdateSavedQueriesResponse>;
+export declare const MoveMySavedQueriesResponseSchema: GenMessage<MoveMySavedQueriesResponse>;
 
 /**
  * @generated from message bytebase.v1.GetSavedQueryPolicyRequest
@@ -729,11 +723,11 @@ export declare const SavedQueryService: GenService<{
     output: typeof SearchSavedQueryFoldersResponseSchema;
   },
   /**
-   * Update a saved query. `title`, `content`, and `database` need write
-   * access; `folder` is creator/admin only, because filing is organization
-   * rather than editing. `database` must belong to the saved query's own
-   * project. An unreadable saved query returns NotFound; a VIEWER who cannot
-   * write gets PermissionDenied.
+   * Update a saved query. `title`, `content`, and `database` need write access;
+   * `folder` is creator/admin only, because filing is organization rather than
+   * editing. `database` must belong to the saved query's own project. An
+   * unreadable saved query returns NotFound; a VIEWER who cannot write gets
+   * PermissionDenied.
    * Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage
    *
    * @generated from rpc bytebase.v1.SavedQueryService.UpdateSavedQuery
@@ -744,10 +738,11 @@ export declare const SavedQueryService: GenService<{
     output: typeof SavedQuerySchema;
   },
   /**
-   * Star or unstar a saved query for the caller. A star is a per-user marker:
-   * invisible to everyone else and granting nothing. Read access is the gate
-   * only so unreadable saved queries stay unprobeable.
-   * Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
+   * Star or unstar a saved query for the caller. Stars are personal: yours are
+   * invisible to everyone else and grant nothing. You can star any saved query
+   * you created or have been granted access to; anything else answers
+   * NotFound, so names stay unprobeable.
+   * Permissions required: creator, or a VIEWER or EDITOR binding
    *
    * @generated from rpc bytebase.v1.SavedQueryService.UpdateSavedQueryStar
    */
@@ -757,18 +752,21 @@ export declare const SavedQueryService: GenService<{
     output: typeof SavedQuerySchema;
   },
   /**
-   * Re-file saved queries into a folder in bulk; the update mask supports
-   * `folder` only. An EDITOR binding does not carry re-filing, so matched
-   * saved queries the caller cannot re-file are skipped rather than rejected,
-   * and the response counts what actually changed.
-   * Permissions required: creator, or bb.savedQueries.manage
+   * Move the caller's own saved queries into a folder, named individually or a
+   * whole folder at a time. Moving a folder carries its descendants, so renaming "a/b" to
+   * "a/c" also moves "a/b/deep" -- one call, not one per path.
    *
-   * @generated from rpc bytebase.v1.SavedQueryService.BatchUpdateSavedQueries
+   * Filing is personal organization, so only the creator's own move: a folder
+   * is that person's tree, and neither a binding nor the admin backstop
+   * reaches into it. The response counts what moved.
+   * Permissions required: creator
+   *
+   * @generated from rpc bytebase.v1.SavedQueryService.MoveMySavedQueries
    */
-  batchUpdateSavedQueries: {
+  moveMySavedQueries: {
     methodKind: "unary";
-    input: typeof BatchUpdateSavedQueriesRequestSchema;
-    output: typeof BatchUpdateSavedQueriesResponseSchema;
+    input: typeof MoveMySavedQueriesRequestSchema;
+    output: typeof MoveMySavedQueriesResponseSchema;
   },
   /**
    * Delete a saved query and every user's stars on it. An EDITOR binding never

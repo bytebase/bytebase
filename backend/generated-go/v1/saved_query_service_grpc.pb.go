@@ -27,7 +27,7 @@ const (
 	SavedQueryService_SearchSavedQueryFolders_FullMethodName = "/bytebase.v1.SavedQueryService/SearchSavedQueryFolders"
 	SavedQueryService_UpdateSavedQuery_FullMethodName        = "/bytebase.v1.SavedQueryService/UpdateSavedQuery"
 	SavedQueryService_UpdateSavedQueryStar_FullMethodName    = "/bytebase.v1.SavedQueryService/UpdateSavedQueryStar"
-	SavedQueryService_BatchUpdateSavedQueries_FullMethodName = "/bytebase.v1.SavedQueryService/BatchUpdateSavedQueries"
+	SavedQueryService_MoveMySavedQueries_FullMethodName      = "/bytebase.v1.SavedQueryService/MoveMySavedQueries"
 	SavedQueryService_DeleteSavedQuery_FullMethodName        = "/bytebase.v1.SavedQueryService/DeleteSavedQuery"
 	SavedQueryService_GetSavedQueryPolicy_FullMethodName     = "/bytebase.v1.SavedQueryService/GetSavedQueryPolicy"
 	SavedQueryService_SetSavedQueryPolicy_FullMethodName     = "/bytebase.v1.SavedQueryService/SetSavedQueryPolicy"
@@ -85,24 +85,28 @@ type SavedQueryServiceClient interface {
 	// from the ones reaching you through a grant (`shared == true`).
 	// Permissions required: bb.savedQueries.search on the project
 	SearchSavedQueryFolders(ctx context.Context, in *SearchSavedQueryFoldersRequest, opts ...grpc.CallOption) (*SearchSavedQueryFoldersResponse, error)
-	// Update a saved query. `title`, `content`, and `database` need write
-	// access; `folder` is creator/admin only, because filing is organization
-	// rather than editing. `database` must belong to the saved query's own
-	// project. An unreadable saved query returns NotFound; a VIEWER who cannot
-	// write gets PermissionDenied.
+	// Update a saved query. `title`, `content`, and `database` need write access;
+	// `folder` is creator/admin only, because filing is organization rather than
+	// editing. `database` must belong to the saved query's own project. An
+	// unreadable saved query returns NotFound; a VIEWER who cannot write gets
+	// PermissionDenied.
 	// Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage
 	UpdateSavedQuery(ctx context.Context, in *UpdateSavedQueryRequest, opts ...grpc.CallOption) (*SavedQuery, error)
-	// Star or unstar a saved query for the caller. A star is a per-user marker:
-	// invisible to everyone else and granting nothing. Read access is the gate
-	// only so unreadable saved queries stay unprobeable.
-	// Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
+	// Star or unstar a saved query for the caller. Stars are personal: yours are
+	// invisible to everyone else and grant nothing. You can star any saved query
+	// you created or have been granted access to; anything else answers
+	// NotFound, so names stay unprobeable.
+	// Permissions required: creator, or a VIEWER or EDITOR binding
 	UpdateSavedQueryStar(ctx context.Context, in *UpdateSavedQueryStarRequest, opts ...grpc.CallOption) (*SavedQuery, error)
-	// Re-file saved queries into a folder in bulk; the update mask supports
-	// `folder` only. An EDITOR binding does not carry re-filing, so matched
-	// saved queries the caller cannot re-file are skipped rather than rejected,
-	// and the response counts what actually changed.
-	// Permissions required: creator, or bb.savedQueries.manage
-	BatchUpdateSavedQueries(ctx context.Context, in *BatchUpdateSavedQueriesRequest, opts ...grpc.CallOption) (*BatchUpdateSavedQueriesResponse, error)
+	// Move the caller's own saved queries into a folder, named individually or a
+	// whole folder at a time. Moving a folder carries its descendants, so renaming "a/b" to
+	// "a/c" also moves "a/b/deep" -- one call, not one per path.
+	//
+	// Filing is personal organization, so only the creator's own move: a folder
+	// is that person's tree, and neither a binding nor the admin backstop
+	// reaches into it. The response counts what moved.
+	// Permissions required: creator
+	MoveMySavedQueries(ctx context.Context, in *MoveMySavedQueriesRequest, opts ...grpc.CallOption) (*MoveMySavedQueriesResponse, error)
 	// Delete a saved query and every user's stars on it. An EDITOR binding never
 	// carries deletion. An unreadable saved query returns NotFound; a grantee
 	// who can read but not delete gets PermissionDenied.
@@ -200,10 +204,10 @@ func (c *savedQueryServiceClient) UpdateSavedQueryStar(ctx context.Context, in *
 	return out, nil
 }
 
-func (c *savedQueryServiceClient) BatchUpdateSavedQueries(ctx context.Context, in *BatchUpdateSavedQueriesRequest, opts ...grpc.CallOption) (*BatchUpdateSavedQueriesResponse, error) {
+func (c *savedQueryServiceClient) MoveMySavedQueries(ctx context.Context, in *MoveMySavedQueriesRequest, opts ...grpc.CallOption) (*MoveMySavedQueriesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BatchUpdateSavedQueriesResponse)
-	err := c.cc.Invoke(ctx, SavedQueryService_BatchUpdateSavedQueries_FullMethodName, in, out, cOpts...)
+	out := new(MoveMySavedQueriesResponse)
+	err := c.cc.Invoke(ctx, SavedQueryService_MoveMySavedQueries_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -292,24 +296,28 @@ type SavedQueryServiceServer interface {
 	// from the ones reaching you through a grant (`shared == true`).
 	// Permissions required: bb.savedQueries.search on the project
 	SearchSavedQueryFolders(context.Context, *SearchSavedQueryFoldersRequest) (*SearchSavedQueryFoldersResponse, error)
-	// Update a saved query. `title`, `content`, and `database` need write
-	// access; `folder` is creator/admin only, because filing is organization
-	// rather than editing. `database` must belong to the saved query's own
-	// project. An unreadable saved query returns NotFound; a VIEWER who cannot
-	// write gets PermissionDenied.
+	// Update a saved query. `title`, `content`, and `database` need write access;
+	// `folder` is creator/admin only, because filing is organization rather than
+	// editing. `database` must belong to the saved query's own project. An
+	// unreadable saved query returns NotFound; a VIEWER who cannot write gets
+	// PermissionDenied.
 	// Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage
 	UpdateSavedQuery(context.Context, *UpdateSavedQueryRequest) (*SavedQuery, error)
-	// Star or unstar a saved query for the caller. A star is a per-user marker:
-	// invisible to everyone else and granting nothing. Read access is the gate
-	// only so unreadable saved queries stay unprobeable.
-	// Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
+	// Star or unstar a saved query for the caller. Stars are personal: yours are
+	// invisible to everyone else and grant nothing. You can star any saved query
+	// you created or have been granted access to; anything else answers
+	// NotFound, so names stay unprobeable.
+	// Permissions required: creator, or a VIEWER or EDITOR binding
 	UpdateSavedQueryStar(context.Context, *UpdateSavedQueryStarRequest) (*SavedQuery, error)
-	// Re-file saved queries into a folder in bulk; the update mask supports
-	// `folder` only. An EDITOR binding does not carry re-filing, so matched
-	// saved queries the caller cannot re-file are skipped rather than rejected,
-	// and the response counts what actually changed.
-	// Permissions required: creator, or bb.savedQueries.manage
-	BatchUpdateSavedQueries(context.Context, *BatchUpdateSavedQueriesRequest) (*BatchUpdateSavedQueriesResponse, error)
+	// Move the caller's own saved queries into a folder, named individually or a
+	// whole folder at a time. Moving a folder carries its descendants, so renaming "a/b" to
+	// "a/c" also moves "a/b/deep" -- one call, not one per path.
+	//
+	// Filing is personal organization, so only the creator's own move: a folder
+	// is that person's tree, and neither a binding nor the admin backstop
+	// reaches into it. The response counts what moved.
+	// Permissions required: creator
+	MoveMySavedQueries(context.Context, *MoveMySavedQueriesRequest) (*MoveMySavedQueriesResponse, error)
 	// Delete a saved query and every user's stars on it. An EDITOR binding never
 	// carries deletion. An unreadable saved query returns NotFound; a grantee
 	// who can read but not delete gets PermissionDenied.
@@ -358,8 +366,8 @@ func (UnimplementedSavedQueryServiceServer) UpdateSavedQuery(context.Context, *U
 func (UnimplementedSavedQueryServiceServer) UpdateSavedQueryStar(context.Context, *UpdateSavedQueryStarRequest) (*SavedQuery, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateSavedQueryStar not implemented")
 }
-func (UnimplementedSavedQueryServiceServer) BatchUpdateSavedQueries(context.Context, *BatchUpdateSavedQueriesRequest) (*BatchUpdateSavedQueriesResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method BatchUpdateSavedQueries not implemented")
+func (UnimplementedSavedQueryServiceServer) MoveMySavedQueries(context.Context, *MoveMySavedQueriesRequest) (*MoveMySavedQueriesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method MoveMySavedQueries not implemented")
 }
 func (UnimplementedSavedQueryServiceServer) DeleteSavedQuery(context.Context, *DeleteSavedQueryRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteSavedQuery not implemented")
@@ -517,20 +525,20 @@ func _SavedQueryService_UpdateSavedQueryStar_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SavedQueryService_BatchUpdateSavedQueries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BatchUpdateSavedQueriesRequest)
+func _SavedQueryService_MoveMySavedQueries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MoveMySavedQueriesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SavedQueryServiceServer).BatchUpdateSavedQueries(ctx, in)
+		return srv.(SavedQueryServiceServer).MoveMySavedQueries(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SavedQueryService_BatchUpdateSavedQueries_FullMethodName,
+		FullMethod: SavedQueryService_MoveMySavedQueries_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SavedQueryServiceServer).BatchUpdateSavedQueries(ctx, req.(*BatchUpdateSavedQueriesRequest))
+		return srv.(SavedQueryServiceServer).MoveMySavedQueries(ctx, req.(*MoveMySavedQueriesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -625,8 +633,8 @@ var SavedQueryService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SavedQueryService_UpdateSavedQueryStar_Handler,
 		},
 		{
-			MethodName: "BatchUpdateSavedQueries",
-			Handler:    _SavedQueryService_BatchUpdateSavedQueries_Handler,
+			MethodName: "MoveMySavedQueries",
+			Handler:    _SavedQueryService_MoveMySavedQueries_Handler,
 		},
 		{
 			MethodName: "DeleteSavedQuery",

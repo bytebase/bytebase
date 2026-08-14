@@ -529,41 +529,36 @@ func (x *UpdateSavedQueryStarRequest) GetStarred() bool {
 	return false
 }
 
-type BatchUpdateSavedQueriesRequest struct {
+type MoveMySavedQueriesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// Select the saved queries to update, in CEL. See
-	// https://github.com/google/cel-spec
-	//
-	// Supported fields:
-	// - name: the saved query name. Supports "==" and "in [...]".
-	// - creator: the creator in "users/{email}" format. Supports "==" and "!=".
-	// - starred: whether the caller starred it. Supports "==".
-	// - folder: the exact folder path. Supports "==".
-	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
-	// The values to apply to every matched saved query.
-	SavedQuery *SavedQuery `protobuf:"bytes,3,opt,name=saved_query,json=savedQuery,proto3" json:"saved_query,omitempty"`
-	// Fields to update. Supported: `folder`.
-	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,4,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	// The saved queries to move. Set this or `source_folder`, not both.
+	// Format: projects/{project}/savedQueries/{savedQuery}
+	Names []string `protobuf:"bytes,2,rep,name=names,proto3" json:"names,omitempty"`
+	// Move everything filed under this path, descendants included, e.g. "a/b".
+	// Set this or `names`, not both.
+	SourceFolder string `protobuf:"bytes,3,opt,name=source_folder,json=sourceFolder,proto3" json:"source_folder,omitempty"`
+	// Where they land. A path like "a/b/c"; empty unfiles them.
+	TargetFolder  string `protobuf:"bytes,4,opt,name=target_folder,json=targetFolder,proto3" json:"target_folder,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BatchUpdateSavedQueriesRequest) Reset() {
-	*x = BatchUpdateSavedQueriesRequest{}
+func (x *MoveMySavedQueriesRequest) Reset() {
+	*x = MoveMySavedQueriesRequest{}
 	mi := &file_v1_saved_query_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BatchUpdateSavedQueriesRequest) String() string {
+func (x *MoveMySavedQueriesRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BatchUpdateSavedQueriesRequest) ProtoMessage() {}
+func (*MoveMySavedQueriesRequest) ProtoMessage() {}
 
-func (x *BatchUpdateSavedQueriesRequest) ProtoReflect() protoreflect.Message {
+func (x *MoveMySavedQueriesRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_saved_query_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -575,62 +570,61 @@ func (x *BatchUpdateSavedQueriesRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BatchUpdateSavedQueriesRequest.ProtoReflect.Descriptor instead.
-func (*BatchUpdateSavedQueriesRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use MoveMySavedQueriesRequest.ProtoReflect.Descriptor instead.
+func (*MoveMySavedQueriesRequest) Descriptor() ([]byte, []int) {
 	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *BatchUpdateSavedQueriesRequest) GetParent() string {
+func (x *MoveMySavedQueriesRequest) GetParent() string {
 	if x != nil {
 		return x.Parent
 	}
 	return ""
 }
 
-func (x *BatchUpdateSavedQueriesRequest) GetFilter() string {
+func (x *MoveMySavedQueriesRequest) GetNames() []string {
 	if x != nil {
-		return x.Filter
+		return x.Names
+	}
+	return nil
+}
+
+func (x *MoveMySavedQueriesRequest) GetSourceFolder() string {
+	if x != nil {
+		return x.SourceFolder
 	}
 	return ""
 }
 
-func (x *BatchUpdateSavedQueriesRequest) GetSavedQuery() *SavedQuery {
+func (x *MoveMySavedQueriesRequest) GetTargetFolder() string {
 	if x != nil {
-		return x.SavedQuery
+		return x.TargetFolder
 	}
-	return nil
+	return ""
 }
 
-func (x *BatchUpdateSavedQueriesRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
-	if x != nil {
-		return x.UpdateMask
-	}
-	return nil
-}
-
-type BatchUpdateSavedQueriesResponse struct {
+type MoveMySavedQueriesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// How many saved queries were updated, which may be fewer than the filter
-	// matched.
-	UpdatedCount  int32 `protobuf:"varint,1,opt,name=updated_count,json=updatedCount,proto3" json:"updated_count,omitempty"`
+	// How many moved. Fewer than were named when some are not the caller's.
+	MovedCount    int32 `protobuf:"varint,1,opt,name=moved_count,json=movedCount,proto3" json:"moved_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BatchUpdateSavedQueriesResponse) Reset() {
-	*x = BatchUpdateSavedQueriesResponse{}
+func (x *MoveMySavedQueriesResponse) Reset() {
+	*x = MoveMySavedQueriesResponse{}
 	mi := &file_v1_saved_query_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BatchUpdateSavedQueriesResponse) String() string {
+func (x *MoveMySavedQueriesResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BatchUpdateSavedQueriesResponse) ProtoMessage() {}
+func (*MoveMySavedQueriesResponse) ProtoMessage() {}
 
-func (x *BatchUpdateSavedQueriesResponse) ProtoReflect() protoreflect.Message {
+func (x *MoveMySavedQueriesResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_saved_query_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -642,14 +636,14 @@ func (x *BatchUpdateSavedQueriesResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BatchUpdateSavedQueriesResponse.ProtoReflect.Descriptor instead.
-func (*BatchUpdateSavedQueriesResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use MoveMySavedQueriesResponse.ProtoReflect.Descriptor instead.
+func (*MoveMySavedQueriesResponse) Descriptor() ([]byte, []int) {
 	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *BatchUpdateSavedQueriesResponse) GetUpdatedCount() int32 {
+func (x *MoveMySavedQueriesResponse) GetMovedCount() int32 {
 	if x != nil {
-		return x.UpdatedCount
+		return x.MovedCount
 	}
 	return 0
 }
@@ -1252,17 +1246,16 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"updateMask\"P\n" +
 	"\x1bUpdateSavedQueryStarRequest\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\x12\x18\n" +
-	"\astarred\x18\x02 \x01(\bR\astarred\"\xef\x01\n" +
-	"\x1eBatchUpdateSavedQueriesRequest\x124\n" +
+	"\astarred\x18\x02 \x01(\bR\astarred\"\xc5\x01\n" +
+	"\x19MoveMySavedQueriesRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x12\x16\n" +
-	"\x06filter\x18\x02 \x01(\tR\x06filter\x12=\n" +
-	"\vsaved_query\x18\x03 \x01(\v2\x17.bytebase.v1.SavedQueryB\x03\xe0A\x02R\n" +
-	"savedQuery\x12@\n" +
-	"\vupdate_mask\x18\x04 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
-	"updateMask\"F\n" +
-	"\x1fBatchUpdateSavedQueriesResponse\x12#\n" +
-	"\rupdated_count\x18\x01 \x01(\x05R\fupdatedCount\"Y\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12\x14\n" +
+	"\x05names\x18\x02 \x03(\tR\x05names\x12-\n" +
+	"\rsource_folder\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\fsourceFolder\x12-\n" +
+	"\rtarget_folder\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\ftargetFolder\"=\n" +
+	"\x1aMoveMySavedQueriesResponse\x12\x1f\n" +
+	"\vmoved_count\x18\x01 \x01(\x05R\n" +
+	"movedCount\"Y\n" +
 	"\x1aGetSavedQueryPolicyRequest\x12;\n" +
 	"\bresource\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
 	"\x17bytebase.com/SavedQueryR\bresource\"\x95\x01\n" +
@@ -1311,7 +1304,7 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\x12 \n" +
 	"\x06folder\x18\r \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\x06folder:K\xeaAH\n" +
 	"\x17bytebase.com/SavedQuery\x12-projects/{project}/savedQueries/{saved_query}J\x04\b\n" +
-	"\x10\vJ\x04\b\f\x10\r2\xbe\x0f\n" +
+	"\x10\vJ\x04\b\f\x10\r2\xa0\x0f\n" +
 	"\x11SavedQueryService\x12\xc3\x01\n" +
 	"\x10CreateSavedQuery\x12$.bytebase.v1.CreateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"p\xdaA\x12parent,saved_query\x8a\xea0\x16bb.savedQueries.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x023:\vsaved_query\"$/v1/{parent=projects/*}/savedQueries\x12\x84\x01\n" +
 	"\rGetSavedQuery\x12!.bytebase.v1.GetSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"7\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/savedQueries/*}\x12\xb2\x01\n" +
@@ -1319,8 +1312,8 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\x12SearchSavedQueries\x12&.bytebase.v1.SearchSavedQueriesRequest\x1a'.bytebase.v1.SearchSavedQueriesResponse\"C\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:search\x12\xc0\x01\n" +
 	"\x17SearchSavedQueryFolders\x12+.bytebase.v1.SearchSavedQueryFoldersRequest\x1a,.bytebase.v1.SearchSavedQueryFoldersResponse\"J\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{parent=projects/*}/savedQueries:searchFolders\x12\xba\x01\n" +
 	"\x10UpdateSavedQuery\x12$.bytebase.v1.UpdateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"g\xdaA\x17saved_query,update_mask\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02?:\vsaved_query20/v1/{saved_query.name=projects/*/savedQueries/*}\x12\xa8\x01\n" +
-	"\x14UpdateSavedQueryStar\x12(.bytebase.v1.UpdateSavedQueryStarRequest\x1a\x17.bytebase.v1.SavedQuery\"M\xdaA\fname,starred\x90\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/savedQueries/*}:updateStar\x12\xda\x01\n" +
-	"\x17BatchUpdateSavedQueries\x12+.bytebase.v1.BatchUpdateSavedQueriesRequest\x1a,.bytebase.v1.BatchUpdateSavedQueriesResponse\"d\xdaA\x1eparent,saved_query,update_mask\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x025:\x01*\"0/v1/{parent=projects/*}/savedQueries:batchUpdate\x12\x8d\x01\n" +
+	"\x14UpdateSavedQueryStar\x12(.bytebase.v1.UpdateSavedQueryStarRequest\x1a\x17.bytebase.v1.SavedQuery\"M\xdaA\fname,starred\x90\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/savedQueries/*}:updateStar\x12\xbc\x01\n" +
+	"\x12MoveMySavedQueries\x12&.bytebase.v1.MoveMySavedQueriesRequest\x1a'.bytebase.v1.MoveMySavedQueriesResponse\"U\xdaA\x14parent,target_folder\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:moveMy\x12\x8d\x01\n" +
 	"\x10DeleteSavedQuery\x12$.bytebase.v1.DeleteSavedQueryRequest\x1a\x16.google.protobuf.Empty\";\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02&*$/v1/{name=projects/*/savedQueries/*}\x12\xa8\x01\n" +
 	"\x13GetSavedQueryPolicy\x12'.bytebase.v1.GetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"I\xdaA\bresource\x90\xea0\x02\x82\xd3\xe4\x93\x024\x122/v1/{resource=projects/*/savedQueries/*}:getPolicy\x12\xb6\x01\n" +
 	"\x13SetSavedQueryPolicy\x12'.bytebase.v1.SetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"W\xdaA\x0fresource,policy\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{resource=projects/*/savedQueries/*}:setPolicyB\xac\x01\n" +
@@ -1350,8 +1343,8 @@ var file_v1_saved_query_service_proto_goTypes = []any{
 	(*SearchSavedQueryFoldersResponse)(nil), // 6: bytebase.v1.SearchSavedQueryFoldersResponse
 	(*UpdateSavedQueryRequest)(nil),         // 7: bytebase.v1.UpdateSavedQueryRequest
 	(*UpdateSavedQueryStarRequest)(nil),     // 8: bytebase.v1.UpdateSavedQueryStarRequest
-	(*BatchUpdateSavedQueriesRequest)(nil),  // 9: bytebase.v1.BatchUpdateSavedQueriesRequest
-	(*BatchUpdateSavedQueriesResponse)(nil), // 10: bytebase.v1.BatchUpdateSavedQueriesResponse
+	(*MoveMySavedQueriesRequest)(nil),       // 9: bytebase.v1.MoveMySavedQueriesRequest
+	(*MoveMySavedQueriesResponse)(nil),      // 10: bytebase.v1.MoveMySavedQueriesResponse
 	(*GetSavedQueryPolicyRequest)(nil),      // 11: bytebase.v1.GetSavedQueryPolicyRequest
 	(*SetSavedQueryPolicyRequest)(nil),      // 12: bytebase.v1.SetSavedQueryPolicyRequest
 	(*SavedQueryPolicy)(nil),                // 13: bytebase.v1.SavedQueryPolicy
@@ -1369,41 +1362,39 @@ var file_v1_saved_query_service_proto_depIdxs = []int32{
 	18, // 1: bytebase.v1.ListSavedQueriesResponse.saved_queries:type_name -> bytebase.v1.SavedQuery
 	18, // 2: bytebase.v1.UpdateSavedQueryRequest.saved_query:type_name -> bytebase.v1.SavedQuery
 	19, // 3: bytebase.v1.UpdateSavedQueryRequest.update_mask:type_name -> google.protobuf.FieldMask
-	18, // 4: bytebase.v1.BatchUpdateSavedQueriesRequest.saved_query:type_name -> bytebase.v1.SavedQuery
-	19, // 5: bytebase.v1.BatchUpdateSavedQueriesRequest.update_mask:type_name -> google.protobuf.FieldMask
-	13, // 6: bytebase.v1.SetSavedQueryPolicyRequest.policy:type_name -> bytebase.v1.SavedQueryPolicy
-	14, // 7: bytebase.v1.SavedQueryPolicy.bindings:type_name -> bytebase.v1.SavedQueryBinding
-	0,  // 8: bytebase.v1.SavedQueryBinding.level:type_name -> bytebase.v1.SavedQueryBinding.Level
-	18, // 9: bytebase.v1.SearchSavedQueriesResponse.saved_queries:type_name -> bytebase.v1.SavedQuery
-	20, // 10: bytebase.v1.SavedQuery.create_time:type_name -> google.protobuf.Timestamp
-	20, // 11: bytebase.v1.SavedQuery.update_time:type_name -> google.protobuf.Timestamp
-	1,  // 12: bytebase.v1.SavedQueryService.CreateSavedQuery:input_type -> bytebase.v1.CreateSavedQueryRequest
-	2,  // 13: bytebase.v1.SavedQueryService.GetSavedQuery:input_type -> bytebase.v1.GetSavedQueryRequest
-	3,  // 14: bytebase.v1.SavedQueryService.ListSavedQueries:input_type -> bytebase.v1.ListSavedQueriesRequest
-	16, // 15: bytebase.v1.SavedQueryService.SearchSavedQueries:input_type -> bytebase.v1.SearchSavedQueriesRequest
-	5,  // 16: bytebase.v1.SavedQueryService.SearchSavedQueryFolders:input_type -> bytebase.v1.SearchSavedQueryFoldersRequest
-	7,  // 17: bytebase.v1.SavedQueryService.UpdateSavedQuery:input_type -> bytebase.v1.UpdateSavedQueryRequest
-	8,  // 18: bytebase.v1.SavedQueryService.UpdateSavedQueryStar:input_type -> bytebase.v1.UpdateSavedQueryStarRequest
-	9,  // 19: bytebase.v1.SavedQueryService.BatchUpdateSavedQueries:input_type -> bytebase.v1.BatchUpdateSavedQueriesRequest
-	15, // 20: bytebase.v1.SavedQueryService.DeleteSavedQuery:input_type -> bytebase.v1.DeleteSavedQueryRequest
-	11, // 21: bytebase.v1.SavedQueryService.GetSavedQueryPolicy:input_type -> bytebase.v1.GetSavedQueryPolicyRequest
-	12, // 22: bytebase.v1.SavedQueryService.SetSavedQueryPolicy:input_type -> bytebase.v1.SetSavedQueryPolicyRequest
-	18, // 23: bytebase.v1.SavedQueryService.CreateSavedQuery:output_type -> bytebase.v1.SavedQuery
-	18, // 24: bytebase.v1.SavedQueryService.GetSavedQuery:output_type -> bytebase.v1.SavedQuery
-	4,  // 25: bytebase.v1.SavedQueryService.ListSavedQueries:output_type -> bytebase.v1.ListSavedQueriesResponse
-	17, // 26: bytebase.v1.SavedQueryService.SearchSavedQueries:output_type -> bytebase.v1.SearchSavedQueriesResponse
-	6,  // 27: bytebase.v1.SavedQueryService.SearchSavedQueryFolders:output_type -> bytebase.v1.SearchSavedQueryFoldersResponse
-	18, // 28: bytebase.v1.SavedQueryService.UpdateSavedQuery:output_type -> bytebase.v1.SavedQuery
-	18, // 29: bytebase.v1.SavedQueryService.UpdateSavedQueryStar:output_type -> bytebase.v1.SavedQuery
-	10, // 30: bytebase.v1.SavedQueryService.BatchUpdateSavedQueries:output_type -> bytebase.v1.BatchUpdateSavedQueriesResponse
-	21, // 31: bytebase.v1.SavedQueryService.DeleteSavedQuery:output_type -> google.protobuf.Empty
-	13, // 32: bytebase.v1.SavedQueryService.GetSavedQueryPolicy:output_type -> bytebase.v1.SavedQueryPolicy
-	13, // 33: bytebase.v1.SavedQueryService.SetSavedQueryPolicy:output_type -> bytebase.v1.SavedQueryPolicy
-	23, // [23:34] is the sub-list for method output_type
-	12, // [12:23] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	13, // 4: bytebase.v1.SetSavedQueryPolicyRequest.policy:type_name -> bytebase.v1.SavedQueryPolicy
+	14, // 5: bytebase.v1.SavedQueryPolicy.bindings:type_name -> bytebase.v1.SavedQueryBinding
+	0,  // 6: bytebase.v1.SavedQueryBinding.level:type_name -> bytebase.v1.SavedQueryBinding.Level
+	18, // 7: bytebase.v1.SearchSavedQueriesResponse.saved_queries:type_name -> bytebase.v1.SavedQuery
+	20, // 8: bytebase.v1.SavedQuery.create_time:type_name -> google.protobuf.Timestamp
+	20, // 9: bytebase.v1.SavedQuery.update_time:type_name -> google.protobuf.Timestamp
+	1,  // 10: bytebase.v1.SavedQueryService.CreateSavedQuery:input_type -> bytebase.v1.CreateSavedQueryRequest
+	2,  // 11: bytebase.v1.SavedQueryService.GetSavedQuery:input_type -> bytebase.v1.GetSavedQueryRequest
+	3,  // 12: bytebase.v1.SavedQueryService.ListSavedQueries:input_type -> bytebase.v1.ListSavedQueriesRequest
+	16, // 13: bytebase.v1.SavedQueryService.SearchSavedQueries:input_type -> bytebase.v1.SearchSavedQueriesRequest
+	5,  // 14: bytebase.v1.SavedQueryService.SearchSavedQueryFolders:input_type -> bytebase.v1.SearchSavedQueryFoldersRequest
+	7,  // 15: bytebase.v1.SavedQueryService.UpdateSavedQuery:input_type -> bytebase.v1.UpdateSavedQueryRequest
+	8,  // 16: bytebase.v1.SavedQueryService.UpdateSavedQueryStar:input_type -> bytebase.v1.UpdateSavedQueryStarRequest
+	9,  // 17: bytebase.v1.SavedQueryService.MoveMySavedQueries:input_type -> bytebase.v1.MoveMySavedQueriesRequest
+	15, // 18: bytebase.v1.SavedQueryService.DeleteSavedQuery:input_type -> bytebase.v1.DeleteSavedQueryRequest
+	11, // 19: bytebase.v1.SavedQueryService.GetSavedQueryPolicy:input_type -> bytebase.v1.GetSavedQueryPolicyRequest
+	12, // 20: bytebase.v1.SavedQueryService.SetSavedQueryPolicy:input_type -> bytebase.v1.SetSavedQueryPolicyRequest
+	18, // 21: bytebase.v1.SavedQueryService.CreateSavedQuery:output_type -> bytebase.v1.SavedQuery
+	18, // 22: bytebase.v1.SavedQueryService.GetSavedQuery:output_type -> bytebase.v1.SavedQuery
+	4,  // 23: bytebase.v1.SavedQueryService.ListSavedQueries:output_type -> bytebase.v1.ListSavedQueriesResponse
+	17, // 24: bytebase.v1.SavedQueryService.SearchSavedQueries:output_type -> bytebase.v1.SearchSavedQueriesResponse
+	6,  // 25: bytebase.v1.SavedQueryService.SearchSavedQueryFolders:output_type -> bytebase.v1.SearchSavedQueryFoldersResponse
+	18, // 26: bytebase.v1.SavedQueryService.UpdateSavedQuery:output_type -> bytebase.v1.SavedQuery
+	18, // 27: bytebase.v1.SavedQueryService.UpdateSavedQueryStar:output_type -> bytebase.v1.SavedQuery
+	10, // 28: bytebase.v1.SavedQueryService.MoveMySavedQueries:output_type -> bytebase.v1.MoveMySavedQueriesResponse
+	21, // 29: bytebase.v1.SavedQueryService.DeleteSavedQuery:output_type -> google.protobuf.Empty
+	13, // 30: bytebase.v1.SavedQueryService.GetSavedQueryPolicy:output_type -> bytebase.v1.SavedQueryPolicy
+	13, // 31: bytebase.v1.SavedQueryService.SetSavedQueryPolicy:output_type -> bytebase.v1.SavedQueryPolicy
+	21, // [21:32] is the sub-list for method output_type
+	10, // [10:21] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_v1_saved_query_service_proto_init() }

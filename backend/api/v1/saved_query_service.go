@@ -505,9 +505,9 @@ func (s *SavedQueryService) DeleteSavedQuery(
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-// UpdateSavedQueryStar stars or unstars a saved query for the caller. A
-// star is always the caller's own per-user marker; the gate is read access
-// to the saved query being starred.
+// UpdateSavedQueryStar stars or unstars a saved query for the caller. Stars
+// are personal: you can star anything you created or were granted, and your
+// stars are invisible to everyone else.
 func (s *SavedQueryService) UpdateSavedQueryStar(
 	ctx context.Context,
 	req *connect.Request[v1pb.UpdateSavedQueryStarRequest],
@@ -526,7 +526,10 @@ func (s *SavedQueryService) UpdateSavedQueryStar(
 	if err != nil {
 		return nil, err
 	}
-	if !access.canRead() {
+	// NotFound rather than PermissionDenied: the star surface only concerns
+	// saved queries you can use, and answering "exists, but not yours" would
+	// make names probeable.
+	if !access.canStar() {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
@@ -547,39 +550,24 @@ func (s *SavedQueryService) UpdateSavedQueryStar(
 	return connect.NewResponse(convertToAPISavedQuery(savedQuery)), nil
 }
 
-// BatchUpdateSavedQueries re-files the matched saved queries into a folder.
-// Only rows the caller may re-file are updated: their own, or any in scope
-// for admins.
-func (s *SavedQueryService) BatchUpdateSavedQueries(
+// MoveMySavedQueries files saved queries, named individually or a folder at a
+// time. Creator-only: filing is personal organization, so the store scopes
+// every move to the caller's own rows and anything else is simply not
+// selected.
+func (s *SavedQueryService) MoveMySavedQueries(
 	ctx context.Context,
-	req *connect.Request[v1pb.BatchUpdateSavedQueriesRequest],
-) (*connect.Response[v1pb.BatchUpdateSavedQueriesResponse], error) {
+	req *connect.Request[v1pb.MoveMySavedQueriesRequest],
+) (*connect.Response[v1pb.MoveMySavedQueriesResponse], error) {
 	request := req.Msg
-	if request.SavedQuery == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("saved_query cannot be empty"))
-	}
-	if request.UpdateMask == nil || len(request.UpdateMask.Paths) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask cannot be empty"))
-	}
-	for _, path := range request.UpdateMask.Paths {
-		if path != "folder" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q; only \"folder\" is supported", path))
-		}
-	}
-
-	// Normalize before any work: a folder the filter could never match must
-	// not be written to a single row.
-	folder, err := store.NormalizeSavedQueryFolder(request.SavedQuery.Folder)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if projectID == "-" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("projects/- is not supported for batch update saved queries"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`projects/- is not supported`))
+	}
+	if (len(request.Names) == 0) == (request.SourceFolder == "") {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("set either names or source_folder, not both"))
 	}
 
 	user, ok := GetUserFromContext(ctx)
@@ -587,54 +575,52 @@ func (s *SavedQueryService) BatchUpdateSavedQueries(
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	accessMembers, err := s.iamManager.PrincipalMembers(ctx, common.GetWorkspaceIDFromContext(ctx), user)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve principals: %v", err))
-	}
-
-	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, user.Email, accessMembers, request.Filter, false /* allowTitleContains */)
+	target, err := store.NormalizeSavedQueryFolder(request.TargetFolder)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	savedQueryList, err := s.store.ListSavedQueries(ctx, &store.FindSavedQueryMessage{
-		ProjectIDs:     []string{projectID},
-		PrincipalEmail: user.Email,
-		FilterQ:        filterQ,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list saved queries: %v", err))
-	}
 
-	var savedQueryIDs []string
-	for _, savedQuery := range savedQueryList {
-		access, err := s.savedQueryAccess(ctx, savedQuery)
+	var moved int
+	if request.SourceFolder != "" {
+		source, err := store.NormalizeSavedQueryFolder(request.SourceFolder)
 		if err != nil {
-			return nil, err
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
-		// Re-filing is creator/admin only, and matched rows the caller may not
-		// re-file are skipped rather than failing the batch — so the response
-		// count is what changed, not what matched.
-		if !access.canManage() {
-			continue
+		if source == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("source_folder cannot be empty"))
 		}
-		savedQueryIDs = append(savedQueryIDs, savedQuery.ResourceID)
+		if source == target {
+			return connect.NewResponse(&v1pb.MoveMySavedQueriesResponse{}), nil
+		}
+		if strings.HasPrefix(target, source+"/") {
+			// "a/b" into "a/b/c" would rewrite the rows it just moved.
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot move a folder into itself"))
+		}
+		moved, err = s.store.MoveSavedQueryFolder(ctx, projectID, user.Email, source, target)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to move folder: %v", err))
+		}
+	} else {
+		resourceIDs := make([]string, 0, len(request.Names))
+		for _, name := range request.Names {
+			nameProject, savedQueryID, err := common.GetProjectIDSavedQueryID(name)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
+			if nameProject != projectID {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("saved query %q is not in %q", name, request.Parent))
+			}
+			resourceIDs = append(resourceIDs, savedQueryID)
+		}
+		moved, err = s.store.MoveSavedQueries(ctx, projectID, user.Email, resourceIDs, target)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to move saved queries: %v", err))
+		}
 	}
 
-	updated, err := s.store.BatchUpdateSavedQueryFolder(ctx, savedQueryIDs, folder)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to batch update saved queries: %v", err))
-	}
-	return connect.NewResponse(&v1pb.BatchUpdateSavedQueriesResponse{
-		UpdatedCount: int32(updated),
-	}), nil
+	return connect.NewResponse(&v1pb.MoveMySavedQueriesResponse{MovedCount: int32(moved)}), nil
 }
 
-// checkDiscoverSavedQueries gates the per-project discovery surfaces
-// (Search, folder list): bb.savedQueries.search, with bb.savedQueries.manage
-// as the admin backstop that must be able to enumerate what it manages.
-// checkProjectWide re-checks an IAM-gated permission, rejecting bindings whose
-// condition scopes resources. The generic interceptor cannot express this: it
-// evaluates request.time and passes the residual condition through.
 func (s *SavedQueryService) checkProjectWide(ctx context.Context, user *store.UserMessage, p permission.Permission, projectIDs ...string) error {
 	ok, err := s.iamManager.CheckProjectWidePermission(ctx, p, user, common.GetWorkspaceIDFromContext(ctx), projectIDs...)
 	if err != nil {
@@ -924,6 +910,12 @@ func (a savedQueryAccess) canRead() bool {
 
 func (a savedQueryAccess) canWrite() bool {
 	return a.isCreator || a.isAdmin || a.level >= storepb.SavedQueryBinding_EDITOR
+}
+
+// canStar covers starring, which is personal: you can star any saved query you
+// created or were granted access to, and your stars are yours alone.
+func (a savedQueryAccess) canStar() bool {
+	return a.isCreator || a.level >= storepb.SavedQueryBinding_VIEWER
 }
 
 // canManage covers sharing, deleting, and re-filing: a binding never confers

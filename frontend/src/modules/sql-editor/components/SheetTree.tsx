@@ -1611,13 +1611,16 @@ export function SheetTree({
             : "[&_[role=treeitem]]:overflow-hidden"
         )}
         onMove={handleMove}
+        // Dragging re-files, and only your own saved queries can be re-filed,
+        // so the Shared tree is browse-only rather than accepting a drop the
+        // server declines.
         disableDrag={
-          view === "draft" || !!editingNode || multiSelectMode
+          view !== "my" || !!editingNode || multiSelectMode
             ? true
             : ({ data }) => !!data.loadMore
         }
         disableDrop={
-          view === "draft" || !!editingNode || multiSelectMode
+          view !== "my" || !!editingNode || multiSelectMode
             ? true
             : ({ parentNode: p, dragNodes }) =>
                 !!p?.data.data.savedQuery ||

@@ -150,7 +150,7 @@ func (x *UpdateSavedQueryStarRequest) Equal(y *UpdateSavedQueryStarRequest) bool
 	return true
 }
 
-func (x *BatchUpdateSavedQueriesRequest) Equal(y *BatchUpdateSavedQueriesRequest) bool {
+func (x *MoveMySavedQueriesRequest) Equal(y *MoveMySavedQueriesRequest) bool {
 	if x == y {
 		return true
 	}
@@ -160,30 +160,31 @@ func (x *BatchUpdateSavedQueriesRequest) Equal(y *BatchUpdateSavedQueriesRequest
 	if x.Parent != y.Parent {
 		return false
 	}
-	if x.Filter != y.Filter {
+	if len(x.Names) != len(y.Names) {
 		return false
 	}
-	if !x.SavedQuery.Equal(y.SavedQuery) {
+	for i := 0; i < len(x.Names); i++ {
+		if x.Names[i] != y.Names[i] {
+			return false
+		}
+	}
+	if x.SourceFolder != y.SourceFolder {
 		return false
 	}
-	if equal, ok := interface{}(x.UpdateMask).(interface {
-		Equal(*fieldmaskpb.FieldMask) bool
-	}); !ok || !equal.Equal(y.UpdateMask) {
-		return false
-	} else if !proto.Equal(x.UpdateMask, y.UpdateMask) {
+	if x.TargetFolder != y.TargetFolder {
 		return false
 	}
 	return true
 }
 
-func (x *BatchUpdateSavedQueriesResponse) Equal(y *BatchUpdateSavedQueriesResponse) bool {
+func (x *MoveMySavedQueriesResponse) Equal(y *MoveMySavedQueriesResponse) bool {
 	if x == y {
 		return true
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.UpdatedCount != y.UpdatedCount {
+	if x.MovedCount != y.MovedCount {
 		return false
 	}
 	return true

@@ -1249,8 +1249,12 @@ const batchUpdateSavedQueryFolders = async (
     string,
     { parent: string; folders: string[]; names: string[] }
   >();
+  const currentUserName = `users/${useAppStore.getState().currentUser?.email}`;
   for (const savedQuery of savedQueries) {
     const current = useAppStore.getState().getSavedQueryByName(savedQuery.name);
+    // Only the creator's own rows move. Sending somebody else's would come
+    // back with nothing moved while the cache patch below claimed otherwise.
+    if (current && current.creator !== currentUserName) continue;
     const view = current ? viewForSavedQuery(current) : undefined;
     if (current && (view === "my" || view === "shared")) {
       addAffectedFolderKey(
@@ -1284,15 +1288,10 @@ const batchUpdateSavedQueryFolders = async (
   await Promise.all(
     requests.map(async (request) => {
       const folder = request.folders.join("/");
-      await useAppStore
-        .getState()
-        .batchUpdateSavedQueryFolder(
-          request.parent,
-          `name in [${request.names
-            .map((name) => '"' + escapeCELStringLiteral(name) + '"')
-            .join(",")}]`,
-          folder
-        );
+      await useAppStore.getState().moveMySavedQueries(request.parent, {
+        names: request.names,
+        targetFolder: folder,
+      });
       useAppStore
         .getState()
         .patchSavedQueryFolderInCache(request.names, folder);
@@ -1308,33 +1307,76 @@ const batchUpdateSavedQueryFolderPaths = async (
   view: SheetViewMode,
   updates: SavedQueryFolderPathUpdate[]
 ): Promise<void> => {
-  if (view !== "my" && view !== "shared") return;
+  // Only the caller's own tree can be re-filed: MoveMySavedQueries scopes to
+  // creator, so running this for the Shared view would move nothing while the
+  // cache patch below claimed otherwise, leaving a phantom move on screen
+  // until the next refetch.
+  if (view !== "my") return;
   if (updates.length === 0) return;
   const project = getSQLEditorEditorState().project;
-  const sortedUpdates = [...updates].sort(
+  // Deepest first, so a nested source still matches rows an ancestor move has
+  // not yet rewritten.
+  const sorted = [...updates].sort(
     (a, b) => b.sourceFolder.length - a.sourceFolder.length
   );
-  for (const update of sortedUpdates) {
+  // The server rewrites a folder's prefix, carrying descendants with it, so a
+  // nested update is redundant only when that rewrite already produces its
+  // target: "old" -> "new" implies "old/child" -> "new/child". Flattening does
+  // not qualify -- "old" -> "" would leave "old/child" at "child" rather than
+  // at the root -- so those updates still have to be sent.
+  const impliedTarget = (
+    ancestor: SavedQueryFolderPathUpdate,
+    update: SavedQueryFolderPathUpdate
+  ) =>
+    (
+      ancestor.targetFolder.join("/") +
+      update.sourceFolder
+        .join("/")
+        .slice(ancestor.sourceFolder.join("/").length)
+    ).replace(/^\/+/, "");
+  const needed = sorted.filter(
+    (update) =>
+      !sorted.some(
+        (ancestor) =>
+          ancestor !== update &&
+          isSubFolder({
+            parent: ancestor.sourceFolder.join("/"),
+            path: update.sourceFolder.join("/"),
+            dig: true,
+          }) &&
+          update.targetFolder.join("/") === impliedTarget(ancestor, update)
+      )
+  );
+  for (const update of needed) {
     const source = update.sourceFolder.join("/");
     const target = update.targetFolder.join("/");
-    // Cached rows are named before the move so the tree can be rebuilt
-    // without waiting for a refetch; rows outside the cache move server-side
-    // and arrive with the new folder on their next page.
-    const movedNames = cachedSavedQueriesForView(view)
-      .filter((savedQuery) => savedQuery.folder === source)
-      .map((savedQuery) => savedQuery.name);
-    await useAppStore
-      .getState()
-      .batchUpdateSavedQueryFolder(
-        project,
-        sheetFilterForView(
-          view,
-          [`folder == "${escapeCELStringLiteral(source)}"`],
-          false
-        ),
-        target
-      );
-    useAppStore.getState().patchSavedQueryFolderInCache(movedNames, target);
+    // Cached rows are re-filed locally so the tree can rebuild without waiting
+    // for a refetch; rows outside the cache move server-side and arrive with
+    // the new folder on their next page.
+    const moved = cachedSavedQueriesForView(view)
+      .filter(
+        (savedQuery) =>
+          savedQuery.folder === source ||
+          savedQuery.folder.startsWith(source + "/")
+      )
+      .map((savedQuery) => ({
+        name: savedQuery.name,
+        folder: target + savedQuery.folder.slice(source.length),
+      }));
+    await useAppStore.getState().moveMySavedQueries(project, {
+      sourceFolder: source,
+      targetFolder: target,
+    });
+    // One patch per destination: a flat move lands every row in the same
+    // folder, while a subtree move keeps each descendant's own tail.
+    const byFolder = new Map<string, string[]>();
+    for (const savedQuery of moved) {
+      const folder = savedQuery.folder.replace(/^\/+/, "");
+      byFolder.set(folder, [...(byFolder.get(folder) ?? []), savedQuery.name]);
+    }
+    for (const [folder, names] of byFolder) {
+      useAppStore.getState().patchSavedQueryFolderInCache(names, folder);
+    }
   }
 };
 
