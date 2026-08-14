@@ -15,13 +15,15 @@ Postgres (Phase 1) and GCP Cloud SQL (Phase 2). Components are split across
 - Tier under test: smallest shippable tier (1 vCPU / ~3.75 GB).
 - Connection: direct, no pooler, public IP + TLS; password superuser admin.
 - Isolation: one database + one role per workspace. The database is owned by the
-  admin user (Cloud SQL's `postgres` superuser cannot `SET ROLE` / transfer
-  database ownership); the role is granted `CONNECT` on only its own database
-  and is transferred ownership of its public schema and objects so it can run
-  change-ticket DDL as the workspace. `pg_database` name disclosure is accepted.
+  admin user; the role is granted `CONNECT` and `CREATE` on only its own
+  database and `CREATE` on its `public` schema. The role seeds its own schema
+  and therefore owns it, so it can run change-ticket DDL as the workspace.
+  Cloud SQL's `postgres` user is not a superuser (`rolsuper=false`) and cannot
+  `SET ROLE` or transfer ownership of objects it creates, so a role can only own
+  what it creates itself. `pg_database` name disclosure is accepted.
 - Seed: the Bytebase sample HR schema (7 tables, 2 views, 1 function, ~13k rows),
-  applied by the admin (control plane); ownership is then transferred to the
-  workspace role.
+  applied as the workspace role after the control plane grants `CREATE` on the
+  `public` schema.
 
 ## Workload assumptions (labeled, not measured traffic)
 

@@ -37,6 +37,9 @@ func provision(ctx context.Context, db *sql.DB, cfg *Config, count int) ([]Tenan
 			fmt.Sprintf("CREATE DATABASE %s", dbase),
 			fmt.Sprintf("REVOKE CONNECT ON DATABASE %s FROM PUBLIC", dbase),
 			fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s", dbase, role),
+			// CREATE ON DATABASE lets the role create schemas (e.g. the seed's
+			// bbdataarchive schema) in its own database.
+			fmt.Sprintf("GRANT CREATE ON DATABASE %s TO %s", dbase, role),
 		}
 		failed := false
 		for _, stmt := range statements {
@@ -67,6 +70,15 @@ func provision(ctx context.Context, db *sql.DB, cfg *Config, count int) ([]Tenan
 func cleanup(ctx context.Context, db *sql.DB, cfg *Config, tenants []Tenant) (CleanupResult, error) {
 	result := CleanupResult{}
 	for _, tenant := range tenants {
+		// Terminate lingering backends of the tenant role before dropping its
+		// database. This models the 7-day expiry, which must terminate the
+		// workspace role's connections first: Cloud SQL's postgres user is not
+		// a superuser, so DROP DATABASE ... WITH (FORCE) alone fails with
+		// "permission denied to terminate process" when backends of another
+		// role linger after the workload phases.
+		if err := terminateTenantBackends(ctx, cfg, tenant); err != nil && cfg.Verbose {
+			log.Printf("cleanup tenant %d: terminate backends: %v", tenant.Index, err)
+		}
 		if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE %s WITH (FORCE)", tenant.Database)); err != nil {
 			result.Failed++
 			if cfg.Verbose {
@@ -126,6 +138,22 @@ func cleanup(ctx context.Context, db *sql.DB, cfg *Config, tenants []Tenant) (Cl
 	}
 
 	return result, nil
+}
+
+// terminateTenantBackends connects as the tenant role and terminates any of its
+// lingering backends on its own database. A role can terminate its own
+// backends, which the control-plane admin (a non-superuser on Cloud SQL)
+// cannot do for another role.
+func terminateTenantBackends(ctx context.Context, cfg *Config, t Tenant) error {
+	db, err := sql.Open("pgx", cfg.tenantDSN(t.Database, t.Role, t.Password))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	if _, err := db.ExecContext(ctx, `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND usename = current_user AND pid <> pg_backend_pid()`); err != nil {
+		return err
+	}
+	return nil
 }
 
 // cleanupPrefix removes any databases and roles left over from a previous run so
