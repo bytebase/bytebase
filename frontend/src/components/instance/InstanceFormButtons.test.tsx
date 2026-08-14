@@ -504,4 +504,73 @@ describe("InstanceFormButtons", () => {
       root.unmount();
     });
   });
+
+  // Pins the contract every field-level validation in this form rests on:
+  // failing checkDataSource is what keeps a data source away from the
+  // connection test, so the operator reads the form's own message instead of a
+  // connection failure. The keytab resupply gate is one caller of it; this
+  // test covers the wiring, not that gate — InstanceFormContext.test.tsx
+  // covers which data sources checkDataSource fails.
+  test("a failing data source check keeps both save actions off the connection test", async () => {
+    const adminDataSource = create(DataSourceSchema, {
+      id: "admin",
+      type: DataSourceType.ADMIN,
+      host: "prod.example.com",
+      port: "5432",
+    });
+    const editState = {
+      ...adminDataSource,
+      pendingCreate: false,
+      updatedPassword: "",
+      updatedMasterPassword: "",
+      updatedToken: "",
+    };
+    mocks.context = {
+      ...mocks.context,
+      instance: create(InstanceSchema, {
+        name: "instances/prod",
+        title: "Production",
+        engine: Engine.POSTGRES,
+        dataSources: [adminDataSource],
+      }),
+      isCreating: false,
+      adminDataSource: editState,
+      editingDataSource: editState,
+      checkDataSource: vi.fn(() => false),
+      valueChanged: true,
+    };
+    const context = mocks.context as {
+      testConnection: ReturnType<typeof vi.fn>;
+    };
+
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<InstanceFormButtons />);
+    });
+
+    const buttons = Array.from(container.querySelectorAll("button"));
+    const updateButton = buttons.find((button) =>
+      button.textContent?.includes("common.update")
+    ) as HTMLButtonElement;
+    const testConnectionButton = buttons.find((button) =>
+      button.textContent?.includes("instance.test-connection")
+    ) as HTMLButtonElement;
+
+    expect(updateButton.disabled).toBe(true);
+    expect(testConnectionButton.disabled).toBe(true);
+
+    await act(async () => {
+      updateButton.click();
+      testConnectionButton.click();
+      await flushPromises();
+    });
+
+    expect(context.testConnection).not.toHaveBeenCalled();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
 });

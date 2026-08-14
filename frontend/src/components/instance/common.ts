@@ -1,4 +1,4 @@
-import { cloneDeep, first } from "lodash-es";
+import { cloneDeep, first, isEqual } from "lodash-es";
 import i18n from "@/lib/i18n";
 import { useAppStore } from "@/stores/app";
 import { UNKNOWN_INSTANCE_NAME, unknownDataSource } from "@/types";
@@ -113,22 +113,64 @@ export const wrapEditDataSource = (ds: DataSource | undefined) => {
   };
 };
 
-export const applyExtraConnectionParameters = (
-  dataSource: DataSource,
-  editState: EditDataSource
-): DataSource => {
-  if (editState.extraConnectionParameters) {
-    const params: Record<string, string> = {};
-    Object.entries(editState.extraConnectionParameters).forEach(
-      ([key, value]) => {
-        params[key] = value;
-      }
-    );
-    dataSource.extraConnectionParameters = params;
-  } else {
-    dataSource.extraConnectionParameters = {};
+export const krbConfigOf = (dataSource: DataSource) =>
+  dataSource.saslConfig?.mechanism?.case === "krbConfig"
+    ? dataSource.saslConfig.mechanism.value
+    : undefined;
+
+// The fields through which the operator names where a data source connects.
+// Mirrors dataSourceDestination in
+// backend/api/v1/instance_service_converter.go, which the server compares to
+// decide whether a stored Kerberos keytab may be inherited.
+const dataSourceDestination = (dataSource: DataSource) => {
+  const krbConfig = krbConfigOf(dataSource);
+  return {
+    host: dataSource.host,
+    port: dataSource.port,
+    additionalAddresses: dataSource.additionalAddresses.map(
+      ({ host, port }) => ({ host, port })
+    ),
+    sshHost: dataSource.sshHost,
+    sshPort: dataSource.sshPort,
+    extraConnectionParameters: { ...dataSource.extraConnectionParameters },
+    kdcHost: krbConfig?.kdcHost ?? "",
+    kdcPort: krbConfig?.kdcPort ?? "",
+  };
+};
+
+/**
+ * Reports whether this update would carry the stored Kerberos keytab to a
+ * destination the operator moved, which the server refuses: the keytab has to
+ * be supplied again, and supplying it is proof the operator still holds it.
+ *
+ * Pass the value the form will send as `editing`. The server compares its
+ * merged result against the stored data source as read, so the default port
+ * `extractDataSourceFromEdit` fills in, and the SSH fields it clears, count as
+ * a move here exactly as they do there.
+ *
+ * The form is deliberately stricter than the server on one point. The server
+ * refuses only when a keytab is actually stored; the keytab is INPUT_ONLY and
+ * no `keytab_set` companion exists, so a read cannot tell, and a saved data
+ * source that still authenticates with Kerberos is taken to hold one. A
+ * Kerberos data source stored without a keytab — reachable through the API,
+ * not through this form — is blocked here on an edit the server would accept.
+ * Carrying a presence flag the way `ssl_ca_set` does would remove the guess.
+ */
+export const movesKeytabToNewDestination = (
+  editing: DataSource,
+  original: DataSource | undefined
+): boolean => {
+  const editingKrbConfig = krbConfigOf(editing);
+  if (!editingKrbConfig || editingKrbConfig.keytab.length > 0) {
+    return false;
   }
-  return dataSource;
+  if (!original || !krbConfigOf(original)) {
+    return false;
+  }
+  return !isEqual(
+    dataSourceDestination(editing),
+    dataSourceDestination(original)
+  );
 };
 
 export const calcDataSourceUpdateMask = (

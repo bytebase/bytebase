@@ -48,6 +48,8 @@ import {
   calcDataSourceUpdateMask,
   extractBasicInfo,
   extractDataSourceEditState,
+  krbConfigOf,
+  movesKeytabToNewDestination,
 } from "./common";
 import { effectivePortForEngine } from "./constants";
 import { hasInstancePermission } from "./permission";
@@ -104,6 +106,7 @@ export interface InstanceFormContextValue {
   labelErrors: string[];
   setLabelErrors: React.Dispatch<React.SetStateAction<string[]>>;
   checkDataSource: (dataSources: EditDataSource[]) => boolean;
+  needsKeytabResupply: (dataSource: EditDataSource) => boolean;
   resetDataSource: () => void;
   extractDataSourceFromEdit: (
     engine: Engine,
@@ -278,128 +281,6 @@ export function InstanceFormProvider({
     [basicInfo.environment, environmentList]
   );
 
-  const checkDataSource = useCallback(
-    (dataSources: EditDataSource[]) => {
-      return dataSources.every((ds) => {
-        if (
-          ds.authenticationType ===
-          DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
-        ) {
-          return /.+:.+:.+/.test(ds.host);
-        }
-        if (
-          ds.authenticationType === DataSource_AuthenticationType.AWS_RDS_IAM
-        ) {
-          // DynamoDB can run on the deployment's default credential chain,
-          // where the region may also come from the environment. A specific
-          // credential must pin its region.
-          if (basicInfo.engine === Engine.DYNAMODB) {
-            return ds.iamExtension?.case !== "awsCredential" || !!ds.region;
-          }
-          return !!ds.region;
-        }
-        if (basicInfo.engine === Engine.ORACLE) {
-          if (!ds.sid && !ds.serviceName) return false;
-        } else if (basicInfo.engine === Engine.DATABRICKS) {
-          if (!ds.warehouseId) return false;
-          // Token is INPUT_ONLY: backend never returns it. Require it only on
-          // create; on edit, an empty updatedToken means "keep existing token".
-          if (ds.pendingCreate && !ds.updatedToken) return false;
-        }
-        if (ds.saslConfig?.mechanism?.case === "krbConfig") {
-          const krbConfig = ds.saslConfig.mechanism.value;
-          if (!krbConfig.primary || !krbConfig.realm || !krbConfig.kdcHost) {
-            return false;
-          }
-          // Keytab is INPUT_ONLY: the backend never returns it. Require it
-          // only on create; on edit, an empty keytab keeps the existing one.
-          if (ds.pendingCreate && krbConfig.keytab.length === 0) {
-            return false;
-          }
-        }
-        if (!ds.externalSecret) return true;
-        switch (ds.externalSecret.secretType) {
-          case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
-            if (
-              !ds.externalSecret.url ||
-              !ds.externalSecret.engineName ||
-              !ds.externalSecret.secretName ||
-              !ds.externalSecret.passwordKeyName
-            )
-              return false;
-            break;
-          case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
-            if (
-              !ds.externalSecret.secretName ||
-              !ds.externalSecret.passwordKeyName
-            )
-              return false;
-            break;
-          case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
-            if (!ds.externalSecret.secretName) return false;
-            break;
-        }
-        switch (ds.externalSecret.authType) {
-          case DataSourceExternalSecret_AuthType.TOKEN:
-            return !!(
-              ds.externalSecret.authOption?.case === "token" &&
-              ds.externalSecret.authOption.value
-            );
-          case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
-            return !!(
-              ds.externalSecret.authOption?.case === "appRole" &&
-              ds.externalSecret.authOption.value.roleId &&
-              ds.externalSecret.authOption.value.secretId
-            );
-        }
-        return true;
-      });
-    },
-    [basicInfo.engine]
-  );
-
-  const allowCreate = useMemo(() => {
-    if (!hasPermission("bb.instances.create")) return false;
-    if (basicInfo.engine === Engine.SPANNER) {
-      return (
-        !!basicInfo.title.trim() && isValidSpannerDataSource(adminDataSource)
-      );
-    }
-    if (basicInfo.engine === Engine.BIGQUERY) {
-      return (
-        !!basicInfo.title.trim() && isValidBigQueryDataSource(adminDataSource)
-      );
-    }
-    if (basicInfo.engine !== Engine.DYNAMODB) {
-      if (adminDataSource.host === "") return false;
-    }
-    if (basicInfo.engine === Engine.REDIS) {
-      if (
-        adminDataSource.redisType === DataSource_RedisType.SENTINEL &&
-        adminDataSource.masterName === ""
-      )
-        return false;
-    }
-    const hasLabelErrs = labelErrors.length > 0;
-    return (
-      !!basicInfo.title.trim() &&
-      resourceIdValidated &&
-      checkDataSource([adminDataSource]) &&
-      !hasLabelErrs
-    );
-  }, [
-    basicInfo,
-    adminDataSource,
-    resourceIdValidated,
-    labelErrors,
-    checkDataSource,
-    hasPermission,
-  ]);
-
-  const resetDataSource = useCallback(() => {
-    setDataSourceEditState(extractDataSourceEditState(instance));
-  }, [instance]);
-
   const extractDataSourceFromEdit = useCallback(
     (engine: Engine, edit: EditDataSource): DataSource => {
       const ds = cloneDeep(
@@ -446,6 +327,148 @@ export function InstanceFormProvider({
     },
     [specs]
   );
+
+  // Asks movesKeytabToNewDestination about one data source of the form,
+  // resolving both sides it compares: the stored data source by ID, and the
+  // value this edit would send. The Kerberos filter comes first so that an
+  // ordinary data source never pays for that extraction.
+  const needsKeytabResupply = useCallback(
+    (ds: EditDataSource): boolean => {
+      if (!krbConfigOf(ds)) return false;
+      return movesKeytabToNewDestination(
+        extractDataSourceFromEdit(basicInfo.engine, ds),
+        instance?.dataSources.find((d) => d.id === ds.id)
+      );
+    },
+    [basicInfo.engine, extractDataSourceFromEdit, instance]
+  );
+
+  const checkDataSource = useCallback(
+    (dataSources: EditDataSource[]) => {
+      return dataSources.every((ds) => {
+        if (
+          ds.authenticationType ===
+          DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+        ) {
+          return /.+:.+:.+/.test(ds.host);
+        }
+        if (
+          ds.authenticationType === DataSource_AuthenticationType.AWS_RDS_IAM
+        ) {
+          // DynamoDB can run on the deployment's default credential chain,
+          // where the region may also come from the environment. A specific
+          // credential must pin its region.
+          if (basicInfo.engine === Engine.DYNAMODB) {
+            return ds.iamExtension?.case !== "awsCredential" || !!ds.region;
+          }
+          return !!ds.region;
+        }
+        if (basicInfo.engine === Engine.ORACLE) {
+          if (!ds.sid && !ds.serviceName) return false;
+        } else if (basicInfo.engine === Engine.DATABRICKS) {
+          if (!ds.warehouseId) return false;
+          // Token is INPUT_ONLY: backend never returns it. Require it only on
+          // create; on edit, an empty updatedToken means "keep existing token".
+          if (ds.pendingCreate && !ds.updatedToken) return false;
+        }
+        const krbConfig = krbConfigOf(ds);
+        if (krbConfig) {
+          if (!krbConfig.primary || !krbConfig.realm || !krbConfig.kdcHost) {
+            return false;
+          }
+          // Keytab is INPUT_ONLY: the backend never returns it. Require it
+          // only on create; on edit, an empty keytab keeps the existing one.
+          if (ds.pendingCreate && krbConfig.keytab.length === 0) {
+            return false;
+          }
+          // Unless the edit moves where the data source connects, which the
+          // backend refuses to let the stored keytab follow.
+          if (needsKeytabResupply(ds)) {
+            return false;
+          }
+        }
+        if (!ds.externalSecret) return true;
+        switch (ds.externalSecret.secretType) {
+          case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
+            if (
+              !ds.externalSecret.url ||
+              !ds.externalSecret.engineName ||
+              !ds.externalSecret.secretName ||
+              !ds.externalSecret.passwordKeyName
+            )
+              return false;
+            break;
+          case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
+            if (
+              !ds.externalSecret.secretName ||
+              !ds.externalSecret.passwordKeyName
+            )
+              return false;
+            break;
+          case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
+            if (!ds.externalSecret.secretName) return false;
+            break;
+        }
+        switch (ds.externalSecret.authType) {
+          case DataSourceExternalSecret_AuthType.TOKEN:
+            return !!(
+              ds.externalSecret.authOption?.case === "token" &&
+              ds.externalSecret.authOption.value
+            );
+          case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
+            return !!(
+              ds.externalSecret.authOption?.case === "appRole" &&
+              ds.externalSecret.authOption.value.roleId &&
+              ds.externalSecret.authOption.value.secretId
+            );
+        }
+        return true;
+      });
+    },
+    [basicInfo.engine, needsKeytabResupply]
+  );
+
+  const allowCreate = useMemo(() => {
+    if (!hasPermission("bb.instances.create")) return false;
+    if (basicInfo.engine === Engine.SPANNER) {
+      return (
+        !!basicInfo.title.trim() && isValidSpannerDataSource(adminDataSource)
+      );
+    }
+    if (basicInfo.engine === Engine.BIGQUERY) {
+      return (
+        !!basicInfo.title.trim() && isValidBigQueryDataSource(adminDataSource)
+      );
+    }
+    if (basicInfo.engine !== Engine.DYNAMODB) {
+      if (adminDataSource.host === "") return false;
+    }
+    if (basicInfo.engine === Engine.REDIS) {
+      if (
+        adminDataSource.redisType === DataSource_RedisType.SENTINEL &&
+        adminDataSource.masterName === ""
+      )
+        return false;
+    }
+    const hasLabelErrs = labelErrors.length > 0;
+    return (
+      !!basicInfo.title.trim() &&
+      resourceIdValidated &&
+      checkDataSource([adminDataSource]) &&
+      !hasLabelErrs
+    );
+  }, [
+    basicInfo,
+    adminDataSource,
+    resourceIdValidated,
+    labelErrors,
+    checkDataSource,
+    hasPermission,
+  ]);
+
+  const resetDataSource = useCallback(() => {
+    setDataSourceEditState(extractDataSourceEditState(instance));
+  }, [instance]);
 
   // Debounced to avoid expensive cloneDeep + extraction on every keystroke.
   const [pendingCreateInstance, setPendingCreateInstance] = useState<Instance>(
@@ -642,6 +665,7 @@ export function InstanceFormProvider({
       labelErrors,
       setLabelErrors,
       checkDataSource,
+      needsKeytabResupply,
       resetDataSource,
       extractDataSourceFromEdit,
       testConnection,
@@ -676,6 +700,7 @@ export function InstanceFormProvider({
       resourceIdValidated,
       labelErrors,
       checkDataSource,
+      needsKeytabResupply,
       resetDataSource,
       extractDataSourceFromEdit,
       testConnection,
