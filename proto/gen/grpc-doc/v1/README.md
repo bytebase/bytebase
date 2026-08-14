@@ -11393,9 +11393,8 @@ SavedQueryService manages saved queries for SQL Editor query development.
 A saved query is private to its creator until shared. Three things grant
 access to one: being its creator (the fixed owner), holding a VIEWER or
 EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop
-that reaches private saved queries too. Starring is the one thing the
-backstop does not reach: a star marks something you use. Bindings are
-managed through the GetSavedQueryPolicy/SetSavedQueryPolicy pair.
+that reaches private saved queries too. Bindings are managed through the
+GetSavedQueryPolicy/SetSavedQueryPolicy pair.
 
 Two gates sit on top of that: bb.savedQueries.search gates discovery, and
 running a saved query needs the SQL Editor&#39;s own database permissions.
@@ -11412,7 +11411,7 @@ Caller-scoped, always: the caller&#39;s own saved queries plus those a binding s
 
 A path is returned when at least one readable saved query sits in it — including one somebody else filed and shared, since a client seeds its folder tree from here and cannot expand into a folder it never learns about. Use the filter to split your own folders (`creator == &#34;users/me&#34;`) from the ones reaching you through a grant (`shared == true`). Permissions required: bb.savedQueries.search on the project |
 | UpdateSavedQuery | [UpdateSavedQueryRequest](#bytebase-v1-UpdateSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Update a saved query. `title`, `content`, and `database` need write access; `folder` is creator/admin only, because filing is organization rather than editing. `database` must belong to the saved query&#39;s own project. An unreadable saved query returns NotFound; a VIEWER who cannot write gets PermissionDenied. Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage |
-| UpdateSavedQueryStar | [UpdateSavedQueryStarRequest](#bytebase-v1-UpdateSavedQueryStarRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Star or unstar a saved query for the caller. A star is a per-user marker: invisible to everyone else and granting nothing. It follows the grant, not the admin backstop: a saved query an admin only sees through manage is not one they use. Permissions required: creator, or a VIEWER or EDITOR binding |
+| UpdateSavedQueryStar | [UpdateSavedQueryStarRequest](#bytebase-v1-UpdateSavedQueryStarRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Star or unstar a saved query for the caller. Stars are personal: yours are invisible to everyone else and grant nothing. You can star any saved query you created or have been granted access to. Permissions required: creator, or a VIEWER or EDITOR binding |
 | MoveMySavedQueries | [MoveMySavedQueriesRequest](#bytebase-v1-MoveMySavedQueriesRequest) | [MoveMySavedQueriesResponse](#bytebase-v1-MoveMySavedQueriesResponse) | Move the caller&#39;s own saved queries into a folder, named individually or a whole folder at a time. Moving a folder carries its descendants, so renaming &#34;a/b&#34; to &#34;a/c&#34; also moves &#34;a/b/deep&#34; -- one call, not one per path.
 
 Filing is personal organization, so only the creator&#39;s own move: a folder is that person&#39;s tree, and neither a binding nor the admin backstop reaches into it. The response counts what moved. Permissions required: creator |

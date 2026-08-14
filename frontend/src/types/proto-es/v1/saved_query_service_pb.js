@@ -164,9 +164,8 @@ export const SavedQuerySchema = /*@__PURE__*/
  * A saved query is private to its creator until shared. Three things grant
  * access to one: being its creator (the fixed owner), holding a VIEWER or
  * EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop
- * that reaches private saved queries too. Starring is the one thing the
- * backstop does not reach: a star marks something you use. Bindings are
- * managed through the GetSavedQueryPolicy/SetSavedQueryPolicy pair.
+ * that reaches private saved queries too. Bindings are managed through the
+ * GetSavedQueryPolicy/SetSavedQueryPolicy pair.
  *
  * Two gates sit on top of that: bb.savedQueries.search gates discovery, and
  * running a saved query needs the SQL Editor's own database permissions.

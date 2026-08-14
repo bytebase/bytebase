@@ -42,9 +42,8 @@ const (
 // A saved query is private to its creator until shared. Three things grant
 // access to one: being its creator (the fixed owner), holding a VIEWER or
 // EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop
-// that reaches private saved queries too. Starring is the one thing the
-// backstop does not reach: a star marks something you use. Bindings are
-// managed through the GetSavedQueryPolicy/SetSavedQueryPolicy pair.
+// that reaches private saved queries too. Bindings are managed through the
+// GetSavedQueryPolicy/SetSavedQueryPolicy pair.
 //
 // Two gates sit on top of that: bb.savedQueries.search gates discovery, and
 // running a saved query needs the SQL Editor's own database permissions.
@@ -93,10 +92,9 @@ type SavedQueryServiceClient interface {
 	// PermissionDenied.
 	// Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage
 	UpdateSavedQuery(ctx context.Context, in *UpdateSavedQueryRequest, opts ...grpc.CallOption) (*SavedQuery, error)
-	// Star or unstar a saved query for the caller. A star is a per-user marker:
-	// invisible to everyone else and granting nothing. It follows the grant, not
-	// the admin backstop: a saved query an admin only sees through manage is not
-	// one they use.
+	// Star or unstar a saved query for the caller. Stars are personal: yours are
+	// invisible to everyone else and grant nothing. You can star any saved query
+	// you created or have been granted access to.
 	// Permissions required: creator, or a VIEWER or EDITOR binding
 	UpdateSavedQueryStar(ctx context.Context, in *UpdateSavedQueryStarRequest, opts ...grpc.CallOption) (*SavedQuery, error)
 	// Move the caller's own saved queries into a folder, named individually or a
@@ -254,9 +252,8 @@ func (c *savedQueryServiceClient) SetSavedQueryPolicy(ctx context.Context, in *S
 // A saved query is private to its creator until shared. Three things grant
 // access to one: being its creator (the fixed owner), holding a VIEWER or
 // EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop
-// that reaches private saved queries too. Starring is the one thing the
-// backstop does not reach: a star marks something you use. Bindings are
-// managed through the GetSavedQueryPolicy/SetSavedQueryPolicy pair.
+// that reaches private saved queries too. Bindings are managed through the
+// GetSavedQueryPolicy/SetSavedQueryPolicy pair.
 //
 // Two gates sit on top of that: bb.savedQueries.search gates discovery, and
 // running a saved query needs the SQL Editor's own database permissions.
@@ -305,10 +302,9 @@ type SavedQueryServiceServer interface {
 	// PermissionDenied.
 	// Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage
 	UpdateSavedQuery(context.Context, *UpdateSavedQueryRequest) (*SavedQuery, error)
-	// Star or unstar a saved query for the caller. A star is a per-user marker:
-	// invisible to everyone else and granting nothing. It follows the grant, not
-	// the admin backstop: a saved query an admin only sees through manage is not
-	// one they use.
+	// Star or unstar a saved query for the caller. Stars are personal: yours are
+	// invisible to everyone else and grant nothing. You can star any saved query
+	// you created or have been granted access to.
 	// Permissions required: creator, or a VIEWER or EDITOR binding
 	UpdateSavedQueryStar(context.Context, *UpdateSavedQueryStarRequest) (*SavedQuery, error)
 	// Move the caller's own saved queries into a folder, named individually or a

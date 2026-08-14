@@ -912,8 +912,8 @@ func (a savedQueryAccess) canWrite() bool {
 	return a.isCreator || a.isAdmin || a.level >= storepb.SavedQueryBinding_EDITOR
 }
 
-// canStar follows the grant, not the backstop: a star marks something you use,
-// and a saved query an admin only sees through manage is not that.
+// canStar covers starring, which is personal: you can star any saved query you
+// created or were granted access to, and your stars are yours alone.
 func (a savedQueryAccess) canStar() bool {
 	return a.isCreator || a.level >= storepb.SavedQueryBinding_VIEWER
 }

@@ -180,10 +180,11 @@ Alternatives the rejected options.
    and fork-a-copy cover the departed-creator case.
 5. **Admin (`manage`) reads private.** Peer parity (`dataform.admin`,
    Databricks workspace admins), and what makes incident response and orphan
-   cleanup possible. Two things it deliberately does not reach: **starring**,
-   a per-user marker on something you actually use, and the bulk
-   **`MoveMySavedQueries`**, which is caller-scoped by name — a single
-   `UpdateSavedQuery` still lets an admin re-file one saved query. The real
+   cleanup possible. Two things sit outside it: **starring**, which is
+   personal — you star what you created or were granted, and your stars are
+   yours alone — and the bulk **`MoveMySavedQueries`**, caller-scoped by name,
+   though a single `UpdateSavedQuery` still lets an admin re-file one saved
+   query. The real
    tradeoff: admins can read private drafts, and reads are not audited — the audit log records changes, not
    lookups (see API and authorization: Audit events). The control on admin
    access is therefore who holds `manage` (never a default member role),
@@ -263,7 +264,7 @@ create(u, P)   = u holds bb.savedQueries.create on P
 discover(u, P) = u holds bb.savedQueries.search on P     -- gates Search, not content
 read(s, u)     = admin(u, s.project) OR u == s.creator OR grant(s, u) >= VIEWER
 write(s, u)    = admin(u, s.project) OR u == s.creator OR grant(s, u) >= EDITOR
-star(s, u)     = u == s.creator OR grant(s, u) >= VIEWER      -- a per-user marker
+star(s, u)     = u == s.creator OR grant(s, u) >= VIEWER      -- personal, own or shared
 move(s, u)     = u == s.creator                              -- MoveMySavedQueries
 share(s, u)    = admin(u, s.project) OR u == s.creator
 delete(s, u)   = admin(u, s.project) OR u == s.creator

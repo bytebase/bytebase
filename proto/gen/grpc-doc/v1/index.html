@@ -32341,7 +32341,7 @@ and deletion stay with the creator and admins.</p></td>
 
       
         <h3 id="bytebase.v1.SavedQueryService">SavedQueryService</h3>
-        <p>SavedQueryService manages saved queries for SQL Editor query development.</p><p>A saved query is private to its creator until shared. Three things grant</p><p>access to one: being its creator (the fixed owner), holding a VIEWER or</p><p>EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop</p><p>that reaches private saved queries too. Starring is the one thing the</p><p>backstop does not reach: a star marks something you use. Bindings are</p><p>managed through the GetSavedQueryPolicy/SetSavedQueryPolicy pair.</p><p>Two gates sit on top of that: bb.savedQueries.search gates discovery, and</p><p>running a saved query needs the SQL Editor's own database permissions.</p>
+        <p>SavedQueryService manages saved queries for SQL Editor query development.</p><p>A saved query is private to its creator until shared. Three things grant</p><p>access to one: being its creator (the fixed owner), holding a VIEWER or</p><p>EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop</p><p>that reaches private saved queries too. Bindings are managed through the</p><p>GetSavedQueryPolicy/SetSavedQueryPolicy pair.</p><p>Two gates sit on top of that: bb.savedQueries.search gates discovery, and</p><p>running a saved query needs the SQL Editor's own database permissions.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
@@ -32426,10 +32426,9 @@ Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage</p><
                 <td>UpdateSavedQueryStar</td>
                 <td><a href="#bytebase.v1.UpdateSavedQueryStarRequest">UpdateSavedQueryStarRequest</a></td>
                 <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
-                <td><p>Star or unstar a saved query for the caller. A star is a per-user marker:
-invisible to everyone else and granting nothing. It follows the grant, not
-the admin backstop: a saved query an admin only sees through manage is not
-one they use.
+                <td><p>Star or unstar a saved query for the caller. Stars are personal: yours are
+invisible to everyone else and grant nothing. You can star any saved query
+you created or have been granted access to.
 Permissions required: creator, or a VIEWER or EDITOR binding</p></td>
               </tr>
             
