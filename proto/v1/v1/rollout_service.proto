@@ -22,6 +22,7 @@ service RolloutService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.rollouts.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists rollouts in a project.
@@ -31,6 +32,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.rollouts.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Creates a new rollout for a plan.
@@ -43,6 +45,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Lists task run executions for a task.
@@ -52,6 +55,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Retrieves a task run by name.
@@ -61,6 +65,7 @@ service RolloutService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Retrieves execution logs for a task run.
@@ -70,6 +75,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Retrieves database session information for a running task.
@@ -79,6 +85,8 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = OPENS_AN_ADMIN_CONNECTION;
   }
 
   // Executes multiple tasks in a rollout stage.
@@ -91,6 +99,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Skips multiple tasks in a rollout stage.
@@ -103,6 +112,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Cancels multiple task runs.
@@ -118,6 +128,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Generates rollback SQL for a completed task run.
@@ -130,6 +141,7 @@ service RolloutService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 }
 

@@ -1304,19 +1304,19 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\x12 \n" +
 	"\x06folder\x18\r \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\x06folder:K\xeaAH\n" +
 	"\x17bytebase.com/SavedQuery\x12-projects/{project}/savedQueries/{saved_query}J\x04\b\n" +
-	"\x10\vJ\x04\b\f\x10\r2\xa0\x0f\n" +
-	"\x11SavedQueryService\x12\xc3\x01\n" +
-	"\x10CreateSavedQuery\x12$.bytebase.v1.CreateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"p\xdaA\x12parent,saved_query\x8a\xea0\x16bb.savedQueries.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x023:\vsaved_query\"$/v1/{parent=projects/*}/savedQueries\x12\x84\x01\n" +
-	"\rGetSavedQuery\x12!.bytebase.v1.GetSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"7\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/savedQueries/*}\x12\xb2\x01\n" +
-	"\x10ListSavedQueries\x12$.bytebase.v1.ListSavedQueriesRequest\x1a%.bytebase.v1.ListSavedQueriesResponse\"Q\xdaA\x06parent\x8a\xea0\x14bb.savedQueries.list\x90\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{parent=projects/*}/savedQueries\x12\xaa\x01\n" +
-	"\x12SearchSavedQueries\x12&.bytebase.v1.SearchSavedQueriesRequest\x1a'.bytebase.v1.SearchSavedQueriesResponse\"C\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:search\x12\xc0\x01\n" +
-	"\x17SearchSavedQueryFolders\x12+.bytebase.v1.SearchSavedQueryFoldersRequest\x1a,.bytebase.v1.SearchSavedQueryFoldersResponse\"J\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{parent=projects/*}/savedQueries:searchFolders\x12\xba\x01\n" +
-	"\x10UpdateSavedQuery\x12$.bytebase.v1.UpdateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"g\xdaA\x17saved_query,update_mask\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02?:\vsaved_query20/v1/{saved_query.name=projects/*/savedQueries/*}\x12\xa8\x01\n" +
-	"\x14UpdateSavedQueryStar\x12(.bytebase.v1.UpdateSavedQueryStarRequest\x1a\x17.bytebase.v1.SavedQuery\"M\xdaA\fname,starred\x90\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/savedQueries/*}:updateStar\x12\xbc\x01\n" +
-	"\x12MoveMySavedQueries\x12&.bytebase.v1.MoveMySavedQueriesRequest\x1a'.bytebase.v1.MoveMySavedQueriesResponse\"U\xdaA\x14parent,target_folder\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:moveMy\x12\x8d\x01\n" +
-	"\x10DeleteSavedQuery\x12$.bytebase.v1.DeleteSavedQueryRequest\x1a\x16.google.protobuf.Empty\";\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02&*$/v1/{name=projects/*/savedQueries/*}\x12\xa8\x01\n" +
-	"\x13GetSavedQueryPolicy\x12'.bytebase.v1.GetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"I\xdaA\bresource\x90\xea0\x02\x82\xd3\xe4\x93\x024\x122/v1/{resource=projects/*/savedQueries/*}:getPolicy\x12\xb6\x01\n" +
-	"\x13SetSavedQueryPolicy\x12'.bytebase.v1.SetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"W\xdaA\x0fresource,policy\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{resource=projects/*/savedQueries/*}:setPolicyB\xac\x01\n" +
+	"\x10\vJ\x04\b\f\x10\r2\xd8\x0f\n" +
+	"\x11SavedQueryService\x12\xc7\x01\n" +
+	"\x10CreateSavedQuery\x12$.bytebase.v1.CreateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"t\xdaA\x12parent,saved_query\x8a\xea0\x16bb.savedQueries.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x023:\vsaved_query\"$/v1/{parent=projects/*}/savedQueries\x12\x88\x01\n" +
+	"\rGetSavedQuery\x12!.bytebase.v1.GetSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\";\xdaA\x04name\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/savedQueries/*}\x12\xba\x01\n" +
+	"\x10ListSavedQueries\x12$.bytebase.v1.ListSavedQueriesRequest\x1a%.bytebase.v1.ListSavedQueriesResponse\"Y\xdaA\x06parent\x8a\xea0\x14bb.savedQueries.list\x90\xea0\x01\xa0\xea0\x04\xb0\xea0\x02\x82\xd3\xe4\x93\x02&\x12$/v1/{parent=projects/*}/savedQueries\x12\xae\x01\n" +
+	"\x12SearchSavedQueries\x12&.bytebase.v1.SearchSavedQueriesRequest\x1a'.bytebase.v1.SearchSavedQueriesResponse\"G\xdaA\x06parent\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:search\x12\xc4\x01\n" +
+	"\x17SearchSavedQueryFolders\x12+.bytebase.v1.SearchSavedQueryFoldersRequest\x1a,.bytebase.v1.SearchSavedQueryFoldersResponse\"N\xdaA\x06parent\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{parent=projects/*}/savedQueries:searchFolders\x12\xbe\x01\n" +
+	"\x10UpdateSavedQuery\x12$.bytebase.v1.UpdateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"k\xdaA\x17saved_query,update_mask\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02?:\vsaved_query20/v1/{saved_query.name=projects/*/savedQueries/*}\x12\xac\x01\n" +
+	"\x14UpdateSavedQueryStar\x12(.bytebase.v1.UpdateSavedQueryStarRequest\x1a\x17.bytebase.v1.SavedQuery\"Q\xdaA\fname,starred\x90\xea0\x02\xa0\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/savedQueries/*}:updateStar\x12\xc0\x01\n" +
+	"\x12MoveMySavedQueries\x12&.bytebase.v1.MoveMySavedQueriesRequest\x1a'.bytebase.v1.MoveMySavedQueriesResponse\"Y\xdaA\x14parent,target_folder\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:moveMy\x12\x91\x01\n" +
+	"\x10DeleteSavedQuery\x12$.bytebase.v1.DeleteSavedQueryRequest\x1a\x16.google.protobuf.Empty\"?\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02&*$/v1/{name=projects/*/savedQueries/*}\x12\xb0\x01\n" +
+	"\x13GetSavedQueryPolicy\x12'.bytebase.v1.GetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"Q\xdaA\bresource\x90\xea0\x02\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x024\x122/v1/{resource=projects/*/savedQueries/*}:getPolicy\x12\xbe\x01\n" +
+	"\x13SetSavedQueryPolicy\x12'.bytebase.v1.SetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"_\xdaA\x0fresource,policy\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{resource=projects/*/savedQueries/*}:setPolicyB\xac\x01\n" +
 	"\x0fcom.bytebase.v1B\x16SavedQueryServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

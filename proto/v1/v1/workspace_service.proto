@@ -23,12 +23,14 @@ service WorkspaceService {
   rpc GetWorkspace(GetWorkspaceRequest) returns (Workspace) {
     option (google.api.http) = {get: "/v1/{name=workspaces/*}"};
     option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists all workspaces the current user is a member of.
   rpc ListWorkspaces(ListWorkspacesRequest) returns (ListWorkspacesResponse) {
     option (google.api.http) = {get: "/v1/workspaces"};
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Updates a workspace. Currently only title can be updated.
@@ -40,6 +42,8 @@ service WorkspaceService {
     option (bytebase.v1.permission) = "bb.workspaces.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Retrieves IAM policy for the workspace.
@@ -48,6 +52,8 @@ service WorkspaceService {
     option (google.api.http) = {get: "/v1/{resource=workspaces/*}:getIamPolicy"};
     option (bytebase.v1.permission) = "bb.workspaces.getIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Deletes a workspace. SaaS only. Cancels any active subscription and
@@ -86,6 +92,8 @@ service WorkspaceService {
     option (bytebase.v1.permission) = "bb.workspaces.setIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Mints a new directory sync (SCIM) token, immediately invalidating the

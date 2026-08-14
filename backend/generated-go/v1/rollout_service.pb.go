@@ -3558,21 +3558,21 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/TaskRunR\x04name\">\n" +
 	"\x1ePreviewTaskRunRollbackResponse\x12\x1c\n" +
-	"\tstatement\x18\x01 \x01(\tR\tstatement2\x8b\x10\n" +
-	"\x0eRolloutService\x12\x8f\x01\n" +
+	"\tstatement\x18\x01 \x01(\tR\tstatement2\xbb\x10\n" +
+	"\x0eRolloutService\x12\x93\x01\n" +
 	"\n" +
-	"GetRollout\x12\x1e.bytebase.v1.GetRolloutRequest\x1a\x14.bytebase.v1.Rollout\"K\xdaA\x04name\x8a\xea0\x0fbb.rollouts.get\x90\xea0\x01\x82\xd3\xe4\x93\x02'\x12%/v1/{name=projects/*/plans/*/rollout}\x12\x9e\x01\n" +
-	"\fListRollouts\x12 .bytebase.v1.ListRolloutsRequest\x1a!.bytebase.v1.ListRolloutsResponse\"I\xdaA\x06parent\x8a\xea0\x10bb.rollouts.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/{parent=projects/*}/rollouts\x12\x8d\x01\n" +
-	"\rCreateRollout\x12!.bytebase.v1.CreateRolloutRequest\x1a\x14.bytebase.v1.Rollout\"C\xdaA\x06parent\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/{parent=projects/*/plans/*}/rollout\x12\xbf\x01\n" +
-	"\fListTaskRuns\x12 .bytebase.v1.ListTaskRunsRequest\x1a!.bytebase.v1.ListTaskRunsResponse\"j\xdaA\x06parent\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02C\x12A/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*}/taskRuns\x12\xac\x01\n" +
+	"GetRollout\x12\x1e.bytebase.v1.GetRolloutRequest\x1a\x14.bytebase.v1.Rollout\"O\xdaA\x04name\x8a\xea0\x0fbb.rollouts.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02'\x12%/v1/{name=projects/*/plans/*/rollout}\x12\xa2\x01\n" +
+	"\fListRollouts\x12 .bytebase.v1.ListRolloutsRequest\x1a!.bytebase.v1.ListRolloutsResponse\"M\xdaA\x06parent\x8a\xea0\x10bb.rollouts.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/{parent=projects/*}/rollouts\x12\x91\x01\n" +
+	"\rCreateRollout\x12!.bytebase.v1.CreateRolloutRequest\x1a\x14.bytebase.v1.Rollout\"G\xdaA\x06parent\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/{parent=projects/*/plans/*}/rollout\x12\xc3\x01\n" +
+	"\fListTaskRuns\x12 .bytebase.v1.ListTaskRunsRequest\x1a!.bytebase.v1.ListTaskRunsResponse\"n\xdaA\x06parent\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02C\x12A/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*}/taskRuns\x12\xb0\x01\n" +
 	"\n" +
-	"GetTaskRun\x12\x1e.bytebase.v1.GetTaskRunRequest\x1a\x14.bytebase.v1.TaskRun\"h\xdaA\x04name\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02C\x12A/v1/{name=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}\x12\xbd\x01\n" +
-	"\rGetTaskRunLog\x12!.bytebase.v1.GetTaskRunLogRequest\x1a\x17.bytebase.v1.TaskRunLog\"p\xdaA\x06parent\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02I\x12G/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}/log\x12\xcd\x01\n" +
-	"\x11GetTaskRunSession\x12%.bytebase.v1.GetTaskRunSessionRequest\x1a\x1b.bytebase.v1.TaskRunSession\"t\xdaA\x06parent\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02M\x12K/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}/session\x12\xb3\x01\n" +
-	"\rBatchRunTasks\x12!.bytebase.v1.BatchRunTasksRequest\x1a\".bytebase.v1.BatchRunTasksResponse\"[\xdaA\x06parent\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02D:\x01*\"?/v1/{parent=projects/*/plans/*/rollout/stages/*}/tasks:batchRun\x12\xb7\x01\n" +
-	"\x0eBatchSkipTasks\x12\".bytebase.v1.BatchSkipTasksRequest\x1a#.bytebase.v1.BatchSkipTasksResponse\"\\\xdaA\x06parent\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02E:\x01*\"@/v1/{parent=projects/*/plans/*/rollout/stages/*}/tasks:batchSkip\x12\xd3\x01\n" +
-	"\x13BatchCancelTaskRuns\x12'.bytebase.v1.BatchCancelTaskRunsRequest\x1a(.bytebase.v1.BatchCancelTaskRunsResponse\"i\xdaA\x06parent\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02R:\x01*\"M/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*}/taskRuns:batchCancel\x12\xee\x01\n" +
-	"\x16PreviewTaskRunRollback\x12*.bytebase.v1.PreviewTaskRunRollbackRequest\x1a+.bytebase.v1.PreviewTaskRunRollbackResponse\"{\xdaA\x04name\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02V:\x01*\"Q/v1/{name=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}:previewRollbackB\xa9\x01\n" +
+	"GetTaskRun\x12\x1e.bytebase.v1.GetTaskRunRequest\x1a\x14.bytebase.v1.TaskRun\"l\xdaA\x04name\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02C\x12A/v1/{name=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}\x12\xc1\x01\n" +
+	"\rGetTaskRunLog\x12!.bytebase.v1.GetTaskRunLogRequest\x1a\x17.bytebase.v1.TaskRunLog\"t\xdaA\x06parent\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02I\x12G/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}/log\x12\xd5\x01\n" +
+	"\x11GetTaskRunSession\x12%.bytebase.v1.GetTaskRunSessionRequest\x1a\x1b.bytebase.v1.TaskRunSession\"|\xdaA\x06parent\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\xa0\xea0\x04\xb0\xea0\x03\x82\xd3\xe4\x93\x02M\x12K/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}/session\x12\xb7\x01\n" +
+	"\rBatchRunTasks\x12!.bytebase.v1.BatchRunTasksRequest\x1a\".bytebase.v1.BatchRunTasksResponse\"_\xdaA\x06parent\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02D:\x01*\"?/v1/{parent=projects/*/plans/*/rollout/stages/*}/tasks:batchRun\x12\xbb\x01\n" +
+	"\x0eBatchSkipTasks\x12\".bytebase.v1.BatchSkipTasksRequest\x1a#.bytebase.v1.BatchSkipTasksResponse\"`\xdaA\x06parent\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02E:\x01*\"@/v1/{parent=projects/*/plans/*/rollout/stages/*}/tasks:batchSkip\x12\xd7\x01\n" +
+	"\x13BatchCancelTaskRuns\x12'.bytebase.v1.BatchCancelTaskRunsRequest\x1a(.bytebase.v1.BatchCancelTaskRunsResponse\"m\xdaA\x06parent\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02R:\x01*\"M/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*}/taskRuns:batchCancel\x12\xf2\x01\n" +
+	"\x16PreviewTaskRunRollback\x12*.bytebase.v1.PreviewTaskRunRollbackRequest\x1a+.bytebase.v1.PreviewTaskRunRollbackResponse\"\x7f\xdaA\x04name\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02V:\x01*\"Q/v1/{name=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}:previewRollbackB\xa9\x01\n" +
 	"\x0fcom.bytebase.v1B\x13RolloutServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

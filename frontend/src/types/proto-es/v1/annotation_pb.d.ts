@@ -48,14 +48,20 @@ export declare const AuthMethodSchema: GenEnum<AuthMethod>;
  * authorization of an MCP session is this classification intersected with the
  * caller's own RBAC: it can only ever narrow what the human could do, never
  * widen it.
+ * Only FORBIDDEN is enforced today. READ, WRITE and EXCLUDED are recorded
+ * classifications and nothing reads them at request time yet — the gate that
+ * selects between them is a later change. A method annotated READ or WRITE is
+ * therefore served exactly as it is today; the annotation states where it
+ * belongs, not where the boundary currently sits. FORBIDDEN is the exception
+ * and is enforced the moment it is annotated.
  *
  * @generated from enum bytebase.v1.MCPMethodClass
  */
 export enum MCPMethodClass {
   /**
-   * Not yet classified. Reaches its handler, subject to RBAC as usual —
-   * the classification is being rolled out method by method, and only
-   * FORBIDDEN is enforced today.
+   * Not yet classified. Reaches its handler, subject to RBAC as usual. CI
+   * rejects this value on any v1 RPC, so it survives only inside a build that
+   * has not been linted: a new RPC is classified before it can ship.
    *
    * @generated from enum value: MCP_METHOD_CLASS_UNSPECIFIED = 0;
    */
@@ -69,7 +75,10 @@ export enum MCPMethodClass {
   READ = 1,
 
   /**
-   * Served to a read-write MCP session only.
+   * Served to a read-write MCP session only. This is a serving mode, not a
+   * verb: a method that only reads still belongs here when a read-only session
+   * has no business calling it — taking a copy of data out of the product, or
+   * generating migration DDL from a schema the caller supplied.
    *
    * @generated from enum value: WRITE = 2;
    */
@@ -84,6 +93,22 @@ export enum MCPMethodClass {
    * @generated from enum value: FORBIDDEN = 3;
    */
   FORBIDDEN = 3,
+
+  /**
+   * Served by no MCP mode this phase ships, and not a durable never. These are
+   * workspace administration, plus the handful of methods that do something
+   * materially worse than the plain read permission they share suggests.
+   *
+   * The line against FORBIDDEN is reversibility. An admin-capable ceiling, if
+   * one is ever built, could legitimately serve an EXCLUDED method — that is a
+   * product decision nobody has made. It could never serve a FORBIDDEN one,
+   * because FORBIDDEN names a mechanism that breaks the MCP boundary itself.
+   * Keeping them apart is what stops a future widening from having to
+   * re-litigate the credential-minting set alongside the ordinary admin API.
+   *
+   * @generated from enum value: EXCLUDED = 4;
+   */
+  EXCLUDED = 4,
 }
 
 /**
@@ -167,12 +192,96 @@ export enum MCPForbiddenReason {
    * @generated from enum value: REWRITES_SESSION_BOUNDARY = 7;
    */
   REWRITES_SESSION_BOUNDARY = 7,
+
+  /**
+   * Moves the human review decision that is meant to gate the change, or
+   * re-derives who has to make it. An agent may compose a change and may
+   * execute an approved one; it may never be the approver of its own work.
+   *
+   * @generated from enum value: DRIVES_THE_APPROVAL_DECISION = 8;
+   */
+  DRIVES_THE_APPROVAL_DECISION = 8,
 }
 
 /**
  * Describes the enum bytebase.v1.MCPForbiddenReason.
  */
 export declare const MCPForbiddenReasonSchema: GenEnum<MCPForbiddenReason>;
+
+/**
+ * Why an RPC is served by no MCP mode. Unlike MCPForbiddenReason, which names
+ * a mechanism that breaks the MCP boundary, these name a scope decision: the
+ * method is out because this phase ships two modes and neither is the right
+ * home for it. Each value is what a future admin-capable ceiling would have to
+ * argue with, one population at a time.
+ *
+ * @generated from enum bytebase.v1.MCPExclusionReason
+ */
+export enum MCPExclusionReason {
+  /**
+   * No reason recorded. CI rejects this on a method classified EXCLUDED.
+   *
+   * @generated from enum value: MCP_EXCLUSION_REASON_UNSPECIFIED = 0;
+   */
+  MCP_EXCLUSION_REASON_UNSPECIFIED = 0,
+
+  /**
+   * Administers the workspace rather than doing database work: identity,
+   * credentials, access control, governance policy, billing, workspace and
+   * instance configuration, project lifecycle, and the operator's own audit
+   * trail. Reading is administration too where the read returns the privilege
+   * topology or a stored secret rather than the state of a database.
+   *
+   * @generated from enum value: ADMINISTERS_THE_WORKSPACE = 1;
+   */
+  ADMINISTERS_THE_WORKSPACE = 1,
+
+  /**
+   * Returns SQL that other people wrote. The permission gating it reads as an
+   * ordinary list permission, so the exclusion is per method rather than per
+   * permission: these methods span the workspace or ignore the per-object
+   * sharing that keeps a saved query private.
+   *
+   * @generated from enum value: READS_OTHER_USERS_SQL = 2;
+   */
+  READS_OTHER_USERS_SQL = 2,
+
+  /**
+   * Opens an admin-credentialed connection to the customer's database and
+   * returns live session state from it — including other sessions' in-flight,
+   * unmasked SQL. It shares a plain read permission with sibling methods that
+   * only read Bytebase's own store.
+   *
+   * @generated from enum value: OPENS_AN_ADMIN_CONNECTION = 3;
+   */
+  OPENS_AN_ADMIN_CONNECTION = 3,
+
+  /**
+   * Spends a stored workspace credential on an outbound call to a third
+   * party, which puts whatever the caller passes outside the product.
+   *
+   * @generated from enum value: SENDS_DATA_TO_A_THIRD_PARTY = 4;
+   */
+  SENDS_DATA_TO_A_THIRD_PARTY = 4,
+
+  /**
+   * Returns a stored secret in its response body today. These are ordinary
+   * reads that belong in a serving class on their merits, and each is here
+   * because of a leak that a redaction on the read path would close — the
+   * product already redacts the same values elsewhere. This reason is
+   * therefore the one that is meant to go away: fixing the leak moves the
+   * method to READ, as a reviewed widening, rather than leaving a quiet
+   * exposure the moment the ceiling starts serving.
+   *
+   * @generated from enum value: RETURNS_A_STORED_SECRET = 5;
+   */
+  RETURNS_A_STORED_SECRET = 5,
+}
+
+/**
+ * Describes the enum bytebase.v1.MCPExclusionReason.
+ */
+export declare const MCPExclusionReasonSchema: GenEnum<MCPExclusionReason>;
 
 /**
  * Whether the method allows access without authentication credentials.
@@ -218,4 +327,14 @@ export declare const mcp_method_class: GenExtension<MethodOptions, MCPMethodClas
  * @generated from extension: bytebase.v1.MCPForbiddenReason mcp_forbidden_reason = 100005;
  */
 export declare const mcp_forbidden_reason: GenExtension<MethodOptions, MCPForbiddenReason>;
+
+/**
+ * Why the method is served by no MCP mode. Meaningful only alongside
+ * mcp_method_class = EXCLUDED, and required there: an exclusion whose reason
+ * nobody wrote down is one nobody can revisit, and these are the rows a
+ * later admin-capable ceiling has to re-decide one at a time.
+ *
+ * @generated from extension: bytebase.v1.MCPExclusionReason mcp_exclusion_reason = 100006;
+ */
+export declare const mcp_exclusion_reason: GenExtension<MethodOptions, MCPExclusionReason>;
 

@@ -27,6 +27,8 @@ service ReviewConfigService {
     option (bytebase.v1.permission) = "bb.reviewConfigs.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Lists all SQL review configurations.
@@ -36,6 +38,7 @@ service ReviewConfigService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.reviewConfigs.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Retrieves a SQL review configuration by name.
@@ -45,6 +48,7 @@ service ReviewConfigService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.reviewConfigs.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Updates a SQL review configuration.
@@ -59,6 +63,8 @@ service ReviewConfigService {
     option (bytebase.v1.permission) = "bb.reviewConfigs.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Deletes a SQL review configuration.
@@ -69,6 +75,8 @@ service ReviewConfigService {
     option (bytebase.v1.permission) = "bb.reviewConfigs.delete";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 }
 

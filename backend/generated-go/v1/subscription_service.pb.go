@@ -1849,17 +1849,17 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x12FEATURE_CUSTOM_MSA\x10D\x12\x1d\n" +
 	"\x19FEATURE_COMMUNITY_SUPPORT\x10E\x12\x19\n" +
 	"\x15FEATURE_EMAIL_SUPPORT\x10F\x12&\n" +
-	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10G2\xa9\v\n" +
-	"\x13SubscriptionService\x12n\n" +
-	"\x0fGetSubscription\x12#.bytebase.v1.GetSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"\x1b\xdaA\x00\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/subscription\x12\xc4\x01\n" +
-	"\x16ExportVCSProviderUsers\x12*.bytebase.v1.ExportVCSProviderUsersRequest\x1a+.bytebase.v1.ExportVCSProviderUsersResponse\"Q\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02)\x12'/v1/subscription:vcsProviderUsersExport\x12\x94\x01\n" +
-	"\rUploadLicense\x12!.bytebase.v1.UploadLicenseRequest\x1a\x19.bytebase.v1.Subscription\"E\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1d:\x01*2\x18/v1/subscription/license\x12\x9b\x01\n" +
-	"\x0eCreatePurchase\x12\".bytebase.v1.CreatePurchaseRequest\x1a\x1d.bytebase.v1.PurchaseResponse\"F\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/v1/subscription:purchase\x12\xa1\x01\n" +
-	"\x0eUpdatePurchase\x12\".bytebase.v1.UpdatePurchaseRequest\x1a\x1d.bytebase.v1.PurchaseResponse\"L\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02$:\x01*\"\x1f/v1/subscription:updatePurchase\x12\xa1\x01\n" +
-	"\x0eCancelPurchase\x12\".bytebase.v1.CancelPurchaseRequest\x1a\x1d.bytebase.v1.PurchaseResponse\"L\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02$:\x01*\"\x1f/v1/subscription:cancelPurchase\x12\x92\x01\n" +
-	"\x0eGetPaymentInfo\x12\".bytebase.v1.GetPaymentInfoRequest\x1a\x18.bytebase.v1.PaymentInfo\"B\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1e\x12\x1c/v1/subscription/paymentInfo\x12\xc3\x01\n" +
-	"\x15VerifyCheckoutSession\x12).bytebase.v1.VerifyCheckoutSessionRequest\x1a*.bytebase.v1.VerifyCheckoutSessionResponse\"S\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x82\xd3\xe4\x93\x02/\x12-/v1/subscription/checkoutSession/{session_id}\x12\x82\x01\n" +
-	"\x11ListPurchasePlans\x12%.bytebase.v1.ListPurchasePlansRequest\x1a&.bytebase.v1.ListPurchasePlansResponse\"\x1e\x82\xd3\xe4\x93\x02\x18\x12\x16/v1/subscription/plansB\xae\x01\n" +
+	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10G2\xed\v\n" +
+	"\x13SubscriptionService\x12r\n" +
+	"\x0fGetSubscription\x12#.bytebase.v1.GetSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"\x1f\xdaA\x00\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/subscription\x12\xcc\x01\n" +
+	"\x16ExportVCSProviderUsers\x12*.bytebase.v1.ExportVCSProviderUsersRequest\x1a+.bytebase.v1.ExportVCSProviderUsersResponse\"Y\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02)\x12'/v1/subscription:vcsProviderUsersExport\x12\x9c\x01\n" +
+	"\rUploadLicense\x12!.bytebase.v1.UploadLicenseRequest\x1a\x19.bytebase.v1.Subscription\"M\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02\x1d:\x01*2\x18/v1/subscription/license\x12\xa3\x01\n" +
+	"\x0eCreatePurchase\x12\".bytebase.v1.CreatePurchaseRequest\x1a\x1d.bytebase.v1.PurchaseResponse\"N\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/v1/subscription:purchase\x12\xa9\x01\n" +
+	"\x0eUpdatePurchase\x12\".bytebase.v1.UpdatePurchaseRequest\x1a\x1d.bytebase.v1.PurchaseResponse\"T\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02$:\x01*\"\x1f/v1/subscription:updatePurchase\x12\xa9\x01\n" +
+	"\x0eCancelPurchase\x12\".bytebase.v1.CancelPurchaseRequest\x1a\x1d.bytebase.v1.PurchaseResponse\"T\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02$:\x01*\"\x1f/v1/subscription:cancelPurchase\x12\x9a\x01\n" +
+	"\x0eGetPaymentInfo\x12\".bytebase.v1.GetPaymentInfoRequest\x1a\x18.bytebase.v1.PaymentInfo\"J\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02\x1e\x12\x1c/v1/subscription/paymentInfo\x12\xcb\x01\n" +
+	"\x15VerifyCheckoutSession\x12).bytebase.v1.VerifyCheckoutSessionRequest\x1a*.bytebase.v1.VerifyCheckoutSessionResponse\"[\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02/\x12-/v1/subscription/checkoutSession/{session_id}\x12\x8a\x01\n" +
+	"\x11ListPurchasePlans\x12%.bytebase.v1.ListPurchasePlansRequest\x1a&.bytebase.v1.ListPurchasePlansResponse\"&\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02\x18\x12\x16/v1/subscription/plansB\xae\x01\n" +
 	"\x0fcom.bytebase.v1B\x18SubscriptionServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

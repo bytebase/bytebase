@@ -137,6 +137,24 @@ var mcpForbiddenReasons = map[v1pb.MCPForbiddenReason]string{
 	// handler so ordinary configuration stays reachable to an agent is the
 	// follow-up (BOT-53); disallowing first is the deliberate order.
 	v1pb.MCPForbiddenReason_REWRITES_SESSION_BOUNDARY: "it rewrites the workspace settings that bound this session, including the switch meant to contain it",
+
+	// The four approval methods. ApproveIssue, RejectIssue and RequestIssue are
+	// one handler under three actions (issue_review.go reviewIssue), and that
+	// handler moves the review decision itself. An agent may compose a change
+	// and may execute one that a human approved; being the approver of its own
+	// work is the one thing the review step exists to prevent, so no ceiling
+	// mode restores it.
+	//
+	// RetryIssueApproval is the near miss, and it is in deliberately. It casts
+	// no vote — it re-runs approval-template finding for an issue stuck in
+	// CHECKING, and only the issue creator may call it (issue_service.go
+	// canRequestIssue). What it does move is which approval flow applies: it
+	// re-derives the template against the current workspace rule, so an agent
+	// holding it can turn a stale requirement into whatever the rule now says.
+	// Refusing it costs an agent the ability to unstick its own issue, which is
+	// a real cost and the reason this row is a judgment call rather than an
+	// obvious one; the operator retries from the console.
+	v1pb.MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION: "it moves the human review decision that is meant to gate the change, and an agent does not approve its own work",
 }
 
 // reasonForbiddenClass is the fallback for a method annotated FORBIDDEN whose
