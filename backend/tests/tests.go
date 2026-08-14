@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -399,7 +398,7 @@ func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
 		Email:    "demo@example.com",
 		Password: "1024bytebase",
 		Title:    "demo",
-	})); err != nil && !strings.Contains(err.Error(), "already registered") {
+	})); err != nil && connect.CodeOf(err) != connect.CodeAlreadyExists {
 		return "", err
 	}
 	loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{

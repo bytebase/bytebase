@@ -251,7 +251,8 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 // - Otherwise, creates a new workspace with the user as admin.
 func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.SignupRequest]) (*connect.Response[v1pb.LoginResponse], error) {
 	request := req.Msg
-	if request.Email == "" {
+	email := strings.ToLower(strings.TrimSpace(request.Email))
+	if email == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email must be set"))
 	}
 	if request.Title == "" {
@@ -260,12 +261,12 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 	if request.Password == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password must be set"))
 	}
-	if err := validateEndUserEmail(request.Email); err != nil {
+	if err := validateEndUserEmail(email); err != nil {
 		return nil, err
 	}
 
 	// Check if principal already exists.
-	existingUser, err := s.store.GetUserByEmail(ctx, request.Email)
+	existingUser, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
 	}
@@ -275,7 +276,7 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 
 	// Resolve the target workspace (read-only) so we can check restrictions BEFORE
 	// any write — otherwise a rejected signup would leave an orphan user/workspace behind.
-	targetWorkspaceID, _, err := s.resolveWorkspaceIDByEmail(ctx, request.Email)
+	targetWorkspaceID, _, err := s.resolveWorkspaceIDByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target workspace"))
 	}
@@ -301,7 +302,7 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, err
 	}
 
-	workspaceID, err := s.provisionWorkspaceForNewUser(ctx, request.Email)
+	workspaceID, err := s.provisionWorkspaceForNewUser(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
 	}
@@ -313,7 +314,7 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 
 	// Step 2: Create the principal (global identity).
 	user, err := s.store.CreateUser(ctx, &store.UserMessage{
-		Email:        request.Email,
+		Email:        email,
 		Name:         request.Title,
 		PasswordHash: string(passwordHash),
 		Profile:      &storepb.UserProfile{},
@@ -1728,6 +1729,13 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if workspaceID != "" {
+		if err := validateEmailWithDomains(ctx, s.licenseService, s.store, workspaceID, email, false); err != nil {
+			return nil, err
+		}
+	} else if err := validateEndUserEmail(email); err != nil {
+		return nil, err
+	}
 
 	// Gate on AllowEmailCodeSignin — no point emailing a code the workspace won't accept.
 	// getAccountRestriction handles all cases (including empty workspace for brand-new SaaS
@@ -1937,6 +1945,13 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 	if err != nil {
 		return nil, err
 	}
+	if codeRow.Workspace != "" {
+		if err := validateEmailWithDomains(ctx, s.licenseService, s.store, codeRow.Workspace, email, false); err != nil {
+			return nil, err
+		}
+	} else if err := validateEndUserEmail(email); err != nil {
+		return nil, err
+	}
 
 	// Existing user → return. allow_email_code_signin is checked later in validateLoginPermissions
 	// against the actually-resolved login workspace (which may not match the send-time workspace
@@ -1947,11 +1962,6 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 	}
 	if user != nil {
 		return user, nil
-	}
-
-	// Unknown email → signup path. Validate email format to prevent reserved-namespace collisions.
-	if err := validateEndUserEmail(email); err != nil {
-		return nil, err
 	}
 
 	// Gate checks run BEFORE user creation to prevent orphan accounts.
