@@ -157,8 +157,8 @@ var mcpForbiddenReasons = map[v1pb.MCPForbiddenReason]string{
 	// rather than an exception to it: on an auto-approved result the same call
 	// activates the grant and enqueues the rollout (issue_service.go:789,796),
 	// so it moves an issue through the gate without any human acting. What it
-	// does not buy is containment of
-	// re-derivation in general: PlanService/UpdatePlan with a specs mask, and
+	// does not buy is containment of re-derivation in general:
+	// PlanService/UpdatePlan with a specs mask, and
 	// UpdateIssue on a label change, both reset ApprovalFindingDone and force
 	// the template to be found again against the current workspace rule
 	// (component/review/plan.go, component/review/metadata.go), and both stay

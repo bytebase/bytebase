@@ -279,6 +279,11 @@ func checkEveryClassHasAServingDecision(
 			servedBy[class] = append(servedBy[class], mode)
 		}
 	}
+	// serving is a map, so without this the mode list in a violation message
+	// comes out in a different order on every run.
+	for class := range servedBy {
+		slices.Sort(servedBy[class])
+	}
 
 	inVocabulary := map[v1pb.MCPMethodClass]bool{}
 	decided := map[v1pb.MCPMethodClass]bool{}
@@ -297,7 +302,10 @@ func checkEveryClassHasAServingDecision(
 			violations = append(violations, fmt.Sprintf("%v is neither served by a mode nor denied", class))
 		default:
 		}
-		decided[class] = isServed != isDenied
+		// Having two decisions counts as decided here. The class-level loop
+		// above has already said so once; repeating it per method would bury
+		// the one actionable line under a hundred rows naming the wrong problem.
+		decided[class] = isServed || isDenied
 	}
 	for _, class := range denied {
 		if !inVocabulary[class] {
@@ -418,7 +426,7 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 	// the tables skipped.
 	classes, modes := mcpEnums(t)
 
-	t.Run("a class both served and denied fails", func(t *testing.T) {
+	t.Run("a class both served and denied fails once, not once per method", func(t *testing.T) {
 		widened := map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
 			v1pb.WorkspaceProfileSetting_DISABLED:  {},
 			v1pb.WorkspaceProfileSetting_READ_ONLY: {v1pb.MCPMethodClass_READ},
@@ -426,8 +434,11 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 				v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE, v1pb.MCPMethodClass_EXCLUDED,
 			},
 		}
+		// The real rows are passed deliberately: 93 of them carry EXCLUDED, and
+		// the diagnosis worth reading is the one about the table, not ninety-three
+		// about methods whose annotation is fine.
 		require.Equal(t, []string{"EXCLUDED is denied and served by [READ_WRITE]"},
-			checkEveryClassHasAServingDecision(nil, widened, mcpDeniedClasses, classes, modes))
+			checkEveryClassHasAServingDecision(mcpClassificationsFromDescriptors(t), widened, mcpDeniedClasses, classes, modes))
 	})
 
 	t.Run("a class nobody decided fails, and takes its rows with it", func(t *testing.T) {
