@@ -189,6 +189,77 @@ func (x *BatchUpdateSavedQueriesResponse) Equal(y *BatchUpdateSavedQueriesRespon
 	return true
 }
 
+func (x *GetSavedQueryPolicyRequest) Equal(y *GetSavedQueryPolicyRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Resource != y.Resource {
+		return false
+	}
+	return true
+}
+
+func (x *SetSavedQueryPolicyRequest) Equal(y *SetSavedQueryPolicyRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Resource != y.Resource {
+		return false
+	}
+	if !x.Policy.Equal(y.Policy) {
+		return false
+	}
+	return true
+}
+
+func (x *SavedQueryPolicy) Equal(y *SavedQueryPolicy) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Bindings) != len(y.Bindings) {
+		return false
+	}
+	for i := 0; i < len(x.Bindings); i++ {
+		if !x.Bindings[i].Equal(y.Bindings[i]) {
+			return false
+		}
+	}
+	if x.Etag != y.Etag {
+		return false
+	}
+	return true
+}
+
+func (x *SavedQueryBinding) Equal(y *SavedQueryBinding) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Level != y.Level {
+		return false
+	}
+	if len(x.Members) != len(y.Members) {
+		return false
+	}
+	for i := 0; i < len(x.Members); i++ {
+		if x.Members[i] != y.Members[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func (x *DeleteSavedQueryRequest) Equal(y *DeleteSavedQueryRequest) bool {
 	if x == y {
 		return true

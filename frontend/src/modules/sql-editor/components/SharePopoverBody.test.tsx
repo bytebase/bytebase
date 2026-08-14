@@ -20,6 +20,9 @@ const mocks = vi.hoisted(() => ({
   routerResolve: vi.fn(() => ({
     href: "/sql-editor/projects/proj1/savedQueries/1",
   })),
+  hasProjectPermissionV2: vi.fn(() => false),
+  getProjectByName: vi.fn((name: string) => ({ name })),
+  SavedQueryGrantEditor: vi.fn(() => null),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -33,6 +36,8 @@ vi.mock("@/stores/app", () => {
   const state = () => ({
     serverInfo: mocks.serverInfo,
     notify: mocks.pushNotification,
+    currentUser: { email: "test@example.com" },
+    getProjectByName: mocks.getProjectByName,
   });
   return {
     useAppStore: Object.assign(
@@ -45,6 +50,16 @@ vi.mock("@/stores/app", () => {
 vi.mock("@/utils", () => ({
   extractProjectResourceName: mocks.extractProjectResourceName,
   extractSavedQueryID: mocks.extractSavedQueryID,
+}));
+
+vi.mock("@/utils/iam/permission", () => ({
+  hasProjectPermissionV2: mocks.hasProjectPermissionV2,
+}));
+
+// The grant editor reads the policy over the wire and has its own tests; these
+// cover the link section, so stub it out rather than mocking a policy fetch.
+vi.mock("./SavedQueryGrantEditor", () => ({
+  SavedQueryGrantEditor: mocks.SavedQueryGrantEditor,
 }));
 
 vi.mock("@/app/router", async (importOriginal) => ({
@@ -115,16 +130,36 @@ describe("SharePopoverBody", () => {
     unmount();
   });
 
-  test("renders the deep link without an access selector", () => {
+  test("renders the deep link alongside the grant editor", () => {
     const { container, render, unmount } = renderIntoContainer(
       <SharePopoverBody savedQuery={mockSavedQuery as never} />
     );
     render();
     const input = container.querySelector("input") as HTMLInputElement;
     expect(input.value).toContain("/savedQueries/1");
-    // Saved queries are private until per-object grants ship, so the
-    // popover carries no visibility selector.
-    expect(container.querySelector("[data-access-trigger]")).toBeNull();
+    // The link carries location; the grant editor carries access. Both belong
+    // in the popover, and the creator gets an editable one.
+    expect(mocks.SavedQueryGrantEditor).toHaveBeenCalledWith(
+      expect.objectContaining({ canManage: true }),
+      undefined
+    );
+    unmount();
+  });
+
+  test("a non-creator without manage gets a read-only grant editor", () => {
+    mocks.hasProjectPermissionV2.mockReturnValue(false);
+    const { render, unmount } = renderIntoContainer(
+      <SharePopoverBody
+        savedQuery={
+          { ...mockSavedQuery, creator: "users/someone-else@example.com" } as never
+        }
+      />
+    );
+    render();
+    expect(mocks.SavedQueryGrantEditor).toHaveBeenCalledWith(
+      expect.objectContaining({ canManage: false }),
+      undefined
+    );
     unmount();
   });
 

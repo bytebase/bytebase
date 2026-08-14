@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/google/cel-go/cel"
@@ -245,6 +246,16 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 }
 
 // UpdateGroup updates a group.
+// groupPrincipalToken is how a group is named inside a saved-query binding:
+// its email, or its ID when it has none — matching what GetUserGroupsSnapshot
+// emits for the caller's principal set.
+func groupPrincipalToken(id, email string) string {
+	if email != "" {
+		return email
+	}
+	return id
+}
+
 func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*GroupMessage, error) {
 	set := qb.Q()
 	if v := patch.Email; v != nil {
@@ -281,11 +292,28 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	// Saved-query grants name a group by email, so a rename has to rewrite them
+	// in the same transaction or every saved query shared with this group
+	// becomes unreachable to its members. Read the old token under the row lock
+	// the UPDATE below takes anyway.
+	var oldEmail sql.NullString
+	if err := tx.QueryRowContext(ctx,
+		`SELECT email FROM user_group WHERE id = $1 AND workspace = $2 FOR UPDATE`,
+		patch.ID, patch.Workspace).Scan(&oldEmail); err != nil {
+		return nil, err
+	}
+
 	var group GroupMessage
 	var payload []byte
 	var email sql.NullString
 
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan( // NOSONAR: query is parameterized via qb.Query
+	if err := tx.QueryRowContext(ctx, query, args...).Scan( // NOSONAR: query is parameterized via qb.Query
 		&group.ID,
 		&email,
 		&group.Title,
@@ -293,6 +321,32 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 		&payload,
 	); err != nil {
 		return nil, err
+	}
+
+	oldToken := groupPrincipalToken(patch.ID, oldEmail.String)
+	newToken := groupPrincipalToken(patch.ID, email.String)
+	if oldToken != newToken {
+		// Both needles are whole JSON strings built here rather than assembled
+		// in SQL, so they reach the query as plain bound values: no LIKE, and
+		// therefore no chance of an email's own % or _ acting as a wildcard.
+		// The quotes keep the match exact -- "group:eng@x" cannot match inside
+		// "group:xeng@x". Scoped to this workspace's projects, since group
+		// tokens are workspace-local and an identical email elsewhere belongs
+		// to a different group.
+		oldMember := fmt.Sprintf("%q", common.FormatGroupEmail(oldToken))
+		newMember := fmt.Sprintf("%q", common.FormatGroupEmail(newToken))
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE saved_query
+			SET bindings = replace(bindings::text, $1, $2)::jsonb
+			WHERE project IN (SELECT resource_id FROM project WHERE workspace = $3)
+				AND strpos(bindings::text, $1) > 0
+		`, oldMember, newMember, patch.Workspace); err != nil {
+			return nil, errors.Wrapf(err, "failed to rewrite saved query grants for group %s", patch.ID)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 
 	groupPayload := storepb.GroupPayload{}

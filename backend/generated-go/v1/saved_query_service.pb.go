@@ -26,9 +26,63 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Nested because bytebase.v1 already defines a package-scoped EDITOR
+// (DatabaseChangeMode), and enum values live in the enclosing scope.
+type SavedQueryBinding_Level int32
+
+const (
+	SavedQueryBinding_LEVEL_UNSPECIFIED SavedQueryBinding_Level = 0
+	// Open and read the saved query.
+	SavedQueryBinding_VIEWER SavedQueryBinding_Level = 1
+	// VIEWER, plus write the title, content, and connected database. Sharing
+	// and deletion stay with the creator and admins.
+	SavedQueryBinding_EDITOR SavedQueryBinding_Level = 2
+)
+
+// Enum value maps for SavedQueryBinding_Level.
+var (
+	SavedQueryBinding_Level_name = map[int32]string{
+		0: "LEVEL_UNSPECIFIED",
+		1: "VIEWER",
+		2: "EDITOR",
+	}
+	SavedQueryBinding_Level_value = map[string]int32{
+		"LEVEL_UNSPECIFIED": 0,
+		"VIEWER":            1,
+		"EDITOR":            2,
+	}
+)
+
+func (x SavedQueryBinding_Level) Enum() *SavedQueryBinding_Level {
+	p := new(SavedQueryBinding_Level)
+	*p = x
+	return p
+}
+
+func (x SavedQueryBinding_Level) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SavedQueryBinding_Level) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_saved_query_service_proto_enumTypes[0].Descriptor()
+}
+
+func (SavedQueryBinding_Level) Type() protoreflect.EnumType {
+	return &file_v1_saved_query_service_proto_enumTypes[0]
+}
+
+func (x SavedQueryBinding_Level) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SavedQueryBinding_Level.Descriptor instead.
+func (SavedQueryBinding_Level) EnumDescriptor() ([]byte, []int) {
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{13, 0}
+}
+
 type CreateSavedQueryRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The parent resource where this saved query will be created.
+	// The project to create the saved query in.
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The saved query to create.
@@ -83,7 +137,6 @@ func (x *CreateSavedQueryRequest) GetSavedQuery() *SavedQuery {
 
 type GetSavedQueryRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of the saved query to retrieve.
 	// Format: projects/{project}/savedQueries/{savedQuery}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -129,30 +182,24 @@ func (x *GetSavedQueryRequest) GetName() string {
 
 type ListSavedQueriesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The parent resource of the saved queries.
+	// The project to list saved queries in, or "projects/-" for every project.
 	// Format: projects/{project}
-	// Use "projects/-" to list saved queries across all projects.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// To filter the list result.
-	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	// Filter the result, in CEL. See https://github.com/google/cel-spec
 	//
-	// Supported filter:
-	// - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
+	// Supported fields:
+	// - creator: the creator in "users/{email}" format. Supports "==" and "!=".
 	//
 	// For example:
-	// creator == "users/{email}"
-	// creator != "users/{email}"
+	// creator == "users/alice@example.com"
 	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
-	// The maximum number of saved queries to return. The service may return fewer than
-	// this value.
-	// If unspecified, at most 10 saved queries will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
+	// The maximum number of saved queries to return. The service may return
+	// fewer. Defaults to 10; values above 1000 are coerced to 1000.
 	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `ListSavedQueries` call.
-	// Provide this to retrieve the subsequent page.
-	//
-	// When paginating, all other parameters provided to `ListSavedQueries` must match
-	// the call that provided the page token.
+	// A page token from a previous ListSavedQueries call. Every other parameter
+	// must match the call that returned it: the token carries the offset reached
+	// so far, so changing `filter` or `page_size` mid-pagination reinterprets
+	// that offset against a different result set.
 	PageToken     string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -217,12 +264,10 @@ func (x *ListSavedQueriesRequest) GetPageToken() string {
 }
 
 type ListSavedQueriesResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The saved queries from the specified parent.
-	SavedQueries []*SavedQuery `protobuf:"bytes,1,rep,name=saved_queries,json=savedQueries,proto3" json:"saved_queries,omitempty"`
-	// A token to retrieve next page of saved queries.
-	// Pass this value in the page_token field in the subsequent call to
-	// `ListSavedQueries` method to retrieve the next page of saved queries.
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	SavedQueries []*SavedQuery          `protobuf:"bytes,1,rep,name=saved_queries,json=savedQueries,proto3" json:"saved_queries,omitempty"`
+	// Pass to the next ListSavedQueries call to fetch the following page. Empty
+	// on the last page.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -274,18 +319,11 @@ func (x *ListSavedQueriesResponse) GetNextPageToken() string {
 
 type SearchSavedQueryFoldersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The parent resource whose saved query folders are searched.
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// To filter the folders by the saved queries they hold. Takes the same
-	// fields and syntax as `SearchSavedQueries.filter`, except `title`. A
-	// folder is returned when at least one saved query the caller can read
-	// matches, so the caller-scoping is the same as SearchSavedQueries: your
-	// own saved queries, plus everyone's for the admin backstop.
-	//
-	// For example, to split a folder tree into your own and everyone else's:
-	// creator == "users/{email}"
-	// creator != "users/{email}"
+	// Filter folders by the saved queries they hold. Takes the same fields and
+	// syntax as SearchSavedQueries.filter, except `title`. A folder is returned
+	// when at least one saved query the caller can read matches.
 	Filter        string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -337,9 +375,8 @@ func (x *SearchSavedQueryFoldersRequest) GetFilter() string {
 
 type SearchSavedQueryFoldersResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The caller's folder paths, including every ancestor prefix, sorted.
-	// A folder is a path on saved queries ("a/b/c"), so empty folders cannot
-	// exist.
+	// Folder paths, every ancestor prefix included, sorted. A folder is a path
+	// on saved queries ("a/b/c"), so empty folders cannot exist.
 	Folders       []string `protobuf:"bytes,1,rep,name=folders,proto3" json:"folders,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -384,19 +421,11 @@ func (x *SearchSavedQueryFoldersResponse) GetFolders() []string {
 
 type UpdateSavedQueryRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The saved query to update.
-	//
-	// The saved query's `name` field is used to identify the saved query to update.
+	// `saved_query.name` identifies the saved query to update.
 	// Format: projects/{project}/savedQueries/{savedQuery}
 	SavedQuery *SavedQuery `protobuf:"bytes,1,opt,name=saved_query,json=savedQuery,proto3" json:"saved_query,omitempty"`
-	// The list of fields to be updated.
-	// Fields are specified relative to the saved query.
-	// (e.g., `title`, `content`; *not* `saved_query.title` or `saved_query.content`)
-	// Only support update the following fields for now:
-	// - `title`
-	// - `content`
-	// - `database`
-	// - `folder`
+	// Fields to update, relative to the saved query (`title`, not
+	// `saved_query.title`). Supported: `title`, `content`, `database`, `folder`.
 	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -448,7 +477,6 @@ func (x *UpdateSavedQueryRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 
 type UpdateSavedQueryStarRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of the saved query to star or unstar.
 	// Format: projects/{project}/savedQueries/{savedQuery}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Whether the caller stars the saved query.
@@ -503,23 +531,20 @@ func (x *UpdateSavedQueryStarRequest) GetStarred() bool {
 
 type BatchUpdateSavedQueriesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The parent resource whose saved queries are updated.
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// To filter the batch update target.
-	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	// Select the saved queries to update, in CEL. See
+	// https://github.com/google/cel-spec
 	//
-	// Supported filter:
-	// - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
-	// - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
-	// - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-	// - folder: the saved query folder path, support exact "==" operator.
+	// Supported fields:
+	// - name: the saved query name. Supports "==" and "in [...]".
+	// - creator: the creator in "users/{email}" format. Supports "==" and "!=".
+	// - starred: whether the caller starred it. Supports "==".
+	// - folder: the exact folder path. Supports "==".
 	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
-	// The fields to apply to every matched saved query.
+	// The values to apply to every matched saved query.
 	SavedQuery *SavedQuery `protobuf:"bytes,3,opt,name=saved_query,json=savedQuery,proto3" json:"saved_query,omitempty"`
-	// The list of fields to be updated.
-	// Only support update the following fields for now:
-	// - `folder`
+	// Fields to update. Supported: `folder`.
 	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,4,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -585,7 +610,8 @@ func (x *BatchUpdateSavedQueriesRequest) GetUpdateMask() *fieldmaskpb.FieldMask 
 
 type BatchUpdateSavedQueriesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The number of saved queries updated.
+	// How many saved queries were updated, which may be fewer than the filter
+	// matched.
 	UpdatedCount  int32 `protobuf:"varint,1,opt,name=updated_count,json=updatedCount,proto3" json:"updated_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -628,9 +654,233 @@ func (x *BatchUpdateSavedQueriesResponse) GetUpdatedCount() int32 {
 	return 0
 }
 
+type GetSavedQueryPolicyRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Format: projects/{project}/savedQueries/{savedQuery}
+	Resource      string `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSavedQueryPolicyRequest) Reset() {
+	*x = GetSavedQueryPolicyRequest{}
+	mi := &file_v1_saved_query_service_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSavedQueryPolicyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSavedQueryPolicyRequest) ProtoMessage() {}
+
+func (x *GetSavedQueryPolicyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_saved_query_service_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSavedQueryPolicyRequest.ProtoReflect.Descriptor instead.
+func (*GetSavedQueryPolicyRequest) Descriptor() ([]byte, []int) {
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *GetSavedQueryPolicyRequest) GetResource() string {
+	if x != nil {
+		return x.Resource
+	}
+	return ""
+}
+
+type SetSavedQueryPolicyRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Format: projects/{project}/savedQueries/{savedQuery}
+	Resource string `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	// Replaces the stored policy in full: a member absent from it loses their
+	// grant, and a policy with no bindings makes the saved query private again.
+	Policy        *SavedQueryPolicy `protobuf:"bytes,2,opt,name=policy,proto3" json:"policy,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetSavedQueryPolicyRequest) Reset() {
+	*x = SetSavedQueryPolicyRequest{}
+	mi := &file_v1_saved_query_service_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetSavedQueryPolicyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetSavedQueryPolicyRequest) ProtoMessage() {}
+
+func (x *SetSavedQueryPolicyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_saved_query_service_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetSavedQueryPolicyRequest.ProtoReflect.Descriptor instead.
+func (*SetSavedQueryPolicyRequest) Descriptor() ([]byte, []int) {
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *SetSavedQueryPolicyRequest) GetResource() string {
+	if x != nil {
+		return x.Resource
+	}
+	return ""
+}
+
+func (x *SetSavedQueryPolicyRequest) GetPolicy() *SavedQueryPolicy {
+	if x != nil {
+		return x.Policy
+	}
+	return nil
+}
+
+// Who a saved query is shared with, and at what level. A saved query with no
+// bindings is private. The creator is never a binding member: ownership comes
+// from creating the saved query and cannot be granted away.
+type SavedQueryPolicy struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// At most one binding per level. A member listed under two levels is
+	// rejected rather than resolved to the higher one.
+	Bindings []*SavedQueryBinding `protobuf:"bytes,1,rep,name=bindings,proto3" json:"bindings,omitempty"`
+	// The etag of the policy as read. SetSavedQueryPolicy requires it and fails
+	// with ABORTED when it no longer matches.
+	Etag          string `protobuf:"bytes,2,opt,name=etag,proto3" json:"etag,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SavedQueryPolicy) Reset() {
+	*x = SavedQueryPolicy{}
+	mi := &file_v1_saved_query_service_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SavedQueryPolicy) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SavedQueryPolicy) ProtoMessage() {}
+
+func (x *SavedQueryPolicy) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_saved_query_service_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SavedQueryPolicy.ProtoReflect.Descriptor instead.
+func (*SavedQueryPolicy) Descriptor() ([]byte, []int) {
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SavedQueryPolicy) GetBindings() []*SavedQueryBinding {
+	if x != nil {
+		return x.Bindings
+	}
+	return nil
+}
+
+func (x *SavedQueryPolicy) GetEtag() string {
+	if x != nil {
+		return x.Etag
+	}
+	return ""
+}
+
+// Binds members to one access level on one saved query. Not bytebase.v1.Binding
+// because per-object access here is a capability, not a role.
+type SavedQueryBinding struct {
+	state protoimpl.MessageState  `protogen:"open.v1"`
+	Level SavedQueryBinding_Level `protobuf:"varint,1,opt,name=level,proto3,enum=bytebase.v1.SavedQueryBinding_Level" json:"level,omitempty"`
+	// The principals granted `level`, in bytebase.v1.Binding.members format,
+	// restricted to "user:{email}" and "group:{email}" -- prefix-checked, as
+	// project and workspace IAM check their own members.
+	//
+	// Service accounts and workload identities are not grantees: they own and
+	// run their own saved queries and reach them as the creator. Naming one
+	// under a "user:" prefix grants nothing rather than being rejected, because
+	// a caller's member is derived from their principal type, so such a binding
+	// matches nobody.
+	//
+	// A group is stored as a reference and never expanded, so its membership
+	// stays live and a large group costs no more than a small one.
+	Members       []string `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SavedQueryBinding) Reset() {
+	*x = SavedQueryBinding{}
+	mi := &file_v1_saved_query_service_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SavedQueryBinding) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SavedQueryBinding) ProtoMessage() {}
+
+func (x *SavedQueryBinding) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_saved_query_service_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SavedQueryBinding.ProtoReflect.Descriptor instead.
+func (*SavedQueryBinding) Descriptor() ([]byte, []int) {
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *SavedQueryBinding) GetLevel() SavedQueryBinding_Level {
+	if x != nil {
+		return x.Level
+	}
+	return SavedQueryBinding_LEVEL_UNSPECIFIED
+}
+
+func (x *SavedQueryBinding) GetMembers() []string {
+	if x != nil {
+		return x.Members
+	}
+	return nil
+}
+
 type DeleteSavedQueryRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of the saved query to delete.
 	// Format: projects/{project}/savedQueries/{savedQuery}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -639,7 +889,7 @@ type DeleteSavedQueryRequest struct {
 
 func (x *DeleteSavedQueryRequest) Reset() {
 	*x = DeleteSavedQueryRequest{}
-	mi := &file_v1_saved_query_service_proto_msgTypes[10]
+	mi := &file_v1_saved_query_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -651,7 +901,7 @@ func (x *DeleteSavedQueryRequest) String() string {
 func (*DeleteSavedQueryRequest) ProtoMessage() {}
 
 func (x *DeleteSavedQueryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_saved_query_service_proto_msgTypes[10]
+	mi := &file_v1_saved_query_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -664,7 +914,7 @@ func (x *DeleteSavedQueryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteSavedQueryRequest.ProtoReflect.Descriptor instead.
 func (*DeleteSavedQueryRequest) Descriptor() ([]byte, []int) {
-	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{10}
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *DeleteSavedQueryRequest) GetName() string {
@@ -676,34 +926,40 @@ func (x *DeleteSavedQueryRequest) GetName() string {
 
 type SearchSavedQueriesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The parent resource of the saved queries.
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// To filter the search result.
-	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	// Filter the result, in CEL. See https://github.com/google/cel-spec
 	//
-	// Supported filter:
-	// - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
-	// - title: the saved query title, support "contains" operator.
-	// - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
-	// - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-	// - folder: the saved query folder path, support "==" operator.
+	// Supported fields:
+	//   - name: the saved query name. Supports "==" and "in [...]".
+	//   - title: the title. Supports "contains".
+	//   - creator: the creator in "users/{email}" format. Supports "==" and "!=".
+	//   - shared: true selects only saved queries the caller reaches through a
+	//     binding, excluding their own and any seen through
+	//     bb.savedQueries.manage; false selects the rest. Supports "==".
+	//   - starred: whether the caller starred it. Supports "==".
+	//   - folder: the exact folder path. Supports "==".
+	//
+	// The SQL Editor's views are `creator == "users/{me}"` for My and
+	// `shared == true` for Shared. Prefer `shared` over `creator !=` for the
+	// latter: for an admin, `creator !=` also matches saved queries nobody
+	// shared with them.
 	//
 	// For example:
-	// creator == "users/{email}"
-	// title.contains("saved query title")
-	// creator != "users/{email}"
+	// creator == "users/alice@example.com"
+	// shared == true
 	// starred == true
-	// starred == false
+	// title.contains("weekly report")
 	// folder == "foo/bar"
 	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
-	// The maximum number of saved queries to return. The service may return fewer than
-	// this value.
-	// If unspecified, at most 10 saved queries will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
+	// The maximum number of saved queries to return. The service may return
+	// fewer. Defaults to 10; values above 1000 are coerced to 1000.
 	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `SearchSavedQueries` call.
-	// Provide this to retrieve the subsequent page.
+	// A page token from a previous SearchSavedQueries call. Every other
+	// parameter must match the call that returned it: the token carries the
+	// offset reached so far, so changing `filter` or `page_size` mid-pagination
+	// reinterprets that offset against a different result set and can skip or
+	// repeat rows.
 	PageToken     string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -711,7 +967,7 @@ type SearchSavedQueriesRequest struct {
 
 func (x *SearchSavedQueriesRequest) Reset() {
 	*x = SearchSavedQueriesRequest{}
-	mi := &file_v1_saved_query_service_proto_msgTypes[11]
+	mi := &file_v1_saved_query_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -723,7 +979,7 @@ func (x *SearchSavedQueriesRequest) String() string {
 func (*SearchSavedQueriesRequest) ProtoMessage() {}
 
 func (x *SearchSavedQueriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_saved_query_service_proto_msgTypes[11]
+	mi := &file_v1_saved_query_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -736,7 +992,7 @@ func (x *SearchSavedQueriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchSavedQueriesRequest.ProtoReflect.Descriptor instead.
 func (*SearchSavedQueriesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{11}
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *SearchSavedQueriesRequest) GetParent() string {
@@ -768,12 +1024,10 @@ func (x *SearchSavedQueriesRequest) GetPageToken() string {
 }
 
 type SearchSavedQueriesResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The saved queries that matched the search criteria.
-	SavedQueries []*SavedQuery `protobuf:"bytes,1,rep,name=saved_queries,json=savedQueries,proto3" json:"saved_queries,omitempty"`
-	// A token to retrieve next page of saved queries.
-	// Pass this value in the page_token field in the subsequent call to
-	// `SearchSavedQueries` method to retrieve the next page of saved queries.
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	SavedQueries []*SavedQuery          `protobuf:"bytes,1,rep,name=saved_queries,json=savedQueries,proto3" json:"saved_queries,omitempty"`
+	// Pass to the next SearchSavedQueries call to fetch the following page.
+	// Empty on the last page.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -781,7 +1035,7 @@ type SearchSavedQueriesResponse struct {
 
 func (x *SearchSavedQueriesResponse) Reset() {
 	*x = SearchSavedQueriesResponse{}
-	mi := &file_v1_saved_query_service_proto_msgTypes[12]
+	mi := &file_v1_saved_query_service_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -793,7 +1047,7 @@ func (x *SearchSavedQueriesResponse) String() string {
 func (*SearchSavedQueriesResponse) ProtoMessage() {}
 
 func (x *SearchSavedQueriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_saved_query_service_proto_msgTypes[12]
+	mi := &file_v1_saved_query_service_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -806,7 +1060,7 @@ func (x *SearchSavedQueriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchSavedQueriesResponse.ProtoReflect.Descriptor instead.
 func (*SearchSavedQueriesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{12}
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SearchSavedQueriesResponse) GetSavedQueries() []*SavedQuery {
@@ -825,38 +1079,32 @@ func (x *SearchSavedQueriesResponse) GetNextPageToken() string {
 
 type SavedQuery struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of the saved query resource, generated by the server.
-	// Canonical parent is project.
+	// Server-generated.
 	// Format: projects/{project}/savedQueries/{savedQuery}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The project resource name.
 	// Format: projects/{project}
 	Project string `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
-	// The database resource name.
+	// The connected database, which must belong to the saved query's own
+	// project. Empty when none is connected, or when the database no longer
+	// exists.
 	// Format: instances/{instance}/databases/{database}
-	// If the database parent doesn't exist, the database field is empty.
 	Database string `protobuf:"bytes,3,opt,name=database,proto3" json:"database,omitempty"`
 	// The title of the saved query.
 	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	// The creator of the SavedQuery — the fixed owner; ownership does not
-	// transfer.
+	// The fixed owner. Ownership does not transfer.
 	// Format: users/{email}
-	Creator string `protobuf:"bytes,5,opt,name=creator,proto3" json:"creator,omitempty"`
-	// The create time of the saved query.
+	Creator    string                 `protobuf:"bytes,5,opt,name=creator,proto3" json:"creator,omitempty"`
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	// The last update time of the saved query.
 	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
-	// The content of the saved query.
-	// By default, it will be cut off in SearchSavedQueries() method. If it doesn't match the `content_size`, you can
-	// use GetSavedQuery() request to retrieve the full content.
+	// The SQL text. SearchSavedQueries truncates it; when it is shorter than
+	// `content_size`, GetSavedQuery returns the whole thing.
 	Content []byte `protobuf:"bytes,8,opt,name=content,proto3" json:"content,omitempty"`
-	// content_size is the full size of the content, may not match the size of the `content` field.
+	// The full size of the content, which may exceed the `content` returned.
 	ContentSize int64 `protobuf:"varint,9,opt,name=content_size,json=contentSize,proto3" json:"content_size,omitempty"`
-	// starred indicates whether the saved query is starred by the current authenticated user.
+	// Whether the calling user starred it.
 	Starred bool `protobuf:"varint,11,opt,name=starred,proto3" json:"starred,omitempty"`
-	// The folder path this saved query lives in, set by its creator (or an
-	// admin). Empty means unfiled. A saved query lives in exactly one folder;
-	// a folder is a path on saved queries, e.g. "a/b/c".
+	// The folder holding this saved query, set by its creator or an admin. A
+	// path like "a/b/c"; empty means unfiled.
 	Folder        string `protobuf:"bytes,13,opt,name=folder,proto3" json:"folder,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -864,7 +1112,7 @@ type SavedQuery struct {
 
 func (x *SavedQuery) Reset() {
 	*x = SavedQuery{}
-	mi := &file_v1_saved_query_service_proto_msgTypes[13]
+	mi := &file_v1_saved_query_service_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -876,7 +1124,7 @@ func (x *SavedQuery) String() string {
 func (*SavedQuery) ProtoMessage() {}
 
 func (x *SavedQuery) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_saved_query_service_proto_msgTypes[13]
+	mi := &file_v1_saved_query_service_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -889,7 +1137,7 @@ func (x *SavedQuery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SavedQuery.ProtoReflect.Descriptor instead.
 func (*SavedQuery) Descriptor() ([]byte, []int) {
-	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{13}
+	return file_v1_saved_query_service_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *SavedQuery) GetName() string {
@@ -1014,7 +1262,26 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\vupdate_mask\x18\x04 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\"F\n" +
 	"\x1fBatchUpdateSavedQueriesResponse\x12#\n" +
-	"\rupdated_count\x18\x01 \x01(\x05R\fupdatedCount\"N\n" +
+	"\rupdated_count\x18\x01 \x01(\x05R\fupdatedCount\"Y\n" +
+	"\x1aGetSavedQueryPolicyRequest\x12;\n" +
+	"\bresource\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
+	"\x17bytebase.com/SavedQueryR\bresource\"\x95\x01\n" +
+	"\x1aSetSavedQueryPolicyRequest\x12;\n" +
+	"\bresource\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
+	"\x17bytebase.com/SavedQueryR\bresource\x12:\n" +
+	"\x06policy\x18\x02 \x01(\v2\x1d.bytebase.v1.SavedQueryPolicyB\x03\xe0A\x02R\x06policy\"b\n" +
+	"\x10SavedQueryPolicy\x12:\n" +
+	"\bbindings\x18\x01 \x03(\v2\x1e.bytebase.v1.SavedQueryBindingR\bbindings\x12\x12\n" +
+	"\x04etag\x18\x02 \x01(\tR\x04etag\"\xb3\x01\n" +
+	"\x11SavedQueryBinding\x12?\n" +
+	"\x05level\x18\x01 \x01(\x0e2$.bytebase.v1.SavedQueryBinding.LevelB\x03\xe0A\x02R\x05level\x12%\n" +
+	"\amembers\x18\x02 \x03(\tB\v\xe0A\x02\xbaH\x05\x92\x01\x02\b\x01R\amembers\"6\n" +
+	"\x05Level\x12\x15\n" +
+	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\n" +
+	"\n" +
+	"\x06VIEWER\x10\x01\x12\n" +
+	"\n" +
+	"\x06EDITOR\x10\x02\"N\n" +
 	"\x17DeleteSavedQueryRequest\x123\n" +
 	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
 	"\x17bytebase.com/SavedQueryR\x04name\"\xa5\x01\n" +
@@ -1027,7 +1294,7 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"page_token\x18\x04 \x01(\tR\tpageToken\"\x82\x01\n" +
 	"\x1aSearchSavedQueriesResponse\x12<\n" +
 	"\rsaved_queries\x18\x01 \x03(\v2\x17.bytebase.v1.SavedQueryR\fsavedQueries\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x9f\x04\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8a\x04\n" +
 	"\n" +
 	"SavedQuery\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x1d\n" +
@@ -1044,8 +1311,7 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\x12 \n" +
 	"\x06folder\x18\r \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\x06folder:K\xeaAH\n" +
 	"\x17bytebase.com/SavedQuery\x12-projects/{project}/savedQueries/{saved_query}J\x04\b\n" +
-	"\x10\vJ\x04\b\f\x10\rR\n" +
-	"visibilityR\afolders2\xda\f\n" +
+	"\x10\vJ\x04\b\f\x10\r2\xbe\x0f\n" +
 	"\x11SavedQueryService\x12\xc3\x01\n" +
 	"\x10CreateSavedQuery\x12$.bytebase.v1.CreateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"p\xdaA\x12parent,saved_query\x8a\xea0\x16bb.savedQueries.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x023:\vsaved_query\"$/v1/{parent=projects/*}/savedQueries\x12\x84\x01\n" +
 	"\rGetSavedQuery\x12!.bytebase.v1.GetSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"7\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/savedQueries/*}\x12\xb2\x01\n" +
@@ -1055,7 +1321,9 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\x10UpdateSavedQuery\x12$.bytebase.v1.UpdateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"g\xdaA\x17saved_query,update_mask\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02?:\vsaved_query20/v1/{saved_query.name=projects/*/savedQueries/*}\x12\xa8\x01\n" +
 	"\x14UpdateSavedQueryStar\x12(.bytebase.v1.UpdateSavedQueryStarRequest\x1a\x17.bytebase.v1.SavedQuery\"M\xdaA\fname,starred\x90\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/savedQueries/*}:updateStar\x12\xda\x01\n" +
 	"\x17BatchUpdateSavedQueries\x12+.bytebase.v1.BatchUpdateSavedQueriesRequest\x1a,.bytebase.v1.BatchUpdateSavedQueriesResponse\"d\xdaA\x1eparent,saved_query,update_mask\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x025:\x01*\"0/v1/{parent=projects/*}/savedQueries:batchUpdate\x12\x8d\x01\n" +
-	"\x10DeleteSavedQuery\x12$.bytebase.v1.DeleteSavedQueryRequest\x1a\x16.google.protobuf.Empty\";\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02&*$/v1/{name=projects/*/savedQueries/*}B\xac\x01\n" +
+	"\x10DeleteSavedQuery\x12$.bytebase.v1.DeleteSavedQueryRequest\x1a\x16.google.protobuf.Empty\";\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02&*$/v1/{name=projects/*/savedQueries/*}\x12\xa8\x01\n" +
+	"\x13GetSavedQueryPolicy\x12'.bytebase.v1.GetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"I\xdaA\bresource\x90\xea0\x02\x82\xd3\xe4\x93\x024\x122/v1/{resource=projects/*/savedQueries/*}:getPolicy\x12\xb6\x01\n" +
+	"\x13SetSavedQueryPolicy\x12'.bytebase.v1.SetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"W\xdaA\x0fresource,policy\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{resource=projects/*/savedQueries/*}:setPolicyB\xac\x01\n" +
 	"\x0fcom.bytebase.v1B\x16SavedQueryServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -1070,59 +1338,72 @@ func file_v1_saved_query_service_proto_rawDescGZIP() []byte {
 	return file_v1_saved_query_service_proto_rawDescData
 }
 
-var file_v1_saved_query_service_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_v1_saved_query_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_v1_saved_query_service_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_v1_saved_query_service_proto_goTypes = []any{
-	(*CreateSavedQueryRequest)(nil),         // 0: bytebase.v1.CreateSavedQueryRequest
-	(*GetSavedQueryRequest)(nil),            // 1: bytebase.v1.GetSavedQueryRequest
-	(*ListSavedQueriesRequest)(nil),         // 2: bytebase.v1.ListSavedQueriesRequest
-	(*ListSavedQueriesResponse)(nil),        // 3: bytebase.v1.ListSavedQueriesResponse
-	(*SearchSavedQueryFoldersRequest)(nil),  // 4: bytebase.v1.SearchSavedQueryFoldersRequest
-	(*SearchSavedQueryFoldersResponse)(nil), // 5: bytebase.v1.SearchSavedQueryFoldersResponse
-	(*UpdateSavedQueryRequest)(nil),         // 6: bytebase.v1.UpdateSavedQueryRequest
-	(*UpdateSavedQueryStarRequest)(nil),     // 7: bytebase.v1.UpdateSavedQueryStarRequest
-	(*BatchUpdateSavedQueriesRequest)(nil),  // 8: bytebase.v1.BatchUpdateSavedQueriesRequest
-	(*BatchUpdateSavedQueriesResponse)(nil), // 9: bytebase.v1.BatchUpdateSavedQueriesResponse
-	(*DeleteSavedQueryRequest)(nil),         // 10: bytebase.v1.DeleteSavedQueryRequest
-	(*SearchSavedQueriesRequest)(nil),       // 11: bytebase.v1.SearchSavedQueriesRequest
-	(*SearchSavedQueriesResponse)(nil),      // 12: bytebase.v1.SearchSavedQueriesResponse
-	(*SavedQuery)(nil),                      // 13: bytebase.v1.SavedQuery
-	(*fieldmaskpb.FieldMask)(nil),           // 14: google.protobuf.FieldMask
-	(*timestamppb.Timestamp)(nil),           // 15: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),                   // 16: google.protobuf.Empty
+	(SavedQueryBinding_Level)(0),            // 0: bytebase.v1.SavedQueryBinding.Level
+	(*CreateSavedQueryRequest)(nil),         // 1: bytebase.v1.CreateSavedQueryRequest
+	(*GetSavedQueryRequest)(nil),            // 2: bytebase.v1.GetSavedQueryRequest
+	(*ListSavedQueriesRequest)(nil),         // 3: bytebase.v1.ListSavedQueriesRequest
+	(*ListSavedQueriesResponse)(nil),        // 4: bytebase.v1.ListSavedQueriesResponse
+	(*SearchSavedQueryFoldersRequest)(nil),  // 5: bytebase.v1.SearchSavedQueryFoldersRequest
+	(*SearchSavedQueryFoldersResponse)(nil), // 6: bytebase.v1.SearchSavedQueryFoldersResponse
+	(*UpdateSavedQueryRequest)(nil),         // 7: bytebase.v1.UpdateSavedQueryRequest
+	(*UpdateSavedQueryStarRequest)(nil),     // 8: bytebase.v1.UpdateSavedQueryStarRequest
+	(*BatchUpdateSavedQueriesRequest)(nil),  // 9: bytebase.v1.BatchUpdateSavedQueriesRequest
+	(*BatchUpdateSavedQueriesResponse)(nil), // 10: bytebase.v1.BatchUpdateSavedQueriesResponse
+	(*GetSavedQueryPolicyRequest)(nil),      // 11: bytebase.v1.GetSavedQueryPolicyRequest
+	(*SetSavedQueryPolicyRequest)(nil),      // 12: bytebase.v1.SetSavedQueryPolicyRequest
+	(*SavedQueryPolicy)(nil),                // 13: bytebase.v1.SavedQueryPolicy
+	(*SavedQueryBinding)(nil),               // 14: bytebase.v1.SavedQueryBinding
+	(*DeleteSavedQueryRequest)(nil),         // 15: bytebase.v1.DeleteSavedQueryRequest
+	(*SearchSavedQueriesRequest)(nil),       // 16: bytebase.v1.SearchSavedQueriesRequest
+	(*SearchSavedQueriesResponse)(nil),      // 17: bytebase.v1.SearchSavedQueriesResponse
+	(*SavedQuery)(nil),                      // 18: bytebase.v1.SavedQuery
+	(*fieldmaskpb.FieldMask)(nil),           // 19: google.protobuf.FieldMask
+	(*timestamppb.Timestamp)(nil),           // 20: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                   // 21: google.protobuf.Empty
 }
 var file_v1_saved_query_service_proto_depIdxs = []int32{
-	13, // 0: bytebase.v1.CreateSavedQueryRequest.saved_query:type_name -> bytebase.v1.SavedQuery
-	13, // 1: bytebase.v1.ListSavedQueriesResponse.saved_queries:type_name -> bytebase.v1.SavedQuery
-	13, // 2: bytebase.v1.UpdateSavedQueryRequest.saved_query:type_name -> bytebase.v1.SavedQuery
-	14, // 3: bytebase.v1.UpdateSavedQueryRequest.update_mask:type_name -> google.protobuf.FieldMask
-	13, // 4: bytebase.v1.BatchUpdateSavedQueriesRequest.saved_query:type_name -> bytebase.v1.SavedQuery
-	14, // 5: bytebase.v1.BatchUpdateSavedQueriesRequest.update_mask:type_name -> google.protobuf.FieldMask
-	13, // 6: bytebase.v1.SearchSavedQueriesResponse.saved_queries:type_name -> bytebase.v1.SavedQuery
-	15, // 7: bytebase.v1.SavedQuery.create_time:type_name -> google.protobuf.Timestamp
-	15, // 8: bytebase.v1.SavedQuery.update_time:type_name -> google.protobuf.Timestamp
-	0,  // 9: bytebase.v1.SavedQueryService.CreateSavedQuery:input_type -> bytebase.v1.CreateSavedQueryRequest
-	1,  // 10: bytebase.v1.SavedQueryService.GetSavedQuery:input_type -> bytebase.v1.GetSavedQueryRequest
-	2,  // 11: bytebase.v1.SavedQueryService.ListSavedQueries:input_type -> bytebase.v1.ListSavedQueriesRequest
-	11, // 12: bytebase.v1.SavedQueryService.SearchSavedQueries:input_type -> bytebase.v1.SearchSavedQueriesRequest
-	4,  // 13: bytebase.v1.SavedQueryService.SearchSavedQueryFolders:input_type -> bytebase.v1.SearchSavedQueryFoldersRequest
-	6,  // 14: bytebase.v1.SavedQueryService.UpdateSavedQuery:input_type -> bytebase.v1.UpdateSavedQueryRequest
-	7,  // 15: bytebase.v1.SavedQueryService.UpdateSavedQueryStar:input_type -> bytebase.v1.UpdateSavedQueryStarRequest
-	8,  // 16: bytebase.v1.SavedQueryService.BatchUpdateSavedQueries:input_type -> bytebase.v1.BatchUpdateSavedQueriesRequest
-	10, // 17: bytebase.v1.SavedQueryService.DeleteSavedQuery:input_type -> bytebase.v1.DeleteSavedQueryRequest
-	13, // 18: bytebase.v1.SavedQueryService.CreateSavedQuery:output_type -> bytebase.v1.SavedQuery
-	13, // 19: bytebase.v1.SavedQueryService.GetSavedQuery:output_type -> bytebase.v1.SavedQuery
-	3,  // 20: bytebase.v1.SavedQueryService.ListSavedQueries:output_type -> bytebase.v1.ListSavedQueriesResponse
-	12, // 21: bytebase.v1.SavedQueryService.SearchSavedQueries:output_type -> bytebase.v1.SearchSavedQueriesResponse
-	5,  // 22: bytebase.v1.SavedQueryService.SearchSavedQueryFolders:output_type -> bytebase.v1.SearchSavedQueryFoldersResponse
-	13, // 23: bytebase.v1.SavedQueryService.UpdateSavedQuery:output_type -> bytebase.v1.SavedQuery
-	13, // 24: bytebase.v1.SavedQueryService.UpdateSavedQueryStar:output_type -> bytebase.v1.SavedQuery
-	9,  // 25: bytebase.v1.SavedQueryService.BatchUpdateSavedQueries:output_type -> bytebase.v1.BatchUpdateSavedQueriesResponse
-	16, // 26: bytebase.v1.SavedQueryService.DeleteSavedQuery:output_type -> google.protobuf.Empty
-	18, // [18:27] is the sub-list for method output_type
-	9,  // [9:18] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	18, // 0: bytebase.v1.CreateSavedQueryRequest.saved_query:type_name -> bytebase.v1.SavedQuery
+	18, // 1: bytebase.v1.ListSavedQueriesResponse.saved_queries:type_name -> bytebase.v1.SavedQuery
+	18, // 2: bytebase.v1.UpdateSavedQueryRequest.saved_query:type_name -> bytebase.v1.SavedQuery
+	19, // 3: bytebase.v1.UpdateSavedQueryRequest.update_mask:type_name -> google.protobuf.FieldMask
+	18, // 4: bytebase.v1.BatchUpdateSavedQueriesRequest.saved_query:type_name -> bytebase.v1.SavedQuery
+	19, // 5: bytebase.v1.BatchUpdateSavedQueriesRequest.update_mask:type_name -> google.protobuf.FieldMask
+	13, // 6: bytebase.v1.SetSavedQueryPolicyRequest.policy:type_name -> bytebase.v1.SavedQueryPolicy
+	14, // 7: bytebase.v1.SavedQueryPolicy.bindings:type_name -> bytebase.v1.SavedQueryBinding
+	0,  // 8: bytebase.v1.SavedQueryBinding.level:type_name -> bytebase.v1.SavedQueryBinding.Level
+	18, // 9: bytebase.v1.SearchSavedQueriesResponse.saved_queries:type_name -> bytebase.v1.SavedQuery
+	20, // 10: bytebase.v1.SavedQuery.create_time:type_name -> google.protobuf.Timestamp
+	20, // 11: bytebase.v1.SavedQuery.update_time:type_name -> google.protobuf.Timestamp
+	1,  // 12: bytebase.v1.SavedQueryService.CreateSavedQuery:input_type -> bytebase.v1.CreateSavedQueryRequest
+	2,  // 13: bytebase.v1.SavedQueryService.GetSavedQuery:input_type -> bytebase.v1.GetSavedQueryRequest
+	3,  // 14: bytebase.v1.SavedQueryService.ListSavedQueries:input_type -> bytebase.v1.ListSavedQueriesRequest
+	16, // 15: bytebase.v1.SavedQueryService.SearchSavedQueries:input_type -> bytebase.v1.SearchSavedQueriesRequest
+	5,  // 16: bytebase.v1.SavedQueryService.SearchSavedQueryFolders:input_type -> bytebase.v1.SearchSavedQueryFoldersRequest
+	7,  // 17: bytebase.v1.SavedQueryService.UpdateSavedQuery:input_type -> bytebase.v1.UpdateSavedQueryRequest
+	8,  // 18: bytebase.v1.SavedQueryService.UpdateSavedQueryStar:input_type -> bytebase.v1.UpdateSavedQueryStarRequest
+	9,  // 19: bytebase.v1.SavedQueryService.BatchUpdateSavedQueries:input_type -> bytebase.v1.BatchUpdateSavedQueriesRequest
+	15, // 20: bytebase.v1.SavedQueryService.DeleteSavedQuery:input_type -> bytebase.v1.DeleteSavedQueryRequest
+	11, // 21: bytebase.v1.SavedQueryService.GetSavedQueryPolicy:input_type -> bytebase.v1.GetSavedQueryPolicyRequest
+	12, // 22: bytebase.v1.SavedQueryService.SetSavedQueryPolicy:input_type -> bytebase.v1.SetSavedQueryPolicyRequest
+	18, // 23: bytebase.v1.SavedQueryService.CreateSavedQuery:output_type -> bytebase.v1.SavedQuery
+	18, // 24: bytebase.v1.SavedQueryService.GetSavedQuery:output_type -> bytebase.v1.SavedQuery
+	4,  // 25: bytebase.v1.SavedQueryService.ListSavedQueries:output_type -> bytebase.v1.ListSavedQueriesResponse
+	17, // 26: bytebase.v1.SavedQueryService.SearchSavedQueries:output_type -> bytebase.v1.SearchSavedQueriesResponse
+	6,  // 27: bytebase.v1.SavedQueryService.SearchSavedQueryFolders:output_type -> bytebase.v1.SearchSavedQueryFoldersResponse
+	18, // 28: bytebase.v1.SavedQueryService.UpdateSavedQuery:output_type -> bytebase.v1.SavedQuery
+	18, // 29: bytebase.v1.SavedQueryService.UpdateSavedQueryStar:output_type -> bytebase.v1.SavedQuery
+	10, // 30: bytebase.v1.SavedQueryService.BatchUpdateSavedQueries:output_type -> bytebase.v1.BatchUpdateSavedQueriesResponse
+	21, // 31: bytebase.v1.SavedQueryService.DeleteSavedQuery:output_type -> google.protobuf.Empty
+	13, // 32: bytebase.v1.SavedQueryService.GetSavedQueryPolicy:output_type -> bytebase.v1.SavedQueryPolicy
+	13, // 33: bytebase.v1.SavedQueryService.SetSavedQueryPolicy:output_type -> bytebase.v1.SavedQueryPolicy
+	23, // [23:34] is the sub-list for method output_type
+	12, // [12:23] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_v1_saved_query_service_proto_init() }
@@ -1136,13 +1417,14 @@ func file_v1_saved_query_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_saved_query_service_proto_rawDesc), len(file_v1_saved_query_service_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   14,
+			NumEnums:      1,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_v1_saved_query_service_proto_goTypes,
 		DependencyIndexes: file_v1_saved_query_service_proto_depIdxs,
+		EnumInfos:         file_v1_saved_query_service_proto_enumTypes,
 		MessageInfos:      file_v1_saved_query_service_proto_msgTypes,
 	}.Build()
 	File_v1_saved_query_service_proto = out.File

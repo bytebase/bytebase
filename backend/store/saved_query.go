@@ -2,7 +2,10 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -35,6 +38,10 @@ type SavedQueryMessage struct {
 	// The folder path this saved query lives in ("a/b/c", "" = unfiled).
 	Folder string
 
+	// Bindings are the per-object grants. Empty means private to the creator
+	// (the admin backstop aside).
+	Bindings []*storepb.SavedQueryBinding
+
 	// Output only fields
 	Size      int64
 	CreatedAt time.Time
@@ -50,6 +57,18 @@ type FindSavedQueryMessage struct {
 	Workspace  string
 
 	PrincipalEmail string
+
+	// AccessMembers restricts results to saved queries the caller can read:
+	// their own, plus any whose bindings name one of these principals
+	// ("user:{email}" and "group:{email}" — the caller and their groups).
+	// Leave nil to skip the access clause entirely, which is what the auditor
+	// List does.
+	//
+	// Must describe the same caller as PrincipalEmail: the clause reads "own"
+	// from PrincipalEmail and "granted" from here. Setting one without the
+	// other narrows the result rather than widening it, but the two disagreeing
+	// would be a bug.
+	AccessMembers []string
 
 	ResourceID *string
 
@@ -110,11 +129,26 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 			saved_query.payload,
 			saved_query.folder,
 			saved_query.name,
+			saved_query.bindings,
 			%s,
 			OCTET_LENGTH(saved_query.statement),
 			EXISTS (SELECT 1 FROM saved_query_star WHERE saved_query_star.saved_query = saved_query.resource_id AND saved_query_star.principal = ?)
 		FROM saved_query
 		WHERE TRUE`, statementField), find.PrincipalEmail)
+
+	// The read predicate, pushed into SQL rather than applied to the page
+	// afterwards: filtering after LIMIT would silently return short pages.
+	if find.AccessMembers != nil {
+		access := qb.Q().Space("saved_query.creator = ?", find.PrincipalEmail)
+		for _, member := range find.AccessMembers {
+			probe, err := bindingProbe(member)
+			if err != nil {
+				return nil, err
+			}
+			access.Or("saved_query.bindings @> ?", probe)
+		}
+		q.And("(?)", access)
+	}
 
 	if find.Workspace != "" {
 		q.And("EXISTS (SELECT 1 FROM project WHERE project.resource_id = saved_query.project AND project.workspace = ? AND project.deleted = FALSE)", find.Workspace)
@@ -155,7 +189,7 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 	var sheets []*SavedQueryMessage
 	for rows.Next() {
 		var sheet SavedQueryMessage
-		var payloadBytes []byte
+		var payloadBytes, bindingsBytes []byte
 		if err := rows.Scan(
 			&sheet.ResourceID,
 			&sheet.Creator,
@@ -165,6 +199,7 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 			&payloadBytes,
 			&sheet.Folder,
 			&sheet.Title,
+			&bindingsBytes,
 			&sheet.Statement,
 			&sheet.Size,
 			&sheet.Starred,
@@ -178,6 +213,12 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 		}
 		sheet.Database = payload.Database
 
+		bindings, err := unmarshalSavedQueryBindings(bindingsBytes)
+		if err != nil {
+			return nil, err
+		}
+		sheet.Bindings = bindings
+
 		sheets = append(sheets, &sheet)
 	}
 	if err := rows.Err(); err != nil {
@@ -186,6 +227,128 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 
 	return sheets, nil
 }
+
+// bindingProbe builds the jsonb containment operand that matches any binding
+// naming this principal, e.g. `[{"members":["user:a@corp.com"]}]`. `@>` on a
+// jsonb array is "contains an element containing this", so one probe per
+// principal, BitmapOr'd by the planner, answers "shared with me".
+func bindingProbe(member string) (string, error) {
+	probe, err := json.Marshal([]map[string]any{{"members": []string{member}}})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to build binding probe for %q", member)
+	}
+	return string(probe), nil
+}
+
+// marshalSavedQueryBindings writes the bindings as a protojson array at the
+// jsonb root. protojson has no top-level array form, so each element is
+// marshalled on its own and the array assembled here; the shape is pinned
+// because the GIN containment probes above depend on it.
+func marshalSavedQueryBindings(bindings []*storepb.SavedQueryBinding) (string, error) {
+	elements := make([]json.RawMessage, 0, len(bindings))
+	for _, binding := range bindings {
+		element, err := protojson.Marshal(binding)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to marshal saved query binding")
+		}
+		elements = append(elements, element)
+	}
+	out, err := json.Marshal(elements)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to marshal saved query bindings")
+	}
+	return string(out), nil
+}
+
+func unmarshalSavedQueryBindings(b []byte) ([]*storepb.SavedQueryBinding, error) {
+	if len(b) == 0 {
+		return nil, nil
+	}
+	var elements []json.RawMessage
+	if err := json.Unmarshal(b, &elements); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal saved query bindings")
+	}
+	bindings := make([]*storepb.SavedQueryBinding, 0, len(elements))
+	for _, element := range elements {
+		var binding storepb.SavedQueryBinding
+		if err := common.ProtojsonUnmarshaler.Unmarshal(element, &binding); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal saved query binding")
+		}
+		bindings = append(bindings, &binding)
+	}
+	return bindings, nil
+}
+
+// SavedQueryPolicyEtag derives the etag from the stored bindings themselves,
+// so no column has to be kept in step with them. Two policies with the same
+// grants produce the same etag, which is what compare-and-swap needs: a write
+// is rejected only when the grants actually moved.
+func SavedQueryPolicyEtag(bindings []*storepb.SavedQueryBinding) (string, error) {
+	marshalled, err := marshalSavedQueryBindings(bindings)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256([]byte(marshalled))
+	return hex.EncodeToString(sum[:]), nil
+}
+
+// SetSavedQueryBindings replaces a saved query's grants under compare-and-swap.
+// The row is locked and its current etag compared before the write, so a
+// full-replacement write can never silently undo a concurrent revocation.
+// Returns ErrSavedQueryEtagMismatch when the caller's etag is stale, and
+// reports false when the saved query is gone from the named project -- deleted,
+// or re-parented to the default project by a purge.
+func (s *Store) SetSavedQueryBindings(ctx context.Context, projectID, resourceID string, bindings []*storepb.SavedQueryBinding, expectedEtag string) (bool, error) {
+	marshalled, err := marshalSavedQueryBindings(bindings)
+	if err != nil {
+		return false, err
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	// Scoped to the project the caller named, not the saved query's global id.
+	// A project purge re-parents its members' saved queries to the default
+	// project, so a write resolved against the old project must land on
+	// nothing rather than on a row that has since moved out from under it.
+	var currentBytes []byte
+	if err := tx.QueryRowContext(ctx,
+		`SELECT bindings FROM saved_query WHERE resource_id = $1 AND project = $2 FOR UPDATE`,
+		resourceID, projectID).Scan(&currentBytes); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, errors.Wrapf(err, "failed to lock saved query %s", resourceID)
+	}
+	current, err := unmarshalSavedQueryBindings(currentBytes)
+	if err != nil {
+		return false, err
+	}
+	currentEtag, err := SavedQueryPolicyEtag(current)
+	if err != nil {
+		return false, err
+	}
+	if expectedEtag != currentEtag {
+		return false, ErrSavedQueryEtagMismatch
+	}
+
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE saved_query SET bindings = $1 WHERE resource_id = $2 AND project = $3`,
+		marshalled, resourceID, projectID); err != nil {
+		return false, errors.Wrapf(err, "failed to update bindings for saved query %s", resourceID)
+	}
+	if err := tx.Commit(); err != nil {
+		return false, errors.Wrap(err, "failed to commit transaction")
+	}
+	return true, nil
+}
+
+// ErrSavedQueryEtagMismatch reports that the policy moved under a
+// compare-and-swap write; the caller refetches and reapplies.
+var ErrSavedQueryEtagMismatch = errors.New("saved query policy etag mismatch")
 
 // CreateSavedQuery creates a new saved query. The insert transaction locks
 // the owning project row and requires it to be active, so a create racing a
@@ -406,6 +569,9 @@ func (s *Store) BatchUpdateSavedQueryFolder(ctx context.Context, resourceIDs []s
 	if err := rows.Err(); err != nil {
 		return 0, err
 	}
+	// Free the cursor before the UPDATE below: statements on the same
+	// transaction cannot interleave with an open one.
+	rows.Close()
 
 	if len(locked) > 0 {
 		if _, err := tx.ExecContext(ctx, `
@@ -427,15 +593,30 @@ func (s *Store) BatchUpdateSavedQueryFolder(ctx context.Context, resourceIDs []s
 // paths to that creator's rows, which is how the API layer applies the same
 // read rule the rows themselves carry: your own always, everyone's only with
 // the admin backstop.
-func (s *Store) ListSavedQueryFolderPaths(ctx context.Context, projectID string, creator *string, filterQ *qb.Query) ([]string, error) {
+// ListSavedQueryFolderPaths returns the distinct folder paths of the saved
+// queries a caller can read, narrowed by filterQ. Access is the same predicate
+// SearchSavedQueries applies, and for the same reason: a folder is only useful
+// if its contents are reachable. Scoping these to the caller's *own* rows
+// instead would hide a shared saved query filed by its creator — the tree is
+// seeded from here, and a row whose folder has no node can never be expanded
+// into.
+func (s *Store) ListSavedQueryFolderPaths(ctx context.Context, projectID string, principalEmail string, accessMembers []string, filterQ *qb.Query) ([]string, error) {
 	q := qb.Q().Space(`
 		SELECT DISTINCT folder
 		FROM saved_query
 		WHERE TRUE`)
 	q.And("saved_query.project = ?", projectID)
 	q.And("saved_query.folder <> ''")
-	if creator != nil {
-		q.And("saved_query.creator = ?", *creator)
+	if accessMembers != nil {
+		access := qb.Q().Space("saved_query.creator = ?", principalEmail)
+		for _, member := range accessMembers {
+			probe, err := bindingProbe(member)
+			if err != nil {
+				return nil, err
+			}
+			access.Or("saved_query.bindings @> ?", probe)
+		}
+		q.And("(?)", access)
 	}
 	if filterQ != nil {
 		q.And("?", filterQ)
@@ -479,7 +660,7 @@ func NormalizeSavedQueryFolder(folder string) (string, error) {
 	return normalized, nil
 }
 
-func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, filter string, allowTitleContains bool) (*qb.Query, error) {
+func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, accessMembers []string, filter string, allowTitleContains bool) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
 	}
@@ -530,7 +711,11 @@ func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, fil
 			}
 			return qb.Q().Space("saved_query.resource_id = ?", savedQueryID), nil
 		case "creator":
-			userID, err := getUserID(value.(string))
+			creator, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("invalid creator value %v, expect a string", value)
+			}
+			userID, err := getUserID(creator)
 			if err != nil {
 				return nil, err
 			}
@@ -542,7 +727,27 @@ func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, fil
 				}
 				return qb.Q().Space("NOT EXISTS (SELECT 1 FROM saved_query_star WHERE saved_query_star.saved_query = saved_query.resource_id AND saved_query_star.principal = ?)", caller), nil
 			}
-			return qb.Q().Space("TRUE"), nil
+			return nil, errors.Errorf("invalid starred value %v, expect true or false", value)
+		case "shared":
+			// Reached through a binding, which is narrower than "somebody else
+			// created it": an admin sees saved queries nobody shared with them,
+			// and those must not show up in a Shared view.
+			shared, ok := value.(bool)
+			if !ok {
+				return nil, errors.Errorf("invalid shared value %v, expect true or false", value)
+			}
+			granted := qb.Q().Space("FALSE")
+			for _, principal := range accessMembers {
+				probe, err := bindingProbe(principal)
+				if err != nil {
+					return nil, err
+				}
+				granted.Or("saved_query.bindings @> ?", probe)
+			}
+			if shared {
+				return qb.Q().Space("(saved_query.creator <> ? AND (?))", caller, granted), nil
+			}
+			return qb.Q().Space("(NOT (saved_query.creator <> ? AND (?)))", caller, granted), nil
 		case "folder":
 			folder, ok := value.(string)
 			if !ok {
@@ -617,7 +822,11 @@ func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, fil
 				if variable != "creator" {
 					return nil, errors.Errorf(`only "creator" support "!=" operator`)
 				}
-				userID, err := getUserID(value.(string))
+				creator, ok := value.(string)
+				if !ok {
+					return nil, errors.Errorf("invalid creator value %v, expect a string", value)
+				}
+				userID, err := getUserID(creator)
 				if err != nil {
 					return nil, err
 				}

@@ -367,9 +367,12 @@ describe("sheet context", () => {
       await viewContext!.fetchSheetList();
     });
 
+    // Shared is "reached through a binding", not "somebody else created it":
+    // the latter also matches saved queries an admin can read but nobody
+    // shared with them.
     expect(mocks.getAppState().searchSavedQueryFolders).toHaveBeenCalledWith(
       "projects/proj1",
-      'creator != "users/creator@example.com"'
+      "shared == true"
     );
     expect(container.textContent).toContain("theirs");
   });

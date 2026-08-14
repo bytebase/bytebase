@@ -1028,13 +1028,13 @@ const sheetFilterForView = (
   includeDisplayFilters = true
 ): string => {
   const email = useAppStore.getState().currentUser?.email ?? "";
-  // The server already restricts Search results to rows the caller can
-  // read (their own, plus everything for workspace admins), so "shared"
-  // is simply the readable rows someone else created.
+  // "Shared" means reached through a binding, which is narrower than "someone
+  // else created it": an admin can read saved queries nobody shared with them,
+  // and those must not appear here.
   const baseFilters =
     view === "my"
       ? [`creator == "users/${escapeCELStringLiteral(email)}"`]
-      : [`creator != "users/${escapeCELStringLiteral(email)}"`];
+      : [`shared == true`];
   return [
     ...baseFilters,
     ...extraFilters,

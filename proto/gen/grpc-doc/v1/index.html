@@ -2777,6 +2777,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetSavedQueryPolicyRequest"><span class="badge">M</span>GetSavedQueryPolicyRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.GetSavedQueryRequest"><span class="badge">M</span>GetSavedQueryRequest</a>
                 </li>
               
@@ -2790,6 +2794,14 @@
               
                 <li>
                   <a href="#bytebase.v1.SavedQuery"><span class="badge">M</span>SavedQuery</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SavedQueryBinding"><span class="badge">M</span>SavedQueryBinding</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SavedQueryPolicy"><span class="badge">M</span>SavedQueryPolicy</a>
                 </li>
               
                 <li>
@@ -2809,6 +2821,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.SetSavedQueryPolicyRequest"><span class="badge">M</span>SetSavedQueryPolicyRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdateSavedQueryRequest"><span class="badge">M</span>UpdateSavedQueryRequest</a>
                 </li>
               
@@ -2816,6 +2832,10 @@
                   <a href="#bytebase.v1.UpdateSavedQueryStarRequest"><span class="badge">M</span>UpdateSavedQueryStarRequest</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.v1.SavedQueryBinding.Level"><span class="badge">E</span>SavedQueryBinding.Level</a>
+                </li>
               
               
               
@@ -2928,7 +2948,7 @@
                 <li>
                   <a href="#bytebase.v1.ExportVCSProviderUsersResponse"><span class="badge">M</span>ExportVCSProviderUsersResponse</a>
                 </li>
-
+              
                 <li>
                   <a href="#bytebase.v1.GetPaymentInfoRequest"><span class="badge">M</span>GetPaymentInfoRequest</a>
                 </li>
@@ -31601,38 +31621,35 @@ Permissions required: bb.roles.delete</p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent resource whose saved queries are updated.
-Format: projects/{project} </p></td>
+                  <td><p>Format: projects/{project} </p></td>
                 </tr>
               
                 <tr>
                   <td>filter</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>To filter the batch update target.
-The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+                  <td><p>Select the saved queries to update, in CEL. See
+https://github.com/google/cel-spec
 
-Supported filter:
-- name: the saved query name in &#34;projects/{project}/savedQueries/{savedQuery}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator.
-- creator: the saved query creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
-- starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred saved queries, support &#34;==&#34; operator.
-- folder: the saved query folder path, support exact &#34;==&#34; operator. </p></td>
+Supported fields:
+- name: the saved query name. Supports &#34;==&#34; and &#34;in [...]&#34;.
+- creator: the creator in &#34;users/{email}&#34; format. Supports &#34;==&#34; and &#34;!=&#34;.
+- starred: whether the caller starred it. Supports &#34;==&#34;.
+- folder: the exact folder path. Supports &#34;==&#34;. </p></td>
                 </tr>
               
                 <tr>
                   <td>saved_query</td>
                   <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
                   <td></td>
-                  <td><p>The fields to apply to every matched saved query. </p></td>
+                  <td><p>The values to apply to every matched saved query. </p></td>
                 </tr>
               
                 <tr>
                   <td>update_mask</td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
-                  <td><p>The list of fields to be updated.
-Only support update the following fields for now:
-- `folder` </p></td>
+                  <td><p>Fields to update. Supported: `folder`. </p></td>
                 </tr>
               
             </tbody>
@@ -31656,7 +31673,8 @@ Only support update the following fields for now:
                   <td>updated_count</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The number of saved queries updated. </p></td>
+                  <td><p>How many saved queries were updated, which may be fewer than the filter
+matched. </p></td>
                 </tr>
               
             </tbody>
@@ -31680,7 +31698,7 @@ Only support update the following fields for now:
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent resource where this saved query will be created.
+                  <td><p>The project to create the saved query in.
 Format: projects/{project} </p></td>
                 </tr>
               
@@ -31712,8 +31730,31 @@ Format: projects/{project} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the saved query to delete.
-Format: projects/{project}/savedQueries/{savedQuery} </p></td>
+                  <td><p>Format: projects/{project}/savedQueries/{savedQuery} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetSavedQueryPolicyRequest">GetSavedQueryPolicyRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/savedQueries/{savedQuery} </p></td>
                 </tr>
               
             </tbody>
@@ -31737,8 +31778,7 @@ Format: projects/{project}/savedQueries/{savedQuery} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the saved query to retrieve.
-Format: projects/{project}/savedQueries/{savedQuery} </p></td>
+                  <td><p>Format: projects/{project}/savedQueries/{savedQuery} </p></td>
                 </tr>
               
             </tbody>
@@ -31762,45 +31802,39 @@ Format: projects/{project}/savedQueries/{savedQuery} </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent resource of the saved queries.
-Format: projects/{project}
-Use &#34;projects/-&#34; to list saved queries across all projects. </p></td>
+                  <td><p>The project to list saved queries in, or &#34;projects/-&#34; for every project.
+Format: projects/{project} </p></td>
                 </tr>
               
                 <tr>
                   <td>filter</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>To filter the list result.
-The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+                  <td><p>Filter the result, in CEL. See https://github.com/google/cel-spec
 
-Supported filter:
-- creator: the saved query creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
+Supported fields:
+- creator: the creator in &#34;users/{email}&#34; format. Supports &#34;==&#34; and &#34;!=&#34;.
 
 For example:
-creator == &#34;users/{email}&#34;
-creator != &#34;users/{email}&#34; </p></td>
+creator == &#34;users/alice@example.com&#34; </p></td>
                 </tr>
               
                 <tr>
                   <td>page_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of saved queries to return. The service may return fewer than
-this value.
-If unspecified, at most 10 saved queries will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                  <td><p>The maximum number of saved queries to return. The service may return
+fewer. Defaults to 10; values above 1000 are coerced to 1000. </p></td>
                 </tr>
               
                 <tr>
                   <td>page_token</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>A page token, received from a previous `ListSavedQueries` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListSavedQueries` must match
-the call that provided the page token. </p></td>
+                  <td><p>A page token from a previous ListSavedQueries call. Every other parameter
+must match the call that returned it: the token carries the offset reached
+so far, so changing `filter` or `page_size` mid-pagination reinterprets
+that offset against a different result set. </p></td>
                 </tr>
               
             </tbody>
@@ -31824,16 +31858,15 @@ the call that provided the page token. </p></td>
                   <td>saved_queries</td>
                   <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
                   <td>repeated</td>
-                  <td><p>The saved queries from the specified parent. </p></td>
+                  <td><p> </p></td>
                 </tr>
               
                 <tr>
                   <td>next_page_token</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>A token to retrieve next page of saved queries.
-Pass this value in the page_token field in the subsequent call to
-`ListSavedQueries` method to retrieve the next page of saved queries. </p></td>
+                  <td><p>Pass to the next ListSavedQueries call to fetch the following page. Empty
+on the last page. </p></td>
                 </tr>
               
             </tbody>
@@ -31857,8 +31890,7 @@ Pass this value in the page_token field in the subsequent call to
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the saved query resource, generated by the server.
-Canonical parent is project.
+                  <td><p>Server-generated.
 Format: projects/{project}/savedQueries/{savedQuery} </p></td>
                 </tr>
               
@@ -31866,17 +31898,17 @@ Format: projects/{project}/savedQueries/{savedQuery} </p></td>
                   <td>project</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The project resource name.
-Format: projects/{project} </p></td>
+                  <td><p>Format: projects/{project} </p></td>
                 </tr>
               
                 <tr>
                   <td>database</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The database resource name.
-Format: instances/{instance}/databases/{database}
-If the database parent doesn&#39;t exist, the database field is empty. </p></td>
+                  <td><p>The connected database, which must belong to the saved query&#39;s own
+project. Empty when none is connected, or when the database no longer
+exists.
+Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
@@ -31890,8 +31922,7 @@ If the database parent doesn&#39;t exist, the database field is empty. </p></td>
                   <td>creator</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The creator of the SavedQuery — the fixed owner; ownership does not
-transfer.
+                  <td><p>The fixed owner. Ownership does not transfer.
 Format: users/{email} </p></td>
                 </tr>
               
@@ -31899,46 +31930,119 @@ Format: users/{email} </p></td>
                   <td>create_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
-                  <td><p>The create time of the saved query. </p></td>
+                  <td><p> </p></td>
                 </tr>
               
                 <tr>
                   <td>update_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
-                  <td><p>The last update time of the saved query. </p></td>
+                  <td><p> </p></td>
                 </tr>
               
                 <tr>
                   <td>content</td>
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
-                  <td><p>The content of the saved query.
-By default, it will be cut off in SearchSavedQueries() method. If it doesn&#39;t match the `content_size`, you can
-use GetSavedQuery() request to retrieve the full content. </p></td>
+                  <td><p>The SQL text. SearchSavedQueries truncates it; when it is shorter than
+`content_size`, GetSavedQuery returns the whole thing. </p></td>
                 </tr>
               
                 <tr>
                   <td>content_size</td>
                   <td><a href="#int64">int64</a></td>
                   <td></td>
-                  <td><p>content_size is the full size of the content, may not match the size of the `content` field. </p></td>
+                  <td><p>The full size of the content, which may exceed the `content` returned. </p></td>
                 </tr>
               
                 <tr>
                   <td>starred</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>starred indicates whether the saved query is starred by the current authenticated user. </p></td>
+                  <td><p>Whether the calling user starred it. </p></td>
                 </tr>
               
                 <tr>
                   <td>folder</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The folder path this saved query lives in, set by its creator (or an
-admin). Empty means unfiled. A saved query lives in exactly one folder;
-a folder is a path on saved queries, e.g. &#34;a/b/c&#34;. </p></td>
+                  <td><p>The folder holding this saved query, set by its creator or an admin. A
+path like &#34;a/b/c&#34;; empty means unfiled. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SavedQueryBinding">SavedQueryBinding</h3>
+        <p>Binds members to one access level on one saved query. Not bytebase.v1.Binding</p><p>because per-object access here is a capability, not a role.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>level</td>
+                  <td><a href="#bytebase.v1.SavedQueryBinding.Level">SavedQueryBinding.Level</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>members</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The principals granted `level`, in bytebase.v1.Binding.members format,
+restricted to &#34;user:{email}&#34; and &#34;group:{email}&#34; -- prefix-checked, as
+project and workspace IAM check their own members.
+
+Service accounts and workload identities are not grantees: they own and
+run their own saved queries and reach them as the creator. Naming one
+under a &#34;user:&#34; prefix grants nothing rather than being rejected, because
+a caller&#39;s member is derived from their principal type, so such a binding
+matches nobody.
+
+A group is stored as a reference and never expanded, so its membership
+stays live and a large group costs no more than a small one. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SavedQueryPolicy">SavedQueryPolicy</h3>
+        <p>Who a saved query is shared with, and at what level. A saved query with no</p><p>bindings is private. The creator is never a binding member: ownership comes</p><p>from creating the saved query and cannot be granted away.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>bindings</td>
+                  <td><a href="#bytebase.v1.SavedQueryBinding">SavedQueryBinding</a></td>
+                  <td>repeated</td>
+                  <td><p>At most one binding per level. A member listed under two levels is
+rejected rather than resolved to the higher one. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>etag</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The etag of the policy as read. SetSavedQueryPolicy requires it and fails
+with ABORTED when it no longer matches. </p></td>
                 </tr>
               
             </tbody>
@@ -31962,30 +32066,35 @@ a folder is a path on saved queries, e.g. &#34;a/b/c&#34;. </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent resource of the saved queries.
-Format: projects/{project} </p></td>
+                  <td><p>Format: projects/{project} </p></td>
                 </tr>
               
                 <tr>
                   <td>filter</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>To filter the search result.
-The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+                  <td><p>Filter the result, in CEL. See https://github.com/google/cel-spec
 
-Supported filter:
-- name: the saved query name in &#34;projects/{project}/savedQueries/{savedQuery}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator.
-- title: the saved query title, support &#34;contains&#34; operator.
-- creator: the saved query creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
-- starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred saved queries, support &#34;==&#34; operator.
-- folder: the saved query folder path, support &#34;==&#34; operator.
+Supported fields:
+- name: the saved query name. Supports &#34;==&#34; and &#34;in [...]&#34;.
+- title: the title. Supports &#34;contains&#34;.
+- creator: the creator in &#34;users/{email}&#34; format. Supports &#34;==&#34; and &#34;!=&#34;.
+- shared: true selects only saved queries the caller reaches through a
+  binding, excluding their own and any seen through
+  bb.savedQueries.manage; false selects the rest. Supports &#34;==&#34;.
+- starred: whether the caller starred it. Supports &#34;==&#34;.
+- folder: the exact folder path. Supports &#34;==&#34;.
+
+The SQL Editor&#39;s views are `creator == &#34;users/{me}&#34;` for My and
+`shared == true` for Shared. Prefer `shared` over `creator !=` for the
+latter: for an admin, `creator !=` also matches saved queries nobody
+shared with them.
 
 For example:
-creator == &#34;users/{email}&#34;
-title.contains(&#34;saved query title&#34;)
-creator != &#34;users/{email}&#34;
+creator == &#34;users/alice@example.com&#34;
+shared == true
 starred == true
-starred == false
+title.contains(&#34;weekly report&#34;)
 folder == &#34;foo/bar&#34; </p></td>
                 </tr>
               
@@ -31993,18 +32102,19 @@ folder == &#34;foo/bar&#34; </p></td>
                   <td>page_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of saved queries to return. The service may return fewer than
-this value.
-If unspecified, at most 10 saved queries will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                  <td><p>The maximum number of saved queries to return. The service may return
+fewer. Defaults to 10; values above 1000 are coerced to 1000. </p></td>
                 </tr>
               
                 <tr>
                   <td>page_token</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>A page token, received from a previous `SearchSavedQueries` call.
-Provide this to retrieve the subsequent page. </p></td>
+                  <td><p>A page token from a previous SearchSavedQueries call. Every other
+parameter must match the call that returned it: the token carries the
+offset reached so far, so changing `filter` or `page_size` mid-pagination
+reinterprets that offset against a different result set and can skip or
+repeat rows. </p></td>
                 </tr>
               
             </tbody>
@@ -32028,16 +32138,15 @@ Provide this to retrieve the subsequent page. </p></td>
                   <td>saved_queries</td>
                   <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
                   <td>repeated</td>
-                  <td><p>The saved queries that matched the search criteria. </p></td>
+                  <td><p> </p></td>
                 </tr>
               
                 <tr>
                   <td>next_page_token</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>A token to retrieve next page of saved queries.
-Pass this value in the page_token field in the subsequent call to
-`SearchSavedQueries` method to retrieve the next page of saved queries. </p></td>
+                  <td><p>Pass to the next SearchSavedQueries call to fetch the following page.
+Empty on the last page. </p></td>
                 </tr>
               
             </tbody>
@@ -32061,23 +32170,16 @@ Pass this value in the page_token field in the subsequent call to
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent resource whose saved query folders are searched.
-Format: projects/{project} </p></td>
+                  <td><p>Format: projects/{project} </p></td>
                 </tr>
               
                 <tr>
                   <td>filter</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>To filter the folders by the saved queries they hold. Takes the same
-fields and syntax as `SearchSavedQueries.filter`, except `title`. A
-folder is returned when at least one saved query the caller can read
-matches, so the caller-scoping is the same as SearchSavedQueries: your
-own saved queries, plus everyone&#39;s for the admin backstop.
-
-For example, to split a folder tree into your own and everyone else&#39;s:
-creator == &#34;users/{email}&#34;
-creator != &#34;users/{email}&#34; </p></td>
+                  <td><p>Filter folders by the saved queries they hold. Takes the same fields and
+syntax as SearchSavedQueries.filter, except `title`. A folder is returned
+when at least one saved query the caller can read matches. </p></td>
                 </tr>
               
             </tbody>
@@ -32101,9 +32203,40 @@ creator != &#34;users/{email}&#34; </p></td>
                   <td>folders</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>The caller&#39;s folder paths, including every ancestor prefix, sorted.
-A folder is a path on saved queries (&#34;a/b/c&#34;), so empty folders cannot
-exist. </p></td>
+                  <td><p>Folder paths, every ancestor prefix included, sorted. A folder is a path
+on saved queries (&#34;a/b/c&#34;), so empty folders cannot exist. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SetSavedQueryPolicyRequest">SetSavedQueryPolicyRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/savedQueries/{savedQuery} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>policy</td>
+                  <td><a href="#bytebase.v1.SavedQueryPolicy">SavedQueryPolicy</a></td>
+                  <td></td>
+                  <td><p>Replaces the stored policy in full: a member absent from it loses their
+grant, and a policy with no bindings makes the saved query private again. </p></td>
                 </tr>
               
             </tbody>
@@ -32127,9 +32260,7 @@ exist. </p></td>
                   <td>saved_query</td>
                   <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
                   <td></td>
-                  <td><p>The saved query to update.
-
-The saved query&#39;s `name` field is used to identify the saved query to update.
+                  <td><p>`saved_query.name` identifies the saved query to update.
 Format: projects/{project}/savedQueries/{savedQuery} </p></td>
                 </tr>
               
@@ -32137,14 +32268,8 @@ Format: projects/{project}/savedQueries/{savedQuery} </p></td>
                   <td>update_mask</td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
-                  <td><p>The list of fields to be updated.
-Fields are specified relative to the saved query.
-(e.g., `title`, `content`; *not* `saved_query.title` or `saved_query.content`)
-Only support update the following fields for now:
-- `title`
-- `content`
-- `database`
-- `folder` </p></td>
+                  <td><p>Fields to update, relative to the saved query (`title`, not
+`saved_query.title`). Supported: `title`, `content`, `database`, `folder`. </p></td>
                 </tr>
               
             </tbody>
@@ -32168,8 +32293,7 @@ Only support update the following fields for now:
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the saved query to star or unstar.
-Format: projects/{project}/savedQueries/{savedQuery} </p></td>
+                  <td><p>Format: projects/{project}/savedQueries/{savedQuery} </p></td>
                 </tr>
               
                 <tr>
@@ -32188,12 +32312,42 @@ Format: projects/{project}/savedQueries/{savedQuery} </p></td>
       
 
       
+        <h3 id="bytebase.v1.SavedQueryBinding.Level">SavedQueryBinding.Level</h3>
+        <p>Nested because bytebase.v1 already defines a package-scoped EDITOR</p><p>(DatabaseChangeMode), and enum values live in the enclosing scope.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>LEVEL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>VIEWER</td>
+                <td>1</td>
+                <td><p>Open and read the saved query.</p></td>
+              </tr>
+            
+              <tr>
+                <td>EDITOR</td>
+                <td>2</td>
+                <td><p>VIEWER, plus write the title, content, and connected database. Sharing
+and deletion stay with the creator and admins.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
 
       
         <h3 id="bytebase.v1.SavedQueryService">SavedQueryService</h3>
-        <p>SavedQueryService manages saved queries for SQL Editor query development.</p><p>A saved query is private to its creator; `bb.savedQueries.manage` is the</p><p>admin backstop that can reach any saved query in scope. Per-object</p><p>VIEWER/EDITOR grants arrive with the access-model redesign, which brings</p><p>its own policy shapes and the GetIamPolicy/SetIamPolicy pair that manages</p><p>them.</p>
+        <p>SavedQueryService manages saved queries for SQL Editor query development.</p><p>A saved query is private to its creator until shared. Three things grant</p><p>access to one: being its creator (the fixed owner), holding a VIEWER or</p><p>EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop</p><p>that reaches private saved queries too. Bindings are managed through the</p><p>GetSavedQueryPolicy/SetSavedQueryPolicy pair.</p><p>Two gates sit on top of that: bb.savedQueries.search gates discovery, and</p><p>running a saved query needs the SQL Editor's own database permissions.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
@@ -32204,8 +32358,8 @@ Format: projects/{project}/savedQueries/{savedQuery} </p></td>
                 <td>CreateSavedQuery</td>
                 <td><a href="#bytebase.v1.CreateSavedQueryRequest">CreateSavedQueryRequest</a></td>
                 <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
-                <td><p>Creates a personal saved query used in SQL Editor. The creator becomes
-the fixed owner.
+                <td><p>Create a saved query. The creator becomes its fixed owner, and the saved
+query starts private.
 Permissions required: bb.savedQueries.create on the parent project</p></td>
               </tr>
             
@@ -32213,82 +32367,118 @@ Permissions required: bb.savedQueries.create on the parent project</p></td>
                 <td>GetSavedQuery</td>
                 <td><a href="#bytebase.v1.GetSavedQueryRequest">GetSavedQueryRequest</a></td>
                 <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
-                <td><p>Get a saved query by name. Returns NotFound for saved queries the
-caller cannot read.
-Permissions required: creator, or bb.savedQueries.manage in scope</p></td>
+                <td><p>Get a saved query with its full content. An unreadable saved query returns
+NotFound rather than PermissionDenied, so it stays unprobeable by name.
+Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage</p></td>
               </tr>
             
               <tr>
                 <td>ListSavedQueries</td>
                 <td><a href="#bytebase.v1.ListSavedQueriesRequest">ListSavedQueriesRequest</a></td>
                 <td><a href="#bytebase.v1.ListSavedQueriesResponse">ListSavedQueriesResponse</a></td>
-                <td><p>List saved queries: the grant-independent governance surface. Supports
-listing in a project, or across all projects by using `projects/-`, with
-whole statements rather than the previews Search returns — e.g. an
-offboarding review filtering by creator.
-Permissions required: bb.savedQueries.list</p></td>
+                <td><p>List saved queries for auditing. Bindings are ignored: the permission
+alone reads every matched saved query&#39;s content, private ones included.
+Returns whole statements rather than Search&#39;s previews, and accepts
+&#34;projects/-&#34; to span every project.
+Permissions required: bb.savedQueries.list on the parent project, or
+workspace-wide when the parent is &#34;projects/-&#34;</p></td>
               </tr>
             
               <tr>
                 <td>SearchSavedQueries</td>
                 <td><a href="#bytebase.v1.SearchSavedQueriesRequest">SearchSavedQueriesRequest</a></td>
                 <td><a href="#bytebase.v1.SearchSavedQueriesResponse">SearchSavedQueriesResponse</a></td>
-                <td><p>Search for saved queries in a project: the SQL Editor&#39;s hot list path,
-returning only rows the caller can read, with content previews.
-Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project</p></td>
+                <td><p>Search saved queries in one project: the SQL Editor&#39;s list path, returning
+content previews.
+
+Caller-scoped, always: the caller&#39;s own saved queries plus those a binding
+shares with them. bb.savedQueries.manage does not widen it — an admin
+reading everyone&#39;s saved queries uses ListSavedQueries, which is built for
+that. The permission here gates discovery only and grants access to
+nothing by itself.
+Permissions required: bb.savedQueries.search on the project</p></td>
               </tr>
             
               <tr>
                 <td>SearchSavedQueryFolders</td>
                 <td><a href="#bytebase.v1.SearchSavedQueryFoldersRequest">SearchSavedQueryFoldersRequest</a></td>
                 <td><a href="#bytebase.v1.SearchSavedQueryFoldersResponse">SearchSavedQueryFoldersResponse</a></td>
-                <td><p>Search the folder paths of the caller&#39;s saved queries in a project.
-Folders are a derived view over the `folder` field rather than a
-resource collection, so this is a custom method on savedQueries and
-shares SearchSavedQueries&#39; caller-scoped semantics — not the
-cross-creator reach of ListSavedQueries.
-Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project</p></td>
+                <td><p>Search the folder paths holding saved queries the caller can read. Folders
+are a derived view over the `folder` field rather than a resource
+collection, so this is a custom method, caller-scoped like
+SearchSavedQueries.
+
+A path is returned when at least one readable saved query sits in it —
+including one somebody else filed and shared, since a client seeds its
+folder tree from here and cannot expand into a folder it never learns
+about. Use the filter to split your own folders (`creator == &#34;users/me&#34;`)
+from the ones reaching you through a grant (`shared == true`).
+Permissions required: bb.savedQueries.search on the project</p></td>
               </tr>
             
               <tr>
                 <td>UpdateSavedQuery</td>
                 <td><a href="#bytebase.v1.UpdateSavedQueryRequest">UpdateSavedQueryRequest</a></td>
                 <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
-                <td><p>Update a saved query. `title`, `content`, and `database` require write
-access; `folder` re-files the saved query and is creator/admin only.
-Returns NotFound for saved queries the caller cannot read.
-Permissions required: creator, or bb.savedQueries.manage in scope</p></td>
+                <td><p>Update a saved query. `title`, `content`, and `database` need write
+access; `folder` is creator/admin only, because filing is organization
+rather than editing. `database` must belong to the saved query&#39;s own
+project. An unreadable saved query returns NotFound; a VIEWER who cannot
+write gets PermissionDenied.
+Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage</p></td>
               </tr>
             
               <tr>
                 <td>UpdateSavedQueryStar</td>
                 <td><a href="#bytebase.v1.UpdateSavedQueryStarRequest">UpdateSavedQueryStarRequest</a></td>
                 <td><a href="#bytebase.v1.SavedQuery">SavedQuery</a></td>
-                <td><p>Star or unstar a saved query for the caller. A star is always the
-caller&#39;s own per-user marker — invisible to others and carrying no
-access. The only requirement is that the caller can read the saved
-query being starred (which also keeps private saved query names
-unprobeable).
-Permissions required: read access to the saved query</p></td>
+                <td><p>Star or unstar a saved query for the caller. A star is a per-user marker:
+invisible to everyone else and granting nothing. Read access is the gate
+only so unreadable saved queries stay unprobeable.
+Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage</p></td>
               </tr>
             
               <tr>
                 <td>BatchUpdateSavedQueries</td>
                 <td><a href="#bytebase.v1.BatchUpdateSavedQueriesRequest">BatchUpdateSavedQueriesRequest</a></td>
                 <td><a href="#bytebase.v1.BatchUpdateSavedQueriesResponse">BatchUpdateSavedQueriesResponse</a></td>
-                <td><p>Batch re-file saved queries into a folder. The update mask supports
-`folder` only; only rows the caller may re-file are updated (their own,
-or any in scope for admins).
-Permissions required: creator, or bb.savedQueries.manage in scope</p></td>
+                <td><p>Re-file saved queries into a folder in bulk; the update mask supports
+`folder` only. An EDITOR binding does not carry re-filing, so matched
+saved queries the caller cannot re-file are skipped rather than rejected,
+and the response counts what actually changed.
+Permissions required: creator, or bb.savedQueries.manage</p></td>
               </tr>
             
               <tr>
                 <td>DeleteSavedQuery</td>
                 <td><a href="#bytebase.v1.DeleteSavedQueryRequest">DeleteSavedQueryRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p>Delete a saved query. Only the creator (or an admin) can delete.
-Returns NotFound for saved queries the caller cannot read.
-Permissions required: creator, or bb.savedQueries.manage in scope</p></td>
+                <td><p>Delete a saved query and every user&#39;s stars on it. An EDITOR binding never
+carries deletion. An unreadable saved query returns NotFound; a grantee
+who can read but not delete gets PermissionDenied.
+Permissions required: creator, or bb.savedQueries.manage</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetSavedQueryPolicy</td>
+                <td><a href="#bytebase.v1.GetSavedQueryPolicyRequest">GetSavedQueryPolicyRequest</a></td>
+                <td><a href="#bytebase.v1.SavedQueryPolicy">SavedQueryPolicy</a></td>
+                <td><p>Get a saved query&#39;s sharing policy: who it is shared with, at what level.
+
+Anyone who can read the saved query can read its policy, which is how a
+grantee learns whether they may edit it. Callers who cannot read the
+saved query get NotFound.
+Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage</p></td>
+              </tr>
+            
+              <tr>
+                <td>SetSavedQueryPolicy</td>
+                <td><a href="#bytebase.v1.SetSavedQueryPolicyRequest">SetSavedQueryPolicyRequest</a></td>
+                <td><a href="#bytebase.v1.SavedQueryPolicy">SavedQueryPolicy</a></td>
+                <td><p>Replace a saved query&#39;s sharing policy in full. `policy.etag` must match
+the stored policy or the call fails with ABORTED, so a stale write cannot
+reinstate a grant somebody just revoked.
+Permissions required: creator, or bb.savedQueries.manage</p></td>
               </tr>
             
           </tbody>
@@ -32396,6 +32586,26 @@ Permissions required: creator, or bb.savedQueries.manage in scope</p></td>
                 <td>DELETE</td>
                 <td>/v1/{name=projects/*/savedQueries/*}</td>
                 <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetSavedQueryPolicy</td>
+                <td>GET</td>
+                <td>/v1/{resource=projects/*/savedQueries/*}:getPolicy</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>SetSavedQueryPolicy</td>
+                <td>POST</td>
+                <td>/v1/{resource=projects/*/savedQueries/*}:setPolicy</td>
+                <td>*</td>
               </tr>
               
             
@@ -33239,27 +33449,27 @@ Required. </p></td>
         <h3 id="bytebase.v1.ExportVCSProviderUsersResponse">ExportVCSProviderUsersResponse</h3>
         <p></p>
 
-
+        
           <table class="field-table">
             <thead>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-
+              
                 <tr>
                   <td>content</td>
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
-
+              
             </tbody>
           </table>
 
+          
 
-
-
-
+        
+      
         <h3 id="bytebase.v1.GetPaymentInfoRequest">GetPaymentInfoRequest</h3>
         <p></p>
 

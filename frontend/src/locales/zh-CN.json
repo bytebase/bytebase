@@ -3038,6 +3038,16 @@
     "rows-affected": "行受影响",
     "rows-upper-limit": "到达查询结果条数上限",
     "save-sheet": "保存查询",
+    "saved-query-share": {
+      "editor": "编辑者",
+      "granted-at-other-level": "另有 {{count}} 个成员在其他权限级别。",
+      "not-shared": "尚未共享给任何人。",
+      "only-users-and-groups": "只能将访问权限授予用户和用户组。",
+      "policy-changed": "共享设置已在别处更改，已重新加载最新配置。",
+      "private-hint": "仅你和工作区管理员可以打开该已保存的查询。",
+      "shared-with": "共享给",
+      "viewer": "查看者"
+    },
     "scroll-to-bottom": "滚动到底部",
     "scroll-to-top": "滚动到顶部",
     "search-history-by-statement": "搜索 SQL 语句",

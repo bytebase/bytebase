@@ -45,10 +45,9 @@ Cited throughout as G1–G8.
 2. **Private by default**; per-object **VIEWER / EDITOR** grants to `user:`
    and `group:` principals. No grantable owner tier.
 3. **BigQuery-layered gates**: a per-object grant carries content access;
-   *discovery* (Search, always per-project) is gated by a dedicated
-   `bb.savedQueries.search` permission carried by the human project roles —
-   automation roles stay off the surface (`manage` passes too — the admin
-   backstop);
+   *discovery* (Search, always per-project and always caller-scoped) is gated
+   by a dedicated `bb.savedQueries.search` permission carried by the human
+   project roles — automation roles stay off the surface;
    *running* is gated by the SQL Editor's own database permissions. Leaving
    a project ends discovery and run; explicit grants persist until
    revoked.
@@ -212,314 +211,340 @@ Alternatives the rejected options.
 
 ### Model and access rules
 
-A saved query carries a policy of per-object grants; the `creator` is the
-immutable owner; a private saved query has no bindings. **Ownership is a
-typed principal** — following BigQuery, whoever holds `create` owns what
-they create, so `creator` may be a user (`users/{email}`) or a service
-account / workload identity (`serviceAccounts/{email}`, …); `read/write/
-share/delete`'s `u == s.creator` compares by principal identity, any type.
-Only *sharing* is narrower: binding members stay `user:`/`group:` (below),
-so a service account can own and run its own automation queries but is
-never a grantee — its access comes from being the creator (or an admin).
+Three things grant access to a saved query, and nothing else does:
+
+- **Creator.** Whoever created it owns it, permanently. Ownership never
+  transfers and cannot be granted away (G4).
+- **Binding.** A VIEWER or EDITOR grant to a `user:` or `group:` principal,
+  stored on the saved query itself. A saved query with no bindings is private.
+- **Admin backstop.** `bb.savedQueries.manage` reaches any saved query in
+  scope, private ones included — matching `dataform.admin` and Databricks
+  workspace admins, and what makes incident response and orphan cleanup
+  possible (decision 5).
 
 ```
-Grant levels:  VIEWER (open, read)  <  EDITOR (+ write content/title/database)
+Grant levels:  VIEWER (open, read)  <  EDITOR (+ write title/content/database)
 Principals:    user:{email} | group:{email}
 ```
 
-**Member format follows `bytebase.v1.IamPolicy` exactly** — the same
-`user:`/`group:` binding prefixes (`common.UserBindingPrefix` /
-`GroupBindingPrefix`) the project and workspace policies use, restricted to
-the `user:` and `group:` types (no `allUsers`, `serviceAccount:`, or
-`workloadIdentity:`). This is a deliberate invariant: principal parsing,
-group expansion, and the share-with-project snapshot all reuse the existing
-IAM machinery unchanged, and a project binding copies into a saved-query
-binding verbatim.
+The creator may be any principal type — a user, a service account, a workload
+identity — since whoever holds `create` owns what they create. Only *sharing*
+is narrower: binding members are `user:` and `group:` only, so a service
+account can own and run its own automation queries but is never a grantee.
 
-The whole model (G1); every RPC gate derives from these. Notation: `u` is
-the caller, `P` a project, `s` a saved query, `s.project` its owning
-project; "holds" means any of `u`'s role bindings — project-level (direct
-or via a group) or workspace-level — grants the permission. Binding
-conditions are handled precisely: expiry (`request.time`) is honored, but
-a binding whose condition scopes *resources* (databases, environments)
-confers **no** `bb.savedQueries.*` permission at all — saved-query
-surfaces are project-wide, and a data-slice grant must not silently widen
-to them. The generic interceptor cannot enforce this (it evaluates
-`request.time` only and passes residual resource conditions), so the rule
-lives where saved-query code evaluates permissions: the CUSTOM gates, and
-an in-handler source re-check on **both** IAM methods (`create`, `list`)
-that rejects resource-conditioned bindings (see Per-RPC access). Same
-narrowing stance as the snapshot's condition skip:
+Member format follows `bytebase.v1.IamPolicy` exactly, on both sides of the
+boundary it draws. The API takes the binding form (`user:`, `group:`), minus
+the types above; the store holds the resource-name form the IAM policy
+payloads hold, `users/{email}` and `groups/{email}`, converted once on write
+as `convertToStoreIamPolicyMember` does for a project policy.
+
+The read path then converts nothing: `iam.PrincipalMembers` already yields a
+caller's members in stored form, so the access clause compares them to
+`bindings` directly. It also keeps principal typing in one place — a caller's
+own member comes from `formatUserNameByType`, so a service account is only
+ever named `serviceAccounts/{email}` and a binding naming one under a user
+prefix matches nobody. That is what lets the write path validate members by
+prefix alone, exactly as project IAM does.
+
+#### The rules
+
+Every RPC gate derives from these (G1). `u` is the caller, `P` a project, `s`
+a saved query; "holds" means any of `u`'s role bindings — project-level,
+direct or via a group, or workspace-level — grants the permission.
 
 ```
-admin(u, P)    = u holds bb.savedQueries.manage on P          -- the dataform.admin backstop
-grant(s, u)    = max level (VIEWER|EDITOR) among s.bindings whose principal is in principals(u)
+admin(u, P)    = u holds bb.savedQueries.manage on P
+grant(s, u)    = max level (VIEWER|EDITOR) among s.bindings matching principals(u)
 
 create(u, P)   = u holds bb.savedQueries.create on P
-discover(u, P) = u holds bb.savedQueries.search on P          -- gates Search, not content
+discover(u, P) = u holds bb.savedQueries.search on P     -- gates Search, not content
 read(s, u)     = admin(u, s.project) OR u == s.creator OR grant(s, u) >= VIEWER
 write(s, u)    = admin(u, s.project) OR u == s.creator OR grant(s, u) >= EDITOR
-share(s, u)    = admin(u, s.project) OR u == s.creator        -- manage the policy
+share(s, u)    = admin(u, s.project) OR u == s.creator
 delete(s, u)   = admin(u, s.project) OR u == s.creator
 ```
 
-The four role permissions the rules reference (G3–G6) — everything between
-them (who reads, edits, re-shares a *specific* saved query) is that query's
-own bindings:
+#### The four permissions
 
 | Permission | Meaning |
 |---|---|
 | `bb.savedQueries.create` | Create saved queries in the project |
-| `bb.savedQueries.search` | Discover: the per-member Search and folder list (results still filtered to `read(s,u)`) |
-| `bb.savedQueries.list` | Auditor: enumerate/filter in scope (project or `projects/-`), read-only, ignoring grants |
-| `bb.savedQueries.manage` | Admin: read/write/re-share/delete any saved query in scope, incl. private |
+| `bb.savedQueries.search` | Discover: Search and the folder list, results still filtered to `read(s,u)` |
+| `bb.savedQueries.list` | Audit: enumerate in scope, read-only, ignoring bindings |
+| `bb.savedQueries.manage` | Admin: read/write/re-share/delete anything in scope, private included |
 
-There is no `get` permission — bindings decide reads (`bb.worksheets.get`
-is dropped, not renamed). `search` is a dedicated permission rather than a
-ride on `bb.projects.get` (see Alternatives) so custom roles can control
-the saved-query surface independently of project visibility; the decoupled
-combos are API-level shapes — the UI needs `bb.projects.get` to render
-project context, and every search-carrying role also holds it. `list` and
-`manage` can read content in scope — that is their purpose — so neither
-belongs in default member roles (decision 7). Role mapping: the human project roles — `projectOwner`,
-`projectDeveloper`, `sqlEditorUser`, `sqlEditorReadUser`, `projectViewer` —
-carry `create` and `search`; the automation roles (`projectReleaser`,
-`gitopsServiceAgent`) carry **neither**, keeping CI principals off the
-saved-query surface entirely — which is what makes the share-with-project
-snapshot's role filter meaningful for them. `projectOwner` carries
-project-scoped `list` + `manage`; `workspaceAdmin`/`workspaceDBA` carry
-**all four** workspace-scoped — they are human operator roles, and an
-admin who could manage everyone's queries yet not draft their own would
-be absurd. `manage` implies the Search gate — Search evaluates
-`discover ∨ admin` in the handler — so a manage-only custom role can
-still enumerate what it manages; there is no hidden permission
-coupling.
+There is no `get` permission — bindings decide reads, so `bb.worksheets.get`
+is dropped rather than renamed. `search` is dedicated rather than riding on
+`bb.projects.get` (see Alternatives) so a custom role can control the
+saved-query surface independently of project visibility.
 
-The gates are **layered, exactly as new BigQuery enforces them** (G3): the
-per-object grant carries content access (`codeViewer/Editor` on the asset);
-a dedicated permission gates **discovery** — `SearchSavedQueries`
-requires `bb.savedQueries.search` or `manage` (the backstop must be able
-to enumerate what it manages), the exact `dataform.repositories.list`
-analog, always per-project (no cross-project "shared with me"; no peer
-has one); and
-**running** always passes the SQL Editor's own database grants, the
-`bigquery.jobUser` analog. A grantee who is not a project member opens the
-saved query by its link — BigQuery's own sharing flow, "grant the role,
-then share the link" — but cannot browse the project or run anything in
-it. Databricks and Snowflake enforce their container structurally (an ACL
-can only name a workspace/account user); BigQuery and this design let a
-grant name any workspace identity, expressing the container through the
-discovery and run gates instead.
+| Role | create | search | list | manage |
+|---|:--:|:--:|:--:|:--:|
+| `workspaceAdmin`, `workspaceDBA` | ✓ | ✓ | ✓ | ✓ |
+| `projectOwner` | ✓ | ✓ | ✓ | ✓ |
+| `projectDeveloper`, `sqlEditorUser`, `sqlEditorReadUser`, `projectViewer` | ✓ | ✓ | | |
+| `projectReleaser`, `gitopsServiceAgent` | | | | |
 
-**Offboarding.** Removing a user from a project ends discovery and run
-immediately (workspace-wide roles aside — those reach every project by
-design). Explicitly granted content access — and the creator's access to
-their own queries — persists until revoked, and the revocation surface is
-explicit: an offboarding review is **two `ListSavedQueries` filters** over
-the target. `creator == target` lists the rows they own — no binding
-exists for these, so no member filter can find them (remediation: an
-admin deletes them, or deliberately leaves the departed user their own
-drafts). `member == target`, given a `user:` principal, **expands the
-target's group memberships server-side** — the same `principals(u)`
-expansion the read path uses — listing rows granted directly *and* via
-any of the user's groups (a `group:` principal matches that group's
-rows); direct grants strip via `SetIamPolicy`, while group-held access is
-revoked at the group (leave or edit it), not per-query — a group grant's
-audience is deliberately the live group, and workspace deactivation ends
-everything. This is precisely BigQuery's
-behavior. The audit's Problem-1 complaint was never retention itself but
-*implicit* retention — flag-derived access with no grant to see, audit,
-or revoke.
+Two things this table encodes. `list` and `manage` read other people's content
+by design, so neither belongs in a default member role (decision 7). And the
+automation roles carry nothing at all, which keeps CI principals off the
+saved-query surface entirely — the property that makes the share-with-project
+role filter meaningful.
 
-**Share-with-project is a snapshot.** There is deliberately no derived
-"everyone in the project" principal (see Alternatives); the share dialog's
-*Share with project* shortcut writes the project's current IAM principals —
-`group:` and `user:` bindings, not an expansion of members — into the
-policy at the chosen level. The source is the project's **effective**
-role bindings, not just its own policy row: a project role granted from
-the *workspace* IAM policy applies to every project, so those bindings are
-folded in too (the same "holds on P" the `discover` gate uses) — otherwise
-a workspace-level project member would pass discovery yet be silently
-omitted from the share. Only bindings **whose role carries
-`bb.savedQueries.search` but *not* `bb.savedQueries.manage`** are included.
-Two exclusions, one rule — snapshot only principals whose sole path to the
-query *is* a per-object grant: a role kept off the saved-query surface (a
-CI releaser) has no `search` and must not be swept in; an admin role
-(`workspaceAdmin`/`workspaceDBA`, or `projectOwner`) reaches the query
-through the `manage` **backstop**, not a grant, so freezing it into a
-VIEWER/EDITOR binding is both redundant *and* a residual-access bug —
-the grant would outlive the admin role and leave a former operator
-deep-link access. That leaves the pure project audience
-(`projectDeveloper`, `sqlEditorUser`, `sqlEditorReadUser`, `projectViewer`),
-which is exactly who "share with everyone here" means. `allUsers` members — which
-self-hosted project IAM permits — are **skipped, never expanded**: the
-per-object policy accepts only `user:` and `group:` principals
-(`SetIamPolicy` rejects anything else), and freezing a workspace-wide
-audience into per-user grants would be exactly the member explosion the
-snapshot avoids. The dialog surfaces the skip so the sharer can grant a
-group instead. Snapshots keep group dynamism (a group
-gaining a member propagates, since the entry stores the group reference) but
-not membership dynamism (a principal added to the project later is re-shared
-by the owner, as in every group-based peer). Project bindings carrying a CEL
-`condition` (expiring or scoped access) are **skipped**: a time-bounded
-grant cannot be faithfully frozen into an unconditional one, and for a
-governance product under-granting (the owner re-shares) beats silently
-converting expiring access into permanent access.
+The discovery gate is `search` alone, not "search or manage". The search family
+is caller-scoped, so letting `manage` through would show a role only its own
+rows — no use to it, and one more rule to explain. Admins read everyone's saved
+queries through `ListSavedQueries`, and every predefined role holding `manage`
+holds `search` too.
 
-**Ownership does not transfer** (G4): the creator alone (plus admins)
-re-shares or deletes. Transfer/co-ownership would add a tier and an
-orphan-guard for a case the admin backstop and fork-a-copy already cover.
-**The admin backstop** (`bb.savedQueries.manage`) matches `dataform.admin`
-and Databricks workspace admins: read/write/re-share/delete anything in
-scope, private included — a deliberate privacy reversal (decision 5) that
-makes orphan cleanup and incident response possible.
+#### Layered gates
+
+Access is three independent layers, exactly as new BigQuery enforces them (G3):
+
+| Layer | Gate | BigQuery analog |
+|---|---|---|
+| Content | the binding on the saved query | `dataform.codeViewer` / `codeEditor` |
+| Discovery | `bb.savedQueries.search` on the project | `dataform.repositories.list` |
+| Running | the SQL Editor's own database permissions | `bigquery.jobUser` |
+
+So a grantee outside the project opens the saved query by link — BigQuery's own
+"grant the role, then share the link" flow — but cannot browse the project or
+run anything in it. Discovery is always per-project; there is no cross-project
+"shared with me", and no peer has one.
+
+**Conditioned role bindings.** Expiry (`request.time`) is honored. A binding
+whose condition scopes *resources* — databases, environments — confers **no**
+`bb.savedQueries.*` permission at all: these surfaces are project-wide, and a
+data-slice grant must not silently widen to them. The generic interceptor
+cannot enforce this (it evaluates `request.time` only and passes residual
+resource conditions), so the rule lives in saved-query code: the CUSTOM gates,
+plus an in-handler source re-check on both IAM methods, `create` and `list`.
+
+#### Offboarding
+
+Removing a user from a project ends discovery and running immediately
+(workspace-wide roles aside — those reach every project by design). Explicit
+grants, and the creator's access to their own queries, persist until revoked.
+Three levers, blunt to precise:
+
+1. **Workspace deactivation** ends everything at once.
+2. **Group membership** revokes every group-held grant in one edit, since a
+   group binding names the live group rather than a frozen expansion.
+3. **`SetSavedQueryPolicy`** strips a direct grant on one saved query.
+
+Users can always see what they hold: `SearchSavedQueries` with `shared == true`
+returns everything shared with the caller.
+
+What v1 does not ship is the third-party direction — a bulk "what is still
+shared with *this other person*" sweep. Search cannot answer it, since it
+scopes to the caller's own readable set. `ListSavedQueries` filters by
+`creator`, which finds what the departing user owns (no grant-based filter
+could find those anyway; an admin deletes them, or deliberately leaves them
+their drafts), but there is no `member` filter and bindings are not on the
+`SavedQuery` resource, so enumerating someone's residual grants means walking
+`GetSavedQueryPolicy` per saved query as an admin.
+
+That is a scope cut, not a model limitation: the grants exist, are readable,
+and are revocable per query — only the sweep over them is missing, and a
+`member ==` filter slots in later as a purely additive change. The audit's
+Problem-1 complaint was never retention itself but *implicit* retention:
+flag-derived access with no grant to see, audit, or revoke. Grants are now
+explicit objects with a read and a write API, which answers it.
+
+#### Share with project
+
+There is deliberately no derived "everyone in the project" principal (see
+Alternatives). The share dialog's *Share with project* shortcut instead
+snapshots the project's current principals into the policy at the chosen
+level, as `user:` and `group:` bindings — never an expansion of group members.
+
+The source is the project's **effective** role bindings, not just its own
+policy row: a project role granted at the workspace level applies to every
+project, so those fold in too. Otherwise a workspace-level project member
+would pass discovery yet be silently missing from the share.
+
+Four things are skipped:
+
+| Skipped | Why |
+|---|---|
+| Roles without `search` | A CI releaser is deliberately off this surface; sweeping it in would put it back on |
+| Roles with `manage` | Admins reach the query through the backstop, so a binding is redundant *and* would outlive the admin role, leaving a former operator deep-link access |
+| `allUsers` members | The policy accepts only `user:`/`group:`, and freezing a workspace-wide audience into per-user grants is the member explosion the snapshot exists to avoid. The dialog surfaces the skip so the sharer can grant a group instead |
+| Conditioned bindings | A time-bounded grant cannot be faithfully frozen into an unconditional one; under-granting beats silently making expiring access permanent |
+
+What remains is the pure project audience — `projectDeveloper`,
+`sqlEditorUser`, `sqlEditorReadUser`, `projectViewer` — which is exactly who
+"share with everyone here" means.
+
+A snapshot keeps group dynamism (a group gaining a member propagates, since the
+binding stores the group reference) but not membership dynamism: a principal
+added to the project later is re-shared by the owner, as in every group-based
+peer.
+
 
 ### API and authorization
 
-Sharing is a policy on the resource, managed via a
-`GetIamPolicy`/`SetIamPolicy` pair — new BigQuery's shape; Databricks and
-Snowflake likewise keep permissions on a dedicated surface. Because Bytebase
-has no resource-level role store below the project, the policy carries
-capability **levels** grouped by member list, evaluated by the saved-query
-handlers, not central `CheckPermission` (decision 6). `SetIamPolicy` is
-**compare-and-swap**: `GetIamPolicy` returns an `etag`, `SetIamPolicy`
-must present it, and a mismatch aborts for refetch — a full-replacement
-write may never silently overwrite a concurrent revocation (the
-offboarding race). **`GetIamPolicy` is gated on `share(s,u)`, not
-`read(s,u)`** — reading the full member list is a sharer/admin operation,
-as in GCP (`getIamPolicy` is its own privileged permission) and Bytebase's
-project policy. An ordinary VIEWER/EDITOR never needs the roster: their own
-capability arrives as `effective_level` on every row, so a query shared
-with a contractor or a narrow partner group does not leak the rest of the
-ACL to them.
+Sharing is a policy on the resource, read and written by the
+`GetSavedQueryPolicy`/`SetSavedQueryPolicy` pair — new BigQuery's shape, and
+Databricks and Snowflake likewise keep permissions on a dedicated surface. The
+pair is named for the resource rather than reusing `GetIamPolicy`/`SetIamPolicy`,
+which already exist on `ProjectService` and `WorkspaceService` returning
+`bytebase.v1.IamPolicy`: one method name with two return types across the same
+API is a trap on the generated SDK and OpenAPI surfaces.
 
-**Database is project-scoped.** `database` is an ordinary `write(s,u)`
-field, but with one invariant `CreateSavedQuery`/`UpdateSavedQuery` enforce
-(carried over from today's `getWorksheetDatabase`): a set database must
-belong to the saved query's **own project**, and is stored canonically. A
+Because Bytebase has no resource-level role store below the project, the policy
+carries capability **levels** grouped by member list, evaluated by the
+saved-query handlers rather than the central `CheckPermission` (decision 6).
+
+Two properties matter:
+
+- **`SetSavedQueryPolicy` is compare-and-swap.** `GetSavedQueryPolicy` returns
+  an `etag`; the write must present it, and a mismatch aborts for refetch. A
+  full-replacement write may never silently overwrite a concurrent revocation
+  — the offboarding race.
+- **`GetSavedQueryPolicy` is gated on `read(s,u)`**, the same predicate as
+  reading the saved query itself, and returns the whole policy. That is what
+  lets a grantee discover whether they may edit, which is the only way to
+  know now that nothing caller-relative rides on the resource. Writing the
+  policy still needs `share(s,u)`.
+
+  An earlier revision filtered the response so a grantee saw only their own
+  bindings. Dropped as unnecessary: any authenticated user can already list
+  every user in the workspace, so all the filtering concealed was which of
+  those colleagues hold a grant on this query, from someone who holds one
+  themselves. It also had no peer — GCP's `getIamPolicy` is all-or-nothing —
+  and it bought a second response shape plus an invariant about not writing a
+  partial view back. Seeing who else can reach a query you can reach is
+  arguably the better governance property anyway.
+
+**Database is project-scoped.** `database` is an ordinary `write(s,u)` field
+with one invariant, carried over from today's `getWorksheetDatabase`: a set
+database must belong to the saved query's own project, stored canonically. A
 project-A editor cannot pin a project-B database onto a project-A query —
-otherwise Get/Search responses and the deep link would become a
-cross-project metadata surface even though running still needs that
-database's own grants. Empty is allowed (no connected database); the
-reference stays soft (nullable, no FK) and may dangle after the database is
-deleted or transferred, degrading to "no database" in the UI.
+otherwise Get/Search responses and the deep link become a cross-project
+metadata surface, even though running still needs that database's own grants.
+Empty is allowed, and the reference stays soft (nullable, no FK), so it may
+dangle after the database is deleted or transferred and degrade to "no
+database" in the UI.
 
-**Per-RPC access.** `CreateSavedQuery` and `ListSavedQueries` are IAM — a
-single family permission checked at the interceptor. Because the platform's
-generic check evaluates conditions with `request.time` only and passes
-residual resource conditions, **both re-check the permission source
-in-handler and reject resource-conditioned bindings**, enforcing the family
-condition rule uniformly: a database- or environment-scoped role confers
-neither `list`'s content read nor `create`'s project-wide row. The search
-family (`SearchSavedQueries`, `SearchSavedQueryFolders`)
-is CUSTOM — its gate is `discover(u, P) ∨ admin(u, P)`, an OR the
-single-permission interceptor cannot express — and every object method is
-a CUSTOM per-row predicate.
-
-`SearchSavedQueries` and `ListSavedQueries` are **two enumeration surfaces
-for two use cases**, not redundant: Search is the **SQL Editor** — a member
-browsing what they can use *in one project* (My / Shared / Starred),
-grant-respecting, preview-only, on the hot path; List is **governance** — an
-auditor or service account enumerating by `creator` (or other metadata)
-*across projects* (`projects/-`), grant-independent, full content,
-`bb.savedQueries.list`-gated. They overlap only for an admin within a single
-project (both can surface every row), by different lenses. One boundary is
-deliberately left out: a member has **no cross-project "all my own queries"
-view** — discovery is per-project (peer-consistent with BigQuery/Databricks),
-and the only `projects/-` path is the privileged audit List. If a
-self-scoped cross-project view is later wanted, it is safe to add without
-`list` — a `creator == me` query exposes only the caller's own rows, an
-additive relaxation, not a new surface.
+**Per-RPC access.** `CreateSavedQuery` and `ListSavedQueries` are IAM — one
+family permission at the interceptor — and both re-check the permission source
+in-handler to reject resource-conditioned bindings (see Conditioned role
+bindings). The search family is CUSTOM because its gate is
+`discover(u,P) ∨ admin(u,P)`, an OR the single-permission interceptor cannot
+express. Every object method is a CUSTOM per-row predicate.
 
 | RPC | Auth | Gate | Content / audit |
 |---|---|---|---|
-| `CreateSavedQuery` | IAM `create` + handler source re-check | creator becomes owner | writes own; audited |
-| `SearchSavedQueries` | CUSTOM | `discover ∨ admin` → rows where `read(s,u)`; admin: all | previews; unaudited |
-| `ListSavedQueries` | IAM `list` + handler source re-check | all rows matching `filter`; `projects/-` allowed | full content (FULL); unaudited |
+| `CreateSavedQuery` | IAM `create` + source re-check | creator becomes owner | writes own; audited |
+| `SearchSavedQueries` | CUSTOM | `discover` → the caller's own rows plus those a binding grants; admins not widened | previews; unaudited |
+| `ListSavedQueries` | IAM `list` + source re-check | all rows matching `filter`; `projects/-` allowed | full content; unaudited |
 | `GetSavedQuery` | CUSTOM | `read(s,u)`; NotFound when unreadable | full content; unaudited |
 | `UpdateSavedQuery` | CUSTOM | title/content/database `write(s,u)`; `folder` creator/admin | returns content; audited |
 | `DeleteSavedQuery` | CUSTOM | `delete(s,u)` | — ; audited |
-| `GetIamPolicy` | CUSTOM | `share(s,u)` — sharer/admin only (see below) | policy only; unaudited |
-| `SetIamPolicy` | CUSTOM | `share(s,u)` + etag CAS | policy only; audited |
+| `GetSavedQueryPolicy` | CUSTOM | `read(s,u)`; NotFound when unreadable | policy only; unaudited |
+| `SetSavedQueryPolicy` | CUSTOM | `share(s,u)` + etag CAS | policy only; audited |
 | `UpdateSavedQueryStar` | CUSTOM | `read(s,u)` — star any readable query | — ; unaudited |
 | `BatchUpdateSavedQueries` | CUSTOM | rows the caller may re-file (creator; admin: any); mask limited to `folder` | count only; audited |
-| `SearchSavedQueryFolders` | CUSTOM | `discover ∨ admin` → the caller's own folder paths | paths only; unaudited |
+| `SearchSavedQueryFolders` | CUSTOM | `discover` → folder paths of readable rows, same access clause as Search | paths only; unaudited |
 
-Duplicate/fork needs no RPC: read what you can already see, then
-`CreateSavedQuery` — the copy is yours and private.
+Duplicate and fork need no RPC: read what you can already see, then
+`CreateSavedQuery`. The copy is yours, and private.
 
-**Audit events.** Today's `WorksheetService` carries **no**
-`bytebase.v1.audit` annotations at all (sheet and database services do) —
-this design closes that gap, under one invariant: **the audit log records
-changes, not lookups.** Every RPC that mutates a saved query or its policy
-is annotated — `CreateSavedQuery`, `UpdateSavedQuery`,
-`BatchUpdateSavedQueries`, `DeleteSavedQuery`, and `SetIamPolicy` (the
-share event) — and no read RPC is. This is the same line the rest of the
-v1 API draws, and it keeps the annotation set derivable from the method
-rather than from who the caller happened to be.
+#### Search versus List
 
-The reads left unaudited include two privileged ones, deliberately:
-`GetSavedQuery`/`SearchSavedQueries` under the admin backstop, and the
-grant-bypassing `ListSavedQueries`. Both are governance surfaces gated by
-permissions no default member role carries (decision 7), so the control is
-*who holds `list`/`manage`*, not a read trail behind them — and a read
-trail on the SQL Editor's own hot path would be mostly the caller reading
-their own drafts. This drops the earlier revision's read-side machinery:
-Search returns previews for every row the caller can read, admin-override
-rows included (no metadata-only carve-out), and `UpdateSavedQuery` is
-audited outright rather than only when it exercises the override.
+Two enumeration surfaces for two use cases, not redundant:
 
-Two costs, stated plainly. First, **autosave writes are audit events**:
-the editor saves on a 2-second debounce, so an active editing session
-emits an audit row every couple of seconds, and saved-query writes will
-dominate the log by volume — the price of a rule that does not special-case
-the hot path. Second, **a shared query keeps no per-editor trail** in the
-resource itself: the fixed `creator` names the owner, not whoever last
-edited, so multi-editor changes are last-write-wins and the updater's
-identity lives only in the audit event; add version history if that ever
-matters. `UpdateSavedQueryStar` is a write but stays unaudited — a
-per-user marker that carries no content and no access. `GetIamPolicy` and
-the folder listing return no content and are unaudited.
+| | `SearchSavedQueries` | `ListSavedQueries` |
+|---|---|---|
+| For | The SQL Editor | Governance |
+| Scope | One project | One project, or `projects/-` |
+| Bindings | Respected; admins not widened | Ignored |
+| Content | Previews | Whole statements |
+| Views | `creator == me`, `shared == true`, `starred == true` | `creator ==` |
 
-**Compatibility: hard cutover, no shim** (decision 8). `WorksheetService`
-and the `visibility` field are removed in the release that ships
-`SavedQueryService`; the in-repo frontend ships against the new API in the
-same release. Post-rename, a shim is not a deprecated field but an entire
-second service to maintain and secure — for a UI-owned feature. Cost:
-external worksheet scripts break loudly at upgrade, documented in the
-changelog.
+They no longer overlap: Search is caller-scoped even for an admin, so
+everyone's rows come only from List. One boundary is deliberately left out: a member has no
+cross-project "all my own queries" view, since discovery is per-project
+(peer-consistent with BigQuery and Databricks) and the only `projects/-` path is
+the privileged audit List. A self-scoped cross-project view is safe to add later
+without `list` — `creator == me` exposes only the caller's own rows.
+
+The SQL Editor's Shared view is `shared == true`, not `creator != me`. The two
+diverge for an admin, for whom `creator != me` also matches saved queries nobody
+shared with them.
+
+#### Audit events
+
+Today's `WorksheetService` carries no `bytebase.v1.audit` annotations at all,
+though sheet and database services do. This design closes that gap under one
+invariant: **the audit log records changes, not lookups.** Every RPC that
+mutates a saved query or its policy is annotated — `CreateSavedQuery`,
+`UpdateSavedQuery`, `BatchUpdateSavedQueries`, `DeleteSavedQuery`,
+`SetSavedQueryPolicy` — and no read RPC is. That keeps the annotation set
+derivable from the method rather than from who the caller happened to be, and
+draws the same line as the rest of the v1 API.
+
+Two privileged reads are left unaudited deliberately: `GetSavedQuery` and
+`SearchSavedQueries` under the admin backstop, and the binding-bypassing
+`ListSavedQueries`. Both are governance surfaces gated by permissions no
+default member role carries (decision 7), so the control is *who holds
+`list`/`manage`*, not a trail behind them — and a read trail on the SQL Editor's
+hot path would be mostly people reading their own drafts.
+
+Two costs, stated plainly:
+
+- **Autosave writes are audit events.** The editor saves on a 2-second debounce,
+  so an active session emits a row every couple of seconds and saved-query
+  writes will dominate the log by volume. That is the price of a rule that does
+  not special-case the hot path.
+- **A shared query keeps no per-editor trail** in the resource. The fixed
+  `creator` names the owner, not whoever last edited, so multi-editor changes
+  are last-write-wins and the updater's identity lives only in the audit event.
+  Add version history if that ever matters.
+
+`UpdateSavedQueryStar` is a write but stays unaudited — a per-user marker
+carrying no content and no access. `GetSavedQueryPolicy` and the folder listing
+return no content and are unaudited.
+
+#### Compatibility
+
+**Hard cutover, no shim** (decision 8). `WorksheetService` and the `visibility`
+field are removed in the release that ships `SavedQueryService`, and the in-repo
+frontend ships against the new API in the same release. After the rename a shim
+would not be a deprecated field but an entire second service to maintain and
+secure, for a UI-owned feature. External worksheet scripts break loudly at
+upgrade, documented in the changelog.
 
 **Existing data migrates owner-private** — a deliberate, one-time breaking
-change. Every existing row keeps its `creator`, `title`, `content`, and its
-connected-database reference (carried into the payload as the database's
-canonical resource name, `SavedQueryPayload.database` — so run context
-survives and the name encodes workspace- vs project-instance scope; cleared
-only if that database no longer belongs to the query's project, per the
-same-project invariant);
+change, and BigQuery's own classic→modern path. Every row keeps its `creator`,
+`title`, `content`, and connected database (carried into
+`SavedQueryPayload.database` as a canonical resource name, so run context
+survives; cleared if that database no longer belongs to the query's project).
 `visibility` is dropped and `bindings` starts empty, so `PRIVATE`,
-`PROJECT_READ`, and `PROJECT_WRITE` alike become creator-only. **Owner
-organization is preserved**: the creator's own `worksheet_organizer` row
-migrates — its folder placement into `saved_query.folder`, its `starred`
-flag into a `saved_query_star` row — so owners keep their tree and
-favorites; only *sharing* resets. Non-creator organizer rows are dropped
-(their owners lose access to the now-private query anyway, so their star
-or folder on it is moot). Previously shared worksheets lose their sharing
-at upgrade; owners re-share from the new dialog (Share-with-project
-reproduces the old project-wide audience in one click). There is deliberately no automatic mapping: the old flag
-carries no per-user grant to preserve, and snapshotting project IAM into
-every shared row would widen or persist access differently — exactly the
-project-derived-principal hack rejected in Alternatives. This is BigQuery's
-own classic→modern path (migrate owner-private, owners re-grant), and the
-blast radius is small — sharing was a coarse, little-used flag. Called out
-in the release notes. Historical audit-log
-entries keep old names as records.
+`PROJECT_READ`, and `PROJECT_WRITE` alike become creator-only.
+
+Owner organization is preserved: the creator's own `worksheet_organizer` row
+migrates, its folder placement into `saved_query.folder` and its `starred` flag
+into a `saved_query_star` row, so owners keep their tree and favorites. Only
+*sharing* resets. Non-creator organizer rows are dropped, since their owners
+lose access to the now-private query anyway.
+
+Owners re-share from the new dialog, where Share with project reproduces the old
+project-wide audience in one click. There is deliberately no automatic mapping:
+the old flag carries no per-user grant to preserve, and snapshotting project IAM
+into every shared row would widen or persist access differently — the
+project-derived-principal hack rejected in Alternatives. The blast radius is
+small, since sharing was a coarse and little-used flag. Called out in the
+release notes; historical audit-log entries keep the old names as records.
+
 
 ### Storage and query scalability
 
 The policy lives in `saved_query.bindings jsonb` — no separate access
 table. The **stored shape is pinned**: the protojson *array* of
 `Binding` messages, e.g.
-`[{"level": "EDITOR", "members": ["group:eng@corp.com", "user:a@corp.com"]}]`
+`[{"level": "EDITOR", "members": ["groups/eng@corp.com", "users/a@corp.com"]}]`
 — the array must sit at the jsonb root for the `@>` probes below (a wrapped
 `{"bindings": [...]}` would force expression indexes). This deviates from
 the store-a-whole-message payload convention, deliberately; the store layer
@@ -543,7 +568,7 @@ platform-wide convention change outside this design's scope.
 
 The caller's principal set expands cheaply — groups are flat (members are
 users, one hop) and `GetUserGroupsSnapshot` is cached in
-`memberGroupsCache`: `principals(u) = {user:u} ∪ {group:g …}`, typically a
+`memberGroupsCache`: `principals(u) = {users/u} ∪ {groups/g …}`, typically a
 handful. Bindings carry `user:`/`group:` members (the IamPolicy invariant
 above), so the only format boundary is group *membership*, stored
 resource-name-style (`GroupMember.member = users/{email}`):
@@ -551,10 +576,13 @@ resource-name-style (`GroupMember.member = users/{email}`):
 caller's groups, then emits each as `group:{email}` for the probe — exactly
 the conversion the existing IAM group-expansion already performs. (`creator`
 is a typed **principal** resource name — `users/{email}` or
-`serviceAccounts/{email}` — not a binding member: the `creator ==` filter
-matches that principal form, `member ==` matches the `user:`/`group:`
-binding form.)
-The list query filters the table directly, one GIN probe per principal:
+`serviceAccounts/{email}` — not a binding member, so the `creator ==` filter
+matches that principal form while the bindings themselves carry the
+`user:`/`group:` form. Only the read path crosses between them; there is no
+member-based filter in v1, see Offboarding.)
+The index is `gin (bindings jsonb_path_ops)` — smaller and faster than the
+default opclass, and containment is all these queries do. The list query
+filters the table directly, one probe per principal:
 
 ```sql
 -- The search gate already passed at the interceptor. An admin drops the
@@ -562,8 +590,8 @@ The list query filters the table directly, one GIN probe per principal:
 SELECT s.* FROM saved_query s
 WHERE s.project = $P
   AND ( s.creator = $me                                  -- own (incl. private)
-        OR s.bindings @> '[{"members":["user:me"]}]'
-        OR s.bindings @> '[{"members":["group:g1"]}]'
+        OR s.bindings @> '[{"members":["users/me"]}]'
+        OR s.bindings @> '[{"members":["groups/g1"]}]'
         OR ... )               -- one @> per principals(u), each GIN-indexed
 ORDER BY s.name, s.resource_id                           -- name is the title
 LIMIT $n OFFSET $k;
@@ -682,13 +710,17 @@ direction (absence of `40P01` alone is insufficient).
 
 ### Sharing and organization UX
 
-- Views, all within the current project: **My** (`creator == me`, organized
-  in my folder tree), **Shared** (a binding grants me VIEWER+, flat
-  searchable list), **Starred** (my favorites, own or shared). Nobody
-  fetches a query they have no grant on.
-- The edit-vs-view affordance reads `effective_level` off each row
-  (server-computed, on the resource) — no per-row `GetIamPolicy` fan-out;
-  creator and admin status the UI already knows.
+- Views, all within the current project, all served by `SearchSavedQueries`:
+  **My** (`creator == me`, organized in my folder tree), **Shared**
+  (`shared == true` — a binding grants me VIEWER or EDITOR — as a flat
+  searchable list), **Starred** (`starred == true`, own or shared). Nobody
+  fetches a saved query they have no access to.
+- Edit-vs-view is resolved when a saved query is opened, not per row in the
+  list — BigQuery's behavior, and the reason nothing caller-relative beyond
+  `starred` sits on the resource. The editor calls `GetSavedQueryPolicy`
+  alongside `GetSavedQuery` and reads its own binding from the response;
+  creator and admin status the UI already knows. In **My** everything is
+  writable anyway, so only **Shared** ever resolves to view-only.
 - Share dialog (creator or admin): add `user:`/`group:` at VIEWER/EDITOR;
   the picker suggests project members/groups (a non-member grantee opens
   via link but cannot browse the project or run — see Model). **Share with
@@ -829,6 +861,6 @@ Sources: [Snowflake worksheets](https://docs.snowflake.com/en/user-guide/ui-snow
   tier plus orphan-guard for cases the admin backstop and fork already
   cover. Re-adding an OWNER level later is additive.
 - **A legacy `WorksheetService` shim** (derive `visibility` best-effort,
-  translate legacy writes to snapshot SetIamPolicy) — after the rename the
+  translate legacy writes to a snapshot policy write) — after the rename the
   shim is an entire second service to maintain, secure, and audit, for a
   feature whose real consumer ships in lockstep. Hard cutover instead.

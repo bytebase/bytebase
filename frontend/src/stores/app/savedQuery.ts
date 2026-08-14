@@ -9,15 +9,19 @@ import {
   BatchUpdateSavedQueriesRequestSchema,
   CreateSavedQueryRequestSchema,
   DeleteSavedQueryRequestSchema,
+  GetSavedQueryPolicyRequestSchema,
   GetSavedQueryRequestSchema,
+  SavedQueryBinding_Level,
   SavedQuerySchema,
   SearchSavedQueriesRequestSchema,
   SearchSavedQueryFoldersRequestSchema,
+  SetSavedQueryPolicyRequestSchema,
   UpdateSavedQueryRequestSchema,
   UpdateSavedQueryStarRequestSchema,
 } from "@/types/proto-es/v1/saved_query_service_pb";
 import { isValidDatabaseName } from "@/types/v1/database";
 import { extractSavedQueryID } from "@/utils/v1/savedQuery";
+import { setSavedQueryAccess } from "./savedQueryAccess";
 import type { AppSliceCreator, SavedQuerySlice, SavedQueryView } from "./types";
 
 const cacheKey = (uid: string, view: SavedQueryView) => `${uid}:${view}`;
@@ -72,9 +76,29 @@ export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
     }
   };
 
+  // The caller's principals, in the binding format the policy stores. Mirrors
+  // the server's principals(u): themselves plus each group they belong to,
+  // matched by reference so group membership stays live.
+  const callerPrincipals = (): string[] => {
+    const user = get().currentUser;
+    if (!user?.email) return [];
+    return [
+      `user:${user.email}`,
+      ...user.groups.map((group) => `group:${group.replace(/^groups\//, "")}`),
+    ];
+  };
+
+  // Wire the cycle-free access layer the shared `@/utils` predicates read.
+  setSavedQueryAccess({
+    getSavedQueryLevel: (name) =>
+      get().savedQueryLevelByName[name] ??
+      SavedQueryBinding_Level.LEVEL_UNSPECIFIED,
+  });
+
   return {
     savedQueriesByKey: {},
     savedQueryRequests: {},
+    savedQueryLevelByName: {},
 
     getSavedQueryByName: (name, view) => {
       const uid = extractSavedQueryID(name);
@@ -109,6 +133,14 @@ export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
           );
           await hydrateRelatedResources([response]);
           setCacheEntry(response, "FULL");
+          // Somebody else's saved query: resolve the caller's grant level
+          // before returning, because the readable/writable predicates are
+          // synchronous and run as soon as this resolves. Own saved queries
+          // need no policy read -- the creator short-circuit covers them.
+          const me = get().currentUser?.email;
+          if (me && response.creator !== `users/${me}`) {
+            await get().fetchSavedQueryLevel(response);
+          }
           return response;
         } catch {
           return undefined;
@@ -246,5 +278,52 @@ export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
     // load it eagerly.
     savedQueryList: () =>
       uniqBy(Object.values(get().savedQueriesByKey), (w) => w.name),
+
+    getSavedQueryPolicy: async (name) =>
+      await savedQueryServiceClientConnect.getSavedQueryPolicy(
+        createProto(GetSavedQueryPolicyRequestSchema, { resource: name })
+      ),
+
+    setSavedQueryPolicy: async (name, policy) => {
+      const updated = await savedQueryServiceClientConnect.setSavedQueryPolicy(
+        createProto(SetSavedQueryPolicyRequestSchema, {
+          resource: name,
+          policy,
+        })
+      );
+      // The caller's own level can change with the policy they just wrote --
+      // an admin can demote themselves -- so drop the cached value rather than
+      // leaving a stale one behind the read-only affordances.
+      set((s) => {
+        const { [name]: _dropped, ...savedQueryLevelByName } =
+          s.savedQueryLevelByName;
+        return { savedQueryLevelByName };
+      });
+      return updated;
+    },
+
+    fetchSavedQueryLevel: async (savedQuery) => {
+      const principals = new Set(callerPrincipals());
+      let level = SavedQueryBinding_Level.LEVEL_UNSPECIFIED;
+      try {
+        const policy = await get().getSavedQueryPolicy(savedQuery.name);
+        for (const binding of policy.bindings) {
+          if (binding.level <= level) continue;
+          if (binding.members.some((member) => principals.has(member))) {
+            level = binding.level;
+          }
+        }
+      } catch {
+        // Unreadable or unreachable: leave the level unspecified, which the
+        // predicates treat as "no grant" and fall back to creator/admin.
+      }
+      set((s) => ({
+        savedQueryLevelByName: {
+          ...s.savedQueryLevelByName,
+          [savedQuery.name]: level,
+        },
+      }));
+      return level;
+    },
   };
 };

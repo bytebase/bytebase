@@ -3038,6 +3038,16 @@
     "rows-affected": "rows affected",
     "rows-upper-limit": "reached the limit of query results",
     "save-sheet": "Save query",
+    "saved-query-share": {
+      "editor": "Editor",
+      "granted-at-other-level": "{{count}} more granted at another level.",
+      "not-shared": "Not shared with anyone.",
+      "only-users-and-groups": "Only users and groups can be granted access.",
+      "policy-changed": "Sharing changed elsewhere. Reloaded the latest.",
+      "private-hint": "Only you and workspace admins can open this saved query.",
+      "shared-with": "Shared with",
+      "viewer": "Viewer"
+    },
     "scroll-to-bottom": "Scroll to the bottom",
     "scroll-to-top": "Scroll to the top",
     "search-history-by-statement": "Search by statement",

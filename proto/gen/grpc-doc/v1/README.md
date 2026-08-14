@@ -683,16 +683,22 @@
     - [BatchUpdateSavedQueriesResponse](#bytebase-v1-BatchUpdateSavedQueriesResponse)
     - [CreateSavedQueryRequest](#bytebase-v1-CreateSavedQueryRequest)
     - [DeleteSavedQueryRequest](#bytebase-v1-DeleteSavedQueryRequest)
+    - [GetSavedQueryPolicyRequest](#bytebase-v1-GetSavedQueryPolicyRequest)
     - [GetSavedQueryRequest](#bytebase-v1-GetSavedQueryRequest)
     - [ListSavedQueriesRequest](#bytebase-v1-ListSavedQueriesRequest)
     - [ListSavedQueriesResponse](#bytebase-v1-ListSavedQueriesResponse)
     - [SavedQuery](#bytebase-v1-SavedQuery)
+    - [SavedQueryBinding](#bytebase-v1-SavedQueryBinding)
+    - [SavedQueryPolicy](#bytebase-v1-SavedQueryPolicy)
     - [SearchSavedQueriesRequest](#bytebase-v1-SearchSavedQueriesRequest)
     - [SearchSavedQueriesResponse](#bytebase-v1-SearchSavedQueriesResponse)
     - [SearchSavedQueryFoldersRequest](#bytebase-v1-SearchSavedQueryFoldersRequest)
     - [SearchSavedQueryFoldersResponse](#bytebase-v1-SearchSavedQueryFoldersResponse)
+    - [SetSavedQueryPolicyRequest](#bytebase-v1-SetSavedQueryPolicyRequest)
     - [UpdateSavedQueryRequest](#bytebase-v1-UpdateSavedQueryRequest)
     - [UpdateSavedQueryStarRequest](#bytebase-v1-UpdateSavedQueryStarRequest)
+  
+    - [SavedQueryBinding.Level](#bytebase-v1-SavedQueryBinding-Level)
   
     - [SavedQueryService](#bytebase-v1-SavedQueryService)
   
@@ -11052,12 +11058,12 @@ RoleService manages workspace roles and permissions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource whose saved queries are updated. Format: projects/{project} |
-| filter | [string](#string) |  | To filter the batch update target. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+| parent | [string](#string) |  | Format: projects/{project} |
+| filter | [string](#string) |  | Select the saved queries to update, in CEL. See https://github.com/google/cel-spec
 
-Supported filter: - name: the saved query name in &#34;projects/{project}/savedQueries/{savedQuery}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator. - creator: the saved query creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred saved queries, support &#34;==&#34; operator. - folder: the saved query folder path, support exact &#34;==&#34; operator. |
-| saved_query | [SavedQuery](#bytebase-v1-SavedQuery) |  | The fields to apply to every matched saved query. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Only support update the following fields for now: - `folder` |
+Supported fields: - name: the saved query name. Supports &#34;==&#34; and &#34;in [...]&#34;. - creator: the creator in &#34;users/{email}&#34; format. Supports &#34;==&#34; and &#34;!=&#34;. - starred: whether the caller starred it. Supports &#34;==&#34;. - folder: the exact folder path. Supports &#34;==&#34;. |
+| saved_query | [SavedQuery](#bytebase-v1-SavedQuery) |  | The values to apply to every matched saved query. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | Fields to update. Supported: `folder`. |
 
 
 
@@ -11072,7 +11078,7 @@ Supported filter: - name: the saved query name in &#34;projects/{project}/savedQ
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| updated_count | [int32](#int32) |  | The number of saved queries updated. |
+| updated_count | [int32](#int32) |  | How many saved queries were updated, which may be fewer than the filter matched. |
 
 
 
@@ -11087,7 +11093,7 @@ Supported filter: - name: the saved query name in &#34;projects/{project}/savedQ
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this saved query will be created. Format: projects/{project} |
+| parent | [string](#string) |  | The project to create the saved query in. Format: projects/{project} |
 | saved_query | [SavedQuery](#bytebase-v1-SavedQuery) |  | The saved query to create. |
 
 
@@ -11103,7 +11109,22 @@ Supported filter: - name: the saved query name in &#34;projects/{project}/savedQ
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the saved query to delete. Format: projects/{project}/savedQueries/{savedQuery} |
+| name | [string](#string) |  | Format: projects/{project}/savedQueries/{savedQuery} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetSavedQueryPolicyRequest"></a>
+
+### GetSavedQueryPolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| resource | [string](#string) |  | Format: projects/{project}/savedQueries/{savedQuery} |
 
 
 
@@ -11118,7 +11139,7 @@ Supported filter: - name: the saved query name in &#34;projects/{project}/savedQ
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the saved query to retrieve. Format: projects/{project}/savedQueries/{savedQuery} |
+| name | [string](#string) |  | Format: projects/{project}/savedQueries/{savedQuery} |
 
 
 
@@ -11133,16 +11154,14 @@ Supported filter: - name: the saved query name in &#34;projects/{project}/savedQ
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource of the saved queries. Format: projects/{project} Use &#34;projects/-&#34; to list saved queries across all projects. |
-| filter | [string](#string) |  | To filter the list result. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+| parent | [string](#string) |  | The project to list saved queries in, or &#34;projects/-&#34; for every project. Format: projects/{project} |
+| filter | [string](#string) |  | Filter the result, in CEL. See https://github.com/google/cel-spec
 
-Supported filter: - creator: the saved query creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator.
+Supported fields: - creator: the creator in &#34;users/{email}&#34; format. Supports &#34;==&#34; and &#34;!=&#34;.
 
-For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; |
-| page_size | [int32](#int32) |  | The maximum number of saved queries to return. The service may return fewer than this value. If unspecified, at most 10 saved queries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListSavedQueries` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListSavedQueries` must match the call that provided the page token. |
+For example: creator == &#34;users/alice@example.com&#34; |
+| page_size | [int32](#int32) |  | The maximum number of saved queries to return. The service may return fewer. Defaults to 10; values above 1000 are coerced to 1000. |
+| page_token | [string](#string) |  | A page token from a previous ListSavedQueries call. Every other parameter must match the call that returned it: the token carries the offset reached so far, so changing `filter` or `page_size` mid-pagination reinterprets that offset against a different result set. |
 
 
 
@@ -11157,8 +11176,8 @@ When paginating, all other parameters provided to `ListSavedQueries` must match 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| saved_queries | [SavedQuery](#bytebase-v1-SavedQuery) | repeated | The saved queries from the specified parent. |
-| next_page_token | [string](#string) |  | A token to retrieve next page of saved queries. Pass this value in the page_token field in the subsequent call to `ListSavedQueries` method to retrieve the next page of saved queries. |
+| saved_queries | [SavedQuery](#bytebase-v1-SavedQuery) | repeated |  |
+| next_page_token | [string](#string) |  | Pass to the next ListSavedQueries call to fetch the following page. Empty on the last page. |
 
 
 
@@ -11173,17 +11192,56 @@ When paginating, all other parameters provided to `ListSavedQueries` must match 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the saved query resource, generated by the server. Canonical parent is project. Format: projects/{project}/savedQueries/{savedQuery} |
-| project | [string](#string) |  | The project resource name. Format: projects/{project} |
-| database | [string](#string) |  | The database resource name. Format: instances/{instance}/databases/{database} If the database parent doesn&#39;t exist, the database field is empty. |
+| name | [string](#string) |  | Server-generated. Format: projects/{project}/savedQueries/{savedQuery} |
+| project | [string](#string) |  | Format: projects/{project} |
+| database | [string](#string) |  | The connected database, which must belong to the saved query&#39;s own project. Empty when none is connected, or when the database no longer exists. Format: instances/{instance}/databases/{database} |
 | title | [string](#string) |  | The title of the saved query. |
-| creator | [string](#string) |  | The creator of the SavedQuery — the fixed owner; ownership does not transfer. Format: users/{email} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the saved query. |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the saved query. |
-| content | [bytes](#bytes) |  | The content of the saved query. By default, it will be cut off in SearchSavedQueries() method. If it doesn&#39;t match the `content_size`, you can use GetSavedQuery() request to retrieve the full content. |
-| content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
-| starred | [bool](#bool) |  | starred indicates whether the saved query is starred by the current authenticated user. |
-| folder | [string](#string) |  | The folder path this saved query lives in, set by its creator (or an admin). Empty means unfiled. A saved query lives in exactly one folder; a folder is a path on saved queries, e.g. &#34;a/b/c&#34;. |
+| creator | [string](#string) |  | The fixed owner. Ownership does not transfer. Format: users/{email} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| content | [bytes](#bytes) |  | The SQL text. SearchSavedQueries truncates it; when it is shorter than `content_size`, GetSavedQuery returns the whole thing. |
+| content_size | [int64](#int64) |  | The full size of the content, which may exceed the `content` returned. |
+| starred | [bool](#bool) |  | Whether the calling user starred it. |
+| folder | [string](#string) |  | The folder holding this saved query, set by its creator or an admin. A path like &#34;a/b/c&#34;; empty means unfiled. |
+
+
+
+
+
+
+<a name="bytebase-v1-SavedQueryBinding"></a>
+
+### SavedQueryBinding
+Binds members to one access level on one saved query. Not bytebase.v1.Binding
+because per-object access here is a capability, not a role.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| level | [SavedQueryBinding.Level](#bytebase-v1-SavedQueryBinding-Level) |  |  |
+| members | [string](#string) | repeated | The principals granted `level`, in bytebase.v1.Binding.members format, restricted to &#34;user:{email}&#34; and &#34;group:{email}&#34; -- prefix-checked, as project and workspace IAM check their own members.
+
+Service accounts and workload identities are not grantees: they own and run their own saved queries and reach them as the creator. Naming one under a &#34;user:&#34; prefix grants nothing rather than being rejected, because a caller&#39;s member is derived from their principal type, so such a binding matches nobody.
+
+A group is stored as a reference and never expanded, so its membership stays live and a large group costs no more than a small one. |
+
+
+
+
+
+
+<a name="bytebase-v1-SavedQueryPolicy"></a>
+
+### SavedQueryPolicy
+Who a saved query is shared with, and at what level. A saved query with no
+bindings is private. The creator is never a binding member: ownership comes
+from creating the saved query and cannot be granted away.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| bindings | [SavedQueryBinding](#bytebase-v1-SavedQueryBinding) | repeated | At most one binding per level. A member listed under two levels is rejected rather than resolved to the higher one. |
+| etag | [string](#string) |  | The etag of the policy as read. SetSavedQueryPolicy requires it and fails with ABORTED when it no longer matches. |
 
 
 
@@ -11198,14 +11256,16 @@ When paginating, all other parameters provided to `ListSavedQueries` must match 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource of the saved queries. Format: projects/{project} |
-| filter | [string](#string) |  | To filter the search result. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+| parent | [string](#string) |  | Format: projects/{project} |
+| filter | [string](#string) |  | Filter the result, in CEL. See https://github.com/google/cel-spec
 
-Supported filter: - name: the saved query name in &#34;projects/{project}/savedQueries/{savedQuery}&#34; format, support &#34;==&#34; and &#34;in [xx]&#34; operator. - title: the saved query title, support &#34;contains&#34; operator. - creator: the saved query creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred saved queries, support &#34;==&#34; operator. - folder: the saved query folder path, support &#34;==&#34; operator.
+Supported fields: - name: the saved query name. Supports &#34;==&#34; and &#34;in [...]&#34;. - title: the title. Supports &#34;contains&#34;. - creator: the creator in &#34;users/{email}&#34; format. Supports &#34;==&#34; and &#34;!=&#34;. - shared: true selects only saved queries the caller reaches through a binding, excluding their own and any seen through bb.savedQueries.manage; false selects the rest. Supports &#34;==&#34;. - starred: whether the caller starred it. Supports &#34;==&#34;. - folder: the exact folder path. Supports &#34;==&#34;.
 
-For example: creator == &#34;users/{email}&#34; title.contains(&#34;saved query title&#34;) creator != &#34;users/{email}&#34; starred == true starred == false folder == &#34;foo/bar&#34; |
-| page_size | [int32](#int32) |  | The maximum number of saved queries to return. The service may return fewer than this value. If unspecified, at most 10 saved queries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `SearchSavedQueries` call. Provide this to retrieve the subsequent page. |
+The SQL Editor&#39;s views are `creator == &#34;users/{me}&#34;` for My and `shared == true` for Shared. Prefer `shared` over `creator !=` for the latter: for an admin, `creator !=` also matches saved queries nobody shared with them.
+
+For example: creator == &#34;users/alice@example.com&#34; shared == true starred == true title.contains(&#34;weekly report&#34;) folder == &#34;foo/bar&#34; |
+| page_size | [int32](#int32) |  | The maximum number of saved queries to return. The service may return fewer. Defaults to 10; values above 1000 are coerced to 1000. |
+| page_token | [string](#string) |  | A page token from a previous SearchSavedQueries call. Every other parameter must match the call that returned it: the token carries the offset reached so far, so changing `filter` or `page_size` mid-pagination reinterprets that offset against a different result set and can skip or repeat rows. |
 
 
 
@@ -11220,8 +11280,8 @@ For example: creator == &#34;users/{email}&#34; title.contains(&#34;saved query 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| saved_queries | [SavedQuery](#bytebase-v1-SavedQuery) | repeated | The saved queries that matched the search criteria. |
-| next_page_token | [string](#string) |  | A token to retrieve next page of saved queries. Pass this value in the page_token field in the subsequent call to `SearchSavedQueries` method to retrieve the next page of saved queries. |
+| saved_queries | [SavedQuery](#bytebase-v1-SavedQuery) | repeated |  |
+| next_page_token | [string](#string) |  | Pass to the next SearchSavedQueries call to fetch the following page. Empty on the last page. |
 
 
 
@@ -11236,10 +11296,8 @@ For example: creator == &#34;users/{email}&#34; title.contains(&#34;saved query 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource whose saved query folders are searched. Format: projects/{project} |
-| filter | [string](#string) |  | To filter the folders by the saved queries they hold. Takes the same fields and syntax as `SearchSavedQueries.filter`, except `title`. A folder is returned when at least one saved query the caller can read matches, so the caller-scoping is the same as SearchSavedQueries: your own saved queries, plus everyone&#39;s for the admin backstop.
-
-For example, to split a folder tree into your own and everyone else&#39;s: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; |
+| parent | [string](#string) |  | Format: projects/{project} |
+| filter | [string](#string) |  | Filter folders by the saved queries they hold. Takes the same fields and syntax as SearchSavedQueries.filter, except `title`. A folder is returned when at least one saved query the caller can read matches. |
 
 
 
@@ -11254,7 +11312,23 @@ For example, to split a folder tree into your own and everyone else&#39;s: creat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| folders | [string](#string) | repeated | The caller&#39;s folder paths, including every ancestor prefix, sorted. A folder is a path on saved queries (&#34;a/b/c&#34;), so empty folders cannot exist. |
+| folders | [string](#string) | repeated | Folder paths, every ancestor prefix included, sorted. A folder is a path on saved queries (&#34;a/b/c&#34;), so empty folders cannot exist. |
+
+
+
+
+
+
+<a name="bytebase-v1-SetSavedQueryPolicyRequest"></a>
+
+### SetSavedQueryPolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| resource | [string](#string) |  | Format: projects/{project}/savedQueries/{savedQuery} |
+| policy | [SavedQueryPolicy](#bytebase-v1-SavedQueryPolicy) |  | Replaces the stored policy in full: a member absent from it loses their grant, and a policy with no bindings makes the saved query private again. |
 
 
 
@@ -11269,10 +11343,8 @@ For example, to split a folder tree into your own and everyone else&#39;s: creat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| saved_query | [SavedQuery](#bytebase-v1-SavedQuery) |  | The saved query to update.
-
-The saved query&#39;s `name` field is used to identify the saved query to update. Format: projects/{project}/savedQueries/{savedQuery} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the saved query. (e.g., `title`, `content`; *not* `saved_query.title` or `saved_query.content`) Only support update the following fields for now: - `title` - `content` - `database` - `folder` |
+| saved_query | [SavedQuery](#bytebase-v1-SavedQuery) |  | `saved_query.name` identifies the saved query to update. Format: projects/{project}/savedQueries/{savedQuery} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | Fields to update, relative to the saved query (`title`, not `saved_query.title`). Supported: `title`, `content`, `database`, `folder`. |
 
 
 
@@ -11287,7 +11359,7 @@ The saved query&#39;s `name` field is used to identify the saved query to update
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the saved query to star or unstar. Format: projects/{project}/savedQueries/{savedQuery} |
+| name | [string](#string) |  | Format: projects/{project}/savedQueries/{savedQuery} |
 | starred | [bool](#bool) |  | Whether the caller stars the saved query. |
 
 
@@ -11295,6 +11367,20 @@ The saved query&#39;s `name` field is used to identify the saved query to update
 
 
  
+
+
+<a name="bytebase-v1-SavedQueryBinding-Level"></a>
+
+### SavedQueryBinding.Level
+Nested because bytebase.v1 already defines a package-scoped EDITOR
+(DatabaseChangeMode), and enum values live in the enclosing scope.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LEVEL_UNSPECIFIED | 0 |  |
+| VIEWER | 1 | Open and read the saved query. |
+| EDITOR | 2 | VIEWER, plus write the title, content, and connected database. Sharing and deletion stay with the creator and admins. |
+
 
  
 
@@ -11306,23 +11392,34 @@ The saved query&#39;s `name` field is used to identify the saved query to update
 ### SavedQueryService
 SavedQueryService manages saved queries for SQL Editor query development.
 
-A saved query is private to its creator; `bb.savedQueries.manage` is the
-admin backstop that can reach any saved query in scope. Per-object
-VIEWER/EDITOR grants arrive with the access-model redesign, which brings
-its own policy shapes and the GetIamPolicy/SetIamPolicy pair that manages
-them.
+A saved query is private to its creator until shared. Three things grant
+access to one: being its creator (the fixed owner), holding a VIEWER or
+EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop
+that reaches private saved queries too. Bindings are managed through the
+GetSavedQueryPolicy/SetSavedQueryPolicy pair.
+
+Two gates sit on top of that: bb.savedQueries.search gates discovery, and
+running a saved query needs the SQL Editor&#39;s own database permissions.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| CreateSavedQuery | [CreateSavedQueryRequest](#bytebase-v1-CreateSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Creates a personal saved query used in SQL Editor. The creator becomes the fixed owner. Permissions required: bb.savedQueries.create on the parent project |
-| GetSavedQuery | [GetSavedQueryRequest](#bytebase-v1-GetSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Get a saved query by name. Returns NotFound for saved queries the caller cannot read. Permissions required: creator, or bb.savedQueries.manage in scope |
-| ListSavedQueries | [ListSavedQueriesRequest](#bytebase-v1-ListSavedQueriesRequest) | [ListSavedQueriesResponse](#bytebase-v1-ListSavedQueriesResponse) | List saved queries: the grant-independent governance surface. Supports listing in a project, or across all projects by using `projects/-`, with whole statements rather than the previews Search returns — e.g. an offboarding review filtering by creator. Permissions required: bb.savedQueries.list |
-| SearchSavedQueries | [SearchSavedQueriesRequest](#bytebase-v1-SearchSavedQueriesRequest) | [SearchSavedQueriesResponse](#bytebase-v1-SearchSavedQueriesResponse) | Search for saved queries in a project: the SQL Editor&#39;s hot list path, returning only rows the caller can read, with content previews. Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project |
-| SearchSavedQueryFolders | [SearchSavedQueryFoldersRequest](#bytebase-v1-SearchSavedQueryFoldersRequest) | [SearchSavedQueryFoldersResponse](#bytebase-v1-SearchSavedQueryFoldersResponse) | Search the folder paths of the caller&#39;s saved queries in a project. Folders are a derived view over the `folder` field rather than a resource collection, so this is a custom method on savedQueries and shares SearchSavedQueries&#39; caller-scoped semantics — not the cross-creator reach of ListSavedQueries. Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project |
-| UpdateSavedQuery | [UpdateSavedQueryRequest](#bytebase-v1-UpdateSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Update a saved query. `title`, `content`, and `database` require write access; `folder` re-files the saved query and is creator/admin only. Returns NotFound for saved queries the caller cannot read. Permissions required: creator, or bb.savedQueries.manage in scope |
-| UpdateSavedQueryStar | [UpdateSavedQueryStarRequest](#bytebase-v1-UpdateSavedQueryStarRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Star or unstar a saved query for the caller. A star is always the caller&#39;s own per-user marker — invisible to others and carrying no access. The only requirement is that the caller can read the saved query being starred (which also keeps private saved query names unprobeable). Permissions required: read access to the saved query |
-| BatchUpdateSavedQueries | [BatchUpdateSavedQueriesRequest](#bytebase-v1-BatchUpdateSavedQueriesRequest) | [BatchUpdateSavedQueriesResponse](#bytebase-v1-BatchUpdateSavedQueriesResponse) | Batch re-file saved queries into a folder. The update mask supports `folder` only; only rows the caller may re-file are updated (their own, or any in scope for admins). Permissions required: creator, or bb.savedQueries.manage in scope |
-| DeleteSavedQuery | [DeleteSavedQueryRequest](#bytebase-v1-DeleteSavedQueryRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a saved query. Only the creator (or an admin) can delete. Returns NotFound for saved queries the caller cannot read. Permissions required: creator, or bb.savedQueries.manage in scope |
+| CreateSavedQuery | [CreateSavedQueryRequest](#bytebase-v1-CreateSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Create a saved query. The creator becomes its fixed owner, and the saved query starts private. Permissions required: bb.savedQueries.create on the parent project |
+| GetSavedQuery | [GetSavedQueryRequest](#bytebase-v1-GetSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Get a saved query with its full content. An unreadable saved query returns NotFound rather than PermissionDenied, so it stays unprobeable by name. Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage |
+| ListSavedQueries | [ListSavedQueriesRequest](#bytebase-v1-ListSavedQueriesRequest) | [ListSavedQueriesResponse](#bytebase-v1-ListSavedQueriesResponse) | List saved queries for auditing. Bindings are ignored: the permission alone reads every matched saved query&#39;s content, private ones included. Returns whole statements rather than Search&#39;s previews, and accepts &#34;projects/-&#34; to span every project. Permissions required: bb.savedQueries.list on the parent project, or workspace-wide when the parent is &#34;projects/-&#34; |
+| SearchSavedQueries | [SearchSavedQueriesRequest](#bytebase-v1-SearchSavedQueriesRequest) | [SearchSavedQueriesResponse](#bytebase-v1-SearchSavedQueriesResponse) | Search saved queries in one project: the SQL Editor&#39;s list path, returning content previews.
+
+Caller-scoped, always: the caller&#39;s own saved queries plus those a binding shares with them. bb.savedQueries.manage does not widen it — an admin reading everyone&#39;s saved queries uses ListSavedQueries, which is built for that. The permission here gates discovery only and grants access to nothing by itself. Permissions required: bb.savedQueries.search on the project |
+| SearchSavedQueryFolders | [SearchSavedQueryFoldersRequest](#bytebase-v1-SearchSavedQueryFoldersRequest) | [SearchSavedQueryFoldersResponse](#bytebase-v1-SearchSavedQueryFoldersResponse) | Search the folder paths holding saved queries the caller can read. Folders are a derived view over the `folder` field rather than a resource collection, so this is a custom method, caller-scoped like SearchSavedQueries.
+
+A path is returned when at least one readable saved query sits in it — including one somebody else filed and shared, since a client seeds its folder tree from here and cannot expand into a folder it never learns about. Use the filter to split your own folders (`creator == &#34;users/me&#34;`) from the ones reaching you through a grant (`shared == true`). Permissions required: bb.savedQueries.search on the project |
+| UpdateSavedQuery | [UpdateSavedQueryRequest](#bytebase-v1-UpdateSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Update a saved query. `title`, `content`, and `database` need write access; `folder` is creator/admin only, because filing is organization rather than editing. `database` must belong to the saved query&#39;s own project. An unreadable saved query returns NotFound; a VIEWER who cannot write gets PermissionDenied. Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage |
+| UpdateSavedQueryStar | [UpdateSavedQueryStarRequest](#bytebase-v1-UpdateSavedQueryStarRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Star or unstar a saved query for the caller. A star is a per-user marker: invisible to everyone else and granting nothing. Read access is the gate only so unreadable saved queries stay unprobeable. Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage |
+| BatchUpdateSavedQueries | [BatchUpdateSavedQueriesRequest](#bytebase-v1-BatchUpdateSavedQueriesRequest) | [BatchUpdateSavedQueriesResponse](#bytebase-v1-BatchUpdateSavedQueriesResponse) | Re-file saved queries into a folder in bulk; the update mask supports `folder` only. An EDITOR binding does not carry re-filing, so matched saved queries the caller cannot re-file are skipped rather than rejected, and the response counts what actually changed. Permissions required: creator, or bb.savedQueries.manage |
+| DeleteSavedQuery | [DeleteSavedQueryRequest](#bytebase-v1-DeleteSavedQueryRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a saved query and every user&#39;s stars on it. An EDITOR binding never carries deletion. An unreadable saved query returns NotFound; a grantee who can read but not delete gets PermissionDenied. Permissions required: creator, or bb.savedQueries.manage |
+| GetSavedQueryPolicy | [GetSavedQueryPolicyRequest](#bytebase-v1-GetSavedQueryPolicyRequest) | [SavedQueryPolicy](#bytebase-v1-SavedQueryPolicy) | Get a saved query&#39;s sharing policy: who it is shared with, at what level.
+
+Anyone who can read the saved query can read its policy, which is how a grantee learns whether they may edit it. Callers who cannot read the saved query get NotFound. Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage |
+| SetSavedQueryPolicy | [SetSavedQueryPolicyRequest](#bytebase-v1-SetSavedQueryPolicyRequest) | [SavedQueryPolicy](#bytebase-v1-SavedQueryPolicy) | Replace a saved query&#39;s sharing policy in full. `policy.etag` must match the stored policy or the call fails with ABORTED, so a stale write cannot reinstate a grant somebody just revoked. Permissions required: creator, or bb.savedQueries.manage |
 
  
 

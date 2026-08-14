@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
@@ -686,6 +687,22 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	}
 	if err := updateReference("UPDATE saved_query SET creator = $1 WHERE creator = $2"); err != nil {
 		return nil, err
+	}
+	// Saved-query grants name their principals by email as well, so a rename
+	// has to rewrite the members inside the bindings jsonb in the same
+	// transaction — otherwise every grant made to this address silently
+	// orphans. Both needles are whole JSON strings built here rather than
+	// assembled in SQL, so an email's own % or _ cannot act as a wildcard, and
+	// the quotes keep the match exact: "user:a@corp.com" cannot match inside
+	// "user:xa@corp.com".
+	oldMember := fmt.Sprintf("%q", common.FormatUserEmail(user.Email))
+	newMember := fmt.Sprintf("%q", common.FormatUserEmail(newEmail))
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE saved_query
+		SET bindings = replace(bindings::text, $1, $2)::jsonb
+		WHERE strpos(bindings::text, $1) > 0
+	`, oldMember, newMember); err != nil {
+		return nil, errors.Wrapf(err, "failed to rewrite saved query grants for %s", user.Email)
 	}
 	if err := updateReference("UPDATE issue_comment SET creator = $1 WHERE creator = $2"); err != nil {
 		return nil, err
