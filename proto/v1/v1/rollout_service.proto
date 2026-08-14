@@ -45,23 +45,43 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
-    // WRITE carries two approval gaps the gate PR owes a carve-out for, and
-    // neither is specific to MCP — both are reachable by a human today.
+    // WRITE, and it stays WRITE: executing an approved change is what a
+    // read-write session is for. Two ways a change reaches execution without a
+    // human approval ride this method, and they get OPPOSITE answers, because
+    // only one of them is fixable at the MCP layer. Both are stated here
+    // because the gate PR is the reader who needs them.
     //
-    // 1. Both approval checks on this path are guarded on a LINKED ISSUE
-    //    existing (rollout_service.go, and the locked re-check in
-    //    component/review/rollout.go), so a plan created without one reaches
-    //    task creation with no approval whatever require_issue_approval says.
-    //    The shipped GitOps Service Agent role holds no issue permission at
-    //    all, so that flow is designed, not accidental. Ordering trap: once an
+    // 1. The gate PR OWES A RULE. Both approval checks on this path are
+    //    guarded on a LINKED ISSUE existing (rollout_service.go, and the
+    //    locked re-check in component/review/rollout.go), so a plan created
+    //    without one reaches task creation with no approval whatever
+    //    require_issue_approval says. The rule to implement: on the MCP path,
+    //    refuse CreateRollout and BatchRunTasks when the project sets
+    //    require_issue_approval and the plan has no linked approved issue.
+    //    Not because the behavior is a defect — the shipped GitOps Service
+    //    Agent role holds no issue permission at all, so issueless deployment
+    //    is a supported product contract, and READ_WRITE preserves supported
+    //    contracts. Because without the rule the four FORBIDDEN approval
+    //    methods are decorative for the change lane: an agent that cannot
+    //    clear the gate can skip it instead, which is the same end state the
+    //    self-approval guard exists to prevent. Ordering trap: once an
     //    issueless rollout exists, approval finding refuses outright ("rollout
-    //    already started"), so a carve-out has to land before the rollout.
-    // 2. An approval binds the plan's specs and its approval_input_version,
-    //    not the set of databases a group target resolves to. This method
+    //    already started"), so the rule has to bite before the rollout, not
+    //    after. BOT-71 tracks whether the product should close this for every
+    //    caller; if it does, this rule becomes redundant rather than wrong.
+    //
+    // 2. The gate PR owes NOTHING here, and must not pretend otherwise. An
+    //    approval binds the plan's specs and its approval_input_version, not
+    //    the set of databases a group target resolves to. This method
     //    re-resolves the group live (rollout_service_task.go), and nothing in
     //    UpdateDatabaseGroup, UpdateDatabase or background schema sync bumps
     //    that version, so databases that join the group after approval execute
-    //    under it — and under plan checks that never ran against them.
+    //    under it, and under plan checks that never ran against them. No MCP
+    //    rule closes this: approving an issue enqueues rollout creation on the
+    //    auto path with no CreateRollout call at all, and schema sync enlarges
+    //    the set with no API call. The only fix is binding approval to a
+    //    digest of the resolved set — a product decision, since live expansion
+    //    was introduced deliberately (#18589). BOT-72.
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -116,10 +136,11 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
-    // Same two approval gaps as CreateRollout, and this is the method that
-    // actually starts execution: its approval check is guarded on a linked
-    // issue existing, and it runs whatever tasks the live group resolution
-    // produced. See the comment there.
+    // WRITE, and the same two cases as CreateRollout reach it — this is the
+    // method that actually starts execution. Its approval check carries the
+    // identical linked-issue guard, so the rule the gate PR owes covers this
+    // method too; and it runs whatever tasks the live group resolution
+    // produced, which no MCP rule can constrain. Both stated on CreateRollout.
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 

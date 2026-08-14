@@ -49,10 +49,10 @@ service PlanService {
     option (bytebase.v1.permission) = "bb.plans.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    // This is the step that produces the issueless plan RolloutService's
-    // approval gaps ride on — it creates a plan and links no issue. See the
-    // comment on RolloutService/CreateRollout for the carve-out the gate PR
-    // owes.
+    // This is the step that produces the issueless plan — it creates a plan
+    // and links no issue. It stays WRITE and needs no rule of its own: the
+    // rule the gate PR owes belongs at execution, not here, since a plan that
+    // is never rolled out changes nothing. See RolloutService/CreateRollout.
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
