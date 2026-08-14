@@ -779,7 +779,7 @@ func (s *SavedQueryService) SetSavedQueryPolicy(
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only the creator or an admin can share a saved query"))
 	}
 
-	bindings, err := convertToStoreSavedQueryBindings(request.Policy.Bindings)
+	bindings, err := s.convertToStoreSavedQueryBindings(ctx, request.Policy.Bindings)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -822,11 +822,49 @@ func convertToAPISavedQueryPolicy(bindings []*storepb.SavedQueryBinding) (*v1pb.
 }
 
 // convertToStoreSavedQueryBindings validates a submitted policy and converts
-// it for storage. Members are restricted to user: and group: — a service
-// account can own and run its own saved queries, but is never a grantee — and
-// a member may appear at one level only, so the stored policy never needs a
-// tie-break rule.
-func convertToStoreSavedQueryBindings(bindings []*v1pb.SavedQueryBinding) ([]*storepb.SavedQueryBinding, error) {
+// it for storage. A member may appear at one level only, so the stored policy
+// never needs a tie-break rule, and every principal is resolved rather than
+// pattern-matched: the prefix says what a member claims to be, not what it is.
+//
+// Only end users and groups can be grantees. A service account or workload
+// identity owns and runs its own saved queries and reaches them as the
+// creator, which is auditable; letting one be granted access under a "user:"
+// prefix would route that access through a binding instead. Resolving the
+// principal also rejects a member that does not exist, which would otherwise
+// store a grant nobody can ever use.
+func (s *SavedQueryService) convertToStoreSavedQueryBindings(ctx context.Context, bindings []*v1pb.SavedQueryBinding) ([]*storepb.SavedQueryBinding, error) {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	validateMember := func(member string) error {
+		if email, ok := strings.CutPrefix(member, common.UserBindingPrefix); ok {
+			user, err := s.store.GetUserByEmail(ctx, email)
+			if err != nil {
+				return errors.Wrapf(err, "failed to resolve member %q", member)
+			}
+			if user == nil {
+				return errors.Errorf("invalid member %q: no such user", member)
+			}
+			if user.Type != storepb.PrincipalType_END_USER {
+				return errors.Errorf("invalid member %q: service accounts and workload identities cannot be granted access to a saved query", member)
+			}
+			return nil
+		}
+		email, ok := strings.CutPrefix(member, common.GroupBindingPrefix)
+		if !ok {
+			return errors.Errorf("invalid member %q: only %q and %q are supported", member, common.UserBindingPrefix, common.GroupBindingPrefix)
+		}
+		group, err := s.store.GetGroup(ctx, &store.FindGroupMessage{Workspace: workspaceID, Email: &email})
+		if err != nil {
+			return errors.Wrapf(err, "failed to resolve member %q", member)
+		}
+		if group == nil {
+			return errors.Errorf("invalid member %q: no such group", member)
+		}
+		return nil
+	}
+	return convertToStoreSavedQueryBindingsWith(bindings, validateMember)
+}
+
+func convertToStoreSavedQueryBindingsWith(bindings []*v1pb.SavedQueryBinding, validateMember func(string) error) ([]*storepb.SavedQueryBinding, error) {
 	var converted []*storepb.SavedQueryBinding
 	seenLevel := make(map[v1pb.SavedQueryBinding_Level]bool, len(bindings))
 	seenMember := make(map[string]bool)
@@ -845,16 +883,13 @@ func convertToStoreSavedQueryBindings(bindings []*v1pb.SavedQueryBinding) ([]*st
 			return nil, errors.Errorf("binding for level %q has no members", binding.Level)
 		}
 		for _, member := range binding.Members {
-			if !strings.HasPrefix(member, common.UserBindingPrefix) && !strings.HasPrefix(member, common.GroupBindingPrefix) {
-				return nil, errors.Errorf("invalid member %q: only %q and %q are supported", member, common.UserBindingPrefix, common.GroupBindingPrefix)
-			}
-			if strings.TrimPrefix(strings.TrimPrefix(member, common.UserBindingPrefix), common.GroupBindingPrefix) == "" {
-				return nil, errors.Errorf("invalid member %q: empty email", member)
-			}
 			if seenMember[member] {
-				return nil, errors.Errorf("member %q appears at more than one level", member)
+				return nil, errors.Errorf("member %q appears at more than one binding", member)
 			}
 			seenMember[member] = true
+			if err := validateMember(member); err != nil {
+				return nil, err
+			}
 		}
 
 		converted = append(converted, &storepb.SavedQueryBinding{

@@ -11219,7 +11219,7 @@ because per-object access here is a capability, not a role.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | level | [SavedQueryBinding.Level](#bytebase-v1-SavedQueryBinding-Level) |  |  |
-| members | [string](#string) | repeated | The principals granted `level`, in bytebase.v1.Binding.members format, restricted to &#34;user:{email}&#34; and &#34;group:{email}&#34;. allUsers, serviceAccount:, and workloadIdentity: are rejected: a service account can own and run its own saved queries, but is never a grantee.
+| members | [string](#string) | repeated | The principals granted `level`, in bytebase.v1.Binding.members format, restricted to &#34;user:{email}&#34; and &#34;group:{email}&#34;. Every member is resolved, not merely prefix-checked: one that does not exist is rejected rather than stored as a grant nobody can use, and a service account or workload identity is rejected whatever prefix names it. Those principals own and run their own saved queries and reach them as the creator, which is auditable; they are never grantees.
 
 A group is stored as a reference and never expanded, so its membership stays live and a large group costs no more than a small one. |
 

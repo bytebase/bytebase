@@ -950,6 +950,49 @@ func TestSavedQuerySharing(t *testing.T) {
 		a.Equal(connect.CodePermissionDenied, connect.CodeOf(err), "sharing for editing must not cost the owner the saved query")
 	})
 
+	// Only end users and groups can be grantees. A service account reaches its
+	// own saved queries as the creator, which is auditable; a "user:" prefix on
+	// its email must not route access through a binding instead.
+	saResp, err := ctl.serviceAccountServiceClient.CreateServiceAccount(ctx, connect.NewRequest(&v1pb.CreateServiceAccountRequest{
+		Parent: ctl.project.Name,
+		ServiceAccount: &v1pb.ServiceAccount{
+			Title: "Saved Query Bot",
+		},
+		ServiceAccountId: generateRandomString("sq-bot"),
+	}))
+	a.NoError(err)
+	currentPolicy, err := ctl.savedQueryServiceClient.GetSavedQueryPolicy(ctx, connect.NewRequest(&v1pb.GetSavedQueryPolicyRequest{
+		Resource: savedQuery.Name,
+	}))
+	a.NoError(err)
+	_, err = ctl.savedQueryServiceClient.SetSavedQueryPolicy(ctx, connect.NewRequest(&v1pb.SetSavedQueryPolicyRequest{
+		Resource: savedQuery.Name,
+		Policy: &v1pb.SavedQueryPolicy{
+			Etag: currentPolicy.Msg.Etag,
+			Bindings: []*v1pb.SavedQueryBinding{{
+				Level:   v1pb.SavedQueryBinding_VIEWER,
+				Members: []string{fmt.Sprintf("user:%s", saResp.Msg.Email)},
+			}},
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err), "a service account is never a grantee, whatever prefix names it")
+
+	// A member that does not resolve is rejected rather than stored as a grant
+	// nobody can ever use.
+	_, err = ctl.savedQueryServiceClient.SetSavedQueryPolicy(ctx, connect.NewRequest(&v1pb.SetSavedQueryPolicyRequest{
+		Resource: savedQuery.Name,
+		Policy: &v1pb.SavedQueryPolicy{
+			Etag: currentPolicy.Msg.Etag,
+			Bindings: []*v1pb.SavedQueryBinding{{
+				Level:   v1pb.SavedQueryBinding_VIEWER,
+				Members: []string{"user:nobody-here@example.com"},
+			}},
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
 	// Revoking drops the grantee back to invisible.
 	_, err = ctl.savedQueryServiceClient.SetSavedQueryPolicy(ctx, connect.NewRequest(&v1pb.SetSavedQueryPolicyRequest{
 		Resource: savedQuery.Name,

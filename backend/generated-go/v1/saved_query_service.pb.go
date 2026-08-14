@@ -819,9 +819,12 @@ type SavedQueryBinding struct {
 	state protoimpl.MessageState  `protogen:"open.v1"`
 	Level SavedQueryBinding_Level `protobuf:"varint,1,opt,name=level,proto3,enum=bytebase.v1.SavedQueryBinding_Level" json:"level,omitempty"`
 	// The principals granted `level`, in bytebase.v1.Binding.members format,
-	// restricted to "user:{email}" and "group:{email}". allUsers,
-	// serviceAccount:, and workloadIdentity: are rejected: a service account can
-	// own and run its own saved queries, but is never a grantee.
+	// restricted to "user:{email}" and "group:{email}". Every member is
+	// resolved, not merely prefix-checked: one that does not exist is rejected
+	// rather than stored as a grant nobody can use, and a service account or
+	// workload identity is rejected whatever prefix names it. Those principals
+	// own and run their own saved queries and reach them as the creator, which
+	// is auditable; they are never grantees.
 	//
 	// A group is stored as a reference and never expanded, so its membership
 	// stays live and a large group costs no more than a small one.
