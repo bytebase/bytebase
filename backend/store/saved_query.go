@@ -354,11 +354,21 @@ var ErrSavedQueryEtagMismatch = errors.New("saved query policy etag mismatch")
 // themselves, plus each group they belong to. Groups are matched by reference
 // and never expanded into their members, so a 1,000-member group costs the
 // same as a 3-member one.
-func (s *Store) SavedQueryPrincipals(ctx context.Context, workspaceID, email string) ([]string, error) {
-	principals := []string{common.UserBindingPrefix + email}
-	groups, err := s.GetUserGroupsSnapshot(ctx, workspaceID, common.FormatUserEmail(email))
+//
+// The user-level principal is derived from the caller's principal *type*, the
+// way iam.check does it: only an end user produces a "user:" member. A service
+// account or workload identity produces none, so it reaches a saved query as
+// its creator and never through a grant — and a binding that names one under a
+// "user:" prefix matches nothing rather than granting it access. That is what
+// lets member validation stay a prefix check, as it is for project IAM.
+func (s *Store) SavedQueryPrincipals(ctx context.Context, workspaceID string, user *UserMessage) ([]string, error) {
+	var principals []string
+	if user.Type == storepb.PrincipalType_END_USER {
+		principals = append(principals, common.UserBindingPrefix+user.Email)
+	}
+	groups, err := s.GetUserGroupsSnapshot(ctx, workspaceID, common.FormatUserEmail(user.Email))
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get groups for %s", email)
+		return nil, errors.Wrapf(err, "failed to get groups for %s", user.Email)
 	}
 	for _, group := range groups {
 		principals = append(principals, common.GroupBindingPrefix+strings.TrimPrefix(group, common.GroupPrefix))
@@ -676,7 +686,7 @@ func NormalizeSavedQueryFolder(folder string) (string, error) {
 	return normalized, nil
 }
 
-func GetSearchSavedQueryFilter(ctx context.Context, s *Store, workspaceID, caller string, filter string, allowTitleContains bool) (*qb.Query, error) {
+func GetSearchSavedQueryFilter(ctx context.Context, s *Store, workspaceID string, caller *UserMessage, filter string, allowTitleContains bool) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
 	}
@@ -739,9 +749,9 @@ func GetSearchSavedQueryFilter(ctx context.Context, s *Store, workspaceID, calle
 		case "starred":
 			if starred, ok := value.(bool); ok {
 				if starred {
-					return qb.Q().Space("EXISTS (SELECT 1 FROM saved_query_star WHERE saved_query_star.saved_query = saved_query.resource_id AND saved_query_star.principal = ?)", caller), nil
+					return qb.Q().Space("EXISTS (SELECT 1 FROM saved_query_star WHERE saved_query_star.saved_query = saved_query.resource_id AND saved_query_star.principal = ?)", caller.Email), nil
 				}
-				return qb.Q().Space("NOT EXISTS (SELECT 1 FROM saved_query_star WHERE saved_query_star.saved_query = saved_query.resource_id AND saved_query_star.principal = ?)", caller), nil
+				return qb.Q().Space("NOT EXISTS (SELECT 1 FROM saved_query_star WHERE saved_query_star.saved_query = saved_query.resource_id AND saved_query_star.principal = ?)", caller.Email), nil
 			}
 			return nil, errors.Errorf("invalid starred value %v, expect true or false", value)
 		case "shared":
@@ -765,9 +775,9 @@ func GetSearchSavedQueryFilter(ctx context.Context, s *Store, workspaceID, calle
 				granted.Or("saved_query.bindings @> ?", probe)
 			}
 			if shared {
-				return qb.Q().Space("(saved_query.creator <> ? AND (?))", caller, granted), nil
+				return qb.Q().Space("(saved_query.creator <> ? AND (?))", caller.Email, granted), nil
 			}
-			return qb.Q().Space("(NOT (saved_query.creator <> ? AND (?)))", caller, granted), nil
+			return qb.Q().Space("(NOT (saved_query.creator <> ? AND (?)))", caller.Email, granted), nil
 		case "folder":
 			folder, ok := value.(string)
 			if !ok {

@@ -31999,12 +31999,14 @@ path like &#34;a/b/c&#34;; empty means unfiled. </p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>The principals granted `level`, in bytebase.v1.Binding.members format,
-restricted to &#34;user:{email}&#34; and &#34;group:{email}&#34;. Every member is
-resolved, not merely prefix-checked: one that does not exist is rejected
-rather than stored as a grant nobody can use, and a service account or
-workload identity is rejected whatever prefix names it. Those principals
-own and run their own saved queries and reach them as the creator, which
-is auditable; they are never grantees.
+restricted to &#34;user:{email}&#34; and &#34;group:{email}&#34; -- prefix-checked, as
+project and workspace IAM check their own members.
+
+Service accounts and workload identities are not grantees: they own and
+run their own saved queries and reach them as the creator. Naming one
+under a &#34;user:&#34; prefix grants nothing rather than being rejected, because
+a caller&#39;s member is derived from their principal type, so such a binding
+matches nobody.
 
 A group is stored as a reference and never expanded, so its membership
 stays live and a large group costs no more than a small one. </p></td>

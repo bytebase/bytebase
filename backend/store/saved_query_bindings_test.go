@@ -134,3 +134,29 @@ func TestSavedQueryBindingsFollowGroupRename(t *testing.T) {
 	require.False(t, matchedOld, "the stale token must be gone")
 	require.True(t, matchedUser, "unrelated members must be untouched")
 }
+
+// A binding names principals by prefix, and validation is a prefix check like
+// project IAM's. What keeps a service account from being granted access is the
+// read side: the caller's member is derived from their principal type, so a
+// binding carrying "user:<service-account-email>" matches nobody rather than
+// granting it. Pinning that here, because it is the reason the write side can
+// stay a prefix check.
+func TestSavedQueryPrincipalsAreTypeAware(t *testing.T) {
+	fixture := newProjectDeletionLockOrderFixture(t, "")
+
+	endUser := &store.UserMessage{Email: "human@example.com", Type: storepb.PrincipalType_END_USER}
+	principals, err := fixture.store.SavedQueryPrincipals(fixture.ctx, "default", endUser)
+	require.NoError(t, err)
+	require.Contains(t, principals, "user:human@example.com")
+
+	for _, principalType := range []storepb.PrincipalType{
+		storepb.PrincipalType_SERVICE_ACCOUNT,
+		storepb.PrincipalType_WORKLOAD_IDENTITY,
+	} {
+		bot := &store.UserMessage{Email: "bot@service.bytebase.com", Type: principalType}
+		principals, err := fixture.store.SavedQueryPrincipals(fixture.ctx, "default", bot)
+		require.NoError(t, err)
+		require.NotContains(t, principals, "user:bot@service.bytebase.com",
+			"%s must reach a saved query as its creator, never through a grant", principalType)
+	}
+}

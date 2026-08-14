@@ -234,7 +234,7 @@ func (s *SavedQueryService) SearchSavedQueryFolders(
 		return nil, err
 	}
 
-	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), user.Email, request.Filter, false /* allowTitleContains */)
+	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), user, request.Filter, false /* allowTitleContains */)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -246,7 +246,7 @@ func (s *SavedQueryService) SearchSavedQueryFolders(
 	// would hide a shared saved query its creator filed, since the client seeds
 	// its folder tree from this call and cannot expand into a folder it never
 	// learns about.
-	accessMembers, err := s.store.SavedQueryPrincipals(ctx, common.GetWorkspaceIDFromContext(ctx), user.Email)
+	accessMembers, err := s.store.SavedQueryPrincipals(ctx, common.GetWorkspaceIDFromContext(ctx), user)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve principals: %v", err))
 	}
@@ -328,13 +328,13 @@ func (s *SavedQueryService) SearchSavedQueries(
 	// afterwards, which would return short pages: nine of ten rows dropped
 	// still consumes the whole page.
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	accessMembers, err := s.store.SavedQueryPrincipals(ctx, workspaceID, user.Email)
+	accessMembers, err := s.store.SavedQueryPrincipals(ctx, workspaceID, user)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve principals: %v", err))
 	}
 	savedQueryFind.AccessMembers = accessMembers
 
-	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, workspaceID, user.Email, request.Filter, true /* allowTitleContains */)
+	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, workspaceID, user, request.Filter, true /* allowTitleContains */)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -587,7 +587,7 @@ func (s *SavedQueryService) BatchUpdateSavedQueries(
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), user.Email, request.Filter, false /* allowTitleContains */)
+	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), user, request.Filter, false /* allowTitleContains */)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -779,7 +779,7 @@ func (s *SavedQueryService) SetSavedQueryPolicy(
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only the creator or an admin can share a saved query"))
 	}
 
-	bindings, err := s.convertToStoreSavedQueryBindings(ctx, request.Policy.Bindings)
+	bindings, err := convertToStoreSavedQueryBindings(request.Policy.Bindings)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -821,50 +821,18 @@ func convertToAPISavedQueryPolicy(bindings []*storepb.SavedQueryBinding) (*v1pb.
 	return policy, nil
 }
 
-// convertToStoreSavedQueryBindings validates a submitted policy and converts
-// it for storage. A member may appear at one level only, so the stored policy
-// never needs a tie-break rule, and every principal is resolved rather than
-// pattern-matched: the prefix says what a member claims to be, not what it is.
+// convertToStoreSavedQueryBindings validates a submitted policy and converts it
+// for storage. A member may appear at one binding only, so the stored policy
+// never needs a tie-break rule.
 //
-// Only end users and groups can be grantees. A service account or workload
-// identity owns and runs its own saved queries and reaches them as the
-// creator, which is auditable; letting one be granted access under a "user:"
-// prefix would route that access through a binding instead. Resolving the
-// principal also rejects a member that does not exist, which would otherwise
-// store a grant nobody can ever use.
-func (s *SavedQueryService) convertToStoreSavedQueryBindings(ctx context.Context, bindings []*v1pb.SavedQueryBinding) ([]*storepb.SavedQueryBinding, error) {
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	validateMember := func(member string) error {
-		if email, ok := strings.CutPrefix(member, common.UserBindingPrefix); ok {
-			user, err := s.store.GetUserByEmail(ctx, email)
-			if err != nil {
-				return errors.Wrapf(err, "failed to resolve member %q", member)
-			}
-			if user == nil {
-				return errors.Errorf("invalid member %q: no such user", member)
-			}
-			if user.Type != storepb.PrincipalType_END_USER {
-				return errors.Errorf("invalid member %q: service accounts and workload identities cannot be granted access to a saved query", member)
-			}
-			return nil
-		}
-		email, ok := strings.CutPrefix(member, common.GroupBindingPrefix)
-		if !ok {
-			return errors.Errorf("invalid member %q: only %q and %q are supported", member, common.UserBindingPrefix, common.GroupBindingPrefix)
-		}
-		group, err := s.store.GetGroup(ctx, &store.FindGroupMessage{Workspace: workspaceID, Email: &email})
-		if err != nil {
-			return errors.Wrapf(err, "failed to resolve member %q", member)
-		}
-		if group == nil {
-			return errors.Errorf("invalid member %q: no such group", member)
-		}
-		return nil
-	}
-	return convertToStoreSavedQueryBindingsWith(bindings, validateMember)
-}
-
-func convertToStoreSavedQueryBindingsWith(bindings []*v1pb.SavedQueryBinding, validateMember func(string) error) ([]*storepb.SavedQueryBinding, error) {
+// Members are prefix-checked, not resolved — the same shape project and
+// workspace IAM use in validateMember — narrowed to the two types a saved
+// query accepts. A service account named under a "user:" prefix is inert
+// rather than rejected: SavedQueryPrincipals derives the caller's member from
+// their principal type, so such a binding matches nobody. That is how IAM is
+// safe with a prefix check, and doing the same here keeps one convention
+// instead of two.
+func convertToStoreSavedQueryBindings(bindings []*v1pb.SavedQueryBinding) ([]*storepb.SavedQueryBinding, error) {
 	var converted []*storepb.SavedQueryBinding
 	seenLevel := make(map[v1pb.SavedQueryBinding_Level]bool, len(bindings))
 	seenMember := make(map[string]bool)
@@ -887,8 +855,10 @@ func convertToStoreSavedQueryBindingsWith(bindings []*v1pb.SavedQueryBinding, va
 				return nil, errors.Errorf("member %q appears at more than one binding", member)
 			}
 			seenMember[member] = true
-			if err := validateMember(member); err != nil {
-				return nil, err
+			hasUser := strings.HasPrefix(member, common.UserBindingPrefix) && len(member) > len(common.UserBindingPrefix)
+			hasGroup := strings.HasPrefix(member, common.GroupBindingPrefix) && len(member) > len(common.GroupBindingPrefix)
+			if !hasUser && !hasGroup {
+				return nil, errors.Errorf("invalid member %q: only %q and %q are supported", member, common.UserBindingPrefix, common.GroupBindingPrefix)
 			}
 		}
 
@@ -948,7 +918,7 @@ func (s *SavedQueryService) savedQueryAccess(ctx context.Context, savedQuery *st
 	access.isAdmin = isAdmin
 
 	if len(savedQuery.Bindings) > 0 {
-		principals, err := s.store.SavedQueryPrincipals(ctx, workspaceID, user.Email)
+		principals, err := s.store.SavedQueryPrincipals(ctx, workspaceID, user)
 		if err != nil {
 			return savedQueryAccess{}, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve principals: %v", err))
 		}
