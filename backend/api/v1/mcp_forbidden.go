@@ -141,8 +141,8 @@ var mcpForbiddenReasons = map[v1pb.MCPForbiddenReason]string{
 	// The four approval methods. ApproveIssue, RejectIssue and RequestIssue are
 	// one handler under three actions (issue_review.go reviewIssue), and that
 	// handler records the review decision itself. An agent composes a change; it
-	// does not cast the vote on its own change. That is the whole claim, and it
-	// is deliberately narrower than "an agent only executes approved work",
+	// does not move its own change through the gate. That is the whole claim,
+	// and it is deliberately narrower than "an agent only executes approved work",
 	// which this classification does NOT deliver: CreatePlan, CreateRollout and
 	// BatchRunTasks are all WRITE, and both approval checks on the execution
 	// path are guarded on an issue existing, so a plan created without one
@@ -151,12 +151,13 @@ var mcpForbiddenReasons = map[v1pb.MCPForbiddenReason]string{
 	// than inherit.
 	//
 	// RetryIssueApproval is the near miss and is in deliberately. It casts no
-	// vote: it re-runs approval-template finding for an issue stuck in CHECKING,
-	// only the issue creator may call it (issue_service.go canRequestIssue), and
-	// on an auto-approved result it goes on to activate the grant and enqueue
-	// the rollout (issue_service.go:789,796). It is refused because the four
-	// methods are the approval surface as a set, and a guard with a hole in it
-	// teaches the wrong thing. What it does not buy is containment of
+	// vote — it re-runs approval-template finding for an issue stuck in
+	// CHECKING, and only the issue creator may call it (issue_service.go
+	// canRequestIssue) — but it is the other half of the reason's wording
+	// rather than an exception to it: on an auto-approved result the same call
+	// activates the grant and enqueues the rollout (issue_service.go:789,796),
+	// so it moves an issue through the gate without any human acting. What it
+	// does not buy is containment of
 	// re-derivation in general: PlanService/UpdatePlan with a specs mask, and
 	// UpdateIssue on a label change, both reset ApprovalFindingDone and force
 	// the template to be found again against the current workspace rule
@@ -165,7 +166,7 @@ var mcpForbiddenReasons = map[v1pb.MCPForbiddenReason]string{
 	// and re-review after an edit is the system working — not an oversight.
 	// Refusing RetryIssueApproval costs an agent the self-service recovery for
 	// its own stuck issue; the operator retries from the console.
-	v1pb.MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION: "it records the human review decision that is meant to gate the change, and an agent does not vote on its own work",
+	v1pb.MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION: "it works the approval step meant to gate the change, and an agent does not move its own change through that gate",
 }
 
 // reasonForbiddenClass is the fallback for a method annotated FORBIDDEN whose

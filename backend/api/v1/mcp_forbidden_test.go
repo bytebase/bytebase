@@ -164,11 +164,10 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.IssueServiceRequestIssueProcedure:                      v1pb.MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION,
 		v1connect.IssueServiceRetryIssueApprovalProcedure:                v1pb.MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION,
 	}
+	// Wording for every mechanism in use is checkReasonsMatchTheClass's job, over
+	// every class rather than only the ones enumerated here.
 	require.Equal(t, wantReason, got,
 		"every FORBIDDEN method records the mechanism it is refused for, and this is the second signature on it")
-
-	// Wording for every mechanism in use is checkReasonsMatchTheClass's job, for
-	// every class rather than only the ones enumerated here.
 }
 
 // The lint. Every clause is a function over the rows rather than a body of
@@ -262,9 +261,10 @@ var mcpDeniedClasses = []v1pb.MCPMethodClass{v1pb.MCPMethodClass_FORBIDDEN, v1pb
 // somebody decides who serves it — which is the decision that would otherwise
 // be made by whichever `switch` in the gate happened to have a default arm.
 //
-// The last loop closes the circle back to the rows: a method may only carry a
-// class this table has decided, so an annotation cannot reach a value the
-// serving decision skipped.
+// The last loop closes the circle back to the rows. `decided` holds the classes
+// that came out of the loop above with exactly one answer, so dropping READ from
+// the serving table does not merely report READ once — it reports every method
+// annotated READ, which is the shape of the damage.
 func checkEveryClassHasAServingDecision(
 	rows []mcpClassification,
 	serving map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass,
@@ -280,6 +280,7 @@ func checkEveryClassHasAServingDecision(
 		}
 	}
 
+	inVocabulary := map[v1pb.MCPMethodClass]bool{}
 	decided := map[v1pb.MCPMethodClass]bool{}
 	values := classes.Values()
 	for i := range values.Len() {
@@ -287,6 +288,7 @@ func checkEveryClassHasAServingDecision(
 		if class == v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED {
 			continue
 		}
+		inVocabulary[class] = true
 		isServed, isDenied := len(servedBy[class]) > 0, slices.Contains(denied, class)
 		switch {
 		case isServed && isDenied:
@@ -295,10 +297,10 @@ func checkEveryClassHasAServingDecision(
 			violations = append(violations, fmt.Sprintf("%v is neither served by a mode nor denied", class))
 		default:
 		}
-		decided[class] = true
+		decided[class] = isServed != isDenied
 	}
 	for _, class := range denied {
-		if !decided[class] {
+		if !inVocabulary[class] {
 			violations = append(violations, fmt.Sprintf("%v is denied but is not a class", class))
 		}
 	}
@@ -428,13 +430,21 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 			checkEveryClassHasAServingDecision(nil, widened, mcpDeniedClasses, classes, modes))
 	})
 
-	t.Run("a class nobody decided fails", func(t *testing.T) {
-		require.Equal(t, []string{"WRITE is neither served by a mode nor denied"},
-			checkEveryClassHasAServingDecision(nil, map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
-				v1pb.WorkspaceProfileSetting_DISABLED:   {},
-				v1pb.WorkspaceProfileSetting_READ_ONLY:  {v1pb.MCPMethodClass_READ},
-				v1pb.WorkspaceProfileSetting_READ_WRITE: {v1pb.MCPMethodClass_READ},
-			}, mcpDeniedClasses, classes, modes))
+	t.Run("a class nobody decided fails, and takes its rows with it", func(t *testing.T) {
+		// The damage from dropping a class out of the serving table is every
+		// method annotated with it, so the clause reports every method too.
+		rows := []mcpClassification{
+			{procedure: "/p", class: v1pb.MCPMethodClass_WRITE},
+			{procedure: "/q", class: v1pb.MCPMethodClass_READ},
+		}
+		require.Equal(t, []string{
+			"/p: carries WRITE, which has no serving decision",
+			"WRITE is neither served by a mode nor denied",
+		}, checkEveryClassHasAServingDecision(rows, map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
+			v1pb.WorkspaceProfileSetting_DISABLED:   {},
+			v1pb.WorkspaceProfileSetting_READ_ONLY:  {v1pb.MCPMethodClass_READ},
+			v1pb.WorkspaceProfileSetting_READ_WRITE: {v1pb.MCPMethodClass_READ},
+		}, mcpDeniedClasses, classes, modes))
 	})
 
 	t.Run("a ceiling mode with no serving row fails", func(t *testing.T) {
