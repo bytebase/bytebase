@@ -537,95 +537,60 @@ func (s *Store) SetSavedQueryStar(ctx context.Context, savedQueryResourceID, pri
 // update, so two overlapping batches can never lock in opposing orders; a
 // row deleted mid-batch simply updates zero rows.
 // MoveSavedQueries files the named saved queries, restricted to one creator:
-// filing is personal organization, so neither a binding nor the admin backstop
-// reaches into somebody else's tree. Rows belonging to anyone else are simply
-// not selected, so the count reports what moved.
-//
-// Locks its rows in full primary-key order, per the store's batch rule, so two
-// overlapping moves cannot deadlock.
+// filing is personal organization, so rows belonging to anyone else are not
+// selected and the count reports what actually moved.
 func (s *Store) MoveSavedQueries(ctx context.Context, projectID, creator string, resourceIDs []string, folder string) (int, error) {
 	if len(resourceIDs) == 0 {
 		return 0, nil
 	}
-	return s.applySavedQueryMove(ctx, `
-		SELECT resource_id
-		FROM saved_query
-		WHERE resource_id = ANY($1) AND project = $2 AND creator = $3
-		ORDER BY resource_id
-		FOR UPDATE
-	`, []any{resourceIDs, projectID, creator}, func(tx *sql.Tx, locked []string) error {
-		_, err := tx.ExecContext(ctx, `
-			UPDATE saved_query SET folder = $1, updated_at = now()
-			WHERE resource_id = ANY($2)
-		`, folder, locked)
-		return err
-	})
+	return s.execSavedQueryMove(ctx, `
+		WITH locked AS (
+			SELECT resource_id FROM saved_query
+			WHERE resource_id = ANY($1) AND project = $2 AND creator = $3
+			ORDER BY resource_id
+			FOR UPDATE
+		)
+		UPDATE saved_query SET folder = $4, updated_at = now()
+		WHERE resource_id IN (SELECT resource_id FROM locked)
+	`, resourceIDs, projectID, creator, folder)
 }
 
 // MoveSavedQueryFolder rewrites the folder prefix for one creator's saved
 // queries: moving "a/b" to "a/c" also moves "a/b/deep" to "a/c/deep". The
-// rewrite is one statement over rows locked in primary-key order, so a rename
-// cannot half-apply the way a per-path loop can.
+// suffix keeps each descendant's own tail, and ltrim drops the separator when
+// the target is empty so a row is unfiled rather than left at "/deep".
 func (s *Store) MoveSavedQueryFolder(ctx context.Context, projectID, creator, source, target string) (int, error) {
 	if source == "" {
 		return 0, errors.New("source folder cannot be empty")
 	}
-	return s.applySavedQueryMove(ctx, `
-		SELECT resource_id
-		FROM saved_query
-		WHERE project = $1 AND creator = $2 AND (folder = $3 OR folder LIKE $4)
-		ORDER BY resource_id
-		FOR UPDATE
-	`, []any{projectID, creator, source, escapeLikePattern(source) + "/%"}, func(tx *sql.Tx, locked []string) error {
-		// The suffix keeps each descendant's own tail: "a/b/deep" under source
-		// "a/b" contributes "/deep", which ltrim drops when the target is empty
-		// so the row is unfiled rather than left at "/deep".
-		_, err := tx.ExecContext(ctx, `
-			UPDATE saved_query
-			SET folder = ltrim($1 || substring(folder from length($2) + 1), '/'),
-			    updated_at = now()
-			WHERE resource_id = ANY($3)
-		`, target, source, locked)
-		return err
-	})
+	return s.execSavedQueryMove(ctx, `
+		WITH locked AS (
+			SELECT resource_id FROM saved_query
+			WHERE project = $1 AND creator = $2 AND (folder = $3 OR folder LIKE $4)
+			ORDER BY resource_id
+			FOR UPDATE
+		)
+		UPDATE saved_query
+		SET folder = ltrim($5 || substring(folder from length($3) + 1), '/'),
+		    updated_at = now()
+		WHERE resource_id IN (SELECT resource_id FROM locked)
+	`, projectID, creator, source, escapeLikePattern(source)+"/%", target)
 }
 
-func (s *Store) applySavedQueryMove(ctx context.Context, selectSQL string, args []any, update func(*sql.Tx, []string) error) (int, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
+// execSavedQueryMove runs a move as a single statement. The CTE takes every
+// row lock in primary-key order before the update touches anything -- the
+// store's batch rule, so two overlapping moves serialize instead of
+// deadlocking -- and one statement needs no explicit transaction.
+func (s *Store) execSavedQueryMove(ctx context.Context, query string, args ...any) (int, error) {
+	result, err := s.GetDB().ExecContext(ctx, query, args...)
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to begin transaction")
+		return 0, errors.Wrap(err, "failed to move saved queries")
 	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, selectSQL, args...)
+	moved, err := result.RowsAffected()
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to lock saved queries")
+		return 0, errors.Wrap(err, "failed to count moved saved queries")
 	}
-	defer rows.Close()
-	var locked []string
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			return 0, err
-		}
-		locked = append(locked, id)
-	}
-	if err := rows.Err(); err != nil {
-		return 0, err
-	}
-	// Free the cursor before the UPDATE: statements on one transaction cannot
-	// interleave with an open one.
-	rows.Close()
-
-	if len(locked) > 0 {
-		if err := update(tx, locked); err != nil {
-			return 0, errors.Wrap(err, "failed to move saved queries")
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return 0, errors.Wrap(err, "failed to commit transaction")
-	}
-	return len(locked), nil
+	return int(moved), nil
 }
 
 // ListSavedQueryFolderPaths returns the distinct folder paths of the saved

@@ -1249,8 +1249,12 @@ const batchUpdateSavedQueryFolders = async (
     string,
     { parent: string; folders: string[]; names: string[] }
   >();
+  const currentUserName = `users/${useAppStore.getState().currentUser?.email}`;
   for (const savedQuery of savedQueries) {
     const current = useAppStore.getState().getSavedQueryByName(savedQuery.name);
+    // Only the creator's own rows move. Sending somebody else's would come
+    // back with nothing moved while the cache patch below claimed otherwise.
+    if (current && current.creator !== currentUserName) continue;
     const view = current ? viewForSavedQuery(current) : undefined;
     if (current && (view === "my" || view === "shared")) {
       addAffectedFolderKey(
@@ -1310,21 +1314,40 @@ const batchUpdateSavedQueryFolderPaths = async (
   if (view !== "my") return;
   if (updates.length === 0) return;
   const project = getSQLEditorEditorState().project;
-  // The server moves a folder's descendants with it, so only the top-level
-  // moves need sending -- a nested path would be rewritten twice otherwise.
-  const topLevel = updates.filter(
+  // Deepest first, so a nested source still matches rows an ancestor move has
+  // not yet rewritten.
+  const sorted = [...updates].sort(
+    (a, b) => b.sourceFolder.length - a.sourceFolder.length
+  );
+  // The server rewrites a folder's prefix, carrying descendants with it, so a
+  // nested update is redundant only when that rewrite already produces its
+  // target: "old" -> "new" implies "old/child" -> "new/child". Flattening does
+  // not qualify -- "old" -> "" would leave "old/child" at "child" rather than
+  // at the root -- so those updates still have to be sent.
+  const impliedTarget = (
+    ancestor: SavedQueryFolderPathUpdate,
+    update: SavedQueryFolderPathUpdate
+  ) =>
+    (
+      ancestor.targetFolder.join("/") +
+      update.sourceFolder
+        .join("/")
+        .slice(ancestor.sourceFolder.join("/").length)
+    ).replace(/^\/+/, "");
+  const needed = sorted.filter(
     (update) =>
-      !updates.some(
-        (other) =>
-          other !== update &&
+      !sorted.some(
+        (ancestor) =>
+          ancestor !== update &&
           isSubFolder({
-            parent: other.sourceFolder.join("/"),
+            parent: ancestor.sourceFolder.join("/"),
             path: update.sourceFolder.join("/"),
             dig: true,
-          })
+          }) &&
+          update.targetFolder.join("/") === impliedTarget(ancestor, update)
       )
   );
-  for (const update of topLevel) {
+  for (const update of needed) {
     const source = update.sourceFolder.join("/");
     const target = update.targetFolder.join("/");
     // Cached rows are re-filed locally so the tree can rebuild without waiting

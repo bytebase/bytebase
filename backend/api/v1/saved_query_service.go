@@ -505,9 +505,9 @@ func (s *SavedQueryService) DeleteSavedQuery(
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-// UpdateSavedQueryStar stars or unstars a saved query for the caller. A
-// star is always the caller's own per-user marker; the gate is read access
-// to the saved query being starred.
+// UpdateSavedQueryStar stars or unstars a saved query for the caller. Stars
+// are personal: you can star anything you created or were granted, and your
+// stars are invisible to everyone else.
 func (s *SavedQueryService) UpdateSavedQueryStar(
 	ctx context.Context,
 	req *connect.Request[v1pb.UpdateSavedQueryStarRequest],
@@ -526,10 +526,13 @@ func (s *SavedQueryService) UpdateSavedQueryStar(
 	if err != nil {
 		return nil, err
 	}
-	if !access.canRead() {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
-	}
 	if !access.canStar() {
+		// canStar is canRead minus the admin backstop, so the only caller who
+		// gets this far without it is an admin with no grant: they can see the
+		// saved query, so denying is honest where hiding would not be.
+		if !access.canRead() {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
+		}
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only the creator or a grantee can star a saved query"))
 	}
 
