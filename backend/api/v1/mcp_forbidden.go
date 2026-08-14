@@ -116,17 +116,24 @@ var mcpForbiddenReasons = map[v1pb.MCPForbiddenReason]string{
 	v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS: "it hands someone control of a principal other than the caller, which revoking this session would not take back",
 
 	// SettingService/UpdateSetting, refused for the boundary it rewrites
-	// rather than for any credential it hands out. Two mask paths carry it:
+	// rather than for any credential it hands out. Three mask paths carry it:
 	// value.workspace_profile.mcp_capability IS the MCP ceiling, so a session
-	// that reaches it is not bounded by it; and value.email.smtp keeps the
+	// that reaches it is not bounded by it; value.email.smtp keeps the
 	// stored password when the request omits it while accepting a new host,
 	// which hands over the relay resolvePreLoginEmailSetting reads to mail
-	// password resets and login codes. TestEmailSetting is the one-shot
-	// version of the second; this is the persisting one. The same method also
-	// writes the SSO domain allowlist and the sign-in switches.
+	// password resets and login codes; and value.ai.endpoint does the same to
+	// the AI key it never names — the stored api_key survives the mask, and the
+	// next AIService/Chat puts it in an auth header to the host just written
+	// (ai_service.go). SaaS refuses AI writes outright (setting_service.go), so
+	// that third one is a self-hosted vector, and the key it carries out is
+	// whatever the operator configured — GEMINI_API_KEY, where it is set, seeds
+	// one key into every workspace created after it (getAdditionalWorkspaceSettings).
+	// TestEmailSetting is the one-shot version of the second; this is the
+	// persisting one. The same method also writes the SSO domain allowlist and
+	// the sign-in switches.
 	//
 	// Classification is per method, so this refuses the whole RPC — including
-	// the settings that have nothing to do with either path. Splitting the
+	// the settings that have nothing to do with any of them. Splitting the
 	// handler so ordinary configuration stays reachable to an agent is the
 	// follow-up (BOT-53); disallowing first is the deliberate order.
 	v1pb.MCPForbiddenReason_REWRITES_SESSION_BOUNDARY: "it rewrites the workspace settings that bound this session, including the switch meant to contain it",

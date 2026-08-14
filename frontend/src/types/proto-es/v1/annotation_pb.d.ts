@@ -159,9 +159,10 @@ export enum MCPForbiddenReason {
 
   /**
    * Rewrites the workspace configuration that governs the session making the
-   * call — the MCP switch itself, the sign-in and SSO settings, and the mail
-   * relay that carries credential resets. A session that can widen its own
-   * ceiling is not bounded by it.
+   * call — the MCP switch itself, the sign-in and SSO settings, the mail
+   * relay that carries credential resets, and the AI endpoint the stored API
+   * key is sent to. A session that can widen its own ceiling is not bounded
+   * by it.
    *
    * @generated from enum value: REWRITES_SESSION_BOUNDARY = 7;
    */
