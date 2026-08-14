@@ -36,7 +36,7 @@ var (
 
 // StartAllSampleInstances starts all postgres sample instances.
 func StartAllSampleInstances(ctx context.Context, dataDir string, basePort int) []func() {
-	sampleData, err := loadSampleData()
+	sampleData, err := loadSampleDataFromFS()
 	if err != nil {
 		slog.Error("failed to load sample data", log.BBError(err))
 		return nil
@@ -74,7 +74,7 @@ func StartAllSampleInstances(ctx context.Context, dataDir string, basePort int) 
 	return stoppers
 }
 
-func loadSampleData() (string, error) {
+func loadSampleDataFromFS() (string, error) {
 	// Load sample data
 	names, err := fs.Glob(sampleFS, "sample/*.sql")
 	if err != nil {

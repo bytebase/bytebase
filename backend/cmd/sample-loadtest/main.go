@@ -26,6 +26,10 @@ func main() {
 	counts := flag.String("counts", "70,500,1000", "comma-separated database counts")
 	report := flag.String("report", "", "output path for the JSON report (empty = no file)")
 	verbose := flag.Bool("verbose", false, "log per-tenant errors")
+	syncConcurrency := flag.Int("sync-concurrency", 0, "max concurrent per-workspace syncs (0 = realistic default)")
+	ddlConcurrency := flag.Int("ddl-concurrency", 0, "max concurrent per-workspace change-ticket DDL (0 = realistic default)")
+	interactiveConcurrency := flag.Int("interactive-concurrency", 0, "steady-state interactive sessions (0 = realistic default)")
+	interactiveBurst := flag.Int("interactive-burst", 0, "burst interactive sessions (0 = realistic default)")
 	flag.Parse()
 
 	if *password == "" {
@@ -45,19 +49,23 @@ func main() {
 	}
 
 	cfg := loadtest.Config{
-		Host:               *host,
-		Port:               *port,
-		AdminUser:          *user,
-		AdminPassword:      *password,
-		SSLMode:            *sslmode,
-		DatabaseNamePrefix: "lt_ws_",
-		RoleNamePrefix:     "lt_role_",
-		SeedSQL:            seed,
-		DatabaseCounts:     dbCounts,
-		InteractiveQueries: loadtest.DefaultInteractiveQueries(),
-		DDLStatements:      loadtest.DefaultDDLStatements(),
-		ReportPath:         *report,
-		Verbose:            *verbose,
+		Host:                   *host,
+		Port:                   *port,
+		AdminUser:              *user,
+		AdminPassword:          *password,
+		SSLMode:                *sslmode,
+		DatabaseNamePrefix:     "lt_ws_",
+		RoleNamePrefix:         "lt_role_",
+		SeedSQL:                seed,
+		DatabaseCounts:         dbCounts,
+		InteractiveQueries:     loadtest.DefaultInteractiveQueries(),
+		DDLStatements:          loadtest.DefaultDDLStatements(),
+		SyncConcurrency:        *syncConcurrency,
+		DDLConcurrency:         *ddlConcurrency,
+		InteractiveConcurrency: *interactiveConcurrency,
+		InteractiveBurst:       *interactiveBurst,
+		ReportPath:             *report,
+		Verbose:                *verbose,
 	}
 
 	results, err := loadtest.Run(context.Background(), cfg)

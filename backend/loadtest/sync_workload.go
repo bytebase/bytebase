@@ -19,9 +19,11 @@ var syncQueries = []string{
 	`SELECT schemaname, tablename, tableowner FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')`,
 }
 
-// runSyncWorkload replays Bytebase's schema-sync load: up to
-// cfg.syncConcurrency() workers each open a connection to one tenant database,
-// run catalog introspection plus a light schema dump, then close it.
+// runSyncWorkload replays Bytebase's per-workspace schema-sync load: each
+// workspace's instance syncs only its own database, connecting as that
+// database's role. Syncs are independent (each workspace has its own schedule),
+// so concurrency is capped at cfg.syncConcurrency() — a modest realistic
+// overlap — instead of every database syncing at once.
 // nolint:unparam // failures are recorded in DurationStats.Errors; the error result is always nil by contract.
 func runSyncWorkload(ctx context.Context, _ *sql.DB, cfg *Config, tenants []Tenant) (SyncResult, error) {
 	start := time.Now()
@@ -30,7 +32,7 @@ func runSyncWorkload(ctx context.Context, _ *sql.DB, cfg *Config, tenants []Tena
 	latencies := make([]time.Duration, 0, len(tenants))
 	errors := 0
 
-	p := pool.New().WithMaxGoroutines(len(tenants))
+	p := pool.New().WithMaxGoroutines(cfg.syncConcurrency())
 	for _, t := range tenants {
 		p.Go(func() {
 			start := time.Now()
@@ -54,10 +56,11 @@ func runSyncWorkload(ctx context.Context, _ *sql.DB, cfg *Config, tenants []Tena
 	}, nil
 }
 
-// syncOneDatabase opens one connection to a tenant database and runs the sync
-// queries sequentially, returning the first error encountered.
+// syncOneDatabase opens one connection to a tenant database as the tenant's
+// per-database role and runs the sync queries sequentially, returning the first
+// error encountered.
 func syncOneDatabase(ctx context.Context, cfg *Config, t Tenant, queries []string) error {
-	db, err := sql.Open("pgx", cfg.adminDSNForDB(t.Database))
+	db, err := sql.Open("pgx", cfg.tenantDSN(t.Database, t.Role, t.Password))
 	if err != nil {
 		return err
 	}

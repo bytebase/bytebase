@@ -44,6 +44,15 @@ type Config struct {
 	InteractiveQueries []string
 	DDLStatements      []string
 
+	// Concurrency for the per-workspace workload model. Zero means "use the
+	// realistic default" (see defaults.go). Sync and DDL model independent
+	// per-workspace schedules with a modest overlap rather than an N-wide pool;
+	// interactive concurrency is held fixed while the database count varies.
+	SyncConcurrency        int // max concurrent per-workspace syncs.
+	DDLConcurrency         int // max concurrent per-workspace change-ticket DDL.
+	InteractiveConcurrency int // steady-state interactive sessions.
+	InteractiveBurst       int // burst interactive sessions.
+
 	ReportPath string
 	Verbose    bool
 }
@@ -250,13 +259,13 @@ func Run(ctx context.Context, cfg Config) ([]Result, error) {
 		}
 		r.Idle = idle
 
-		syncRes, ir, ddl, err := runOverlapWorkload(ctx, &cfg, tenants)
+		syncRes, irs, ddl, err := runOverlapWorkload(ctx, &cfg, tenants)
 		if err != nil {
 			_, _ = cleanup(ctx, db, &cfg, tenants)
 			return results, errors.Wrapf(err, "overlap workload")
 		}
 		r.Sync = syncRes
-		r.Interactive = append(r.Interactive, ir)
+		r.Interactive = append(r.Interactive, irs...)
 		r.DDL = ddl
 
 		churn, err := runChurn(ctx, db, &cfg, tenants)

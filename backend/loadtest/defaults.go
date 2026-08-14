@@ -1,5 +1,52 @@
 package loadtest
 
+// Default workload concurrency levels for the per-workspace model. These are
+// labeled assumptions, not measured traffic:
+//
+//   - Sync: N independent per-workspace syncs on independent 15-minute
+//     schedules. Expected steady-state overlap is roughly
+//     N x (per-database sync duration / 15 min), i.e. at most a handful even at
+//     1000 databases; 10 is a conservative upper bound.
+//   - DDL: change tickets are human-initiated and rare; 5 concurrent is a
+//     generous upper bound.
+//   - Interactive: 10 steady-state sessions and a 50-session burst, held fixed
+//     while database count varies. Database count and connection count are
+//     independent.
+const (
+	defaultSyncConcurrency        = 10
+	defaultDDLConcurrency         = 5
+	defaultInteractiveConcurrency = 10
+	defaultInteractiveBurst       = 50
+)
+
+func (c *Config) syncConcurrency() int {
+	if c.SyncConcurrency > 0 {
+		return c.SyncConcurrency
+	}
+	return defaultSyncConcurrency
+}
+
+func (c *Config) ddlConcurrency() int {
+	if c.DDLConcurrency > 0 {
+		return c.DDLConcurrency
+	}
+	return defaultDDLConcurrency
+}
+
+func (c *Config) interactiveConcurrency() int {
+	if c.InteractiveConcurrency > 0 {
+		return c.InteractiveConcurrency
+	}
+	return defaultInteractiveConcurrency
+}
+
+func (c *Config) interactiveBurst() int {
+	if c.InteractiveBurst > 0 {
+		return c.InteractiveBurst
+	}
+	return defaultInteractiveBurst
+}
+
 // DefaultInteractiveQueries returns representative tutorial queries against the
 // Bytebase sample HR schema. These encode the assumed "interactive use" pattern;
 // adjust them if product traffic defines a different mix.
