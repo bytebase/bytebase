@@ -755,6 +755,10 @@ func validateEndUserEmail(email string) error {
 	if common.IsWorkloadIdentityEmail(email) {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email for end users cannot end with %v", common.WorkloadIdentitySuffix))
 	}
+	// Check if the email is valid.
+	if err := common.ValidateEmail(email); err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid email: %v", err.Error()))
+	}
 	return nil
 }
 
@@ -764,10 +768,6 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 	}
 	if licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION) != nil {
 		// nolint:nilerr
-		// feature not enabled, only validate email and skip domain restriction.
-		if err := common.ValidateEmail(email); err != nil {
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid email: %v", err.Error()))
-		}
 		return nil
 	}
 	setting, err := stores.GetWorkspaceProfileSetting(ctx, workspaceID)
@@ -780,10 +780,6 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 		allowedDomains = setting.Domains
 	}
 
-	// Check if the email is valid.
-	if err := common.ValidateEmail(email); err != nil {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid email: %v", err.Error()))
-	}
 	// Enforce domain restrictions.
 	if len(allowedDomains) > 0 {
 		ok := false
@@ -794,7 +790,7 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 			}
 		}
 		if !ok {
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email %q does not belong to domains %v", email, allowedDomains))
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email %q does not belong to allowed domains", email))
 		}
 	}
 	return nil
