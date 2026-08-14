@@ -60,7 +60,8 @@ Cited throughout as G1–G8.
    saved queries (e.g. by creator) independent of grants — offboarding
    review, incident audit.
 7. **Listing scales**: My / Shared / Starred are separate indexed queries
-   with keyset pagination; group sharing never expands group memberships.
+   on the platform's standard pagination; group sharing never expands group
+   memberships.
 8. **Rename** worksheet → saved query, bundled with the already-breaking
    API change.
 
@@ -181,8 +182,11 @@ Alternatives the rejected options.
 5. **Admin (`manage`) reads private.** Peer parity (`dataform.admin`,
    Databricks workspace admins), and what makes incident response and
    orphan cleanup possible. The real tradeoff: admins can read private
-   drafts — accepted, and made accountable by auditing content reads (see
-   API and authorization: Audit events).
+   drafts, and reads are not audited — the audit log records changes, not
+   lookups (see API and authorization: Audit events). The control on admin
+   access is therefore who holds `manage` (never a default member role),
+   not an after-the-fact read trail; an admin *write* to someone else's
+   query is audited like any other write.
 6. **A purpose-built level policy, not the role-based `IamPolicy` proto.**
    Per-object access is a *capability* (view/edit), as every peer models
    it; reusing `IamPolicy` would force per-object pseudo-roles and a
@@ -321,8 +325,8 @@ expansion the read path uses — listing rows granted directly *and* via
 any of the user's groups (a `group:` principal matches that group's
 rows); direct grants strip via `SetIamPolicy`, while group-held access is
 revoked at the group (leave or edit it), not per-query — a group grant's
-audience is deliberately the live group. Content reads are audited, and
-workspace deactivation ends everything. This is precisely BigQuery's
+audience is deliberately the live group, and workspace deactivation ends
+everything. This is precisely BigQuery's
 behavior. The audit's Problem-1 complaint was never retention itself but
 *implicit* retention — flag-derived access with no grant to see, audit,
 or revoke.
@@ -417,7 +421,7 @@ for two use cases**, not redundant: Search is the **SQL Editor** — a member
 browsing what they can use *in one project* (My / Shared / Starred),
 grant-respecting, preview-only, on the hot path; List is **governance** — an
 auditor or service account enumerating by `creator` (or other metadata)
-*across projects* (`projects/-`), grant-independent, full content, audited,
+*across projects* (`projects/-`), grant-independent, full content,
 `bb.savedQueries.list`-gated. They overlap only for an admin within a single
 project (both can surface every row), by different lenses. One boundary is
 deliberately left out: a member has **no cross-project "all my own queries"
@@ -430,10 +434,10 @@ additive relaxation, not a new surface.
 | RPC | Auth | Gate | Content / audit |
 |---|---|---|---|
 | `CreateSavedQuery` | IAM `create` + handler source re-check | creator becomes owner | writes own; audited |
-| `SearchSavedQueries` | CUSTOM | `discover ∨ admin` → rows where `read(s,u)`; admin: all | previews, metadata-only on override rows; unaudited |
-| `ListSavedQueries` | IAM `list` + handler source re-check | all rows matching `filter`; `projects/-` allowed | full content (FULL); audited |
-| `GetSavedQuery` | CUSTOM | `read(s,u)`; NotFound when unreadable | full content; audited |
-| `UpdateSavedQuery` | CUSTOM | title/content/database `write(s,u)`; `folder` creator/admin | returns content; override write emits audit event |
+| `SearchSavedQueries` | CUSTOM | `discover ∨ admin` → rows where `read(s,u)`; admin: all | previews; unaudited |
+| `ListSavedQueries` | IAM `list` + handler source re-check | all rows matching `filter`; `projects/-` allowed | full content (FULL); unaudited |
+| `GetSavedQuery` | CUSTOM | `read(s,u)`; NotFound when unreadable | full content; unaudited |
+| `UpdateSavedQuery` | CUSTOM | title/content/database `write(s,u)`; `folder` creator/admin | returns content; audited |
 | `DeleteSavedQuery` | CUSTOM | `delete(s,u)` | — ; audited |
 | `GetIamPolicy` | CUSTOM | `share(s,u)` — sharer/admin only (see below) | policy only; unaudited |
 | `SetIamPolicy` | CUSTOM | `share(s,u)` + etag CAS | policy only; audited |
@@ -446,28 +450,36 @@ Duplicate/fork needs no RPC: read what you can already see, then
 
 **Audit events.** Today's `WorksheetService` carries **no**
 `bytebase.v1.audit` annotations at all (sheet and database services do) —
-this design closes that gap, under one invariant: **every path to another
-user's private content is audited.** By annotation: `CreateSavedQuery`,
-`GetSavedQuery` (content reads — what makes admin access attributable, the
-accountability half of decision 5), `DeleteSavedQuery`, `SetIamPolicy`
-(the share event), `BatchUpdateSavedQueries`, and the grant-bypassing
-`ListSavedQueries`. The two unaudited RPCs that could return content are
-closed differently: `SearchSavedQueries` — the hot list path — returns
-**metadata only, no content preview, for rows the caller reaches solely
-via the admin override** (neither creator nor grantee), funneling their
-content through the audited `GetSavedQuery`; `UpdateSavedQuery` — the
-autosave path, where per-keystroke audit rows drown signal — carries no
-annotation, but the handler **emits an audit event when the write
-exercises the admin override**, which also covers reading content via a
-no-op update's response. Self and granted traffic through Search and
-Update stays unaudited: a granted EDITOR reading or rewriting a query
-*shared with them* is ordinary collaboration, not access to another user's
-*private* content, so the invariant does not cover it. The accepted cost is
-attribution, not exposure — a shared query keeps no per-editor trail (the
-fixed `creator` names the owner, not whoever last edited), so multi-editor
-changes are last-write-wins with no updater identity; add version history
-if that ever matters. Star, folder listing, and
-`GetIamPolicy` return no content and are unaudited.
+this design closes that gap, under one invariant: **the audit log records
+changes, not lookups.** Every RPC that mutates a saved query or its policy
+is annotated — `CreateSavedQuery`, `UpdateSavedQuery`,
+`BatchUpdateSavedQueries`, `DeleteSavedQuery`, and `SetIamPolicy` (the
+share event) — and no read RPC is. This is the same line the rest of the
+v1 API draws, and it keeps the annotation set derivable from the method
+rather than from who the caller happened to be.
+
+The reads left unaudited include two privileged ones, deliberately:
+`GetSavedQuery`/`SearchSavedQueries` under the admin backstop, and the
+grant-bypassing `ListSavedQueries`. Both are governance surfaces gated by
+permissions no default member role carries (decision 7), so the control is
+*who holds `list`/`manage`*, not a read trail behind them — and a read
+trail on the SQL Editor's own hot path would be mostly the caller reading
+their own drafts. This drops the earlier revision's read-side machinery:
+Search returns previews for every row the caller can read, admin-override
+rows included (no metadata-only carve-out), and `UpdateSavedQuery` is
+audited outright rather than only when it exercises the override.
+
+Two costs, stated plainly. First, **autosave writes are audit events**:
+the editor saves on a 2-second debounce, so an active editing session
+emits an audit row every couple of seconds, and saved-query writes will
+dominate the log by volume — the price of a rule that does not special-case
+the hot path. Second, **a shared query keeps no per-editor trail** in the
+resource itself: the fixed `creator` names the owner, not whoever last
+edited, so multi-editor changes are last-write-wins and the updater's
+identity lives only in the audit event; add version history if that ever
+matters. `UpdateSavedQueryStar` is a write but stays unaudited — a
+per-user marker that carries no content and no access. `GetIamPolicy` and
+the folder listing return no content and are unaudited.
 
 **Compatibility: hard cutover, no shim** (decision 8). `WorksheetService`
 and the `visibility` field are removed in the release that ships
@@ -546,53 +558,60 @@ The list query filters the table directly, one GIN probe per principal:
 
 ```sql
 -- The search gate already passed at the interceptor. An admin drops the
--- whole access clause. KEYSET cursor: the last row's (updated_at,
--- resource_id); the cursor predicate is omitted on the first page.
+-- whole access clause. Paging is the platform's LIMIT/OFFSET page token.
 SELECT s.* FROM saved_query s
 WHERE s.project = $P
   AND ( s.creator = $me                                  -- own (incl. private)
         OR s.bindings @> '[{"members":["user:me"]}]'
         OR s.bindings @> '[{"members":["group:g1"]}]'
         OR ... )               -- one @> per principals(u), each GIN-indexed
-  AND (s.updated_at, s.resource_id) < ($cursor_at, $cursor_id)
-ORDER BY s.updated_at DESC, s.resource_id DESC
-LIMIT $n;
+ORDER BY s.name, s.resource_id                           -- name is the title
+LIMIT $n OFFSET $k;
 -- "My" adds creator = $me and drops the bindings OR; "Shared" adds creator <> $me.
 ```
 
 Honest per-tab costs (G7):
 
-- **My** (`creator = me`): btree `(creator, project, updated_at DESC,
-  resource_id DESC)` — equality on the leading columns plus an
-  index-ordered keyset scan → true `O(page)` at any scale. The index's
-  `creator` prefix also serves the auditor's cross-project `creator`
-  filter (no binding test needed there) — but not its ordering: with
-  `projects/-` there is no `project` equality, so the audit list top-N
-  sorts that one creator's rows. Bounded and cold, so no dedicated index;
-  and because completeness matters more than recency on a governance
-  surface, the audit list keysets on an immutable key (`created_at`,
-  `resource_id`), immune to the autosave skips below.
+- **My** (`creator = me`): the `(project, creator, folder)` and
+  `(creator, project)` btrees answer the equality; the title sort is
+  uncovered, so each page sorts the matched rows. That set is one person's
+  scratchpad in one project — tens to hundreds — so the sort is noise. The
+  `(creator, project)` index also serves the auditor's cross-project
+  `creator` filter (no binding test needed there), which is bounded and
+  cold enough to need no index of its own.
 - **Starred**: my rows in `saved_query_star` via its `principal` btree —
   row existence is the star. Fetch the (naturally small) set, join, drop
   rows I can no longer read (lazily deleting stale stars), sort.
   `O(my stars)` — bounded by my own behavior.
 - **Shared with me**: the only tab touching groups — `K+1` GIN probes for
-  `K` groups, BitmapOr'd into my accessible set `S`. Bitmap output is
-  unordered, so each page top-N sorts `S`: `O(S log page)`, **not** pure
-  keyset — the honest cost of the no-extra-table choice, acceptable because `S` is *my*
-  reachable set (tens to hundreds), not the project's total.
+  `K` groups, BitmapOr'd into my accessible set `S`, then sorted per page:
+  `O(S log S)` — the honest cost of the no-extra-table choice, acceptable
+  because `S` is *my* reachable set (tens to hundreds), not the project's
+  total.
 
-Pagination is **keyset, never OFFSET**, on every tab: where the plan is
-index-ordered (My) pages are `O(page)`; where it is bitmap-based (Shared)
-the cursor still avoids OFFSET's re-scan and caps the sort at top-N. One
-honest limit of the mutable sort key: `updated_at` only moves forward, so
-already-returned rows never repeat, but a row autosaved mid-scroll jumps
-ahead of the cursor and drops out of the remaining pages — it surfaces at
-the top of the next refresh. Acceptable for a scratchpad list; the auditor
-view keysets on an immutable key instead (above). And the expensive move —
-expanding a *group's members* — never happens on any path: policies store
-group references, so a 1,000-member group costs the same as a 3-member one
-and membership changes rewrite nothing.
+**Pagination follows the platform, not a bespoke cursor.** Every v1
+List/Search paginates with `storepb.PageToken`'s `{limit, offset}` and a
+`LIMIT/OFFSET` tail — ~22 call sites across the API — and the token
+carries no cursor field to hold a keyset. Saved queries use the same
+mechanism; adopting keyset pagination here would be a platform-wide change,
+out of scope for this design. Two properties worth naming:
+
+- **The sort key is the title** (`saved_query.name`), matching the SQL
+  Editor's folder tree rather than a recency feed. This matters more than
+  it looks: titles change only on explicit create, rename, or delete, so
+  the row set under a paging caller is nearly static, and the window in
+  which offset paging can skip or repeat a row is correspondingly narrow.
+  Ordering by `updated_at` would instead have the 2-second autosave
+  debounce reshuffling the list continuously — a worse fit for the same
+  pagination mechanism.
+- **The offset re-scan is real but small**: page *k* walks and discards
+  *k × page* rows. Scratchpad volumes keep this far from mattering; if a
+  project's list ever grows enough to feel it, the first fix is an index
+  covering the sort key, not a new pagination scheme.
+
+And the expensive move — expanding a *group's members* — never happens on
+any path: policies store group references, so a 1,000-member group costs
+the same as a 3-member one and membership changes rewrite nothing.
 
 **GIN churn, stated plainly**: the bindings index sits on the same row as
 the autosaved content; a non-HOT content save re-touches it, and churn can

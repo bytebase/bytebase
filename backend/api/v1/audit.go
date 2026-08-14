@@ -583,6 +583,14 @@ func getRequestString(request any) (string, error) {
 			r = proto.CloneOf(r)
 			r.SavedQuery = redactSavedQuery(r.SavedQuery)
 			return r
+		case *v1pb.UpdateSavedQueryRequest:
+			r = proto.CloneOf(r)
+			r.SavedQuery = redactSavedQuery(r.SavedQuery)
+			return r
+		case *v1pb.BatchUpdateSavedQueriesRequest:
+			r = proto.CloneOf(r)
+			r.SavedQuery = redactSavedQuery(r.SavedQuery)
+			return r
 		case *v1pb.CreateInstanceRequest:
 			r = proto.CloneOf(r)
 			r.Instance = redactInstance(r.Instance)
