@@ -539,11 +539,15 @@ func (s *Store) SetSavedQueryStar(ctx context.Context, savedQueryResourceID, pri
 // MoveSavedQueries files the named saved queries, restricted to one creator:
 // filing is personal organization, so rows belonging to anyone else are not
 // selected and the count reports what actually moved.
+//
+// The CTE takes every row lock in primary-key order before the update touches
+// anything -- the store's batch rule, so two overlapping moves serialize
+// instead of deadlocking -- and one statement needs no explicit transaction.
 func (s *Store) MoveSavedQueries(ctx context.Context, projectID, creator string, resourceIDs []string, folder string) (int, error) {
 	if len(resourceIDs) == 0 {
 		return 0, nil
 	}
-	return s.execSavedQueryMove(ctx, `
+	result, err := s.GetDB().ExecContext(ctx, `
 		WITH locked AS (
 			SELECT resource_id FROM saved_query
 			WHERE resource_id = ANY($1) AND project = $2 AND creator = $3
@@ -553,17 +557,27 @@ func (s *Store) MoveSavedQueries(ctx context.Context, projectID, creator string,
 		UPDATE saved_query SET folder = $4, updated_at = now()
 		WHERE resource_id IN (SELECT resource_id FROM locked)
 	`, resourceIDs, projectID, creator, folder)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to move saved queries")
+	}
+	moved, err := result.RowsAffected()
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to count moved saved queries")
+	}
+	return int(moved), nil
 }
 
 // MoveSavedQueryFolder rewrites the folder prefix for one creator's saved
 // queries: moving "a/b" to "a/c" also moves "a/b/deep" to "a/c/deep". The
 // suffix keeps each descendant's own tail, and ltrim drops the separator when
 // the target is empty so a row is unfiled rather than left at "/deep".
+//
+// Locks in primary-key order like MoveSavedQueries, for the same reason.
 func (s *Store) MoveSavedQueryFolder(ctx context.Context, projectID, creator, source, target string) (int, error) {
 	if source == "" {
 		return 0, errors.New("source folder cannot be empty")
 	}
-	return s.execSavedQueryMove(ctx, `
+	result, err := s.GetDB().ExecContext(ctx, `
 		WITH locked AS (
 			SELECT resource_id FROM saved_query
 			WHERE project = $1 AND creator = $2 AND (folder = $3 OR folder LIKE $4)
@@ -575,16 +589,8 @@ func (s *Store) MoveSavedQueryFolder(ctx context.Context, projectID, creator, so
 		    updated_at = now()
 		WHERE resource_id IN (SELECT resource_id FROM locked)
 	`, projectID, creator, source, escapeLikePattern(source)+"/%", target)
-}
-
-// execSavedQueryMove runs a move as a single statement. The CTE takes every
-// row lock in primary-key order before the update touches anything -- the
-// store's batch rule, so two overlapping moves serialize instead of
-// deadlocking -- and one statement needs no explicit transaction.
-func (s *Store) execSavedQueryMove(ctx context.Context, query string, args ...any) (int, error) {
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to move saved queries")
+		return 0, errors.Wrap(err, "failed to move saved query folder")
 	}
 	moved, err := result.RowsAffected()
 	if err != nil {

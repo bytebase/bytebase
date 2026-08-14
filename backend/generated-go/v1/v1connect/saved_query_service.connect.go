@@ -117,7 +117,8 @@ type SavedQueryServiceClient interface {
 	UpdateSavedQuery(context.Context, *connect.Request[v1.UpdateSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error)
 	// Star or unstar a saved query for the caller. Stars are personal: yours are
 	// invisible to everyone else and grant nothing. You can star any saved query
-	// you created or have been granted access to.
+	// you created or have been granted access to; anything else answers
+	// NotFound, so names stay unprobeable.
 	// Permissions required: creator, or a VIEWER or EDITOR binding
 	UpdateSavedQueryStar(context.Context, *connect.Request[v1.UpdateSavedQueryStarRequest]) (*connect.Response[v1.SavedQuery], error)
 	// Move the caller's own saved queries into a folder, named individually or a
@@ -346,7 +347,8 @@ type SavedQueryServiceHandler interface {
 	UpdateSavedQuery(context.Context, *connect.Request[v1.UpdateSavedQueryRequest]) (*connect.Response[v1.SavedQuery], error)
 	// Star or unstar a saved query for the caller. Stars are personal: yours are
 	// invisible to everyone else and grant nothing. You can star any saved query
-	// you created or have been granted access to.
+	// you created or have been granted access to; anything else answers
+	// NotFound, so names stay unprobeable.
 	// Permissions required: creator, or a VIEWER or EDITOR binding
 	UpdateSavedQueryStar(context.Context, *connect.Request[v1.UpdateSavedQueryStarRequest]) (*connect.Response[v1.SavedQuery], error)
 	// Move the caller's own saved queries into a folder, named individually or a

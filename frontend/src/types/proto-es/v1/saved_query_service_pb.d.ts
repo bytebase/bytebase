@@ -740,7 +740,8 @@ export declare const SavedQueryService: GenService<{
   /**
    * Star or unstar a saved query for the caller. Stars are personal: yours are
    * invisible to everyone else and grant nothing. You can star any saved query
-   * you created or have been granted access to.
+   * you created or have been granted access to; anything else answers
+   * NotFound, so names stay unprobeable.
    * Permissions required: creator, or a VIEWER or EDITOR binding
    *
    * @generated from rpc bytebase.v1.SavedQueryService.UpdateSavedQueryStar

@@ -526,14 +526,11 @@ func (s *SavedQueryService) UpdateSavedQueryStar(
 	if err != nil {
 		return nil, err
 	}
+	// NotFound rather than PermissionDenied: the star surface only concerns
+	// saved queries you can use, and answering "exists, but not yours" would
+	// make names probeable.
 	if !access.canStar() {
-		// canStar is canRead minus the admin backstop, so the only caller who
-		// gets this far without it is an admin with no grant: they can see the
-		// saved query, so denying is honest where hiding would not be.
-		if !access.canRead() {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
-		}
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only the creator or a grantee can star a saved query"))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
 	user, ok := GetUserFromContext(ctx)
