@@ -157,13 +157,12 @@ var mcpForbiddenReasons = map[v1pb.MCPForbiddenReason]string{
 	// rather than an exception to it: on an auto-approved result the same call
 	// activates the grant and enqueues the rollout (issue_service.go:789,796),
 	// so it moves an issue through the gate without any human acting. What it
-	// does not buy is containment of re-derivation in general:
-	// PlanService/UpdatePlan with a specs mask, and
-	// UpdateIssue on a label change, both reset ApprovalFindingDone and force
-	// the template to be found again against the current workspace rule
-	// (component/review/plan.go, component/review/metadata.go), and both stay
-	// WRITE. That is the intended line — editing a proposal is the agent's job,
-	// and re-review after an edit is the system working — not an oversight.
+	// does not buy is containment of re-derivation in general: UpdatePlan with
+	// a specs mask, and UpdateIssue on a label change, both reset
+	// ApprovalFindingDone and force the template to be found again against the
+	// current workspace rule (component/review/plan.go, metadata.go), and both
+	// stay WRITE. That is the intended line — editing a proposal is the agent's
+	// job, and re-review after an edit is the system working — not an oversight.
 	// Refusing RetryIssueApproval costs an agent the self-service recovery for
 	// its own stuck issue; the operator retries from the console.
 	v1pb.MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION: "it works the approval step meant to gate the change, and an agent does not move its own change through that gate",

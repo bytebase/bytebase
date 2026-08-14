@@ -262,9 +262,9 @@ var mcpDeniedClasses = []v1pb.MCPMethodClass{v1pb.MCPMethodClass_FORBIDDEN, v1pb
 // be made by whichever `switch` in the gate happened to have a default arm.
 //
 // The last loop closes the circle back to the rows. `decided` holds the classes
-// that came out of the loop above with exactly one answer, so dropping READ from
-// the serving table does not merely report READ once — it reports every method
-// annotated READ, which is the shape of the damage.
+// some decision claims — served, denied, or, when the tables disagree, both — so
+// dropping READ out of the serving table does not merely report READ once. It
+// reports every method annotated READ, which is the shape of the damage.
 func checkEveryClassHasAServingDecision(
 	rows []mcpClassification,
 	serving map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass,
@@ -302,9 +302,9 @@ func checkEveryClassHasAServingDecision(
 			violations = append(violations, fmt.Sprintf("%v is neither served by a mode nor denied", class))
 		default:
 		}
-		// Having two decisions counts as decided here. The class-level loop
-		// above has already said so once; repeating it per method would bury
-		// the one actionable line under a hundred rows naming the wrong problem.
+		// Having two decisions counts as decided here. The switch above has
+		// already said so once; repeating it per method would bury the one
+		// actionable line under a hundred rows naming the wrong problem.
 		decided[class] = isServed || isDenied
 	}
 	for _, class := range denied {
@@ -429,15 +429,16 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 	t.Run("a class both served and denied fails once, not once per method", func(t *testing.T) {
 		widened := map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
 			v1pb.WorkspaceProfileSetting_DISABLED:  {},
-			v1pb.WorkspaceProfileSetting_READ_ONLY: {v1pb.MCPMethodClass_READ},
+			v1pb.WorkspaceProfileSetting_READ_ONLY: {v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_EXCLUDED},
 			v1pb.WorkspaceProfileSetting_READ_WRITE: {
 				v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE, v1pb.MCPMethodClass_EXCLUDED,
 			},
 		}
 		// The real rows are passed deliberately: 93 of them carry EXCLUDED, and
 		// the diagnosis worth reading is the one about the table, not ninety-three
-		// about methods whose annotation is fine.
-		require.Equal(t, []string{"EXCLUDED is denied and served by [READ_WRITE]"},
+		// about methods whose annotation is fine. Two modes, so the mode list in
+		// the message is only stable because servedBy is sorted.
+		require.Equal(t, []string{"EXCLUDED is denied and served by [READ_ONLY READ_WRITE]"},
 			checkEveryClassHasAServingDecision(mcpClassificationsFromDescriptors(t), widened, mcpDeniedClasses, classes, modes))
 	})
 
