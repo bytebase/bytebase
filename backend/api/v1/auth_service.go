@@ -1041,8 +1041,8 @@ func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.
 		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check user roles"))
 	}
 
-	// Skip restrictions for workspace admins and service accounts
-	if isAdmin || user.Type != storepb.PrincipalType_END_USER {
+	// Login restrictions only apply to end users.
+	if user.Type != storepb.PrincipalType_END_USER {
 		return nil
 	}
 
@@ -1064,7 +1064,7 @@ func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.
 	}
 	if request.GetIdpName() == "" {
 		if request.Password != "" {
-			if restriction.DisallowPasswordSignin {
+			if restriction.DisallowPasswordSignin && !isAdmin {
 				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("password signin is disallowed"))
 			}
 		}

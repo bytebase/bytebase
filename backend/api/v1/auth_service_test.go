@@ -89,7 +89,7 @@ func TestPasswordResetEmailSkipsDeletedUser(t *testing.T) {
 	))
 }
 
-func TestEmailCodeLoginEnforcesWorkspaceDomains(t *testing.T) {
+func TestLoginEnforcesWorkspaceDomains(t *testing.T) {
 	const (
 		workspaceID = "email-code-domain-test"
 		secret      = "test-secret"
@@ -121,7 +121,7 @@ func TestEmailCodeLoginEnforcesWorkspaceDomains(t *testing.T) {
 			PasswordRestriction:    &storepb.WorkspaceProfileSetting_PasswordRestriction{MinLength: 8},
 			EnableMetricCollection: true,
 			DisallowSignup:         false,
-			DisallowPasswordSignin: false,
+			DisallowPasswordSignin: true,
 		},
 	})
 	require.NoError(t, err)
@@ -138,17 +138,68 @@ func TestEmailCodeLoginEnforcesWorkspaceDomains(t *testing.T) {
 	service := NewAuthService(stores, secret, licenseService, &config.Profile{}, nil)
 	workspaceName := common.FormatWorkspace(workspaceID)
 
-	t.Run("send code", func(t *testing.T) {
-		_, err := service.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{
-			Email:     "new@blocked.example",
-			Workspace: &workspaceName,
-		}))
-		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-		require.ErrorContains(t, err, "does not belong to allowed domains")
+	allowedAdmin, err := stores.CreateUser(ctx, &store.UserMessage{
+		Email:        "admin@allowed.example",
+		Name:         "Allowed admin",
+		PasswordHash: "unused",
+		Profile:      &storepb.UserProfile{},
+	})
+	require.NoError(t, err)
+	blockedAdmin, err := stores.CreateUser(ctx, &store.UserMessage{
+		Email:        "admin@blocked.example",
+		Name:         "Blocked admin",
+		PasswordHash: "unused",
+		Profile:      &storepb.UserProfile{},
+	})
+	require.NoError(t, err)
+	_, err = stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+		Workspace: workspaceID,
+		Member:    common.FormatUserEmail(blockedAdmin.Email),
+		Roles:     []string{common.FormatRole(store.WorkspaceAdminRole)},
+	})
+	require.NoError(t, err)
 
-		row, err := stores.GetEmailVerificationCode(ctx, "new@blocked.example", storepb.EmailVerificationCodePurpose_LOGIN)
-		require.NoError(t, err)
-		require.Nil(t, row)
+	t.Run("workspace admin", func(t *testing.T) {
+		for _, test := range []struct {
+			name    string
+			request *v1pb.LoginRequest
+		}{
+			{
+				name:    "password login enforces domains",
+				request: &v1pb.LoginRequest{Email: blockedAdmin.Email, Password: "password"},
+			},
+			{
+				name:    "SSO login enforces domains",
+				request: &v1pb.LoginRequest{Email: blockedAdmin.Email, IdpName: "idps/test"},
+			},
+		} {
+			t.Run(test.name, func(t *testing.T) {
+				err := service.validateLoginPermissions(ctx, blockedAdmin, workspaceID, test.request)
+				require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+				require.ErrorContains(t, err, "does not belong to allowed domains")
+			})
+		}
+
+		err := service.validateLoginPermissions(ctx, allowedAdmin, workspaceID, &v1pb.LoginRequest{
+			Email:    allowedAdmin.Email,
+			Password: "password",
+		})
+		require.NoError(t, err, "workspace admins remain exempt from disallow_password_signin")
+	})
+
+	t.Run("send code", func(t *testing.T) {
+		for _, email := range []string{"new@blocked.example", blockedAdmin.Email} {
+			_, err := service.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{
+				Email:     email,
+				Workspace: &workspaceName,
+			}))
+			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+			require.ErrorContains(t, err, "does not belong to allowed domains")
+
+			row, err := stores.GetEmailVerificationCode(ctx, email, storepb.EmailVerificationCodePurpose_LOGIN)
+			require.NoError(t, err)
+			require.Nil(t, row)
+		}
 	})
 
 	t.Run("authenticate existing user", func(t *testing.T) {
@@ -172,6 +223,25 @@ func TestEmailCodeLoginEnforcesWorkspaceDomains(t *testing.T) {
 
 		_, err = service.authenticateEmailCodeLogin(ctx, &v1pb.LoginRequest{
 			Email:     email,
+			EmailCode: ptr(code),
+		})
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		require.ErrorContains(t, err, "does not belong to allowed domains")
+	})
+
+	t.Run("authenticate workspace admin", func(t *testing.T) {
+		_, err := stores.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
+			Email:      blockedAdmin.Email,
+			Purpose:    storepb.EmailVerificationCodePurpose_LOGIN,
+			CodeHash:   service.hashEmailCode(code),
+			ExpiresAt:  time.Now().Add(time.Minute),
+			LastSentAt: time.Now(),
+			Workspace:  workspaceID,
+		}, 0)
+		require.NoError(t, err)
+
+		_, err = service.authenticateEmailCodeLogin(ctx, &v1pb.LoginRequest{
+			Email:     blockedAdmin.Email,
 			EmailCode: ptr(code),
 		})
 		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
