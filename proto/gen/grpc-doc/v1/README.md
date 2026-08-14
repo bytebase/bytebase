@@ -679,14 +679,14 @@
     - [RoleService](#bytebase-v1-RoleService)
   
 - [v1/saved_query_service.proto](#v1_saved_query_service-proto)
-    - [BatchUpdateSavedQueriesRequest](#bytebase-v1-BatchUpdateSavedQueriesRequest)
-    - [BatchUpdateSavedQueriesResponse](#bytebase-v1-BatchUpdateSavedQueriesResponse)
     - [CreateSavedQueryRequest](#bytebase-v1-CreateSavedQueryRequest)
     - [DeleteSavedQueryRequest](#bytebase-v1-DeleteSavedQueryRequest)
     - [GetSavedQueryPolicyRequest](#bytebase-v1-GetSavedQueryPolicyRequest)
     - [GetSavedQueryRequest](#bytebase-v1-GetSavedQueryRequest)
     - [ListSavedQueriesRequest](#bytebase-v1-ListSavedQueriesRequest)
     - [ListSavedQueriesResponse](#bytebase-v1-ListSavedQueriesResponse)
+    - [MoveMySavedQueriesRequest](#bytebase-v1-MoveMySavedQueriesRequest)
+    - [MoveMySavedQueriesResponse](#bytebase-v1-MoveMySavedQueriesResponse)
     - [SavedQuery](#bytebase-v1-SavedQuery)
     - [SavedQueryBinding](#bytebase-v1-SavedQueryBinding)
     - [SavedQueryPolicy](#bytebase-v1-SavedQueryPolicy)
@@ -11050,41 +11050,6 @@ RoleService manages workspace roles and permissions.
 
 
 
-<a name="bytebase-v1-BatchUpdateSavedQueriesRequest"></a>
-
-### BatchUpdateSavedQueriesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: projects/{project} |
-| filter | [string](#string) |  | Select the saved queries to update, in CEL. See https://github.com/google/cel-spec
-
-Supported fields: - name: the saved query name. Supports &#34;==&#34; and &#34;in [...]&#34;. - creator: the creator in &#34;users/{email}&#34; format. Supports &#34;==&#34; and &#34;!=&#34;. - starred: whether the caller starred it. Supports &#34;==&#34;. - folder: the exact folder path. Supports &#34;==&#34;. |
-| saved_query | [SavedQuery](#bytebase-v1-SavedQuery) |  | The values to apply to every matched saved query. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | Fields to update. Supported: `folder`. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchUpdateSavedQueriesResponse"></a>
-
-### BatchUpdateSavedQueriesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| updated_count | [int32](#int32) |  | How many saved queries were updated, which may be fewer than the filter matched. |
-
-
-
-
-
-
 <a name="bytebase-v1-CreateSavedQueryRequest"></a>
 
 ### CreateSavedQueryRequest
@@ -11178,6 +11143,39 @@ For example: creator == &#34;users/alice@example.com&#34; |
 | ----- | ---- | ----- | ----------- |
 | saved_queries | [SavedQuery](#bytebase-v1-SavedQuery) | repeated |  |
 | next_page_token | [string](#string) |  | Pass to the next ListSavedQueries call to fetch the following page. Empty on the last page. |
+
+
+
+
+
+
+<a name="bytebase-v1-MoveMySavedQueriesRequest"></a>
+
+### MoveMySavedQueriesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{project} |
+| names | [string](#string) | repeated | The saved queries to move. Set this or `source_folder`, not both. Format: projects/{project}/savedQueries/{savedQuery} |
+| source_folder | [string](#string) |  | Move everything filed under this path, descendants included, e.g. &#34;a/b&#34;. Set this or `names`, not both. |
+| target_folder | [string](#string) |  | Where they land. A path like &#34;a/b/c&#34;; empty unfiles them. |
+
+
+
+
+
+
+<a name="bytebase-v1-MoveMySavedQueriesResponse"></a>
+
+### MoveMySavedQueriesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| moved_count | [int32](#int32) |  | How many moved. Fewer than were named when some are not the caller&#39;s. |
 
 
 
@@ -11394,9 +11392,11 @@ SavedQueryService manages saved queries for SQL Editor query development.
 
 A saved query is private to its creator until shared. Three things grant
 access to one: being its creator (the fixed owner), holding a VIEWER or
-EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop
-that reaches private saved queries too. Bindings are managed through the
-GetSavedQueryPolicy/SetSavedQueryPolicy pair.
+EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop.
+The backstop reads, deletes, and re-shares any saved query in scope, private
+ones included. It does not edit content, star, or file: those belong to the
+creator and, for content, to EDITOR grantees. Bindings are managed through
+the GetSavedQueryPolicy/SetSavedQueryPolicy pair.
 
 Two gates sit on top of that: bb.savedQueries.search gates discovery, and
 running a saved query needs the SQL Editor&#39;s own database permissions.
@@ -11412,9 +11412,11 @@ Caller-scoped, always: the caller&#39;s own saved queries plus those a binding s
 | SearchSavedQueryFolders | [SearchSavedQueryFoldersRequest](#bytebase-v1-SearchSavedQueryFoldersRequest) | [SearchSavedQueryFoldersResponse](#bytebase-v1-SearchSavedQueryFoldersResponse) | Search the folder paths holding saved queries the caller can read. Folders are a derived view over the `folder` field rather than a resource collection, so this is a custom method, caller-scoped like SearchSavedQueries.
 
 A path is returned when at least one readable saved query sits in it — including one somebody else filed and shared, since a client seeds its folder tree from here and cannot expand into a folder it never learns about. Use the filter to split your own folders (`creator == &#34;users/me&#34;`) from the ones reaching you through a grant (`shared == true`). Permissions required: bb.savedQueries.search on the project |
-| UpdateSavedQuery | [UpdateSavedQueryRequest](#bytebase-v1-UpdateSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Update a saved query. `title`, `content`, and `database` need write access; `folder` is creator/admin only, because filing is organization rather than editing. `database` must belong to the saved query&#39;s own project. An unreadable saved query returns NotFound; a VIEWER who cannot write gets PermissionDenied. Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage |
-| UpdateSavedQueryStar | [UpdateSavedQueryStarRequest](#bytebase-v1-UpdateSavedQueryStarRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Star or unstar a saved query for the caller. A star is a per-user marker: invisible to everyone else and granting nothing. Read access is the gate only so unreadable saved queries stay unprobeable. Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage |
-| BatchUpdateSavedQueries | [BatchUpdateSavedQueriesRequest](#bytebase-v1-BatchUpdateSavedQueriesRequest) | [BatchUpdateSavedQueriesResponse](#bytebase-v1-BatchUpdateSavedQueriesResponse) | Re-file saved queries into a folder in bulk; the update mask supports `folder` only. An EDITOR binding does not carry re-filing, so matched saved queries the caller cannot re-file are skipped rather than rejected, and the response counts what actually changed. Permissions required: creator, or bb.savedQueries.manage |
+| UpdateSavedQuery | [UpdateSavedQueryRequest](#bytebase-v1-UpdateSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Update a saved query. `title`, `content`, and `database` need write access: the creator or an EDITOR binding. `folder` is the creator&#39;s alone, since filing is personal organization. The admin backstop does neither -- it reads, deletes, and re-shares. `database` must belong to the saved query&#39;s own project. An unreadable saved query returns NotFound; a caller who can read but not make the requested change gets PermissionDenied. Permissions required: creator, or an EDITOR binding for content fields |
+| UpdateSavedQueryStar | [UpdateSavedQueryStarRequest](#bytebase-v1-UpdateSavedQueryStarRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Star or unstar a saved query for the caller. A star is a per-user marker: invisible to everyone else and granting nothing. It follows the grant, not the admin backstop: a saved query an admin only sees through manage is not one they use. Permissions required: creator, or a VIEWER or EDITOR binding |
+| MoveMySavedQueries | [MoveMySavedQueriesRequest](#bytebase-v1-MoveMySavedQueriesRequest) | [MoveMySavedQueriesResponse](#bytebase-v1-MoveMySavedQueriesResponse) | Move the caller&#39;s own saved queries into a folder, named individually or a whole folder at a time. Moving a folder carries its descendants, so renaming &#34;a/b&#34; to &#34;a/c&#34; also moves &#34;a/b/deep&#34; -- one call, not one per path.
+
+Filing is personal organization, so only the creator&#39;s own move: a folder is that person&#39;s tree, and neither a binding nor the admin backstop reaches into it. The response counts what moved. Permissions required: creator |
 | DeleteSavedQuery | [DeleteSavedQueryRequest](#bytebase-v1-DeleteSavedQueryRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a saved query and every user&#39;s stars on it. An EDITOR binding never carries deletion. An unreadable saved query returns NotFound; a grantee who can read but not delete gets PermissionDenied. Permissions required: creator, or bb.savedQueries.manage |
 | GetSavedQueryPolicy | [GetSavedQueryPolicyRequest](#bytebase-v1-GetSavedQueryPolicyRequest) | [SavedQueryPolicy](#bytebase-v1-SavedQueryPolicy) | Get a saved query&#39;s sharing policy: who it is shared with, at what level.
 

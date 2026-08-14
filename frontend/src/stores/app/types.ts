@@ -651,10 +651,19 @@ export type SavedQuerySlice = {
   ) => Promise<SavedQuery | undefined>;
   deleteSavedQueryByName: (name: string) => Promise<void>;
   updateSavedQueryStar: (name: string, starred: boolean) => Promise<void>;
-  batchUpdateSavedQueryFolder: (
+  /**
+   * Move saved queries into a folder: either `names` (specific saved queries)
+   * or `sourceFolder` (that folder and its descendants), never both. Only the
+   * caller's own saved queries move, so the returned count can be smaller than
+   * what was named.
+   */
+  moveMySavedQueries: (
     parent: string,
-    filter: string,
-    folder: string
+    params: {
+      names?: string[];
+      sourceFolder?: string;
+      targetFolder: string;
+    }
   ) => Promise<number>;
   /**
    * Mirror a completed server-side folder move onto the cached rows. The

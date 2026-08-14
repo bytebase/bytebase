@@ -178,9 +178,13 @@ Alternatives the rejected options.
 4. **Creator = fixed owner, no transfer** (G4). Scratchpad-grade
    simplicity: no extra tier, no orphan-guard machinery; the admin backstop
    and fork-a-copy cover the departed-creator case.
-5. **Admin (`manage`) reads private.** Peer parity (`dataform.admin`,
-   Databricks workspace admins), and what makes incident response and
-   orphan cleanup possible. The real tradeoff: admins can read private
+5. **Admin (`manage`) reads private, but does not write.** The backstop
+   reads, re-shares, and deletes — what incident response and orphan cleanup
+   need. It stops short of editing content, starring, and filing: those are
+   the creator's (and, for content, an EDITOR grantee's). This is narrower
+   than `dataform.admin` and Databricks workspace admins, deliberately —
+   rewriting somebody's draft or reorganising their tree is not an
+   administrative act. The real tradeoff: admins can read private
    drafts, and reads are not audited — the audit log records changes, not
    lookups (see API and authorization: Audit events). The control on admin
    access is therefore who holds `manage` (never a default member role),
@@ -259,7 +263,9 @@ grant(s, u)    = max level (VIEWER|EDITOR) among s.bindings matching principals(
 create(u, P)   = u holds bb.savedQueries.create on P
 discover(u, P) = u holds bb.savedQueries.search on P     -- gates Search, not content
 read(s, u)     = admin(u, s.project) OR u == s.creator OR grant(s, u) >= VIEWER
-write(s, u)    = admin(u, s.project) OR u == s.creator OR grant(s, u) >= EDITOR
+write(s, u)    = u == s.creator OR grant(s, u) >= EDITOR      -- content; not the backstop
+star(s, u)     = u == s.creator OR grant(s, u) >= VIEWER      -- a per-user marker
+file(s, u)     = u == s.creator                              -- folders are personal
 share(s, u)    = admin(u, s.project) OR u == s.creator
 delete(s, u)   = admin(u, s.project) OR u == s.creator
 ```
@@ -271,7 +277,7 @@ delete(s, u)   = admin(u, s.project) OR u == s.creator
 | `bb.savedQueries.create` | Create saved queries in the project |
 | `bb.savedQueries.search` | Discover: Search and the folder list, results still filtered to `read(s,u)` |
 | `bb.savedQueries.list` | Audit: enumerate in scope, read-only, ignoring bindings |
-| `bb.savedQueries.manage` | Admin: read/write/re-share/delete anything in scope, private included |
+| `bb.savedQueries.manage` | Admin backstop: read, re-share, and delete anything in scope, private included. Not write, star, or file |
 
 There is no `get` permission — bindings decide reads, so `bb.worksheets.get`
 is dropped rather than renamed. `search` is dedicated rather than riding on
@@ -445,7 +451,7 @@ express. Every object method is a CUSTOM per-row predicate.
 | `GetSavedQueryPolicy` | CUSTOM | `read(s,u)`; NotFound when unreadable | policy only; unaudited |
 | `SetSavedQueryPolicy` | CUSTOM | `share(s,u)` + etag CAS | policy only; audited |
 | `UpdateSavedQueryStar` | CUSTOM | `read(s,u)` — star any readable query | — ; unaudited |
-| `BatchUpdateSavedQueries` | CUSTOM | rows the caller may re-file (creator; admin: any); mask limited to `folder` | count only; audited |
+| `MoveMySavedQueries` | CUSTOM | the caller's own rows, by name or by folder (descendants included) | count only; audited |
 | `SearchSavedQueryFolders` | CUSTOM | `discover` → folder paths of readable rows, same access clause as Search | paths only; unaudited |
 
 Duplicate and fork need no RPC: read what you can already see, then
@@ -480,7 +486,7 @@ Today's `WorksheetService` carries no `bytebase.v1.audit` annotations at all,
 though sheet and database services do. This design closes that gap under one
 invariant: **the audit log records changes, not lookups.** Every RPC that
 mutates a saved query or its policy is annotated — `CreateSavedQuery`,
-`UpdateSavedQuery`, `BatchUpdateSavedQueries`, `DeleteSavedQuery`,
+`UpdateSavedQuery`, `MoveMySavedQueries`, `DeleteSavedQuery`,
 `SetSavedQueryPolicy` — and no read RPC is. That keeps the annotation set
 derivable from the method rather than from who the caller happened to be, and
 draws the same line as the rest of the v1 API.
@@ -672,7 +678,7 @@ lock-ordering):
   uses for `project`. Its inserted key is novel, so it never contends with
   purge's existing-child locks — no cross-order deadlock.
 - **Batch folder moves lock rows in primary-key order.**
-  `BatchUpdateSavedQueries` only *updates* existing `saved_query` rows (no
+  `MoveMySavedQueries` only *updates* existing `saved_query` rows (no
   new child), but "existing" is not enough on its own: two overlapping
   batches could grab their target rows in different scan orders and
   deadlock. So it locks its selected rows in full primary-key order
@@ -703,7 +709,7 @@ delete) before mutating. Required before
 implementation: deterministic real-PostgreSQL regression tests for **both**
 acquisition orders of each contending pair — create↔purge,
 first-star↔purge, delete↔star-toggle, delete↔purge over a query with
-multiple stars, and two overlapping `BatchUpdateSavedQueries` with
+multiple stars, and two overlapping `MoveMySavedQueries` with
 intersecting, reverse-ordered targets — asserting the terminal outcomes — project (or query) deleted, no orphaned
 saved query or star, and **no** FK failure or deadlock (`40P01`) in either
 direction (absence of `40P01` alone is insufficient).
@@ -751,7 +757,7 @@ deferred.
   Storage follows the semantic: the location is the `saved_query.folder`
   **path column on the object** ("a/b/c", '' = unfiled), set via
   `UpdateSavedQuery` (creator/admin only — re-filing is organization, not
-  editing), bulk rename/move via `BatchUpdateSavedQueries`. Folders never
+  editing), bulk rename/move via `MoveMySavedQueries`. Folders never
   grant access; a folder is a path on rows, so empty folders cannot exist.
   Today's per-user organizer re-foldering (everyone re-files everything) is
   dropped as the outlier. A query shared with you appears in

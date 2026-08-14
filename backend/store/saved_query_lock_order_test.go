@@ -322,7 +322,7 @@ func TestSavedQueryBatchFolderMovesLockOrder(t *testing.T) {
 	// the first instead of deadlocking.
 	firstResult := make(chan error, 1)
 	go func() {
-		_, err := fixture.store.BatchUpdateSavedQueryFolder(fixture.ctx,
+		_, err := fixture.store.MoveSavedQueries(fixture.ctx, "default", "user@example.com",
 			[]string{"saved-query-a", "saved-query-b"}, "one")
 		firstResult <- err
 	}()
@@ -331,7 +331,7 @@ func TestSavedQueryBatchFolderMovesLockOrder(t *testing.T) {
 
 	secondResult := make(chan error, 1)
 	go func() {
-		_, err := fixture.store.BatchUpdateSavedQueryFolder(fixture.ctx,
+		_, err := fixture.store.MoveSavedQueries(fixture.ctx, "default", "user@example.com",
 			[]string{"saved-query-b", "saved-query-a"}, "two")
 		secondResult <- err
 	}()

@@ -517,13 +517,12 @@ func TestGetResourceFromRequest(t *testing.T) {
 			want:    []string{"projects/hello/savedQueries/sq1"},
 		},
 		{
-			// The batch branch picks `parent` up only because it carries a
-			// resource_reference, and this request has no `requests` list to
-			// fall back on; it then repeats via the single-request path,
-			// which the audit parent dedup collapses to one row.
-			request: &v1pb.BatchUpdateSavedQueriesRequest{Parent: "projects/hello"},
-			method:  "/bytebase.v1.SavedQueryService/BatchUpdateSavedQueries",
-			want:    []string{"projects/hello", "projects/hello"},
+			// Not a Batch* method, so `parent` resolves through the
+			// single-request path -- which still needs its resource_reference,
+			// or the audit row would file under the workspace.
+			request: &v1pb.MoveMySavedQueriesRequest{Parent: "projects/hello"},
+			method:  "/bytebase.v1.SavedQueryService/MoveMySavedQueries",
+			want:    []string{"projects/hello"},
 		},
 	}
 
