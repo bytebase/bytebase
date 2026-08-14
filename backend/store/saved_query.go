@@ -296,8 +296,9 @@ func SavedQueryPolicyEtag(bindings []*storepb.SavedQueryBinding) (string, error)
 // The row is locked and its current etag compared before the write, so a
 // full-replacement write can never silently undo a concurrent revocation.
 // Returns ErrSavedQueryEtagMismatch when the caller's etag is stale, and
-// reports false when the saved query is gone.
-func (s *Store) SetSavedQueryBindings(ctx context.Context, resourceID string, bindings []*storepb.SavedQueryBinding, expectedEtag string) (bool, error) {
+// reports false when the saved query is gone from the named project -- deleted,
+// or re-parented to the default project by a purge.
+func (s *Store) SetSavedQueryBindings(ctx context.Context, projectID, resourceID string, bindings []*storepb.SavedQueryBinding, expectedEtag string) (bool, error) {
 	marshalled, err := marshalSavedQueryBindings(bindings)
 	if err != nil {
 		return false, err
@@ -309,9 +310,14 @@ func (s *Store) SetSavedQueryBindings(ctx context.Context, resourceID string, bi
 	}
 	defer tx.Rollback()
 
+	// Scoped to the project the caller named, not the saved query's global id.
+	// A project purge re-parents its members' saved queries to the default
+	// project, so a write resolved against the old project must land on
+	// nothing rather than on a row that has since moved out from under it.
 	var currentBytes []byte
 	if err := tx.QueryRowContext(ctx,
-		`SELECT bindings FROM saved_query WHERE resource_id = $1 FOR UPDATE`, resourceID).Scan(&currentBytes); err != nil {
+		`SELECT bindings FROM saved_query WHERE resource_id = $1 AND project = $2 FOR UPDATE`,
+		resourceID, projectID).Scan(&currentBytes); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil
 		}
@@ -330,7 +336,8 @@ func (s *Store) SetSavedQueryBindings(ctx context.Context, resourceID string, bi
 	}
 
 	if _, err := tx.ExecContext(ctx,
-		`UPDATE saved_query SET bindings = $1 WHERE resource_id = $2`, marshalled, resourceID); err != nil {
+		`UPDATE saved_query SET bindings = $1 WHERE resource_id = $2 AND project = $3`,
+		marshalled, resourceID, projectID); err != nil {
 		return false, errors.Wrapf(err, "failed to update bindings for saved query %s", resourceID)
 	}
 	if err := tx.Commit(); err != nil {

@@ -441,7 +441,7 @@ func TestSavedQuerySetBindingsAndDeleteProjectLockOrder(t *testing.T) {
 
 		setResult := make(chan error, 1)
 		go func() {
-			_, err := fixture.store.SetSavedQueryBindings(fixture.ctx, "saved-query-a", bindings, emptyEtag)
+			_, err := fixture.store.SetSavedQueryBindings(fixture.ctx, "project-a", "saved-query-a", bindings, emptyEtag)
 			setResult <- err
 		}()
 		waitForBackendBlockedByPID(fixture.ctx, t, fixture.db, purgePID)
@@ -463,7 +463,7 @@ func TestSavedQuerySetBindingsAndDeleteProjectLockOrder(t *testing.T) {
 
 		setResult := make(chan error, 1)
 		go func() {
-			_, err := fixture.store.SetSavedQueryBindings(fixture.ctx, "saved-query-a", bindings, emptyEtag)
+			_, err := fixture.store.SetSavedQueryBindings(fixture.ctx, "project-a", "saved-query-a", bindings, emptyEtag)
 			setResult <- err
 		}()
 		waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)

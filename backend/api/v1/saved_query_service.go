@@ -784,7 +784,7 @@ func (s *SavedQueryService) SetSavedQueryPolicy(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	applied, err := s.store.SetSavedQueryBindings(ctx, savedQuery.ResourceID, bindings, request.Policy.Etag)
+	applied, err := s.store.SetSavedQueryBindings(ctx, projectID, savedQuery.ResourceID, bindings, request.Policy.Etag)
 	if err != nil {
 		if errors.Is(err, store.ErrSavedQueryEtagMismatch) {
 			// The policy moved under this write. Aborted tells the caller to
