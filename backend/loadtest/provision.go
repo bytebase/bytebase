@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 // nolint:unparam // failures are reported via Stats.Errors, the error result is always nil by contract.
@@ -79,13 +81,27 @@ func cleanup(ctx context.Context, db *sql.DB, cfg *Config, tenants []Tenant) (Cl
 		if err := terminateTenantBackends(ctx, cfg, tenant); err != nil && cfg.Verbose {
 			log.Printf("cleanup tenant %d: terminate backends: %v", tenant.Index, err)
 		}
-		if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE %s WITH (FORCE)", tenant.Database)); err != nil {
-			result.Failed++
-			if cfg.Verbose {
-				log.Printf("cleanup tenant %d: drop database %s: %v", tenant.Index, tenant.Database, err)
+		// Backend termination is asynchronous: a backend can linger for a
+		// moment after its client socket closes. Wait until none remain on the
+		// database before dropping it, so the drop does not race with session
+		// teardown.
+		if err := waitTenantBackendsDrained(ctx, db, tenant.Database); err != nil && cfg.Verbose {
+			log.Printf("cleanup tenant %d: wait backends drained: %v", tenant.Index, err)
+		}
+		dropped := false
+		for attempt := 0; attempt < 3 && !dropped; attempt++ {
+			if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE %s WITH (FORCE)", tenant.Database)); err != nil {
+				if cfg.Verbose && attempt == 2 {
+					log.Printf("cleanup tenant %d: drop database %s: %v", tenant.Index, tenant.Database, err)
+				}
+				time.Sleep(time.Duration(attempt+1) * time.Second)
+				continue
 			}
-		} else {
+			dropped = true
 			result.Dropped++
+		}
+		if !dropped {
+			result.Failed++
 		}
 		if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP ROLE %s", tenant.Role)); err != nil {
 			result.Failed++
@@ -154,6 +170,29 @@ func terminateTenantBackends(ctx context.Context, cfg *Config, t Tenant) error {
 		return err
 	}
 	return nil
+}
+
+// waitTenantBackendsDrained polls pg_stat_activity as the admin user until no
+// backends remain on the tenant database. Terminated backends disappear
+// asynchronously after their client socket closes, and dropping the database in
+// that window would fail because the admin cannot terminate another role's
+// processes.
+func waitTenantBackendsDrained(ctx context.Context, db *sql.DB, database string, timeout ...time.Duration) error {
+	deadline := time.Now().Add(15 * time.Second)
+	if len(timeout) > 0 {
+		deadline = time.Now().Add(timeout[0])
+	}
+	for time.Now().Before(deadline) {
+		var n int
+		if err := db.QueryRowContext(ctx, `SELECT count(*) FROM pg_stat_activity WHERE datname = $1`, database).Scan(&n); err != nil {
+			return err
+		}
+		if n == 0 {
+			return nil
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	return errors.Errorf("backends still present on %s", database)
 }
 
 // cleanupPrefix removes any databases and roles left over from a previous run so
