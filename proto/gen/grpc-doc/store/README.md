@@ -4157,7 +4157,7 @@ index directly.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | level | [SavedQueryBinding.Level](#bytebase-store-SavedQueryBinding-Level) |  |  |
-| members | [string](#string) | repeated | Principals, in the v1 IamPolicy binding format, restricted to &#34;user:{email}&#34; and &#34;group:{email}&#34;. Groups are stored as references and never expanded. |
+| members | [string](#string) | repeated | Principals in the same resource-name form the IAM policy payloads use: &#34;users/{email}&#34; and &#34;groups/{email}&#34;. The v1 API takes the binding form (&#34;user:&#34;, &#34;group:&#34;) and converts once on write, as the project policy does. Groups are named by reference and never expanded. |
 
 
 

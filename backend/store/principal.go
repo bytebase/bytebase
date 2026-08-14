@@ -695,8 +695,8 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	// assembled in SQL, so an email's own % or _ cannot act as a wildcard, and
 	// the quotes keep the match exact: "user:a@corp.com" cannot match inside
 	// "user:xa@corp.com".
-	oldMember := fmt.Sprintf("%q", common.UserBindingPrefix+user.Email)
-	newMember := fmt.Sprintf("%q", common.UserBindingPrefix+newEmail)
+	oldMember := fmt.Sprintf("%q", common.FormatUserEmail(user.Email))
+	newMember := fmt.Sprintf("%q", common.FormatUserEmail(newEmail))
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE saved_query
 		SET bindings = replace(bindings::text, $1, $2)::jsonb

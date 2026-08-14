@@ -232,11 +232,19 @@ identity — since whoever holds `create` owns what they create. Only *sharing*
 is narrower: binding members are `user:` and `group:` only, so a service
 account can own and run its own automation queries but is never a grantee.
 
-Member format follows `bytebase.v1.IamPolicy` exactly (`common.UserBindingPrefix` /
-`GroupBindingPrefix`), minus the types above. That is deliberate: principal
-parsing, group expansion, and the share-with-project snapshot all reuse the
-existing IAM machinery, and a project binding copies into a saved-query
-binding verbatim.
+Member format follows `bytebase.v1.IamPolicy` exactly, on both sides of the
+boundary it draws. The API takes the binding form (`user:`, `group:`), minus
+the types above; the store holds the resource-name form the IAM policy
+payloads hold, `users/{email}` and `groups/{email}`, converted once on write
+as `convertToStoreIamPolicyMember` does for a project policy.
+
+The read path then converts nothing: `iam.PrincipalMembers` already yields a
+caller's members in stored form, so the access clause compares them to
+`bindings` directly. It also keeps principal typing in one place — a caller's
+own member comes from `formatUserNameByType`, so a service account is only
+ever named `serviceAccounts/{email}` and a binding naming one under a user
+prefix matches nobody. That is what lets the write path validate members by
+prefix alone, exactly as project IAM does.
 
 #### The rules
 
@@ -536,7 +544,7 @@ release notes; historical audit-log entries keep the old names as records.
 The policy lives in `saved_query.bindings jsonb` — no separate access
 table. The **stored shape is pinned**: the protojson *array* of
 `Binding` messages, e.g.
-`[{"level": "EDITOR", "members": ["group:eng@corp.com", "user:a@corp.com"]}]`
+`[{"level": "EDITOR", "members": ["groups/eng@corp.com", "users/a@corp.com"]}]`
 — the array must sit at the jsonb root for the `@>` probes below (a wrapped
 `{"bindings": [...]}` would force expression indexes). This deviates from
 the store-a-whole-message payload convention, deliberately; the store layer
@@ -560,7 +568,7 @@ platform-wide convention change outside this design's scope.
 
 The caller's principal set expands cheaply — groups are flat (members are
 users, one hop) and `GetUserGroupsSnapshot` is cached in
-`memberGroupsCache`: `principals(u) = {user:u} ∪ {group:g …}`, typically a
+`memberGroupsCache`: `principals(u) = {users/u} ∪ {groups/g …}`, typically a
 handful. Bindings carry `user:`/`group:` members (the IamPolicy invariant
 above), so the only format boundary is group *membership*, stored
 resource-name-style (`GroupMember.member = users/{email}`):
@@ -582,8 +590,8 @@ filters the table directly, one probe per principal:
 SELECT s.* FROM saved_query s
 WHERE s.project = $P
   AND ( s.creator = $me                                  -- own (incl. private)
-        OR s.bindings @> '[{"members":["user:me"]}]'
-        OR s.bindings @> '[{"members":["group:g1"]}]'
+        OR s.bindings @> '[{"members":["users/me"]}]'
+        OR s.bindings @> '[{"members":["groups/g1"]}]'
         OR ... )               -- one @> per principals(u), each GIN-indexed
 ORDER BY s.name, s.resource_id                           -- name is the title
 LIMIT $n OFFSET $k;

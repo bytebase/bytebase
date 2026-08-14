@@ -120,6 +120,23 @@ func (m *Manager) GetUserGroups(ctx context.Context, workspaceID string, email s
 	return m.store.GetUserGroupsSnapshot(ctx, workspaceID, common.FormatUserEmail(email))
 }
 
+// PrincipalMembers returns the policy members that stand for a caller: itself,
+// in the form its principal type dictates, plus each group it belongs to.
+//
+// This is the derivation check() uses, exposed for policy surfaces that
+// evaluate their own bindings instead of going through CheckPermission. Taking
+// the caller's type from formatUserNameByType is what keeps a service account
+// out of a "users/" member, so a binding naming one there matches nobody --
+// which is why a policy's write path can validate members by prefix alone.
+// Groups are named by reference and never expanded.
+func (m *Manager) PrincipalMembers(ctx context.Context, workspaceID string, user *store.UserMessage) ([]string, error) {
+	groups, err := m.GetUserGroups(ctx, workspaceID, user.Email)
+	if err != nil {
+		return nil, err
+	}
+	return append([]string{formatUserNameByType(user)}, groups...), nil
+}
+
 func check(user *store.UserMessage, p permission.Permission, policy *storepb.IamPolicy, getPermissions func(role string) map[permission.Permission]bool, getGroupMembers func(groupName string) map[string]bool, skipAllUsers bool, projectWideOnly bool) bool {
 	userName := formatUserNameByType(user)
 

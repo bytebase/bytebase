@@ -234,7 +234,12 @@ func (s *SavedQueryService) SearchSavedQueryFolders(
 		return nil, err
 	}
 
-	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), user, request.Filter, false /* allowTitleContains */)
+	accessMembers, err := s.iamManager.PrincipalMembers(ctx, common.GetWorkspaceIDFromContext(ctx), user)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve principals: %v", err))
+	}
+
+	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, user.Email, accessMembers, request.Filter, false /* allowTitleContains */)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -246,11 +251,6 @@ func (s *SavedQueryService) SearchSavedQueryFolders(
 	// would hide a shared saved query its creator filed, since the client seeds
 	// its folder tree from this call and cannot expand into a folder it never
 	// learns about.
-	accessMembers, err := s.store.SavedQueryPrincipals(ctx, common.GetWorkspaceIDFromContext(ctx), user)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve principals: %v", err))
-	}
-
 	paths, err := s.store.ListSavedQueryFolderPaths(ctx, projectID, user.Email, accessMembers, filterQ)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to search saved query folders: %v", err))
@@ -328,13 +328,13 @@ func (s *SavedQueryService) SearchSavedQueries(
 	// afterwards, which would return short pages: nine of ten rows dropped
 	// still consumes the whole page.
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	accessMembers, err := s.store.SavedQueryPrincipals(ctx, workspaceID, user)
+	accessMembers, err := s.iamManager.PrincipalMembers(ctx, workspaceID, user)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve principals: %v", err))
 	}
 	savedQueryFind.AccessMembers = accessMembers
 
-	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, workspaceID, user, request.Filter, true /* allowTitleContains */)
+	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, user.Email, accessMembers, request.Filter, true /* allowTitleContains */)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -587,7 +587,12 @@ func (s *SavedQueryService) BatchUpdateSavedQueries(
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), user, request.Filter, false /* allowTitleContains */)
+	accessMembers, err := s.iamManager.PrincipalMembers(ctx, common.GetWorkspaceIDFromContext(ctx), user)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve principals: %v", err))
+	}
+
+	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, user.Email, accessMembers, request.Filter, false /* allowTitleContains */)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -813,25 +818,54 @@ func convertToAPISavedQueryPolicy(bindings []*storepb.SavedQueryBinding) (*v1pb.
 	}
 	policy := &v1pb.SavedQueryPolicy{Etag: etag}
 	for _, binding := range bindings {
+		members := make([]string, 0, len(binding.Members))
+		for _, member := range binding.Members {
+			members = append(members, convertToV1SavedQueryMember(member))
+		}
 		policy.Bindings = append(policy.Bindings, &v1pb.SavedQueryBinding{
 			Level:   v1pb.SavedQueryBinding_Level(binding.Level),
-			Members: binding.Members,
+			Members: members,
 		})
 	}
 	return policy, nil
 }
 
+// convertToStoreSavedQueryMember maps a submitted member to the resource name
+// the store holds. Only users and groups are accepted; serviceAccount:,
+// workloadIdentity:, and allUsers are not grantees on a saved query.
+func convertToStoreSavedQueryMember(member string) (string, error) {
+	if email, ok := strings.CutPrefix(member, common.UserBindingPrefix); ok && email != "" {
+		return common.FormatUserEmail(email), nil
+	}
+	if email, ok := strings.CutPrefix(member, common.GroupBindingPrefix); ok && email != "" {
+		return common.FormatGroupEmail(email), nil
+	}
+	return "", errors.Errorf("invalid member %q: only %q and %q are supported", member, common.UserBindingPrefix, common.GroupBindingPrefix)
+}
+
+func convertToV1SavedQueryMember(member string) string {
+	if email, ok := strings.CutPrefix(member, common.UserNamePrefix); ok {
+		return common.UserBindingPrefix + email
+	}
+	if email, ok := strings.CutPrefix(member, common.GroupPrefix); ok {
+		return common.GroupBindingPrefix + email
+	}
+	return member
+}
+
 // convertToStoreSavedQueryBindings validates a submitted policy and converts it
-// for storage. A member may appear at one binding only, so the stored policy
-// never needs a tie-break rule.
+// for storage, converting each member from the API's binding form to the
+// resource name the store holds -- "user:a@corp.com" becomes "users/a@corp.com"
+// -- exactly as convertToStoreIamPolicyMember does for an IAM policy. Doing it
+// once here rather than at every read is what lets the access queries compare
+// stored members against iam.PrincipalMembers with no conversion at all.
 //
-// Members are prefix-checked, not resolved — the same shape project and
-// workspace IAM use in validateMember — narrowed to the two types a saved
-// query accepts. A service account named under a "user:" prefix is inert
-// rather than rejected: SavedQueryPrincipals derives the caller's member from
-// their principal type, so such a binding matches nobody. That is how IAM is
-// safe with a prefix check, and doing the same here keeps one convention
-// instead of two.
+// A member may appear at one binding only, so the stored policy never needs a
+// tie-break rule. Members are prefix-checked, not resolved, the same shape
+// project and workspace IAM use in validateMember, narrowed to the two types a
+// saved query accepts. A service account named under a "user:" prefix is inert
+// rather than rejected: a caller's members come from their principal type, so
+// such a binding matches nobody.
 func convertToStoreSavedQueryBindings(bindings []*v1pb.SavedQueryBinding) ([]*storepb.SavedQueryBinding, error) {
 	var converted []*storepb.SavedQueryBinding
 	seenLevel := make(map[v1pb.SavedQueryBinding_Level]bool, len(bindings))
@@ -850,21 +884,22 @@ func convertToStoreSavedQueryBindings(bindings []*v1pb.SavedQueryBinding) ([]*st
 		if len(binding.Members) == 0 {
 			return nil, errors.Errorf("binding for level %q has no members", binding.Level)
 		}
+		members := make([]string, 0, len(binding.Members))
 		for _, member := range binding.Members {
 			if seenMember[member] {
 				return nil, errors.Errorf("member %q appears at more than one binding", member)
 			}
 			seenMember[member] = true
-			hasUser := strings.HasPrefix(member, common.UserBindingPrefix) && len(member) > len(common.UserBindingPrefix)
-			hasGroup := strings.HasPrefix(member, common.GroupBindingPrefix) && len(member) > len(common.GroupBindingPrefix)
-			if !hasUser && !hasGroup {
-				return nil, errors.Errorf("invalid member %q: only %q and %q are supported", member, common.UserBindingPrefix, common.GroupBindingPrefix)
+			stored, err := convertToStoreSavedQueryMember(member)
+			if err != nil {
+				return nil, err
 			}
+			members = append(members, stored)
 		}
 
 		converted = append(converted, &storepb.SavedQueryBinding{
 			Level:   storepb.SavedQueryBinding_Level(binding.Level),
-			Members: binding.Members,
+			Members: members,
 		})
 	}
 	return converted, nil
@@ -918,7 +953,7 @@ func (s *SavedQueryService) savedQueryAccess(ctx context.Context, savedQuery *st
 	access.isAdmin = isAdmin
 
 	if len(savedQuery.Bindings) > 0 {
-		principals, err := s.store.SavedQueryPrincipals(ctx, workspaceID, user)
+		principals, err := s.iamManager.PrincipalMembers(ctx, workspaceID, user)
 		if err != nil {
 			return savedQueryAccess{}, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve principals: %v", err))
 		}

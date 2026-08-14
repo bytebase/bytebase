@@ -127,9 +127,10 @@ func (x *SavedQueryPayload) GetDatabase() string {
 type SavedQueryBinding struct {
 	state protoimpl.MessageState  `protogen:"open.v1"`
 	Level SavedQueryBinding_Level `protobuf:"varint,1,opt,name=level,proto3,enum=bytebase.store.SavedQueryBinding_Level" json:"level,omitempty"`
-	// Principals, in the v1 IamPolicy binding format, restricted to
-	// "user:{email}" and "group:{email}". Groups are stored as references and
-	// never expanded.
+	// Principals in the same resource-name form the IAM policy payloads use:
+	// "users/{email}" and "groups/{email}". The v1 API takes the binding form
+	// ("user:", "group:") and converts once on write, as the project policy
+	// does. Groups are named by reference and never expanded.
 	Members       []string `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

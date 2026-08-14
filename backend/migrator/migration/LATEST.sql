@@ -374,7 +374,7 @@ CREATE TABLE saved_query (
     -- connected database is a soft reference kept as its canonical name.
     payload jsonb NOT NULL DEFAULT '{}',
     -- Per-object grants: a protojson array of SavedQueryBinding at the jsonb
-    -- root, e.g. [{"level":"EDITOR","members":["group:eng@corp.com"]}]. The
+    -- root, e.g. [{"level":"EDITOR","members":["groups/eng@corp.com"]}]. The
     -- array must sit at the root so the access queries' `@>` probes use the
     -- GIN index below. Empty means private to the creator.
     bindings jsonb NOT NULL DEFAULT '[]',

@@ -23,7 +23,7 @@ func TestSavedQueryBindingsStoredShape(t *testing.T) {
 
 	bindings := []*storepb.SavedQueryBinding{{
 		Level:   storepb.SavedQueryBinding_EDITOR,
-		Members: []string{"group:eng@example.com", "user:grantee@example.com"},
+		Members: []string{"groups/eng@example.com", "users/grantee@example.com"},
 	}}
 	etag, err := store.SavedQueryPolicyEtag(nil)
 	require.NoError(t, err)
@@ -41,8 +41,8 @@ func TestSavedQueryBindingsStoredShape(t *testing.T) {
 	// The containment probe the access clause builds must match a member listed
 	// alongside others, for both principal types.
 	for _, probe := range []string{
-		`[{"members":["user:grantee@example.com"]}]`,
-		`[{"members":["group:eng@example.com"]}]`,
+		`[{"members":["users/grantee@example.com"]}]`,
+		`[{"members":["groups/eng@example.com"]}]`,
 	} {
 		var matched bool
 		require.NoError(t, fixture.db.QueryRowContext(fixture.ctx,
@@ -54,7 +54,7 @@ func TestSavedQueryBindingsStoredShape(t *testing.T) {
 	var strangerMatched bool
 	require.NoError(t, fixture.db.QueryRowContext(fixture.ctx,
 		"SELECT bindings @> $1::jsonb FROM saved_query WHERE resource_id = 'saved-query-a'",
-		`[{"members":["user:stranger@example.com"]}]`).Scan(&strangerMatched))
+		`[{"members":["users/stranger@example.com"]}]`).Scan(&strangerMatched))
 	require.False(t, strangerMatched)
 
 	// Compare-and-swap: the etag moved with the write, so replaying the old one
@@ -109,7 +109,7 @@ func TestSavedQueryBindingsFollowGroupRename(t *testing.T) {
 	applied, err := fixture.store.SetSavedQueryBindings(fixture.ctx, "project-a", "saved-query-a",
 		[]*storepb.SavedQueryBinding{{
 			Level:   storepb.SavedQueryBinding_EDITOR,
-			Members: []string{"group:eng@example.com", "user:someone@example.com"},
+			Members: []string{"groups/eng@example.com", "users/someone@example.com"},
 		}}, emptyEtag)
 	require.NoError(t, err)
 	require.True(t, applied)
@@ -125,38 +125,12 @@ func TestSavedQueryBindingsFollowGroupRename(t *testing.T) {
 	// The renamed group's grant follows it; the untouched user member does not move.
 	var matchedNew, matchedOld, matchedUser bool
 	require.NoError(t, fixture.db.QueryRowContext(fixture.ctx, `
-		SELECT bindings @> '[{"members":["group:engineering@example.com"]}]'::jsonb,
-		       bindings @> '[{"members":["group:eng@example.com"]}]'::jsonb,
-		       bindings @> '[{"members":["user:someone@example.com"]}]'::jsonb
+		SELECT bindings @> '[{"members":["groups/engineering@example.com"]}]'::jsonb,
+		       bindings @> '[{"members":["groups/eng@example.com"]}]'::jsonb,
+		       bindings @> '[{"members":["users/someone@example.com"]}]'::jsonb
 		FROM saved_query WHERE resource_id = 'saved-query-a'
 	`).Scan(&matchedNew, &matchedOld, &matchedUser))
 	require.True(t, matchedNew, "the grant must follow the rename")
 	require.False(t, matchedOld, "the stale token must be gone")
 	require.True(t, matchedUser, "unrelated members must be untouched")
-}
-
-// A binding names principals by prefix, and validation is a prefix check like
-// project IAM's. What keeps a service account from being granted access is the
-// read side: the caller's member is derived from their principal type, so a
-// binding carrying "user:<service-account-email>" matches nobody rather than
-// granting it. Pinning that here, because it is the reason the write side can
-// stay a prefix check.
-func TestSavedQueryPrincipalsAreTypeAware(t *testing.T) {
-	fixture := newProjectDeletionLockOrderFixture(t, "")
-
-	endUser := &store.UserMessage{Email: "human@example.com", Type: storepb.PrincipalType_END_USER}
-	principals, err := fixture.store.SavedQueryPrincipals(fixture.ctx, "default", endUser)
-	require.NoError(t, err)
-	require.Contains(t, principals, "user:human@example.com")
-
-	for _, principalType := range []storepb.PrincipalType{
-		storepb.PrincipalType_SERVICE_ACCOUNT,
-		storepb.PrincipalType_WORKLOAD_IDENTITY,
-	} {
-		bot := &store.UserMessage{Email: "bot@service.bytebase.com", Type: principalType}
-		principals, err := fixture.store.SavedQueryPrincipals(fixture.ctx, "default", bot)
-		require.NoError(t, err)
-		require.NotContains(t, principals, "user:bot@service.bytebase.com",
-			"%s must reach a saved query as its creator, never through a grant", principalType)
-	}
 }

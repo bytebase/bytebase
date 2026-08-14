@@ -333,8 +333,8 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 		// "group:xeng@x". Scoped to this workspace's projects, since group
 		// tokens are workspace-local and an identical email elsewhere belongs
 		// to a different group.
-		oldMember := fmt.Sprintf("%q", common.GroupBindingPrefix+oldToken)
-		newMember := fmt.Sprintf("%q", common.GroupBindingPrefix+newToken)
+		oldMember := fmt.Sprintf("%q", common.FormatGroupEmail(oldToken))
+		newMember := fmt.Sprintf("%q", common.FormatGroupEmail(newToken))
 		if _, err := tx.ExecContext(ctx, `
 			UPDATE saved_query
 			SET bindings = replace(bindings::text, $1, $2)::jsonb
