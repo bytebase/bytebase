@@ -135,7 +135,11 @@ export function useDropdown(
         });
       }
     } else {
-      if (allowCreateNew) {
+      // Folder structure is the creator's own: MoveMySavedQueries only moves
+      // rows you created, so offering to rename, delete, or add folders in the
+      // Shared tree would accept a gesture the server declines.
+      const canOrganize = viewMode === "my";
+      if (allowCreateNew && canOrganize) {
         items.push({
           key: "add-folder",
           label: t("sql-editor.tab.context-menu.actions.add-folder"),
@@ -155,7 +159,7 @@ export function useDropdown(
           });
         }
       }
-      if (currentNode.editable) {
+      if (currentNode.editable && canOrganize) {
         items.push(
           {
             key: "rename",
