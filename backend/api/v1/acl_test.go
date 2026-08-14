@@ -508,6 +508,23 @@ func TestGetResourceFromRequest(t *testing.T) {
 			method:  "/bytebase.v1.SavedQueryService/SearchSavedQueries",
 			want:    []string{"projects/-"},
 		},
+		{
+			// Every audited saved-query write must resolve to a
+			// project-scoped resource, or the audit row files under the
+			// workspace and a project audit-log search cannot find it.
+			request: &v1pb.UpdateSavedQueryRequest{SavedQuery: &v1pb.SavedQuery{Name: "projects/hello/savedQueries/sq1"}},
+			method:  "/bytebase.v1.SavedQueryService/UpdateSavedQuery",
+			want:    []string{"projects/hello/savedQueries/sq1"},
+		},
+		{
+			// The batch branch picks `parent` up only because it carries a
+			// resource_reference, and this request has no `requests` list to
+			// fall back on; it then repeats via the single-request path,
+			// which the audit parent dedup collapses to one row.
+			request: &v1pb.BatchUpdateSavedQueriesRequest{Parent: "projects/hello"},
+			method:  "/bytebase.v1.SavedQueryService/BatchUpdateSavedQueries",
+			want:    []string{"projects/hello", "projects/hello"},
+		},
 	}
 
 	for _, tt := range tests {

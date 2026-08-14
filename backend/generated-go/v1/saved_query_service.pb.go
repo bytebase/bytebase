@@ -1004,9 +1004,10 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"updateMask\"P\n" +
 	"\x1bUpdateSavedQueryStarRequest\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\x12\x18\n" +
-	"\astarred\x18\x02 \x01(\bR\astarred\"\xd6\x01\n" +
-	"\x1eBatchUpdateSavedQueriesRequest\x12\x1b\n" +
-	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x16\n" +
+	"\astarred\x18\x02 \x01(\bR\astarred\"\xef\x01\n" +
+	"\x1eBatchUpdateSavedQueriesRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12\x16\n" +
 	"\x06filter\x18\x02 \x01(\tR\x06filter\x12=\n" +
 	"\vsaved_query\x18\x03 \x01(\v2\x17.bytebase.v1.SavedQueryB\x03\xe0A\x02R\n" +
 	"savedQuery\x12@\n" +
