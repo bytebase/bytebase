@@ -52,6 +52,10 @@ const isGrantableMember = (member: string) =>
  */
 export function SavedQueryGrantEditor({ savedQuery, canManage }: Props) {
   const { t } = useTranslation();
+  const levelLabel = (level: SavedQueryBinding_Level) =>
+    level === SavedQueryBinding_Level.EDITOR
+      ? t("sql-editor.saved-query-share.editor")
+      : t("sql-editor.saved-query-share.viewer");
   const getSavedQueryPolicy = useAppStore((s) => s.getSavedQueryPolicy);
   const setSavedQueryPolicy = useAppStore((s) => s.setSavedQueryPolicy);
   const notify = useAppStore((s) => s.notify);
@@ -187,12 +191,11 @@ export function SavedQueryGrantEditor({ savedQuery, canManage }: Props) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={String(SavedQueryBinding_Level.VIEWER)}>
-                {t("sql-editor.saved-query-share.viewer")}
-              </SelectItem>
-              <SelectItem value={String(SavedQueryBinding_Level.EDITOR)}>
-                {t("sql-editor.saved-query-share.editor")}
-              </SelectItem>
+              {GRANTABLE_LEVELS.map((candidate) => (
+                <SelectItem key={candidate} value={String(candidate)}>
+                  {levelLabel(candidate)}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         )}
@@ -213,12 +216,33 @@ export function SavedQueryGrantEditor({ savedQuery, canManage }: Props) {
             </p>
           )}
         </>
-      ) : (
+      ) : policy.bindings.length === 0 ? (
         <p className="text-sm text-control-light">
-          {policy.bindings.length === 0
-            ? t("sql-editor.saved-query-share.not-shared")
-            : policy.bindings.flatMap((binding) => binding.members).join(", ")}
+          {t("sql-editor.saved-query-share.not-shared")}
         </p>
+      ) : (
+        // Labelled by level, not flattened: this read-only view is the only
+        // place a grantee can see whether they hold VIEWER or EDITOR, which is
+        // the whole reason the policy is readable by anyone who can read the
+        // saved query.
+        <dl className="flex flex-col gap-y-1 text-sm">
+          {GRANTABLE_LEVELS.filter((candidate) =>
+            policy.bindings.some(
+              (binding) =>
+                binding.level === candidate && binding.members.length > 0
+            )
+          ).map((candidate) => (
+            <div key={candidate} className="flex gap-x-2">
+              <dt className="shrink-0 font-medium">{levelLabel(candidate)}</dt>
+              <dd className="text-control-light">
+                {policy.bindings
+                  .filter((binding) => binding.level === candidate)
+                  .flatMap((binding) => binding.members)
+                  .join(", ")}
+              </dd>
+            </div>
+          ))}
+        </dl>
       )}
 
       {canManage && policy.bindings.length === 0 && (

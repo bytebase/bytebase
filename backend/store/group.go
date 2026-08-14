@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/google/cel-go/cel"
@@ -325,15 +326,21 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 	oldToken := groupPrincipalToken(patch.ID, oldEmail.String)
 	newToken := groupPrincipalToken(patch.ID, email.String)
 	if oldToken != newToken {
-		// Scoped to this workspace's projects: group tokens are workspace-local,
-		// so an identical email elsewhere must not be rewritten. The quotes make
-		// the match exact, as in the user-rename rewrite.
+		// Both needles are whole JSON strings built here rather than assembled
+		// in SQL, so they reach the query as plain bound values: no LIKE, and
+		// therefore no chance of an email's own % or _ acting as a wildcard.
+		// The quotes keep the match exact -- "group:eng@x" cannot match inside
+		// "group:xeng@x". Scoped to this workspace's projects, since group
+		// tokens are workspace-local and an identical email elsewhere belongs
+		// to a different group.
+		oldMember := fmt.Sprintf("%q", common.GroupBindingPrefix+oldToken)
+		newMember := fmt.Sprintf("%q", common.GroupBindingPrefix+newToken)
 		if _, err := tx.ExecContext(ctx, `
 			UPDATE saved_query
-			SET bindings = replace(bindings::text, '"group:' || $1 || '"', '"group:' || $2 || '"')::jsonb
+			SET bindings = replace(bindings::text, $1, $2)::jsonb
 			WHERE project IN (SELECT resource_id FROM project WHERE workspace = $3)
-				AND bindings::text LIKE '%"group:' || $1 || '"%'
-		`, oldToken, newToken, patch.Workspace); err != nil {
+				AND strpos(bindings::text, $1) > 0
+		`, oldMember, newMember, patch.Workspace); err != nil {
 			return nil, errors.Wrapf(err, "failed to rewrite saved query grants for group %s", patch.ID)
 		}
 	}
