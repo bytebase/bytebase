@@ -138,10 +138,13 @@ var mcpForbiddenReasons = map[v1pb.MCPForbiddenReason]string{
 	// follow-up (BOT-53); disallowing first is the deliberate order.
 	v1pb.MCPForbiddenReason_REWRITES_SESSION_BOUNDARY: "it rewrites the workspace settings that bound this session, including the switch meant to contain it",
 
-	// The four approval methods. ApproveIssue, RejectIssue and RequestIssue are
-	// one handler under three actions (issue_review.go reviewIssue), and that
-	// handler records the review decision itself. An agent composes a change; it
-	// does not move its own change through the gate. That is the whole claim,
+	// The four approval methods. ApproveIssue and RejectIssue are two actions of
+	// one handler (issue_review.go reviewIssue), and that handler records the
+	// review decision itself: applyReviewAction requires an approver role via
+	// canReview, enforces the self-approval guard, and appends an APPROVED or
+	// REJECTED approver (component/review/workflow.go). An agent composes a
+	// change; it does not move its own change through the gate. That is the
+	// whole claim,
 	// and it is deliberately narrower than "an agent only executes approved work",
 	// which this classification does NOT deliver: CreatePlan, CreateRollout and
 	// BatchRunTasks are all WRITE, and both approval checks on the execution
@@ -149,6 +152,24 @@ var mcpForbiddenReasons = map[v1pb.MCPForbiddenReason]string{
 	// reaches execution with no approval at all. Whether an issueless rollout
 	// belongs in WRITE is the gate PR's decision to take deliberately rather
 	// than inherit.
+	//
+	// RequestIssue is the contested row, and the reason's wording does NOT
+	// describe it. It is the third action of the same handler but structurally
+	// the opposite of the other two: it requires the issue to already be
+	// rejected, requires the actor to be the issue CREATOR, never calls
+	// canReview, and records no decision — it strips the REJECTED approvers and
+	// returns the issue to PENDING for a fresh human decision
+	// (component/review/workflow.go applyReviewAction, ActionRequest). It
+	// cannot approve anything, so forbidding it protects nothing the other two
+	// do not already protect. What it costs is real: while a rejection stands,
+	// Approve and Reject both hard-fail ("cannot approve because the issue has
+	// been rejected"), so this is the ONLY exit from the rejected state, and an
+	// agent that fixes the SQL a human asked it to fix cannot resubmit — the
+	// human has to re-request from the console, or the agent abandons the issue
+	// and creates a replacement. That is the propose-fix-resubmit loop
+	// propose_database_change exists for. Raised by the Codex review; kept
+	// FORBIDDEN here only because the four-method set is a spec-level decision,
+	// and flagged for the lead as the row to widen.
 	//
 	// RetryIssueApproval is the near miss and is in deliberately. It casts no
 	// vote — it re-runs approval-template finding for an issue stuck in
