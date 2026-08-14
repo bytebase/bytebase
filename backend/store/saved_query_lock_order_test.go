@@ -479,3 +479,98 @@ func TestSavedQuerySetBindingsAndDeleteProjectLockOrder(t *testing.T) {
 		requireGone(t, fixture)
 	})
 }
+
+// A prefix move locks every row under the folder, so two moves whose paths
+// overlap contend on the same rows -- "a" covers "a/child". Both take their
+// locks in primary-key order through the CTE, so the second serializes behind
+// the first in either acquisition order rather than deadlocking, and the
+// terminal folders are exact: whichever commits first decides what the other
+// still matches.
+func TestSavedQueryFolderPrefixMovesLockOrder(t *testing.T) {
+	const seedSQL = `
+		INSERT INTO saved_query (resource_id, creator, project, name, statement, folder) VALUES
+			('saved-query-a', 'user@example.com', 'default', 'A', '', 'a'),
+			('saved-query-b', 'user@example.com', 'default', 'B', '', 'a/child');
+	`
+
+	folders := func(t *testing.T, fixture *projectDeletionLockOrderFixture) map[string]string {
+		t.Helper()
+		rows, err := fixture.db.QueryContext(fixture.ctx,
+			"SELECT resource_id, folder FROM saved_query ORDER BY resource_id")
+		require.NoError(t, err)
+		defer rows.Close()
+		got := map[string]string{}
+		for rows.Next() {
+			var id, folder string
+			require.NoError(t, rows.Scan(&id, &folder))
+			got[id] = folder
+		}
+		require.NoError(t, rows.Err())
+		return got
+	}
+
+	t.Run("parent first", func(t *testing.T) {
+		fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+		const barrierID = 9961
+		barrier := newMaintenanceLockBarrier(fixture.ctx, t, fixture.db, barrierID)
+		installMaintenanceLockBarrier(t, fixture.db, barrierID,
+			"AFTER UPDATE OF folder ON saved_query FOR EACH ROW")
+
+		parentResult := make(chan error, 1)
+		go func() {
+			_, err := fixture.store.MoveSavedQueryFolder(fixture.ctx, "default", "user@example.com", "a", "x")
+			parentResult <- err
+		}()
+		waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)
+		parentPID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
+
+		childResult := make(chan error, 1)
+		go func() {
+			_, err := fixture.store.MoveSavedQueryFolder(fixture.ctx, "default", "user@example.com", "a/child", "y")
+			childResult <- err
+		}()
+		waitForBackendBlockedByPID(fixture.ctx, t, fixture.db, parentPID)
+		barrier.release(t)
+
+		requireMaintenanceResult(t, parentResult)
+		requireMaintenanceResult(t, childResult)
+		// The parent move carried the child with it, so "a/child" no longer
+		// exists for the second move to find.
+		require.Equal(t, map[string]string{
+			"saved-query-a": "x",
+			"saved-query-b": "x/child",
+		}, folders(t, fixture))
+	})
+
+	t.Run("child first", func(t *testing.T) {
+		fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+		const barrierID = 9962
+		barrier := newMaintenanceLockBarrier(fixture.ctx, t, fixture.db, barrierID)
+		installMaintenanceLockBarrier(t, fixture.db, barrierID,
+			"AFTER UPDATE OF folder ON saved_query FOR EACH ROW")
+
+		childResult := make(chan error, 1)
+		go func() {
+			_, err := fixture.store.MoveSavedQueryFolder(fixture.ctx, "default", "user@example.com", "a/child", "y")
+			childResult <- err
+		}()
+		waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)
+		childPID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
+
+		parentResult := make(chan error, 1)
+		go func() {
+			_, err := fixture.store.MoveSavedQueryFolder(fixture.ctx, "default", "user@example.com", "a", "x")
+			parentResult <- err
+		}()
+		waitForBackendBlockedByPID(fixture.ctx, t, fixture.db, childPID)
+		barrier.release(t)
+
+		requireMaintenanceResult(t, childResult)
+		requireMaintenanceResult(t, parentResult)
+		// The child left the subtree first, so the parent move only found "a".
+		require.Equal(t, map[string]string{
+			"saved-query-a": "x",
+			"saved-query-b": "y",
+		}, folders(t, fixture))
+	})
+}
