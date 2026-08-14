@@ -181,6 +181,11 @@ func TestForbiddenClassMembership(t *testing.T) {
 // hold the classification against it; nothing reads it at request time, and the
 // interceptor still enforces FORBIDDEN alone. DISABLED serves nothing because
 // it refuses the connection.
+//
+// The gate PR must LIFT this table into the code it evaluates rather than
+// declare a second copy. Two copies would let this lint stay green while the
+// runtime serving rules drift away from it, which is the one failure mode a
+// specification-shaped test cannot catch about itself.
 var mcpServingModes = map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
 	v1pb.WorkspaceProfileSetting_DISABLED:   {},
 	v1pb.WorkspaceProfileSetting_READ_ONLY:  {v1pb.MCPMethodClass_READ},
