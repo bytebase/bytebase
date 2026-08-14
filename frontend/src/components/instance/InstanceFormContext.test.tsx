@@ -4,6 +4,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
   DataSource_AuthenticationType,
   DataSource_AWSCredentialSchema,
@@ -14,6 +15,7 @@ import {
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { unknownInstance } from "@/types/v1/instance";
+import type { EditDataSource } from "./common";
 import { wrapEditDataSource } from "./common";
 import {
   InstanceFormProvider,
@@ -457,6 +459,182 @@ describe("InstanceFormProvider", () => {
       expect(probe.dataset.defaultChainNoRegion).toBe("false");
 
       harness.unmount();
+    });
+  });
+
+  // The server refuses to carry a stored Kerberos keytab to a destination the
+  // caller moved, so the form has to fail the data source before it offers to
+  // save it — otherwise the refusal arrives as a connection failure.
+  describe("checkDataSource Kerberos keytab resupply", () => {
+    const storedDataSource = create(DataSourceSchema, {
+      id: "admin",
+      type: DataSourceType.ADMIN,
+      host: "hive.example.com",
+      port: "10000",
+      saslConfig: {
+        mechanism: {
+          case: "krbConfig",
+          value: {
+            primary: "bytebase",
+            realm: "EXAMPLE.COM",
+            kdcHost: "kdc.example.com",
+            kdcPort: "88",
+          },
+        },
+      },
+    });
+
+    const editedDataSource = (edit: (ds: EditDataSource) => void) => {
+      const ds = wrapEditDataSource(storedDataSource);
+      edit(ds);
+      return ds;
+    };
+
+    const movedHost = () =>
+      editedDataSource((ds) => {
+        ds.host = "hive-2.example.com";
+      });
+
+    const KeytabProbe = () => {
+      const ctx = useInstanceFormContext();
+      return (
+        <div
+          data-username-only={String(
+            ctx.checkDataSource([
+              editedDataSource((ds) => {
+                ds.username = "hive";
+              }),
+            ])
+          )}
+          data-moved-host={String(ctx.checkDataSource([movedHost()]))}
+          data-moved-kdc={String(
+            ctx.checkDataSource([
+              editedDataSource((ds) => {
+                if (ds.saslConfig?.mechanism?.case === "krbConfig") {
+                  ds.saslConfig.mechanism.value.kdcHost = "kdc-2.example.com";
+                }
+              }),
+            ])
+          )}
+          data-moved-with-keytab={String(
+            ctx.checkDataSource([
+              editedDataSource((ds) => {
+                ds.host = "hive-2.example.com";
+                if (ds.saslConfig?.mechanism?.case === "krbConfig") {
+                  ds.saslConfig.mechanism.value.keytab = new Uint8Array([5, 2]);
+                }
+              }),
+            ])
+          )}
+          data-needs-resupply={String(ctx.needsKeytabResupply(movedHost()))}
+        />
+      );
+    };
+
+    test("a moved destination fails the data source until the keytab is uploaded again", async () => {
+      const harness = renderIntoContainer();
+
+      await harness.render(
+        <InstanceFormProvider
+          instance={create(InstanceSchema, {
+            name: "instances/hive",
+            title: "Hive",
+            engine: Engine.HIVE,
+            environment: "environments/prod",
+            dataSources: [storedDataSource],
+          })}
+        >
+          <KeytabProbe />
+        </InstanceFormProvider>
+      );
+
+      const probe = harness.container.firstElementChild as HTMLElement;
+      expect(probe.dataset.usernameOnly).toBe("true");
+      expect(probe.dataset.movedHost).toBe("false");
+      expect(probe.dataset.movedKdc).toBe("false");
+      expect(probe.dataset.movedWithKeytab).toBe("true");
+      expect(probe.dataset.needsResupply).toBe("true");
+
+      harness.unmount();
+    });
+
+    const ResupplyProbe = ({ build }: { build: () => EditDataSource }) => {
+      const ctx = useInstanceFormContext();
+      return <div data-needs-resupply={String(ctx.needsKeytabResupply(build()))} />;
+    };
+
+    const renderWithStored = async (
+      stored: DataSource[],
+      build: () => EditDataSource
+    ) => {
+      const harness = renderIntoContainer();
+      await harness.render(
+        <InstanceFormProvider
+          instance={create(InstanceSchema, {
+            name: "instances/hive",
+            title: "Hive",
+            engine: Engine.HIVE,
+            environment: "environments/prod",
+            dataSources: stored,
+          })}
+        >
+          <ResupplyProbe build={build} />
+        </InstanceFormProvider>
+      );
+      const probe = harness.container.firstElementChild as HTMLElement;
+      const result = probe.dataset.needsResupply;
+      harness.unmount();
+      return result;
+    };
+
+    // The comparison runs on what the form would send, not on the edit state,
+    // because that is what the server merges and then compares.
+    test("the port the form fills in for the engine counts as a move", async () => {
+      const withoutPort = create(DataSourceSchema, {
+        ...storedDataSource,
+        port: "",
+      });
+      expect(
+        await renderWithStored([withoutPort], () =>
+          wrapEditDataSource(withoutPort)
+        )
+      ).toBe("true");
+    });
+
+    test("an SSH tunnel the form drops for the engine counts as a move", async () => {
+      const withTunnel = create(DataSourceSchema, {
+        ...storedDataSource,
+        sshHost: "bastion.example.com",
+        sshPort: "22",
+      });
+      expect(
+        await renderWithStored([withTunnel], () =>
+          wrapEditDataSource(withTunnel)
+        )
+      ).toBe("true");
+    });
+
+    // checkDataSource runs over every data source, so the stored record has to
+    // be the one with the same ID rather than whichever comes first.
+    test("each data source is compared against its own stored record", async () => {
+      const readonlyDataSource = create(DataSourceSchema, {
+        ...storedDataSource,
+        id: "readonly",
+        type: DataSourceType.READ_ONLY,
+        host: "hive-replica.example.com",
+      });
+      expect(
+        await renderWithStored([storedDataSource, readonlyDataSource], () =>
+          wrapEditDataSource(readonlyDataSource)
+        )
+      ).toBe("false");
+      expect(
+        await renderWithStored([storedDataSource, readonlyDataSource], () => {
+          const ds = wrapEditDataSource(readonlyDataSource);
+          ds.host = "hive-replica-2.example.com";
+          return ds;
+        })
+      ).toBe("true");
     });
   });
 });

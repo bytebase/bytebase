@@ -8,10 +8,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   FormControlGroup,
   FormControlRow,
+  FormError,
   FormField,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
@@ -92,7 +94,7 @@ export function DataSourceForm({
   optionsOnly = false,
   onDataSourceChange,
   onOpenInfoPanel,
-}: DataSourceFormProps) {
+}: Readonly<DataSourceFormProps>) {
   const { t } = useTranslation();
   const currentPlan = useAppStore((s) => s.currentPlan());
   const isSaaSMode = useAppStore((s) => s.isSaaSMode());
@@ -107,6 +109,7 @@ export function DataSourceForm({
     hasReadonlyReplicaFeature,
     setMissingFeature,
     hideAdvancedFeatures,
+    needsKeytabResupply,
   } = ctx;
 
   const {
@@ -522,6 +525,10 @@ export function DataSourceForm({
 
   const [keytabFileName, setKeytabFileName] = useState("");
 
+  // The stored keytab cannot follow the data source to a new destination, so
+  // the operator has to upload it again before this edit can be saved.
+  const keytabResupplyRequired = needsKeytabResupply(dataSource);
+
   const handleKeytabUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -660,7 +667,8 @@ export function DataSourceForm({
                     className="sm:col-span-3 sm:col-start-1"
                     title={
                       <>
-                        Principal <span className="text-error">*</span>
+                        {t("instance.kerberos-principal")}{" "}
+                        <span className="text-error">*</span>
                       </>
                     }
                   >
@@ -671,7 +679,7 @@ export function DataSourceForm({
                           dataSource.saslConfig.mechanism.value.primary ?? ""
                         }
                         disabled={!allowEdit}
-                        placeholder="primary"
+                        placeholder={t("instance.kerberos-primary-placeholder")}
                         onChange={(e) => {
                           const updated = { ...dataSource };
                           if (
@@ -692,7 +700,9 @@ export function DataSourceForm({
                           dataSource.saslConfig.mechanism.value.instance ?? ""
                         }
                         disabled={!allowEdit}
-                        placeholder="instance, optional"
+                        placeholder={t(
+                          "instance.kerberos-instance-placeholder"
+                        )}
                         onChange={(e) => {
                           const updated = { ...dataSource };
                           if (
@@ -713,7 +723,7 @@ export function DataSourceForm({
                           dataSource.saslConfig.mechanism.value.realm ?? ""
                         }
                         disabled={!allowEdit}
-                        placeholder="realm"
+                        placeholder={t("instance.kerberos-realm-placeholder")}
                         onChange={(e) => {
                           const updated = { ...dataSource };
                           if (
@@ -731,7 +741,8 @@ export function DataSourceForm({
                     className="sm:col-span-3 sm:col-start-1"
                     title={
                       <>
-                        KDC <span className="text-error">*</span>
+                        {t("instance.kerberos-kdc")}{" "}
+                        <span className="text-error">*</span>
                       </>
                     }
                   >
@@ -769,7 +780,9 @@ export function DataSourceForm({
                           dataSource.saslConfig.mechanism.value.kdcHost ?? ""
                         }
                         disabled={!allowEdit}
-                        placeholder="KDC host"
+                        placeholder={t(
+                          "instance.kerberos-kdc-host-placeholder"
+                        )}
                         onChange={(e) => {
                           const updated = { ...dataSource };
                           if (
@@ -790,7 +803,9 @@ export function DataSourceForm({
                           dataSource.saslConfig.mechanism.value.kdcPort ?? ""
                         }
                         disabled={!allowEdit}
-                        placeholder="KDC port, optional"
+                        placeholder={t(
+                          "instance.kerberos-kdc-port-placeholder"
+                        )}
                         onChange={(e) => {
                           if (
                             e.target.value &&
@@ -813,8 +828,9 @@ export function DataSourceForm({
                     className="sm:col-span-3 sm:col-start-1"
                     title={
                       <>
-                        Keytab File
-                        {dataSource.pendingCreate && (
+                        {t("instance.keytab-file")}
+                        {(dataSource.pendingCreate ||
+                          keytabResupplyRequired) && (
                           <>
                             {" "}
                             <span className="text-error">*</span>
@@ -823,7 +839,12 @@ export function DataSourceForm({
                       </>
                     }
                   >
-                    <div className="mt-3 border-2 border-dashed rounded-lg p-6 text-center">
+                    <div
+                      className={cn(
+                        "mt-3 border-2 border-dashed rounded-lg p-6 text-center",
+                        keytabResupplyRequired && "border-error"
+                      )}
+                    >
                       <input
                         type="file"
                         accept=".keytab"
@@ -835,7 +856,7 @@ export function DataSourceForm({
                         htmlFor="keytab-upload"
                         className="cursor-pointer textinfolabel"
                       >
-                        Click or Drag your .keytab file here
+                        {t("instance.keytab-upload-placeholder")}
                       </label>
                       {keytabFileName && (
                         <p className="mt-2 textinfolabel truncate">
@@ -843,10 +864,17 @@ export function DataSourceForm({
                         </p>
                       )}
                     </div>
-                    {!dataSource.pendingCreate && (
+                    {/* The write-only hint offers to keep the stored keytab,
+                        which is the offer the resupply error withdraws. */}
+                    {!dataSource.pendingCreate && !keytabResupplyRequired && (
                       <p className="mt-1 textinfolabel">
                         {t("instance.keytab-write-only")}
                       </p>
+                    )}
+                    {keytabResupplyRequired && (
+                      <FormError className="mt-1">
+                        {t("instance.keytab-resupply-required")}
+                      </FormError>
                     )}
                   </FormField>
                 </>

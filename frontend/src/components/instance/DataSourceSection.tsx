@@ -36,7 +36,19 @@ export function DataSourceSection({
     readonlyDataSourceList,
     hasReadOnlyDataSource,
     hasPermission,
+    checkDataSource,
+    isEditing,
   } = ctx;
+
+  // Only the open tab renders its own field errors, and any data source that
+  // fails the check disables Update from anywhere. Say which tab to open —
+  // while there is an edit to save, which is when those buttons are on screen.
+  const incompleteMarker = (ds: EditDataSource) =>
+    !isEditing || checkDataSource([ds]) ? null : (
+      <span className="ml-1 text-error" title={t("instance.open-data-source")}>
+        *<span className="sr-only"> {t("instance.open-data-source")}</span>
+      </span>
+    );
 
   const allowUpdate = hasPermission("bb.instances.update");
 
@@ -151,6 +163,7 @@ export function DataSourceSection({
               onClick={() => handleTabChange(adminDataSource.id)}
             >
               {t("common.admin")}
+              {incompleteMarker(adminDataSource)}
             </button>
             {readonlyDataSourceList.map((ds) => (
               <div key={ds.id} className="flex items-center">
@@ -164,6 +177,7 @@ export function DataSourceSection({
                   onClick={() => handleTabChange(ds.id)}
                 >
                   {t("common.read-only")}
+                  {incompleteMarker(ds)}
                 </button>
                 {hasReadOnlyDataSource && (
                   <button
