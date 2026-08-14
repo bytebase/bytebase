@@ -8,6 +8,9 @@ import { writeTextToClipboard } from "@/lib/clipboard";
 import { useAppStore } from "@/stores/app";
 import type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";
 import { extractProjectResourceName, extractSavedQueryID } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils/iam/permission";
+
+import { SavedQueryGrantEditor } from "./SavedQueryGrantEditor";
 
 type Props = {
   readonly savedQuery?: SavedQuery;
@@ -15,14 +18,26 @@ type Props = {
 
 /**
  * Replaces frontend/src/views/sql-editor/EditorCommon/SharePopover.vue.
- * Renders the share popover body: the saved query's deep link with a copy
- * button. The link carries location, not access — a saved query is private
- * to its creator (admins aside) until the access-model redesign ships
- * per-object grants, so there is no access selector here.
+ * Renders the share popover body: the saved query's grants, plus its deep
+ * link. The link carries location, not access — opening it still runs the
+ * same read check — so the two are shown together but do different work.
  */
 export function SharePopoverBody({ savedQuery }: Props) {
   const { t } = useTranslation();
   const workspaceExternalURL = useAppStore((s) => s.serverInfo?.externalUrl);
+  const currentUser = useAppStore((s) => s.currentUser);
+  const getProjectByName = useAppStore((s) => s.getProjectByName);
+
+  // Sharing and deletion are creator-or-admin; a binding never confers them.
+  // Both inputs are already on the client, so this needs no extra request.
+  const canManage = useMemo(() => {
+    if (!savedQuery) return false;
+    if (savedQuery.creator === `users/${currentUser?.email}`) return true;
+    const project = getProjectByName(savedQuery.project);
+    return project
+      ? hasProjectPermissionV2(project, "bb.savedQueries.manage")
+      : false;
+  }, [savedQuery, currentUser, getProjectByName]);
 
   const sharedTabLink = useMemo(() => {
     if (!savedQuery) return "";
@@ -56,6 +71,10 @@ export function SharePopoverBody({ savedQuery }: Props) {
           <h2 className="text-lg font-semibold">{t("common.share")}</h2>
         </div>
       </section>
+
+      {savedQuery && (
+        <SavedQueryGrantEditor savedQuery={savedQuery} canManage={canManage} />
+      )}
 
       {/* Link input + copy button — single bordered container with rounded
           inner corners. No group-level focus ring; only the input shows a

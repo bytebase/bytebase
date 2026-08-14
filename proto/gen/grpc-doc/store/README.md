@@ -244,7 +244,10 @@
     - [RolePermissions](#bytebase-store-RolePermissions)
   
 - [store/saved_query.proto](#store_saved_query-proto)
+    - [SavedQueryBinding](#bytebase-store-SavedQueryBinding)
     - [SavedQueryPayload](#bytebase-store-SavedQueryPayload)
+  
+    - [SavedQueryBinding.Level](#bytebase-store-SavedQueryBinding-Level)
   
 - [store/server_config.proto](#store_server_config-proto)
     - [ServerConfigPayload](#bytebase-store-ServerConfigPayload)
@@ -4142,6 +4145,25 @@ The severity level for SQL review rules.
 
 
 
+<a name="bytebase-store-SavedQueryBinding"></a>
+
+### SavedQueryBinding
+One grant on a saved query. Stored in saved_query.bindings, which holds a
+protojson array of these messages at the jsonb root rather than a wrapper
+object, so the `@&gt;` containment probes the access queries run hit the GIN
+index directly.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| level | [SavedQueryBinding.Level](#bytebase-store-SavedQueryBinding-Level) |  |  |
+| members | [string](#string) | repeated | Principals, in the v1 IamPolicy binding format, restricted to &#34;user:{email}&#34; and &#34;group:{email}&#34;. Groups are stored as references and never expanded. |
+
+
+
+
+
+
 <a name="bytebase-store-SavedQueryPayload"></a>
 
 ### SavedQueryPayload
@@ -4157,6 +4179,19 @@ The severity level for SQL review rules.
 
 
  
+
+
+<a name="bytebase-store-SavedQueryBinding-Level"></a>
+
+### SavedQueryBinding.Level
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LEVEL_UNSPECIFIED | 0 |  |
+| VIEWER | 1 |  |
+| EDITOR | 2 |  |
+
 
  
 

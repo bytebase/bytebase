@@ -446,8 +446,8 @@ func TestSearchSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 
 	ownerToken := ctl.authInterceptor.token
 
-	createSavedQuery := func(title, folder string) {
-		_, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
+	createSavedQuery := func(title, folder string) *v1pb.SavedQuery {
+		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 			Parent: ctl.project.Name,
 			SavedQuery: &v1pb.SavedQuery{
 				Title:   title,
@@ -456,6 +456,7 @@ func TestSearchSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 			},
 		}))
 		a.NoError(err)
+		return resp.Msg
 	}
 
 	createSavedQuery("owner", "owner/child")
@@ -495,7 +496,7 @@ func TestSearchSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 	}))
 	a.NoError(err)
 	ctl.authInterceptor.token = loginResp.Msg.Token
-	createSavedQuery("other-users", "theirs/deep")
+	theirSavedQuery := createSavedQuery("other-users", "theirs/deep")
 
 	// Each caller sees only their own folder paths, with ancestor prefixes.
 	otherFolders, err := ctl.savedQueryServiceClient.SearchSavedQueryFolders(ctx, connect.NewRequest(&v1pb.SearchSavedQueryFoldersRequest{
@@ -514,15 +515,16 @@ func TestSearchSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 	a.NoError(err)
 	a.Empty(notMineForOther.Msg.Folders)
 
-	// Unfiltered means "every folder I can read", so the admin backstop sees
-	// the other creator's folders too. The My/Shared split the SQL Editor
-	// renders comes from the creator filter, asserted below.
+	// Unfiltered means "every folder holding a saved query I can read". The
+	// search family is caller-scoped even for an admin -- bb.savedQueries.manage
+	// does not widen it, and everyone's rows come from ListSavedQueries instead
+	// -- so the other creator's folders are absent until something is shared.
 	ctl.authInterceptor.token = ownerToken
 	ownerFolders, err := ctl.savedQueryServiceClient.SearchSavedQueryFolders(ctx, connect.NewRequest(&v1pb.SearchSavedQueryFoldersRequest{
 		Parent: ctl.project.Name,
 	}))
 	a.NoError(err)
-	a.Equal([]string{"owner", "owner-second", "owner/child", "theirs", "theirs/deep"}, ownerFolders.Msg.Folders)
+	a.Equal([]string{"owner", "owner-second", "owner/child"}, ownerFolders.Msg.Folders)
 
 	ownFolders, err := ctl.savedQueryServiceClient.SearchSavedQueryFolders(ctx, connect.NewRequest(&v1pb.SearchSavedQueryFoldersRequest{
 		Parent: ctl.project.Name,
@@ -531,12 +533,32 @@ func TestSearchSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 	a.NoError(err)
 	a.Equal([]string{"owner", "owner-second", "owner/child"}, ownFolders.Msg.Folders)
 
-	// The admin backstop is what makes the SQL Editor's shared tree work:
-	// everyone-else's folders resolve server-side, so a cold cache still
-	// renders the folders holding saved queries the caller never opened.
+	// A grant is what makes the SQL Editor's shared tree work. The folder of a
+	// saved query somebody else filed resolves server-side once it is shared,
+	// so a cold cache still renders folders holding rows the caller never
+	// opened -- without one, a foldered shared row would be unreachable,
+	// because the client can only expand into folders this call reports.
+	ctl.authInterceptor.token = loginResp.Msg.Token
+	theirPolicy, err := ctl.savedQueryServiceClient.GetSavedQueryPolicy(ctx, connect.NewRequest(&v1pb.GetSavedQueryPolicyRequest{
+		Resource: theirSavedQuery.Name,
+	}))
+	a.NoError(err)
+	_, err = ctl.savedQueryServiceClient.SetSavedQueryPolicy(ctx, connect.NewRequest(&v1pb.SetSavedQueryPolicyRequest{
+		Resource: theirSavedQuery.Name,
+		Policy: &v1pb.SavedQueryPolicy{
+			Etag: theirPolicy.Msg.Etag,
+			Bindings: []*v1pb.SavedQueryBinding{{
+				Level:   v1pb.SavedQueryBinding_VIEWER,
+				Members: []string{fmt.Sprintf("user:%s", ownerEmail)},
+			}},
+		},
+	}))
+	a.NoError(err)
+
+	ctl.authInterceptor.token = ownerToken
 	sharedFolders, err := ctl.savedQueryServiceClient.SearchSavedQueryFolders(ctx, connect.NewRequest(&v1pb.SearchSavedQueryFoldersRequest{
 		Parent: ctl.project.Name,
-		Filter: fmt.Sprintf(`creator != "users/%s"`, ownerEmail),
+		Filter: "shared == true",
 	}))
 	a.NoError(err)
 	a.Equal([]string{"theirs", "theirs/deep"}, sharedFolders.Msg.Folders)
@@ -742,4 +764,204 @@ func findSavedQueryByName(savedQueries []*v1pb.SavedQuery, name string) *v1pb.Sa
 		}
 	}
 	return nil
+}
+
+// TestSavedQuerySharing covers the per-object grant model end to end: a
+// private saved query is invisible to a co-member, a VIEWER binding makes it
+// readable but not writable, EDITOR makes it writable but never deletable, and
+// the policy write is compare-and-swap.
+func TestSavedQuerySharing(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	ownerToken := ctl.authInterceptor.token
+
+	granteeEmail := fmt.Sprintf("saved-query-grantee-%s@example.com", generateRandomString("user"))
+	granteePassword := "1024bytebase"
+	grantee, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{
+			Email:    granteeEmail,
+			Password: granteePassword,
+			Title:    "Saved Query Grantee",
+		},
+	}))
+	a.NoError(err)
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, grantee.Msg.Workspace, fmt.Sprintf("user:%s", granteeEmail), "roles/workspaceMember")
+	a.NoError(err)
+
+	// The grantee needs the project's saved-query surface to discover anything;
+	// the binding is what carries content access on top of it.
+	policyResp, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+		Resource: ctl.project.Name,
+	}))
+	a.NoError(err)
+	projectPolicy := policyResp.Msg
+	projectPolicy.Bindings = append(projectPolicy.Bindings, &v1pb.Binding{
+		Role:    "roles/sqlEditorUser",
+		Members: []string{fmt.Sprintf("user:%s", granteeEmail)},
+	})
+	_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Resource: ctl.project.Name,
+		Policy:   projectPolicy,
+	}))
+	a.NoError(err)
+
+	createResp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
+		Parent: ctl.project.Name,
+		SavedQuery: &v1pb.SavedQuery{
+			Title:   "shared-query",
+			Content: []byte("SELECT 1;"),
+		},
+	}))
+	a.NoError(err)
+	savedQuery := createResp.Msg
+
+	// A new saved query starts private: no bindings.
+	getPolicyResp, err := ctl.savedQueryServiceClient.GetSavedQueryPolicy(ctx, connect.NewRequest(&v1pb.GetSavedQueryPolicyRequest{
+		Resource: savedQuery.Name,
+	}))
+	a.NoError(err)
+	a.Empty(getPolicyResp.Msg.Bindings)
+	a.NotEmpty(getPolicyResp.Msg.Etag, "etag is what the next write has to present")
+	initialEtag := getPolicyResp.Msg.Etag
+
+	loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    granteeEmail,
+		Password: granteePassword,
+	}))
+	a.NoError(err)
+	granteeToken := loginResp.Msg.Token
+
+	asGrantee := func(f func()) {
+		ctl.authInterceptor.token = granteeToken
+		defer func() { ctl.authInterceptor.token = ownerToken }()
+		f()
+	}
+
+	// Private: invisible, and NotFound rather than PermissionDenied so the name
+	// cannot be probed.
+	asGrantee(func() {
+		_, err := ctl.savedQueryServiceClient.GetSavedQuery(ctx, connect.NewRequest(&v1pb.GetSavedQueryRequest{
+			Name: savedQuery.Name,
+		}))
+		a.Error(err)
+		a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+
+		searchResp, err := ctl.savedQueryServiceClient.SearchSavedQueries(ctx, connect.NewRequest(&v1pb.SearchSavedQueriesRequest{
+			Parent: ctl.project.Name,
+		}))
+		a.NoError(err)
+		a.NotContains(savedQueryNames(searchResp.Msg.SavedQueries), savedQuery.Name)
+	})
+
+	setPolicy := func(level v1pb.SavedQueryBinding_Level, etag string) *v1pb.SavedQueryPolicy {
+		resp, err := ctl.savedQueryServiceClient.SetSavedQueryPolicy(ctx, connect.NewRequest(&v1pb.SetSavedQueryPolicyRequest{
+			Resource: savedQuery.Name,
+			Policy: &v1pb.SavedQueryPolicy{
+				Etag: etag,
+				Bindings: []*v1pb.SavedQueryBinding{
+					{Level: level, Members: []string{fmt.Sprintf("user:%s", granteeEmail)}},
+				},
+			},
+		}))
+		a.NoError(err)
+		return resp.Msg
+	}
+
+	viewerPolicy := setPolicy(v1pb.SavedQueryBinding_VIEWER, initialEtag)
+	a.NotEqual(initialEtag, viewerPolicy.Etag, "the etag moves with the grants")
+
+	// A stale etag must not silently reinstate what somebody just revoked.
+	_, err = ctl.savedQueryServiceClient.SetSavedQueryPolicy(ctx, connect.NewRequest(&v1pb.SetSavedQueryPolicyRequest{
+		Resource: savedQuery.Name,
+		Policy: &v1pb.SavedQueryPolicy{
+			Etag:     initialEtag,
+			Bindings: nil,
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeAborted, connect.CodeOf(err))
+
+	// VIEWER: reads, and shows up under shared == true, but cannot write.
+	asGrantee(func() {
+		getResp, err := ctl.savedQueryServiceClient.GetSavedQuery(ctx, connect.NewRequest(&v1pb.GetSavedQueryRequest{
+			Name: savedQuery.Name,
+		}))
+		a.NoError(err)
+		a.Equal("shared-query", getResp.Msg.Title)
+
+		sharedResp, err := ctl.savedQueryServiceClient.SearchSavedQueries(ctx, connect.NewRequest(&v1pb.SearchSavedQueriesRequest{
+			Parent: ctl.project.Name,
+			Filter: "shared == true",
+		}))
+		a.NoError(err)
+		a.Contains(savedQueryNames(sharedResp.Msg.SavedQueries), savedQuery.Name)
+
+		_, err = ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+			SavedQuery: &v1pb.SavedQuery{Name: savedQuery.Name, Title: "renamed by viewer"},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title"}},
+		}))
+		a.Error(err)
+		a.Equal(connect.CodePermissionDenied, connect.CodeOf(err), "a VIEWER can see the row, so hiding it would be wrong")
+
+		// Grantees read their own level through the policy; they cannot rewrite it.
+		policy, err := ctl.savedQueryServiceClient.GetSavedQueryPolicy(ctx, connect.NewRequest(&v1pb.GetSavedQueryPolicyRequest{
+			Resource: savedQuery.Name,
+		}))
+		a.NoError(err)
+		a.Len(policy.Msg.Bindings, 1)
+		a.Equal(v1pb.SavedQueryBinding_VIEWER, policy.Msg.Bindings[0].Level)
+
+		_, err = ctl.savedQueryServiceClient.SetSavedQueryPolicy(ctx, connect.NewRequest(&v1pb.SetSavedQueryPolicyRequest{
+			Resource: savedQuery.Name,
+			Policy:   &v1pb.SavedQueryPolicy{Etag: policy.Msg.Etag},
+		}))
+		a.Error(err)
+		a.Equal(connect.CodePermissionDenied, connect.CodeOf(err))
+	})
+
+	editorPolicy := setPolicy(v1pb.SavedQueryBinding_EDITOR, viewerPolicy.Etag)
+
+	// EDITOR: writes content, but never deletes and never re-files.
+	asGrantee(func() {
+		updated, err := ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+			SavedQuery: &v1pb.SavedQuery{Name: savedQuery.Name, Content: []byte("SELECT 2;")},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"content"}},
+		}))
+		a.NoError(err)
+		a.True(bytes.Equal([]byte("SELECT 2;"), updated.Msg.Content))
+
+		_, err = ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+			SavedQuery: &v1pb.SavedQuery{Name: savedQuery.Name, Folder: "grantee"},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
+		}))
+		a.Error(err)
+		a.Equal(connect.CodePermissionDenied, connect.CodeOf(err), "filing is organization, not editing")
+
+		_, err = ctl.savedQueryServiceClient.DeleteSavedQuery(ctx, connect.NewRequest(&v1pb.DeleteSavedQueryRequest{
+			Name: savedQuery.Name,
+		}))
+		a.Error(err)
+		a.Equal(connect.CodePermissionDenied, connect.CodeOf(err), "sharing for editing must not cost the owner the saved query")
+	})
+
+	// Revoking drops the grantee back to invisible.
+	_, err = ctl.savedQueryServiceClient.SetSavedQueryPolicy(ctx, connect.NewRequest(&v1pb.SetSavedQueryPolicyRequest{
+		Resource: savedQuery.Name,
+		Policy:   &v1pb.SavedQueryPolicy{Etag: editorPolicy.Etag},
+	}))
+	a.NoError(err)
+
+	asGrantee(func() {
+		_, err := ctl.savedQueryServiceClient.GetSavedQuery(ctx, connect.NewRequest(&v1pb.GetSavedQueryRequest{
+			Name: savedQuery.Name,
+		}))
+		a.Error(err)
+		a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+	})
 }

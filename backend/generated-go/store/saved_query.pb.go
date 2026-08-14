@@ -21,6 +21,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type SavedQueryBinding_Level int32
+
+const (
+	SavedQueryBinding_LEVEL_UNSPECIFIED SavedQueryBinding_Level = 0
+	SavedQueryBinding_VIEWER            SavedQueryBinding_Level = 1
+	SavedQueryBinding_EDITOR            SavedQueryBinding_Level = 2
+)
+
+// Enum value maps for SavedQueryBinding_Level.
+var (
+	SavedQueryBinding_Level_name = map[int32]string{
+		0: "LEVEL_UNSPECIFIED",
+		1: "VIEWER",
+		2: "EDITOR",
+	}
+	SavedQueryBinding_Level_value = map[string]int32{
+		"LEVEL_UNSPECIFIED": 0,
+		"VIEWER":            1,
+		"EDITOR":            2,
+	}
+)
+
+func (x SavedQueryBinding_Level) Enum() *SavedQueryBinding_Level {
+	p := new(SavedQueryBinding_Level)
+	*p = x
+	return p
+}
+
+func (x SavedQueryBinding_Level) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SavedQueryBinding_Level) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_saved_query_proto_enumTypes[0].Descriptor()
+}
+
+func (SavedQueryBinding_Level) Type() protoreflect.EnumType {
+	return &file_store_saved_query_proto_enumTypes[0]
+}
+
+func (x SavedQueryBinding_Level) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SavedQueryBinding_Level.Descriptor instead.
+func (SavedQueryBinding_Level) EnumDescriptor() ([]byte, []int) {
+	return file_store_saved_query_proto_rawDescGZIP(), []int{1, 0}
+}
+
 type SavedQueryPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The connected database, stored as its canonical resource name:
@@ -71,13 +120,81 @@ func (x *SavedQueryPayload) GetDatabase() string {
 	return ""
 }
 
+// One grant on a saved query. Stored in saved_query.bindings, which holds a
+// protojson array of these messages at the jsonb root rather than a wrapper
+// object, so the `@>` containment probes the access queries run hit the GIN
+// index directly.
+type SavedQueryBinding struct {
+	state protoimpl.MessageState  `protogen:"open.v1"`
+	Level SavedQueryBinding_Level `protobuf:"varint,1,opt,name=level,proto3,enum=bytebase.store.SavedQueryBinding_Level" json:"level,omitempty"`
+	// Principals, in the v1 IamPolicy binding format, restricted to
+	// "user:{email}" and "group:{email}". Groups are stored as references and
+	// never expanded.
+	Members       []string `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SavedQueryBinding) Reset() {
+	*x = SavedQueryBinding{}
+	mi := &file_store_saved_query_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SavedQueryBinding) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SavedQueryBinding) ProtoMessage() {}
+
+func (x *SavedQueryBinding) ProtoReflect() protoreflect.Message {
+	mi := &file_store_saved_query_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SavedQueryBinding.ProtoReflect.Descriptor instead.
+func (*SavedQueryBinding) Descriptor() ([]byte, []int) {
+	return file_store_saved_query_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *SavedQueryBinding) GetLevel() SavedQueryBinding_Level {
+	if x != nil {
+		return x.Level
+	}
+	return SavedQueryBinding_LEVEL_UNSPECIFIED
+}
+
+func (x *SavedQueryBinding) GetMembers() []string {
+	if x != nil {
+		return x.Members
+	}
+	return nil
+}
+
 var File_store_saved_query_proto protoreflect.FileDescriptor
 
 const file_store_saved_query_proto_rawDesc = "" +
 	"\n" +
 	"\x17store/saved_query.proto\x12\x0ebytebase.store\"/\n" +
 	"\x11SavedQueryPayload\x12\x1a\n" +
-	"\bdatabase\x18\x01 \x01(\tR\bdatabaseB\x92\x01\n" +
+	"\bdatabase\x18\x01 \x01(\tR\bdatabase\"\xa4\x01\n" +
+	"\x11SavedQueryBinding\x12=\n" +
+	"\x05level\x18\x01 \x01(\x0e2'.bytebase.store.SavedQueryBinding.LevelR\x05level\x12\x18\n" +
+	"\amembers\x18\x02 \x03(\tR\amembers\"6\n" +
+	"\x05Level\x12\x15\n" +
+	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\n" +
+	"\n" +
+	"\x06VIEWER\x10\x01\x12\n" +
+	"\n" +
+	"\x06EDITOR\x10\x02B\x92\x01\n" +
 	"\x12com.bytebase.storeB\x0fSavedQueryProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -92,16 +209,20 @@ func file_store_saved_query_proto_rawDescGZIP() []byte {
 	return file_store_saved_query_proto_rawDescData
 }
 
-var file_store_saved_query_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_store_saved_query_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_store_saved_query_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_saved_query_proto_goTypes = []any{
-	(*SavedQueryPayload)(nil), // 0: bytebase.store.SavedQueryPayload
+	(SavedQueryBinding_Level)(0), // 0: bytebase.store.SavedQueryBinding.Level
+	(*SavedQueryPayload)(nil),    // 1: bytebase.store.SavedQueryPayload
+	(*SavedQueryBinding)(nil),    // 2: bytebase.store.SavedQueryBinding
 }
 var file_store_saved_query_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: bytebase.store.SavedQueryBinding.level:type_name -> bytebase.store.SavedQueryBinding.Level
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_store_saved_query_proto_init() }
@@ -114,13 +235,14 @@ func file_store_saved_query_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_saved_query_proto_rawDesc), len(file_store_saved_query_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   1,
+			NumEnums:      1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_saved_query_proto_goTypes,
 		DependencyIndexes: file_store_saved_query_proto_depIdxs,
+		EnumInfos:         file_store_saved_query_proto_enumTypes,
 		MessageInfos:      file_store_saved_query_proto_msgTypes,
 	}.Build()
 	File_store_saved_query_proto = out.File

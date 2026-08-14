@@ -63,7 +63,11 @@ import type { Release } from "@/types/proto-es/v1/release_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
-import type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";
+import type {
+  SavedQuery,
+  SavedQueryBinding_Level,
+  SavedQueryPolicy,
+} from "@/types/proto-es/v1/saved_query_service_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type {
   DataClassificationSetting_DataClassificationConfig,
@@ -659,6 +663,36 @@ export type SavedQuerySlice = {
    */
   patchSavedQueryFolderInCache: (names: string[], folder: string) => void;
   savedQueryList: () => SavedQuery[];
+  /**
+   * The calling user's grant level per saved query, keyed by resource name.
+   * Nothing caller-relative rides on the SavedQuery resource, so this is
+   * resolved from the policy when a saved query somebody else created is
+   * fetched, and read back synchronously by the readable/writable predicates.
+   */
+  savedQueryLevelByName: Record<string, SavedQueryBinding_Level>;
+  /**
+   * Resolve and cache the caller's level on a saved query by reading its
+   * policy and matching the bindings against the caller's own principals
+   * (themselves plus their groups), the same set the server uses.
+   */
+  fetchSavedQueryLevel: (
+    savedQuery: SavedQuery
+  ) => Promise<SavedQueryBinding_Level>;
+  /**
+   * Read a saved query's grants. Anyone who can read the saved query can read
+   * its policy, so this is also how a grantee learns whether they may edit —
+   * nothing caller-relative rides on the resource itself.
+   */
+  getSavedQueryPolicy: (name: string) => Promise<SavedQueryPolicy>;
+  /**
+   * Replace a saved query's grants. `policy.etag` must carry the etag from the
+   * last read; the server aborts on a mismatch rather than clobbering a
+   * concurrent revocation.
+   */
+  setSavedQueryPolicy: (
+    name: string,
+    policy: SavedQueryPolicy
+  ) => Promise<SavedQueryPolicy>;
 };
 
 export type InstanceRoleSlice = {

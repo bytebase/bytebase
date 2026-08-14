@@ -373,6 +373,11 @@ CREATE TABLE saved_query (
     -- Stored as SavedQueryPayload (proto/store/store/saved_query.proto); the
     -- connected database is a soft reference kept as its canonical name.
     payload jsonb NOT NULL DEFAULT '{}',
+    -- Per-object grants: a protojson array of SavedQueryBinding at the jsonb
+    -- root, e.g. [{"level":"EDITOR","members":["group:eng@corp.com"]}]. The
+    -- array must sit at the root so the access queries' `@>` probes use the
+    -- GIN index below. Empty means private to the creator.
+    bindings jsonb NOT NULL DEFAULT '[]',
     PRIMARY KEY (resource_id)
 );
 
@@ -382,6 +387,11 @@ CREATE TABLE saved_query (
 -- on its own.
 CREATE INDEX idx_saved_query_project_creator_folder ON saved_query(project, creator, folder);
 CREATE INDEX idx_saved_query_creator_project ON saved_query(creator, project);
+
+-- "Shared with me" probes bindings once per principal in the caller's set and
+-- BitmapOrs the results. jsonb_path_ops is smaller and faster than the default
+-- opclass for the containment these queries do.
+CREATE INDEX idx_saved_query_bindings ON saved_query USING gin (bindings jsonb_path_ops);
 
 -- saved_query_star stores per-user stars: row existence is the star. The FK
 -- cascade is a race backstop only — code paths delete star rows explicitly

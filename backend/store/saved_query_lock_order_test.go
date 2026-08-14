@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -389,4 +390,92 @@ func TestCreateSavedQueryRejectsInactiveProject(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotEmpty(t, created.ResourceID)
+}
+
+// SetSavedQueryBindings updates one existing row and touches no child table, so
+// it cannot form a wait-for cycle with the purge by itself. What it can do is
+// race project deletion, and both orders must reach a terminal outcome: either
+// the policy lands and the purge then removes the row, or the purge wins and the
+// write reports the saved query as gone rather than failing on the FK.
+func TestSavedQuerySetBindingsAndDeleteProjectLockOrder(t *testing.T) {
+	const seedSQL = `
+		INSERT INTO service_account (name, email, workspace, service_key_hash, project)
+			VALUES ('service account', 'sa@example.com', 'default', 'unused', 'project-a');
+		INSERT INTO saved_query (resource_id, creator, project, name, statement)
+			VALUES ('saved-query-a', 'sa@example.com', 'project-a', 'Saved Query A', '');
+		INSERT INTO saved_query_star (saved_query, principal) VALUES
+			('saved-query-a', 'user-1@example.com');
+	`
+
+	bindings := []*storepb.SavedQueryBinding{{
+		Level:   storepb.SavedQueryBinding_VIEWER,
+		Members: []string{"user:grantee@example.com"},
+	}}
+
+	requireGone := func(t *testing.T, fixture *projectDeletionLockOrderFixture) {
+		t.Helper()
+		var count int
+		require.NoError(t, fixture.db.QueryRowContext(fixture.ctx,
+			"SELECT COUNT(*) FROM saved_query WHERE resource_id = 'saved-query-a'").Scan(&count))
+		require.Zero(t, count, "the purge owns the terminal state in both orders")
+		require.Zero(t, savedQueryStarCount(t, fixture))
+	}
+
+	emptyEtag, err := store.SavedQueryPolicyEtag(nil)
+	require.NoError(t, err)
+
+	t.Run("purge first", func(t *testing.T) {
+		fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+		const barrierID = 9951
+		barrier := newMaintenanceLockBarrier(fixture.ctx, t, fixture.db, barrierID)
+		// The barrier has to fire where the purge actually holds the
+		// saved_query row: pausing it after the star delete leaves that row
+		// unlocked, so the policy write would sail past and prove nothing.
+		installMaintenanceLockBarrier(t, fixture.db, barrierID,
+			"AFTER DELETE ON saved_query FOR EACH ROW")
+
+		purgeResult := make(chan error, 1)
+		go func() { purgeResult <- fixture.store.DeleteProject(fixture.ctx, "default", "project-a") }()
+		waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)
+		purgePID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
+
+		setResult := make(chan error, 1)
+		go func() {
+			_, err := fixture.store.SetSavedQueryBindings(fixture.ctx, "saved-query-a", bindings, emptyEtag)
+			setResult <- err
+		}()
+		waitForBackendBlockedByPID(fixture.ctx, t, fixture.db, purgePID)
+		barrier.release(t)
+
+		requireMaintenanceResult(t, purgeResult)
+		// The row is gone by the time the lock is granted, which the store
+		// reports as "not applied" (a nil error) rather than an FK failure.
+		requireMaintenanceResult(t, setResult)
+		requireGone(t, fixture)
+	})
+
+	t.Run("policy write first", func(t *testing.T) {
+		fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+		const barrierID = 9952
+		barrier := newMaintenanceLockBarrier(fixture.ctx, t, fixture.db, barrierID)
+		installMaintenanceLockBarrier(t, fixture.db, barrierID,
+			"AFTER UPDATE OF bindings ON saved_query FOR EACH ROW")
+
+		setResult := make(chan error, 1)
+		go func() {
+			_, err := fixture.store.SetSavedQueryBindings(fixture.ctx, "saved-query-a", bindings, emptyEtag)
+			setResult <- err
+		}()
+		waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)
+		setPID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
+
+		purgeResult := make(chan error, 1)
+		go func() { purgeResult <- fixture.store.DeleteProject(fixture.ctx, "default", "project-a") }()
+		waitForBackendBlockedByPID(fixture.ctx, t, fixture.db, setPID)
+		barrier.release(t)
+
+		requireMaintenanceResult(t, setResult)
+		requireMaintenanceResult(t, purgeResult)
+		requireGone(t, fixture)
+	})
 }

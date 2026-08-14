@@ -687,6 +687,18 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	if err := updateReference("UPDATE saved_query SET creator = $1 WHERE creator = $2"); err != nil {
 		return nil, err
 	}
+	// Saved-query grants name their principals by email as well, so a rename
+	// has to rewrite the members inside the bindings jsonb in the same
+	// transaction — otherwise every grant made to this address silently
+	// orphans. The quotes make the match exact: members are whole JSON
+	// strings, so "user:a@corp.com" cannot match inside "user:xa@corp.com".
+	if err := updateReference(`
+		UPDATE saved_query
+		SET bindings = replace(bindings::text, '"user:' || $2 || '"', '"user:' || $1 || '"')::jsonb
+		WHERE bindings::text LIKE '%"user:' || $2 || '"%'
+	`); err != nil {
+		return nil, err
+	}
 	if err := updateReference("UPDATE issue_comment SET creator = $1 WHERE creator = $2"); err != nil {
 		return nil, err
 	}

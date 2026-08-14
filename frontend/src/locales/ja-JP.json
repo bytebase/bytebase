@@ -3038,6 +3038,16 @@
     "rows-affected": "行に影響",
     "rows-upper-limit": "クエリ結果の数が上限に達しました",
     "save-sheet": "クエリを保存",
+    "saved-query-share": {
+      "editor": "編集者",
+      "granted-at-other-level": "他のレベルで {{count}} 件付与されています。",
+      "not-shared": "誰にも共有されていません。",
+      "only-users-and-groups": "アクセス権を付与できるのはユーザーとグループのみです。",
+      "policy-changed": "共有設定が別の場所で変更されました。最新の状態を再読み込みしました。",
+      "private-hint": "この保存済みクエリを開けるのは、あなたとワークスペース管理者のみです。",
+      "shared-with": "共有先",
+      "viewer": "閲覧者"
+    },
     "scroll-to-bottom": "末尾へスクロール",
     "scroll-to-top": "先頭へスクロール",
     "search-history-by-statement": "ステートメントで検索",

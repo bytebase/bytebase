@@ -3038,6 +3038,16 @@
     "rows-affected": "dòng bị ảnh hưởng",
     "rows-upper-limit": "đã đạt đến giới hạn kết quả truy vấn",
     "save-sheet": "Lưu truy vấn",
+    "saved-query-share": {
+      "editor": "Người chỉnh sửa",
+      "granted-at-other-level": "Còn {{count}} mục được cấp ở mức khác.",
+      "not-shared": "Chưa chia sẻ với ai.",
+      "only-users-and-groups": "Chỉ có thể cấp quyền cho người dùng và nhóm.",
+      "policy-changed": "Cài đặt chia sẻ đã thay đổi ở nơi khác. Đã tải lại bản mới nhất.",
+      "private-hint": "Chỉ bạn và quản trị viên workspace có thể mở truy vấn đã lưu này.",
+      "shared-with": "Được chia sẻ với",
+      "viewer": "Người xem"
+    },
     "scroll-to-bottom": "Cuộn xuống cuối",
     "scroll-to-top": "Cuộn lên đầu",
     "search-history-by-statement": "Tìm kiếm theo câu lệnh",

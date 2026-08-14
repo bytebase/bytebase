@@ -15,3 +15,24 @@ func (x *SavedQueryPayload) Equal(y *SavedQueryPayload) bool {
 	}
 	return true
 }
+
+func (x *SavedQueryBinding) Equal(y *SavedQueryBinding) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Level != y.Level {
+		return false
+	}
+	if len(x.Members) != len(y.Members) {
+		return false
+	}
+	for i := 0; i < len(x.Members); i++ {
+		if x.Members[i] != y.Members[i] {
+			return false
+		}
+	}
+	return true
+}

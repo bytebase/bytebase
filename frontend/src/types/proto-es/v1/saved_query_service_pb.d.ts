@@ -2,7 +2,7 @@
 // @generated from file v1/saved_query_service.proto (package bytebase.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
 
@@ -16,7 +16,7 @@ export declare const file_v1_saved_query_service: GenFile;
  */
 export declare type CreateSavedQueryRequest = Message<"bytebase.v1.CreateSavedQueryRequest"> & {
   /**
-   * The parent resource where this saved query will be created.
+   * The project to create the saved query in.
    * Format: projects/{project}
    *
    * @generated from field: string parent = 1;
@@ -42,7 +42,6 @@ export declare const CreateSavedQueryRequestSchema: GenMessage<CreateSavedQueryR
  */
 export declare type GetSavedQueryRequest = Message<"bytebase.v1.GetSavedQueryRequest"> & {
   /**
-   * The name of the saved query to retrieve.
    * Format: projects/{project}/savedQueries/{savedQuery}
    *
    * @generated from field: string name = 1;
@@ -61,45 +60,39 @@ export declare const GetSavedQueryRequestSchema: GenMessage<GetSavedQueryRequest
  */
 export declare type ListSavedQueriesRequest = Message<"bytebase.v1.ListSavedQueriesRequest"> & {
   /**
-   * The parent resource of the saved queries.
+   * The project to list saved queries in, or "projects/-" for every project.
    * Format: projects/{project}
-   * Use "projects/-" to list saved queries across all projects.
    *
    * @generated from field: string parent = 1;
    */
   parent: string;
 
   /**
-   * To filter the list result.
-   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   * Filter the result, in CEL. See https://github.com/google/cel-spec
    *
-   * Supported filter:
-   * - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
+   * Supported fields:
+   * - creator: the creator in "users/{email}" format. Supports "==" and "!=".
    *
    * For example:
-   * creator == "users/{email}"
-   * creator != "users/{email}"
+   * creator == "users/alice@example.com"
    *
    * @generated from field: string filter = 2;
    */
   filter: string;
 
   /**
-   * The maximum number of saved queries to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 10 saved queries will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   * The maximum number of saved queries to return. The service may return
+   * fewer. Defaults to 10; values above 1000 are coerced to 1000.
    *
    * @generated from field: int32 page_size = 3;
    */
   pageSize: number;
 
   /**
-   * A page token, received from a previous `ListSavedQueries` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `ListSavedQueries` must match
-   * the call that provided the page token.
+   * A page token from a previous ListSavedQueries call. Every other parameter
+   * must match the call that returned it: the token carries the offset reached
+   * so far, so changing `filter` or `page_size` mid-pagination reinterprets
+   * that offset against a different result set.
    *
    * @generated from field: string page_token = 4;
    */
@@ -117,16 +110,13 @@ export declare const ListSavedQueriesRequestSchema: GenMessage<ListSavedQueriesR
  */
 export declare type ListSavedQueriesResponse = Message<"bytebase.v1.ListSavedQueriesResponse"> & {
   /**
-   * The saved queries from the specified parent.
-   *
    * @generated from field: repeated bytebase.v1.SavedQuery saved_queries = 1;
    */
   savedQueries: SavedQuery[];
 
   /**
-   * A token to retrieve next page of saved queries.
-   * Pass this value in the page_token field in the subsequent call to
-   * `ListSavedQueries` method to retrieve the next page of saved queries.
+   * Pass to the next ListSavedQueries call to fetch the following page. Empty
+   * on the last page.
    *
    * @generated from field: string next_page_token = 2;
    */
@@ -144,7 +134,6 @@ export declare const ListSavedQueriesResponseSchema: GenMessage<ListSavedQueries
  */
 export declare type SearchSavedQueryFoldersRequest = Message<"bytebase.v1.SearchSavedQueryFoldersRequest"> & {
   /**
-   * The parent resource whose saved query folders are searched.
    * Format: projects/{project}
    *
    * @generated from field: string parent = 1;
@@ -152,15 +141,9 @@ export declare type SearchSavedQueryFoldersRequest = Message<"bytebase.v1.Search
   parent: string;
 
   /**
-   * To filter the folders by the saved queries they hold. Takes the same
-   * fields and syntax as `SearchSavedQueries.filter`, except `title`. A
-   * folder is returned when at least one saved query the caller can read
-   * matches, so the caller-scoping is the same as SearchSavedQueries: your
-   * own saved queries, plus everyone's for the admin backstop.
-   *
-   * For example, to split a folder tree into your own and everyone else's:
-   * creator == "users/{email}"
-   * creator != "users/{email}"
+   * Filter folders by the saved queries they hold. Takes the same fields and
+   * syntax as SearchSavedQueries.filter, except `title`. A folder is returned
+   * when at least one saved query the caller can read matches.
    *
    * @generated from field: string filter = 2;
    */
@@ -178,9 +161,8 @@ export declare const SearchSavedQueryFoldersRequestSchema: GenMessage<SearchSave
  */
 export declare type SearchSavedQueryFoldersResponse = Message<"bytebase.v1.SearchSavedQueryFoldersResponse"> & {
   /**
-   * The caller's folder paths, including every ancestor prefix, sorted.
-   * A folder is a path on saved queries ("a/b/c"), so empty folders cannot
-   * exist.
+   * Folder paths, every ancestor prefix included, sorted. A folder is a path
+   * on saved queries ("a/b/c"), so empty folders cannot exist.
    *
    * @generated from field: repeated string folders = 1;
    */
@@ -198,9 +180,7 @@ export declare const SearchSavedQueryFoldersResponseSchema: GenMessage<SearchSav
  */
 export declare type UpdateSavedQueryRequest = Message<"bytebase.v1.UpdateSavedQueryRequest"> & {
   /**
-   * The saved query to update.
-   *
-   * The saved query's `name` field is used to identify the saved query to update.
+   * `saved_query.name` identifies the saved query to update.
    * Format: projects/{project}/savedQueries/{savedQuery}
    *
    * @generated from field: bytebase.v1.SavedQuery saved_query = 1;
@@ -208,14 +188,8 @@ export declare type UpdateSavedQueryRequest = Message<"bytebase.v1.UpdateSavedQu
   savedQuery?: SavedQuery | undefined;
 
   /**
-   * The list of fields to be updated.
-   * Fields are specified relative to the saved query.
-   * (e.g., `title`, `content`; *not* `saved_query.title` or `saved_query.content`)
-   * Only support update the following fields for now:
-   * - `title`
-   * - `content`
-   * - `database`
-   * - `folder`
+   * Fields to update, relative to the saved query (`title`, not
+   * `saved_query.title`). Supported: `title`, `content`, `database`, `folder`.
    *
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
@@ -233,7 +207,6 @@ export declare const UpdateSavedQueryRequestSchema: GenMessage<UpdateSavedQueryR
  */
 export declare type UpdateSavedQueryStarRequest = Message<"bytebase.v1.UpdateSavedQueryStarRequest"> & {
   /**
-   * The name of the saved query to star or unstar.
    * Format: projects/{project}/savedQueries/{savedQuery}
    *
    * @generated from field: string name = 1;
@@ -259,7 +232,6 @@ export declare const UpdateSavedQueryStarRequestSchema: GenMessage<UpdateSavedQu
  */
 export declare type BatchUpdateSavedQueriesRequest = Message<"bytebase.v1.BatchUpdateSavedQueriesRequest"> & {
   /**
-   * The parent resource whose saved queries are updated.
    * Format: projects/{project}
    *
    * @generated from field: string parent = 1;
@@ -267,30 +239,28 @@ export declare type BatchUpdateSavedQueriesRequest = Message<"bytebase.v1.BatchU
   parent: string;
 
   /**
-   * To filter the batch update target.
-   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   * Select the saved queries to update, in CEL. See
+   * https://github.com/google/cel-spec
    *
-   * Supported filter:
-   * - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
-   * - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
-   * - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-   * - folder: the saved query folder path, support exact "==" operator.
+   * Supported fields:
+   * - name: the saved query name. Supports "==" and "in [...]".
+   * - creator: the creator in "users/{email}" format. Supports "==" and "!=".
+   * - starred: whether the caller starred it. Supports "==".
+   * - folder: the exact folder path. Supports "==".
    *
    * @generated from field: string filter = 2;
    */
   filter: string;
 
   /**
-   * The fields to apply to every matched saved query.
+   * The values to apply to every matched saved query.
    *
    * @generated from field: bytebase.v1.SavedQuery saved_query = 3;
    */
   savedQuery?: SavedQuery | undefined;
 
   /**
-   * The list of fields to be updated.
-   * Only support update the following fields for now:
-   * - `folder`
+   * Fields to update. Supported: `folder`.
    *
    * @generated from field: google.protobuf.FieldMask update_mask = 4;
    */
@@ -308,7 +278,8 @@ export declare const BatchUpdateSavedQueriesRequestSchema: GenMessage<BatchUpdat
  */
 export declare type BatchUpdateSavedQueriesResponse = Message<"bytebase.v1.BatchUpdateSavedQueriesResponse"> & {
   /**
-   * The number of saved queries updated.
+   * How many saved queries were updated, which may be fewer than the filter
+   * matched.
    *
    * @generated from field: int32 updated_count = 1;
    */
@@ -322,11 +293,150 @@ export declare type BatchUpdateSavedQueriesResponse = Message<"bytebase.v1.Batch
 export declare const BatchUpdateSavedQueriesResponseSchema: GenMessage<BatchUpdateSavedQueriesResponse>;
 
 /**
+ * @generated from message bytebase.v1.GetSavedQueryPolicyRequest
+ */
+export declare type GetSavedQueryPolicyRequest = Message<"bytebase.v1.GetSavedQueryPolicyRequest"> & {
+  /**
+   * Format: projects/{project}/savedQueries/{savedQuery}
+   *
+   * @generated from field: string resource = 1;
+   */
+  resource: string;
+};
+
+/**
+ * Describes the message bytebase.v1.GetSavedQueryPolicyRequest.
+ * Use `create(GetSavedQueryPolicyRequestSchema)` to create a new message.
+ */
+export declare const GetSavedQueryPolicyRequestSchema: GenMessage<GetSavedQueryPolicyRequest>;
+
+/**
+ * @generated from message bytebase.v1.SetSavedQueryPolicyRequest
+ */
+export declare type SetSavedQueryPolicyRequest = Message<"bytebase.v1.SetSavedQueryPolicyRequest"> & {
+  /**
+   * Format: projects/{project}/savedQueries/{savedQuery}
+   *
+   * @generated from field: string resource = 1;
+   */
+  resource: string;
+
+  /**
+   * Replaces the stored policy in full: a member absent from it loses their
+   * grant, and a policy with no bindings makes the saved query private again.
+   *
+   * @generated from field: bytebase.v1.SavedQueryPolicy policy = 2;
+   */
+  policy?: SavedQueryPolicy | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.SetSavedQueryPolicyRequest.
+ * Use `create(SetSavedQueryPolicyRequestSchema)` to create a new message.
+ */
+export declare const SetSavedQueryPolicyRequestSchema: GenMessage<SetSavedQueryPolicyRequest>;
+
+/**
+ * Who a saved query is shared with, and at what level. A saved query with no
+ * bindings is private. The creator is never a binding member: ownership comes
+ * from creating the saved query and cannot be granted away.
+ *
+ * @generated from message bytebase.v1.SavedQueryPolicy
+ */
+export declare type SavedQueryPolicy = Message<"bytebase.v1.SavedQueryPolicy"> & {
+  /**
+   * At most one binding per level. A member listed under two levels is
+   * rejected rather than resolved to the higher one.
+   *
+   * @generated from field: repeated bytebase.v1.SavedQueryBinding bindings = 1;
+   */
+  bindings: SavedQueryBinding[];
+
+  /**
+   * The etag of the policy as read. SetSavedQueryPolicy requires it and fails
+   * with ABORTED when it no longer matches.
+   *
+   * @generated from field: string etag = 2;
+   */
+  etag: string;
+};
+
+/**
+ * Describes the message bytebase.v1.SavedQueryPolicy.
+ * Use `create(SavedQueryPolicySchema)` to create a new message.
+ */
+export declare const SavedQueryPolicySchema: GenMessage<SavedQueryPolicy>;
+
+/**
+ * Binds members to one access level on one saved query. Not bytebase.v1.Binding
+ * because per-object access here is a capability, not a role.
+ *
+ * @generated from message bytebase.v1.SavedQueryBinding
+ */
+export declare type SavedQueryBinding = Message<"bytebase.v1.SavedQueryBinding"> & {
+  /**
+   * @generated from field: bytebase.v1.SavedQueryBinding.Level level = 1;
+   */
+  level: SavedQueryBinding_Level;
+
+  /**
+   * The principals granted `level`, in bytebase.v1.Binding.members format,
+   * restricted to "user:{email}" and "group:{email}". allUsers,
+   * serviceAccount:, and workloadIdentity: are rejected: a service account can
+   * own and run its own saved queries, but is never a grantee.
+   *
+   * A group is stored as a reference and never expanded, so its membership
+   * stays live and a large group costs no more than a small one.
+   *
+   * @generated from field: repeated string members = 2;
+   */
+  members: string[];
+};
+
+/**
+ * Describes the message bytebase.v1.SavedQueryBinding.
+ * Use `create(SavedQueryBindingSchema)` to create a new message.
+ */
+export declare const SavedQueryBindingSchema: GenMessage<SavedQueryBinding>;
+
+/**
+ * Nested because bytebase.v1 already defines a package-scoped EDITOR
+ * (DatabaseChangeMode), and enum values live in the enclosing scope.
+ *
+ * @generated from enum bytebase.v1.SavedQueryBinding.Level
+ */
+export enum SavedQueryBinding_Level {
+  /**
+   * @generated from enum value: LEVEL_UNSPECIFIED = 0;
+   */
+  LEVEL_UNSPECIFIED = 0,
+
+  /**
+   * Open and read the saved query.
+   *
+   * @generated from enum value: VIEWER = 1;
+   */
+  VIEWER = 1,
+
+  /**
+   * VIEWER, plus write the title, content, and connected database. Sharing
+   * and deletion stay with the creator and admins.
+   *
+   * @generated from enum value: EDITOR = 2;
+   */
+  EDITOR = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.SavedQueryBinding.Level.
+ */
+export declare const SavedQueryBinding_LevelSchema: GenEnum<SavedQueryBinding_Level>;
+
+/**
  * @generated from message bytebase.v1.DeleteSavedQueryRequest
  */
 export declare type DeleteSavedQueryRequest = Message<"bytebase.v1.DeleteSavedQueryRequest"> & {
   /**
-   * The name of the saved query to delete.
    * Format: projects/{project}/savedQueries/{savedQuery}
    *
    * @generated from field: string name = 1;
@@ -345,7 +455,6 @@ export declare const DeleteSavedQueryRequestSchema: GenMessage<DeleteSavedQueryR
  */
 export declare type SearchSavedQueriesRequest = Message<"bytebase.v1.SearchSavedQueriesRequest"> & {
   /**
-   * The parent resource of the saved queries.
    * Format: projects/{project}
    *
    * @generated from field: string parent = 1;
@@ -353,22 +462,28 @@ export declare type SearchSavedQueriesRequest = Message<"bytebase.v1.SearchSaved
   parent: string;
 
   /**
-   * To filter the search result.
-   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   * Filter the result, in CEL. See https://github.com/google/cel-spec
    *
-   * Supported filter:
-   * - name: the saved query name in "projects/{project}/savedQueries/{savedQuery}" format, support "==" and "in [xx]" operator.
-   * - title: the saved query title, support "contains" operator.
-   * - creator: the saved query creator in "users/{email}" format, support "==" and "!=" operator.
-   * - starred: should be "true" or "false", filter starred/unstarred saved queries, support "==" operator.
-   * - folder: the saved query folder path, support "==" operator.
+   * Supported fields:
+   * - name: the saved query name. Supports "==" and "in [...]".
+   * - title: the title. Supports "contains".
+   * - creator: the creator in "users/{email}" format. Supports "==" and "!=".
+   * - shared: true selects only saved queries the caller reaches through a
+   *   binding, excluding their own and any seen through
+   *   bb.savedQueries.manage; false selects the rest. Supports "==".
+   * - starred: whether the caller starred it. Supports "==".
+   * - folder: the exact folder path. Supports "==".
+   *
+   * The SQL Editor's views are `creator == "users/{me}"` for My and
+   * `shared == true` for Shared. Prefer `shared` over `creator !=` for the
+   * latter: for an admin, `creator !=` also matches saved queries nobody
+   * shared with them.
    *
    * For example:
-   * creator == "users/{email}"
-   * title.contains("saved query title")
-   * creator != "users/{email}"
+   * creator == "users/alice@example.com"
+   * shared == true
    * starred == true
-   * starred == false
+   * title.contains("weekly report")
    * folder == "foo/bar"
    *
    * @generated from field: string filter = 2;
@@ -376,18 +491,19 @@ export declare type SearchSavedQueriesRequest = Message<"bytebase.v1.SearchSaved
   filter: string;
 
   /**
-   * The maximum number of saved queries to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 10 saved queries will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   * The maximum number of saved queries to return. The service may return
+   * fewer. Defaults to 10; values above 1000 are coerced to 1000.
    *
    * @generated from field: int32 page_size = 3;
    */
   pageSize: number;
 
   /**
-   * A page token, received from a previous `SearchSavedQueries` call.
-   * Provide this to retrieve the subsequent page.
+   * A page token from a previous SearchSavedQueries call. Every other
+   * parameter must match the call that returned it: the token carries the
+   * offset reached so far, so changing `filter` or `page_size` mid-pagination
+   * reinterprets that offset against a different result set and can skip or
+   * repeat rows.
    *
    * @generated from field: string page_token = 4;
    */
@@ -405,16 +521,13 @@ export declare const SearchSavedQueriesRequestSchema: GenMessage<SearchSavedQuer
  */
 export declare type SearchSavedQueriesResponse = Message<"bytebase.v1.SearchSavedQueriesResponse"> & {
   /**
-   * The saved queries that matched the search criteria.
-   *
    * @generated from field: repeated bytebase.v1.SavedQuery saved_queries = 1;
    */
   savedQueries: SavedQuery[];
 
   /**
-   * A token to retrieve next page of saved queries.
-   * Pass this value in the page_token field in the subsequent call to
-   * `SearchSavedQueries` method to retrieve the next page of saved queries.
+   * Pass to the next SearchSavedQueries call to fetch the following page.
+   * Empty on the last page.
    *
    * @generated from field: string next_page_token = 2;
    */
@@ -432,8 +545,7 @@ export declare const SearchSavedQueriesResponseSchema: GenMessage<SearchSavedQue
  */
 export declare type SavedQuery = Message<"bytebase.v1.SavedQuery"> & {
   /**
-   * The name of the saved query resource, generated by the server.
-   * Canonical parent is project.
+   * Server-generated.
    * Format: projects/{project}/savedQueries/{savedQuery}
    *
    * @generated from field: string name = 1;
@@ -441,7 +553,6 @@ export declare type SavedQuery = Message<"bytebase.v1.SavedQuery"> & {
   name: string;
 
   /**
-   * The project resource name.
    * Format: projects/{project}
    *
    * @generated from field: string project = 2;
@@ -449,9 +560,10 @@ export declare type SavedQuery = Message<"bytebase.v1.SavedQuery"> & {
   project: string;
 
   /**
-   * The database resource name.
+   * The connected database, which must belong to the saved query's own
+   * project. Empty when none is connected, or when the database no longer
+   * exists.
    * Format: instances/{instance}/databases/{database}
-   * If the database parent doesn't exist, the database field is empty.
    *
    * @generated from field: string database = 3;
    */
@@ -465,8 +577,7 @@ export declare type SavedQuery = Message<"bytebase.v1.SavedQuery"> & {
   title: string;
 
   /**
-   * The creator of the SavedQuery — the fixed owner; ownership does not
-   * transfer.
+   * The fixed owner. Ownership does not transfer.
    * Format: users/{email}
    *
    * @generated from field: string creator = 5;
@@ -474,46 +585,40 @@ export declare type SavedQuery = Message<"bytebase.v1.SavedQuery"> & {
   creator: string;
 
   /**
-   * The create time of the saved query.
-   *
    * @generated from field: google.protobuf.Timestamp create_time = 6;
    */
   createTime?: Timestamp | undefined;
 
   /**
-   * The last update time of the saved query.
-   *
    * @generated from field: google.protobuf.Timestamp update_time = 7;
    */
   updateTime?: Timestamp | undefined;
 
   /**
-   * The content of the saved query.
-   * By default, it will be cut off in SearchSavedQueries() method. If it doesn't match the `content_size`, you can
-   * use GetSavedQuery() request to retrieve the full content.
+   * The SQL text. SearchSavedQueries truncates it; when it is shorter than
+   * `content_size`, GetSavedQuery returns the whole thing.
    *
    * @generated from field: bytes content = 8;
    */
   content: Uint8Array;
 
   /**
-   * content_size is the full size of the content, may not match the size of the `content` field.
+   * The full size of the content, which may exceed the `content` returned.
    *
    * @generated from field: int64 content_size = 9;
    */
   contentSize: bigint;
 
   /**
-   * starred indicates whether the saved query is starred by the current authenticated user.
+   * Whether the calling user starred it.
    *
    * @generated from field: bool starred = 11;
    */
   starred: boolean;
 
   /**
-   * The folder path this saved query lives in, set by its creator (or an
-   * admin). Empty means unfiled. A saved query lives in exactly one folder;
-   * a folder is a path on saved queries, e.g. "a/b/c".
+   * The folder holding this saved query, set by its creator or an admin. A
+   * path like "a/b/c"; empty means unfiled.
    *
    * @generated from field: string folder = 13;
    */
@@ -529,18 +634,21 @@ export declare const SavedQuerySchema: GenMessage<SavedQuery>;
 /**
  * SavedQueryService manages saved queries for SQL Editor query development.
  *
- * A saved query is private to its creator; `bb.savedQueries.manage` is the
- * admin backstop that can reach any saved query in scope. Per-object
- * VIEWER/EDITOR grants arrive with the access-model redesign, which brings
- * its own policy shapes and the GetIamPolicy/SetIamPolicy pair that manages
- * them.
+ * A saved query is private to its creator until shared. Three things grant
+ * access to one: being its creator (the fixed owner), holding a VIEWER or
+ * EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop
+ * that reaches private saved queries too. Bindings are managed through the
+ * GetSavedQueryPolicy/SetSavedQueryPolicy pair.
+ *
+ * Two gates sit on top of that: bb.savedQueries.search gates discovery, and
+ * running a saved query needs the SQL Editor's own database permissions.
  *
  * @generated from service bytebase.v1.SavedQueryService
  */
 export declare const SavedQueryService: GenService<{
   /**
-   * Creates a personal saved query used in SQL Editor. The creator becomes
-   * the fixed owner.
+   * Create a saved query. The creator becomes its fixed owner, and the saved
+   * query starts private.
    * Permissions required: bb.savedQueries.create on the parent project
    *
    * @generated from rpc bytebase.v1.SavedQueryService.CreateSavedQuery
@@ -551,9 +659,9 @@ export declare const SavedQueryService: GenService<{
     output: typeof SavedQuerySchema;
   },
   /**
-   * Get a saved query by name. Returns NotFound for saved queries the
-   * caller cannot read.
-   * Permissions required: creator, or bb.savedQueries.manage in scope
+   * Get a saved query with its full content. An unreadable saved query returns
+   * NotFound rather than PermissionDenied, so it stays unprobeable by name.
+   * Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
    *
    * @generated from rpc bytebase.v1.SavedQueryService.GetSavedQuery
    */
@@ -563,11 +671,12 @@ export declare const SavedQueryService: GenService<{
     output: typeof SavedQuerySchema;
   },
   /**
-   * List saved queries: the grant-independent governance surface. Supports
-   * listing in a project, or across all projects by using `projects/-`, with
-   * whole statements rather than the previews Search returns — e.g. an
-   * offboarding review filtering by creator.
-   * Permissions required: bb.savedQueries.list
+   * List saved queries for auditing. Bindings are ignored: the permission
+   * alone reads every matched saved query's content, private ones included.
+   * Returns whole statements rather than Search's previews, and accepts
+   * "projects/-" to span every project.
+   * Permissions required: bb.savedQueries.list on the parent project, or
+   * workspace-wide when the parent is "projects/-"
    *
    * @generated from rpc bytebase.v1.SavedQueryService.ListSavedQueries
    */
@@ -577,9 +686,15 @@ export declare const SavedQueryService: GenService<{
     output: typeof ListSavedQueriesResponseSchema;
   },
   /**
-   * Search for saved queries in a project: the SQL Editor's hot list path,
-   * returning only rows the caller can read, with content previews.
-   * Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
+   * Search saved queries in one project: the SQL Editor's list path, returning
+   * content previews.
+   *
+   * Caller-scoped, always: the caller's own saved queries plus those a binding
+   * shares with them. bb.savedQueries.manage does not widen it — an admin
+   * reading everyone's saved queries uses ListSavedQueries, which is built for
+   * that. The permission here gates discovery only and grants access to
+   * nothing by itself.
+   * Permissions required: bb.savedQueries.search on the project
    *
    * @generated from rpc bytebase.v1.SavedQueryService.SearchSavedQueries
    */
@@ -589,12 +704,17 @@ export declare const SavedQueryService: GenService<{
     output: typeof SearchSavedQueriesResponseSchema;
   },
   /**
-   * Search the folder paths of the caller's saved queries in a project.
-   * Folders are a derived view over the `folder` field rather than a
-   * resource collection, so this is a custom method on savedQueries and
-   * shares SearchSavedQueries' caller-scoped semantics — not the
-   * cross-creator reach of ListSavedQueries.
-   * Permissions required: bb.savedQueries.search or bb.savedQueries.manage on the project
+   * Search the folder paths holding saved queries the caller can read. Folders
+   * are a derived view over the `folder` field rather than a resource
+   * collection, so this is a custom method, caller-scoped like
+   * SearchSavedQueries.
+   *
+   * A path is returned when at least one readable saved query sits in it —
+   * including one somebody else filed and shared, since a client seeds its
+   * folder tree from here and cannot expand into a folder it never learns
+   * about. Use the filter to split your own folders (`creator == "users/me"`)
+   * from the ones reaching you through a grant (`shared == true`).
+   * Permissions required: bb.savedQueries.search on the project
    *
    * @generated from rpc bytebase.v1.SavedQueryService.SearchSavedQueryFolders
    */
@@ -604,10 +724,12 @@ export declare const SavedQueryService: GenService<{
     output: typeof SearchSavedQueryFoldersResponseSchema;
   },
   /**
-   * Update a saved query. `title`, `content`, and `database` require write
-   * access; `folder` re-files the saved query and is creator/admin only.
-   * Returns NotFound for saved queries the caller cannot read.
-   * Permissions required: creator, or bb.savedQueries.manage in scope
+   * Update a saved query. `title`, `content`, and `database` need write
+   * access; `folder` is creator/admin only, because filing is organization
+   * rather than editing. `database` must belong to the saved query's own
+   * project. An unreadable saved query returns NotFound; a VIEWER who cannot
+   * write gets PermissionDenied.
+   * Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage
    *
    * @generated from rpc bytebase.v1.SavedQueryService.UpdateSavedQuery
    */
@@ -617,12 +739,10 @@ export declare const SavedQueryService: GenService<{
     output: typeof SavedQuerySchema;
   },
   /**
-   * Star or unstar a saved query for the caller. A star is always the
-   * caller's own per-user marker — invisible to others and carrying no
-   * access. The only requirement is that the caller can read the saved
-   * query being starred (which also keeps private saved query names
-   * unprobeable).
-   * Permissions required: read access to the saved query
+   * Star or unstar a saved query for the caller. A star is a per-user marker:
+   * invisible to everyone else and granting nothing. Read access is the gate
+   * only so unreadable saved queries stay unprobeable.
+   * Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
    *
    * @generated from rpc bytebase.v1.SavedQueryService.UpdateSavedQueryStar
    */
@@ -632,10 +752,11 @@ export declare const SavedQueryService: GenService<{
     output: typeof SavedQuerySchema;
   },
   /**
-   * Batch re-file saved queries into a folder. The update mask supports
-   * `folder` only; only rows the caller may re-file are updated (their own,
-   * or any in scope for admins).
-   * Permissions required: creator, or bb.savedQueries.manage in scope
+   * Re-file saved queries into a folder in bulk; the update mask supports
+   * `folder` only. An EDITOR binding does not carry re-filing, so matched
+   * saved queries the caller cannot re-file are skipped rather than rejected,
+   * and the response counts what actually changed.
+   * Permissions required: creator, or bb.savedQueries.manage
    *
    * @generated from rpc bytebase.v1.SavedQueryService.BatchUpdateSavedQueries
    */
@@ -645,9 +766,10 @@ export declare const SavedQueryService: GenService<{
     output: typeof BatchUpdateSavedQueriesResponseSchema;
   },
   /**
-   * Delete a saved query. Only the creator (or an admin) can delete.
-   * Returns NotFound for saved queries the caller cannot read.
-   * Permissions required: creator, or bb.savedQueries.manage in scope
+   * Delete a saved query and every user's stars on it. An EDITOR binding never
+   * carries deletion. An unreadable saved query returns NotFound; a grantee
+   * who can read but not delete gets PermissionDenied.
+   * Permissions required: creator, or bb.savedQueries.manage
    *
    * @generated from rpc bytebase.v1.SavedQueryService.DeleteSavedQuery
    */
@@ -655,6 +777,34 @@ export declare const SavedQueryService: GenService<{
     methodKind: "unary";
     input: typeof DeleteSavedQueryRequestSchema;
     output: typeof EmptySchema;
+  },
+  /**
+   * Get a saved query's sharing policy: who it is shared with, at what level.
+   *
+   * Anyone who can read the saved query can read its policy, which is how a
+   * grantee learns whether they may edit it. Callers who cannot read the
+   * saved query get NotFound.
+   * Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
+   *
+   * @generated from rpc bytebase.v1.SavedQueryService.GetSavedQueryPolicy
+   */
+  getSavedQueryPolicy: {
+    methodKind: "unary";
+    input: typeof GetSavedQueryPolicyRequestSchema;
+    output: typeof SavedQueryPolicySchema;
+  },
+  /**
+   * Replace a saved query's sharing policy in full. `policy.etag` must match
+   * the stored policy or the call fails with ABORTED, so a stale write cannot
+   * reinstate a grant somebody just revoked.
+   * Permissions required: creator, or bb.savedQueries.manage
+   *
+   * @generated from rpc bytebase.v1.SavedQueryService.SetSavedQueryPolicy
+   */
+  setSavedQueryPolicy: {
+    methodKind: "unary";
+    input: typeof SetSavedQueryPolicyRequestSchema;
+    output: typeof SavedQueryPolicySchema;
   },
 }>;
 
