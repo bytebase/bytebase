@@ -5,7 +5,7 @@ import { SavedQueryBinding_Level } from "@/types/proto-es/v1/saved_query_service
 const mocks = vi.hoisted(() => ({
   currentUser: { email: "me@example.com" },
   level: 0 as SavedQueryBinding_Level,
-  hasProjectPermissionV2: vi.fn(
+  hasProjectWidePermissionV2: vi.fn(
     (_project: unknown, _permission: string): boolean => false
   ),
 }));
@@ -23,7 +23,7 @@ vi.mock("@/stores/app/savedQueryAccess", () => ({
 }));
 
 vi.mock("@/utils", () => ({
-  hasProjectPermissionV2: mocks.hasProjectPermissionV2,
+  hasProjectWidePermissionV2: mocks.hasProjectWidePermissionV2,
 }));
 
 import {
@@ -46,8 +46,8 @@ const theirs = sheet("users/other@example.com");
 describe("saved query access predicates", () => {
   beforeEach(() => {
     mocks.level = SavedQueryBinding_Level.LEVEL_UNSPECIFIED;
-    mocks.hasProjectPermissionV2.mockReset();
-    mocks.hasProjectPermissionV2.mockReturnValue(false);
+    mocks.hasProjectWidePermissionV2.mockReset();
+    mocks.hasProjectWidePermissionV2.mockReturnValue(false);
   });
 
   test("the creator holds every predicate", () => {
@@ -75,7 +75,7 @@ describe("saved query access predicates", () => {
 
   test("each predicate asks for exactly its project-level verb", () => {
     const byVerb = (verb: string) =>
-      mocks.hasProjectPermissionV2.mockImplementation(
+      mocks.hasProjectWidePermissionV2.mockImplementation(
         (_project: unknown, permission: string) => permission === verb
       );
 
@@ -91,7 +91,19 @@ describe("saved query access predicates", () => {
     expect(isSavedQueryDeletableV1(theirs)).toBe(true);
     expect(isSavedQueryShareableV1(theirs)).toBe(false);
 
+    // setIamPolicy alone is not enough: the write is compare-and-swap over
+    // the policy's etag, which only getIamPolicy can read.
     byVerb("bb.savedQueries.setIamPolicy");
+    expect(isSavedQueryShareableV1(theirs)).toBe(false);
+
+    byVerb("bb.savedQueries.getIamPolicy");
+    expect(isSavedQueryShareableV1(theirs)).toBe(false);
+
+    mocks.hasProjectWidePermissionV2.mockImplementation(
+      (_project: unknown, permission: string) =>
+        permission === "bb.savedQueries.setIamPolicy" ||
+        permission === "bb.savedQueries.getIamPolicy"
+    );
     expect(isSavedQueryShareableV1(theirs)).toBe(true);
     expect(isSavedQueryReadableV1(theirs)).toBe(false);
   });

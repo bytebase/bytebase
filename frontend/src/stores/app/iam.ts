@@ -18,7 +18,11 @@ import {
 } from "@/types/proto-es/v1/iam_policy_pb";
 import { ListRolesRequestSchema } from "@/types/proto-es/v1/role_service_pb";
 import { ALL_USERS_USER_EMAIL, groupBindingPrefix } from "@/types/v1/user";
-import { getUserListInBinding, isBindingPolicyExpired } from "@/utils/v1/iam";
+import {
+  bindingScopesResources,
+  getUserListInBinding,
+  isBindingPolicyExpired,
+} from "@/utils/v1/iam";
 import type { AppSliceCreator, IamSlice } from "./types";
 import { bindingMatchesUser } from "./utils";
 
@@ -389,6 +393,23 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
     ).map((binding) => binding.role);
     return [...workspaceLevelProjectRoles, ...projectRoles].some((roleName) =>
       roleByName.get(roleName)?.permissions.includes(permission)
+    );
+  },
+
+  // Mirrors the server's CheckProjectWidePermission: like
+  // hasProjectPermission, but a binding whose condition scopes resources
+  // confers nothing — a data-slice grant must not widen to project-wide
+  // surfaces such as the saved-query permissions.
+  hasProjectWidePermission: (project, permission) => {
+    const user = get().currentUser;
+    if (!user) return false;
+    const roleByName = new Map(get().roles.map((role) => [role.name, role]));
+    const bindings = [
+      ...bindingMatchesUser(get().workspacePolicy, user),
+      ...bindingMatchesUser(get().projectPoliciesByName[project.name], user),
+    ].filter((binding) => !bindingScopesResources(binding));
+    return bindings.some((binding) =>
+      roleByName.get(binding.role)?.permissions.includes(permission)
     );
   },
 });

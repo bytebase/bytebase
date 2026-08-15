@@ -374,6 +374,10 @@ export type IamSlice = {
   getWorkspaceRolesByName: (name: string) => Set<string>;
   hasWorkspacePermission: (permission: Permission) => boolean;
   hasProjectPermission: (project: Project, permission: Permission) => boolean;
+  hasProjectWidePermission: (
+    project: Project,
+    permission: Permission
+  ) => boolean;
 };
 
 export interface ProjectFilter {

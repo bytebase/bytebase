@@ -31,6 +31,15 @@ import { appStoreUtilBridge } from "@/utils/app-store-bridge";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { ensureUserFullName } from "@/utils/v1/user";
 
+// Mirrors the server's project-wide permission rule: a binding whose
+// condition scopes resources — it references any `resource.` attribute, not
+// just expiry — confers no project-wide permission. Every IAM condition
+// attribute other than request.time lives under `resource.`, so the
+// substring test matches the server's "any variable other than request.time"
+// check, future attributes included.
+export const bindingScopesResources = (binding: Binding): boolean =>
+  (binding.condition?.expression ?? "").includes("resource.");
+
 export const isBindingPolicyExpired = (binding: Binding): boolean => {
   if (binding.parsedExpr) {
     const conditionExpr = convertFromExpr(binding.parsedExpr);

@@ -7,7 +7,7 @@ import {
   type SavedQuery,
   SavedQueryBinding_Level,
 } from "@/types/proto-es/v1/saved_query_service_pb";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasProjectWidePermissionV2 } from "@/utils";
 
 export const extractSavedQueryID = (name: string) => {
   const pattern = /(?:^|\/)savedQueries\/([^/]+)(?:$|\/)/;
@@ -19,15 +19,24 @@ export const extractSavedQueryID = (name: string) => {
 // the server's whole discovery gate. A SQL role can grant query access
 // without search, in which case the tree stays empty rather than firing
 // requests that can only come back denied.
+//
+// All checks in this file are project-wide, mirroring the server: a binding
+// whose condition scopes resources confers no saved-query permission.
 export const canSearchSavedQueriesInProject = (project: string) =>
-  hasProjectPermissionV2(getProjectByName(project), "bb.savedQueries.search");
+  hasProjectWidePermissionV2(
+    getProjectByName(project),
+    "bb.savedQueries.search"
+  );
 
 // Creating a saved query takes bb.savedQueries.create on the project. A role
 // can grant SQL Editor access without it, so entry points that would persist a
 // new saved query check this first -- the editor stays usable, it just keeps
 // the work local.
 export const canCreateSavedQueryInProject = (project: string) =>
-  hasProjectPermissionV2(getProjectByName(project), "bb.savedQueries.create");
+  hasProjectWidePermissionV2(
+    getProjectByName(project),
+    "bb.savedQueries.create"
+  );
 
 // Access mirrors the server: the creator owns the saved query and holds every
 // permission on it; a VIEWER binding grants bb.savedQueries.get and an EDITOR
@@ -49,8 +58,9 @@ const hasProjectVerb = (
     | "bb.savedQueries.get"
     | "bb.savedQueries.update"
     | "bb.savedQueries.delete"
+    | "bb.savedQueries.getIamPolicy"
     | "bb.savedQueries.setIamPolicy"
-) => hasProjectPermissionV2(getProjectByName(sheet.project), permission);
+) => hasProjectWidePermissionV2(getProjectByName(sheet.project), permission);
 
 const bindingGrantsGet = (sheet: SavedQuery) => {
   const level = getSavedQueryLevel(sheet.name);
@@ -78,9 +88,13 @@ export const isSavedQueryDeletableV1 = (sheet: SavedQuery) =>
   isCreator(sheet) || hasProjectVerb(sheet, "bb.savedQueries.delete");
 
 // Sharing: the creator, or a project-level bb.savedQueries.setIamPolicy —
-// which no predefined role carries.
+// which no predefined role carries. The write is compare-and-swap over the
+// policy's etag, so exercising it requires reading the policy first: the
+// affordance demands getIamPolicy alongside setIamPolicy.
 export const isSavedQueryShareableV1 = (sheet: SavedQuery) =>
-  isCreator(sheet) || hasProjectVerb(sheet, "bb.savedQueries.setIamPolicy");
+  isCreator(sheet) ||
+  (hasProjectVerb(sheet, "bb.savedQueries.setIamPolicy") &&
+    hasProjectVerb(sheet, "bb.savedQueries.getIamPolicy"));
 
 // `extractSavedQueryConnection` moved to `@/lib/sqlEditorConnection`
 // so the database lookup can go through the React app store without
