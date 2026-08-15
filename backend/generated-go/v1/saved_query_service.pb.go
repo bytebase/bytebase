@@ -533,10 +533,10 @@ type MoveMySavedQueriesRequest struct {
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The folder to move, descendants included, e.g. "a/b".
-	SourceFolder string `protobuf:"bytes,3,opt,name=source_folder,json=sourceFolder,proto3" json:"source_folder,omitempty"`
+	SourceFolder string `protobuf:"bytes,2,opt,name=source_folder,json=sourceFolder,proto3" json:"source_folder,omitempty"`
 	// Where it lands. A path like "a/b/c"; empty drops the `source_folder`
 	// prefix, promoting the folder's contents toward the root.
-	TargetFolder  string `protobuf:"bytes,4,opt,name=target_folder,json=targetFolder,proto3" json:"target_folder,omitempty"`
+	TargetFolder  string `protobuf:"bytes,3,opt,name=target_folder,json=targetFolder,proto3" json:"target_folder,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1225,12 +1225,12 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\x1bUpdateSavedQueryStarRequest\x123\n" +
 	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
 	"\x17bytebase.com/SavedQueryR\x04name\x12\x18\n" +
-	"\astarred\x18\x02 \x01(\bR\astarred\"\xba\x01\n" +
+	"\astarred\x18\x02 \x01(\bR\astarred\"\xb4\x01\n" +
 	"\x19MoveMySavedQueriesRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x122\n" +
-	"\rsource_folder\x18\x03 \x01(\tB\r\xe0A\x02\xbaH\ar\x05\x10\x01\x18\x80\x02R\fsourceFolder\x12-\n" +
-	"\rtarget_folder\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\ftargetFolderJ\x04\b\x02\x10\x03\"=\n" +
+	"\rsource_folder\x18\x02 \x01(\tB\r\xe0A\x02\xbaH\ar\x05\x10\x01\x18\x80\x02R\fsourceFolder\x12-\n" +
+	"\rtarget_folder\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\ftargetFolder\"=\n" +
 	"\x1aMoveMySavedQueriesResponse\x12\x1f\n" +
 	"\vmoved_count\x18\x01 \x01(\x05R\n" +
 	"movedCount\"Y\n" +

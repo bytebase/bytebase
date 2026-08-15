@@ -266,12 +266,8 @@ message MoveMySavedQueriesRequest {
     (google.api.resource_reference) = {type: "bytebase.com/Project"}
   ];
 
-  // Removed: `names` — re-filing a single saved query is UpdateSavedQuery's
-  // `folder` field.
-  reserved 2;
-
   // The folder to move, descendants included, e.g. "a/b".
-  string source_folder = 3 [
+  string source_folder = 2 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).string = {
       min_len: 1
@@ -281,7 +277,7 @@ message MoveMySavedQueriesRequest {
 
   // Where it lands. A path like "a/b/c"; empty drops the `source_folder`
   // prefix, promoting the folder's contents toward the root.
-  string target_folder = 4 [(buf.validate.field).string.max_len = 256];
+  string target_folder = 3 [(buf.validate.field).string.max_len = 256];
 }
 
 message MoveMySavedQueriesResponse {

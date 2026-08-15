@@ -239,7 +239,7 @@ export declare type MoveMySavedQueriesRequest = Message<"bytebase.v1.MoveMySaved
   /**
    * The folder to move, descendants included, e.g. "a/b".
    *
-   * @generated from field: string source_folder = 3;
+   * @generated from field: string source_folder = 2;
    */
   sourceFolder: string;
 
@@ -247,7 +247,7 @@ export declare type MoveMySavedQueriesRequest = Message<"bytebase.v1.MoveMySaved
    * Where it lands. A path like "a/b/c"; empty drops the `source_folder`
    * prefix, promoting the folder's contents toward the root.
    *
-   * @generated from field: string target_folder = 4;
+   * @generated from field: string target_folder = 3;
    */
   targetFolder: string;
 };
