@@ -413,6 +413,7 @@ func (s *SavedQueryService) UpdateSavedQuery(
 
 	savedQueryPatch := &store.PatchSavedQueryMessage{
 		ResourceID: savedQuery.ResourceID,
+		ProjectID:  savedQuery.ProjectID,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
@@ -509,7 +510,7 @@ func (s *SavedQueryService) DeleteSavedQuery(
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
-	if err := s.store.DeleteSavedQuery(ctx, savedQuery.ResourceID); err != nil {
+	if err := s.store.DeleteSavedQuery(ctx, savedQuery.ProjectID, savedQuery.ResourceID); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to delete saved query: %v", err))
 	}
 
@@ -558,7 +559,7 @@ func (s *SavedQueryService) UpdateSavedQueryStar(
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
-	applied, err := s.store.SetSavedQueryStar(ctx, savedQuery.ResourceID, user.Email, request.Starred)
+	applied, err := s.store.SetSavedQueryStar(ctx, savedQuery.ProjectID, savedQuery.ResourceID, user.Email, request.Starred)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update star: %v", err))
 	}

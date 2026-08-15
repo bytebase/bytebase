@@ -765,10 +765,16 @@ lock-ordering):
   **not** via the FK cascade, which would lock the parent first — matching
   the star and purge order so a delete racing a star toggle or a purge
   cannot deadlock.
-- **Purge is child-before-parent.** `BatchDeleteProjects`' hard-delete path
-  deletes `saved_query_star` (child) before `saved_query`, and `saved_query`
-  before `project` (as it deletes `worksheet` today) — locking existing
-  child rows ahead of their parents, per the rule.
+- **Purge is child-before-parent, and re-parents human rows.** The
+  hard-delete path deletes the stars and saved queries of project service
+  accounts and workload identities (stars first), then reassigns the
+  remaining, human-created saved queries to the default project — locking
+  existing child rows ahead of their parents, per the rule. Because a
+  surviving row changes project mid-purge, **every non-purge writer scopes
+  its predicate by `(resource_id, project)`** — patch, delete, and the
+  first-star parent fence — so a write authorized in the purged project
+  cannot land on the reassigned row; it updates zero rows and surfaces as
+  NotFound.
 
 Two invariants cover every writer. **(1) Child before parent** for
 existing-row writes/deletes; the *only* parent-first step is a new-child

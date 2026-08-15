@@ -118,9 +118,11 @@ func TestSavedQueryFirstStarAndDeleteProjectLockOrder(t *testing.T) {
 
 		// The first star takes the parent fence on the saved_query row the
 		// parked purge holds via its re-parent update.
+		starApplied := make(chan bool, 1)
 		starResult := make(chan error, 1)
 		go func() {
-			_, err := fixture.store.SetSavedQueryStar(fixture.ctx, "saved-query-a", "user@example.com", true)
+			applied, err := fixture.store.SetSavedQueryStar(fixture.ctx, "project-a", "saved-query-a", "user@example.com", true)
+			starApplied <- applied
 			starResult <- err
 		}()
 		waitForBackendBlockedByPID(fixture.ctx, t, fixture.db, purgePID)
@@ -128,8 +130,11 @@ func TestSavedQueryFirstStarAndDeleteProjectLockOrder(t *testing.T) {
 
 		requireMaintenanceResult(t, deleteResult)
 		requireMaintenanceResult(t, starResult)
-		// The row survived the purge by re-parenting, so the star landed.
-		require.Equal(t, 1, savedQueryStarCount(t, fixture))
+		// The row survived the purge by re-parenting into the default project,
+		// so the fence re-evaluates against the committed reassignment and the
+		// star authorized in project-a does not land.
+		require.False(t, <-starApplied)
+		require.Equal(t, 0, savedQueryStarCount(t, fixture))
 	})
 
 	t.Run("star first", func(t *testing.T) {
@@ -141,7 +146,7 @@ func TestSavedQueryFirstStarAndDeleteProjectLockOrder(t *testing.T) {
 
 		starResult := make(chan error, 1)
 		go func() {
-			_, err := fixture.store.SetSavedQueryStar(fixture.ctx, "saved-query-a", "user@example.com", true)
+			_, err := fixture.store.SetSavedQueryStar(fixture.ctx, "project-a", "saved-query-a", "user@example.com", true)
 			starResult <- err
 		}()
 		waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)
@@ -176,7 +181,7 @@ func TestSavedQueryDeleteAndStarToggleLockOrder(t *testing.T) {
 			"AFTER DELETE ON saved_query FOR EACH ROW")
 
 		deleteResult := make(chan error, 1)
-		go func() { deleteResult <- fixture.store.DeleteSavedQuery(fixture.ctx, "saved-query-a") }()
+		go func() { deleteResult <- fixture.store.DeleteSavedQuery(fixture.ctx, "default", "saved-query-a") }()
 		waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)
 		deletePID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
 
@@ -185,7 +190,7 @@ func TestSavedQueryDeleteAndStarToggleLockOrder(t *testing.T) {
 		starResult := make(chan error, 1)
 		var starApplied bool
 		go func() {
-			applied, err := fixture.store.SetSavedQueryStar(fixture.ctx, "saved-query-a", "other@example.com", true)
+			applied, err := fixture.store.SetSavedQueryStar(fixture.ctx, "default", "saved-query-a", "other@example.com", true)
 			starApplied = applied
 			starResult <- err
 		}()
@@ -216,14 +221,14 @@ func TestSavedQueryDeleteAndStarToggleLockOrder(t *testing.T) {
 		// barrier with the child lock held.
 		unstarResult := make(chan error, 1)
 		go func() {
-			_, err := fixture.store.SetSavedQueryStar(fixture.ctx, "saved-query-a", "user@example.com", false)
+			_, err := fixture.store.SetSavedQueryStar(fixture.ctx, "default", "saved-query-a", "user@example.com", false)
 			unstarResult <- err
 		}()
 		waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)
 		unstarPID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
 
 		deleteResult := make(chan error, 1)
-		go func() { deleteResult <- fixture.store.DeleteSavedQuery(fixture.ctx, "saved-query-a") }()
+		go func() { deleteResult <- fixture.store.DeleteSavedQuery(fixture.ctx, "default", "saved-query-a") }()
 		waitForBackendBlockedByPID(fixture.ctx, t, fixture.db, unstarPID)
 		barrier.release(t)
 
@@ -272,7 +277,7 @@ func TestSavedQueryDeleteAndDeleteProjectLockOrder(t *testing.T) {
 		purgePID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
 
 		deleteResult := make(chan error, 1)
-		go func() { deleteResult <- fixture.store.DeleteSavedQuery(fixture.ctx, "saved-query-a") }()
+		go func() { deleteResult <- fixture.store.DeleteSavedQuery(fixture.ctx, "project-a", "saved-query-a") }()
 		waitForBackendBlockedByPID(fixture.ctx, t, fixture.db, purgePID)
 		barrier.release(t)
 
@@ -289,7 +294,7 @@ func TestSavedQueryDeleteAndDeleteProjectLockOrder(t *testing.T) {
 			"AFTER DELETE ON saved_query_star FOR EACH ROW")
 
 		deleteResult := make(chan error, 1)
-		go func() { deleteResult <- fixture.store.DeleteSavedQuery(fixture.ctx, "saved-query-a") }()
+		go func() { deleteResult <- fixture.store.DeleteSavedQuery(fixture.ctx, "project-a", "saved-query-a") }()
 		waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)
 		deletePID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
 
@@ -577,4 +582,41 @@ func TestSavedQueryFolderPrefixMovesLockOrder(t *testing.T) {
 			"saved-query-b": "y",
 		}, folders(t, fixture))
 	})
+}
+
+// TestSavedQueryWritersProjectScoped locks the purge-reassignment fence: a
+// purge moves surviving saved queries to the default project, so a write
+// authorized in the original project must not land on the reassigned row.
+// Every non-purge writer scopes by (resource_id, project).
+func TestSavedQueryWritersProjectScoped(t *testing.T) {
+	const seedSQL = `
+		INSERT INTO saved_query (resource_id, creator, project, name, statement, folder)
+			VALUES ('saved-query-a', 'user@example.com', 'project-a', 'Saved Query A', '', 'kept');
+		INSERT INTO saved_query_star (saved_query, principal) VALUES ('saved-query-a', 'user@example.com');
+	`
+	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+
+	// Simulate the purge's re-parenting having happened after the caller's
+	// authorization in project-a.
+	_, err := fixture.db.ExecContext(fixture.ctx,
+		"UPDATE saved_query SET project = 'default' WHERE resource_id = 'saved-query-a'")
+	require.NoError(t, err)
+
+	title := "raced"
+	require.NoError(t, fixture.store.PatchSavedQuery(fixture.ctx, &store.PatchSavedQueryMessage{
+		ResourceID: "saved-query-a",
+		ProjectID:  "project-a",
+		Title:      &title,
+	}))
+	require.NoError(t, fixture.store.DeleteSavedQuery(fixture.ctx, "project-a", "saved-query-a"))
+	applied, err := fixture.store.SetSavedQueryStar(fixture.ctx, "project-a", "saved-query-a", "other@example.com", true)
+	require.NoError(t, err)
+	require.False(t, applied, "first star must take the parent fence in the authorized project")
+
+	var name, folder string
+	require.NoError(t, fixture.db.QueryRowContext(fixture.ctx,
+		"SELECT name, folder FROM saved_query WHERE resource_id = 'saved-query-a'").Scan(&name, &folder))
+	require.Equal(t, "Saved Query A", name, "a patch authorized in the old project must not land")
+	require.Equal(t, "kept", folder)
+	require.Equal(t, 1, savedQueryStarCount(t, fixture))
 }

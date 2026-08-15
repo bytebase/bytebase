@@ -31,14 +31,71 @@ import { appStoreUtilBridge } from "@/utils/app-store-bridge";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { ensureUserFullName } from "@/utils/v1/user";
 
+// expressionReferencesResources walks a parsed CEL condition for any
+// reference other than request.time — the server's rule for a binding that
+// scopes resources rather than just expiry.
+const expressionReferencesResources = (expr: Expr | undefined): boolean => {
+  if (!expr) return false;
+  switch (expr.exprKind?.case) {
+    case "identExpr":
+      return expr.exprKind.value.name !== "request";
+    case "selectExpr": {
+      const select = expr.exprKind.value;
+      const operand = select.operand;
+      if (
+        operand?.exprKind?.case === "identExpr" &&
+        operand.exprKind.value.name === "request"
+      ) {
+        // request.time is the one attribute a project-wide grant may carry.
+        return select.field !== "time";
+      }
+      return expressionReferencesResources(operand);
+    }
+    case "callExpr": {
+      const call = expr.exprKind.value;
+      return (
+        expressionReferencesResources(call.target) ||
+        call.args.some(expressionReferencesResources)
+      );
+    }
+    case "listExpr":
+      return expr.exprKind.value.elements.some(expressionReferencesResources);
+    case "structExpr":
+      return expr.exprKind.value.entries.some(
+        (entry) =>
+          expressionReferencesResources(entry.value) ||
+          (entry.keyKind?.case === "mapKey" &&
+            expressionReferencesResources(entry.keyKind.value))
+      );
+    case "comprehensionExpr": {
+      const comprehension = expr.exprKind.value;
+      return [
+        comprehension.iterRange,
+        comprehension.accuInit,
+        comprehension.loopCondition,
+        comprehension.loopStep,
+        comprehension.result,
+      ].some(expressionReferencesResources);
+    }
+    default:
+      return false;
+  }
+};
+
 // Mirrors the server's project-wide permission rule: a binding whose
-// condition scopes resources — it references any `resource.` attribute, not
-// just expiry — confers no project-wide permission. Every IAM condition
-// attribute other than request.time lives under `resource.`, so the
-// substring test matches the server's "any variable other than request.time"
-// check, future attributes included.
-export const bindingScopesResources = (binding: Binding): boolean =>
-  (binding.condition?.expression ?? "").includes("resource.");
+// condition scopes resources — it references anything other than
+// request.time — confers no project-wide permission. The server attaches the
+// parsed condition to every binding it returns, so the check walks the AST
+// exactly as the server's conditionScopesResources does; without one it
+// falls back to a substring test, which is exact for canonical expressions
+// because every IAM condition attribute other than request.time lives under
+// `resource.`.
+export const bindingScopesResources = (binding: Binding): boolean => {
+  if (binding.parsedExpr) {
+    return expressionReferencesResources(binding.parsedExpr);
+  }
+  return (binding.condition?.expression ?? "").includes("resource.");
+};
 
 export const isBindingPolicyExpired = (binding: Binding): boolean => {
   if (binding.parsedExpr) {

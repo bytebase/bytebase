@@ -85,8 +85,12 @@ type FindSavedQueryMessage struct {
 // PatchSavedQueryMessage is the message to patch a saved query.
 type PatchSavedQueryMessage struct {
 	ResourceID string
-	Title      *string
-	Statement  *string
+	// ProjectID scopes the write to the project the caller was authorized in:
+	// a purge reassigns surviving saved queries to the default project, and a
+	// patch racing it must not land on the reassigned row.
+	ProjectID string
+	Title     *string
+	Statement *string
 	// Database sets the connected database ("" clears it).
 	Database *string
 	// Folder re-files the saved query ("" = unfiled).
@@ -433,7 +437,7 @@ func (s *Store) PatchSavedQuery(ctx context.Context, patch *PatchSavedQueryMessa
 		}
 	}
 
-	query, args, err := qb.Q().Space("UPDATE saved_query SET ? WHERE resource_id = ?", set, patch.ResourceID).ToSQL()
+	query, args, err := qb.Q().Space("UPDATE saved_query SET ? WHERE resource_id = ? AND project = ?", set, patch.ResourceID, patch.ProjectID).ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
@@ -443,11 +447,19 @@ func (s *Store) PatchSavedQuery(ctx context.Context, patch *PatchSavedQueryMessa
 	return nil
 }
 
-// DeleteSavedQuery deletes an existing saved query by resource ID. Star rows
-// are deleted first, in full primary-key order — explicitly, not via the FK
-// cascade (which would lock the parent first) — matching the star and purge
-// lock order so a delete racing a star toggle or a purge cannot deadlock.
-func (s *Store) DeleteSavedQuery(ctx context.Context, resourceID string) error {
+// DeleteSavedQuery deletes an existing saved query. Star rows are deleted
+// first, in full primary-key order — explicitly, not via the FK cascade
+// (which would lock the parent first) — matching the star and purge lock
+// order so a delete racing a star toggle or a purge cannot deadlock.
+//
+// Both statements scope by the project the caller was authorized in: a purge
+// reassigns surviving saved queries to the default project, and a delete
+// racing it must not land on the reassigned row. The star delete reads the
+// parent without locking it (locking would invert the child-before-parent
+// order); a reassignment between the two statements can strip a reassigned
+// row's stars — personal markers, in a purge-width window — but never the
+// row.
+func (s *Store) DeleteSavedQuery(ctx context.Context, projectID, resourceID string) error {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin transaction")
@@ -460,13 +472,17 @@ func (s *Store) DeleteSavedQuery(ctx context.Context, resourceID string) error {
 			SELECT saved_query, principal
 			FROM saved_query_star
 			WHERE saved_query = $1
+			  AND EXISTS (
+				SELECT 1 FROM saved_query
+				WHERE resource_id = $1 AND project = $2
+			  )
 			ORDER BY saved_query, principal
 			FOR UPDATE
 		)
-	`, resourceID); err != nil {
+	`, resourceID, projectID); err != nil {
 		return errors.Wrapf(err, "failed to delete stars for saved query %s", resourceID)
 	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM saved_query WHERE resource_id = $1`, resourceID); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM saved_query WHERE resource_id = $1 AND project = $2`, resourceID, projectID); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -479,9 +495,12 @@ func (s *Store) DeleteSavedQuery(ctx context.Context, resourceID string) error {
 // that cannot be locked in advance — that case alone takes the parent fence
 // (lock the saved_query row), and its inserted key is novel so it never
 // contends with a purge's existing-child locks. The parent fence is also the
-// only path that can observe a concurrent delete, which it reports as false
-// rather than an error so the caller decides what a vanished row means.
-func (s *Store) SetSavedQueryStar(ctx context.Context, savedQueryResourceID, principal string, starred bool) (bool, error) {
+// only path that can observe a concurrent delete or purge reassignment — it
+// requires the row in the project the caller was authorized in — and reports
+// either as false rather than an error so the caller decides what a vanished
+// row means. Removing an existing star stays project-blind: the star is the
+// caller's own marker, removable wherever its row went.
+func (s *Store) SetSavedQueryStar(ctx context.Context, projectID, savedQueryResourceID, principal string, starred bool) (bool, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to begin transaction")
@@ -506,9 +525,9 @@ func (s *Store) SetSavedQueryStar(ctx context.Context, savedQueryResourceID, pri
 		if err := tx.QueryRowContext(ctx, `
 			SELECT 1
 			FROM saved_query
-			WHERE resource_id = $1
+			WHERE resource_id = $1 AND project = $2
 			FOR UPDATE
-		`, savedQueryResourceID).Scan(&one); err != nil {
+		`, savedQueryResourceID, projectID).Scan(&one); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return false, nil
 			}
