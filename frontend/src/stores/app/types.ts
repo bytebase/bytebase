@@ -374,6 +374,10 @@ export type IamSlice = {
   getWorkspaceRolesByName: (name: string) => Set<string>;
   hasWorkspacePermission: (permission: Permission) => boolean;
   hasProjectPermission: (project: Project, permission: Permission) => boolean;
+  hasProjectWidePermission: (
+    project: Project,
+    permission: Permission
+  ) => boolean;
 };
 
 export interface ProjectFilter {
@@ -652,16 +656,15 @@ export type SavedQuerySlice = {
   deleteSavedQueryByName: (name: string) => Promise<void>;
   updateSavedQueryStar: (name: string, starred: boolean) => Promise<void>;
   /**
-   * Move saved queries into a folder: either `names` (specific saved queries)
-   * or `sourceFolder` (that folder and its descendants), never both. Only the
-   * caller's own saved queries move, so the returned count can be smaller than
-   * what was named.
+   * Move the caller's saved queries filed under `sourceFolder`, descendants
+   * included, into `targetFolder`. Only the caller's own saved queries move;
+   * the returned count reports how many did. Re-filing a single saved query
+   * is `patchSavedQuery` with the `folder` field.
    */
   moveMySavedQueries: (
     parent: string,
     params: {
-      names?: string[];
-      sourceFolder?: string;
+      sourceFolder: string;
       targetFolder: string;
     }
   ) => Promise<number>;

@@ -250,7 +250,6 @@ export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
       const response = await savedQueryServiceClientConnect.moveMySavedQueries(
         createProto(MoveMySavedQueriesRequestSchema, {
           parent,
-          names: params.names,
           sourceFolder: params.sourceFolder,
           targetFolder: params.targetFolder,
         })

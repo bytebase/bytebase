@@ -59,10 +59,11 @@ type FindSavedQueryMessage struct {
 	PrincipalEmail string
 
 	// AccessMembers restricts results to saved queries the caller can read:
-	// their own, plus any whose bindings name one of these principals
-	// ("user:{email}" and "group:{email}" — the caller and their groups).
-	// Leave nil to skip the access clause entirely, which is what the auditor
-	// List does.
+	// their own, plus any whose bindings name one of these principals in the
+	// stored member form ("users/{email}" and "groups/{email}" — the caller
+	// and their groups).
+	// Leave nil to skip the access clause entirely: the auditor List, and
+	// Search for a caller with project-level bb.savedQueries.get.
 	//
 	// Must describe the same caller as PrincipalEmail: the clause reads "own"
 	// from PrincipalEmail and "granted" from here. Setting one without the
@@ -84,8 +85,12 @@ type FindSavedQueryMessage struct {
 // PatchSavedQueryMessage is the message to patch a saved query.
 type PatchSavedQueryMessage struct {
 	ResourceID string
-	Title      *string
-	Statement  *string
+	// ProjectID scopes the write to the project the caller was authorized in:
+	// a purge reassigns surviving saved queries to the default project, and a
+	// patch racing it must not land on the reassigned row.
+	ProjectID string
+	Title     *string
+	Statement *string
 	// Database sets the connected database ("" clears it).
 	Database *string
 	// Folder re-files the saved query ("" = unfiled).
@@ -229,9 +234,15 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 }
 
 // bindingProbe builds the jsonb containment operand that matches any binding
-// naming this principal, e.g. `[{"members":["user:a@corp.com"]}]`. `@>` on a
-// jsonb array is "contains an element containing this", so one probe per
-// principal, BitmapOr'd by the planner, answers "shared with me".
+// naming this principal, e.g. `[{"members":["users/a@corp.com"]}]` — the
+// stored member form. `@>` on a jsonb array is "contains an element
+// containing this", so one probe per principal, BitmapOr'd by the planner,
+// answers "shared with me".
+//
+// The probe is level-blind on purpose: every current level's bundle grants
+// get (bindingGrants in api/v1/saved_query_service.go). A future level that
+// does not grant get must add a level term here, or Search would return
+// previews GetSavedQuery denies.
 func bindingProbe(member string) (string, error) {
 	probe, err := json.Marshal([]map[string]any{{"members": []string{member}}})
 	if err != nil {
@@ -426,7 +437,7 @@ func (s *Store) PatchSavedQuery(ctx context.Context, patch *PatchSavedQueryMessa
 		}
 	}
 
-	query, args, err := qb.Q().Space("UPDATE saved_query SET ? WHERE resource_id = ?", set, patch.ResourceID).ToSQL()
+	query, args, err := qb.Q().Space("UPDATE saved_query SET ? WHERE resource_id = ? AND project = ?", set, patch.ResourceID, patch.ProjectID).ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
@@ -436,14 +447,32 @@ func (s *Store) PatchSavedQuery(ctx context.Context, patch *PatchSavedQueryMessa
 	return nil
 }
 
-// DeleteSavedQuery deletes an existing saved query by resource ID. Star rows
-// are deleted first, in full primary-key order — explicitly, not via the FK
-// cascade (which would lock the parent first) — matching the star and purge
-// lock order so a delete racing a star toggle or a purge cannot deadlock.
-func (s *Store) DeleteSavedQuery(ctx context.Context, resourceID string) error {
+// DeleteSavedQuery deletes an existing saved query and reports whether it was
+// still there to delete. Star rows are deleted first, in full primary-key
+// order — explicitly, not via the FK cascade (which would lock the parent
+// first) — matching the star and purge lock order so a delete racing a star
+// toggle or a purge cannot deadlock.
+//
+// Both statements scope by the project the caller was authorized in: a purge
+// reassigns surviving saved queries to the default project, and a delete
+// racing it must not land on the reassigned row. The row delete is the
+// arbiter — when it matches nothing (row gone, or reassigned after the star
+// statement's unlocked parent snapshot), the transaction rolls back, which
+// also restores any stars the first statement removed, and the caller gets
+// false to answer NotFound.
+//
+// Lifecycle policy (per the store's purge-fence rule): writers on existing
+// rows — delete, patch, star — require the row in the authorized project,
+// not an active project. Archived projects are unreachable through every
+// read path (the project.deleted = FALSE fence on the fetches), so the only
+// archival exposure is a write already in flight when the archive lands,
+// and that completing is an ordinary serialization of concurrent requests.
+// Only creation, which adds a row a purge cannot see, requires an active
+// project.
+func (s *Store) DeleteSavedQuery(ctx context.Context, projectID, resourceID string) (bool, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(err, "failed to begin transaction")
+		return false, errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
@@ -453,16 +482,28 @@ func (s *Store) DeleteSavedQuery(ctx context.Context, resourceID string) error {
 			SELECT saved_query, principal
 			FROM saved_query_star
 			WHERE saved_query = $1
+			  AND EXISTS (
+				SELECT 1 FROM saved_query
+				WHERE resource_id = $1 AND project = $2
+			  )
 			ORDER BY saved_query, principal
 			FOR UPDATE
 		)
-	`, resourceID); err != nil {
-		return errors.Wrapf(err, "failed to delete stars for saved query %s", resourceID)
+	`, resourceID, projectID); err != nil {
+		return false, errors.Wrapf(err, "failed to delete stars for saved query %s", resourceID)
 	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM saved_query WHERE resource_id = $1`, resourceID); err != nil {
-		return err
+	result, err := tx.ExecContext(ctx, `DELETE FROM saved_query WHERE resource_id = $1 AND project = $2`, resourceID, projectID)
+	if err != nil {
+		return false, err
 	}
-	return tx.Commit()
+	deleted, err := result.RowsAffected()
+	if err != nil {
+		return false, errors.Wrap(err, "failed to count deleted saved queries")
+	}
+	if deleted == 0 {
+		return false, nil
+	}
+	return true, tx.Commit()
 }
 
 // SetSavedQueryStar stars or unstars a saved query for a principal, and
@@ -472,9 +513,12 @@ func (s *Store) DeleteSavedQuery(ctx context.Context, resourceID string) error {
 // that cannot be locked in advance — that case alone takes the parent fence
 // (lock the saved_query row), and its inserted key is novel so it never
 // contends with a purge's existing-child locks. The parent fence is also the
-// only path that can observe a concurrent delete, which it reports as false
-// rather than an error so the caller decides what a vanished row means.
-func (s *Store) SetSavedQueryStar(ctx context.Context, savedQueryResourceID, principal string, starred bool) (bool, error) {
+// only path that can observe a concurrent delete or purge reassignment — it
+// requires the row in the project the caller was authorized in — and reports
+// either as false rather than an error so the caller decides what a vanished
+// row means. Removing an existing star stays project-blind: the star is the
+// caller's own marker, removable wherever its row went.
+func (s *Store) SetSavedQueryStar(ctx context.Context, projectID, savedQueryResourceID, principal string, starred bool) (bool, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to begin transaction")
@@ -499,9 +543,9 @@ func (s *Store) SetSavedQueryStar(ctx context.Context, savedQueryResourceID, pri
 		if err := tx.QueryRowContext(ctx, `
 			SELECT 1
 			FROM saved_query
-			WHERE resource_id = $1
+			WHERE resource_id = $1 AND project = $2
 			FOR UPDATE
-		`, savedQueryResourceID).Scan(&one); err != nil {
+		`, savedQueryResourceID, projectID).Scan(&one); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return false, nil
 			}
@@ -533,46 +577,15 @@ func (s *Store) SetSavedQueryStar(ctx context.Context, savedQueryResourceID, pri
 }
 
 // BatchUpdateSavedQueryFolder re-files the given saved queries into folder.
-// The rows are locked in full primary-key order (resource_id) before the
-// update, so two overlapping batches can never lock in opposing orders; a
-// row deleted mid-batch simply updates zero rows.
-// MoveSavedQueries files the named saved queries, restricted to one creator:
-// filing is personal organization, so rows belonging to anyone else are not
-// selected and the count reports what actually moved.
-//
-// The CTE takes every row lock in primary-key order before the update touches
-// anything -- the store's batch rule, so two overlapping moves serialize
-// instead of deadlocking -- and one statement needs no explicit transaction.
-func (s *Store) MoveSavedQueries(ctx context.Context, projectID, creator string, resourceIDs []string, folder string) (int, error) {
-	if len(resourceIDs) == 0 {
-		return 0, nil
-	}
-	result, err := s.GetDB().ExecContext(ctx, `
-		WITH locked AS (
-			SELECT resource_id FROM saved_query
-			WHERE resource_id = ANY($1) AND project = $2 AND creator = $3
-			ORDER BY resource_id
-			FOR UPDATE
-		)
-		UPDATE saved_query SET folder = $4, updated_at = now()
-		WHERE resource_id IN (SELECT resource_id FROM locked)
-	`, resourceIDs, projectID, creator, folder)
-	if err != nil {
-		return 0, errors.Wrap(err, "failed to move saved queries")
-	}
-	moved, err := result.RowsAffected()
-	if err != nil {
-		return 0, errors.Wrap(err, "failed to count moved saved queries")
-	}
-	return int(moved), nil
-}
-
 // MoveSavedQueryFolder rewrites the folder prefix for one creator's saved
 // queries: moving "a/b" to "a/c" also moves "a/b/deep" to "a/c/deep". The
 // suffix keeps each descendant's own tail, and ltrim drops the separator when
 // the target is empty so a row is unfiled rather than left at "/deep".
 //
-// Locks in primary-key order like MoveSavedQueries, for the same reason.
+// The CTE takes every row lock in full primary-key order (resource_id) before
+// the update touches anything -- the store's batch rule, so two overlapping
+// moves serialize instead of deadlocking -- and one statement needs no
+// explicit transaction. A row deleted mid-move simply updates zero rows.
 func (s *Store) MoveSavedQueryFolder(ctx context.Context, projectID, creator, source, target string) (int, error) {
 	if source == "" {
 		return 0, errors.New("source folder cannot be empty")
@@ -600,23 +613,21 @@ func (s *Store) MoveSavedQueryFolder(ctx context.Context, projectID, creator, so
 }
 
 // ListSavedQueryFolderPaths returns the distinct folder paths of the saved
-// queries in a project that match filterQ. A non-nil creator restricts the
-// paths to that creator's rows, which is how the API layer applies the same
-// read rule the rows themselves carry: your own always, everyone's only with
-// the admin backstop.
-// ListSavedQueryFolderPaths returns the distinct folder paths of the saved
 // queries a caller can read, narrowed by filterQ. Access is the same predicate
-// SearchSavedQueries applies, and for the same reason: a folder is only useful
-// if its contents are reachable. Scoping these to the caller's *own* rows
-// instead would hide a shared saved query filed by its creator — the tree is
-// seeded from here, and a row whose folder has no node can never be expanded
-// into.
-func (s *Store) ListSavedQueryFolderPaths(ctx context.Context, projectID string, principalEmail string, accessMembers []string, filterQ *qb.Query) ([]string, error) {
+// SearchSavedQueries applies (nil accessMembers skips the clause, for a
+// caller with project-level bb.savedQueries.get), and for the same reason: a
+// folder is only useful if its contents are reachable. Scoping these to the
+// caller's *own* rows instead would hide a shared saved query filed by its
+// creator — the tree is seeded from here, and a row whose folder has no node
+// can never be expanded into. workspaceID fences the project to the caller's
+// workspace and to active projects, exactly as the List query does.
+func (s *Store) ListSavedQueryFolderPaths(ctx context.Context, workspaceID string, projectID string, principalEmail string, accessMembers []string, filterQ *qb.Query) ([]string, error) {
 	q := qb.Q().Space(`
 		SELECT DISTINCT folder
 		FROM saved_query
 		WHERE TRUE`)
 	q.And("saved_query.project = ?", projectID)
+	q.And("EXISTS (SELECT 1 FROM project WHERE project.resource_id = saved_query.project AND project.workspace = ? AND project.deleted = FALSE)", workspaceID)
 	q.And("saved_query.folder <> ''")
 	if accessMembers != nil {
 		access := qb.Q().Space("saved_query.creator = ?", principalEmail)
@@ -741,8 +752,9 @@ func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, acc
 			return nil, errors.Errorf("invalid starred value %v, expect true or false", value)
 		case "shared":
 			// Reached through a binding, which is narrower than "somebody else
-			// created it": an admin sees saved queries nobody shared with them,
-			// and those must not show up in a Shared view.
+			// created it": a project-level bb.savedQueries.get holder sees
+			// saved queries nobody shared with them, and those must not show
+			// up in a Shared view.
 			shared, ok := value.(bool)
 			if !ok {
 				return nil, errors.Errorf("invalid shared value %v, expect true or false", value)

@@ -17,7 +17,12 @@ import type {
 } from "@/modules/sql-editor/model/Sheet";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useAppStore } from "@/stores/app";
-import { canCreateSavedQueryInProject, isSavedQueryWritableV1 } from "@/utils";
+import {
+  canCreateSavedQueryInProject,
+  isSavedQueryDeletableV1,
+  isSavedQueryShareableV1,
+  isSavedQueryWritableV1,
+} from "@/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -47,7 +52,7 @@ export function useDropdown(
   // Only the "my" tree is wired to the parent's multi-select state. For
   // other views (shared / draft) the context-menu entry is hidden so a
   // right-click on a shared saved query cannot populate the my tree's
-  // checkedNodes — which the toolbar's Delete + Move-to-folder flows act on.
+  // checkedNodes — which the toolbar's Delete flow acts on.
   canMultiSelect = false
 ) {
   const { t } = useTranslation();
@@ -109,24 +114,27 @@ export function useDropdown(
           label: isCreator ? t("common.duplicate") : t("common.fork"),
         });
       }
-      if (isCreator) {
+      // Per-verb affordances mirroring the server: share follows
+      // setIamPolicy (creator, or a custom role), delete follows the delete
+      // verb (creator, or a role grant) — so an admin doing orphan cleanup
+      // sees Delete on shared rows too.
+      if (isSavedQueryShareableV1(savedQueryEntity)) {
         items.push({
           key: "share",
           label: t("common.share"),
         });
       }
-      const canWriteSheet = isSavedQueryWritableV1(savedQueryEntity);
-      if (canWriteSheet) {
+      if (isSavedQueryWritableV1(savedQueryEntity)) {
         items.push({
           key: "rename",
           label: t("sql-editor.tab.context-menu.actions.rename"),
         });
-        if (viewMode === "my") {
-          items.push({
-            key: "delete",
-            label: t("common.delete"),
-          });
-        }
+      }
+      if (isSavedQueryDeletableV1(savedQueryEntity)) {
+        items.push({
+          key: "delete",
+          label: t("common.delete"),
+        });
       }
       if (canMultiSelect) {
         items.push({

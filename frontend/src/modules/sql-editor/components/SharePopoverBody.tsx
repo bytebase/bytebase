@@ -7,8 +7,11 @@ import { Button } from "@/components/ui/button";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { useAppStore } from "@/stores/app";
 import type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";
-import { extractProjectResourceName, extractSavedQueryID } from "@/utils";
-import { hasProjectPermissionV2 } from "@/utils/iam/permission";
+import {
+  extractProjectResourceName,
+  extractSavedQueryID,
+  isSavedQueryShareableV1,
+} from "@/utils";
 
 import { SavedQueryGrantEditor } from "./SavedQueryGrantEditor";
 
@@ -26,18 +29,13 @@ export function SharePopoverBody({ savedQuery }: Props) {
   const { t } = useTranslation();
   const workspaceExternalURL = useAppStore((s) => s.serverInfo?.externalUrl);
   const currentUser = useAppStore((s) => s.currentUser);
-  const getProjectByName = useAppStore((s) => s.getProjectByName);
 
-  // Sharing and deletion are creator-or-admin; a binding never confers them.
+  // Sharing: the creator, or a project-level bb.savedQueries.setIamPolicy.
   // Both inputs are already on the client, so this needs no extra request.
   const canManage = useMemo(() => {
-    if (!savedQuery) return false;
-    if (savedQuery.creator === `users/${currentUser?.email}`) return true;
-    const project = getProjectByName(savedQuery.project);
-    return project
-      ? hasProjectPermissionV2(project, "bb.savedQueries.manage")
-      : false;
-  }, [savedQuery, currentUser, getProjectByName]);
+    if (!savedQuery || !currentUser) return false;
+    return isSavedQueryShareableV1(savedQuery);
+  }, [savedQuery, currentUser]);
 
   const sharedTabLink = useMemo(() => {
     if (!savedQuery) return "";

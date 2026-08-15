@@ -11,6 +11,14 @@ const mocks = vi.hoisted(() => ({
   currentUser: { email: "me@example.com" },
   savedQuery: undefined as SavedQuery | undefined,
   isSavedQueryWritableV1: vi.fn(() => true),
+  // Mirror the real predicates' creator arm; role-grant cases override
+  // per test.
+  isSavedQueryDeletableV1: vi.fn(
+    (sheet: SavedQuery) => sheet.creator === "users/me@example.com"
+  ),
+  isSavedQueryShareableV1: vi.fn(
+    (sheet: SavedQuery) => sheet.creator === "users/me@example.com"
+  ),
   canCreateSavedQueryInProject: vi.fn(() => true),
 }));
 
@@ -31,6 +39,8 @@ vi.mock("@/stores/app", () => ({
 
 vi.mock("@/utils", () => ({
   isSavedQueryWritableV1: mocks.isSavedQueryWritableV1,
+  isSavedQueryDeletableV1: mocks.isSavedQueryDeletableV1,
+  isSavedQueryShareableV1: mocks.isSavedQueryShareableV1,
   canCreateSavedQueryInProject: mocks.canCreateSavedQueryInProject,
 }));
 
@@ -88,6 +98,27 @@ describe("useDropdown", () => {
     expect(
       result.current.options.map((item) => item.type === "item" && item.key)
     ).toEqual(["duplicate", "rename"]);
+  });
+
+  test("role-granted delete and share reach shared saved queries", () => {
+    mocks.savedQuery = {
+      name: "projects/proj/savedQueries/sheet",
+      creator: "users/other@example.com",
+    } as SavedQuery;
+    mocks.isSavedQueryDeletableV1.mockReturnValue(true);
+    mocks.isSavedQueryShareableV1.mockReturnValue(true);
+
+    const { result } = renderHook(() =>
+      useDropdown("shared", baseFilter, false)
+    );
+
+    act(() => {
+      result.current.handleContextMenu(event, savedQueryNode);
+    });
+
+    expect(
+      result.current.options.map((item) => item.type === "item" && item.key)
+    ).toEqual(["duplicate", "share", "rename", "delete"]);
   });
 
   test("keeps delete for writable my saved queries", () => {
