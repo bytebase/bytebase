@@ -52,7 +52,7 @@ export function useDropdown(
   // Only the "my" tree is wired to the parent's multi-select state. For
   // other views (shared / draft) the context-menu entry is hidden so a
   // right-click on a shared saved query cannot populate the my tree's
-  // checkedNodes — which the toolbar's Delete + Move-to-folder flows act on.
+  // checkedNodes — which the toolbar's Delete flow acts on.
   canMultiSelect = false
 ) {
   const { t } = useTranslation();
