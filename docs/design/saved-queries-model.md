@@ -77,7 +77,9 @@ Cited throughout as G1–G8.
    API change.
 
 The frontend mirrors these rules for control visibility only; enforcement is
-server-side.
+server-side. Where the mirror cannot reproduce an evaluation — a binding
+condition beyond the canonical expiry form — it hides the control rather than
+showing one the server denies.
 
 ### Non-goals
 
