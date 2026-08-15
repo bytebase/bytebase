@@ -69,7 +69,10 @@ import { useSQLEditorStore as useSQLEditorReactStore } from "@/modules/sql-edito
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
-import { canSearchSavedQueriesInProject } from "@/utils";
+import {
+  canSearchSavedQueriesInProject,
+  isSavedQueryWritableV1,
+} from "@/utils";
 import { filterNode } from "./filterNode";
 import { SharePopoverBody } from "./SharePopoverBody";
 import { TreeNodePrefix } from "./TreeNodePrefix";
@@ -1625,16 +1628,26 @@ export function SheetTree({
             : "[&_[role=treeitem]]:overflow-hidden"
         )}
         onMove={handleMove}
-        // Dragging re-files, and only your own saved queries can be re-filed,
-        // so the Shared tree is browse-only rather than accepting a drop the
-        // server declines.
+        // Dragging re-files, which is UpdateSavedQuery's folder field, so a
+        // Shared-tree saved query is draggable exactly when the caller can
+        // update it — the predicate that gates rename. Folders stay pinned
+        // outside the my tree: MoveMySavedQueries rewrites only the caller's
+        // own rows, so dragging a shared folder would move nothing.
         disableDrag={
-          view !== "my" || !!editingNode || multiSelectMode
+          view === "draft" || !!editingNode || multiSelectMode
             ? true
-            : ({ data }) => !!data.loadMore
+            : ({ data }) => {
+                if (data.loadMore) return true;
+                if (view === "my") return false;
+                if (!data.savedQuery) return true;
+                const entity = useAppStore
+                  .getState()
+                  .getSavedQueryByName(data.savedQuery.name);
+                return !entity || !isSavedQueryWritableV1(entity);
+              }
         }
         disableDrop={
-          view !== "my" || !!editingNode || multiSelectMode
+          view === "draft" || !!editingNode || multiSelectMode
             ? true
             : ({ parentNode: p, dragNodes }) =>
                 !!p?.data.data.savedQuery ||

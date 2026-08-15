@@ -25,6 +25,7 @@ import {
   getDefaultPagination,
   getSheetStatement,
   isSavedQueryReadableV1,
+  isSavedQueryWritableV1,
   storageKeySqlEditorSavedQueryFolder,
   storageKeySqlEditorSavedQueryTree,
   workspaceCacheScope,
@@ -1247,13 +1248,14 @@ const batchUpdateSavedQueryFolders = async (
 
   // Re-filing rides UpdateSavedQuery's folder field — MoveMySavedQueries
   // moves whole folders only. The row is always cached here (it came off the
-  // tree), and only the creator's own rows move: patching somebody else's
-  // would come back NotFound while the cache claimed otherwise.
-  const currentUserName = `users/${useAppStore.getState().currentUser?.email}`;
+  // tree), and it moves exactly when the caller can update it — the predicate
+  // that gates rename — so an EDITOR grantee re-files a shared saved query
+  // while a row the server would refuse is skipped rather than patched into
+  // a NotFound the cache would contradict.
   const updates: { current: SavedQuery; folder: string }[] = [];
   for (const savedQuery of savedQueries) {
     const current = useAppStore.getState().getSavedQueryByName(savedQuery.name);
-    if (!current || current.creator !== currentUserName) continue;
+    if (!current || !isSavedQueryWritableV1(current)) continue;
     const view = viewForSavedQuery(current);
     if (view === "my" || view === "shared") {
       addAffectedFolderKey(

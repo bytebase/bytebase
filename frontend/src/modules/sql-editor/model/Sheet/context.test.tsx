@@ -27,6 +27,7 @@ type AppState = {
 
 const mocks = vi.hoisted(() => {
   let appState: AppState;
+  const isSavedQueryWritableV1 = vi.fn();
   const appSubscribers = new Set<(state: AppState, prev: AppState) => void>();
   const keyForSavedQuery = (name: string) => `${name.split("/").pop()}:FULL`;
 
@@ -54,6 +55,7 @@ const mocks = vi.hoisted(() => {
 
   return {
     getAppState: () => appState,
+    isSavedQueryWritableV1,
     resetAppState: () => {
       appSubscribers.clear();
       appState = {
@@ -109,6 +111,14 @@ vi.mock("@/stores/app", () => ({
   useAppStore: mocks.useAppStore,
 }));
 
+// The real predicate reads registration bridges the mocked store never
+// installs, so it is stubbed; the default (set in beforeEach) mirrors its
+// creator arm.
+vi.mock("@/utils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils")>()),
+  isSavedQueryWritableV1: mocks.isSavedQueryWritableV1,
+}));
+
 vi.mock("@/modules/sql-editor/store/editor", () => ({
   getSQLEditorEditorState: () => ({ project: "projects/proj1" }),
   subscribeSQLEditorEditorState: mocks.subscribeSQLEditorEditorState,
@@ -128,6 +138,9 @@ describe("sheet context", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mocks.resetAppState();
+    mocks.isSavedQueryWritableV1.mockImplementation(
+      (sheet: SavedQuery) => sheet.creator === "users/creator@example.com"
+    );
     window.localStorage.clear();
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -918,7 +931,7 @@ describe("sheet context", () => {
     });
 
     // Re-filing patches the cached row, so the rows must be in the cache and
-    // owned by the current user.
+    // writable by the caller (the default stub passes creator rows).
     mocks.addSavedQueries([
       create(SavedQuerySchema, {
         name: "projects/proj1/savedQueries/1",
@@ -965,6 +978,78 @@ describe("sheet context", () => {
     expect(
       mocks.getAppState().patchSavedQueryFolderInCache
     ).toHaveBeenCalledWith(["projects/proj1/savedQueries/2"], "target");
+  });
+
+  test("re-files shared rows the caller can update and skips the rest", async () => {
+    const { provideSheetContext, useSheetContext } = await import("./context");
+    let sheetContext: ReturnType<typeof useSheetContext> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      sheetContext = useSheetContext();
+      return null;
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+
+    // The server lets an EDITOR grantee (or a project-level update grant)
+    // re-file somebody else's saved query — folder is an ordinary update
+    // field — so the move keys off writability, not ownership.
+    mocks.addSavedQueries([
+      create(SavedQuerySchema, {
+        name: "projects/proj1/savedQueries/editable-shared",
+        project: "projects/proj1",
+        creator: "users/other@example.com",
+        title: "editable",
+      }),
+      create(SavedQuerySchema, {
+        name: "projects/proj1/savedQueries/readonly-shared",
+        project: "projects/proj1",
+        creator: "users/other@example.com",
+        title: "read-only",
+      }),
+    ]);
+    mocks.isSavedQueryWritableV1.mockImplementation(
+      (sheet: SavedQuery) =>
+        sheet.name === "projects/proj1/savedQueries/editable-shared"
+    );
+
+    await act(async () => {
+      await sheetContext!.batchUpdateSavedQueryFolders([
+        {
+          name: "projects/proj1/savedQueries/editable-shared",
+          folders: ["target"],
+        },
+        {
+          name: "projects/proj1/savedQueries/readonly-shared",
+          folders: ["target"],
+        },
+      ]);
+    });
+
+    expect(mocks.getAppState().patchSavedQuery).toHaveBeenCalledTimes(1);
+    expect(mocks.getAppState().patchSavedQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "projects/proj1/savedQueries/editable-shared",
+        folder: "target",
+      }),
+      ["folder"]
+    );
+    expect(
+      mocks.getAppState().patchSavedQueryFolderInCache
+    ).toHaveBeenCalledWith(
+      ["projects/proj1/savedQueries/editable-shared"],
+      "target"
+    );
+    expect(
+      mocks.getAppState().patchSavedQueryFolderInCache
+    ).not.toHaveBeenCalledWith(
+      ["projects/proj1/savedQueries/readonly-shared"],
+      "target"
+    );
   });
 
   test("moves cached rows that the starred filter hides", async () => {
