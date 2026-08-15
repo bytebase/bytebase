@@ -460,6 +460,15 @@ func (s *Store) PatchSavedQuery(ctx context.Context, patch *PatchSavedQueryMessa
 // statement's unlocked parent snapshot), the transaction rolls back, which
 // also restores any stars the first statement removed, and the caller gets
 // false to answer NotFound.
+//
+// Lifecycle policy (per the store's purge-fence rule): writers on existing
+// rows — delete, patch, star — require the row in the authorized project,
+// not an active project. Archived projects are unreachable through every
+// read path (the project.deleted = FALSE fence on the fetches), so the only
+// archival exposure is a write already in flight when the archive lands,
+// and that completing is an ordinary serialization of concurrent requests.
+// Only creation, which adds a row a purge cannot see, requires an active
+// project.
 func (s *Store) DeleteSavedQuery(ctx context.Context, projectID, resourceID string) (bool, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {

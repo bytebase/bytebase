@@ -774,7 +774,13 @@ lock-ordering):
   its predicate by `(resource_id, project)`** — patch, delete, and the
   first-star parent fence — so a write authorized in the purged project
   cannot land on the reassigned row; it updates zero rows and surfaces as
-  NotFound.
+  NotFound (the fenced delete rolls back its star cleanup). The declared
+  lifecycle policy: writers on existing rows require the row in the
+  authorized project, not an active project — archived projects are already
+  unreachable through every read path, so a write racing an archive is an
+  ordinary serialization of concurrent requests, and restore does not
+  promise to resurrect a row whose authorized delete won that race. Only
+  creation requires an active project.
 
 Two invariants cover every writer. **(1) Child before parent** for
 existing-row writes/deletes; the *only* parent-first step is a new-child
