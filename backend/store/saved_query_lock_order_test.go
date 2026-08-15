@@ -181,7 +181,10 @@ func TestSavedQueryDeleteAndStarToggleLockOrder(t *testing.T) {
 			"AFTER DELETE ON saved_query FOR EACH ROW")
 
 		deleteResult := make(chan error, 1)
-		go func() { deleteResult <- fixture.store.DeleteSavedQuery(fixture.ctx, "default", "saved-query-a") }()
+		go func() {
+			_, err := fixture.store.DeleteSavedQuery(fixture.ctx, "default", "saved-query-a")
+			deleteResult <- err
+		}()
 		waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)
 		deletePID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
 
@@ -228,7 +231,10 @@ func TestSavedQueryDeleteAndStarToggleLockOrder(t *testing.T) {
 		unstarPID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
 
 		deleteResult := make(chan error, 1)
-		go func() { deleteResult <- fixture.store.DeleteSavedQuery(fixture.ctx, "default", "saved-query-a") }()
+		go func() {
+			_, err := fixture.store.DeleteSavedQuery(fixture.ctx, "default", "saved-query-a")
+			deleteResult <- err
+		}()
 		waitForBackendBlockedByPID(fixture.ctx, t, fixture.db, unstarPID)
 		barrier.release(t)
 
@@ -277,7 +283,10 @@ func TestSavedQueryDeleteAndDeleteProjectLockOrder(t *testing.T) {
 		purgePID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
 
 		deleteResult := make(chan error, 1)
-		go func() { deleteResult <- fixture.store.DeleteSavedQuery(fixture.ctx, "project-a", "saved-query-a") }()
+		go func() {
+			_, err := fixture.store.DeleteSavedQuery(fixture.ctx, "project-a", "saved-query-a")
+			deleteResult <- err
+		}()
 		waitForBackendBlockedByPID(fixture.ctx, t, fixture.db, purgePID)
 		barrier.release(t)
 
@@ -294,7 +303,10 @@ func TestSavedQueryDeleteAndDeleteProjectLockOrder(t *testing.T) {
 			"AFTER DELETE ON saved_query_star FOR EACH ROW")
 
 		deleteResult := make(chan error, 1)
-		go func() { deleteResult <- fixture.store.DeleteSavedQuery(fixture.ctx, "project-a", "saved-query-a") }()
+		go func() {
+			_, err := fixture.store.DeleteSavedQuery(fixture.ctx, "project-a", "saved-query-a")
+			deleteResult <- err
+		}()
 		waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)
 		deletePID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
 
@@ -608,7 +620,9 @@ func TestSavedQueryWritersProjectScoped(t *testing.T) {
 		ProjectID:  "project-a",
 		Title:      &title,
 	}))
-	require.NoError(t, fixture.store.DeleteSavedQuery(fixture.ctx, "project-a", "saved-query-a"))
+	deleted, err := fixture.store.DeleteSavedQuery(fixture.ctx, "project-a", "saved-query-a")
+	require.NoError(t, err)
+	require.False(t, deleted, "a delete authorized in the old project must not land")
 	applied, err := fixture.store.SetSavedQueryStar(fixture.ctx, "project-a", "saved-query-a", "other@example.com", true)
 	require.NoError(t, err)
 	require.False(t, applied, "first star must take the parent fence in the authorized project")

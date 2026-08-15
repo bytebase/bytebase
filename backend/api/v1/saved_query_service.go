@@ -510,8 +510,14 @@ func (s *SavedQueryService) DeleteSavedQuery(
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
-	if err := s.store.DeleteSavedQuery(ctx, savedQuery.ProjectID, savedQuery.ResourceID); err != nil {
+	deleted, err := s.store.DeleteSavedQuery(ctx, savedQuery.ProjectID, savedQuery.ResourceID)
+	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to delete saved query: %v", err))
+	}
+	if !deleted {
+		// Gone — or reassigned by a purge — between the read above and the
+		// delete.
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil

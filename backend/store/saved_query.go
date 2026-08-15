@@ -447,22 +447,23 @@ func (s *Store) PatchSavedQuery(ctx context.Context, patch *PatchSavedQueryMessa
 	return nil
 }
 
-// DeleteSavedQuery deletes an existing saved query. Star rows are deleted
-// first, in full primary-key order — explicitly, not via the FK cascade
-// (which would lock the parent first) — matching the star and purge lock
-// order so a delete racing a star toggle or a purge cannot deadlock.
+// DeleteSavedQuery deletes an existing saved query and reports whether it was
+// still there to delete. Star rows are deleted first, in full primary-key
+// order — explicitly, not via the FK cascade (which would lock the parent
+// first) — matching the star and purge lock order so a delete racing a star
+// toggle or a purge cannot deadlock.
 //
 // Both statements scope by the project the caller was authorized in: a purge
 // reassigns surviving saved queries to the default project, and a delete
-// racing it must not land on the reassigned row. The star delete reads the
-// parent without locking it (locking would invert the child-before-parent
-// order); a reassignment between the two statements can strip a reassigned
-// row's stars — personal markers, in a purge-width window — but never the
-// row.
-func (s *Store) DeleteSavedQuery(ctx context.Context, projectID, resourceID string) error {
+// racing it must not land on the reassigned row. The row delete is the
+// arbiter — when it matches nothing (row gone, or reassigned after the star
+// statement's unlocked parent snapshot), the transaction rolls back, which
+// also restores any stars the first statement removed, and the caller gets
+// false to answer NotFound.
+func (s *Store) DeleteSavedQuery(ctx context.Context, projectID, resourceID string) (bool, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(err, "failed to begin transaction")
+		return false, errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
@@ -480,12 +481,20 @@ func (s *Store) DeleteSavedQuery(ctx context.Context, projectID, resourceID stri
 			FOR UPDATE
 		)
 	`, resourceID, projectID); err != nil {
-		return errors.Wrapf(err, "failed to delete stars for saved query %s", resourceID)
+		return false, errors.Wrapf(err, "failed to delete stars for saved query %s", resourceID)
 	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM saved_query WHERE resource_id = $1 AND project = $2`, resourceID, projectID); err != nil {
-		return err
+	result, err := tx.ExecContext(ctx, `DELETE FROM saved_query WHERE resource_id = $1 AND project = $2`, resourceID, projectID)
+	if err != nil {
+		return false, err
 	}
-	return tx.Commit()
+	deleted, err := result.RowsAffected()
+	if err != nil {
+		return false, errors.Wrap(err, "failed to count deleted saved queries")
+	}
+	if deleted == 0 {
+		return false, nil
+	}
+	return true, tx.Commit()
 }
 
 // SetSavedQueryStar stars or unstars a saved query for a principal, and
