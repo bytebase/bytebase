@@ -198,9 +198,9 @@ Alternatives the rejected options.
    `setIamPolicy`, but no predefined role carries it, so nobody re-grants a
    saved query out from under its creator unless a custom role says so. One
    thing sits outside the verbs: the bulk
-   **`MoveMySavedQueries`**, caller-scoped by name, though a
-   single `UpdateSavedQuery` still moves one saved query for anyone holding
-   `update`. **Starring** follows `read` — a personal marker on anything
+   **`MoveMySavedQueries`**, which re-files only the caller's own folder
+   tree, though a single `UpdateSavedQuery` still moves one saved query for
+   anyone holding `update`. **Starring** follows `read` — a personal marker on anything
    you can reach, granting nothing, yours alone. The real tradeoff:
    role-`get` holders read private drafts, and reads are not audited — the
    audit log records changes, not lookups (see API and authorization: Audit
@@ -514,7 +514,7 @@ Every object method is a CUSTOM per-row predicate.
 | `GetSavedQueryPolicy` | CUSTOM | `readPolicy(s,u)`; NotFound when unreadable | policy only; unaudited |
 | `SetSavedQueryPolicy` | CUSTOM | `share(s,u)` + etag CAS | policy only; audited |
 | `UpdateSavedQueryStar` | CUSTOM | `read(s,u)` — star any readable query | — ; unaudited |
-| `MoveMySavedQueries` | CUSTOM | the caller's own rows only, by name or by folder (descendants included) | count only; audited |
+| `MoveMySavedQueries` | CUSTOM | the caller's own rows under `source_folder` (descendants included); single re-files ride `UpdateSavedQuery` | count only; audited |
 | `SearchSavedQueryFolders` | CUSTOM | `discover` → folder paths of readable rows, same access clause as Search | paths only; unaudited |
 
 Duplicate and fork need no RPC: read what you can already see, then
@@ -785,8 +785,8 @@ delete) before mutating. Required before
 implementation: deterministic real-PostgreSQL regression tests for **both**
 acquisition orders of each contending pair — create↔purge,
 first-star↔purge, delete↔star-toggle, delete↔purge over a query with
-multiple stars, and two overlapping `MoveMySavedQueries` with
-intersecting, reverse-ordered targets — asserting the terminal outcomes — project (or query) deleted, no orphaned
+multiple stars, and two overlapping `MoveMySavedQueries` over
+the same folder — asserting the terminal outcomes — project (or query) deleted, no orphaned
 saved query or star, and **no** FK failure or deadlock (`40P01`) in either
 direction (absence of `40P01` alone is insufficient).
 

@@ -31815,26 +31815,18 @@ on the last page. </p></td>
                 </tr>
               
                 <tr>
-                  <td>names</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The saved queries to move. Set this or `source_folder`, not both.
-Format: projects/{project}/savedQueries/{savedQuery} </p></td>
-                </tr>
-              
-                <tr>
                   <td>source_folder</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Move everything filed under this path, descendants included, e.g. &#34;a/b&#34;.
-Set this or `names`, not both. </p></td>
+                  <td><p>The folder to move, descendants included, e.g. &#34;a/b&#34;. </p></td>
                 </tr>
               
                 <tr>
                   <td>target_folder</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Where they land. A path like &#34;a/b/c&#34;; empty unfiles them. </p></td>
+                  <td><p>Where it lands. A path like &#34;a/b/c&#34;; empty drops the `source_folder`
+prefix, promoting the folder&#39;s contents toward the root. </p></td>
                 </tr>
               
             </tbody>
@@ -31858,7 +31850,7 @@ Set this or `names`, not both. </p></td>
                   <td>moved_count</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>How many moved. Fewer than were named when some are not the caller&#39;s. </p></td>
+                  <td><p>How many moved. </p></td>
                 </tr>
               
             </tbody>
@@ -32409,10 +32401,11 @@ binding, or project-level grant)</p></td>
                 <td>MoveMySavedQueries</td>
                 <td><a href="#bytebase.v1.MoveMySavedQueriesRequest">MoveMySavedQueriesRequest</a></td>
                 <td><a href="#bytebase.v1.MoveMySavedQueriesResponse">MoveMySavedQueriesResponse</a></td>
-                <td><p>Move the caller&#39;s own saved queries into a folder, by name or a whole
-folder at a time. Moving a folder moves its descendants: renaming &#34;a/b&#34;
-to &#34;a/c&#34; also moves &#34;a/b/deep&#34;. Only the caller&#39;s own saved queries move;
-the response counts how many did.
+                <td><p>Move the caller&#39;s saved queries filed under `source_folder`, descendants
+included, into `target_folder`: renaming &#34;a/b&#34; to &#34;a/c&#34; also moves
+&#34;a/b/deep&#34;. Only the caller&#39;s own saved queries move; the response counts
+how many did. Re-filing a single saved query is UpdateSavedQuery&#39;s
+`folder` field.
 Permissions required: creator</p></td>
               </tr>
             

@@ -308,7 +308,7 @@ func TestSavedQueryBatchFolderMovesLockOrder(t *testing.T) {
 	const seedSQL = `
 		INSERT INTO saved_query (resource_id, creator, project, name, statement, folder) VALUES
 			('saved-query-a', 'user@example.com', 'default', 'A', '', 'start'),
-			('saved-query-b', 'user@example.com', 'default', 'B', '', 'start');
+			('saved-query-b', 'user@example.com', 'default', 'B', '', 'start/sub');
 	`
 
 	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
@@ -317,22 +317,25 @@ func TestSavedQueryBatchFolderMovesLockOrder(t *testing.T) {
 	installMaintenanceLockBarrier(t, fixture.db, barrierID,
 		"AFTER UPDATE OF folder ON saved_query FOR EACH ROW")
 
-	// Two overlapping batches with intersecting, reverse-ordered targets:
-	// both lock in full primary-key order, so the second serializes behind
-	// the first instead of deadlocking.
+	// Two overlapping folder moves over the same rows: both lock in full
+	// primary-key order, so the second serializes behind the first instead of
+	// deadlocking, re-evaluates its predicate against the committed rename,
+	// and moves nothing.
 	firstResult := make(chan error, 1)
 	go func() {
-		_, err := fixture.store.MoveSavedQueries(fixture.ctx, "default", "user@example.com",
-			[]string{"saved-query-a", "saved-query-b"}, "one")
+		_, err := fixture.store.MoveSavedQueryFolder(fixture.ctx, "default", "user@example.com",
+			"start", "one")
 		firstResult <- err
 	}()
 	waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)
 	firstPID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
 
+	secondMoved := make(chan int, 1)
 	secondResult := make(chan error, 1)
 	go func() {
-		_, err := fixture.store.MoveSavedQueries(fixture.ctx, "default", "user@example.com",
-			[]string{"saved-query-b", "saved-query-a"}, "two")
+		moved, err := fixture.store.MoveSavedQueryFolder(fixture.ctx, "default", "user@example.com",
+			"start", "two")
+		secondMoved <- moved
 		secondResult <- err
 	}()
 	waitForBackendBlockedByPID(fixture.ctx, t, fixture.db, firstPID)
@@ -340,6 +343,7 @@ func TestSavedQueryBatchFolderMovesLockOrder(t *testing.T) {
 
 	requireMaintenanceResult(t, firstResult)
 	requireMaintenanceResult(t, secondResult)
+	require.Equal(t, 0, <-secondMoved)
 
 	var folders []string
 	rows, err := fixture.db.QueryContext(fixture.ctx,
@@ -352,7 +356,7 @@ func TestSavedQueryBatchFolderMovesLockOrder(t *testing.T) {
 		folders = append(folders, folder)
 	}
 	require.NoError(t, rows.Err())
-	require.Equal(t, []string{"two", "two"}, folders)
+	require.Equal(t, []string{"one", "one/sub"}, folders)
 }
 
 // TestCreateSavedQueryRejectsInactiveProject covers the shared fence's outcome

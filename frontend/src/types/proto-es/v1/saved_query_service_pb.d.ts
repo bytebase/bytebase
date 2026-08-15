@@ -237,23 +237,15 @@ export declare type MoveMySavedQueriesRequest = Message<"bytebase.v1.MoveMySaved
   parent: string;
 
   /**
-   * The saved queries to move. Set this or `source_folder`, not both.
-   * Format: projects/{project}/savedQueries/{savedQuery}
-   *
-   * @generated from field: repeated string names = 2;
-   */
-  names: string[];
-
-  /**
-   * Move everything filed under this path, descendants included, e.g. "a/b".
-   * Set this or `names`, not both.
+   * The folder to move, descendants included, e.g. "a/b".
    *
    * @generated from field: string source_folder = 3;
    */
   sourceFolder: string;
 
   /**
-   * Where they land. A path like "a/b/c"; empty unfiles them.
+   * Where it lands. A path like "a/b/c"; empty drops the `source_folder`
+   * prefix, promoting the folder's contents toward the root.
    *
    * @generated from field: string target_folder = 4;
    */
@@ -271,7 +263,7 @@ export declare const MoveMySavedQueriesRequestSchema: GenMessage<MoveMySavedQuer
  */
 export declare type MoveMySavedQueriesResponse = Message<"bytebase.v1.MoveMySavedQueriesResponse"> & {
   /**
-   * How many moved. Fewer than were named when some are not the caller's.
+   * How many moved.
    *
    * @generated from field: int32 moved_count = 1;
    */
@@ -724,10 +716,11 @@ export declare const SavedQueryService: GenService<{
     output: typeof SavedQuerySchema;
   },
   /**
-   * Move the caller's own saved queries into a folder, by name or a whole
-   * folder at a time. Moving a folder moves its descendants: renaming "a/b"
-   * to "a/c" also moves "a/b/deep". Only the caller's own saved queries move;
-   * the response counts how many did.
+   * Move the caller's saved queries filed under `source_folder`, descendants
+   * included, into `target_folder`: renaming "a/b" to "a/c" also moves
+   * "a/b/deep". Only the caller's own saved queries move; the response counts
+   * how many did. Re-filing a single saved query is UpdateSavedQuery's
+   * `folder` field.
    * Permissions required: creator
    *
    * @generated from rpc bytebase.v1.SavedQueryService.MoveMySavedQueries

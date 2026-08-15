@@ -14206,10 +14206,11 @@ paths:
         - SavedQueryService
       summary: MoveMySavedQueries
       description: |-
-        Move the caller's own saved queries into a folder, by name or a whole
-         folder at a time. Moving a folder moves its descendants: renaming "a/b"
-         to "a/c" also moves "a/b/deep". Only the caller's own saved queries move;
-         the response counts how many did.
+        Move the caller's saved queries filed under `source_folder`, descendants
+         included, into `target_folder`: renaming "a/b" to "a/c" also moves
+         "a/b/deep". Only the caller's own saved queries move; the response counts
+         how many did. Re-filing a single saved query is UpdateSavedQuery's
+         `folder` field.
          Permissions required: creator
       operationId: SavedQueryService_MoveMySavedQueries
       parameters:
@@ -14225,27 +14226,22 @@ paths:
             schema:
               type: object
               properties:
-                names:
-                  type: array
-                  items:
-                    type: string
-                  title: names
-                  description: |-
-                    The saved queries to move. Set this or `source_folder`, not both.
-                     Format: projects/{project}/savedQueries/{savedQuery}
                 sourceFolder:
                   type: string
                   title: source_folder
                   maxLength: 256
-                  description: |-
-                    Move everything filed under this path, descendants included, e.g. "a/b".
-                     Set this or `names`, not both.
+                  minLength: 1
+                  description: The folder to move, descendants included, e.g. "a/b".
                 targetFolder:
                   type: string
                   title: target_folder
                   maxLength: 256
-                  description: Where they land. A path like "a/b/c"; empty unfiles them.
+                  description: |-
+                    Where it lands. A path like "a/b/c"; empty drops the `source_folder`
+                     prefix, promoting the folder's contents toward the root.
               title: MoveMySavedQueriesRequest
+              required:
+                - sourceFolder
               additionalProperties: false
         required: true
       responses:
@@ -26159,29 +26155,23 @@ components:
           type: string
           title: parent
           description: 'Format: projects/{project}'
-        names:
-          type: array
-          items:
-            type: string
-          title: names
-          description: |-
-            The saved queries to move. Set this or `source_folder`, not both.
-             Format: projects/{project}/savedQueries/{savedQuery}
         sourceFolder:
           type: string
           title: source_folder
           maxLength: 256
-          description: |-
-            Move everything filed under this path, descendants included, e.g. "a/b".
-             Set this or `names`, not both.
+          minLength: 1
+          description: The folder to move, descendants included, e.g. "a/b".
         targetFolder:
           type: string
           title: target_folder
           maxLength: 256
-          description: Where they land. A path like "a/b/c"; empty unfiles them.
+          description: |-
+            Where it lands. A path like "a/b/c"; empty drops the `source_folder`
+             prefix, promoting the folder's contents toward the root.
       title: MoveMySavedQueriesRequest
       required:
         - parent
+        - sourceFolder
       additionalProperties: false
     bytebase.v1.MoveMySavedQueriesResponse:
       type: object
@@ -26190,7 +26180,7 @@ components:
           type: integer
           title: moved_count
           format: int32
-          description: How many moved. Fewer than were named when some are not the caller's.
+          description: How many moved.
       title: MoveMySavedQueriesResponse
       additionalProperties: false
     bytebase.v1.OAuth2AuthStyle:

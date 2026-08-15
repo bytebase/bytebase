@@ -11158,9 +11158,8 @@ For example: creator == &#34;users/alice@example.com&#34; |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | Format: projects/{project} |
-| names | [string](#string) | repeated | The saved queries to move. Set this or `source_folder`, not both. Format: projects/{project}/savedQueries/{savedQuery} |
-| source_folder | [string](#string) |  | Move everything filed under this path, descendants included, e.g. &#34;a/b&#34;. Set this or `names`, not both. |
-| target_folder | [string](#string) |  | Where they land. A path like &#34;a/b/c&#34;; empty unfiles them. |
+| source_folder | [string](#string) |  | The folder to move, descendants included, e.g. &#34;a/b&#34;. |
+| target_folder | [string](#string) |  | Where it lands. A path like &#34;a/b/c&#34;; empty drops the `source_folder` prefix, promoting the folder&#39;s contents toward the root. |
 
 
 
@@ -11175,7 +11174,7 @@ For example: creator == &#34;users/alice@example.com&#34; |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| moved_count | [int32](#int32) |  | How many moved. Fewer than were named when some are not the caller&#39;s. |
+| moved_count | [int32](#int32) |  | How many moved. |
 
 
 
@@ -11406,7 +11405,7 @@ is governed by the SQL Editor&#39;s database permissions, not by this service.
 | SearchSavedQueryFolders | [SearchSavedQueryFoldersRequest](#bytebase-v1-SearchSavedQueryFoldersRequest) | [SearchSavedQueryFoldersResponse](#bytebase-v1-SearchSavedQueryFoldersResponse) | Search folder paths. A path is returned when it holds at least one saved query the caller can read, the same access rule as SearchSavedQueries. Permissions required: bb.savedQueries.search on the project |
 | UpdateSavedQuery | [UpdateSavedQueryRequest](#bytebase-v1-UpdateSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Update a saved query. `database` must belong to the saved query&#39;s project. Permissions required: bb.savedQueries.update (creator, EDITOR binding, or project-level grant) |
 | UpdateSavedQueryStar | [UpdateSavedQueryStarRequest](#bytebase-v1-UpdateSavedQueryStarRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Star or unstar a saved query for the caller. Stars are personal: nobody else sees them and they grant nothing. The caller can star any saved query they can read. When access is lost the star is hidden, not deleted; it comes back if access returns. Permissions required: bb.savedQueries.get (creator, VIEWER/EDITOR binding, or project-level grant) |
-| MoveMySavedQueries | [MoveMySavedQueriesRequest](#bytebase-v1-MoveMySavedQueriesRequest) | [MoveMySavedQueriesResponse](#bytebase-v1-MoveMySavedQueriesResponse) | Move the caller&#39;s own saved queries into a folder, by name or a whole folder at a time. Moving a folder moves its descendants: renaming &#34;a/b&#34; to &#34;a/c&#34; also moves &#34;a/b/deep&#34;. Only the caller&#39;s own saved queries move; the response counts how many did. Permissions required: creator |
+| MoveMySavedQueries | [MoveMySavedQueriesRequest](#bytebase-v1-MoveMySavedQueriesRequest) | [MoveMySavedQueriesResponse](#bytebase-v1-MoveMySavedQueriesResponse) | Move the caller&#39;s saved queries filed under `source_folder`, descendants included, into `target_folder`: renaming &#34;a/b&#34; to &#34;a/c&#34; also moves &#34;a/b/deep&#34;. Only the caller&#39;s own saved queries move; the response counts how many did. Re-filing a single saved query is UpdateSavedQuery&#39;s `folder` field. Permissions required: creator |
 | DeleteSavedQuery | [DeleteSavedQueryRequest](#bytebase-v1-DeleteSavedQueryRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a saved query and every user&#39;s stars on it. An EDITOR binding cannot delete. Permissions required: bb.savedQueries.delete (creator or project-level grant) |
 | GetSavedQueryPolicy | [GetSavedQueryPolicyRequest](#bytebase-v1-GetSavedQueryPolicyRequest) | [SavedQueryPolicy](#bytebase-v1-SavedQueryPolicy) | Get a saved query&#39;s sharing policy: who it is shared with, at what level. Permissions required: bb.savedQueries.getIamPolicy (creator, VIEWER/EDITOR binding, or project-level grant) |
 | SetSavedQueryPolicy | [SetSavedQueryPolicyRequest](#bytebase-v1-SetSavedQueryPolicyRequest) | [SavedQueryPolicy](#bytebase-v1-SavedQueryPolicy) | Replace a saved query&#39;s sharing policy in full. `policy.etag` must match the stored policy; a mismatch fails with ABORTED. Permissions required: bb.savedQueries.setIamPolicy (creator or project-level grant; no predefined role carries it) |

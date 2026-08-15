@@ -532,13 +532,10 @@ type MoveMySavedQueriesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// The saved queries to move. Set this or `source_folder`, not both.
-	// Format: projects/{project}/savedQueries/{savedQuery}
-	Names []string `protobuf:"bytes,2,rep,name=names,proto3" json:"names,omitempty"`
-	// Move everything filed under this path, descendants included, e.g. "a/b".
-	// Set this or `names`, not both.
+	// The folder to move, descendants included, e.g. "a/b".
 	SourceFolder string `protobuf:"bytes,3,opt,name=source_folder,json=sourceFolder,proto3" json:"source_folder,omitempty"`
-	// Where they land. A path like "a/b/c"; empty unfiles them.
+	// Where it lands. A path like "a/b/c"; empty drops the `source_folder`
+	// prefix, promoting the folder's contents toward the root.
 	TargetFolder  string `protobuf:"bytes,4,opt,name=target_folder,json=targetFolder,proto3" json:"target_folder,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -581,13 +578,6 @@ func (x *MoveMySavedQueriesRequest) GetParent() string {
 	return ""
 }
 
-func (x *MoveMySavedQueriesRequest) GetNames() []string {
-	if x != nil {
-		return x.Names
-	}
-	return nil
-}
-
 func (x *MoveMySavedQueriesRequest) GetSourceFolder() string {
 	if x != nil {
 		return x.SourceFolder
@@ -604,7 +594,7 @@ func (x *MoveMySavedQueriesRequest) GetTargetFolder() string {
 
 type MoveMySavedQueriesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// How many moved. Fewer than were named when some are not the caller's.
+	// How many moved.
 	MovedCount    int32 `protobuf:"varint,1,opt,name=moved_count,json=movedCount,proto3" json:"moved_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1235,14 +1225,12 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\x1bUpdateSavedQueryStarRequest\x123\n" +
 	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
 	"\x17bytebase.com/SavedQueryR\x04name\x12\x18\n" +
-	"\astarred\x18\x02 \x01(\bR\astarred\"\xe3\x01\n" +
+	"\astarred\x18\x02 \x01(\bR\astarred\"\xba\x01\n" +
 	"\x19MoveMySavedQueriesRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x122\n" +
-	"\x05names\x18\x02 \x03(\tB\x1c\xfaA\x19\n" +
-	"\x17bytebase.com/SavedQueryR\x05names\x12-\n" +
-	"\rsource_folder\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\fsourceFolder\x12-\n" +
-	"\rtarget_folder\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\ftargetFolder\"=\n" +
+	"\rsource_folder\x18\x03 \x01(\tB\r\xe0A\x02\xbaH\ar\x05\x10\x01\x18\x80\x02R\fsourceFolder\x12-\n" +
+	"\rtarget_folder\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\ftargetFolderJ\x04\b\x02\x10\x03\"=\n" +
 	"\x1aMoveMySavedQueriesResponse\x12\x1f\n" +
 	"\vmoved_count\x18\x01 \x01(\x05R\n" +
 	"movedCount\"Y\n" +
@@ -1294,7 +1282,7 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\x12 \n" +
 	"\x06folder\x18\r \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\x06folder:K\xeaAH\n" +
 	"\x17bytebase.com/SavedQuery\x12-projects/{project}/savedQueries/{saved_query}J\x04\b\n" +
-	"\x10\vJ\x04\b\f\x10\r2\xa0\x0f\n" +
+	"\x10\vJ\x04\b\f\x10\r2\xae\x0f\n" +
 	"\x11SavedQueryService\x12\xc3\x01\n" +
 	"\x10CreateSavedQuery\x12$.bytebase.v1.CreateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"p\xdaA\x12parent,saved_query\x8a\xea0\x16bb.savedQueries.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x023:\vsaved_query\"$/v1/{parent=projects/*}/savedQueries\x12\x84\x01\n" +
 	"\rGetSavedQuery\x12!.bytebase.v1.GetSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"7\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/savedQueries/*}\x12\xb2\x01\n" +
@@ -1302,8 +1290,8 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\x12SearchSavedQueries\x12&.bytebase.v1.SearchSavedQueriesRequest\x1a'.bytebase.v1.SearchSavedQueriesResponse\"C\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:search\x12\xc0\x01\n" +
 	"\x17SearchSavedQueryFolders\x12+.bytebase.v1.SearchSavedQueryFoldersRequest\x1a,.bytebase.v1.SearchSavedQueryFoldersResponse\"J\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{parent=projects/*}/savedQueries:searchFolders\x12\xba\x01\n" +
 	"\x10UpdateSavedQuery\x12$.bytebase.v1.UpdateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"g\xdaA\x17saved_query,update_mask\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02?:\vsaved_query20/v1/{saved_query.name=projects/*/savedQueries/*}\x12\xa8\x01\n" +
-	"\x14UpdateSavedQueryStar\x12(.bytebase.v1.UpdateSavedQueryStarRequest\x1a\x17.bytebase.v1.SavedQuery\"M\xdaA\fname,starred\x90\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/savedQueries/*}:updateStar\x12\xbc\x01\n" +
-	"\x12MoveMySavedQueries\x12&.bytebase.v1.MoveMySavedQueriesRequest\x1a'.bytebase.v1.MoveMySavedQueriesResponse\"U\xdaA\x14parent,target_folder\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:moveMy\x12\x8d\x01\n" +
+	"\x14UpdateSavedQueryStar\x12(.bytebase.v1.UpdateSavedQueryStarRequest\x1a\x17.bytebase.v1.SavedQuery\"M\xdaA\fname,starred\x90\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/savedQueries/*}:updateStar\x12\xca\x01\n" +
+	"\x12MoveMySavedQueries\x12&.bytebase.v1.MoveMySavedQueriesRequest\x1a'.bytebase.v1.MoveMySavedQueriesResponse\"c\xdaA\"parent,source_folder,target_folder\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:moveMy\x12\x8d\x01\n" +
 	"\x10DeleteSavedQuery\x12$.bytebase.v1.DeleteSavedQueryRequest\x1a\x16.google.protobuf.Empty\";\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02&*$/v1/{name=projects/*/savedQueries/*}\x12\xa8\x01\n" +
 	"\x13GetSavedQueryPolicy\x12'.bytebase.v1.GetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"I\xdaA\bresource\x90\xea0\x02\x82\xd3\xe4\x93\x024\x122/v1/{resource=projects/*/savedQueries/*}:getPolicy\x12\xb6\x01\n" +
 	"\x13SetSavedQueryPolicy\x12'.bytebase.v1.SetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"W\xdaA\x0fresource,policy\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{resource=projects/*/savedQueries/*}:setPolicyB\xac\x01\n" +

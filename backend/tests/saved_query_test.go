@@ -374,13 +374,15 @@ func TestMoveSavedQueries(t *testing.T) {
 	a.Empty(searchByFolder("old"))
 	a.Empty(searchByFolder("old/child"))
 
-	// Naming saved queries moves exactly those, descendants irrelevant.
-	moved, err = move(&v1pb.MoveMySavedQueriesRequest{
-		Names:        []string{directSavedQuery.Name, childSavedQuery.Name},
-		TargetFolder: "selected",
-	})
-	a.NoError(err)
-	a.Equal(int32(2), moved)
+	// Re-filing single saved queries is UpdateSavedQuery's folder field.
+	for _, name := range []string{directSavedQuery.Name, childSavedQuery.Name} {
+		refiled, err := ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+			SavedQuery: &v1pb.SavedQuery{Name: name, Folder: "selected"},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"folder"}},
+		}))
+		a.NoError(err)
+		a.Equal("selected", refiled.Msg.Folder)
+	}
 	a.ElementsMatch([]string{directSavedQuery.Name, childSavedQuery.Name}, searchByFolder("selected"))
 	a.ElementsMatch([]string{otherSavedQuery.Name}, searchByFolder("other"))
 
@@ -397,15 +399,8 @@ func TestMoveSavedQueries(t *testing.T) {
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 	a.ElementsMatch([]string{directSavedQuery.Name, childSavedQuery.Name}, searchByFolder("boxed"))
 
-	// Exactly one of names / source_folder.
+	// source_folder is required.
 	_, err = move(&v1pb.MoveMySavedQueriesRequest{TargetFolder: "x"})
-	a.Error(err)
-	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
-	_, err = move(&v1pb.MoveMySavedQueriesRequest{
-		Names:        []string{directSavedQuery.Name},
-		SourceFolder: "boxed",
-		TargetFolder: "x",
-	})
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 

@@ -22,6 +22,7 @@ type AppState = {
   fetchSavedQueryList: ReturnType<typeof vi.fn>;
   updateSavedQueryStar: ReturnType<typeof vi.fn>;
   moveMySavedQueries: ReturnType<typeof vi.fn>;
+  patchSavedQuery: ReturnType<typeof vi.fn>;
 };
 
 const mocks = vi.hoisted(() => {
@@ -78,6 +79,7 @@ const mocks = vi.hoisted(() => {
         }),
         updateSavedQueryStar: vi.fn(),
         moveMySavedQueries: vi.fn(async () => 0),
+        patchSavedQuery: vi.fn(async () => undefined),
         patchSavedQueryFolderInCache: vi.fn(),
       };
     },
@@ -900,7 +902,7 @@ describe("sheet context", () => {
     expect(viewContext!.hasMoreForFolder("/my/alpha")).toBe(false);
   });
 
-  test("batch updates saved query folders with one name filter per target folder", async () => {
+  test("batch updates saved query folders via UpdateSavedQuery per row", async () => {
     const { provideSheetContext, useSheetContext } = await import("./context");
     let sheetContext: ReturnType<typeof useSheetContext> | undefined;
 
@@ -915,6 +917,23 @@ describe("sheet context", () => {
       root.render(<Probe />);
     });
 
+    // Re-filing patches the cached row, so the rows must be in the cache and
+    // owned by the current user.
+    mocks.addSavedQueries([
+      create(SavedQuerySchema, {
+        name: "projects/proj1/savedQueries/1",
+        project: "projects/proj1",
+        creator: "users/creator@example.com",
+        title: "one",
+      }),
+      create(SavedQuerySchema, {
+        name: "projects/proj1/savedQueries/2",
+        project: "projects/proj1",
+        creator: "users/creator@example.com",
+        title: "two",
+      }),
+    ]);
+
     await act(async () => {
       await sheetContext!.batchUpdateSavedQueryFolders([
         { name: "projects/proj1/savedQueries/1", folders: ["target"] },
@@ -922,25 +941,30 @@ describe("sheet context", () => {
       ]);
     });
 
-    expect(mocks.getAppState().moveMySavedQueries).toHaveBeenCalledTimes(1);
-    expect(mocks.getAppState().moveMySavedQueries).toHaveBeenCalledWith(
-      "projects/proj1",
-      {
-        names: [
-          "projects/proj1/savedQueries/1",
-          "projects/proj1/savedQueries/2",
-        ],
-        targetFolder: "target",
-      }
+    expect(mocks.getAppState().moveMySavedQueries).not.toHaveBeenCalled();
+    expect(mocks.getAppState().patchSavedQuery).toHaveBeenCalledTimes(2);
+    expect(mocks.getAppState().patchSavedQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "projects/proj1/savedQueries/1",
+        folder: "target",
+      }),
+      ["folder"]
     );
-    // The batch RPC answers with a count, so the moved rows are mirrored into
-    // the cache — otherwise the tree rebuild snaps them back to the old folder.
+    expect(mocks.getAppState().patchSavedQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "projects/proj1/savedQueries/2",
+        folder: "target",
+      }),
+      ["folder"]
+    );
+    // Both cache views are re-filed per row so the tree rebuild does not snap
+    // the rows back to the old folder.
     expect(
       mocks.getAppState().patchSavedQueryFolderInCache
-    ).toHaveBeenCalledWith(
-      ["projects/proj1/savedQueries/1", "projects/proj1/savedQueries/2"],
-      "target"
-    );
+    ).toHaveBeenCalledWith(["projects/proj1/savedQueries/1"], "target");
+    expect(
+      mocks.getAppState().patchSavedQueryFolderInCache
+    ).toHaveBeenCalledWith(["projects/proj1/savedQueries/2"], "target");
   });
 
   test("moves cached rows that the starred filter hides", async () => {

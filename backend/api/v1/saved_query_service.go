@@ -571,10 +571,9 @@ func (s *SavedQueryService) UpdateSavedQueryStar(
 	return connect.NewResponse(convertToAPISavedQuery(savedQuery)), nil
 }
 
-// MoveMySavedQueries files saved queries, named individually or a folder at a
-// time. Creator-only: filing is personal organization, so the store scopes
-// every move to the caller's own rows and anything else is simply not
-// selected.
+// MoveMySavedQueries moves the caller's saved queries filed under one folder.
+// Creator-only: filing is personal organization, so the store scopes the move
+// to the caller's own rows and anything else is simply not selected.
 func (s *SavedQueryService) MoveMySavedQueries(
 	ctx context.Context,
 	req *connect.Request[v1pb.MoveMySavedQueriesRequest],
@@ -587,9 +586,6 @@ func (s *SavedQueryService) MoveMySavedQueries(
 	if projectID == "-" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`projects/- is not supported`))
 	}
-	if (len(request.Names) == 0) == (request.SourceFolder == "") {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("set either names or source_folder, not both"))
-	}
 
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
@@ -600,43 +596,23 @@ func (s *SavedQueryService) MoveMySavedQueries(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-
-	var moved int
-	if request.SourceFolder != "" {
-		source, err := store.NormalizeSavedQueryFolder(request.SourceFolder)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		if source == "" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("source_folder cannot be empty"))
-		}
-		if source == target {
-			return connect.NewResponse(&v1pb.MoveMySavedQueriesResponse{}), nil
-		}
-		if strings.HasPrefix(target, source+"/") {
-			// "a/b" into "a/b/c" would rewrite the rows it just moved.
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot move a folder into itself"))
-		}
-		moved, err = s.store.MoveSavedQueryFolder(ctx, projectID, user.Email, source, target)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to move folder: %v", err))
-		}
-	} else {
-		resourceIDs := make([]string, 0, len(request.Names))
-		for _, name := range request.Names {
-			nameProject, savedQueryID, err := common.GetProjectIDSavedQueryID(name)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, err)
-			}
-			if nameProject != projectID {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("saved query %q is not in %q", name, request.Parent))
-			}
-			resourceIDs = append(resourceIDs, savedQueryID)
-		}
-		moved, err = s.store.MoveSavedQueries(ctx, projectID, user.Email, resourceIDs, target)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to move saved queries: %v", err))
-		}
+	source, err := store.NormalizeSavedQueryFolder(request.SourceFolder)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if source == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("source_folder cannot be empty"))
+	}
+	if source == target {
+		return connect.NewResponse(&v1pb.MoveMySavedQueriesResponse{}), nil
+	}
+	if strings.HasPrefix(target, source+"/") {
+		// "a/b" into "a/b/c" would rewrite the rows it just moved.
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot move a folder into itself"))
+	}
+	moved, err := s.store.MoveSavedQueryFolder(ctx, projectID, user.Email, source, target)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to move folder: %v", err))
 	}
 
 	return connect.NewResponse(&v1pb.MoveMySavedQueriesResponse{MovedCount: int32(moved)}), nil

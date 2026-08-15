@@ -114,17 +114,18 @@ service SavedQueryService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
-  // Move the caller's own saved queries into a folder, by name or a whole
-  // folder at a time. Moving a folder moves its descendants: renaming "a/b"
-  // to "a/c" also moves "a/b/deep". Only the caller's own saved queries move;
-  // the response counts how many did.
+  // Move the caller's saved queries filed under `source_folder`, descendants
+  // included, into `target_folder`: renaming "a/b" to "a/c" also moves
+  // "a/b/deep". Only the caller's own saved queries move; the response counts
+  // how many did. Re-filing a single saved query is UpdateSavedQuery's
+  // `folder` field.
   // Permissions required: creator
   rpc MoveMySavedQueries(MoveMySavedQueriesRequest) returns (MoveMySavedQueriesResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/savedQueries:moveMy"
       body: "*"
     };
-    option (google.api.method_signature) = "parent,target_folder";
+    option (google.api.method_signature) = "parent,source_folder,target_folder";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
   }
@@ -265,20 +266,26 @@ message MoveMySavedQueriesRequest {
     (google.api.resource_reference) = {type: "bytebase.com/Project"}
   ];
 
-  // The saved queries to move. Set this or `source_folder`, not both.
-  // Format: projects/{project}/savedQueries/{savedQuery}
-  repeated string names = 2 [(google.api.resource_reference) = {type: "bytebase.com/SavedQuery"}];
+  // Removed: `names` — re-filing a single saved query is UpdateSavedQuery's
+  // `folder` field.
+  reserved 2;
 
-  // Move everything filed under this path, descendants included, e.g. "a/b".
-  // Set this or `names`, not both.
-  string source_folder = 3 [(buf.validate.field).string.max_len = 256];
+  // The folder to move, descendants included, e.g. "a/b".
+  string source_folder = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 256
+    }
+  ];
 
-  // Where they land. A path like "a/b/c"; empty unfiles them.
+  // Where it lands. A path like "a/b/c"; empty drops the `source_folder`
+  // prefix, promoting the folder's contents toward the root.
   string target_folder = 4 [(buf.validate.field).string.max_len = 256];
 }
 
 message MoveMySavedQueriesResponse {
-  // How many moved. Fewer than were named when some are not the caller's.
+  // How many moved.
   int32 moved_count = 1;
 }
 

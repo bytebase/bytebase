@@ -104,10 +104,11 @@ type SavedQueryServiceClient interface {
 	// Permissions required: bb.savedQueries.get (creator, VIEWER/EDITOR
 	// binding, or project-level grant)
 	UpdateSavedQueryStar(context.Context, *connect.Request[v1.UpdateSavedQueryStarRequest]) (*connect.Response[v1.SavedQuery], error)
-	// Move the caller's own saved queries into a folder, by name or a whole
-	// folder at a time. Moving a folder moves its descendants: renaming "a/b"
-	// to "a/c" also moves "a/b/deep". Only the caller's own saved queries move;
-	// the response counts how many did.
+	// Move the caller's saved queries filed under `source_folder`, descendants
+	// included, into `target_folder`: renaming "a/b" to "a/c" also moves
+	// "a/b/deep". Only the caller's own saved queries move; the response counts
+	// how many did. Re-filing a single saved query is UpdateSavedQuery's
+	// `folder` field.
 	// Permissions required: creator
 	MoveMySavedQueries(context.Context, *connect.Request[v1.MoveMySavedQueriesRequest]) (*connect.Response[v1.MoveMySavedQueriesResponse], error)
 	// Delete a saved query and every user's stars on it. An EDITOR binding
@@ -311,10 +312,11 @@ type SavedQueryServiceHandler interface {
 	// Permissions required: bb.savedQueries.get (creator, VIEWER/EDITOR
 	// binding, or project-level grant)
 	UpdateSavedQueryStar(context.Context, *connect.Request[v1.UpdateSavedQueryStarRequest]) (*connect.Response[v1.SavedQuery], error)
-	// Move the caller's own saved queries into a folder, by name or a whole
-	// folder at a time. Moving a folder moves its descendants: renaming "a/b"
-	// to "a/c" also moves "a/b/deep". Only the caller's own saved queries move;
-	// the response counts how many did.
+	// Move the caller's saved queries filed under `source_folder`, descendants
+	// included, into `target_folder`: renaming "a/b" to "a/c" also moves
+	// "a/b/deep". Only the caller's own saved queries move; the response counts
+	// how many did. Re-filing a single saved query is UpdateSavedQuery's
+	// `folder` field.
 	// Permissions required: creator
 	MoveMySavedQueries(context.Context, *connect.Request[v1.MoveMySavedQueriesRequest]) (*connect.Response[v1.MoveMySavedQueriesResponse], error)
 	// Delete a saved query and every user's stars on it. An EDITOR binding
