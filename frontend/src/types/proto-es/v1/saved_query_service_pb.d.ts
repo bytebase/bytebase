@@ -89,10 +89,8 @@ export declare type ListSavedQueriesRequest = Message<"bytebase.v1.ListSavedQuer
   pageSize: number;
 
   /**
-   * A page token from a previous ListSavedQueries call. Every other parameter
-   * must match the call that returned it: the token carries the offset reached
-   * so far, so changing `filter` or `page_size` mid-pagination reinterprets
-   * that offset against a different result set.
+   * A page token from a previous ListSavedQueries call. Keep every other
+   * parameter the same as the call that returned it.
    *
    * @generated from field: string page_token = 4;
    */
@@ -316,8 +314,8 @@ export declare type SetSavedQueryPolicyRequest = Message<"bytebase.v1.SetSavedQu
   resource: string;
 
   /**
-   * Replaces the stored policy in full: a member absent from it loses their
-   * grant, and a policy with no bindings makes the saved query private again.
+   * The new policy, replacing the stored one in full. Empty `bindings` makes
+   * the saved query private again.
    *
    * @generated from field: bytebase.v1.SavedQueryPolicy policy = 2;
    */
@@ -331,9 +329,8 @@ export declare type SetSavedQueryPolicyRequest = Message<"bytebase.v1.SetSavedQu
 export declare const SetSavedQueryPolicyRequestSchema: GenMessage<SetSavedQueryPolicyRequest>;
 
 /**
- * Who a saved query is shared with, and at what level. A saved query with no
- * bindings is private. The creator is never a binding member: ownership comes
- * from creating the saved query and cannot be granted away.
+ * Who a saved query is shared with, and at what level. No bindings means
+ * private. The creator is never a binding member; ownership cannot be granted.
  *
  * @generated from message bytebase.v1.SavedQueryPolicy
  */
@@ -362,8 +359,7 @@ export declare type SavedQueryPolicy = Message<"bytebase.v1.SavedQueryPolicy"> &
 export declare const SavedQueryPolicySchema: GenMessage<SavedQueryPolicy>;
 
 /**
- * Binds members to one access level on one saved query. Not bytebase.v1.Binding
- * because per-object access here is a capability, not a role.
+ * Binds members to one access level on one saved query.
  *
  * @generated from message bytebase.v1.SavedQueryBinding
  */
@@ -374,18 +370,11 @@ export declare type SavedQueryBinding = Message<"bytebase.v1.SavedQueryBinding">
   level: SavedQueryBinding_Level;
 
   /**
-   * The principals granted `level`, in bytebase.v1.Binding.members format,
-   * restricted to "user:{email}" and "group:{email}" -- prefix-checked, as
-   * project and workspace IAM check their own members.
+   * The members granted `level`: "user:{email}" or "group:{email}" only.
    *
-   * Service accounts and workload identities are not grantees: they own and
-   * run their own saved queries and reach them as the creator. Naming one
-   * under a "user:" prefix grants nothing rather than being rejected, because
-   * a caller's member is derived from their principal type, so such a binding
-   * matches nobody.
-   *
-   * A group is stored as a reference and never expanded, so its membership
-   * stays live and a large group costs no more than a small one.
+   * Service accounts cannot be grantees — they reach their own saved queries
+   * as the creator. Naming one under "user:" grants nothing rather than
+   * failing. Groups are stored as references, so membership stays live.
    *
    * @generated from field: repeated string members = 2;
    */
@@ -399,8 +388,8 @@ export declare type SavedQueryBinding = Message<"bytebase.v1.SavedQueryBinding">
 export declare const SavedQueryBindingSchema: GenMessage<SavedQueryBinding>;
 
 /**
- * Nested because bytebase.v1 already defines a package-scoped EDITOR
- * (DatabaseChangeMode), and enum values live in the enclosing scope.
+ * Nested to avoid colliding with the package-scoped EDITOR in
+ * DatabaseChangeMode.
  *
  * @generated from enum bytebase.v1.SavedQueryBinding.Level
  */
@@ -411,15 +400,16 @@ export enum SavedQueryBinding_Level {
   LEVEL_UNSPECIFIED = 0,
 
   /**
-   * Open and read the saved query.
+   * Holds bb.savedQueries.get and bb.savedQueries.getIamPolicy on the
+   * saved query: open and read it, and see who it is shared with.
    *
    * @generated from enum value: VIEWER = 1;
    */
   VIEWER = 1,
 
   /**
-   * VIEWER, plus write the title, content, and connected database. Sharing
-   * and deletion stay with the creator and admins.
+   * VIEWER, plus bb.savedQueries.update: write the title, content,
+   * database, and folder. Not deletion, not setIamPolicy.
    *
    * @generated from enum value: EDITOR = 2;
    */
@@ -467,16 +457,16 @@ export declare type SearchSavedQueriesRequest = Message<"bytebase.v1.SearchSaved
    * - name: the saved query name. Supports "==" and "in [...]".
    * - title: the title. Supports "contains".
    * - creator: the creator in "users/{email}" format. Supports "==" and "!=".
-   * - shared: true selects only saved queries the caller reaches through a
-   *   binding, excluding their own and any seen through
-   *   bb.savedQueries.manage; false selects the rest. Supports "==".
+   * - shared: whether a binding shares the saved query with the caller. Their
+   *   own saved queries, and ones visible only through a project-level
+   *   bb.savedQueries.get, are not "shared". Supports "==".
    * - starred: whether the caller starred it. Supports "==".
    * - folder: the exact folder path. Supports "==".
    *
-   * The SQL Editor's views are `creator == "users/{me}"` for My and
-   * `shared == true` for Shared. Prefer `shared` over `creator !=` for the
-   * latter: for an admin, `creator !=` also matches saved queries nobody
-   * shared with them.
+   * Use `creator == "users/{me}"` for a My view and `shared == true` for a
+   * Shared view. Prefer `shared` over `creator !=`: with a project-level
+   * bb.savedQueries.get, `creator !=` also matches saved queries nobody
+   * shared with the caller.
    *
    * For example:
    * creator == "users/alice@example.com"
@@ -498,11 +488,8 @@ export declare type SearchSavedQueriesRequest = Message<"bytebase.v1.SearchSaved
   pageSize: number;
 
   /**
-   * A page token from a previous SearchSavedQueries call. Every other
-   * parameter must match the call that returned it: the token carries the
-   * offset reached so far, so changing `filter` or `page_size` mid-pagination
-   * reinterprets that offset against a different result set and can skip or
-   * repeat rows.
+   * A page token from a previous SearchSavedQueries call. Keep every other
+   * parameter the same as the call that returned it.
    *
    * @generated from field: string page_token = 4;
    */
@@ -576,7 +563,7 @@ export declare type SavedQuery = Message<"bytebase.v1.SavedQuery"> & {
   title: string;
 
   /**
-   * The fixed owner. Ownership does not transfer.
+   * The owner. Ownership does not transfer.
    * Format: users/{email}
    *
    * @generated from field: string creator = 5;
@@ -594,8 +581,8 @@ export declare type SavedQuery = Message<"bytebase.v1.SavedQuery"> & {
   updateTime?: Timestamp | undefined;
 
   /**
-   * The SQL text. SearchSavedQueries truncates it; when it is shorter than
-   * `content_size`, GetSavedQuery returns the whole thing.
+   * The SQL text. SearchSavedQueries returns a truncated preview;
+   * GetSavedQuery returns the full text.
    *
    * @generated from field: bytes content = 8;
    */
@@ -616,8 +603,8 @@ export declare type SavedQuery = Message<"bytebase.v1.SavedQuery"> & {
   starred: boolean;
 
   /**
-   * The folder holding this saved query, set by its creator or an admin. A
-   * path like "a/b/c"; empty means unfiled.
+   * The folder holding this saved query. A path like "a/b/c"; empty means
+   * unfiled.
    *
    * @generated from field: string folder = 13;
    */
@@ -631,24 +618,26 @@ export declare type SavedQuery = Message<"bytebase.v1.SavedQuery"> & {
 export declare const SavedQuerySchema: GenMessage<SavedQuery>;
 
 /**
- * SavedQueryService manages saved queries for SQL Editor query development.
+ * SavedQueryService manages saved queries in the SQL Editor.
  *
- * A saved query is private to its creator until shared. Three things grant
- * access to one: being its creator (the fixed owner), holding a VIEWER or
- * EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop
- * that reaches private saved queries too. Bindings are managed through the
- * GetSavedQueryPolicy/SetSavedQueryPolicy pair.
- *
- * Two gates sit on top of that: bb.savedQueries.search gates discovery, and
- * running a saved query needs the SQL Editor's own database permissions.
+ * A saved query is private to its creator until shared. Permissions come from
+ * three places:
+ * - The creator owns the saved query and holds every permission on it.
+ * - A VIEWER binding grants bb.savedQueries.get and getIamPolicy; an EDITOR
+ *   binding adds update.
+ * - Permissions granted on the project or workspace apply to every saved
+ *   query in the project, private ones included.
+ * A caller without a method's permission gets NotFound, not
+ * PermissionDenied, so private names stay unprobeable. Running a saved query
+ * is governed by the SQL Editor's database permissions, not by this service.
  *
  * @generated from service bytebase.v1.SavedQueryService
  */
 export declare const SavedQueryService: GenService<{
   /**
-   * Create a saved query. The creator becomes its fixed owner, and the saved
-   * query starts private.
-   * Permissions required: bb.savedQueries.create on the parent project
+   * Create a saved query. The creator becomes the owner and the saved query
+   * starts private.
+   * Permissions required: bb.savedQueries.create on the project
    *
    * @generated from rpc bytebase.v1.SavedQueryService.CreateSavedQuery
    */
@@ -658,9 +647,9 @@ export declare const SavedQueryService: GenService<{
     output: typeof SavedQuerySchema;
   },
   /**
-   * Get a saved query with its full content. An unreadable saved query returns
-   * NotFound rather than PermissionDenied, so it stays unprobeable by name.
-   * Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
+   * Get a saved query with its full content.
+   * Permissions required: bb.savedQueries.get (creator, VIEWER/EDITOR
+   * binding, or project-level grant)
    *
    * @generated from rpc bytebase.v1.SavedQueryService.GetSavedQuery
    */
@@ -670,12 +659,11 @@ export declare const SavedQueryService: GenService<{
     output: typeof SavedQuerySchema;
   },
   /**
-   * List saved queries for auditing. Bindings are ignored: the permission
-   * alone reads every matched saved query's content, private ones included.
-   * Returns whole statements rather than Search's previews, and accepts
-   * "projects/-" to span every project.
-   * Permissions required: bb.savedQueries.list on the parent project, or
-   * workspace-wide when the parent is "projects/-"
+   * List saved queries for auditing. The permission alone grants reading
+   * every matched saved query with full content, private ones included;
+   * bindings are ignored. Use parent "projects/-" for all projects.
+   * Permissions required: bb.savedQueries.list on the project, or on the
+   * workspace when the parent is "projects/-"
    *
    * @generated from rpc bytebase.v1.SavedQueryService.ListSavedQueries
    */
@@ -685,14 +673,8 @@ export declare const SavedQueryService: GenService<{
     output: typeof ListSavedQueriesResponseSchema;
   },
   /**
-   * Search saved queries in one project: the SQL Editor's list path, returning
-   * content previews.
-   *
-   * Caller-scoped, always: the caller's own saved queries plus those a binding
-   * shares with them. bb.savedQueries.manage does not widen it — an admin
-   * reading everyone's saved queries uses ListSavedQueries, which is built for
-   * that. The permission here gates discovery only and grants access to
-   * nothing by itself.
+   * Search saved queries in one project. Returns content previews of the
+   * saved queries the caller can read, the same access rule as GetSavedQuery.
    * Permissions required: bb.savedQueries.search on the project
    *
    * @generated from rpc bytebase.v1.SavedQueryService.SearchSavedQueries
@@ -703,16 +685,8 @@ export declare const SavedQueryService: GenService<{
     output: typeof SearchSavedQueriesResponseSchema;
   },
   /**
-   * Search the folder paths holding saved queries the caller can read. Folders
-   * are a derived view over the `folder` field rather than a resource
-   * collection, so this is a custom method, caller-scoped like
-   * SearchSavedQueries.
-   *
-   * A path is returned when at least one readable saved query sits in it —
-   * including one somebody else filed and shared, since a client seeds its
-   * folder tree from here and cannot expand into a folder it never learns
-   * about. Use the filter to split your own folders (`creator == "users/me"`)
-   * from the ones reaching you through a grant (`shared == true`).
+   * Search folder paths. A path is returned when it holds at least one saved
+   * query the caller can read, the same access rule as SearchSavedQueries.
    * Permissions required: bb.savedQueries.search on the project
    *
    * @generated from rpc bytebase.v1.SavedQueryService.SearchSavedQueryFolders
@@ -723,12 +697,9 @@ export declare const SavedQueryService: GenService<{
     output: typeof SearchSavedQueryFoldersResponseSchema;
   },
   /**
-   * Update a saved query. `title`, `content`, and `database` need write access;
-   * `folder` is creator/admin only, because filing is organization rather than
-   * editing. `database` must belong to the saved query's own project. An
-   * unreadable saved query returns NotFound; a VIEWER who cannot write gets
-   * PermissionDenied.
-   * Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage
+   * Update a saved query. `database` must belong to the saved query's project.
+   * Permissions required: bb.savedQueries.update (creator, EDITOR binding, or
+   * project-level grant)
    *
    * @generated from rpc bytebase.v1.SavedQueryService.UpdateSavedQuery
    */
@@ -738,11 +709,12 @@ export declare const SavedQueryService: GenService<{
     output: typeof SavedQuerySchema;
   },
   /**
-   * Star or unstar a saved query for the caller. Stars are personal: yours are
-   * invisible to everyone else and grant nothing. You can star any saved query
-   * you created or have been granted access to; anything else answers
-   * NotFound, so names stay unprobeable.
-   * Permissions required: creator, or a VIEWER or EDITOR binding
+   * Star or unstar a saved query for the caller. Stars are personal: nobody
+   * else sees them and they grant nothing. The caller can star any saved
+   * query they can read. When access is lost the star is hidden, not
+   * deleted; it comes back if access returns.
+   * Permissions required: bb.savedQueries.get (creator, VIEWER/EDITOR
+   * binding, or project-level grant)
    *
    * @generated from rpc bytebase.v1.SavedQueryService.UpdateSavedQueryStar
    */
@@ -752,13 +724,10 @@ export declare const SavedQueryService: GenService<{
     output: typeof SavedQuerySchema;
   },
   /**
-   * Move the caller's own saved queries into a folder, named individually or a
-   * whole folder at a time. Moving a folder carries its descendants, so renaming "a/b" to
-   * "a/c" also moves "a/b/deep" -- one call, not one per path.
-   *
-   * Filing is personal organization, so only the creator's own move: a folder
-   * is that person's tree, and neither a binding nor the admin backstop
-   * reaches into it. The response counts what moved.
+   * Move the caller's own saved queries into a folder, by name or a whole
+   * folder at a time. Moving a folder moves its descendants: renaming "a/b"
+   * to "a/c" also moves "a/b/deep". Only the caller's own saved queries move;
+   * the response counts how many did.
    * Permissions required: creator
    *
    * @generated from rpc bytebase.v1.SavedQueryService.MoveMySavedQueries
@@ -769,10 +738,10 @@ export declare const SavedQueryService: GenService<{
     output: typeof MoveMySavedQueriesResponseSchema;
   },
   /**
-   * Delete a saved query and every user's stars on it. An EDITOR binding never
-   * carries deletion. An unreadable saved query returns NotFound; a grantee
-   * who can read but not delete gets PermissionDenied.
-   * Permissions required: creator, or bb.savedQueries.manage
+   * Delete a saved query and every user's stars on it. An EDITOR binding
+   * cannot delete.
+   * Permissions required: bb.savedQueries.delete (creator or project-level
+   * grant)
    *
    * @generated from rpc bytebase.v1.SavedQueryService.DeleteSavedQuery
    */
@@ -783,11 +752,8 @@ export declare const SavedQueryService: GenService<{
   },
   /**
    * Get a saved query's sharing policy: who it is shared with, at what level.
-   *
-   * Anyone who can read the saved query can read its policy, which is how a
-   * grantee learns whether they may edit it. Callers who cannot read the
-   * saved query get NotFound.
-   * Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
+   * Permissions required: bb.savedQueries.getIamPolicy (creator, VIEWER/EDITOR
+   * binding, or project-level grant)
    *
    * @generated from rpc bytebase.v1.SavedQueryService.GetSavedQueryPolicy
    */
@@ -798,9 +764,9 @@ export declare const SavedQueryService: GenService<{
   },
   /**
    * Replace a saved query's sharing policy in full. `policy.etag` must match
-   * the stored policy or the call fails with ABORTED, so a stale write cannot
-   * reinstate a grant somebody just revoked.
-   * Permissions required: creator, or bb.savedQueries.manage
+   * the stored policy; a mismatch fails with ABORTED.
+   * Permissions required: bb.savedQueries.setIamPolicy (creator or
+   * project-level grant; no predefined role carries it)
    *
    * @generated from rpc bytebase.v1.SavedQueryService.SetSavedQueryPolicy
    */

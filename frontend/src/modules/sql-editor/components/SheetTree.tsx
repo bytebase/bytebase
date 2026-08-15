@@ -643,9 +643,23 @@ export function SheetTree({
         cleanup();
         return;
       }
-      await useAppStore
-        .getState()
-        .patchSavedQuery({ ...savedQuery, title: newTitle }, ["title"]);
+      try {
+        await useAppStore
+          .getState()
+          .patchSavedQuery({ ...savedQuery, title: newTitle }, ["title"]);
+      } catch (error) {
+        // The global middleware ignores NotFound — and a permission denial
+        // is masked as NotFound — so surface the failure here or the rename
+        // silently never persists.
+        useAppStore.getState().notify({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.error"),
+          description: error instanceof Error ? error.message : String(error),
+        });
+        cleanup();
+        return;
+      }
       const tabsState = getSQLEditorTabsState();
       const tab = Array.from(tabsState.tabsById.values()).find(
         (t) => t.savedQuery === savedQuery.name

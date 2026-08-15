@@ -11126,7 +11126,7 @@ Supported fields: - creator: the creator in &#34;users/{email}&#34; format. Supp
 
 For example: creator == &#34;users/alice@example.com&#34; |
 | page_size | [int32](#int32) |  | The maximum number of saved queries to return. The service may return fewer. Defaults to 10; values above 1000 are coerced to 1000. |
-| page_token | [string](#string) |  | A page token from a previous ListSavedQueries call. Every other parameter must match the call that returned it: the token carries the offset reached so far, so changing `filter` or `page_size` mid-pagination reinterprets that offset against a different result set. |
+| page_token | [string](#string) |  | A page token from a previous ListSavedQueries call. Keep every other parameter the same as the call that returned it. |
 
 
 
@@ -11194,13 +11194,13 @@ For example: creator == &#34;users/alice@example.com&#34; |
 | project | [string](#string) |  | Format: projects/{project} |
 | database | [string](#string) |  | The connected database, which must belong to the saved query&#39;s own project. Empty when none is connected, or when the database no longer exists. Format: instances/{instance}/databases/{database} |
 | title | [string](#string) |  | The title of the saved query. |
-| creator | [string](#string) |  | The fixed owner. Ownership does not transfer. Format: users/{email} |
+| creator | [string](#string) |  | The owner. Ownership does not transfer. Format: users/{email} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| content | [bytes](#bytes) |  | The SQL text. SearchSavedQueries truncates it; when it is shorter than `content_size`, GetSavedQuery returns the whole thing. |
+| content | [bytes](#bytes) |  | The SQL text. SearchSavedQueries returns a truncated preview; GetSavedQuery returns the full text. |
 | content_size | [int64](#int64) |  | The full size of the content, which may exceed the `content` returned. |
 | starred | [bool](#bool) |  | Whether the calling user starred it. |
-| folder | [string](#string) |  | The folder holding this saved query, set by its creator or an admin. A path like &#34;a/b/c&#34;; empty means unfiled. |
+| folder | [string](#string) |  | The folder holding this saved query. A path like &#34;a/b/c&#34;; empty means unfiled. |
 
 
 
@@ -11210,18 +11210,15 @@ For example: creator == &#34;users/alice@example.com&#34; |
 <a name="bytebase-v1-SavedQueryBinding"></a>
 
 ### SavedQueryBinding
-Binds members to one access level on one saved query. Not bytebase.v1.Binding
-because per-object access here is a capability, not a role.
+Binds members to one access level on one saved query.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | level | [SavedQueryBinding.Level](#bytebase-v1-SavedQueryBinding-Level) |  |  |
-| members | [string](#string) | repeated | The principals granted `level`, in bytebase.v1.Binding.members format, restricted to &#34;user:{email}&#34; and &#34;group:{email}&#34; -- prefix-checked, as project and workspace IAM check their own members.
+| members | [string](#string) | repeated | The members granted `level`: &#34;user:{email}&#34; or &#34;group:{email}&#34; only.
 
-Service accounts and workload identities are not grantees: they own and run their own saved queries and reach them as the creator. Naming one under a &#34;user:&#34; prefix grants nothing rather than being rejected, because a caller&#39;s member is derived from their principal type, so such a binding matches nobody.
-
-A group is stored as a reference and never expanded, so its membership stays live and a large group costs no more than a small one. |
+Service accounts cannot be grantees — they reach their own saved queries as the creator. Naming one under &#34;user:&#34; grants nothing rather than failing. Groups are stored as references, so membership stays live. |
 
 
 
@@ -11231,9 +11228,8 @@ A group is stored as a reference and never expanded, so its membership stays liv
 <a name="bytebase-v1-SavedQueryPolicy"></a>
 
 ### SavedQueryPolicy
-Who a saved query is shared with, and at what level. A saved query with no
-bindings is private. The creator is never a binding member: ownership comes
-from creating the saved query and cannot be granted away.
+Who a saved query is shared with, and at what level. No bindings means
+private. The creator is never a binding member; ownership cannot be granted.
 
 
 | Field | Type | Label | Description |
@@ -11257,13 +11253,13 @@ from creating the saved query and cannot be granted away.
 | parent | [string](#string) |  | Format: projects/{project} |
 | filter | [string](#string) |  | Filter the result, in CEL. See https://github.com/google/cel-spec
 
-Supported fields: - name: the saved query name. Supports &#34;==&#34; and &#34;in [...]&#34;. - title: the title. Supports &#34;contains&#34;. - creator: the creator in &#34;users/{email}&#34; format. Supports &#34;==&#34; and &#34;!=&#34;. - shared: true selects only saved queries the caller reaches through a binding, excluding their own and any seen through bb.savedQueries.manage; false selects the rest. Supports &#34;==&#34;. - starred: whether the caller starred it. Supports &#34;==&#34;. - folder: the exact folder path. Supports &#34;==&#34;.
+Supported fields: - name: the saved query name. Supports &#34;==&#34; and &#34;in [...]&#34;. - title: the title. Supports &#34;contains&#34;. - creator: the creator in &#34;users/{email}&#34; format. Supports &#34;==&#34; and &#34;!=&#34;. - shared: whether a binding shares the saved query with the caller. Their own saved queries, and ones visible only through a project-level bb.savedQueries.get, are not &#34;shared&#34;. Supports &#34;==&#34;. - starred: whether the caller starred it. Supports &#34;==&#34;. - folder: the exact folder path. Supports &#34;==&#34;.
 
-The SQL Editor&#39;s views are `creator == &#34;users/{me}&#34;` for My and `shared == true` for Shared. Prefer `shared` over `creator !=` for the latter: for an admin, `creator !=` also matches saved queries nobody shared with them.
+Use `creator == &#34;users/{me}&#34;` for a My view and `shared == true` for a Shared view. Prefer `shared` over `creator !=`: with a project-level bb.savedQueries.get, `creator !=` also matches saved queries nobody shared with the caller.
 
 For example: creator == &#34;users/alice@example.com&#34; shared == true starred == true title.contains(&#34;weekly report&#34;) folder == &#34;foo/bar&#34; |
 | page_size | [int32](#int32) |  | The maximum number of saved queries to return. The service may return fewer. Defaults to 10; values above 1000 are coerced to 1000. |
-| page_token | [string](#string) |  | A page token from a previous SearchSavedQueries call. Every other parameter must match the call that returned it: the token carries the offset reached so far, so changing `filter` or `page_size` mid-pagination reinterprets that offset against a different result set and can skip or repeat rows. |
+| page_token | [string](#string) |  | A page token from a previous SearchSavedQueries call. Keep every other parameter the same as the call that returned it. |
 
 
 
@@ -11326,7 +11322,7 @@ For example: creator == &#34;users/alice@example.com&#34; shared == true starred
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | resource | [string](#string) |  | Format: projects/{project}/savedQueries/{savedQuery} |
-| policy | [SavedQueryPolicy](#bytebase-v1-SavedQueryPolicy) |  | Replaces the stored policy in full: a member absent from it loses their grant, and a policy with no bindings makes the saved query private again. |
+| policy | [SavedQueryPolicy](#bytebase-v1-SavedQueryPolicy) |  | The new policy, replacing the stored one in full. Empty `bindings` makes the saved query private again. |
 
 
 
@@ -11370,14 +11366,14 @@ For example: creator == &#34;users/alice@example.com&#34; shared == true starred
 <a name="bytebase-v1-SavedQueryBinding-Level"></a>
 
 ### SavedQueryBinding.Level
-Nested because bytebase.v1 already defines a package-scoped EDITOR
-(DatabaseChangeMode), and enum values live in the enclosing scope.
+Nested to avoid colliding with the package-scoped EDITOR in
+DatabaseChangeMode.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | LEVEL_UNSPECIFIED | 0 |  |
-| VIEWER | 1 | Open and read the saved query. |
-| EDITOR | 2 | VIEWER, plus write the title, content, and connected database. Sharing and deletion stay with the creator and admins. |
+| VIEWER | 1 | Holds bb.savedQueries.get and bb.savedQueries.getIamPolicy on the saved query: open and read it, and see who it is shared with. |
+| EDITOR | 2 | VIEWER, plus bb.savedQueries.update: write the title, content, database, and folder. Not deletion, not setIamPolicy. |
 
 
  
@@ -11388,38 +11384,32 @@ Nested because bytebase.v1 already defines a package-scoped EDITOR
 <a name="bytebase-v1-SavedQueryService"></a>
 
 ### SavedQueryService
-SavedQueryService manages saved queries for SQL Editor query development.
+SavedQueryService manages saved queries in the SQL Editor.
 
-A saved query is private to its creator until shared. Three things grant
-access to one: being its creator (the fixed owner), holding a VIEWER or
-EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop
-that reaches private saved queries too. Bindings are managed through the
-GetSavedQueryPolicy/SetSavedQueryPolicy pair.
-
-Two gates sit on top of that: bb.savedQueries.search gates discovery, and
-running a saved query needs the SQL Editor&#39;s own database permissions.
+A saved query is private to its creator until shared. Permissions come from
+three places:
+- The creator owns the saved query and holds every permission on it.
+- A VIEWER binding grants bb.savedQueries.get and getIamPolicy; an EDITOR
+  binding adds update.
+- Permissions granted on the project or workspace apply to every saved
+  query in the project, private ones included.
+A caller without a method&#39;s permission gets NotFound, not
+PermissionDenied, so private names stay unprobeable. Running a saved query
+is governed by the SQL Editor&#39;s database permissions, not by this service.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| CreateSavedQuery | [CreateSavedQueryRequest](#bytebase-v1-CreateSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Create a saved query. The creator becomes its fixed owner, and the saved query starts private. Permissions required: bb.savedQueries.create on the parent project |
-| GetSavedQuery | [GetSavedQueryRequest](#bytebase-v1-GetSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Get a saved query with its full content. An unreadable saved query returns NotFound rather than PermissionDenied, so it stays unprobeable by name. Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage |
-| ListSavedQueries | [ListSavedQueriesRequest](#bytebase-v1-ListSavedQueriesRequest) | [ListSavedQueriesResponse](#bytebase-v1-ListSavedQueriesResponse) | List saved queries for auditing. Bindings are ignored: the permission alone reads every matched saved query&#39;s content, private ones included. Returns whole statements rather than Search&#39;s previews, and accepts &#34;projects/-&#34; to span every project. Permissions required: bb.savedQueries.list on the parent project, or workspace-wide when the parent is &#34;projects/-&#34; |
-| SearchSavedQueries | [SearchSavedQueriesRequest](#bytebase-v1-SearchSavedQueriesRequest) | [SearchSavedQueriesResponse](#bytebase-v1-SearchSavedQueriesResponse) | Search saved queries in one project: the SQL Editor&#39;s list path, returning content previews.
-
-Caller-scoped, always: the caller&#39;s own saved queries plus those a binding shares with them. bb.savedQueries.manage does not widen it — an admin reading everyone&#39;s saved queries uses ListSavedQueries, which is built for that. The permission here gates discovery only and grants access to nothing by itself. Permissions required: bb.savedQueries.search on the project |
-| SearchSavedQueryFolders | [SearchSavedQueryFoldersRequest](#bytebase-v1-SearchSavedQueryFoldersRequest) | [SearchSavedQueryFoldersResponse](#bytebase-v1-SearchSavedQueryFoldersResponse) | Search the folder paths holding saved queries the caller can read. Folders are a derived view over the `folder` field rather than a resource collection, so this is a custom method, caller-scoped like SearchSavedQueries.
-
-A path is returned when at least one readable saved query sits in it — including one somebody else filed and shared, since a client seeds its folder tree from here and cannot expand into a folder it never learns about. Use the filter to split your own folders (`creator == &#34;users/me&#34;`) from the ones reaching you through a grant (`shared == true`). Permissions required: bb.savedQueries.search on the project |
-| UpdateSavedQuery | [UpdateSavedQueryRequest](#bytebase-v1-UpdateSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Update a saved query. `title`, `content`, and `database` need write access; `folder` is creator/admin only, because filing is organization rather than editing. `database` must belong to the saved query&#39;s own project. An unreadable saved query returns NotFound; a VIEWER who cannot write gets PermissionDenied. Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage |
-| UpdateSavedQueryStar | [UpdateSavedQueryStarRequest](#bytebase-v1-UpdateSavedQueryStarRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Star or unstar a saved query for the caller. Stars are personal: yours are invisible to everyone else and grant nothing. You can star any saved query you created or have been granted access to; anything else answers NotFound, so names stay unprobeable. Permissions required: creator, or a VIEWER or EDITOR binding |
-| MoveMySavedQueries | [MoveMySavedQueriesRequest](#bytebase-v1-MoveMySavedQueriesRequest) | [MoveMySavedQueriesResponse](#bytebase-v1-MoveMySavedQueriesResponse) | Move the caller&#39;s own saved queries into a folder, named individually or a whole folder at a time. Moving a folder carries its descendants, so renaming &#34;a/b&#34; to &#34;a/c&#34; also moves &#34;a/b/deep&#34; -- one call, not one per path.
-
-Filing is personal organization, so only the creator&#39;s own move: a folder is that person&#39;s tree, and neither a binding nor the admin backstop reaches into it. The response counts what moved. Permissions required: creator |
-| DeleteSavedQuery | [DeleteSavedQueryRequest](#bytebase-v1-DeleteSavedQueryRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a saved query and every user&#39;s stars on it. An EDITOR binding never carries deletion. An unreadable saved query returns NotFound; a grantee who can read but not delete gets PermissionDenied. Permissions required: creator, or bb.savedQueries.manage |
-| GetSavedQueryPolicy | [GetSavedQueryPolicyRequest](#bytebase-v1-GetSavedQueryPolicyRequest) | [SavedQueryPolicy](#bytebase-v1-SavedQueryPolicy) | Get a saved query&#39;s sharing policy: who it is shared with, at what level.
-
-Anyone who can read the saved query can read its policy, which is how a grantee learns whether they may edit it. Callers who cannot read the saved query get NotFound. Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage |
-| SetSavedQueryPolicy | [SetSavedQueryPolicyRequest](#bytebase-v1-SetSavedQueryPolicyRequest) | [SavedQueryPolicy](#bytebase-v1-SavedQueryPolicy) | Replace a saved query&#39;s sharing policy in full. `policy.etag` must match the stored policy or the call fails with ABORTED, so a stale write cannot reinstate a grant somebody just revoked. Permissions required: creator, or bb.savedQueries.manage |
+| CreateSavedQuery | [CreateSavedQueryRequest](#bytebase-v1-CreateSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Create a saved query. The creator becomes the owner and the saved query starts private. Permissions required: bb.savedQueries.create on the project |
+| GetSavedQuery | [GetSavedQueryRequest](#bytebase-v1-GetSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Get a saved query with its full content. Permissions required: bb.savedQueries.get (creator, VIEWER/EDITOR binding, or project-level grant) |
+| ListSavedQueries | [ListSavedQueriesRequest](#bytebase-v1-ListSavedQueriesRequest) | [ListSavedQueriesResponse](#bytebase-v1-ListSavedQueriesResponse) | List saved queries for auditing. The permission alone grants reading every matched saved query with full content, private ones included; bindings are ignored. Use parent &#34;projects/-&#34; for all projects. Permissions required: bb.savedQueries.list on the project, or on the workspace when the parent is &#34;projects/-&#34; |
+| SearchSavedQueries | [SearchSavedQueriesRequest](#bytebase-v1-SearchSavedQueriesRequest) | [SearchSavedQueriesResponse](#bytebase-v1-SearchSavedQueriesResponse) | Search saved queries in one project. Returns content previews of the saved queries the caller can read, the same access rule as GetSavedQuery. Permissions required: bb.savedQueries.search on the project |
+| SearchSavedQueryFolders | [SearchSavedQueryFoldersRequest](#bytebase-v1-SearchSavedQueryFoldersRequest) | [SearchSavedQueryFoldersResponse](#bytebase-v1-SearchSavedQueryFoldersResponse) | Search folder paths. A path is returned when it holds at least one saved query the caller can read, the same access rule as SearchSavedQueries. Permissions required: bb.savedQueries.search on the project |
+| UpdateSavedQuery | [UpdateSavedQueryRequest](#bytebase-v1-UpdateSavedQueryRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Update a saved query. `database` must belong to the saved query&#39;s project. Permissions required: bb.savedQueries.update (creator, EDITOR binding, or project-level grant) |
+| UpdateSavedQueryStar | [UpdateSavedQueryStarRequest](#bytebase-v1-UpdateSavedQueryStarRequest) | [SavedQuery](#bytebase-v1-SavedQuery) | Star or unstar a saved query for the caller. Stars are personal: nobody else sees them and they grant nothing. The caller can star any saved query they can read. When access is lost the star is hidden, not deleted; it comes back if access returns. Permissions required: bb.savedQueries.get (creator, VIEWER/EDITOR binding, or project-level grant) |
+| MoveMySavedQueries | [MoveMySavedQueriesRequest](#bytebase-v1-MoveMySavedQueriesRequest) | [MoveMySavedQueriesResponse](#bytebase-v1-MoveMySavedQueriesResponse) | Move the caller&#39;s own saved queries into a folder, by name or a whole folder at a time. Moving a folder moves its descendants: renaming &#34;a/b&#34; to &#34;a/c&#34; also moves &#34;a/b/deep&#34;. Only the caller&#39;s own saved queries move; the response counts how many did. Permissions required: creator |
+| DeleteSavedQuery | [DeleteSavedQueryRequest](#bytebase-v1-DeleteSavedQueryRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a saved query and every user&#39;s stars on it. An EDITOR binding cannot delete. Permissions required: bb.savedQueries.delete (creator or project-level grant) |
+| GetSavedQueryPolicy | [GetSavedQueryPolicyRequest](#bytebase-v1-GetSavedQueryPolicyRequest) | [SavedQueryPolicy](#bytebase-v1-SavedQueryPolicy) | Get a saved query&#39;s sharing policy: who it is shared with, at what level. Permissions required: bb.savedQueries.getIamPolicy (creator, VIEWER/EDITOR binding, or project-level grant) |
+| SetSavedQueryPolicy | [SetSavedQueryPolicyRequest](#bytebase-v1-SetSavedQueryPolicyRequest) | [SavedQueryPolicy](#bytebase-v1-SavedQueryPolicy) | Replace a saved query&#39;s sharing policy in full. `policy.etag` must match the stored policy; a mismatch fails with ABORTED. Permissions required: bb.savedQueries.setIamPolicy (creator or project-level grant; no predefined role carries it) |
 
  
 

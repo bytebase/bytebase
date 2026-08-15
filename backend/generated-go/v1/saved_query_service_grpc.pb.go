@@ -37,92 +37,72 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// SavedQueryService manages saved queries for SQL Editor query development.
+// SavedQueryService manages saved queries in the SQL Editor.
 //
-// A saved query is private to its creator until shared. Three things grant
-// access to one: being its creator (the fixed owner), holding a VIEWER or
-// EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop
-// that reaches private saved queries too. Bindings are managed through the
-// GetSavedQueryPolicy/SetSavedQueryPolicy pair.
+// A saved query is private to its creator until shared. Permissions come from
+// three places:
+//   - The creator owns the saved query and holds every permission on it.
+//   - A VIEWER binding grants bb.savedQueries.get and getIamPolicy; an EDITOR
+//     binding adds update.
+//   - Permissions granted on the project or workspace apply to every saved
+//     query in the project, private ones included.
 //
-// Two gates sit on top of that: bb.savedQueries.search gates discovery, and
-// running a saved query needs the SQL Editor's own database permissions.
+// A caller without a method's permission gets NotFound, not
+// PermissionDenied, so private names stay unprobeable. Running a saved query
+// is governed by the SQL Editor's database permissions, not by this service.
 type SavedQueryServiceClient interface {
-	// Create a saved query. The creator becomes its fixed owner, and the saved
-	// query starts private.
-	// Permissions required: bb.savedQueries.create on the parent project
+	// Create a saved query. The creator becomes the owner and the saved query
+	// starts private.
+	// Permissions required: bb.savedQueries.create on the project
 	CreateSavedQuery(ctx context.Context, in *CreateSavedQueryRequest, opts ...grpc.CallOption) (*SavedQuery, error)
-	// Get a saved query with its full content. An unreadable saved query returns
-	// NotFound rather than PermissionDenied, so it stays unprobeable by name.
-	// Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
+	// Get a saved query with its full content.
+	// Permissions required: bb.savedQueries.get (creator, VIEWER/EDITOR
+	// binding, or project-level grant)
 	GetSavedQuery(ctx context.Context, in *GetSavedQueryRequest, opts ...grpc.CallOption) (*SavedQuery, error)
-	// List saved queries for auditing. Bindings are ignored: the permission
-	// alone reads every matched saved query's content, private ones included.
-	// Returns whole statements rather than Search's previews, and accepts
-	// "projects/-" to span every project.
-	// Permissions required: bb.savedQueries.list on the parent project, or
-	// workspace-wide when the parent is "projects/-"
+	// List saved queries for auditing. The permission alone grants reading
+	// every matched saved query with full content, private ones included;
+	// bindings are ignored. Use parent "projects/-" for all projects.
+	// Permissions required: bb.savedQueries.list on the project, or on the
+	// workspace when the parent is "projects/-"
 	ListSavedQueries(ctx context.Context, in *ListSavedQueriesRequest, opts ...grpc.CallOption) (*ListSavedQueriesResponse, error)
-	// Search saved queries in one project: the SQL Editor's list path, returning
-	// content previews.
-	//
-	// Caller-scoped, always: the caller's own saved queries plus those a binding
-	// shares with them. bb.savedQueries.manage does not widen it — an admin
-	// reading everyone's saved queries uses ListSavedQueries, which is built for
-	// that. The permission here gates discovery only and grants access to
-	// nothing by itself.
+	// Search saved queries in one project. Returns content previews of the
+	// saved queries the caller can read, the same access rule as GetSavedQuery.
 	// Permissions required: bb.savedQueries.search on the project
 	SearchSavedQueries(ctx context.Context, in *SearchSavedQueriesRequest, opts ...grpc.CallOption) (*SearchSavedQueriesResponse, error)
-	// Search the folder paths holding saved queries the caller can read. Folders
-	// are a derived view over the `folder` field rather than a resource
-	// collection, so this is a custom method, caller-scoped like
-	// SearchSavedQueries.
-	//
-	// A path is returned when at least one readable saved query sits in it —
-	// including one somebody else filed and shared, since a client seeds its
-	// folder tree from here and cannot expand into a folder it never learns
-	// about. Use the filter to split your own folders (`creator == "users/me"`)
-	// from the ones reaching you through a grant (`shared == true`).
+	// Search folder paths. A path is returned when it holds at least one saved
+	// query the caller can read, the same access rule as SearchSavedQueries.
 	// Permissions required: bb.savedQueries.search on the project
 	SearchSavedQueryFolders(ctx context.Context, in *SearchSavedQueryFoldersRequest, opts ...grpc.CallOption) (*SearchSavedQueryFoldersResponse, error)
-	// Update a saved query. `title`, `content`, and `database` need write access;
-	// `folder` is creator/admin only, because filing is organization rather than
-	// editing. `database` must belong to the saved query's own project. An
-	// unreadable saved query returns NotFound; a VIEWER who cannot write gets
-	// PermissionDenied.
-	// Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage
+	// Update a saved query. `database` must belong to the saved query's project.
+	// Permissions required: bb.savedQueries.update (creator, EDITOR binding, or
+	// project-level grant)
 	UpdateSavedQuery(ctx context.Context, in *UpdateSavedQueryRequest, opts ...grpc.CallOption) (*SavedQuery, error)
-	// Star or unstar a saved query for the caller. Stars are personal: yours are
-	// invisible to everyone else and grant nothing. You can star any saved query
-	// you created or have been granted access to; anything else answers
-	// NotFound, so names stay unprobeable.
-	// Permissions required: creator, or a VIEWER or EDITOR binding
+	// Star or unstar a saved query for the caller. Stars are personal: nobody
+	// else sees them and they grant nothing. The caller can star any saved
+	// query they can read. When access is lost the star is hidden, not
+	// deleted; it comes back if access returns.
+	// Permissions required: bb.savedQueries.get (creator, VIEWER/EDITOR
+	// binding, or project-level grant)
 	UpdateSavedQueryStar(ctx context.Context, in *UpdateSavedQueryStarRequest, opts ...grpc.CallOption) (*SavedQuery, error)
-	// Move the caller's own saved queries into a folder, named individually or a
-	// whole folder at a time. Moving a folder carries its descendants, so renaming "a/b" to
-	// "a/c" also moves "a/b/deep" -- one call, not one per path.
-	//
-	// Filing is personal organization, so only the creator's own move: a folder
-	// is that person's tree, and neither a binding nor the admin backstop
-	// reaches into it. The response counts what moved.
+	// Move the caller's own saved queries into a folder, by name or a whole
+	// folder at a time. Moving a folder moves its descendants: renaming "a/b"
+	// to "a/c" also moves "a/b/deep". Only the caller's own saved queries move;
+	// the response counts how many did.
 	// Permissions required: creator
 	MoveMySavedQueries(ctx context.Context, in *MoveMySavedQueriesRequest, opts ...grpc.CallOption) (*MoveMySavedQueriesResponse, error)
-	// Delete a saved query and every user's stars on it. An EDITOR binding never
-	// carries deletion. An unreadable saved query returns NotFound; a grantee
-	// who can read but not delete gets PermissionDenied.
-	// Permissions required: creator, or bb.savedQueries.manage
+	// Delete a saved query and every user's stars on it. An EDITOR binding
+	// cannot delete.
+	// Permissions required: bb.savedQueries.delete (creator or project-level
+	// grant)
 	DeleteSavedQuery(ctx context.Context, in *DeleteSavedQueryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Get a saved query's sharing policy: who it is shared with, at what level.
-	//
-	// Anyone who can read the saved query can read its policy, which is how a
-	// grantee learns whether they may edit it. Callers who cannot read the
-	// saved query get NotFound.
-	// Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
+	// Permissions required: bb.savedQueries.getIamPolicy (creator, VIEWER/EDITOR
+	// binding, or project-level grant)
 	GetSavedQueryPolicy(ctx context.Context, in *GetSavedQueryPolicyRequest, opts ...grpc.CallOption) (*SavedQueryPolicy, error)
 	// Replace a saved query's sharing policy in full. `policy.etag` must match
-	// the stored policy or the call fails with ABORTED, so a stale write cannot
-	// reinstate a grant somebody just revoked.
-	// Permissions required: creator, or bb.savedQueries.manage
+	// the stored policy; a mismatch fails with ABORTED.
+	// Permissions required: bb.savedQueries.setIamPolicy (creator or
+	// project-level grant; no predefined role carries it)
 	SetSavedQueryPolicy(ctx context.Context, in *SetSavedQueryPolicyRequest, opts ...grpc.CallOption) (*SavedQueryPolicy, error)
 }
 
@@ -248,92 +228,72 @@ func (c *savedQueryServiceClient) SetSavedQueryPolicy(ctx context.Context, in *S
 // All implementations must embed UnimplementedSavedQueryServiceServer
 // for forward compatibility.
 //
-// SavedQueryService manages saved queries for SQL Editor query development.
+// SavedQueryService manages saved queries in the SQL Editor.
 //
-// A saved query is private to its creator until shared. Three things grant
-// access to one: being its creator (the fixed owner), holding a VIEWER or
-// EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop
-// that reaches private saved queries too. Bindings are managed through the
-// GetSavedQueryPolicy/SetSavedQueryPolicy pair.
+// A saved query is private to its creator until shared. Permissions come from
+// three places:
+//   - The creator owns the saved query and holds every permission on it.
+//   - A VIEWER binding grants bb.savedQueries.get and getIamPolicy; an EDITOR
+//     binding adds update.
+//   - Permissions granted on the project or workspace apply to every saved
+//     query in the project, private ones included.
 //
-// Two gates sit on top of that: bb.savedQueries.search gates discovery, and
-// running a saved query needs the SQL Editor's own database permissions.
+// A caller without a method's permission gets NotFound, not
+// PermissionDenied, so private names stay unprobeable. Running a saved query
+// is governed by the SQL Editor's database permissions, not by this service.
 type SavedQueryServiceServer interface {
-	// Create a saved query. The creator becomes its fixed owner, and the saved
-	// query starts private.
-	// Permissions required: bb.savedQueries.create on the parent project
+	// Create a saved query. The creator becomes the owner and the saved query
+	// starts private.
+	// Permissions required: bb.savedQueries.create on the project
 	CreateSavedQuery(context.Context, *CreateSavedQueryRequest) (*SavedQuery, error)
-	// Get a saved query with its full content. An unreadable saved query returns
-	// NotFound rather than PermissionDenied, so it stays unprobeable by name.
-	// Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
+	// Get a saved query with its full content.
+	// Permissions required: bb.savedQueries.get (creator, VIEWER/EDITOR
+	// binding, or project-level grant)
 	GetSavedQuery(context.Context, *GetSavedQueryRequest) (*SavedQuery, error)
-	// List saved queries for auditing. Bindings are ignored: the permission
-	// alone reads every matched saved query's content, private ones included.
-	// Returns whole statements rather than Search's previews, and accepts
-	// "projects/-" to span every project.
-	// Permissions required: bb.savedQueries.list on the parent project, or
-	// workspace-wide when the parent is "projects/-"
+	// List saved queries for auditing. The permission alone grants reading
+	// every matched saved query with full content, private ones included;
+	// bindings are ignored. Use parent "projects/-" for all projects.
+	// Permissions required: bb.savedQueries.list on the project, or on the
+	// workspace when the parent is "projects/-"
 	ListSavedQueries(context.Context, *ListSavedQueriesRequest) (*ListSavedQueriesResponse, error)
-	// Search saved queries in one project: the SQL Editor's list path, returning
-	// content previews.
-	//
-	// Caller-scoped, always: the caller's own saved queries plus those a binding
-	// shares with them. bb.savedQueries.manage does not widen it — an admin
-	// reading everyone's saved queries uses ListSavedQueries, which is built for
-	// that. The permission here gates discovery only and grants access to
-	// nothing by itself.
+	// Search saved queries in one project. Returns content previews of the
+	// saved queries the caller can read, the same access rule as GetSavedQuery.
 	// Permissions required: bb.savedQueries.search on the project
 	SearchSavedQueries(context.Context, *SearchSavedQueriesRequest) (*SearchSavedQueriesResponse, error)
-	// Search the folder paths holding saved queries the caller can read. Folders
-	// are a derived view over the `folder` field rather than a resource
-	// collection, so this is a custom method, caller-scoped like
-	// SearchSavedQueries.
-	//
-	// A path is returned when at least one readable saved query sits in it —
-	// including one somebody else filed and shared, since a client seeds its
-	// folder tree from here and cannot expand into a folder it never learns
-	// about. Use the filter to split your own folders (`creator == "users/me"`)
-	// from the ones reaching you through a grant (`shared == true`).
+	// Search folder paths. A path is returned when it holds at least one saved
+	// query the caller can read, the same access rule as SearchSavedQueries.
 	// Permissions required: bb.savedQueries.search on the project
 	SearchSavedQueryFolders(context.Context, *SearchSavedQueryFoldersRequest) (*SearchSavedQueryFoldersResponse, error)
-	// Update a saved query. `title`, `content`, and `database` need write access;
-	// `folder` is creator/admin only, because filing is organization rather than
-	// editing. `database` must belong to the saved query's own project. An
-	// unreadable saved query returns NotFound; a VIEWER who cannot write gets
-	// PermissionDenied.
-	// Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage
+	// Update a saved query. `database` must belong to the saved query's project.
+	// Permissions required: bb.savedQueries.update (creator, EDITOR binding, or
+	// project-level grant)
 	UpdateSavedQuery(context.Context, *UpdateSavedQueryRequest) (*SavedQuery, error)
-	// Star or unstar a saved query for the caller. Stars are personal: yours are
-	// invisible to everyone else and grant nothing. You can star any saved query
-	// you created or have been granted access to; anything else answers
-	// NotFound, so names stay unprobeable.
-	// Permissions required: creator, or a VIEWER or EDITOR binding
+	// Star or unstar a saved query for the caller. Stars are personal: nobody
+	// else sees them and they grant nothing. The caller can star any saved
+	// query they can read. When access is lost the star is hidden, not
+	// deleted; it comes back if access returns.
+	// Permissions required: bb.savedQueries.get (creator, VIEWER/EDITOR
+	// binding, or project-level grant)
 	UpdateSavedQueryStar(context.Context, *UpdateSavedQueryStarRequest) (*SavedQuery, error)
-	// Move the caller's own saved queries into a folder, named individually or a
-	// whole folder at a time. Moving a folder carries its descendants, so renaming "a/b" to
-	// "a/c" also moves "a/b/deep" -- one call, not one per path.
-	//
-	// Filing is personal organization, so only the creator's own move: a folder
-	// is that person's tree, and neither a binding nor the admin backstop
-	// reaches into it. The response counts what moved.
+	// Move the caller's own saved queries into a folder, by name or a whole
+	// folder at a time. Moving a folder moves its descendants: renaming "a/b"
+	// to "a/c" also moves "a/b/deep". Only the caller's own saved queries move;
+	// the response counts how many did.
 	// Permissions required: creator
 	MoveMySavedQueries(context.Context, *MoveMySavedQueriesRequest) (*MoveMySavedQueriesResponse, error)
-	// Delete a saved query and every user's stars on it. An EDITOR binding never
-	// carries deletion. An unreadable saved query returns NotFound; a grantee
-	// who can read but not delete gets PermissionDenied.
-	// Permissions required: creator, or bb.savedQueries.manage
+	// Delete a saved query and every user's stars on it. An EDITOR binding
+	// cannot delete.
+	// Permissions required: bb.savedQueries.delete (creator or project-level
+	// grant)
 	DeleteSavedQuery(context.Context, *DeleteSavedQueryRequest) (*emptypb.Empty, error)
 	// Get a saved query's sharing policy: who it is shared with, at what level.
-	//
-	// Anyone who can read the saved query can read its policy, which is how a
-	// grantee learns whether they may edit it. Callers who cannot read the
-	// saved query get NotFound.
-	// Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
+	// Permissions required: bb.savedQueries.getIamPolicy (creator, VIEWER/EDITOR
+	// binding, or project-level grant)
 	GetSavedQueryPolicy(context.Context, *GetSavedQueryPolicyRequest) (*SavedQueryPolicy, error)
 	// Replace a saved query's sharing policy in full. `policy.etag` must match
-	// the stored policy or the call fails with ABORTED, so a stale write cannot
-	// reinstate a grant somebody just revoked.
-	// Permissions required: creator, or bb.savedQueries.manage
+	// the stored policy; a mismatch fails with ABORTED.
+	// Permissions required: bb.savedQueries.setIamPolicy (creator or
+	// project-level grant; no predefined role carries it)
 	SetSavedQueryPolicy(context.Context, *SetSavedQueryPolicyRequest) (*SavedQueryPolicy, error)
 	mustEmbedUnimplementedSavedQueryServiceServer()
 }

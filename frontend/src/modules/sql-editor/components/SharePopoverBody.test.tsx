@@ -50,6 +50,11 @@ vi.mock("@/stores/app", () => {
 vi.mock("@/utils", () => ({
   extractProjectResourceName: mocks.extractProjectResourceName,
   extractSavedQueryID: mocks.extractSavedQueryID,
+  // Mirrors the real helper: the creator, or a project-level
+  // bb.savedQueries.setIamPolicy.
+  isSavedQueryShareableV1: (sheet: { creator: string }) =>
+    sheet.creator === "users/test@example.com" ||
+    mocks.hasProjectPermissionV2(),
 }));
 
 vi.mock("@/utils/iam/permission", () => ({
@@ -146,7 +151,7 @@ describe("SharePopoverBody", () => {
     unmount();
   });
 
-  test("a non-creator without manage gets a read-only grant editor", () => {
+  test("a non-creator without setIamPolicy gets a read-only grant editor", () => {
     mocks.hasProjectPermissionV2.mockReturnValue(false);
     const { render, unmount } = renderIntoContainer(
       <SharePopoverBody

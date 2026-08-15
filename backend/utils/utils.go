@@ -261,12 +261,5 @@ func extractEmailFromUserIdentifier(identifier string) (string, error) {
 // For service accounts: serviceAccounts/{email}
 // For workload identities: workloadIdentities/{email}
 func formatMemberNameByType(user *store.UserMessage) string {
-	switch user.Type {
-	case storepb.PrincipalType_SERVICE_ACCOUNT:
-		return common.FormatServiceAccountEmail(user.Email)
-	case storepb.PrincipalType_WORKLOAD_IDENTITY:
-		return common.FormatWorkloadIdentityEmail(user.Email)
-	default:
-		return common.FormatUserEmail(user.Email)
-	}
+	return common.FormatPrincipalMember(user.Email, user.Type)
 }

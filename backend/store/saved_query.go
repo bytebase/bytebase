@@ -59,10 +59,11 @@ type FindSavedQueryMessage struct {
 	PrincipalEmail string
 
 	// AccessMembers restricts results to saved queries the caller can read:
-	// their own, plus any whose bindings name one of these principals
-	// ("user:{email}" and "group:{email}" — the caller and their groups).
-	// Leave nil to skip the access clause entirely, which is what the auditor
-	// List does.
+	// their own, plus any whose bindings name one of these principals in the
+	// stored member form ("users/{email}" and "groups/{email}" — the caller
+	// and their groups).
+	// Leave nil to skip the access clause entirely: the auditor List, and
+	// Search for a caller with project-level bb.savedQueries.get.
 	//
 	// Must describe the same caller as PrincipalEmail: the clause reads "own"
 	// from PrincipalEmail and "granted" from here. Setting one without the
@@ -229,9 +230,15 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 }
 
 // bindingProbe builds the jsonb containment operand that matches any binding
-// naming this principal, e.g. `[{"members":["user:a@corp.com"]}]`. `@>` on a
-// jsonb array is "contains an element containing this", so one probe per
-// principal, BitmapOr'd by the planner, answers "shared with me".
+// naming this principal, e.g. `[{"members":["users/a@corp.com"]}]` — the
+// stored member form. `@>` on a jsonb array is "contains an element
+// containing this", so one probe per principal, BitmapOr'd by the planner,
+// answers "shared with me".
+//
+// The probe is level-blind on purpose: every current level's bundle grants
+// get (bindingGrants in api/v1/saved_query_service.go). A future level that
+// does not grant get must add a level term here, or Search would return
+// previews GetSavedQuery denies.
 func bindingProbe(member string) (string, error) {
 	probe, err := json.Marshal([]map[string]any{{"members": []string{member}}})
 	if err != nil {
@@ -600,23 +607,21 @@ func (s *Store) MoveSavedQueryFolder(ctx context.Context, projectID, creator, so
 }
 
 // ListSavedQueryFolderPaths returns the distinct folder paths of the saved
-// queries in a project that match filterQ. A non-nil creator restricts the
-// paths to that creator's rows, which is how the API layer applies the same
-// read rule the rows themselves carry: your own always, everyone's only with
-// the admin backstop.
-// ListSavedQueryFolderPaths returns the distinct folder paths of the saved
 // queries a caller can read, narrowed by filterQ. Access is the same predicate
-// SearchSavedQueries applies, and for the same reason: a folder is only useful
-// if its contents are reachable. Scoping these to the caller's *own* rows
-// instead would hide a shared saved query filed by its creator — the tree is
-// seeded from here, and a row whose folder has no node can never be expanded
-// into.
-func (s *Store) ListSavedQueryFolderPaths(ctx context.Context, projectID string, principalEmail string, accessMembers []string, filterQ *qb.Query) ([]string, error) {
+// SearchSavedQueries applies (nil accessMembers skips the clause, for a
+// caller with project-level bb.savedQueries.get), and for the same reason: a
+// folder is only useful if its contents are reachable. Scoping these to the
+// caller's *own* rows instead would hide a shared saved query filed by its
+// creator — the tree is seeded from here, and a row whose folder has no node
+// can never be expanded into. workspaceID fences the project to the caller's
+// workspace and to active projects, exactly as the List query does.
+func (s *Store) ListSavedQueryFolderPaths(ctx context.Context, workspaceID string, projectID string, principalEmail string, accessMembers []string, filterQ *qb.Query) ([]string, error) {
 	q := qb.Q().Space(`
 		SELECT DISTINCT folder
 		FROM saved_query
 		WHERE TRUE`)
 	q.And("saved_query.project = ?", projectID)
+	q.And("EXISTS (SELECT 1 FROM project WHERE project.resource_id = saved_query.project AND project.workspace = ? AND project.deleted = FALSE)", workspaceID)
 	q.And("saved_query.folder <> ''")
 	if accessMembers != nil {
 		access := qb.Q().Space("saved_query.creator = ?", principalEmail)
@@ -741,8 +746,9 @@ func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, acc
 			return nil, errors.Errorf("invalid starred value %v, expect true or false", value)
 		case "shared":
 			// Reached through a binding, which is narrower than "somebody else
-			// created it": an admin sees saved queries nobody shared with them,
-			// and those must not show up in a Shared view.
+			// created it": a project-level bb.savedQueries.get holder sees
+			// saved queries nobody shared with them, and those must not show
+			// up in a Shared view.
 			shared, ok := value.(bool)
 			if !ok {
 				return nil, errors.Errorf("invalid shared value %v, expect true or false", value)

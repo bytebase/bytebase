@@ -182,9 +182,9 @@ func TestCheckProjectWideOnlySkipsResourceScopedBindings(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			policy := policyWithCondition(tc.expression)
 			require.Equal(t, tc.wantProjectWide,
-				check(testUser, permission.SavedQueriesManage, policy, getPermissions, getGroupMembers, false, true /* projectWideOnly */))
+				check(testUser, permission.SavedQueriesGet, policy, getPermissions, getGroupMembers, false, true /* projectWideOnly */))
 			require.Equal(t, tc.wantGeneric,
-				check(testUser, permission.SavedQueriesManage, policy, getPermissions, getGroupMembers, false, false /* projectWideOnly */))
+				check(testUser, permission.SavedQueriesGet, policy, getPermissions, getGroupMembers, false, false /* projectWideOnly */))
 		})
 	}
 }

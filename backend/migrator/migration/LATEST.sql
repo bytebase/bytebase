@@ -366,9 +366,9 @@ CREATE TABLE saved_query (
     project text NOT NULL REFERENCES project(resource_id),
     name text NOT NULL,
     statement text NOT NULL,
-    -- The folder path this saved query lives in ("a/b/c", '' = unfiled), set
-    -- by its creator (or an admin). A folder is a path on rows, so empty
-    -- folders cannot exist.
+    -- The folder path this saved query lives in ("a/b/c", '' = unfiled),
+    -- written under the ordinary update permission like any other field. A
+    -- folder is a path on rows, so empty folders cannot exist.
     folder text NOT NULL DEFAULT '',
     -- Stored as SavedQueryPayload (proto/store/store/saved_query.proto); the
     -- connected database is a soft reference kept as its canonical name.
