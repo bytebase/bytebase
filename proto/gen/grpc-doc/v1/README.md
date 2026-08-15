@@ -11337,7 +11337,7 @@ For example: creator == &#34;users/alice@example.com&#34; shared == true starred
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | saved_query | [SavedQuery](#bytebase-v1-SavedQuery) |  | `saved_query.name` identifies the saved query to update. Format: projects/{project}/savedQueries/{savedQuery} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | Fields to update, relative to the saved query (`title`, not `saved_query.title`). Supported: `title`, `content`, `database`, `folder`. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | Fields to update, relative to the saved query (`title`, not `saved_query.title`). Supported: `title`, `content`, `database`, `folder`. At least one path is required. |
 
 
 

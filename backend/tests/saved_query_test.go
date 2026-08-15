@@ -1101,6 +1101,15 @@ func TestSavedQueryPerVerbRoleGrants(t *testing.T) {
 		a.NoError(err)
 		a.Equal("verbed", refiled.Msg.Folder)
 
+		// An empty mask is rejected: it would touch nothing yet return the
+		// full content — a read in update's clothing.
+		_, err = ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+			SavedQuery: &v1pb.SavedQuery{Name: savedQuery.Name},
+			UpdateMask: &fieldmaskpb.FieldMask{},
+		}))
+		a.Error(err)
+		a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
 		_, err = ctl.savedQueryServiceClient.DeleteSavedQuery(ctx, connect.NewRequest(&v1pb.DeleteSavedQueryRequest{
 			Name: savedQuery.Name,
 		}))

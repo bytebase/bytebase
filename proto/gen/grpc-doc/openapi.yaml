@@ -31938,6 +31938,7 @@ components:
           description: |-
             Fields to update, relative to the saved query (`title`, not
              `saved_query.title`). Supported: `title`, `content`, `database`, `folder`.
+             At least one path is required.
           $ref: '#/components/schemas/google.protobuf.FieldMask'
       title: UpdateSavedQueryRequest
       required:

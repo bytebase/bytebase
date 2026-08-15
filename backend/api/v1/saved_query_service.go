@@ -375,8 +375,10 @@ func (s *SavedQueryService) UpdateSavedQuery(
 	if request.SavedQuery == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("saved query cannot be empty"))
 	}
-	if request.UpdateMask == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask cannot be empty"))
+	// An empty mask would touch nothing yet still return the full saved query
+	// — a read in update's clothing, which an update-only role must not get.
+	if request.UpdateMask == nil || len(request.UpdateMask.Paths) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask must name at least one field"))
 	}
 	if request.SavedQuery.Name == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("saved query name cannot be empty"))

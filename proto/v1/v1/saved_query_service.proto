@@ -245,6 +245,7 @@ message UpdateSavedQueryRequest {
 
   // Fields to update, relative to the saved query (`title`, not
   // `saved_query.title`). Supported: `title`, `content`, `database`, `folder`.
+  // At least one path is required.
   google.protobuf.FieldMask update_mask = 2;
 }
 

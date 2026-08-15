@@ -425,6 +425,7 @@ type UpdateSavedQueryRequest struct {
 	SavedQuery *SavedQuery `protobuf:"bytes,1,opt,name=saved_query,json=savedQuery,proto3" json:"saved_query,omitempty"`
 	// Fields to update, relative to the saved query (`title`, not
 	// `saved_query.title`). Supported: `title`, `content`, `database`, `folder`.
+	// At least one path is required.
 	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
