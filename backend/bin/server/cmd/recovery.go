@@ -300,11 +300,13 @@ func resetUserPassword(
 		Password:    password,
 	})
 	clearBytes(password)
-	if resetErr == nil {
-		printPasswordResetSuccess(output, result.Email)
-	} else {
+	if result == nil {
 		fmt.Fprintf(output, "Failed to reset user password: %v\n", resetErr)
 		return nil
+	}
+	printPasswordResetSuccess(output, result.Email)
+	if resetErr != nil {
+		fmt.Fprintf(output, "Warning: %v\n", resetErr)
 	}
 
 	member, err := runner.IsUserInWorkspace(ctx, workspaceID, result.Email)

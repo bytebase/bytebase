@@ -82,6 +82,7 @@ type fakeRecoveryRunner struct {
 	addRequests            []recovery.AddUserToWorkspaceRequest
 	roles                  []*recovery.Role
 	enableErr              error
+	resetResult            *recovery.ResetUserPasswordResult
 	resetErr               error
 	resetErrs              []error
 	listErr                error
@@ -145,7 +146,10 @@ func (f *fakeRecoveryRunner) ResetUserPassword(_ context.Context, request recove
 		return nil, f.resetErrs[requestIndex]
 	}
 	if f.resetErr != nil {
-		return nil, f.resetErr
+		return f.resetResult, f.resetErr
+	}
+	if f.resetResult != nil {
+		return f.resetResult, nil
 	}
 	return &recovery.ResetUserPasswordResult{WorkspaceID: request.WorkspaceID, Email: request.Email}, nil
 }
@@ -487,6 +491,32 @@ func TestRecoveryCommandContract(t *testing.T) {
 		require.Len(t, runner.addRequests, 1)
 		require.Len(t, runner.resetRequests, 1)
 		require.Contains(t, output.String(), "Failed to add user to workspace: IAM write failed")
+	})
+
+	t.Run("audit failure preserves the reset and continues membership recovery", func(t *testing.T) {
+		runner := &fakeRecoveryRunner{
+			resetResult: &recovery.ResetUserPasswordResult{
+				WorkspaceID: "acme",
+				Email:       "user@example.com",
+				Changed:     true,
+			},
+			resetErr:       errors.New("user password reset completed, but failed to create the recovery audit log: audit write failed"),
+			notInWorkspace: true,
+			roles:          []*recovery.Role{{Name: "roles/workspaceMember", Title: "Workspace member"}},
+		}
+		passwords := [][]byte{[]byte("NewPassword1!"), []byte("NewPassword1!")}
+		readCount := 0
+		command, output, _, _ := newTestRecoveryCommand(t, runner, "2\nuser@example.com\ny\n1\ny\nq\n", func(io.Reader) ([]byte, error) {
+			password := passwords[readCount]
+			readCount++
+			return password, nil
+		})
+
+		require.NoError(t, command.Execute())
+		require.Equal(t, []string{"acme:user@example.com"}, runner.membershipChecks)
+		require.Len(t, runner.addRequests, 1)
+		require.Contains(t, output.String(), "Password updated for user user@example.com.")
+		require.Contains(t, output.String(), "Warning: user password reset completed, but failed to create the recovery audit log: audit write failed")
 	})
 
 	t.Run("membership check failure reports the persisted password reset", func(t *testing.T) {
