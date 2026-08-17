@@ -86,10 +86,10 @@ describe("lazyPage persistent parent routes", () => {
     await router.navigate(-1);
     await waitFor(() =>
       expect(screen.getByTestId("route-name")).toHaveTextContent(
-        "plan.rollout.stage"
+        /^plan\.rollout\.stage$/
       )
     );
-    expect(screen.getByTestId("task-id")).toHaveTextContent("");
+    expect(screen.getByTestId("task-id")).toBeEmptyDOMElement();
     expect(screen.getByTestId("mount-id")).toHaveTextContent("1");
 
     await router.navigate(1);
