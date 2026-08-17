@@ -82,10 +82,11 @@ Use this checklist when enabling or validating HA:
 
 ## Administrator recovery
 
-The interactive administrator recovery command can run while HA replicas remain
-active. Run `bytebase recovery` with the exact same shared `PG_URL` used by every
-replica. The command connects directly to the metadata database and does not
-start an HTTP server, scheduler, or background runner.
+Stop every Bytebase replica before running the interactive administrator
+recovery command. Run `bytebase recovery` with the exact same shared `PG_URL`
+used by every replica. The command connects directly to the metadata database
+and does not start an HTTP server, scheduler, or background runner. Restart all
+replicas after recovery so they reload the updated settings and IAM policy.
 
 Follow the [administrator recovery runbook](./admin-recovery.md) for backup,
 terminal, action-selection, login, and cleanup requirements. Recovery is not an

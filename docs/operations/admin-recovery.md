@@ -44,13 +44,16 @@ After recovery, sign in through the ordinary
      a file-level snapshot.
 2. Use the same Bytebase binary version as the deployment. The recovery command
    neither initializes nor migrates the metadata schema.
-3. Reuse the deployment's metadata connection configuration. Recovery does not
+3. Stop every Bytebase server instance or replica connected to the metadata
+   database. Keep them stopped until the recovery session exits so no process
+   uses stale cached settings or IAM policies during recovery.
+4. Reuse the deployment's metadata connection configuration. Recovery does not
    define a separate format. Follow the existing
    [Docker deployment guide](https://docs.bytebase.com/get-started/self-host/deploy-with-docker)
    for embedded data and port configuration, or
    [Configure External PostgreSQL](https://docs.bytebase.com/get-started/self-host/external-postgres)
    for `PG_URL`.
-4. Run the command from an interactive terminal. It rejects redirected or
+5. Run the command from an interactive terminal. It rejects redirected or
    otherwise non-terminal input and output.
 
 ## Start the recovery session
@@ -70,16 +73,19 @@ The command requires exactly one workspace in the metadata database, verifies
 that it is active, resolves it automatically, and displays:
 
 ```text
+Stop all Bytebase servers that use this metadata database before continuing.
+Restart all Bytebase servers after recovery so they reload updated settings and IAM policies.
+
 Select a recovery action:
 1. Enable password sign-in
 2. Reset user password
 q. Exit
 ```
 
-For an embedded deployment, the command connects to the running metadata
-database when available. Otherwise it starts only an existing initialized
-`pgdata` and stops only the PostgreSQL instance it started itself. Bytebase does
-not need to be stopped merely to run a recovery action.
+For an embedded deployment, the command connects to the metadata database when
+available. Otherwise it starts only an existing initialized `pgdata` and stops
+only the PostgreSQL instance it started itself. All Bytebase server processes
+must remain stopped throughout the recovery session.
 
 ## Enable password sign-in
 
@@ -89,7 +95,8 @@ not need to be stopped merely to run a recovery action.
    an effective, active end-user administrator with a password credential, then
    sets only `DisallowPasswordSignin` to `false` and records a warning audit
    event.
-4. Restart Bytebase so authentication reloads the updated workspace setting.
+4. Restart all Bytebase servers so authentication reloads the updated workspace
+   setting.
 5. Sign in at `/auth` using the known administrator email and password.
 6. Repair and verify the configured identity provider.
 7. Re-enable **Disallow password sign-in** in the workspace authentication
@@ -118,8 +125,8 @@ change any user, MFA configuration, IAM policy, or identity-provider setting.
    entered manually. Declining leaves the completed password reset intact.
 8. If password sign-in is disabled and this user is an administrator needed for
    recovery, select **Enable password sign-in** in the same session.
-9. Restart Bytebase so authentication reloads the updated credential and
-   workspace setting.
+9. Restart all Bytebase servers so authentication reloads the updated
+   credential, workspace setting, and IAM policy.
 10. Sign in at `/auth` with the new password, repair and verify the identity
    provider, then re-enable **Disallow password sign-in**.
 11. Select `q. Exit`.
@@ -131,9 +138,9 @@ direct role while preserving unrelated IAM bindings. It does not create or
 reactivate the user, clear MFA, change profile data, revoke refresh tokens, or
 modify workspace settings.
 
-An already-running Bytebase server can take up to one minute to observe a role
-added by the separate recovery process because IAM policy reads are cached. A
-newly started server reads the role immediately.
+Keep every Bytebase server stopped until the recovery session exits. Restarted
+servers read the recovered credential, workspace setting, and IAM policy from
+the metadata database without retaining a stale process-local cache.
 
 ## Troubleshooting
 
@@ -181,7 +188,8 @@ connected to the intended self-hosted metadata database.
 
 ## After recovery
 
-1. Confirm the recovered administrator can sign in through `/auth`.
+1. Restart all Bytebase servers, then confirm the recovered administrator can
+   sign in through `/auth`.
 2. Verify the identity-provider configuration and federated sign-in.
 3. Re-enable **Disallow password sign-in** if it was enabled before the outage.
 4. Review the warning-level recovery audit events. They identify the operation
