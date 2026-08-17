@@ -364,10 +364,18 @@ func resolveRawResourceWithArchivedProject(ctx context.Context, stores *store.St
 	}
 
 	parts := strings.Split(name, "/")
-	if allowArchivedProject && getResourceRoute(parts) == (resourceRoute{projectCollection, instanceCollection}) {
+	route := getResourceRoute(parts)
+	if allowArchivedProject && route == (resourceRoute{projectCollection}) {
+		projectID, err := requiredResourceIdentifier(parts, 1, projectCollection)
+		if err != nil {
+			return nil, err
+		}
+		return &common.Resource{Type: common.ResourceTypeProject, ID: projectID}, nil
+	}
+	if allowArchivedProject && route == (resourceRoute{projectCollection, instanceCollection}) {
 		return resolveProjectInstanceResourceForLifecycle(ctx, stores, parts)
 	}
-	_, resolver, ok := findResourceResolver(getResourceRoute(parts))
+	_, resolver, ok := findResourceResolver(route)
 	if !ok {
 		return workspaceFallback(ctx), nil
 	}
@@ -579,7 +587,9 @@ func resolveProjectInstanceResourceForLifecycle(ctx context.Context, stores *sto
 }
 
 func allowsArchivedProjectResourceResolution(method string) bool {
-	return method == v1connect.InstanceServiceDeleteInstanceProcedure || method == v1connect.InstanceServiceUndeleteInstanceProcedure
+	return method == v1connect.InstanceServiceDeleteInstanceProcedure ||
+		method == v1connect.InstanceServiceUndeleteInstanceProcedure ||
+		method == v1connect.InstanceServicePrepareSampleProjectInstanceProcedure
 }
 
 func getResourceFromRequest(ctx context.Context, request any, method string) ([]string, error) {
@@ -597,13 +607,25 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 
 	var resources []string
 
-	if r, ok := request.(*v1pb.CreateInstanceRequest); ok && r.Parent != nil {
+	switch r := request.(type) {
+	case *v1pb.CreateInstanceRequest:
+		if r.Parent == nil {
+			break
+		}
 		projectID, err := common.GetProjectID(*r.Parent)
 		if err == nil && common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), projectID) {
 			// Default projects cannot own instances. Authorize at workspace scope so
 			// InstanceService can return its canonical invalid-argument response.
 			return []string{""}, nil
 		}
+	case *v1pb.PrepareSampleProjectInstanceRequest:
+		projectID, err := common.GetProjectID(r.GetParent())
+		if err == nil && common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), projectID) {
+			// Keep the default-project rejection in InstanceService, consistent
+			// with ordinary project instance creation.
+			return []string{""}, nil
+		}
+	default:
 	}
 	if r, ok := request.(*v1pb.UpdateInstanceRequest); ok && r.AllowMissing && r.Instance != nil {
 		if projectID, _, err := common.GetProjectIDInstanceID(r.Instance.Name); err == nil {

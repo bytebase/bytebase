@@ -28,6 +28,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
+	"github.com/bytebase/bytebase/backend/component/sampleprojectinstance"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -51,6 +52,7 @@ func configureGrpcRouters(
 	iamManager *iam.Manager,
 	secret string,
 	sampleInstanceManager *sampleinstance.Manager,
+	sampleProjectManager *sampleprojectinstance.Manager,
 ) (http.Handler, error) {
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
@@ -103,7 +105,7 @@ func configureGrpcRouters(
 	groupService := apiv1.NewGroupService(stores, iamManager, licenseService)
 	identityProviderService := apiv1.NewIdentityProviderService(stores, licenseService, profile)
 	instanceRoleService := apiv1.NewInstanceRoleService(stores)
-	instanceService := apiv1.NewInstanceService(stores, profile, licenseService, dbFactory, schemaSyncer, sampleInstanceManager)
+	instanceService := apiv1.NewInstanceService(stores, profile, licenseService, dbFactory, schemaSyncer, sampleInstanceManager, sampleProjectManager)
 	issueService := apiv1.NewIssueService(stores, webhookManager, bus, licenseService, iamManager)
 	orgPolicyService := apiv1.NewOrgPolicyService(stores, licenseService, iamManager)
 	planService := apiv1.NewPlanService(stores, bus, iamManager, webhookManager, licenseService)

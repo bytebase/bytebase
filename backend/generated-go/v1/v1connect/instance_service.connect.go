@@ -43,6 +43,9 @@ const (
 	// InstanceServiceCreateInstanceProcedure is the fully-qualified name of the InstanceService's
 	// CreateInstance RPC.
 	InstanceServiceCreateInstanceProcedure = "/bytebase.v1.InstanceService/CreateInstance"
+	// InstanceServicePrepareSampleProjectInstanceProcedure is the fully-qualified name of the
+	// InstanceService's PrepareSampleProjectInstance RPC.
+	InstanceServicePrepareSampleProjectInstanceProcedure = "/bytebase.v1.InstanceService/PrepareSampleProjectInstance"
 	// InstanceServiceUpdateInstanceProcedure is the fully-qualified name of the InstanceService's
 	// UpdateInstance RPC.
 	InstanceServiceUpdateInstanceProcedure = "/bytebase.v1.InstanceService/UpdateInstance"
@@ -86,6 +89,9 @@ type InstanceServiceClient interface {
 	// Creates a new database instance.
 	// Permissions required: bb.instances.create
 	CreateInstance(context.Context, *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error)
+	// Prepares a Sample Project Instance for a project.
+	// Permissions required: bb.instances.create
+	PrepareSampleProjectInstance(context.Context, *connect.Request[v1.PrepareSampleProjectInstanceRequest]) (*connect.Response[v1.Instance], error)
 	// Updates a database instance.
 	// Permissions required: bb.instances.update
 	UpdateInstance(context.Context, *connect.Request[v1.UpdateInstanceRequest]) (*connect.Response[v1.Instance], error)
@@ -149,6 +155,12 @@ func NewInstanceServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			httpClient,
 			baseURL+InstanceServiceCreateInstanceProcedure,
 			connect.WithSchema(instanceServiceMethods.ByName("CreateInstance")),
+			connect.WithClientOptions(opts...),
+		),
+		prepareSampleProjectInstance: connect.NewClient[v1.PrepareSampleProjectInstanceRequest, v1.Instance](
+			httpClient,
+			baseURL+InstanceServicePrepareSampleProjectInstanceProcedure,
+			connect.WithSchema(instanceServiceMethods.ByName("PrepareSampleProjectInstance")),
 			connect.WithClientOptions(opts...),
 		),
 		updateInstance: connect.NewClient[v1.UpdateInstanceRequest, v1.Instance](
@@ -216,19 +228,20 @@ func NewInstanceServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 
 // instanceServiceClient implements InstanceServiceClient.
 type instanceServiceClient struct {
-	getInstance          *connect.Client[v1.GetInstanceRequest, v1.Instance]
-	listInstances        *connect.Client[v1.ListInstancesRequest, v1.ListInstancesResponse]
-	createInstance       *connect.Client[v1.CreateInstanceRequest, v1.Instance]
-	updateInstance       *connect.Client[v1.UpdateInstanceRequest, v1.Instance]
-	deleteInstance       *connect.Client[v1.DeleteInstanceRequest, emptypb.Empty]
-	undeleteInstance     *connect.Client[v1.UndeleteInstanceRequest, v1.Instance]
-	syncInstance         *connect.Client[v1.SyncInstanceRequest, v1.SyncInstanceResponse]
-	listInstanceDatabase *connect.Client[v1.ListInstanceDatabaseRequest, v1.ListInstanceDatabaseResponse]
-	batchSyncInstances   *connect.Client[v1.BatchSyncInstancesRequest, v1.BatchSyncInstancesResponse]
-	batchUpdateInstances *connect.Client[v1.BatchUpdateInstancesRequest, v1.BatchUpdateInstancesResponse]
-	addDataSource        *connect.Client[v1.AddDataSourceRequest, v1.Instance]
-	removeDataSource     *connect.Client[v1.RemoveDataSourceRequest, v1.Instance]
-	updateDataSource     *connect.Client[v1.UpdateDataSourceRequest, v1.Instance]
+	getInstance                  *connect.Client[v1.GetInstanceRequest, v1.Instance]
+	listInstances                *connect.Client[v1.ListInstancesRequest, v1.ListInstancesResponse]
+	createInstance               *connect.Client[v1.CreateInstanceRequest, v1.Instance]
+	prepareSampleProjectInstance *connect.Client[v1.PrepareSampleProjectInstanceRequest, v1.Instance]
+	updateInstance               *connect.Client[v1.UpdateInstanceRequest, v1.Instance]
+	deleteInstance               *connect.Client[v1.DeleteInstanceRequest, emptypb.Empty]
+	undeleteInstance             *connect.Client[v1.UndeleteInstanceRequest, v1.Instance]
+	syncInstance                 *connect.Client[v1.SyncInstanceRequest, v1.SyncInstanceResponse]
+	listInstanceDatabase         *connect.Client[v1.ListInstanceDatabaseRequest, v1.ListInstanceDatabaseResponse]
+	batchSyncInstances           *connect.Client[v1.BatchSyncInstancesRequest, v1.BatchSyncInstancesResponse]
+	batchUpdateInstances         *connect.Client[v1.BatchUpdateInstancesRequest, v1.BatchUpdateInstancesResponse]
+	addDataSource                *connect.Client[v1.AddDataSourceRequest, v1.Instance]
+	removeDataSource             *connect.Client[v1.RemoveDataSourceRequest, v1.Instance]
+	updateDataSource             *connect.Client[v1.UpdateDataSourceRequest, v1.Instance]
 }
 
 // GetInstance calls bytebase.v1.InstanceService.GetInstance.
@@ -244,6 +257,11 @@ func (c *instanceServiceClient) ListInstances(ctx context.Context, req *connect.
 // CreateInstance calls bytebase.v1.InstanceService.CreateInstance.
 func (c *instanceServiceClient) CreateInstance(ctx context.Context, req *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error) {
 	return c.createInstance.CallUnary(ctx, req)
+}
+
+// PrepareSampleProjectInstance calls bytebase.v1.InstanceService.PrepareSampleProjectInstance.
+func (c *instanceServiceClient) PrepareSampleProjectInstance(ctx context.Context, req *connect.Request[v1.PrepareSampleProjectInstanceRequest]) (*connect.Response[v1.Instance], error) {
+	return c.prepareSampleProjectInstance.CallUnary(ctx, req)
 }
 
 // UpdateInstance calls bytebase.v1.InstanceService.UpdateInstance.
@@ -307,6 +325,9 @@ type InstanceServiceHandler interface {
 	// Creates a new database instance.
 	// Permissions required: bb.instances.create
 	CreateInstance(context.Context, *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error)
+	// Prepares a Sample Project Instance for a project.
+	// Permissions required: bb.instances.create
+	PrepareSampleProjectInstance(context.Context, *connect.Request[v1.PrepareSampleProjectInstanceRequest]) (*connect.Response[v1.Instance], error)
 	// Updates a database instance.
 	// Permissions required: bb.instances.update
 	UpdateInstance(context.Context, *connect.Request[v1.UpdateInstanceRequest]) (*connect.Response[v1.Instance], error)
@@ -366,6 +387,12 @@ func NewInstanceServiceHandler(svc InstanceServiceHandler, opts ...connect.Handl
 		InstanceServiceCreateInstanceProcedure,
 		svc.CreateInstance,
 		connect.WithSchema(instanceServiceMethods.ByName("CreateInstance")),
+		connect.WithHandlerOptions(opts...),
+	)
+	instanceServicePrepareSampleProjectInstanceHandler := connect.NewUnaryHandler(
+		InstanceServicePrepareSampleProjectInstanceProcedure,
+		svc.PrepareSampleProjectInstance,
+		connect.WithSchema(instanceServiceMethods.ByName("PrepareSampleProjectInstance")),
 		connect.WithHandlerOptions(opts...),
 	)
 	instanceServiceUpdateInstanceHandler := connect.NewUnaryHandler(
@@ -436,6 +463,8 @@ func NewInstanceServiceHandler(svc InstanceServiceHandler, opts ...connect.Handl
 			instanceServiceListInstancesHandler.ServeHTTP(w, r)
 		case InstanceServiceCreateInstanceProcedure:
 			instanceServiceCreateInstanceHandler.ServeHTTP(w, r)
+		case InstanceServicePrepareSampleProjectInstanceProcedure:
+			instanceServicePrepareSampleProjectInstanceHandler.ServeHTTP(w, r)
 		case InstanceServiceUpdateInstanceProcedure:
 			instanceServiceUpdateInstanceHandler.ServeHTTP(w, r)
 		case InstanceServiceDeleteInstanceProcedure:
@@ -475,6 +504,10 @@ func (UnimplementedInstanceServiceHandler) ListInstances(context.Context, *conne
 
 func (UnimplementedInstanceServiceHandler) CreateInstance(context.Context, *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.CreateInstance is not implemented"))
+}
+
+func (UnimplementedInstanceServiceHandler) PrepareSampleProjectInstance(context.Context, *connect.Request[v1.PrepareSampleProjectInstanceRequest]) (*connect.Response[v1.Instance], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.PrepareSampleProjectInstance is not implemented"))
 }
 
 func (UnimplementedInstanceServiceHandler) UpdateInstance(context.Context, *connect.Request[v1.UpdateInstanceRequest]) (*connect.Response[v1.Instance], error) {

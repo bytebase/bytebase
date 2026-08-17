@@ -2511,6 +2511,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListInstancesResponse'
+  /bytebase.v1.InstanceService/PrepareSampleProjectInstance:
+    post:
+      tags:
+        - bytebase.v1.InstanceService
+      summary: PrepareSampleProjectInstance
+      description: |-
+        Prepares a Sample Project Instance for a project.
+         Permissions required: bb.instances.create
+      operationId: bytebase.v1.InstanceService.PrepareSampleProjectInstance
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.PrepareSampleProjectInstanceRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.Instance'
   /bytebase.v1.InstanceService/RemoveDataSource:
     post:
       tags:
@@ -16124,6 +16162,17 @@ components:
          - If only line is known, set line and leave column as 0 (e.g., line=5, column=0)
          - If only column is known (rare), set column and leave line as 0
          Frontends should check for nil/undefined/zero values and handle them appropriately.
+    bytebase.v1.PrepareSampleProjectInstanceRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The project that owns the sample instance.
+             Format: projects/{project}
+      title: PrepareSampleProjectInstanceRequest
+      additionalProperties: false
     bytebase.v1.PreviewTaskRunRollbackRequest:
       type: object
       properties:

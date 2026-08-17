@@ -515,6 +515,8 @@ func getRequestResource(request any, method string) string {
 			return common.FormatProjectInstance(projectID, r.GetInstanceId())
 		}
 		return ""
+	case *v1pb.PrepareSampleProjectInstanceRequest:
+		return r.GetParent()
 	case *v1pb.CreateProjectRequest:
 		return common.FormatProject(r.GetProjectId())
 	case *v1pb.CreateReviewConfigRequest:

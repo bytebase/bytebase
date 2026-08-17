@@ -1204,11 +1204,15 @@
     },
     "password-write-only": "YOUR_DB_PWD - 仅写入",
     "port": "端口",
+    "prepare-sample-instance-failed": "准备示例项目实例失败。",
+    "preparing-sample-instance": "正在准备示例项目实例…",
     "project-id": "项目 ID",
     "restore-instance-instance-name-to-normal-state": "恢复实例'{{0}}'到正常状态?",
     "role-arn": "角色 ARN",
     "role-arn-description": "用于跨账户访问的 IAM 角色。同账户访问请留空。",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-project-instance-description": "使用示例项目实例探索 Bytebase，并在 7 天内使用预配置的数据库。",
+    "sample-project-instance-title": "试用示例项目实例",
     "scan-interval": {
       "default-never": "默认（永不）",
       "description": "Bytebase 会定期同步实例的 schema 以及进行异常检测。",
@@ -1302,6 +1306,7 @@
     "token-write-only": "YOUR_TOKEN - 仅写入",
     "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
     "unable-to-connect": "Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:{{0}}",
+    "use-sample-instance": "使用示例实例（可用 7 天）",
     "users": "用户",
     "your-snowflake-account-locator": "您的 Snowflake 账户定位符"
   },

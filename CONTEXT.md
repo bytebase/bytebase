@@ -28,6 +28,10 @@ _Avoid_: Project instance, unassigned instance
 An instance owned by exactly one project. Every database it contains belongs to that same project.
 _Avoid_: Workspace instance, shared instance
 
+**Sample Project Instance**:
+A Project Instance provided by Bytebase Cloud for temporary evaluation. It is an aggregate comprising one Project Instance and its one dedicated database and login role on Bytebase's shared, dedicated Cloud SQL PostgreSQL instance. Each Workspace has one lifetime entitlement. Seven-day eligibility begins only when the aggregate is ready; physical cleanup removes the backing database and role while retaining Bytebase metadata.
+_Avoid_: Sample instance, sample database, shared instance
+
 **Database**:
 A named database inside an instance that Bytebase tracks and assigns to a project. In a project instance, it belongs to the instance's project; in a workspace instance, it may be assigned independently.
 _Avoid_: Instance, schema

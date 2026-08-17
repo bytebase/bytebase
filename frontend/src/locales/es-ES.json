@@ -1204,11 +1204,15 @@
     },
     "password-write-only": "SU_DB_PWD - solo escritura",
     "port": "Puerto",
+    "prepare-sample-instance-failed": "No se pudo preparar la instancia de proyecto de muestra.",
+    "preparing-sample-instance": "Preparando la instancia de proyecto de muestra…",
     "project-id": "ID del proyecto",
     "restore-instance-instance-name-to-normal-state": "¿Restaurar la instancia '{{0}}' al estado normal?",
     "role-arn": "ARN del rol",
     "role-arn-description": "Rol IAM para asumir en acceso entre cuentas. Dejar vacío para acceso en la misma cuenta.",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-project-instance-description": "Use una instancia de proyecto de muestra para explorar Bytebase con una base de datos lista para usar durante 7 días.",
+    "sample-project-instance-title": "Pruebe una instancia de proyecto de muestra",
     "scan-interval": {
       "default-never": "Predeterminado (nunca)",
       "description": "Bytebase sincroniza periódicamente el esquema de instancia y detecta anomalías.",
@@ -1302,6 +1306,7 @@
     "token-write-only": "TU_TOKEN - solo escritura",
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
     "unable-to-connect": "Bytebase no puede conectar la instancia. Le recomendamos que revise la información de conexión nuevamente. Pero está bien ignorar esta advertencia por ahora. Aún puede solucionar la información de conexión desde la página de detalles de la instancia después de la creación.\n\nDetalle del error: {{0}}",
+    "use-sample-instance": "Usar instancia de ejemplo (Disponible durante 7 días)",
     "users": "Usuarios",
     "your-snowflake-account-locator": "Su localizador de cuentas Snowflake"
   },

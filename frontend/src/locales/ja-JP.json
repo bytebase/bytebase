@@ -1204,11 +1204,15 @@
     },
     "password-write-only": "YOUR_DB_PWD - 書き込み専用",
     "port": "ポート",
+    "prepare-sample-instance-failed": "サンプルプロジェクトインスタンスの準備に失敗しました。",
+    "preparing-sample-instance": "サンプルプロジェクトインスタンスを準備しています…",
     "project-id": "プロジェクトID",
     "restore-instance-instance-name-to-normal-state": "インスタンス '{{0}}' を通常の状態に復元しますか?",
     "role-arn": "ロール ARN",
     "role-arn-description": "クロスアカウントアクセス用の IAM ロール。同一アカウントアクセスの場合は空のままにしてください。",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-project-instance-description": "すぐに使えるデータベースを備えたサンプルプロジェクトインスタンスを 7 日間使用して、Bytebase を試すことができます。",
+    "sample-project-instance-title": "サンプルプロジェクトインスタンスを試す",
     "scan-interval": {
       "default-never": "デフォルト (なし)",
       "description": "Bytebase は定期的にインスタンスのスキーマを同期し、異常検出を実行します。",
@@ -1302,6 +1306,7 @@
     "token-write-only": "YOUR_TOKEN - 書き込み専用",
     "type-or-paste-credentials-write-only": "資格情報を入力または貼り付けます - 書き込みのみ",
     "unable-to-connect": "Bytebase はインスタンスに接続できません。接続情報を再度確認することをお勧めします。ただし、今のところこの警告は無視してかまいません。作成後もインスタンスの詳細ページで接続情報を修正できます。\n\nエラーの詳細:{{0}}",
+    "use-sample-instance": "サンプルインスタンスを使用する（7日間利用可能）",
     "users": "ユーザー",
     "your-snowflake-account-locator": "Snowflake アカウント ロケーター"
   },

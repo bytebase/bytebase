@@ -276,6 +276,26 @@ func TestPopulateRawResourcesUsesWorkspaceFallback(t *testing.T) {
 	require.Empty(t, resources)
 }
 
+func TestPopulateRawResourcesAllowsDeletedSampleProjectInstanceProject(t *testing.T) {
+	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	_, err := stores.GetDB().ExecContext(ctx, `
+		UPDATE project
+		SET deleted = TRUE
+		WHERE workspace = $1 AND resource_id = $2
+	`, workspaceID, projectID)
+	require.NoError(t, err)
+
+	resources, err := populateRawResources(
+		ctx,
+		stores,
+		&v1pb.PrepareSampleProjectInstanceRequest{Parent: common.FormatProject(projectID)},
+		v1connect.InstanceServicePrepareSampleProjectInstanceProcedure,
+	)
+	require.NoError(t, err)
+	require.Equal(t, []*common.Resource{{Type: common.ResourceTypeProject, ID: projectID}}, resources)
+}
+
 func TestGetResourceFromRequest(t *testing.T) {
 	tests := []struct {
 		request any
@@ -341,6 +361,29 @@ func TestGetResourceFromRequest(t *testing.T) {
 			},
 			method: "/bytebase.v1.InstanceService/CreateInstance",
 			want:   []string{"projects/hello"},
+		},
+		{
+			request: &v1pb.PrepareSampleProjectInstanceRequest{
+				Parent: "projects/hello",
+			},
+			method: "/bytebase.v1.InstanceService/PrepareSampleProjectInstance",
+			want:   []string{"projects/hello"},
+		},
+		{
+			// The missing required parent is rejected by InstanceService, after
+			// workspace-scope authorization, just like other invalid parents.
+			request: &v1pb.PrepareSampleProjectInstanceRequest{},
+			method:  "/bytebase.v1.InstanceService/PrepareSampleProjectInstance",
+			want:    []string{""},
+		},
+		{
+			// Default projects cannot own instances. The handler owns the
+			// canonical validation error, so ACL resolves this at workspace scope.
+			request: &v1pb.PrepareSampleProjectInstanceRequest{
+				Parent: "projects/default",
+			},
+			method: "/bytebase.v1.InstanceService/PrepareSampleProjectInstance",
+			want:   []string{""},
 		},
 		{
 			request: &v1pb.UpdateInstanceRequest{

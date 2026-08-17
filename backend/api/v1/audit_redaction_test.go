@@ -433,6 +433,20 @@ func TestAuditRedactionSurvivesAnIncompleteRequest(t *testing.T) {
 	}
 }
 
+func TestPrepareSampleProjectInstanceAuditRequestContainsOnlyParent(t *testing.T) {
+	request := &v1pb.PrepareSampleProjectInstanceRequest{Parent: "projects/project-a"}
+
+	got, err := getRequestString(request)
+	require.NoError(t, err)
+	require.Contains(t, got, "projects/project-a")
+	require.NotContains(t, got, secretSentinel)
+	require.Equal(
+		t,
+		"projects/project-a",
+		getRequestResource(request, "/bytebase.v1.InstanceService/PrepareSampleProjectInstance"),
+	)
+}
+
 func TestAuditRequestRedactsCredentials(t *testing.T) {
 	batchParent := "projects/project-a"
 	settingRequest := func(v *v1pb.SettingValue) *v1pb.UpdateSettingRequest {

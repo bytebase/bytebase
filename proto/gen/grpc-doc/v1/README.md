@@ -426,6 +426,7 @@
     - [ListInstanceDatabaseResponse](#bytebase-v1-ListInstanceDatabaseResponse)
     - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
+    - [PrepareSampleProjectInstanceRequest](#bytebase-v1-PrepareSampleProjectInstanceRequest)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
     - [SASLConfig](#bytebase-v1-SASLConfig)
     - [SyncDatabases](#bytebase-v1-SyncDatabases)
@@ -7088,6 +7089,21 @@ For example: name == &#34;sample instance&#34; name.contains(&#34;sample&#34;) r
 
 
 
+<a name="bytebase-v1-PrepareSampleProjectInstanceRequest"></a>
+
+### PrepareSampleProjectInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The project that owns the sample instance. Format: projects/{project} |
+
+
+
+
+
+
 <a name="bytebase-v1-RemoveDataSourceRequest"></a>
 
 ### RemoveDataSourceRequest
@@ -7345,6 +7361,7 @@ InstanceService manages database instances and their connections.
 | GetInstance | [GetInstanceRequest](#bytebase-v1-GetInstanceRequest) | [Instance](#bytebase-v1-Instance) | Gets a database instance by name. Permissions required: bb.instances.get |
 | ListInstances | [ListInstancesRequest](#bytebase-v1-ListInstancesRequest) | [ListInstancesResponse](#bytebase-v1-ListInstancesResponse) | Lists database instances, optionally within a project. Permissions required: bb.instances.list |
 | CreateInstance | [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest) | [Instance](#bytebase-v1-Instance) | Creates a new database instance. Permissions required: bb.instances.create |
+| PrepareSampleProjectInstance | [PrepareSampleProjectInstanceRequest](#bytebase-v1-PrepareSampleProjectInstanceRequest) | [Instance](#bytebase-v1-Instance) | Prepares a Sample Project Instance for a project. Permissions required: bb.instances.create |
 | UpdateInstance | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | [Instance](#bytebase-v1-Instance) | Updates a database instance. Permissions required: bb.instances.update |
 | DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes or soft-deletes a database instance. Soft-delete requests fail with FAILED_PRECONDITION while any task run targeting the instance is pending, available, or running. Permissions required: bb.instances.delete |
 | UndeleteInstance | [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest) | [Instance](#bytebase-v1-Instance) | Restores a soft-deleted database instance. Restore requests fail with FAILED_PRECONDITION while any task run targeting the instance is pending, available, or running. Permissions required: bb.instances.undelete |

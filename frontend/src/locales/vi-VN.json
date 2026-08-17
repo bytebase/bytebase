@@ -1204,11 +1204,15 @@
     },
     "password-write-only": "YOUR_DB_PWD - chỉ ghi",
     "port": "Cổng",
+    "prepare-sample-instance-failed": "Không thể chuẩn bị Phiên bản dự án mẫu.",
+    "preparing-sample-instance": "Đang chuẩn bị Phiên bản dự án mẫu…",
     "project-id": "ID dự án",
     "restore-instance-instance-name-to-normal-state": "Khôi phục phiên bản '{{0}}' về trạng thái bình thường?",
     "role-arn": "ARN vai trò",
     "role-arn-description": "Vai trò IAM để đảm nhận cho truy cập xuyên tài khoản. Để trống cho truy cập cùng tài khoản.",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-project-instance-description": "Sử dụng Phiên bản dự án mẫu để khám phá Bytebase với cơ sở dữ liệu sẵn sàng sử dụng trong 7 ngày.",
+    "sample-project-instance-title": "Dùng thử Phiên bản dự án mẫu",
     "scan-interval": {
       "default-never": "Mặc định (không bao giờ)",
       "description": "Bytebase định kỳ đồng bộ lược đồ phiên bản và phát hiện bất thường.",
@@ -1302,6 +1306,7 @@
     "token-write-only": "YOUR_TOKEN - chỉ ghi",
     "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC THỰC - chỉ ghi",
     "unable-to-connect": "Bytebase không thể kết nối với phiên bản. Chúng tôi khuyên bạn nên xem xét lại thông tin kết nối. Nhưng bạn có thể bỏ qua cảnh báo này ngay bây giờ. Bạn vẫn có thể sửa thông tin kết nối từ trang chi tiết phiên bản sau khi tạo.\n\nChi tiết lỗi: {{0}}",
+    "use-sample-instance": "Sử dụng phiên bản mẫu (Có sẵn trong 7 ngày)",
     "users": "Người dùng",
     "your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn"
   },

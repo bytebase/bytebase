@@ -39,6 +39,10 @@ type Profile struct {
 	GitCommit string
 	// PgURL is the optional external PostgreSQL instance connection url
 	PgURL string
+	// SampleProjectInstancePgURL is the Cloud PostgreSQL target for managed
+	// Sample Project Instances. It is read only from the environment and must
+	// never be logged.
+	SampleProjectInstancePgURL string
 
 	// LastActiveTS is the service last active timestamp, any API calls will refresh this value.
 	LastActiveTS atomic.Int64

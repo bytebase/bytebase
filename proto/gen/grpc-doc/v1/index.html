@@ -1799,6 +1799,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.PrepareSampleProjectInstanceRequest"><span class="badge">M</span>PrepareSampleProjectInstanceRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.RemoveDataSourceRequest"><span class="badge">M</span>RemoveDataSourceRequest</a>
                 </li>
               
@@ -20095,6 +20099,31 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
+        <h3 id="bytebase.v1.PrepareSampleProjectInstanceRequest">PrepareSampleProjectInstanceRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The project that owns the sample instance.
+Format: projects/{project} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.RemoveDataSourceRequest">RemoveDataSourceRequest</h3>
         <p></p>
 
@@ -20671,6 +20700,14 @@ Permissions required: bb.instances.create</p></td>
               </tr>
             
               <tr>
+                <td>PrepareSampleProjectInstance</td>
+                <td><a href="#bytebase.v1.PrepareSampleProjectInstanceRequest">PrepareSampleProjectInstanceRequest</a></td>
+                <td><a href="#bytebase.v1.Instance">Instance</a></td>
+                <td><p>Prepares a Sample Project Instance for a project.
+Permissions required: bb.instances.create</p></td>
+              </tr>
+            
+              <tr>
                 <td>UpdateInstance</td>
                 <td><a href="#bytebase.v1.UpdateInstanceRequest">UpdateInstanceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
@@ -20820,6 +20857,16 @@ Permissions required: bb.instances.update</p></td>
                 <td>POST</td>
                 <td>/v1/{parent=projects/*}/instances</td>
                 <td>instance</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>PrepareSampleProjectInstance</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/instances:prepareSampleProjectInstance</td>
+                <td>*</td>
               </tr>
               
             

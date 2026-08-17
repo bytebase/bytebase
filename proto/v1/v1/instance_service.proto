@@ -66,6 +66,19 @@ service InstanceService {
     option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
+  // Prepares a Sample Project Instance for a project.
+  // Permissions required: bb.instances.create
+  rpc PrepareSampleProjectInstance(PrepareSampleProjectInstanceRequest) returns (Instance) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/instances:prepareSampleProjectInstance"
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.instances.create";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
+
   // Updates a database instance.
   // Permissions required: bb.instances.update
   rpc UpdateInstance(UpdateInstanceRequest) returns (Instance) {
@@ -353,6 +366,15 @@ message CreateInstanceRequest {
 
   // Validate only also tests the data source connection.
   bool validate_only = 3;
+}
+
+message PrepareSampleProjectInstanceRequest {
+  // The project that owns the sample instance.
+  // Format: projects/{project}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
 }
 
 message UpdateInstanceRequest {
