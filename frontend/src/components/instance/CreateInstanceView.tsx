@@ -9,11 +9,14 @@ import {
   useInstanceFormContext,
 } from "@/components/instance";
 import type { InfoSection } from "@/components/instance/info-content";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { isValidProjectName } from "@/types/v1/project";
 
 const MIN_DOCKED_MAIN_WIDTH = 700;
 const DOCKED_INFO_RAIL_WIDTH = 500;
@@ -35,9 +38,13 @@ export function CreateInstanceView({
   onCreated,
 }: CreateInstanceViewProps) {
   const { t } = useTranslation();
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
+  const canPrepareSampleProjectInstance =
+    isSaaSMode && !!parent && isValidProjectName(parent);
 
   // Check instance limit on mount
   useEffect(() => {
+    if (canPrepareSampleProjectInstance) return;
     const store = useAppStore.getState();
     if (store.instanceCountLimit() <= store.activatedInstanceCount()) {
       pushNotification({
@@ -50,7 +57,7 @@ export function CreateInstanceView({
       });
       onDismiss();
     }
-  }, [onDismiss, t]);
+  }, [canPrepareSampleProjectInstance, onDismiss, t]);
 
   return (
     <div className="h-full overflow-hidden">
@@ -59,20 +66,35 @@ export function CreateInstanceView({
         project={project}
         onDismiss={onDismiss}
       >
-        <CreateInstanceFormInner onCreated={onCreated} />
+        <CreateInstanceFormInner
+          canPrepareSampleProjectInstance={canPrepareSampleProjectInstance}
+          onCreated={onCreated}
+          parent={parent}
+        />
       </InstanceFormProvider>
     </div>
   );
 }
 
 function CreateInstanceFormInner({
+  canPrepareSampleProjectInstance,
   onCreated,
+  parent,
 }: {
+  canPrepareSampleProjectInstance: boolean;
   onCreated: (instance: Instance) => void;
+  parent?: string;
 }) {
   const { t } = useTranslation();
   const ctx = useInstanceFormContext();
   const currentEngine = ctx.basicInfo.engine;
+  const prepareSampleProjectInstance = useAppStore(
+    (state) => state.prepareSampleProjectInstance
+  );
+  const [
+    isPreparingSampleProjectInstance,
+    setIsPreparingSampleProjectInstance,
+  ] = useState(false);
 
   const [activeInfoSection, setActiveInfoSection] = useState<
     InfoSection | undefined
@@ -138,6 +160,28 @@ function CreateInstanceFormInner({
     setActiveInfoSection(section);
   }, []);
 
+  const handlePrepareSampleProjectInstance = useCallback(async () => {
+    if (!parent || isPreparingSampleProjectInstance) return;
+    setIsPreparingSampleProjectInstance(true);
+    try {
+      onCreated(await prepareSampleProjectInstance(parent));
+    } catch {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("instance.prepare-sample-instance-failed"),
+      });
+    } finally {
+      setIsPreparingSampleProjectInstance(false);
+    }
+  }, [
+    isPreparingSampleProjectInstance,
+    onCreated,
+    parent,
+    prepareSampleProjectInstance,
+    t,
+  ]);
+
   return (
     <div
       ref={layoutRef}
@@ -149,6 +193,22 @@ function CreateInstanceFormInner({
         {/* Body */}
         <div className="flex-1 min-h-0 overflow-auto">
           <div className="px-4 py-4 sm:px-6">
+            {canPrepareSampleProjectInstance && (
+              <Alert
+                title={t("instance.sample-project-instance-title")}
+                description={t("instance.sample-project-instance-description")}
+              >
+                <Button
+                  className="mt-3"
+                  disabled={isPreparingSampleProjectInstance}
+                  onClick={handlePrepareSampleProjectInstance}
+                >
+                  {isPreparingSampleProjectInstance
+                    ? t("instance.preparing-sample-instance")
+                    : t("instance.use-sample-instance")}
+                </Button>
+              </Alert>
+            )}
             <InstanceFormBody onOpenInfoPanel={handleOpenInfoPanel} />
           </div>
         </div>

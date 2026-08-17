@@ -11,21 +11,22 @@ import (
 
 func getBaseProfile(dataDir string) *config.Profile {
 	config := &config.Profile{
-		ExternalURL:         flags.externalURL,
-		Port:                flags.port,     // Using flags.port as our gRPC server port.
-		DatastorePort:       flags.port + 2, // Using flags.port + 2 as our datastore port.
-		HA:                  flags.ha,
-		SaaS:                flags.saas,
-		Debug:               flags.debug,
-		IsDocker:            isDocker(),
-		DataDir:             dataDir,
-		Version:             version,
-		GitCommit:           gitcommit,
-		PgURL:               os.Getenv("PG_URL"),
-		ReplicaID:           uuid.NewString(),
-		StripeAPISecret:     os.Getenv("STRIPE_API_SECRET"),
-		StripeWebhookSecret: os.Getenv("STRIPE_WEBHOOK_SECRET"),
-		LicensePrivateKey:   os.Getenv("LICENSE_PRIVATE_KEY"),
+		ExternalURL:                flags.externalURL,
+		Port:                       flags.port,     // Using flags.port as our gRPC server port.
+		DatastorePort:              flags.port + 2, // Using flags.port + 2 as our datastore port.
+		HA:                         flags.ha,
+		SaaS:                       flags.saas,
+		Debug:                      flags.debug,
+		IsDocker:                   isDocker(),
+		DataDir:                    dataDir,
+		Version:                    version,
+		GitCommit:                  gitcommit,
+		PgURL:                      os.Getenv("PG_URL"),
+		SampleProjectInstancePgURL: os.Getenv("SAMPLE_PROJECT_INSTANCE_PG_URL"),
+		ReplicaID:                  uuid.NewString(),
+		StripeAPISecret:            os.Getenv("STRIPE_API_SECRET"),
+		StripeWebhookSecret:        os.Getenv("STRIPE_WEBHOOK_SECRET"),
+		LicensePrivateKey:          os.Getenv("LICENSE_PRIVATE_KEY"),
 	}
 
 	config.LastActiveTS.Store(time.Now().Unix())

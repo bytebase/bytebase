@@ -14,6 +14,7 @@ import {
   type Instance,
   ListInstanceDatabaseRequestSchema,
   ListInstancesRequestSchema,
+  PrepareSampleProjectInstanceRequestSchema,
   RemoveDataSourceRequestSchema,
   SyncInstanceRequestSchema,
   UndeleteInstanceRequestSchema,
@@ -202,6 +203,14 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
         upsertInstances([response]);
       }
       return response;
+    },
+
+    prepareSampleProjectInstance: async (parent) => {
+      const response =
+        await instanceServiceClientConnect.prepareSampleProjectInstance(
+          createProto(PrepareSampleProjectInstanceRequestSchema, { parent })
+        );
+      return upsertInstances([response])[0];
     },
 
     updateInstance: async (instance, updateMask) => {

@@ -27,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
+	"github.com/bytebase/bytebase/backend/component/sampleprojectinstance"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -45,6 +46,7 @@ type InstanceService struct {
 	dbFactory             *dbfactory.DBFactory
 	schemaSyncer          *schemasync.Syncer
 	sampleInstanceManager *sampleinstance.Manager
+	sampleProjectManager  sampleProjectInstanceManager
 }
 
 type instanceLicenseService interface {
@@ -53,6 +55,10 @@ type instanceLicenseService interface {
 	IsFeatureEnabledForInstance(context.Context, string, v1pb.PlanFeature, *store.InstanceMessage) error
 	IsInstanceEffectivelyActivated(context.Context, string, *store.InstanceMessage) bool
 	IsUnifiedInstanceLicense(context.Context, string) bool
+}
+
+type sampleProjectInstanceManager interface {
+	Prepare(context.Context, sampleprojectinstance.PrepareRequest) (*store.InstanceMessage, error)
 }
 
 const (
@@ -198,7 +204,7 @@ func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, met
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleInstanceManager *sampleinstance.Manager) *InstanceService {
+func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleInstanceManager *sampleinstance.Manager, sampleProjectManager sampleProjectInstanceManager) *InstanceService {
 	return &InstanceService{
 		store:                 store,
 		profile:               profile,
@@ -206,6 +212,7 @@ func NewInstanceService(store *store.Store, profile *config.Profile, licenseServ
 		dbFactory:             dbFactory,
 		schemaSyncer:          schemaSyncer,
 		sampleInstanceManager: sampleInstanceManager,
+		sampleProjectManager:  sampleProjectManager,
 	}
 }
 
@@ -464,6 +471,69 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 
 	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
+}
+
+// PrepareSampleProjectInstance provisions a Cloud Sample Project Instance for
+// the requested project. The lifetime entitlement itself is enforced by the
+// lifecycle manager under a workspace row lock.
+func (s *InstanceService) PrepareSampleProjectInstance(ctx context.Context, req *connect.Request[v1pb.PrepareSampleProjectInstanceRequest]) (*connect.Response[v1pb.Instance], error) {
+	projectID, err := s.getSampleProjectInstanceParent(ctx, &req.Msg.Parent)
+	if err != nil {
+		return nil, err
+	}
+	if projectID == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("Sample Project Instance parent is required"))
+	}
+	if s.profile == nil || !s.profile.SaaS || s.sampleProjectManager == nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("Sample Project Instance is available only in SaaS deployments with a configured target"))
+	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	instance, err := s.sampleProjectManager.Prepare(ctx, sampleprojectinstance.PrepareRequest{
+		WorkspaceID: workspaceID,
+		ProjectID:   *projectID,
+		CanCreate: func(ctx context.Context) error {
+			if err := s.instanceCountGuard(ctx); err != nil {
+				return err
+			}
+			return s.checkActivationLimit(ctx, workspaceID, true)
+		},
+	})
+	if err != nil {
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			return nil, connectErr
+		}
+		switch sampleprojectinstance.ErrorKindOf(err) {
+		case sampleprojectinstance.ErrorKindFailedPrecondition:
+			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+		case sampleprojectinstance.ErrorKindUnavailable:
+			return nil, connect.NewError(connect.CodeUnavailable, err)
+		case sampleprojectinstance.ErrorKindDeadlineExceeded:
+			return nil, connect.NewError(connect.CodeDeadlineExceeded, err)
+		default:
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+	}
+	return connect.NewResponse(s.convertToV1Instance(ctx, instance)), nil
+}
+
+func (s *InstanceService) getSampleProjectInstanceParent(ctx context.Context, parent *string) (*string, error) {
+	projectID, err := s.getProjectInstanceParent(ctx, parent)
+	if err == nil || connect.CodeOf(err) != connect.CodeNotFound || parent == nil {
+		return projectID, err
+	}
+	missingProjectID, parseErr := common.GetProjectID(*parent)
+	if parseErr != nil {
+		return nil, err
+	}
+	reservation, storeErr := s.store.GetSampleProjectInstance(ctx, common.GetWorkspaceIDFromContext(ctx))
+	if storeErr != nil {
+		return nil, connect.NewError(connect.CodeInternal, storeErr)
+	}
+	if reservation != nil && reservation.ProjectID == missingProjectID {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("Sample Project Instance entitlement is already consumed"))
+	}
+	return nil, err
 }
 
 func (s *InstanceService) getProjectInstanceParent(ctx context.Context, parent *string) (*string, error) {
