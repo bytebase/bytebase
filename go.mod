@@ -95,6 +95,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.54.0
 	golang.org/x/oauth2 v0.36.0
+	golang.org/x/term v0.45.0
 	golang.org/x/text v0.40.0
 	google.golang.org/api v0.290.0
 	google.golang.org/genproto v0.0.0-20260720211330-0afa2a65878a
@@ -266,7 +267,6 @@ require (
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260625142307-59b4966ccb57 // indirect
-	golang.org/x/term v0.45.0 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

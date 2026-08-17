@@ -8,6 +8,21 @@ import (
 	"github.com/bytebase/bytebase/backend/common/qb"
 )
 
+// CountWorkspaces counts all workspaces.
+func (s *Store) CountWorkspaces(ctx context.Context) (int, error) {
+	q := qb.Q().Space("SELECT count(1) FROM workspace")
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to build sql")
+	}
+
+	var count int
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 // CountActiveInstances counts the number of instances.
 func (s *Store) CountActiveInstances(ctx context.Context, workspaceID string) (int, error) {
 	q := qb.Q().Space("SELECT count(1) FROM instance WHERE instance.workspace = ?", workspaceID).And("instance.deleted = ?", false)

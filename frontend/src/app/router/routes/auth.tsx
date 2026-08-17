@@ -8,7 +8,6 @@ import {
   AUTH_PASSWORD_FORGOT_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
   AUTH_PROFILE_SETUP_MODULE,
-  AUTH_SIGNIN_ADMIN_MODULE,
   AUTH_SIGNIN_MODULE,
   AUTH_SIGNUP_MODULE,
   OAUTH2_CONSENT_MODULE,
@@ -54,14 +53,6 @@ export const authRoutes: RouteObject[] = [
         lazy: lazyPage(
           () => import("@/routes/auth/SigninPage"),
           (m) => m.SigninPage
-        ),
-      },
-      {
-        path: "admin",
-        handle: { name: AUTH_SIGNIN_ADMIN_MODULE },
-        lazy: lazyPage(
-          () => import("@/routes/auth/SigninAdminPage"),
-          (m) => m.SigninAdminPage
         ),
       },
       {

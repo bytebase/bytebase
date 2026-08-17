@@ -17005,7 +17005,7 @@ components:
         disallowPasswordSignin:
           type: boolean
           title: disallow_password_signin
-          description: Whether password-based signin is disabled (except for workspace admins).
+          description: Whether password sign-in is disabled for all end users.
         passwordRestriction:
           title: password_restriction
           description: Password complexity and restriction requirements.
@@ -21373,7 +21373,7 @@ components:
         disallowPasswordSignin:
           type: boolean
           title: disallow_password_signin
-          description: Whether to disallow password signin. (Except workspace admins)
+          description: Whether password sign-in is disabled for all end users.
         enableMetricCollection:
           type: boolean
           title: enable_metric_collection

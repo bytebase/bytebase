@@ -57,7 +57,7 @@ message Restriction {
   // Whether self-service user signup is disabled.
   bool disallow_signup = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Whether password-based signin is disabled (except for workspace admins).
+  // Whether password sign-in is disabled for all end users.
   bool disallow_password_signin = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Password complexity and restriction requirements.

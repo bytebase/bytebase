@@ -1036,11 +1036,6 @@ func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.
 		return connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user has been deactivated by administrators"))
 	}
 
-	isAdmin, err := isUserWorkspaceAdmin(ctx, s.store, user, workspaceID)
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check user roles"))
-	}
-
 	// Login restrictions only apply to end users.
 	if user.Type != storepb.PrincipalType_END_USER {
 		return nil
@@ -1063,10 +1058,8 @@ func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.
 		return err
 	}
 	if request.GetIdpName() == "" {
-		if request.Password != "" {
-			if restriction.DisallowPasswordSignin && !isAdmin {
-				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("password signin is disallowed"))
-			}
+		if request.Password != "" && restriction.DisallowPasswordSignin {
+			return connect.NewError(connect.CodePermissionDenied, errors.Errorf("password signin is disallowed"))
 		}
 		if request.EmailCode != nil && *request.EmailCode != "" {
 			if !restriction.AllowEmailCodeSignin {

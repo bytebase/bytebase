@@ -61,7 +61,7 @@ export declare type Restriction = Message<"bytebase.v1.Restriction"> & {
   disallowSignup: boolean;
 
   /**
-   * Whether password-based signin is disabled (except for workspace admins).
+   * Whether password sign-in is disabled for all end users.
    *
    * @generated from field: bool disallow_password_signin = 2;
    */

@@ -160,31 +160,19 @@ func TestLoginEnforcesWorkspaceDomains(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("workspace admin", func(t *testing.T) {
-		for _, test := range []struct {
-			name    string
-			request *v1pb.LoginRequest
-		}{
-			{
-				name:    "password login enforces domains",
-				request: &v1pb.LoginRequest{Email: blockedAdmin.Email, Password: "password"},
-			},
-			{
-				name:    "SSO login enforces domains",
-				request: &v1pb.LoginRequest{Email: blockedAdmin.Email, IdpName: "idps/test"},
-			},
-		} {
-			t.Run(test.name, func(t *testing.T) {
-				err := service.validateLoginPermissions(ctx, blockedAdmin, workspaceID, test.request)
-				require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-				require.ErrorContains(t, err, "does not belong to allowed domains")
-			})
-		}
+		err := service.validateLoginPermissions(ctx, blockedAdmin, workspaceID, &v1pb.LoginRequest{
+			Email:   blockedAdmin.Email,
+			IdpName: "idps/test",
+		})
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		require.ErrorContains(t, err, "does not belong to allowed domains")
 
-		err := service.validateLoginPermissions(ctx, allowedAdmin, workspaceID, &v1pb.LoginRequest{
+		err = service.validateLoginPermissions(ctx, allowedAdmin, workspaceID, &v1pb.LoginRequest{
 			Email:    allowedAdmin.Email,
 			Password: "password",
 		})
-		require.NoError(t, err, "workspace admins remain exempt from disallow_password_signin")
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+		require.ErrorContains(t, err, "password signin is disallowed")
 	})
 
 	t.Run("send code", func(t *testing.T) {
