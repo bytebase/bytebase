@@ -249,6 +249,13 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: int32 active_vcs_user_count = 28;
    */
   activeVcsUserCount: number;
+
+  /**
+   * Whether the self-hosted instance needs its initial workspace administrator.
+   *
+   * @generated from field: bool admin_setup_required = 29;
+   */
+  adminSetupRequired: boolean;
 };
 
 /**
@@ -265,8 +272,10 @@ export declare const ActuatorInfoSchema: GenMessage<ActuatorInfo>;
 export declare const ActuatorService: GenService<{
   /**
    * Gets system information and health status of the Bytebase instance.
-   * When `name` is provided (or the workspace-scoped binding is used), the
-   * response includes workspace-scoped fields for that workspace.
+   * Without credentials, the response contains only the workspace name, SaaS
+   * mode, authentication restrictions, and whether initial administrator setup is required.
+   * For authenticated calls, when `name` is provided (or the workspace-scoped
+   * binding is used), the response includes workspace-scoped fields for that workspace.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.ActuatorService.GetActuatorInfo

@@ -44,7 +44,6 @@ export function SigninPage(props: SigninPageProps) {
 
   const serverInfo = useAppStore((s) => s.serverInfo);
   const isSaaSMode = useAppStore((s) => s.isSaaSMode());
-  const activeUserCount = useAppStore((s) => s.activeUserCount());
   const identityProviders = useIdentityProviderList();
 
   const query = router.currentRoute.value.query;
@@ -70,10 +69,10 @@ export function SigninPage(props: SigninPageProps) {
   // Redirect to signup when an admin setup is needed.
   useEffect(() => {
     if (!initialized) return;
-    if (activeUserCount === 0 && !disallowSignup && !isSaaSMode) {
+    if (serverInfo?.adminSetupRequired && !disallowSignup && !isSaaSMode) {
       router.replace({ name: AUTH_SIGNUP_MODULE });
     }
-  }, [initialized, activeUserCount, disallowSignup, isSaaSMode]);
+  }, [initialized, serverInfo?.adminSetupRequired, disallowSignup, isSaaSMode]);
 
   const trySigninWithIdp = async (idp: IdentityProvider) => {
     try {

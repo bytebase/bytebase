@@ -126,5 +126,8 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.ActiveVcsUserCount != y.ActiveVcsUserCount {
 		return false
 	}
+	if x.AdminSetupRequired != y.AdminSetupRequired {
+		return false
+	}
 	return true
 }

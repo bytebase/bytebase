@@ -10,6 +10,7 @@ import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 
 const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
+  routerReplace: vi.fn(),
   currentRoute: {
     value: { query: {} as Record<string, string | undefined> },
   },
@@ -25,6 +26,8 @@ vi.mock("@/app/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router")>()),
   router: {
     push: mocks.routerPush,
+    replace: mocks.routerReplace,
+    resolve: (to: unknown) => ({ href: String(to), fullPath: String(to) }),
     currentRoute: mocks.currentRoute,
   },
 }));
@@ -139,6 +142,34 @@ beforeEach(async () => {
 });
 
 describe("SigninPage", () => {
+  test("redirects to signup when initial admin setup is required", async () => {
+    mocks.actuatorStore = {
+      serverInfo: {
+        adminSetupRequired: true,
+        restriction: {
+          disallowPasswordSignin: false,
+          allowEmailCodeSignin: false,
+          disallowSignup: false,
+        },
+      },
+      isSaaSMode: () => false,
+      activeUserCount: () => 1,
+      fetchServerInfo: vi.fn(async () => ({})),
+    };
+    mocks.identityProviderList = [];
+    mocks.listIdentityProviders.mockResolvedValue([]);
+
+    const { render, unmount } = renderIntoContainer(<SigninPage />);
+    render();
+    await flushPromises();
+
+    expect(mocks.routerReplace).toHaveBeenCalledWith({
+      name: "auth.signup",
+    });
+
+    unmount();
+  });
+
   test("renders a username text field for LDAP tabs", async () => {
     const { container, render, unmount } = renderIntoContainer(<SigninPage />);
     render();

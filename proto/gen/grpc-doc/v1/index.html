@@ -177,7 +177,7 @@
           <li>
             <a href="#v1%2fannotation.proto">v1/annotation.proto</a>
             <ul>
-              
+
               
                 <li>
                   <a href="#bytebase.v1.AuthMethod"><span class="badge">E</span>AuthMethod</a>
@@ -3503,7 +3503,7 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td></td>
                   <td><p>The container name to execute the query against, used for CosmosDB only. </p></td>
                 </tr>
-              
+
             </tbody>
           </table>
 
@@ -13942,6 +13942,13 @@ Format: projects/{id} </p></td>
                   <td><p>The number of active VCS users seen in the active window. </p></td>
                 </tr>
               
+                <tr>
+                  <td>admin_setup_required</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the self-hosted instance needs its initial workspace administrator. </p></td>
+                </tr>
+
             </tbody>
           </table>
 
@@ -14055,8 +14062,10 @@ True when the workspace (or deployment) has an email setting configured. </p></t
                 <td><a href="#bytebase.v1.GetActuatorInfoRequest">GetActuatorInfoRequest</a></td>
                 <td><a href="#bytebase.v1.ActuatorInfo">ActuatorInfo</a></td>
                 <td><p>Gets system information and health status of the Bytebase instance.
-When `name` is provided (or the workspace-scoped binding is used), the
-response includes workspace-scoped fields for that workspace.
+Without credentials, the response contains only the workspace name, SaaS
+mode, authentication restrictions, and whether initial administrator setup is required.
+For authenticated calls, when `name` is provided (or the workspace-scoped
+binding is used), the response includes workspace-scoped fields for that workspace.
 Permissions required: None</p></td>
               </tr>
             
@@ -35932,4 +35941,3 @@ Permissions required: bb.workspaces.rotateDirectorySyncToken</p></td>
     </table>
   </body>
 </html>
-

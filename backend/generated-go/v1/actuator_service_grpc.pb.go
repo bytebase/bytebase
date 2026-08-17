@@ -31,8 +31,10 @@ const (
 // ActuatorService manages system health and operational information.
 type ActuatorServiceClient interface {
 	// Gets system information and health status of the Bytebase instance.
-	// When `name` is provided (or the workspace-scoped binding is used), the
-	// response includes workspace-scoped fields for that workspace.
+	// Without credentials, the response contains only the workspace name, SaaS
+	// mode, authentication restrictions, and whether initial administrator setup is required.
+	// For authenticated calls, when `name` is provided (or the workspace-scoped
+	// binding is used), the response includes workspace-scoped fields for that workspace.
 	// Permissions required: None
 	GetActuatorInfo(ctx context.Context, in *GetActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
 	// Sets up sample data for demonstration and testing purposes.
@@ -75,8 +77,10 @@ func (c *actuatorServiceClient) SetupSample(ctx context.Context, in *SetupSample
 // ActuatorService manages system health and operational information.
 type ActuatorServiceServer interface {
 	// Gets system information and health status of the Bytebase instance.
-	// When `name` is provided (or the workspace-scoped binding is used), the
-	// response includes workspace-scoped fields for that workspace.
+	// Without credentials, the response contains only the workspace name, SaaS
+	// mode, authentication restrictions, and whether initial administrator setup is required.
+	// For authenticated calls, when `name` is provided (or the workspace-scoped
+	// binding is used), the response includes workspace-scoped fields for that workspace.
 	// Permissions required: None
 	GetActuatorInfo(context.Context, *GetActuatorInfoRequest) (*ActuatorInfo, error)
 	// Sets up sample data for demonstration and testing purposes.

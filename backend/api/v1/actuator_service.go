@@ -58,7 +58,8 @@ func NewActuatorService(
 }
 
 // GetActuatorInfo gets the actuator info.
-// Workspace resolution order: request.name -> JWT context -> default workspace (self-hosted).
+// Anonymous workspace resolution uses request.name or the self-hosted default.
+// Authenticated callers are always bound to the workspace in their token.
 func (s *ActuatorService) GetActuatorInfo(
 	ctx context.Context,
 	req *connect.Request[v1pb.GetActuatorInfoRequest],
@@ -81,11 +82,62 @@ func (s *ActuatorService) GetActuatorInfo(
 		}
 		workspaceID = ws
 	}
+	user, authenticated := GetUserFromContext(ctx)
+	if authenticated && user != nil {
+		authenticatedWorkspaceID := common.GetWorkspaceIDFromContext(ctx)
+		if authenticatedWorkspaceID == "" {
+			return nil, connect.NewError(connect.CodeInternal, errors.New("authenticated workspace not found"))
+		}
+		if req.Msg.Name != "" && workspaceID != authenticatedWorkspaceID {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.New("requested workspace does not match authenticated workspace"))
+		}
+		workspaceID = authenticatedWorkspaceID
+	}
+	if !authenticated || user == nil {
+		info, err := s.getPublicServerInfo(ctx, workspaceID)
+		if err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(info), nil
+	}
+
 	info, err := s.getServerInfo(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	return connect.NewResponse(info), nil
+}
+
+func (s *ActuatorService) getPublicServerInfo(ctx context.Context, workspaceID string) (*v1pb.ActuatorInfo, error) {
+	restriction, err := getAccountRestriction(
+		ctx,
+		s.store,
+		s.licenseService,
+		s.profile.SaaS,
+		workspaceID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	adminSetupRequired := false
+	if !s.profile.SaaS {
+		activePrincipalCount, err := s.store.CountActivePrincipals(ctx)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		adminSetupRequired = activePrincipalCount == 0
+	}
+
+	info := &v1pb.ActuatorInfo{
+		Saas:               s.profile.SaaS,
+		Restriction:        restriction,
+		AdminSetupRequired: adminSetupRequired,
+	}
+	if workspaceID != "" {
+		info.Workspace = common.FormatWorkspace(workspaceID)
+	}
+	return info, nil
 }
 
 // SetupSample sets up the sample project and instance.

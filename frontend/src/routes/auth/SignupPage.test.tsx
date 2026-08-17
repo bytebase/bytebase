@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  adminSetupRequired: false,
   activeUserCount: 0,
   currentRoute: {
     value: { query: {} as Record<string, string | undefined> },
@@ -32,6 +33,7 @@ vi.mock("@/stores/app", () => {
     activeUserCount: () => mocks.activeUserCount,
     loadServerInfo: mocks.loadServerInfo,
     serverInfo: {
+      adminSetupRequired: mocks.adminSetupRequired,
       restriction: {
         disallowSignup: false,
       },
@@ -90,14 +92,13 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.adminSetupRequired = false;
   mocks.activeUserCount = 0;
   ({ SignupPage } = await import("./SignupPage"));
 });
 
 describe("SignupPage", () => {
   test("centers the regular sign-up title", () => {
-    mocks.activeUserCount = 1;
-
     const { container, render, unmount } = renderIntoContainer(<SignupPage />);
     render();
 
@@ -109,6 +110,8 @@ describe("SignupPage", () => {
   });
 
   test("centers the admin setup title", () => {
+    mocks.adminSetupRequired = true;
+
     const { container, render, unmount } = renderIntoContainer(<SignupPage />);
     render();
 

@@ -262,8 +262,10 @@ paths:
       summary: GetActuatorInfo
       description: |-
         Gets system information and health status of the Bytebase instance.
-         When `name` is provided (or the workspace-scoped binding is used), the
-         response includes workspace-scoped fields for that workspace.
+         Without credentials, the response contains only the workspace name, SaaS
+         mode, authentication restrictions, and whether initial administrator setup is required.
+         For authenticated calls, when `name` is provided (or the workspace-scoped
+         binding is used), the response includes workspace-scoped fields for that workspace.
          Permissions required: None
       operationId: bytebase.v1.ActuatorService.GetActuatorInfo
       parameters:
@@ -8316,6 +8318,10 @@ components:
           title: active_vcs_user_count
           format: int32
           description: The number of active VCS users seen in the active window.
+        adminSetupRequired:
+          type: boolean
+          title: admin_setup_required
+          description: Whether the self-hosted instance needs its initial workspace administrator.
       title: ActuatorInfo
       additionalProperties: false
       description: |-
