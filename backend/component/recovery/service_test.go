@@ -2,7 +2,6 @@ package recovery_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -151,6 +150,17 @@ func TestResetUserPassword(t *testing.T) {
 	stores := setupRecoveryStore(ctx, t)
 	service := recovery.NewService(stores)
 
+	t.Run("returns the workspace password restriction", func(t *testing.T) {
+		const workspaceID = "recovery-password-restriction"
+		profile := recoveryProfile()
+		createRecoveryWorkspace(ctx, t, stores, workspaceID, "admin@example.com", profile)
+
+		restriction, err := service.GetPasswordRestriction(ctx, workspaceID)
+
+		require.NoError(t, err)
+		require.True(t, proto.Equal(profile.PasswordRestriction, restriction))
+	})
+
 	t.Run("resets an existing user password and only password metadata", func(t *testing.T) {
 		const (
 			workspaceID = "recovery-reset-success"
@@ -252,6 +262,9 @@ func TestResetUserPassword(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.True(t, result.Changed)
+		member, err := service.IsUserInWorkspace(ctx, workspaceID, email)
+		require.NoError(t, err)
+		require.True(t, member)
 	})
 
 	t.Run("accepts a direct non-admin workspace member", func(t *testing.T) {
@@ -273,6 +286,50 @@ func TestResetUserPassword(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.True(t, result.Changed)
+		member, err := service.IsUserInWorkspace(ctx, workspaceID, email)
+		require.NoError(t, err)
+		require.True(t, member)
+	})
+
+	t.Run("reports a user covered by allUsers as a workspace member", func(t *testing.T) {
+		const (
+			workspaceID = "recovery-reset-all-users"
+			email       = "all-users-member@example.com"
+		)
+		createRecoveryWorkspace(ctx, t, stores, workspaceID, "missing@example.com", recoveryProfile())
+		createRecoveryUser(ctx, t, stores, email, "OriginalPassword1!", false, nil, nil)
+		setWorkspaceIAMPolicy(ctx, t, stores, workspaceID, &storepb.IamPolicy{Bindings: []*storepb.Binding{{
+			Role:    "roles/workspaceMember",
+			Members: []string{common.AllUsers},
+		}}})
+
+		member, err := service.IsUserInWorkspace(ctx, workspaceID, email)
+		require.NoError(t, err)
+		require.True(t, member)
+	})
+
+	t.Run("resets a user outside the workspace before reporting membership", func(t *testing.T) {
+		const (
+			workspaceID = "recovery-reset-unrelated"
+			email       = "unrelated-user@example.com"
+			newPassword = "ReplacementPassword1!"
+		)
+		createRecoveryWorkspace(ctx, t, stores, workspaceID, "missing@example.com", recoveryProfile())
+		createRecoveryUser(ctx, t, stores, email, "OriginalPassword1!", false, nil, nil)
+
+		result, err := service.ResetUserPassword(ctx, recovery.ResetUserPasswordRequest{
+			WorkspaceID: workspaceID,
+			Email:       email,
+			Password:    []byte(newPassword),
+		})
+		require.NoError(t, err)
+		require.True(t, result.Changed)
+		member, err := service.IsUserInWorkspace(ctx, workspaceID, email)
+		require.NoError(t, err)
+		require.False(t, member)
+		user, err := stores.GetUserByEmail(ctx, email)
+		require.NoError(t, err)
+		require.NoError(t, bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(newPassword)))
 	})
 
 	for _, tc := range []struct {
@@ -347,15 +404,6 @@ func TestResetUserPassword(t *testing.T) {
 			wantError:   "not an active end user",
 		},
 		{
-			name:        "user outside workspace",
-			workspaceID: "recovery-reset-unrelated",
-			email:       "unrelated-user@example.com",
-			profile:     recoveryProfile(),
-			password:    "ReplacementPassword1!",
-			createUser:  true,
-			wantError:   "does not belong to workspace",
-		},
-		{
 			name:        "outside enforced domain",
 			workspaceID: "recovery-reset-domain",
 			email:       "admin@blocked.example",
@@ -380,11 +428,7 @@ func TestResetUserPassword(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			workspaceAdmin := "missing@example.com"
-			if tc.name != "user outside workspace" {
-				workspaceAdmin = tc.email
-			}
-			createRecoveryWorkspace(ctx, t, stores, tc.workspaceID, workspaceAdmin, tc.profile)
+			createRecoveryWorkspace(ctx, t, stores, tc.workspaceID, tc.email, tc.profile)
 			if tc.createUser {
 				createRecoveryUser(ctx, t, stores, tc.email, "OriginalPassword1!", tc.deleted, nil, nil)
 			}
@@ -394,12 +438,6 @@ func TestResetUserPassword(t *testing.T) {
 				Password:    []byte(tc.password),
 			})
 			require.ErrorContains(t, err, tc.wantError)
-			if tc.name == "user outside workspace" {
-				var membershipErr *recovery.UserNotInWorkspaceError
-				require.True(t, errors.As(err, &membershipErr))
-				require.Equal(t, tc.workspaceID, membershipErr.WorkspaceID)
-				require.Equal(t, tc.email, membershipErr.Email)
-			}
 			require.Nil(t, result)
 			user, getErr := stores.GetUserByEmail(ctx, tc.email)
 			require.NoError(t, getErr)

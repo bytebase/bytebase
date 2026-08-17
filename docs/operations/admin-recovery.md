@@ -103,23 +103,26 @@ change any user, MFA configuration, IAM policy, or identity-provider setting.
 
 1. Select `2. Reset user password`.
 2. Enter the existing user's email. A blank email cancels the action.
-3. Enter and confirm the new password. Password input is hidden and is never
-   accepted through a flag or environment variable.
-4. If the user is not a workspace member, choose whether to add the user. When
+3. Review the displayed workspace password requirements.
+4. Enter the new password. Password input is hidden and is never accepted
+   through a flag or environment variable. A policy violation explains the
+   problem and prompts for the password again before confirmation.
+5. Confirm the valid new password. A mismatch prompts for both entries again.
+   Press `Ctrl+C` at either password prompt to exit recovery immediately.
+6. Wait for the password completion message. The command validates the password
+   before submitting it, and the recovery service validates it again before
+   updating the credential and recording a warning audit event.
+7. If the user is not a workspace member, choose whether to add the user. When
    confirmed, select one numbered role, verify the email and role,
    and confirm the IAM change. Role IDs are displayed for reference but are not
-   entered manually.
-5. Wait for the completion message. The action validates identity-domain policy
-   and the workspace password restriction before updating the password
-   credential. Password resets and confirmed IAM grants each record a warning
-   audit event.
-6. If password sign-in is disabled and this user is an administrator needed for
+   entered manually. Declining leaves the completed password reset intact.
+8. If password sign-in is disabled and this user is an administrator needed for
    recovery, select **Enable password sign-in** in the same session.
-7. Restart Bytebase so authentication reloads the updated credential and
+9. Restart Bytebase so authentication reloads the updated credential and
    workspace setting.
-8. Sign in at `/auth` with the new password, repair and verify the identity
+10. Sign in at `/auth` with the new password, repair and verify the identity
    provider, then re-enable **Disallow password sign-in**.
-9. Select `q. Exit`.
+11. Select `q. Exit`.
 
 The action accepts only an existing active end user. Existing effective
 membership through a direct binding, group, or `allUsers` needs no IAM change.

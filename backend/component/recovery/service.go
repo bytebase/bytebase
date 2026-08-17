@@ -4,7 +4,6 @@ package recovery
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"slices"
 	"strings"
 
@@ -48,17 +47,6 @@ type ResetUserPasswordResult struct {
 	WorkspaceID string
 	Email       string
 	Changed     bool
-}
-
-// UserNotInWorkspaceError indicates that an active end user has no effective
-// membership in the selected workspace.
-type UserNotInWorkspaceError struct {
-	WorkspaceID string
-	Email       string
-}
-
-func (e *UserNotInWorkspaceError) Error() string {
-	return fmt.Sprintf("user %q does not belong to workspace %q", e.Email, e.WorkspaceID)
 }
 
 // Role describes a role available for workspace recovery.
@@ -168,6 +156,38 @@ func (s *Service) EnablePasswordSignin(ctx context.Context, workspaceID string) 
 		return result, errors.Wrap(err, "password sign-in was enabled, but failed to create the recovery audit log")
 	}
 	return result, nil
+}
+
+// GetPasswordRestriction returns the workspace password restriction.
+func (s *Service) GetPasswordRestriction(ctx context.Context, workspaceID string) (*storepb.WorkspaceProfileSetting_PasswordRestriction, error) {
+	if err := s.requireWorkspace(ctx, workspaceID); err != nil {
+		return nil, err
+	}
+	profile, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get workspace profile setting")
+	}
+	return profile.PasswordRestriction, nil
+}
+
+// IsUserInWorkspace reports whether the user has effective workspace membership.
+func (s *Service) IsUserInWorkspace(ctx context.Context, workspaceID, email string) (bool, error) {
+	if err := s.requireWorkspace(ctx, workspaceID); err != nil {
+		return false, err
+	}
+	email = strings.ToLower(email)
+	if err := common.ValidateEmail(email); err != nil {
+		return false, errors.Wrap(err, "invalid user email")
+	}
+	workspace, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+		WorkspaceID:    &workspaceID,
+		Email:          email,
+		IncludeAllUser: true,
+	})
+	if err != nil {
+		return false, errors.Wrap(err, "failed to verify workspace membership")
+	}
+	return workspace != nil, nil
 }
 
 // ListRoles lists roles available for workspace membership recovery.
@@ -296,8 +316,8 @@ func (s *Service) AddUserToWorkspace(ctx context.Context, request AddUserToWorks
 	return result, nil
 }
 
-// ResetUserPassword replaces the password of an existing, active end user in
-// the workspace without changing any other access state.
+// ResetUserPassword replaces the password of an existing, active end user
+// without changing any other access state.
 func (s *Service) ResetUserPassword(ctx context.Context, request ResetUserPasswordRequest) (*ResetUserPasswordResult, error) {
 	if err := s.requireWorkspace(ctx, request.WorkspaceID); err != nil {
 		return nil, err
@@ -324,17 +344,6 @@ func (s *Service) ResetUserPassword(ctx context.Context, request ResetUserPasswo
 		return nil, err
 	}
 
-	workspace, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
-		WorkspaceID:    &request.WorkspaceID,
-		Email:          email,
-		IncludeAllUser: true,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to verify workspace membership")
-	}
-	if workspace == nil {
-		return nil, &UserNotInWorkspaceError{WorkspaceID: request.WorkspaceID, Email: email}
-	}
 	auditRequest, err := json.Marshal(struct {
 		Workspace string `json:"workspace"`
 		Email     string `json:"email"`
