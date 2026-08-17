@@ -208,11 +208,13 @@ func TestRecoveryCommandContract(t *testing.T) {
 	})
 
 	t.Run("opens and closes metadata once for the session", func(t *testing.T) {
-		command, _, openCount, closeCount := newTestRecoveryCommand(t, &fakeRecoveryRunner{}, "", nil)
+		command, output, openCount, closeCount := newTestRecoveryCommand(t, &fakeRecoveryRunner{}, "", nil)
 
 		require.NoError(t, command.Execute())
 		require.Equal(t, 1, *openCount)
 		require.Equal(t, 1, *closeCount)
+		require.Contains(t, output.String(), "Stop all Bytebase servers that use this metadata database before continuing.")
+		require.Contains(t, output.String(), "Restart all Bytebase servers after recovery")
 	})
 
 	t.Run("rejects metadata with multiple workspaces", func(t *testing.T) {
@@ -262,7 +264,10 @@ func TestRecoveryCommandContract(t *testing.T) {
 		require.Contains(t, output.String(), "Enabling password sign-in...")
 		require.Contains(t, output.String(), "Password sign-in is enabled.")
 		require.NotContains(t, output.String(), "resolved-workspace")
-		require.Contains(t, output.String(), "Sign in at /auth")
+		require.Contains(t, output.String(), "Restart all Bytebase servers after exiting recovery.")
+		require.Contains(t, output.String(), "After restarting, sign in at /auth with an existing user account.")
+		require.NotContains(t, output.String(), "existing administrator account")
+		require.Less(t, strings.Index(output.String(), "Restart all Bytebase servers"), strings.Index(output.String(), "After restarting, sign in at /auth"))
 		require.Equal(t, 2, strings.Count(output.String(), "Select a recovery action:"))
 	})
 
@@ -466,7 +471,7 @@ func TestRecoveryCommandContract(t *testing.T) {
 		require.Contains(t, output.String(), "Invalid role selection")
 		require.Contains(t, output.String(), "Add user@example.com as Workspace admin (roles/workspaceAdmin)? [y/N]")
 		require.Contains(t, output.String(), "Adding user to workspace...")
-		require.Contains(t, output.String(), "The running Bytebase server may take up to one minute to observe the IAM change.")
+		require.Contains(t, output.String(), "Restart all Bytebase servers after exiting recovery so they reload the updated IAM policy.")
 		require.Contains(t, output.String(), "Password updated for user user@example.com.")
 		require.NotContains(t, output.String(), "NewPassword1!")
 		require.Equal(t, make([]byte, len(firstPassword)), firstPassword)

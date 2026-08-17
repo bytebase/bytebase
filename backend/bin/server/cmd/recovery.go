@@ -65,6 +65,8 @@ func newRecoveryCommand(dependencies recoveryCommandDependencies) *cobra.Command
 			if !dependencies.isTerminal(input, output) {
 				return errors.New("recovery requires terminal input and output")
 			}
+			fmt.Fprintln(output, "Stop all Bytebase servers that use this metadata database before continuing.")
+			fmt.Fprintln(output, "Restart all Bytebase servers after recovery so they reload updated settings and IAM policies.")
 
 			ctx, stop := signal.NotifyContext(command.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
@@ -220,7 +222,8 @@ func runEnablePasswordSignin(
 		return nil
 	}
 	fmt.Fprintln(output, "Password sign-in is enabled.")
-	fmt.Fprintln(output, "Sign in at /auth with an existing administrator account.")
+	fmt.Fprintln(output, "Restart all Bytebase servers after exiting recovery.")
+	fmt.Fprintln(output, "After restarting, sign in at /auth with an existing user account.")
 	fmt.Fprintln(output, "After repairing SSO, re-enable Disallow password sign-in.")
 	return nil
 }
@@ -390,7 +393,7 @@ func resetUserPassword(
 		role.Title,
 		role.Name,
 	)
-	fmt.Fprintln(output, "The running Bytebase server may take up to one minute to observe the IAM change.")
+	fmt.Fprintln(output, "Restart all Bytebase servers after exiting recovery so they reload the updated IAM policy.")
 	return nil
 }
 
