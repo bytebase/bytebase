@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
@@ -154,6 +155,16 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 	return fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.DataSource.Username, connCfg.Password, protocol, connCfg.DataSource.Host, connCfg.DataSource.Port, connCfg.ConnectionContext.DatabaseName, strings.Join(params, "&")), nil
 }
 
+// rdsCertBundleURL is a variable so tests can point it at a local server.
+var rdsCertBundleURL = "https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem"
+
+// rdsCertFetchTimeout bounds the download so a stalled fetch cannot hold a
+// connection attempt open indefinitely.
+const rdsCertFetchTimeout = 30 * time.Second
+
+// rdsCertPool caches the downloaded bundle for the process lifetime.
+var rdsCertPool atomic.Pointer[x509.CertPool]
+
 // getRDSCertPool downloads and returns the RDS CA certificate pool.
 // AWS RDS connection with IAM require TLS connection.
 //
@@ -161,17 +172,23 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 // https://github.com/aws/aws-sdk-go/issues/1248
 // https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/mysql-ssl-connections.html
 func getRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rdsCertBundleURL, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build request for rds cert")
 	}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: rdsCertFetchTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	// Without this an error page would reach AppendCertsFromPEM and surface as
+	// "failed to parse RDS CA certificates", hiding the real cause.
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("failed to download RDS CA certificates: %s", resp.Status)
+	}
 
 	pem, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -188,6 +205,52 @@ func getRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
 	}
 
 	return rootCertPool, nil
+}
+
+// cachedRDSCertPool returns the AWS RDS CA bundle, downloading it at most once
+// per process. Only successes are cached, so a transient network failure can
+// recover instead of poisoning every later connection.
+func cachedRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
+	if pool := rdsCertPool.Load(); pool != nil {
+		return pool, nil
+	}
+	pool, err := getRDSCertPool(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rdsCertPool.Store(pool)
+	return pool, nil
+}
+
+// rdsRootCAs prefers an operator-supplied CA, so a deployment can serve RDS IAM
+// connections without any outbound network access.
+func rdsRootCAs(ctx context.Context, dataSource *storepb.DataSource) (*x509.CertPool, error) {
+	if ca := dataSource.GetSslCa(); ca != "" {
+		pool := x509.NewCertPool()
+		if ok := pool.AppendCertsFromPEM([]byte(ca)); !ok {
+			return nil, errors.Errorf("failed to parse ssl_ca certificates")
+		}
+		return pool, nil
+	}
+	return cachedRDSCertPool(ctx)
+}
+
+// rdsTLSConfig builds the TLS config for an RDS IAM connection. IAM auth always
+// requires TLS, so this always returns a config.
+func rdsTLSConfig(ctx context.Context, dataSource *storepb.DataSource) (*tls.Config, error) {
+	if !dataSource.GetVerifyTlsCertificate() {
+		// No verifier runs in this mode, so a root pool would never be consulted.
+		return &tls.Config{InsecureSkipVerify: true}, nil
+	}
+	rootCertPool, err := rdsRootCAs(ctx, dataSource)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get RDS cert pool")
+	}
+	return &tls.Config{
+		RootCAs:               rootCertPool,
+		InsecureSkipVerify:    true, // superseded by VerifyPeerCertificate below
+		VerifyPeerCertificate: util.CreateCertificateVerifier(rootCertPool, dataSource.GetHost()),
+	}, nil
 }
 
 // getRDSConnection returns the connection string with IAM for AWS RDS.
@@ -213,30 +276,13 @@ func (d *Driver) getRDSConnection(ctx context.Context, connCfg db.ConnectionConf
 		return "", errors.Wrap(err, "failed to create authentication token")
 	}
 
-	// Get RDS CA certificate pool
-	rootCertPool, err := getRDSCertPool(ctx)
+	tlsConfig, err := rdsTLSConfig(ctx, connCfg.DataSource)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get RDS cert pool")
+		return "", err
 	}
 
 	// Create TLS config with unique name for this connection
 	tlsKey := uuid.NewString()
-
-	var tlsConfig *tls.Config
-	if connCfg.DataSource.GetVerifyTlsCertificate() {
-		// Secure config with certificate verification
-		tlsConfig = &tls.Config{
-			RootCAs:            rootCertPool,
-			InsecureSkipVerify: true, // We use custom verification
-		}
-		tlsConfig.VerifyPeerCertificate = util.CreateCertificateVerifier(rootCertPool, connCfg.DataSource.Host)
-	} else {
-		// Backward compatible config without verification
-		tlsConfig = &tls.Config{
-			RootCAs:            rootCertPool,
-			InsecureSkipVerify: true,
-		}
-	}
 
 	// Register the TLS config with unique name
 	if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {

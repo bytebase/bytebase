@@ -1,12 +1,25 @@
 package mysql
 
 import (
+	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
+	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestValidateMySQLExtraConnectionParameters(t *testing.T) {
@@ -151,4 +164,132 @@ func TestBuildExecuteCommandsDoesNotNormalizeDelimiterForLargeSheet(t *testing.T
 	require.NoError(t, err)
 	require.Len(t, commands, 1)
 	require.Equal(t, statement, commands[0].Text)
+}
+
+// selfSignedCAPEM builds a throwaway CA so the tests can assert that a supplied
+// ssl_ca is parsed and that a served bundle is cached, without shipping a
+// certificate that eventually expires.
+func selfSignedCAPEM(t *testing.T) string {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "bytebase-test-ca"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		KeyUsage:              x509.KeyUsageCertSign,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	require.NoError(t, err)
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))
+}
+
+// serveRDSCertBundle points rdsCertBundleURL at a local server and returns the
+// request counter, so a test can assert that no download happened at all.
+func serveRDSCertBundle(t *testing.T, handler http.HandlerFunc) *atomic.Int32 {
+	t.Helper()
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		handler(w, r)
+	}))
+	t.Cleanup(server.Close)
+
+	previousURL := rdsCertBundleURL
+	rdsCertBundleURL = server.URL
+	rdsCertPool.Store(nil)
+	t.Cleanup(func() {
+		rdsCertBundleURL = previousURL
+		rdsCertPool.Store(nil)
+	})
+	return &requests
+}
+
+func TestRDSTLSConfigSkipsDownloadWhenVerificationDisabled(t *testing.T) {
+	ca := selfSignedCAPEM(t)
+	requests := serveRDSCertBundle(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(ca))
+	})
+
+	cfg, err := rdsTLSConfig(context.Background(), &storepb.DataSource{
+		Host:                 "db.example.com",
+		VerifyTlsCertificate: false,
+	})
+	require.NoError(t, err)
+	require.True(t, cfg.InsecureSkipVerify)
+	require.Nil(t, cfg.RootCAs)
+	require.Nil(t, cfg.VerifyPeerCertificate)
+	require.Equal(t, int32(0), requests.Load())
+}
+
+func TestRDSTLSConfigSkipsDownloadWhenSslCaConfigured(t *testing.T) {
+	ca := selfSignedCAPEM(t)
+	requests := serveRDSCertBundle(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(ca))
+	})
+
+	cfg, err := rdsTLSConfig(context.Background(), &storepb.DataSource{
+		Host:                 "db.example.com",
+		VerifyTlsCertificate: true,
+		SslCa:                ca,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, cfg.RootCAs)
+	require.NotNil(t, cfg.VerifyPeerCertificate)
+	require.Equal(t, int32(0), requests.Load())
+}
+
+func TestRDSTLSConfigDownloadsBundleOnlyOnce(t *testing.T) {
+	ca := selfSignedCAPEM(t)
+	requests := serveRDSCertBundle(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(ca))
+	})
+
+	dataSource := &storepb.DataSource{Host: "db.example.com", VerifyTlsCertificate: true}
+	for range 5 {
+		cfg, err := rdsTLSConfig(context.Background(), dataSource)
+		require.NoError(t, err)
+		require.NotNil(t, cfg.RootCAs)
+	}
+	require.Equal(t, int32(1), requests.Load())
+}
+
+func TestRDSCertPoolDoesNotCacheFailures(t *testing.T) {
+	ca := selfSignedCAPEM(t)
+	var fail atomic.Bool
+	fail.Store(true)
+	requests := serveRDSCertBundle(t, func(w http.ResponseWriter, _ *http.Request) {
+		if fail.Load() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		_, _ = w.Write([]byte(ca))
+	})
+
+	_, err := cachedRDSCertPool(context.Background())
+	require.Error(t, err)
+
+	fail.Store(false)
+	pool, err := cachedRDSCertPool(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, pool)
+	require.Equal(t, int32(2), requests.Load())
+}
+
+func TestRDSCertPoolReportsHTTPStatus(t *testing.T) {
+	serveRDSCertBundle(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte("<Error>AccessDenied</Error>"))
+	})
+
+	_, err := getRDSCertPool(context.Background())
+	require.ErrorContains(t, err, "403")
+}
+
+func TestRDSRootCAsRejectsUnparseableSslCa(t *testing.T) {
+	_, err := rdsRootCAs(context.Background(), &storepb.DataSource{SslCa: "not a certificate"})
+	require.ErrorContains(t, err, "ssl_ca")
 }
