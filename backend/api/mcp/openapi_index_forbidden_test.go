@@ -24,10 +24,12 @@ func TestForbiddenEndpointsAreNotAdvertised(t *testing.T) {
 		require.Equal(t, forbiddenPath, ep.Path)
 	})
 
-	t.Run("absent from service listings", func(t *testing.T) {
-		require.NotContains(t, idx.Services(), "AuthService",
-			"every AuthService RPC is FORBIDDEN, so the service itself has nothing to offer an agent")
-		require.Empty(t, idx.GetServiceEndpoints("AuthService"))
+	t.Run("only callable auth endpoints are listed", func(t *testing.T) {
+		require.Contains(t, idx.Services(), "AuthService",
+			"AuthService has a non-FORBIDDEN authentication restriction endpoint")
+		endpoints := idx.GetServiceEndpoints("AuthService")
+		require.Len(t, endpoints, 1)
+		require.Equal(t, "bytebase.v1.AuthService.GetAuthenticationRestriction", endpoints[0].OperationID)
 	})
 
 	t.Run("absent from search", func(t *testing.T) {
