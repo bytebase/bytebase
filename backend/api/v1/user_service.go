@@ -295,20 +295,8 @@ func (s *UserService) validatePassword(ctx context.Context, workspaceID, passwor
 }
 
 func validatePasswordWithRestriction(password string, passwordRestriction *storepb.WorkspaceProfileSetting_PasswordRestriction) error {
-	if len(password) < int(passwordRestriction.GetMinLength()) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password length should no less than %v characters", passwordRestriction.GetMinLength()))
-	}
-	if passwordRestriction.GetRequireNumber() && !regexp.MustCompile("[0-9]+").MatchString(password) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password must contains at least 1 number"))
-	}
-	if passwordRestriction.GetRequireLetter() && !regexp.MustCompile("[a-zA-Z]+").MatchString(password) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password must contains at least 1 lower case letter"))
-	}
-	if passwordRestriction.GetRequireUppercaseLetter() && !regexp.MustCompile("[A-Z]+").MatchString(password) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password must contains at least 1 upper case letter"))
-	}
-	if passwordRestriction.GetRequireSpecialCharacter() && !regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+`).MatchString(password) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password must contains at least 1 special character"))
+	if err := common.ValidatePassword(password, passwordRestriction); err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	return nil
 }

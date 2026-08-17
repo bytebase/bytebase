@@ -216,7 +216,7 @@ message WorkspaceProfileSetting {
   // The workspace database change mode.
   DatabaseChangeMode database_change_mode = 9;
 
-  // Whether to disallow password signin. (Except workspace admins)
+  // Whether password sign-in is disabled for all end users.
   bool disallow_password_signin = 10;
 
   // Whether to enable metric collection for the workspace.

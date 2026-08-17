@@ -554,7 +554,7 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   databaseChangeMode: DatabaseChangeMode;
 
   /**
-   * Whether to disallow password signin. (Except workspace admins)
+   * Whether password sign-in is disabled for all end users.
    *
    * @generated from field: bool disallow_password_signin = 10;
    */

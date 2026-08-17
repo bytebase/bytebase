@@ -37,7 +37,6 @@ export const WORKSPACE_ROUTE_404 = "error.404";
 
 // --- auth.ts ---
 export const AUTH_SIGNIN_MODULE = "auth.signin";
-export const AUTH_SIGNIN_ADMIN_MODULE = "auth.signin.admin";
 export const AUTH_SIGNUP_MODULE = "auth.signup";
 export const AUTH_MFA_MODULE = "auth.mfa";
 export const AUTH_PASSWORD_RESET_MODULE = "auth.password.reset";

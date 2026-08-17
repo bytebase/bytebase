@@ -150,6 +150,13 @@ describe("rootGuard", () => {
     expect(response.headers.get("Location")).toBe("/404");
   });
 
+  test("/auth/admin matches the catch-all route", () => {
+    const matched = matchRoutes(routes, "/auth/admin");
+    const leafRoute = matched?.at(-1)?.route;
+    const handle = leafRoute?.handle as { name?: string } | undefined;
+    expect(handle?.name).toBe(WORKSPACE_ROUTE_404);
+  });
+
   test("oauth callback is allowed directly", () => {
     expect(run(AUTH_OAUTH_CALLBACK_MODULE, "/auth/oauth/callback")).toBeNull();
   });

@@ -114,7 +114,7 @@ type Restriction struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Whether self-service user signup is disabled.
 	DisallowSignup bool `protobuf:"varint,1,opt,name=disallow_signup,json=disallowSignup,proto3" json:"disallow_signup,omitempty"`
-	// Whether password-based signin is disabled (except for workspace admins).
+	// Whether password sign-in is disabled for all end users.
 	DisallowPasswordSignin bool `protobuf:"varint,2,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
 	// Password complexity and restriction requirements.
 	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,3,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`

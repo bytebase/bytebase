@@ -162,12 +162,11 @@ func start() {
 		}
 	}
 
-	if err := checkDataDir(); err != nil {
+	profile, err := resolveProfile()
+	if err != nil {
 		slog.Error(err.Error())
 		return
 	}
-
-	profile := activeProfile(flags.dataDir)
 
 	fmt.Printf("Starting Bytebase %s(%s)...\n", profile.Version, profile.GitCommit)
 

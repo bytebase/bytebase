@@ -4796,7 +4796,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | domains | [string](#string) | repeated | The workspace domain, e.g., bytebase.com. |
 | enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
 | database_change_mode | [WorkspaceProfileSetting.DatabaseChangeMode](#bytebase-store-WorkspaceProfileSetting-DatabaseChangeMode) |  | The workspace database change mode. |
-| disallow_password_signin | [bool](#bool) |  | Whether to disallow password signin. (Except workspace admins) |
+| disallow_password_signin | [bool](#bool) |  | Whether password sign-in is disabled for all end users. |
 | enable_metric_collection | [bool](#bool) |  | Whether to enable metric collection for the workspace. |
 | inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
 | enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
