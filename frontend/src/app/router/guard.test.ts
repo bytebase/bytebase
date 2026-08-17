@@ -10,6 +10,7 @@ const session = {
   requireMfa: false,
   hasTwoFa: false,
   isSaaSMode: false,
+  disallowSignup: false,
   currentUser: undefined as { mfaEnabled: boolean } | undefined,
   // Mirrors the store default: PIPELINE until the workspace profile loads.
   databaseChangeMode: DatabaseChangeMode.PIPELINE,
@@ -30,6 +31,9 @@ vi.mock("@/stores/app", () => ({
       getWorkspaceProfile: () => ({ requireMfa: session.requireMfa }),
       hasFeature: () => session.hasTwoFa,
       isSaaSMode: () => session.isSaaSMode,
+      serverInfo: {
+        restriction: { disallowSignup: session.disallowSignup },
+      },
       currentUser: session.currentUser,
       appFeatures: {
         "bb.feature.database-change-mode": session.databaseChangeMode,
@@ -67,6 +71,7 @@ beforeEach(() => {
   session.requireMfa = false;
   session.hasTwoFa = false;
   session.isSaaSMode = false;
+  session.disallowSignup = false;
   session.currentUser = undefined;
   session.databaseChangeMode = DatabaseChangeMode.PIPELINE;
   vi.clearAllMocks();
@@ -185,8 +190,8 @@ describe("rootGuard", () => {
     expect(resets.resetProjects).toHaveBeenCalled();
   });
 
-  test("redirects SaaS signup route to signin", () => {
-    session.isSaaSMode = true;
+  test("redirects to signin when signup is disallowed", () => {
+    session.disallowSignup = true;
 
     expect(
       location(

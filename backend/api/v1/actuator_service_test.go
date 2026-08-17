@@ -55,6 +55,12 @@ func TestGetActuatorInfoAuthenticationBoundary(t *testing.T) {
 	require.NotNil(t, adminSetupField)
 	require.True(t, publicResponse.Msg.ProtoReflect().Get(adminSetupField).Bool())
 
+	service.profile.SaaS = true
+	saasPublicResponse, err := service.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	require.NoError(t, err)
+	require.True(t, saasPublicResponse.Msg.Saas)
+	service.profile.SaaS = false
+
 	const workspaceID = "actuator-auth-boundary"
 	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
 		ResourceID: workspaceID,

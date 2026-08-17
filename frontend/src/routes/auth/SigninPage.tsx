@@ -69,10 +69,10 @@ export function SigninPage(props: SigninPageProps) {
   // Redirect to signup when an admin setup is needed.
   useEffect(() => {
     if (!initialized) return;
-    if (serverInfo?.adminSetupRequired && !disallowSignup && !isSaaSMode) {
+    if (serverInfo?.adminSetupRequired && !disallowSignup) {
       router.replace({ name: AUTH_SIGNUP_MODULE });
     }
-  }, [initialized, serverInfo?.adminSetupRequired, disallowSignup, isSaaSMode]);
+  }, [initialized, serverInfo?.adminSetupRequired, disallowSignup]);
 
   const trySigninWithIdp = async (idp: IdentityProvider) => {
     try {

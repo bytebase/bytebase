@@ -39,7 +39,7 @@ rewriteLegacyPath();
     initPromises.push(store.loadWorkspaceProfile());
   }
   await Promise.all(initPromises);
-  initializeGA4(store.isSaaSMode());
+  initializeGA4();
 
   const { mountReactRouterApp } = await import("./app/mountApp");
   await mountReactRouterApp("#app");

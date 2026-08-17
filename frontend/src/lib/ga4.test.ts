@@ -20,27 +20,17 @@ afterEach(() => {
 
 describe("initializeGA4", () => {
   test("does not load GA4 without a measurement ID", () => {
-    initializeGA4(true);
+    initializeGA4();
 
     expect(document.querySelector(ga4ScriptSelector)).toBeNull();
     expect(window.dataLayer).toBeUndefined();
     expect(window.gtag).toBeUndefined();
   });
 
-  test("does not load GA4 outside SaaS mode", () => {
+  test("loads the configured GA4 property", () => {
     vi.stubEnv("BB_GA4_MEASUREMENT_ID", "G-TEST");
 
-    initializeGA4(false);
-
-    expect(document.querySelector(ga4ScriptSelector)).toBeNull();
-    expect(window.dataLayer).toBeUndefined();
-    expect(window.gtag).toBeUndefined();
-  });
-
-  test("loads the shared GA4 property in SaaS mode", () => {
-    vi.stubEnv("BB_GA4_MEASUREMENT_ID", "G-TEST");
-
-    initializeGA4(true);
+    initializeGA4();
 
     const script = document.querySelector<HTMLScriptElement>(ga4ScriptSelector);
     expect(script?.async).toBe(true);
@@ -68,7 +58,7 @@ describe("initializeGA4", () => {
       "/oauth/callback?code=secret&state=token#fragment"
     );
 
-    initializeGA4(true);
+    initializeGA4();
 
     expect(window.dataLayer?.[1]).toEqual([
       "config",
