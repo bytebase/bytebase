@@ -1405,7 +1405,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.GetAuthenticationInfoRequest"><span class="badge">M</span>GetAuthenticationInfoRequest</a>
+                  <a href="#bytebase.v1.GetAuthenticationRestrictionRequest"><span class="badge">M</span>GetAuthenticationRestrictionRequest</a>
                 </li>
 
                 <li>
@@ -16020,7 +16020,7 @@ Format: {name}@workload.bytebase.com </p></td>
 
         
       
-        <h3 id="bytebase.v1.GetAuthenticationInfoRequest">GetAuthenticationInfoRequest</h3>
+        <h3 id="bytebase.v1.GetAuthenticationRestrictionRequest">GetAuthenticationRestrictionRequest</h3>
         <p></p>
 
 
@@ -16552,10 +16552,10 @@ Format: workspaces/{workspace} </p></td>
           <tbody>
             
               <tr>
-                <td>GetAuthenticationInfo</td>
-                <td><a href="#bytebase.v1.GetAuthenticationInfoRequest">GetAuthenticationInfoRequest</a></td>
+                <td>GetAuthenticationRestriction</td>
+                <td><a href="#bytebase.v1.GetAuthenticationRestrictionRequest">GetAuthenticationRestrictionRequest</a></td>
                 <td><a href="#bytebase.v1.AuthenticationInfo">AuthenticationInfo</a></td>
-                <td><p>Gets the information needed to render authentication flows.
+                <td><p>Gets the effective restrictions needed to render authentication flows.
 Permissions required: None</p></td>
               </tr>
 
@@ -16657,16 +16657,16 @@ Permissions required: None</p></td>
               
               
               <tr>
-                <td>GetAuthenticationInfo</td>
+                <td>GetAuthenticationRestriction</td>
                 <td>GET</td>
-                <td>/v1/auth/info</td>
+                <td>/v1/auth/restriction</td>
                 <td></td>
               </tr>
 
               <tr>
-                <td>GetAuthenticationInfo</td>
+                <td>GetAuthenticationRestriction</td>
                 <td>GET</td>
-                <td>/v1/{workspace=workspaces/*}/auth/info</td>
+                <td>/v1/{workspace=workspaces/*}/auth/restriction</td>
                 <td></td>
               </tr>
 

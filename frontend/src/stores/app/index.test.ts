@@ -103,7 +103,7 @@ const mocks = vi.hoisted(() => ({
     }
   ),
   signup: vi.fn(),
-  getAuthenticationInfo: vi.fn(),
+  getAuthenticationRestriction: vi.fn(),
   getActuatorInfo: vi.fn(),
   getWorkspace: vi.fn(),
   updateWorkspace: vi.fn(),
@@ -193,7 +193,7 @@ vi.mock("@/api", () => ({
     getActuatorInfo: mocks.getActuatorInfo,
   },
   authServiceClientConnect: {
-    getAuthenticationInfo: mocks.getAuthenticationInfo,
+    getAuthenticationRestriction: mocks.getAuthenticationRestriction,
     login: mocks.login,
     logout: mocks.logout,
     signup: mocks.signup,
@@ -1873,12 +1873,14 @@ describe("useAppStore", () => {
     const info = createProto(AuthenticationInfoSchema, {
       workspace: "workspaces/pre-login",
     });
-    mocks.getAuthenticationInfo.mockResolvedValue(info);
+    mocks.getAuthenticationRestriction.mockResolvedValue(info);
     const store = createAppStore();
 
     await store.getState().loadAuthenticationInfo();
 
-    expect(mocks.getAuthenticationInfo).toHaveBeenCalledWith({ workspace: "" });
+    expect(mocks.getAuthenticationRestriction).toHaveBeenCalledWith({
+      workspace: "",
+    });
     expect(mocks.getActuatorInfo).not.toHaveBeenCalled();
     expect(store.getState().authenticationInfo).toBe(info);
     expect(store.getState().isSaaSMode()).toBe(false);

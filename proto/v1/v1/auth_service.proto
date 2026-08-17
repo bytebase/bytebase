@@ -15,12 +15,12 @@ option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 // AuthService handles user authentication operations.
 service AuthService {
-  // Gets the information needed to render authentication flows.
+  // Gets the effective restrictions needed to render authentication flows.
   // Permissions required: None
-  rpc GetAuthenticationInfo(GetAuthenticationInfoRequest) returns (AuthenticationInfo) {
+  rpc GetAuthenticationRestriction(GetAuthenticationRestrictionRequest) returns (AuthenticationInfo) {
     option (google.api.http) = {
-      get: "/v1/auth/info"
-      additional_bindings: {get: "/v1/{workspace=workspaces/*}/auth/info"}
+      get: "/v1/auth/restriction"
+      additional_bindings: {get: "/v1/{workspace=workspaces/*}/auth/restriction"}
     };
     option (google.api.method_signature) = "";
     option (bytebase.v1.allow_without_credential) = true;
@@ -147,7 +147,7 @@ service AuthService {
   }
 }
 
-message GetAuthenticationInfoRequest {
+message GetAuthenticationRestrictionRequest {
   // Optional. The workspace whose authentication policy should be returned.
   // Format: workspaces/{workspace}
   // When unset, self-hosted resolves the singleton workspace and SaaS uses

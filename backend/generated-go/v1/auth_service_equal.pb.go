@@ -3,7 +3,7 @@
 
 package v1
 
-func (x *GetAuthenticationInfoRequest) Equal(y *GetAuthenticationInfoRequest) bool {
+func (x *GetAuthenticationRestrictionRequest) Equal(y *GetAuthenticationRestrictionRequest) bool {
 	if x == y {
 		return true
 	}

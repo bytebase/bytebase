@@ -23,7 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type GetAuthenticationInfoRequest struct {
+type GetAuthenticationRestrictionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Optional. The workspace whose authentication policy should be returned.
 	// Format: workspaces/{workspace}
@@ -34,20 +34,20 @@ type GetAuthenticationInfoRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetAuthenticationInfoRequest) Reset() {
-	*x = GetAuthenticationInfoRequest{}
+func (x *GetAuthenticationRestrictionRequest) Reset() {
+	*x = GetAuthenticationRestrictionRequest{}
 	mi := &file_v1_auth_service_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetAuthenticationInfoRequest) String() string {
+func (x *GetAuthenticationRestrictionRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetAuthenticationInfoRequest) ProtoMessage() {}
+func (*GetAuthenticationRestrictionRequest) ProtoMessage() {}
 
-func (x *GetAuthenticationInfoRequest) ProtoReflect() protoreflect.Message {
+func (x *GetAuthenticationRestrictionRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_auth_service_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -59,12 +59,12 @@ func (x *GetAuthenticationInfoRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetAuthenticationInfoRequest.ProtoReflect.Descriptor instead.
-func (*GetAuthenticationInfoRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetAuthenticationRestrictionRequest.ProtoReflect.Descriptor instead.
+func (*GetAuthenticationRestrictionRequest) Descriptor() ([]byte, []int) {
 	return file_v1_auth_service_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *GetAuthenticationInfoRequest) GetWorkspace() string {
+func (x *GetAuthenticationRestrictionRequest) GetWorkspace() string {
 	if x != nil {
 		return x.Workspace
 	}
@@ -1128,8 +1128,8 @@ var File_v1_auth_service_proto protoreflect.FileDescriptor
 
 const file_v1_auth_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/auth_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x13v1/annotation.proto\x1a\x18v1/setting_service.proto\x1a\x15v1/user_service.proto\"Y\n" +
-	"\x1cGetAuthenticationInfoRequest\x129\n" +
+	"\x15v1/auth_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x13v1/annotation.proto\x1a\x18v1/setting_service.proto\x1a\x15v1/user_service.proto\"`\n" +
+	"#GetAuthenticationRestrictionRequest\x129\n" +
 	"\tworkspace\x18\x01 \x01(\tB\x1b\xfaA\x18\n" +
 	"\x16bytebase.com/WorkspaceR\tworkspace\"x\n" +
 	"\x12AuthenticationInfo\x12!\n" +
@@ -1209,10 +1209,10 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\x0emfa_temp_token\x18\x05 \x01(\tH\x02R\fmfaTempToken\x88\x01\x01B\v\n" +
 	"\t_otp_codeB\x10\n" +
 	"\x0e_recovery_codeB\x11\n" +
-	"\x0f_mfa_temp_token2\xa2\n" +
+	"\x0f_mfa_temp_token2\xbe\n" +
 	"\n" +
-	"\vAuthService\x12\xab\x01\n" +
-	"\x15GetAuthenticationInfo\x12).bytebase.v1.GetAuthenticationInfoRequest\x1a\x1f.bytebase.v1.AuthenticationInfo\"F\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x029Z(\x12&/v1/{workspace=workspaces/*}/auth/info\x12\r/v1/auth/info\x12i\n" +
+	"\vAuthService\x12\xc7\x01\n" +
+	"\x1cGetAuthenticationRestriction\x120.bytebase.v1.GetAuthenticationRestrictionRequest\x1a\x1f.bytebase.v1.AuthenticationInfo\"T\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02GZ/\x12-/v1/{workspace=workspaces/*}/auth/restriction\x12\x14/v1/auth/restriction\x12i\n" +
 	"\x05Login\x12\x19.bytebase.v1.LoginRequest\x1a\x1a.bytebase.v1.LoginResponse\")\x80\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x01\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/v1/auth/login\x12h\n" +
 	"\x06Logout\x12\x1a.bytebase.v1.LogoutRequest\x1a\x16.google.protobuf.Empty\"*\x80\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x04\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/auth/logout\x12\x89\x01\n" +
 	"\rExchangeToken\x12!.bytebase.v1.ExchangeTokenRequest\x1a\".bytebase.v1.ExchangeTokenResponse\"1\x80\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x01\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/v1/auth:exchangeToken\x12l\n" +
@@ -1238,7 +1238,7 @@ func file_v1_auth_service_proto_rawDescGZIP() []byte {
 
 var file_v1_auth_service_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_v1_auth_service_proto_goTypes = []any{
-	(*GetAuthenticationInfoRequest)(nil),                // 0: bytebase.v1.GetAuthenticationInfoRequest
+	(*GetAuthenticationRestrictionRequest)(nil),         // 0: bytebase.v1.GetAuthenticationRestrictionRequest
 	(*AuthenticationInfo)(nil),                          // 1: bytebase.v1.AuthenticationInfo
 	(*Restriction)(nil),                                 // 2: bytebase.v1.Restriction
 	(*LoginRequest)(nil),                                // 3: bytebase.v1.LoginRequest
@@ -1267,7 +1267,7 @@ var file_v1_auth_service_proto_depIdxs = []int32{
 	5,  // 3: bytebase.v1.IdentityProviderContext.oauth2_context:type_name -> bytebase.v1.OAuth2IdentityProviderContext
 	6,  // 4: bytebase.v1.IdentityProviderContext.oidc_context:type_name -> bytebase.v1.OIDCIdentityProviderContext
 	19, // 5: bytebase.v1.LoginResponse.user:type_name -> bytebase.v1.User
-	0,  // 6: bytebase.v1.AuthService.GetAuthenticationInfo:input_type -> bytebase.v1.GetAuthenticationInfoRequest
+	0,  // 6: bytebase.v1.AuthService.GetAuthenticationRestriction:input_type -> bytebase.v1.GetAuthenticationRestrictionRequest
 	3,  // 7: bytebase.v1.AuthService.Login:input_type -> bytebase.v1.LoginRequest
 	8,  // 8: bytebase.v1.AuthService.Logout:input_type -> bytebase.v1.LogoutRequest
 	9,  // 9: bytebase.v1.AuthService.ExchangeToken:input_type -> bytebase.v1.ExchangeTokenRequest
@@ -1277,7 +1277,7 @@ var file_v1_auth_service_proto_depIdxs = []int32{
 	14, // 13: bytebase.v1.AuthService.RequestPasswordReset:input_type -> bytebase.v1.RequestPasswordResetRequest
 	15, // 14: bytebase.v1.AuthService.ResetPassword:input_type -> bytebase.v1.ResetPasswordRequest
 	16, // 15: bytebase.v1.AuthService.SendEmailLoginCode:input_type -> bytebase.v1.SendEmailLoginCodeRequest
-	1,  // 16: bytebase.v1.AuthService.GetAuthenticationInfo:output_type -> bytebase.v1.AuthenticationInfo
+	1,  // 16: bytebase.v1.AuthService.GetAuthenticationRestriction:output_type -> bytebase.v1.AuthenticationInfo
 	7,  // 17: bytebase.v1.AuthService.Login:output_type -> bytebase.v1.LoginResponse
 	20, // 18: bytebase.v1.AuthService.Logout:output_type -> google.protobuf.Empty
 	10, // 19: bytebase.v1.AuthService.ExchangeToken:output_type -> bytebase.v1.ExchangeTokenResponse

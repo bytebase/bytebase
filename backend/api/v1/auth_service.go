@@ -136,10 +136,10 @@ func NewAuthService(store *store.Store, secret string, licenseService *enterpris
 	}
 }
 
-// GetAuthenticationInfo returns the public information needed by authentication flows.
-func (s *AuthService) GetAuthenticationInfo(
+// GetAuthenticationRestriction returns the public restrictions needed by authentication flows.
+func (s *AuthService) GetAuthenticationRestriction(
 	ctx context.Context,
-	req *connect.Request[v1pb.GetAuthenticationInfoRequest],
+	req *connect.Request[v1pb.GetAuthenticationRestrictionRequest],
 ) (*connect.Response[v1pb.AuthenticationInfo], error) {
 	workspaceID := ""
 	if req.Msg.Workspace != "" {

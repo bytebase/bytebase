@@ -323,7 +323,7 @@
     - [AuthenticationInfo](#bytebase-v1-AuthenticationInfo)
     - [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest)
     - [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse)
-    - [GetAuthenticationInfoRequest](#bytebase-v1-GetAuthenticationInfoRequest)
+    - [GetAuthenticationRestrictionRequest](#bytebase-v1-GetAuthenticationRestrictionRequest)
     - [IdentityProviderContext](#bytebase-v1-IdentityProviderContext)
     - [LoginRequest](#bytebase-v1-LoginRequest)
     - [LoginResponse](#bytebase-v1-LoginResponse)
@@ -5583,9 +5583,9 @@ UserService manages user accounts and authentication.
 
 
 
-<a name="bytebase-v1-GetAuthenticationInfoRequest"></a>
+<a name="bytebase-v1-GetAuthenticationRestrictionRequest"></a>
 
-### GetAuthenticationInfoRequest
+### GetAuthenticationRestrictionRequest
 
 
 
@@ -5833,7 +5833,7 @@ AuthService handles user authentication operations.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetAuthenticationInfo | [GetAuthenticationInfoRequest](#bytebase-v1-GetAuthenticationInfoRequest) | [AuthenticationInfo](#bytebase-v1-AuthenticationInfo) | Gets the information needed to render authentication flows. Permissions required: None |
+| GetAuthenticationRestriction | [GetAuthenticationRestrictionRequest](#bytebase-v1-GetAuthenticationRestrictionRequest) | [AuthenticationInfo](#bytebase-v1-AuthenticationInfo) | Gets the effective restrictions needed to render authentication flows. Permissions required: None |
 | Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Authenticates a user and returns access tokens. Permissions required: None |
 | Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Logs out the current user session. Permissions required: None |
 | ExchangeToken | [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest) | [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse) | Exchanges an external OIDC token for a Bytebase access token. Used by CI/CD pipelines with Workload Identity Federation. Permissions required: None (validates via OIDC token) |
@@ -12603,4 +12603,3 @@ WorkspaceService manages workspace-level operations and profile.
 | <a name="bool" /> bool |  | bool | boolean | boolean | bool | bool | boolean | TrueClass/FalseClass |
 | <a name="string" /> string | A string must always contain UTF-8 encoded or 7-bit ASCII text. | string | String | str/unicode | string | string | string | String (UTF-8) |
 | <a name="bytes" /> bytes | May contain any arbitrary sequence of bytes. | string | ByteString | str | []byte | ByteString | string | String (ASCII-8BIT) |
-

@@ -20,16 +20,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_GetAuthenticationInfo_FullMethodName = "/bytebase.v1.AuthService/GetAuthenticationInfo"
-	AuthService_Login_FullMethodName                 = "/bytebase.v1.AuthService/Login"
-	AuthService_Logout_FullMethodName                = "/bytebase.v1.AuthService/Logout"
-	AuthService_ExchangeToken_FullMethodName         = "/bytebase.v1.AuthService/ExchangeToken"
-	AuthService_Signup_FullMethodName                = "/bytebase.v1.AuthService/Signup"
-	AuthService_Refresh_FullMethodName               = "/bytebase.v1.AuthService/Refresh"
-	AuthService_SwitchWorkspace_FullMethodName       = "/bytebase.v1.AuthService/SwitchWorkspace"
-	AuthService_RequestPasswordReset_FullMethodName  = "/bytebase.v1.AuthService/RequestPasswordReset"
-	AuthService_ResetPassword_FullMethodName         = "/bytebase.v1.AuthService/ResetPassword"
-	AuthService_SendEmailLoginCode_FullMethodName    = "/bytebase.v1.AuthService/SendEmailLoginCode"
+	AuthService_GetAuthenticationRestriction_FullMethodName = "/bytebase.v1.AuthService/GetAuthenticationRestriction"
+	AuthService_Login_FullMethodName                        = "/bytebase.v1.AuthService/Login"
+	AuthService_Logout_FullMethodName                       = "/bytebase.v1.AuthService/Logout"
+	AuthService_ExchangeToken_FullMethodName                = "/bytebase.v1.AuthService/ExchangeToken"
+	AuthService_Signup_FullMethodName                       = "/bytebase.v1.AuthService/Signup"
+	AuthService_Refresh_FullMethodName                      = "/bytebase.v1.AuthService/Refresh"
+	AuthService_SwitchWorkspace_FullMethodName              = "/bytebase.v1.AuthService/SwitchWorkspace"
+	AuthService_RequestPasswordReset_FullMethodName         = "/bytebase.v1.AuthService/RequestPasswordReset"
+	AuthService_ResetPassword_FullMethodName                = "/bytebase.v1.AuthService/ResetPassword"
+	AuthService_SendEmailLoginCode_FullMethodName           = "/bytebase.v1.AuthService/SendEmailLoginCode"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -38,9 +38,9 @@ const (
 //
 // AuthService handles user authentication operations.
 type AuthServiceClient interface {
-	// Gets the information needed to render authentication flows.
+	// Gets the effective restrictions needed to render authentication flows.
 	// Permissions required: None
-	GetAuthenticationInfo(ctx context.Context, in *GetAuthenticationInfoRequest, opts ...grpc.CallOption) (*AuthenticationInfo, error)
+	GetAuthenticationRestriction(ctx context.Context, in *GetAuthenticationRestrictionRequest, opts ...grpc.CallOption) (*AuthenticationInfo, error)
 	// Authenticates a user and returns access tokens.
 	// Permissions required: None
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
@@ -83,10 +83,10 @@ func NewAuthServiceClient(cc grpc.ClientConnInterface) AuthServiceClient {
 	return &authServiceClient{cc}
 }
 
-func (c *authServiceClient) GetAuthenticationInfo(ctx context.Context, in *GetAuthenticationInfoRequest, opts ...grpc.CallOption) (*AuthenticationInfo, error) {
+func (c *authServiceClient) GetAuthenticationRestriction(ctx context.Context, in *GetAuthenticationRestrictionRequest, opts ...grpc.CallOption) (*AuthenticationInfo, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AuthenticationInfo)
-	err := c.cc.Invoke(ctx, AuthService_GetAuthenticationInfo_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, AuthService_GetAuthenticationRestriction_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -189,9 +189,9 @@ func (c *authServiceClient) SendEmailLoginCode(ctx context.Context, in *SendEmai
 //
 // AuthService handles user authentication operations.
 type AuthServiceServer interface {
-	// Gets the information needed to render authentication flows.
+	// Gets the effective restrictions needed to render authentication flows.
 	// Permissions required: None
-	GetAuthenticationInfo(context.Context, *GetAuthenticationInfoRequest) (*AuthenticationInfo, error)
+	GetAuthenticationRestriction(context.Context, *GetAuthenticationRestrictionRequest) (*AuthenticationInfo, error)
 	// Authenticates a user and returns access tokens.
 	// Permissions required: None
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
@@ -234,8 +234,8 @@ type AuthServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAuthServiceServer struct{}
 
-func (UnimplementedAuthServiceServer) GetAuthenticationInfo(context.Context, *GetAuthenticationInfoRequest) (*AuthenticationInfo, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetAuthenticationInfo not implemented")
+func (UnimplementedAuthServiceServer) GetAuthenticationRestriction(context.Context, *GetAuthenticationRestrictionRequest) (*AuthenticationInfo, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAuthenticationRestriction not implemented")
 }
 func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
@@ -285,20 +285,20 @@ func RegisterAuthServiceServer(s grpc.ServiceRegistrar, srv AuthServiceServer) {
 	s.RegisterService(&AuthService_ServiceDesc, srv)
 }
 
-func _AuthService_GetAuthenticationInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetAuthenticationInfoRequest)
+func _AuthService_GetAuthenticationRestriction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAuthenticationRestrictionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AuthServiceServer).GetAuthenticationInfo(ctx, in)
+		return srv.(AuthServiceServer).GetAuthenticationRestriction(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AuthService_GetAuthenticationInfo_FullMethodName,
+		FullMethod: AuthService_GetAuthenticationRestriction_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).GetAuthenticationInfo(ctx, req.(*GetAuthenticationInfoRequest))
+		return srv.(AuthServiceServer).GetAuthenticationRestriction(ctx, req.(*GetAuthenticationRestrictionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -473,8 +473,8 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*AuthServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetAuthenticationInfo",
-			Handler:    _AuthService_GetAuthenticationInfo_Handler,
+			MethodName: "GetAuthenticationRestriction",
+			Handler:    _AuthService_GetAuthenticationRestriction_Handler,
 		},
 		{
 			MethodName: "Login",

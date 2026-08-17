@@ -14,9 +14,9 @@ import type { EmptySchema } from "@bufbuild/protobuf/wkt";
 export declare const file_v1_auth_service: GenFile;
 
 /**
- * @generated from message bytebase.v1.GetAuthenticationInfoRequest
+ * @generated from message bytebase.v1.GetAuthenticationRestrictionRequest
  */
-export declare type GetAuthenticationInfoRequest = Message<"bytebase.v1.GetAuthenticationInfoRequest"> & {
+export declare type GetAuthenticationRestrictionRequest = Message<"bytebase.v1.GetAuthenticationRestrictionRequest"> & {
   /**
    * Optional. The workspace whose authentication policy should be returned.
    * Format: workspaces/{workspace}
@@ -29,10 +29,10 @@ export declare type GetAuthenticationInfoRequest = Message<"bytebase.v1.GetAuthe
 };
 
 /**
- * Describes the message bytebase.v1.GetAuthenticationInfoRequest.
- * Use `create(GetAuthenticationInfoRequestSchema)` to create a new message.
+ * Describes the message bytebase.v1.GetAuthenticationRestrictionRequest.
+ * Use `create(GetAuthenticationRestrictionRequestSchema)` to create a new message.
  */
-export declare const GetAuthenticationInfoRequestSchema: GenMessage<GetAuthenticationInfoRequest>;
+export declare const GetAuthenticationRestrictionRequestSchema: GenMessage<GetAuthenticationRestrictionRequest>;
 
 /**
  * @generated from message bytebase.v1.AuthenticationInfo
@@ -569,14 +569,14 @@ export declare const SwitchWorkspaceRequestSchema: GenMessage<SwitchWorkspaceReq
  */
 export declare const AuthService: GenService<{
   /**
-   * Gets the information needed to render authentication flows.
+   * Gets the effective restrictions needed to render authentication flows.
    * Permissions required: None
    *
-   * @generated from rpc bytebase.v1.AuthService.GetAuthenticationInfo
+   * @generated from rpc bytebase.v1.AuthService.GetAuthenticationRestriction
    */
-  getAuthenticationInfo: {
+  getAuthenticationRestriction: {
     methodKind: "unary";
-    input: typeof GetAuthenticationInfoRequestSchema;
+    input: typeof GetAuthenticationRestrictionRequestSchema;
     output: typeof AuthenticationInfoSchema;
   },
   /**
