@@ -472,138 +472,18 @@ describe("SavedQueryPane", () => {
     );
     expect(myTree?.getAttribute("data-multi-select-mode")).toBe("true");
 
-    // Toolbar buttons rendered — Move + Cancel stay inline; destructive
-    // Delete is tucked into the More menu for the narrow saved query pane.
+    // Toolbar buttons rendered — Cancel and Delete both fit inline now that
+    // the move-to-folder action is gone (no peer offers bulk query move).
     const toolbarButtons = Array.from(
       container.querySelectorAll("[data-testid='button']")
     ).map((el) => el.textContent?.trim());
     expect(toolbarButtons).toEqual(
-      expect.arrayContaining(["sheet.move-saved-queries", "common.cancel"])
+      expect.arrayContaining(["common.cancel", "common.delete"])
     );
-    expect(toolbarButtons).not.toContain("common.delete");
-    const menuItems = Array.from(
-      container.querySelectorAll("[data-testid='dropdown-menu-item']")
-    ).map((el) => el.textContent?.trim());
-    expect(menuItems).toContain("common.delete");
+    expect(toolbarButtons).not.toContain("sheet.move-saved-queries");
     expect(toolbarButtons).not.toContain("common.n-selected");
 
     unmount();
   });
 
-  test("5. Move modal opens and submit calls batchUpdateSavedQueryFolders", async () => {
-    const { batchUpdateSavedQueryFolders, getFoldersForSavedQuery } =
-      setupDefaultMocks();
-    const { container, render, unmount } = renderIntoContainer(
-      <SavedQueryPane />
-    );
-    render();
-
-    // Step 1: enter multi-select and check a saved query
-    act(() => {
-      container
-        .querySelector("[data-testid='sheet-tree-my-enter-multi-select']")
-        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-    act(() => {
-      container
-        .querySelector("[data-testid='sheet-tree-my-check-ws']")
-        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    // Step 2: click the "move-saved-queries" toolbar button to open the modal
-    const moveButton = Array.from(
-      container.querySelectorAll("[data-testid='button']")
-    ).find((el) => el.textContent?.trim() === "sheet.move-saved-queries") as
-      | HTMLButtonElement
-      | undefined;
-    expect(moveButton).not.toBeUndefined();
-
-    act(() => {
-      moveButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    // Dialog should be open now — FolderForm is rendered
-    const folderForm = container.querySelector("[data-testid='folder-form']");
-    expect(folderForm).not.toBeNull();
-
-    // Step 3: change the folder target via the mocked FolderForm's setter
-    act(() => {
-      container
-        .querySelector("[data-testid='folder-form-set-target']")
-        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    const saveButton = Array.from(
-      container.querySelectorAll("[data-testid='button']")
-    ).find((el) => el.textContent?.trim() === "common.save");
-    expect(saveButton).not.toBeUndefined();
-
-    await act(async () => {
-      saveButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    expect(getFoldersForSavedQuery).toHaveBeenCalledWith("/some/folder");
-    expect(batchUpdateSavedQueryFolders).toHaveBeenCalledWith([
-      { name: "savedQueries/ws1", folders: ["/some/folder"] },
-    ]);
-
-    unmount();
-  });
-
-  test("5b. Move modal can move saved queries to the root folder", async () => {
-    const { batchUpdateSavedQueryFolders, getFoldersForSavedQuery } =
-      setupDefaultMocks();
-    const { container, render, unmount } = renderIntoContainer(
-      <SavedQueryPane />
-    );
-    render();
-
-    act(() => {
-      container
-        .querySelector("[data-testid='sheet-tree-my-enter-multi-select']")
-        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-    act(() => {
-      container
-        .querySelector("[data-testid='sheet-tree-my-check-ws']")
-        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    const moveButton = Array.from(
-      container.querySelectorAll("[data-testid='button']")
-    ).find((el) => el.textContent?.trim() === "sheet.move-saved-queries");
-    act(() => {
-      moveButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    act(() => {
-      container
-        .querySelector("[data-testid='folder-form-set-target']")
-        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    const folderForm = container.querySelector("[data-testid='folder-form']");
-    expect(folderForm?.getAttribute("data-include-root")).toBe("true");
-
-    act(() => {
-      container
-        .querySelector("[data-testid='folder-form-set-root']")
-        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    const saveButton = Array.from(
-      container.querySelectorAll("[data-testid='button']")
-    ).find((el) => el.textContent?.trim() === "common.save");
-
-    await act(async () => {
-      saveButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    expect(getFoldersForSavedQuery).toHaveBeenCalledWith("/my");
-    expect(batchUpdateSavedQueryFolders).toHaveBeenCalledWith([
-      { name: "savedQueries/ws1", folders: [] },
-    ]);
-
-    unmount();
-  });
 });

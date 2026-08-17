@@ -87,6 +87,8 @@ registerPermissionCheckers({
     useAppStore.getState().hasWorkspacePermission(permission),
   hasProjectPermission: (project, permission) =>
     useAppStore.getState().hasProjectPermission(project, permission),
+  hasProjectWidePermission: (project, permission) =>
+    useAppStore.getState().hasProjectWidePermission(project, permission),
 });
 
 // Back the subscription / environment reads in shared `@/utils` helpers with
