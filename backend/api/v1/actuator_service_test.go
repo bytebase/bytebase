@@ -20,7 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func TestGetActuatorInfoAuthenticationBoundary(t *testing.T) {
+func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })
@@ -33,14 +33,15 @@ func TestGetActuatorInfoAuthenticationBoundary(t *testing.T) {
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)
-	service := NewActuatorService(stores, &config.Profile{
+	profile := &config.Profile{
 		Version:     "9.9.9",
 		GitCommit:   "sensitive-commit",
 		ExternalURL: "https://bytebase.example.com",
-		IsDocker:    true,
-	}, nil, licenseService, nil)
+	}
+	actuatorService := NewActuatorService(stores, profile, nil, licenseService, nil)
+	authService := NewAuthService(stores, "test-secret", licenseService, profile, nil)
 
-	publicResponse, err := service.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	publicResponse, err := authService.GetAuthenticationInfo(ctx, connect.NewRequest(&v1pb.GetAuthenticationInfoRequest{}))
 	require.NoError(t, err)
 
 	var populated []string
@@ -49,17 +50,15 @@ func TestGetActuatorInfoAuthenticationBoundary(t *testing.T) {
 		return true
 	})
 	slices.Sort(populated)
-	require.Equal(t, []string{"admin_setup_required", "restriction"}, populated)
+	require.Equal(t, []string{"restriction"}, populated)
+	require.Empty(t, publicResponse.Msg.Workspace)
 
-	adminSetupField := publicResponse.Msg.ProtoReflect().Descriptor().Fields().ByName("admin_setup_required")
-	require.NotNil(t, adminSetupField)
-	require.True(t, publicResponse.Msg.ProtoReflect().Get(adminSetupField).Bool())
-
-	service.profile.SaaS = true
-	saasPublicResponse, err := service.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	profile.SaaS = true
+	saasPublicResponse, err := authService.GetAuthenticationInfo(ctx, connect.NewRequest(&v1pb.GetAuthenticationInfoRequest{}))
 	require.NoError(t, err)
-	require.True(t, saasPublicResponse.Msg.Saas)
-	service.profile.SaaS = false
+	require.True(t, saasPublicResponse.Msg.Restriction.DisallowSignup)
+	require.True(t, saasPublicResponse.Msg.Restriction.DisallowPasswordSignin)
+	profile.SaaS = false
 
 	const workspaceID = "actuator-auth-boundary"
 	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
@@ -68,7 +67,7 @@ func TestGetActuatorInfoAuthenticationBoundary(t *testing.T) {
 	}, "admin@example.com")
 	require.NoError(t, err)
 
-	publicResponse, err = service.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	publicResponse, err = authService.GetAuthenticationInfo(ctx, connect.NewRequest(&v1pb.GetAuthenticationInfoRequest{}))
 	require.NoError(t, err)
 	populated = nil
 	publicResponse.Msg.ProtoReflect().Range(func(field protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
@@ -76,8 +75,11 @@ func TestGetActuatorInfoAuthenticationBoundary(t *testing.T) {
 		return true
 	})
 	slices.Sort(populated)
-	require.Equal(t, []string{"admin_setup_required", "restriction", "workspace"}, populated)
+	require.Equal(t, []string{"restriction", "workspace"}, populated)
 	require.Equal(t, common.FormatWorkspace(workspaceID), publicResponse.Msg.Workspace)
+
+	_, err = actuatorService.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 
 	user, err := stores.CreateUser(ctx, &store.UserMessage{
 		Email:        "admin@example.com",
@@ -89,22 +91,10 @@ func TestGetActuatorInfoAuthenticationBoundary(t *testing.T) {
 	authenticatedCtx := context.WithValue(ctx, common.UserContextKey, user)
 	authenticatedCtx = context.WithValue(authenticatedCtx, common.WorkspaceIDContextKey, workspaceID)
 
-	privateResponse, err := service.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	privateResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
 	require.NoError(t, err)
 	require.Equal(t, "9.9.9", privateResponse.Msg.Version)
 	require.Equal(t, "sensitive-commit", privateResponse.Msg.GitCommit)
 	require.Equal(t, common.FormatWorkspace(workspaceID), privateResponse.Msg.Workspace)
 	require.NotEmpty(t, privateResponse.Msg.DefaultProject)
-
-	const otherWorkspaceID = "other-actuator-workspace"
-	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
-		ResourceID: otherWorkspaceID,
-		Payload:    &storepb.WorkspacePayload{Title: "Other actuator workspace"},
-	}, "other@example.com")
-	require.NoError(t, err)
-
-	_, err = service.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{
-		Name: common.FormatWorkspace(otherWorkspaceID),
-	}))
-	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
 }

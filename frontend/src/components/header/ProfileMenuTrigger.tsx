@@ -74,7 +74,7 @@ export function ProfileMenuTrigger({
   const quickStartEnabled =
     !hideQuickStart &&
     Boolean(serverInfo?.enableSample) &&
-    (serverInfo?.activatedUserCount ?? 0) <= 1;
+    (serverInfo?.userCountInIam ?? 0) <= 1;
   const customLogo = workspace?.logo ?? "";
   const [open, setOpen] = useState(false);
 

@@ -198,7 +198,7 @@ export function rootGuard({
 
   if (
     toName === AUTH_SIGNUP_MODULE &&
-    store.serverInfo?.restriction?.disallowSignup
+    store.authenticationInfo?.restriction?.disallowSignup
   ) {
     return redirect(
       resolvePath(AUTH_SIGNIN_MODULE, {

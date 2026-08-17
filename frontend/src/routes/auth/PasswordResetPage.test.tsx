@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   appStoreState: {
-    serverInfo: {
+    authenticationInfo: {
       restriction: {
         passwordRestriction: undefined as unknown,
         disallowPasswordSignin: false,
@@ -48,7 +48,7 @@ vi.mock("@/stores/app", () => {
   const getState = () => ({
     ...mocks.appStoreState,
     updateUser: mocks.updateUser,
-    loadServerInfo: vi.fn().mockResolvedValue(undefined),
+    loadAuthenticationInfo: vi.fn().mockResolvedValue(undefined),
     login: mocks.login,
     setRequireResetPassword: mocks.setRequireResetPassword,
     workspaceResourceName: () => "",
@@ -165,12 +165,8 @@ const setInputValue = (input: HTMLInputElement, value: string) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.currentRoute.value.query = {};
-  mocks.appStoreState.serverInfo = {
-    restriction: {
-      passwordRestriction: undefined,
-      disallowPasswordSignin: false,
-    },
-  };
+  mocks.appStoreState.authenticationInfo.restriction.disallowPasswordSignin =
+    false;
   mocks.appStoreState.requireResetPassword = () => true;
   mocks.useAuthStore.mockReturnValue({
     setRequireResetPassword: vi.fn(),
@@ -190,12 +186,8 @@ describe("PasswordResetPage", () => {
 
   test("code mode: redirects to signin when password signin is disallowed", () => {
     mocks.currentRoute.value.query = { email: "u@e.com" };
-    mocks.appStoreState.serverInfo = {
-      restriction: {
-        passwordRestriction: undefined,
-        disallowPasswordSignin: true,
-      },
-    };
+    mocks.appStoreState.authenticationInfo.restriction.disallowPasswordSignin =
+      true;
     const { render, unmount } = renderIntoContainer(<PasswordResetPage />);
     render();
     expect(mocks.routerReplace).toHaveBeenCalledWith({

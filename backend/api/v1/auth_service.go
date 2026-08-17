@@ -136,6 +136,41 @@ func NewAuthService(store *store.Store, secret string, licenseService *enterpris
 	}
 }
 
+// GetAuthenticationInfo returns the public information needed by authentication flows.
+func (s *AuthService) GetAuthenticationInfo(
+	ctx context.Context,
+	req *connect.Request[v1pb.GetAuthenticationInfoRequest],
+) (*connect.Response[v1pb.AuthenticationInfo], error) {
+	workspaceID := ""
+	if req.Msg.Workspace != "" {
+		id, err := common.GetWorkspaceID(req.Msg.Workspace)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		workspaceID = id
+	}
+	if workspaceID == "" && !s.profile.SaaS {
+		id, err := s.store.GetWorkspaceID(ctx)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		workspaceID = id
+	}
+
+	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	info := &v1pb.AuthenticationInfo{
+		Restriction: restriction,
+	}
+	if workspaceID != "" {
+		info.Workspace = common.FormatWorkspace(workspaceID)
+	}
+	return connect.NewResponse(info), nil
+}
+
 // Login is the auth login method including SSO.
 func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.LoginRequest]) (*connect.Response[v1pb.LoginResponse], error) {
 	request := req.Msg

@@ -330,7 +330,7 @@ func (ctl *controller) waitForHealthz(ctx context.Context) error {
 	for {
 		select {
 		case <-ticker.C:
-			_, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, &connect.Request[v1pb.GetActuatorInfoRequest]{})
+			_, err := ctl.authServiceClient.GetAuthenticationInfo(ctx, &connect.Request[v1pb.GetAuthenticationInfoRequest]{})
 			if err != nil && status.Code(err) == codes.Unavailable {
 				continue
 			}

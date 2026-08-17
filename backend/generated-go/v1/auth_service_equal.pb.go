@@ -3,6 +3,60 @@
 
 package v1
 
+func (x *GetAuthenticationInfoRequest) Equal(y *GetAuthenticationInfoRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Workspace != y.Workspace {
+		return false
+	}
+	return true
+}
+
+func (x *AuthenticationInfo) Equal(y *AuthenticationInfo) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Workspace != y.Workspace {
+		return false
+	}
+	if !x.Restriction.Equal(y.Restriction) {
+		return false
+	}
+	return true
+}
+
+func (x *Restriction) Equal(y *Restriction) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.DisallowSignup != y.DisallowSignup {
+		return false
+	}
+	if x.DisallowPasswordSignin != y.DisallowPasswordSignin {
+		return false
+	}
+	if !x.PasswordRestriction.Equal(y.PasswordRestriction) {
+		return false
+	}
+	if x.AllowEmailCodeSignin != y.AllowEmailCodeSignin {
+		return false
+	}
+	if x.PasswordResetEnabled != y.PasswordResetEnabled {
+		return false
+	}
+	return true
+}
+
 func (x *LoginRequest) Equal(y *LoginRequest) bool {
 	if x == y {
 		return true

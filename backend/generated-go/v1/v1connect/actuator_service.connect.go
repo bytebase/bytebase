@@ -45,11 +45,8 @@ const (
 // ActuatorServiceClient is a client for the bytebase.v1.ActuatorService service.
 type ActuatorServiceClient interface {
 	// Gets system information and health status of the Bytebase instance.
-	// Without credentials, the response contains only the workspace name, SaaS
-	// mode, authentication restrictions, and whether initial administrator setup is required.
-	// For authenticated calls, when `name` is provided (or the workspace-scoped
-	// binding is used), the response includes workspace-scoped fields for that workspace.
-	// Permissions required: None
+	// The workspace is resolved from the authenticated session.
+	// Permissions required: None (authentication required)
 	GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
 	// Sets up sample data for demonstration and testing purposes.
 	// Permissions required: bb.projects.create
@@ -101,11 +98,8 @@ func (c *actuatorServiceClient) SetupSample(ctx context.Context, req *connect.Re
 // ActuatorServiceHandler is an implementation of the bytebase.v1.ActuatorService service.
 type ActuatorServiceHandler interface {
 	// Gets system information and health status of the Bytebase instance.
-	// Without credentials, the response contains only the workspace name, SaaS
-	// mode, authentication restrictions, and whether initial administrator setup is required.
-	// For authenticated calls, when `name` is provided (or the workspace-scoped
-	// binding is used), the response includes workspace-scoped fields for that workspace.
-	// Permissions required: None
+	// The workspace is resolved from the authenticated session.
+	// Permissions required: None (authentication required)
 	GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
 	// Sets up sample data for demonstration and testing purposes.
 	// Permissions required: bb.projects.create

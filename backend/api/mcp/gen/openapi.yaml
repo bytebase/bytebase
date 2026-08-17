@@ -262,11 +262,8 @@ paths:
       summary: GetActuatorInfo
       description: |-
         Gets system information and health status of the Bytebase instance.
-         Without credentials, the response contains only the workspace name, SaaS
-         mode, authentication restrictions, and whether initial administrator setup is required.
-         For authenticated calls, when `name` is provided (or the workspace-scoped
-         binding is used), the response includes workspace-scoped fields for that workspace.
-         Permissions required: None
+         The workspace is resolved from the authenticated session.
+         Permissions required: None (authentication required)
       operationId: bytebase.v1.ActuatorService.GetActuatorInfo
       parameters:
         - name: Connect-Protocol-Version
@@ -450,6 +447,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ExchangeTokenResponse'
+  /bytebase.v1.AuthService/GetAuthenticationInfo:
+    post:
+      tags:
+        - bytebase.v1.AuthService
+      summary: GetAuthenticationInfo
+      description: |-
+        Gets the information needed to render authentication flows.
+         Permissions required: None
+      operationId: bytebase.v1.AuthService.GetAuthenticationInfo
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetAuthenticationInfoRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.AuthenticationInfo'
   /bytebase.v1.AuthService/Login:
     post:
       tags:
@@ -8231,22 +8266,10 @@ components:
           type: string
           title: git_commit
           description: The git commit hash of the build.
-        readonly:
-          type: boolean
-          title: readonly
-          description: Whether the Bytebase instance is running in read-only mode.
         saas:
           type: boolean
           title: saas
           description: Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.
-        host:
-          type: string
-          title: host
-          description: The host address of the Bytebase instance.
-        port:
-          type: string
-          title: port
-          description: The port number of the Bytebase instance.
         externalUrl:
           type: string
           title: external_url
@@ -8267,15 +8290,6 @@ components:
             type: string
           title: unlicensed_features
           description: List of features that are not licensed.
-        docker:
-          type: boolean
-          title: docker
-          description: Whether the Bytebase instance is running in Docker.
-        activatedUserCount:
-          type: integer
-          title: activated_user_count
-          format: int32
-          description: The number of activated users.
         activatedInstanceCount:
           type: integer
           title: activated_instance_count
@@ -8299,9 +8313,6 @@ components:
           title: replica_count
           format: int32
           description: The number of active replicas (servers sharing the same database).
-        restriction:
-          title: restriction
-          $ref: '#/components/schemas/bytebase.v1.Restriction'
         defaultProject:
           type: string
           title: default_project
@@ -8318,10 +8329,6 @@ components:
           title: active_vcs_user_count
           format: int32
           description: The number of active VCS users seen in the active window.
-        adminSetupRequired:
-          type: boolean
-          title: admin_setup_required
-          description: Whether the self-hosted instance needs its initial workspace administrator.
       title: ActuatorInfo
       additionalProperties: false
       description: |-
@@ -8915,6 +8922,21 @@ components:
         - IAM
         - CUSTOM
       description: Authorization method for RPC calls.
+    bytebase.v1.AuthenticationInfo:
+      type: object
+      properties:
+        workspace:
+          type: string
+          title: workspace
+          description: |-
+            The workspace used for authentication, when one can be resolved.
+             Format: workspaces/{workspace}
+        restriction:
+          title: restriction
+          description: The effective authentication restrictions.
+          $ref: '#/components/schemas/bytebase.v1.Restriction'
+      title: AuthenticationInfo
+      additionalProperties: false
     bytebase.v1.BatchCancelTaskRunsRequest:
       type: object
       properties:
@@ -12027,18 +12049,22 @@ components:
       additionalProperties: false
     bytebase.v1.GetActuatorInfoRequest:
       type: object
-      properties:
-        name:
-          type: string
-          title: name
-          description: |-
-            Optional. The workspace to scope the response to.
-             Format: workspaces/{workspace}
-             When unset, the workspace is resolved from the request context (self-hosted)
-             or no workspace-scoped fields are returned (SaaS).
       title: GetActuatorInfoRequest
       additionalProperties: false
       description: Request message for getting actuator information.
+    bytebase.v1.GetAuthenticationInfoRequest:
+      type: object
+      properties:
+        workspace:
+          type: string
+          title: workspace
+          description: |-
+            Optional. The workspace whose authentication policy should be returned.
+             Format: workspaces/{workspace}
+             When unset, self-hosted resolves the singleton workspace and SaaS uses
+             the deployment-level defaults.
+      title: GetAuthenticationInfoRequest
+      additionalProperties: false
     bytebase.v1.GetChangelogRequest:
       type: object
       properties:
@@ -22759,6 +22785,12 @@ security: []
 tags:
   - name: bytebase.v1.AccessGrantService
     description: AccessGrantService manages temporary access grants within projects.
+  - name: bytebase.v1.ActuatorService
+    description: ActuatorService manages system health and operational information.
+  - name: bytebase.v1.AIService
+    description: AIService provides AI chat capabilities for the page agent.
+  - name: bytebase.v1.AuditLogService
+    description: AuditLogService manages audit logs for system activities and API calls.
   - name: bytebase.v1.RolloutService
     description: RolloutService manages the execution of deployment plans.
   - name: bytebase.v1.QueryHistoryService
@@ -22771,12 +22803,6 @@ tags:
     description: IssueService manages issues for tracking database changes and tasks.
   - name: bytebase.v1.SettingService
     description: SettingService manages workspace-level settings and configurations.
-  - name: bytebase.v1.ActuatorService
-    description: ActuatorService manages system health and operational information.
-  - name: bytebase.v1.AIService
-    description: AIService provides AI chat capabilities for the page agent.
-  - name: bytebase.v1.AuditLogService
-    description: AuditLogService manages audit logs for system activities and API calls.
   - name: bytebase.v1.UserService
     description: UserService manages user accounts and authentication.
   - name: bytebase.v1.AuthService

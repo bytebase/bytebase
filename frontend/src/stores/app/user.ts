@@ -47,23 +47,6 @@ export const buildUserFilter = (params: UserFilter) => {
 };
 
 export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
-  const adjustActivatedUserCount = (delta: number) => {
-    set((state) => {
-      if (!state.serverInfo) {
-        return {};
-      }
-      return {
-        serverInfo: {
-          ...state.serverInfo,
-          activatedUserCount: Math.max(
-            0,
-            state.serverInfo.activatedUserCount + delta
-          ),
-        },
-      };
-    });
-  };
-
   return {
     usersByName: { [allUsersUser().name]: allUsersUser() },
     userRequests: {},
@@ -195,7 +178,9 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
       set((state) => ({
         usersByName: { ...state.usersByName, [response.name]: response },
       }));
-      adjustActivatedUserCount(1);
+      await get()
+        .refreshServerInfo()
+        .catch(() => undefined);
       return response;
     },
 
@@ -277,7 +262,9 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
           },
         };
       });
-      adjustActivatedUserCount(-1);
+      await get()
+        .refreshServerInfo()
+        .catch(() => undefined);
     },
 
     restoreUser: async (name) => {
@@ -289,7 +276,9 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
       set((state) => ({
         usersByName: { ...state.usersByName, [response.name]: response },
       }));
-      adjustActivatedUserCount(1);
+      await get()
+        .refreshServerInfo()
+        .catch(() => undefined);
       return response;
     },
   };

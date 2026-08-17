@@ -16,8 +16,10 @@ const mocks = vi.hoisted(() => {
     disallowPasswordSignin: false,
   };
   const appStoreState = {
-    serverInfo: { restriction } as { restriction: typeof restriction },
-    loadServerInfo: vi.fn().mockResolvedValue(undefined),
+    authenticationInfo: { restriction } as {
+      restriction: typeof restriction;
+    },
+    loadAuthenticationInfo: vi.fn().mockResolvedValue(undefined),
   };
   return {
     restriction,

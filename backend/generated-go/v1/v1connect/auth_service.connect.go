@@ -34,6 +34,9 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// AuthServiceGetAuthenticationInfoProcedure is the fully-qualified name of the AuthService's
+	// GetAuthenticationInfo RPC.
+	AuthServiceGetAuthenticationInfoProcedure = "/bytebase.v1.AuthService/GetAuthenticationInfo"
 	// AuthServiceLoginProcedure is the fully-qualified name of the AuthService's Login RPC.
 	AuthServiceLoginProcedure = "/bytebase.v1.AuthService/Login"
 	// AuthServiceLogoutProcedure is the fully-qualified name of the AuthService's Logout RPC.
@@ -61,6 +64,9 @@ const (
 
 // AuthServiceClient is a client for the bytebase.v1.AuthService service.
 type AuthServiceClient interface {
+	// Gets the information needed to render authentication flows.
+	// Permissions required: None
+	GetAuthenticationInfo(context.Context, *connect.Request[v1.GetAuthenticationInfoRequest]) (*connect.Response[v1.AuthenticationInfo], error)
 	// Authenticates a user and returns access tokens.
 	// Permissions required: None
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
@@ -106,6 +112,12 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 	baseURL = strings.TrimRight(baseURL, "/")
 	authServiceMethods := v1.File_v1_auth_service_proto.Services().ByName("AuthService").Methods()
 	return &authServiceClient{
+		getAuthenticationInfo: connect.NewClient[v1.GetAuthenticationInfoRequest, v1.AuthenticationInfo](
+			httpClient,
+			baseURL+AuthServiceGetAuthenticationInfoProcedure,
+			connect.WithSchema(authServiceMethods.ByName("GetAuthenticationInfo")),
+			connect.WithClientOptions(opts...),
+		),
 		login: connect.NewClient[v1.LoginRequest, v1.LoginResponse](
 			httpClient,
 			baseURL+AuthServiceLoginProcedure,
@@ -165,15 +177,21 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 
 // authServiceClient implements AuthServiceClient.
 type authServiceClient struct {
-	login                *connect.Client[v1.LoginRequest, v1.LoginResponse]
-	logout               *connect.Client[v1.LogoutRequest, emptypb.Empty]
-	exchangeToken        *connect.Client[v1.ExchangeTokenRequest, v1.ExchangeTokenResponse]
-	signup               *connect.Client[v1.SignupRequest, v1.LoginResponse]
-	refresh              *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
-	switchWorkspace      *connect.Client[v1.SwitchWorkspaceRequest, v1.LoginResponse]
-	requestPasswordReset *connect.Client[v1.RequestPasswordResetRequest, emptypb.Empty]
-	resetPassword        *connect.Client[v1.ResetPasswordRequest, emptypb.Empty]
-	sendEmailLoginCode   *connect.Client[v1.SendEmailLoginCodeRequest, emptypb.Empty]
+	getAuthenticationInfo *connect.Client[v1.GetAuthenticationInfoRequest, v1.AuthenticationInfo]
+	login                 *connect.Client[v1.LoginRequest, v1.LoginResponse]
+	logout                *connect.Client[v1.LogoutRequest, emptypb.Empty]
+	exchangeToken         *connect.Client[v1.ExchangeTokenRequest, v1.ExchangeTokenResponse]
+	signup                *connect.Client[v1.SignupRequest, v1.LoginResponse]
+	refresh               *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
+	switchWorkspace       *connect.Client[v1.SwitchWorkspaceRequest, v1.LoginResponse]
+	requestPasswordReset  *connect.Client[v1.RequestPasswordResetRequest, emptypb.Empty]
+	resetPassword         *connect.Client[v1.ResetPasswordRequest, emptypb.Empty]
+	sendEmailLoginCode    *connect.Client[v1.SendEmailLoginCodeRequest, emptypb.Empty]
+}
+
+// GetAuthenticationInfo calls bytebase.v1.AuthService.GetAuthenticationInfo.
+func (c *authServiceClient) GetAuthenticationInfo(ctx context.Context, req *connect.Request[v1.GetAuthenticationInfoRequest]) (*connect.Response[v1.AuthenticationInfo], error) {
+	return c.getAuthenticationInfo.CallUnary(ctx, req)
 }
 
 // Login calls bytebase.v1.AuthService.Login.
@@ -223,6 +241,9 @@ func (c *authServiceClient) SendEmailLoginCode(ctx context.Context, req *connect
 
 // AuthServiceHandler is an implementation of the bytebase.v1.AuthService service.
 type AuthServiceHandler interface {
+	// Gets the information needed to render authentication flows.
+	// Permissions required: None
+	GetAuthenticationInfo(context.Context, *connect.Request[v1.GetAuthenticationInfoRequest]) (*connect.Response[v1.AuthenticationInfo], error)
 	// Authenticates a user and returns access tokens.
 	// Permissions required: None
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
@@ -264,6 +285,12 @@ type AuthServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	authServiceMethods := v1.File_v1_auth_service_proto.Services().ByName("AuthService").Methods()
+	authServiceGetAuthenticationInfoHandler := connect.NewUnaryHandler(
+		AuthServiceGetAuthenticationInfoProcedure,
+		svc.GetAuthenticationInfo,
+		connect.WithSchema(authServiceMethods.ByName("GetAuthenticationInfo")),
+		connect.WithHandlerOptions(opts...),
+	)
 	authServiceLoginHandler := connect.NewUnaryHandler(
 		AuthServiceLoginProcedure,
 		svc.Login,
@@ -320,6 +347,8 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 	)
 	return "/bytebase.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case AuthServiceGetAuthenticationInfoProcedure:
+			authServiceGetAuthenticationInfoHandler.ServeHTTP(w, r)
 		case AuthServiceLoginProcedure:
 			authServiceLoginHandler.ServeHTTP(w, r)
 		case AuthServiceLogoutProcedure:
@@ -346,6 +375,10 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 
 // UnimplementedAuthServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAuthServiceHandler struct{}
+
+func (UnimplementedAuthServiceHandler) GetAuthenticationInfo(context.Context, *connect.Request[v1.GetAuthenticationInfoRequest]) (*connect.Response[v1.AuthenticationInfo], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.GetAuthenticationInfo is not implemented"))
+}
 
 func (UnimplementedAuthServiceHandler) Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.Login is not implemented"))

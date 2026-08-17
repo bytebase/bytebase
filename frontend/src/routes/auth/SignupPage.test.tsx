@@ -8,12 +8,12 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  adminSetupRequired: false,
-  activeUserCount: 0,
+  workspace: "workspaces/default",
+  disallowSignup: false,
   currentRoute: {
     value: { query: {} as Record<string, string | undefined> },
   },
-  loadServerInfo: vi.fn(),
+  loadAuthenticationInfo: vi.fn(),
   replace: vi.fn(),
   resolve: vi.fn(() => ({ href: "/signin" })),
   signup: vi.fn(),
@@ -30,12 +30,11 @@ vi.mock("@/app/router", async (importOriginal) => ({
 
 vi.mock("@/stores/app", () => {
   const getState = () => ({
-    activeUserCount: () => mocks.activeUserCount,
-    loadServerInfo: mocks.loadServerInfo,
-    serverInfo: {
-      adminSetupRequired: mocks.adminSetupRequired,
+    loadAuthenticationInfo: mocks.loadAuthenticationInfo,
+    authenticationInfo: {
+      workspace: mocks.workspace,
       restriction: {
-        disallowSignup: false,
+        disallowSignup: mocks.disallowSignup,
       },
     },
     signup: mocks.signup,
@@ -92,8 +91,8 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.adminSetupRequired = false;
-  mocks.activeUserCount = 0;
+  mocks.workspace = "workspaces/default";
+  mocks.disallowSignup = false;
   ({ SignupPage } = await import("./SignupPage"));
 });
 
@@ -110,7 +109,7 @@ describe("SignupPage", () => {
   });
 
   test("centers the admin setup title", () => {
-    mocks.adminSetupRequired = true;
+    mocks.workspace = "";
 
     const { container, render, unmount } = renderIntoContainer(<SignupPage />);
     render();
@@ -120,6 +119,23 @@ describe("SignupPage", () => {
     expect(heading?.className).toContain("text-main");
     expect(heading?.querySelector("p")).toBeNull();
     expect(heading?.className).toContain("text-center");
+
+    unmount();
+  });
+
+  test("does not enter initial setup when signup is disallowed", () => {
+    mocks.workspace = "";
+    mocks.disallowSignup = true;
+
+    const { container, render, unmount } = renderIntoContainer(<SignupPage />);
+    render();
+
+    expect(container.querySelector("h2")?.textContent).toBe(
+      "auth.sign-up.title"
+    );
+    expect(container.textContent).not.toContain(
+      "auth.sign-up.accept-terms-and-policy"
+    );
 
     unmount();
   });

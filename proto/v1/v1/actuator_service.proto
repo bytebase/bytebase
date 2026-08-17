@@ -5,29 +5,20 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
-import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
-import "v1/setting_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 // ActuatorService manages system health and operational information.
 service ActuatorService {
   // Gets system information and health status of the Bytebase instance.
-  // Without credentials, the response contains only the workspace name, SaaS
-  // mode, authentication restrictions, and whether initial administrator setup is required.
-  // For authenticated calls, when `name` is provided (or the workspace-scoped
-  // binding is used), the response includes workspace-scoped fields for that workspace.
-  // Permissions required: None
+  // The workspace is resolved from the authenticated session.
+  // Permissions required: None (authentication required)
   rpc GetActuatorInfo(GetActuatorInfoRequest) returns (ActuatorInfo) {
-    option (google.api.http) = {
-      get: "/v1/actuator/info"
-      additional_bindings: {get: "/v1/{name=workspaces/*}/actuator/info"}
-    };
+    option (google.api.http) = {get: "/v1/actuator/info"};
     option (google.api.method_signature) = "";
-    option (bytebase.v1.allow_without_credential) = true;
   }
 
   // Sets up sample data for demonstration and testing purposes.
@@ -47,36 +38,12 @@ service ActuatorService {
 message SetupSampleRequest {}
 
 // Request message for getting actuator information.
-message GetActuatorInfoRequest {
-  // Optional. The workspace to scope the response to.
-  // Format: workspaces/{workspace}
-  // When unset, the workspace is resolved from the request context (self-hosted)
-  // or no workspace-scoped fields are returned (SaaS).
-  string name = 1 [(google.api.resource_reference) = {type: "bytebase.com/Workspace"}];
-}
-
-message Restriction {
-  // Whether self-service user signup is disabled.
-  bool disallow_signup = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Whether password sign-in is disabled for all end users.
-  bool disallow_password_signin = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Password complexity and restriction requirements.
-  WorkspaceProfileSetting.PasswordRestriction password_restriction = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Whether email + 6-digit code signin is enabled for this workspace.
-  bool allow_email_code_signin = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Whether password reset via email is available for this workspace.
-  // True when the workspace (or deployment) has an email setting configured.
-  bool password_reset_enabled = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
-}
+message GetActuatorInfoRequest {}
 
 // System information and configuration for the Bytebase instance.
 // Actuator concept is similar to the Spring Boot Actuator.
 message ActuatorInfo {
-  reserved 5, 9, 10, 12, 16, 17, 14;
+  reserved 3, 5 to 7, 9, 10, 12, 14, 16 to 19, 25;
 
   // The Bytebase server version.
   string version = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -84,17 +51,8 @@ message ActuatorInfo {
   // The git commit hash of the build.
   string git_commit = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Whether the Bytebase instance is running in read-only mode.
-  bool readonly = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   // Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.
   bool saas = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The host address of the Bytebase instance.
-  string host = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The port number of the Bytebase instance.
-  string port = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The external URL where users or webhook callbacks access Bytebase.
   string external_url = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -108,12 +66,6 @@ message ActuatorInfo {
 
   // List of features that are not licensed.
   repeated string unlicensed_features = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Whether the Bytebase instance is running in Docker.
-  bool docker = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The number of activated users.
-  int32 activated_user_count = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The number of activated database instances.
   int32 activated_instance_count = 20 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -130,8 +82,6 @@ message ActuatorInfo {
   // The number of active replicas (servers sharing the same database).
   int32 replica_count = 24 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  Restriction restriction = 25 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   // The default project for unassigned databases.
   // Format: projects/{id}
   string default_project = 26 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -141,7 +91,4 @@ message ActuatorInfo {
 
   // The number of active VCS users seen in the active window.
   int32 active_vcs_user_count = 28 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Whether the self-hosted instance needs its initial workspace administrator.
-  bool admin_setup_required = 29 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

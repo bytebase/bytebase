@@ -31,7 +31,7 @@ vi.mock("@/stores/app", () => ({
       getWorkspaceProfile: () => ({ requireMfa: session.requireMfa }),
       hasFeature: () => session.hasTwoFa,
       isSaaSMode: () => session.isSaaSMode,
-      serverInfo: {
+      authenticationInfo: {
         restriction: { disallowSignup: session.disallowSignup },
       },
       currentUser: session.currentUser,
