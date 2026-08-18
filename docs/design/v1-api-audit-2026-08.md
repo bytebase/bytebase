@@ -10,12 +10,12 @@ noted. Nothing here is patched yet. Fixed findings are removed and listed at the
 
 | | Problem | Severity |
 |---|---|---|
-| T9 | On Cloud, password guessing is unlimited — the lockout never fires | HIGH |
 | T10 | A stolen session can change your password and switch off your 2FA | HIGH |
 | T2 | Schema diff reads a second database without checking permission on it | HIGH |
 | T15 | Rotating a leaked cloud credential can silently do nothing | HIGH |
 | T13 | "Waiting for my approval" can show an empty page with a live Load More | HIGH |
 | T14 | Paging through issues across projects skips some and repeats others | HIGH |
+| T9 | On Cloud, 2FA codes can be guessed without limit, and no failed login is recorded | MED |
 | T18a | Test-environment rights can cancel a running production migration | MED |
 | T12 | Anonymous callers can enumerate emails, relay mail, and read your LDAP config | MED |
 | T16 | Four `BatchGet` RPCs behave four different ways when an item is missing | MED |
@@ -28,17 +28,33 @@ noted. Nothing here is patched yet. Fixed findings are removed and listed at the
 
 ## Getting in, and staying in
 
-### T9 · Password guessing is unlimited on Cloud — HIGH
+### T9 · On Cloud, 2FA codes can be guessed without limit — MED
 
-The 10-strikes lockout works by counting failed-login rows in the audit log. On Cloud the sign-in
-page doesn't send a workspace ID, and with no workspace the audit row is never written — so the
-counter reads zero forever and neither the password (10/10min) nor the MFA (5/5min) limit ever
-fires. There is no IP or global rate limiter anywhere in the stack, so this counter is the only
-brake on brute force.
+The password and MFA lockouts work by counting failed-login rows in the audit log. On Cloud the
+sign-in page doesn't send a workspace ID, and with no workspace the audit row is never written — so
+the counter reads zero forever and the limits never fire. `auth_service.go:180-189`
 
-Self-hosted is fixed and tested ([#21189](https://github.com/bytebase/bytebase/pull/21189)); this
-is the SaaS remainder. **Fix:** in SaaS, either reject a login that names no workspace, or resolve
-it from the request host *before* checking the password. `auth_service.go:180-189`
+**This does not expose passwords on Cloud.** SaaS forces `DisallowPasswordSignin = true`
+unconditionally (`auth_service.go:1624-1627`), and Cloud accounts are created with a random 32-byte
+bcrypt hash (`:2049-2056`), so there is no guessable password to find. Email-code login — the actual
+Cloud primary factor — carries its own attempt counter in the database, independent of the audit log:
+5 tries per code, code destroyed on exhaustion, 10-minute expiry, constant-time compare, hashed at
+rest (`verifyEmailCode`, `:1962-1984`). That path is properly protected.
+
+**What is exposed is the second factor.** `completeMFALogin` gates on `checkMFALockout`
+(`auth_service.go:1076`), which is the audit-row counter — inert on Cloud for the same reason. The
+MFA temp token is a stateless JWT valid for 5 minutes and is not single-use, so an attacker holding
+one can spend the whole window guessing TOTP codes (a 10⁶ space) or recovery codes with nothing
+counting the misses. Reaching that point requires already passing the email-code step, i.e. access to
+the victim's inbox — which is precisely the situation the second factor exists to survive.
+
+Secondary: **no failed-login record is written on Cloud at all**, so there is nothing to alert or
+investigate on.
+
+Self-hosted is fixed and tested ([#21189](https://github.com/bytebase/bytebase/pull/21189)) — there
+the finding was genuinely HIGH, because password signin is allowed. **Fix:** in SaaS, resolve the
+workspace from the request host before authenticating, or count MFA failures somewhere other than
+the audit log.
 
 ### T10 · A borrowed session becomes permanent account takeover — HIGH
 
@@ -233,14 +249,19 @@ constraints.
 
 ## What I'd do, in order
 
-1. **Close the SaaS half of T9.** It's the only brute-force control that exists, and it currently
-   doesn't run on the hosted product.
-2. **Fix the ACL class, not the instance.** Teach the interceptor to collect every annotated
+1. **Require re-authentication for password change and 2FA disable (T10).** It's the one finding
+   here that turns a temporary compromise into a permanent one, and it affects both deployments.
+2. **Fix the ACL class, not the instance (T2).** Teach the interceptor to collect every annotated
    resource field, then annotate `DiffSchema`. Otherwise the next second-resource field reopens it.
-3. **Fail closed on auth annotations.** Reject `AUTH_METHOD_UNSPECIFIED` at startup, and make a
-   `permission` on a CUSTOM RPC either enforced or a build error — 15 are decorative today.
-4. **Put api-linter in CI** at a freshly measured baseline. None of this was visible to `buf lint`'s
-   BASIC profile, which is why it accumulated.
+3. **Make credential rotation fail loudly (T15).** A security operation that returns 200 and does
+   nothing is worse than one that errors.
+4. **Close the SaaS half of T9.** Lower severity than it first looked — Cloud's primary factor is
+   protected independently — but the second factor currently has no attempt limit, and no failed
+   login is recorded anywhere.
+5. **Fail closed on auth annotations, and put api-linter in CI.** Reject
+   `AUTH_METHOD_UNSPECIFIED` at startup; make a `permission` on a CUSTOM RPC either enforced or a
+   build error, since 15 are decorative. None of Tier 5 was visible to `buf lint`'s BASIC profile,
+   which is why it accumulated.
 
 ---
 
