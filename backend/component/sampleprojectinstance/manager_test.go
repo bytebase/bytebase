@@ -66,6 +66,68 @@ func TestManagerCompensatesConcreteMetadataFailure(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestManagerCompensatesConcreteDiscoveryFailure(t *testing.T) {
+	ctx, db, s, target, manager := newConcreteManager(t)
+	const advisoryLockID = 4242
+	lockConn, err := db.Conn(ctx)
+	require.NoError(t, err)
+	defer lockConn.Close()
+	_, err = lockConn.ExecContext(ctx, "SELECT pg_advisory_lock($1)", advisoryLockID)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, fmt.Sprintf(`
+		CREATE FUNCTION block_sample_instance_insert() RETURNS trigger
+		LANGUAGE plpgsql AS $$
+		BEGIN
+			PERFORM pg_advisory_xact_lock(%d);
+			RETURN NEW;
+		END;
+		$$;
+		CREATE TRIGGER block_sample_instance_insert
+		BEFORE INSERT ON instance
+		FOR EACH ROW
+		WHEN (NEW.resource_id LIKE 'sample-%%')
+		EXECUTE FUNCTION block_sample_instance_insert();
+	`, advisoryLockID))
+	require.NoError(t, err)
+
+	prepareErr := make(chan error, 1)
+	go func() {
+		_, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+		prepareErr <- err
+	}()
+	require.Eventually(t, func() bool {
+		var waiting bool
+		err := db.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM pg_locks
+				WHERE locktype = 'advisory' AND objid = $1 AND NOT granted
+			)
+		`, advisoryLockID).Scan(&waiting)
+		return err == nil && waiting
+	}, 30*time.Second, 50*time.Millisecond)
+
+	names := sampleNames("workspace-a")
+	admin, err := target.connect(ctx, "", "", "")
+	require.NoError(t, err)
+	_, err = admin.Exec(ctx, fmt.Sprintf("ALTER ROLE %s NOLOGIN", quoteIdentifier(names.Role)))
+	require.NoError(t, err)
+	require.NoError(t, admin.Close(ctx))
+	_, err = lockConn.ExecContext(ctx, "SELECT pg_advisory_unlock($1)", advisoryLockID)
+	require.NoError(t, err)
+	require.Error(t, <-prepareErr)
+	require.Nil(t, mustGetSampleProjectInstance(ctx, t, s, "workspace-a"))
+	assertAllocationAbsent(ctx, t, target, names)
+
+	_, err = db.ExecContext(ctx, `
+		DROP TRIGGER block_sample_instance_insert ON instance;
+		DROP FUNCTION block_sample_instance_insert();
+	`)
+	require.NoError(t, err)
+	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.NoError(t, err)
+}
+
 func TestManagerPersistsAndRecoversConcreteProvisionOwnership(t *testing.T) {
 	ctx, _, s, target, manager := newConcreteManager(t)
 	names := sampleNames("workspace-a")
