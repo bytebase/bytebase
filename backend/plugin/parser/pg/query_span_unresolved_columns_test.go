@@ -42,8 +42,10 @@ func healthySchema() *storepb.DatabaseSchemaMetadata {
 	}
 }
 
-// degradedSchema is what a sync leaves behind when the connecting role lost its
-// privileges: the table is still listed, with no columns under it.
+// degradedSchema is what a pre-#20581 sync left behind when the connecting role
+// lost its privileges: the table is still listed, with no columns under it. A
+// current PostgreSQL sync reads pg_catalog and cannot produce this, but a
+// snapshot written by an older version and never re-synced still carries it.
 func degradedSchema() *storepb.DatabaseSchemaMetadata {
 	return &storepb.DatabaseSchemaMetadata{
 		Name: "db",
@@ -54,9 +56,10 @@ func degradedSchema() *storepb.DatabaseSchemaMetadata {
 	}
 }
 
-// degradedViewSchema is the same degradation reaching a view: the syncer fills
-// a view's column list from the same map as a table's, so a privilege-degraded
-// sync empties both.
+// degradedViewSchema is the same degradation reaching a view. The syncer fills
+// a view's column list from the same map as a table's, so a snapshot written
+// before #20581 — when the column query still ran through information_schema
+// and privileges could hide rows — empties both.
 func degradedViewSchema() *storepb.DatabaseSchemaMetadata {
 	return &storepb.DatabaseSchemaMetadata{
 		Name: "db",
@@ -166,6 +169,20 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 		require.NotNil(t, span.UnresolvedColumnsError,
 			"a view with no synced columns hides its base table's masking just as a table does")
 		require.Contains(t, span.UnresolvedColumnsError.Error(), "public.v")
+	})
+
+	t.Run("a foreign table stripped of its columns is unresolved", func(t *testing.T) {
+		metadata := &storepb.DatabaseSchemaMetadata{
+			Name: "db",
+			Schemas: []*storepb.SchemaMetadata{{
+				Name:           "public",
+				ExternalTables: []*storepb.ExternalTableMetadata{{Name: "ft"}},
+			}},
+		}
+		span := spanFor(t, "SELECT * FROM public.ft", metadata)
+		require.NotNil(t, span.UnresolvedColumnsError,
+			"foreign tables take their columns from the same sync map as tables and views")
+		require.Contains(t, span.UnresolvedColumnsError.Error(), "public.ft")
 	})
 
 	t.Run("materialized view without columns is not a degraded table", func(t *testing.T) {

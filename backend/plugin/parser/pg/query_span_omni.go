@@ -193,14 +193,18 @@ func findDollarQuotedBody(definition string) (tag string, bodyStart int, bodyEnd
 // SELECT * simply yields no results at all, which is indistinguishable from a
 // query that legitimately projects nothing.
 //
-// Tables and views are both checked: the syncer fills a view's column list
-// from the same map as a table's, so an empty one means the same thing.
-// Materialized views are excluded because their metadata carries no column
-// list at all, making an empty one uninformative.
+// Tables, views and foreign tables are all checked: the syncer fills each
+// column list from the same map, so an empty one means the same thing for
+// every one of them. Materialized views are excluded because their metadata
+// carries no column list at all, making an empty one uninformative.
 //
 // A relation the snapshot does not carry at all is not reported. Column
 // resolution drops it upstream, so it never reaches this set; that shape is
 // still unmasked and is tracked separately.
+//
+// On PostgreSQL a current sync cannot produce this state: #20581 moved the
+// column query to pg_catalog so privileges no longer hide columns. What
+// reaches it is a snapshot written before that fix and never re-synced.
 func (e *omniQuerySpanExtractor) findUnresolvedRelations(accesses base.SourceColumnSet) []base.ColumnResource {
 	seen := make(map[base.ColumnResource]bool, len(accesses))
 	var unresolved []base.ColumnResource
@@ -215,32 +219,39 @@ func (e *omniQuerySpanExtractor) findUnresolvedRelations(accesses base.SourceCol
 			continue
 		}
 		seen[relation] = true
-
-		meta, err := e.getDatabaseMetadata(relation.Database)
-		if err != nil || meta == nil {
-			// A database we cannot read is not evidence about this relation.
-			continue
-		}
-		schema := meta.GetSchemaMetadata(relation.Schema)
-		if schema == nil {
-			continue
-		}
-		if table := schema.GetTable(relation.Table); table != nil {
-			if len(table.GetProto().GetColumns()) == 0 {
-				unresolved = append(unresolved, relation)
-			}
-			continue
-		}
-		// A view carries a column list too, filled from the same map as a
-		// table's, so a view with none is degraded the same way. Reading a
-		// masked base table through one must not slip past.
-		if view := schema.GetView(relation.Table); view != nil {
-			if len(view.GetColumns()) == 0 {
-				unresolved = append(unresolved, relation)
-			}
+		if e.relationHasNoSyncedColumns(relation) {
+			unresolved = append(unresolved, relation)
 		}
 	}
 	return unresolved
+}
+
+// relationHasNoSyncedColumns reports whether the snapshot carries the relation
+// with an empty column list. It answers false for anything it cannot judge:
+// a database or schema it cannot read, and any object kind that does not carry
+// a column list of its own.
+func (e *omniQuerySpanExtractor) relationHasNoSyncedColumns(relation base.ColumnResource) bool {
+	meta, err := e.getDatabaseMetadata(relation.Database)
+	if err != nil || meta == nil {
+		// A database we cannot read is not evidence about this relation.
+		return false
+	}
+	schema := meta.GetSchemaMetadata(relation.Schema)
+	if schema == nil {
+		return false
+	}
+	// Tables, views and foreign tables all take their column list from the same
+	// map in the syncer, so an empty one means the same thing for each.
+	if table := schema.GetTable(relation.Table); table != nil {
+		return len(table.GetProto().GetColumns()) == 0
+	}
+	if view := schema.GetView(relation.Table); view != nil {
+		return len(view.GetColumns()) == 0
+	}
+	if external := schema.GetExternalTable(relation.Table); external != nil {
+		return len(external.GetProto().GetColumns()) == 0
+	}
+	return false
 }
 
 // unresolvedColumnsError builds the span signal for accesses whose columns the
