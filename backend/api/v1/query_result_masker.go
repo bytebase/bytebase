@@ -69,13 +69,15 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		// here means a fresh sync still could not describe the relation.
 		//
 		// A table that legitimately has no columns (PostgreSQL allows
-		// CREATE TABLE t()) is stored exactly like a degraded one, so it is
-		// refused too. The snapshot cannot tell the two apart, and refusing a
-		// relation that can hold no data is the cheaper error than returning an
-		// unmaskable one.
-		if results[i].Error == "" && spans[i].UnresolvedColumnsError != nil &&
-			common.EngineSupportMasking(instance.Metadata.GetEngine()) {
-			return errors.Errorf("masking error: %v; sync the database to restore it", spans[i].UnresolvedColumnsError)
+		// CREATE TABLE t()) is stored exactly like a degraded one and is refused
+		// too. Such a table still holds rows and still conveys cardinality
+		// through count(*), joins and existence tests, so this is a real refusal
+		// rather than a free one — but the snapshot cannot tell the two apart,
+		// and refusing is the safe side of that ambiguity.
+		if results[i].Error == "" && maskingBlockedByUnresolvedColumns(spans[i], instance) {
+			return errors.Errorf(
+				"masking cannot be applied: %v; the schema was re-synced and still reports none, so the query was not returned",
+				spans[i].UnresolvedColumnsError)
 		}
 		// Skip masking for error result, but redact the error message if the
 		// statement touches masked columns — database errors can contain
@@ -97,6 +99,22 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 	}
 
 	return nil
+}
+
+// maskingBlockedByUnresolvedColumns reports whether masking cannot be evaluated
+// for this span because the stored snapshot does not describe a relation the
+// query reads.
+//
+// Both the re-sync trigger in queryRetry and the refusal above key on this one
+// predicate. They were written separately and drifted apart twice, so this is
+// deliberately the only definition: a re-sync that fires where the refusal will
+// not is wasted work on the request path, and a refusal that fires where the
+// re-sync did not never gives a stale snapshot its chance to recover.
+func maskingBlockedByUnresolvedColumns(span *parserbase.QuerySpan, instance *store.InstanceMessage) bool {
+	if span == nil || span.UnresolvedColumnsError == nil || instance == nil {
+		return false
+	}
+	return common.EngineSupportMasking(instance.Metadata.GetEngine())
 }
 
 // spanTouchesMaskedColumns checks whether any column referenced anywhere in
