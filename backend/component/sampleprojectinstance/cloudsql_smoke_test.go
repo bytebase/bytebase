@@ -60,6 +60,13 @@ func TestCloudSQLSampleProjectInstanceSmoke(t *testing.T) {
 	if err := session.Ping(ctx); err != nil {
 		t.Fatal("cloud SQL sample Project Instance role is unavailable")
 	}
+	cloudSQLAdminConfig := sampleConfig.Copy()
+	cloudSQLAdminConfig.Database = "cloudsqladmin"
+	cloudSQLAdminSession, err := pgx.ConnectConfig(ctx, cloudSQLAdminConfig)
+	if err == nil {
+		cloudSQLAdminSession.Close(context.Background())
+		t.Fatal("cloud SQL sample Project Instance role can connect to cloudsqladmin")
+	}
 
 	if err := target.Remove(ctx, allocation); err != nil {
 		t.Fatal("cloud SQL sample Project Instance cleanup failed")

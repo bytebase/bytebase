@@ -161,6 +161,9 @@ func (t *Target) Validate(ctx context.Context) error {
 			if allowConnections {
 				return staticTargetError("sample project instance target requires template0 to deny connections")
 			}
+		case "cloudsqladmin":
+			// Cloud SQL reserves this exact database for its administration
+			// service. It is not a tenant-accessible sample database.
 		default:
 			if allowConnections && publicAccess {
 				return staticTargetError("sample project instance target has a connectable database with PUBLIC access")

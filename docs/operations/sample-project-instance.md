@@ -9,7 +9,8 @@ Set `SAMPLE_PROJECT_INSTANCE_PG_URL` on every SaaS replica to the same direct Po
 - Supply the password in the URL. File indirection and hot credential rotation are not supported for this setting.
 - Keep the value out of source control, shell history, diagnostic dumps, and application logs. Use the deployment secret mechanism and rotate by replacing the deployment configuration uniformly across replicas.
 - The configured control-plane role requires `CREATEDB`, `CREATEROLE`, and membership in `pg_signal_backend`.
-- Maintain the isolation baseline: revoke `PUBLIC` access from `postgres` and `template1`, deny connections to `template0`, and do not leave any connectable database with `PUBLIC` access.
+- Maintain the isolation baseline: revoke `PUBLIC` access from `postgres` and `template1`, deny connections to `template0`, and do not leave any connectable database with `PUBLIC` access except Cloud SQL's exact provider-managed `cloudsqladmin` database.
+- Bytebase must not modify `cloudsqladmin`: Cloud SQL documents its corresponding system user as non-modifiable and excludes the database from `pg_dumpall` exports because customer tooling cannot access it. All customer-managed databases remain hardened. See [Cloud SQL system users](https://cloud.google.com/sql/docs/postgres/users) and [Cloud SQL dump exports](https://cloud.google.com/sql/docs/postgres/import-export/import-export-dmp).
 
 An absent or invalid target configuration must not block server startup. Preparation is unavailable until configuration and target validation succeed. Startup and hourly cleanup still report structured, redacted errors for outstanding lifecycle records.
 
