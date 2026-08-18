@@ -18,6 +18,20 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+func TestFailureKindOf(t *testing.T) {
+	require.Equal(t, FailureUnknown, FailureKindOf(errors.New("unexpected")))
+	require.Equal(t, FailureFailedPrecondition, FailureKindOf(newFailure(FailureFailedPrecondition, errors.New("invalid target"))))
+	require.Equal(t, FailureUnavailable, FailureKindOf(errors.Join(errors.New("wrapped"), newFailure(FailureUnavailable, errors.New("offline")))))
+	require.Equal(t, FailureDeadlineExceeded, FailureKindOf(newFailure(FailureDeadlineExceeded, context.DeadlineExceeded)))
+}
+
+func TestMapTargetErrorUsesManagerFailureVocabulary(t *testing.T) {
+	require.Equal(t, FailureFailedPrecondition, FailureKindOf(mapTargetError(newTargetFailure(targetFailureStatic, errors.New("invalid target")))))
+	require.Equal(t, FailureUnavailable, FailureKindOf(mapTargetError(newTargetFailure(targetFailureUnavailable, errors.New("offline")))))
+	require.Equal(t, FailureDeadlineExceeded, FailureKindOf(mapTargetError(context.DeadlineExceeded)))
+	require.Equal(t, FailureUnknown, FailureKindOf(mapTargetError(newTargetFailure(targetFailureInvariant, errors.New("collision")))))
+}
+
 func TestManagerPrepareCreatesActivatedSampleProjectInstance(t *testing.T) {
 	ctx, _, s := newManagerStore(t)
 	target := &fakeTarget{}
@@ -30,12 +44,12 @@ func TestManagerPrepareCreatesActivatedSampleProjectInstance(t *testing.T) {
 		Random: bytes.NewReader(bytes.Repeat([]byte{0}, 48)),
 	})
 
-	instance, err := manager.Prepare(ctx, PrepareRequest{
+	result, err := manager.Prepare(ctx, PrepareRequest{
 		WorkspaceID: "workspace-a",
 		ProjectID:   "project-a",
 	})
 	require.NoError(t, err)
-	require.Equal(t, "sample-00000000000000000000000000000000", instance.ResourceID)
+	require.Equal(t, "sample-00000000000000000000000000000000", result.Instance.ResourceID)
 	require.Equal(t, 1, target.validateCalls)
 	require.Len(t, target.provisions, 1)
 	require.Equal(t, names.Database, target.provisions[0].Database)
@@ -59,7 +73,7 @@ func TestManagerPrepareReturnsSameProjectAllocationBeforeTargetValidation(t *tes
 	ctx, _, s := newManagerStore(t)
 	now := time.Date(2026, time.August, 17, 9, 0, 0, 0, time.UTC)
 	seedReservation(ctx, t, s, "workspace-a", "project-a", now)
-	target := &fakeTarget{validateErr: NewTargetError(TargetErrorUnavailable, errors.New("offline"))}
+	target := &fakeTarget{validateErr: newTargetFailure(targetFailureUnavailable, errors.New("offline"))}
 	metadata := &fakeMetadata{
 		state: MetadataState{
 			ProjectActive:   true,
@@ -76,13 +90,16 @@ func TestManagerPrepareReturnsSameProjectAllocationBeforeTargetValidation(t *tes
 		Clock: func() time.Time { return now },
 	})
 
-	instance, err := manager.Prepare(ctx, PrepareRequest{
+	result, err := manager.Prepare(ctx, PrepareRequest{
 		WorkspaceID: "workspace-a",
 		ProjectID:   "project-a",
-		CanCreate:   func(context.Context) error { canCreateCalls++; return nil },
+		CheckCreatePolicy: func(context.Context) (CreatePolicyResult, error) {
+			canCreateCalls++
+			return CreatePolicyResult{}, nil
+		},
 	})
 	require.NoError(t, err)
-	require.Equal(t, metadata.state.Instance, instance)
+	require.Equal(t, metadata.state.Instance, result.Instance)
 	require.Zero(t, target.validateCalls)
 	require.Zero(t, canCreateCalls)
 }
@@ -94,14 +111,13 @@ func TestManagerPrepareRejectsConsumedOrCrossProjectAllocation(t *testing.T) {
 	manager := NewManager(s, &fakeTarget{}, &fakeMetadata{}, &fakeSyncer{}, ManagerOptions{Clock: func() time.Time { return now }})
 
 	_, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-b"})
-	require.ErrorIs(t, err, ErrFailedPrecondition)
-	require.Equal(t, ErrorKindFailedPrecondition, ErrorKindOf(err))
+	require.Equal(t, FailureFailedPrecondition, FailureKindOf(err))
 
 	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
 		return tx.MarkDeleted(ctx, now)
 	}))
 	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
-	require.ErrorIs(t, err, ErrFailedPrecondition)
+	require.Equal(t, FailureFailedPrecondition, FailureKindOf(err))
 }
 
 func TestManagerPrepareCompensatesAndDeletesFailedReservation(t *testing.T) {
@@ -156,8 +172,8 @@ func TestManagerPrepareDiscardsReservationForCollisionValidationAndLimitFailures
 		name      string
 		target    *fakeTarget
 		metadata  *fakeMetadata
-		canCreate func(context.Context) error
-		kind      ErrorKind
+		canCreate func(context.Context) (CreatePolicyResult, error)
+		kind      FailureKind
 	}{
 		{
 			name:   "deterministic metadata collision",
@@ -165,30 +181,35 @@ func TestManagerPrepareDiscardsReservationForCollisionValidationAndLimitFailures
 			metadata: &fakeMetadata{state: MetadataState{
 				Instance: &store.InstanceMessage{ResourceID: testInstanceID("workspace-a")},
 			}},
-			kind: ErrorKindInternal,
+			kind: FailureUnknown,
 		},
 		{
 			name:     "target validation",
-			target:   &fakeTarget{validateErr: NewTargetError(TargetErrorStatic, errors.New("invalid target"))},
+			target:   &fakeTarget{validateErr: newTargetFailure(targetFailureStatic, errors.New("invalid target"))},
 			metadata: &fakeMetadata{},
-			kind:     ErrorKindFailedPrecondition,
+			kind:     FailureFailedPrecondition,
 		},
 		{
-			name:      "instance limit",
-			target:    &fakeTarget{},
-			metadata:  &fakeMetadata{},
-			canCreate: func(context.Context) error { return errors.New("limit reached") },
-			kind:      "",
+			name:     "instance limit",
+			target:   &fakeTarget{},
+			metadata: &fakeMetadata{},
+			canCreate: func(context.Context) (CreatePolicyResult, error) {
+				return CreatePolicyResult{DeniedReason: errors.New("limit reached")}, nil
+			},
+			kind: FailureUnknown,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			ctx, _, s := newManagerStore(t)
 			manager := NewManager(s, test.target, test.metadata, &fakeSyncer{}, ManagerOptions{})
 
-			_, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a", CanCreate: test.canCreate})
-			require.Error(t, err)
-			if test.kind != "" {
-				require.Equal(t, test.kind, ErrorKindOf(err))
+			result, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a", CheckCreatePolicy: test.canCreate})
+			if test.canCreate != nil {
+				require.NoError(t, err)
+				require.EqualError(t, result.PolicyDenied, "limit reached")
+			} else {
+				require.Error(t, err)
+				require.Equal(t, test.kind, FailureKindOf(err))
 			}
 			require.Zero(t, test.metadata.removeCalls)
 			require.Empty(t, test.target.provisions)
@@ -216,12 +237,12 @@ func TestManagerFromURLDefersEmptyConfigurationFailure(t *testing.T) {
 	}
 	manager := NewManagerFromURL(s, "", metadata, &fakeSyncer{}, ManagerOptions{})
 
-	instance, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	result, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
 	require.NoError(t, err)
-	require.Equal(t, testInstanceID("workspace-a"), instance.ResourceID)
+	require.Equal(t, testInstanceID("workspace-a"), result.Instance.ResourceID)
 	metadata.state = MetadataState{}
 	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-b", ProjectID: "project-b"})
-	require.ErrorIs(t, err, ErrFailedPrecondition)
+	require.Equal(t, FailureFailedPrecondition, FailureKindOf(err))
 	require.Error(t, s.WithLockedSampleProjectInstance(ctx, "workspace-b", func(context.Context, *store.SampleProjectInstanceTx, *store.SampleProjectInstanceMessage) error {
 		return nil
 	}))
@@ -241,7 +262,7 @@ func TestManagerFromURLReturnsStaticErrorForExistingReservation(t *testing.T) {
 	manager := NewManagerFromURL(s, "", &fakeMetadata{}, &fakeSyncer{}, ManagerOptions{})
 
 	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
-	require.ErrorIs(t, err, ErrFailedPrecondition)
+	require.Equal(t, FailureFailedPrecondition, FailureKindOf(err))
 	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(context.Context, *store.SampleProjectInstanceTx, *store.SampleProjectInstanceMessage) error {
 		return nil
 	}))
@@ -250,12 +271,12 @@ func TestManagerFromURLReturnsStaticErrorForExistingReservation(t *testing.T) {
 func TestManagerPrepareDoesNotRemoveResourcesAfterDeterministicTargetCollision(t *testing.T) {
 	ctx, _, s := newManagerStore(t)
 	target := &fakeTarget{
-		provisionErr: NewTargetError(TargetErrorInvariant, errors.New("deterministic target collision")),
+		provisionErr: newTargetFailure(targetFailureInvariant, errors.New("deterministic target collision")),
 	}
 	manager := NewManager(s, target, &fakeMetadata{}, &fakeSyncer{}, ManagerOptions{})
 
 	_, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
-	require.ErrorIs(t, err, ErrInternal)
+	require.Equal(t, FailureUnknown, FailureKindOf(err))
 	require.Empty(t, target.removes)
 	require.Error(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(context.Context, *store.SampleProjectInstanceTx, *store.SampleProjectInstanceMessage) error {
 		return nil
@@ -287,7 +308,7 @@ func TestManagerPrepareDoesNotConsumeEntitlementWhenInstanceIDGenerationFails(t 
 	})
 
 	_, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
-	require.ErrorIs(t, err, ErrInternal)
+	require.Equal(t, FailureUnknown, FailureKindOf(err))
 	require.Nil(t, mustGetSampleProjectInstance(ctx, t, s, "workspace-a"))
 
 	manager.random = bytes.NewReader(bytes.Repeat([]byte{1}, 48))
@@ -305,10 +326,10 @@ func TestManagerPrepareUsesUnpredictableInstanceIDDespiteCrossWorkspaceLegacyPre
 		Random: bytes.NewReader(bytes.Repeat([]byte{2}, 48)),
 	})
 
-	instance, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	result, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
 	require.NoError(t, err)
-	require.NotEqual(t, legacyID, instance.ResourceID)
-	require.Equal(t, "sample-02020202020202020202020202020202", instance.ResourceID)
+	require.NotEqual(t, legacyID, result.Instance.ResourceID)
+	require.Equal(t, "sample-02020202020202020202020202020202", result.Instance.ResourceID)
 }
 
 func TestManagerPrepareRetainsPersistedInstanceIDForSameProjectRetry(t *testing.T) {
@@ -323,12 +344,12 @@ func TestManagerPrepareRetainsPersistedInstanceIDForSameProjectRetry(t *testing.
 	require.NoError(t, err)
 	second, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
 	require.NoError(t, err)
-	require.Equal(t, first.ResourceID, second.ResourceID)
-	require.Equal(t, "sample-01010101010101010101010101010101", second.ResourceID)
+	require.Equal(t, first.Instance.ResourceID, second.Instance.ResourceID)
+	require.Equal(t, "sample-01010101010101010101010101010101", second.Instance.ResourceID)
 	require.Len(t, target.provisions, 1)
 
 	reservation := mustGetSampleProjectInstance(ctx, t, s, "workspace-a")
-	require.Equal(t, first.ResourceID, reservation.InstanceID)
+	require.Equal(t, first.Instance.ResourceID, reservation.InstanceID)
 }
 
 func TestManagerCleanupReturnsDeferredStaticConfigurationFailureWithoutClaiming(t *testing.T) {
@@ -342,7 +363,7 @@ func TestManagerCleanupReturnsDeferredStaticConfigurationFailureWithoutClaiming(
 	manager := NewManagerFromURL(s, "not-a-postgres-url", &fakeMetadata{}, &fakeSyncer{}, ManagerOptions{})
 
 	err = manager.Cleanup(ctx, now)
-	require.ErrorIs(t, err, ErrFailedPrecondition)
+	require.Equal(t, FailureFailedPrecondition, FailureKindOf(err))
 	var count int
 	require.NoError(t, db.QueryRowContext(ctx, `SELECT COUNT(*) FROM sample_project_instance WHERE workspace = 'workspace-a'`).Scan(&count))
 	require.Equal(t, 1, count)
@@ -364,7 +385,7 @@ func TestManagerCleanupUsesBoundedCleanupValidationAndContinuesPastProvisioningI
 		return tx.SetExpiration(ctx, now.Add(-time.Second))
 	}))
 	target := &fakeTarget{
-		validateErr: NewTargetError(TargetErrorStatic, errors.New("provisioning isolation baseline failed")),
+		validateErr: newTargetFailure(targetFailureStatic, errors.New("provisioning isolation baseline failed")),
 	}
 	manager := NewManager(s, target, &fakeMetadata{}, &fakeSyncer{}, ManagerOptions{})
 	startedAt := time.Now()
@@ -444,7 +465,7 @@ func TestManagerPrepareReconcilesNullReservationBeforeRetrying(t *testing.T) {
 	})
 
 	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
-	require.Equal(t, ErrorKindInternal, ErrorKindOf(err))
+	require.Equal(t, FailureUnknown, FailureKindOf(err))
 	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(context.Context, *store.SampleProjectInstanceTx, *store.SampleProjectInstanceMessage) error {
 		return nil
 	}))

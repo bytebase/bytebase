@@ -58,7 +58,7 @@ type instanceLicenseService interface {
 }
 
 type sampleProjectInstanceManager interface {
-	Prepare(context.Context, sampleprojectinstance.PrepareRequest) (*store.InstanceMessage, error)
+	Prepare(context.Context, sampleprojectinstance.PrepareRequest) (*sampleprojectinstance.PrepareResult, error)
 }
 
 const (
@@ -488,33 +488,55 @@ func (s *InstanceService) PrepareSampleProjectInstance(ctx context.Context, req 
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("Sample Project Instance is available only in SaaS deployments with a configured target"))
 	}
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	instance, err := s.sampleProjectManager.Prepare(ctx, sampleprojectinstance.PrepareRequest{
+	result, err := s.sampleProjectManager.Prepare(ctx, sampleprojectinstance.PrepareRequest{
 		WorkspaceID: workspaceID,
 		ProjectID:   *projectID,
-		CanCreate: func(ctx context.Context) error {
+		CheckCreatePolicy: func(ctx context.Context) (sampleprojectinstance.CreatePolicyResult, error) {
 			if err := s.instanceCountGuard(ctx); err != nil {
-				return err
+				if connect.CodeOf(err) == connect.CodeResourceExhausted {
+					return sampleprojectinstance.CreatePolicyResult{DeniedReason: transportNeutralError(err)}, nil
+				}
+				return sampleprojectinstance.CreatePolicyResult{}, transportNeutralError(err)
 			}
-			return s.checkActivationLimit(ctx, workspaceID, true)
+			if err := s.checkActivationLimit(ctx, workspaceID, true); err != nil {
+				if connect.CodeOf(err) == connect.CodeResourceExhausted {
+					return sampleprojectinstance.CreatePolicyResult{DeniedReason: transportNeutralError(err)}, nil
+				}
+				return sampleprojectinstance.CreatePolicyResult{}, transportNeutralError(err)
+			}
+			return sampleprojectinstance.CreatePolicyResult{}, nil
 		},
 	})
 	if err != nil {
-		var connectErr *connect.Error
-		if errors.As(err, &connectErr) {
-			return nil, connectErr
-		}
-		switch sampleprojectinstance.ErrorKindOf(err) {
-		case sampleprojectinstance.ErrorKindFailedPrecondition:
+		switch sampleprojectinstance.FailureKindOf(err) {
+		case sampleprojectinstance.FailureFailedPrecondition:
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
-		case sampleprojectinstance.ErrorKindUnavailable:
+		case sampleprojectinstance.FailureUnavailable:
 			return nil, connect.NewError(connect.CodeUnavailable, err)
-		case sampleprojectinstance.ErrorKindDeadlineExceeded:
+		case sampleprojectinstance.FailureDeadlineExceeded:
 			return nil, connect.NewError(connect.CodeDeadlineExceeded, err)
 		default:
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 	}
-	return connect.NewResponse(s.convertToV1Instance(ctx, instance)), nil
+	if result.PolicyDenied != nil {
+		return nil, connect.NewError(connect.CodeResourceExhausted, result.PolicyDenied)
+	}
+	if result.Instance == nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.New("Sample Project Instance preparation returned no instance"))
+	}
+	return connect.NewResponse(s.convertToV1Instance(ctx, result.Instance)), nil
+}
+
+func transportNeutralError(err error) error {
+	var connectErr *connect.Error
+	if errors.As(err, &connectErr) {
+		if cause := connectErr.Unwrap(); cause != nil {
+			return cause
+		}
+		return errors.New(connectErr.Message())
+	}
+	return err
 }
 
 func (s *InstanceService) getSampleProjectInstanceParent(ctx context.Context, parent *string) (*string, error) {

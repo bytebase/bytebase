@@ -41,6 +41,42 @@ type Target struct {
 	sslCA     string
 }
 
+type targetFailureKind string
+
+const (
+	targetFailureStatic      targetFailureKind = "static"
+	targetFailureUnavailable targetFailureKind = "unavailable"
+	targetFailureInvariant   targetFailureKind = "invariant"
+)
+
+type targetFailure struct {
+	kind targetFailureKind
+	err  error
+}
+
+func (e *targetFailure) Error() string {
+	if e.err == nil {
+		return string(e.kind)
+	}
+	return e.err.Error()
+}
+
+func (e *targetFailure) Unwrap() error {
+	return e.err
+}
+
+func newTargetFailure(kind targetFailureKind, err error) error {
+	return &targetFailure{kind: kind, err: err}
+}
+
+func targetFailureKindOf(err error) targetFailureKind {
+	var failure *targetFailure
+	if errors.As(err, &failure) {
+		return failure.kind
+	}
+	return targetFailureUnavailable
+}
+
 // NewTarget parses a direct PostgreSQL target URL. It intentionally accepts
 // only URL-form password authentication so the configured target cannot use
 // passfiles, service files, or credential rotation indirection.
@@ -223,7 +259,7 @@ func (t *Target) validateIsolationBaseline(ctx context.Context) error {
 
 // Provision creates a sample role and database, applies the isolation policy,
 // and seeds the employee data as the sample role.
-func (t *Target) Provision(ctx context.Context, allocation Allocation) error {
+func (t *Target) Provision(ctx context.Context, allocation Allocation) (retErr error) {
 	if err := validateProvisionAllocation(allocation); err != nil {
 		return err
 	}
@@ -234,7 +270,18 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) error {
 	}
 	defer admin.Close(ctx)
 
-	roleCreated := false
+	var roleCreated, databaseCreated bool
+	defer func() {
+		if retErr == nil {
+			return
+		}
+		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), compensationDeadline)
+		defer cancel()
+		if err := cleanupProvisionAttempt(cleanupCtx, admin, allocation, databaseCreated, roleCreated); err != nil {
+			retErr = unavailableTargetError("failed to clean up sample project instance provisioning attempt")
+		}
+	}()
+
 	if _, err := admin.Exec(ctx, fmt.Sprintf(
 		"CREATE ROLE %s LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %s",
 		quoteIdentifier(allocation.Role),
@@ -244,14 +291,9 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) error {
 	}
 	roleCreated = true
 	if _, err := admin.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s", quoteIdentifier(allocation.Database))); err != nil {
-		provisionErr := classifyProvisionError(err, "failed to create sample project instance database")
-		if roleCreated {
-			if _, cleanupErr := admin.Exec(ctx, fmt.Sprintf("DROP ROLE %s", quoteIdentifier(allocation.Role))); cleanupErr != nil {
-				return NewTargetError(TargetErrorInvariant, errors.New("failed to remove sample project instance role after database creation failure"))
-			}
-		}
-		return provisionErr
+		return classifyProvisionError(err, "failed to create sample project instance database")
 	}
+	databaseCreated = true
 	if _, err := admin.Exec(ctx, fmt.Sprintf("REVOKE ALL PRIVILEGES ON DATABASE %s FROM PUBLIC", quoteIdentifier(allocation.Database))); err != nil {
 		return errors.New("failed to revoke PUBLIC database privileges")
 	}
@@ -295,6 +337,20 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) error {
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return errors.New("failed to commit sample project instance seed transaction")
+	}
+	return nil
+}
+
+func cleanupProvisionAttempt(ctx context.Context, admin *pgx.Conn, allocation Allocation, databaseCreated, roleCreated bool) error {
+	if databaseCreated {
+		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP DATABASE %s WITH (FORCE)", quoteIdentifier(allocation.Database))); err != nil {
+			return err
+		}
+	}
+	if roleCreated {
+		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP ROLE %s", quoteIdentifier(allocation.Role))); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -389,17 +445,17 @@ func quoteLiteral(value string) string {
 }
 
 func staticTargetError(message string) error {
-	return NewTargetError(TargetErrorStatic, errors.New(message))
+	return newTargetFailure(targetFailureStatic, errors.New(message))
 }
 
 func unavailableTargetError(message string) error {
-	return NewTargetError(TargetErrorUnavailable, errors.New(message))
+	return newTargetFailure(targetFailureUnavailable, errors.New(message))
 }
 
 func classifyProvisionError(err error, message string) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && (pgErr.Code == "42710" || pgErr.Code == "42P04") {
-		return NewTargetError(TargetErrorInvariant, errors.New(message))
+		return newTargetFailure(targetFailureInvariant, errors.New(message))
 	}
 	return unavailableTargetError(message)
 }

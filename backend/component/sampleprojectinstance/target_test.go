@@ -32,9 +32,7 @@ func TestNewTargetRejectsUnsafeConfiguration(t *testing.T) {
 			_, err := NewTarget(test.targetURL)
 			require.Error(t, err)
 			require.NotContains(t, err.Error(), "secret")
-			var targetErr *TargetError
-			require.ErrorAs(t, err, &targetErr)
-			require.Equal(t, TargetErrorStatic, targetErr.Kind)
+			require.Equal(t, targetFailureStatic, targetFailureKindOf(err))
 		})
 	}
 }
@@ -267,9 +265,7 @@ func TestTargetValidateRejectsUnexpectedPublicDatabase(t *testing.T) {
 
 	err = newLocalTarget(t, container).Validate(ctx)
 	require.Error(t, err)
-	var targetErr *TargetError
-	require.ErrorAs(t, err, &targetErr)
-	require.Equal(t, TargetErrorStatic, targetErr.Kind)
+	require.Equal(t, targetFailureStatic, targetFailureKindOf(err))
 }
 
 func TestTargetValidateForCleanupAllowsUnexpectedPublicDatabase(t *testing.T) {
@@ -321,9 +317,7 @@ func TestTargetProvisionRemovesNewRoleWhenDatabaseExists(t *testing.T) {
 
 	err = newLocalTarget(t, container).Provision(ctx, allocation)
 	require.Error(t, err)
-	var targetErr *TargetError
-	require.ErrorAs(t, err, &targetErr)
-	require.Equal(t, TargetErrorInvariant, targetErr.Kind)
+	require.Equal(t, targetFailureInvariant, targetFailureKindOf(err))
 
 	var databasePresent, rolePresent bool
 	require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", allocation.Database).Scan(&databasePresent))
