@@ -52,7 +52,11 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 	// We expect the len(spans) == len(results), but to avoid NPE, we use the min(len(spans), len(results)) here.
 	loopBoundary := min(len(spans), len(results))
 	for i := 0; i < loopBoundary; i++ {
-		if strings.HasPrefix(strings.TrimSpace(results[i].Statement), "EXPLAIN") {
+		// EXPLAIN output is a query plan, not table data. Match case-insensitively:
+		// PostgreSQL accepts a lowercase `explain`, and `explain analyze` is
+		// classified as a plain Select whose span carries no results, which the
+		// arity check below would otherwise refuse.
+		if strings.HasPrefix(strings.ToUpper(strings.TrimSpace(results[i].Statement)), "EXPLAIN") {
 			continue
 		}
 		if results[i].Error == "" && spans[i].FunctionNotSupportedError != nil {
@@ -73,6 +77,16 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 			}
 			continue
 		}
+		// Maskers are positional: masker N is applied to result value N. If the
+		// span resolved a different number of columns than the driver returned,
+		// that mapping is not trustworthy — values would be masked with another
+		// column's policy, or fall past the end of the list and be returned raw.
+		// Refuse rather than emit a result we cannot vouch for.
+		if maskerArityMismatch(spans[i], results[i]) {
+			return errors.Errorf(
+				"masking aborted: the query returned %d columns but the synced schema resolved %d; the stored schema for %q is incomplete or stale, sync the database and retry",
+				len(results[i].ColumnNames), len(spans[i].Results), instance.ResourceID)
+		}
 		maskers, reasons, err := s.getMaskersForQuerySpan(ctx, m, instance, user, spans[i])
 		if err != nil {
 			return errors.Wrapf(err, "failed to get maskers for query span")
@@ -81,6 +95,32 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 	}
 
 	return nil
+}
+
+// maskerArityMismatch reports whether the query span resolved a different
+// number of result columns than the driver actually returned.
+//
+// The masker list is built one entry per span result and applied by position,
+// so any disagreement breaks the value-to-policy mapping. It happens when the
+// stored schema metadata is incomplete or stale — a table synced with no
+// columns yields no span results at all, and a table missing a leading column
+// shifts every masker onto its neighbour.
+//
+// The check is deliberately narrow, because only a projection over a real table
+// has an arity the span is expected to predict:
+//   - rows must be present; an empty result carries no data to leak.
+//   - the span must be a plain Select. Explain, DDL, DML, and information-schema
+//     reads legitimately produce driver columns the span never models.
+//   - the span must reference at least one table. Constant and function-only
+//     projections (SET, SHOW, SELECT 1) resolve no table to have metadata for.
+func maskerArityMismatch(span *parserbase.QuerySpan, result *v1pb.QueryResult) bool {
+	if span == nil || result == nil || len(result.Rows) == 0 {
+		return false
+	}
+	if span.Type != parserbase.Select || len(span.SourceColumns) == 0 {
+		return false
+	}
+	return len(span.Results) != len(result.ColumnNames)
 }
 
 // spanTouchesMaskedColumns checks whether any column referenced anywhere in

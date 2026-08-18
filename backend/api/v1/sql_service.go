@@ -748,7 +748,17 @@ func queryRetry(
 		if r.Error != "" {
 			continue
 		}
-		if i < len(spans) && spans[i].NotFoundError != nil {
+		if i >= len(spans) {
+			continue
+		}
+		// A span that could not resolve a referenced object asks for a re-sync.
+		// So does a span whose result count disagrees with the columns the driver
+		// returned: the masker mapping is positional, and a stale or incomplete
+		// snapshot is the usual cause. Re-syncing first lets a merely-stale
+		// snapshot recover instead of failing the query outright below.
+		needSync := spans[i].NotFoundError != nil ||
+			(maskingEnabled && maskerArityMismatch(spans[i], r))
+		if needSync {
 			for k := range spans[i].SourceColumns {
 				slog.Debug("database metadata need to sync", slog.String("instance", instance.ResourceID), slog.String("database", k.Database), slog.String("schema", k.Schema), slog.String("table", k.Table), slog.String("column", k.Column))
 				syncDatabaseMap[k.Database] = true
