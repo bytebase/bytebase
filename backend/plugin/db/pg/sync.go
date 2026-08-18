@@ -729,7 +729,7 @@ func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMe
 			Name:               tableName,
 			Expression:         partKeyDef,
 			Value:              relPartBound,
-			Indexes:            indexMap[key],
+			Indexes:            localIndexes(indexMap[key]),
 			CheckConstraints:   checksMap[key],
 			ExcludeConstraints: excludesMap[key],
 		}
@@ -750,6 +750,16 @@ func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMe
 	}
 
 	return result, nil
+}
+
+func localIndexes(indexes []*storepb.IndexMetadata) []*storepb.IndexMetadata {
+	var result []*storepb.IndexMetadata
+	for _, index := range indexes {
+		if index.ParentIndexName == "" {
+			result = append(result, index)
+		}
+	}
+	return result
 }
 
 var listIndexInheritanceQuery = `

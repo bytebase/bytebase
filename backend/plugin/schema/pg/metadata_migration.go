@@ -1645,7 +1645,7 @@ func writeTableForMetadataMigration(out *strings.Builder, schemaName string, tab
 	}
 	for _, index := range table.GetIndexes() {
 		if index.GetPrimary() {
-			if err := writePrimaryKey(out, schemaName, table.GetName(), index); err != nil {
+			if err := writePrimaryKey(out, schemaName, table.GetName(), index, len(table.GetPartitions()) == 0 || hasRecordedAttachedChild(table.GetPartitions(), schemaName, index.GetName())); err != nil {
 				return err
 			}
 		}
@@ -1657,7 +1657,7 @@ func writeTableForMetadataMigration(out *strings.Builder, schemaName string, tab
 	}
 	for _, index := range table.GetIndexes() {
 		if index.GetUnique() && !index.GetPrimary() && index.GetIsConstraint() {
-			if err := writeUniqueKey(out, schemaName, table.GetName(), index); err != nil {
+			if err := writeUniqueKey(out, schemaName, table.GetName(), index, len(table.GetPartitions()) == 0 || hasRecordedAttachedChild(table.GetPartitions(), schemaName, index.GetName())); err != nil {
 				return err
 			}
 		}
@@ -1669,7 +1669,7 @@ func writeTableForMetadataMigration(out *strings.Builder, schemaName string, tab
 	}
 	for _, index := range table.GetIndexes() {
 		if !index.GetPrimary() && !index.GetIsConstraint() {
-			if err := writeCreateRegularIndex(out, schemaName, table.GetName(), index, len(table.GetPartitions()) > 0); err != nil {
+			if err := writeCreateRegularIndex(out, schemaName, table.GetName(), index, len(table.GetPartitions()) > 0 && hasRecordedAttachedChild(table.GetPartitions(), schemaName, index.GetName())); err != nil {
 				return err
 			}
 		}
@@ -1762,7 +1762,7 @@ func writeCreatePartitionDiff(out *strings.Builder, schemaName, tableName string
 func writePartitionIndexForMetadataMigration(out *strings.Builder, schemaName string, partition *storepb.TablePartitionMetadata) error {
 	for _, index := range partition.GetIndexes() {
 		if !index.GetIsConstraint() && !index.GetPrimary() {
-			if err := writeCreateRegularIndex(out, schemaName, partition.GetName(), index, len(partition.GetSubpartitions()) > 0); err != nil {
+			if err := writeCreateRegularIndex(out, schemaName, partition.GetName(), index, len(partition.GetSubpartitions()) > 0 && hasRecordedAttachedChild(partition.GetSubpartitions(), schemaName, index.GetName())); err != nil {
 				return err
 			}
 		}
@@ -1793,14 +1793,14 @@ func writeAlterTableDiff(out *strings.Builder, tableDiff *schema.TableDiff) erro
 	}
 	for _, primaryKeyDiff := range tableDiff.PrimaryKeyChanges {
 		if primaryKeyDiff.Action == schema.MetadataDiffActionCreate || primaryKeyDiff.Action == schema.MetadataDiffActionAlter {
-			if err := writePrimaryKey(out, tableDiff.SchemaName, tableDiff.TableName, primaryKeyDiff.NewPrimaryKey); err != nil {
+			if err := writePrimaryKey(out, tableDiff.SchemaName, tableDiff.TableName, primaryKeyDiff.NewPrimaryKey, true); err != nil {
 				return err
 			}
 		}
 	}
 	for _, uniqueConstraintDiff := range tableDiff.UniqueConstraintChanges {
 		if uniqueConstraintDiff.Action == schema.MetadataDiffActionCreate || uniqueConstraintDiff.Action == schema.MetadataDiffActionAlter {
-			if err := writeUniqueKey(out, tableDiff.SchemaName, tableDiff.TableName, uniqueConstraintDiff.NewUniqueConstraint); err != nil {
+			if err := writeUniqueKey(out, tableDiff.SchemaName, tableDiff.TableName, uniqueConstraintDiff.NewUniqueConstraint, true); err != nil {
 				return err
 			}
 		}
@@ -2050,16 +2050,16 @@ func writeCreateIndexDiff(out *strings.Builder, schemaName, tableName string, in
 	}
 	switch {
 	case index.GetPrimary():
-		return writePrimaryKey(out, schemaName, tableName, index)
+		return writePrimaryKey(out, schemaName, tableName, index, true)
 	case index.GetUnique() && index.GetIsConstraint():
-		return writeUniqueKey(out, schemaName, tableName, index)
+		return writeUniqueKey(out, schemaName, tableName, index, true)
 	default:
 		return writeCreateRegularIndex(out, schemaName, tableName, index, false)
 	}
 }
 
 func writeCreateRegularIndex(out *strings.Builder, schemaName, tableName string, index *storepb.IndexMetadata, useOnlyClause bool) error {
-	if index.GetDefinition() != "" {
+	if index.GetDefinition() != "" && (useOnlyClause || !strings.Contains(index.GetDefinition(), " ON ONLY ")) {
 		if err := writeDefinitionStatement(out, index.GetDefinition()); err != nil {
 			return err
 		}
