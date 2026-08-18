@@ -18,11 +18,11 @@ An absent or invalid target configuration must not block server startup. Prepara
 
 ## Provisioning and readiness
 
-The service provisions a new dedicated role and database, grants access only to that role, and seeds as that role. It then registers the Project Instance and synchronously discovers its database. Seven-day eligibility starts only after all of those readiness steps succeed.
+The service provisions a new dedicated role and creates its database with connections disabled. It revokes `PUBLIC` database access, grants access to the dedicated role, and only then enables connections before hardening the `public` schema and seeding as that role. It then registers the Project Instance and synchronously discovers its database. Seven-day eligibility starts only after all of those readiness steps succeed.
 
-The independent control-plane record is the Workspace's lifetime entitlement fence. It has no foreign keys so that normal deletion or retention of Workspace, Project, Project Instance, and Database metadata cannot erase the cleanup obligation or restore entitlement.
+The independent control-plane record is the Workspace's lifetime entitlement fence. It also records whether physical-resource ownership is known and which database or role remains owned after a failed provisioning cleanup. It has no foreign keys so that normal deletion or retention of Workspace, Project, Project Instance, and Database metadata cannot erase the cleanup obligation or restore entitlement.
 
-If preparation fails after reserving the entitlement, the service compensates by removing partial Bytebase metadata and physical resources, then removes the stale reservation when compensation succeeds. A later preparation request or cleanup pass reconciles a remaining stale reservation before attempting a new allocation. Operators should investigate repeated reconciliation failures through redacted structured logs rather than editing entitlement records directly.
+If preparation fails after reserving the entitlement, the service compensates by removing partial Bytebase metadata and only the physical resources created by that attempt, then removes the stale reservation when compensation succeeds. If cleanup of a known-created resource fails, the service retains the reservation and its exact ownership state; a later preparation request or cleanup pass removes only those owned resources before attempting a new allocation. Reservations without known ownership remain conservatively eligible for deterministic cleanup after an abrupt process interruption. Operators should investigate repeated reconciliation failures through redacted structured logs rather than editing entitlement records directly.
 
 ## Cleanup
 

@@ -13,14 +13,17 @@ import (
 // SampleProjectInstanceMessage is the control-plane record for a sample
 // Project Instance. It deliberately does not reference Bytebase metadata.
 type SampleProjectInstanceMessage struct {
-	WorkspaceID string
-	ProjectID   string
-	InstanceID  string
-	DBName      string
-	RoleName    string
-	CreatedAt   time.Time
-	ExpiresAt   *time.Time
-	DeletedAt   *time.Time
+	WorkspaceID     string
+	ProjectID       string
+	InstanceID      string
+	DBName          string
+	RoleName        string
+	OwnershipKnown  bool
+	DatabaseCreated bool
+	RoleCreated     bool
+	CreatedAt       time.Time
+	ExpiresAt       *time.Time
+	DeletedAt       *time.Time
 }
 
 // SampleProjectInstanceTx owns a locked sample Project Instance record for the
@@ -34,7 +37,9 @@ type SampleProjectInstanceTx struct {
 // workspace without locking it.
 func (s *Store) GetSampleProjectInstance(ctx context.Context, workspaceID string) (*SampleProjectInstanceMessage, error) {
 	message, err := scanSampleProjectInstance(s.GetDB().QueryRowContext(ctx, `
-		SELECT workspace, project, instance, db_name, role_name, created_at, expires_at, deleted_at
+		SELECT workspace, project, instance, db_name, role_name,
+			ownership_known, database_created, role_created,
+			created_at, expires_at, deleted_at
 		FROM sample_project_instance
 		WHERE workspace = $1
 	`, workspaceID))
@@ -74,7 +79,9 @@ func (s *Store) ReserveSampleProjectInstance(ctx context.Context, create *Sample
 	}
 
 	existing, err := scanSampleProjectInstance(tx.QueryRowContext(ctx, `
-		SELECT workspace, project, instance, db_name, role_name, created_at, expires_at, deleted_at
+		SELECT workspace, project, instance, db_name, role_name,
+			ownership_known, database_created, role_created,
+			created_at, expires_at, deleted_at
 		FROM sample_project_instance
 		WHERE workspace = $1
 	`, create.WorkspaceID))
@@ -155,6 +162,31 @@ func (tx *SampleProjectInstanceTx) SetExpiration(ctx context.Context, expiresAt 
 	return nil
 }
 
+// SetProvisionOwnership records which physical resources are known to belong
+// to this reservation.
+func (tx *SampleProjectInstanceTx) SetProvisionOwnership(ctx context.Context, databaseCreated, roleCreated bool) error {
+	result, err := tx.tx.ExecContext(ctx, `
+		UPDATE sample_project_instance
+		SET ownership_known = TRUE,
+			database_created = $1,
+			role_created = $2
+		WHERE workspace = $3
+			AND expires_at IS NULL
+			AND deleted_at IS NULL
+	`, databaseCreated, roleCreated, tx.workspace)
+	if err != nil {
+		return errors.Wrap(err, "failed to set sample Project Instance provision ownership")
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "failed to inspect sample Project Instance provision ownership update")
+	}
+	if rows != 1 {
+		return errors.Errorf("sample Project Instance %s provision ownership cannot be set", tx.workspace)
+	}
+	return nil
+}
+
 // MarkDeleted marks an activated reservation as physically deleted.
 func (tx *SampleProjectInstanceTx) MarkDeleted(ctx context.Context, deletedAt time.Time) error {
 	result, err := tx.tx.ExecContext(ctx, `
@@ -203,7 +235,10 @@ func (tx *SampleProjectInstanceTx) DeleteReservation(ctx context.Context) error 
 func (tx *SampleProjectInstanceTx) ResetCreatedAt(ctx context.Context, createdAt time.Time) error {
 	result, err := tx.tx.ExecContext(ctx, `
 		UPDATE sample_project_instance
-		SET created_at = $1
+		SET created_at = $1,
+			ownership_known = FALSE,
+			database_created = FALSE,
+			role_created = FALSE
 		WHERE workspace = $2
 			AND expires_at IS NULL
 			AND deleted_at IS NULL
@@ -269,7 +304,9 @@ func (s *Store) WithLockedSampleProjectInstanceCleanupRecord(
 	defer tx.Rollback()
 
 	message, err := scanSampleProjectInstance(tx.QueryRowContext(ctx, `
-		SELECT workspace, project, instance, db_name, role_name, created_at, expires_at, deleted_at
+		SELECT workspace, project, instance, db_name, role_name,
+			ownership_known, database_created, role_created,
+			created_at, expires_at, deleted_at
 		FROM sample_project_instance
 		WHERE deleted_at IS NULL
 			AND (
@@ -316,7 +353,9 @@ func insertSampleProjectInstance(ctx context.Context, tx *sql.Tx, create *Sample
 		INSERT INTO sample_project_instance (workspace, project, instance, db_name, role_name)
 		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (workspace) DO NOTHING
-		RETURNING workspace, project, instance, db_name, role_name, created_at, expires_at, deleted_at
+		RETURNING workspace, project, instance, db_name, role_name,
+			ownership_known, database_created, role_created,
+			created_at, expires_at, deleted_at
 	`, create.WorkspaceID, create.ProjectID, create.InstanceID, create.DBName, create.RoleName)
 	message, err := scanSampleProjectInstance(row)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -327,7 +366,9 @@ func insertSampleProjectInstance(ctx context.Context, tx *sql.Tx, create *Sample
 
 func getLockedSampleProjectInstance(ctx context.Context, tx *sql.Tx, workspaceID string) (*SampleProjectInstanceMessage, error) {
 	row := tx.QueryRowContext(ctx, `
-		SELECT workspace, project, instance, db_name, role_name, created_at, expires_at, deleted_at
+		SELECT workspace, project, instance, db_name, role_name,
+			ownership_known, database_created, role_created,
+			created_at, expires_at, deleted_at
 		FROM sample_project_instance
 		WHERE workspace = $1
 		FOR UPDATE
@@ -351,6 +392,9 @@ func scanSampleProjectInstance(scanner sampleProjectInstanceScanner) (*SamplePro
 		&message.InstanceID,
 		&message.DBName,
 		&message.RoleName,
+		&message.OwnershipKnown,
+		&message.DatabaseCreated,
+		&message.RoleCreated,
 		&message.CreatedAt,
 		&message.ExpiresAt,
 		&message.DeletedAt,
