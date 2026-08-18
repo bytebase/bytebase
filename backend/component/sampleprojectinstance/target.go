@@ -36,10 +36,26 @@ type InstanceConfig struct {
 
 // Target manages direct PostgreSQL operations for sample project instances.
 type Target struct {
-	config    *pgx.ConnConfig
-	verifyTLS bool
-	sslCA     string
+	config        *pgx.ConnConfig
+	verifyTLS     bool
+	sslCA         string
+	provisionHook func(provisionStage) error
 }
+
+type provisionStage string
+
+const (
+	provisionStageRoleCreated         provisionStage = "role-created"
+	provisionStageDatabaseCreated     provisionStage = "database-created"
+	provisionStagePublicAccessRevoked provisionStage = "public-access-revoked"
+	provisionStageRoleAccessGranted   provisionStage = "role-access-granted"
+	provisionStageConnectionsEnabled  provisionStage = "connections-enabled"
+	provisionStagePublicSchemaRevoked provisionStage = "public-schema-revoked"
+	provisionStageRoleSchemaGranted   provisionStage = "role-schema-granted"
+	provisionStageSeeded              provisionStage = "seeded"
+	provisionStageCleanupDatabase     provisionStage = "cleanup-database"
+	provisionStageCleanupRole         provisionStage = "cleanup-role"
+)
 
 type targetFailureKind string
 
@@ -52,6 +68,32 @@ const (
 type targetFailure struct {
 	kind targetFailureKind
 	err  error
+}
+
+type provisionOwnership struct {
+	databaseCreated bool
+	roleCreated     bool
+}
+
+type provisionFailure struct {
+	err       error
+	ownership provisionOwnership
+}
+
+func (e *provisionFailure) Error() string {
+	return e.err.Error()
+}
+
+func (e *provisionFailure) Unwrap() error {
+	return e.err
+}
+
+func provisionOwnershipOf(err error) (provisionOwnership, bool) {
+	var failure *provisionFailure
+	if errors.As(err, &failure) {
+		return failure.ownership, true
+	}
+	return provisionOwnership{}, false
 }
 
 func (e *targetFailure) Error() string {
@@ -277,8 +319,15 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) (retErr e
 		}
 		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), compensationDeadline)
 		defer cancel()
-		if err := cleanupProvisionAttempt(cleanupCtx, admin, allocation, databaseCreated, roleCreated); err != nil {
-			retErr = unavailableTargetError("failed to clean up sample project instance provisioning attempt")
+		remaining, err := t.cleanupProvisionAttempt(cleanupCtx, admin, allocation, provisionOwnership{
+			databaseCreated: databaseCreated,
+			roleCreated:     roleCreated,
+		})
+		if err != nil {
+			retErr = &provisionFailure{
+				err:       unavailableTargetError("failed to clean up sample project instance provisioning attempt"),
+				ownership: remaining,
+			}
 		}
 	}()
 
@@ -290,12 +339,21 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) (retErr e
 		return classifyProvisionError(err, "failed to create sample project instance role")
 	}
 	roleCreated = true
-	if _, err := admin.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s", quoteIdentifier(allocation.Database))); err != nil {
+	if err := t.runProvisionHook(provisionStageRoleCreated); err != nil {
+		return err
+	}
+	if _, err := admin.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s WITH ALLOW_CONNECTIONS false", quoteIdentifier(allocation.Database))); err != nil {
 		return classifyProvisionError(err, "failed to create sample project instance database")
 	}
 	databaseCreated = true
+	if err := t.runProvisionHook(provisionStageDatabaseCreated); err != nil {
+		return err
+	}
 	if _, err := admin.Exec(ctx, fmt.Sprintf("REVOKE ALL PRIVILEGES ON DATABASE %s FROM PUBLIC", quoteIdentifier(allocation.Database))); err != nil {
 		return errors.New("failed to revoke PUBLIC database privileges")
+	}
+	if err := t.runProvisionHook(provisionStagePublicAccessRevoked); err != nil {
+		return err
 	}
 	if _, err := admin.Exec(ctx, fmt.Sprintf(
 		"GRANT CONNECT, CREATE, TEMPORARY ON DATABASE %s TO %s",
@@ -303,6 +361,15 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) (retErr e
 		quoteIdentifier(allocation.Role),
 	)); err != nil {
 		return errors.New("failed to grant sample project instance database privileges")
+	}
+	if err := t.runProvisionHook(provisionStageRoleAccessGranted); err != nil {
+		return err
+	}
+	if _, err := admin.Exec(ctx, fmt.Sprintf("ALTER DATABASE %s ALLOW_CONNECTIONS true", quoteIdentifier(allocation.Database))); err != nil {
+		return errors.New("failed to enable sample project instance database connections")
+	}
+	if err := t.runProvisionHook(provisionStageConnectionsEnabled); err != nil {
+		return err
 	}
 
 	sampleAdmin, err := t.connect(ctx, allocation.Database, "", "")
@@ -313,8 +380,14 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) (retErr e
 	if _, err := sampleAdmin.Exec(ctx, "REVOKE CREATE ON SCHEMA public FROM PUBLIC"); err != nil {
 		return errors.New("failed to revoke PUBLIC schema creation")
 	}
+	if err := t.runProvisionHook(provisionStagePublicSchemaRevoked); err != nil {
+		return err
+	}
 	if _, err := sampleAdmin.Exec(ctx, fmt.Sprintf("GRANT USAGE, CREATE ON SCHEMA public TO %s", quoteIdentifier(allocation.Role))); err != nil {
 		return errors.New("failed to grant sample project instance schema privileges")
+	}
+	if err := t.runProvisionHook(provisionStageRoleSchemaGranted); err != nil {
+		return err
 	}
 
 	sample, err := t.connect(ctx, allocation.Database, allocation.Role, allocation.Password)
@@ -338,21 +411,41 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) (retErr e
 	if err := tx.Commit(ctx); err != nil {
 		return errors.New("failed to commit sample project instance seed transaction")
 	}
-	return nil
+	return t.runProvisionHook(provisionStageSeeded)
 }
 
-func cleanupProvisionAttempt(ctx context.Context, admin *pgx.Conn, allocation Allocation, databaseCreated, roleCreated bool) error {
-	if databaseCreated {
+func (t *Target) runProvisionHook(stage provisionStage) error {
+	if t.provisionHook == nil {
+		return nil
+	}
+	return t.provisionHook(stage)
+}
+
+func (t *Target) cleanupProvisionAttempt(
+	ctx context.Context,
+	admin *pgx.Conn,
+	allocation Allocation,
+	ownership provisionOwnership,
+) (provisionOwnership, error) {
+	if ownership.databaseCreated {
+		if err := t.runProvisionHook(provisionStageCleanupDatabase); err != nil {
+			return ownership, err
+		}
 		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP DATABASE %s WITH (FORCE)", quoteIdentifier(allocation.Database))); err != nil {
-			return err
+			return ownership, err
 		}
+		ownership.databaseCreated = false
 	}
-	if roleCreated {
+	if ownership.roleCreated {
+		if err := t.runProvisionHook(provisionStageCleanupRole); err != nil {
+			return ownership, err
+		}
 		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP ROLE %s", quoteIdentifier(allocation.Role))); err != nil {
-			return err
+			return ownership, err
 		}
+		ownership.roleCreated = false
 	}
-	return nil
+	return ownership, nil
 }
 
 // Remove revokes access, terminates every role or database session, and drops
@@ -361,7 +454,7 @@ func (t *Target) Remove(ctx context.Context, allocation Allocation) error {
 	if err := validateCleanupAllocation(allocation); err != nil {
 		return err
 	}
-	if t.config.Database == allocation.Database {
+	if allocation.Database != "" && t.config.Database == allocation.Database {
 		return errors.New("sample project instance target cannot remove its configured database")
 	}
 
@@ -419,8 +512,9 @@ func (t *Target) connect(ctx context.Context, database, user, password string) (
 }
 
 func validateProvisionAllocation(allocation Allocation) error {
-	if err := validateCleanupAllocation(allocation); err != nil {
-		return err
+	if allocation.Database == "" || allocation.Role == "" ||
+		strings.ContainsRune(allocation.Database, 0) || strings.ContainsRune(allocation.Role, 0) {
+		return errors.New("sample project instance provisioning requires database and role")
 	}
 	if allocation.Password == "" || strings.ContainsRune(allocation.Password, 0) {
 		return errors.New("sample project instance provisioning requires password")
@@ -429,9 +523,9 @@ func validateProvisionAllocation(allocation Allocation) error {
 }
 
 func validateCleanupAllocation(allocation Allocation) error {
-	if allocation.Database == "" || allocation.Role == "" ||
+	if (allocation.Database == "" && allocation.Role == "") ||
 		strings.ContainsRune(allocation.Database, 0) || strings.ContainsRune(allocation.Role, 0) {
-		return errors.New("sample project instance cleanup requires database and role")
+		return errors.New("sample project instance cleanup requires a database or role")
 	}
 	return nil
 }

@@ -2,6 +2,7 @@ package sampleprojectinstance
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -319,6 +320,164 @@ func TestTargetProvisionRemovesNewRoleWhenDatabaseExists(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, targetFailureInvariant, targetFailureKindOf(err))
 
+	var databasePresent, rolePresent bool
+	require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", allocation.Database).Scan(&databasePresent))
+	require.True(t, databasePresent)
+	require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = $1)", allocation.Role).Scan(&rolePresent))
+	require.False(t, rolePresent)
+}
+
+func TestTargetProvisionCleansUpAtEveryInterruptionBoundary(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping PostgreSQL testcontainer test in short mode")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	t.Cleanup(cancel)
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(context.Background()) })
+
+	admin := connectLocal(ctx, t, container, "postgres", "postgres", "root-password")
+	defer admin.Close(ctx)
+	require.NoError(t, prepareBaseline(ctx, admin))
+
+	stages := []provisionStage{
+		provisionStageRoleCreated,
+		provisionStageDatabaseCreated,
+		provisionStagePublicAccessRevoked,
+		provisionStageRoleAccessGranted,
+		provisionStageConnectionsEnabled,
+		provisionStagePublicSchemaRevoked,
+		provisionStageRoleSchemaGranted,
+		provisionStageSeeded,
+	}
+	for index, interruptedStage := range stages {
+		t.Run(string(interruptedStage), func(t *testing.T) {
+			allocation := Allocation{
+				Database: fmt.Sprintf("sample_boundary_database_%d", index),
+				Role:     fmt.Sprintf("sample_boundary_role_%d", index),
+				Password: "sample-target-password",
+			}
+			target := newLocalTarget(t, container)
+			target.provisionHook = func(stage provisionStage) error {
+				if stage == interruptedStage {
+					return errors.New("injected provisioning interruption")
+				}
+				return nil
+			}
+
+			require.Error(t, target.Provision(ctx, allocation))
+			var exists bool
+			require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", allocation.Database).Scan(&exists))
+			require.False(t, exists)
+			require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = $1)", allocation.Role).Scan(&exists))
+			require.False(t, exists)
+		})
+	}
+}
+
+func TestTargetProvisionKeepsDatabaseNonConnectableUntilAccessIsReady(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping PostgreSQL testcontainer test in short mode")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	t.Cleanup(cancel)
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(context.Background()) })
+
+	admin := connectLocal(ctx, t, container, "postgres", "postgres", "root-password")
+	defer admin.Close(ctx)
+	require.NoError(t, prepareBaseline(ctx, admin))
+	_, err := admin.Exec(ctx, "CREATE ROLE other_sample_role LOGIN PASSWORD 'other-password'")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = admin.Exec(context.Background(), "DROP ROLE other_sample_role")
+	})
+
+	reachedDatabaseCreated := make(chan struct{})
+	resumeProvisioning := make(chan struct{})
+	target := newLocalTarget(t, container)
+	target.provisionHook = func(stage provisionStage) error {
+		if stage == provisionStageDatabaseCreated {
+			close(reachedDatabaseCreated)
+			<-resumeProvisioning
+		}
+		return nil
+	}
+	allocation := Allocation{
+		Database: "sample_target_nonconnectable",
+		Role:     "sample_target_nonconnectable_role",
+		Password: "sample-target-password",
+	}
+	provisionErr := make(chan error, 1)
+	go func() {
+		provisionErr <- target.Provision(ctx, allocation)
+	}()
+	<-reachedDatabaseCreated
+
+	var allowConnections bool
+	require.NoError(t, admin.QueryRow(ctx, "SELECT datallowconn FROM pg_database WHERE datname = $1", allocation.Database).Scan(&allowConnections))
+	crossConfig, err := pgx.ParseConfig(fmt.Sprintf(
+		"postgres://other_sample_role:other-password@%s:%s/%s?sslmode=disable",
+		container.GetHost(),
+		container.GetPort(),
+		allocation.Database,
+	))
+	require.NoError(t, err)
+	crossConnection, crossErr := pgx.ConnectConfig(ctx, crossConfig)
+	close(resumeProvisioning)
+	require.NoError(t, <-provisionErr)
+	if crossConnection != nil {
+		require.NoError(t, crossConnection.Close(ctx))
+	}
+	t.Cleanup(func() {
+		_ = target.Remove(context.Background(), allocation)
+	})
+
+	require.False(t, allowConnections)
+	require.Error(t, crossErr)
+}
+
+func TestTargetProvisionPreservesOwnershipWhenAttemptCleanupFails(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping PostgreSQL testcontainer test in short mode")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	t.Cleanup(cancel)
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(context.Background()) })
+
+	admin := connectLocal(ctx, t, container, "postgres", "postgres", "root-password")
+	defer admin.Close(ctx)
+	require.NoError(t, prepareBaseline(ctx, admin))
+	allocation := Allocation{
+		Database: "sample_target_existing_database",
+		Role:     "sample_target_owned_role",
+		Password: "sample-target-password",
+	}
+	_, err := admin.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s", quoteIdentifier(allocation.Database)))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = admin.Exec(context.Background(), fmt.Sprintf("DROP DATABASE %s", quoteIdentifier(allocation.Database)))
+		_, _ = admin.Exec(context.Background(), fmt.Sprintf("DROP ROLE %s", quoteIdentifier(allocation.Role)))
+	})
+
+	target := newLocalTarget(t, container)
+	target.provisionHook = func(stage provisionStage) error {
+		if stage == provisionStageCleanupRole {
+			return errors.New("injected role cleanup failure")
+		}
+		return nil
+	}
+	err = target.Provision(ctx, allocation)
+	require.Error(t, err)
+
+	ownership, ok := provisionOwnershipOf(err)
+	require.True(t, ok)
+	require.False(t, ownership.databaseCreated)
+	require.True(t, ownership.roleCreated)
+
+	target.provisionHook = nil
+	require.NoError(t, target.Remove(ctx, Allocation{Role: allocation.Role}))
 	var databasePresent, rolePresent bool
 	require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", allocation.Database).Scan(&databasePresent))
 	require.True(t, databasePresent)

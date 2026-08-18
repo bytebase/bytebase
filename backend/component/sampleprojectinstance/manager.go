@@ -162,8 +162,9 @@ type SchemaSync interface {
 }
 
 // TargetService is the direct PostgreSQL target lifecycle boundary.
-// Provision must remove only resources created by its attempt before returning
-// an error, so Manager never needs target mutation-state details.
+// Provision removes only resources created by its attempt before returning an
+// error. The concrete target privately reports any owned resources it could not
+// remove so Manager can retain them for later cleanup.
 type TargetService interface {
 	Validate(ctx context.Context) error
 	ValidateForCleanup(ctx context.Context) error
@@ -313,6 +314,7 @@ func (m *Manager) prepareLocked(
 		return prepareOutcome{err: newFailure(FailureFailedPrecondition, errors.New("sample project instance entitlement is already consumed"))}
 	}
 	allocation := Allocation{Database: reservation.DBName, Role: reservation.RoleName}
+	targetCleanup := cleanupAllocation(reservation)
 
 	state, err := m.metadata.Lookup(lifecycleCtx, allocation, reservation.InstanceID, request.WorkspaceID, request.ProjectID)
 	if err != nil {
@@ -339,7 +341,7 @@ func (m *Manager) prepareLocked(
 			return prepareOutcome{err: mapTargetError(m.targetErr)}
 		}
 		m.logger.InfoContext(workCtx, "reconciling stale sample project instance reservation", "workspace", request.WorkspaceID)
-		if err := m.reconcile(workCtx, allocation, reservation.InstanceID, request); err != nil {
+		if err := m.reconcile(workCtx, allocation, targetCleanup, reservation.InstanceID, request); err != nil {
 			m.logger.ErrorContext(workCtx, "failed to reconcile stale sample project instance reservation", "workspace", request.WorkspaceID, "error", err)
 			return prepareOutcome{err: newFailure(FailureUnavailable, err)}
 		}
@@ -383,12 +385,16 @@ func (m *Manager) prepareLocked(
 	timedOut := errors.Is(provisionCtx.Err(), context.DeadlineExceeded)
 	provisionCancel()
 	if err != nil {
-		if timedOut {
-			err = newFailure(FailureDeadlineExceeded, context.DeadlineExceeded)
-		} else {
-			err = mapTargetError(err)
+		if ownership, ok := provisionOwnershipOf(err); ok {
+			if ownershipErr := tx.SetProvisionOwnership(lifecycleCtx, ownership.databaseCreated, ownership.roleCreated); ownershipErr != nil {
+				return prepareOutcome{err: newFailure(FailureUnavailable, errors.Join(errors.New("failed to preserve sample project instance provision ownership"), ownershipErr))}
+			}
+			return prepareOutcome{commit: true, err: mapProvisionError(err, timedOut)}
 		}
-		return m.discardReservation(lifecycleCtx, tx, err)
+		return m.discardReservation(lifecycleCtx, tx, mapProvisionError(err, timedOut))
+	}
+	if err := tx.SetProvisionOwnership(workCtx, true, true); err != nil {
+		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, errors.Join(errors.New("failed to record sample project instance provision ownership"), err))
 	}
 	registered, err := m.metadata.Create(workCtx, Registration{
 		WorkspaceID:       request.WorkspaceID,
@@ -421,11 +427,35 @@ func (m *Manager) prepareLocked(
 	}
 }
 
-func (m *Manager) reconcile(ctx context.Context, allocation Allocation, instanceID string, request PrepareRequest) error {
-	if err := m.metadata.Remove(ctx, allocation, instanceID, request.WorkspaceID, request.ProjectID); err != nil {
+func mapProvisionError(err error, timedOut bool) error {
+	if timedOut {
+		return newFailure(FailureDeadlineExceeded, context.DeadlineExceeded)
+	}
+	return mapTargetError(err)
+}
+
+func cleanupAllocation(reservation *store.SampleProjectInstanceMessage) Allocation {
+	allocation := Allocation{Database: reservation.DBName, Role: reservation.RoleName}
+	if !reservation.OwnershipKnown {
+		return allocation
+	}
+	if !reservation.DatabaseCreated {
+		allocation.Database = ""
+	}
+	if !reservation.RoleCreated {
+		allocation.Role = ""
+	}
+	return allocation
+}
+
+func (m *Manager) reconcile(ctx context.Context, metadataAllocation, targetAllocation Allocation, instanceID string, request PrepareRequest) error {
+	if err := m.metadata.Remove(ctx, metadataAllocation, instanceID, request.WorkspaceID, request.ProjectID); err != nil {
 		return errors.Join(errors.New("failed to remove partial sample project instance metadata"), err)
 	}
-	if err := m.target.Remove(ctx, allocation); err != nil {
+	if targetAllocation.Database == "" && targetAllocation.Role == "" {
+		return nil
+	}
+	if err := m.target.Remove(ctx, targetAllocation); err != nil {
 		return errors.Join(errors.New("failed to remove partial sample project instance target resources"), err)
 	}
 	return nil
@@ -499,7 +529,7 @@ func (m *Manager) Cleanup(ctx context.Context, now time.Time) error {
 			allocation := Allocation{Database: reservation.DBName, Role: reservation.RoleName}
 			if reservation.ExpiresAt == nil {
 				m.logger.InfoContext(callbackCtx, "reconciling stale sample project instance reservation", "workspace", reservation.WorkspaceID)
-				err := m.reconcile(attemptCtx, allocation, reservation.InstanceID, PrepareRequest{WorkspaceID: reservation.WorkspaceID, ProjectID: reservation.ProjectID})
+				err := m.reconcile(attemptCtx, allocation, cleanupAllocation(reservation), reservation.InstanceID, PrepareRequest{WorkspaceID: reservation.WorkspaceID, ProjectID: reservation.ProjectID})
 				if err != nil {
 					m.logger.ErrorContext(callbackCtx, "failed to reconcile stale sample project instance reservation", "workspace", reservation.WorkspaceID, "error", err)
 				}

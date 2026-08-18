@@ -136,6 +136,15 @@ func TestWithLockedSampleProjectInstanceResetsStaleReservationAndCountsCleanup(t
 	_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
 	require.NoError(t, err)
 	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
+		return tx.SetProvisionOwnership(ctx, false, true)
+	}))
+	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
+		require.True(t, message.OwnershipKnown)
+		require.False(t, message.DatabaseCreated)
+		require.True(t, message.RoleCreated)
+		return nil
+	}))
+	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
 		return tx.ResetCreatedAt(ctx, now)
 	}))
 	count, err := s.CountSampleProjectInstancesForCleanup(ctx, now.Add(time.Hour), now.Add(time.Minute))
@@ -143,6 +152,9 @@ func TestWithLockedSampleProjectInstanceResetsStaleReservationAndCountsCleanup(t
 	require.Equal(t, 1, count)
 	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
 		require.Equal(t, now, message.CreatedAt)
+		require.False(t, message.OwnershipKnown)
+		require.False(t, message.DatabaseCreated)
+		require.False(t, message.RoleCreated)
 		return nil
 	}))
 }

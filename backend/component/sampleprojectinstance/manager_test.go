@@ -283,6 +283,38 @@ func TestManagerPrepareDoesNotRemoveResourcesAfterDeterministicTargetCollision(t
 	}))
 }
 
+func TestManagerPrepareRetainsReservationWhenOwnedProvisioningCleanupFails(t *testing.T) {
+	ctx, _, s := newManagerStore(t)
+	target := &fakeTarget{
+		provisionErr: &provisionFailure{
+			err: unavailableTargetError("failed to clean up provisioning attempt"),
+			ownership: provisionOwnership{
+				roleCreated: true,
+			},
+		},
+	}
+	manager := NewManager(s, target, &fakeMetadata{}, &fakeSyncer{databaseName: sampleNames("workspace-a").Database}, ManagerOptions{})
+
+	_, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.Equal(t, FailureUnavailable, FailureKindOf(err))
+	require.Empty(t, target.removes)
+	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(_ context.Context, _ *store.SampleProjectInstanceTx, reservation *store.SampleProjectInstanceMessage) error {
+		require.Equal(t, sampleNames("workspace-a").Database, reservation.DBName)
+		require.Equal(t, sampleNames("workspace-a").Role, reservation.RoleName)
+		require.True(t, reservation.OwnershipKnown)
+		require.False(t, reservation.DatabaseCreated)
+		require.True(t, reservation.RoleCreated)
+		return nil
+	}))
+
+	target.provisionErr = nil
+	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.NoError(t, err)
+	require.Equal(t, []Allocation{{
+		Role: sampleNames("workspace-a").Role,
+	}}, target.removes)
+}
+
 func TestManagerPrepareReservesOneMinuteForCompensation(t *testing.T) {
 	ctx, _, s := newManagerStore(t)
 	target := &fakeTarget{}
