@@ -156,6 +156,22 @@ func TestLoginAnnouncesPreAuthenticationWorkspace(t *testing.T) {
 		require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 		require.Equal(t, []string{"ws-test"}, auditWorkspaceIDs)
 	})
+
+	t.Run("rejects nonexistent requested workspace", func(t *testing.T) {
+		service := &AuthService{store: stores, profile: &config.Profile{}}
+		var auditWorkspaceID string
+		ctx := common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
+			auditWorkspaceID = workspaceID
+		})
+		workspace := common.FormatWorkspace("missing")
+		_, err := service.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:     "unknown@example.com",
+			Password:  "wrong-password",
+			Workspace: &workspace,
+		}))
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		require.Empty(t, auditWorkspaceID)
+	})
 }
 
 func TestExtractDomain(t *testing.T) {

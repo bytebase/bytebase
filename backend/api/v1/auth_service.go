@@ -143,7 +143,7 @@ func (s *AuthService) GetAuthenticationRestriction(
 ) (*connect.Response[v1pb.AuthenticationInfo], error) {
 	workspaceID, err := s.resolveAuthenticationWorkspaceID(ctx, &req.Msg.Workspace)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, err
 	}
 
 	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, workspaceID)
@@ -162,17 +162,25 @@ func (s *AuthService) GetAuthenticationRestriction(
 
 // resolveAuthenticationWorkspaceID resolves the workspace targeted by an
 // authentication request and announces it to the audit interceptor. An explicit
-// workspace is used regardless of account membership; self-hosted falls back to
-// the singleton workspace when the request omits it.
+// existing workspace is used regardless of account membership; self-hosted falls
+// back to the singleton workspace when the request omits it.
 func (s *AuthService) resolveAuthenticationWorkspaceID(ctx context.Context, workspaceName *string) (string, error) {
 	workspaceID, err := parseOptionalWorkspace(workspaceName)
 	if err != nil {
-		return "", err
+		return "", connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	if workspaceID == "" && !s.profile.SaaS {
+	if workspaceID != "" {
+		workspace, err := s.store.GetWorkspaceByID(ctx, workspaceID)
+		if err != nil {
+			return "", connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+		}
+		if workspace == nil {
+			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("workspace %q not found", common.FormatWorkspace(workspaceID)))
+		}
+	} else if !s.profile.SaaS {
 		workspaceID, err = s.store.GetWorkspaceID(ctx)
 		if err != nil {
-			return "", err
+			return "", connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
 		}
 	}
 	if workspaceID != "" {
@@ -189,7 +197,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	// accounts can be recorded. SaaS requires an explicit workspace; self-hosted
 	// falls back to the singleton workspace.
 	if _, err := s.resolveAuthenticationWorkspaceID(ctx, request.Workspace); err != nil {
-		slog.Warn("failed to resolve workspace for login audit", log.BBError(err))
+		return nil, err
 	}
 
 	// 1. Authenticate user (password, IDP, or MFA completion)
