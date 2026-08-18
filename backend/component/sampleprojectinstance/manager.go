@@ -15,6 +15,7 @@ import (
 	"time"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -146,33 +147,6 @@ func (s MetadataState) matches(reservation *store.SampleProjectInstanceMessage) 
 		s.Database.DatabaseName == reservation.DBName
 }
 
-// MetadataStore owns normal Bytebase Instance and Database metadata. The
-// concrete adapter belongs to API/server wiring, not this lifecycle package.
-type MetadataStore interface {
-	Lookup(ctx context.Context, allocation Allocation, instanceID, workspaceID, projectID string) (MetadataState, error)
-	Create(ctx context.Context, registration Registration) (*store.InstanceMessage, error)
-	Remove(ctx context.Context, allocation Allocation, instanceID, workspaceID, projectID string) error
-}
-
-// SchemaSync performs synchronous database discovery then schedules the
-// ordinary asynchronous schema sync.
-type SchemaSync interface {
-	SyncInstance(ctx context.Context, instance *store.InstanceMessage) (*store.InstanceMessage, []*store.DatabaseMessage, error)
-	SyncDatabasesAsync(databases []*store.DatabaseMessage)
-}
-
-// TargetService is the direct PostgreSQL target lifecycle boundary.
-// Provision removes only resources created by its attempt before returning an
-// error. The concrete target privately reports any owned resources it could not
-// remove so Manager can retain them for later cleanup.
-type TargetService interface {
-	Validate(ctx context.Context) error
-	ValidateForCleanup(ctx context.Context) error
-	Provision(ctx context.Context, allocation Allocation) error
-	Remove(ctx context.Context, allocation Allocation) error
-	InstanceConfig(allocation Allocation) (*InstanceConfig, error)
-}
-
 // ManagerOptions control non-production seams used by lifecycle tests.
 type ManagerOptions struct {
 	Clock  func() time.Time
@@ -184,10 +158,9 @@ type ManagerOptions struct {
 // registration, discovery, expiration, and cleanup.
 type Manager struct {
 	store     *store.Store
-	target    TargetService
+	target    *Target
 	targetErr error
-	metadata  MetadataStore
-	schema    SchemaSync
+	syncer    *schemasync.Syncer
 	clock     func() time.Time
 	random    io.Reader
 	logger    *slog.Logger
@@ -207,12 +180,11 @@ type prepareOutcome struct {
 func NewManagerFromURL(
 	s *store.Store,
 	targetURL string,
-	metadata MetadataStore,
-	schema SchemaSync,
+	syncer *schemasync.Syncer,
 	options ManagerOptions,
 ) *Manager {
 	target, err := NewTarget(targetURL)
-	manager := NewManager(s, target, metadata, schema, options)
+	manager := NewManager(s, target, syncer, options)
 	manager.targetErr = err
 	return manager
 }
@@ -220,9 +192,8 @@ func NewManagerFromURL(
 // NewManager creates a Sample Project Instance lifecycle manager.
 func NewManager(
 	s *store.Store,
-	target TargetService,
-	metadata MetadataStore,
-	schema SchemaSync,
+	target *Target,
+	syncer *schemasync.Syncer,
 	options ManagerOptions,
 ) *Manager {
 	if options.Clock == nil {
@@ -235,19 +206,18 @@ func NewManager(
 		options.Logger = slog.Default()
 	}
 	return &Manager{
-		store:    s,
-		target:   target,
-		metadata: metadata,
-		schema:   schema,
-		clock:    options.Clock,
-		random:   options.Random,
-		logger:   options.Logger,
+		store:  s,
+		target: target,
+		syncer: syncer,
+		clock:  options.Clock,
+		random: options.Random,
+		logger: options.Logger,
 	}
 }
 
 // Prepare provisions and registers a seven-day sample instance for a project.
 func (m *Manager) Prepare(ctx context.Context, request PrepareRequest) (*PrepareResult, error) {
-	if m.store == nil || (m.target == nil && m.targetErr == nil) || m.metadata == nil || m.schema == nil {
+	if m.store == nil || (m.target == nil && m.targetErr == nil) || m.syncer == nil {
 		return nil, errors.New("sample project instance manager is not configured")
 	}
 	if request.WorkspaceID == "" || request.ProjectID == "" {
@@ -295,7 +265,7 @@ func (m *Manager) Prepare(ctx context.Context, request PrepareRequest) (*Prepare
 		return nil, outcome.err
 	}
 	if len(outcome.discoveredDatabases) > 0 {
-		m.schema.SyncDatabasesAsync(outcome.discoveredDatabases)
+		m.syncer.SyncDatabasesAsync(outcome.discoveredDatabases)
 	}
 	return &PrepareResult{
 		Instance:     outcome.instance,
@@ -316,7 +286,7 @@ func (m *Manager) prepareLocked(
 	allocation := Allocation{Database: reservation.DBName, Role: reservation.RoleName}
 	targetCleanup := cleanupAllocation(reservation)
 
-	state, err := m.metadata.Lookup(lifecycleCtx, allocation, reservation.InstanceID, request.WorkspaceID, request.ProjectID)
+	state, err := m.lookupMetadata(lifecycleCtx, allocation, reservation.InstanceID, request.WorkspaceID, request.ProjectID)
 	if err != nil {
 		err = errors.Join(errors.New("failed to inspect sample project instance metadata"), err)
 		if created {
@@ -396,7 +366,7 @@ func (m *Manager) prepareLocked(
 	if err := tx.SetProvisionOwnership(workCtx, true, true); err != nil {
 		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, errors.Join(errors.New("failed to record sample project instance provision ownership"), err))
 	}
-	registered, err := m.metadata.Create(workCtx, Registration{
+	registered, err := m.createMetadata(workCtx, Registration{
 		WorkspaceID:       request.WorkspaceID,
 		ProjectID:         request.ProjectID,
 		EnvironmentID:     testEnvironmentID,
@@ -410,7 +380,7 @@ func (m *Manager) prepareLocked(
 	if err != nil {
 		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, errors.Join(errors.New("failed to create sample project instance metadata"), err))
 	}
-	synced, databases, err := m.schema.SyncInstance(workCtx, registered)
+	synced, _, databases, err := m.syncer.SyncInstance(workCtx, registered)
 	if err != nil {
 		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, mapDiscoveryError(workCtx, err))
 	}
@@ -449,7 +419,7 @@ func cleanupAllocation(reservation *store.SampleProjectInstanceMessage) Allocati
 }
 
 func (m *Manager) reconcile(ctx context.Context, metadataAllocation, targetAllocation Allocation, instanceID string, request PrepareRequest) error {
-	if err := m.metadata.Remove(ctx, metadataAllocation, instanceID, request.WorkspaceID, request.ProjectID); err != nil {
+	if err := m.removeMetadata(ctx, metadataAllocation, instanceID, request.WorkspaceID, request.ProjectID); err != nil {
 		return errors.Join(errors.New("failed to remove partial sample project instance metadata"), err)
 	}
 	if targetAllocation.Database == "" && targetAllocation.Role == "" {
@@ -472,7 +442,7 @@ func (m *Manager) compensate(
 	m.logger.WarnContext(lifecycleCtx, "compensating failed sample project instance preparation", "workspace", request.WorkspaceID, "error", original)
 	compensationCtx, cancel := context.WithTimeout(lifecycleCtx, compensationDeadline)
 	defer cancel()
-	metadataErr := m.metadata.Remove(compensationCtx, allocation, instanceID, request.WorkspaceID, request.ProjectID)
+	metadataErr := m.removeMetadata(compensationCtx, allocation, instanceID, request.WorkspaceID, request.ProjectID)
 	targetErr := m.target.Remove(compensationCtx, allocation)
 	if metadataErr != nil || targetErr != nil {
 		err := errors.Join(metadataErr, targetErr)
@@ -504,7 +474,7 @@ func (m *Manager) denyByPolicy(ctx context.Context, tx *store.SampleProjectInsta
 
 // Cleanup removes expired target resources and reconciles stale reservations.
 func (m *Manager) Cleanup(ctx context.Context, now time.Time) error {
-	if m.store == nil || (m.target == nil && m.targetErr == nil) || m.metadata == nil {
+	if m.store == nil || (m.target == nil && m.targetErr == nil) {
 		return errors.New("sample project instance manager is not configured")
 	}
 	targetErr := m.targetErr

@@ -9,22 +9,9 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// StoreMetadata adapts normal Bytebase metadata persistence to MetadataStore.
-// It deliberately verifies every ownership and deterministic-allocation field
-// before deleting anything during lifecycle compensation.
-type StoreMetadata struct {
-	store *store.Store
-}
-
-// NewStoreMetadata creates the normal metadata adapter for sample Project
-// Instances.
-func NewStoreMetadata(s *store.Store) *StoreMetadata {
-	return &StoreMetadata{store: s}
-}
-
 // Lookup reads the deterministic Instance across its workspace, then the
 // expected project-scoped Database, including their deleted state.
-func (m *StoreMetadata) Lookup(
+func (m *Manager) lookupMetadata(
 	ctx context.Context,
 	allocation Allocation,
 	instanceID, workspaceID, projectID string,
@@ -64,7 +51,7 @@ func (m *StoreMetadata) Lookup(
 
 // Create persists the activated, project-scoped PostgreSQL Instance through
 // Store.CreateInstance so credential obfuscation remains centralized.
-func (m *StoreMetadata) Create(ctx context.Context, registration Registration) (*store.InstanceMessage, error) {
+func (m *Manager) createMetadata(ctx context.Context, registration Registration) (*store.InstanceMessage, error) {
 	return m.store.CreateInstance(ctx, &store.InstanceMessage{
 		Workspace:     registration.WorkspaceID,
 		ProjectID:     &registration.ProjectID,
@@ -85,7 +72,7 @@ func (m *StoreMetadata) Create(ctx context.Context, registration Registration) (
 // Remove deletes only the exact, deterministic Sample Project Instance in its
 // owning project and workspace. It rejects collisions so the caller leaves
 // physical resources and the reservation available for later diagnosis.
-func (m *StoreMetadata) Remove(
+func (m *Manager) removeMetadata(
 	ctx context.Context,
 	allocation Allocation,
 	instanceID, workspaceID, projectID string,
