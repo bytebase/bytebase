@@ -30,118 +30,51 @@ const (
 	staleReservationAge        = time.Hour
 )
 
-// ErrorKind classifies lifecycle failures for the API layer.
-type ErrorKind string
+// FailureKind classifies failures at the Manager seam.
+type FailureKind string
 
 const (
-	// ErrorKindFailedPrecondition indicates an unavailable or already consumed
-	// sample-project-instance entitlement.
-	ErrorKindFailedPrecondition ErrorKind = "failed_precondition"
-	// ErrorKindUnavailable indicates a retryable target or compensation failure.
-	ErrorKindUnavailable ErrorKind = "unavailable"
-	// ErrorKindInternal indicates an invariant or unexpected internal failure.
-	ErrorKindInternal ErrorKind = "internal"
-	// ErrorKindDeadlineExceeded indicates lifecycle work exceeded its deadline.
-	ErrorKindDeadlineExceeded ErrorKind = "deadline_exceeded"
+	// FailureUnknown is the default for unexpected failures.
+	FailureUnknown FailureKind = "unknown"
+	// FailureFailedPrecondition indicates an unavailable or already consumed
+	// Sample Project Instance entitlement.
+	FailureFailedPrecondition FailureKind = "failed_precondition"
+	// FailureUnavailable indicates a retryable target or compensation failure.
+	FailureUnavailable FailureKind = "unavailable"
+	// FailureDeadlineExceeded indicates lifecycle work exceeded its deadline.
+	FailureDeadlineExceeded FailureKind = "deadline_exceeded"
 )
 
-// Error is a typed lifecycle error suitable for Connect status translation.
-type Error struct {
-	Kind ErrorKind
-	Err  error
+type failure struct {
+	kind FailureKind
+	err  error
 }
 
-func (e *Error) Error() string {
-	if e.Err == nil {
-		return string(e.Kind)
+func (e *failure) Error() string {
+	if e.err == nil {
+		return string(e.kind)
 	}
-	return e.Err.Error()
-}
-
-func (e *Error) Unwrap() error {
-	return e.Err
-}
-
-func (e *Error) Is(target error) bool {
-	other, ok := target.(*Error)
-	return ok && e.Kind == other.Kind
-}
-
-var (
-	// ErrFailedPrecondition identifies a consumed or invalid entitlement.
-	ErrFailedPrecondition = &Error{Kind: ErrorKindFailedPrecondition}
-	// ErrUnavailable identifies retryable target lifecycle failures.
-	ErrUnavailable = &Error{Kind: ErrorKindUnavailable}
-	// ErrInternal identifies lifecycle invariants and unexpected failures.
-	ErrInternal = &Error{Kind: ErrorKindInternal}
-	// ErrDeadlineExceeded identifies lifecycle deadline failures.
-	ErrDeadlineExceeded = &Error{Kind: ErrorKindDeadlineExceeded}
-)
-
-// ErrorKindOf returns the typed manager classification, if available.
-func ErrorKindOf(err error) ErrorKind {
-	var lifecycleErr *Error
-	if errors.As(err, &lifecycleErr) {
-		return lifecycleErr.Kind
-	}
-	return ""
-}
-
-func lifecycleError(kind ErrorKind, err error) error {
-	return &Error{Kind: kind, Err: err}
-}
-
-// committedError tells Prepare to commit the locked control-plane mutation
-// before returning the underlying lifecycle failure to its caller.
-type committedError struct {
-	err error
-}
-
-func (e *committedError) Error() string {
 	return e.err.Error()
 }
 
-func (e *committedError) Unwrap() error {
+func (e *failure) Unwrap() error {
 	return e.err
 }
 
-// TargetErrorKind distinguishes static target configuration errors from
-// transient target connectivity failures.
-type TargetErrorKind string
-
-const (
-	// TargetErrorStatic indicates malformed configuration or an insufficient
-	// target privilege/isolation baseline.
-	TargetErrorStatic TargetErrorKind = "static"
-	// TargetErrorUnavailable indicates a reachable target could not complete
-	// an operation.
-	TargetErrorUnavailable TargetErrorKind = "unavailable"
-	// TargetErrorInvariant indicates a deterministic allocation collision or
-	// another target state that violates the lifecycle contract.
-	TargetErrorInvariant TargetErrorKind = "invariant"
-)
-
-// TargetError is returned by Target implementations without exposing
-// credentials in the error text.
-type TargetError struct {
-	Kind TargetErrorKind
-	Err  error
-}
-
-func (e *TargetError) Error() string {
-	if e.Err == nil {
-		return string(e.Kind)
+// FailureKindOf returns the Manager failure classification.
+func FailureKindOf(err error) FailureKind {
+	var classified *failure
+	if errors.As(err, &classified) {
+		return classified.kind
 	}
-	return e.Err.Error()
+	return FailureUnknown
 }
 
-func (e *TargetError) Unwrap() error {
-	return e.Err
-}
-
-// NewTargetError constructs a typed target error.
-func NewTargetError(kind TargetErrorKind, err error) error {
-	return &TargetError{Kind: kind, Err: err}
+func newFailure(kind FailureKind, err error) error {
+	if kind == FailureUnknown {
+		return err
+	}
+	return &failure{kind: kind, err: err}
 }
 
 // AllocationNames are the deterministic names allocated to one workspace.
@@ -161,9 +94,22 @@ func sampleNames(workspaceID string) AllocationNames {
 
 // PrepareRequest identifies the Project that will own the sample instance.
 type PrepareRequest struct {
-	WorkspaceID string
-	ProjectID   string
-	CanCreate   func(context.Context) error
+	WorkspaceID       string
+	ProjectID         string
+	CheckCreatePolicy func(context.Context) (CreatePolicyResult, error)
+}
+
+// CreatePolicyResult is the transport-neutral capacity decision supplied by
+// the API adapter. A nil DeniedReason allows creation.
+type CreatePolicyResult struct {
+	DeniedReason error
+}
+
+// PrepareResult is the result of preparation. PolicyDenied is set only when
+// creation was rejected by the supplied capacity policy.
+type PrepareResult struct {
+	Instance     *store.InstanceMessage
+	PolicyDenied error
 }
 
 // Registration is the normal Instance registration requested by Manager.
@@ -216,6 +162,8 @@ type SchemaSync interface {
 }
 
 // TargetService is the direct PostgreSQL target lifecycle boundary.
+// Provision must remove only resources created by its attempt before returning
+// an error, so Manager never needs target mutation-state details.
 type TargetService interface {
 	Validate(ctx context.Context) error
 	ValidateForCleanup(ctx context.Context) error
@@ -242,6 +190,14 @@ type Manager struct {
 	clock     func() time.Time
 	random    io.Reader
 	logger    *slog.Logger
+}
+
+type prepareOutcome struct {
+	instance            *store.InstanceMessage
+	discoveredDatabases []*store.DatabaseMessage
+	policyDenied        error
+	commit              bool
+	err                 error
 }
 
 // NewManagerFromURL creates a startup-safe manager from raw target
@@ -289,17 +245,17 @@ func NewManager(
 }
 
 // Prepare provisions and registers a seven-day sample instance for a project.
-func (m *Manager) Prepare(ctx context.Context, request PrepareRequest) (*store.InstanceMessage, error) {
+func (m *Manager) Prepare(ctx context.Context, request PrepareRequest) (*PrepareResult, error) {
 	if m.store == nil || (m.target == nil && m.targetErr == nil) || m.metadata == nil || m.schema == nil {
-		return nil, lifecycleError(ErrorKindInternal, errors.New("sample project instance manager is not configured"))
+		return nil, errors.New("sample project instance manager is not configured")
 	}
 	if request.WorkspaceID == "" || request.ProjectID == "" {
-		return nil, lifecycleError(ErrorKindFailedPrecondition, errors.New("sample project instance requires workspace and project"))
+		return nil, newFailure(FailureFailedPrecondition, errors.New("sample project instance requires workspace and project"))
 	}
 	names := sampleNames(request.WorkspaceID)
 	existing, err := m.store.GetSampleProjectInstance(ctx, request.WorkspaceID)
 	if err != nil {
-		return nil, lifecycleError(ErrorKindInternal, errors.Join(errors.New("failed to inspect sample project instance reservation"), err))
+		return nil, errors.Join(errors.New("failed to inspect sample project instance reservation"), err)
 	}
 	instanceID := ""
 	if existing != nil {
@@ -307,7 +263,7 @@ func (m *Manager) Prepare(ctx context.Context, request PrepareRequest) (*store.I
 	} else {
 		instanceID, err = randomInstanceID(m.random)
 		if err != nil {
-			return nil, lifecycleError(ErrorKindInternal, errors.Join(errors.New("failed to generate sample project instance ID"), err))
+			return nil, errors.Join(errors.New("failed to generate sample project instance ID"), err)
 		}
 	}
 	reservation, created, err := m.store.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
@@ -323,29 +279,27 @@ func (m *Manager) Prepare(ctx context.Context, request PrepareRequest) (*store.I
 
 	lifecycleCtx, lifecycleCancel := context.WithTimeout(context.WithoutCancel(ctx), prepareDeadline)
 	defer lifecycleCancel()
-	var instance *store.InstanceMessage
-	var discoveredDatabases []*store.DatabaseMessage
-	var finalErr error
+	var outcome prepareOutcome
 	err = m.store.WithLockedSampleProjectInstance(lifecycleCtx, reservation.WorkspaceID, func(lockCtx context.Context, tx *store.SampleProjectInstanceTx, locked *store.SampleProjectInstanceMessage) error {
-		var prepareErr error
-		instance, prepareErr = m.prepareLocked(lockCtx, tx, locked, request, created, &discoveredDatabases)
-		var committed *committedError
-		if errors.As(prepareErr, &committed) {
-			finalErr = committed.err
+		outcome = m.prepareLocked(lockCtx, tx, locked, request, created)
+		if outcome.commit {
 			return nil
 		}
-		return prepareErr
+		return outcome.err
 	})
 	if err != nil {
 		return nil, err
 	}
-	if finalErr != nil {
-		return nil, finalErr
+	if outcome.err != nil {
+		return nil, outcome.err
 	}
-	if len(discoveredDatabases) > 0 {
-		m.schema.SyncDatabasesAsync(discoveredDatabases)
+	if len(outcome.discoveredDatabases) > 0 {
+		m.schema.SyncDatabasesAsync(outcome.discoveredDatabases)
 	}
-	return instance, nil
+	return &PrepareResult{
+		Instance:     outcome.instance,
+		PolicyDenied: outcome.policyDenied,
+	}, nil
 }
 
 func (m *Manager) prepareLocked(
@@ -354,69 +308,73 @@ func (m *Manager) prepareLocked(
 	reservation *store.SampleProjectInstanceMessage,
 	request PrepareRequest,
 	created bool,
-	discoveredDatabases *[]*store.DatabaseMessage,
-) (*store.InstanceMessage, error) {
+) prepareOutcome {
 	if reservation.ProjectID != request.ProjectID || reservation.DeletedAt != nil {
-		return nil, lifecycleError(ErrorKindFailedPrecondition, errors.New("sample project instance entitlement is already consumed"))
+		return prepareOutcome{err: newFailure(FailureFailedPrecondition, errors.New("sample project instance entitlement is already consumed"))}
 	}
 	allocation := Allocation{Database: reservation.DBName, Role: reservation.RoleName}
 
 	state, err := m.metadata.Lookup(lifecycleCtx, allocation, reservation.InstanceID, request.WorkspaceID, request.ProjectID)
 	if err != nil {
+		err = errors.Join(errors.New("failed to inspect sample project instance metadata"), err)
 		if created {
-			return nil, m.discardReservation(lifecycleCtx, tx, lifecycleError(ErrorKindInternal, errors.Join(errors.New("failed to inspect sample project instance metadata"), err)))
+			return m.discardReservation(lifecycleCtx, tx, err)
 		}
-		return nil, lifecycleError(ErrorKindInternal, errors.Join(errors.New("failed to inspect sample project instance metadata"), err))
+		return prepareOutcome{err: err}
 	}
 	if reservation.ExpiresAt != nil {
 		if !state.matches(reservation) {
-			return nil, lifecycleError(ErrorKindFailedPrecondition, errors.New("sample project instance entitlement is already consumed"))
+			return prepareOutcome{err: newFailure(FailureFailedPrecondition, errors.New("sample project instance entitlement is already consumed"))}
 		}
-		return state.Instance, nil
+		return prepareOutcome{instance: state.Instance, commit: true}
 	}
 	if created && (state.Instance != nil || state.Database != nil) {
-		return nil, m.discardReservation(lifecycleCtx, tx, lifecycleError(ErrorKindInternal, errors.New("sample project instance deterministic metadata collision")))
+		return m.discardReservation(lifecycleCtx, tx, errors.New("sample project instance metadata collision"))
 	}
 
 	workCtx, workCancel := preparationWorkContext(lifecycleCtx)
 	defer workCancel()
 	if !created {
 		if m.targetErr != nil {
-			return nil, mapTargetError(m.targetErr)
+			return prepareOutcome{err: mapTargetError(m.targetErr)}
 		}
 		m.logger.InfoContext(workCtx, "reconciling stale sample project instance reservation", "workspace", request.WorkspaceID)
 		if err := m.reconcile(workCtx, allocation, reservation.InstanceID, request); err != nil {
 			m.logger.ErrorContext(workCtx, "failed to reconcile stale sample project instance reservation", "workspace", request.WorkspaceID, "error", err)
-			return nil, lifecycleError(ErrorKindUnavailable, err)
+			return prepareOutcome{err: newFailure(FailureUnavailable, err)}
 		}
 		if err := tx.ResetCreatedAt(workCtx, m.clock()); err != nil {
-			return nil, lifecycleError(ErrorKindInternal, errors.Join(errors.New("failed to reset sample project instance reservation"), err))
+			return prepareOutcome{err: errors.Join(errors.New("failed to reset sample project instance reservation"), err)}
 		}
 	}
 
 	if m.targetErr != nil {
-		return nil, m.discardReservation(lifecycleCtx, tx, mapTargetError(m.targetErr))
+		return m.discardReservation(lifecycleCtx, tx, mapTargetError(m.targetErr))
 	}
 	if err := m.target.Validate(workCtx); err != nil {
-		return nil, m.discardReservation(lifecycleCtx, tx, mapTargetError(err))
+		return m.discardReservation(lifecycleCtx, tx, mapTargetError(err))
 	}
-	if request.CanCreate != nil {
-		if err := request.CanCreate(workCtx); err != nil {
-			return nil, m.discardReservation(lifecycleCtx, tx, err)
+	if request.CheckCreatePolicy != nil {
+		policy, err := request.CheckCreatePolicy(workCtx)
+		if err != nil {
+			return m.discardReservation(lifecycleCtx, tx, err)
+		}
+		if policy.DeniedReason != nil {
+			return m.denyByPolicy(lifecycleCtx, tx, policy.DeniedReason)
 		}
 	}
 
 	password, err := randomPassword(m.random)
 	if err != nil {
-		return nil, m.discardReservation(lifecycleCtx, tx, lifecycleError(ErrorKindInternal, errors.Join(errors.New("failed to generate sample project instance password"), err)))
+		return m.discardReservation(lifecycleCtx, tx, errors.Join(errors.New("failed to generate sample project instance password"), err))
 	}
 	allocation.Password = password
 	config, err := m.target.InstanceConfig(allocation)
 	if err != nil {
-		return nil, m.discardReservation(lifecycleCtx, tx, mapTargetError(err))
+		return m.discardReservation(lifecycleCtx, tx, mapTargetError(err))
 	}
 	if len(config.SyncDatabaseNames) != 1 || config.SyncDatabaseNames[0] != allocation.Database {
-		return nil, m.discardReservation(lifecycleCtx, tx, lifecycleError(ErrorKindInternal, errors.New("sample project instance sync filter invariant failed")))
+		return m.discardReservation(lifecycleCtx, tx, errors.New("sample project instance sync filter invariant failed"))
 	}
 
 	m.logger.InfoContext(workCtx, "preparing sample project instance", "workspace", request.WorkspaceID, "project", request.ProjectID)
@@ -426,13 +384,11 @@ func (m *Manager) prepareLocked(
 	provisionCancel()
 	if err != nil {
 		if timedOut {
-			err = lifecycleError(ErrorKindDeadlineExceeded, context.DeadlineExceeded)
-		} else if isTargetInvariant(err) {
-			return nil, m.discardReservation(lifecycleCtx, tx, mapTargetError(err))
+			err = newFailure(FailureDeadlineExceeded, context.DeadlineExceeded)
 		} else {
 			err = mapTargetError(err)
 		}
-		return nil, m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, err)
+		return m.discardReservation(lifecycleCtx, tx, err)
 	}
 	registered, err := m.metadata.Create(workCtx, Registration{
 		WorkspaceID:       request.WorkspaceID,
@@ -446,20 +402,23 @@ func (m *Manager) prepareLocked(
 		SyncDatabaseNames: config.SyncDatabaseNames,
 	})
 	if err != nil {
-		return nil, m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, lifecycleError(ErrorKindInternal, errors.Join(errors.New("failed to create sample project instance metadata"), err)))
+		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, errors.Join(errors.New("failed to create sample project instance metadata"), err))
 	}
 	synced, databases, err := m.schema.SyncInstance(workCtx, registered)
 	if err != nil {
-		return nil, m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, mapDiscoveryError(workCtx, err))
+		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, mapDiscoveryError(workCtx, err))
 	}
 	if len(databases) != 1 || databases[0].DatabaseName != allocation.Database || databases[0].Deleted {
-		return nil, m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, lifecycleError(ErrorKindInternal, errors.New("sample project instance discovery invariant failed")))
+		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, errors.New("sample project instance discovery invariant failed"))
 	}
 	if err := tx.SetExpiration(workCtx, m.clock().Add(sampleLifetime)); err != nil {
-		return nil, m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, lifecycleError(ErrorKindInternal, errors.Join(errors.New("failed to activate sample project instance"), err)))
+		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, errors.Join(errors.New("failed to activate sample project instance"), err))
 	}
-	*discoveredDatabases = databases
-	return synced, nil
+	return prepareOutcome{
+		instance:            synced,
+		discoveredDatabases: databases,
+		commit:              true,
+	}
 }
 
 func (m *Manager) reconcile(ctx context.Context, allocation Allocation, instanceID string, request PrepareRequest) error {
@@ -479,7 +438,7 @@ func (m *Manager) compensate(
 	instanceID string,
 	request PrepareRequest,
 	original error,
-) error {
+) prepareOutcome {
 	m.logger.WarnContext(lifecycleCtx, "compensating failed sample project instance preparation", "workspace", request.WorkspaceID, "error", original)
 	compensationCtx, cancel := context.WithTimeout(lifecycleCtx, compensationDeadline)
 	defer cancel()
@@ -488,27 +447,35 @@ func (m *Manager) compensate(
 	if metadataErr != nil || targetErr != nil {
 		err := errors.Join(metadataErr, targetErr)
 		m.logger.ErrorContext(lifecycleCtx, "sample project instance compensation failed", "workspace", request.WorkspaceID, "error", err)
-		return lifecycleError(ErrorKindUnavailable, err)
+		return prepareOutcome{err: newFailure(FailureUnavailable, err)}
 	}
 	if err := tx.DeleteReservation(compensationCtx); err != nil {
 		m.logger.ErrorContext(lifecycleCtx, "failed to remove compensated sample project instance reservation", "workspace", request.WorkspaceID, "error", err)
-		return lifecycleError(ErrorKindUnavailable, err)
+		return prepareOutcome{err: newFailure(FailureUnavailable, err)}
 	}
-	return &committedError{err: original}
+	return prepareOutcome{commit: true, err: original}
 }
 
-func (m *Manager) discardReservation(ctx context.Context, tx *store.SampleProjectInstanceTx, original error) error {
+func (m *Manager) discardReservation(ctx context.Context, tx *store.SampleProjectInstanceTx, original error) prepareOutcome {
 	if err := tx.DeleteReservation(ctx); err != nil {
 		m.logger.ErrorContext(ctx, "failed to discard sample project instance reservation", "error", err)
-		return lifecycleError(ErrorKindUnavailable, err)
+		return prepareOutcome{err: newFailure(FailureUnavailable, err)}
 	}
-	return &committedError{err: original}
+	return prepareOutcome{commit: true, err: original}
+}
+
+func (m *Manager) denyByPolicy(ctx context.Context, tx *store.SampleProjectInstanceTx, reason error) prepareOutcome {
+	if err := tx.DeleteReservation(ctx); err != nil {
+		m.logger.ErrorContext(ctx, "failed to discard denied sample project instance reservation", "error", err)
+		return prepareOutcome{err: newFailure(FailureUnavailable, err)}
+	}
+	return prepareOutcome{commit: true, policyDenied: reason}
 }
 
 // Cleanup removes expired target resources and reconciles stale reservations.
 func (m *Manager) Cleanup(ctx context.Context, now time.Time) error {
 	if m.store == nil || (m.target == nil && m.targetErr == nil) || m.metadata == nil {
-		return lifecycleError(ErrorKindInternal, errors.New("sample project instance manager is not configured"))
+		return errors.New("sample project instance manager is not configured")
 	}
 	targetErr := m.targetErr
 	if targetErr == nil {
@@ -587,29 +554,21 @@ func randomInstanceID(reader io.Reader) (string, error) {
 
 func mapTargetError(err error) error {
 	if errors.Is(err, context.DeadlineExceeded) {
-		return lifecycleError(ErrorKindDeadlineExceeded, err)
+		return newFailure(FailureDeadlineExceeded, err)
 	}
-	var targetErr *TargetError
-	if errors.As(err, &targetErr) {
-		if targetErr.Kind == TargetErrorStatic {
-			return lifecycleError(ErrorKindFailedPrecondition, err)
-		}
-		if targetErr.Kind == TargetErrorInvariant {
-			return lifecycleError(ErrorKindInternal, err)
-		}
-		return lifecycleError(ErrorKindUnavailable, err)
+	switch targetFailureKindOf(err) {
+	case targetFailureStatic:
+		return newFailure(FailureFailedPrecondition, err)
+	case targetFailureInvariant:
+		return err
+	default:
+		return newFailure(FailureUnavailable, err)
 	}
-	return lifecycleError(ErrorKindUnavailable, err)
-}
-
-func isTargetInvariant(err error) bool {
-	var targetErr *TargetError
-	return errors.As(err, &targetErr) && targetErr.Kind == TargetErrorInvariant
 }
 
 func mapDiscoveryError(ctx context.Context, err error) error {
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return lifecycleError(ErrorKindDeadlineExceeded, context.DeadlineExceeded)
+		return newFailure(FailureDeadlineExceeded, context.DeadlineExceeded)
 	}
 	return mapTargetError(err)
 }

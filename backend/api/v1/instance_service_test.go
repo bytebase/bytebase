@@ -77,35 +77,22 @@ func TestPrepareSampleProjectInstanceRejectsConsumedEntitlementAfterProjectDelet
 	require.Zero(t, manager.calls)
 }
 
-func TestPrepareSampleProjectInstanceMapsManagerAndGuardErrors(t *testing.T) {
+func TestPrepareSampleProjectInstanceMapsUnknownAndGuardErrors(t *testing.T) {
 	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
-	for _, test := range []struct {
-		name string
-		err  error
-		code connect.Code
-	}{
-		{"precondition", &sampleprojectinstance.Error{Kind: sampleprojectinstance.ErrorKindFailedPrecondition}, connect.CodeFailedPrecondition},
-		{"unavailable", &sampleprojectinstance.Error{Kind: sampleprojectinstance.ErrorKindUnavailable}, connect.CodeUnavailable},
-		{"deadline", &sampleprojectinstance.Error{Kind: sampleprojectinstance.ErrorKindDeadlineExceeded}, connect.CodeDeadlineExceeded},
-		{"internal", &sampleprojectinstance.Error{Kind: sampleprojectinstance.ErrorKindInternal}, connect.CodeInternal},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			service := &InstanceService{
-				store:          stores,
-				profile:        &config.Profile{SaaS: true},
-				licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
-				sampleProjectManager: &sampleProjectManagerStub{
-					err: test.err,
-				},
-			}
-			_, err := service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-				Parent: common.FormatProject(projectID),
-			}))
-			require.Equal(t, test.code, connect.CodeOf(err))
-		})
-	}
-
 	service := &InstanceService{
+		store:          stores,
+		profile:        &config.Profile{SaaS: true},
+		licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
+		sampleProjectManager: &sampleProjectManagerStub{
+			err: errors.New("unexpected manager failure"),
+		},
+	}
+	_, err := service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
+		Parent: common.FormatProject(projectID),
+	}))
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+
+	service = &InstanceService{
 		store:          stores,
 		profile:        &config.Profile{SaaS: true},
 		licenseService: &instanceLicenseServiceStub{instanceLimit: 1, activatedInstanceLimit: 10},
@@ -113,10 +100,17 @@ func TestPrepareSampleProjectInstanceMapsManagerAndGuardErrors(t *testing.T) {
 			runGuard: true,
 		},
 	}
-	_, err := service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
+	_, err = service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
 		Parent: common.FormatProject(projectID),
 	}))
 	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(err))
+}
+
+func TestTransportNeutralErrorRemovesConnectType(t *testing.T) {
+	neutral := transportNeutralError(connect.NewError(connect.CodeResourceExhausted, errors.New("instance limit reached")))
+	var connectErr *connect.Error
+	require.NotErrorAs(t, neutral, &connectErr)
+	require.EqualError(t, neutral, "instance limit reached")
 }
 
 type sampleProjectManagerStub struct {
@@ -125,21 +119,27 @@ type sampleProjectManagerStub struct {
 	calls    int
 }
 
-func (m *sampleProjectManagerStub) Prepare(ctx context.Context, request sampleprojectinstance.PrepareRequest) (*store.InstanceMessage, error) {
+func (m *sampleProjectManagerStub) Prepare(ctx context.Context, request sampleprojectinstance.PrepareRequest) (*sampleprojectinstance.PrepareResult, error) {
 	m.calls++
-	if m.runGuard && request.CanCreate != nil {
-		if err := request.CanCreate(ctx); err != nil {
+	if m.runGuard && request.CheckCreatePolicy != nil {
+		policy, err := request.CheckCreatePolicy(ctx)
+		if err != nil {
 			return nil, err
+		}
+		if policy.DeniedReason != nil {
+			return &sampleprojectinstance.PrepareResult{PolicyDenied: policy.DeniedReason}, nil //nolint:nilerr // Policy denial is a result.
 		}
 	}
 	if m.err != nil {
 		return nil, m.err
 	}
-	return &store.InstanceMessage{
-		ResourceID: "sample",
-		Workspace:  request.WorkspaceID,
-		ProjectID:  &request.ProjectID,
-		Metadata:   &storepb.Instance{},
+	return &sampleprojectinstance.PrepareResult{
+		Instance: &store.InstanceMessage{
+			ResourceID: "sample",
+			Workspace:  request.WorkspaceID,
+			ProjectID:  &request.ProjectID,
+			Metadata:   &storepb.Instance{},
+		},
 	}, nil
 }
 
