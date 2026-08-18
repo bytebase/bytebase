@@ -556,8 +556,11 @@ describe("useAppStore", () => {
     await store.getState().login({
       request: { email: user.email, password: "secret" } as never,
       redirectUrl,
+      silent: true,
     });
 
+    const requestOptions = mocks.login.mock.calls[0]?.[1];
+    expect(requestOptions?.contextValues.get(silentContextKey)).toBe(true);
     expect(mocks.navigateToPath).toHaveBeenCalledWith(redirectUrl, {
       replace: true,
     });

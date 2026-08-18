@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { Code, createContextValues } from "@connectrpc/connect";
 import { uniqueId } from "lodash-es";
 import { authServiceClientConnect, userServiceClientConnect } from "@/api";
-import { ignoredCodesContextKey } from "@/api/context-key";
+import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
 import {
   AUTH_MFA_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
@@ -156,13 +156,13 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
   // sometimes we have to redirect users even if we don't want to redirect them.
   // for example, the user is forced to reset their password,
   // or the user is using the LDAP to signin.
-  login: async ({ request, redirect = true, redirectUrl }) => {
+  login: async ({ request, redirect = true, redirectUrl, silent = false }) => {
     const resp = await authServiceClientConnect.login(
       create(LoginRequestSchema, { ...request, web: true }),
       {
-        contextValues: createContextValues().set(ignoredCodesContextKey, [
-          Code.NotFound,
-        ]),
+        contextValues: createContextValues()
+          .set(ignoredCodesContextKey, [Code.NotFound])
+          .set(silentContextKey, silent),
       }
     );
     const redirectQuery = new URLSearchParams(window.location.search).get(

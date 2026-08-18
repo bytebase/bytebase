@@ -125,6 +125,7 @@
       "title": "您已以其他用户身份登录"
     },
     "oauth-callback": {
+      "idp-error": "身份提供商返回了错误。",
       "invalid-state": "认证失败：无效的回调状态。请重试。",
       "opener-failed": "认证已完成,但与父窗口通信失败。请关闭此窗口并重试。",
       "opener-unavailable": "认证已完成，但父窗口不再可用。请关闭此窗口并重试。",
@@ -157,10 +158,24 @@
       "forget-password": "忘记密码?",
       "invited-email": "您已被邀请，请使用 {{email}} 登录",
       "new-user": "第一次使用 Bytebase?",
+      "no-method-available": {
+        "description": "此工作区已禁用密码和邮箱验证码登录，且未配置身份提供商。",
+        "title": "没有可用的登录方式"
+      },
       "resend-code": "重新发送验证码",
       "resend-in": "{{seconds}} 秒后重新发送",
       "sign-in-or-create": "登录或创建您的账户",
       "sign-in-to-account": "登录您的账户",
+      "sso-failure": {
+        "administrators": "管理员：",
+        "contact-administrator": "请联系您的工作区管理员。",
+        "contact-support": "联系 Bytebase 支持",
+        "description": "身份提供商返回了错误。",
+        "no-fallback": "此工作区已禁用密码和邮箱验证码登录，目前没有备用登录方式。",
+        "password-disabled": "此工作区已禁用密码登录。",
+        "recovery-guide": "查看恢复指南",
+        "title": "无法使用 {{idp}} 登录"
+      },
       "standard-tab": "标准",
       "tos": "继续即表示您同意我们的<terms>服务条款</terms>和<privacy>隐私政策</privacy>。",
       "verification-code": "验证码"

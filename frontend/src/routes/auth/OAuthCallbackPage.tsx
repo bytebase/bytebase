@@ -29,6 +29,7 @@ type ProcessedOutcome = {
 // leaving the side effects (opener dispatch / login) to the run that computed
 // it.
 const processedOutcomes = new Map<string, ProcessedOutcome>();
+const SIGNIN_EVENT_PREFIX = "bb.oauth.signin.";
 
 export function OAuthCallbackPage() {
   const { t } = useTranslation();
@@ -91,14 +92,19 @@ export function OAuthCallbackPage() {
       return;
     }
 
+    const callbackError = typeof query.error === "string" ? query.error : "";
+    payloadRef.current.error = callbackError;
     apply({
-      hasError: false,
-      messageKey: "auth.oauth-callback.success-redirecting",
+      hasError: callbackError.length > 0,
+      messageKey:
+        callbackError.length > 0
+          ? "auth.oauth-callback.idp-error"
+          : "auth.oauth-callback.success-redirecting",
       oAuthState: storedState,
     });
     payloadRef.current.code = (query.code as string) || "";
     clearOAuthState(storedState.token);
-    triggerAuthCallback(storedState, false);
+    triggerAuthCallback(storedState, callbackError.length > 0);
   }, []);
 
   const triggerAuthCallback = async (
@@ -146,35 +152,58 @@ export function OAuthCallbackPage() {
       return;
     }
 
-    if (isError || !state) {
+    if (isError && state) {
+      returnToSigninAfterSSOFailure(state);
+      return;
+    }
+
+    if (!state) {
       return;
     }
 
     const eventName = state.event;
-    if (eventName.startsWith("bb.oauth.signin")) {
+    if (eventName.startsWith(SIGNIN_EVENT_PREFIX)) {
       const isOidc = state.idpType === IdentityProviderType.OIDC;
-      const idpName = eventName.split(".").pop();
+      const idpName = eventName.slice(SIGNIN_EVENT_PREFIX.length);
       if (!idpName) {
         return;
       }
 
-      await useAppStore.getState().login({
-        request: create(LoginRequestSchema, {
-          idpName,
-          idpContext: {
-            context: {
-              case: isOidc ? "oidcContext" : "oauth2Context",
-              value: {
-                code: payloadRef.current.code,
+      try {
+        await useAppStore.getState().login({
+          request: create(LoginRequestSchema, {
+            idpName,
+            idpContext: {
+              context: {
+                case: isOidc ? "oidcContext" : "oauth2Context",
+                value: {
+                  code: payloadRef.current.code,
+                },
               },
             },
-          },
-          workspace: resolveWorkspaceName(),
-        }),
-        redirect: true,
-        redirectUrl: state.redirect,
-      });
+            workspace: resolveWorkspaceName(),
+          }),
+          redirect: true,
+          redirectUrl: state.redirect,
+          silent: true,
+        });
+      } catch {
+        returnToSigninAfterSSOFailure(state);
+      }
     }
+  };
+
+  const returnToSigninAfterSSOFailure = (state: OAuthState) => {
+    const idpName = state.event.startsWith(SIGNIN_EVENT_PREFIX)
+      ? state.event.slice(SIGNIN_EVENT_PREFIX.length)
+      : "";
+    router.push({
+      name: AUTH_SIGNIN_MODULE,
+      query: {
+        redirect: state.redirect,
+        ssoError: idpName,
+      },
+    });
   };
 
   const backToSignin = () => {
