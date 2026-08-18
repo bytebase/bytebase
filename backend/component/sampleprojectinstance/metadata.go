@@ -15,23 +15,23 @@ func (m *Manager) lookupMetadata(
 	ctx context.Context,
 	allocation Allocation,
 	instanceID, workspaceID, projectID string,
-) (MetadataState, error) {
+) (metadataState, error) {
 	project, err := m.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID:  &projectID,
 		Workspace:   workspaceID,
 		ShowDeleted: true,
 	})
 	if err != nil {
-		return MetadataState{}, errors.Wrap(err, "get project")
+		return metadataState{}, errors.Wrap(err, "get project")
 	}
-	state := MetadataState{ProjectActive: project != nil && !project.Deleted}
+	state := metadataState{ProjectActive: project != nil && !project.Deleted}
 	instance, err := m.store.GetInstance(ctx, &store.FindInstanceMessage{
 		Workspace:   workspaceID,
 		ResourceID:  &instanceID,
 		ShowDeleted: true,
 	})
 	if err != nil {
-		return MetadataState{}, errors.Wrap(err, "get instance")
+		return metadataState{}, errors.Wrap(err, "get instance")
 	}
 	state.Instance = instance
 	state.InstanceMatches = instance != nil && instance.ProjectID != nil && *instance.ProjectID == projectID
@@ -43,7 +43,7 @@ func (m *Manager) lookupMetadata(
 		ShowDeleted:  true,
 	})
 	if err != nil {
-		return MetadataState{}, errors.Wrap(err, "get database")
+		return metadataState{}, errors.Wrap(err, "get database")
 	}
 	state.Database = database
 	return state, nil
@@ -51,7 +51,7 @@ func (m *Manager) lookupMetadata(
 
 // createMetadata persists the activated, project-scoped PostgreSQL Instance through
 // Store.CreateInstance so credential obfuscation remains centralized.
-func (m *Manager) createMetadata(ctx context.Context, registration Registration) (*store.InstanceMessage, error) {
+func (m *Manager) createMetadata(ctx context.Context, registration registration) (*store.InstanceMessage, error) {
 	return m.store.CreateInstance(ctx, &store.InstanceMessage{
 		Workspace:     registration.WorkspaceID,
 		ProjectID:     &registration.ProjectID,

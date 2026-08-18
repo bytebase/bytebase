@@ -5,13 +5,19 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/migrator"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
+	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -29,9 +35,123 @@ func TestMapTargetErrorUsesManagerFailureVocabulary(t *testing.T) {
 	require.Equal(t, FailureUnknown, FailureKindOf(mapTargetError(newTargetFailure(targetFailureInvariant, errors.New("collision")))))
 }
 
+func TestManagerCompensatesConcreteMetadataFailure(t *testing.T) {
+	ctx, db, s, target, manager := newConcreteManager(t)
+	_, err := db.ExecContext(ctx, `
+		CREATE FUNCTION fail_sample_instance_insert() RETURNS trigger
+		LANGUAGE plpgsql AS $$
+		BEGIN
+			RAISE EXCEPTION 'injected instance persistence failure';
+		END;
+		$$;
+		CREATE TRIGGER fail_sample_instance_insert
+		BEFORE INSERT ON instance
+		FOR EACH ROW
+		WHEN (NEW.resource_id LIKE 'sample-%')
+		EXECUTE FUNCTION fail_sample_instance_insert();
+	`)
+	require.NoError(t, err)
+
+	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.Error(t, err)
+	require.Nil(t, mustGetSampleProjectInstance(ctx, t, s, "workspace-a"))
+	assertAllocationAbsent(ctx, t, target, sampleNames("workspace-a"))
+
+	_, err = db.ExecContext(ctx, `
+		DROP TRIGGER fail_sample_instance_insert ON instance;
+		DROP FUNCTION fail_sample_instance_insert();
+	`)
+	require.NoError(t, err)
+	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.NoError(t, err)
+}
+
+func TestManagerPersistsAndRecoversConcreteProvisionOwnership(t *testing.T) {
+	ctx, _, s, target, manager := newConcreteManager(t)
+	names := sampleNames("workspace-a")
+	admin, err := target.connect(ctx, "", "", "")
+	require.NoError(t, err)
+	defer admin.Close(ctx)
+	_, err = admin.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s", quoteIdentifier(names.Database)))
+	require.NoError(t, err)
+	_, err = admin.Exec(ctx, fmt.Sprintf("REVOKE ALL PRIVILEGES ON DATABASE %s FROM PUBLIC", quoteIdentifier(names.Database)))
+	require.NoError(t, err)
+	target.provisionHook = func(stage provisionStage) error {
+		if stage == provisionStageCleanupRole {
+			return errors.New("injected role cleanup failure")
+		}
+		return nil
+	}
+
+	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.Equal(t, FailureUnavailable, FailureKindOf(err))
+	reservation := mustGetSampleProjectInstance(ctx, t, s, "workspace-a")
+	require.True(t, reservation.OwnershipKnown)
+	require.False(t, reservation.DatabaseCreated)
+	require.True(t, reservation.RoleCreated)
+
+	target.provisionHook = nil
+	_, err = admin.Exec(ctx, fmt.Sprintf("DROP DATABASE %s", quoteIdentifier(names.Database)))
+	require.NoError(t, err)
+	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.NoError(t, err)
+}
+
+func newConcreteManager(t *testing.T) (context.Context, *sql.DB, *store.Store, *Target, *Manager) {
+	t.Helper()
+	ctx, db, s := newManagerStore(t)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO project (resource_id, workspace, name)
+		VALUES ('project-a', 'workspace-a', 'Project A')
+	`)
+	require.NoError(t, err)
+
+	container := testcontainer.GetTestTLSPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(context.Background()) })
+	targetURL := fmt.Sprintf(
+		"postgres://postgres:root-password@localhost:%s/postgres?sslmode=verify-full&sslrootcert=%s",
+		container.GetPort(),
+		url.QueryEscape(container.GetTLSCAPath()),
+	)
+	target, err := NewTarget(targetURL)
+	require.NoError(t, err)
+	admin, err := target.connect(ctx, "", "", "")
+	require.NoError(t, err)
+	require.NoError(t, prepareBaseline(ctx, admin))
+	require.NoError(t, admin.Close(ctx))
+	t.Cleanup(func() {
+		names := sampleNames("workspace-a")
+		_ = target.Remove(context.Background(), Allocation{Database: names.Database, Role: names.Role})
+	})
+
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
+	require.NoError(t, err)
+	syncer := schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService)
+	return ctx, db, s, target, NewManager(s, target, syncer, ManagerOptions{})
+}
+
+func assertAllocationAbsent(ctx context.Context, t *testing.T, target *Target, names AllocationNames) {
+	t.Helper()
+	conn, err := target.connect(ctx, "", "", "")
+	require.NoError(t, err)
+	defer conn.Close(ctx)
+	var databaseExists, roleExists bool
+	require.NoError(t, conn.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", names.Database).Scan(&databaseExists))
+	require.NoError(t, conn.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = $1)", names.Role).Scan(&roleExists))
+	require.False(t, databaseExists)
+	require.False(t, roleExists)
+}
+
+func mustGetSampleProjectInstance(ctx context.Context, t *testing.T, s *store.Store, workspaceID string) *store.SampleProjectInstanceMessage {
+	t.Helper()
+	reservation, err := s.GetSampleProjectInstance(ctx, workspaceID)
+	require.NoError(t, err)
+	return reservation
+}
+
 func newManagerStore(t *testing.T) (context.Context, *sql.DB, *store.Store) {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	t.Cleanup(cancel)
 	container := testcontainer.GetTestPgContainer(ctx, t)
 	t.Cleanup(func() { container.Close(context.Background()) })

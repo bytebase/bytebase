@@ -297,9 +297,9 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (cont
 	sampleTarget, err := sampleprojectinstance.NewTarget(targetURL)
 	require.NoError(t, err)
 	inspector := newSampleTargetInspector(t, targetURL)
-	manager := sampleprojectinstance.NewManager(
+	manager := sampleprojectinstance.NewManagerFromURL(
 		stores,
-		sampleTarget,
+		targetURL,
 		syncer,
 		sampleprojectinstance.ManagerOptions{Clock: clock},
 	)

@@ -113,34 +113,33 @@ type PrepareResult struct {
 	PolicyDenied error
 }
 
-// Registration is the normal Instance registration requested by Manager.
-// Implementations must persist the datasource with Store.CreateInstance so the
+// registration is the normal Instance registration requested by Manager.
+// createMetadata persists the datasource with Store.CreateInstance so the
 // password is encrypted at rest.
-type Registration struct {
+type registration struct {
 	WorkspaceID       string
 	ProjectID         string
 	EnvironmentID     string
 	InstanceID        string
 	Title             string
 	Engine            storepb.Engine
-	Allocation        Allocation
 	AdminDataSource   *storepb.DataSource
 	SyncDatabaseNames []string
 }
 
-// MetadataState is the exact resource state needed to decide idempotency.
-type MetadataState struct {
+// metadataState is the exact resource state needed to decide idempotency.
+type metadataState struct {
 	ProjectActive   bool
 	InstanceMatches bool
 	Instance        *store.InstanceMessage
 	Database        *store.DatabaseMessage
 }
 
-func (s MetadataState) active() bool {
+func (s metadataState) active() bool {
 	return s.ProjectActive && s.InstanceMatches && s.Instance != nil && !s.Instance.Deleted && s.Database != nil && !s.Database.Deleted
 }
 
-func (s MetadataState) matches(reservation *store.SampleProjectInstanceMessage) bool {
+func (s metadataState) matches(reservation *store.SampleProjectInstanceMessage) bool {
 	return s.active() &&
 		s.Instance.ResourceID == reservation.InstanceID &&
 		s.Database.InstanceID == reservation.InstanceID &&
@@ -366,14 +365,13 @@ func (m *Manager) prepareLocked(
 	if err := tx.SetProvisionOwnership(workCtx, true, true); err != nil {
 		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, errors.Join(errors.New("failed to record sample project instance provision ownership"), err))
 	}
-	registered, err := m.createMetadata(workCtx, Registration{
+	registered, err := m.createMetadata(workCtx, registration{
 		WorkspaceID:       request.WorkspaceID,
 		ProjectID:         request.ProjectID,
 		EnvironmentID:     testEnvironmentID,
 		InstanceID:        reservation.InstanceID,
 		Title:             sampleProjectInstanceTitle,
 		Engine:            storepb.Engine_POSTGRES,
-		Allocation:        allocation,
 		AdminDataSource:   config.AdminDataSource,
 		SyncDatabaseNames: config.SyncDatabaseNames,
 	})

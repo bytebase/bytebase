@@ -20,14 +20,13 @@ func TestManagerMetadataCreatesAndLooksUpScopedSampleProjectInstance(t *testing.
 	require.NoError(t, err)
 	allocation := Allocation{Database: "sample-db", Role: "sample-role", Password: "secret"}
 	manager := &Manager{store: stores}
-	instance, err := manager.createMetadata(ctx, Registration{
+	instance, err := manager.createMetadata(ctx, registration{
 		WorkspaceID:   "workspace-a",
 		ProjectID:     "project-a",
 		EnvironmentID: "test",
 		InstanceID:    "sample-instance",
 		Title:         sampleProjectInstanceTitle,
 		Engine:        storepb.Engine_POSTGRES,
-		Allocation:    allocation,
 		AdminDataSource: &storepb.DataSource{
 			Id:       "admin",
 			Type:     storepb.DataSourceType_ADMIN,
@@ -97,14 +96,13 @@ func TestManagerMetadataCreatesAndLooksUpScopedSampleProjectInstance(t *testing.
 	require.NoError(t, err)
 	require.Nil(t, removed)
 
-	_, err = manager.createMetadata(ctx, Registration{
+	_, err = manager.createMetadata(ctx, registration{
 		WorkspaceID:   "workspace-a",
 		ProjectID:     "project-a",
 		EnvironmentID: "test",
 		InstanceID:    "cross-project-instance",
 		Title:         sampleProjectInstanceTitle,
 		Engine:        storepb.Engine_POSTGRES,
-		Allocation:    allocation,
 		AdminDataSource: &storepb.DataSource{
 			Id:       "admin",
 			Type:     storepb.DataSourceType_ADMIN,
