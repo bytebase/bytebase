@@ -141,20 +141,9 @@ func (s *AuthService) GetAuthenticationRestriction(
 	ctx context.Context,
 	req *connect.Request[v1pb.GetAuthenticationRestrictionRequest],
 ) (*connect.Response[v1pb.AuthenticationInfo], error) {
-	workspaceID := ""
-	if req.Msg.Workspace != "" {
-		id, err := common.GetWorkspaceID(req.Msg.Workspace)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		workspaceID = id
-	}
-	if workspaceID == "" && !s.profile.SaaS {
-		id, err := s.store.GetWorkspaceID(ctx)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		workspaceID = id
+	workspaceID, err := s.resolveAuthenticationWorkspaceID(ctx, &req.Msg.Workspace)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, workspaceID)
@@ -171,17 +160,32 @@ func (s *AuthService) GetAuthenticationRestriction(
 	return connect.NewResponse(info), nil
 }
 
+func (s *AuthService) resolveAuthenticationWorkspaceID(ctx context.Context, workspaceName *string) (string, error) {
+	workspaceID, err := parseOptionalWorkspace(workspaceName)
+	if err != nil {
+		return "", err
+	}
+	if workspaceID == "" && !s.profile.SaaS {
+		workspaceID, err = s.store.GetWorkspaceID(ctx)
+		if err != nil {
+			return "", err
+		}
+	}
+	if workspaceID != "" {
+		common.SetAuditWorkspaceID(ctx, workspaceID)
+	}
+	return workspaceID, nil
+}
+
 // Login is the auth login method including SSO.
 func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.LoginRequest]) (*connect.Response[v1pb.LoginResponse], error) {
 	request := req.Msg
 	mfaSecondLogin := request.GetMfaTempToken() != ""
-	if !s.profile.SaaS {
-		workspaceID, err := s.store.GetWorkspaceID(ctx)
-		if err != nil {
-			slog.Warn("failed to resolve self-hosted workspace for login audit", log.BBError(err))
-		} else if workspaceID != "" {
-			common.SetAuditWorkspaceID(ctx, workspaceID)
-		}
+	// Resolve the audit workspace before authentication so failures for unknown
+	// accounts can be recorded. SaaS requires an explicit workspace; self-hosted
+	// falls back to the singleton workspace.
+	if _, err := s.resolveAuthenticationWorkspaceID(ctx, request.Workspace); err != nil {
+		slog.Warn("failed to resolve workspace for login audit", log.BBError(err))
 	}
 
 	// 1. Authenticate user (password, IDP, or MFA completion)
@@ -622,28 +626,6 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 		return nil, invalidCredentialsError
 	}
 
-	var user *store.UserMessage
-	auditWorkspaceID := account.Workspace
-	if account.Type == storepb.PrincipalType_END_USER {
-		user, err = s.store.ResolvePrincipalAsUser(ctx, account)
-		if err != nil {
-			slog.Warn("failed to resolve user for login audit", slog.String("user", account.Email), log.BBError(err))
-		} else if user != nil {
-			preferredWorkspaceID, err := parseOptionalWorkspace(request.Workspace)
-			if err != nil {
-				slog.Warn("failed to parse workspace for login audit", slog.String("user", account.Email), log.BBError(err))
-			}
-			auditWorkspaceID, err = s.resolveWorkspaceForLogin(ctx, user, preferredWorkspaceID)
-			if err != nil {
-				slog.Warn("failed to resolve workspace for login audit", slog.String("user", account.Email), log.BBError(err))
-				auditWorkspaceID = ""
-			}
-		}
-	}
-	if auditWorkspaceID != "" {
-		common.SetAuditWorkspaceID(ctx, auditWorkspaceID)
-	}
-
 	// Compare the stored hashed password, with the hashed version of the password that was received.
 	if err := bcrypt.CompareHashAndPassword([]byte(account.PasswordHash), []byte(request.Password)); err != nil {
 		// If the two passwords don't match, return a 401 status.
@@ -651,11 +633,9 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 	}
 
 	// Convert AccountMessage to UserMessage for downstream use.
-	if user == nil {
-		user, err = s.store.ResolvePrincipalAsUser(ctx, account)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve principal %q", account.Email))
-		}
+	user, err := s.store.ResolvePrincipalAsUser(ctx, account)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve principal %q", account.Email))
 	}
 	if user == nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user %q not found", account.Email))
@@ -1081,17 +1061,6 @@ func (s *AuthService) completeMFALogin(ctx context.Context, request *v1pb.LoginR
 	if user == nil {
 		return nil, loginAuthMethodPassword, invalidCredentialsError
 	}
-	preferredWorkspaceID, err := parseOptionalWorkspace(request.Workspace)
-	if err != nil {
-		slog.Warn("failed to parse workspace for MFA login audit", slog.String("user", user.Email), log.BBError(err))
-	}
-	auditWorkspaceID, err := s.resolveWorkspaceForLogin(ctx, user, preferredWorkspaceID)
-	if err != nil {
-		slog.Warn("failed to resolve workspace for MFA login audit", slog.String("user", user.Email), log.BBError(err))
-	} else if auditWorkspaceID != "" {
-		common.SetAuditWorkspaceID(ctx, auditWorkspaceID)
-	}
-
 	if err := s.checkMFALockout(ctx, user.Email); err != nil {
 		return nil, loginAuthMethodPassword, err
 	}

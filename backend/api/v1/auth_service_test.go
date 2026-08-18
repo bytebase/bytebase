@@ -84,7 +84,7 @@ func TestCountRecentLoginFailures(t *testing.T) {
 	require.Equal(t, 2, mfaFailures)
 }
 
-func TestLoginAnnouncesSelfHostedWorkspace(t *testing.T) {
+func TestLoginAnnouncesPreAuthenticationWorkspace(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })
@@ -97,18 +97,65 @@ func TestLoginAnnouncesSelfHostedWorkspace(t *testing.T) {
 	stores, err := store.New(ctx, pgURL, false)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, stores.Close()) })
-	service := &AuthService{store: stores, profile: &config.Profile{}}
 
-	var auditWorkspaceID string
-	ctx = common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
-		auditWorkspaceID = workspaceID
+	t.Run("self-hosted singleton", func(t *testing.T) {
+		service := &AuthService{store: stores, profile: &config.Profile{}}
+		var auditWorkspaceID string
+		ctx := common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
+			auditWorkspaceID = workspaceID
+		})
+		_, err := service.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:    "unknown@example.com",
+			Password: "wrong-password",
+		}))
+		require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
+		require.Equal(t, "ws-test", auditWorkspaceID)
 	})
-	_, err = service.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
-		Email:    "unknown@example.com",
-		Password: "wrong-password",
-	}))
-	require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
-	require.Equal(t, "ws-test", auditWorkspaceID)
+
+	t.Run("SaaS requested workspace", func(t *testing.T) {
+		service := &AuthService{store: stores, profile: &config.Profile{SaaS: true}}
+		var auditWorkspaceID string
+		ctx := common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
+			auditWorkspaceID = workspaceID
+		})
+		workspace := common.FormatWorkspace("ws-test")
+		_, err := service.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:     "unknown@example.com",
+			Password:  "wrong-password",
+			Workspace: &workspace,
+		}))
+		require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
+		require.Equal(t, "ws-test", auditWorkspaceID)
+	})
+
+	t.Run("SaaS requested workspace without membership", func(t *testing.T) {
+		user, err := stores.CreateUser(ctx, &store.UserMessage{
+			Email:        "member@example.com",
+			Name:         "Member",
+			PasswordHash: "wrong-password-hash",
+			Profile:      &storepb.UserProfile{},
+		})
+		require.NoError(t, err)
+		_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
+			ResourceID: "ws-member",
+			Payload:    &storepb.WorkspacePayload{Title: "Member workspace"},
+		}, user.Email)
+		require.NoError(t, err)
+
+		service := &AuthService{store: stores, profile: &config.Profile{SaaS: true}}
+		var auditWorkspaceIDs []string
+		ctx := common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
+			auditWorkspaceIDs = append(auditWorkspaceIDs, workspaceID)
+		})
+		workspace := common.FormatWorkspace("ws-test")
+		_, err = service.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:     user.Email,
+			Password:  "wrong-password",
+			Workspace: &workspace,
+		}))
+		require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
+		require.Equal(t, []string{"ws-test"}, auditWorkspaceIDs)
+	})
 }
 
 func TestExtractDomain(t *testing.T) {
