@@ -4,7 +4,6 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { WorkspaceProfileSetting_PasswordRestriction } from "./setting_service_pb";
 import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
 
 /**
@@ -32,15 +31,6 @@ export declare const SetupSampleRequestSchema: GenMessage<SetupSampleRequest>;
  * @generated from message bytebase.v1.GetActuatorInfoRequest
  */
 export declare type GetActuatorInfoRequest = Message<"bytebase.v1.GetActuatorInfoRequest"> & {
-  /**
-   * Optional. The workspace to scope the response to.
-   * Format: workspaces/{workspace}
-   * When unset, the workspace is resolved from the request context (self-hosted)
-   * or no workspace-scoped fields are returned (SaaS).
-   *
-   * @generated from field: string name = 1;
-   */
-  name: string;
 };
 
 /**
@@ -48,53 +38,6 @@ export declare type GetActuatorInfoRequest = Message<"bytebase.v1.GetActuatorInf
  * Use `create(GetActuatorInfoRequestSchema)` to create a new message.
  */
 export declare const GetActuatorInfoRequestSchema: GenMessage<GetActuatorInfoRequest>;
-
-/**
- * @generated from message bytebase.v1.Restriction
- */
-export declare type Restriction = Message<"bytebase.v1.Restriction"> & {
-  /**
-   * Whether self-service user signup is disabled.
-   *
-   * @generated from field: bool disallow_signup = 1;
-   */
-  disallowSignup: boolean;
-
-  /**
-   * Whether password sign-in is disabled for all end users.
-   *
-   * @generated from field: bool disallow_password_signin = 2;
-   */
-  disallowPasswordSignin: boolean;
-
-  /**
-   * Password complexity and restriction requirements.
-   *
-   * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 3;
-   */
-  passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction | undefined;
-
-  /**
-   * Whether email + 6-digit code signin is enabled for this workspace.
-   *
-   * @generated from field: bool allow_email_code_signin = 4;
-   */
-  allowEmailCodeSignin: boolean;
-
-  /**
-   * Whether password reset via email is available for this workspace.
-   * True when the workspace (or deployment) has an email setting configured.
-   *
-   * @generated from field: bool password_reset_enabled = 5;
-   */
-  passwordResetEnabled: boolean;
-};
-
-/**
- * Describes the message bytebase.v1.Restriction.
- * Use `create(RestrictionSchema)` to create a new message.
- */
-export declare const RestrictionSchema: GenMessage<Restriction>;
 
 /**
  * System information and configuration for the Bytebase instance.
@@ -118,32 +61,11 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   gitCommit: string;
 
   /**
-   * Whether the Bytebase instance is running in read-only mode.
-   *
-   * @generated from field: bool readonly = 3;
-   */
-  readonly: boolean;
-
-  /**
    * Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.
    *
    * @generated from field: bool saas = 4;
    */
   saas: boolean;
-
-  /**
-   * The host address of the Bytebase instance.
-   *
-   * @generated from field: string host = 6;
-   */
-  host: string;
-
-  /**
-   * The port number of the Bytebase instance.
-   *
-   * @generated from field: string port = 7;
-   */
-  port: string;
 
   /**
    * The external URL where users or webhook callbacks access Bytebase.
@@ -173,20 +95,6 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: repeated string unlicensed_features = 15;
    */
   unlicensedFeatures: string[];
-
-  /**
-   * Whether the Bytebase instance is running in Docker.
-   *
-   * @generated from field: bool docker = 18;
-   */
-  docker: boolean;
-
-  /**
-   * The number of activated users.
-   *
-   * @generated from field: int32 activated_user_count = 19;
-   */
-  activatedUserCount: number;
 
   /**
    * The number of activated database instances.
@@ -222,11 +130,6 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: int32 replica_count = 24;
    */
   replicaCount: number;
-
-  /**
-   * @generated from field: bytebase.v1.Restriction restriction = 25;
-   */
-  restriction?: Restriction | undefined;
 
   /**
    * The default project for unassigned databases.
@@ -265,9 +168,8 @@ export declare const ActuatorInfoSchema: GenMessage<ActuatorInfo>;
 export declare const ActuatorService: GenService<{
   /**
    * Gets system information and health status of the Bytebase instance.
-   * When `name` is provided (or the workspace-scoped binding is used), the
-   * response includes workspace-scoped fields for that workspace.
-   * Permissions required: None
+   * The workspace is resolved from the authenticated session.
+   * Permissions required: None (authentication required)
    *
    * @generated from rpc bytebase.v1.ActuatorService.GetActuatorInfo
    */

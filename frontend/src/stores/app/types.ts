@@ -7,7 +7,10 @@ import type { Permission } from "@/types/iam/permission";
 import type { NotificationCreate } from "@/types/notification";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
-import type { LoginRequest } from "@/types/proto-es/v1/auth_service_pb";
+import type {
+  AuthenticationInfo,
+  LoginRequest,
+} from "@/types/proto-es/v1/auth_service_pb";
 import type {
   Changelog,
   ChangelogView,
@@ -177,6 +180,8 @@ export type ListAccessGrantsParams = {
 };
 
 export type AuthSlice = {
+  authenticationInfo?: AuthenticationInfo;
+  authenticationInfoRequest?: Promise<AuthenticationInfo | undefined>;
   currentUser?: User;
   currentUserRequest?: Promise<User | undefined>;
   // Resource name `users/{email}` of the signed-in user. Mirrors the legacy
@@ -185,6 +190,10 @@ export type AuthSlice = {
   unauthenticatedOccurred: boolean;
   authSessionKey: string;
   isSelfEmailUpdate: boolean;
+  loadAuthenticationInfo: () => Promise<AuthenticationInfo | undefined>;
+  fetchAuthenticationInfo: (
+    workspace?: string
+  ) => Promise<AuthenticationInfo | undefined>;
   loadCurrentUser: () => Promise<User | undefined>;
   isLoggedIn: () => boolean;
   requireResetPassword: () => boolean;
@@ -228,11 +237,7 @@ export type WorkspaceSlice = {
   paymentInfo?: PaymentInfo;
   loadServerInfo: () => Promise<ActuatorInfo | undefined>;
   refreshServerInfo: () => Promise<ActuatorInfo | undefined>;
-  // Alias for the legacy Pinia `actuatorStore.fetchServerInfo(workspace?)`
-  // so consumers map 1:1. Delegates to the slice's refresh path.
-  fetchServerInfo: (
-    workspaceResourceName?: string
-  ) => Promise<ActuatorInfo | undefined>;
+  fetchServerInfo: () => Promise<ActuatorInfo | undefined>;
   loadWorkspace: () => Promise<Workspace | undefined>;
   loadWorkspaceList: () => Promise<Workspace[]>;
   updateWorkspace: (
@@ -302,7 +307,6 @@ export type WorkspaceSlice = {
   totalInstanceCount: () => number;
   userCountInIam: () => number;
   activeVcsUserCount: () => number;
-  activeUserCount: () => number;
   enableOnboarding: () => boolean;
   quickStartEnabled: () => boolean;
   setupSample: () => Promise<void>;

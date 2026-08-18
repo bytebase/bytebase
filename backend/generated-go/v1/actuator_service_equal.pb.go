@@ -20,34 +20,6 @@ func (x *GetActuatorInfoRequest) Equal(y *GetActuatorInfoRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Name != y.Name {
-		return false
-	}
-	return true
-}
-
-func (x *Restriction) Equal(y *Restriction) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.DisallowSignup != y.DisallowSignup {
-		return false
-	}
-	if x.DisallowPasswordSignin != y.DisallowPasswordSignin {
-		return false
-	}
-	if !x.PasswordRestriction.Equal(y.PasswordRestriction) {
-		return false
-	}
-	if x.AllowEmailCodeSignin != y.AllowEmailCodeSignin {
-		return false
-	}
-	if x.PasswordResetEnabled != y.PasswordResetEnabled {
-		return false
-	}
 	return true
 }
 
@@ -64,16 +36,7 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.GitCommit != y.GitCommit {
 		return false
 	}
-	if x.Readonly != y.Readonly {
-		return false
-	}
 	if x.Saas != y.Saas {
-		return false
-	}
-	if x.Host != y.Host {
-		return false
-	}
-	if x.Port != y.Port {
 		return false
 	}
 	if x.ExternalUrl != y.ExternalUrl {
@@ -93,12 +56,6 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 			return false
 		}
 	}
-	if x.Docker != y.Docker {
-		return false
-	}
-	if x.ActivatedUserCount != y.ActivatedUserCount {
-		return false
-	}
 	if x.ActivatedInstanceCount != y.ActivatedInstanceCount {
 		return false
 	}
@@ -112,9 +69,6 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 		return false
 	}
 	if x.ReplicaCount != y.ReplicaCount {
-		return false
-	}
-	if !x.Restriction.Equal(y.Restriction) {
 		return false
 	}
 	if x.DefaultProject != y.DefaultProject {

@@ -3,7 +3,8 @@ import { useAppStore } from "@/stores/app";
 /**
  * Resolve the active workspace resource name for auth flows (signin, MFA,
  * password reset/forgot, OAuth callback). Prefers the app store's resolved
- * workspace (from server info); falls back to the `?workspace=<id>` URL query.
+ * workspace (from authentication info); falls back to the
+ * `?workspace=<id>` URL query.
  *
  * Lives in the React layer (not `@/utils`) because it reads the Zustand app
  * store — keeping the app-store import out of the low-level `@/utils` barrel,

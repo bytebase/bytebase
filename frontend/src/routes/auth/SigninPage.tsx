@@ -42,16 +42,18 @@ export function SigninPage(props: SigninPageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
-  const serverInfo = useAppStore((s) => s.serverInfo);
-  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
-  const activeUserCount = useAppStore((s) => s.activeUserCount());
+  const authenticationInfo = useAppStore((s) => s.authenticationInfo);
   const identityProviders = useIdentityProviderList();
 
   const query = router.currentRoute.value.query;
   const invitedEmail = (query.email as string | undefined) ?? "";
 
   const disallowSignup =
-    !allowSignupProp || !!serverInfo?.restriction?.disallowSignup;
+    !allowSignupProp || !!authenticationInfo?.restriction?.disallowSignup;
+  const needsInitialSetup = authenticationInfo
+    ? !authenticationInfo.workspace &&
+      !authenticationInfo.restriction?.disallowSignup
+    : false;
 
   const separatedIdps = identityProviders.filter(
     (idp) => idp.type !== IdentityProviderType.LDAP
@@ -61,19 +63,21 @@ export function SigninPage(props: SigninPageProps) {
   );
 
   const defaultTab = (() => {
-    if (serverInfo?.restriction?.allowEmailCodeSignin) return "email-code";
-    if (!serverInfo?.restriction?.disallowPasswordSignin) return "standard";
+    if (authenticationInfo?.restriction?.allowEmailCodeSignin)
+      return "email-code";
+    if (!authenticationInfo?.restriction?.disallowPasswordSignin)
+      return "standard";
     if (groupedIdps.length > 0) return groupedIdps[0].name;
     return "standard";
   })();
 
-  // Redirect to signup when an admin setup is needed.
+  // A self-hosted server without a workspace needs its initial administrator.
   useEffect(() => {
     if (!initialized) return;
-    if (activeUserCount === 0 && !disallowSignup && !isSaaSMode) {
+    if (needsInitialSetup && !disallowSignup) {
       router.replace({ name: AUTH_SIGNUP_MODULE });
     }
-  }, [initialized, activeUserCount, disallowSignup, isSaaSMode]);
+  }, [initialized, needsInitialSetup, disallowSignup]);
 
   const trySigninWithIdp = async (idp: IdentityProvider) => {
     try {
@@ -102,7 +106,7 @@ export function SigninPage(props: SigninPageProps) {
     }
   };
 
-  // Initial load: fetch server info + IDPs + handle `idp` query param.
+  // Initial load: fetch authentication info + IDPs + handle `idp` query param.
   // Ref guard is critical — the `?idp=<name>` path triggers an SSO redirect
   // via `trySigninWithIdp`, which must not fire twice under StrictMode.
   const initRef = useRef(false);
@@ -116,7 +120,7 @@ export function SigninPage(props: SigninPageProps) {
       try {
         const [idpList] = await Promise.all([
           listIdentityProviders(workspaceName),
-          useAppStore.getState().fetchServerInfo(workspaceName),
+          useAppStore.getState().fetchAuthenticationInfo(workspaceName),
         ]);
         if (idpList.length === 0 && workspaceName) {
           await listIdentityProviders();
@@ -160,7 +164,7 @@ export function SigninPage(props: SigninPageProps) {
     label: string;
     panel: React.ReactNode;
   }[] = [];
-  if (!serverInfo?.restriction?.disallowPasswordSignin) {
+  if (!authenticationInfo?.restriction?.disallowPasswordSignin) {
     methods.push({
       value: "standard",
       label: t("auth.sign-in.standard-tab"),
@@ -185,7 +189,7 @@ export function SigninPage(props: SigninPageProps) {
       ),
     });
   }
-  if (serverInfo?.restriction?.allowEmailCodeSignin) {
+  if (authenticationInfo?.restriction?.allowEmailCodeSignin) {
     methods.push({
       value: "email-code",
       label: t("auth.sign-in.email-code-tab"),
@@ -210,15 +214,13 @@ export function SigninPage(props: SigninPageProps) {
     });
   }
 
-  // The email-code flow signs an unknown email up on the spot, so the page
-  // doubles as the signup surface — the copy and the terms line reflect that.
-  // On SaaS the restriction reports disallowSignup=true, but that flag only
-  // gates the password Signup RPC, not email-code onboarding.
+  const emailCodeEnabled = methods.some(({ value }) => value === "email-code");
   const combinedSignupSurface =
     methods.length === 1 &&
     methods[0].value === "email-code" &&
     allowSignupProp &&
-    (isSaaSMode || !serverInfo?.restriction?.disallowSignup);
+    !authenticationInfo?.restriction?.disallowSignup;
+  const showTerms = allowSignupProp && emailCodeEnabled;
 
   return (
     <>
@@ -287,7 +289,7 @@ export function SigninPage(props: SigninPageProps) {
           </div>
         )}
 
-        {isSaaSMode && combinedSignupSurface && (
+        {showTerms && (
           <p className="mt-6 text-center text-xs text-control-light leading-5">
             <Trans
               i18nKey="auth.sign-in.tos"

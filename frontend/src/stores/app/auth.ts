@@ -62,6 +62,30 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
   authSessionKey: uniqueId(),
   isSelfEmailUpdate: false,
 
+  loadAuthenticationInfo: async () => {
+    const existing = get().authenticationInfo;
+    if (existing) return existing;
+    const pending = get().authenticationInfoRequest;
+    if (pending) return pending;
+    const request = get()
+      .fetchAuthenticationInfo()
+      .finally(() => set({ authenticationInfoRequest: undefined }));
+    set({ authenticationInfoRequest: request });
+    return request;
+  },
+
+  fetchAuthenticationInfo: async (workspace) => {
+    try {
+      const info = await authServiceClientConnect.getAuthenticationRestriction({
+        workspace: workspace ?? get().currentUser?.workspace ?? "",
+      });
+      set({ authenticationInfo: info });
+      return info;
+    } catch {
+      return undefined;
+    }
+  },
+
   isLoggedIn: () => {
     const name = get().currentUserName;
     return Boolean(name) && name !== UNKNOWN_USER_NAME;
@@ -160,7 +184,7 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     }
 
     get().setRequireResetPassword(resp.requireResetPassword);
-    await get().fetchServerInfo(user?.workspace);
+    await get().fetchServerInfo();
     // Re-fetch the current workspace now that we're authenticated.
     await get().loadWorkspace();
     // `rootGuard` decides where "/" goes, and it reads the workspace change
@@ -207,7 +231,7 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
       return;
     }
 
-    await get().fetchServerInfo(user?.workspace);
+    await get().fetchServerInfo();
     // See `login()`. Loaded above the onboarding branch because `SetupPage`
     // reads the change mode too, and its skip button navigates to "/".
     await get().loadWorkspaceProfile(true);

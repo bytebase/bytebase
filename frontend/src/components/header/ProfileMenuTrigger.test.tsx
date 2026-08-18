@@ -120,7 +120,7 @@ vi.mock("@/hooks/useAppState", () => ({
   }),
   useServerInfo: () => ({
     enableSample: true,
-    activatedUserCount: 1,
+    userCountInIam: 1,
   }),
   useSubscription: () => ({
     subscription: { plan: PlanType.FREE },

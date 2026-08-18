@@ -196,7 +196,10 @@ export function rootGuard({
   const store = useAppStore.getState();
   const isLoggedIn = store.isLoggedIn();
 
-  if (toName === AUTH_SIGNUP_MODULE && store.isSaaSMode()) {
+  if (
+    toName === AUTH_SIGNUP_MODULE &&
+    store.authenticationInfo?.restriction?.disallowSignup
+  ) {
     return redirect(
       resolvePath(AUTH_SIGNIN_MODULE, {
         query: Object.fromEntries(url.searchParams),

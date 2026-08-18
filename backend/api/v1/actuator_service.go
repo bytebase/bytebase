@@ -58,29 +58,21 @@ func NewActuatorService(
 }
 
 // GetActuatorInfo gets the actuator info.
-// Workspace resolution order: request.name -> JWT context -> default workspace (self-hosted).
+// The workspace is resolved from the authenticated token.
 func (s *ActuatorService) GetActuatorInfo(
 	ctx context.Context,
-	req *connect.Request[v1pb.GetActuatorInfoRequest],
+	_ *connect.Request[v1pb.GetActuatorInfoRequest],
 ) (*connect.Response[v1pb.ActuatorInfo], error) {
-	var workspaceID string
-	if req.Msg.Name != "" {
-		id, err := common.GetWorkspaceID(req.Msg.Name)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		workspaceID = id
+	user, authenticated := GetUserFromContext(ctx)
+	if !authenticated || user == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
 	}
+
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	if workspaceID == "" {
-		workspaceID = common.GetWorkspaceIDFromContext(ctx)
+		return nil, connect.NewError(connect.CodeInternal, errors.New("authenticated workspace not found"))
 	}
-	if workspaceID == "" && !s.profile.SaaS {
-		ws, err := s.store.GetWorkspaceID(ctx)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		workspaceID = ws
-	}
+
 	info, err := s.getServerInfo(ctx, workspaceID)
 	if err != nil {
 		return nil, err
@@ -115,26 +107,13 @@ func (s *ActuatorService) SetupSample(
 }
 
 func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string) (*v1pb.ActuatorInfo, error) {
-	restriction, err := getAccountRestriction(
-		ctx,
-		s.store,
-		s.licenseService,
-		s.profile.SaaS,
-		workspaceID,
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	serverInfo := v1pb.ActuatorInfo{
 		Version:             s.profile.Version,
 		GitCommit:           s.profile.GitCommit,
 		Saas:                s.profile.SaaS,
 		LastActiveTime:      timestamppb.New(time.Unix(s.profile.LastActiveTS.Load(), 0)),
-		Docker:              s.profile.IsDocker,
 		ExternalUrlFromFlag: s.profile.ExternalURL != "",
 		ReplicaCount:        int32(s.licenseService.CountActiveReplicas(ctx)),
-		Restriction:         restriction,
 		ExternalUrl:         s.profile.ExternalURL,
 	}
 
@@ -157,14 +136,6 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 			unlicensedFeaturesString = append(unlicensedFeaturesString, f.String())
 		}
 		serverInfo.UnlicensedFeatures = unlicensedFeaturesString
-
-		if !s.profile.SaaS {
-			activePrincipalCount, err := s.store.CountActivePrincipals(ctx)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
-			}
-			serverInfo.ActivatedUserCount = int32(activePrincipalCount)
-		}
 
 		iamPolicy, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
 		if err != nil {

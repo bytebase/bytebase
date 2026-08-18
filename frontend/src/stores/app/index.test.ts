@@ -8,6 +8,7 @@ import {
   AccessGrantSchema,
 } from "@/types/proto-es/v1/access_grant_service_pb";
 import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
+import { AuthenticationInfoSchema } from "@/types/proto-es/v1/auth_service_pb";
 import {
   ChangelogSchema,
   ChangelogView,
@@ -102,6 +103,7 @@ const mocks = vi.hoisted(() => ({
     }
   ),
   signup: vi.fn(),
+  getAuthenticationRestriction: vi.fn(),
   getActuatorInfo: vi.fn(),
   getWorkspace: vi.fn(),
   updateWorkspace: vi.fn(),
@@ -191,6 +193,7 @@ vi.mock("@/api", () => ({
     getActuatorInfo: mocks.getActuatorInfo,
   },
   authServiceClientConnect: {
+    getAuthenticationRestriction: mocks.getAuthenticationRestriction,
     login: mocks.login,
     logout: mocks.logout,
     signup: mocks.signup,
@@ -607,10 +610,10 @@ describe("useAppStore", () => {
     vi.stubGlobal("location", { search: "?redirect=%2Fprojects%2Ffoo" });
     mocks.signup.mockResolvedValue({});
     mocks.getCurrentUser.mockResolvedValue(user);
-    // activeUserCount > 1 so `enableOnboarding()` is false and signup navigates.
+    // userCountInIam > 1 so `enableOnboarding()` is false and signup navigates.
     mocks.getActuatorInfo.mockResolvedValue({
       workspace: user.workspace,
-      activatedUserCount: 2,
+      userCountInIam: 2,
     });
     mocks.getSetting.mockResolvedValue(
       createProto(SettingSchema, {
@@ -646,7 +649,7 @@ describe("useAppStore", () => {
     mocks.getCurrentUser.mockResolvedValue(user);
     mocks.getActuatorInfo.mockResolvedValue({
       workspace: user.workspace,
-      activatedUserCount: 2,
+      userCountInIam: 2,
     });
     mocks.getSetting.mockResolvedValue(
       createProto(SettingSchema, {
@@ -1012,34 +1015,41 @@ describe("useAppStore", () => {
     ]);
   });
 
-  test("create archive and restore update activated user count when server info is loaded", async () => {
+  test("create archive and restore refresh the IAM user count", async () => {
     mocks.createUser.mockResolvedValue(userA);
     mocks.deleteUser.mockResolvedValue({});
     mocks.undeleteUser.mockResolvedValue(userA);
+    mocks.getActuatorInfo
+      .mockResolvedValueOnce(
+        createProto(ActuatorInfoSchema, { userCountInIam: 7 })
+      )
+      .mockResolvedValueOnce(
+        createProto(ActuatorInfoSchema, { userCountInIam: 6 })
+      )
+      .mockResolvedValueOnce(
+        createProto(ActuatorInfoSchema, { userCountInIam: 7 })
+      )
+      .mockResolvedValueOnce(
+        createProto(ActuatorInfoSchema, { userCountInIam: 0 })
+      );
     const store = createAppStore();
     store.setState({
       serverInfo: createProto(ActuatorInfoSchema, {
-        activatedUserCount: 2,
+        userCountInIam: 2,
       }),
     });
 
     await store.getState().createUser(userA);
-    expect(store.getState().serverInfo?.activatedUserCount).toBe(3);
+    expect(store.getState().serverInfo?.userCountInIam).toBe(7);
 
     await store.getState().archiveUser(userA.name);
-    expect(store.getState().serverInfo?.activatedUserCount).toBe(2);
+    expect(store.getState().serverInfo?.userCountInIam).toBe(6);
 
     await store.getState().restoreUser(userA.name);
-    expect(store.getState().serverInfo?.activatedUserCount).toBe(3);
-
-    store.setState({
-      serverInfo: createProto(ActuatorInfoSchema, {
-        activatedUserCount: 0,
-      }),
-    });
+    expect(store.getState().serverInfo?.userCountInIam).toBe(7);
 
     await store.getState().archiveUser(userA.name);
-    expect(store.getState().serverInfo?.activatedUserCount).toBe(0);
+    expect(store.getState().serverInfo?.userCountInIam).toBe(0);
   });
 
   test("lists, upserts, and deletes roles", async () => {
@@ -1857,6 +1867,26 @@ describe("useAppStore", () => {
     expect(store.getState().activatedInstanceCount()).toBe(2);
     expect(store.getState().totalInstanceCount()).toBe(3);
     expect(store.getState().userCountInIam()).toBe(7);
+  });
+
+  test("loads authentication info without fetching actuator info", async () => {
+    const info = createProto(AuthenticationInfoSchema, {
+      workspace: "workspaces/pre-login",
+    });
+    mocks.getAuthenticationRestriction.mockResolvedValue(info);
+    const store = createAppStore();
+
+    await store.getState().loadAuthenticationInfo();
+
+    expect(mocks.getAuthenticationRestriction).toHaveBeenCalledWith({
+      workspace: "",
+    });
+    expect(mocks.getActuatorInfo).not.toHaveBeenCalled();
+    expect(store.getState().authenticationInfo).toBe(info);
+    expect(store.getState().isSaaSMode()).toBe(false);
+    expect(store.getState().workspaceResourceName()).toBe(
+      "workspaces/pre-login"
+    );
   });
 
   test("derives subscription limits and feature state", () => {

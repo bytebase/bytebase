@@ -1111,9 +1111,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
           .getState()
           .updateInstance(instancePatch, ["activation"]);
         useAppStore.getState().updateDatabaseInstance(updated);
-        await useAppStore
-          .getState()
-          .fetchServerInfo(useAppStore.getState().workspaceResourceName());
+        await useAppStore.getState().fetchServerInfo();
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",

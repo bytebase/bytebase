@@ -4,120 +4,145 @@
 
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import { file_google_api_annotations } from "../google/api/annotations_pb";
+import { file_google_api_client } from "../google/api/client_pb";
+import { file_google_api_field_behavior } from "../google/api/field_behavior_pb";
+import { file_google_api_resource } from "../google/api/resource_pb";
 import { file_google_protobuf_empty } from "@bufbuild/protobuf/wkt";
 import { file_v1_annotation } from "./annotation_pb";
+import { file_v1_setting_service } from "./setting_service_pb";
 import { file_v1_user_service } from "./user_service_pb";
 
 /**
  * Describes the file v1/auth_service.proto.
  */
 export const file_v1_auth_service = /*@__PURE__*/
-  fileDesc("ChV2MS9hdXRoX3NlcnZpY2UucHJvdG8SC2J5dGViYXNlLnYxItkCCgxMb2dpblJlcXVlc3QSDQoFZW1haWwYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSCwoDd2ViGAMgASgIEhAKCGlkcF9uYW1lGAQgASgJEjkKC2lkcF9jb250ZXh0GAUgASgLMiQuYnl0ZWJhc2UudjEuSWRlbnRpdHlQcm92aWRlckNvbnRleHQSFQoIb3RwX2NvZGUYBiABKAlIAIgBARIaCg1yZWNvdmVyeV9jb2RlGAcgASgJSAGIAQESGwoObWZhX3RlbXBfdG9rZW4YCCABKAlIAogBARIXCgplbWFpbF9jb2RlGAkgASgJSAOIAQESFgoJd29ya3NwYWNlGAogASgJSASIAQFCCwoJX290cF9jb2RlQhAKDl9yZWNvdmVyeV9jb2RlQhEKD19tZmFfdGVtcF90b2tlbkINCgtfZW1haWxfY29kZUIMCgpfd29ya3NwYWNlIqwBChdJZGVudGl0eVByb3ZpZGVyQ29udGV4dBJECg5vYXV0aDJfY29udGV4dBgBIAEoCzIqLmJ5dGViYXNlLnYxLk9BdXRoMklkZW50aXR5UHJvdmlkZXJDb250ZXh0SAASQAoMb2lkY19jb250ZXh0GAIgASgLMiguYnl0ZWJhc2UudjEuT0lEQ0lkZW50aXR5UHJvdmlkZXJDb250ZXh0SABCCQoHY29udGV4dCItCh1PQXV0aDJJZGVudGl0eVByb3ZpZGVyQ29udGV4dBIMCgRjb2RlGAEgASgJIisKG09JRENJZGVudGl0eVByb3ZpZGVyQ29udGV4dBIMCgRjb2RlGAEgASgJIo8BCg1Mb2dpblJlc3BvbnNlEg0KBXRva2VuGAEgASgJEhsKDm1mYV90ZW1wX3Rva2VuGAIgASgJSACIAQESHgoWcmVxdWlyZV9yZXNldF9wYXNzd29yZBgDIAEoCBIfCgR1c2VyGAQgASgLMhEuYnl0ZWJhc2UudjEuVXNlckIRCg9fbWZhX3RlbXBfdG9rZW4iDwoNTG9nb3V0UmVxdWVzdCI0ChRFeGNoYW5nZVRva2VuUmVxdWVzdBINCgV0b2tlbhgBIAEoCRINCgVlbWFpbBgCIAEoCSItChVFeGNoYW5nZVRva2VuUmVzcG9uc2USFAoMYWNjZXNzX3Rva2VuGAEgASgJIj8KDVNpZ251cFJlcXVlc3QSDQoFZW1haWwYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSDQoFdGl0bGUYAyABKAkiEAoOUmVmcmVzaFJlcXVlc3QiEQoPUmVmcmVzaFJlc3BvbnNlIlIKG1JlcXVlc3RQYXNzd29yZFJlc2V0UmVxdWVzdBINCgVlbWFpbBgBIAEoCRIWCgl3b3Jrc3BhY2UYAiABKAlIAIgBAUIMCgpfd29ya3NwYWNlIkkKFFJlc2V0UGFzc3dvcmRSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEgwKBGNvZGUYAiABKAkSFAoMbmV3X3Bhc3N3b3JkGAMgASgJIlAKGVNlbmRFbWFpbExvZ2luQ29kZVJlcXVlc3QSDQoFZW1haWwYASABKAkSFgoJd29ya3NwYWNlGAIgASgJSACIAQFCDAoKX3dvcmtzcGFjZSK6AQoWU3dpdGNoV29ya3NwYWNlUmVxdWVzdBIRCgl3b3Jrc3BhY2UYASABKAkSCwoDd2ViGAIgASgIEhUKCG90cF9jb2RlGAMgASgJSACIAQESGgoNcmVjb3ZlcnlfY29kZRgEIAEoCUgBiAEBEhsKDm1mYV90ZW1wX3Rva2VuGAUgASgJSAKIAQFCCwoJX290cF9jb2RlQhAKDl9yZWNvdmVyeV9jb2RlQhEKD19tZmFfdGVtcF90b2tlbjL0CAoLQXV0aFNlcnZpY2USaQoFTG9naW4SGS5ieXRlYmFzZS52MS5Mb2dpblJlcXVlc3QaGi5ieXRlYmFzZS52MS5Mb2dpblJlc3BvbnNlIimA6jABmOowAaDqMAOo6jABgtPkkwITOgEqIg4vdjEvYXV0aC9sb2dpbhJoCgZMb2dvdXQSGi5ieXRlYmFzZS52MS5Mb2dvdXRSZXF1ZXN0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IiqA6jABmOowAaDqMAOo6jAEgtPkkwIUOgEqIg8vdjEvYXV0aC9sb2dvdXQSiQEKDUV4Y2hhbmdlVG9rZW4SIS5ieXRlYmFzZS52MS5FeGNoYW5nZVRva2VuUmVxdWVzdBoiLmJ5dGViYXNlLnYxLkV4Y2hhbmdlVG9rZW5SZXNwb25zZSIxgOowAZjqMAGg6jADqOowAYLT5JMCGzoBKiIWL3YxL2F1dGg6ZXhjaGFuZ2VUb2tlbhJsCgZTaWdudXASGi5ieXRlYmFzZS52MS5TaWdudXBSZXF1ZXN0GhouYnl0ZWJhc2UudjEuTG9naW5SZXNwb25zZSIqgOowAZjqMAGg6jADqOowAYLT5JMCFDoBKiIPL3YxL2F1dGgvc2lnbnVwEm0KB1JlZnJlc2gSGy5ieXRlYmFzZS52MS5SZWZyZXNoUmVxdWVzdBocLmJ5dGViYXNlLnYxLlJlZnJlc2hSZXNwb25zZSIngOowAaDqMAOo6jABgtPkkwIVOgEqIhAvdjEvYXV0aC9yZWZyZXNoEoMBCg9Td2l0Y2hXb3Jrc3BhY2USIy5ieXRlYmFzZS52MS5Td2l0Y2hXb3Jrc3BhY2VSZXF1ZXN0GhouYnl0ZWJhc2UudjEuTG9naW5SZXNwb25zZSIvkOowAqDqMAOo6jABgtPkkwIdOgEqIhgvdjEvYXV0aDpzd2l0Y2hXb3Jrc3BhY2USkgEKFFJlcXVlc3RQYXNzd29yZFJlc2V0EiguYnl0ZWJhc2UudjEuUmVxdWVzdFBhc3N3b3JkUmVzZXRSZXF1ZXN0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IjiA6jABmOowAaDqMAOo6jACgtPkkwIiOgEqIh0vdjEvYXV0aDpyZXF1ZXN0UGFzc3dvcmRSZXNldBJ9Cg1SZXNldFBhc3N3b3JkEiEuYnl0ZWJhc2UudjEuUmVzZXRQYXNzd29yZFJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiMYDqMAGY6jABoOowA6jqMAKC0+STAhs6ASoiFi92MS9hdXRoOnJlc2V0UGFzc3dvcmQSjAEKElNlbmRFbWFpbExvZ2luQ29kZRImLmJ5dGViYXNlLnYxLlNlbmRFbWFpbExvZ2luQ29kZVJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiNoDqMAGY6jABoOowA6jqMAKC0+STAiA6ASoiGy92MS9hdXRoOnNlbmRFbWFpbExvZ2luQ29kZUKmAQoPY29tLmJ5dGViYXNlLnYxQhBBdXRoU2VydmljZVByb3RvUAFaNGdpdGh1Yi5jb20vYnl0ZWJhc2UvYnl0ZWJhc2UvYmFja2VuZC9nZW5lcmF0ZWQtZ28vdjGiAgNCWFiqAgtCeXRlYmFzZS5WMcoCC0J5dGViYXNlXFYx4gIXQnl0ZWJhc2VcVjFcR1BCTWV0YWRhdGHqAgxCeXRlYmFzZTo6VjFiBnByb3RvMw", [file_google_api_annotations, file_google_protobuf_empty, file_v1_annotation, file_v1_user_service]);
+  fileDesc("ChV2MS9hdXRoX3NlcnZpY2UucHJvdG8SC2J5dGViYXNlLnYxIlUKI0dldEF1dGhlbnRpY2F0aW9uUmVzdHJpY3Rpb25SZXF1ZXN0Ei4KCXdvcmtzcGFjZRgBIAEoCUIb+kEYChZieXRlYmFzZS5jb20vV29ya3NwYWNlImAKEkF1dGhlbnRpY2F0aW9uSW5mbxIWCgl3b3Jrc3BhY2UYASABKAlCA+BBAxIyCgtyZXN0cmljdGlvbhgCIAEoCzIYLmJ5dGViYXNlLnYxLlJlc3RyaWN0aW9uQgPgQQMi+gEKC1Jlc3RyaWN0aW9uEhwKD2Rpc2FsbG93X3NpZ251cBgBIAEoCEID4EEDEiUKGGRpc2FsbG93X3Bhc3N3b3JkX3NpZ25pbhgCIAEoCEID4EEDElsKFHBhc3N3b3JkX3Jlc3RyaWN0aW9uGAMgASgLMjguYnl0ZWJhc2UudjEuV29ya3NwYWNlUHJvZmlsZVNldHRpbmcuUGFzc3dvcmRSZXN0cmljdGlvbkID4EEDEiQKF2FsbG93X2VtYWlsX2NvZGVfc2lnbmluGAQgASgIQgPgQQMSIwoWcGFzc3dvcmRfcmVzZXRfZW5hYmxlZBgFIAEoCEID4EEDItkCCgxMb2dpblJlcXVlc3QSDQoFZW1haWwYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSCwoDd2ViGAMgASgIEhAKCGlkcF9uYW1lGAQgASgJEjkKC2lkcF9jb250ZXh0GAUgASgLMiQuYnl0ZWJhc2UudjEuSWRlbnRpdHlQcm92aWRlckNvbnRleHQSFQoIb3RwX2NvZGUYBiABKAlIAIgBARIaCg1yZWNvdmVyeV9jb2RlGAcgASgJSAGIAQESGwoObWZhX3RlbXBfdG9rZW4YCCABKAlIAogBARIXCgplbWFpbF9jb2RlGAkgASgJSAOIAQESFgoJd29ya3NwYWNlGAogASgJSASIAQFCCwoJX290cF9jb2RlQhAKDl9yZWNvdmVyeV9jb2RlQhEKD19tZmFfdGVtcF90b2tlbkINCgtfZW1haWxfY29kZUIMCgpfd29ya3NwYWNlIqwBChdJZGVudGl0eVByb3ZpZGVyQ29udGV4dBJECg5vYXV0aDJfY29udGV4dBgBIAEoCzIqLmJ5dGViYXNlLnYxLk9BdXRoMklkZW50aXR5UHJvdmlkZXJDb250ZXh0SAASQAoMb2lkY19jb250ZXh0GAIgASgLMiguYnl0ZWJhc2UudjEuT0lEQ0lkZW50aXR5UHJvdmlkZXJDb250ZXh0SABCCQoHY29udGV4dCItCh1PQXV0aDJJZGVudGl0eVByb3ZpZGVyQ29udGV4dBIMCgRjb2RlGAEgASgJIisKG09JRENJZGVudGl0eVByb3ZpZGVyQ29udGV4dBIMCgRjb2RlGAEgASgJIo8BCg1Mb2dpblJlc3BvbnNlEg0KBXRva2VuGAEgASgJEhsKDm1mYV90ZW1wX3Rva2VuGAIgASgJSACIAQESHgoWcmVxdWlyZV9yZXNldF9wYXNzd29yZBgDIAEoCBIfCgR1c2VyGAQgASgLMhEuYnl0ZWJhc2UudjEuVXNlckIRCg9fbWZhX3RlbXBfdG9rZW4iDwoNTG9nb3V0UmVxdWVzdCI0ChRFeGNoYW5nZVRva2VuUmVxdWVzdBINCgV0b2tlbhgBIAEoCRINCgVlbWFpbBgCIAEoCSItChVFeGNoYW5nZVRva2VuUmVzcG9uc2USFAoMYWNjZXNzX3Rva2VuGAEgASgJIj8KDVNpZ251cFJlcXVlc3QSDQoFZW1haWwYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSDQoFdGl0bGUYAyABKAkiEAoOUmVmcmVzaFJlcXVlc3QiEQoPUmVmcmVzaFJlc3BvbnNlIlIKG1JlcXVlc3RQYXNzd29yZFJlc2V0UmVxdWVzdBINCgVlbWFpbBgBIAEoCRIWCgl3b3Jrc3BhY2UYAiABKAlIAIgBAUIMCgpfd29ya3NwYWNlIkkKFFJlc2V0UGFzc3dvcmRSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEgwKBGNvZGUYAiABKAkSFAoMbmV3X3Bhc3N3b3JkGAMgASgJIlAKGVNlbmRFbWFpbExvZ2luQ29kZVJlcXVlc3QSDQoFZW1haWwYASABKAkSFgoJd29ya3NwYWNlGAIgASgJSACIAQFCDAoKX3dvcmtzcGFjZSK6AQoWU3dpdGNoV29ya3NwYWNlUmVxdWVzdBIRCgl3b3Jrc3BhY2UYASABKAkSCwoDd2ViGAIgASgIEhUKCG90cF9jb2RlGAMgASgJSACIAQESGgoNcmVjb3ZlcnlfY29kZRgEIAEoCUgBiAEBEhsKDm1mYV90ZW1wX3Rva2VuGAUgASgJSAKIAQFCCwoJX290cF9jb2RlQhAKDl9yZWNvdmVyeV9jb2RlQhEKD19tZmFfdGVtcF90b2tlbjK+CgoLQXV0aFNlcnZpY2USxwEKHEdldEF1dGhlbnRpY2F0aW9uUmVzdHJpY3Rpb24SMC5ieXRlYmFzZS52MS5HZXRBdXRoZW50aWNhdGlvblJlc3RyaWN0aW9uUmVxdWVzdBofLmJ5dGViYXNlLnYxLkF1dGhlbnRpY2F0aW9uSW5mbyJU2kEAgOowAYLT5JMCR1ovEi0vdjEve3dvcmtzcGFjZT13b3Jrc3BhY2VzLyp9L2F1dGgvcmVzdHJpY3Rpb24SFC92MS9hdXRoL3Jlc3RyaWN0aW9uEmkKBUxvZ2luEhkuYnl0ZWJhc2UudjEuTG9naW5SZXF1ZXN0GhouYnl0ZWJhc2UudjEuTG9naW5SZXNwb25zZSIpgOowAZjqMAGg6jADqOowAYLT5JMCEzoBKiIOL3YxL2F1dGgvbG9naW4SaAoGTG9nb3V0EhouYnl0ZWJhc2UudjEuTG9nb3V0UmVxdWVzdBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIqgOowAZjqMAGg6jADqOowBILT5JMCFDoBKiIPL3YxL2F1dGgvbG9nb3V0EokBCg1FeGNoYW5nZVRva2VuEiEuYnl0ZWJhc2UudjEuRXhjaGFuZ2VUb2tlblJlcXVlc3QaIi5ieXRlYmFzZS52MS5FeGNoYW5nZVRva2VuUmVzcG9uc2UiMYDqMAGY6jABoOowA6jqMAGC0+STAhs6ASoiFi92MS9hdXRoOmV4Y2hhbmdlVG9rZW4SbAoGU2lnbnVwEhouYnl0ZWJhc2UudjEuU2lnbnVwUmVxdWVzdBoaLmJ5dGViYXNlLnYxLkxvZ2luUmVzcG9uc2UiKoDqMAGY6jABoOowA6jqMAGC0+STAhQ6ASoiDy92MS9hdXRoL3NpZ251cBJtCgdSZWZyZXNoEhsuYnl0ZWJhc2UudjEuUmVmcmVzaFJlcXVlc3QaHC5ieXRlYmFzZS52MS5SZWZyZXNoUmVzcG9uc2UiJ4DqMAGg6jADqOowAYLT5JMCFToBKiIQL3YxL2F1dGgvcmVmcmVzaBKDAQoPU3dpdGNoV29ya3NwYWNlEiMuYnl0ZWJhc2UudjEuU3dpdGNoV29ya3NwYWNlUmVxdWVzdBoaLmJ5dGViYXNlLnYxLkxvZ2luUmVzcG9uc2UiL5DqMAKg6jADqOowAYLT5JMCHToBKiIYL3YxL2F1dGg6c3dpdGNoV29ya3NwYWNlEpIBChRSZXF1ZXN0UGFzc3dvcmRSZXNldBIoLmJ5dGViYXNlLnYxLlJlcXVlc3RQYXNzd29yZFJlc2V0UmVxdWVzdBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSI4gOowAZjqMAGg6jADqOowAoLT5JMCIjoBKiIdL3YxL2F1dGg6cmVxdWVzdFBhc3N3b3JkUmVzZXQSfQoNUmVzZXRQYXNzd29yZBIhLmJ5dGViYXNlLnYxLlJlc2V0UGFzc3dvcmRSZXF1ZXN0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IjGA6jABmOowAaDqMAOo6jACgtPkkwIbOgEqIhYvdjEvYXV0aDpyZXNldFBhc3N3b3JkEowBChJTZW5kRW1haWxMb2dpbkNvZGUSJi5ieXRlYmFzZS52MS5TZW5kRW1haWxMb2dpbkNvZGVSZXF1ZXN0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IjaA6jABmOowAaDqMAOo6jACgtPkkwIgOgEqIhsvdjEvYXV0aDpzZW5kRW1haWxMb2dpbkNvZGVCpgEKD2NvbS5ieXRlYmFzZS52MUIQQXV0aFNlcnZpY2VQcm90b1ABWjRnaXRodWIuY29tL2J5dGViYXNlL2J5dGViYXNlL2JhY2tlbmQvZ2VuZXJhdGVkLWdvL3YxogIDQlhYqgILQnl0ZWJhc2UuVjHKAgtCeXRlYmFzZVxWMeICF0J5dGViYXNlXFYxXEdQQk1ldGFkYXRh6gIMQnl0ZWJhc2U6OlYxYgZwcm90bzM", [file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_empty, file_v1_annotation, file_v1_setting_service, file_v1_user_service]);
+
+/**
+ * Describes the message bytebase.v1.GetAuthenticationRestrictionRequest.
+ * Use `create(GetAuthenticationRestrictionRequestSchema)` to create a new message.
+ */
+export const GetAuthenticationRestrictionRequestSchema = /*@__PURE__*/
+  messageDesc(file_v1_auth_service, 0);
+
+/**
+ * Describes the message bytebase.v1.AuthenticationInfo.
+ * Use `create(AuthenticationInfoSchema)` to create a new message.
+ */
+export const AuthenticationInfoSchema = /*@__PURE__*/
+  messageDesc(file_v1_auth_service, 1);
+
+/**
+ * Describes the message bytebase.v1.Restriction.
+ * Use `create(RestrictionSchema)` to create a new message.
+ */
+export const RestrictionSchema = /*@__PURE__*/
+  messageDesc(file_v1_auth_service, 2);
 
 /**
  * Describes the message bytebase.v1.LoginRequest.
  * Use `create(LoginRequestSchema)` to create a new message.
  */
 export const LoginRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 0);
+  messageDesc(file_v1_auth_service, 3);
 
 /**
  * Describes the message bytebase.v1.IdentityProviderContext.
  * Use `create(IdentityProviderContextSchema)` to create a new message.
  */
 export const IdentityProviderContextSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 1);
+  messageDesc(file_v1_auth_service, 4);
 
 /**
  * Describes the message bytebase.v1.OAuth2IdentityProviderContext.
  * Use `create(OAuth2IdentityProviderContextSchema)` to create a new message.
  */
 export const OAuth2IdentityProviderContextSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 2);
+  messageDesc(file_v1_auth_service, 5);
 
 /**
  * Describes the message bytebase.v1.OIDCIdentityProviderContext.
  * Use `create(OIDCIdentityProviderContextSchema)` to create a new message.
  */
 export const OIDCIdentityProviderContextSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 3);
+  messageDesc(file_v1_auth_service, 6);
 
 /**
  * Describes the message bytebase.v1.LoginResponse.
  * Use `create(LoginResponseSchema)` to create a new message.
  */
 export const LoginResponseSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 4);
+  messageDesc(file_v1_auth_service, 7);
 
 /**
  * Describes the message bytebase.v1.LogoutRequest.
  * Use `create(LogoutRequestSchema)` to create a new message.
  */
 export const LogoutRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 5);
+  messageDesc(file_v1_auth_service, 8);
 
 /**
  * Describes the message bytebase.v1.ExchangeTokenRequest.
  * Use `create(ExchangeTokenRequestSchema)` to create a new message.
  */
 export const ExchangeTokenRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 6);
+  messageDesc(file_v1_auth_service, 9);
 
 /**
  * Describes the message bytebase.v1.ExchangeTokenResponse.
  * Use `create(ExchangeTokenResponseSchema)` to create a new message.
  */
 export const ExchangeTokenResponseSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 7);
+  messageDesc(file_v1_auth_service, 10);
 
 /**
  * Describes the message bytebase.v1.SignupRequest.
  * Use `create(SignupRequestSchema)` to create a new message.
  */
 export const SignupRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 8);
+  messageDesc(file_v1_auth_service, 11);
 
 /**
  * Describes the message bytebase.v1.RefreshRequest.
  * Use `create(RefreshRequestSchema)` to create a new message.
  */
 export const RefreshRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 9);
+  messageDesc(file_v1_auth_service, 12);
 
 /**
  * Describes the message bytebase.v1.RefreshResponse.
  * Use `create(RefreshResponseSchema)` to create a new message.
  */
 export const RefreshResponseSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 10);
+  messageDesc(file_v1_auth_service, 13);
 
 /**
  * Describes the message bytebase.v1.RequestPasswordResetRequest.
  * Use `create(RequestPasswordResetRequestSchema)` to create a new message.
  */
 export const RequestPasswordResetRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 11);
+  messageDesc(file_v1_auth_service, 14);
 
 /**
  * Describes the message bytebase.v1.ResetPasswordRequest.
  * Use `create(ResetPasswordRequestSchema)` to create a new message.
  */
 export const ResetPasswordRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 12);
+  messageDesc(file_v1_auth_service, 15);
 
 /**
  * Describes the message bytebase.v1.SendEmailLoginCodeRequest.
  * Use `create(SendEmailLoginCodeRequestSchema)` to create a new message.
  */
 export const SendEmailLoginCodeRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 13);
+  messageDesc(file_v1_auth_service, 16);
 
 /**
  * Describes the message bytebase.v1.SwitchWorkspaceRequest.
  * Use `create(SwitchWorkspaceRequestSchema)` to create a new message.
  */
 export const SwitchWorkspaceRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 14);
+  messageDesc(file_v1_auth_service, 17);
 
 /**
  * AuthService handles user authentication operations.
