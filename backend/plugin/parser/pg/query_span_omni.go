@@ -205,7 +205,7 @@ func findDollarQuotedBody(definition string) (tag string, bodyStart int, bodyEnd
 // On PostgreSQL a current sync cannot produce this state: #20581 moved the
 // column query to pg_catalog so privileges no longer hide columns. What
 // reaches it is a snapshot written before that fix and never re-synced.
-func (e *omniQuerySpanExtractor) findUnresolvedRelations(accesses base.SourceColumnSet) []base.ColumnResource {
+func (e *omniQuerySpanExtractor) findUnresolvedRelations(accesses base.SourceColumnSet, cteNames map[string]bool) []base.ColumnResource {
 	seen := make(map[base.ColumnResource]bool, len(accesses))
 	var unresolved []base.ColumnResource
 	for access := range accesses {
@@ -219,6 +219,13 @@ func (e *omniQuerySpanExtractor) findUnresolvedRelations(accesses base.SourceCol
 			continue
 		}
 		seen[relation] = true
+		// ExtractAccessTables walks every RangeVar without tracking CTE scope, so
+		// a reference to a CTE that shares a table's name arrives here resolved to
+		// that table. Such a query never reads the table and resolves entirely
+		// from the CTE, so refusing it would be a false positive.
+		if cteNames[strings.ToLower(relation.Table)] {
+			continue
+		}
 		if e.relationHasNoSyncedColumns(relation) {
 			unresolved = append(unresolved, relation)
 		}
@@ -256,8 +263,8 @@ func (e *omniQuerySpanExtractor) relationHasNoSyncedColumns(relation base.Column
 
 // unresolvedColumnsError builds the span signal for accesses whose columns the
 // snapshot cannot describe, or nil when every accessed table resolves.
-func (e *omniQuerySpanExtractor) unresolvedColumnsError(accesses base.SourceColumnSet) *base.UnresolvedColumnsError {
-	unresolved := e.findUnresolvedRelations(accesses)
+func (e *omniQuerySpanExtractor) unresolvedColumnsError(accesses base.SourceColumnSet, selStmt *ast.SelectStmt) *base.UnresolvedColumnsError {
+	unresolved := e.findUnresolvedRelations(accesses, collectCTENames(selStmt))
 	if len(unresolved) == 0 {
 		return nil
 	}
@@ -361,7 +368,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 				Type:                   base.Select,
 				SourceColumns:          accessesMap,
 				Results:                results,
-				UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
+				UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap, selStmt),
 			}, nil
 		}
 		// Fail-open: return access tables with best-effort column names and lineage
@@ -371,7 +378,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 			SourceColumns:          accessesMap,
 			Results:                e.extractFallbackColumns(selStmt),
 			PredicateColumns:       e.funcPredicateColumns,
-			UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
+			UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap, selStmt),
 		}, nil
 	}
 
@@ -390,7 +397,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		SourceColumns:          accessesMap,
 		PredicateColumns:       e.funcPredicateColumns,
 		Results:                results,
-		UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
+		UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap, selStmt),
 	}, nil
 }
 
@@ -1367,6 +1374,37 @@ func collectColumnRefNames(node ast.Node) []string {
 		names = append(names, collectColumnRefNames(v.Arg)...)
 	default:
 	}
+	return names
+}
+
+// collectCTENames returns every name bound by a WITH clause in the statement,
+// lowercased. A CTE name shadows an unqualified reference to a physical table
+// of the same name, and the access-table walk does not model that scope.
+//
+// Nested WITH clauses inside CTE bodies are included. The cost of naming one
+// too many is that a genuinely degraded table sharing a CTE's name goes
+// unchecked in that statement; the cost of naming one too few is refusing a
+// query that reads no table at all.
+func collectCTENames(selStmt *ast.SelectStmt) map[string]bool {
+	names := make(map[string]bool)
+	var walk func(*ast.SelectStmt, int)
+	walk = func(sel *ast.SelectStmt, depth int) {
+		// Guard against a malformed tree looping; real queries nest shallowly.
+		if sel == nil || sel.WithClause == nil || depth > 32 {
+			return
+		}
+		for _, item := range sel.WithClause.Ctes.Items {
+			cte, ok := item.(*ast.CommonTableExpr)
+			if !ok {
+				continue
+			}
+			names[strings.ToLower(cte.Ctename)] = true
+			if body, ok := cte.Ctequery.(*ast.SelectStmt); ok {
+				walk(body, depth+1)
+			}
+		}
+	}
+	walk(selStmt, 0)
 	return names
 }
 
