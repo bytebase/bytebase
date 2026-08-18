@@ -182,7 +182,6 @@ func findDollarQuotedBody(definition string) (tag string, bodyStart int, bodyEnd
 	return "", 0, 0
 }
 
-// getQuerySpan extracts the query span for the given SQL statement.
 // findUnresolvedRelations reports the relations in accesses whose columns the
 // stored snapshot does not describe. It reads the snapshot directly rather than
 // inspecting the analyzer's output, so it says the same thing regardless of
@@ -254,6 +253,7 @@ func (e *omniQuerySpanExtractor) unresolvedColumnsError(accesses base.SourceColu
 	return &base.UnresolvedColumnsError{Relations: unresolved}
 }
 
+// getQuerySpan extracts the query span for the given SQL statement.
 func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
 	e.ctx = ctx
 
