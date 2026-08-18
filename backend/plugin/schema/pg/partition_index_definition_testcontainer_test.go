@@ -24,9 +24,11 @@ CREATE TABLE accounts (
 CREATE TABLE accounts_t1 PARTITION OF accounts FOR VALUES IN ('t1');
 CREATE TABLE accounts_t2 PARTITION OF accounts FOR VALUES IN ('t2') PARTITION BY RANGE (id);
 CREATE TABLE accounts_t2_a PARTITION OF accounts_t2 FOR VALUES FROM (0) TO (100);
+CREATE INDEX accounts_t1_email_idx ON accounts_t1 (id);
 CREATE INDEX accounts_email_idx ON accounts (email);
 CREATE INDEX accounts_t1_local_idx ON accounts_t1 (email, id);
 CREATE INDEX accounts_t2_local_idx ON accounts_t2 (id, email);
+COMMENT ON INDEX accounts_t1_email_idx1 IS 'inherited clone comment';
 `
 
 // TestGetDatabaseDefinitionPartitionIndexRoundTrip verifies that the generated
@@ -81,12 +83,22 @@ func TestGetDatabaseDefinitionPartitionIndexRoundTrip(t *testing.T) {
 		`SELECT COUNT(*) FROM pg_inherits i JOIN pg_class c ON c.oid = i.inhrelid WHERE c.relkind IN ('i', 'I')`).Scan(&indexInheritanceEdges))
 	require.Equal(t, 7, indexInheritanceEdges, "generated DDL:\n%s", generatedDDL)
 
-	for _, indexName := range []string{"accounts_pkey", "accounts_email_idx", "accounts_t1_local_idx", "accounts_t2_local_idx"} {
+	for _, indexName := range []string{"accounts_pkey", "accounts_email_idx", "accounts_t1_email_idx", "accounts_t1_email_idx1", "accounts_t1_local_idx", "accounts_t2_local_idx"} {
 		var exists bool
 		require.NoError(t, dbB.QueryRowContext(ctx,
 			`SELECT EXISTS (SELECT 1 FROM pg_class WHERE relname = $1 AND relkind IN ('i', 'I'))`, indexName).Scan(&exists))
 		require.True(t, exists, "index %s missing from restored database; generated DDL:\n%s", indexName, generatedDDL)
 	}
+
+	var localDef string
+	require.NoError(t, dbB.QueryRowContext(ctx,
+		`SELECT pg_get_indexdef(oid) FROM pg_class WHERE relname = 'accounts_t1_email_idx'`).Scan(&localDef))
+	require.Contains(t, localDef, "(id)", "generated DDL:\n%s", generatedDDL)
+
+	var cloneComment string
+	require.NoError(t, dbB.QueryRowContext(ctx,
+		`SELECT COALESCE(obj_description(oid), '') FROM pg_class WHERE relname = 'accounts_t1_email_idx1'`).Scan(&cloneComment))
+	require.Equal(t, "inherited clone comment", cloneComment, "generated DDL:\n%s", generatedDDL)
 }
 
 // TestGetDatabaseDefinitionLegacyPartitionIndexMetadata pins the pg_dump-style
@@ -133,4 +145,8 @@ func TestGetDatabaseDefinitionLegacyPartitionIndexMetadata(t *testing.T) {
 	require.Contains(t, ddl, `CREATE INDEX "accounts_t1_email_idx" ON "public"."accounts_t1"`)
 	require.Contains(t, ddl, `ALTER INDEX "public"."accounts_email_idx" ATTACH PARTITION "public"."accounts_t1_email_idx";`)
 	require.False(t, strings.Contains(ddl, `ON ONLY "public"."accounts_t1"`), "partition without subpartitions must not use ON ONLY; got:\n%s", ddl)
+	require.Less(t,
+		strings.Index(ddl, `CREATE INDEX "accounts_t1_email_idx"`),
+		strings.Index(ddl, `CREATE INDEX "accounts_email_idx"`),
+		"partition index must be written before parent index; got:\n%s", ddl)
 }

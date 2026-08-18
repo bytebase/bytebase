@@ -755,7 +755,7 @@ func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMe
 func localIndexes(indexes []*storepb.IndexMetadata) []*storepb.IndexMetadata {
 	var result []*storepb.IndexMetadata
 	for _, index := range indexes {
-		if index.ParentIndexName == "" {
+		if index.ParentIndexName == "" || index.Comment != "" {
 			result = append(result, index)
 		}
 	}

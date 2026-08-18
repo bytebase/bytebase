@@ -24,11 +24,12 @@ CREATE TABLE accounts_t2_a PARTITION OF accounts_t2 FOR VALUES FROM (0) TO (100)
 CREATE INDEX accounts_email_idx ON accounts (email);
 CREATE INDEX accounts_t1_local_idx ON accounts_t1 (email, id);
 CREATE INDEX accounts_t2_local_idx ON accounts_t2 (id, email);
+COMMENT ON INDEX accounts_t1_email_idx IS 'clone comment';
 `
 
 // TestSyncPartitionIndexesOmitInheritedClones verifies that synced partition
-// metadata keeps locally-created indexes but not clones propagated from a
-// parent partitioned index.
+// metadata keeps locally-created indexes and commented clones, but not plain
+// clones propagated from a parent partitioned index.
 func TestSyncPartitionIndexesOmitInheritedClones(t *testing.T) {
 	ctx := context.Background()
 
@@ -95,8 +96,16 @@ func TestSyncPartitionIndexesOmitInheritedClones(t *testing.T) {
 	require.Contains(t, partitions, "accounts_t1")
 	require.Contains(t, partitions, "accounts_t2")
 
-	require.ElementsMatch(t, []string{"accounts_t1_local_idx"}, indexNames(partitions["accounts_t1"].Indexes))
+	require.ElementsMatch(t, []string{"accounts_t1_local_idx", "accounts_t1_email_idx"}, indexNames(partitions["accounts_t1"].Indexes))
 	require.ElementsMatch(t, []string{"accounts_t2_local_idx"}, indexNames(partitions["accounts_t2"].Indexes))
+
+	for _, index := range partitions["accounts_t1"].Indexes {
+		if index.Name == "accounts_t1_email_idx" {
+			require.Equal(t, "clone comment", index.Comment)
+			require.Equal(t, "public", index.ParentIndexSchema)
+			require.Equal(t, "accounts_email_idx", index.ParentIndexName)
+		}
+	}
 
 	require.Len(t, partitions["accounts_t2"].Subpartitions, 1)
 	subpartition := partitions["accounts_t2"].Subpartitions[0]

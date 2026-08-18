@@ -2049,15 +2049,6 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 		}
 	}
 
-	// Construct Primary Key.
-	for _, index := range table.Indexes {
-		if index.Primary {
-			if err := writePrimaryKey(out, schema, table.Name, index, len(table.Partitions) == 0 || hasRecordedAttachedChild(table.Partitions, schema, index.Name)); err != nil {
-				return err
-			}
-		}
-	}
-
 	// Construct Partition table primary key.
 	for _, partition := range table.Partitions {
 		if err := writePartitionPrimaryKey(out, schema, partition); err != nil {
@@ -2065,10 +2056,10 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 		}
 	}
 
-	// Construct Unique Key.
+	// Construct Primary Key.
 	for _, index := range table.Indexes {
-		if index.Unique && !index.Primary && index.IsConstraint {
-			if err := writeUniqueKey(out, schema, table.Name, index, len(table.Partitions) == 0 || hasRecordedAttachedChild(table.Partitions, schema, index.Name)); err != nil {
+		if index.Primary {
+			if err := writePrimaryKey(out, schema, table.Name, index, len(table.Partitions) == 0 || allPartitionsRecordAttachedChild(table.Partitions, schema, index.Name)); err != nil {
 				return err
 			}
 		}
@@ -2081,10 +2072,10 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 		}
 	}
 
-	// Construct Index.
+	// Construct Unique Key.
 	for _, index := range table.Indexes {
-		if !index.Primary && !index.IsConstraint {
-			if err := writeIndex(out, schema, table.Name, index, len(table.Partitions) > 0 && hasRecordedAttachedChild(table.Partitions, schema, index.Name)); err != nil {
+		if index.Unique && !index.Primary && index.IsConstraint {
+			if err := writeUniqueKey(out, schema, table.Name, index, len(table.Partitions) == 0 || allPartitionsRecordAttachedChild(table.Partitions, schema, index.Name)); err != nil {
 				return err
 			}
 		}
@@ -2094,6 +2085,15 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 	for _, partition := range table.Partitions {
 		if err := writePartitionIndex(out, schema, partition); err != nil {
 			return err
+		}
+	}
+
+	// Construct Index.
+	for _, index := range table.Indexes {
+		if !index.Primary && !index.IsConstraint {
+			if err := writeIndex(out, schema, table.Name, index, allPartitionsRecordAttachedChild(table.Partitions, schema, index.Name)); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -2219,15 +2219,23 @@ func writeAttachPartitionIndex(out io.Writer, schema string, partition *storepb.
 	return nil
 }
 
-func hasRecordedAttachedChild(partitions []*storepb.TablePartitionMetadata, parentSchema, parentIndex string) bool {
+func allPartitionsRecordAttachedChild(partitions []*storepb.TablePartitionMetadata, parentSchema, parentIndex string) bool {
+	if len(partitions) == 0 {
+		return false
+	}
 	for _, partition := range partitions {
+		found := false
 		for _, index := range partition.Indexes {
 			if index.ParentIndexSchema == parentSchema && index.ParentIndexName == parentIndex {
-				return true
+				found = true
+				break
 			}
 		}
+		if !found {
+			return false
+		}
 	}
-	return false
+	return true
 }
 
 func writeAttachIndex(out io.Writer, schema string, index *storepb.IndexMetadata) error {
@@ -2264,17 +2272,17 @@ func writeAttachIndex(out io.Writer, schema string, index *storepb.IndexMetadata
 }
 
 func writePartitionIndex(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
-	for _, index := range partition.Indexes {
-		if !index.IsConstraint && !index.Primary {
-			if err := writeIndex(out, schema, partition.Name, index, len(partition.Subpartitions) > 0 && hasRecordedAttachedChild(partition.Subpartitions, schema, index.Name)); err != nil {
-				return err
-			}
-		}
-	}
-
 	for _, subpartition := range partition.Subpartitions {
 		if err := writePartitionIndex(out, schema, subpartition); err != nil {
 			return err
+		}
+	}
+
+	for _, index := range partition.Indexes {
+		if !index.IsConstraint && !index.Primary {
+			if err := writeIndex(out, schema, partition.Name, index, allPartitionsRecordAttachedChild(partition.Subpartitions, schema, index.Name)); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -2360,17 +2368,17 @@ func writeIndexComment(out io.Writer, schema string, index *storepb.IndexMetadat
 }
 
 func writePartitionUniqueKey(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
-	for _, index := range partition.Indexes {
-		if index.Unique && !index.Primary && index.IsConstraint {
-			if err := writeUniqueKey(out, schema, partition.Name, index, len(partition.Subpartitions) == 0 || hasRecordedAttachedChild(partition.Subpartitions, schema, index.Name)); err != nil {
-				return err
-			}
-		}
-	}
-
 	for _, subpartition := range partition.Subpartitions {
 		if err := writePartitionUniqueKey(out, schema, subpartition); err != nil {
 			return err
+		}
+	}
+
+	for _, index := range partition.Indexes {
+		if index.Unique && !index.Primary && index.IsConstraint {
+			if err := writeUniqueKey(out, schema, partition.Name, index, len(partition.Subpartitions) == 0 || allPartitionsRecordAttachedChild(partition.Subpartitions, schema, index.Name)); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -2426,17 +2434,17 @@ func writeUniqueKey(out io.Writer, schema string, table string, index *storepb.I
 }
 
 func writePartitionPrimaryKey(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
-	for _, index := range partition.Indexes {
-		if index.Primary {
-			if err := writePrimaryKey(out, schema, partition.Name, index, len(partition.Subpartitions) == 0 || hasRecordedAttachedChild(partition.Subpartitions, schema, index.Name)); err != nil {
-				return err
-			}
-		}
-	}
-
 	for _, subpartition := range partition.Subpartitions {
 		if err := writePartitionPrimaryKey(out, schema, subpartition); err != nil {
 			return err
+		}
+	}
+
+	for _, index := range partition.Indexes {
+		if index.Primary {
+			if err := writePrimaryKey(out, schema, partition.Name, index, len(partition.Subpartitions) == 0 || allPartitionsRecordAttachedChild(partition.Subpartitions, schema, index.Name)); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -3614,7 +3622,7 @@ func writeIndexesSDL(out io.Writer, schemaName string, table *storepb.TableMetad
 			continue
 		}
 
-		if err := writeIndexSDL(out, schemaName, table.Name, index, len(table.Partitions) > 0 && hasRecordedAttachedChild(table.Partitions, schemaName, index.Name)); err != nil {
+		if err := writeIndexSDL(out, schemaName, table.Name, index, allPartitionsRecordAttachedChild(table.Partitions, schemaName, index.Name)); err != nil {
 			return err
 		}
 

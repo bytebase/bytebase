@@ -1643,21 +1643,14 @@ func writeTableForMetadataMigration(out *strings.Builder, schemaName string, tab
 			return err
 		}
 	}
-	for _, index := range table.GetIndexes() {
-		if index.GetPrimary() {
-			if err := writePrimaryKey(out, schemaName, table.GetName(), index, len(table.GetPartitions()) == 0 || hasRecordedAttachedChild(table.GetPartitions(), schemaName, index.GetName())); err != nil {
-				return err
-			}
-		}
-	}
 	for _, partition := range table.GetPartitions() {
 		if err := writePartitionPrimaryKey(out, schemaName, partition); err != nil {
 			return err
 		}
 	}
 	for _, index := range table.GetIndexes() {
-		if index.GetUnique() && !index.GetPrimary() && index.GetIsConstraint() {
-			if err := writeUniqueKey(out, schemaName, table.GetName(), index, len(table.GetPartitions()) == 0 || hasRecordedAttachedChild(table.GetPartitions(), schemaName, index.GetName())); err != nil {
+		if index.GetPrimary() {
+			if err := writePrimaryKey(out, schemaName, table.GetName(), index, len(table.GetPartitions()) == 0 || allPartitionsRecordAttachedChild(table.GetPartitions(), schemaName, index.GetName())); err != nil {
 				return err
 			}
 		}
@@ -1668,8 +1661,8 @@ func writeTableForMetadataMigration(out *strings.Builder, schemaName string, tab
 		}
 	}
 	for _, index := range table.GetIndexes() {
-		if !index.GetPrimary() && !index.GetIsConstraint() {
-			if err := writeCreateRegularIndex(out, schemaName, table.GetName(), index, len(table.GetPartitions()) > 0 && hasRecordedAttachedChild(table.GetPartitions(), schemaName, index.GetName())); err != nil {
+		if index.GetUnique() && !index.GetPrimary() && index.GetIsConstraint() {
+			if err := writeUniqueKey(out, schemaName, table.GetName(), index, len(table.GetPartitions()) == 0 || allPartitionsRecordAttachedChild(table.GetPartitions(), schemaName, index.GetName())); err != nil {
 				return err
 			}
 		}
@@ -1677,6 +1670,13 @@ func writeTableForMetadataMigration(out *strings.Builder, schemaName string, tab
 	for _, partition := range table.GetPartitions() {
 		if err := writePartitionIndexForMetadataMigration(out, schemaName, partition); err != nil {
 			return err
+		}
+	}
+	for _, index := range table.GetIndexes() {
+		if !index.GetPrimary() && !index.GetIsConstraint() {
+			if err := writeCreateRegularIndex(out, schemaName, table.GetName(), index, allPartitionsRecordAttachedChild(table.GetPartitions(), schemaName, index.GetName())); err != nil {
+				return err
+			}
 		}
 	}
 	for _, partition := range table.GetPartitions() {
@@ -1760,16 +1760,16 @@ func writeCreatePartitionDiff(out *strings.Builder, schemaName, tableName string
 }
 
 func writePartitionIndexForMetadataMigration(out *strings.Builder, schemaName string, partition *storepb.TablePartitionMetadata) error {
-	for _, index := range partition.GetIndexes() {
-		if !index.GetIsConstraint() && !index.GetPrimary() {
-			if err := writeCreateRegularIndex(out, schemaName, partition.GetName(), index, len(partition.GetSubpartitions()) > 0 && hasRecordedAttachedChild(partition.GetSubpartitions(), schemaName, index.GetName())); err != nil {
-				return err
-			}
-		}
-	}
 	for _, subpartition := range partition.GetSubpartitions() {
 		if err := writePartitionIndexForMetadataMigration(out, schemaName, subpartition); err != nil {
 			return err
+		}
+	}
+	for _, index := range partition.GetIndexes() {
+		if !index.GetIsConstraint() && !index.GetPrimary() {
+			if err := writeCreateRegularIndex(out, schemaName, partition.GetName(), index, allPartitionsRecordAttachedChild(partition.GetSubpartitions(), schemaName, index.GetName())); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
