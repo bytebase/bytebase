@@ -196,6 +196,52 @@ func TestTargetValidateRejectsPublicAccess(t *testing.T) {
 	require.Error(t, newLocalTarget(t, container).Validate(ctx))
 }
 
+func TestTargetValidateAllowsCloudSQLAdminPublicAccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping PostgreSQL testcontainer test in short mode")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	t.Cleanup(cancel)
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(context.Background()) })
+
+	admin := connectLocal(ctx, t, container, "postgres", "postgres", "root-password")
+	defer admin.Close(ctx)
+	require.NoError(t, prepareBaseline(ctx, admin))
+	_, err := admin.Exec(ctx, "CREATE DATABASE cloudsqladmin")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = admin.Exec(context.Background(), "DROP DATABASE cloudsqladmin")
+	})
+
+	require.NoError(t, newLocalTarget(t, container).Validate(ctx))
+}
+
+func TestTargetValidateRejectsUnexpectedPublicDatabase(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping PostgreSQL testcontainer test in short mode")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	t.Cleanup(cancel)
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(context.Background()) })
+
+	admin := connectLocal(ctx, t, container, "postgres", "postgres", "root-password")
+	defer admin.Close(ctx)
+	require.NoError(t, prepareBaseline(ctx, admin))
+	_, err := admin.Exec(ctx, "CREATE DATABASE unexpected_public_database")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = admin.Exec(context.Background(), "DROP DATABASE unexpected_public_database")
+	})
+
+	err = newLocalTarget(t, container).Validate(ctx)
+	require.Error(t, err)
+	var targetErr *TargetError
+	require.ErrorAs(t, err, &targetErr)
+	require.Equal(t, TargetErrorStatic, targetErr.Kind)
+}
+
 func newLocalTarget(t *testing.T, container *testcontainer.Container) *Target {
 	t.Helper()
 	config, err := pgx.ParseConfig(fmt.Sprintf(
