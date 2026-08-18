@@ -1,4 +1,5 @@
 import { act } from "react";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -28,8 +29,9 @@ let CreateInstanceView: typeof import("./CreateInstanceView").CreateInstanceView
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({
-    t: (key: string) =>
-      ({
+    t: (key: string, values?: { total?: number }) => {
+      const translation =
+        ({
         "instance.use-sample-instance":
           "Use sample instance (Available for 7 days)",
         "instance.preparing-sample-instance":
@@ -40,7 +42,12 @@ vi.mock("react-i18next", () => ({
           "Use a Sample Project Instance to explore Bytebase with a ready-to-use database for 7 days.",
         "instance.sample-project-instance-title":
           "Try a Sample Project Instance",
-      })[key] ?? key,
+        "subscription.usage.instance-count.title": "Instance quota reached",
+        "subscription.usage.instance-count.runoutof":
+          "You have reached the limit of {{total}} instances.",
+        })[key] ?? key;
+      return translation.replace("{{total}}", String(values?.total ?? ""));
+    },
   }),
 }));
 
@@ -252,7 +259,7 @@ describe("CreateInstanceView", () => {
     });
   });
 
-  test("offers a sample instance for SaaS project creation despite the local instance limit", () => {
+  test("dismisses SaaS sample creation when the instance quota is reached", () => {
     mocks.isSaaSMode = true;
     mocks.instanceCountLimit = 1;
     mocks.activatedInstanceCount = 1;
@@ -269,11 +276,13 @@ describe("CreateInstanceView", () => {
       );
     });
 
-    expect(
-      [...container.querySelectorAll("button")]
-        .find((element) => element.textContent?.includes("Use sample instance"))
-        ?.textContent
-    ).toContain("Use sample instance (Available for 7 days)");
+    expect(mocks.pushNotification).toHaveBeenCalledWith({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Instance quota reached",
+      description: "You have reached the limit of 1 instances.",
+    });
+    expect(mocks.onDismiss).toHaveBeenCalledOnce();
 
     act(() => {
       root.unmount();
@@ -356,7 +365,12 @@ describe("CreateInstanceView", () => {
 
   test("shows localized feedback when sample preparation fails", async () => {
     mocks.isSaaSMode = true;
-    mocks.prepareSampleProjectInstance.mockRejectedValue(new Error("failed"));
+    mocks.prepareSampleProjectInstance.mockRejectedValue(
+      new ConnectError(
+        "The sample instance cannot be provisioned. Try again later.",
+        Code.Internal
+      )
+    );
     const container = document.createElement("div");
     const root = createRoot(container);
 
@@ -381,6 +395,8 @@ describe("CreateInstanceView", () => {
       module: "bytebase",
       style: "CRITICAL",
       title: "Failed to prepare Sample Project Instance.",
+      description:
+        "[internal] The sample instance cannot be provisioned. Try again later.",
     });
 
     act(() => {

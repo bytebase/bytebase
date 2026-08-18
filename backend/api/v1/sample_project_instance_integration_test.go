@@ -737,6 +737,15 @@ func (t *integrationSampleTarget) Validate(ctx context.Context) error {
 	return t.prepareBaseline(ctx)
 }
 
+func (t *integrationSampleTarget) ValidateForCleanup(ctx context.Context) error {
+	conn, err := t.connect(ctx, "", "", "")
+	if err != nil {
+		return errors.New("sample target cleanup is unavailable")
+	}
+	defer conn.Close(ctx)
+	return nil
+}
+
 func (t *integrationSampleTarget) prepareBaseline(ctx context.Context) error {
 	conn, err := t.connect(ctx, "", "", "")
 	if err != nil {

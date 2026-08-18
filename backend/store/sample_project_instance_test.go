@@ -147,7 +147,7 @@ func TestWithLockedSampleProjectInstanceResetsStaleReservationAndCountsCleanup(t
 	}))
 }
 
-func TestWithLockedSampleProjectInstanceCleanupBatch(t *testing.T) {
+func TestWithLockedSampleProjectInstanceCleanupRecordIteratesAfterCallbackError(t *testing.T) {
 	ctx, db, s := newSampleProjectInstanceFixture(t)
 	now := time.Date(2026, time.August, 17, 9, 0, 0, 0, time.UTC)
 	for _, workspace := range []string{"workspace-a", "workspace-b", "workspace-d"} {
@@ -170,18 +170,28 @@ func TestWithLockedSampleProjectInstanceCleanupBatch(t *testing.T) {
 	require.NoError(t, err)
 
 	var processed []string
-	err = s.WithLockedSampleProjectInstanceCleanupBatch(ctx, now, now.Add(-time.Hour), func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
-		processed = append(processed, message.WorkspaceID)
-		if message.WorkspaceID == "workspace-d" {
-			return errors.New("physical cleanup failed")
+	var callbackErr error
+	afterWorkspace := ""
+	for {
+		result, err := s.WithLockedSampleProjectInstanceCleanupRecord(ctx, now, now.Add(-time.Hour), afterWorkspace, func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
+			processed = append(processed, message.WorkspaceID)
+			if message.WorkspaceID == "workspace-a" {
+				return errors.New("physical cleanup failed")
+			}
+			return nil
+		})
+		require.NoError(t, err)
+		if !result.Found {
+			break
 		}
-		return nil
-	})
-	require.Error(t, err)
+		afterWorkspace = result.WorkspaceID
+		callbackErr = errors.Join(callbackErr, result.CallbackErr)
+	}
+	require.Error(t, callbackErr)
 	require.Equal(t, []string{"workspace-a", "workspace-c", "workspace-d"}, processed)
 
 	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
-		require.Equal(t, &now, message.DeletedAt)
+		require.Nil(t, message.DeletedAt)
 		return nil
 	}))
 	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-b", func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
@@ -192,73 +202,21 @@ func TestWithLockedSampleProjectInstanceCleanupBatch(t *testing.T) {
 		return nil
 	}))
 	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-d", func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
-		require.Nil(t, message.DeletedAt)
-		return nil
-	}))
-	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-d", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-		return tx.MarkDeleted(ctx, now)
-	}))
-	var reprocessed []string
-	require.NoError(t, s.WithLockedSampleProjectInstanceCleanupBatch(ctx, now, now.Add(-time.Hour), func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
-		reprocessed = append(reprocessed, message.WorkspaceID)
-		return nil
-	}))
-	require.Empty(t, reprocessed)
-}
-
-func TestWithLockedSampleProjectInstanceCleanupBatchSkipsDeletedRows(t *testing.T) {
-	ctx, _, s := newSampleProjectInstanceFixture(t)
-	now := time.Date(2026, time.August, 17, 9, 0, 0, 0, time.UTC)
-	_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
-	require.NoError(t, err)
-	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-		return tx.SetExpiration(ctx, now.Add(-time.Second))
-	}))
-	require.NoError(t, s.WithLockedSampleProjectInstanceCleanupBatch(ctx, now, now.Add(-time.Hour), func(context.Context, *store.SampleProjectInstanceTx, *store.SampleProjectInstanceMessage) error {
+		require.Equal(t, &now, message.DeletedAt)
 		return nil
 	}))
 
-	var processed []string
-	require.NoError(t, s.WithLockedSampleProjectInstanceCleanupBatch(ctx, now, now.Add(-time.Hour), func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
+	result, err := s.WithLockedSampleProjectInstanceCleanupRecord(ctx, now, now.Add(-time.Hour), "", func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
 		processed = append(processed, message.WorkspaceID)
 		return nil
-	}))
-	require.Empty(t, processed)
+	})
+	require.NoError(t, err)
+	require.True(t, result.Found)
+	require.Equal(t, "workspace-a", result.WorkspaceID)
+	require.NoError(t, result.CallbackErr)
 }
 
-func TestWithLockedSampleProjectInstanceCleanupBatchHoldsLocksThroughCallback(t *testing.T) {
-	ctx, db, s := newSampleProjectInstanceFixture(t)
-	now := time.Date(2026, time.August, 17, 9, 0, 0, 0, time.UTC)
-	_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
-	require.NoError(t, err)
-	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-		return tx.SetExpiration(ctx, now.Add(-time.Second))
-	}))
-
-	started := make(chan struct{})
-	release := make(chan struct{})
-	result := make(chan error, 1)
-	go func() {
-		result <- s.WithLockedSampleProjectInstanceCleanupBatch(ctx, now, now.Add(-time.Hour), func(context.Context, *store.SampleProjectInstanceTx, *store.SampleProjectInstanceMessage) error {
-			close(started)
-			<-release
-			return nil
-		})
-	}()
-	<-started
-
-	locker, err := db.BeginTx(ctx, nil)
-	require.NoError(t, err)
-	defer locker.Rollback()
-	_, err = locker.ExecContext(ctx, `
-		SELECT workspace FROM sample_project_instance WHERE workspace = 'workspace-a' FOR UPDATE NOWAIT
-	`)
-	require.Error(t, err)
-	close(release)
-	require.NoError(t, <-result)
-}
-
-func TestWithLockedSampleProjectInstanceCleanupBatchSkipsLockedRows(t *testing.T) {
+func TestWithLockedSampleProjectInstanceCleanupRecordLocksOnlySelectedRow(t *testing.T) {
 	ctx, _, s := newSampleProjectInstanceFixture(t)
 	now := time.Date(2026, time.August, 17, 9, 0, 0, 0, time.UTC)
 	for _, workspace := range []string{"workspace-a", "workspace-b"} {
@@ -271,9 +229,10 @@ func TestWithLockedSampleProjectInstanceCleanupBatchSkipsLockedRows(t *testing.T
 
 	started := make(chan struct{})
 	release := make(chan struct{})
-	firstResult := make(chan error, 1)
+	firstResult := make(chan *store.SampleProjectInstanceCleanupResult, 1)
+	firstErr := make(chan error, 1)
 	go func() {
-		firstResult <- s.WithLockedSampleProjectInstanceCleanupBatch(ctx, now, now.Add(-time.Hour), func(context.Context, *store.SampleProjectInstanceTx, *store.SampleProjectInstanceMessage) error {
+		result, err := s.WithLockedSampleProjectInstanceCleanupRecord(ctx, now, now.Add(-time.Hour), "", func(context.Context, *store.SampleProjectInstanceTx, *store.SampleProjectInstanceMessage) error {
 			select {
 			case <-started:
 			default:
@@ -282,18 +241,22 @@ func TestWithLockedSampleProjectInstanceCleanupBatchSkipsLockedRows(t *testing.T
 			<-release
 			return nil
 		})
+		firstResult <- result
+		firstErr <- err
 	}()
 	<-started
 
-	var secondProcessed []string
-	require.NoError(t, s.WithLockedSampleProjectInstanceCleanupBatch(ctx, now, now.Add(-time.Hour), func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
-		secondProcessed = append(secondProcessed, message.WorkspaceID)
+	result, err := s.WithLockedSampleProjectInstanceCleanupRecord(ctx, now, now.Add(-time.Hour), "", func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
+		require.Equal(t, "workspace-b", message.WorkspaceID)
 		return nil
-	}))
-	require.Empty(t, secondProcessed)
+	})
+	require.NoError(t, err)
+	require.True(t, result.Found)
+	require.Equal(t, "workspace-b", result.WorkspaceID)
 
 	close(release)
-	require.NoError(t, <-firstResult)
+	require.NoError(t, <-firstErr)
+	require.Equal(t, "workspace-a", (<-firstResult).WorkspaceID)
 }
 
 func sampleProjectInstance(workspace string) *store.SampleProjectInstanceMessage {

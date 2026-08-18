@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -24,6 +25,7 @@ const (
 	prepareDeadline            = 3 * time.Minute
 	provisionDeadline          = 2 * time.Minute
 	compensationDeadline       = time.Minute
+	cleanupValidationDeadline  = 10 * time.Second
 	cleanupAttemptDeadline     = time.Minute
 	staleReservationAge        = time.Hour
 )
@@ -144,18 +146,16 @@ func NewTargetError(kind TargetErrorKind, err error) error {
 
 // AllocationNames are the deterministic names allocated to one workspace.
 type AllocationNames struct {
-	InstanceID string
-	Database   string
-	Role       string
+	Database string
+	Role     string
 }
 
 func sampleNames(workspaceID string) AllocationNames {
 	sum := sha256.Sum256([]byte(workspaceID))
 	token := fmt.Sprintf("%x", sum[:16])
 	return AllocationNames{
-		InstanceID: "sample-" + token,
-		Database:   "bb_sample_" + token,
-		Role:       "bb_sample_role_" + token,
+		Database: "bb_sample_" + token,
+		Role:     "bb_sample_role_" + token,
 	}
 }
 
@@ -218,6 +218,7 @@ type SchemaSync interface {
 // TargetService is the direct PostgreSQL target lifecycle boundary.
 type TargetService interface {
 	Validate(ctx context.Context) error
+	ValidateForCleanup(ctx context.Context) error
 	Provision(ctx context.Context, allocation Allocation) error
 	Remove(ctx context.Context, allocation Allocation) error
 	InstanceConfig(allocation Allocation) (*InstanceConfig, error)
@@ -296,10 +297,23 @@ func (m *Manager) Prepare(ctx context.Context, request PrepareRequest) (*store.I
 		return nil, lifecycleError(ErrorKindFailedPrecondition, errors.New("sample project instance requires workspace and project"))
 	}
 	names := sampleNames(request.WorkspaceID)
+	existing, err := m.store.GetSampleProjectInstance(ctx, request.WorkspaceID)
+	if err != nil {
+		return nil, lifecycleError(ErrorKindInternal, errors.Join(errors.New("failed to inspect sample project instance reservation"), err))
+	}
+	instanceID := ""
+	if existing != nil {
+		instanceID = existing.InstanceID
+	} else {
+		instanceID, err = randomInstanceID(m.random)
+		if err != nil {
+			return nil, lifecycleError(ErrorKindInternal, errors.Join(errors.New("failed to generate sample project instance ID"), err))
+		}
+	}
 	reservation, created, err := m.store.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
 		WorkspaceID: request.WorkspaceID,
 		ProjectID:   request.ProjectID,
-		InstanceID:  names.InstanceID,
+		InstanceID:  instanceID,
 		DBName:      names.Database,
 		RoleName:    names.Role,
 	})
@@ -346,9 +360,6 @@ func (m *Manager) prepareLocked(
 		return nil, lifecycleError(ErrorKindFailedPrecondition, errors.New("sample project instance entitlement is already consumed"))
 	}
 	allocation := Allocation{Database: reservation.DBName, Role: reservation.RoleName}
-	if reservation.InstanceID != sampleNames(request.WorkspaceID).InstanceID {
-		return nil, lifecycleError(ErrorKindInternal, errors.New("sample project instance allocation invariant failed"))
-	}
 
 	state, err := m.metadata.Lookup(lifecycleCtx, allocation, reservation.InstanceID, request.WorkspaceID, request.ProjectID)
 	if err != nil {
@@ -374,7 +385,7 @@ func (m *Manager) prepareLocked(
 			return nil, mapTargetError(m.targetErr)
 		}
 		m.logger.InfoContext(workCtx, "reconciling stale sample project instance reservation", "workspace", request.WorkspaceID)
-		if err := m.reconcile(workCtx, allocation, request); err != nil {
+		if err := m.reconcile(workCtx, allocation, reservation.InstanceID, request); err != nil {
 			m.logger.ErrorContext(workCtx, "failed to reconcile stale sample project instance reservation", "workspace", request.WorkspaceID, "error", err)
 			return nil, lifecycleError(ErrorKindUnavailable, err)
 		}
@@ -421,7 +432,7 @@ func (m *Manager) prepareLocked(
 		} else {
 			err = mapTargetError(err)
 		}
-		return nil, m.compensate(lifecycleCtx, tx, allocation, request, err)
+		return nil, m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, err)
 	}
 	registered, err := m.metadata.Create(workCtx, Registration{
 		WorkspaceID:       request.WorkspaceID,
@@ -435,24 +446,24 @@ func (m *Manager) prepareLocked(
 		SyncDatabaseNames: config.SyncDatabaseNames,
 	})
 	if err != nil {
-		return nil, m.compensate(lifecycleCtx, tx, allocation, request, lifecycleError(ErrorKindInternal, errors.Join(errors.New("failed to create sample project instance metadata"), err)))
+		return nil, m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, lifecycleError(ErrorKindInternal, errors.Join(errors.New("failed to create sample project instance metadata"), err)))
 	}
 	synced, databases, err := m.schema.SyncInstance(workCtx, registered)
 	if err != nil {
-		return nil, m.compensate(lifecycleCtx, tx, allocation, request, mapDiscoveryError(workCtx, err))
+		return nil, m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, mapDiscoveryError(workCtx, err))
 	}
 	if len(databases) != 1 || databases[0].DatabaseName != allocation.Database || databases[0].Deleted {
-		return nil, m.compensate(lifecycleCtx, tx, allocation, request, lifecycleError(ErrorKindInternal, errors.New("sample project instance discovery invariant failed")))
+		return nil, m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, lifecycleError(ErrorKindInternal, errors.New("sample project instance discovery invariant failed")))
 	}
 	if err := tx.SetExpiration(workCtx, m.clock().Add(sampleLifetime)); err != nil {
-		return nil, m.compensate(lifecycleCtx, tx, allocation, request, lifecycleError(ErrorKindInternal, errors.Join(errors.New("failed to activate sample project instance"), err)))
+		return nil, m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, lifecycleError(ErrorKindInternal, errors.Join(errors.New("failed to activate sample project instance"), err)))
 	}
 	*discoveredDatabases = databases
 	return synced, nil
 }
 
-func (m *Manager) reconcile(ctx context.Context, allocation Allocation, request PrepareRequest) error {
-	if err := m.metadata.Remove(ctx, allocation, sampleNames(request.WorkspaceID).InstanceID, request.WorkspaceID, request.ProjectID); err != nil {
+func (m *Manager) reconcile(ctx context.Context, allocation Allocation, instanceID string, request PrepareRequest) error {
+	if err := m.metadata.Remove(ctx, allocation, instanceID, request.WorkspaceID, request.ProjectID); err != nil {
 		return errors.Join(errors.New("failed to remove partial sample project instance metadata"), err)
 	}
 	if err := m.target.Remove(ctx, allocation); err != nil {
@@ -465,13 +476,14 @@ func (m *Manager) compensate(
 	lifecycleCtx context.Context,
 	tx *store.SampleProjectInstanceTx,
 	allocation Allocation,
+	instanceID string,
 	request PrepareRequest,
 	original error,
 ) error {
 	m.logger.WarnContext(lifecycleCtx, "compensating failed sample project instance preparation", "workspace", request.WorkspaceID, "error", original)
 	compensationCtx, cancel := context.WithTimeout(lifecycleCtx, compensationDeadline)
 	defer cancel()
-	metadataErr := m.metadata.Remove(compensationCtx, allocation, sampleNames(request.WorkspaceID).InstanceID, request.WorkspaceID, request.ProjectID)
+	metadataErr := m.metadata.Remove(compensationCtx, allocation, instanceID, request.WorkspaceID, request.ProjectID)
 	targetErr := m.target.Remove(compensationCtx, allocation)
 	if metadataErr != nil || targetErr != nil {
 		err := errors.Join(metadataErr, targetErr)
@@ -500,7 +512,9 @@ func (m *Manager) Cleanup(ctx context.Context, now time.Time) error {
 	}
 	targetErr := m.targetErr
 	if targetErr == nil {
-		targetErr = m.target.Validate(ctx)
+		validationCtx, validationCancel := context.WithTimeout(ctx, cleanupValidationDeadline)
+		targetErr = m.target.ValidateForCleanup(validationCtx)
+		validationCancel()
 	}
 	if targetErr != nil {
 		count, countErr := m.store.CountSampleProjectInstancesForCleanup(ctx, now, now.Add(-staleReservationAge))
@@ -510,26 +524,38 @@ func (m *Manager) Cleanup(ctx context.Context, now time.Time) error {
 		m.logger.ErrorContext(ctx, "sample project instance cleanup target validation failed", "outstanding", count, "error", targetErr)
 		return mapTargetError(targetErr)
 	}
-	err := m.store.WithLockedSampleProjectInstanceCleanupBatch(ctx, now, now.Add(-staleReservationAge), func(callbackCtx context.Context, _ *store.SampleProjectInstanceTx, reservation *store.SampleProjectInstanceMessage) error {
-		attemptCtx, cancel := context.WithTimeout(callbackCtx, cleanupAttemptDeadline)
-		defer cancel()
-		allocation := Allocation{Database: reservation.DBName, Role: reservation.RoleName}
-		if reservation.ExpiresAt == nil {
-			m.logger.InfoContext(callbackCtx, "reconciling stale sample project instance reservation", "workspace", reservation.WorkspaceID)
-			err := m.reconcile(attemptCtx, allocation, PrepareRequest{WorkspaceID: reservation.WorkspaceID, ProjectID: reservation.ProjectID})
-			if err != nil {
-				m.logger.ErrorContext(callbackCtx, "failed to reconcile stale sample project instance reservation", "workspace", reservation.WorkspaceID, "error", err)
+	var cleanupErr error
+	for afterWorkspace := ""; ; {
+		result, err := m.store.WithLockedSampleProjectInstanceCleanupRecord(ctx, now, now.Add(-staleReservationAge), afterWorkspace, func(callbackCtx context.Context, _ *store.SampleProjectInstanceTx, reservation *store.SampleProjectInstanceMessage) error {
+			attemptCtx, cancel := context.WithTimeout(callbackCtx, cleanupAttemptDeadline)
+			defer cancel()
+			allocation := Allocation{Database: reservation.DBName, Role: reservation.RoleName}
+			if reservation.ExpiresAt == nil {
+				m.logger.InfoContext(callbackCtx, "reconciling stale sample project instance reservation", "workspace", reservation.WorkspaceID)
+				err := m.reconcile(attemptCtx, allocation, reservation.InstanceID, PrepareRequest{WorkspaceID: reservation.WorkspaceID, ProjectID: reservation.ProjectID})
+				if err != nil {
+					m.logger.ErrorContext(callbackCtx, "failed to reconcile stale sample project instance reservation", "workspace", reservation.WorkspaceID, "error", err)
+				}
+				return err
 			}
-			return err
+			m.logger.InfoContext(callbackCtx, "expiring sample project instance", "workspace", reservation.WorkspaceID)
+			if err := m.target.Remove(attemptCtx, allocation); err != nil {
+				m.logger.ErrorContext(callbackCtx, "failed to expire sample project instance", "workspace", reservation.WorkspaceID, "error", err)
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return errors.Join(cleanupErr, err)
 		}
-		m.logger.InfoContext(callbackCtx, "expiring sample project instance", "workspace", reservation.WorkspaceID)
-		if err := m.target.Remove(attemptCtx, allocation); err != nil {
-			m.logger.ErrorContext(callbackCtx, "failed to expire sample project instance", "workspace", reservation.WorkspaceID, "error", err)
-			return err
+		if !result.Found {
+			return cleanupErr
 		}
-		return nil
-	})
-	return err
+		afterWorkspace = result.WorkspaceID
+		if result.CallbackErr != nil {
+			cleanupErr = errors.Join(cleanupErr, result.CallbackErr)
+		}
+	}
 }
 
 func preparationWorkContext(lifecycleCtx context.Context) (context.Context, context.CancelFunc) {
@@ -549,6 +575,14 @@ func randomPassword(reader io.Reader) (string, error) {
 		return "", err
 	}
 	return base64.RawURLEncoding.EncodeToString(bytes), nil
+}
+
+func randomInstanceID(reader io.Reader) (string, error) {
+	bytes := make([]byte, 16)
+	if _, err := io.ReadFull(reader, bytes); err != nil {
+		return "", err
+	}
+	return "sample-" + hex.EncodeToString(bytes), nil
 }
 
 func mapTargetError(err error) error {
