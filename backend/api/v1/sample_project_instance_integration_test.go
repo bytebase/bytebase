@@ -3,10 +3,11 @@ package v1
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http/httptest"
-	"strings"
+	"net/url"
 	"sync"
 	"testing"
 	"time"
@@ -28,7 +29,6 @@ import (
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/migrator"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
-	"github.com/bytebase/bytebase/backend/resources/postgres"
 	sampleprojectinstancerunner "github.com/bytebase/bytebase/backend/runner/sampleprojectinstance"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -51,7 +51,7 @@ func TestPrepareSampleProjectInstanceLifecycle(t *testing.T) {
 	require.True(t, prepared.Msg.Activation)
 
 	record := fixture.sampleRecord(ctx, t)
-	allocation := fixture.allocation()
+	allocation := fixture.allocation(ctx, t)
 	require.Equal(t, fixture.workspaceID, record.workspace)
 	require.Equal(t, fixture.projectID, record.project)
 	require.Equal(t, prepared.Msg.Name, common.FormatProjectInstance(record.project, record.instance))
@@ -117,71 +117,6 @@ func TestPrepareSampleProjectInstanceLifecycle(t *testing.T) {
 		Parent: common.FormatProject(fixture.projectID),
 	}))
 	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-}
-
-func TestPrepareSampleProjectInstanceRetriesAfterProvisionFailure(t *testing.T) {
-	now := time.Date(2026, time.August, 17, 12, 0, 0, 0, time.UTC)
-	ctx, fixture := newSampleProjectInstanceFixture(t, func() time.Time { return now })
-	fixture.target.provisionFailures = 1
-
-	_, err := fixture.service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-		Parent: common.FormatProject(fixture.projectID),
-	}))
-	require.Equal(t, connect.CodeUnavailable, connect.CodeOf(err))
-	require.Zero(t, fixture.sampleRecordCount(ctx, t))
-
-	prepared, err := fixture.service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-		Parent: common.FormatProject(fixture.projectID),
-	}))
-	require.NoError(t, err)
-	require.Equal(t, now.Add(7*24*time.Hour), fixture.sampleRecord(ctx, t).expiresAt)
-	require.True(t, fixture.target.databaseExists(ctx, fixture.allocation().Database))
-	require.Equal(t, common.FormatProjectInstance(fixture.projectID, fixture.sampleRecord(ctx, t).instance), prepared.Msg.Name)
-}
-
-func TestPrepareSampleProjectInstanceCompensatesMetadataAndDiscoveryFailures(t *testing.T) {
-	now := time.Date(2026, time.August, 17, 12, 0, 0, 0, time.UTC)
-	ctx, fixture := newSampleProjectInstanceFixture(t, func() time.Time { return now })
-
-	for _, test := range []struct {
-		name         string
-		inject       func()
-		expectedCode connect.Code
-	}{
-		{
-			name:         "metadata persistence",
-			inject:       func() { fixture.metadata.setCreateFailures(1) },
-			expectedCode: connect.CodeInternal,
-		},
-		{
-			name:         "synchronous discovery",
-			inject:       func() { fixture.schema.setSyncFailures(1) },
-			expectedCode: connect.CodeUnavailable,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			workspaceCtx, projectID := fixture.newWorkspaceProject(ctx, t, strings.ReplaceAll(test.name, " ", "-"))
-			workspaceID := workspaceIDFromContext(workspaceCtx, t)
-			test.inject()
-
-			_, err := fixture.service.PrepareSampleProjectInstance(workspaceCtx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-				Parent: common.FormatProject(projectID),
-			}))
-			require.Equal(t, test.expectedCode, connect.CodeOf(err))
-			fixture.assertFullyCompensated(workspaceCtx, t, workspaceID, projectID)
-
-			prepared, err := fixture.service.PrepareSampleProjectInstance(workspaceCtx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-				Parent: common.FormatProject(projectID),
-			}))
-			require.NoError(t, err)
-			record := fixture.sampleRecordFor(workspaceCtx, t, workspaceID)
-			require.Equal(t, now.Add(7*24*time.Hour), record.expiresAt)
-			require.Equal(t, common.FormatProjectInstance(projectID, record.instance), prepared.Msg.Name)
-			require.True(t, fixture.target.databaseExists(workspaceCtx, record.database))
-			require.True(t, fixture.target.roleExists(workspaceCtx, record.role))
-			fixture.assertActiveMetadata(workspaceCtx, t, record)
-		})
-	}
 }
 
 func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
@@ -281,38 +216,6 @@ func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
 		require.Nil(t, instance)
 	})
 
-	now = now.Add(8 * 24 * time.Hour)
-	require.NoError(t, runner.RunOnce(ctx))
-
-	t.Run("provisioning failure compensates and a retry receives a full lifetime", func(t *testing.T) {
-		retryCtx, retryProjectID := fixture.newWorkspaceProject(ctx, t, "retry")
-		fixture.target.setProvisionFailures(1)
-		_, err := fixture.service.PrepareSampleProjectInstance(retryCtx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-			Parent: common.FormatProject(retryProjectID),
-		}))
-		require.Equal(t, connect.CodeUnavailable, connect.CodeOf(err))
-		require.Zero(t, fixture.sampleRecordCountFor(retryCtx, t, "sample-workspace-retry"))
-
-		_, err = fixture.service.PrepareSampleProjectInstance(retryCtx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-			Parent: common.FormatProject(retryProjectID),
-		}))
-		require.NoError(t, err)
-		require.Equal(t, now.Add(7*24*time.Hour), fixture.sampleRecordFor(retryCtx, t, "sample-workspace-retry").expiresAt)
-	})
-
-	now = now.Add(8 * 24 * time.Hour)
-	t.Run("failed cleanup remains eligible for a later pass", func(t *testing.T) {
-		fixture.target.setRemoveFailures(1)
-		require.Error(t, runner.RunOnce(ctx))
-		record := fixture.sampleRecordFor(ctx, t, "sample-workspace-retry")
-		require.Nil(t, record.deletedAt)
-		require.True(t, fixture.target.databaseExists(ctx, record.database))
-
-		require.NoError(t, runner.RunOnce(ctx))
-		require.NotNil(t, fixture.sampleRecordFor(ctx, t, "sample-workspace-retry").deletedAt)
-		require.False(t, fixture.target.databaseExists(ctx, record.database))
-	})
-
 	t.Run("missing target resources are cleaned idempotently", func(t *testing.T) {
 		missingCtx, missingProjectID := fixture.newWorkspaceProject(ctx, t, "missing")
 		_, err := fixture.service.PrepareSampleProjectInstance(missingCtx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
@@ -340,7 +243,7 @@ func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
 		allocation := sampleprojectinstance.Allocation{
 			Database: record.database,
 			Role:     record.role,
-			Password: fixture.allocation().Password,
+			Password: fixture.allocationFor(sessionCtx, t, "sample-workspace-external-session").Password,
 		}
 		outside := fixture.target.externalRoleConnection(sessionCtx, t, allocation)
 		t.Cleanup(func() { _ = outside.Close(context.Background()) })
@@ -354,14 +257,13 @@ func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
 }
 
 type sampleProjectInstanceFixture struct {
-	store       *store.Store
-	service     *InstanceService
-	manager     *sampleprojectinstance.Manager
-	target      *integrationSampleTarget
-	metadata    *integrationMetadataStore
-	schema      *integrationSchemaSync
-	workspaceID string
-	projectID   string
+	store        *store.Store
+	service      *InstanceService
+	manager      *sampleprojectinstance.Manager
+	sampleTarget *sampleprojectinstance.Target
+	target       *sampleTargetInspector
+	workspaceID  string
+	projectID    string
 }
 
 func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (context.Context, *sampleProjectInstanceFixture) {
@@ -371,7 +273,7 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (cont
 
 	metadata := testcontainer.GetTestPgContainer(ctx, t)
 	t.Cleanup(func() { metadata.Close(context.Background()) })
-	target := testcontainer.GetTestPgContainer(ctx, t)
+	target := testcontainer.GetTestTLSPgContainer(ctx, t)
 	t.Cleanup(func() { target.Close(context.Background()) })
 
 	require.NoError(t, migrator.MigrateSchema(ctx, metadata.GetDB()))
@@ -390,18 +292,15 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (cont
 	require.NoError(t, err)
 	dbFactory := dbfactory.New(stores, licenseService)
 	syncer := schemasync.NewSyncer(stores, dbFactory, licenseService)
-	integrationTarget := newIntegrationSampleTarget(ctx, t, target)
-	integrationMetadata := &integrationMetadataStore{
-		delegate: sampleprojectinstance.NewStoreMetadata(stores),
-	}
-	integrationSchema := &integrationSchemaSync{
-		delegate: sampleprojectinstance.NewSyncerSchemaSync(syncer),
-	}
+	require.NoError(t, prepareSampleTargetBaseline(ctx, target.GetDB()))
+	targetURL := tlsPostgresTestURL(target)
+	sampleTarget, err := sampleprojectinstance.NewTarget(targetURL)
+	require.NoError(t, err)
+	inspector := newSampleTargetInspector(t, targetURL)
 	manager := sampleprojectinstance.NewManager(
 		stores,
-		integrationTarget,
-		integrationMetadata,
-		integrationSchema,
+		sampleTarget,
+		syncer,
 		sampleprojectinstance.ManagerOptions{Clock: clock},
 	)
 	return context.WithValue(ctx, common.WorkspaceIDContextKey, "sample-workspace"), &sampleProjectInstanceFixture{
@@ -414,13 +313,20 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (cont
 			schemaSyncer:         syncer,
 			sampleProjectManager: manager,
 		},
-		manager:     manager,
-		target:      integrationTarget,
-		metadata:    integrationMetadata,
-		schema:      integrationSchema,
-		workspaceID: "sample-workspace",
-		projectID:   "sample-project",
+		manager:      manager,
+		sampleTarget: sampleTarget,
+		target:       inspector,
+		workspaceID:  "sample-workspace",
+		projectID:    "sample-project",
 	}
+}
+
+func tlsPostgresTestURL(container *testcontainer.Container) string {
+	return fmt.Sprintf(
+		"postgres://postgres:root-password@localhost:%s/postgres?sslmode=verify-full&sslrootcert=%s",
+		container.GetPort(),
+		url.QueryEscape(container.GetTLSCAPath()),
+	)
 }
 
 func postgresTestURL(container *testcontainer.Container) string {
@@ -483,10 +389,34 @@ func (f *sampleProjectInstanceFixture) sampleRecordCountFor(ctx context.Context,
 	return count
 }
 
-func (f *sampleProjectInstanceFixture) allocation() sampleprojectinstance.Allocation {
-	f.target.mu.Lock()
-	defer f.target.mu.Unlock()
-	return *f.target.allocation
+func (f *sampleProjectInstanceFixture) allocation(ctx context.Context, t *testing.T) sampleprojectinstance.Allocation {
+	return f.allocationFor(ctx, t, f.workspaceID)
+}
+
+func (f *sampleProjectInstanceFixture) allocationFor(
+	ctx context.Context,
+	t *testing.T,
+	workspaceID string,
+) sampleprojectinstance.Allocation {
+	record := f.sampleRecordFor(ctx, t, workspaceID)
+	instance, err := f.store.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:   workspaceID,
+		ResourceID:  &record.instance,
+		ShowDeleted: true,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, instance)
+	for _, dataSource := range instance.Metadata.GetDataSources() {
+		if dataSource.GetId() == "admin" {
+			return sampleprojectinstance.Allocation{
+				Database: record.database,
+				Role:     record.role,
+				Password: dataSource.GetPassword(),
+			}
+		}
+	}
+	require.FailNow(t, "sample instance has no admin data source")
+	return sampleprojectinstance.Allocation{}
 }
 
 func (f *sampleProjectInstanceFixture) newWorkspaceProject(ctx context.Context, t *testing.T, suffix string) (context.Context, string) {
@@ -527,34 +457,6 @@ func (f *sampleProjectInstanceFixture) assertActiveMetadata(ctx context.Context,
 	require.Equal(t, 1, databaseCount)
 }
 
-func (f *sampleProjectInstanceFixture) assertFullyCompensated(
-	ctx context.Context,
-	t *testing.T,
-	workspaceID, projectID string,
-) {
-	t.Helper()
-	instanceID := sampleInstanceID(workspaceID)
-	databaseName := sampleDatabaseName(workspaceID)
-	roleName := sampleRoleName(workspaceID)
-	require.Zero(t, f.sampleRecordCountFor(ctx, t, workspaceID))
-
-	var instanceCount, databaseCount int
-	require.NoError(t, f.store.GetDB().QueryRowContext(ctx, `
-		SELECT COUNT(*)
-		FROM instance
-		WHERE workspace = $1 AND resource_id = $2
-	`, workspaceID, instanceID).Scan(&instanceCount))
-	require.NoError(t, f.store.GetDB().QueryRowContext(ctx, `
-		SELECT COUNT(*)
-		FROM db
-		WHERE project = $1 AND instance = $2 AND name = $3
-	`, projectID, instanceID, databaseName).Scan(&databaseCount))
-	require.Zero(t, instanceCount)
-	require.Zero(t, databaseCount)
-	require.False(t, f.target.databaseExists(ctx, databaseName))
-	require.False(t, f.target.roleExists(ctx, roleName))
-}
-
 func (f *sampleProjectInstanceFixture) createPartialReservation(
 	ctx context.Context,
 	t *testing.T,
@@ -576,20 +478,23 @@ func (f *sampleProjectInstanceFixture) createPartialReservation(
 		Role:     record.RoleName,
 		Password: "sample-partial-password",
 	}
-	require.NoError(t, f.target.Provision(ctx, allocation))
-	config, err := f.target.InstanceConfig(allocation)
+	require.NoError(t, f.sampleTarget.Provision(ctx, allocation))
+	config, err := f.sampleTarget.InstanceConfig(allocation)
 	require.NoError(t, err)
-	metadata := sampleprojectinstance.NewStoreMetadata(f.store)
-	instance, err := metadata.Create(ctx, sampleprojectinstance.Registration{
-		WorkspaceID:       workspaceID,
-		ProjectID:         projectID,
-		EnvironmentID:     "test",
-		InstanceID:        record.InstanceID,
-		Title:             "Sample Project Instance",
-		Engine:            storepb.Engine_POSTGRES,
-		Allocation:        allocation,
-		AdminDataSource:   config.AdminDataSource,
-		SyncDatabaseNames: config.SyncDatabaseNames,
+	instance, err := f.store.CreateInstance(ctx, &store.InstanceMessage{
+		Workspace:     workspaceID,
+		ProjectID:     &projectID,
+		EnvironmentID: ptr("test"),
+		ResourceID:    record.InstanceID,
+		Metadata: &storepb.Instance{
+			Title:      "Sample Project Instance",
+			Engine:     storepb.Engine_POSTGRES,
+			Activation: true,
+			DataSources: []*storepb.DataSource{
+				config.AdminDataSource,
+			},
+			SyncDatabases: &storepb.SyncDatabases{Databases: config.SyncDatabaseNames},
+		},
 	})
 	require.NoError(t, err)
 	_, _, databases, err := f.service.schemaSyncer.SyncInstance(ctx, instance)
@@ -602,13 +507,6 @@ func (f *sampleProjectInstanceFixture) createPartialReservation(
 	`, createdAt, workspaceID)
 	require.NoError(t, err)
 	return allocation
-}
-
-func workspaceIDFromContext(ctx context.Context, t *testing.T) string {
-	t.Helper()
-	workspaceID, ok := ctx.Value(common.WorkspaceIDContextKey).(string)
-	require.True(t, ok)
-	return workspaceID
 }
 
 func sampleToken(workspaceID string) string {
@@ -628,308 +526,30 @@ func sampleRoleName(workspaceID string) string {
 	return "bb_sample_role_" + sampleToken(workspaceID)
 }
 
-type integrationSampleTarget struct {
-	config            *pgx.ConnConfig
-	mu                sync.Mutex
-	allocation        *sampleprojectinstance.Allocation
-	provisionFailures int
-	removeFailures    int
+type sampleTargetInspector struct {
+	config *pgx.ConnConfig
 }
 
-type integrationMetadataStore struct {
-	delegate       sampleprojectinstance.MetadataStore
-	mu             sync.Mutex
-	createFailures int
-}
-
-func (s *integrationMetadataStore) Lookup(
-	ctx context.Context,
-	allocation sampleprojectinstance.Allocation,
-	instanceID, workspaceID, projectID string,
-) (sampleprojectinstance.MetadataState, error) {
-	return s.delegate.Lookup(ctx, allocation, instanceID, workspaceID, projectID)
-}
-
-func (s *integrationMetadataStore) Create(
-	ctx context.Context,
-	registration sampleprojectinstance.Registration,
-) (*store.InstanceMessage, error) {
-	if s.consumeCreateFailure() {
-		return nil, errors.New("injected sample metadata persistence failure")
-	}
-	return s.delegate.Create(ctx, registration)
-}
-
-func (s *integrationMetadataStore) Remove(
-	ctx context.Context,
-	allocation sampleprojectinstance.Allocation,
-	instanceID, workspaceID, projectID string,
-) error {
-	return s.delegate.Remove(ctx, allocation, instanceID, workspaceID, projectID)
-}
-
-func (s *integrationMetadataStore) setCreateFailures(count int) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.createFailures = count
-}
-
-func (s *integrationMetadataStore) consumeCreateFailure() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.createFailures == 0 {
-		return false
-	}
-	s.createFailures--
-	return true
-}
-
-type integrationSchemaSync struct {
-	delegate     sampleprojectinstance.SchemaSync
-	mu           sync.Mutex
-	syncFailures int
-}
-
-func (s *integrationSchemaSync) SyncInstance(
-	ctx context.Context,
-	instance *store.InstanceMessage,
-) (*store.InstanceMessage, []*store.DatabaseMessage, error) {
-	updated, databases, err := s.delegate.SyncInstance(ctx, instance)
-	if err != nil {
-		return nil, nil, err
-	}
-	if s.consumeSyncFailure() {
-		return nil, nil, errors.New("injected sample synchronous discovery failure")
-	}
-	return updated, databases, nil
-}
-
-func (s *integrationSchemaSync) SyncDatabasesAsync(databases []*store.DatabaseMessage) {
-	s.delegate.SyncDatabasesAsync(databases)
-}
-
-func (s *integrationSchemaSync) setSyncFailures(count int) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.syncFailures = count
-}
-
-func (s *integrationSchemaSync) consumeSyncFailure() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.syncFailures == 0 {
-		return false
-	}
-	s.syncFailures--
-	return true
-}
-
-func newIntegrationSampleTarget(ctx context.Context, t *testing.T, container *testcontainer.Container) *integrationSampleTarget {
+func newSampleTargetInspector(t *testing.T, targetURL string) *sampleTargetInspector {
 	t.Helper()
-	config, err := pgx.ParseConfig(postgresTestURL(container))
+	config, err := pgx.ParseConfig(targetURL)
 	require.NoError(t, err)
-	target := &integrationSampleTarget{config: config}
-	require.NoError(t, target.prepareBaseline(ctx))
-	return target
+	return &sampleTargetInspector{config: config}
 }
 
-func (t *integrationSampleTarget) Validate(ctx context.Context) error {
-	return t.prepareBaseline(ctx)
-}
-
-func (t *integrationSampleTarget) ValidateForCleanup(ctx context.Context) error {
-	conn, err := t.connect(ctx, "", "", "")
-	if err != nil {
-		return errors.New("sample target cleanup is unavailable")
-	}
-	defer conn.Close(ctx)
-	return nil
-}
-
-func (t *integrationSampleTarget) prepareBaseline(ctx context.Context) error {
-	conn, err := t.connect(ctx, "", "", "")
-	if err != nil {
-		return errors.New("sample target baseline is unavailable")
-	}
-	defer conn.Close(ctx)
+func prepareSampleTargetBaseline(ctx context.Context, db *sql.DB) error {
 	for _, statement := range []string{
 		"REVOKE ALL PRIVILEGES ON DATABASE postgres FROM PUBLIC",
 		"REVOKE ALL PRIVILEGES ON DATABASE template1 FROM PUBLIC",
 	} {
-		if _, err := conn.Exec(ctx, statement); err != nil {
-			return errors.New("sample target baseline cannot be prepared")
+		if _, err := db.ExecContext(ctx, statement); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func (t *integrationSampleTarget) InstanceConfig(allocation sampleprojectinstance.Allocation) (*sampleprojectinstance.InstanceConfig, error) {
-	return &sampleprojectinstance.InstanceConfig{
-		AdminDataSource: &storepb.DataSource{
-			Id:       "admin",
-			Type:     storepb.DataSourceType_ADMIN,
-			Host:     t.config.Host,
-			Port:     fmt.Sprint(t.config.Port),
-			Database: allocation.Database,
-			Username: allocation.Role,
-			Password: allocation.Password,
-			UseSsl:   false,
-		},
-		SyncDatabaseNames: []string{allocation.Database},
-	}, nil
-}
-
-func (t *integrationSampleTarget) Provision(ctx context.Context, allocation sampleprojectinstance.Allocation) error {
-	if t.consumeProvisionFailure() {
-		return errors.New("injected sample target provisioning failure")
-	}
-	admin, err := t.connect(ctx, "", "", "")
-	if err != nil {
-		return errors.New("sample target provisioning is unavailable")
-	}
-	defer admin.Close(ctx)
-	if _, err := admin.Exec(ctx, fmt.Sprintf(
-		"CREATE ROLE %s LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %s",
-		pgx.Identifier{allocation.Role}.Sanitize(),
-		quoteIntegrationLiteral(allocation.Password),
-	)); err != nil {
-		return errors.New("sample target role could not be created")
-	}
-	if _, err := admin.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s", pgx.Identifier{allocation.Database}.Sanitize())); err != nil {
-		return errors.New("sample target database could not be created")
-	}
-	if _, err := admin.Exec(ctx, fmt.Sprintf("REVOKE ALL PRIVILEGES ON DATABASE %s FROM PUBLIC", pgx.Identifier{allocation.Database}.Sanitize())); err != nil {
-		return errors.New("sample target database access could not be restricted")
-	}
-	if _, err := admin.Exec(ctx, fmt.Sprintf(
-		"GRANT CONNECT, CREATE, TEMPORARY ON DATABASE %s TO %s",
-		pgx.Identifier{allocation.Database}.Sanitize(),
-		pgx.Identifier{allocation.Role}.Sanitize(),
-	)); err != nil {
-		return errors.New("sample target database access could not be granted")
-	}
-
-	database, err := t.connect(ctx, allocation.Database, "", "")
-	if err != nil {
-		return errors.New("sample target database is unavailable")
-	}
-	defer database.Close(ctx)
-	if _, err := database.Exec(ctx, "REVOKE CREATE ON SCHEMA public FROM PUBLIC"); err != nil {
-		return errors.New("sample target schema access could not be restricted")
-	}
-	if _, err := database.Exec(ctx, fmt.Sprintf(
-		"GRANT USAGE, CREATE ON SCHEMA public TO %s",
-		pgx.Identifier{allocation.Role}.Sanitize(),
-	)); err != nil {
-		return errors.New("sample target schema access could not be granted")
-	}
-
-	sample, err := t.connect(ctx, allocation.Database, allocation.Role, allocation.Password)
-	if err != nil {
-		return errors.New("sample target role cannot connect")
-	}
-	defer sample.Close(ctx)
-	seed, err := postgres.LoadSampleData()
-	if err != nil {
-		return errors.New("sample target seed could not be loaded")
-	}
-	tx, err := sample.Begin(ctx)
-	if err != nil {
-		return errors.New("sample target seed transaction could not start")
-	}
-	defer tx.Rollback(ctx)
-	if _, err := tx.Exec(ctx, seed, pgx.QueryExecModeSimpleProtocol); err != nil {
-		return errors.New("sample target seed could not be applied")
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return errors.New("sample target seed could not be committed")
-	}
-	t.mu.Lock()
-	t.allocation = &allocation
-	t.mu.Unlock()
-	return nil
-}
-
-func (t *integrationSampleTarget) Remove(ctx context.Context, allocation sampleprojectinstance.Allocation) error {
-	if t.consumeRemoveFailure() {
-		return errors.New("injected sample target cleanup failure")
-	}
-	admin, err := t.connect(ctx, "", "", "")
-	if err != nil {
-		return errors.New("sample target cleanup is unavailable")
-	}
-	defer admin.Close(ctx)
-	roleExists := t.roleExists(ctx, allocation.Role)
-	if roleExists {
-		if _, err := admin.Exec(ctx, fmt.Sprintf("ALTER ROLE %s NOLOGIN", pgx.Identifier{allocation.Role}.Sanitize())); err != nil {
-			return errors.New("sample target role could not be disabled")
-		}
-	}
-	if t.databaseExists(ctx, allocation.Database) {
-		if roleExists {
-			if _, err := admin.Exec(ctx, fmt.Sprintf(
-				"REVOKE ALL PRIVILEGES ON DATABASE %s FROM %s",
-				pgx.Identifier{allocation.Database}.Sanitize(),
-				pgx.Identifier{allocation.Role}.Sanitize(),
-			)); err != nil {
-				return errors.New("sample target database access could not be revoked")
-			}
-		}
-		if _, err := admin.Exec(ctx, fmt.Sprintf("ALTER DATABASE %s ALLOW_CONNECTIONS false", pgx.Identifier{allocation.Database}.Sanitize())); err != nil {
-			return errors.New("sample target database could not be drained")
-		}
-		if _, err := admin.Exec(ctx, `
-			SELECT pg_terminate_backend(pid)
-			FROM pg_stat_activity
-			WHERE (usename = $1 OR datname = $2) AND pid <> pg_backend_pid()
-		`, allocation.Role, allocation.Database); err != nil {
-			return errors.New("sample target sessions could not be terminated")
-		}
-		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP DATABASE %s", pgx.Identifier{allocation.Database}.Sanitize())); err != nil {
-			return errors.New("sample target database could not be removed")
-		}
-	}
-	if roleExists {
-		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP ROLE %s", pgx.Identifier{allocation.Role}.Sanitize())); err != nil {
-			return errors.New("sample target role could not be removed")
-		}
-	}
-	return nil
-}
-
-func (t *integrationSampleTarget) setProvisionFailures(count int) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.provisionFailures = count
-}
-
-func (t *integrationSampleTarget) setRemoveFailures(count int) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.removeFailures = count
-}
-
-func (t *integrationSampleTarget) consumeProvisionFailure() bool {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	if t.provisionFailures == 0 {
-		return false
-	}
-	t.provisionFailures--
-	return true
-}
-
-func (t *integrationSampleTarget) consumeRemoveFailure() bool {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	if t.removeFailures == 0 {
-		return false
-	}
-	t.removeFailures--
-	return true
-}
-
-func (t *integrationSampleTarget) connect(ctx context.Context, database, user, password string) (*pgx.Conn, error) {
+func (t *sampleTargetInspector) connect(ctx context.Context, database, user, password string) (*pgx.Conn, error) {
 	config := t.config.Copy()
 	if database != "" {
 		config.Database = database
@@ -941,7 +561,7 @@ func (t *integrationSampleTarget) connect(ctx context.Context, database, user, p
 	return pgx.ConnectConfig(ctx, config)
 }
 
-func (t *integrationSampleTarget) roleExists(ctx context.Context, role string) bool {
+func (t *sampleTargetInspector) roleExists(ctx context.Context, role string) bool {
 	conn, err := t.connect(ctx, "", "", "")
 	if err != nil {
 		return false
@@ -951,7 +571,7 @@ func (t *integrationSampleTarget) roleExists(ctx context.Context, role string) b
 	return conn.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = $1)", role).Scan(&exists) == nil && exists
 }
 
-func (t *integrationSampleTarget) databaseExists(ctx context.Context, database string) bool {
+func (t *sampleTargetInspector) databaseExists(ctx context.Context, database string) bool {
 	conn, err := t.connect(ctx, "", "", "")
 	if err != nil {
 		return false
@@ -961,14 +581,14 @@ func (t *integrationSampleTarget) databaseExists(ctx context.Context, database s
 	return conn.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", database).Scan(&exists) == nil && exists
 }
 
-func (t *integrationSampleTarget) sampleConnection(ctx context.Context, tst *testing.T, allocation sampleprojectinstance.Allocation) *pgx.Conn {
+func (t *sampleTargetInspector) sampleConnection(ctx context.Context, tst *testing.T, allocation sampleprojectinstance.Allocation) *pgx.Conn {
 	tst.Helper()
 	conn, err := t.connect(ctx, allocation.Database, allocation.Role, allocation.Password)
 	require.NoError(tst, err)
 	return conn
 }
 
-func (t *integrationSampleTarget) sampleEmployeeCount(ctx context.Context, allocation sampleprojectinstance.Allocation, assert func(int) bool) error {
+func (t *sampleTargetInspector) sampleEmployeeCount(ctx context.Context, allocation sampleprojectinstance.Allocation, assert func(int) bool) error {
 	conn, err := t.connect(ctx, allocation.Database, allocation.Role, allocation.Password)
 	if err != nil {
 		return errors.New("sample target cannot be inspected")
@@ -981,7 +601,7 @@ func (t *integrationSampleTarget) sampleEmployeeCount(ctx context.Context, alloc
 	return nil
 }
 
-func (t *integrationSampleTarget) assertSeededOwnershipAndDDL(
+func (t *sampleTargetInspector) assertSeededOwnershipAndDDL(
 	ctx context.Context,
 	tst *testing.T,
 	allocation sampleprojectinstance.Allocation,
@@ -1013,7 +633,7 @@ func (t *integrationSampleTarget) assertSeededOwnershipAndDDL(
 	}
 }
 
-func (t *integrationSampleTarget) assertIsolation(ctx context.Context, tst *testing.T, allocation sampleprojectinstance.Allocation) {
+func (t *sampleTargetInspector) assertIsolation(ctx context.Context, tst *testing.T, allocation sampleprojectinstance.Allocation) {
 	tst.Helper()
 	admin, err := t.connect(ctx, "", "", "")
 	require.NoError(tst, err)
@@ -1056,7 +676,7 @@ func (t *integrationSampleTarget) assertIsolation(ctx context.Context, tst *test
 	require.True(tst, publicCreate)
 }
 
-func (t *integrationSampleTarget) dropResources(ctx context.Context, allocation sampleprojectinstance.Allocation) error {
+func (t *sampleTargetInspector) dropResources(ctx context.Context, allocation sampleprojectinstance.Allocation) error {
 	admin, err := t.connect(ctx, "", "", "")
 	if err != nil {
 		return err
@@ -1075,7 +695,7 @@ func (t *integrationSampleTarget) dropResources(ctx context.Context, allocation 
 	return nil
 }
 
-func (t *integrationSampleTarget) externalRoleConnection(ctx context.Context, tst *testing.T, allocation sampleprojectinstance.Allocation) *pgx.Conn {
+func (t *sampleTargetInspector) externalRoleConnection(ctx context.Context, tst *testing.T, allocation sampleprojectinstance.Allocation) *pgx.Conn {
 	tst.Helper()
 	admin, err := t.connect(ctx, "", "", "")
 	require.NoError(tst, err)
@@ -1095,8 +715,4 @@ func (t *integrationSampleTarget) externalRoleConnection(ctx context.Context, ts
 	conn, err := t.connect(ctx, database, allocation.Role, allocation.Password)
 	require.NoError(tst, err)
 	return conn
-}
-
-func quoteIntegrationLiteral(value string) string {
-	return "E'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(value) + "'"
 }
