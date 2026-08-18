@@ -246,9 +246,9 @@ func rdsTLSConfig(ctx context.Context, dataSource *storepb.DataSource) (*tls.Con
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get RDS cert pool")
 	}
-	return &tls.Config{
+	return &tls.Config{ // NOSONAR(go:S4830) VerifyPeerCertificate below verifies chain and hostname
 		RootCAs:               rootCertPool,
-		InsecureSkipVerify:    true, // NOSONAR(go:S4830) superseded by VerifyPeerCertificate below
+		InsecureSkipVerify:    true, // superseded by VerifyPeerCertificate below
 		VerifyPeerCertificate: util.CreateCertificateVerifier(rootCertPool, dataSource.GetHost()),
 	}, nil
 }
