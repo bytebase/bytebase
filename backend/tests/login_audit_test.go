@@ -13,12 +13,149 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/pquerna/otp/totp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
+
+func TestLoginFailureLockout(t *testing.T) {
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	workspaceResp, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
+		Name: "workspaces/-",
+	}))
+	a.NoError(err)
+	workspace := workspaceResp.Msg.Name
+	a.NotEmpty(workspace)
+	workspaceID, err := common.GetWorkspaceID(workspace)
+	a.NoError(err)
+
+	metadataDB, err := sql.Open("pgx", ctl.profile.PgURL)
+	a.NoError(err)
+	defer metadataDB.Close()
+	userName := common.FormatUserEmail("demo@example.com")
+	mfaSetup, err := ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
+		User:                    &v1pb.User{Name: userName},
+		UpdateMask:              &fieldmaskpb.FieldMask{},
+		RegenerateTempMfaSecret: true,
+	}))
+	a.NoError(err)
+	validOTP, err := totp.GenerateCode(mfaSetup.Msg.TempOtpSecret, time.Now())
+	a.NoError(err)
+	_, err = ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
+		User:       &v1pb.User{Name: userName, MfaEnabled: true},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"mfa_enabled"}},
+		OtpCode:    &validOTP,
+	}))
+	a.NoError(err)
+
+	adminToken := ctl.authInterceptor.token
+	ctl.authInterceptor.token = ""
+
+	mfaStart, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    "demo@example.com",
+		Password: "1024bytebase",
+	}))
+	a.NoError(err)
+	mfaTempToken := mfaStart.Msg.GetMfaTempToken()
+	a.NotEmpty(mfaTempToken)
+	invalidOTP := "not-a-code"
+	for range 5 {
+		_, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			OtpCode:      &invalidOTP,
+			MfaTempToken: &mfaTempToken,
+		}))
+		a.Equal(connect.CodeUnauthenticated, connect.CodeOf(err))
+		a.ErrorContains(err, "invalid MFA code")
+	}
+	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		OtpCode:      &invalidOTP,
+		MfaTempToken: &mfaTempToken,
+	}))
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
+	a.ErrorContains(err, "too many failed MFA attempts")
+
+	for _, email := range []string{" Demo@Example.com ", " Unknown@Example.com "} {
+		for range 10 {
+			_, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+				Email:    email,
+				Password: "wrong-password",
+			}))
+			a.Equal(connect.CodeUnauthenticated, connect.CodeOf(err))
+			a.ErrorContains(err, "invalid email or password")
+		}
+		_, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:    email,
+			Password: "wrong-password",
+		}))
+		a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
+		a.ErrorContains(err, "too many failed login attempts")
+	}
+
+	ctl.authInterceptor.token = adminToken
+	search, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent:   workspace,
+		Filter:   `method == "/bytebase.v1.AuthService/Login"`,
+		OrderBy:  "create_time desc",
+		PageSize: 100,
+	}))
+	a.NoError(err)
+
+	invalidPasswordCount := map[string]int{}
+	passwordLockoutCount := map[string]int{}
+	invalidMFACount := 0
+	mfaLockoutCount := 0
+	for _, auditLog := range search.Msg.AuditLogs {
+		if auditLog.Status == nil {
+			continue
+		}
+		a.True(strings.HasPrefix(auditLog.Name, workspace+"/auditLogs/"))
+		request := &v1pb.LoginRequest{}
+		a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(auditLog.Request), request))
+		a.Empty(request.Password)
+		a.Empty(request.GetOtpCode())
+		a.Empty(request.GetMfaTempToken())
+		a.NotContains(auditLog.Request, "wrong-password")
+		a.NotContains(auditLog.Request, invalidOTP)
+		a.NotContains(auditLog.Request, mfaTempToken)
+
+		switch auditLog.Status.Message {
+		case "invalid email or password":
+			invalidPasswordCount[auditLog.Resource]++
+		case "too many failed login attempts, please try again later":
+			passwordLockoutCount[auditLog.Resource]++
+		case "invalid MFA code":
+			invalidMFACount++
+		case "too many failed MFA attempts, please try again later":
+			mfaLockoutCount++
+		default:
+		}
+	}
+	a.Equal(10, invalidPasswordCount["demo@example.com"])
+	a.Equal(10, invalidPasswordCount["unknown@example.com"])
+	a.Equal(1, passwordLockoutCount["demo@example.com"])
+	a.Equal(1, passwordLockoutCount["unknown@example.com"])
+	a.Equal(5, invalidMFACount)
+	a.Equal(1, mfaLockoutCount)
+
+	var misownedRows int
+	a.NoError(metadataDB.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM audit_log
+		WHERE workspace != $1
+			AND payload->>'method' = '/bytebase.v1.AuthService/Login'
+			AND payload->>'resource' IN ('demo@example.com', 'unknown@example.com')
+	`, workspaceID).Scan(&misownedRows))
+	a.Zero(misownedRows)
+}
 
 // TestAuditLogFormat is both a regression test for the 3.17.0 bug where
 // AuthService/Login (and Signup/ExchangeToken) silently dropped audit entries,

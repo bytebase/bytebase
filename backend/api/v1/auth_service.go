@@ -175,6 +175,14 @@ func (s *AuthService) GetAuthenticationRestriction(
 func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.LoginRequest]) (*connect.Response[v1pb.LoginResponse], error) {
 	request := req.Msg
 	mfaSecondLogin := request.GetMfaTempToken() != ""
+	if !s.profile.SaaS {
+		workspaceID, err := s.store.GetWorkspaceID(ctx)
+		if err != nil {
+			slog.Warn("failed to resolve self-hosted workspace for login audit", log.BBError(err))
+		} else if workspaceID != "" {
+			common.SetAuditWorkspaceID(ctx, workspaceID)
+		}
+	}
 
 	// 1. Authenticate user (password, IDP, or MFA completion)
 	loginUser, loginMethod, err := s.authenticateLogin(ctx, request)
@@ -596,21 +604,46 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 }
 
 func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
+	email := strings.ToLower(strings.TrimSpace(request.Email))
+
 	// Check if user is locked out due to too many failed password attempts.
-	if err := s.checkPasswordLockout(ctx, request.Email); err != nil {
+	if err := s.checkPasswordLockout(ctx, email); err != nil {
 		return nil, err
 	}
 
 	// GetAccountByEmail is cross-workspace, which is correct for login.
 	// Email is globally unique (PK). The token gets workspace from account.Workspace (SA/WI)
 	// or from the default workspace (END_USER).
-	account, err := s.store.GetAccountByEmail(ctx, request.Email)
+	account, err := s.store.GetAccountByEmail(ctx, email)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user by email %q", request.Email))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user by email %q", email))
 	}
 	if account == nil {
 		return nil, invalidCredentialsError
 	}
+
+	var user *store.UserMessage
+	auditWorkspaceID := account.Workspace
+	if account.Type == storepb.PrincipalType_END_USER {
+		user, err = s.store.ResolvePrincipalAsUser(ctx, account)
+		if err != nil {
+			slog.Warn("failed to resolve user for login audit", slog.String("user", account.Email), log.BBError(err))
+		} else if user != nil {
+			preferredWorkspaceID, err := parseOptionalWorkspace(request.Workspace)
+			if err != nil {
+				slog.Warn("failed to parse workspace for login audit", slog.String("user", account.Email), log.BBError(err))
+			}
+			auditWorkspaceID, err = s.resolveWorkspaceForLogin(ctx, user, preferredWorkspaceID)
+			if err != nil {
+				slog.Warn("failed to resolve workspace for login audit", slog.String("user", account.Email), log.BBError(err))
+				auditWorkspaceID = ""
+			}
+		}
+	}
+	if auditWorkspaceID != "" {
+		common.SetAuditWorkspaceID(ctx, auditWorkspaceID)
+	}
+
 	// Compare the stored hashed password, with the hashed version of the password that was received.
 	if err := bcrypt.CompareHashAndPassword([]byte(account.PasswordHash), []byte(request.Password)); err != nil {
 		// If the two passwords don't match, return a 401 status.
@@ -618,9 +651,11 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 	}
 
 	// Convert AccountMessage to UserMessage for downstream use.
-	user, err := s.store.ResolvePrincipalAsUser(ctx, account)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve principal %q", account.Email))
+	if user == nil {
+		user, err = s.store.ResolvePrincipalAsUser(ctx, account)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve principal %q", account.Email))
+		}
 	}
 	if user == nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user %q not found", account.Email))
@@ -862,7 +897,7 @@ func (s *AuthService) countRecentLoginFailures(ctx context.Context, email string
 
 	// Build filter query for login failures.
 	filterQ := qb.Q().Space("TRUE")
-	filterQ.And("payload->>'method' = ?", "/bytebase.v1.AuthService/Login")
+	filterQ.And("payload->>'method' = ?", v1connect.AuthServiceLoginProcedure)
 	filterQ.And("payload->>'resource' = ?", email)
 	filterQ.And("(payload->'status'->>'code')::int != 0")
 
@@ -1045,6 +1080,16 @@ func (s *AuthService) completeMFALogin(ctx context.Context, request *v1pb.LoginR
 	}
 	if user == nil {
 		return nil, loginAuthMethodPassword, invalidCredentialsError
+	}
+	preferredWorkspaceID, err := parseOptionalWorkspace(request.Workspace)
+	if err != nil {
+		slog.Warn("failed to parse workspace for MFA login audit", slog.String("user", user.Email), log.BBError(err))
+	}
+	auditWorkspaceID, err := s.resolveWorkspaceForLogin(ctx, user, preferredWorkspaceID)
+	if err != nil {
+		slog.Warn("failed to resolve workspace for MFA login audit", slog.String("user", user.Email), log.BBError(err))
+	} else if auditWorkspaceID != "" {
+		common.SetAuditWorkspaceID(ctx, auditWorkspaceID)
 	}
 
 	if err := s.checkMFALockout(ctx, user.Email); err != nil {
