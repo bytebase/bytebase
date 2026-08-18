@@ -67,7 +67,14 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		// back unmasked data with no indication that masking was skipped.
 		// queryRetry re-syncs and rebuilds the span before this runs, so reaching
 		// here means a fresh sync still could not describe the relation.
+		//
+		// The driver's own column list settles the one ambiguous case: a table
+		// that legitimately has no columns (PostgreSQL allows CREATE TABLE t())
+		// is stored exactly like a degraded one, but selecting from it returns
+		// no columns and therefore no data to leak. Only refuse once the driver
+		// has handed back columns the snapshot cannot account for.
 		if results[i].Error == "" && spans[i].UnresolvedColumnsError != nil &&
+			len(results[i].ColumnNames) > 0 &&
 			common.EngineSupportMasking(instance.Metadata.GetEngine()) {
 			return errors.Errorf("masking error: %v; sync the database to restore it", spans[i].UnresolvedColumnsError)
 		}

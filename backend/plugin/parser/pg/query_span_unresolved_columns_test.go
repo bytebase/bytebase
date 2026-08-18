@@ -54,6 +54,20 @@ func degradedSchema() *storepb.DatabaseSchemaMetadata {
 	}
 }
 
+// degradedViewSchema is the same degradation reaching a view: the syncer fills
+// a view's column list from the same map as a table's, so a privilege-degraded
+// sync empties both.
+func degradedViewSchema() *storepb.DatabaseSchemaMetadata {
+	return &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*storepb.TableMetadata{{Name: "t"}},
+			Views:  []*storepb.ViewMetadata{{Name: "v", Definition: "SELECT id, email FROM public.t"}},
+		}},
+	}
+}
+
 // partialSchema keeps some of the table's columns. Same-arity drift like this is
 // out of scope for the unresolved-columns signal; see the masking follow-up.
 func partialSchema() *storepb.DatabaseSchemaMetadata {
@@ -145,6 +159,13 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 		span := spanFor(t, "SELECT * FROM public.t", partialSchema())
 		require.Nil(t, span.UnresolvedColumnsError,
 			"a table with some columns resolves; same-arity drift needs the catalog-comparison follow-up")
+	})
+
+	t.Run("a view stripped of its columns is unresolved", func(t *testing.T) {
+		span := spanFor(t, "SELECT * FROM public.v", degradedViewSchema())
+		require.NotNil(t, span.UnresolvedColumnsError,
+			"a view with no synced columns hides its base table's masking just as a table does")
+		require.Contains(t, span.UnresolvedColumnsError.Error(), "public.v")
 	})
 
 	t.Run("materialized view without columns is not a degraded table", func(t *testing.T) {

@@ -763,7 +763,8 @@ func queryRetry(
 		// fresh sync repairs. The databases come from the signal itself rather
 		// than from SourceColumns, so the target survives even when column
 		// resolution produced no entries.
-		if maskingEnabled && spans[i].UnresolvedColumnsError != nil {
+		if maskingEnabled && spans[i].UnresolvedColumnsError != nil &&
+			common.EngineSupportMasking(instance.Metadata.GetEngine()) {
 			for _, dbName := range spans[i].UnresolvedColumnsError.Databases() {
 				slog.Debug("database metadata need to sync: unresolved columns",
 					slog.String("instance", instance.ResourceID),
