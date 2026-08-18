@@ -156,11 +156,15 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 }
 
 // rdsCertBundleURL is a variable so tests can point it at a local server.
-var rdsCertBundleURL = "https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem"
+var rdsCertBundleURL = "https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem"
 
 // rdsCertFetchTimeout bounds the download so a stalled fetch cannot hold a
 // connection attempt open indefinitely.
 const rdsCertFetchTimeout = 30 * time.Second
+
+// maxRDSCertBundleSize bounds the downloaded bundle so a misbehaving endpoint
+// cannot stream unbounded data into memory (the real global bundle is ~165 KB).
+const maxRDSCertBundleSize int64 = 4 << 20
 
 // rdsCertPool caches the downloaded bundle for the process lifetime.
 var rdsCertPool atomic.Pointer[x509.CertPool]
@@ -190,13 +194,12 @@ func getRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
 		return nil, errors.Errorf("failed to download RDS CA certificates: %s", resp.Status)
 	}
 
-	pem, err := io.ReadAll(resp.Body)
+	pem, err := io.ReadAll(io.LimitReader(resp.Body, maxRDSCertBundleSize+1))
 	if err != nil {
 		return nil, err
 	}
-
-	if err := resp.Body.Close(); err != nil {
-		return nil, errors.Wrapf(err, "failed to close response")
+	if int64(len(pem)) > maxRDSCertBundleSize {
+		return nil, errors.Errorf("RDS CA bundle exceeds %d bytes", maxRDSCertBundleSize)
 	}
 
 	rootCertPool := x509.NewCertPool()
@@ -207,9 +210,8 @@ func getRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
 	return rootCertPool, nil
 }
 
-// cachedRDSCertPool returns the AWS RDS CA bundle, downloading it at most once
-// per process. Only successes are cached, so a transient network failure can
-// recover instead of poisoning every later connection.
+// cachedRDSCertPool caches the AWS RDS CA bundle for the process lifetime.
+// Concurrent first callers may each download, but only successes are cached, so a transient failure can still recover.
 func cachedRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
 	if pool := rdsCertPool.Load(); pool != nil {
 		return pool, nil
