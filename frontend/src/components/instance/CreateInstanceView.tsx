@@ -17,6 +17,7 @@ import { useAppStore } from "@/stores/app";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { isValidProjectName } from "@/types/v1/project";
+import { extractGrpcErrorMessage } from "@/utils/connect";
 
 const MIN_DOCKED_MAIN_WIDTH = 700;
 const DOCKED_INFO_RAIL_WIDTH = 500;
@@ -44,7 +45,6 @@ export function CreateInstanceView({
 
   // Check instance limit on mount
   useEffect(() => {
-    if (canPrepareSampleProjectInstance) return;
     const store = useAppStore.getState();
     if (store.instanceCountLimit() <= store.activatedInstanceCount()) {
       pushNotification({
@@ -165,11 +165,12 @@ function CreateInstanceFormInner({
     setIsPreparingSampleProjectInstance(true);
     try {
       onCreated(await prepareSampleProjectInstance(parent));
-    } catch {
+    } catch (error) {
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: t("instance.prepare-sample-instance-failed"),
+        description: extractGrpcErrorMessage(error),
       });
     } finally {
       setIsPreparingSampleProjectInstance(false);

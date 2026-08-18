@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 )
 
@@ -37,6 +38,7 @@ type InstanceConfig struct {
 type Target struct {
 	config    *pgx.ConnConfig
 	verifyTLS bool
+	sslCA     string
 }
 
 // NewTarget parses a direct PostgreSQL target URL. It intentionally accepts
@@ -60,13 +62,16 @@ func NewTarget(targetURL string) (*Target, error) {
 	}
 
 	query := u.Query()
-	if len(query["sslmode"]) != 1 || (query.Get("sslmode") != "require" && query.Get("sslmode") != "verify-full") {
-		return nil, staticTargetError("sample project instance target URL requires sslmode=require or sslmode=verify-full")
+	if len(query["sslmode"]) != 1 || query.Get("sslmode") != "verify-full" {
+		return nil, staticTargetError("sample project instance target URL requires sslmode=verify-full")
 	}
 	for key := range query {
-		if key != "sslmode" {
-			return nil, staticTargetError("sample project instance target URL only supports sslmode")
+		if key != "sslmode" && key != "sslrootcert" {
+			return nil, staticTargetError("sample project instance target URL only supports sslmode and sslrootcert")
 		}
+	}
+	if roots, ok := query["sslrootcert"]; ok && (len(roots) != 1 || roots[0] == "") {
+		return nil, staticTargetError("sample project instance target URL requires a single non-empty sslrootcert")
 	}
 
 	config, err := pgx.ParseConfig(targetURL)
@@ -76,7 +81,18 @@ func NewTarget(targetURL string) (*Target, error) {
 	if len(config.Fallbacks) != 0 {
 		return nil, staticTargetError("sample project instance target URL must use one host")
 	}
-	return newTargetFromConfig(config, query.Get("sslmode") == "verify-full"), nil
+	var sslCA string
+	if path := query.Get("sslrootcert"); path != "" {
+		resolved, err := util.ResolveTLSMaterial(&storepb.DataSource{
+			UseSsl:    true,
+			SslCaPath: path,
+		})
+		if err != nil {
+			return nil, staticTargetError("invalid sample project instance target sslrootcert")
+		}
+		sslCA = resolved.GetSslCa()
+	}
+	return newTargetFromConfig(config, true, sslCA), nil
 }
 
 // InstanceConfig builds the persisted admin datasource and its exact discovery
@@ -96,21 +112,38 @@ func (t *Target) InstanceConfig(allocation Allocation) (*InstanceConfig, error) 
 			Password:             allocation.Password,
 			UseSsl:               true,
 			VerifyTlsCertificate: t.verifyTLS,
+			SslCa:                t.sslCA,
 		},
 		SyncDatabaseNames: []string{allocation.Database},
 	}, nil
 }
 
-func newTargetFromConfig(config *pgx.ConnConfig, verifyTLS bool) *Target {
+func newTargetFromConfig(config *pgx.ConnConfig, verifyTLS bool, sslCA string) *Target {
 	return &Target{
 		config:    config,
 		verifyTLS: verifyTLS,
+		sslCA:     sslCA,
 	}
 }
 
 // Validate verifies the target is reachable and has the static isolation
 // baseline required before allocating shared sample databases.
 func (t *Target) Validate(ctx context.Context) error {
+	if err := t.validateCapabilities(ctx, true); err != nil {
+		return err
+	}
+	return t.validateIsolationBaseline(ctx)
+}
+
+// ValidateForCleanup verifies the connectivity and target capabilities needed
+// to remove existing allocations. Unlike Validate, it does not require the
+// provisioning isolation baseline because a partially provisioned allocation
+// may need cleanup before that baseline can be restored.
+func (t *Target) ValidateForCleanup(ctx context.Context) error {
+	return t.validateCapabilities(ctx, false)
+}
+
+func (t *Target) validateCapabilities(ctx context.Context, requireCreateDB bool) error {
 	conn, err := t.connect(ctx, "", "", "")
 	if err != nil {
 		return unavailableTargetError("failed to connect to sample project instance target")
@@ -125,9 +158,21 @@ func (t *Target) Validate(ctx context.Context) error {
 	`).Scan(&canCreateDB, &canCreateRole, &canSignal); err != nil {
 		return unavailableTargetError("failed to inspect sample project instance target role")
 	}
-	if !canCreateDB || !canCreateRole || !canSignal {
+	if requireCreateDB && (!canCreateDB || !canCreateRole || !canSignal) {
 		return staticTargetError("sample project instance target role requires CREATEDB, CREATEROLE, and pg_signal_backend")
 	}
+	if !requireCreateDB && (!canCreateRole || !canSignal) {
+		return staticTargetError("sample project instance target role requires CREATEROLE and pg_signal_backend for cleanup")
+	}
+	return nil
+}
+
+func (t *Target) validateIsolationBaseline(ctx context.Context) error {
+	conn, err := t.connect(ctx, "", "", "")
+	if err != nil {
+		return unavailableTargetError("failed to connect to sample project instance target")
+	}
+	defer conn.Close(ctx)
 
 	rows, err := conn.Query(ctx, `
 		SELECT
@@ -189,6 +234,7 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) error {
 	}
 	defer admin.Close(ctx)
 
+	roleCreated := false
 	if _, err := admin.Exec(ctx, fmt.Sprintf(
 		"CREATE ROLE %s LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %s",
 		quoteIdentifier(allocation.Role),
@@ -196,8 +242,15 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) error {
 	)); err != nil {
 		return classifyProvisionError(err, "failed to create sample project instance role")
 	}
+	roleCreated = true
 	if _, err := admin.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s", quoteIdentifier(allocation.Database))); err != nil {
-		return classifyProvisionError(err, "failed to create sample project instance database")
+		provisionErr := classifyProvisionError(err, "failed to create sample project instance database")
+		if roleCreated {
+			if _, cleanupErr := admin.Exec(ctx, fmt.Sprintf("DROP ROLE %s", quoteIdentifier(allocation.Role))); cleanupErr != nil {
+				return NewTargetError(TargetErrorInvariant, errors.New("failed to remove sample project instance role after database creation failure"))
+			}
+		}
+		return provisionErr
 	}
 	if _, err := admin.Exec(ctx, fmt.Sprintf("REVOKE ALL PRIVILEGES ON DATABASE %s FROM PUBLIC", quoteIdentifier(allocation.Database))); err != nil {
 		return errors.New("failed to revoke PUBLIC database privileges")

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 
 	"github.com/bytebase/bytebase/backend/common"
 )
@@ -241,23 +240,35 @@ func (s *Store) CountSampleProjectInstancesForCleanup(ctx context.Context, now, 
 	return count, nil
 }
 
-// WithLockedSampleProjectInstanceCleanupBatch locks every expired or stale
-// reservation in workspace order. It executes every callback even if earlier
-// callbacks fail, commits successful cleanup state, and returns the combined
-// callback errors after that commit.
-func (s *Store) WithLockedSampleProjectInstanceCleanupBatch(
+// SampleProjectInstanceCleanupResult reports the outcome of one cleanup
+// attempt. CallbackErr does not roll back the transaction: the caller advances
+// AfterWorkspace and may report the callback error after attempting later
+// records.
+type SampleProjectInstanceCleanupResult struct {
+	WorkspaceID string
+	Found       bool
+	CallbackErr error
+}
+
+// WithLockedSampleProjectInstanceCleanupRecord locks one expired or stale
+// reservation after afterWorkspace in workspace order. The row lock is held
+// only while callback runs. A successful callback updates the lifecycle record;
+// a failed callback leaves it unchanged after committing and returns its error
+// in the result so callers can continue from the returned workspace.
+func (s *Store) WithLockedSampleProjectInstanceCleanupRecord(
 	ctx context.Context,
 	now time.Time,
 	staleBefore time.Time,
+	afterWorkspace string,
 	callback func(context.Context, *SampleProjectInstanceTx, *SampleProjectInstanceMessage) error,
-) error {
+) (*SampleProjectInstanceCleanupResult, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(err, "failed to begin sample Project Instance cleanup transaction")
+		return nil, errors.Wrap(err, "failed to begin sample Project Instance cleanup transaction")
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, `
+	message, err := scanSampleProjectInstance(tx.QueryRowContext(ctx, `
 		SELECT workspace, project, instance, db_name, role_name, created_at, expires_at, deleted_at
 		FROM sample_project_instance
 		WHERE deleted_at IS NULL
@@ -265,47 +276,39 @@ func (s *Store) WithLockedSampleProjectInstanceCleanupBatch(
 				(expires_at IS NOT NULL AND expires_at <= $1)
 				OR (expires_at IS NULL AND created_at <= $2)
 			)
+			AND workspace > $3
 		ORDER BY workspace
 		FOR UPDATE SKIP LOCKED
-	`, now, staleBefore)
+		LIMIT 1
+	`, now, staleBefore, afterWorkspace))
+	if errors.Is(err, sql.ErrNoRows) {
+		if err := tx.Commit(); err != nil {
+			return nil, errors.Wrap(err, "failed to commit empty sample Project Instance cleanup transaction")
+		}
+		return &SampleProjectInstanceCleanupResult{}, nil
+	}
 	if err != nil {
-		return errors.Wrap(err, "failed to lock sample Project Instance cleanup batch")
-	}
-	defer rows.Close()
-
-	var messages []*SampleProjectInstanceMessage
-	for rows.Next() {
-		message, err := scanSampleProjectInstance(rows)
-		if err != nil {
-			return err
-		}
-		messages = append(messages, message)
-	}
-	if err := rows.Err(); err != nil {
-		return errors.Wrap(err, "failed to scan sample Project Instance cleanup batch")
+		return nil, errors.Wrap(err, "failed to lock sample Project Instance cleanup record")
 	}
 
-	var callbackErr error
-	for _, message := range messages {
-		recordTx := &SampleProjectInstanceTx{tx: tx, workspace: message.WorkspaceID}
-		if err := callback(ctx, recordTx, message); err != nil {
-			callbackErr = multierr.Append(callbackErr, err)
-			continue
+	result := &SampleProjectInstanceCleanupResult{
+		WorkspaceID: message.WorkspaceID,
+		Found:       true,
+	}
+	recordTx := &SampleProjectInstanceTx{tx: tx, workspace: message.WorkspaceID}
+	if err := callback(ctx, recordTx, message); err != nil {
+		result.CallbackErr = err
+	} else if message.ExpiresAt == nil {
+		if err := recordTx.DeleteReservation(ctx); err != nil {
+			return nil, err
 		}
-		if message.ExpiresAt == nil {
-			if err := recordTx.DeleteReservation(ctx); err != nil {
-				return err
-			}
-			continue
-		}
-		if err := recordTx.MarkDeleted(ctx, now); err != nil {
-			return err
-		}
+	} else if err := recordTx.MarkDeleted(ctx, now); err != nil {
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "failed to commit sample Project Instance cleanup transaction")
+		return nil, errors.Wrap(err, "failed to commit sample Project Instance cleanup transaction")
 	}
-	return callbackErr
+	return result, nil
 }
 
 func insertSampleProjectInstance(ctx context.Context, tx *sql.Tx, create *SampleProjectInstanceMessage) (*SampleProjectInstanceMessage, bool, error) {

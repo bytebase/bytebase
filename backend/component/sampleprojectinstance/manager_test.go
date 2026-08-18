@@ -3,6 +3,7 @@ package sampleprojectinstance
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -26,7 +27,7 @@ func TestManagerPrepareCreatesActivatedSampleProjectInstance(t *testing.T) {
 	now := time.Date(2026, time.August, 17, 9, 0, 0, 0, time.UTC)
 	manager := NewManager(s, target, metadata, syncer, ManagerOptions{
 		Clock:  func() time.Time { return now },
-		Random: bytes.NewReader(bytes.Repeat([]byte{0}, 32)),
+		Random: bytes.NewReader(bytes.Repeat([]byte{0}, 48)),
 	})
 
 	instance, err := manager.Prepare(ctx, PrepareRequest{
@@ -34,7 +35,7 @@ func TestManagerPrepareCreatesActivatedSampleProjectInstance(t *testing.T) {
 		ProjectID:   "project-a",
 	})
 	require.NoError(t, err)
-	require.Equal(t, names.InstanceID, instance.ResourceID)
+	require.Equal(t, "sample-00000000000000000000000000000000", instance.ResourceID)
 	require.Equal(t, 1, target.validateCalls)
 	require.Len(t, target.provisions, 1)
 	require.Equal(t, names.Database, target.provisions[0].Database)
@@ -63,9 +64,9 @@ func TestManagerPrepareReturnsSameProjectAllocationBeforeTargetValidation(t *tes
 		state: MetadataState{
 			ProjectActive:   true,
 			InstanceMatches: true,
-			Instance:        &store.InstanceMessage{ResourceID: sampleNames("workspace-a").InstanceID},
+			Instance:        &store.InstanceMessage{ResourceID: testInstanceID("workspace-a")},
 			Database: &store.DatabaseMessage{
-				InstanceID:   sampleNames("workspace-a").InstanceID,
+				InstanceID:   testInstanceID("workspace-a"),
 				DatabaseName: sampleNames("workspace-a").Database,
 			},
 		},
@@ -109,7 +110,7 @@ func TestManagerPrepareCompensatesAndDeletesFailedReservation(t *testing.T) {
 	metadata := &fakeMetadata{createErr: errors.New("metadata write failed")}
 	manager := NewManager(s, target, metadata, &fakeSyncer{}, ManagerOptions{
 		Clock:  time.Now,
-		Random: bytes.NewReader(bytes.Repeat([]byte{1}, 32)),
+		Random: bytes.NewReader(bytes.Repeat([]byte{1}, 48)),
 	})
 
 	_, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
@@ -138,7 +139,7 @@ func TestManagerPrepareSurvivesClientCancellationAfterReservation(t *testing.T) 
 		},
 	}
 	manager := NewManager(s, target, &fakeMetadata{}, &fakeSyncer{databaseName: names.Database}, ManagerOptions{
-		Random: bytes.NewReader(bytes.Repeat([]byte{3}, 32)),
+		Random: bytes.NewReader(bytes.Repeat([]byte{3}, 48)),
 	})
 
 	_, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
@@ -162,7 +163,7 @@ func TestManagerPrepareDiscardsReservationForCollisionValidationAndLimitFailures
 			name:   "deterministic metadata collision",
 			target: &fakeTarget{},
 			metadata: &fakeMetadata{state: MetadataState{
-				Instance: &store.InstanceMessage{ResourceID: sampleNames("workspace-a").InstanceID},
+				Instance: &store.InstanceMessage{ResourceID: testInstanceID("workspace-a")},
 			}},
 			kind: ErrorKindInternal,
 		},
@@ -206,9 +207,9 @@ func TestManagerFromURLDefersEmptyConfigurationFailure(t *testing.T) {
 		state: MetadataState{
 			ProjectActive:   true,
 			InstanceMatches: true,
-			Instance:        &store.InstanceMessage{ResourceID: sampleNames("workspace-a").InstanceID},
+			Instance:        &store.InstanceMessage{ResourceID: testInstanceID("workspace-a")},
 			Database: &store.DatabaseMessage{
-				InstanceID:   sampleNames("workspace-a").InstanceID,
+				InstanceID:   testInstanceID("workspace-a"),
 				DatabaseName: sampleNames("workspace-a").Database,
 			},
 		},
@@ -217,7 +218,7 @@ func TestManagerFromURLDefersEmptyConfigurationFailure(t *testing.T) {
 
 	instance, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
 	require.NoError(t, err)
-	require.Equal(t, sampleNames("workspace-a").InstanceID, instance.ResourceID)
+	require.Equal(t, testInstanceID("workspace-a"), instance.ResourceID)
 	metadata.state = MetadataState{}
 	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-b", ProjectID: "project-b"})
 	require.ErrorIs(t, err, ErrFailedPrecondition)
@@ -232,7 +233,7 @@ func TestManagerFromURLReturnsStaticErrorForExistingReservation(t *testing.T) {
 	_, _, err := s.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
 		WorkspaceID: "workspace-a",
 		ProjectID:   "project-a",
-		InstanceID:  names.InstanceID,
+		InstanceID:  testInstanceID("workspace-a"),
 		DBName:      names.Database,
 		RoleName:    names.Role,
 	})
@@ -279,6 +280,57 @@ func TestManagerPrepareReservesOneMinuteForCompensation(t *testing.T) {
 	require.WithinDuration(t, startedAt.Add(time.Minute), target.removeDeadline, 5*time.Second)
 }
 
+func TestManagerPrepareDoesNotConsumeEntitlementWhenInstanceIDGenerationFails(t *testing.T) {
+	ctx, _, s := newManagerStore(t)
+	manager := NewManager(s, &fakeTarget{}, &fakeMetadata{}, &fakeSyncer{databaseName: sampleNames("workspace-a").Database}, ManagerOptions{
+		Random: bytes.NewReader(nil),
+	})
+
+	_, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.ErrorIs(t, err, ErrInternal)
+	require.Nil(t, mustGetSampleProjectInstance(ctx, t, s, "workspace-a"))
+
+	manager.random = bytes.NewReader(bytes.Repeat([]byte{1}, 48))
+	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.NoError(t, err)
+	require.NotNil(t, mustGetSampleProjectInstance(ctx, t, s, "workspace-a"))
+}
+
+func TestManagerPrepareUsesUnpredictableInstanceIDDespiteCrossWorkspaceLegacyPreclaim(t *testing.T) {
+	ctx, _, s := newManagerStore(t)
+	sum := sha256.Sum256([]byte("workspace-a"))
+	legacyID := fmt.Sprintf("sample-%x", sum[:16])
+	metadata := &fakeMetadata{claimedInstanceID: legacyID}
+	manager := NewManager(s, &fakeTarget{}, metadata, &fakeSyncer{databaseName: sampleNames("workspace-a").Database}, ManagerOptions{
+		Random: bytes.NewReader(bytes.Repeat([]byte{2}, 48)),
+	})
+
+	instance, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.NoError(t, err)
+	require.NotEqual(t, legacyID, instance.ResourceID)
+	require.Equal(t, "sample-02020202020202020202020202020202", instance.ResourceID)
+}
+
+func TestManagerPrepareRetainsPersistedInstanceIDForSameProjectRetry(t *testing.T) {
+	ctx, _, s := newManagerStore(t)
+	target := &fakeTarget{}
+	metadata := &fakeMetadata{}
+	manager := NewManager(s, target, metadata, &fakeSyncer{databaseName: sampleNames("workspace-a").Database}, ManagerOptions{
+		Random: bytes.NewReader(append(bytes.Repeat([]byte{1}, 16), bytes.Repeat([]byte{2}, 32)...)),
+	})
+
+	first, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.NoError(t, err)
+	second, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.NoError(t, err)
+	require.Equal(t, first.ResourceID, second.ResourceID)
+	require.Equal(t, "sample-01010101010101010101010101010101", second.ResourceID)
+	require.Len(t, target.provisions, 1)
+
+	reservation := mustGetSampleProjectInstance(ctx, t, s, "workspace-a")
+	require.Equal(t, first.ResourceID, reservation.InstanceID)
+}
+
 func TestManagerCleanupReturnsDeferredStaticConfigurationFailureWithoutClaiming(t *testing.T) {
 	ctx, db, s := newManagerStore(t)
 	now := time.Date(2026, time.August, 17, 9, 0, 0, 0, time.UTC)
@@ -296,6 +348,82 @@ func TestManagerCleanupReturnsDeferredStaticConfigurationFailureWithoutClaiming(
 	require.Equal(t, 1, count)
 }
 
+func TestManagerCleanupUsesBoundedCleanupValidationAndContinuesPastProvisioningIsolationFailure(t *testing.T) {
+	ctx, _, s := newManagerStore(t)
+	now := time.Date(2026, time.August, 17, 9, 0, 0, 0, time.UTC)
+	names := sampleNames("workspace-a")
+	_, _, err := s.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
+		WorkspaceID: "workspace-a",
+		ProjectID:   "project-a",
+		InstanceID:  testInstanceID("workspace-a"),
+		DBName:      names.Database,
+		RoleName:    names.Role,
+	})
+	require.NoError(t, err)
+	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
+		return tx.SetExpiration(ctx, now.Add(-time.Second))
+	}))
+	target := &fakeTarget{
+		validateErr: NewTargetError(TargetErrorStatic, errors.New("provisioning isolation baseline failed")),
+	}
+	manager := NewManager(s, target, &fakeMetadata{}, &fakeSyncer{}, ManagerOptions{})
+	startedAt := time.Now()
+
+	require.NoError(t, manager.Cleanup(context.WithoutCancel(ctx), now))
+	require.Zero(t, target.validateCalls)
+	require.Equal(t, 1, target.validateForCleanupCalls)
+	require.WithinDuration(t, startedAt.Add(cleanupValidationDeadline), target.cleanupValidateDeadline, time.Second)
+	require.Len(t, target.removes, 1)
+	require.WithinDuration(t, startedAt.Add(cleanupAttemptDeadline), target.removeDeadline, time.Second)
+}
+
+func TestManagerCleanupContinuesAfterFailedRecordAndAggregatesErrors(t *testing.T) {
+	ctx, db, s := newManagerStore(t)
+	now := time.Date(2026, time.August, 17, 9, 0, 0, 0, time.UTC)
+	names := sampleNames("workspace-a")
+	_, _, err := s.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
+		WorkspaceID: "workspace-a",
+		ProjectID:   "project-a",
+		InstanceID:  testInstanceID("workspace-a"),
+		DBName:      names.Database,
+		RoleName:    names.Role,
+	})
+	require.NoError(t, err)
+	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
+		return tx.SetExpiration(ctx, now.Add(-time.Second))
+	}))
+	_, err = db.ExecContext(ctx, `
+		INSERT INTO sample_project_instance (workspace, project, instance, db_name, role_name, created_at)
+		VALUES ('workspace-b', 'project-b', 'sample-stale', 'bb_sample_stale', 'bb_sample_role_stale', $1)
+	`, now.Add(-time.Hour))
+	require.NoError(t, err)
+	removeErrA := errors.New("cannot remove workspace-a")
+	removeErrB := errors.New("cannot remove workspace-b")
+	target := &fakeTarget{
+		remove: func(_ context.Context, allocation Allocation) error {
+			if allocation.Database == names.Database {
+				return removeErrA
+			}
+			return removeErrB
+		},
+	}
+	manager := NewManager(s, target, &fakeMetadata{}, &fakeSyncer{}, ManagerOptions{})
+
+	err = manager.Cleanup(ctx, now)
+	require.ErrorIs(t, err, removeErrA)
+	require.ErrorIs(t, err, removeErrB)
+	require.Len(t, target.removes, 2)
+	require.Equal(t, names.Database, target.removes[0].Database)
+	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(_ context.Context, _ *store.SampleProjectInstanceTx, reservation *store.SampleProjectInstanceMessage) error {
+		require.Nil(t, reservation.DeletedAt)
+		return nil
+	}))
+	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-b", func(_ context.Context, _ *store.SampleProjectInstanceTx, reservation *store.SampleProjectInstanceMessage) error {
+		require.Nil(t, reservation.DeletedAt)
+		return nil
+	}))
+}
+
 func TestManagerPrepareReconcilesNullReservationBeforeRetrying(t *testing.T) {
 	ctx, _, s := newManagerStore(t)
 	now := time.Date(2026, time.August, 17, 9, 0, 0, 0, time.UTC)
@@ -303,7 +431,7 @@ func TestManagerPrepareReconcilesNullReservationBeforeRetrying(t *testing.T) {
 	_, _, err := s.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
 		WorkspaceID: "workspace-a",
 		ProjectID:   "project-a",
-		InstanceID:  names.InstanceID,
+		InstanceID:  testInstanceID("workspace-a"),
 		DBName:      names.Database,
 		RoleName:    names.Role,
 	})
@@ -312,7 +440,7 @@ func TestManagerPrepareReconcilesNullReservationBeforeRetrying(t *testing.T) {
 	metadata := &fakeMetadata{lookupErr: errors.New("metadata unavailable")}
 	manager := NewManager(s, target, metadata, &fakeSyncer{databaseName: names.Database}, ManagerOptions{
 		Clock:  func() time.Time { return now },
-		Random: bytes.NewReader(bytes.Repeat([]byte{2}, 32)),
+		Random: bytes.NewReader(bytes.Repeat([]byte{2}, 64)),
 	})
 
 	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
@@ -340,7 +468,7 @@ func TestManagerCleanupExpiresAndReconcilesStaleReservations(t *testing.T) {
 	_, _, err := s.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
 		WorkspaceID: "workspace-a",
 		ProjectID:   "project-a",
-		InstanceID:  names.InstanceID,
+		InstanceID:  testInstanceID("workspace-a"),
 		DBName:      names.Database,
 		RoleName:    names.Role,
 	})
@@ -392,7 +520,7 @@ func seedReservation(ctx context.Context, t *testing.T, s *store.Store, workspac
 	_, _, err := s.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
 		WorkspaceID: workspaceID,
 		ProjectID:   projectID,
-		InstanceID:  names.InstanceID,
+		InstanceID:  testInstanceID(workspaceID),
 		DBName:      names.Database,
 		RoleName:    names.Role,
 	})
@@ -402,15 +530,31 @@ func seedReservation(ctx context.Context, t *testing.T, s *store.Store, workspac
 	}))
 }
 
+func mustGetSampleProjectInstance(ctx context.Context, t *testing.T, s *store.Store, workspaceID string) *store.SampleProjectInstanceMessage {
+	t.Helper()
+	reservation, err := s.GetSampleProjectInstance(ctx, workspaceID)
+	require.NoError(t, err)
+	return reservation
+}
+
+func testInstanceID(workspaceID string) string {
+	return "sample-test-" + workspaceID
+}
+
 type fakeTarget struct {
-	validateCalls  int
-	validateErr    error
-	validate       func(context.Context) error
-	provisionErr   error
-	removeErr      error
-	provisions     []Allocation
-	removes        []Allocation
-	removeDeadline time.Time
+	validateCalls           int
+	validateErr             error
+	validate                func(context.Context) error
+	validateForCleanupCalls int
+	validateForCleanupErr   error
+	validateForCleanup      func(context.Context) error
+	cleanupValidateDeadline time.Time
+	provisionErr            error
+	removeErr               error
+	remove                  func(context.Context, Allocation) error
+	provisions              []Allocation
+	removes                 []Allocation
+	removeDeadline          time.Time
 }
 
 func (t *fakeTarget) Validate(ctx context.Context) error {
@@ -421,6 +565,15 @@ func (t *fakeTarget) Validate(ctx context.Context) error {
 	return t.validateErr
 }
 
+func (t *fakeTarget) ValidateForCleanup(ctx context.Context) error {
+	t.validateForCleanupCalls++
+	t.cleanupValidateDeadline, _ = ctx.Deadline()
+	if t.validateForCleanup != nil {
+		return t.validateForCleanup(ctx)
+	}
+	return t.validateForCleanupErr
+}
+
 func (t *fakeTarget) Provision(_ context.Context, allocation Allocation) error {
 	t.provisions = append(t.provisions, allocation)
 	return t.provisionErr
@@ -429,6 +582,9 @@ func (t *fakeTarget) Provision(_ context.Context, allocation Allocation) error {
 func (t *fakeTarget) Remove(ctx context.Context, allocation Allocation) error {
 	t.removeDeadline, _ = ctx.Deadline()
 	t.removes = append(t.removes, allocation)
+	if t.remove != nil {
+		return t.remove(ctx, allocation)
+	}
 	return t.removeErr
 }
 
@@ -440,13 +596,14 @@ func (*fakeTarget) InstanceConfig(allocation Allocation) (*InstanceConfig, error
 }
 
 type fakeMetadata struct {
-	state          MetadataState
-	lookupErr      error
-	createErr      error
-	removeErr      error
-	registration   Registration
-	removeCalls    int
-	lookupDeadline time.Time
+	state             MetadataState
+	lookupErr         error
+	createErr         error
+	claimedInstanceID string
+	removeErr         error
+	registration      Registration
+	removeCalls       int
+	lookupDeadline    time.Time
 }
 
 func (m *fakeMetadata) Lookup(ctx context.Context, _ Allocation, _, _, _ string) (MetadataState, error) {
@@ -459,12 +616,15 @@ func (m *fakeMetadata) Create(_ context.Context, registration Registration) (*st
 	if m.createErr != nil {
 		return nil, m.createErr
 	}
+	if registration.InstanceID == m.claimedInstanceID {
+		return nil, errors.New("instance resource ID is already claimed")
+	}
 	instance := &store.InstanceMessage{ResourceID: registration.InstanceID}
 	m.state = MetadataState{
 		ProjectActive:   true,
 		InstanceMatches: true,
 		Instance:        instance,
-		Database:        &store.DatabaseMessage{DatabaseName: registration.Allocation.Database},
+		Database:        &store.DatabaseMessage{InstanceID: registration.InstanceID, DatabaseName: registration.Allocation.Database},
 	}
 	return instance, nil
 }
