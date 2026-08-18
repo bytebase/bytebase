@@ -86,7 +86,14 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		// just Results (SELECT output) to catch cases like:
 		//   SELECT name FROM t WHERE CAST(masked_col AS int) > 5
 		if results[i].Error != "" && len(results[i].Rows) == 0 {
-			if i < len(spans) && spans[i] != nil && s.spanTouchesMaskedColumns(ctx, m, instance, user, spans[i]) {
+			// spanTouchesMaskedColumns looks for a column carrying a policy, so on
+			// a snapshot that describes no columns it finds nothing and reads that
+			// as "nothing sensitive here". The error text can quote a column value,
+			// so redact whenever the relation is unresolved, without asking a
+			// question the snapshot cannot answer.
+			if i < len(spans) && spans[i] != nil &&
+				(maskingBlockedByUnresolvedColumns(spans[i], instance) ||
+					s.spanTouchesMaskedColumns(ctx, m, instance, user, spans[i])) {
 				results[i].Error = "Query execution failed. Error details are hidden because the query references columns with data masking policies."
 			}
 			continue

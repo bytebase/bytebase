@@ -88,6 +88,28 @@ func TestMaskingBlockedByUnresolvedColumns(t *testing.T) {
 	}
 }
 
+// TestUnresolvedSpanDrivesErrorRedaction pins that an unresolved relation is
+// enough on its own to redact a database error.
+//
+// The other half of that condition, spanTouchesMaskedColumns, looks for a
+// column carrying a policy — and on a snapshot describing no columns it finds
+// none and reports false. Read literally that is "nothing sensitive here",
+// which is exactly wrong: the snapshot could not answer the question. Database
+// errors quote column values (an integer cast of a text column returns the
+// value in the message), so the unresolved signal has to redact by itself.
+func TestUnresolvedSpanDrivesErrorRedaction(t *testing.T) {
+	// The predicate the redaction path consults for the unresolved case is the
+	// same one the refusal uses, so an unresolved span on a masking engine
+	// redacts without needing any column-level lineage.
+	require.True(t, maskingBlockedByUnresolvedColumns(unresolvedSpan(), instanceOn(storepb.Engine_POSTGRES)),
+		"an unresolved relation must redact the error on its own")
+
+	// A span with no unresolved relation falls through to the lineage check,
+	// which is the pre-existing behavior and must not change.
+	require.False(t, maskingBlockedByUnresolvedColumns(&parserbase.QuerySpan{Type: parserbase.Select}, instanceOn(storepb.Engine_POSTGRES)),
+		"a healthy span must still be judged by its column lineage, not redacted wholesale")
+}
+
 // TestMaskingEnginesAgreeWithSignalProducers records which masking-capable
 // engines actually produce the unresolved-columns signal today. Only the
 // PostgreSQL extractor sets it, so every other masking engine still returns

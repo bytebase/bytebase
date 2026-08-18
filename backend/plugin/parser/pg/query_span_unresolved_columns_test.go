@@ -208,14 +208,22 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 			"a CTE bound inside a subquery shadows the physical table just as a top-level one does")
 	})
 
-	t.Run("known gap: a qualified read is skipped when a CTE shares the name", func(t *testing.T) {
+	t.Run("a qualified read is still checked when a CTE shares the name", func(t *testing.T) {
 		// PostgreSQL does not let a CTE shadow a schema-qualified name, so this
 		// statement really does read the degraded public.t. Excluding by name
-		// alone cannot see that, so the read goes unchecked. Pinned so the gap
-		// is visible; closing it needs CTE scope in ExtractAccessTables.
+		// alone would have dropped it; the qualified-reference set keeps it.
 		span := spanFor(t, "WITH t AS (SELECT 1 AS n) SELECT * FROM public.t", degradedSchema())
-		require.Nil(t, span.UnresolvedColumnsError,
-			"documented limitation of excluding CTE names without scope tracking")
+		require.NotNil(t, span.UnresolvedColumnsError,
+			"a schema-qualified read is never shadowed by a CTE of the same name")
+		require.Contains(t, span.UnresolvedColumnsError.Error(), "public.t")
+	})
+
+	t.Run("a statement reading both the CTE and the qualified table is checked", func(t *testing.T) {
+		span := spanFor(t,
+			"WITH t AS (SELECT 1 AS n) SELECT * FROM t UNION ALL SELECT * FROM public.t",
+			degradedSchema())
+		require.NotNil(t, span.UnresolvedColumnsError,
+			"the qualified arm is a genuine read regardless of the CTE arm")
 	})
 
 	t.Run("materialized view without columns is not a degraded table", func(t *testing.T) {

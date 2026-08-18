@@ -208,7 +208,7 @@ func findDollarQuotedBody(definition string) (tag string, bodyStart int, bodyEnd
 // On PostgreSQL a current sync cannot produce this state: #20581 moved the
 // column query to pg_catalog so privileges no longer hide columns. What
 // reaches it is a snapshot written before that fix and never re-synced.
-func (e *omniQuerySpanExtractor) findUnresolvedRelations(accesses base.SourceColumnSet, cteNames map[string]bool) []base.ColumnResource {
+func (e *omniQuerySpanExtractor) findUnresolvedRelations(accesses base.SourceColumnSet, cteNames, qualified map[string]bool) []base.ColumnResource {
 	seen := make(map[base.ColumnResource]bool, len(accesses))
 	var unresolved []base.ColumnResource
 	for access := range accesses {
@@ -224,9 +224,11 @@ func (e *omniQuerySpanExtractor) findUnresolvedRelations(accesses base.SourceCol
 		seen[relation] = true
 		// ExtractAccessTables walks every RangeVar without tracking CTE scope, so
 		// a reference to a CTE that shares a table's name arrives here resolved to
-		// that table. Such a query never reads the table and resolves entirely
-		// from the CTE, so refusing it would be a false positive.
-		if cteNames[strings.ToLower(relation.Table)] {
+		// that table. Skip it only when nothing in the statement names the table
+		// with a schema: PostgreSQL does not let a CTE shadow a qualified name, so
+		// a qualified mention is a genuine read no matter what the CTEs are called.
+		lower := strings.ToLower(relation.Table)
+		if cteNames[lower] && !qualified[lower] {
 			continue
 		}
 		if e.relationHasNoSyncedColumns(relation) {
@@ -267,7 +269,7 @@ func (e *omniQuerySpanExtractor) relationHasNoSyncedColumns(relation base.Column
 // unresolvedColumnsError builds the span signal for accesses whose columns the
 // snapshot cannot describe, or nil when every accessed table resolves.
 func (e *omniQuerySpanExtractor) unresolvedColumnsError(accesses base.SourceColumnSet, selStmt *ast.SelectStmt) *base.UnresolvedColumnsError {
-	unresolved := e.findUnresolvedRelations(accesses, collectCTENames(selStmt))
+	unresolved := e.findUnresolvedRelations(accesses, collectCTENames(selStmt), collectQualifiedTableNames(selStmt))
 	if len(unresolved) == 0 {
 		return nil
 	}
@@ -1389,10 +1391,10 @@ func collectColumnRefNames(node ast.Node) []string {
 // a WITH can sit inside a derived table, a scalar subquery, or a branch of a
 // set operation, and a name bound in any of those shadows just as effectively.
 //
-// Names are collected without regard to the scope they are visible in. Naming
-// one too many leaves a genuinely degraded table sharing a CTE's name
-// unchecked in that statement; naming one too few refuses a query that reads
-// no table at all. The first is the quieter failure.
+// Names are collected without regard to the scope they are visible in, so a
+// CTE bound in one branch suppresses an unqualified reference in another. A
+// schema-qualified reference is never suppressed — see
+// collectQualifiedTableNames — so a genuine read still reaches the check.
 func collectCTENames(selStmt *ast.SelectStmt) map[string]bool {
 	names := make(map[string]bool)
 	if selStmt == nil {
@@ -1401,6 +1403,27 @@ func collectCTENames(selStmt *ast.SelectStmt) map[string]bool {
 	ast.Inspect(selStmt, func(node ast.Node) bool {
 		if cte, ok := node.(*ast.CommonTableExpr); ok {
 			names[strings.ToLower(cte.Ctename)] = true
+		}
+		return true
+	})
+	return names
+}
+
+// collectQualifiedTableNames returns the lowercased base names of every table
+// reference in the statement that carries a schema, anywhere in the tree.
+//
+// A CTE cannot shadow a schema-qualified reference in PostgreSQL, so a name
+// that appears qualified somewhere is being read as a real table there, whatever
+// the statement's CTEs are called. Excluding it as a CTE name would drop a
+// genuine read.
+func collectQualifiedTableNames(selStmt *ast.SelectStmt) map[string]bool {
+	names := make(map[string]bool)
+	if selStmt == nil {
+		return names
+	}
+	ast.Inspect(selStmt, func(node ast.Node) bool {
+		if rv, ok := node.(*ast.RangeVar); ok && rv.Schemaname != "" && rv.Relname != "" {
+			names[strings.ToLower(rv.Relname)] = true
 		}
 		return true
 	})
