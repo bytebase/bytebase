@@ -279,6 +279,7 @@
     "database-group": "Nhóm cơ sở dữ liệu",
     "databases": "Cơ sở dữ liệu",
     "deactivate": "Hủy kích hoạt",
+    "deactivated": "Đã vô hiệu hóa",
     "default": "Mặc định",
     "definition": "Định nghĩa",
     "delete": "Xóa",
@@ -2275,6 +2276,18 @@
     }
   },
   "settings": {
+    "account": {
+      "change-email": "Đổi email",
+      "change-email-description": "Bạn đăng nhập bằng địa chỉ này. Sau khi đổi, bạn phải dùng địa chỉ mới để đăng nhập.",
+      "description": "Quản lý hồ sơ cá nhân và cách bạn đăng nhập.",
+      "email-managed": "Liên hệ quản trị viên workspace để đổi email đăng nhập.",
+      "password-notice": "Đổi mật khẩu sẽ đăng xuất bạn khỏi mọi phiên, kể cả phiên hiện tại.",
+      "profile": "Hồ sơ",
+      "security": "Bảo mật",
+      "self": "Cài đặt tài khoản",
+      "sign-in": "Đăng nhập",
+      "update-password": "Cập nhật mật khẩu"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2558,6 +2571,30 @@
         "reactivate-confirm-title": "Bạn có chắc muốn kích hoạt lại?"
       },
       "add-member": "Thêm thành viên",
+      "admin": {
+        "account-details": "Chi tiết tài khoản",
+        "account-status": "Trạng thái tài khoản",
+        "change-email": "Đổi email",
+        "change-email-description": "Chuyển địa chỉ đăng nhập của tài khoản này từ {{email}} sang địa chỉ mới. Người dùng phải đăng nhập bằng địa chỉ mới.",
+        "create-user": "Tạo người dùng",
+        "deactivate": "Vô hiệu hóa người dùng",
+        "deactivate-tip": "Tài khoản vẫn giữ dữ liệu nhưng không thể đăng nhập. Bạn có thể kích hoạt lại sau.",
+        "edit-user": "Sửa người dùng",
+        "email-immutable-tip": "Dùng thao tác Đổi email trên trang người dùng để chuyển tài khoản sang địa chỉ khác.",
+        "external-source": "Tài khoản này được đồng bộ từ {{source}}. Thay đổi ở đây có thể bị ghi đè ở lần đồng bộ tiếp theo.",
+        "last-password-change": "Lần đổi mật khẩu gần nhất",
+        "last-sign-in": "Lần đăng nhập gần nhất",
+        "mfa-not-enrolled": "Chưa thiết lập",
+        "reactivate": "Kích hoạt lại người dùng",
+        "reactivate-tip": "Tài khoản có thể đăng nhập lại với thông tin đăng nhập và vai trò hiện có.",
+        "reset-mfa": "Đặt lại 2FA",
+        "reset-mfa-description": "{{user}} sẽ mất ứng dụng xác thực và mã khôi phục hiện tại, và phải thiết lập lại.",
+        "reset-mfa-tip": "Chỉ chủ tài khoản mới thiết lập được ứng dụng xác thực. Quản trị viên có thể đặt lại để họ thiết lập lại.",
+        "reset-password": "Đặt lại mật khẩu",
+        "reset-password-tip": "Đặt mật khẩu ở đây sẽ đăng xuất người dùng khỏi mọi thiết bị. Để trống để giữ nguyên mật khẩu hiện tại.",
+        "saas-read-only": "Trên bản cloud, hồ sơ tài khoản do chủ tài khoản quản lý. Hãy quản lý quyền truy cập workspace ở trang Thành viên.",
+        "viewing-self": "Đây là tài khoản của chính bạn. Mật khẩu và xác thực hai bước nằm trong Cài đặt tài khoản."
+      },
       "all-users": "Tất cả người dùng",
       "assign-role": "Gán vai trò",
       "cannot-revoke-self": "Bạn không thể thu hồi chính mình",

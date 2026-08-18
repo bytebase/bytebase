@@ -279,6 +279,7 @@
     "database-group": "Database Group",
     "databases": "Databases",
     "deactivate": "Deactivate",
+    "deactivated": "Deactivated",
     "default": "Default",
     "definition": "Definition",
     "delete": "Delete",
@@ -2275,6 +2276,18 @@
     }
   },
   "settings": {
+    "account": {
+      "change-email": "Change email",
+      "change-email-description": "You sign in with this address. After changing it you must use the new address to sign in.",
+      "description": "Manage your personal profile and how you sign in.",
+      "email-managed": "Contact a workspace admin to change your sign-in email.",
+      "password-notice": "Changing your password signs you out everywhere, including this session.",
+      "profile": "Profile",
+      "security": "Security",
+      "self": "Account settings",
+      "sign-in": "Sign-in",
+      "update-password": "Update password"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2558,6 +2571,30 @@
         "reactivate-confirm-title": "Are you sure to reactivate"
       },
       "add-member": "Add member",
+      "admin": {
+        "account-details": "Account details",
+        "account-status": "Account status",
+        "change-email": "Change email",
+        "change-email-description": "Move this account from {{email}} to a new sign-in address. The user must sign in with the new address.",
+        "create-user": "Create user",
+        "deactivate": "Deactivate user",
+        "deactivate-tip": "The account keeps its data but can no longer sign in. You can reactivate it later.",
+        "edit-user": "Edit user",
+        "email-immutable-tip": "Use the Change email action on the user page to move this account to another address.",
+        "external-source": "This account is synced from {{source}}. Changes made here can be overwritten by the next sync.",
+        "last-password-change": "Last password change",
+        "last-sign-in": "Last sign-in",
+        "mfa-not-enrolled": "Not enrolled",
+        "reactivate": "Reactivate user",
+        "reactivate-tip": "The account can sign in again with its existing credentials and roles.",
+        "reset-mfa": "Reset 2FA",
+        "reset-mfa-description": "{{user}} loses their current authenticator and recovery codes, and must enroll again.",
+        "reset-mfa-tip": "Only the account owner can enroll an authenticator. As an admin you can reset their enrollment so they set it up again.",
+        "reset-password": "Reset password",
+        "reset-password-tip": "Setting a password here signs the user out everywhere. Leave it empty to keep their current password.",
+        "saas-read-only": "User profiles are owned by the account holder in the cloud. Manage workspace access from Members instead.",
+        "viewing-self": "This is your own account. Your password and two-factor authentication live in Account settings."
+      },
       "all-users": "All users",
       "assign-role": "Assign role",
       "cannot-revoke-self": "You cannot revoke yourself",

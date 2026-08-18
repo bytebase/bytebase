@@ -26,18 +26,11 @@ const updatedCurrentUser = {
 
 const mocks = vi.hoisted(() => ({
   useCurrentUser: vi.fn(() => legacyCurrentUser),
-  useAuthStore: vi.fn(() => ({
-    updateCurrentUserNameForEmailChange: vi.fn(),
-  })),
   getWorkspaceRolesByName: vi.fn(() => new Set<string>()),
-  fetchWorkspaceIamPolicy: vi.fn(async () => undefined),
   hasFeature: vi.fn(() => true),
   pushNotification: vi.fn(),
-  getUserByIdentifier: vi.fn(),
-  getOrFetchUserByIdentifier: vi.fn(),
-  updateUser: vi.fn(async () => updatedCurrentUser),
+  updateUser: vi.fn(async (_request: unknown) => updatedCurrentUser),
   updateEmail: vi.fn(),
-  routerReplace: vi.fn(),
   routerPush: vi.fn(),
   migrateUserStorage: vi.fn(),
   setDocumentTitle: vi.fn(),
@@ -54,17 +47,13 @@ vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
 
 vi.mock("@/stores/app", () => {
   const buildState = () => ({
-    getUserByIdentifier: mocks.getUserByIdentifier,
-    getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
     updateUser: mocks.updateUser,
     updateEmail: mocks.updateEmail,
     updateCurrentUserNameForEmailChange: () => {},
     roleList: [],
     workspacePolicy: undefined,
     getWorkspaceRolesByName: mocks.getWorkspaceRolesByName,
-    fetchWorkspaceIamPolicy: mocks.fetchWorkspaceIamPolicy,
     hasFeature: () => mocks.hasFeature(),
-    // Migrated off the Pinia actuator/setting store mocks.
     isSaaSMode: () => false,
     getWorkspaceProfile: () => ({
       passwordRestriction: undefined,
@@ -80,14 +69,14 @@ vi.mock("@/stores/app", () => {
 vi.mock("@/stores", () => ({
   hasFeature: mocks.hasFeature,
   pushNotification: mocks.pushNotification,
-  useAuthStore: mocks.useAuthStore,
 }));
 
 vi.mock("@/app/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router")>()),
   router: {
-    replace: mocks.routerReplace,
     push: mocks.routerPush,
+    replace: vi.fn(),
+    resolve: () => ({ href: "#" }),
   },
 }));
 
@@ -190,12 +179,9 @@ vi.mock("./UserPasswordSection", () => ({
   UserPasswordSection: () => <div data-testid="password-section" />,
 }));
 
-vi.mock(
-  "@/routes/workspace/two-factor/RegenerateRecoveryCodesView",
-  () => ({
-    RegenerateRecoveryCodesView: () => <div data-testid="recovery-codes" />,
-  })
-);
+vi.mock("@/routes/workspace/two-factor/RegenerateRecoveryCodesView", () => ({
+  RegenerateRecoveryCodesView: () => <div data-testid="recovery-codes" />,
+}));
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -204,7 +190,7 @@ vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
-let ProfilePage: typeof import("./ProfilePage").ProfilePage;
+let AccountSettingsPage: typeof import("./AccountSettingsPage").AccountSettingsPage;
 
 const renderIntoContainer = (element: ReactElement) => {
   const container = document.createElement("div");
@@ -224,44 +210,72 @@ const renderIntoContainer = (element: ReactElement) => {
   };
 };
 
+const findButton = (container: HTMLElement, text: string) =>
+  [...container.querySelectorAll("button")].find(
+    (button) => button.textContent === text
+  );
+
+const setInputValue = async (input: HTMLInputElement, value: string) => {
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value"
+    )?.set?.call(input, value);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+};
+
 beforeEach(async () => {
   vi.clearAllMocks();
-  ({ ProfilePage } = await import("./ProfilePage"));
+  ({ AccountSettingsPage } = await import("./AccountSettingsPage"));
 });
 
-describe("ProfilePage", () => {
-  test("renders the updated self profile from the update response", async () => {
-    const { container, render, unmount } = renderIntoContainer(<ProfilePage />);
+describe("AccountSettingsPage", () => {
+  test("saves the display name and renders the update response", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <AccountSettingsPage />
+    );
 
     await render();
-    expect(container.textContent).toContain("Old Alice");
-
-    const edit = [...container.querySelectorAll("button")].find(
-      (button) => button.textContent === "common.edit"
-    );
-    await act(async () => {
-      edit?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
     const titleInput = container.querySelector("input")!;
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(
-        HTMLInputElement.prototype,
-        "value"
-      )?.set?.call(titleInput, "New Alice");
-      titleInput.dispatchEvent(new Event("input", { bubbles: true }));
-    });
+    expect(titleInput.value).toBe("Old Alice");
 
-    const save = [...container.querySelectorAll("button")].find(
-      (button) => button.textContent === "common.save"
-    );
+    // Nothing changed yet, so the profile section save is inert.
+    expect(findButton(container, "common.save")?.disabled).toBe(true);
+
+    await setInputValue(titleInput, "New Alice");
+    expect(findButton(container, "common.save")?.disabled).toBe(false);
+
     await act(async () => {
-      save?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      findButton(container, "common.save")?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      );
       await Promise.resolve();
     });
 
-    expect(mocks.updateUser).toHaveBeenCalled();
-    expect(container.textContent).toContain("New Alice");
+    expect(mocks.updateUser).toHaveBeenCalledTimes(1);
+    expect(mocks.updateUser.mock.calls[0][0]).toMatchObject({
+      updateMask: { paths: ["title"] },
+    });
+    expect(container.querySelector("input")!.value).toBe("New Alice");
+
+    unmount();
+  });
+
+  test("password lives in its own section and is not part of the profile save", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <AccountSettingsPage />
+    );
+
+    await render();
+
+    // The password section is always visible — no "edit mode" gate.
+    expect(
+      container.querySelector('[data-testid="password-section"]')
+    ).not.toBeNull();
+    // …and updating it is a separate, separately-disabled action.
+    expect(findButton(container, "settings.account.update-password")?.disabled)
+      .toBe(true);
 
     unmount();
   });

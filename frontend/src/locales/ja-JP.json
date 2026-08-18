@@ -279,6 +279,7 @@
     "database-group": "データベースグループ",
     "databases": "データベース",
     "deactivate": "無効化",
+    "deactivated": "無効",
     "default": "デフォルト",
     "definition": "定義",
     "delete": "消去",
@@ -2275,6 +2276,18 @@
     }
   },
   "settings": {
+    "account": {
+      "change-email": "メールアドレスを変更",
+      "change-email-description": "このアドレスでサインインします。変更後は新しいアドレスでサインインしてください。",
+      "description": "プロフィールとサインイン方法を管理します。",
+      "email-managed": "サインイン用メールアドレスの変更はワークスペース管理者にご連絡ください。",
+      "password-notice": "パスワードを変更すると、現在のセッションを含むすべてのセッションからサインアウトされます。",
+      "profile": "プロフィール",
+      "security": "セキュリティ",
+      "self": "アカウント設定",
+      "sign-in": "サインイン",
+      "update-password": "パスワードを更新"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2558,6 +2571,30 @@
         "reactivate-confirm-title": "[OK] を有効にします"
       },
       "add-member": "メンバーを追加",
+      "admin": {
+        "account-details": "アカウント詳細",
+        "account-status": "アカウントの状態",
+        "change-email": "メールアドレスを変更",
+        "change-email-description": "このアカウントのサインインアドレスを {{email}} から変更します。ユーザーは新しいアドレスでサインインします。",
+        "create-user": "ユーザーを作成",
+        "deactivate": "ユーザーを無効化",
+        "deactivate-tip": "データは保持されますが、サインインできなくなります。後で再度有効化できます。",
+        "edit-user": "ユーザーを編集",
+        "email-immutable-tip": "アドレスを変更するには、ユーザーページの「メールアドレスを変更」を使用してください。",
+        "external-source": "このアカウントは {{source}} から同期されています。ここでの変更は次回の同期で上書きされる場合があります。",
+        "last-password-change": "最終パスワード変更",
+        "last-sign-in": "最終サインイン",
+        "mfa-not-enrolled": "未登録",
+        "reactivate": "ユーザーを有効化",
+        "reactivate-tip": "既存の認証情報とロールで再びサインインできます。",
+        "reset-mfa": "2要素認証をリセット",
+        "reset-mfa-description": "{{user}} の現在の認証アプリとリカバリコードは無効になり、再登録が必要になります。",
+        "reset-mfa-tip": "認証アプリを登録できるのは本人だけです。管理者は登録をリセットして再設定させることができます。",
+        "reset-password": "パスワードをリセット",
+        "reset-password-tip": "ここでパスワードを設定すると、そのユーザーはすべての端末でサインアウトされます。空のままにすると現在のパスワードを維持します。",
+        "saas-read-only": "クラウドではアカウント情報は本人が管理します。ワークスペースのアクセス権はメンバー画面で管理してください。",
+        "viewing-self": "これはあなた自身のアカウントです。パスワードと2要素認証はアカウント設定で変更できます。"
+      },
       "all-users": "すべてのユーザー",
       "assign-role": "ロールを割り当て",
       "cannot-revoke-self": "自分自身を取り消すことはできません",

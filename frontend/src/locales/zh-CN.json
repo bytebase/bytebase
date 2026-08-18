@@ -279,6 +279,7 @@
     "database-group": "数据库分组",
     "databases": "数据库",
     "deactivate": "禁用",
+    "deactivated": "已停用",
     "default": "默认",
     "definition": "定义",
     "delete": "删除",
@@ -2275,6 +2276,18 @@
     }
   },
   "settings": {
+    "account": {
+      "change-email": "修改邮箱",
+      "change-email-description": "您使用该邮箱登录。修改后必须使用新邮箱登录。",
+      "description": "管理您的个人资料和登录方式。",
+      "email-managed": "如需修改登录邮箱，请联系工作空间管理员。",
+      "password-notice": "修改密码后，所有会话（包括当前会话）都会退出登录。",
+      "profile": "个人资料",
+      "security": "安全",
+      "self": "账号设置",
+      "sign-in": "登录",
+      "update-password": "更新密码"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2558,6 +2571,30 @@
         "reactivate-confirm-title": "确定启用"
       },
       "add-member": "添加成员",
+      "admin": {
+        "account-details": "账号详情",
+        "account-status": "账号状态",
+        "change-email": "修改邮箱",
+        "change-email-description": "将该账号的登录邮箱从 {{email}} 修改为新邮箱。该用户需使用新邮箱登录。",
+        "create-user": "创建用户",
+        "deactivate": "停用用户",
+        "deactivate-tip": "账号数据会保留，但无法再登录。您之后可以重新启用。",
+        "edit-user": "编辑用户",
+        "email-immutable-tip": "如需更换邮箱，请在用户页面使用“修改邮箱”操作。",
+        "external-source": "该账号从 {{source}} 同步。此处的修改可能会被下次同步覆盖。",
+        "last-password-change": "上次修改密码",
+        "last-sign-in": "上次登录",
+        "mfa-not-enrolled": "未启用",
+        "reactivate": "启用用户",
+        "reactivate-tip": "该账号可以使用原有的凭证和角色重新登录。",
+        "reset-mfa": "重置两步验证",
+        "reset-mfa-description": "{{user}} 当前的验证器和恢复码将失效，需要重新绑定。",
+        "reset-mfa-tip": "只有账号本人才能绑定验证器。管理员可以重置绑定，让其重新设置。",
+        "reset-password": "重置密码",
+        "reset-password-tip": "在此设置密码会让该用户在所有设备退出登录。留空则保持原密码不变。",
+        "saas-read-only": "云端账号资料由账号本人管理。请在成员页面管理工作空间访问权限。",
+        "viewing-self": "这是您自己的账号。密码和两步验证请前往账号设置。"
+      },
       "all-users": "全部用户",
       "assign-role": "分配角色",
       "cannot-revoke-self": "您不能撤销自己",

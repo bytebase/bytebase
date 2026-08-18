@@ -5,9 +5,9 @@ import { describe, expect, test } from "vitest";
 
 const sectionDir = dirname(fileURLToPath(import.meta.url));
 
-describe("UsersPage drawer layout", () => {
+describe("UserFormSheet drawer layout", () => {
   test("keeps the password hint aligned in the compact drawer field", () => {
-    const source = readFileSync(join(sectionDir, "UsersPage.tsx"), "utf8");
+    const source = readFileSync(join(sectionDir, "UserFormSheet.tsx"), "utf8");
 
     const passwordTitleIndex = source.indexOf('id="user-form-password-title"');
     const passwordHintIndex = source.indexOf(
@@ -42,7 +42,7 @@ describe("UsersPage drawer layout", () => {
   });
 
   test("does not require password when creating a user", () => {
-    const source = readFileSync(join(sectionDir, "UsersPage.tsx"), "utf8");
+    const source = readFileSync(join(sectionDir, "UserFormSheet.tsx"), "utf8");
 
     expect(source).not.toContain("(isEditMode || password.length > 0)");
     expect(source).toContain("password,");

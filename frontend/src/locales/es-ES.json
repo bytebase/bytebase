@@ -279,6 +279,7 @@
     "database-group": "Grupo de bases de datos",
     "databases": "Bases de datos",
     "deactivate": "Desactivar",
+    "deactivated": "Desactivado",
     "default": "Predeterminado",
     "definition": "Definición",
     "delete": "Eliminar",
@@ -2275,6 +2276,18 @@
     }
   },
   "settings": {
+    "account": {
+      "change-email": "Cambiar correo electrónico",
+      "change-email-description": "Inicias sesión con esta dirección. Después de cambiarla, deberás usar la nueva dirección para iniciar sesión.",
+      "description": "Gestiona tu perfil personal y cómo inicias sesión.",
+      "email-managed": "Contacta con un administrador del espacio de trabajo para cambiar tu correo de inicio de sesión.",
+      "password-notice": "Al cambiar la contraseña se cerrará la sesión en todos los dispositivos, incluido este.",
+      "profile": "Perfil",
+      "security": "Seguridad",
+      "self": "Configuración de la cuenta",
+      "sign-in": "Inicio de sesión",
+      "update-password": "Actualizar contraseña"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2558,6 +2571,30 @@
         "reactivate-confirm-title": "¿Estás seguro de que deseas reactivar?"
       },
       "add-member": "Agregar miembro",
+      "admin": {
+        "account-details": "Detalles de la cuenta",
+        "account-status": "Estado de la cuenta",
+        "change-email": "Cambiar correo electrónico",
+        "change-email-description": "Cambia la dirección de inicio de sesión de esta cuenta desde {{email}}. El usuario deberá iniciar sesión con la nueva dirección.",
+        "create-user": "Crear usuario",
+        "deactivate": "Desactivar usuario",
+        "deactivate-tip": "La cuenta conserva sus datos pero ya no puede iniciar sesión. Puedes reactivarla más tarde.",
+        "edit-user": "Editar usuario",
+        "email-immutable-tip": "Usa la acción Cambiar correo electrónico en la página del usuario para mover esta cuenta a otra dirección.",
+        "external-source": "Esta cuenta se sincroniza desde {{source}}. Los cambios hechos aquí pueden sobrescribirse en la próxima sincronización.",
+        "last-password-change": "Último cambio de contraseña",
+        "last-sign-in": "Último inicio de sesión",
+        "mfa-not-enrolled": "No configurado",
+        "reactivate": "Reactivar usuario",
+        "reactivate-tip": "La cuenta puede volver a iniciar sesión con sus credenciales y roles actuales.",
+        "reset-mfa": "Restablecer 2FA",
+        "reset-mfa-description": "{{user}} perderá su autenticador y sus códigos de recuperación actuales, y deberá configurarlos de nuevo.",
+        "reset-mfa-tip": "Solo el titular de la cuenta puede configurar un autenticador. Como administrador puedes restablecer su configuración para que vuelva a hacerlo.",
+        "reset-password": "Restablecer contraseña",
+        "reset-password-tip": "Definir una contraseña aquí cierra la sesión del usuario en todos los dispositivos. Déjalo vacío para mantener su contraseña actual.",
+        "saas-read-only": "En la nube, los perfiles pertenecen al titular de la cuenta. Gestiona el acceso al espacio de trabajo desde Miembros.",
+        "viewing-self": "Esta es tu propia cuenta. Tu contraseña y la autenticación de dos factores están en Configuración de la cuenta."
+      },
       "all-users": "Todos los usuarios",
       "assign-role": "Asignar rol",
       "cannot-revoke-self": "No puede revocarse a sí mismo",

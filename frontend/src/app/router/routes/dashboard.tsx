@@ -162,8 +162,8 @@ const workspaceLevelRoutes: RouteObject[] = [
     path: "users/:principalEmail",
     handle: { name: WORKSPACE_ROUTE_USER_PROFILE },
     lazy: lazyPage(
-      () => import("@/routes/workspace/ProfilePage"),
-      (m) => m.ProfilePage
+      () => import("@/routes/workspace/UserDetailPage"),
+      (m) => m.UserDetailPage
     ),
   },
   {
@@ -444,8 +444,8 @@ const workspaceSettingRoutes: RouteObject[] = [
         path: "profile",
         handle: { name: SETTING_ROUTE_PROFILE },
         lazy: lazyPage(
-          () => import("@/routes/workspace/ProfilePage"),
-          (m) => m.ProfilePage
+          () => import("@/routes/workspace/AccountSettingsPage"),
+          (m) => m.AccountSettingsPage
         ),
       },
       {
