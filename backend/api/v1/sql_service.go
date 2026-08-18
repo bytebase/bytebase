@@ -748,10 +748,28 @@ func queryRetry(
 		if r.Error != "" {
 			continue
 		}
-		if i < len(spans) && spans[i].NotFoundError != nil {
+		if i >= len(spans) {
+			continue
+		}
+		if spans[i].NotFoundError != nil {
 			for k := range spans[i].SourceColumns {
 				slog.Debug("database metadata need to sync", slog.String("instance", instance.ResourceID), slog.String("database", k.Database), slog.String("schema", k.Schema), slog.String("table", k.Table), slog.String("column", k.Column))
 				syncDatabaseMap[k.Database] = true
+			}
+		}
+		// A relation whose columns the snapshot cannot describe blocks masking.
+		// Re-sync it once before deciding the condition is real: the usual cause
+		// is a sync that ran while the connecting role lacked privileges, which a
+		// fresh sync repairs. The databases come from the signal itself rather
+		// than from SourceColumns, so the target survives even when column
+		// resolution produced no entries.
+		if maskingEnabled && spans[i].UnresolvedColumnsError != nil {
+			for _, dbName := range spans[i].UnresolvedColumnsError.Databases() {
+				slog.Debug("database metadata need to sync: unresolved columns",
+					slog.String("instance", instance.ResourceID),
+					slog.String("database", dbName),
+					slog.String("detail", spans[i].UnresolvedColumnsError.Error()))
+				syncDatabaseMap[dbName] = true
 			}
 		}
 	}

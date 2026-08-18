@@ -2,6 +2,7 @@ package base
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -73,6 +74,52 @@ type QuerySpan struct {
 	ElasticsearchAnalysis     *ElasticsearchAnalysis
 	NotFoundError             error
 	FunctionNotSupportedError error
+	// UnresolvedColumnsError is set when the query reads a relation whose
+	// columns the stored schema snapshot does not describe, so this span's
+	// lineage is knowingly incomplete. Masking is column-granular, so a
+	// consumer that masks must treat this as "cannot evaluate" rather than
+	// "nothing to mask" — see MaskResults. Consumers that do not mask can
+	// ignore it; the span is otherwise usable.
+	UnresolvedColumnsError *UnresolvedColumnsError
+}
+
+// UnresolvedColumnsError names the relations a query reads whose columns the
+// stored schema snapshot does not describe. A schema sync that ran while the
+// connecting role lacked privileges is the usual cause: the relation is still
+// listed, but with no columns under it.
+type UnresolvedColumnsError struct {
+	// Relations are the unresolved relations, each with an empty Column field.
+	Relations []ColumnResource
+}
+
+func (e *UnresolvedColumnsError) Error() string {
+	names := make([]string, 0, len(e.Relations))
+	for _, r := range e.Relations {
+		switch {
+		case r.Schema != "":
+			names = append(names, fmt.Sprintf("%s.%s", r.Schema, r.Table))
+		default:
+			names = append(names, r.Table)
+		}
+	}
+	slices.Sort(names)
+	return fmt.Sprintf("the synced schema describes no columns for %s", strings.Join(names, ", "))
+}
+
+// Databases returns the distinct databases holding the unresolved relations, so
+// a caller can re-sync exactly those before deciding the condition is real.
+func (e *UnresolvedColumnsError) Databases() []string {
+	seen := make(map[string]bool, len(e.Relations))
+	var out []string
+	for _, r := range e.Relations {
+		if r.Database == "" || seen[r.Database] {
+			continue
+		}
+		seen[r.Database] = true
+		out = append(out, r.Database)
+	}
+	slices.Sort(out)
+	return out
 }
 
 // QuerySpanResult is the result column of a query span.

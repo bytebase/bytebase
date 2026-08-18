@@ -61,6 +61,16 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		if results[i].Error == "" && spans[i].NotFoundError != nil {
 			return errors.Errorf("masking error: %v", spans[i].NotFoundError)
 		}
+		// The span read a relation whose columns the stored snapshot does not
+		// describe, so its lineage is knowingly incomplete and no masking policy
+		// can be evaluated against those columns. Returning the rows would hand
+		// back unmasked data with no indication that masking was skipped.
+		// queryRetry re-syncs and rebuilds the span before this runs, so reaching
+		// here means a fresh sync still could not describe the relation.
+		if results[i].Error == "" && spans[i].UnresolvedColumnsError != nil &&
+			common.EngineSupportMasking(instance.Metadata.GetEngine()) {
+			return errors.Errorf("masking error: %v; sync the database to restore it", spans[i].UnresolvedColumnsError)
+		}
 		// Skip masking for error result, but redact the error message if the
 		// statement touches masked columns — database errors can contain
 		// actual column values (e.g. "invalid input syntax for type integer: '<value>'").

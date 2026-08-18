@@ -98,6 +98,67 @@ func (e *omniQuerySpanExtractor) getDatabaseMetadata(database string) (*model.Da
 //
 // The DDL render + batch-parse path used before this refactor is deleted: BYT-9215 and
 // BYT-9261 are unreachable by construction here.
+// findUnresolvedRelations reports the relations in accesses whose columns the
+// stored snapshot does not describe. It reads the snapshot directly rather than
+// inspecting the analyzer's output, so it says the same thing regardless of
+// which lineage path produced the span.
+//
+// A relation the snapshot lists with no columns is the state a schema sync
+// leaves behind when the connecting role lost its privileges. Column-granular
+// masking cannot be evaluated against it, and no other span field records that:
+// SELECT * simply yields no results at all, which is indistinguishable from a
+// query that legitimately projects nothing.
+//
+// Views and materialized views are excluded: their columns come from a
+// definition rather than a column list, so an empty column list is normal for
+// them and says nothing about the snapshot's health.
+func (e *omniQuerySpanExtractor) findUnresolvedRelations(accesses base.SourceColumnSet) []base.ColumnResource {
+	seen := make(map[base.ColumnResource]bool, len(accesses))
+	var unresolved []base.ColumnResource
+	for access := range accesses {
+		relation := base.ColumnResource{
+			Server:   access.Server,
+			Database: access.Database,
+			Schema:   access.Schema,
+			Table:    access.Table,
+		}
+		if relation.Table == "" || seen[relation] {
+			continue
+		}
+		seen[relation] = true
+
+		meta, err := e.getDatabaseMetadata(relation.Database)
+		if err != nil || meta == nil {
+			// A database we cannot read is not evidence about this relation.
+			continue
+		}
+		schema := meta.GetSchemaMetadata(relation.Schema)
+		if schema == nil {
+			continue
+		}
+		table := schema.GetTable(relation.Table)
+		if table == nil {
+			// Not a table: a view, materialized view, function, or an object the
+			// snapshot never carried. Out of scope here.
+			continue
+		}
+		if len(table.GetProto().GetColumns()) == 0 {
+			unresolved = append(unresolved, relation)
+		}
+	}
+	return unresolved
+}
+
+// unresolvedColumnsError builds the span signal for accesses whose columns the
+// snapshot cannot describe, or nil when every accessed table resolves.
+func (e *omniQuerySpanExtractor) unresolvedColumnsError(accesses base.SourceColumnSet) *base.UnresolvedColumnsError {
+	unresolved := e.findUnresolvedRelations(accesses)
+	if len(unresolved) == 0 {
+		return nil
+	}
+	return &base.UnresolvedColumnsError{Relations: unresolved}
+}
+
 func (e *omniQuerySpanExtractor) initCatalog() error {
 	meta, err := e.getDatabaseMetadata(e.defaultDatabase)
 	if err != nil {
@@ -276,18 +337,20 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		// used as table sources: SELECT * FROM func()).
 		if results := e.tryUserFuncTableSource(selStmt, accessesMap); results != nil {
 			return &base.QuerySpan{
-				Type:          base.Select,
-				SourceColumns: accessesMap,
-				Results:       results,
+				Type:                   base.Select,
+				SourceColumns:          accessesMap,
+				Results:                results,
+				UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
 			}, nil
 		}
 		// Fail-open: return access tables with best-effort column names and lineage
 		// when analysis fails (e.g., unsupported built-in functions).
 		return &base.QuerySpan{
-			Type:             base.Select,
-			SourceColumns:    accessesMap,
-			Results:          e.extractFallbackColumns(selStmt),
-			PredicateColumns: e.funcPredicateColumns,
+			Type:                   base.Select,
+			SourceColumns:          accessesMap,
+			Results:                e.extractFallbackColumns(selStmt),
+			PredicateColumns:       e.funcPredicateColumns,
+			UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
 		}, nil
 	}
 
@@ -302,10 +365,11 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	}
 
 	return &base.QuerySpan{
-		Type:             base.Select,
-		SourceColumns:    accessesMap,
-		PredicateColumns: e.funcPredicateColumns,
-		Results:          results,
+		Type:                   base.Select,
+		SourceColumns:          accessesMap,
+		PredicateColumns:       e.funcPredicateColumns,
+		Results:                results,
+		UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
 	}, nil
 }
 
