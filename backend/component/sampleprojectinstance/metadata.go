@@ -9,7 +9,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// Lookup reads the deterministic Instance across its workspace, then the
+// lookupMetadata reads the deterministic Instance across its workspace, then the
 // expected project-scoped Database, including their deleted state.
 func (m *Manager) lookupMetadata(
 	ctx context.Context,
@@ -49,7 +49,7 @@ func (m *Manager) lookupMetadata(
 	return state, nil
 }
 
-// Create persists the activated, project-scoped PostgreSQL Instance through
+// createMetadata persists the activated, project-scoped PostgreSQL Instance through
 // Store.CreateInstance so credential obfuscation remains centralized.
 func (m *Manager) createMetadata(ctx context.Context, registration Registration) (*store.InstanceMessage, error) {
 	return m.store.CreateInstance(ctx, &store.InstanceMessage{
@@ -69,7 +69,7 @@ func (m *Manager) createMetadata(ctx context.Context, registration Registration)
 	})
 }
 
-// Remove deletes only the exact, deterministic Sample Project Instance in its
+// removeMetadata deletes only the exact, deterministic Sample Project Instance in its
 // owning project and workspace. It rejects collisions so the caller leaves
 // physical resources and the reservation available for later diagnosis.
 func (m *Manager) removeMetadata(

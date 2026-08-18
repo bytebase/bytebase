@@ -9,7 +9,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func TestStoreMetadataCreatesAndLooksUpScopedSampleProjectInstance(t *testing.T) {
+func TestManagerMetadataCreatesAndLooksUpScopedSampleProjectInstance(t *testing.T) {
 	ctx, db, stores := newManagerStore(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO project (resource_id, workspace, name)
@@ -19,8 +19,8 @@ func TestStoreMetadataCreatesAndLooksUpScopedSampleProjectInstance(t *testing.T)
 	`)
 	require.NoError(t, err)
 	allocation := Allocation{Database: "sample-db", Role: "sample-role", Password: "secret"}
-	metadata := NewStoreMetadata(stores)
-	instance, err := metadata.Create(ctx, Registration{
+	manager := &Manager{store: stores}
+	instance, err := manager.createMetadata(ctx, Registration{
 		WorkspaceID:   "workspace-a",
 		ProjectID:     "project-a",
 		EnvironmentID: "test",
@@ -41,7 +41,7 @@ func TestStoreMetadataCreatesAndLooksUpScopedSampleProjectInstance(t *testing.T)
 	require.True(t, instance.Metadata.GetActivation())
 	require.Equal(t, allocation.Password, instance.Metadata.GetDataSources()[0].GetPassword())
 
-	state, err := metadata.Lookup(ctx, allocation, "sample-instance", "workspace-a", "project-a")
+	state, err := manager.lookupMetadata(ctx, allocation, "sample-instance", "workspace-a", "project-a")
 	require.NoError(t, err)
 	require.True(t, state.ProjectActive)
 	require.True(t, state.InstanceMatches)
@@ -55,7 +55,7 @@ func TestStoreMetadataCreatesAndLooksUpScopedSampleProjectInstance(t *testing.T)
 		Metadata:     &storepb.DatabaseMetadata{},
 	})
 	require.NoError(t, err)
-	state, err = metadata.Lookup(ctx, allocation, "sample-instance", "workspace-a", "project-a")
+	state, err = manager.lookupMetadata(ctx, allocation, "sample-instance", "workspace-a", "project-a")
 	require.NoError(t, err)
 	require.NotNil(t, state.Database)
 
@@ -66,11 +66,11 @@ func TestStoreMetadataCreatesAndLooksUpScopedSampleProjectInstance(t *testing.T)
 		Metadata:   instance.Metadata,
 	})
 	require.NoError(t, err)
-	state, err = metadata.Lookup(ctx, allocation, "sample-instance", "workspace-a", "project-a")
+	state, err = manager.lookupMetadata(ctx, allocation, "sample-instance", "workspace-a", "project-a")
 	require.NoError(t, err)
 	require.True(t, state.active())
 
-	require.Error(t, metadata.Remove(ctx, allocation, "sample-instance", "workspace-a", "project-a"))
+	require.Error(t, manager.removeMetadata(ctx, allocation, "sample-instance", "workspace-a", "project-a"))
 	projectID := "project-a"
 	instanceID := "sample-instance"
 	remaining, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
@@ -88,7 +88,7 @@ func TestStoreMetadataCreatesAndLooksUpScopedSampleProjectInstance(t *testing.T)
 		Metadata:   instance.Metadata,
 	})
 	require.NoError(t, err)
-	require.NoError(t, metadata.Remove(ctx, allocation, "sample-instance", "workspace-a", "project-a"))
+	require.NoError(t, manager.removeMetadata(ctx, allocation, "sample-instance", "workspace-a", "project-a"))
 	removed, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
 		Workspace:  "workspace-a",
 		ProjectID:  &projectID,
@@ -97,7 +97,7 @@ func TestStoreMetadataCreatesAndLooksUpScopedSampleProjectInstance(t *testing.T)
 	require.NoError(t, err)
 	require.Nil(t, removed)
 
-	_, err = metadata.Create(ctx, Registration{
+	_, err = manager.createMetadata(ctx, Registration{
 		WorkspaceID:   "workspace-a",
 		ProjectID:     "project-a",
 		EnvironmentID: "test",
@@ -115,11 +115,11 @@ func TestStoreMetadataCreatesAndLooksUpScopedSampleProjectInstance(t *testing.T)
 		SyncDatabaseNames: []string{allocation.Database},
 	})
 	require.NoError(t, err)
-	state, err = metadata.Lookup(ctx, allocation, "cross-project-instance", "workspace-a", "project-b")
+	state, err = manager.lookupMetadata(ctx, allocation, "cross-project-instance", "workspace-a", "project-b")
 	require.NoError(t, err)
 	require.True(t, state.ProjectActive)
 	require.False(t, state.InstanceMatches)
 	require.NotNil(t, state.Instance)
 	require.Nil(t, state.Database)
-	require.Error(t, metadata.Remove(ctx, allocation, "cross-project-instance", "workspace-a", "project-b"))
+	require.Error(t, manager.removeMetadata(ctx, allocation, "cross-project-instance", "workspace-a", "project-b"))
 }
