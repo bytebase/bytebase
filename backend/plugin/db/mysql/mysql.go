@@ -227,7 +227,7 @@ func cachedRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
 func rdsRootCAs(ctx context.Context, dataSource *storepb.DataSource) (*x509.CertPool, error) {
 	if ca := dataSource.GetSslCa(); ca != "" {
 		pool := x509.NewCertPool()
-		if ok := pool.AppendCertsFromPEM([]byte(ca)); !ok {
+		if !pool.AppendCertsFromPEM([]byte(ca)) {
 			return nil, errors.Errorf("failed to parse ssl_ca certificates")
 		}
 		return pool, nil
@@ -240,7 +240,7 @@ func rdsRootCAs(ctx context.Context, dataSource *storepb.DataSource) (*x509.Cert
 func rdsTLSConfig(ctx context.Context, dataSource *storepb.DataSource) (*tls.Config, error) {
 	if !dataSource.GetVerifyTlsCertificate() {
 		// No verifier runs in this mode, so a root pool would never be consulted.
-		return &tls.Config{InsecureSkipVerify: true}, nil
+		return &tls.Config{InsecureSkipVerify: true}, nil // NOSONAR(go:S4830,go:S5527) operator disabled verification (verify_tls_certificate=false)
 	}
 	rootCertPool, err := rdsRootCAs(ctx, dataSource)
 	if err != nil {
@@ -248,7 +248,7 @@ func rdsTLSConfig(ctx context.Context, dataSource *storepb.DataSource) (*tls.Con
 	}
 	return &tls.Config{
 		RootCAs:               rootCertPool,
-		InsecureSkipVerify:    true, // superseded by VerifyPeerCertificate below
+		InsecureSkipVerify:    true, // NOSONAR(go:S4830) superseded by VerifyPeerCertificate below
 		VerifyPeerCertificate: util.CreateCertificateVerifier(rootCertPool, dataSource.GetHost()),
 	}, nil
 }
