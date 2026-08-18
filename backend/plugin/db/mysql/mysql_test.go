@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 func TestValidateMySQLExtraConnectionParameters(t *testing.T) {
@@ -292,4 +294,74 @@ func TestRDSCertPoolReportsHTTPStatus(t *testing.T) {
 func TestRDSRootCAsRejectsUnparseableSslCa(t *testing.T) {
 	_, err := rdsRootCAs(context.Background(), &storepb.DataSource{SslCa: "not a certificate"})
 	require.ErrorContains(t, err, "ssl_ca")
+}
+
+func TestRDSCertPoolRejectsOversizedResponse(t *testing.T) {
+	serveRDSCertBundle(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write(bytes.Repeat([]byte("x"), int(maxRDSCertBundleSize)+1024))
+	})
+	_, err := getRDSCertPool(context.Background())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "exceeds")
+}
+
+func TestCreateCertificateVerifierValidatesChainAndHostname(t *testing.T) {
+	rootKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	rootTemplate := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "bytebase-test-root"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		KeyUsage:              x509.KeyUsageCertSign,
+	}
+	rootDER, err := x509.CreateCertificate(rand.Reader, rootTemplate, rootTemplate, &rootKey.PublicKey, rootKey)
+	require.NoError(t, err)
+	rootCert, err := x509.ParseCertificate(rootDER)
+	require.NoError(t, err)
+	rootPool := x509.NewCertPool()
+	rootPool.AddCert(rootCert)
+
+	foreignKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	foreignTemplate := &x509.Certificate{
+		SerialNumber:          big.NewInt(2),
+		Subject:               pkix.Name{CommonName: "bytebase-test-foreign-root"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		KeyUsage:              x509.KeyUsageCertSign,
+	}
+	foreignDER, err := x509.CreateCertificate(rand.Reader, foreignTemplate, foreignTemplate, &foreignKey.PublicKey, foreignKey)
+	require.NoError(t, err)
+	foreignCert, err := x509.ParseCertificate(foreignDER)
+	require.NoError(t, err)
+
+	// leafFor returns a DER-encoded leaf signed by parent, valid for dnsName.
+	leafFor := func(parent *x509.Certificate, parentKey *ecdsa.PrivateKey, dnsName string) []byte {
+		leafKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		require.NoError(t, err)
+		leaf := &x509.Certificate{
+			SerialNumber: big.NewInt(100),
+			Subject:      pkix.Name{CommonName: dnsName},
+			NotBefore:    time.Now().Add(-time.Hour),
+			NotAfter:     time.Now().Add(time.Hour),
+			KeyUsage:     x509.KeyUsageDigitalSignature,
+			ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+			DNSNames:     []string{dnsName},
+		}
+		der, err := x509.CreateCertificate(rand.Reader, leaf, parent, &leafKey.PublicKey, parentKey)
+		require.NoError(t, err)
+		return der
+	}
+
+	const host = "db.example.com"
+	verifier := util.CreateCertificateVerifier(rootPool, host)
+
+	require.NoError(t, verifier([][]byte{leafFor(rootCert, rootKey, host)}, nil))
+	require.Error(t, verifier([][]byte{leafFor(rootCert, rootKey, "other.example.com")}, nil))
+	require.Error(t, verifier([][]byte{leafFor(foreignCert, foreignKey, host)}, nil))
 }
