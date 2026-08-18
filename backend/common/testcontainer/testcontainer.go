@@ -1,10 +1,20 @@
 package testcontainer
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"database/sql"
+	"encoding/pem"
 	"fmt"
 	"log/slog"
+	"math/big"
+	"net"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -21,6 +31,8 @@ type Container struct {
 	host      string
 	port      string
 	db        *sql.DB
+	tlsDir    string
+	tlsCAPath string
 }
 
 func (c *Container) GetHost() string {
@@ -35,6 +47,12 @@ func (c *Container) GetDB() *sql.DB {
 	return c.db
 }
 
+// GetTLSCAPath returns the CA certificate path for a TLS-enabled PostgreSQL
+// container.
+func (c *Container) GetTLSCAPath() string {
+	return c.tlsCAPath
+}
+
 func (c *Container) Close(ctx context.Context) {
 	if c == nil {
 		return
@@ -47,6 +65,11 @@ func (c *Container) Close(ctx context.Context) {
 	if c.container != nil {
 		if err := c.container.Terminate(ctx, testcontainers.StopTimeout(1*time.Millisecond)); err != nil {
 			slog.Error("close container error")
+		}
+	}
+	if c.tlsDir != "" {
+		if err := os.RemoveAll(c.tlsDir); err != nil {
+			slog.Error("remove TLS directory error")
 		}
 	}
 }
@@ -106,6 +129,12 @@ func GetPgContainer(ctx context.Context) (*Container, error) {
 	return getPgContainerWithImage(ctx, "postgres:16-alpine")
 }
 
+// GetTLSPgContainer creates a TLS-enabled PostgreSQL 16 container. Clients
+// can connect with sslmode=verify-full and the CA returned by GetTLSCAPath.
+func GetTLSPgContainer(ctx context.Context) (*Container, error) {
+	return getTLSPgContainerWithImage(ctx, "postgres:16-alpine")
+}
+
 // GetPg17Container creates a PostgreSQL 17 container for testing. PG17 is required
 // for features absent in 16 — notably MERGE ... RETURNING.
 func GetPg17Container(ctx context.Context) (*Container, error) {
@@ -162,6 +191,150 @@ func getPgContainerWithImage(ctx context.Context, image string) (retC *Container
 	}, nil
 }
 
+func getTLSPgContainerWithImage(ctx context.Context, image string) (retC *Container, retErr error) {
+	tlsDir, ca, certificate, key, err := createPostgreSQLTLSMaterial()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if retErr != nil {
+			_ = os.RemoveAll(tlsDir)
+		}
+	}()
+
+	req := testcontainers.ContainerRequest{
+		Image: image,
+		Env: map[string]string{
+			"LANG":              "en_US.UTF-8",
+			"POSTGRES_PASSWORD": "root-password",
+		},
+		ExposedPorts: []string{"5432/tcp"},
+		Entrypoint: []string{
+			"/bin/sh",
+			"-c",
+			"chown postgres:postgres /tmp/server.key && exec /usr/local/bin/docker-entrypoint.sh \"$@\"",
+			"--",
+		},
+		Cmd: []string{
+			"postgres",
+			"-c", "ssl=on",
+			"-c", "ssl_cert_file=/tmp/server.crt",
+			"-c", "ssl_key_file=/tmp/server.key",
+		},
+		Files: []testcontainers.ContainerFile{
+			{Reader: bytes.NewReader(certificate), ContainerFilePath: "/tmp/server.crt", FileMode: 0o644},
+			{Reader: bytes.NewReader(key), ContainerFilePath: "/tmp/server.key", FileMode: 0o600},
+		},
+		WaitingFor: wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5 * time.Minute),
+	}
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return nil, err
+	}
+	port, err := c.MappedPort(ctx, "5432/tcp")
+	if err != nil {
+		return nil, err
+	}
+	db, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres sslmode=disable", host, port.Port()))
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if retErr != nil {
+			_ = db.Close()
+			_ = c.Terminate(ctx)
+		}
+	}()
+	if err := waitDBPing(ctx, db); err != nil {
+		return nil, err
+	}
+
+	return &Container{
+		container: c,
+		host:      host,
+		port:      port.Port(),
+		db:        db,
+		tlsDir:    tlsDir,
+		tlsCAPath: ca,
+	}, nil
+}
+
+func createPostgreSQLTLSMaterial() (string, string, []byte, []byte, error) {
+	tlsDir, err := os.MkdirTemp("", "bytebase-postgres-tls-*")
+	if err != nil {
+		return "", "", nil, nil, err
+	}
+	fail := func(err error) (string, string, []byte, []byte, error) {
+		_ = os.RemoveAll(tlsDir)
+		return "", "", nil, nil, err
+	}
+
+	caKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return fail(err)
+	}
+	serial, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	if err != nil {
+		return fail(err)
+	}
+	now := time.Now()
+	caTemplate := x509.Certificate{
+		SerialNumber:          serial,
+		Subject:               pkix.Name{CommonName: "Bytebase PostgreSQL Test CA"},
+		NotBefore:             now.Add(-time.Minute),
+		NotAfter:              now.Add(24 * time.Hour),
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
+	}
+	caDER, err := x509.CreateCertificate(rand.Reader, &caTemplate, &caTemplate, &caKey.PublicKey, caKey)
+	if err != nil {
+		return fail(err)
+	}
+	ca, err := x509.ParseCertificate(caDER)
+	if err != nil {
+		return fail(err)
+	}
+	serverKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return fail(err)
+	}
+	serial, err = rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	if err != nil {
+		return fail(err)
+	}
+	serverTemplate := x509.Certificate{
+		SerialNumber: serial,
+		Subject:      pkix.Name{CommonName: "localhost"},
+		DNSNames:     []string{"localhost"},
+		IPAddresses:  []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")},
+		NotBefore:    now.Add(-time.Minute),
+		NotAfter:     now.Add(24 * time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	}
+	serverDER, err := x509.CreateCertificate(rand.Reader, &serverTemplate, ca, &serverKey.PublicKey, caKey)
+	if err != nil {
+		return fail(err)
+	}
+	caPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER})
+	certificate := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: serverDER})
+	key := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(serverKey)})
+	caPath := filepath.Join(tlsDir, "ca.crt")
+	if err := os.WriteFile(caPath, caPEM, 0o644); err != nil {
+		return fail(err)
+	}
+	return tlsDir, caPath, certificate, key, nil
+}
+
 func waitDBPing(ctx context.Context, db *sql.DB) error {
 	started := time.Now()
 	ticker := time.NewTicker(3 * time.Second)
@@ -191,6 +364,17 @@ func GetTestPgContainer(ctx context.Context, t testing.TB) *Container {
 	container, err := GetPgContainer(ctx)
 	if err != nil {
 		t.Fatalf("failed to create PostgreSQL container: %v", err)
+	}
+	return container
+}
+
+// GetTestTLSPgContainer creates a TLS-enabled PostgreSQL container, failing
+// the test when the container cannot be started.
+func GetTestTLSPgContainer(ctx context.Context, t testing.TB) *Container {
+	t.Helper()
+	container, err := GetTLSPgContainer(ctx)
+	if err != nil {
+		t.Fatalf("failed to create TLS PostgreSQL container: %v", err)
 	}
 	return container
 }
