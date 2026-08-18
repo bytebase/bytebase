@@ -141,20 +141,9 @@ func (s *AuthService) GetAuthenticationRestriction(
 	ctx context.Context,
 	req *connect.Request[v1pb.GetAuthenticationRestrictionRequest],
 ) (*connect.Response[v1pb.AuthenticationInfo], error) {
-	workspaceID := ""
-	if req.Msg.Workspace != "" {
-		id, err := common.GetWorkspaceID(req.Msg.Workspace)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		workspaceID = id
-	}
-	if workspaceID == "" && !s.profile.SaaS {
-		id, err := s.store.GetWorkspaceID(ctx)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		workspaceID = id
+	workspaceID, err := s.resolveAuthenticationWorkspaceID(ctx, &req.Msg.Workspace)
+	if err != nil {
+		return nil, err
 	}
 
 	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, workspaceID)
@@ -171,10 +160,45 @@ func (s *AuthService) GetAuthenticationRestriction(
 	return connect.NewResponse(info), nil
 }
 
+// resolveAuthenticationWorkspaceID resolves the workspace targeted by an
+// authentication request and announces it to the audit interceptor. An explicit
+// existing workspace is used regardless of account membership; self-hosted falls
+// back to the singleton workspace when the request omits it.
+func (s *AuthService) resolveAuthenticationWorkspaceID(ctx context.Context, workspaceName *string) (string, error) {
+	workspaceID, err := parseOptionalWorkspace(workspaceName)
+	if err != nil {
+		return "", connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if workspaceID != "" {
+		workspace, err := s.store.GetWorkspaceByID(ctx, workspaceID)
+		if err != nil {
+			return "", connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+		}
+		if workspace == nil {
+			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("workspace %q not found", common.FormatWorkspace(workspaceID)))
+		}
+	} else if !s.profile.SaaS {
+		workspaceID, err = s.store.GetWorkspaceID(ctx)
+		if err != nil {
+			return "", connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+		}
+	}
+	if workspaceID != "" {
+		common.SetAuditWorkspaceID(ctx, workspaceID)
+	}
+	return workspaceID, nil
+}
+
 // Login is the auth login method including SSO.
 func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.LoginRequest]) (*connect.Response[v1pb.LoginResponse], error) {
 	request := req.Msg
 	mfaSecondLogin := request.GetMfaTempToken() != ""
+	// Resolve the audit workspace before authentication so failures for unknown
+	// accounts can be recorded. SaaS requires an explicit workspace; self-hosted
+	// falls back to the singleton workspace.
+	if _, err := s.resolveAuthenticationWorkspaceID(ctx, request.Workspace); err != nil {
+		return nil, err
+	}
 
 	// 1. Authenticate user (password, IDP, or MFA completion)
 	loginUser, loginMethod, err := s.authenticateLogin(ctx, request)
@@ -596,21 +620,24 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 }
 
 func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
+	email := strings.ToLower(strings.TrimSpace(request.Email))
+
 	// Check if user is locked out due to too many failed password attempts.
-	if err := s.checkPasswordLockout(ctx, request.Email); err != nil {
+	if err := s.checkPasswordLockout(ctx, email); err != nil {
 		return nil, err
 	}
 
 	// GetAccountByEmail is cross-workspace, which is correct for login.
 	// Email is globally unique (PK). The token gets workspace from account.Workspace (SA/WI)
 	// or from the default workspace (END_USER).
-	account, err := s.store.GetAccountByEmail(ctx, request.Email)
+	account, err := s.store.GetAccountByEmail(ctx, email)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user by email %q", request.Email))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user by email %q", email))
 	}
 	if account == nil {
 		return nil, invalidCredentialsError
 	}
+
 	// Compare the stored hashed password, with the hashed version of the password that was received.
 	if err := bcrypt.CompareHashAndPassword([]byte(account.PasswordHash), []byte(request.Password)); err != nil {
 		// If the two passwords don't match, return a 401 status.
@@ -862,7 +889,7 @@ func (s *AuthService) countRecentLoginFailures(ctx context.Context, email string
 
 	// Build filter query for login failures.
 	filterQ := qb.Q().Space("TRUE")
-	filterQ.And("payload->>'method' = ?", "/bytebase.v1.AuthService/Login")
+	filterQ.And("payload->>'method' = ?", v1connect.AuthServiceLoginProcedure)
 	filterQ.And("payload->>'resource' = ?", email)
 	filterQ.And("(payload->'status'->>'code')::int != 0")
 
@@ -1046,7 +1073,6 @@ func (s *AuthService) completeMFALogin(ctx context.Context, request *v1pb.LoginR
 	if user == nil {
 		return nil, loginAuthMethodPassword, invalidCredentialsError
 	}
-
 	if err := s.checkMFALockout(ctx, user.Email); err != nil {
 		return nil, loginAuthMethodPassword, err
 	}
