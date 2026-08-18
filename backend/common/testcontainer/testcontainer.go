@@ -234,6 +234,15 @@ func getTLSPgContainerWithImage(ctx context.Context, image string) (retC *Contai
 	if err != nil {
 		return nil, err
 	}
+	var db *sql.DB
+	defer func() {
+		if retErr != nil {
+			if db != nil {
+				_ = db.Close()
+			}
+			_ = c.Terminate(ctx)
+		}
+	}()
 
 	host, err := c.Host(ctx)
 	if err != nil {
@@ -243,16 +252,10 @@ func getTLSPgContainerWithImage(ctx context.Context, image string) (retC *Contai
 	if err != nil {
 		return nil, err
 	}
-	db, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres sslmode=disable", host, port.Port()))
+	db, err = sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres sslmode=disable", host, port.Port()))
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if retErr != nil {
-			_ = db.Close()
-			_ = c.Terminate(ctx)
-		}
-	}()
 	if err := waitDBPing(ctx, db); err != nil {
 		return nil, err
 	}
