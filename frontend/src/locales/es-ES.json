@@ -279,6 +279,7 @@
     "database-group": "Grupo de bases de datos",
     "databases": "Bases de datos",
     "deactivate": "Desactivar",
+    "deactivated": "Desactivado",
     "default": "Predeterminado",
     "definition": "Definición",
     "delete": "Eliminar",
@@ -295,6 +296,7 @@
     "discard-changes": "Descartar cambios",
     "discord": "Discord",
     "dismiss": "Descartar",
+    "done": "Listo",
     "download": "Descargar",
     "draft": "Borrador",
     "duplicate": "Duplicar",
@@ -2275,6 +2277,14 @@
     }
   },
   "settings": {
+    "account": {
+      "description": "Gestiona tu perfil personal y cómo inicias sesión.",
+      "email-managed": "Contacta con un administrador del espacio de trabajo para cambiar tu correo de inicio de sesión.",
+      "password-notice": "Al cambiar la contraseña se cerrará la sesión en todos los dispositivos, incluido este.",
+      "security": "Seguridad",
+      "self": "Configuración de la cuenta",
+      "update-password": "Actualizar contraseña"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2558,6 +2568,29 @@
         "reactivate-confirm-title": "¿Estás seguro de que deseas reactivar?"
       },
       "add-member": "Agregar miembro",
+      "admin": {
+        "change-email": "Cambiar correo electrónico",
+        "change-email-description": "Cambia la dirección de inicio de sesión de esta cuenta desde {{email}}. El usuario deberá iniciar sesión con la nueva dirección.",
+        "create-user": "Crear usuario",
+        "create-user-roles-failed": "La cuenta se creó, pero no se pudieron asignar sus roles. Configúralos desde Miembros.",
+        "deactivate": "Desactivar usuario",
+        "deactivate-tip": "La cuenta conserva sus datos pero ya no puede iniciar sesión. Puedes reactivarla más tarde.",
+        "edit-user": "Editar usuario",
+        "email-immutable-tip": "Para mover esta cuenta a otra dirección, cierra este panel y usa Cambiar correo electrónico en el menú de la fila.",
+        "external-source": "Esta cuenta se sincroniza desde {{source}}. Los cambios hechos aquí pueden sobrescribirse en la próxima sincronización.",
+        "generate": "Generar",
+        "reactivate": "Reactivar usuario",
+        "reactivate-tip": "La cuenta puede volver a iniciar sesión con sus credenciales y roles actuales.",
+        "reset-mfa": "Restablecer 2FA",
+        "reset-mfa-optional": "{{user}} pierde su autenticador y sus códigos de recuperación, e iniciará sesión sin verificación en dos pasos hasta que vuelva a registrarse.",
+        "reset-mfa-recovery-first": "Si aún conserva un código de recuperación, puede iniciar sesión con él y volver a registrarse sin este restablecimiento.",
+        "reset-mfa-required": "{{user}} pierde su autenticador y sus códigos de recuperación. Este espacio de trabajo exige verificación en dos pasos, así que deberá configurar un autenticador nuevo al iniciar sesión.",
+        "reset-password": "Restablecer contraseña",
+        "reset-password-deliver": "Envíasela por un canal de confianza. Bytebase no la envía por correo.",
+        "reset-password-description": "Establece una nueva contraseña para {{user}}. Se cerrarán todas sus sesiones y deberá iniciar sesión de nuevo con ella.",
+        "reset-password-issued": "Nueva contraseña de {{user}}. Se muestra una sola vez y no se puede recuperar después.",
+        "saas-read-only": "En la nube, los perfiles pertenecen al titular de la cuenta. Gestiona el acceso al espacio de trabajo desde Miembros."
+      },
       "all-users": "Todos los usuarios",
       "assign-role": "Asignar rol",
       "cannot-revoke-self": "No puede revocarse a sí mismo",
@@ -2657,13 +2690,11 @@
       "password-mismatch": "Nueva contraseña no coincide",
       "phone": "Número de móvil",
       "phone-tips": "Asegúrese de incluir el código del país +1xxxxxx",
-      "role": "Rol",
       "setup-failed": "Error al actualizar el perfil.",
       "setup-first-project": "Configurar el primer proyecto",
       "setup-skip": "Lo haré después",
       "setup-success": "Perfil actualizado.",
       "setup-title": "¡Bienvenido! Configure su espacio de trabajo",
-      "subscription": "(Actualice para habilitar la gestión de roles)",
       "workspace-name": "Nombre del espacio de trabajo",
       "workspace-name-placeholder": "Ingrese el nombre del espacio de trabajo"
     },

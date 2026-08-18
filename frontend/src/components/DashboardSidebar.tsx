@@ -38,7 +38,6 @@ import {
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
   WORKSPACE_ROUTE_SQL_REVIEW,
-  WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/app/router";
@@ -70,12 +69,6 @@ function getItemClass(item: SidebarItem, currentRouteName: string): string[] {
     item.name === currentRouteName ||
     currentRouteName.startsWith(`${item.name}.`);
   if (isActive) {
-    return ["router-link-active", "bg-link-hover"];
-  }
-  if (
-    item.name === WORKSPACE_ROUTE_USERS &&
-    currentRouteName === WORKSPACE_ROUTE_USER_PROFILE
-  ) {
     return ["router-link-active", "bg-link-hover"];
   }
   return [];

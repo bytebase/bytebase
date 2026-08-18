@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { RouteTarget } from "@/app/router";
 import { RouterLink } from "@/components/RouterLink";
+import { UserHoverCard } from "@/components/UserHoverCard";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { UserAvatar } from "./UserAvatar";
@@ -23,6 +24,12 @@ interface UserCellProps {
     onClick?: () => void;
     to?: RouteTarget;
   };
+  /**
+   * Email of the person this cell names. When set, the name gains a hover card
+   * showing who they are. Used where a name is mentioned in passing and there
+   * is no page to send the reader to.
+   */
+  hoverEmail?: string;
   /** Inline badges rendered after the name. */
   badges?: ReactNode;
   /** Extra className on the outer wrapper. */
@@ -37,6 +44,7 @@ export function UserCell({
   avatar,
   nameClassName,
   nameLink,
+  hoverEmail,
   badges,
   className,
 }: UserCellProps) {
@@ -86,13 +94,21 @@ export function UserCell({
     </span>
   );
 
+  const hoverableNameEl = hoverEmail ? (
+    <UserHoverCard email={hoverEmail} fallbackTitle={title}>
+      {nameEl}
+    </UserHoverCard>
+  ) : (
+    nameEl
+  );
+
   return (
     <div className={cn("flex items-center gap-x-3", className)}>
       {showAvatar &&
         (avatar ?? <UserAvatar title={title || subtitle || "?"} size={size} />)}
       <div className="flex flex-col">
         <div className="flex items-center gap-x-1.5">
-          {nameEl}
+          {hoverableNameEl}
           {badges}
         </div>
         {subtitle && (

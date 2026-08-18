@@ -279,6 +279,7 @@
     "database-group": "Nhóm cơ sở dữ liệu",
     "databases": "Cơ sở dữ liệu",
     "deactivate": "Hủy kích hoạt",
+    "deactivated": "Đã vô hiệu hóa",
     "default": "Mặc định",
     "definition": "Định nghĩa",
     "delete": "Xóa",
@@ -295,6 +296,7 @@
     "discard-changes": "Hủy thay đổi",
     "discord": "Discord",
     "dismiss": "Loại bỏ",
+    "done": "Xong",
     "download": "Tải xuống",
     "draft": "Bản nháp",
     "duplicate": "Nhân bản",
@@ -2275,6 +2277,14 @@
     }
   },
   "settings": {
+    "account": {
+      "description": "Quản lý hồ sơ cá nhân và cách bạn đăng nhập.",
+      "email-managed": "Liên hệ quản trị viên workspace để đổi email đăng nhập.",
+      "password-notice": "Đổi mật khẩu sẽ đăng xuất bạn khỏi mọi phiên, kể cả phiên hiện tại.",
+      "security": "Bảo mật",
+      "self": "Cài đặt tài khoản",
+      "update-password": "Cập nhật mật khẩu"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2558,6 +2568,29 @@
         "reactivate-confirm-title": "Bạn có chắc muốn kích hoạt lại?"
       },
       "add-member": "Thêm thành viên",
+      "admin": {
+        "change-email": "Đổi email",
+        "change-email-description": "Chuyển địa chỉ đăng nhập của tài khoản này từ {{email}} sang địa chỉ mới. Người dùng phải đăng nhập bằng địa chỉ mới.",
+        "create-user": "Tạo người dùng",
+        "create-user-roles-failed": "Tài khoản đã được tạo nhưng không gán được vai trò. Hãy thiết lập trong mục Thành viên.",
+        "deactivate": "Vô hiệu hóa người dùng",
+        "deactivate-tip": "Tài khoản vẫn giữ dữ liệu nhưng không thể đăng nhập. Bạn có thể kích hoạt lại sau.",
+        "edit-user": "Sửa người dùng",
+        "email-immutable-tip": "Để chuyển tài khoản sang địa chỉ khác, hãy đóng bảng này và dùng Đổi email trong menu của hàng.",
+        "external-source": "Tài khoản này được đồng bộ từ {{source}}. Thay đổi ở đây có thể bị ghi đè ở lần đồng bộ tiếp theo.",
+        "generate": "Tạo",
+        "reactivate": "Kích hoạt lại người dùng",
+        "reactivate-tip": "Tài khoản có thể đăng nhập lại với thông tin đăng nhập và vai trò hiện có.",
+        "reset-mfa": "Đặt lại 2FA",
+        "reset-mfa-optional": "{{user}} sẽ mất trình xác thực và mã khôi phục hiện tại, và đăng nhập không có xác thực hai bước cho tới khi đăng ký lại.",
+        "reset-mfa-recovery-first": "Nếu họ vẫn còn mã khôi phục, họ có thể đăng nhập bằng mã đó và tự đăng ký lại mà không cần đặt lại.",
+        "reset-mfa-required": "{{user}} sẽ mất trình xác thực và mã khôi phục hiện tại. Không gian làm việc này yêu cầu xác thực hai bước, nên họ phải thiết lập trình xác thực mới ở lần đăng nhập tới.",
+        "reset-password": "Đặt lại mật khẩu",
+        "reset-password-deliver": "Hãy gửi cho họ qua kênh bạn tin tưởng. Bytebase không gửi qua email.",
+        "reset-password-description": "Đặt mật khẩu mới cho {{user}}. Mọi phiên đăng nhập sẽ bị đăng xuất và họ phải đăng nhập lại bằng mật khẩu này.",
+        "reset-password-issued": "Mật khẩu mới của {{user}}. Chỉ hiển thị một lần và không thể xem lại.",
+        "saas-read-only": "Trên bản cloud, hồ sơ tài khoản do chủ tài khoản quản lý. Hãy quản lý quyền truy cập workspace ở trang Thành viên."
+      },
       "all-users": "Tất cả người dùng",
       "assign-role": "Gán vai trò",
       "cannot-revoke-self": "Bạn không thể thu hồi chính mình",
@@ -2657,13 +2690,11 @@
       "password-mismatch": "Mật khẩu mới không khớp",
       "phone": "Điện thoại",
       "phone-tips": "Nhớ bao gồm mã quốc gia +1xxxxxx",
-      "role": "Vai trò",
       "setup-failed": "Cập nhật hồ sơ thất bại.",
       "setup-first-project": "Thiết lập dự án đầu tiên",
       "setup-skip": "Để sau",
       "setup-success": "Hồ sơ đã được cập nhật.",
       "setup-title": "Chào mừng! Thiết lập không gian làm việc của bạn",
-      "subscription": "(Nâng cấp để kích hoạt quản lý vai trò)",
       "workspace-name": "Tên không gian làm việc",
       "workspace-name-placeholder": "Nhập tên không gian làm việc"
     },

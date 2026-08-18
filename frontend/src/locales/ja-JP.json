@@ -279,6 +279,7 @@
     "database-group": "データベースグループ",
     "databases": "データベース",
     "deactivate": "無効化",
+    "deactivated": "無効",
     "default": "デフォルト",
     "definition": "定義",
     "delete": "消去",
@@ -295,6 +296,7 @@
     "discard-changes": "変更をキャンセルする",
     "discord": "Discord",
     "dismiss": "閉じる",
+    "done": "完了",
     "download": "ダウンロード",
     "draft": "下書き",
     "duplicate": "コピー",
@@ -2275,6 +2277,14 @@
     }
   },
   "settings": {
+    "account": {
+      "description": "プロフィールとサインイン方法を管理します。",
+      "email-managed": "サインイン用メールアドレスの変更はワークスペース管理者にご連絡ください。",
+      "password-notice": "パスワードを変更すると、現在のセッションを含むすべてのセッションからサインアウトされます。",
+      "security": "セキュリティ",
+      "self": "アカウント設定",
+      "update-password": "パスワードを更新"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2558,6 +2568,29 @@
         "reactivate-confirm-title": "[OK] を有効にします"
       },
       "add-member": "メンバーを追加",
+      "admin": {
+        "change-email": "メールアドレスを変更",
+        "change-email-description": "このアカウントのサインインアドレスを {{email}} から変更します。ユーザーは新しいアドレスでサインインします。",
+        "create-user": "ユーザーを作成",
+        "create-user-roles-failed": "アカウントは作成されましたが、ロールを割り当てられませんでした。メンバー画面で設定してください。",
+        "deactivate": "ユーザーを無効化",
+        "deactivate-tip": "データは保持されますが、サインインできなくなります。後で再度有効化できます。",
+        "edit-user": "ユーザーを編集",
+        "email-immutable-tip": "アドレスを変更するには、このパネルを閉じて、行のメニューから「メールアドレスを変更」を使用してください。",
+        "external-source": "このアカウントは {{source}} から同期されています。ここでの変更は次回の同期で上書きされる場合があります。",
+        "generate": "生成",
+        "reactivate": "ユーザーを有効化",
+        "reactivate-tip": "既存の認証情報とロールで再びサインインできます。",
+        "reset-mfa": "2要素認証をリセット",
+        "reset-mfa-optional": "{{user}} は現在の認証アプリとリカバリコードを失い、再登録するまで2要素認証なしでサインインします。",
+        "reset-mfa-recovery-first": "リカバリコードが残っていれば、本人がそれでサインインして再登録できます。リセットは不要です。",
+        "reset-mfa-required": "{{user}} は現在の認証アプリとリカバリコードを失います。このワークスペースは2要素認証が必須のため、次回サインイン時に認証アプリの再設定が必要です。",
+        "reset-password": "パスワードをリセット",
+        "reset-password-deliver": "信頼できる方法で本人に伝えてください。Bytebase はメールを送信しません。",
+        "reset-password-description": "{{user}} に新しいパスワードを設定します。すべてのセッションからサインアウトされ、新しいパスワードで再度サインインする必要があります。",
+        "reset-password-issued": "{{user}} の新しいパスワードです。一度しか表示されず、後から確認することはできません。",
+        "saas-read-only": "クラウドではアカウント情報は本人が管理します。ワークスペースのアクセス権はメンバー画面で管理してください。"
+      },
       "all-users": "すべてのユーザー",
       "assign-role": "ロールを割り当て",
       "cannot-revoke-self": "自分自身を取り消すことはできません",
@@ -2657,13 +2690,11 @@
       "password-mismatch": "新しいパスワードが一致しません",
       "phone": "電話番号",
       "phone-tips": "国コードを必ず含めてください +81xxxxxx",
-      "role": "ロール",
       "setup-failed": "プロフィールの更新に失敗しました。",
       "setup-first-project": "最初のプロジェクトを設定",
       "setup-skip": "後で設定する",
       "setup-success": "プロフィールが更新されました。",
       "setup-title": "ようこそ！ワークスペースを設定してください",
-      "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)",
       "workspace-name": "ワークスペース名",
       "workspace-name-placeholder": "ワークスペース名を入力"
     },

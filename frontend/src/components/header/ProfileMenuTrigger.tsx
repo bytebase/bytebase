@@ -2,8 +2,8 @@ import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ACCOUNT_ROUTE,
   isSqlEditorRouteName,
-  SETTING_ROUTE_PROFILE,
   SQL_EDITOR_HOME_MODULE,
   useCurrentRoute,
   useNavigate,
@@ -96,7 +96,7 @@ export function ProfileMenuTrigger({
   const handleProfileNavigate = () => {
     if (!link) return;
     setOpen(false);
-    void navigate.push({ name: SETTING_ROUTE_PROFILE });
+    void navigate.push({ name: ACCOUNT_ROUTE });
   };
 
   const handleWorkspaceToggle = () => {
