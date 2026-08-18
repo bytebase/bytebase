@@ -56,6 +56,11 @@ interface UserPasswordSectionProps {
   onPasswordConfirmChange: (value: string) => void;
   passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction;
   disabled?: boolean;
+  /**
+   * Marks the fields as required. False on a standalone "change password"
+   * surface, where leaving both fields empty simply means "don't change it".
+   */
+  required?: boolean;
 }
 
 export function UserPasswordSection({
@@ -65,6 +70,7 @@ export function UserPasswordSection({
   onPasswordConfirmChange,
   passwordRestriction,
   disabled,
+  required = true,
 }: UserPasswordSectionProps) {
   const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
@@ -128,8 +134,8 @@ export function UserPasswordSection({
       <div>
         <div>
           <label className="block text-sm font-medium leading-5 text-control">
-            {t("settings.profile.password")}{" "}
-            <span className="text-error">*</span>
+            {t("settings.profile.password")}
+            {required && <span className="ml-0.5 text-error">*</span>}
           </label>
           <span
             className={`flex items-center gap-x-1 text-sm ${
@@ -187,8 +193,8 @@ export function UserPasswordSection({
       {/* Confirm field */}
       <div>
         <label className="block text-sm font-medium leading-5 text-control">
-          {t("settings.profile.password-confirm")}{" "}
-          <span className="text-error">*</span>
+          {t("settings.profile.password-confirm")}
+          {required && <span className="ml-0.5 text-error">*</span>}
         </label>
         <div className="w-full mt-1 flex flex-col justify-start items-start">
           <div className="w-full relative flex flex-row items-center">

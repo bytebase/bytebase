@@ -4,7 +4,6 @@
 export const WORKSPACE_ROOT_MODULE = "workspace.root";
 export const WORKSPACE_ROUTE_LANDING = "workspace.landing";
 export const WORKSPACE_ROUTE_MY_ISSUES = "workspace.my-issues";
-export const WORKSPACE_ROUTE_USER_PROFILE = "workspace.user-profile";
 export const DATABASE_ROUTE_DASHBOARD = "workspace.database";
 export const INSTANCE_ROUTE_DASHBOARD = "workspace.instance";
 export const PROJECT_V1_ROUTE_DASHBOARD = "workspace.project";
@@ -61,8 +60,8 @@ export const SQL_EDITOR_QUERY_HISTORY_MODULE = "sql-editor.query-history";
 // --- dashboard/workspaceSetting.ts ---
 export const SETTING_ROUTE = "setting";
 export const SETTING_ROUTE_WORKSPACE = `${SETTING_ROUTE}.workspace`;
-export const SETTING_ROUTE_PROFILE = `${SETTING_ROUTE}.profile`;
-export const SETTING_ROUTE_PROFILE_TWO_FACTOR = `${SETTING_ROUTE_PROFILE}.two-factor`;
+export const ACCOUNT_ROUTE = "account";
+export const ACCOUNT_ROUTE_TWO_FACTOR = `${ACCOUNT_ROUTE}.two-factor`;
 export const SETTING_ROUTE_WORKSPACE_GENERAL = `${SETTING_ROUTE_WORKSPACE}.general`;
 export const SETTING_ROUTE_WORKSPACE_SUBSCRIPTION = `${SETTING_ROUTE_WORKSPACE}.subscription`;
 

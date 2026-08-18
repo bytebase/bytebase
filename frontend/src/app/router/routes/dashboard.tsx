@@ -4,6 +4,8 @@ import { DashboardLayout } from "@/app/layouts/DashboardLayout";
 import { RouteErrorPage } from "@/app/RouteErrorPage";
 import { rootGuard } from "@/app/router/guard";
 import {
+  ACCOUNT_ROUTE,
+  ACCOUNT_ROUTE_TWO_FACTOR,
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_CREATE,
@@ -46,8 +48,6 @@ import {
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
   PROJECT_V1_ROUTE_WEBHOOKS,
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
-  SETTING_ROUTE_PROFILE,
-  SETTING_ROUTE_PROFILE_TWO_FACTOR,
   SETTING_ROUTE_WORKSPACE,
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
@@ -73,7 +73,6 @@ import {
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-  WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/app/router/handles";
@@ -156,14 +155,6 @@ const workspaceLevelRoutes: RouteObject[] = [
     lazy: lazyPage(
       () => import("@/routes/workspace/EnvironmentsPage"),
       (m) => m.EnvironmentsPage
-    ),
-  },
-  {
-    path: "users/:principalEmail",
-    handle: { name: WORKSPACE_ROUTE_USER_PROFILE },
-    lazy: lazyPage(
-      () => import("@/routes/workspace/ProfilePage"),
-      (m) => m.ProfilePage
     ),
   },
   {
@@ -433,29 +424,33 @@ const workspaceLevelRoutes: RouteObject[] = [
   },
 ];
 
-// Workspace settings routes (`/setting/**`), SettingRouteShell layout.
+// Personal account routes (`/account/**`). Separate from `/setting/**` so
+// "my account" is not a sibling of the workspace's own settings.
+const accountRoutes: RouteObject[] = [
+  {
+    path: "account",
+    handle: { name: ACCOUNT_ROUTE },
+    lazy: lazyPage(
+      () => import("@/routes/workspace/AccountSettingsPage"),
+      (m) => m.AccountSettingsPage
+    ),
+  },
+  {
+    path: "account/two-factor",
+    handle: { name: ACCOUNT_ROUTE_TWO_FACTOR },
+    lazy: lazyPage(
+      () => import("@/routes/workspace/TwoFactorSetupPage"),
+      (m) => m.TwoFactorSetupPage
+    ),
+  },
+];
+
 const workspaceSettingRoutes: RouteObject[] = [
   {
     path: "setting",
     handle: { name: SETTING_ROUTE_WORKSPACE },
     element: <RouteGroupOutlet />,
     children: [
-      {
-        path: "profile",
-        handle: { name: SETTING_ROUTE_PROFILE },
-        lazy: lazyPage(
-          () => import("@/routes/workspace/ProfilePage"),
-          (m) => m.ProfilePage
-        ),
-      },
-      {
-        path: "profile/two-factor",
-        handle: { name: SETTING_ROUTE_PROFILE_TWO_FACTOR },
-        lazy: lazyPage(
-          () => import("@/routes/workspace/TwoFactorSetupPage"),
-          (m) => m.TwoFactorSetupPage
-        ),
-      },
       {
         path: "general",
         handle: {
@@ -1002,6 +997,7 @@ export const dashboardRoutes: RouteObject[] = [
             errorElement: <RouteErrorPage inline />,
             children: [
               ...workspaceLevelRoutes,
+              ...accountRoutes,
               ...workspaceSettingRoutes,
               ...environmentV1Routes,
               ...instanceRoutes,

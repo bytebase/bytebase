@@ -109,7 +109,7 @@ vi.mock("@/app/router", () => ({
   isSqlEditorRouteName: (name?: string) => name?.startsWith("sql-editor"),
   AUTH_SIGNIN_MODULE: "auth.signin",
   WORKSPACE_ROUTE_LANDING: "workspace.landing",
-  SETTING_ROUTE_PROFILE: "setting.profile",
+  ACCOUNT_ROUTE: "account",
   SQL_EDITOR_HOME_MODULE: "sql-editor.home",
 }));
 

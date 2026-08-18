@@ -5,10 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
-import {
-  AUTH_2FA_SETUP_MODULE,
-  SETTING_ROUTE_PROFILE,
-} from "@/app/router/handles";
+import { ACCOUNT_ROUTE, AUTH_2FA_SETUP_MODULE } from "@/app/router/handles";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { Button } from "@/components/ui/button";
 import { OtpInput } from "@/components/ui/otp-input";
@@ -180,7 +177,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
       cancelAction();
     } else {
       router.replace({
-        name: SETTING_ROUTE_PROFILE,
+        name: ACCOUNT_ROUTE,
       });
     }
   }, [cancelAction]);
@@ -206,7 +203,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
     if (router.currentRoute.value.name === AUTH_2FA_SETUP_MODULE) {
       router.replace({ path: "/" });
     } else {
-      router.replace({ name: SETTING_ROUTE_PROFILE });
+      router.replace({ name: ACCOUNT_ROUTE });
     }
   }, [currentUser.name, t, updateUser]);
 

@@ -50,6 +50,8 @@ vi.mock("@/modules/ai/store", () => ({
 
 import { buildSigninRedirectQuery, rootGuard } from "./guard";
 import {
+  ACCOUNT_ROUTE,
+  ACCOUNT_ROUTE_TWO_FACTOR,
   AUTH_2FA_SETUP_MODULE,
   AUTH_OAUTH_CALLBACK_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
@@ -244,6 +246,15 @@ describe("rootGuard", () => {
   test("allows an authenticated user on an allowed route", () => {
     session.isLoggedIn = true;
     expect(run(PROJECT_V1_ROUTE_DASHBOARD, "/projects/p1")).toBeNull();
+  });
+
+  // Personal account routes live outside the /setting tree, so they need
+  // their own entry in the allowlist. Without it a full page load of /account
+  // lands on 404 while in-app navigation still appears to work.
+  test("allows an authenticated user on their account page", () => {
+    session.isLoggedIn = true;
+    expect(run(ACCOUNT_ROUTE, "/account")).toBeNull();
+    expect(run(ACCOUNT_ROUTE_TWO_FACTOR, "/account/two-factor")).toBeNull();
   });
 
   test("unknown named route falls back to 404", () => {

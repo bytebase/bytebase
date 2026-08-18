@@ -7,6 +7,7 @@ import {
   workspaceCacheScope,
 } from "@/utils/storage-keys";
 import {
+  ACCOUNT_ROUTE,
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
   AUTH_OAUTH_CALLBACK_MODULE,
@@ -78,6 +79,7 @@ export function buildSigninRedirectQuery(url: URL): Record<string, string> {
 
 // Route-name prefixes that an authenticated user may always access.
 const ALLOWED_ROUTE_PATTERNS = [
+  ACCOUNT_ROUTE,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
