@@ -198,9 +198,12 @@ func findDollarQuotedBody(definition string) (tag string, bodyStart int, bodyEnd
 // every one of them. Materialized views are excluded because their metadata
 // carries no column list at all, making an empty one uninformative.
 //
-// A relation the snapshot does not carry at all is not reported. Column
-// resolution drops it upstream, so it never reaches this set; that shape is
-// still unmasked and is tracked separately.
+// Two shapes are known not to reach this set, so they stay unmasked and are
+// tracked separately rather than silently assumed covered:
+//   - a relation the snapshot does not carry at all, which column resolution
+//     drops upstream.
+//   - a relation read only inside a SQL-language function body, whose accesses
+//     the body analysis does not surface (BYT-10075).
 //
 // On PostgreSQL a current sync cannot produce this state: #20581 moved the
 // column query to pg_catalog so privileges no longer hide columns. What
@@ -1377,34 +1380,30 @@ func collectColumnRefNames(node ast.Node) []string {
 	return names
 }
 
-// collectCTENames returns every name bound by a WITH clause in the statement,
-// lowercased. A CTE name shadows an unqualified reference to a physical table
-// of the same name, and the access-table walk does not model that scope.
+// collectCTENames returns every name bound by a WITH clause anywhere in the
+// statement, lowercased. A CTE name shadows an unqualified reference to a
+// physical table of the same name, and the access-table walk does not model
+// that scope, so a CTE reference arrives resolved to the table.
 //
-// Nested WITH clauses inside CTE bodies are included. The cost of naming one
-// too many is that a genuinely degraded table sharing a CTE's name goes
-// unchecked in that statement; the cost of naming one too few is refusing a
-// query that reads no table at all.
+// The walk is over the whole tree rather than the top-level WITH clause alone:
+// a WITH can sit inside a derived table, a scalar subquery, or a branch of a
+// set operation, and a name bound in any of those shadows just as effectively.
+//
+// Names are collected without regard to the scope they are visible in. Naming
+// one too many leaves a genuinely degraded table sharing a CTE's name
+// unchecked in that statement; naming one too few refuses a query that reads
+// no table at all. The first is the quieter failure.
 func collectCTENames(selStmt *ast.SelectStmt) map[string]bool {
 	names := make(map[string]bool)
-	var walk func(*ast.SelectStmt, int)
-	walk = func(sel *ast.SelectStmt, depth int) {
-		// Guard against a malformed tree looping; real queries nest shallowly.
-		if sel == nil || sel.WithClause == nil || depth > 32 {
-			return
-		}
-		for _, item := range sel.WithClause.Ctes.Items {
-			cte, ok := item.(*ast.CommonTableExpr)
-			if !ok {
-				continue
-			}
-			names[strings.ToLower(cte.Ctename)] = true
-			if body, ok := cte.Ctequery.(*ast.SelectStmt); ok {
-				walk(body, depth+1)
-			}
-		}
+	if selStmt == nil {
+		return names
 	}
-	walk(selStmt, 0)
+	ast.Inspect(selStmt, func(node ast.Node) bool {
+		if cte, ok := node.(*ast.CommonTableExpr); ok {
+			names[strings.ToLower(cte.Ctename)] = true
+		}
+		return true
+	})
 	return names
 }
 

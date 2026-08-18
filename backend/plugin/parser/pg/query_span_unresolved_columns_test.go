@@ -200,6 +200,14 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 		require.Nil(t, span.UnresolvedColumnsError)
 	})
 
+	t.Run("a CTE inside a derived table also shadows", func(t *testing.T) {
+		// A WITH clause can sit anywhere a SELECT can, so the name collector
+		// walks the whole tree rather than the top-level WITH alone.
+		span := spanFor(t, "SELECT * FROM (WITH t AS (SELECT 1 AS n) SELECT * FROM t) q", degradedSchema())
+		require.Nil(t, span.UnresolvedColumnsError,
+			"a CTE bound inside a subquery shadows the physical table just as a top-level one does")
+	})
+
 	t.Run("known gap: a qualified read is skipped when a CTE shares the name", func(t *testing.T) {
 		// PostgreSQL does not let a CTE shadow a schema-qualified name, so this
 		// statement really does read the degraded public.t. Excluding by name
