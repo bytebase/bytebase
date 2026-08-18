@@ -160,6 +160,10 @@ func (s *AuthService) GetAuthenticationRestriction(
 	return connect.NewResponse(info), nil
 }
 
+// resolveAuthenticationWorkspaceID resolves the workspace targeted by an
+// authentication request and announces it to the audit interceptor. An explicit
+// workspace is used regardless of account membership; self-hosted falls back to
+// the singleton workspace when the request omits it.
 func (s *AuthService) resolveAuthenticationWorkspaceID(ctx context.Context, workspaceName *string) (string, error) {
 	workspaceID, err := parseOptionalWorkspace(workspaceName)
 	if err != nil {
