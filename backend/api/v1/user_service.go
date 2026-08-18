@@ -499,7 +499,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 // DeleteUser deletes a user.
 func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v1pb.DeleteUserRequest]) (*connect.Response[emptypb.Empty], error) {
 	if s.profile.SaaS {
-		return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("CreateUser is not available in SaaS mode, add users via workspace IAM policy instead"))
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("DeleteUser is not available in SaaS mode, remove users from the workspace IAM policy instead"))
 	}
 
 	callerUser, ok := GetUserFromContext(ctx)
@@ -586,7 +586,7 @@ func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storep
 // UndeleteUser undeletes a user.
 func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request[v1pb.UndeleteUserRequest]) (*connect.Response[v1pb.User], error) {
 	if s.profile.SaaS {
-		return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("CreateUser is not available in SaaS mode, add users via workspace IAM policy instead"))
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("UndeleteUser is not available in SaaS mode, add users back to the workspace IAM policy instead"))
 	}
 
 	callerUser, ok := GetUserFromContext(ctx)
