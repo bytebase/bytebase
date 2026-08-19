@@ -46,7 +46,7 @@ type InstanceService struct {
 	dbFactory             *dbfactory.DBFactory
 	schemaSyncer          *schemasync.Syncer
 	sampleInstanceManager *sampleinstance.Manager
-	sampleProjectManager  sampleProjectInstanceManager
+	sampleProjectManager  *sampleprojectinstance.Manager
 }
 
 type instanceLicenseService interface {
@@ -55,10 +55,6 @@ type instanceLicenseService interface {
 	IsFeatureEnabledForInstance(context.Context, string, v1pb.PlanFeature, *store.InstanceMessage) error
 	IsInstanceEffectivelyActivated(context.Context, string, *store.InstanceMessage) bool
 	IsUnifiedInstanceLicense(context.Context, string) bool
-}
-
-type sampleProjectInstanceManager interface {
-	Prepare(context.Context, sampleprojectinstance.PrepareRequest) (*sampleprojectinstance.PrepareResult, error)
 }
 
 const (
@@ -204,7 +200,7 @@ func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, met
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleInstanceManager *sampleinstance.Manager, sampleProjectManager sampleProjectInstanceManager) *InstanceService {
+func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleInstanceManager *sampleinstance.Manager, sampleProjectManager *sampleprojectinstance.Manager) *InstanceService {
 	return &InstanceService{
 		store:                 store,
 		profile:               profile,
@@ -492,32 +488,11 @@ func (s *InstanceService) PrepareSampleProjectInstance(ctx context.Context, req 
 		WorkspaceID: workspaceID,
 		ProjectID:   *projectID,
 		CheckCreatePolicy: func(ctx context.Context) (sampleprojectinstance.CreatePolicyResult, error) {
-			if err := s.instanceCountGuard(ctx); err != nil {
-				if connect.CodeOf(err) == connect.CodeResourceExhausted {
-					return sampleprojectinstance.CreatePolicyResult{DeniedReason: transportNeutralError(err)}, nil
-				}
-				return sampleprojectinstance.CreatePolicyResult{}, transportNeutralError(err)
-			}
-			if err := s.checkActivationLimit(ctx, workspaceID, true); err != nil {
-				if connect.CodeOf(err) == connect.CodeResourceExhausted {
-					return sampleprojectinstance.CreatePolicyResult{DeniedReason: transportNeutralError(err)}, nil
-				}
-				return sampleprojectinstance.CreatePolicyResult{}, transportNeutralError(err)
-			}
-			return sampleprojectinstance.CreatePolicyResult{}, nil
+			return s.sampleProjectInstanceCreatePolicy(ctx, workspaceID)
 		},
 	})
 	if err != nil {
-		switch sampleprojectinstance.FailureKindOf(err) {
-		case sampleprojectinstance.FailureFailedPrecondition:
-			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
-		case sampleprojectinstance.FailureUnavailable:
-			return nil, connect.NewError(connect.CodeUnavailable, err)
-		case sampleprojectinstance.FailureDeadlineExceeded:
-			return nil, connect.NewError(connect.CodeDeadlineExceeded, err)
-		default:
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
+		return nil, sampleProjectInstanceConnectError(err)
 	}
 	if result.PolicyDenied != nil {
 		return nil, connect.NewError(connect.CodeResourceExhausted, result.PolicyDenied)
@@ -526,6 +501,35 @@ func (s *InstanceService) PrepareSampleProjectInstance(ctx context.Context, req 
 		return nil, connect.NewError(connect.CodeInternal, errors.New("Sample Project Instance preparation returned no instance"))
 	}
 	return connect.NewResponse(s.convertToV1Instance(ctx, result.Instance)), nil
+}
+
+func (s *InstanceService) sampleProjectInstanceCreatePolicy(ctx context.Context, workspaceID string) (sampleprojectinstance.CreatePolicyResult, error) {
+	if err := s.instanceCountGuard(ctx); err != nil {
+		if connect.CodeOf(err) == connect.CodeResourceExhausted {
+			return sampleprojectinstance.CreatePolicyResult{DeniedReason: transportNeutralError(err)}, nil
+		}
+		return sampleprojectinstance.CreatePolicyResult{}, transportNeutralError(err)
+	}
+	if err := s.checkActivationLimit(ctx, workspaceID, true); err != nil {
+		if connect.CodeOf(err) == connect.CodeResourceExhausted {
+			return sampleprojectinstance.CreatePolicyResult{DeniedReason: transportNeutralError(err)}, nil
+		}
+		return sampleprojectinstance.CreatePolicyResult{}, transportNeutralError(err)
+	}
+	return sampleprojectinstance.CreatePolicyResult{}, nil
+}
+
+func sampleProjectInstanceConnectError(err error) error {
+	switch sampleprojectinstance.FailureKindOf(err) {
+	case sampleprojectinstance.FailureFailedPrecondition:
+		return connect.NewError(connect.CodeFailedPrecondition, err)
+	case sampleprojectinstance.FailureUnavailable:
+		return connect.NewError(connect.CodeUnavailable, err)
+	case sampleprojectinstance.FailureDeadlineExceeded:
+		return connect.NewError(connect.CodeDeadlineExceeded, err)
+	default:
+		return connect.NewError(connect.CodeInternal, err)
+	}
 }
 
 func transportNeutralError(err error) error {
