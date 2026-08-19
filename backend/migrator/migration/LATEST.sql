@@ -386,7 +386,11 @@ CREATE TABLE saved_query (
 -- as index-only scans, and the project prefix still answers a project lookup
 -- on its own.
 CREATE INDEX idx_saved_query_project_creator_folder ON saved_query(project, creator, folder);
-CREATE INDEX idx_saved_query_creator_project ON saved_query(creator, project);
+
+-- The governance ListSavedQueries recency pull (creator filter +
+-- order_by "update_time desc") reads this index in order with no sort; it
+-- also covers every other creator-led scan via its prefix.
+CREATE INDEX idx_saved_query_creator_updated_at_resource_id ON saved_query(creator, updated_at DESC, resource_id DESC);
 
 -- "Shared with me" probes bindings once per principal in the caller's set and
 -- BitmapOrs the results. jsonb_path_ops is smaller and faster than the default

@@ -3030,6 +3030,7 @@
       }
     },
     "invalid-database": "無効なデータベース {{database}}",
+    "json-view": "JSON ビュー",
     "last-synced": "最終同期時間: <time></time>",
     "loading-data": "データのロード...",
     "loading-databases": "データベース情報をロードしています...",
@@ -3062,6 +3063,7 @@
     },
     "request-aborted": "ユーザーがリクエストを中止しました",
     "request-access-grant": "アクセス付与をリクエスト",
+    "request-export": "エクスポートをリクエスト",
     "result-detail": {
       "next-match": "次の一致",
       "previous-match": "前の一致",
@@ -3070,6 +3072,7 @@
     "result-limit": {
       "self": "結果の制限"
     },
+    "result-view-mode": "結果表示モード",
     "revoke-access": "取り消し",
     "revoke-confirm": "このアクセス付与を取り消してもよろしいですか？",
     "rows": {

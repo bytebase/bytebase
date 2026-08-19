@@ -12965,6 +12965,7 @@ paths:
       summary: ListQueryHistories
       description: |-
         ListQueryHistories lists query histories of all users in a project.
+         Results are ordered by create time descending (newest first).
          Permissions required: bb.queryHistories.list
       operationId: QueryHistoryService_ListQueryHistories
       parameters:
@@ -13708,6 +13709,7 @@ paths:
         List saved queries for auditing. The permission alone grants reading
          every matched saved query with full content, private ones included;
          bindings are ignored. Use parent "projects/-" for all projects.
+         Results default to title ascending; see `order_by`.
          Permissions required: bb.savedQueries.list on the project, or on the
          workspace when the parent is "projects/-"
       operationId: SavedQueryService_ListSavedQueries
@@ -13748,6 +13750,19 @@ paths:
           schema:
             type: string
             title: page_token
+        - name: orderBy
+          in: query
+          description: |-
+            Sort the results, per https://google.aip.dev/132#ordering. Supported
+             fields: `update_time`, `create_time`, `title`; append " desc" for
+             descending, e.g. "update_time desc" for most recently modified first.
+             A modification is a title, content, database, or folder write; sharing
+             and stars do not count, and a never-modified saved query counts its
+             create time. Empty means `title` ascending. `resource_id` is always
+             appended as a final tiebreak so pages stay stable.
+          schema:
+            type: string
+            title: order_by
       responses:
         "200":
           description: Success
@@ -25532,6 +25547,17 @@ components:
           description: |-
             A page token from a previous ListSavedQueries call. Keep every other
              parameter the same as the call that returned it.
+        orderBy:
+          type: string
+          title: order_by
+          description: |-
+            Sort the results, per https://google.aip.dev/132#ordering. Supported
+             fields: `update_time`, `create_time`, `title`; append " desc" for
+             descending, e.g. "update_time desc" for most recently modified first.
+             A modification is a title, content, database, or folder write; sharing
+             and stars do not count, and a never-modified saved query counts its
+             create time. Empty means `title` ascending. `resource_id` is always
+             appended as a final tiebreak so pages stay stable.
       title: ListSavedQueriesRequest
       required:
         - parent

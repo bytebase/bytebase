@@ -3030,6 +3030,7 @@
       }
     },
     "invalid-database": "数据库 {{database}} 无效",
+    "json-view": "JSON 视图",
     "last-synced": "上次同步时间：<time></time>",
     "loading-data": "加载数据中...",
     "loading-databases": "加载数据库信息...",
@@ -3062,6 +3063,7 @@
     },
     "request-aborted": "用户中止了请求",
     "request-access-grant": "申请访问授权",
+    "request-export": "申请导出",
     "result-detail": {
       "next-match": "下一个匹配项",
       "previous-match": "上一个匹配项",
@@ -3070,6 +3072,7 @@
     "result-limit": {
       "self": "结果限制"
     },
+    "result-view-mode": "结果视图模式",
     "revoke-access": "撤销",
     "revoke-confirm": "确定要撤销此访问授权吗？",
     "rows": {

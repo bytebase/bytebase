@@ -76,6 +76,9 @@ type FindSavedQueryMessage struct {
 	// LoadFull is used if we want to load the full sheet.
 	LoadFull bool
 
+	// OrderByKeys overrides the default title order.
+	OrderByKeys []*OrderByKey
+
 	FilterQ *qb.Query
 
 	Limit  *int
@@ -172,7 +175,21 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 		q.And("saved_query.resource_id = ?", *v)
 	}
 
-	q.Space("ORDER BY saved_query.name, saved_query.resource_id")
+	// Default title order; List overrides via order_by. The resource_id
+	// tiebreak keeps pages stable and follows the last key's direction so
+	// "update_time desc" matches the
+	// (creator, updated_at DESC, resource_id DESC) index exactly.
+	keys := find.OrderByKeys
+	if len(keys) == 0 {
+		keys = []*OrderByKey{{Key: "saved_query.name", SortOrder: ASC}}
+	}
+	orderBy := []string{}
+	for _, v := range keys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
+	}
+	last := keys[len(keys)-1]
+	orderBy = append(orderBy, fmt.Sprintf("saved_query.resource_id %s", last.SortOrder.String()))
+	q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -419,7 +436,10 @@ func (s *Store) CreateSavedQuery(ctx context.Context, create *SavedQueryMessage)
 // PatchSavedQuery updates a sheet.
 func (s *Store) PatchSavedQuery(ctx context.Context, patch *PatchSavedQueryMessage) error {
 	set := qb.Q()
-	set.Comma("updated_at = ?", time.Now())
+	// The DB clock, not the app clock: updated_at is an order_by sort key,
+	// and creation stamps it with DEFAULT now(), so a skewed app server
+	// must not interleave edits out of true sequence.
+	set.Comma("updated_at = now()")
 	if v := patch.Title; v != nil {
 		set.Comma("name = ?", *v)
 	}
@@ -902,6 +922,17 @@ func escapeLikePattern(pattern string) string {
 		`%`, `\%`,
 		`_`, `\_`,
 	).Replace(pattern)
+}
+
+// GetSavedQueryOrders parses an AIP-132 order_by string into OrderByKey
+// entries for ListSavedQueries. Supported fields: update_time, create_time,
+// title.
+func GetSavedQueryOrders(orderBy string) ([]*OrderByKey, error) {
+	return getOrderByKeys(orderBy, map[string]string{
+		"update_time": "saved_query.updated_at",
+		"create_time": "saved_query.created_at",
+		"title":       "saved_query.name",
+	})
 }
 
 func GetListSavedQueryFilter(filter string) (*qb.Query, error) {

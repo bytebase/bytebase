@@ -3030,6 +3030,7 @@
       }
     },
     "invalid-database": "Invalid database {{database}}",
+    "json-view": "JSON view",
     "last-synced": "Last synced: <time></time>",
     "loading-data": "Loading Data...",
     "loading-databases": "Loading Databases...",
@@ -3062,6 +3063,7 @@
     },
     "request-aborted": "User aborted the request",
     "request-access-grant": "Request access grant",
+    "request-export": "Request export",
     "result-detail": {
       "next-match": "Next match",
       "previous-match": "Previous match",
@@ -3070,6 +3072,7 @@
     "result-limit": {
       "self": "Result limit"
     },
+    "result-view-mode": "Result view mode",
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "rows": {

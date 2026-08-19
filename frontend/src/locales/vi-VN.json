@@ -3030,6 +3030,7 @@
       }
     },
     "invalid-database": "Cơ sở dữ liệu không hợp lệ {{database}}",
+    "json-view": "Chế độ xem JSON",
     "last-synced": "Đã đồng bộ lần cuối: <time></time>",
     "loading-data": "Đang tải Dữ liệu...",
     "loading-databases": "Đang tải Cơ sở dữ liệu...",
@@ -3062,6 +3063,7 @@
     },
     "request-aborted": "Người dùng đã hủy yêu cầu",
     "request-access-grant": "Yêu cầu cấp quyền truy cập",
+    "request-export": "Yêu cầu xuất dữ liệu",
     "result-detail": {
       "next-match": "Kết quả tiếp theo",
       "previous-match": "Kết quả trước",
@@ -3070,6 +3072,7 @@
     "result-limit": {
       "self": "Giới hạn kết quả"
     },
+    "result-view-mode": "Chế độ xem kết quả",
     "revoke-access": "Thu hồi",
     "revoke-confirm": "Bạn có chắc chắn muốn thu hồi cấp quyền truy cập này không?",
     "rows": {
