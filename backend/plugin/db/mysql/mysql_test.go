@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -364,4 +365,44 @@ func TestCreateCertificateVerifierValidatesChainAndHostname(t *testing.T) {
 	require.NoError(t, verifier([][]byte{leafFor(rootCert, rootKey, host)}, nil))
 	require.Error(t, verifier([][]byte{leafFor(rootCert, rootKey, "other.example.com")}, nil))
 	require.Error(t, verifier([][]byte{leafFor(foreignCert, foreignKey, host)}, nil))
+}
+
+func TestRDSCertPoolCollapsesConcurrentDownloads(t *testing.T) {
+	const callers = 32
+	ca := selfSignedCAPEM(t)
+	// release blocks the first response until every caller is inside the fetch,
+	// so a per-caller download cannot pass by finishing before the others start.
+	release := make(chan struct{})
+	requests := serveRDSCertBundle(t, func(w http.ResponseWriter, _ *http.Request) {
+		<-release
+		_, _ = w.Write([]byte(ca))
+	})
+
+	dataSource := &storepb.DataSource{Host: "db.example.com", VerifyTlsCertificate: true}
+	var ready, done sync.WaitGroup
+	ready.Add(callers)
+	done.Add(callers)
+	pools := make([]*x509.CertPool, callers)
+	errs := make([]error, callers)
+	for i := range callers {
+		go func() {
+			defer done.Done()
+			ready.Done()
+			cfg, err := rdsTLSConfig(context.Background(), dataSource)
+			errs[i] = err
+			if err == nil {
+				pools[i] = cfg.RootCAs
+			}
+		}()
+	}
+	ready.Wait()
+	close(release)
+	done.Wait()
+
+	for i := range callers {
+		require.NoError(t, errs[i])
+		require.NotNil(t, pools[i])
+		require.Same(t, pools[0], pools[i])
+	}
+	require.Equal(t, int32(1), requests.Load())
 }

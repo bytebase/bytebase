@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -169,6 +170,9 @@ const maxRDSCertBundleSize int64 = 4 << 20
 // rdsCertPool caches the downloaded bundle for the process lifetime.
 var rdsCertPool atomic.Pointer[x509.CertPool]
 
+// rdsCertGroup collapses concurrent cold-start downloads into one request.
+var rdsCertGroup singleflight.Group
+
 // getRDSCertPool downloads and returns the RDS CA certificate pool.
 // AWS RDS connection with IAM require TLS connection.
 //
@@ -210,17 +214,33 @@ func getRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
 	return rootCertPool, nil
 }
 
-// cachedRDSCertPool caches the AWS RDS CA bundle for the process lifetime.
-// Concurrent first callers may each download, but only successes are cached, so a transient failure can still recover.
+// cachedRDSCertPool returns the AWS RDS CA bundle, downloading it once per
+// process. Only successes are cached, so a transient failure can still recover.
 func cachedRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
 	if pool := rdsCertPool.Load(); pool != nil {
 		return pool, nil
 	}
-	pool, err := getRDSCertPool(ctx)
+	// Collapse a cold-start burst into one download. singleflight does not retain
+	// the error, so a failed fetch is retried by the next caller.
+	v, err, _ := rdsCertGroup.Do("", func() (any, error) {
+		// Double check after entering singleflight.
+		if pool := rdsCertPool.Load(); pool != nil {
+			return pool, nil
+		}
+		pool, err := getRDSCertPool(ctx)
+		if err != nil {
+			return nil, err
+		}
+		rdsCertPool.Store(pool)
+		return pool, nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	rdsCertPool.Store(pool)
+	pool, ok := v.(*x509.CertPool)
+	if !ok {
+		return nil, errors.Errorf("unexpected RDS cert pool type %T", v)
+	}
 	return pool, nil
 }
 
