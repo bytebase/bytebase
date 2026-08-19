@@ -3,9 +3,11 @@ import { isEmpty } from "lodash-es";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
+  BracesIcon,
   ChevronDownIcon,
   CopyIcon,
   InfoIcon,
+  Table2Icon,
   XIcon,
 } from "lucide-react";
 import {
@@ -36,9 +38,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useExecuteSQL } from "@/hooks/useExecuteSQL";
+import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
@@ -60,6 +64,8 @@ import { createExplainToken } from "@/utils/pev2";
 import {
   flattenElasticsearchSearchResult,
   flattenNoSQLQueryResult,
+  formatNoSQLQueryResultForJSONView,
+  type NoSQLJSONDocument,
 } from "@/utils/sqlResult";
 import { STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW } from "@/utils/storage-keys";
 import { isNullOrUndefined } from "@/utils/util";
@@ -68,10 +74,12 @@ import { compareQueryRowValues, extractSQLRowValuePlain } from "@/utils/v1/sql";
 import { SQLResultViewProvider, useSelectionContext } from "./context";
 import { formatAsCSV, formatAsSQL, formatAsText } from "./copy-formats";
 import { DetailPanel } from "./DetailPanel";
+import { DocumentJSONView } from "./DocumentJSONView";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
 import { ResultStatusBar } from "./ResultStatusBar";
 import { SelectionCopyTooltips } from "./SelectionCopyTooltips";
+import { TextSearchControl } from "./TextSearchControl";
 import type { ResultTableColumn, ResultTableRow, SortState } from "./types";
 import {
   VirtualDataBlock,
@@ -102,6 +110,7 @@ export interface SingleResultViewProps {
 }
 
 type ViewMode = "RESULT" | "EMPTY" | "AFFECTED-ROWS" | "ERROR";
+type DocumentViewMode = "TABLE" | "JSON";
 
 /**
  * Per-result-set view. Owns the per-mount `<SQLResultViewProvider>` plus
@@ -120,6 +129,7 @@ export function SingleResultView(props: SingleResultViewProps) {
     STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW,
     true
   );
+  const [documentTableView, setDocumentTableView] = useState(false);
   // Sort state lives at this level (not inside the inner component) so the
   // sorted `rows` we feed into the provider are the same array the user
   // sees in the table. The provider's selection-copy logic dereferences
@@ -127,18 +137,36 @@ export function SingleResultView(props: SingleResultViewProps) {
   // the table rendered sorted rows, Cmd+C would copy the wrong row.
   const [sortState, setSortState] = useState<SortState | undefined>();
 
+  const isDocumentEngine =
+    engine === Engine.COSMOSDB || engine === Engine.MONGODB;
   const flattened = useMemo(() => {
     if (engine === Engine.ELASTICSEARCH) {
       return flattenElasticsearchSearchResult(result);
     }
-    if (engine === Engine.MONGODB) {
+    if (isDocumentEngine) {
       return flattenNoSQLQueryResult(result);
     }
     return undefined;
-  }, [engine, result]);
-  const supportsTableViewToggle = flattened !== undefined;
-  const activeResult =
-    supportsTableViewToggle && noSQLTableView ? flattened : result;
+  }, [engine, isDocumentEngine, result]);
+  const documentJSONViewResult = useMemo(
+    () =>
+      isDocumentEngine ? formatNoSQLQueryResultForJSONView(result) : undefined,
+    [isDocumentEngine, result]
+  );
+  const documentJSON = documentJSONViewResult?.content;
+  const supportsDocumentJSONView =
+    isDocumentEngine && flattened !== undefined && documentJSON !== undefined;
+  const documentViewMode: DocumentViewMode =
+    supportsDocumentJSONView && !documentTableView ? "JSON" : "TABLE";
+  const supportsTableViewToggle =
+    engine === Engine.ELASTICSEARCH && flattened !== undefined;
+  const activeResult = isDocumentEngine
+    ? (flattened ?? result)
+    : supportsTableViewToggle && noSQLTableView
+      ? flattened
+      : result;
+  const flattenedTableView =
+    flattened !== undefined && activeResult === flattened;
 
   const columns: ResultTableColumn[] = useMemo(
     () =>
@@ -207,9 +235,15 @@ export function SingleResultView(props: SingleResultViewProps) {
         rows={rows}
         sortState={sortState}
         toggleSort={toggleSort}
+        flattenedTableView={flattenedTableView}
         supportsTableViewToggle={supportsTableViewToggle}
         noSQLTableView={noSQLTableView}
         setNoSQLTableView={setNoSQLTableView}
+        supportsDocumentJSONView={supportsDocumentJSONView}
+        documentJSON={documentJSON}
+        documentJSONDocuments={documentJSONViewResult?.documents ?? []}
+        documentViewMode={documentViewMode}
+        setDocumentViewMode={(mode) => setDocumentTableView(mode === "TABLE")}
       />
     </SQLResultViewProvider>
   );
@@ -222,9 +256,15 @@ interface SingleResultViewInnerProps extends SingleResultViewProps {
   rows: ResultTableRow[];
   sortState: SortState | undefined;
   toggleSort: (columnIndex: number) => void;
+  flattenedTableView: boolean;
   supportsTableViewToggle: boolean;
   noSQLTableView: boolean;
   setNoSQLTableView: (next: boolean) => void;
+  supportsDocumentJSONView: boolean;
+  documentJSON: string | undefined;
+  documentJSONDocuments: NoSQLJSONDocument[];
+  documentViewMode: DocumentViewMode;
+  setDocumentViewMode: (mode: DocumentViewMode) => void;
 }
 
 function SingleResultViewInner({
@@ -243,9 +283,15 @@ function SingleResultViewInner({
   rows,
   sortState,
   toggleSort,
+  flattenedTableView,
   supportsTableViewToggle,
   noSQLTableView,
   setNoSQLTableView,
+  supportsDocumentJSONView,
+  documentJSON,
+  documentJSONDocuments,
+  documentViewMode,
+  setDocumentViewMode,
   compact = false,
 }: SingleResultViewInnerProps) {
   const { t } = useTranslation();
@@ -283,6 +329,28 @@ function SingleResultViewInner({
   const [searchCandidateRowIndexs, setSearchCandidateRowIndexs] = useState<
     number[]
   >([]);
+  const [documentSearchQuery, setDocumentSearchQuery] = useState("");
+  const [documentSearchActiveIndex, setDocumentSearchActiveIndex] = useState(0);
+  const [documentSearchMatchCount, setDocumentSearchMatchCount] = useState(0);
+
+  useEffect(() => {
+    setDocumentSearchQuery("");
+    setDocumentSearchActiveIndex(0);
+    setDocumentSearchMatchCount(0);
+  }, [documentJSON]);
+
+  useEffect(() => {
+    setDocumentSearchActiveIndex(0);
+  }, [documentSearchQuery]);
+
+  useEffect(() => {
+    setDocumentSearchActiveIndex((current) => {
+      if (documentSearchMatchCount === 0) {
+        return 0;
+      }
+      return Math.min(current, documentSearchMatchCount - 1);
+    });
+  }, [documentSearchMatchCount]);
 
   // Reset search state when toggling NoSQL table view (sort reset is
   // handled by the wrapper, where sortState lives).
@@ -433,7 +501,7 @@ function SingleResultViewInner({
 
   const isSensitiveColumn = useCallback(
     (columnIndex: number): boolean => {
-      if (supportsTableViewToggle && noSQLTableView) return false;
+      if (flattenedTableView) return false;
       const reason = result.masked?.[columnIndex];
       return (
         reason !== null &&
@@ -442,12 +510,12 @@ function SingleResultViewInner({
         reason.semanticTypeId !== ""
       );
     },
-    [result.masked, supportsTableViewToggle, noSQLTableView]
+    [flattenedTableView, result.masked]
   );
 
   const getMaskingReason = useCallback(
     (columnIndex: number) => {
-      if (supportsTableViewToggle && noSQLTableView) return undefined;
+      if (flattenedTableView) return undefined;
       if (!result.masked || columnIndex >= result.masked.length) {
         return undefined;
       }
@@ -455,7 +523,7 @@ function SingleResultViewInner({
       if (!reason || !reason.semanticTypeId) return undefined;
       return reason;
     },
-    [result.masked, supportsTableViewToggle, noSQLTableView]
+    [flattenedTableView, result.masked]
   );
 
   const showVisualizeButton =
@@ -490,6 +558,19 @@ function SingleResultViewInner({
   }, [result]);
 
   const resultRowsText = `${rows.length} ${t("sql-editor.rows.self")}`;
+  const isJSONView =
+    supportsDocumentJSONView &&
+    documentViewMode === "JSON" &&
+    documentJSON !== undefined;
+  const moveDocumentSearchMatch = (offset: number) => {
+    if (documentSearchMatchCount === 0) {
+      return;
+    }
+    setDocumentSearchActiveIndex(
+      (current) =>
+        (current + offset + documentSearchMatchCount) % documentSearchMatchCount
+    );
+  };
 
   const handleExport = (req: DataExportRequest) => {
     // Forward the user-typed query (`params.statement`) rather than
@@ -499,6 +580,13 @@ function SingleResultViewInner({
     // even when the user asks for more. This matches the Vue
     // multi-result export, which already used `executeParams.statement`.
     onExport?.({ ...req, statement: params.statement });
+  };
+
+  const handleCopyJSON = () => {
+    if (disallowCopyingData || !documentJSON) {
+      return;
+    }
+    void writeTextToClipboard(documentJSON);
   };
 
   // ---- Render branches by viewMode ----
@@ -545,13 +633,23 @@ function SingleResultViewInner({
           {/* Toolbar */}
           <div className="result-toolbar relative w-full shrink-0 flex flex-row gap-x-4 justify-between items-center mb-2 hide-scrollbar">
             <div className="flex flex-row justify-start items-center gap-x-2 mr-2 flex-1">
-              <AdvancedSearch
-                params={searchParams}
-                scopeOptions={searchScopeOptions}
-                placeholder=""
-                onParamsChange={setSearchParams}
-                onEnter={scrollToNextCandidate}
-              />
+              {isJSONView ? (
+                <TextSearchControl
+                  query={documentSearchQuery}
+                  activeMatchIndex={documentSearchActiveIndex}
+                  matchCount={documentSearchMatchCount}
+                  onQueryChange={setDocumentSearchQuery}
+                  onMove={moveDocumentSearchMatch}
+                />
+              ) : (
+                <AdvancedSearch
+                  params={searchParams}
+                  scopeOptions={searchScopeOptions}
+                  placeholder=""
+                  onParamsChange={setSearchParams}
+                  onEnter={scrollToNextCandidate}
+                />
+              )}
               <Tooltip
                 content={
                   reachQueryLimit ? t("sql-editor.rows-upper-limit") : ""
@@ -566,7 +664,42 @@ function SingleResultViewInner({
               </Tooltip>
             </div>
             <div className="flex justify-between items-center shrink-0 gap-x-2">
-              {supportsTableViewToggle && (
+              {supportsDocumentJSONView ? (
+                <SegmentedControl<DocumentViewMode>
+                  value={documentViewMode}
+                  options={[
+                    {
+                      value: "TABLE",
+                      label: (
+                        <span className="flex h-[26px] w-7 items-center justify-center">
+                          <Table2Icon className="size-4" aria-hidden />
+                          <span className="sr-only">
+                            {t("sql-editor.table-view")}
+                          </span>
+                        </span>
+                      ),
+                      tooltip: t("sql-editor.table-view"),
+                    },
+                    {
+                      value: "JSON",
+                      label: (
+                        <span className="flex h-[26px] w-7 items-center justify-center">
+                          <BracesIcon className="size-4" aria-hidden />
+                          <span className="sr-only">
+                            {t("sql-editor.json-view")}
+                          </span>
+                        </span>
+                      ),
+                      tooltip: t("sql-editor.json-view"),
+                    },
+                  ]}
+                  onValueChange={setDocumentViewMode}
+                  ariaLabel={t("sql-editor.result-view-mode")}
+                  appearance="soft"
+                  className="h-7 flex-nowrap"
+                  size="xs"
+                />
+              ) : supportsTableViewToggle ? (
                 <div className="flex items-center gap-x-1">
                   <Switch
                     checked={noSQLTableView}
@@ -576,14 +709,27 @@ function SingleResultViewInner({
                     {t("sql-editor.table-view")}
                   </span>
                 </div>
+              ) : null}
+              {!isJSONView && (
+                <div className="flex items-center gap-x-1">
+                  <Switch checked={vertical} onCheckedChange={setVertical} />
+                  <span className="whitespace-nowrap text-sm text-control-light">
+                    {t("sql-editor.vertical-display")}
+                  </span>
+                </div>
               )}
-              <div className="flex items-center gap-x-1">
-                <Switch checked={vertical} onCheckedChange={setVertical} />
-                <span className="whitespace-nowrap text-sm text-control-light">
-                  {t("sql-editor.vertical-display")}
-                </span>
-              </div>
-              {!disallowCopyingData && rows.length > 0 && (
+              {!disallowCopyingData && rows.length > 0 && isJSONView && (
+                <Button
+                  size="sm"
+                  appearance="outline"
+                  className="h-7 px-2 text-control border-control-border hover:bg-control-bg-hover"
+                  onClick={handleCopyJSON}
+                >
+                  <CopyIcon className="size-4" />
+                  {t("common.copy-all")}
+                </Button>
+              )}
+              {!disallowCopyingData && rows.length > 0 && !isJSONView && (
                 // Split button: the main action copies as plain text (TSV); the
                 // dropdown caret (hover) offers CSV and, for SQL engines, SQL.
                 <div className="flex items-center">
@@ -648,110 +794,122 @@ function SingleResultViewInner({
                 requestExportSlot
               )}
             </div>
-            <SelectionCopyTooltips />
+            {!isJSONView && <SelectionCopyTooltips />}
           </div>
 
           {/* Body */}
-          <div
-            className={cn(
-              "w-full flex flex-col relative",
-              compact
-                ? "h-80 overflow-hidden"
-                : "flex-1 min-h-0 overflow-y-auto"
-            )}
-          >
-            {vertical ? (
-              <VirtualDataBlock
-                ref={dataTableRef as React.RefObject<VirtualDataBlockHandle>}
-                rows={rows}
-                columns={columns}
-                isSensitiveColumn={isSensitiveColumn}
-                getMaskingReason={getMaskingReason}
-                database={database}
-                statement={params.statement}
-                activeRowIndex={activeRowIndex}
-                search={searchParams}
-              />
-            ) : (
-              <VirtualDataTable
-                ref={dataTableRef as React.RefObject<VirtualDataTableHandle>}
-                rows={rows}
-                columns={columns}
-                isSensitiveColumn={isSensitiveColumn}
-                getMaskingReason={getMaskingReason}
-                database={database}
-                statement={params.statement}
-                sortState={sortState}
-                activeRowIndex={activeRowIndex}
-                search={searchParams}
-                onToggleSort={toggleSort}
-              />
-            )}
-
-            {/* Floating buttons */}
-            <div className="absolute bottom-2 right-4 flex items-end gap-x-2">
-              {searchCandidateRowIndexs.length > 0 && (
-                <div className="flex flex-row gap-x-2 border shadow rounded bg-background py-1 px-2">
-                  <Button
-                    size="sm"
-                    appearance="secondary"
-                    disabled={searchCandidateActiveIndex <= 0}
-                    onClick={scrollToPreviousCandidate}
-                  >
-                    <ArrowUpIcon className="size-4" />
-                    {t("sql-editor.previous-row")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    appearance="secondary"
-                    disabled={
-                      searchCandidateActiveIndex >=
-                      searchCandidateRowIndexs.length - 1
-                    }
-                    onClick={scrollToNextCandidate}
-                  >
-                    <ArrowDownIcon className="size-4" />
-                    {t("sql-editor.next-row")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    appearance="secondary"
-                    className="size-7 p-0"
-                    onClick={clearSearchCandidate}
-                  >
-                    <XIcon className="size-4" />
-                  </Button>
-                </div>
+          {isJSONView ? (
+            <DocumentJSONView
+              content={documentJSON}
+              documents={documentJSONDocuments}
+              disallowCopyingData={disallowCopyingData}
+              compact={compact}
+              searchQuery={documentSearchQuery}
+              activeMatchIndex={documentSearchActiveIndex}
+              onMatchCountChange={setDocumentSearchMatchCount}
+            />
+          ) : (
+            <div
+              className={cn(
+                "w-full flex flex-col relative",
+                compact
+                  ? "h-80 overflow-hidden"
+                  : "flex-1 min-h-0 overflow-y-auto"
+              )}
+            >
+              {vertical ? (
+                <VirtualDataBlock
+                  ref={dataTableRef as React.RefObject<VirtualDataBlockHandle>}
+                  rows={rows}
+                  columns={columns}
+                  isSensitiveColumn={isSensitiveColumn}
+                  getMaskingReason={getMaskingReason}
+                  database={database}
+                  statement={params.statement}
+                  activeRowIndex={activeRowIndex}
+                  search={searchParams}
+                />
+              ) : (
+                <VirtualDataTable
+                  ref={dataTableRef as React.RefObject<VirtualDataTableHandle>}
+                  rows={rows}
+                  columns={columns}
+                  isSensitiveColumn={isSensitiveColumn}
+                  getMaskingReason={getMaskingReason}
+                  database={database}
+                  statement={params.statement}
+                  sortState={sortState}
+                  activeRowIndex={activeRowIndex}
+                  search={searchParams}
+                  onToggleSort={toggleSort}
+                />
               )}
 
-              <div className="flex flex-col gap-y-2 result-scroll-buttons">
-                <Tooltip content={t("sql-editor.scroll-to-top")}>
-                  <div className="rounded-full shadow bg-background">
+              {/* Floating buttons */}
+              <div className="absolute bottom-2 right-4 flex items-end gap-x-2">
+                {searchCandidateRowIndexs.length > 0 && (
+                  <div className="flex flex-row gap-x-2 border shadow rounded bg-background py-1 px-2">
                     <Button
                       size="sm"
                       appearance="secondary"
-                      className="size-9 p-0 rounded-full"
-                      onClick={() => scrollToRow(0)}
+                      disabled={searchCandidateActiveIndex <= 0}
+                      onClick={scrollToPreviousCandidate}
                     >
                       <ArrowUpIcon className="size-4" />
+                      {t("sql-editor.previous-row")}
                     </Button>
-                  </div>
-                </Tooltip>
-                <Tooltip content={t("sql-editor.scroll-to-bottom")}>
-                  <div className="rounded-full shadow bg-background">
                     <Button
                       size="sm"
                       appearance="secondary"
-                      className="size-9 p-0 rounded-full"
-                      onClick={() => scrollToRow(rows.length - 1)}
+                      disabled={
+                        searchCandidateActiveIndex >=
+                        searchCandidateRowIndexs.length - 1
+                      }
+                      onClick={scrollToNextCandidate}
                     >
                       <ArrowDownIcon className="size-4" />
+                      {t("sql-editor.next-row")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      appearance="secondary"
+                      className="size-7 p-0"
+                      onClick={clearSearchCandidate}
+                    >
+                      <XIcon className="size-4" />
                     </Button>
                   </div>
-                </Tooltip>
+                )}
+
+                <div className="flex flex-col gap-y-2 result-scroll-buttons">
+                  <Tooltip content={t("sql-editor.scroll-to-top")}>
+                    <div className="rounded-full shadow bg-background">
+                      <Button
+                        size="sm"
+                        appearance="secondary"
+                        className="size-9 p-0 rounded-full"
+                        onClick={() => scrollToRow(0)}
+                      >
+                        <ArrowUpIcon className="size-4" />
+                      </Button>
+                    </div>
+                  </Tooltip>
+                  <Tooltip content={t("sql-editor.scroll-to-bottom")}>
+                    <div className="rounded-full shadow bg-background">
+                      <Button
+                        size="sm"
+                        appearance="secondary"
+                        className="size-9 p-0 rounded-full"
+                        onClick={() => scrollToRow(rows.length - 1)}
+                      >
+                        <ArrowDownIcon className="size-4" />
+                      </Button>
+                    </div>
+                  </Tooltip>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Status bar */}
           <ResultStatusBar
@@ -764,7 +922,7 @@ function SingleResultViewInner({
         </>
       )}
 
-      <DetailPanel rows={rows} columns={columns} />
+      {!isJSONView && <DetailPanel rows={rows} columns={columns} />}
     </>
   );
 }

@@ -5,9 +5,9 @@ import {
   isLosslessNumber,
   type LosslessNumber,
   parse as losslessParse,
+  stringify as losslessStringify,
 } from "lossless-json";
 import { stringify } from "uuid";
-import type { SQLResultSetV1 } from "@/types";
 import type {
   QueryResult,
   QueryRow,
@@ -251,19 +251,6 @@ const convertAnyToRowValue = (
   }
 };
 
-export const flattenNoSQLResult = (resultSet: SQLResultSetV1) => {
-  for (const result of resultSet.results) {
-    const flattened = flattenNoSQLQueryResult(result);
-    if (!flattened) {
-      continue;
-    }
-
-    result.rows = flattened.rows;
-    result.columnNames = flattened.columnNames;
-    result.columnTypeNames = flattened.columnTypeNames;
-  }
-};
-
 export const flattenNoSQLQueryResult = (
   result: QueryResult
 ): QueryResult | undefined => {
@@ -275,7 +262,11 @@ export const flattenNoSQLQueryResult = (
     return undefined;
   }
 
-  const { columns, columnIndexMap } = getNoSQLColumns(result.rows);
+  const columnInfo = getNoSQLColumns(result.rows);
+  if (!columnInfo) {
+    return undefined;
+  }
+  const { columns, columnIndexMap } = columnInfo;
   if (columns.length === 0) {
     return undefined;
   }
@@ -286,16 +277,10 @@ export const flattenNoSQLQueryResult = (
   );
 
   for (const row of result.rows) {
-    if (row.values.length !== 1 || row.values[0].kind.case !== "stringValue") {
+    const data = getNoSQLRows(row);
+    if (!data) {
       return undefined;
     }
-
-    // Use lossless-json to preserve precision for large integers (> 2^53-1)
-    const data = losslessParse(
-      row.values[0].kind.value,
-      null,
-      losslessReviver
-    ) as Record<string, unknown>;
     const values: RowValue[] = Array.from({ length: columns.length }).map(() =>
       createProto(RowValueSchema, {
         kind: {
@@ -305,7 +290,7 @@ export const flattenNoSQLQueryResult = (
       })
     );
 
-    for (const [key, value] of Object.entries(data)) {
+    for (const { key, value } of data) {
       const index = columnIndexMap.get(key) ?? 0;
       const { value: formatted, type } = convertAnyToRowValue(value, true);
       values[index] = formatted;
@@ -330,6 +315,67 @@ export const flattenNoSQLQueryResult = (
     masked: result.masked,
   });
 };
+
+export interface NoSQLJSONDocument {
+  content: string;
+  startLineNumber: number;
+  endLineNumber: number;
+}
+
+export interface NoSQLJSONViewResult {
+  content: string;
+  documents: NoSQLJSONDocument[];
+}
+
+export const formatNoSQLQueryResultForJSONView = (
+  result: QueryResult
+): NoSQLJSONViewResult | undefined => {
+  if (result.columnNames.length !== 1 || result.columnNames[0] !== "result") {
+    return undefined;
+  }
+
+  if (result.rows.length === 0) {
+    return { content: "[]", documents: [] };
+  }
+
+  const lines = ["["];
+  const documents: NoSQLJSONDocument[] = [];
+  for (const [index, row] of result.rows.entries()) {
+    if (row.values.length !== 1 || row.values[0].kind.case !== "stringValue") {
+      return undefined;
+    }
+    try {
+      const document = losslessStringify(
+        losslessParse(row.values[0].kind.value),
+        null,
+        2
+      );
+      if (document === undefined) {
+        return undefined;
+      }
+      const documentLines = document.split("\n").map((line) => `  ${line}`);
+      if (index < result.rows.length - 1) {
+        documentLines[documentLines.length - 1] += ",";
+      }
+      const startLineNumber = lines.length + 1;
+      lines.push(...documentLines);
+      documents.push({
+        content: document,
+        startLineNumber,
+        endLineNumber: lines.length,
+      });
+    } catch {
+      return undefined;
+    }
+  }
+  lines.push("]");
+
+  return { content: lines.join("\n"), documents };
+};
+
+export const formatNoSQLQueryResultAsJSON = (
+  result: QueryResult
+): string | undefined => formatNoSQLQueryResultForJSONView(result)?.content;
 
 // Parses the hits array from an Elasticsearch _search QueryResult's "hits" column.
 const parseESHitsArray = (result: QueryResult): unknown[] | undefined => {
@@ -460,7 +506,7 @@ const getNoSQLColumns = (rows: QueryRow[]) => {
   for (const row of rows) {
     const parsedRows = getNoSQLRows(row);
     if (!parsedRows) {
-      continue;
+      return undefined;
     }
     for (const item of parsedRows) {
       columnSet.add(item.key);
@@ -500,13 +546,19 @@ const getNoSQLRows = (row: QueryRow): NoSQLRowData[] | undefined => {
     return;
   }
   // Use lossless-json to preserve precision for large integers (> 2^53-1)
-  const parsedRow = losslessParse(
-    row.values[0].kind.value,
-    null,
-    losslessReviver
-  ) as {
-    [key: string]: Record<string, unknown>;
-  };
+  let parsedRow: unknown;
+  try {
+    parsedRow = losslessParse(row.values[0].kind.value, null, losslessReviver);
+  } catch {
+    return undefined;
+  }
+  if (
+    typeof parsedRow !== "object" ||
+    parsedRow === null ||
+    Array.isArray(parsedRow)
+  ) {
+    return undefined;
+  }
   const results: NoSQLRowData[] = [];
 
   for (const [key, value] of Object.entries(parsedRow)) {

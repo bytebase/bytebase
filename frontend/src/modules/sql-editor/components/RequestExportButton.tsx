@@ -89,7 +89,7 @@ export function RequestExportButton({
                 feature={PlanFeature.FEATURE_JIT}
               />
             )}
-            {t("sql-editor.request-access-grant")}
+            {t("sql-editor.request-export")}
           </Button>
         )}
       </PermissionGuard>

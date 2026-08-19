@@ -18,6 +18,7 @@ interface SegmentedControlProps<T extends string> {
   options: SegmentedControlOption<T>[];
   onValueChange: (value: T) => void;
   ariaLabel: string;
+  appearance?: "solid" | "soft";
   disabled?: boolean;
   className?: string;
   /** Segment size — matches the shared control size tier names. Defaults to `md`. */
@@ -29,6 +30,7 @@ export function SegmentedControl<T extends string>({
   options,
   onValueChange,
   ariaLabel,
+  appearance = "solid",
   disabled = false,
   className,
   size = "md",
@@ -62,7 +64,9 @@ export function SegmentedControl<T extends string>({
                 !previousSelected &&
                 "border-l border-control-border",
               selected
-                ? "bg-accent text-accent-text"
+                ? appearance === "soft"
+                  ? "bg-accent/10 text-accent"
+                  : "bg-accent text-accent-text"
                 : "bg-background text-control hover:bg-control-bg",
               optionDisabled
                 ? "cursor-not-allowed opacity-50 hover:bg-background"
