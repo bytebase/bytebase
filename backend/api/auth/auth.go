@@ -489,15 +489,10 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 	if !ok {
 		return nil, errs.Errorf("invalid MCP method class extension, full method name %q", fullMethod)
 	}
-	mcpForbiddenReasonAny := proto.GetExtension(md, v1pb.E_McpForbiddenReason)
-	mcpForbiddenReason, ok := mcpForbiddenReasonAny.(v1pb.MCPForbiddenReason)
+	mcpDenialReasonAny := proto.GetExtension(md, v1pb.E_McpDenialReason)
+	mcpDenialReason, ok := mcpDenialReasonAny.(v1pb.MCPDenialReason)
 	if !ok {
-		return nil, errs.Errorf("invalid MCP forbidden reason extension, full method name %q", fullMethod)
-	}
-	mcpExclusionReasonAny := proto.GetExtension(md, v1pb.E_McpExclusionReason)
-	mcpExclusionReason, ok := mcpExclusionReasonAny.(v1pb.MCPExclusionReason)
-	if !ok {
-		return nil, errs.Errorf("invalid MCP exclusion reason extension, full method name %q", fullMethod)
+		return nil, errs.Errorf("invalid MCP denial reason extension, full method name %q", fullMethod)
 	}
 
 	return &common.AuthContext{
@@ -506,8 +501,7 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 		AuthMethod:             authMethod,
 		Audit:                  audit,
 		MCPMethodClass:         mcpMethodClass,
-		MCPForbiddenReason:     mcpForbiddenReason,
-		MCPExclusionReason:     mcpExclusionReason,
+		MCPDenialReason:        mcpDenialReason,
 	}, nil
 }
 

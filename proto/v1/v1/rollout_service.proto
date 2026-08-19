@@ -123,7 +123,7 @@ service RolloutService {
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = OPENS_AN_ADMIN_CONNECTION;
+    option (bytebase.v1.mcp_denial_reason) = OPENS_AN_ADMIN_CONNECTION;
   }
 
   // Executes multiple tasks in a rollout stage.

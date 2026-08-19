@@ -565,7 +565,8 @@ const file_v1_query_history_service_proto_rawDesc = "" +
 	"\x06_error2\xa1\x04\n" +
 	"\x13QueryHistoryService\x12\xb6\x01\n" +
 	"\x14SearchQueryHistories\x12(.bytebase.v1.SearchQueryHistoriesRequest\x1a).bytebase.v1.SearchQueryHistoriesResponse\"I\xdaA\x06parent\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x022:\x01*\"-/v1/{parent=projects/*}/queryHistories:search\x12\xc4\x01\n" +
-	"\x12ListQueryHistories\x12&.bytebase.v1.ListQueryHistoriesRequest\x1a'.bytebase.v1.ListQueryHistoriesResponse\"]\xdaA\x06parent\x8a\xea0\x16bb.queryHistories.list\x90\xea0\x01\xa0\xea0\x04\xb0\xea0\x02\x82\xd3\xe4\x93\x02(\x12&/v1/{parent=projects/*}/queryHistories\x12\x89\x01\n" +
+	"\x12ListQueryHistories\x12&.bytebase.v1.ListQueryHistoriesRequest\x1a'.bytebase.v1.ListQueryHistoriesResponse\"]\xdaA\x06parent\x8a\xea0\x16bb.queryHistories.list\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\n" +
+	"\x82\xd3\xe4\x93\x02(\x12&/v1/{parent=projects/*}/queryHistories\x12\x89\x01\n" +
 	"\x0fGetQueryHistory\x12#.bytebase.v1.GetQueryHistoryRequest\x1a\x19.bytebase.v1.QueryHistory\"6\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{name=projects/*/queryHistories/*}B\xae\x01\n" +
 	"\x0fcom.bytebase.v1B\x18QueryHistoryServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 

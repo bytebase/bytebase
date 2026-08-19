@@ -30,7 +30,7 @@ service InstanceService {
     option (bytebase.v1.permission) = "bb.instances.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = RETURNS_A_STORED_SECRET;
+    option (bytebase.v1.mcp_denial_reason) = RETURNS_A_STORED_SECRET;
   }
 
   // Lists database instances, optionally within a project.
@@ -44,7 +44,7 @@ service InstanceService {
     option (bytebase.v1.permission) = "bb.instances.list";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = RETURNS_A_STORED_SECRET;
+    option (bytebase.v1.mcp_denial_reason) = RETURNS_A_STORED_SECRET;
   }
 
   // Creates a new database instance.
@@ -63,7 +63,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Updates a database instance.
@@ -82,7 +82,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Deletes or soft-deletes a database instance.
@@ -99,7 +99,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Restores a soft-deleted database instance.
@@ -119,7 +119,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Syncs database schemas and metadata from an instance.
@@ -152,7 +152,7 @@ service InstanceService {
     option (bytebase.v1.permission) = "bb.instances.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Syncs multiple instances in a single request.
@@ -186,7 +186,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Adds a read-only data source to an instance.
@@ -204,7 +204,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Removes a read-only data source from an instance.
@@ -222,7 +222,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Updates a data source configuration.
@@ -241,7 +241,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 }
 

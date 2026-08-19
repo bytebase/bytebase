@@ -1,7 +1,7 @@
 # MCP method classification
 
-Rendered from the `bytebase.v1.mcp_method_class`, `mcp_forbidden_reason` and
-`mcp_exclusion_reason` annotations on the v1 RPCs. The annotations are the source of
+Rendered from the `bytebase.v1.mcp_method_class` and `mcp_denial_reason`
+annotations on the v1 RPCs. The annotations are the source of
 truth; this file is a reviewable view of them and nothing reads it at runtime.
 
 Regenerate with:

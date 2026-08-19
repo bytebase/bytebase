@@ -18,16 +18,17 @@ extend google.protobuf.MethodOptions {
   bool audit = 100003;
   // How the method is classified for MCP (AI agent) sessions.
   MCPMethodClass mcp_method_class = 100004;
-  // Why the method is forbidden to MCP sessions. Meaningful only alongside
-  // mcp_method_class = FORBIDDEN; the denial names it so the agent, and the
-  // operator reading the audit row, learn why rather than just that it was
-  // refused.
-  MCPForbiddenReason mcp_forbidden_reason = 100005;
-  // Why the method is served by no MCP mode. Meaningful only alongside
-  // mcp_method_class = EXCLUDED, and required there: an exclusion whose reason
-  // nobody wrote down is one nobody can revisit, and these are the rows a
-  // later admin-capable ceiling has to re-decide one at a time.
-  MCPExclusionReason mcp_exclusion_reason = 100006;
+  // Why an MCP session may not call the method. Meaningful only alongside
+  // mcp_method_class = FORBIDDEN or EXCLUDED, and required on both: the denial
+  // names it so the agent, and the operator reading the audit row, learn why
+  // rather than just that it was refused, and an exclusion whose reason nobody
+  // wrote down is one nobody can revisit.
+  MCPDenialReason mcp_denial_reason = 100005;
+  // 100006 was mcp_exclusion_reason, folded into mcp_denial_reason above. Do
+  // not reuse the number: an extend block cannot carry a `reserved` statement,
+  // so this comment is the only marker, and a binary built before the merge
+  // reads 100006 as the old enum — giving that number a new meaning would let
+  // it read a confident wrong answer instead of nothing.
 }
 
 // Authorization method for RPC calls.
@@ -81,15 +82,32 @@ enum MCPMethodClass {
   EXCLUDED = 4;
 }
 
-// Why an RPC is FORBIDDEN to MCP sessions. The mechanism, not the wording:
-// each value names what its methods actually do, and the serving side turns
-// that into a sentence. A denial whose stated reason has drifted from the
-// mechanism is worse than a bare refusal, because it is the thing the next
-// reader trusts — so a method changing what it does changes its reason here.
-enum MCPForbiddenReason {
+// Why an MCP session may not call an RPC. The mechanism, not the wording: each
+// value names what its methods actually do, and the serving side turns that
+// into a sentence. A denial whose stated reason has drifted from the mechanism
+// is worse than a bare refusal, because it is the thing the next reader trusts
+// — so a method changing what it does changes its reason here.
+//
+// One enum covers both refused classes, and every value belongs to exactly one
+// of them: values 1-8 name a mechanism that breaks the MCP boundary, which is
+// what FORBIDDEN means, and values 9-13 name a scope decision this phase took,
+// which is what EXCLUDED means. The distinction is real and lives on the class
+// annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope
+// decision is what a future admin-capable ceiling would argue with, one
+// population at a time. Splitting it across two enums as well only made the
+// nonsense states representable: a method could carry both, or carry the kind
+// that contradicts its class. Neither is expressible now, and the one check
+// left — the reason belongs to the class it is used on — is a table the gate
+// already keeps for the wording.
+enum MCPDenialReason {
   // No reason recorded. The method is still denied — mcp_method_class is what
-  // enforces — and the denial falls back to generic wording.
-  MCP_FORBIDDEN_REASON_UNSPECIFIED = 0;
+  // enforces — and the denial falls back to generic wording. CI rejects this
+  // on a method classified FORBIDDEN or EXCLUDED.
+  MCP_DENIAL_REASON_UNSPECIFIED = 0;
+
+  // 1-8: FORBIDDEN. The method escapes the MCP boundary rather than merely
+  // exercising a permission, so no ceiling can ever serve it.
+
   // Puts a token for the caller's own principal in the response body.
   MINTS_CREDENTIAL = 1;
   // Drives the out-of-band reset flow that sets or delivers the secret a
@@ -119,35 +137,30 @@ enum MCPForbiddenReason {
   // outright. An agent composes a change; it does not move its own change
   // through the gate.
   DRIVES_THE_APPROVAL_DECISION = 8;
-}
 
-// Why an RPC is served by no MCP mode. Unlike MCPForbiddenReason, which names
-// a mechanism that breaks the MCP boundary, these name a scope decision: the
-// method is out because this phase ships two modes and neither is the right
-// home for it. Each value is what a future admin-capable ceiling would have to
-// argue with, one population at a time.
-enum MCPExclusionReason {
-  // No reason recorded. CI rejects this on a method classified EXCLUDED.
-  MCP_EXCLUSION_REASON_UNSPECIFIED = 0;
+  // 9-13: EXCLUDED. The method is out because this phase ships two modes and
+  // neither is the right home for it, which is a decision rather than a
+  // mechanism.
+
   // Administers the workspace rather than doing database work: identity,
   // credentials, access control, governance policy, billing, workspace and
   // instance configuration, project lifecycle, and the operator's own audit
   // trail. Reading is administration too where the read returns the privilege
   // topology or a stored secret rather than the state of a database.
-  ADMINISTERS_THE_WORKSPACE = 1;
+  ADMINISTERS_THE_WORKSPACE = 9;
   // Returns SQL that other people wrote. The permission gating it reads as an
   // ordinary list permission, so the exclusion is per method rather than per
   // permission: these methods span the workspace or ignore the per-object
   // sharing that keeps a saved query private.
-  READS_OTHER_USERS_SQL = 2;
+  READS_OTHER_USERS_SQL = 10;
   // Opens an admin-credentialed connection to the customer's database and
   // returns live session state from it — including other sessions' in-flight,
   // unmasked SQL. It shares a plain read permission with sibling methods that
   // only read Bytebase's own store.
-  OPENS_AN_ADMIN_CONNECTION = 3;
+  OPENS_AN_ADMIN_CONNECTION = 11;
   // Spends a stored workspace credential on an outbound call to a third
   // party, which puts whatever the caller passes outside the product.
-  SENDS_DATA_TO_A_THIRD_PARTY = 4;
+  SENDS_DATA_TO_A_THIRD_PARTY = 12;
   // Returns a stored secret in its response body today. These are ordinary
   // reads that belong in a serving class on their merits, and each is here
   // because of a leak that a redaction on the read path would close — the
@@ -155,5 +168,5 @@ enum MCPExclusionReason {
   // therefore the one that is meant to go away: fixing the leak moves the
   // method to READ, as a reviewed widening, rather than leaving a quiet
   // exposure the moment the ceiling starts serving.
-  RETURNS_A_STORED_SECRET = 5;
+  RETURNS_A_STORED_SECRET = 13;
 }

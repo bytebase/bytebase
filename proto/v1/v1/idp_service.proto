@@ -23,7 +23,7 @@ service IdentityProviderService {
     option (bytebase.v1.permission) = "bb.identityProviders.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Lists all configured identity providers (public endpoint for login page).
@@ -37,7 +37,7 @@ service IdentityProviderService {
     option (bytebase.v1.allow_without_credential) = true;
     // The method requires no authentication thus no authorization.
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Creates a new identity provider.
@@ -52,7 +52,7 @@ service IdentityProviderService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 
   // Updates an identity provider.
@@ -68,7 +68,7 @@ service IdentityProviderService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 
   // Deletes an identity provider.
@@ -80,7 +80,7 @@ service IdentityProviderService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Tests the connection and configuration of an identity provider.
@@ -93,7 +93,7 @@ service IdentityProviderService {
     option (bytebase.v1.permission) = "bb.identityProviders.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 }
 

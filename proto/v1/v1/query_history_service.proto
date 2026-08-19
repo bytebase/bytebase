@@ -34,7 +34,7 @@ service QueryHistoryService {
     option (bytebase.v1.permission) = "bb.queryHistories.list";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = READS_OTHER_USERS_SQL;
+    option (bytebase.v1.mcp_denial_reason) = READS_OTHER_USERS_SQL;
   }
 
   // GetQueryHistory gets a single query history for the caller.

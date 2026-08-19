@@ -27,12 +27,11 @@ import (
 // mcpClassification is one v1 RPC's MCP annotations, as the compiled
 // descriptors carry them.
 type mcpClassification struct {
-	procedure       string
-	class           v1pb.MCPMethodClass
-	forbiddenReason v1pb.MCPForbiddenReason
-	exclusionReason v1pb.MCPExclusionReason
-	permission      string
-	audit           bool
+	procedure  string
+	class      v1pb.MCPMethodClass
+	reason     v1pb.MCPDenialReason
+	permission string
+	audit      bool
 	// request is the method's input descriptor, which the redaction lint
 	// below reads to see what a denial would write into an audit row.
 	request protoreflect.MessageDescriptor
@@ -59,22 +58,19 @@ func mcpClassificationsFromDescriptors(t *testing.T) []mcpClassification {
 				md := methods.Get(j)
 				class, ok := proto.GetExtension(md.Options(), v1pb.E_McpMethodClass).(v1pb.MCPMethodClass)
 				require.True(t, ok, "method %s carries a malformed mcp_method_class", md.FullName())
-				forbiddenReason, ok := proto.GetExtension(md.Options(), v1pb.E_McpForbiddenReason).(v1pb.MCPForbiddenReason)
-				require.True(t, ok, "method %s carries a malformed mcp_forbidden_reason", md.FullName())
-				exclusionReason, ok := proto.GetExtension(md.Options(), v1pb.E_McpExclusionReason).(v1pb.MCPExclusionReason)
-				require.True(t, ok, "method %s carries a malformed mcp_exclusion_reason", md.FullName())
+				reason, ok := proto.GetExtension(md.Options(), v1pb.E_McpDenialReason).(v1pb.MCPDenialReason)
+				require.True(t, ok, "method %s carries a malformed mcp_denial_reason", md.FullName())
 				permission, ok := proto.GetExtension(md.Options(), v1pb.E_Permission).(string)
 				require.True(t, ok, "method %s carries a malformed permission", md.FullName())
 				audit, ok := proto.GetExtension(md.Options(), v1pb.E_Audit).(bool)
 				require.True(t, ok, "method %s carries a malformed audit annotation", md.FullName())
 				rows = append(rows, mcpClassification{
-					procedure:       fmt.Sprintf("/%s/%s", sd.FullName(), md.Name()),
-					class:           class,
-					forbiddenReason: forbiddenReason,
-					exclusionReason: exclusionReason,
-					permission:      permission,
-					audit:           audit,
-					request:         md.Input(),
+					procedure:  fmt.Sprintf("/%s/%s", sd.FullName(), md.Name()),
+					class:      class,
+					reason:     reason,
+					permission: permission,
+					audit:      audit,
+					request:    md.Input(),
 				})
 			}
 		}
@@ -87,12 +83,12 @@ func mcpClassificationsFromDescriptors(t *testing.T) []mcpClassification {
 // forbiddenProceduresFromDescriptors narrows the classification to the
 // FORBIDDEN set, whose membership several assertions below pin. The gate
 // enforces every class, not this one — its own doc owns that claim.
-func forbiddenProceduresFromDescriptors(t *testing.T) map[string]v1pb.MCPForbiddenReason {
+func forbiddenProceduresFromDescriptors(t *testing.T) map[string]v1pb.MCPDenialReason {
 	t.Helper()
-	found := map[string]v1pb.MCPForbiddenReason{}
+	found := map[string]v1pb.MCPDenialReason{}
 	for _, row := range mcpClassificationsFromDescriptors(t) {
 		if row.class == v1pb.MCPMethodClass_FORBIDDEN {
-			found[row.procedure] = row.forbiddenReason
+			found[row.procedure] = row.reason
 		}
 	}
 	return found
@@ -146,35 +142,35 @@ func TestForbiddenClassMembership(t *testing.T) {
 	// issuing a credential, and a denial that says otherwise teaches the next
 	// reader something false. These are near-synonyms in English and are not
 	// near-synonyms in what they tell an operator, so every method is pinned.
-	wantReason := map[string]v1pb.MCPForbiddenReason{
-		v1connect.AuthServiceLoginProcedure:                              v1pb.MCPForbiddenReason_MINTS_CREDENTIAL,
-		v1connect.AuthServiceSignupProcedure:                             v1pb.MCPForbiddenReason_MINTS_CREDENTIAL,
-		v1connect.AuthServiceExchangeTokenProcedure:                      v1pb.MCPForbiddenReason_MINTS_CREDENTIAL,
-		v1connect.AuthServiceRefreshProcedure:                            v1pb.MCPForbiddenReason_MINTS_CREDENTIAL,
-		v1connect.AuthServiceSwitchWorkspaceProcedure:                    v1pb.MCPForbiddenReason_MINTS_CREDENTIAL,
-		v1connect.AuthServiceRequestPasswordResetProcedure:               v1pb.MCPForbiddenReason_RESETS_CREDENTIAL,
-		v1connect.AuthServiceResetPasswordProcedure:                      v1pb.MCPForbiddenReason_RESETS_CREDENTIAL,
-		v1connect.AuthServiceSendEmailLoginCodeProcedure:                 v1pb.MCPForbiddenReason_RESETS_CREDENTIAL,
-		v1connect.UserServiceUpdateUserProcedure:                         v1pb.MCPForbiddenReason_TAKES_OVER_ACCOUNT,
-		v1connect.AuthServiceLogoutProcedure:                             v1pb.MCPForbiddenReason_ENDS_SESSION,
-		v1connect.WorkspaceServiceLeaveWorkspaceProcedure:                v1pb.MCPForbiddenReason_ENDS_MEMBERSHIP,
-		v1connect.WorkspaceServiceDeleteWorkspaceProcedure:               v1pb.MCPForbiddenReason_ENDS_MEMBERSHIP,
-		v1connect.ServiceAccountServiceCreateServiceAccountProcedure:     v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.ServiceAccountServiceUpdateServiceAccountProcedure:     v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.WorkspaceServiceRotateDirectorySyncTokenProcedure:      v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.UserServiceCreateUserProcedure:                         v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.UserServiceUpdateEmailProcedure:                        v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.IdentityProviderServiceCreateIdentityProviderProcedure: v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.IdentityProviderServiceUpdateIdentityProviderProcedure: v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.IdentityProviderServiceTestIdentityProviderProcedure:   v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure: v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.WorkloadIdentityServiceUpdateWorkloadIdentityProcedure: v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.SettingServiceTestEmailSettingProcedure:                v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.SettingServiceUpdateSettingProcedure:                   v1pb.MCPForbiddenReason_REWRITES_SESSION_BOUNDARY,
-		v1connect.InstanceServiceUpdateDataSourceProcedure:               v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.IssueServiceApproveIssueProcedure:                      v1pb.MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION,
-		v1connect.IssueServiceRejectIssueProcedure:                       v1pb.MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION,
-		v1connect.IssueServiceRetryIssueApprovalProcedure:                v1pb.MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION,
+	wantReason := map[string]v1pb.MCPDenialReason{
+		v1connect.AuthServiceLoginProcedure:                              v1pb.MCPDenialReason_MINTS_CREDENTIAL,
+		v1connect.AuthServiceSignupProcedure:                             v1pb.MCPDenialReason_MINTS_CREDENTIAL,
+		v1connect.AuthServiceExchangeTokenProcedure:                      v1pb.MCPDenialReason_MINTS_CREDENTIAL,
+		v1connect.AuthServiceRefreshProcedure:                            v1pb.MCPDenialReason_MINTS_CREDENTIAL,
+		v1connect.AuthServiceSwitchWorkspaceProcedure:                    v1pb.MCPDenialReason_MINTS_CREDENTIAL,
+		v1connect.AuthServiceRequestPasswordResetProcedure:               v1pb.MCPDenialReason_RESETS_CREDENTIAL,
+		v1connect.AuthServiceResetPasswordProcedure:                      v1pb.MCPDenialReason_RESETS_CREDENTIAL,
+		v1connect.AuthServiceSendEmailLoginCodeProcedure:                 v1pb.MCPDenialReason_RESETS_CREDENTIAL,
+		v1connect.UserServiceUpdateUserProcedure:                         v1pb.MCPDenialReason_TAKES_OVER_ACCOUNT,
+		v1connect.AuthServiceLogoutProcedure:                             v1pb.MCPDenialReason_ENDS_SESSION,
+		v1connect.WorkspaceServiceLeaveWorkspaceProcedure:                v1pb.MCPDenialReason_ENDS_MEMBERSHIP,
+		v1connect.WorkspaceServiceDeleteWorkspaceProcedure:               v1pb.MCPDenialReason_ENDS_MEMBERSHIP,
+		v1connect.ServiceAccountServiceCreateServiceAccountProcedure:     v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+		v1connect.ServiceAccountServiceUpdateServiceAccountProcedure:     v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+		v1connect.WorkspaceServiceRotateDirectorySyncTokenProcedure:      v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+		v1connect.UserServiceCreateUserProcedure:                         v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+		v1connect.UserServiceUpdateEmailProcedure:                        v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+		v1connect.IdentityProviderServiceCreateIdentityProviderProcedure: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+		v1connect.IdentityProviderServiceUpdateIdentityProviderProcedure: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+		v1connect.IdentityProviderServiceTestIdentityProviderProcedure:   v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+		v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+		v1connect.WorkloadIdentityServiceUpdateWorkloadIdentityProcedure: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+		v1connect.SettingServiceTestEmailSettingProcedure:                v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+		v1connect.SettingServiceUpdateSettingProcedure:                   v1pb.MCPDenialReason_REWRITES_SESSION_BOUNDARY,
+		v1connect.InstanceServiceUpdateDataSourceProcedure:               v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+		v1connect.IssueServiceApproveIssueProcedure:                      v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
+		v1connect.IssueServiceRejectIssueProcedure:                       v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
+		v1connect.IssueServiceRetryIssueApprovalProcedure:                v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
 	}
 	// Wording for every mechanism in use is checkReasonsMatchTheClass's job, over
 	// every class rather than only the ones enumerated here.
@@ -210,39 +206,37 @@ func checkEveryMethodIsClassified(rows []mcpClassification) []string {
 }
 
 // checkReasonsMatchTheClass proves each row's reason and class agree. A refused
-// method says why it is refused and has wording to say it with; an excluded
-// method says why it is out; and a served method claims neither, because a
-// reason without its class denies nothing and would read, to anyone grepping
-// for it, as a method that is not served.
-func checkReasonsMatchTheClass(rows []mcpClassification, wording map[v1pb.MCPForbiddenReason]string) []string {
+// method says why it is refused and has wording to say it with, and the reason
+// it gives is one that belongs to its class; a served method claims none,
+// because a reason without its class denies nothing and would read, to anyone
+// grepping for it, as a method that is not served.
+//
+// One enum carries both refused classes, so the pairing is the check. Two
+// enums made a wrong-class reason a parse-level impossibility on paper and, in
+// practice, only added the states where a method carried both or carried the
+// kind that contradicted its class — states this clause used to spend four of
+// its six branches policing. What is left is the one thing that was ever real.
+func checkReasonsMatchTheClass(rows []mcpClassification, wording map[v1pb.MCPDenialReason]mcpDenialWording) []string {
 	var violations []string
 	for _, row := range rows {
-		hasForbiddenReason := row.forbiddenReason != v1pb.MCPForbiddenReason_MCP_FORBIDDEN_REASON_UNSPECIFIED
-		hasExclusionReason := row.exclusionReason != v1pb.MCPExclusionReason_MCP_EXCLUSION_REASON_UNSPECIFIED
-		switch row.class {
-		case v1pb.MCPMethodClass_FORBIDDEN:
-			if !hasForbiddenReason {
-				violations = append(violations, row.procedure+": is FORBIDDEN and records no mcp_forbidden_reason")
-			} else if _, ok := wording[row.forbiddenReason]; !ok {
-				violations = append(violations, fmt.Sprintf("%s: is refused for %v, which has no sentence to say so", row.procedure, row.forbiddenReason))
+		refused := row.class == v1pb.MCPMethodClass_FORBIDDEN || row.class == v1pb.MCPMethodClass_EXCLUDED
+		hasReason := row.reason != v1pb.MCPDenialReason_MCP_DENIAL_REASON_UNSPECIFIED
+		switch {
+		case refused && !hasReason:
+			violations = append(violations, fmt.Sprintf("%s: is %v and records no mcp_denial_reason", row.procedure, row.class))
+		case refused:
+			recorded, ok := wording[row.reason]
+			switch {
+			case !ok:
+				violations = append(violations, fmt.Sprintf("%s: is refused for %v, which has no sentence to say so", row.procedure, row.reason))
+			case recorded.class != row.class:
+				violations = append(violations, fmt.Sprintf("%s: is %v but records %v, which is a %v reason",
+					row.procedure, row.class, row.reason, recorded.class))
+			default:
 			}
-			if hasExclusionReason {
-				violations = append(violations, row.procedure+": is FORBIDDEN and also records an exclusion reason")
-			}
-		case v1pb.MCPMethodClass_EXCLUDED:
-			if !hasExclusionReason {
-				violations = append(violations, row.procedure+": is EXCLUDED and records no mcp_exclusion_reason")
-			}
-			if hasForbiddenReason {
-				violations = append(violations, row.procedure+": is EXCLUDED and also records a forbidden reason")
-			}
+		case hasReason:
+			violations = append(violations, fmt.Sprintf("%s: records %v, a denial reason, but is not refused", row.procedure, row.reason))
 		default:
-			if hasForbiddenReason {
-				violations = append(violations, row.procedure+": records why it is forbidden but is not classified FORBIDDEN")
-			}
-			if hasExclusionReason {
-				violations = append(violations, row.procedure+": records why it is excluded but is not classified EXCLUDED")
-			}
 		}
 	}
 	slices.Sort(violations)
@@ -346,7 +340,7 @@ func TestLintEveryMethodIsClassified(t *testing.T) {
 }
 
 func TestLintReasonsMatchTheClass(t *testing.T) {
-	require.Empty(t, checkReasonsMatchTheClass(mcpClassificationsFromDescriptors(t), mcpForbiddenReasons))
+	require.Empty(t, checkReasonsMatchTheClass(mcpClassificationsFromDescriptors(t), mcpDenialReasons))
 }
 
 // mcpEnums reads the two enums the serving decision spans out of the compiled
@@ -424,54 +418,52 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 			"/bytebase.v1.NewService/NewMethod: carries no mcp_method_class")
 	})
 
-	t.Run("a reasonless FORBIDDEN fails", func(t *testing.T) {
-		broken := []mcpClassification{{procedure: "/p", class: v1pb.MCPMethodClass_FORBIDDEN}}
-		require.Equal(t, []string{"/p: is FORBIDDEN and records no mcp_forbidden_reason"},
-			checkReasonsMatchTheClass(broken, mcpForbiddenReasons))
+	t.Run("a refused method with no reason fails", func(t *testing.T) {
+		broken := []mcpClassification{
+			{procedure: "/p", class: v1pb.MCPMethodClass_FORBIDDEN},
+			{procedure: "/q", class: v1pb.MCPMethodClass_EXCLUDED},
+		}
+		require.Equal(t, []string{
+			"/p: is FORBIDDEN and records no mcp_denial_reason",
+			"/q: is EXCLUDED and records no mcp_denial_reason",
+		}, checkReasonsMatchTheClass(broken, mcpDenialReasons))
 	})
 
-	t.Run("a FORBIDDEN reason with no wording fails", func(t *testing.T) {
+	t.Run("a reason with no wording fails", func(t *testing.T) {
 		broken := []mcpClassification{{
-			procedure:       "/p",
-			class:           v1pb.MCPMethodClass_FORBIDDEN,
-			forbiddenReason: v1pb.MCPForbiddenReason(9999),
+			procedure: "/p",
+			class:     v1pb.MCPMethodClass_FORBIDDEN,
+			reason:    v1pb.MCPDenialReason(9999),
 		}}
 		require.Equal(t, []string{"/p: is refused for 9999, which has no sentence to say so"},
-			checkReasonsMatchTheClass(broken, mcpForbiddenReasons))
+			checkReasonsMatchTheClass(broken, mcpDenialReasons))
 	})
 
-	t.Run("a reasonless EXCLUDED fails", func(t *testing.T) {
-		broken := []mcpClassification{{procedure: "/p", class: v1pb.MCPMethodClass_EXCLUDED}}
-		require.Equal(t, []string{"/p: is EXCLUDED and records no mcp_exclusion_reason"},
-			checkReasonsMatchTheClass(broken, mcpForbiddenReasons))
+	t.Run("a reason belonging to the other refused class fails", func(t *testing.T) {
+		// The one real mistake the merged enum leaves representable, and the
+		// reason each row of the wording table carries its class. Both
+		// directions, because a FORBIDDEN method explaining itself as a scope
+		// decision and an EXCLUDED one claiming a boundary-breaking mechanism
+		// mislead an operator in opposite directions.
+		broken := []mcpClassification{
+			{procedure: "/p", class: v1pb.MCPMethodClass_FORBIDDEN, reason: v1pb.MCPDenialReason_ADMINISTERS_THE_WORKSPACE},
+			{procedure: "/q", class: v1pb.MCPMethodClass_EXCLUDED, reason: v1pb.MCPDenialReason_MINTS_CREDENTIAL},
+		}
+		require.Equal(t, []string{
+			"/p: is FORBIDDEN but records ADMINISTERS_THE_WORKSPACE, which is a EXCLUDED reason",
+			"/q: is EXCLUDED but records MINTS_CREDENTIAL, which is a FORBIDDEN reason",
+		}, checkReasonsMatchTheClass(broken, mcpDenialReasons))
 	})
 
 	t.Run("a served method carrying a denial reason fails", func(t *testing.T) {
 		broken := []mcpClassification{
-			{procedure: "/p", class: v1pb.MCPMethodClass_READ, forbiddenReason: v1pb.MCPForbiddenReason_MINTS_CREDENTIAL},
-			{procedure: "/q", class: v1pb.MCPMethodClass_WRITE, exclusionReason: v1pb.MCPExclusionReason_ADMINISTERS_THE_WORKSPACE},
-			// The mistake two reason enums make possible: both at once. Whichever
-			// class the method carries, the other reason is a sentence about it
-			// that is not true.
-			{
-				procedure:       "/r",
-				class:           v1pb.MCPMethodClass_FORBIDDEN,
-				forbiddenReason: v1pb.MCPForbiddenReason_MINTS_CREDENTIAL,
-				exclusionReason: v1pb.MCPExclusionReason_ADMINISTERS_THE_WORKSPACE,
-			},
-			{
-				procedure:       "/s",
-				class:           v1pb.MCPMethodClass_EXCLUDED,
-				exclusionReason: v1pb.MCPExclusionReason_ADMINISTERS_THE_WORKSPACE,
-				forbiddenReason: v1pb.MCPForbiddenReason_MINTS_CREDENTIAL,
-			},
+			{procedure: "/p", class: v1pb.MCPMethodClass_READ, reason: v1pb.MCPDenialReason_MINTS_CREDENTIAL},
+			{procedure: "/q", class: v1pb.MCPMethodClass_WRITE, reason: v1pb.MCPDenialReason_ADMINISTERS_THE_WORKSPACE},
 		}
 		require.Equal(t, []string{
-			"/p: records why it is forbidden but is not classified FORBIDDEN",
-			"/q: records why it is excluded but is not classified EXCLUDED",
-			"/r: is FORBIDDEN and also records an exclusion reason",
-			"/s: is EXCLUDED and also records a forbidden reason",
-		}, checkReasonsMatchTheClass(broken, mcpForbiddenReasons))
+			"/p: records MINTS_CREDENTIAL, a denial reason, but is not refused",
+			"/q: records ADMINISTERS_THE_WORKSPACE, a denial reason, but is not refused",
+		}, checkReasonsMatchTheClass(broken, mcpDenialReasons))
 	})
 
 	// The serving-decision clause is over the vocabulary, so its mutations are
@@ -603,7 +595,7 @@ func TestExcludedOnlyForALeak(t *testing.T) {
 	}
 	var got []string
 	for _, row := range mcpClassificationsFromDescriptors(t) {
-		if row.exclusionReason == v1pb.MCPExclusionReason_RETURNS_A_STORED_SECRET {
+		if row.reason == v1pb.MCPDenialReason_RETURNS_A_STORED_SECRET {
 			got = append(got, row.procedure)
 		}
 	}
@@ -646,8 +638,8 @@ const mcpInventoryRegenerate = "MCP_INVENTORY=write go test ./backend/api/v1/ -r
 func renderMCPInventory(rows []mcpClassification) string {
 	var b strings.Builder
 	b.WriteString("# MCP method classification\n\n")
-	b.WriteString("Rendered from the `bytebase.v1.mcp_method_class`, `mcp_forbidden_reason` and\n")
-	b.WriteString("`mcp_exclusion_reason` annotations on the v1 RPCs. The annotations are the source of\n")
+	b.WriteString("Rendered from the `bytebase.v1.mcp_method_class` and `mcp_denial_reason`\n")
+	b.WriteString("annotations on the v1 RPCs. The annotations are the source of\n")
 	b.WriteString("truth; this file is a reviewable view of them and nothing reads it at runtime.\n\n")
 	b.WriteString("Regenerate with:\n\n```\n" + mcpInventoryRegenerate + "\n```\n\n")
 	b.WriteString("Every class is enforced by the MCP gate. READ and WRITE are the serving classes a\n")
@@ -676,12 +668,8 @@ func renderMCPInventory(rows []mcpClassification) string {
 	b.WriteString("| Method | Class | Reason | Permission |\n|---|---|---|---|\n")
 	for _, row := range rows {
 		reason := ""
-		switch row.class {
-		case v1pb.MCPMethodClass_FORBIDDEN:
-			reason = row.forbiddenReason.String()
-		case v1pb.MCPMethodClass_EXCLUDED:
-			reason = row.exclusionReason.String()
-		default:
+		if row.reason != v1pb.MCPDenialReason_MCP_DENIAL_REASON_UNSPECIFIED {
+			reason = row.reason.String()
 		}
 		permission := row.permission
 		if permission == "" {
@@ -773,20 +761,14 @@ func classContext(class v1pb.MCPMethodClass) *common.AuthContext {
 // far — 93 methods the console and the public API serve today.
 func TestMCPGateRefusesTheDeniedClasses(t *testing.T) {
 	for _, row := range mcpClassificationsFromDescriptors(t) {
-		var wantReason string
-		switch row.class {
-		case v1pb.MCPMethodClass_FORBIDDEN:
-			wantReason = mcpForbiddenReasons[row.forbiddenReason]
-		case v1pb.MCPMethodClass_EXCLUDED:
-			wantReason = mcpExclusionReasons[row.exclusionReason]
-		default:
+		if row.class != v1pb.MCPMethodClass_FORBIDDEN && row.class != v1pb.MCPMethodClass_EXCLUDED {
 			continue
 		}
+		wantReason := mcpDenialReasons[row.reason].sentence
 		t.Run(row.procedure, func(t *testing.T) {
 			got := invokeMCPGate(t, readWriteCeiling(), &common.AuthContext{
-				MCPMethodClass:     row.class,
-				MCPForbiddenReason: row.forbiddenReason,
-				MCPExclusionReason: row.exclusionReason,
+				MCPMethodClass:  row.class,
+				MCPDenialReason: row.reason,
 			}, row.procedure, connect.NewRequest(&v1pb.GetUserRequest{}))
 
 			require.Error(t, got.err, "a %v method must never reach its handler", row.class)
@@ -949,8 +931,8 @@ func TestMCPGateFailsClosedOnAnUnclassifiedMethod(t *testing.T) {
 func TestMCPGateFallsBackToGenericWording(t *testing.T) {
 	t.Run("forbidden", func(t *testing.T) {
 		got := invokeMCPGate(t, readWriteCeiling(), &common.AuthContext{
-			MCPMethodClass:     v1pb.MCPMethodClass_FORBIDDEN,
-			MCPForbiddenReason: v1pb.MCPForbiddenReason(9999),
+			MCPMethodClass:  v1pb.MCPMethodClass_FORBIDDEN,
+			MCPDenialReason: v1pb.MCPDenialReason(9999),
 		}, v1connect.AuthServiceLoginProcedure, connect.NewRequest(&v1pb.LoginRequest{}))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
@@ -959,8 +941,8 @@ func TestMCPGateFallsBackToGenericWording(t *testing.T) {
 
 	t.Run("excluded", func(t *testing.T) {
 		got := invokeMCPGate(t, readWriteCeiling(), &common.AuthContext{
-			MCPMethodClass:     v1pb.MCPMethodClass_EXCLUDED,
-			MCPExclusionReason: v1pb.MCPExclusionReason(9999),
+			MCPMethodClass:  v1pb.MCPMethodClass_EXCLUDED,
+			MCPDenialReason: v1pb.MCPDenialReason(9999),
 		}, v1connect.UserServiceListUsersProcedure, connect.NewRequest(&v1pb.ListUsersRequest{}))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
@@ -1111,11 +1093,11 @@ func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
 		t.Helper()
 		authCtx := &common.AuthContext{
 			// No audit annotation: the point of the test.
-			Audit:              false,
-			AuthMethod:         common.AuthMethodCustom,
-			MCPMethodClass:     v1pb.MCPMethodClass_FORBIDDEN,
-			MCPForbiddenReason: v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
-			DelegatedGrant:     &common.DelegatedGrant{CorrelationID: correlationID, Scope: "mcp:read-write"},
+			Audit:           false,
+			AuthMethod:      common.AuthMethodCustom,
+			MCPMethodClass:  v1pb.MCPMethodClass_FORBIDDEN,
+			MCPDenialReason: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+			DelegatedGrant:  &common.DelegatedGrant{CorrelationID: correlationID, Scope: "mcp:read-write"},
 		}
 		handlerReached := false
 		handler := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {

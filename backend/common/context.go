@@ -164,17 +164,13 @@ type AuthContext struct {
 	// no ceiling, and UNSPECIFIED means "not yet classified" rather than
 	// "safe", so it is refused too.
 	MCPMethodClass v1pb.MCPMethodClass
-	// MCPForbiddenReason is the method's bytebase.v1.mcp_forbidden_reason
-	// annotation: which mechanism made it FORBIDDEN, so the denial can say
-	// why. Meaningful only when MCPMethodClass is FORBIDDEN, and UNSPECIFIED
-	// costs wording rather than enforcement — the class is what denies.
-	MCPForbiddenReason v1pb.MCPForbiddenReason
-	// MCPExclusionReason is the method's bytebase.v1.mcp_exclusion_reason
-	// annotation, and the same thing for the other refused class: why no mode
-	// this release ships serves it. Meaningful only when MCPMethodClass is
-	// EXCLUDED.
-	MCPExclusionReason v1pb.MCPExclusionReason
-	Resources          []*Resource
+	// MCPDenialReason is the method's bytebase.v1.mcp_denial_reason
+	// annotation: which mechanism or scope decision refuses it, so the denial
+	// can say why. Meaningful only when MCPMethodClass is FORBIDDEN or
+	// EXCLUDED, and UNSPECIFIED costs wording rather than enforcement — the
+	// class is what denies.
+	MCPDenialReason v1pb.MCPDenialReason
+	Resources       []*Resource
 	// DelegatedGrant carries the grant state of the delegated MCP credential
 	// on internal-chain requests; nil on the public chain. Presence, not any
 	// field value, marks a request as MCP-originated.

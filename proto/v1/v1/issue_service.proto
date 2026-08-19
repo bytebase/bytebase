@@ -162,7 +162,7 @@ service IssueService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = DRIVES_THE_APPROVAL_DECISION;
+    option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 
   // Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
@@ -175,7 +175,7 @@ service IssueService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = DRIVES_THE_APPROVAL_DECISION;
+    option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 
   // Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
@@ -221,7 +221,7 @@ service IssueService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = DRIVES_THE_APPROVAL_DECISION;
+    option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 }
 

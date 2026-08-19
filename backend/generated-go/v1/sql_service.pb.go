@@ -2228,9 +2228,10 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
 	"SQLService\x12\x93\x01\n" +
 	"\x05Query\x12\x19.bytebase.v1.QueryRequest\x1a\x1a.bytebase.v1.QueryResponse\"S\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02-:\x01*\"(/v1/{name=instances/*/databases/*}:query\x12\x91\x01\n" +
-	"\fAdminExecute\x12 .bytebase.v1.AdminExecuteRequest\x1a!.bytebase.v1.AdminExecuteResponse\"8\x8a\xea0\fbb.sql.admin\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xb0\xea0\x03\x82\xd3\xe4\x93\x02\x12\x12\x10/v1:adminExecute(\x010\x01\x12x\n" +
+	"\fAdminExecute\x12 .bytebase.v1.AdminExecuteRequest\x1a!.bytebase.v1.AdminExecuteResponse\"8\x8a\xea0\fbb.sql.admin\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\v\x82\xd3\xe4\x93\x02\x12\x12\x10/v1:adminExecute(\x010\x01\x12x\n" +
 	"\x14SearchQueryHistories\x12(.bytebase.v1.SearchQueryHistoriesRequest\x1a).bytebase.v1.SearchQueryHistoriesResponse\"\v\x90\xea0\x02\xa0\xea0\x01\x88\x02\x01\x12\x90\x01\n" +
-	"\x12ListQueryHistories\x12&.bytebase.v1.ListQueryHistoriesRequest\x1a'.bytebase.v1.ListQueryHistoriesResponse\")\x8a\xea0\x16bb.queryHistories.list\x90\xea0\x01\xa0\xea0\x04\xb0\xea0\x02\x88\x02\x01\x12^\n" +
+	"\x12ListQueryHistories\x12&.bytebase.v1.ListQueryHistoriesRequest\x1a'.bytebase.v1.ListQueryHistoriesResponse\")\x8a\xea0\x16bb.queryHistories.list\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\n" +
+	"\x88\x02\x01\x12^\n" +
 	"\x0fGetQueryHistory\x12#.bytebase.v1.GetQueryHistoryRequest\x1a\x19.bytebase.v1.QueryHistory\"\v\x90\xea0\x02\xa0\xea0\x01\x88\x02\x01\x12\x97\x01\n" +
 	"\x06Export\x12\x1a.bytebase.v1.ExportRequest\x1a\x1b.bytebase.v1.ExportResponse\"T\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02.:\x01*\")/v1/{name=instances/*/databases/*}:exportB\xa5\x01\n" +
 	"\x0fcom.bytebase.v1B\x0fSqlServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
