@@ -683,13 +683,18 @@ LIMIT $n OFFSET $k;
 
 Honest per-tab costs (G7):
 
-- **My** (`creator = me`): the `(project, creator, folder)` and
-  `(creator, project)` btrees answer the equality; the title sort is
-  uncovered, so each page sorts the matched rows. That set is one person's
-  scratchpad in one project — tens to hundreds — so the sort is noise. The
-  `(creator, project)` index also serves the auditor's cross-project
-  `creator` filter (no binding test needed there), which is bounded and
-  cold enough to need no index of its own.
+- **My** (`creator = me`): the `(project, creator, folder)` btree answers
+  the equality; the title sort is uncovered, so each page sorts the
+  matched rows. That set is one person's scratchpad in one project — tens
+  to hundreds — so the sort is noise. The auditor's cross-project
+  `creator` filter (no binding test needed there) outgrew that index when
+  it became a programmatic service-account pull (BYT-10078): it now has
+  `(creator, updated_at DESC, resource_id DESC)`, which serves the filter
+  and the pull's `order_by` "update_time desc" in one scan. The old
+  `(creator, project)` btree is dropped in the same migration: every
+  creator-led scan it served — including the purge subqueries, which read
+  columns outside it anyway — rides the new index's creator prefix, and
+  keeping it would mean three creator-led btrees written on every update.
 - **Starred**: my rows in `saved_query_star` via its `principal` btree —
   row existence is the star. Fetch the (naturally small) set, join, drop
   rows I can no longer read from the view — the star row itself persists,
@@ -708,14 +713,22 @@ carries no cursor field to hold a keyset. Saved queries use the same
 mechanism; adopting keyset pagination here would be a platform-wide change,
 out of scope for this design. Two properties worth naming:
 
-- **The sort key is the title** (`saved_query.name`), matching the SQL
+- **Search sorts by title** (`saved_query.name`), matching the SQL
   Editor's folder tree rather than a recency feed. This matters more than
   it looks: titles change only on explicit create, rename, or delete, so
   the row set under a paging caller is nearly static, and the window in
   which offset paging can skip or repeat a row is correspondingly narrow.
   Ordering by `updated_at` would instead have the 2-second autosave
   debounce reshuffling the list continuously — a worse fit for the same
-  pagination mechanism.
+  pagination mechanism. `ListSavedQueries` shares the title default — a
+  row must not jump the list because somebody edited it — and carries an
+  AIP-132 `order_by` (BYT-10078: `update_time`, `create_time`, `title`,
+  each ± `desc`; `resource_id` appended as tiebreak in the last key's
+  direction) for pulls that want recency instead. "update_time desc"
+  accepts the churn the title order avoids — a row autosaved mid-pull can
+  skip or repeat across pages, healed by the consumer's next sync. The
+  recency pull's index is costed in the My bullet above; other orders sort
+  per page, fine at per-user volumes.
 - **The offset re-scan is real but small**: page *k* walks and discards
   *k × page* rows. Scratchpad volumes keep this far from mattering; if a
   project's list ever grows enough to feel it, the first fix is an index

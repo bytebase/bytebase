@@ -82,6 +82,7 @@ type SavedQueryServiceClient interface {
 	// List saved queries for auditing. The permission alone grants reading
 	// every matched saved query with full content, private ones included;
 	// bindings are ignored. Use parent "projects/-" for all projects.
+	// Results default to title ascending; see `order_by`.
 	// Permissions required: bb.savedQueries.list on the project, or on the
 	// workspace when the parent is "projects/-"
 	ListSavedQueries(context.Context, *connect.Request[v1.ListSavedQueriesRequest]) (*connect.Response[v1.ListSavedQueriesResponse], error)
@@ -290,6 +291,7 @@ type SavedQueryServiceHandler interface {
 	// List saved queries for auditing. The permission alone grants reading
 	// every matched saved query with full content, private ones included;
 	// bindings are ignored. Use parent "projects/-" for all projects.
+	// Results default to title ascending; see `order_by`.
 	// Permissions required: bb.savedQueries.list on the project, or on the
 	// workspace when the parent is "projects/-"
 	ListSavedQueries(context.Context, *connect.Request[v1.ListSavedQueriesRequest]) (*connect.Response[v1.ListSavedQueriesResponse], error)

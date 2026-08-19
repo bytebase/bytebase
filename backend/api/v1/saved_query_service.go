@@ -188,6 +188,10 @@ func (s *SavedQueryService) ListSavedQueries(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	orderByKeys, err := store.GetSavedQueryOrders(request.OrderBy)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
 
 	savedQueryList, err := s.store.ListSavedQueries(ctx, &store.FindSavedQueryMessage{
 		ProjectIDs:     projectIDs,
@@ -200,7 +204,8 @@ func (s *SavedQueryService) ListSavedQueries(
 		// offers GetSavedQuery for the rest, but a caller holding only
 		// bb.savedQueries.list cannot Get another creator's row, so a
 		// truncated statement here would have no way back to the full one.
-		LoadFull: true,
+		LoadFull:    true,
+		OrderByKeys: orderByKeys,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list saved queries: %v", err))

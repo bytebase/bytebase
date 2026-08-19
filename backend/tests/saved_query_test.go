@@ -162,6 +162,107 @@ func TestListSavedQueries(t *testing.T) {
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 }
 
+// TestListSavedQueriesOrdering pins the governance List contract: a stable
+// title-ascending default that editing must not reshuffle, and AIP-132
+// order_by for recency pulls.
+func TestListSavedQueriesOrdering(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	createSavedQuery := func(title string) *v1pb.SavedQuery {
+		return createTitledSavedQuery(ctx, a, ctl, title)
+	}
+
+	// Titles sort against creation and edit order on purpose.
+	first := createSavedQuery("zebra-first")
+	second := createSavedQuery("alpha-second")
+	third := createSavedQuery("middle-third")
+
+	// Editing a row must not move it in the default order; only an explicit
+	// "update_time desc" surfaces it first.
+	_, err = ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+		SavedQuery: &v1pb.SavedQuery{Name: first.Name, Content: []byte("SELECT 2;")},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"content"}},
+	}))
+	a.NoError(err)
+
+	filter := `creator == "users/demo@example.com"`
+
+	// Default: title ascending, unaffected by the edit.
+	listResp, err := ctl.savedQueryServiceClient.ListSavedQueries(ctx, connect.NewRequest(&v1pb.ListSavedQueriesRequest{
+		Parent: "projects/-",
+		Filter: filter,
+	}))
+	a.NoError(err)
+	a.Equal([]string{second.Name, third.Name, first.Name}, savedQueryNames(listResp.Msg.SavedQueries))
+
+	// The recency pull: the edited row leads.
+	recency := []string{first.Name, third.Name, second.Name}
+	byUpdated, err := ctl.savedQueryServiceClient.ListSavedQueries(ctx, connect.NewRequest(&v1pb.ListSavedQueriesRequest{
+		Parent:  "projects/-",
+		Filter:  filter,
+		OrderBy: "update_time desc",
+	}))
+	a.NoError(err)
+	a.Equal(recency, savedQueryNames(byUpdated.Msg.SavedQueries))
+
+	// Pagination follows the requested order: fixed pages, so a token bug
+	// fails an assertion instead of hanging the suite.
+	firstPage, err := ctl.savedQueryServiceClient.ListSavedQueries(ctx, connect.NewRequest(&v1pb.ListSavedQueriesRequest{
+		Parent:   "projects/-",
+		Filter:   filter,
+		OrderBy:  "update_time desc",
+		PageSize: 1,
+	}))
+	a.NoError(err)
+	a.Equal(recency[:1], savedQueryNames(firstPage.Msg.SavedQueries))
+	a.NotEmpty(firstPage.Msg.NextPageToken)
+
+	secondPage, err := ctl.savedQueryServiceClient.ListSavedQueries(ctx, connect.NewRequest(&v1pb.ListSavedQueriesRequest{
+		Parent:    "projects/-",
+		Filter:    filter,
+		OrderBy:   "update_time desc",
+		PageSize:  1,
+		PageToken: firstPage.Msg.NextPageToken,
+	}))
+	a.NoError(err)
+	a.Equal(recency[1:2], savedQueryNames(secondPage.Msg.SavedQueries))
+
+	// create_time follows creation order regardless of the edit.
+	byCreated, err := ctl.savedQueryServiceClient.ListSavedQueries(ctx, connect.NewRequest(&v1pb.ListSavedQueriesRequest{
+		Parent:  "projects/-",
+		Filter:  filter,
+		OrderBy: "create_time desc",
+	}))
+	a.NoError(err)
+	a.Equal([]string{third.Name, second.Name, first.Name}, savedQueryNames(byCreated.Msg.SavedQueries))
+
+	// The explicit title order goes through the parser, unlike the default.
+	byTitle, err := ctl.savedQueryServiceClient.ListSavedQueries(ctx, connect.NewRequest(&v1pb.ListSavedQueriesRequest{
+		Parent:  "projects/-",
+		Filter:  filter,
+		OrderBy: "title",
+	}))
+	a.NoError(err)
+	a.Equal([]string{second.Name, third.Name, first.Name}, savedQueryNames(byTitle.Msg.SavedQueries))
+
+	// Malformed order_by is rejected, not silently reinterpreted.
+	for _, invalid := range []string{"content desc", "-update_time", "update_time descending", "update_time desc, update_time"} {
+		_, err = ctl.savedQueryServiceClient.ListSavedQueries(ctx, connect.NewRequest(&v1pb.ListSavedQueriesRequest{
+			Parent:  "projects/-",
+			Filter:  filter,
+			OrderBy: invalid,
+		}))
+		a.Error(err)
+		a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err), invalid)
+	}
+}
+
 func TestSearchSavedQueriesFilterByFolder(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -172,15 +273,7 @@ func TestSearchSavedQueriesFilterByFolder(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	createSavedQuery := func(title string) *v1pb.SavedQuery {
-		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
-			Parent: ctl.project.Name,
-			SavedQuery: &v1pb.SavedQuery{
-				Title:   title,
-				Content: []byte("SELECT 1;"),
-			},
-		}))
-		a.NoError(err)
-		return resp.Msg
+		return createTitledSavedQuery(ctx, a, ctl, title)
 	}
 	setFolder := func(savedQuery *v1pb.SavedQuery, folder string) {
 		_, err := ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
@@ -265,15 +358,7 @@ func TestSearchSavedQueriesFilterByTitle(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	createSavedQuery := func(title string) *v1pb.SavedQuery {
-		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
-			Parent: ctl.project.Name,
-			SavedQuery: &v1pb.SavedQuery{
-				Title:   title,
-				Content: []byte("SELECT 1;"),
-			},
-		}))
-		a.NoError(err)
-		return resp.Msg
+		return createTitledSavedQuery(ctx, a, ctl, title)
 	}
 
 	matchedSavedQuery := createSavedQuery("Production Payroll Report")
@@ -728,6 +813,20 @@ func TestSearchSavedQueriesRejectsWildcardProject(t *testing.T) {
 	}))
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+}
+
+// createTitledSavedQuery creates a title-only saved query in the default
+// project — the shared fixture the list/search tests build on.
+func createTitledSavedQuery(ctx context.Context, a *require.Assertions, ctl *controller, title string) *v1pb.SavedQuery {
+	resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
+		Parent: ctl.project.Name,
+		SavedQuery: &v1pb.SavedQuery{
+			Title:   title,
+			Content: []byte("SELECT 1;"),
+		},
+	}))
+	a.NoError(err)
+	return resp.Msg
 }
 
 func savedQueryNames(savedQueries []*v1pb.SavedQuery) []string {

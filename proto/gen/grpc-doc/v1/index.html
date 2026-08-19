@@ -8903,6 +8903,7 @@ Permissions required: None (only returns caller&#39;s own query histories)</p></
                 <td><a href="#bytebase.v1.ListQueryHistoriesRequest">ListQueryHistoriesRequest</a></td>
                 <td><a href="#bytebase.v1.ListQueryHistoriesResponse">ListQueryHistoriesResponse</a></td>
                 <td><p>ListQueryHistories lists query histories of all users in a project.
+Results are ordered by create time descending (newest first).
 Permissions required: bb.queryHistories.list</p></td>
               </tr>
             
@@ -31891,6 +31892,19 @@ fewer. Defaults to 10; values above 1000 are coerced to 1000. </p></td>
 parameter the same as the call that returned it. </p></td>
                 </tr>
               
+                <tr>
+                  <td>order_by</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Sort the results, per https://google.aip.dev/132#ordering. Supported
+fields: `update_time`, `create_time`, `title`; append &#34; desc&#34; for
+descending, e.g. &#34;update_time desc&#34; for most recently modified first.
+A modification is a title, content, database, or folder write; sharing
+and stars do not count, and a never-modified saved query counts its
+create time. Empty means `title` ascending. `resource_id` is always
+appended as a final tiebreak so pages stay stable. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -32488,6 +32502,7 @@ binding, or project-level grant)</p></td>
                 <td><p>List saved queries for auditing. The permission alone grants reading
 every matched saved query with full content, private ones included;
 bindings are ignored. Use parent &#34;projects/-&#34; for all projects.
+Results default to title ascending; see `order_by`.
 Permissions required: bb.savedQueries.list on the project, or on the
 workspace when the parent is &#34;projects/-&#34;</p></td>
               </tr>

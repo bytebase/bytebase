@@ -199,7 +199,15 @@ type ListSavedQueriesRequest struct {
 	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// A page token from a previous ListSavedQueries call. Keep every other
 	// parameter the same as the call that returned it.
-	PageToken     string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	PageToken string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// Sort the results, per https://google.aip.dev/132#ordering. Supported
+	// fields: `update_time`, `create_time`, `title`; append " desc" for
+	// descending, e.g. "update_time desc" for most recently modified first.
+	// A modification is a title, content, database, or folder write; sharing
+	// and stars do not count, and a never-modified saved query counts its
+	// create time. Empty means `title` ascending. `resource_id` is always
+	// appended as a final tiebreak so pages stay stable.
+	OrderBy       string `protobuf:"bytes,5,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -258,6 +266,13 @@ func (x *ListSavedQueriesRequest) GetPageSize() int32 {
 func (x *ListSavedQueriesRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
+	}
+	return ""
+}
+
+func (x *ListSavedQueriesRequest) GetOrderBy() string {
+	if x != nil {
+		return x.OrderBy
 	}
 	return ""
 }
@@ -1201,14 +1216,15 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"savedQuery\"K\n" +
 	"\x14GetSavedQueryRequest\x123\n" +
 	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
-	"\x17bytebase.com/SavedQueryR\x04name\"\xa3\x01\n" +
+	"\x17bytebase.com/SavedQueryR\x04name\"\xbe\x01\n" +
 	"\x17ListSavedQueriesRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x16\n" +
 	"\x06filter\x18\x02 \x01(\tR\x06filter\x12\x1b\n" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x04 \x01(\tR\tpageToken\"\x80\x01\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\x12\x19\n" +
+	"\border_by\x18\x05 \x01(\tR\aorderBy\"\x80\x01\n" +
 	"\x18ListSavedQueriesResponse\x12<\n" +
 	"\rsaved_queries\x18\x01 \x03(\v2\x17.bytebase.v1.SavedQueryR\fsavedQueries\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"n\n" +

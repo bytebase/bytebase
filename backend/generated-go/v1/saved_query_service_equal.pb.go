@@ -56,6 +56,9 @@ func (x *ListSavedQueriesRequest) Equal(y *ListSavedQueriesRequest) bool {
 	if x.PageToken != y.PageToken {
 		return false
 	}
+	if x.OrderBy != y.OrderBy {
+		return false
+	}
 	return true
 }
 
