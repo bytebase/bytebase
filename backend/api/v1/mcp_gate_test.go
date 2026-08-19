@@ -1285,6 +1285,17 @@ var mcpDenialRequestsUnderReview = map[string]string{
 	v1connect.InstanceServiceListInstanceDatabaseProcedure:         "redactInstance masks every data-source credential",
 	v1connect.ProjectServiceTestWebhookProcedure:                   "redactWebhook masks the webhook URL, which is a bearer credential",
 	v1connect.SettingServiceTestEmailSettingProcedure:              "redactEmailSetting masks the SMTP password",
+
+	// Recorded as sent. Each carries something bigger than a name, and none of
+	// it is a credential: what the row gains by keeping it is what the agent
+	// actually attempted.
+	v1connect.CelServiceBatchParseProcedure:                     "recorded: CEL the caller wrote",
+	v1connect.CelServiceBatchDeparseProcedure:                   "recorded: CEL the caller wrote",
+	v1connect.DatabaseServiceDiffMetadataProcedure:              "recorded: the caller's own proposed schema, which is the subject of the call",
+	v1connect.DatabaseServiceGetSchemaStringProcedure:           "recorded: the caller's own proposed schema",
+	v1connect.InstanceServiceBatchSyncInstancesProcedure:        "recorded: a batch of instance names and a full-sync flag, nothing more",
+	v1connect.ReleaseServiceCheckReleaseProcedure:               "recorded: the caller's own release files, the same way an audited Query records its statement",
+	v1connect.SubscriptionServiceVerifyCheckoutSessionProcedure: "recorded: an opaque checkout id the caller supplied; reaching the payment provider with it needs Bytebase's own key",
 }
 
 // mcpRequestFieldNeedsReview reports whether a request field could carry more
@@ -1298,16 +1309,31 @@ func mcpRequestFieldNeedsReview(field protoreflect.FieldDescriptor) bool {
 	if field.Kind() == protoreflect.MessageKind || field.Kind() == protoreflect.GroupKind {
 		return true
 	}
-	name := string(field.Name())
-	if name == "page_token" {
-		return false
-	}
-	for _, marker := range []string{"password", "secret", "token", "key", "credential", "code", "passphrase", "keytab", "content"} {
-		if strings.Contains(name, marker) {
-			return true
-		}
-	}
-	return false
+	return !mcpInertRequestFields[string(field.Name())]
+}
+
+// mcpInertRequestFields is the closed list of scalar field names that carry
+// nothing worth deciding about: the resource-naming and paging vocabulary AIP
+// standardizes, plus the handful of plain flags on these requests.
+//
+// It is an allowlist rather than a list of credential-sounding names, because
+// the two fail in opposite directions. A denylist of markers admits every field
+// whose name nobody thought of — `session_id` is one that already exists — and
+// admits it silently, which is the failure this lint was written after. An
+// allowlist admits a field only once somebody has looked at it.
+var mcpInertRequestFields = map[string]bool{
+	"name": true, "parent": true, "filter": true, "query": true, "order_by": true,
+	"page_size": true, "page_token": true, "show_deleted": true, "skip_trim": true,
+	"resource": true, "workspace": true, "project": true, "instance": true,
+	"email": true, "user": true, "state": true, "view": true, "raw": true,
+	"schema": true, "sdl_format": true, "concise": true, "validate_only": true,
+	"allow_missing": true, "update_mask": true, "etag": true, "force": true,
+	"web": true, "type": true, "title": true, "description": true,
+	// Plurals of the naming vocabulary, and the plain flags and enums these
+	// requests carry: a batch of resource names is no more interesting than one.
+	"names": true, "targets": true, "changelog": true, "object": true,
+	"limit": true, "format": true, "refresh": true, "enable_full_sync": true,
+	"starred": true, "policy_type": true,
 }
 
 // TestLintDenialRequestsAreReviewedForRedaction fails when a method joins the
@@ -1321,7 +1347,7 @@ func mcpRequestFieldNeedsReview(field protoreflect.FieldDescriptor) bool {
 func TestLintDenialRequestsAreReviewedForRedaction(t *testing.T) {
 	needsReview := map[string][]string{}
 	for _, row := range mcpClassificationsFromDescriptors(t) {
-		if row.audit || !auth.MCPClassIsRefused(row.class) {
+		if row.audit {
 			continue
 		}
 		fields := row.request.Fields()
@@ -1332,13 +1358,23 @@ func TestLintDenialRequestsAreReviewedForRedaction(t *testing.T) {
 		}
 	}
 
+	var undecided []string
 	for procedure, fields := range needsReview {
-		require.Contains(t, mcpDenialRequestsUnderReview, procedure,
-			"%s is refused, carries no audit annotation, and its request holds %v — its denial row now writes that, "+
-				"so decide what may be recorded and add it to mcpDenialRequestsUnderReview", procedure, fields)
+		if _, ok := mcpDenialRequestsUnderReview[procedure]; !ok {
+			undecided = append(undecided, fmt.Sprintf("%s holds %v", procedure, fields))
+		}
 	}
+	slices.Sort(undecided)
+	require.Empty(t, undecided,
+		"these methods are unaudited and the gate can refuse them, so a denial now writes their request into an "+
+			"audit row: decide what may be recorded and add each to mcpDenialRequestsUnderReview")
+
+	var stale []string
 	for procedure := range mcpDenialRequestsUnderReview {
-		require.Contains(t, needsReview, procedure,
-			"%s no longer needs a redaction decision; drop it here so the list keeps meaning something", procedure)
+		if _, ok := needsReview[procedure]; !ok {
+			stale = append(stale, procedure)
+		}
 	}
+	slices.Sort(stale)
+	require.Empty(t, stale, "these no longer need a redaction decision; drop them so the list keeps meaning something")
 }
