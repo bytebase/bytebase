@@ -347,14 +347,14 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		}
 	}
 
-	queryDataPolicy := getEffectiveQueryDataPolicy(
+	queryRestriction := getEffectiveQueryDataPolicy(
 		ctx,
 		s.store,
 		s.licenseService,
-		0,
+		request.Limit,
 		database.ProjectID,
 	)
-	resolvedDataSourceID, err := resolveDataSourceID(ctx, instance, request.DataSourceId, statement, queryDataPolicy.AllowAdminDataSource)
+	resolvedDataSourceID, err := resolveDataSourceID(ctx, instance, request.DataSourceId, statement, queryRestriction.AllowAdminDataSource)
 	if err != nil {
 		return nil, err
 	}
@@ -384,13 +384,6 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	}
 
 	startTime := time.Now()
-	queryRestriction := getEffectiveQueryDataPolicy(
-		ctx,
-		s.store,
-		s.licenseService,
-		request.Limit,
-		database.ProjectID,
-	)
 	queryContext := db.QueryContext{
 		Explain:              request.Explain,
 		Limit:                int(queryRestriction.MaximumResultRows),
