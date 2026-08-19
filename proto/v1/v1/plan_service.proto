@@ -25,6 +25,7 @@ service PlanService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.plans.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists deployment plans in a project.
@@ -34,6 +35,7 @@ service PlanService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.plans.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Creates a new deployment plan.
@@ -47,6 +49,11 @@ service PlanService {
     option (bytebase.v1.permission) = "bb.plans.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    // This is the step that produces the issueless plan — it creates a plan
+    // and links no issue. It stays WRITE and needs no rule of its own: the
+    // rule the gate PR owes belongs at execution, not here, since a plan that
+    // is never rolled out changes nothing. See RolloutService/CreateRollout.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // UpdatePlan updates the plan.
@@ -61,6 +68,7 @@ service PlanService {
     option (bytebase.v1.permission) = "bb.plans.update";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Gets the plan check run for a deployment plan.
@@ -70,6 +78,7 @@ service PlanService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.planCheckRuns.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Executes validation checks on a deployment plan.
@@ -83,6 +92,7 @@ service PlanService {
     option (bytebase.v1.permission) = "bb.planCheckRuns.run";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Cancels the plan check run for a deployment plan.
@@ -96,6 +106,7 @@ service PlanService {
     option (bytebase.v1.permission) = "bb.planCheckRuns.run";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 }
 

@@ -39,6 +39,7 @@ service SavedQueryService {
     option (bytebase.v1.permission) = "bb.savedQueries.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Get a saved query with its full content.
@@ -48,6 +49,7 @@ service SavedQueryService {
     option (google.api.http) = {get: "/v1/{name=projects/*/savedQueries/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // List saved queries for auditing. The permission alone grants reading
@@ -60,6 +62,8 @@ service SavedQueryService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.savedQueries.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = READS_OTHER_USERS_SQL;
   }
 
   // Search saved queries in one project. Returns content previews of the
@@ -72,6 +76,7 @@ service SavedQueryService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Search folder paths. A path is returned when it holds at least one saved
@@ -84,6 +89,7 @@ service SavedQueryService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Update a saved query. `database` must belong to the saved query's project.
@@ -97,6 +103,7 @@ service SavedQueryService {
     option (google.api.method_signature) = "saved_query,update_mask";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Star or unstar a saved query for the caller. Stars are personal: nobody
@@ -112,6 +119,7 @@ service SavedQueryService {
     };
     option (google.api.method_signature) = "name,starred";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Move the caller's saved queries filed under `source_folder`, descendants
@@ -128,6 +136,7 @@ service SavedQueryService {
     option (google.api.method_signature) = "parent,source_folder,target_folder";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Delete a saved query and every user's stars on it. An EDITOR binding
@@ -139,6 +148,7 @@ service SavedQueryService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Get a saved query's sharing policy: who it is shared with, at what level.
@@ -148,6 +158,8 @@ service SavedQueryService {
     option (google.api.http) = {get: "/v1/{resource=projects/*/savedQueries/*}:getPolicy"};
     option (google.api.method_signature) = "resource";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Replace a saved query's sharing policy in full. `policy.etag` must match
@@ -162,6 +174,8 @@ service SavedQueryService {
     option (google.api.method_signature) = "resource,policy";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 }
 

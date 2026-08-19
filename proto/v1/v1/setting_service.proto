@@ -25,6 +25,8 @@ service SettingService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.settings.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Retrieves a workspace setting by name.
@@ -34,6 +36,8 @@ service SettingService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.settings.get";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Updates a workspace setting.

@@ -22,6 +22,8 @@ service InstanceRoleService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.instanceRoles.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = RETURNS_A_STORED_SECRET;
   }
 }
 

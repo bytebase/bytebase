@@ -502,9 +502,9 @@ const file_v1_ai_service_proto_rawDesc = "" +
 	"\x1bAI_CHAT_MESSAGE_ROLE_SYSTEM\x10\x01\x12\x1d\n" +
 	"\x19AI_CHAT_MESSAGE_ROLE_USER\x10\x02\x12\"\n" +
 	"\x1eAI_CHAT_MESSAGE_ROLE_ASSISTANT\x10\x03\x12\x1d\n" +
-	"\x19AI_CHAT_MESSAGE_ROLE_TOOL\x10\x042h\n" +
-	"\tAIService\x12[\n" +
-	"\x04Chat\x12\x1a.bytebase.v1.AIChatRequest\x1a\x1b.bytebase.v1.AIChatResponse\"\x1a\x90\xea0\x02\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/v1/ai/chatB\xa4\x01\n" +
+	"\x19AI_CHAT_MESSAGE_ROLE_TOOL\x10\x042p\n" +
+	"\tAIService\x12c\n" +
+	"\x04Chat\x12\x1a.bytebase.v1.AIChatRequest\x1a\x1b.bytebase.v1.AIChatResponse\"\"\x90\xea0\x02\xa0\xea0\x04\xb0\xea0\x04\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/v1/ai/chatB\xa4\x01\n" +
 	"\x0fcom.bytebase.v1B\x0eAiServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

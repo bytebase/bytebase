@@ -1209,10 +1209,10 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\x0emfa_temp_token\x18\x05 \x01(\tH\x02R\fmfaTempToken\x88\x01\x01B\v\n" +
 	"\t_otp_codeB\x10\n" +
 	"\x0e_recovery_codeB\x11\n" +
-	"\x0f_mfa_temp_token2\xbe\n" +
+	"\x0f_mfa_temp_token2\xc2\n" +
 	"\n" +
-	"\vAuthService\x12\xc7\x01\n" +
-	"\x1cGetAuthenticationRestriction\x120.bytebase.v1.GetAuthenticationRestrictionRequest\x1a\x1f.bytebase.v1.AuthenticationInfo\"T\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02GZ/\x12-/v1/{workspace=workspaces/*}/auth/restriction\x12\x14/v1/auth/restriction\x12i\n" +
+	"\vAuthService\x12\xcb\x01\n" +
+	"\x1cGetAuthenticationRestriction\x120.bytebase.v1.GetAuthenticationRestrictionRequest\x1a\x1f.bytebase.v1.AuthenticationInfo\"X\xdaA\x00\x80\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02GZ/\x12-/v1/{workspace=workspaces/*}/auth/restriction\x12\x14/v1/auth/restriction\x12i\n" +
 	"\x05Login\x12\x19.bytebase.v1.LoginRequest\x1a\x1a.bytebase.v1.LoginResponse\")\x80\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x01\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/v1/auth/login\x12h\n" +
 	"\x06Logout\x12\x1a.bytebase.v1.LogoutRequest\x1a\x16.google.protobuf.Empty\"*\x80\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x04\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/auth/logout\x12\x89\x01\n" +
 	"\rExchangeToken\x12!.bytebase.v1.ExchangeTokenRequest\x1a\".bytebase.v1.ExchangeTokenResponse\"1\x80\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x01\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/v1/auth:exchangeToken\x12l\n" +

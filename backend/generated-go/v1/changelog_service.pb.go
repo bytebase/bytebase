@@ -471,10 +471,10 @@ const file_v1_changelog_service_proto_rawDesc = "" +
 	"\rChangelogView\x12\x1e\n" +
 	"\x1aCHANGELOG_VIEW_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14CHANGELOG_VIEW_BASIC\x10\x01\x12\x17\n" +
-	"\x13CHANGELOG_VIEW_FULL\x10\x022\xec\x03\n" +
-	"\x10ChangelogService\x12\xf4\x01\n" +
-	"\x0eListChangelogs\x12\".bytebase.v1.ListChangelogsRequest\x1a#.bytebase.v1.ListChangelogsResponse\"\x98\x01\xdaA\x06parent\x8a\xea0\x12bb.changelogs.list\x90\xea0\x01\x82\xd3\xe4\x93\x02oZ<\x12:/v1/{parent=projects/*/instances/*/databases/*}/changelogs\x12//v1/{parent=instances/*/databases/*}/changelogs\x12\xe0\x01\n" +
-	"\fGetChangelog\x12 .bytebase.v1.GetChangelogRequest\x1a\x16.bytebase.v1.Changelog\"\x95\x01\xdaA\x04name\x8a\xea0\x11bb.changelogs.get\x90\xea0\x01\x82\xd3\xe4\x93\x02oZ<\x12:/v1/{name=projects/*/instances/*/databases/*/changelogs/*}\x12//v1/{name=instances/*/databases/*/changelogs/*}B\xab\x01\n" +
+	"\x13CHANGELOG_VIEW_FULL\x10\x022\xf4\x03\n" +
+	"\x10ChangelogService\x12\xf8\x01\n" +
+	"\x0eListChangelogs\x12\".bytebase.v1.ListChangelogsRequest\x1a#.bytebase.v1.ListChangelogsResponse\"\x9c\x01\xdaA\x06parent\x8a\xea0\x12bb.changelogs.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02oZ<\x12:/v1/{parent=projects/*/instances/*/databases/*}/changelogs\x12//v1/{parent=instances/*/databases/*}/changelogs\x12\xe4\x01\n" +
+	"\fGetChangelog\x12 .bytebase.v1.GetChangelogRequest\x1a\x16.bytebase.v1.Changelog\"\x99\x01\xdaA\x04name\x8a\xea0\x11bb.changelogs.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02oZ<\x12:/v1/{name=projects/*/instances/*/databases/*/changelogs/*}\x12//v1/{name=instances/*/databases/*/changelogs/*}B\xab\x01\n" +
 	"\x0fcom.bytebase.v1B\x15ChangelogServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

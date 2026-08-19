@@ -5,9 +5,11 @@
 
 - [v1/annotation.proto](#v1_annotation-proto)
     - [AuthMethod](#bytebase-v1-AuthMethod)
+    - [MCPExclusionReason](#bytebase-v1-MCPExclusionReason)
     - [MCPForbiddenReason](#bytebase-v1-MCPForbiddenReason)
     - [MCPMethodClass](#bytebase-v1-MCPMethodClass)
   
+    - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
@@ -34,9 +36,9 @@
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
-
+  
     - [ActuatorService](#bytebase-v1-ActuatorService)
-
+  
 - [v1/ai_service.proto](#v1_ai_service-proto)
     - [AIChatMessage](#bytebase-v1-AIChatMessage)
     - [AIChatRequest](#bytebase-v1-AIChatRequest)
@@ -44,11 +46,11 @@
     - [AIChatToolCall](#bytebase-v1-AIChatToolCall)
     - [AIChatToolDefinition](#bytebase-v1-AIChatToolDefinition)
     - [AIChatUsage](#bytebase-v1-AIChatUsage)
-
+  
     - [AIChatMessageRole](#bytebase-v1-AIChatMessageRole)
-
+  
     - [AIService](#bytebase-v1-AIService)
-
+  
 - [v1/common.proto](#v1_common-proto)
     - [PermissionDeniedDetail](#bytebase-v1-PermissionDeniedDetail)
     - [Position](#bytebase-v1-Position)
@@ -71,9 +73,9 @@
     - [IamPolicy](#bytebase-v1-IamPolicy)
     - [PolicyDelta](#bytebase-v1-PolicyDelta)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
-
+  
     - [BindingDelta.Action](#bytebase-v1-BindingDelta-Action)
-
+  
 - [v1/audit_log_service.proto](#v1_audit_log_service-proto)
     - [AuditData](#bytebase-v1-AuditData)
     - [AuditLog](#bytebase-v1-AuditLog)
@@ -83,11 +85,11 @@
     - [RequestMetadata](#bytebase-v1-RequestMetadata)
     - [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest)
     - [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse)
-
+  
     - [AuditLog.Severity](#bytebase-v1-AuditLog-Severity)
-
+  
     - [AuditLogService](#bytebase-v1-AuditLogService)
-
+  
 - [v1/rollout_service.proto](#v1_rollout_service-proto)
     - [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest)
     - [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse)
@@ -810,6 +812,26 @@ Authorization method for RPC calls.
 
 
 
+<a name="bytebase-v1-MCPExclusionReason"></a>
+
+### MCPExclusionReason
+Why an RPC is served by no MCP mode. Unlike MCPForbiddenReason, which names
+a mechanism that breaks the MCP boundary, these name a scope decision: the
+method is out because this phase ships two modes and neither is the right
+home for it. Each value is what a future admin-capable ceiling would have to
+argue with, one population at a time.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MCP_EXCLUSION_REASON_UNSPECIFIED | 0 | No reason recorded. CI rejects this on a method classified EXCLUDED. |
+| ADMINISTERS_THE_WORKSPACE | 1 | Administers the workspace rather than doing database work: identity, credentials, access control, governance policy, billing, workspace and instance configuration, project lifecycle, and the operator&#39;s own audit trail. Reading is administration too where the read returns the privilege topology or a stored secret rather than the state of a database. |
+| READS_OTHER_USERS_SQL | 2 | Returns SQL that other people wrote. The permission gating it reads as an ordinary list permission, so the exclusion is per method rather than per permission: these methods span the workspace or ignore the per-object sharing that keeps a saved query private. |
+| OPENS_AN_ADMIN_CONNECTION | 3 | Opens an admin-credentialed connection to the customer&#39;s database and returns live session state from it — including other sessions&#39; in-flight, unmasked SQL. It shares a plain read permission with sibling methods that only read Bytebase&#39;s own store. |
+| SENDS_DATA_TO_A_THIRD_PARTY | 4 | Spends a stored workspace credential on an outbound call to a third party, which puts whatever the caller passes outside the product. |
+| RETURNS_A_STORED_SECRET | 5 | Returns a stored secret in its response body today. These are ordinary reads that belong in a serving class on their merits, and each is here because of a leak that a redaction on the read path would close — the product already redacts the same values elsewhere. This reason is therefore the one that is meant to go away: fixing the leak moves the method to READ, as a reviewed widening, rather than leaving a quiet exposure the moment the ceiling starts serving. |
+
+
+
 <a name="bytebase-v1-MCPForbiddenReason"></a>
 
 ### MCPForbiddenReason
@@ -829,6 +851,7 @@ reader trusts — so a method changing what it does changes its reason here.
 | ENDS_MEMBERSHIP | 5 | Destroys the caller&#39;s own workspace membership and mints a plain workspace token on the way out. |
 | MINTS_CREDENTIAL_FOR_OTHERS | 6 | Leaves someone holding a principal the caller is not — by issuing its credential, carrying an existing one out to a host the caller named, choosing what will later be trusted to mint one, or redirecting where one gets delivered. |
 | REWRITES_SESSION_BOUNDARY | 7 | Rewrites the workspace configuration that governs the session making the call — the MCP switch itself, the sign-in and SSO settings, the mail relay that carries credential resets, and the AI endpoint the stored API key is sent to. A session that can widen its own ceiling is not bounded by it. |
+| DRIVES_THE_APPROVAL_DECISION | 8 | Works the human approval step that gates the change: recording the review decision, or re-running the finding that sets it and can clear the issue outright. An agent composes a change; it does not move its own change through the gate. |
 
 
 
@@ -839,13 +862,22 @@ Classification of an RPC for MCP (AI agent) sessions. The effective
 authorization of an MCP session is this classification intersected with the
 caller&#39;s own RBAC: it can only ever narrow what the human could do, never
 widen it.
+Only FORBIDDEN is enforced today. READ, WRITE and EXCLUDED are recorded
+classifications and nothing reads them at request time yet — the gate that
+selects between them is a later change. A method annotated READ or WRITE is
+therefore served exactly as it is today; the annotation states where it
+belongs, not where the boundary currently sits. FORBIDDEN is the exception
+and is enforced the moment it is annotated.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| MCP_METHOD_CLASS_UNSPECIFIED | 0 | Not yet classified. Reaches its handler, subject to RBAC as usual — the classification is being rolled out method by method, and only FORBIDDEN is enforced today. |
+| MCP_METHOD_CLASS_UNSPECIFIED | 0 | Not yet classified. Reaches its handler, subject to RBAC as usual. CI rejects this value on any v1 RPC, so it survives only inside a build that has not been linted: a new RPC is classified before it can ship. |
 | READ | 1 | Served to a read-only MCP session and above. |
-| WRITE | 2 | Served to a read-write MCP session only. |
+| WRITE | 2 | Served to a read-write MCP session only. This is a serving mode, not a verb: a method that only reads still belongs here when a read-only session has no business calling it — taking a copy of data out of the product, or generating migration DDL from a schema the caller supplied. |
 | FORBIDDEN | 3 | Never reachable by an MCP session, whatever the caller&#39;s own permissions are. These methods escape the MCP boundary rather than merely exercising a permission: a human with the permission uses the console; an agent acting for them does not get to. |
+| EXCLUDED | 4 | Served by no MCP mode this phase ships, and not a durable never. These are workspace administration, plus the handful of methods that do something materially worse than the plain read permission they share suggests.
+
+The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is ever built, could legitimately serve an EXCLUDED method — that is a product decision nobody has made. It could never serve a FORBIDDEN one, because FORBIDDEN names a mechanism that breaks the MCP boundary itself. Keeping them apart is what stops a future widening from having to re-litigate the credential-minting set alongside the ordinary admin API. |
 
 
  
@@ -859,6 +891,7 @@ widen it.
 | allow_without_credential | bool | .google.protobuf.MethodOptions | 100000 | Whether the method allows access without authentication credentials. |
 | audit | bool | .google.protobuf.MethodOptions | 100003 | Whether to audit calls to this method. |
 | auth_method | AuthMethod | .google.protobuf.MethodOptions | 100002 | The authorization method to use for this RPC. |
+| mcp_exclusion_reason | MCPExclusionReason | .google.protobuf.MethodOptions | 100006 | Why the method is served by no MCP mode. Meaningful only alongside mcp_method_class = EXCLUDED, and required there: an exclusion whose reason nobody wrote down is one nobody can revisit, and these are the rows a later admin-capable ceiling has to re-decide one at a time. |
 | mcp_forbidden_reason | MCPForbiddenReason | .google.protobuf.MethodOptions | 100005 | Why the method is forbidden to MCP sessions. Meaningful only alongside mcp_method_class = FORBIDDEN; the denial names it so the agent, and the operator reading the audit row, learn why rather than just that it was refused. |
 | mcp_method_class | MCPMethodClass | .google.protobuf.MethodOptions | 100004 | How the method is classified for MCP (AI agent) sessions. |
 | permission | string | .google.protobuf.MethodOptions | 100001 | The permission required to call this method. |
@@ -1132,11 +1165,11 @@ Request message for setting up sample data.
 
 
 
+ 
 
+ 
 
-
-
-
+ 
 
 
 <a name="bytebase-v1-ActuatorService"></a>
@@ -1149,7 +1182,7 @@ ActuatorService manages system health and operational information.
 | GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets system information and health status of the Bytebase instance. The workspace is resolved from the authenticated session. Permissions required: None (authentication required) |
 | SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sets up sample data for demonstration and testing purposes. Permissions required: bb.projects.create |
 
-
+ 
 
 
 
@@ -1260,7 +1293,7 @@ Token usage for a single AI provider call.
 
 
 
-
+ 
 
 
 <a name="bytebase-v1-AIChatMessageRole"></a>
@@ -1277,9 +1310,9 @@ Role of a chat message.
 | AI_CHAT_MESSAGE_ROLE_TOOL | 4 | Tool result message. |
 
 
+ 
 
-
-
+ 
 
 
 <a name="bytebase-v1-AIService"></a>
@@ -1291,7 +1324,7 @@ AIService provides AI chat capabilities for the page agent.
 | ----------- | ------------ | ------------- | ------------|
 | Chat | [AIChatRequest](#bytebase-v1-AIChatRequest) | [AIChatResponse](#bytebase-v1-AIChatResponse) | Chat sends a conversation with tool definitions to the configured AI provider and returns the AI response. |
 
-
+ 
 
 
 
@@ -1367,7 +1400,7 @@ Check the documentation of the field using Range for specific semantics.
 
 
 
-
+ 
 
 
 <a name="bytebase-v1-ApprovalStatus"></a>
@@ -1565,11 +1598,11 @@ Webhook integration type.
 | GOOGLE_CHAT | 8 | Google Chat integration. |
 
 
+ 
 
+ 
 
-
-
-
+ 
 
 
 
@@ -1684,7 +1717,7 @@ Request message for setting an IAM policy.
 
 
 
-
+ 
 
 
 <a name="bytebase-v1-BindingDelta-Action"></a>
@@ -1699,11 +1732,11 @@ Type of action performed on a binding.
 | REMOVE | 2 | Remove a binding. |
 
 
+ 
 
+ 
 
-
-
-
+ 
 
 
 
@@ -1867,7 +1900,7 @@ Response message for searching audit logs.
 
 
 
-
+ 
 
 
 <a name="bytebase-v1-AuditLog-Severity"></a>
@@ -1888,9 +1921,9 @@ Severity level for audit log entries.
 | EMERGENCY | 8 | System is unusable. |
 
 
+ 
 
-
-
+ 
 
 
 <a name="bytebase-v1-AuditLogService"></a>
@@ -1903,7 +1936,7 @@ AuditLogService manages audit logs for system activities and API calls.
 | SearchAuditLogs | [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest) | [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse) | Searches audit logs with optional filtering and pagination. Permissions required: bb.auditLogs.search |
 | ExportAuditLogs | [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest) | [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse) | Exports audit logs in a specified format for external analysis. Permissions required: bb.auditLogs.export |
 
-
+ 
 
 
 
@@ -2873,7 +2906,7 @@ For example: project == &#34;projects/{project}&#34; database == &#34;instances/
 
 
 
-
+ 
 
 
 <a name="bytebase-v1-QueryHistory-Type"></a>
@@ -2888,9 +2921,9 @@ For example: project == &#34;projects/{project}&#34; database == &#34;instances/
 | EXPORT | 2 | Data export operation to file. |
 
 
+ 
 
-
-
+ 
 
 
 <a name="bytebase-v1-QueryHistoryService"></a>
@@ -2904,7 +2937,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | ListQueryHistories | [ListQueryHistoriesRequest](#bytebase-v1-ListQueryHistoriesRequest) | [ListQueryHistoriesResponse](#bytebase-v1-ListQueryHistoriesResponse) | ListQueryHistories lists query histories of all users in a project. Permissions required: bb.queryHistories.list |
 | GetQueryHistory | [GetQueryHistoryRequest](#bytebase-v1-GetQueryHistoryRequest) | [QueryHistory](#bytebase-v1-QueryHistory) | GetQueryHistory gets a single query history for the caller. Permissions required: None (only returns the caller&#39;s own query history) |
 
-
+ 
 
 
 
@@ -3265,7 +3298,7 @@ Syntax error with position information for editor highlighting
 
 
 
-
+ 
 
 
 <a name="bytebase-v1-Advice-Level"></a>
@@ -3351,9 +3384,9 @@ RuleType indicates the source of the linting rule.
 | EXCEPTION | 6 | Exception message indicating error conditions. |
 
 
+ 
 
-
-
+ 
 
 
 <a name="bytebase-v1-SQLService"></a>
@@ -3370,7 +3403,7 @@ SQLService executes SQL queries and manages query operations.
 | GetQueryHistory | [GetQueryHistoryRequest](#bytebase-v1-GetQueryHistoryRequest) | [QueryHistory](#bytebase-v1-QueryHistory) | Deprecated: use QueryHistoryService.GetQueryHistory instead. Delegating alias kept for upgrade transition; will be removed in a future release. No HTTP binding: the REST route is served by QueryHistoryService. Permissions required: None (only returns the caller&#39;s own query history) |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) | Exports query results to a file format. Permissions required: bb.databases.get |
 
-
+ 
 
 
 
@@ -4279,7 +4312,7 @@ The issue&#39;s `name` field is used to identify the issue to update. Format: pr
 
 
 
-
+ 
 
 
 <a name="bytebase-v1-Issue-Approver-Status"></a>
@@ -4323,9 +4356,9 @@ Approval status values.
 | REJECTED | 3 | Rejected. |
 
 
+ 
 
-
-
+ 
 
 
 <a name="bytebase-v1-IssueService"></a>
@@ -4349,7 +4382,7 @@ IssueService manages issues for tracking database changes and tasks.
 | RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) | Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RetryIssueApproval | [RetryIssueApprovalRequest](#bytebase-v1-RetryIssueApprovalRequest) | [Issue](#bytebase-v1-Issue) | Re-runs approval-template finding for an issue stuck in CHECKING. Useful when the synchronous post-create finding errored (e.g. against a malformed workspace approval rule) and the operator has since corrected it — without this, the issue would remain in CHECKING indefinitely because there is no other retry path for non-DATABASE_CHANGE issue types. Idempotent: returns the existing issue unchanged when approval-finding has already completed. Permissions required: None (caller must be the issue creator; mirrors RequestIssue&#39;s authorization model). |
 
-
+ 
 
 
 
@@ -5126,7 +5159,7 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 
 
 
-
+ 
 
 
 <a name="bytebase-v1-AISetting-Provider"></a>
@@ -12603,3 +12636,4 @@ WorkspaceService manages workspace-level operations and profile.
 | <a name="bool" /> bool |  | bool | boolean | boolean | bool | bool | boolean | TrueClass/FalseClass |
 | <a name="string" /> string | A string must always contain UTF-8 encoded or 7-bit ASCII text. | string | String | str/unicode | string | string | string | String (UTF-8) |
 | <a name="bytes" /> bytes | May contain any arbitrary sequence of bytes. | string | ByteString | str | []byte | ByteString | string | String (ASCII-8BIT) |
+

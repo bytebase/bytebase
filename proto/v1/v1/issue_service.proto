@@ -26,6 +26,7 @@ service IssueService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.issues.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Creates a new issue for database changes or tasks.
@@ -40,6 +41,17 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issues.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    // WRITE covers the DATABASE_CHANGE issue this method exists for. It does
+    // not cover the other two types, which complete on creation whenever the
+    // workspace rule produces no approval template, each reaching past a
+    // method that is EXCLUDED for exactly that outcome: ROLE_GRANT writes the
+    // project IAM binding for a grantee the request names, which is
+    // ProjectService/SetIamPolicy; ACCESS_GRANT sets the grant ACTIVE, which
+    // is AccessGrantService/ActivateAccessGrant. A class annotation cannot
+    // split by request field, so the ceiling PR owes a carve-out refusing
+    // those two types on the MCP path. UpdateIssue reaches the same completion
+    // through allow_missing and carries the same debt.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Lists issues in a project.
@@ -49,6 +61,7 @@ service IssueService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.issues.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
@@ -60,6 +73,7 @@ service IssueService {
     };
     option (bytebase.v1.permission) = "bb.issues.get";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Updates an issue's properties such as title, description, or labels.
@@ -73,6 +87,7 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issues.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Lists comments on an issue.
@@ -82,6 +97,7 @@ service IssueService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.issueComments.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Adds a comment to an issue.
@@ -95,6 +111,7 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issueComments.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Updates an existing issue comment.
@@ -108,6 +125,7 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issueComments.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Updates the status of multiple issues in a single operation.
@@ -120,6 +138,7 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issues.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Approves an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
@@ -131,6 +150,8 @@ service IssueService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_forbidden_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 
   // Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
@@ -142,6 +163,8 @@ service IssueService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_forbidden_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 
   // Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
@@ -153,6 +176,21 @@ service IssueService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    // WRITE, not FORBIDDEN with its two siblings, because it is structurally
+    // the opposite of them. ApproveIssue and RejectIssue record the review
+    // decision — an approver role via canReview, the self-approval guard, an
+    // APPROVED or REJECTED approver appended. This action requires the issue to
+    // be ALREADY rejected, requires the actor to be the issue CREATOR, never
+    // calls canReview, and records no decision: it strips the REJECTED
+    // approvers and returns the issue to PENDING for a fresh human decision
+    // (component/review/workflow.go applyReviewAction, ActionRequest).
+    //
+    // It approves nothing, so refusing it protects nothing the other two do not
+    // already protect, and it costs the loop propose_database_change exists
+    // for: while a rejection stands Approve and Reject both hard-fail, so this
+    // is the ONLY exit from the rejected state. Forbidding it means an agent
+    // that fixes the SQL a human asked it to fix cannot resubmit.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Re-runs approval-template finding for an issue stuck in CHECKING.
@@ -171,6 +209,8 @@ service IssueService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_forbidden_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 }
 
