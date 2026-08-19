@@ -551,6 +551,16 @@ func (s *Store) DeleteSetting(ctx context.Context, workspace string, name storep
 	return nil
 }
 
+// ErrMCPCapabilityUnreadable marks a stored MCP capability ceiling this build
+// cannot interpret: an enum name it does not know, a wrong-typed value, a row
+// that is not the JSON the profile expects. It is deliberately distinct from a
+// failed READ, because the two are opposite outcomes for the caller. A read
+// that failed is an outage and will likely succeed on retry; a value that
+// cannot be interpreted will never succeed until an admin rewrites it, so
+// telling the caller to retry would be a lie and telling it "policy" is the
+// truth. Both refuse.
+var ErrMCPCapabilityUnreadable = errors.New("the stored MCP capability ceiling cannot be interpreted")
+
 // GetMCPCapabilityUncached reads the workspace's stored MCP capability ceiling
 // straight from the database, bypassing the setting cache. The cache has no TTL
 // and only in-process writes refresh it, so a ceiling flipped out of band —
@@ -594,7 +604,7 @@ func (s *Store) GetMCPCapabilityUncached(ctx context.Context, workspace string) 
 
 	profile := &storepb.WorkspaceProfileSetting{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), profile); err != nil {
-		return unset, errors.Wrap(err, "failed to unmarshal the workspace profile setting")
+		return unset, errors.Wrapf(ErrMCPCapabilityUnreadable, "the workspace profile setting does not parse: %v", err)
 	}
 	if capability := profile.GetMcpCapability(); capability != unset {
 		return capability, nil
@@ -605,7 +615,7 @@ func (s *Store) GetMCPCapabilityUncached(ctx context.Context, workspace string) 
 		return unset, err
 	}
 	if stored != "" {
-		return unset, errors.Errorf("the stored MCP capability ceiling %s is not a value this build understands", stored)
+		return unset, errors.Wrapf(ErrMCPCapabilityUnreadable, "%s is not a value this build understands", stored)
 	}
 	return whenUnset, nil
 }
@@ -623,7 +633,7 @@ func (s *Store) GetMCPCapabilityUncached(ctx context.Context, workspace string) 
 func storedMCPCapability(value string) (string, error) {
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(value), &fields); err != nil {
-		return "", errors.Wrap(err, "failed to read the workspace profile setting as JSON")
+		return "", errors.Wrapf(ErrMCPCapabilityUnreadable, "the workspace profile setting is not a JSON object: %v", err)
 	}
 	for _, key := range []string{"mcpCapability", "mcp_capability"} {
 		if raw, ok := fields[key]; ok {

@@ -21,6 +21,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // mcpClassification is one v1 RPC's MCP annotations, as the compiled
@@ -31,6 +32,10 @@ type mcpClassification struct {
 	forbiddenReason v1pb.MCPForbiddenReason
 	exclusionReason v1pb.MCPExclusionReason
 	permission      string
+	audit           bool
+	// request is the method's input descriptor, which the redaction lint
+	// below reads to see what a denial would write into an audit row.
+	request protoreflect.MessageDescriptor
 }
 
 // mcpClassificationsFromDescriptors reads every v1 RPC's classification off the
@@ -60,12 +65,16 @@ func mcpClassificationsFromDescriptors(t *testing.T) []mcpClassification {
 				require.True(t, ok, "method %s carries a malformed mcp_exclusion_reason", md.FullName())
 				permission, ok := proto.GetExtension(md.Options(), v1pb.E_Permission).(string)
 				require.True(t, ok, "method %s carries a malformed permission", md.FullName())
+				audit, ok := proto.GetExtension(md.Options(), v1pb.E_Audit).(bool)
+				require.True(t, ok, "method %s carries a malformed audit annotation", md.FullName())
 				rows = append(rows, mcpClassification{
 					procedure:       fmt.Sprintf("/%s/%s", sd.FullName(), md.Name()),
 					class:           class,
 					forbiddenReason: forbiddenReason,
 					exclusionReason: exclusionReason,
 					permission:      permission,
+					audit:           audit,
+					request:         md.Input(),
 				})
 			}
 		}
@@ -838,7 +847,7 @@ func TestMCPGateUnderAReadOnlyCeiling(t *testing.T) {
 // has a ceiling the gate cannot act on. Both refuse: a policy that cannot be
 // read is not a policy that permits.
 func TestMCPGateFailsClosedOnTheCeiling(t *testing.T) {
-	t.Run("a lookup failure refuses, as an outage rather than a verdict", func(t *testing.T) {
+	t.Run("a failed read refuses, as an outage rather than a verdict", func(t *testing.T) {
 		got := invokeMCPGate(t, mcpGateStore{err: errors.New("db unreachable")},
 			classContext(v1pb.MCPMethodClass_READ),
 			v1connect.DatabaseServiceGetDatabaseProcedure, connect.NewRequest(&v1pb.GetDatabaseRequest{}))
@@ -850,6 +859,22 @@ func TestMCPGateFailsClosedOnTheCeiling(t *testing.T) {
 			"the agent gets the outcome, not the workspace's storage state")
 		require.False(t, got.auditMarked,
 			"the denial rows an operator filters on must be denials; an outage is not one")
+	})
+
+	t.Run("a stored value this build cannot interpret is a policy refusal", func(t *testing.T) {
+		// The opposite half of the same failure. No retry fixes a mistyped
+		// ceiling, so promising one would be a lie, and an admin has to act —
+		// which makes it a denial, and an audited one. The /mcp connection
+		// gate splits the same two the same way.
+		got := invokeMCPGate(t, mcpGateStore{err: errors.Wrap(store.ErrMCPCapabilityUnreadable, "READ_WRTIE")},
+			classContext(v1pb.MCPMethodClass_READ),
+			v1connect.DatabaseServiceGetDatabaseProcedure, connect.NewRequest(&v1pb.GetDatabaseRequest{}))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.NotContains(t, got.err.Error(), "READ_WRTIE",
+			"the agent gets the outcome, not the workspace's storage state")
+		require.True(t, got.auditMarked)
 	})
 
 	t.Run("a DISABLED ceiling is an ordinary denial", func(t *testing.T) {
@@ -1237,4 +1262,83 @@ func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
 		require.Contains(t, row.Request, "smtp.attacker.example",
 			"the host the agent named is the point of the row and stays readable")
 	})
+}
+
+// mcpDenialRequestsUnderReview is the population the redaction sweep has to
+// consider: every method the gate refuses that carries NO audit annotation, and
+// whose request holds more than the names, filters and page tokens the rest of
+// them carry. Before the gate, none of these produced an audit row at all; now
+// every denial writes one, so whatever the request holds is what lands in the
+// audit_log table.
+//
+// The value records what audit.go does with it, so a reviewer sees the decision
+// rather than the membership alone.
+//
+// This exists because the first sweep was done by reading, and reading missed
+// ListInstanceDatabase — whose request carries an entire Instance, and with it
+// every data-source credential the product stores. A list nobody can add to
+// silently is the only version of that sweep worth trusting.
+var mcpDenialRequestsUnderReview = map[string]string{
+	v1connect.AIServiceChatProcedure:                               "redactAIChatRequest drops the conversation body",
+	v1connect.AuthServiceSwitchWorkspaceProcedure:                  "redactSwitchWorkspaceRequest masks the three MFA proofs",
+	v1connect.IdentityProviderServiceTestIdentityProviderProcedure: "redactTestIdentityProviderRequest masks the provider secret and the test credential",
+	v1connect.InstanceServiceListInstanceDatabaseProcedure:         "redactInstance masks every data-source credential",
+	v1connect.ProjectServiceTestWebhookProcedure:                   "redactWebhook masks the webhook URL, which is a bearer credential",
+	v1connect.SettingServiceTestEmailSettingProcedure:              "redactEmailSetting masks the SMTP password",
+}
+
+// mcpRequestFieldNeedsReview reports whether a request field could carry more
+// into an audit row than a name or a filter: a nested message, whose whole
+// subtree travels, or a scalar whose name says it is a credential.
+//
+// page_token is the one exclusion. Thirteen list methods carry it, it is an
+// opaque cursor rather than a secret, and leaving it in would bury the six rows
+// that matter under thirteen that do not.
+func mcpRequestFieldNeedsReview(field protoreflect.FieldDescriptor) bool {
+	if field.Kind() == protoreflect.MessageKind || field.Kind() == protoreflect.GroupKind {
+		return true
+	}
+	name := string(field.Name())
+	if name == "page_token" {
+		return false
+	}
+	for _, marker := range []string{"password", "secret", "token", "key", "credential", "code", "passphrase", "keytab", "content"} {
+		if strings.Contains(name, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+// TestLintDenialRequestsAreReviewedForRedaction fails when a method joins the
+// population above without anyone deciding what its denial row may carry.
+//
+// It cannot check that a redactor exists — getRequestString's type switch is
+// not readable from here — so it checks the thing that failed last time: that
+// somebody looked. A new EXCLUDED annotation on an unaudited method whose
+// request holds a nested message now breaks the build, and the fix is either a
+// redactor plus a row here, or a row here saying why none is needed.
+func TestLintDenialRequestsAreReviewedForRedaction(t *testing.T) {
+	needsReview := map[string][]string{}
+	for _, row := range mcpClassificationsFromDescriptors(t) {
+		if row.audit || !auth.MCPClassIsRefused(row.class) {
+			continue
+		}
+		fields := row.request.Fields()
+		for i := range fields.Len() {
+			if field := fields.Get(i); mcpRequestFieldNeedsReview(field) {
+				needsReview[row.procedure] = append(needsReview[row.procedure], string(field.Name()))
+			}
+		}
+	}
+
+	for procedure, fields := range needsReview {
+		require.Contains(t, mcpDenialRequestsUnderReview, procedure,
+			"%s is refused, carries no audit annotation, and its request holds %v — its denial row now writes that, "+
+				"so decide what may be recorded and add it to mcpDenialRequestsUnderReview", procedure, fields)
+	}
+	for procedure := range mcpDenialRequestsUnderReview {
+		require.Contains(t, needsReview, procedure,
+			"%s no longer needs a redaction decision; drop it here so the list keeps meaning something", procedure)
+	}
 }

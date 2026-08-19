@@ -15,6 +15,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // mcpForbiddenReasons is UX copy, NOT the classification and NOT the mapping.
@@ -274,13 +275,15 @@ type mcpCeilingStore interface {
 // address the agent chose. Recording requests that were never recorded is why
 // getRequestString grew redactors in the same change (audit.go).
 //
-// A ceiling that CANNOT BE READ is a different outcome and gets a different
-// answer: the request is still refused — an unknown policy never permits — but
-// with CodeUnavailable and no policy mark, because a database blip is not a
-// verdict about the caller and must not read as one in the audit log. The /mcp
-// connection gate takes the same line for the same class of failure
-// (backend/api/mcp/server.go answers 503, not 401, when it cannot resolve the
-// audience).
+// A ceiling the gate cannot act on splits in two, and the split is the same one
+// the /mcp connection gate makes. A stored value this build cannot interpret —
+// a mistyped enum name, a wrong-typed row — is a policy refusal: it will never
+// succeed on retry, so it answers CodePermissionDenied and is audited, and the
+// connection gate answers 403 for it. A read that FAILED is an outage: it
+// answers CodeUnavailable, is not marked as a policy denial, and the connection
+// gate answers 503, the same way it already answers 503 rather than 401 when it
+// cannot resolve the token audience. Both refuse — an unknown policy never
+// permits — and neither is allowed to describe itself as the other.
 //
 // Two gaps survive this PR, and both are worth knowing because nothing in the
 // annotations shows either.
@@ -423,13 +426,25 @@ func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, proce
 	// error.
 	ceiling, err := in.store.GetMCPCapabilityUncached(ctx, workspaceID)
 	if err != nil {
-		// The agent gets no detail: an unreadable policy is an operator
-		// problem, and the error text can carry the workspace's storage state.
-		slog.Warn("failed to read the MCP capability ceiling; refusing the request",
+		// The agent gets no detail either way: the error text can carry the
+		// workspace's storage state. What it does get is the right KIND of
+		// answer, because the two failures are opposites for a client. A
+		// stored value this build cannot interpret will never succeed on
+		// retry — an admin has to rewrite it — so it is a policy refusal and
+		// an audited one. A read that failed is an outage, so it is
+		// retryable and is not a verdict about the caller. The /mcp
+		// connection gate splits the same two the same way.
+		slog.Warn("failed to resolve the MCP capability ceiling; refusing the request",
 			slog.String("method", procedure), slog.String("workspace", workspaceID), log.BBError(err))
+		if errors.Is(err, store.ErrMCPCapabilityUnreadable) {
+			return true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+				"%s is refused: this workspace's stored MCP capability ceiling is not one this build understands, "+
+					"so the request fails closed. Ask a workspace admin to set the MCP ceiling again in the workspace settings",
+				procedure))
+		}
 		return false, connect.NewError(connect.CodeUnavailable, errors.Errorf(
 			"%s is refused: this workspace's MCP capability ceiling could not be read, so the request fails closed. "+
-				"Retry shortly; if it persists, a workspace admin must set the MCP ceiling again in the workspace settings",
+				"Retry shortly; if it persists, a workspace admin must check the workspace MCP settings",
 			procedure))
 	}
 	served, known := mcpServingClasses[ceiling]

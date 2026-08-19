@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestMCPAuthMiddleware(t *testing.T) {
@@ -132,33 +133,46 @@ func TestNewServerRequiresStore(t *testing.T) {
 	require.Error(t, err)
 }
 
-// TestMCPCeilingReadFailureRejectsTheConnection pins mcpCapability's error arm
-// at the connection gate: a ceiling that cannot be read is not a ceiling that
-// permits. The store-level fail-closed cases are covered against a real
-// database in TestMCPCeilingStoredValueFailsClosed; this one covers the arm
-// above them, which maps ANY read failure to DISABLED.
-func TestMCPCeilingReadFailureRejectsTheConnection(t *testing.T) {
+// TestMCPCeilingFailuresRefuseTheConnectionDifferently pins the split the
+// connection gate makes on the two ways a ceiling can be unusable. Both refuse.
+// They must not describe themselves as each other: telling an operator their
+// admin disabled MCP during a database blip sends them to the wrong place, and
+// telling a client to retry a mistyped stored value promises something no
+// retry delivers.
+//
+// The stored-value cases are covered against a real database in
+// TestMCPCeilingStoredValueFailsClosed; this covers the arm above them.
+func TestMCPCeilingFailuresRefuseTheConnectionDifferently(t *testing.T) {
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
-	store := newTestServerStore()
-	store.capabilityErr = errors.New("db unreachable")
-	s, err := newServerWithStore(store, profile, secret, nil)
-	require.NoError(t, err)
 
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+tokenForWorkspace(t, secret, store.workspaceID))
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	handler := s.authMiddleware(func(c *echo.Context) error {
-		return c.String(http.StatusOK, "success")
-	})
-	if err := handler(c); err != nil {
-		echo.DefaultHTTPErrorHandler(true)(c, err)
+	statusFor := func(t *testing.T, capabilityErr error) int {
+		t.Helper()
+		fake := newTestServerStore()
+		fake.capabilityErr = capabilityErr
+		s, err := newServerWithStore(fake, profile, secret, nil)
+		require.NoError(t, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+tokenForWorkspace(t, secret, fake.workspaceID))
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		handler := s.authMiddleware(func(c *echo.Context) error {
+			return c.String(http.StatusOK, "success")
+		})
+		if err := handler(c); err != nil {
+			echo.DefaultHTTPErrorHandler(true)(c, err)
+		}
+		return rec.Code
 	}
-	require.Equal(t, http.StatusForbidden, rec.Code,
-		"a ceiling the server cannot read must refuse the connection")
+
+	require.Equal(t, http.StatusServiceUnavailable, statusFor(t, errors.New("db unreachable")),
+		"a failed read is an outage; the session is still refused, and the client may retry")
+	require.Equal(t, http.StatusForbidden,
+		statusFor(t, errors.Wrap(store.ErrMCPCapabilityUnreadable, "READ_WRTIE")),
+		"a stored value this build cannot interpret is a policy an admin must fix, not something to retry")
 }
 
 func TestMCPAuthFailsExplicitlyWithoutExternalURL(t *testing.T) {

@@ -589,17 +589,19 @@ func getRequestString(request any) (string, error) {
 			r = proto.CloneOf(r)
 			r.Webhook = redactWebhook(r.Webhook)
 			return r
-		// The five below carry something in a request that produced no audit
+		// The six below carry something in a request that produced no audit
 		// row until the MCP gate started recording its denials. The methods
 		// themselves are still unaudited; what reaches here is a refusal, and
 		// a refusal that transcribed the secret it refused would be worse than
 		// the silence it replaced. Every secret masked here is already masked
 		// on a sibling method that has always been audited.
 		//
-		// They were chosen by walking all 47 refused-and-unaudited methods and
-		// reading each request message: these five are the ones carrying a
-		// credential or an unbounded body. The rest carry names, filters and
-		// page tokens.
+		// Which six is not a judgment to repeat by eye — the first pass of it
+		// missed ListInstanceDatabase, whose request carries a whole Instance
+		// and therefore every data-source credential the product has. The
+		// population is derived from the descriptors instead, and
+		// TestLintDenialRequestsAreReviewedForRedaction fails when a method
+		// joins it.
 		case *v1pb.TestWebhookRequest:
 			r = proto.CloneOf(r)
 			r.Webhook = redactWebhook(r.Webhook)
@@ -614,6 +616,17 @@ func getRequestString(request any) (string, error) {
 			return redactSwitchWorkspaceRequest(r)
 		case *v1pb.AIChatRequest:
 			return redactAIChatRequest(r)
+		case *v1pb.ListInstanceDatabaseRequest:
+			// The request carries a whole Instance — "we need to set this
+			// field if the target instance is not created yet" — so it holds
+			// every data-source credential: password, ssl_key,
+			// ssh_private_key, the Kerberos keytab, the AWS/Azure/GCP
+			// credentials, the external-secret token and master_password.
+			// redactInstance is the same helper CreateInstance and
+			// UpdateInstance already use.
+			r = proto.CloneOf(r)
+			r.Instance = redactInstance(r.Instance)
+			return r
 		case *v1pb.CreateReleaseRequest:
 			r = proto.CloneOf(r)
 			r.Release = redactRelease(r.Release)
