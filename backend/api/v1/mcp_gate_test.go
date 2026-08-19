@@ -1319,9 +1319,9 @@ var mcpDenialRequestsUnderReview = map[string]mcpDenialRequestReview{
 		"redactEmailSetting masks the SMTP password; the address the agent chose to mail stays, which is the point of the row",
 	},
 
-	// Recorded as sent. Each carries something bigger than a name, and none of
-	// it is a credential: what the row gains by keeping it is what the agent
-	// actually attempted.
+	// Recorded as sent. None of it is a credential, and what the row keeps is
+	// what the agent actually attempted: the schema it proposed, the CEL it
+	// wrote, the resources it named, the flags it set.
 	v1connect.CelServiceBatchParseProcedure: {
 		[]string{"expressions"}, "recorded: CEL the caller wrote",
 	},
@@ -1386,10 +1386,12 @@ var mcpDenialRequestsUnderReview = map[string]mcpDenialRequestReview{
 		[]string{"names"}, "recorded: resource names",
 	},
 
-	// Recorded, and inert on inspection: a resource reference this repo spells
-	// its own way, or a plain flag. They are here rather than in the global
-	// list because those names mean whatever their RPC decided, and the next
-	// RPC to use one may decide differently.
+	v1connect.IssueServiceListIssuesProcedure: {
+		[]string{"query"}, "recorded: the caller's own search text",
+	},
+	v1connect.IssueServiceSearchIssuesProcedure: {
+		[]string{"query"}, "recorded: the caller's own search text",
+	},
 	v1connect.AuthServiceGetAuthenticationRestrictionProcedure: {
 		[]string{"workspace"}, "recorded: a workspace resource name",
 	},
@@ -1408,10 +1410,12 @@ var mcpDenialRequestsUnderReview = map[string]mcpDenialRequestReview{
 // — `page_token` is an opaque cursor on every method that has one, by
 // definition.
 //
-// Nothing else is exempt by name. A field called `schema` or `instance` means
-// whatever its own RPC decided it means, so it is reviewed per method above.
+// Nothing else is exempt by name, and the near misses are the reason. `schema`
+// looks like vocabulary and is DiffSchema's entire DDL body; `query` looks like
+// `filter` and is free text the caller wrote. A field means whatever its own
+// RPC decided, so it is reviewed per method above.
 var mcpAIPRequestFields = map[string]bool{
-	"name": true, "parent": true, "filter": true, "query": true, "order_by": true,
+	"name": true, "parent": true, "filter": true, "order_by": true,
 	"page_size": true, "page_token": true, "show_deleted": true, "view": true,
 	"update_mask": true, "etag": true, "allow_missing": true, "validate_only": true,
 	// The IAM-policy resource, standard on Get/SetIamPolicy.

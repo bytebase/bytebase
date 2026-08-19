@@ -639,11 +639,11 @@ func (s *Server) mcpCapability(ctx context.Context, workspaceID string) (storepb
 			return storepb.WorkspaceProfileSetting_DISABLED, nil
 		}
 		// DISABLED rather than UNSPECIFIED, even though the error is what the
-		// caller acts on: UNSPECIFIED is the backward-compatible "never
-		// configured" value and mcpConnectionAllowed ADMITS it, so returning
-		// it here would make the failure value of a security gate mean
-		// "let them in". The value has to be safe on its own, in case a later
-		// caller logs the error and carries on.
+		// caller acts on. UNSPECIFIED is the zero value and means "nobody
+		// resolved this"; DISABLED is a decision. mcpConnectionAllowed refuses
+		// both, so nothing turns on it today — the point is that the value
+		// stays safe to read on its own, in case a later caller logs the error
+		// and carries on.
 		return storepb.WorkspaceProfileSetting_DISABLED, err
 	}
 	return capability, nil
